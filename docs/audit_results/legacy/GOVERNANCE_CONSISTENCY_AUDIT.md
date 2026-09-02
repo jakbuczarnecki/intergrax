@@ -1,7 +1,7 @@
 # Cross-Document Governance Consistency Audit
 
-**Status:** Freeze audit (2026-06-11) — pre-architecture-freeze Tier-3 + ACP  
-**Scope:** Semantic overlap and responsibility boundaries — **not** gap analysis  
+**Status:** Freeze audit (2026-06-11) - pre-architecture-freeze Tier-3 + ACP  
+**Scope:** Semantic overlap and responsibility boundaries - **not** gap analysis  
 **Canon pair:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md)
 **Ideal reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §19.4 · §18.4  
 
@@ -33,7 +33,7 @@ When reviewing new capabilities or adoption work, also verify ([`INTERGRAX_ARCHI
 
 ---
 
-## 2. Capability layer — ALIGNED (do not merge)
+## 2. Capability layer - ALIGNED (do not merge)
 
 | Construct | Canonical home | Layer | Answers |
 |-----------|----------------|-------|---------|
@@ -58,11 +58,11 @@ When reviewing new capabilities or adoption work, also verify ([`INTERGRAX_ARCHI
 
 ### 2.2 IDEAL §19.4 alignment
 
-IDEAL requires typed nodes, lineage, blast radius, validation gates. Implemented as ACP §19 + `phase_v_capability_graph_guard.py`. TIER3 §50.1 adds **environment-scoped consumption** only — **no second graph model**.
+IDEAL requires typed nodes, lineage, blast radius, validation gates. Implemented as ACP §19 + `phase_v_capability_graph_guard.py`. TIER3 §50.1 adds **environment-scoped consumption** only - **no second graph model**.
 
 ---
 
-## 3. Registry layer — LAYERED (different lifecycles)
+## 3. Registry layer - LAYERED (different lifecycles)
 
 | Name | Tier | Scope | Mutable? | Canonical doc |
 |------|------|-------|----------|---------------|
@@ -75,14 +75,14 @@ IDEAL requires typed nodes, lineage, blast radius, validation gates. Implemented
 ### 3.1 Rules
 
 - **`AgentRegistry`** ≠ **`ApplicationRegistry`**. First is **runtime selection**; second is **platform inventory**.
-- **`EnvironmentRegistry`** ≠ **`ApplicationEnvironmentProfile`**. Profile is config; registry entry is **where** that config is deployed. Nested profile bundles (§22.6 · ADR-APP-003) do **not** introduce a second config type — they group fields inside the same profile.
-- README table is **documentation index**, not a registry contract — prefer `ApplicationRegistry` artifacts for ops automation (APP-OPS-4 **Done**).
+- **`EnvironmentRegistry`** ≠ **`ApplicationEnvironmentProfile`**. Profile is config; registry entry is **where** that config is deployed. Nested profile bundles (§22.6 · ADR-APP-003) do **not** introduce a second config type - they group fields inside the same profile.
+- README table is **documentation index**, not a registry contract - prefer `ApplicationRegistry` artifacts for ops automation (APP-OPS-4 **Done**).
 
 **Overlap risk:** Low, if naming is preserved. **Conflict:** None.
 
 ---
 
-## 4. Ownership & governance — LAYERED (watch naming)
+## 4. Ownership & governance - LAYERED (watch naming)
 
 | Construct | Home | Scope | Not the same as |
 |-----------|------|-------|-----------------|
@@ -102,13 +102,13 @@ ProductionOwnership         → agent on-call metadata gate (V-ALG.4)
 ApplicationOperationalOwnership → application host ops contacts (APP-OPS-2)
 ```
 
-**Overlap risk:** **Medium** on word “governance” — mitigated by glossary above. **Conflict:** None — different Pydantic models, different evaluators.
+**Overlap risk:** **Medium** on word “governance” - mitigated by glossary above. **Conflict:** None - different Pydantic models, different evaluators.
 
 **Lifecycle vs ownership:** Lifecycle answers **may this agent run in prod?** Ownership answers **who is paged when it fails?** Application ownership answers **who owns the host deployment?** Orthogonal concerns.
 
 ---
 
-## 5. Health & gates — LAYERED (complementary stack)
+## 5. Health & gates - LAYERED (complementary stack)
 
 | Surface | Type | When | Home |
 |---------|------|------|------|
@@ -127,13 +127,13 @@ EnvironmentHealthScore → rollup of gates + dimensions + staleness over time
 EnvironmentHealthStatus → live task posture (budget, HITL, policy)
 ```
 
-**Rule:** Health **score** may surface APP-PROD failures as dimensions — it does **not** replace gates. Gates remain authoritative for merge/deploy.
+**Rule:** Health **score** may surface APP-PROD failures as dimensions - it does **not** replace gates. Gates remain authoritative for merge/deploy.
 
 **Overlap risk:** Low with explicit stack. **Conflict:** None.
 
 ---
 
-## 6. TIER3 §50 vs IDEAL — ALIGNED
+## 6. TIER3 §50 vs IDEAL - ALIGNED
 
 | IDEAL topic | TIER3 §50 | Result |
 |-------------|-----------|--------|
@@ -178,7 +178,7 @@ EnvironmentHealthStatus → live task posture (budget, HITL, policy)
 | 6 | Ban `CapabilityRegistry` in glossary | **Done** (§2.1) |
 | 7 | APP-OPS implementation | **Done** (APP-OPS-1…4) |
 
-**Architecture freeze:** Tier-3 structural canon §24–§51 + this audit = **approved for freeze**. Further work is implementation (APP-*, ACP-TOK-*) and glossary discipline — not new composition primitives without ADR.
+**Architecture freeze:** Tier-3 structural canon §24–§51 + this audit = **approved for freeze**. Further work is implementation (APP-*, ACP-TOK-*) and glossary discipline - not new composition primitives without ADR.
 
 ---
 

@@ -149,6 +149,46 @@ class LkwClient:
                 meta.update(metadata)
         return self._post_run(body)
 
+    def run_web_search_qualification(
+        self,
+        *,
+        message: str,
+        metadata: dict[str, object] | None = None,
+    ) -> LkwRunResponse:
+        body = {
+            "tenant_id": self._config.tenant_id,
+            "message": message,
+            "capability": "local.workspace.web_search_qualification",
+            "metadata": {
+                "tenant_id": self._config.tenant_id,
+            },
+        }
+        if metadata:
+            meta = body["metadata"]
+            if isinstance(meta, dict):
+                meta.update(metadata)
+        return self._post_run(body)
+
+    def run_model_routing_qualification(
+        self,
+        *,
+        message: str,
+        metadata: dict[str, object] | None = None,
+    ) -> LkwRunResponse:
+        body = {
+            "tenant_id": self._config.tenant_id,
+            "message": message,
+            "capability": "local.workspace.model_routing_qualification",
+            "metadata": {
+                "tenant_id": self._config.tenant_id,
+            },
+        }
+        if metadata:
+            meta = body["metadata"]
+            if isinstance(meta, dict):
+                meta.update(metadata)
+        return self._post_run(body)
+
     def _post_run(self, body: dict[str, object]) -> LkwRunResponse:
         url = f"{self._config.base_url.rstrip('/')}/v1/local_workspace/run"
         status, payload = self._post_json(url, body)
@@ -277,11 +317,14 @@ def _parse_lkw_evidence(metadata: dict[str, object]) -> LkwEvidenceSlice | None:
     schema_version = raw.get("schema_version")
     if not isinstance(schema_version, str):
         return None
-    diagnostics: dict[str, SearchSummaryDiagnostic] = {}
+    diagnostics: dict[str, object] = {}
     raw_diag = raw.get("diagnostics")
     if isinstance(raw_diag, dict):
         for key, value in raw_diag.items():
             if not isinstance(key, str) or not isinstance(value, dict):
+                continue
+            if key == "lkw.web_search_summary.v1":
+                diagnostics[key] = dict(value)
                 continue
             diagnostics[key] = SearchSummaryDiagnostic(
                 num_results=_optional_int(value.get("num_results")),

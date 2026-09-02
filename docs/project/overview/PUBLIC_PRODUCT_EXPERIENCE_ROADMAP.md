@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current program gate | PRE-PX13 — IN_PROGRESS |
-| Next external phase | PX-13 — BLOCKED_ON_PRE_PX13_COMPLETION |
+| Current program gate | PRE-PX13 - IN_PROGRESS |
+| Next external phase | PX-13 - BLOCKED_ON_PRE_PX13_COMPLETION |
 | PX-13 status | NOT_STARTED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
@@ -79,7 +79,7 @@ These are **target experience gates**. They define measurable outcomes for futur
 | **15 seconds** | Understand that Intergrax is a serious foundation for governed AI applications and that LKW is the primary product path. |
 | **60 seconds** | Understand the problem, the LKW role, the current maturity, and one next action. |
 | **5 minutes** | See a concrete truthful product result or product tour. |
-| **15 minutes** | Reach the first useful LKW result in a supported evaluation environment — **after PX-3 provides the actual path**. This target is **not currently claimed** as achieved. |
+| **15 minutes** | Reach the first useful LKW result in a supported evaluation environment - **after PX-3 provides the actual path**. This target is **not currently claimed** as achieved. |
 | **30 minutes** | Inspect citations or evidence and understand the difference between product trial and platform proof. |
 | **60 minutes** | Choose and begin an appropriate product, builder, architecture, or partner path. |
 
@@ -129,7 +129,7 @@ determine its subsequent closure.
 
 ---
 
-## PX-0 — Baseline, audience and success contract
+## PX-0 - Baseline, audience and success contract
 
 **Status:** ACCEPTED / CLOSED
 
@@ -143,7 +143,7 @@ PX-0 froze: audience contract; success gates; route ownership; PX roadmap; exter
 
 ---
 
-## PX-1 — Product positioning
+## PX-1 - Product positioning
 
 **Status:** ACCEPTED / CLOSED
 
@@ -157,7 +157,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-2 — Product-first root README
+## PX-2 - Product-first root README
 
 **Status:** ACCEPTED / CLOSED
 
@@ -169,7 +169,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-3 — Supported LKW product Quick Start
+## PX-3 - Supported LKW product Quick Start
 
 **Status:** ACCEPTED / CLOSED
 
@@ -181,7 +181,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-4 — Real visual product evidence
+## PX-4 - Real visual product evidence
 
 **Status:** ACCEPTED / CLOSED
 
@@ -212,7 +212,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-5 — Product tour and certification-proof separation
+## PX-5 - Product tour and certification-proof separation
 
 **Status:** ACCEPTED / CLOSED
 
@@ -249,7 +249,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-6 — Builder Quick Start
+## PX-6 - Builder Quick Start
 
 **Status:** ACCEPTED / CLOSED
 
@@ -290,7 +290,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-7 — Architect, buyer and partner routes
+## PX-7 - Architect, buyer and partner routes
 
 **Status:** ACCEPTED / CLOSED
 
@@ -327,7 +327,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-8 — Category and alternative positioning
+## PX-8 - Category and alternative positioning
 
 **Status:** ACCEPTED / CLOSED
 
@@ -366,7 +366,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-9 — Public-language cleanup
+## PX-9 - Public-language cleanup
 
 **Status:** ACCEPTED / CLOSED
 
@@ -420,7 +420,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-10 — Proof ownership, roadmap linking and status deduplication
+## PX-10 - Proof ownership, roadmap linking and status deduplication
 
 **Status:** ACCEPTED / CLOSED
 
@@ -492,7 +492,7 @@ the roadmap’s changing task and review status.
 
 ---
 
-## PX-11 — Calls to action and conversion paths
+## PX-11 - Calls to action and conversion paths
 
 **Status:** ACCEPTED / CLOSED
 
@@ -550,7 +550,7 @@ the roadmap’s changing task and review status.
 
 ---
 
-## PX-12 — Editorial, factual, link and executable readiness audit
+## PX-12 - Editorial, factual, link and executable readiness audit
 
 **Status:** ACCEPTED / CLOSED
 
@@ -594,7 +594,7 @@ PX-12 acceptance means that the readiness audit is accepted. It does not claim p
 
 ---
 
-## PRE-PX13 — Product, Proof & Public Experience Completion Gate
+## PRE-PX13 - Product, Proof & Public Experience Completion Gate
 
 **Status:** IN_PROGRESS
 
@@ -664,7 +664,7 @@ and external reader validation remains `NOT_STARTED`.
 
 ---
 
-## PX-13 — External comprehension and trial sessions
+## PX-13 - External comprehension and trial sessions
 
 **Status:** NOT_STARTED / BLOCKED_ON_PRE_PX13_COMPLETION
 
@@ -674,7 +674,7 @@ and external reader validation remains `NOT_STARTED`.
 
 ---
 
-## PX-14 — Findings, corrections and reruns
+## PX-14 - Findings, corrections and reruns
 
 **Status:** WAITING
 
@@ -684,7 +684,7 @@ and external reader validation remains `NOT_STARTED`.
 
 ---
 
-## PX-15 — Maintenance and evolution
+## PX-15 - Maintenance and evolution
 
 **Status:** WAITING
 
@@ -703,7 +703,7 @@ and external reader validation remains `NOT_STARTED`.
 | `PROOFS.md` | Current public proof status |
 | `ROADMAP.md` | Public product-validation direction |
 | LKW implementation documentation | Detailed LKW implementation state |
-| `EXTERNAL_READER_VALIDATION_PROTOCOL.md` | Session methodology — **not** roadmap phase status |
+| `EXTERNAL_READER_VALIDATION_PROTOCOL.md` | Session methodology - **not** roadmap phase status |
 
 This roadmap is **Layer 5** and must **not** be linked from:
 

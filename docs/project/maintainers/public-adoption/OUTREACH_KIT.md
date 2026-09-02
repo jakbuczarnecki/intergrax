@@ -52,7 +52,7 @@ Independence requirements:
 
 ## Blind first-contact invitation
 
-Subject: 15-minute documentation review — independent feedback request
+Subject: 15-minute documentation review - independent feedback request
 
 Hi,
 
@@ -77,7 +77,7 @@ Thanks,
 
 ## Technical evaluation invitation
 
-Subject: 30–60 minute technical evaluation — documentation navigation review
+Subject: 30–60 minute technical evaluation - documentation navigation review
 
 Hi,
 
@@ -111,13 +111,13 @@ Thanks,
 
 ## LKW workflow-fit invitation
 
-Subject: LKW workflow-fit review — governed knowledge workflow evaluation
+Subject: LKW workflow-fit review - governed knowledge workflow evaluation
 
 Hi,
 
 You indicated interest in local or governed knowledge workflows. I would value a structured review of whether the public documentation helps you evaluate a concrete workflow fit.
 
-Local Knowledge Workspace (LKW) is Intergrax's **active reference product** — a **Backend Product Alpha / MVP** with **PARTIAL** public status. Real-user and commercial validation are incomplete. LKW is not a finished product or commercially validated offering. For bounded evidence, see the LKW Platform Proof and proof dashboard below.
+Local Knowledge Workspace (LKW) is Intergrax's **active reference product** - a **Backend Product Alpha / MVP** with **PARTIAL** public status. Real-user and commercial validation are incomplete. LKW is not a finished product or commercially validated offering. For bounded evidence, see the LKW Platform Proof and proof dashboard below.
 
 LKW Platform Proof:
 <pinned-lkw-proof-url>
@@ -151,7 +151,7 @@ Thanks,
 
 ## Architecture and governance review invitation
 
-Subject: Architecture and governance review — platform boundary evaluation
+Subject: Architecture and governance review - platform boundary evaluation
 
 Hi,
 
@@ -228,13 +228,13 @@ After task completion, ask:
 | open source | source-available for evaluation and collaboration |
 | production ready / enterprise ready | active R&D; available for bounded evaluation |
 | commercially validated | commercial validation incomplete |
-| finished LKW product | LKW Backend Product Alpha / MVP — PARTIAL |
+| finished LKW product | LKW Backend Product Alpha / MVP - PARTIAL |
 | validated by users | real-user validation incomplete |
 | guaranteed partnership | design-partner discovery under [docs/project/community/PARTNERS.md](../../community/PARTNERS.md) |
-| certification / certified | technical integration validation — not certification |
-| compliance-ready | governance-oriented surfaces for review — not compliance approval |
+| certification / certified | technical integration validation - not certification |
+| compliance-ready | governance-oriented surfaces for review - not compliance approval |
 | universal usability | qualitative documentation comprehension review |
-| universal Token Optimization savings | Featured platform-capability proof — PARTIAL; no universal savings claim |
+| universal Token Optimization savings | Featured platform-capability proof - PARTIAL; no universal savings claim |
 | free to use commercially | evaluation permitted under [LICENSE](../../../../LICENSE); commercial use requires permission |
 | we support all use cases | [docs/project/overview/USE_CASES.md](../../overview/USE_CASES.md) maps current validation areas |
 

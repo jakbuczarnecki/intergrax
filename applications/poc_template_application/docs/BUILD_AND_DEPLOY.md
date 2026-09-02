@@ -1,4 +1,4 @@
-        # Build & deploy — POC Template Application
+        # Build & deploy - POC Template Application
 
         Tier-3 application package: ``applications/poc_template_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
@@ -25,7 +25,7 @@
         cp applications/poc_template_application/.env.example applications/poc_template_application/.env
         ```
 
-        Edit ``.env`` (gitignored). Variables use the application prefix **`POC_TEMPLATE_`** — do not put app secrets only in the repository-root ``.env``.
+        Edit ``.env`` (gitignored). Variables use the application prefix **`POC_TEMPLATE_`** - do not put app secrets only in the repository-root ``.env``.
 
         | Variable | Default | Role |
         |----------|---------|------|
@@ -108,7 +108,7 @@ MCP endpoint: ``http://127.0.0.1:8095/mcp`` (streamable HTTP transport).
 
         Override image tag: ``IMAGE_TAG=my-registry/poc_template:1.0.0`` (sh) or ``build-docker.bat my-registry/poc_template:1.0.0`` (bat).
 
-        ### Manual — BuildKit
+        ### Manual - BuildKit
 
         ```bash
         docker buildx build -f applications/poc_template_application/docker/Dockerfile \
@@ -116,7 +116,7 @@ MCP endpoint: ``http://127.0.0.1:8095/mcp`` (streamable HTTP transport).
           -t poc_template-application .
         ```
 
-        ### Manual — classic Docker
+        ### Manual - classic Docker
 
         ```bash
         cp applications/poc_template_application/docker/.dockerignore .dockerignore

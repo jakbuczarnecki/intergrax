@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -12,10 +14,14 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
+    Token,
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
+    peek_active_execution_id,
+    require_active_execution_id,
     reset_active_execution_identity,
 )
 from intergrax.utils import attribute_access
@@ -47,7 +53,40 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 TASK_ID = mint_task_id()
 RUN_ID = mint_run_id()
 ATTEMPT_ID = mint_attempt_id()
+EXECUTION_ID = mint_execution_id()
 APPROVER = local_development_approver_evidence(tenant_id="t1")
+
+
+def bind_hitl_test_execution_identity(
+    *,
+    run_id: str = RUN_ID,
+    attempt_id: str = ATTEMPT_ID,
+    execution_id: str = EXECUTION_ID,
+) -> Token:
+    """Bind canonical active execution identity for intake/HITL runtime tests."""
+    return bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+
+
+@contextmanager
+def bound_hitl_test_execution_identity(
+    *,
+    run_id: str = RUN_ID,
+    attempt_id: str = ATTEMPT_ID,
+    execution_id: str = EXECUTION_ID,
+) -> Iterator[None]:
+    token = bind_hitl_test_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        yield
+    finally:
+        reset_active_execution_identity(token)
 
 
 def _active_pause(
@@ -213,6 +252,22 @@ def _set_human_response(
     task.options.human.human_request_id = human_request_id
     task.options.human.approver = APPROVER
     task.sync_metadata()
+
+
+def test_runtime_event_from_task_state_requires_active_execution_id() -> None:
+    task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
+    with pytest.raises(RuntimeError, match="active ExecutionId required"):
+        runtime_event_from_task_state(task, run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+
+
+def test_hitl_test_execution_identity_bind_and_reset() -> None:
+    assert peek_active_execution_id() is None
+    token = bind_hitl_test_execution_identity()
+    try:
+        assert require_active_execution_id() == EXECUTION_ID
+    finally:
+        reset_active_execution_identity(token)
+    assert peek_active_execution_id() is None
 
 
 def test_valid_active_pause_approve_persists_canonical_resolution() -> None:
@@ -384,11 +439,8 @@ async def test_intake_runner_passes_explicit_pause_identity() -> None:
     )
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    try:
+    with bound_hitl_test_execution_identity():
         outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
-    finally:
-        reset_active_execution_identity(token)
 
     assert outcome.early_result is None
     resolution = task.runtime.governance.hitl_resolution
@@ -505,11 +557,8 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
 
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    try:
+    with bound_hitl_test_execution_identity():
         outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
-    finally:
-        reset_active_execution_identity(token)
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None
@@ -563,11 +612,8 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
 
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    try:
+    with bound_hitl_test_execution_identity():
         outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
-    finally:
-        reset_active_execution_identity(token)
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None

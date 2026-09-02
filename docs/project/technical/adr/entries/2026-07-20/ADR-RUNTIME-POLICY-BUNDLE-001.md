@@ -9,14 +9,14 @@
 
 ## Context
 
-Partner validation requires an explicit, digestable runtime policy pack identity on meaningful side-effect decisions. The existing `intergrax.runtime.policy.policy_bundle.RuntimePolicyBundle` is a **live wiring composition** (tool access, budgets, plan-loop engines) — mutable references, not a signed-ready immutable pack.
+Partner validation requires an explicit, digestable runtime policy pack identity on meaningful side-effect decisions. The existing `intergrax.runtime.policy.policy_bundle.RuntimePolicyBundle` is a **live wiring composition** (tool access, budgets, plan-loop engines) - mutable references, not a signed-ready immutable pack.
 
 ## Decision
 
 1. Introduce an immutable contract `ImmutableRuntimePolicyBundle` (`runtime_policy_bundle.v1`) with `bundle_id`, `version`, ordered `rules`, `issued_at`, and `canonical_digest`.
 2. Do **not** replace or reshape the live wiring dataclass.
 3. Extend `PolicyDecision` with optional `policy_bundle_id` / `policy_bundle_version` / `policy_bundle_digest` (plus existing `policy_rule_id` / `action`).
-4. When host attestation is required, missing bundle identity on an ALLOW decision fails closed — no attested receipt.
+4. When host attestation is required, missing bundle identity on an ALLOW decision fails closed - no attested receipt.
 5. Digest uses existing `canonical_json` (sorted keys, UTF-8) over the bundle excluding the digest field; rule order is part of the digest input (tuple order preserved as a JSON array).
 
 ## Consequences

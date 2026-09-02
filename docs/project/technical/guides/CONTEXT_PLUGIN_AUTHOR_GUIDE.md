@@ -33,7 +33,7 @@ This guide is the **implementation workflow** for third-party Context plugins. [
 
 ---
 
-## 1. Purpose — Context vs RAG and adjacent surfaces
+## 1. Purpose - Context vs RAG and adjacent surfaces
 
 Context plugins contribute **candidate fragments** to the Context Engineering (CE) assembly pipeline. They register `ContextSourceProvider` instances (and optional ranker, allocator, formatter, or validator overrides) into a per-request `ContextPluginRegistry`.
 
@@ -119,7 +119,7 @@ builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
 
 ## 3. Minimal implementation
 
-A Context plugin registers one or more `ContextSourceProvider` instances. Minimal copyable example (documentation pattern — same shape as `tests/unit/context/test_context_plugin_registry.py`):
+A Context plugin registers one or more `ContextSourceProvider` instances. Minimal copyable example (documentation pattern - same shape as `tests/unit/context/test_context_plugin_registry.py`):
 
 ```python
 from intergrax.context.contracts import (
@@ -229,7 +229,7 @@ context_profile = ContextProfile(
 )
 ```
 
-**Installable reference:** [`examples/platform_plugins/intergrax_reference_enterprise_plugin/`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) — Context EP `reference_enterprise` (multi-capability package; proof: `tests/unit/platform_plugins/test_reference_enterprise_plugin.py`).
+**Installable reference:** [`examples/platform_plugins/intergrax_reference_enterprise_plugin/`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) - Context EP `reference_enterprise` (multi-capability package; proof: `tests/unit/platform_plugins/test_reference_enterprise_plugin.py`).
 
 ---
 
@@ -263,7 +263,7 @@ For EP mode: install the package, enable discovery (`discover_entry_points=True`
 
 Manual composition below remains valid for hosts that do not use the scaffold.
 
-### Option A — register before bootstrap
+### Option A - register before bootstrap
 
 ```python
 from intergrax.context.bootstrap import bootstrap_context_catalog
@@ -275,7 +275,7 @@ register_context_plugin(AcmeContextPlugin)
 bootstrap_context_catalog(discover_entry_points=False)
 ```
 
-### Option B — pass explicit classes to bootstrap
+### Option B - pass explicit classes to bootstrap
 
 ```python
 bootstrap_context_catalog(
@@ -284,7 +284,7 @@ bootstrap_context_catalog(
 )
 ```
 
-### Option C — application wiring (Tier-3)
+### Option C - application wiring (Tier-3)
 
 `intergrax.applications._shared.context_wiring` resolves the registry from `ApplicationEnvironmentProfile`:
 
@@ -316,7 +316,7 @@ ApplicationEnvironmentProfile.context_profile (ContextProfile)
 | Stage | API |
 |-------|-----|
 | Catalog bootstrap | `bootstrap_context_catalog(register_shipped=True, discover_entry_points=…)` |
-| Validation | `validate_context_plugin_ids(env, production_mode=…)` — lab fails closed on unknown ids; production warns |
+| Validation | `validate_context_plugin_ids(env, production_mode=…)` - lab fails closed on unknown ids; production warns |
 | Registry materialization | `materialize_context_plugin_registry(plugin_ids)` |
 | Engine | `resolve_context_engine_from_environment(env)` |
 
@@ -328,7 +328,7 @@ Default when `context_plugin_ids` is empty: wiring uses `["intergrax.builtin"]`.
 
 Context plugins typically consume **runtime handles** on `ContextProviderContext` (session history, RAG chunks, tool outputs, …). They should not read arbitrary environment variables for secrets.
 
-If a provider needs backend access, receive dependencies through constructor injection when the host registers the provider — not via hidden globals. Credentials belong in host/domain configuration (`IntegrationProfile`, application settings), not in entry-point metadata.
+If a provider needs backend access, receive dependencies through constructor injection when the host registers the provider - not via hidden globals. Credentials belong in host/domain configuration (`IntegrationProfile`, application settings), not in entry-point metadata.
 
 ---
 
@@ -351,6 +351,18 @@ There is no generic service locator. Providers must not import Tier-3 applicatio
 
 ## 9. Registration and discovery
 
+Context plugins flow through catalog admission and profile selection (D9):
+
+```mermaid
+flowchart TB
+  EP[ContextPlugin EP] --> AD[Admission]
+  AD --> CAT[Context catalog]
+  CAT --> CP[ContextProfile ids]
+  CP --> SW[STRICT host wiring]
+```
+
+*Interpretation:* admission populates the catalog; `ContextProfile.context_plugin_ids` selects materialized plugins; `ApplicationEnvironmentWiring` does **not** expose a final public context registry/engine artifact - that is a documented maturity boundary, not a bootstrap bug.
+
 ```python
 from intergrax.context.bootstrap import bootstrap_context_catalog
 
@@ -360,15 +372,15 @@ result = bootstrap_context_catalog(
     context_plugins=(),              # explicit classes
     on_conflict="error",             # "skip" | "override"
 )
-# result.context_plugins — count registered this call
-# result.catalog_plugin_ids — all ids in catalog
+# result.context_plugins - count registered this call
+# result.catalog_plugin_ids - all ids in catalog
 ```
 
 | Concern | Behavior |
 |---------|----------|
 | Duplicate `plugin_id` in catalog | `ValueError` unless `override=True` on `register_context_plugin` |
 | EP name conflict | `PluginConflictError` (via `register_plugins`) |
-| EP discovery default | **Off** — requires explicit flag or `INTERGRAX_DISCOVER_PLUGINS=true` |
+| EP discovery default | **Off** - requires explicit flag or `INTERGRAX_DISCOVER_PLUGINS=true` |
 | Shipped builtin | Always `intergrax.builtin` via `BuiltinContextPlugin` |
 
 ---
@@ -379,7 +391,7 @@ result = bootstrap_context_catalog(
 |-------|--------|
 | Public EP (`intergrax.context`) | **Exists** |
 | Platform qualification primitives | **Exist** (`check_platform_compatibility`, production gate hooks) |
-| Domain-specific Context production qualification | **Varies by host** — CE rollout is domain-owned; not every host enforces Context-specific production qualification today |
+| Domain-specific Context production qualification | **Varies by host** - CE rollout is domain-owned; not every host enforces Context-specific production qualification today |
 
 Compatible metadata ≠ production-qualified. Hosts may warn on unknown plugin ids in production without blocking (see `validate_context_plugin_ids`).
 
@@ -421,7 +433,7 @@ Provider instances live for the lifetime of the materialized `ContextPluginRegis
 | Unknown id in `context_plugin_ids` (production) | Warning logged; assembly may proceed |
 | Invalid `ContextFragment` | Validator/engine error on assemble |
 | Provider raises in `collect` | Propagates to engine assemble (observable failure) |
-| Plugin in catalog but not in `context_plugin_ids` | Not materialized — absent from assembled context |
+| Plugin in catalog but not in `context_plugin_ids` | Not materialized - absent from assembled context |
 
 ---
 
@@ -473,9 +485,9 @@ def test_acme_plugin_materializes_provider():
 | Plugin not in catalog | EP discovery off? Package installed in same venv as host? |
 | `Unknown context plugin id` | Call `bootstrap_context_catalog` before validation; verify `plugin_id` spelling (lowercase) |
 | Provider missing from assembled context | Plugin id not in `context_plugin_ids`; or `collect` returned `[]`; or budget/ranker excluded fragments |
-| `Context provider '…' is already registered` | Duplicate `provider_id` across plugins materialized together — use unique ids or single plugin |
+| `Context provider '…' is already registered` | Duplicate `provider_id` across plugins materialized together - use unique ids or single plugin |
 | Builtin providers missing | Ensure `intergrax.builtin` is in `context_plugin_ids` when overriding defaults |
-| RAG content missing | `enable_rag=False` on `ContextProfile`, or RAG stack not wired — this is not fixed by a Context plugin alone |
+| RAG content missing | `enable_rag=False` on `ContextProfile`, or RAG stack not wired - this is not fixed by a Context plugin alone |
 
 ---
 

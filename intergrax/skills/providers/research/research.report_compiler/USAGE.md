@@ -28,4 +28,4 @@ Governed access to: `rag.retrieve`, `websearch.query`, `workspace.write_file`.
 
 ## Related skills
 
-- Other `research` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `research` bundle skills - see bundle [USAGE.md](../USAGE.md)

@@ -1,22 +1,22 @@
-# LKW PRODUCT-4 — Daily-Use Architecture Decisions (ARCH-1)
+# LKW PRODUCT-4 - Daily-Use Architecture Decisions (ARCH-1)
 
 ## 1. User-facing decision summary
 
 **Status:** READY_FOR_REVIEW (R2 multi-source retrieval filter semantics frozen)
-**Task:** LKW-PRODUCT-4-ARCH-1 — FREEZE DAILY-USE ASK SCOPE AND DESTRUCTIVE CONFIRMATION CONTRACTS (R2: multi-source pre-ranking filter)
-**Mode:** bounded architecture decision / evidence only — no production code changed
+**Task:** LKW-PRODUCT-4-ARCH-1 - FREEZE DAILY-USE ASK SCOPE AND DESTRUCTIVE CONFIRMATION CONTRACTS (R2: multi-source pre-ranking filter)
+**Mode:** bounded architecture decision / evidence only - no production code changed
 
 Two open decisions from the accepted PRODUCT-4A audit are **frozen**:
 
 | Decision | Outcome |
 |---|---|
-| **Source-scoped Ask** | Canonical scope identity is **`knowledge_item_id`** from the unified inventory. Reusable application contract: **`KnowledgeAskScopeV1`** (`knowledge_item_ids`). **Indexed** scoped Ask requires **pre-ranking membership filter** (`source_id ∈ allowed_source_ids` via new **`MetadataMembershipCondition`**) **plus** defensive post-retrieval filter. Equality-only `MetadataFilter` is **not** sufficient for multi-source scope. **Live** scoped Ask is **deferred** — not enforceable on the current companion Ask path. **PRODUCT-4C blocked** until native membership capability + adapter translation + retrieval wiring land. |
+| **Source-scoped Ask** | Canonical scope identity is **`knowledge_item_id`** from the unified inventory. Reusable application contract: **`KnowledgeAskScopeV1`** (`knowledge_item_ids`). **Indexed** scoped Ask requires **pre-ranking membership filter** (`source_id ∈ allowed_source_ids` via new **`MetadataMembershipCondition`**) **plus** defensive post-retrieval filter. Equality-only `MetadataFilter` is **not** sufficient for multi-source scope. **Live** scoped Ask is **deferred** - not enforceable on the current companion Ask path. **PRODUCT-4C blocked** until native membership capability + adapter translation + retrieval wiring land. |
 | **Workspace delete** | **Confirmation required** before any destructive delete on the daily conversational path. Existing HMAC confirmation is **knowledge-specific** but **safely extractable** into a reusable destructive-action confirmation boundary. **`workspace_revision` + CAS required** for production-grade state binding (no `int(updated_at.timestamp())`). Until wired, **`workspace.delete` must fail closed** (no unconfirmed execution). |
 
 **PRODUCT-4 sequencing (if both resolve):**
 
-1. **PRODUCT-4B** — daily inventory, freshness, attention, lifecycle, confirmation UX (including workspace delete), workspace daily UX
-2. **PRODUCT-4C** — source-scoped Ask using `KnowledgeAskScopeV1` + **`KnowledgeRetrievalScopeV1`** (indexed mode; **after** retrieval-level scoped filter is wired)
+1. **PRODUCT-4B** - daily inventory, freshness, attention, lifecycle, confirmation UX (including workspace delete), workspace daily UX
+2. **PRODUCT-4C** - source-scoped Ask using `KnowledgeAskScopeV1` + **`KnowledgeRetrievalScopeV1`** (indexed mode; **after** retrieval-level scoped filter is wired)
 3. **PRODUCT-4** final acceptance
 
 **Git context:** branch `development`; required ancestor `73df2d5da7a2f01f71d1ad26fa88bb14b45e2e08` verified at task start (R2).
@@ -31,7 +31,7 @@ Canonical Ask scope contract is frozen. **Indexed semantic correctness** require
 
 ### Canonical scope identity
 
-**`knowledge_item_id`** on `KnowledgeInventoryItemV1` — not legacy `source_id`, provider IDs, Slack IDs, Qdrant IDs, or storage IDs.
+**`knowledge_item_id`** on `KnowledgeInventoryItemV1` - not legacy `source_id`, provider IDs, Slack IDs, Qdrant IDs, or storage IDs.
 
 Inventory encoding (verified):
 
@@ -39,7 +39,7 @@ Inventory encoding (verified):
 - Live: `live:{live_access_binding_id}` via `live_knowledge_item_id()`
 - Parsed by `_parse_knowledge_item_id()` → `(KnowledgeAccessModeV1, binding_id)`
 
-Each inventory item also carries `source_id` (indexed), `indexed_source_binding_id`, `live_access_binding_id`, and binding refs — these are **derivation fields**, not canonical Ask scope identity.
+Each inventory item also carries `source_id` (indexed), `indexed_source_binding_id`, `live_access_binding_id`, and binding refs - these are **derivation fields**, not canonical Ask scope identity.
 
 ### Exact reusable contract
 
@@ -52,7 +52,7 @@ KnowledgeAskScopeV1
   knowledge_item_ids: tuple[str, ...]   # non-empty, unique, bounded
 ```
 
-Optional future field (not required for PRODUCT-4C freeze): `mode_hint` — **not frozen**; mode is derived per item from inventory.
+Optional future field (not required for PRODUCT-4C freeze): `mode_hint` - **not frozen**; mode is derived per item from inventory.
 
 Planner may propose scope; **planner output is never authorization**.
 
@@ -67,7 +67,7 @@ Application layer **after** tenant/workspace context is established:
 | Item exists | same |
 | Item eligible for Ask | Inventory-derived usability (indexed: not detached/disabled + lifecycle usable per `_item_usable` / `_indexed_usable`; live: `_live_usable` when live path exists) |
 | Disabled / detached / unavailable semantics | Inventory fields `enabled`, `detached`, `lifecycle_state`, `runtime_available`, `sync_state` |
-| Malformed / stale / unauthorized scope | Fail closed — reject before retrieval |
+| Malformed / stale / unauthorized scope | Fail closed - reject before retrieval |
 
 Validated scope yields **allowed indexed `source_id` set** (for indexed items) used for **retrieval scope** and **defensive evidence enforcement**.
 
@@ -87,18 +87,18 @@ knowledge_item_id
 
 **Why post-filter alone is insufficient:** whole-workspace search → `top_k` → post-filter can drop all hits when relevant scoped sources never entered the candidate set. Result: false `INSUFFICIENT_EVIDENCE` despite in-scope evidence existing.
 
-**Retrieval boundary today:** `WorkspaceAskService._retrieve_verified_evidence()` → task `local.workspace.search` with metadata `tenant_id`, `workspace_id`, `collection_id=workspace_id`, `query`, `top_k` — **whole-workspace collection**, no source/binding filter in task metadata.
+**Retrieval boundary today:** `WorkspaceAskService._retrieve_verified_evidence()` → task `local.workspace.search` with metadata `tenant_id`, `workspace_id`, `collection_id=workspace_id`, `query`, `top_k` - **whole-workspace collection**, no source/binding filter in task metadata.
 
 **Search agent** (`agents/local_search/steps/search_job.py`):
 
-- `_LKW_SEARCH_METADATA_KEYS`: `query`, `collection_id`, `top_k`, `tenant_id`, `user_id`, `workspace_id` — **no `source_id` / `knowledge_item_id` filter keys**.
-- `run_search_job()` builds `rag.retrieve` `tool_input` with `query`, `top_k`, `tenant_id`, `user_id`, `workspace_id` only — **no source scope**.
+- `_LKW_SEARCH_METADATA_KEYS`: `query`, `collection_id`, `top_k`, `tenant_id`, `user_id`, `workspace_id` - **no `source_id` / `knowledge_item_id` filter keys**.
+- `run_search_job()` builds `rag.retrieve` `tool_input` with `query`, `top_k`, `tenant_id`, `user_id`, `workspace_id` only - **no source scope**.
 
-**`rag.retrieve` contract today** (`intergrax/tools/providers/rag/contracts.py` `RagRetrieveInput`): `query`, `top_k`, `session_id`, `user_id`, `tenant_id`, `workspace_id`, `score_threshold` — **no `source_id` / `source_ids` field**. `_build_metadata_scope()` adds only `session_id` and `user_id` to `MetadataFilter` conditions.
+**`rag.retrieve` contract today** (`intergrax/tools/providers/rag/contracts.py` `RagRetrieveInput`): `query`, `top_k`, `session_id`, `user_id`, `tenant_id`, `workspace_id`, `score_threshold` - **no `source_id` / `source_ids` field**. `_build_metadata_scope()` adds only `session_id` and `user_id` to `MetadataFilter` conditions.
 
-**Integration-layer filter primitive (exists, equality-only; not wired on LKW Ask path):** `perform_rag_retrieve()` passes `metadata_filter=MetadataFilter(conditions=where)` into `RetrievalRequest` before ranking/`top_k`. `MetadataFilter` (`intergrax/rag/vectorstore/contracts/native_vectorstore.py`) is documented as **immutable provider-neutral equality conditions** — each `conditions` entry is `field = scalar_value`. **It does not define `field IN {values...}` membership semantics.** Mapping `source_id` → a tuple/list of IDs in `conditions` would not mean `source_id ∈ allowed_source_ids`; provider adapters translate equality only (Qdrant `match.value`; Chroma `$eq`). **No application-to-retrieval contract currently passes validated multi-source `source_id` scope into retrieval on the companion Ask path.**
+**Integration-layer filter primitive (exists, equality-only; not wired on LKW Ask path):** `perform_rag_retrieve()` passes `metadata_filter=MetadataFilter(conditions=where)` into `RetrievalRequest` before ranking/`top_k`. `MetadataFilter` (`intergrax/rag/vectorstore/contracts/native_vectorstore.py`) is documented as **immutable provider-neutral equality conditions** - each `conditions` entry is `field = scalar_value`. **It does not define `field IN {values...}` membership semantics.** Mapping `source_id` → a tuple/list of IDs in `conditions` would not mean `source_id ∈ allowed_source_ids`; provider adapters translate equality only (Qdrant `match.value`; Chroma `$eq`). **No application-to-retrieval contract currently passes validated multi-source `source_id` scope into retrieval on the companion Ask path.**
 
-**Evidence mapping:** `map_search_hits()` in `search_evidence.py` verifies hits against repository document refs and drops hits when `source_id` disagrees with `ref.source_id`. It accepts no scope parameter today — this is **defensive post-filter only**.
+**Evidence mapping:** `map_search_hits()` in `search_evidence.py` verifies hits against repository document refs and drops hits when `source_id` disagrees with `ref.source_id`. It accepts no scope parameter today - this is **defensive post-filter only**.
 
 **Frozen minimum indexed enforcement (correct semantics):**
 
@@ -116,7 +116,7 @@ knowledge_item_id
 | Path | Current state | PRODUCT-4C |
 |---|---|---|
 | **Indexed v1 Ask** (`WorkspaceAskService`) | Companion-wired; indexed search only | **Blocked until retrieval-level scoped filter wired**; post-filter remains required defense-in-depth |
-| **Live** | `live:{binding_id}` inventory items; execution via `hybrid_ask_execution` / live handlers with `live_access_binding_id` | **Not supported** — companion does not use hybrid/live Ask |
+| **Live** | `live:{binding_id}` inventory items; execution via `hybrid_ask_execution` / live handlers with `live_access_binding_id` | **Not supported** - companion does not use hybrid/live Ask |
 | **Hybrid v2** | HTTP-only; not companion wiring | **Deferred** (PRODUCT-6) |
 
 **One provider-neutral scope type** (`KnowledgeAskScopeV1`) can **represent** both modes at the contract level, but **cannot safely enforce both** through a single retrieval path today. PRODUCT-4C must initially support **only indexed scoped Ask**.
@@ -124,7 +124,7 @@ knowledge_item_id
 ### Citation invariant
 
 - Citations projected only from **validated, scope-filtered** evidence (`project_ask_citations` on filtered hits).
-- Citations expose workspace `source_id` and safe file names from verified document refs — **not** raw provider/storage/vector IDs to Slack.
+- Citations expose workspace `source_id` and safe file names from verified document refs - **not** raw provider/storage/vector IDs to Slack.
 - If scoped retrieval yields no verified evidence → `INSUFFICIENT_EVIDENCE` (existing behavior).
 - Citations must not reference evidence outside validated scope (enforced by pre-assembly filter).
 
@@ -145,9 +145,9 @@ knowledge_item_id
 
 | Layer | Finding |
 |---|---|
-| **`MetadataFilter`** (`native_vectorstore.py`) | Equality-only: `conditions: Mapping[str, JsonValue]` — one scalar value per field. Docstring: *"Immutable provider-neutral equality conditions."* No `any_of`, `in`, or membership operator. |
-| **`RetrievalRequest`** (`retrieval_request.py`) | Carries `metadata_filter: Any` — today populated with `MetadataFilter` only; no separate membership slot. |
-| **Qdrant adapter** (`integrations/.../qdrant/rag_store.py` `_qdrant_filter`) | Each condition → `{"key": k, "match": {"value": v}}` — equality only. No `MatchAny` / set membership translation today. |
+| **`MetadataFilter`** (`native_vectorstore.py`) | Equality-only: `conditions: Mapping[str, JsonValue]` - one scalar value per field. Docstring: *"Immutable provider-neutral equality conditions."* No `any_of`, `in`, or membership operator. |
+| **`RetrievalRequest`** (`retrieval_request.py`) | Carries `metadata_filter: Any` - today populated with `MetadataFilter` only; no separate membership slot. |
+| **Qdrant adapter** (`integrations/.../qdrant/rag_store.py` `_qdrant_filter`) | Each condition → `{"key": k, "match": {"value": v}}` - equality only. No `MatchAny` / set membership translation today. |
 | **Chroma adapter** (`integrations/.../chroma/rag_store.py` `_normalize_chroma_where`) | Each condition → `{"$eq": v}`; multiple fields → `$and` of equalities. No `$in` / set membership translation today. |
 
 **Conclusion:** equality-only `MetadataFilter` is **insufficient** for multi-source scoped Ask. `KnowledgeRetrievalScopeV1.allowed_source_ids` with `len > 1` requires a **new** reusable provider-neutral membership capability before PRODUCT-4C wiring.
@@ -166,7 +166,7 @@ MetadataMembershipCondition
   allowed_values: tuple[str, ...]    # non-empty when scope narrowed; unique, validated
 ```
 
-**Preferred integration shape:** extend the existing `MetadataFilter` contract with a typed membership slot (e.g. `membership_conditions: Mapping[str, tuple[str, ...]]`) **or** a discriminated condition union (`equality` \| `any_of`) — smallest addition that expresses set membership without a query language. Provider adapters (`qdrant/rag_store.py`, `chroma/rag_store.py`, others on the native path) translate membership to backend-specific syntax internally; **no** Qdrant `MatchAny`, Mongo `$in`, or Chroma `$in` at application/planner level.
+**Preferred integration shape:** extend the existing `MetadataFilter` contract with a typed membership slot (e.g. `membership_conditions: Mapping[str, tuple[str, ...]]`) **or** a discriminated condition union (`equality` \| `any_of`) - smallest addition that expresses set membership without a query language. Provider adapters (`qdrant/rag_store.py`, `chroma/rag_store.py`, others on the native path) translate membership to backend-specific syntax internally; **no** Qdrant `MatchAny`, Mongo `$in`, or Chroma `$in` at application/planner level.
 
 **Mapping:**
 
@@ -177,7 +177,7 @@ KnowledgeRetrievalScopeV1.allowed_source_ids
   → adapter pre-ranking translation → similarity query with filter → top_k
 ```
 
-**Rejected without proof:** N independent per-source retrieval calls + concatenate — would require explicit global merge/rerank semantics to preserve correct `top_k`; not the existing intended abstraction.
+**Rejected without proof:** N independent per-source retrieval calls + concatenate - would require explicit global merge/rerank semantics to preserve correct `top_k`; not the existing intended abstraction.
 
 **Pre-ranking guarantee:** once membership capability is wired through `RetrievalRequest.metadata_filter` and adapters translate it before `query`/`top_k`, candidates are restricted to `source_id ∈ allowed_source_ids` before ranking truncation. **Defensive post-filter remains mandatory** (security invariant).
 
@@ -189,12 +189,12 @@ No existing application contract passes validated source scope to search before 
 KnowledgeRetrievalScopeV1
   allowed_source_ids: tuple[str, ...]   # validated indexed source_id set; non-empty when scope narrowed
 
-MetadataMembershipCondition            # NEW — provider-neutral set membership (see above)
+MetadataMembershipCondition            # NEW - provider-neutral set membership (see above)
   field: str
   allowed_values: tuple[str, ...]
 ```
 
-Propagation (integration boundary — no provider-specific application model):
+Propagation (integration boundary - no provider-specific application model):
 
 1. `WorkspaceAskService` / task metadata carries validated `KnowledgeRetrievalScopeV1` (or equivalent allowed-source fields).
 2. `local.workspace.search` / `run_search_job()` forwards scope into `rag.retrieve`.
@@ -226,7 +226,7 @@ Propagation (integration boundary — no provider-specific application model):
 - Planner as authorization
 - Qdrant-specific application contracts (provider translation stays in integration layer)
 
-**Bounded follow-up (within PRODUCT-4C after prerequisite):** `allowed_source_ids` on `map_search_hits` vs inline filter — implementation choice; both pre-ranking filter and post-filter required.
+**Bounded follow-up (within PRODUCT-4C after prerequisite):** `allowed_source_ids` on `map_search_hits` vs inline filter - implementation choice; both pre-ranking filter and post-filter required.
 
 ---
 
@@ -234,13 +234,13 @@ Propagation (integration boundary — no provider-specific application model):
 
 ### Status: **RESOLVED_WITH_REQUIRED_CAPABILITY**
 
-Confirmation orchestration pattern is frozen. **Workspace state-version authority** requires a new monotonic revision (preferred) or exact full-precision persisted identity — **not** `int(updated_at.timestamp())`.
+Confirmation orchestration pattern is frozen. **Workspace state-version authority** requires a new monotonic revision (preferred) or exact full-precision persisted identity - **not** `int(updated_at.timestamp())`.
 
 ### Confirmation required
 
 **Frozen product rule:** `workspace.delete` on the daily conversational path is allowed **only** through reusable explicit confirmation (two-step: issue token → confirm with token). **Single-turn unconfirmed deletion is rejected.**
 
-Current state: `WorkspaceDeletePlannedAction` → `ConversationInteractionExecutor` → `ManagedWorkspaceService.delete_workspace()` **immediately** — no confirmation.
+Current state: `WorkspaceDeletePlannedAction` → `ConversationInteractionExecutor` → `ManagedWorkspaceService.delete_workspace()` **immediately** - no confirmation.
 
 ### Existing reusable confirmation evidence
 
@@ -248,7 +248,7 @@ Current state: `WorkspaceDeletePlannedAction` → `ConversationInteractionExecut
 
 | Property | Evidence |
 |---|---|
-| Stateless HMAC token | `issue()` / `verify()` — URL-safe payload + HMAC-SHA256 signature |
+| Stateless HMAC token | `issue()` / `verify()` - URL-safe payload + HMAC-SHA256 signature |
 | Binding fields | `tenant_id`, `workspace_id`, `knowledge_item_id`, `operation`, `expected_revision`, `expires_at` |
 | TTL | Default 5 minutes (`timedelta(minutes=5)`) |
 | Tamper protection | Signature mismatch → `knowledge_admin_confirmation_invalid` |
@@ -262,17 +262,17 @@ Current state: `WorkspaceDeletePlannedAction` → `ConversationInteractionExecut
 
 | Option | Finding |
 |---|---|
-| **A. Monotonic revision / CAS on `Workspace`** | **Not found.** `Workspace` (`models.py`) has `updated_at` only — no `revision`, `expected_revision`, ETag, or CAS. `ManagedWorkspaceRepository.put_workspace()` is unconditional `_put`; `delete_workspace()` is unconditional delete. Production `put_workspace` is only called from `ManagedWorkspaceService.create_workspace()` — **`updated_at` is set once at creation and not bumped on later mutations.** |
-| **B. Durable state fingerprint** | **Not found** for workspace shell. `KnowledgeConfigurationHead.committed_revision` has CAS (`replace_knowledge_configuration_head_if_match`) but is knowledge-configuration state, not workspace lifecycle identity. Knowledge inventory items expose `revision` (reused by detach confirmation) — wrong target semantics for workspace delete. |
+| **A. Monotonic revision / CAS on `Workspace`** | **Not found.** `Workspace` (`models.py`) has `updated_at` only - no `revision`, `expected_revision`, ETag, or CAS. `ManagedWorkspaceRepository.put_workspace()` is unconditional `_put`; `delete_workspace()` is unconditional delete. Production `put_workspace` is only called from `ManagedWorkspaceService.create_workspace()` - **`updated_at` is set once at creation and not bumped on later mutations.** |
+| **B. Durable state fingerprint** | **Not found** for workspace shell. `KnowledgeConfigurationHead.committed_revision` has CAS (`replace_knowledge_configuration_head_if_match`) but is knowledge-configuration state, not workspace lifecycle identity. Knowledge inventory items expose `revision` (reused by detach confirmation) - wrong target semantics for workspace delete. |
 | **C. Minimum safe contract** | Add **`workspace_revision: int`** (monotonic, bumped on any workspace-shell mutation, verified with CAS on `put_workspace`) as **`expected_state_version` for `workspace.delete`**. **Forbidden:** `int(workspace.updated_at.timestamp())` or any second-resolution truncation. |
 
-**Persistence precision (if `updated_at` used temporarily):** `ManagedWorkspaceRepository._put()` serializes via `model_dump(mode="json")` — datetime round-trips at JSON precision. Comparison must use **exact canonical persisted `updated_at` string equality** (full precision), never epoch-second `int`. **Limitation:** because `updated_at` is currently write-once at create, it does **not** detect intervening workspace-shell mutations — **not production-grade** without `workspace_revision`.
+**Persistence precision (if `updated_at` used temporarily):** `ManagedWorkspaceRepository._put()` serializes via `model_dump(mode="json")` - datetime round-trips at JSON precision. Comparison must use **exact canonical persisted `updated_at` string equality** (full precision), never epoch-second `int`. **Limitation:** because `updated_at` is currently write-once at create, it does **not** detect intervening workspace-shell mutations - **not production-grade** without `workspace_revision`.
 
-**Rejected:** `int(updated_at.timestamp())` — truncates sub-second precision; two state changes within one second can share the same version and fail to invalidate confirmation.
+**Rejected:** `int(updated_at.timestamp())` - truncates sub-second precision; two state changes within one second can share the same version and fail to invalidate confirmation.
 
 **Not reusable directly:** payload schema and `_verify_confirmation()` are bound to `knowledge_item_id` + `KnowledgeOperationV1`. Workspace delete target is the workspace itself.
 
-**Slack companion** has local delete-confirm rendering/parsing (`slack_companion/workflow.py`, `rendering.py`) — **not** the canonical confirmation primitive; must not become the daily-use confirmation store.
+**Slack companion** has local delete-confirm rendering/parsing (`slack_companion/workflow.py`, `rendering.py`) - **not** the canonical confirmation primitive; must not become the daily-use confirmation store.
 
 ### Reuse / generalization decision
 
@@ -300,7 +300,7 @@ HmacDestructiveActionConfirmationCodec
 2. `HmacKnowledgeAdministrationConfirmationCodec` becomes adapter **or** thin wrapper mapping `KnowledgeAdministrationConfirmationV1` ↔ `DestructiveActionConfirmationV1` with `action_kind="knowledge.detach"` (or operation-specific kinds) and `target_id=knowledge_item_id`.
 3. `KnowledgeAdministrationService._verify_confirmation` continues equivalent binding checks via adapter.
 4. New `WorkspaceDeletionService` (or executor helper) uses same codec + secret for `action_kind="workspace.delete"`, `target_id=workspace_id`, `expected_state_version=workspace.workspace_revision` (after revision field + CAS added).
-5. Shared secret configuration (same as `knowledge_admin_confirmation_secret` on HTTP routes) — **one secret, one crypto primitive**.
+5. Shared secret configuration (same as `knowledge_admin_confirmation_secret` on HTTP routes) - **one secret, one crypto primitive**.
 
 **PRODUCT-4B prerequisite:** add `workspace_revision` to `Workspace` + monotonic bump/CAS on `put_workspace` before workspace-delete confirmation can be production-grade.
 
@@ -320,12 +320,12 @@ HmacDestructiveActionConfirmationCodec
 
 | Scenario | Behavior |
 |---|---|
-| Expired token | Reject — `confirmation_expired` (fail closed) |
-| Tampered token | Reject — `confirmation_invalid` |
-| Wrong tenant / workspace / target / action_kind | Reject — `confirmation_invalid` |
-| Workspace changed after issue (`workspace_revision` differs) | Reject — `confirmation_stale` |
+| Expired token | Reject - `confirmation_expired` (fail closed) |
+| Tampered token | Reject - `confirmation_invalid` |
+| Wrong tenant / workspace / target / action_kind | Reject - `confirmation_invalid` |
+| Workspace changed after issue (`workspace_revision` differs) | Reject - `confirmation_stale` |
 | Valid token within TTL, workspace unchanged | Allow delete (idempotent delete after success: second attempt → workspace not found / already deleted) |
-| Replay within TTL before delete | Same as knowledge detach: **allowed** until state version changes or TTL expires — not a second independent secret system |
+| Replay within TTL before delete | Same as knowledge detach: **allowed** until state version changes or TTL expires - not a second independent secret system |
 
 Do **not** weaken existing HMAC semantics (signature, expiry, binding equality checks).
 
@@ -333,7 +333,7 @@ Do **not** weaken existing HMAC semantics (signature, expiry, binding equality c
 
 | State | Behavior |
 |---|---|
-| Confirmation not wired for daily UX | **Fail closed** — do not expose executable unconfirmed `workspace.delete` on conversational path |
+| Confirmation not wired for daily UX | **Fail closed** - do not expose executable unconfirmed `workspace.delete` on conversational path |
 | Invalid / expired / stale token | Reject; no deletion |
 | Valid confirmation | `ManagedWorkspaceService.delete_workspace()` (existing destructive implementation) |
 
@@ -342,7 +342,7 @@ Do **not** weaken existing HMAC semantics (signature, expiry, binding equality c
 **In scope:**
 
 1. Generic `DestructiveActionConfirmationV1` + `HmacDestructiveActionConfirmationCodec` (extracted from knowledge codec).
-2. Knowledge detach adapter — existing tests must pass unchanged.
+2. Knowledge detach adapter - existing tests must pass unchanged.
 3. Add `workspace_revision` to `Workspace` + monotonic bump/CAS on `put_workspace`.
 4. Workspace delete confirmation issue/verify around `delete_workspace` using `workspace_revision`.
 5. Conversational two-step: `workspace.delete` planned action returns `confirmation_required` + token; separate confirm path executes delete.
@@ -369,7 +369,7 @@ Do **not** weaken existing HMAC semantics (signature, expiry, binding equality c
 | In-memory confirmation token mapping | Stateless HMAC tokens required (knowledge detach pattern) |
 | Immediate workspace deletion on conversational path | Destructive; violates frozen product rule |
 | Duplicate confirmation crypto / second secret system | Extract generic codec; one secret |
-| Reusing knowledge codec verbatim for workspace delete without generalization | Payload binds `knowledge_item_id` + `KnowledgeOperationV1` — wrong target semantics |
+| Reusing knowledge codec verbatim for workspace delete without generalization | Payload binds `knowledge_item_id` + `KnowledgeOperationV1` - wrong target semantics |
 | Post-filter-only indexed scoped Ask | Semantically incorrect; misses in-scope evidence excluded by whole-workspace `top_k` |
 | Equality-only `MetadataFilter` as multi-source `source_id IN` substitute | Equality per field ≠ set membership; tuple/list in `conditions` is not `IN` semantics |
 | `int(updated_at.timestamp())` for workspace delete state version | Truncates sub-second precision; two changes in one second share version |
@@ -401,13 +401,13 @@ No Slack-only stores or duplicate crypto required. Retrieval requires **new** na
 
 | Decision | Status | Notes |
 |---|---|---|
-| Source-scoped Ask — canonical contract | **RESOLVED** | `knowledge_item_id` + `KnowledgeAskScopeV1` |
-| Source-scoped Ask — indexed enforcement | **RESOLVED_WITH_REQUIRED_CAPABILITY** | `MetadataMembershipCondition` + adapter translation + `KnowledgeRetrievalScopeV1` wiring; defensive post-filter retained |
-| Source-scoped Ask — multi-source filter contract | **RESOLVED_WITH_REQUIRED_CAPABILITY** | Equality-only `MetadataFilter` insufficient; freeze `source_id ∈ allowed_source_ids` via `MetadataMembershipCondition` |
-| Source-scoped Ask — live/hybrid | **RESOLVED (deferred)** | Explicitly out of PRODUCT-4C |
-| Workspace delete confirmation — crypto/orchestration | **RESOLVED** | Generic extraction + two-step conversational flow |
-| Workspace delete — state version authority | **RESOLVED_WITH_REQUIRED_CAPABILITY** | `workspace_revision` + CAS required; forbid `int(timestamp())` |
-| Workspace delete — direct codec reuse | **RESOLVED (rejected)** | Generalization required; pattern reuse approved |
+| Source-scoped Ask - canonical contract | **RESOLVED** | `knowledge_item_id` + `KnowledgeAskScopeV1` |
+| Source-scoped Ask - indexed enforcement | **RESOLVED_WITH_REQUIRED_CAPABILITY** | `MetadataMembershipCondition` + adapter translation + `KnowledgeRetrievalScopeV1` wiring; defensive post-filter retained |
+| Source-scoped Ask - multi-source filter contract | **RESOLVED_WITH_REQUIRED_CAPABILITY** | Equality-only `MetadataFilter` insufficient; freeze `source_id ∈ allowed_source_ids` via `MetadataMembershipCondition` |
+| Source-scoped Ask - live/hybrid | **RESOLVED (deferred)** | Explicitly out of PRODUCT-4C |
+| Workspace delete confirmation - crypto/orchestration | **RESOLVED** | Generic extraction + two-step conversational flow |
+| Workspace delete - state version authority | **RESOLVED_WITH_REQUIRED_CAPABILITY** | `workspace_revision` + CAS required; forbid `int(timestamp())` |
+| Workspace delete - direct codec reuse | **RESOLVED (rejected)** | Generalization required; pattern reuse approved |
 
 **PRODUCT-4C blocked** until (1) native `MetadataMembershipCondition` / extended `MetadataFilter`, (2) provider adapter pre-ranking membership translation, and (3) `KnowledgeRetrievalScopeV1` wiring through Ask → search → `rag.retrieve` are implemented. **PRODUCT-4B** may proceed but workspace-delete confirmation needs `workspace_revision` for production-grade stale binding.
 
@@ -417,7 +417,7 @@ No Slack-only stores or duplicate crypto required. Retrieval requires **new** na
 
 1. **PRODUCT-4B** can proceed: inventory/lifecycle/freshness/attention UX; wire `KnowledgeAdministrationService` confirmation for detach; implement **generic destructive confirmation** and **workspace delete two-step**; add **`workspace_revision` + CAS** on workspace persistence; fix workspace list/active presentation; suppress repetitive READY guidance. **Do not** ship unconfirmed `workspace.delete` on conversational executor.
 2. **PRODUCT-4C** proceeds **only after** native membership capability + adapter translation + `KnowledgeRetrievalScopeV1` wiring through Ask → search → `rag.retrieve` pre-ranking filter (may overlap late 4B once prerequisites land): implement `KnowledgeAskScopeV1` + indexed scoped Ask; defensive post-filter; citation scoping tests.
-3. **Live scoped Ask** and **hybrid daily UX** remain PRODUCT-6 / later — not blockers for PRODUCT-4B.
+3. **Live scoped Ask** and **hybrid daily UX** remain PRODUCT-6 / later - not blockers for PRODUCT-4B.
 4. **PRODUCT-4 final acceptance** after 4B + 4C + audit criteria from PRODUCT-4A.
 
 ---
@@ -428,16 +428,16 @@ No Slack-only stores or duplicate crypto required. Retrieval requires **new** na
 
 1. `applications/local_workspace_application/docs/product/PRODUCT_4_SLACK_DAILY_USE_GAP_AUDIT.md`
 
-### Production / source files (6 — R2 budget respected)
+### Production / source files (6 - R2 budget respected)
 
-1. `intergrax/rag/vectorstore/contracts/native_vectorstore.py` (section: `MetadataFilter` — equality-only)
+1. `intergrax/rag/vectorstore/contracts/native_vectorstore.py` (section: `MetadataFilter` - equality-only)
 2. `intergrax/rag/retrieval/retrieval_request.py` (section: `RetrievalRequest.metadata_filter`)
-3. `intergrax/integrations/providers/vector_store/qdrant/rag_store.py` (sections: `query`, `_qdrant_filter` — equality translation)
-4. `intergrax/integrations/providers/vector_store/chroma/rag_store.py` (sections: `query`, `_normalize_chroma_where` — equality translation)
+3. `intergrax/integrations/providers/vector_store/qdrant/rag_store.py` (sections: `query`, `_qdrant_filter` - equality translation)
+4. `intergrax/integrations/providers/vector_store/chroma/rag_store.py` (sections: `query`, `_normalize_chroma_where` - equality translation)
 5. `intergrax/tools/providers/rag/service.py` (sections: `perform_rag_retrieve`, `_build_metadata_scope`)
 6. `agents/local_search/steps/search_job.py` (sections: `_LKW_SEARCH_METADATA_KEYS`, `run_search_job` → `rag.retrieve` `tool_input`)
 
-### Production / source files (R1 — workspace delete; unchanged)
+### Production / source files (R1 - workspace delete; unchanged)
 
 1. `applications/local_workspace_application/workspaces/ask_service.py` (section: `_retrieve_verified_evidence`)
 2. `intergrax/tools/providers/rag/contracts.py` (section: `RagRetrieveInput`)
@@ -447,23 +447,23 @@ No Slack-only stores or duplicate crypto required. Retrieval requires **new** na
 
 **Targeted discovery (grep / symbols only, not full read):**
 
-- `applications/local_workspace_application/workspaces/knowledge_administration_service.py` — `expected_revision`, detach confirmation pattern
-- `applications/local_workspace_application/workspaces/search_evidence.py` — `map_search_hits` defensive `source_id` check
+- `applications/local_workspace_application/workspaces/knowledge_administration_service.py` - `expected_revision`, detach confirmation pattern
+- `applications/local_workspace_application/workspaces/search_evidence.py` - `map_search_hits` defensive `source_id` check
 
-### Focused tests (3 — R2 budget)
+### Focused tests (3 - R2 budget)
 
-1. `tests/unit/rag/vectorstore/test_native_vectorstore_contracts.py` — `test_metadata_filter_copies_nested_json_and_rejects_routing_keys` (equality-only contract)
-2. `tests/integration/rag/vectorstore/test_chroma_live_qualification.py` — `MetadataFilter.for_scope` wiring (grep)
-3. `tests/unit/tools/providers/rag/test_rag_scope.py` — `metadata_filter.conditions` on `RetrievalRequest` (grep)
+1. `tests/unit/rag/vectorstore/test_native_vectorstore_contracts.py` - `test_metadata_filter_copies_nested_json_and_rejects_routing_keys` (equality-only contract)
+2. `tests/integration/rag/vectorstore/test_chroma_live_qualification.py` - `MetadataFilter.for_scope` wiring (grep)
+3. `tests/unit/tools/providers/rag/test_rag_scope.py` - `metadata_filter.conditions` on `RetrievalRequest` (grep)
 
-### Focused tests (R1 — workspace delete; unchanged)
+### Focused tests (R1 - workspace delete; unchanged)
 
-1. `applications/local_workspace_application/tests/workspaces/test_knowledge_administration_service.py` — `test_detach_confirmation_is_signed_bound_stale_and_restart_safe`, `test_confirmation_cannot_cross_workspace_and_parser_is_replaceable`
-2. `applications/local_workspace_application/tests/serving/test_knowledge_surface_http.py` — `test_destructive_operation_requires_confirmation` (grep)
+1. `applications/local_workspace_application/tests/workspaces/test_knowledge_administration_service.py` - `test_detach_confirmation_is_signed_bound_stale_and_restart_safe`, `test_confirmation_cannot_cross_workspace_and_parser_is_replaceable`
+2. `applications/local_workspace_application/tests/serving/test_knowledge_surface_http.py` - `test_destructive_operation_requires_confirmation` (grep)
 
 ### Validation
 
-- `git diff --check` — run at commit time.
+- `git diff --check` - run at commit time.
 - Symbol/path references verified against files read above.
 - No full test suite (documentation-only task).
 - Document internally consistent: canonical identities, enforcement paths, and deferred modes aligned with evidence.

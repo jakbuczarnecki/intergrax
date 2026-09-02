@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional, Protocol, Sequence
 
 from intergrax.runtime.modality.modality_profile import ModalityProfile, filter_tool_ids_by_modality_profile
+from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.runtime.nexus.tools.tool_runtime import (
     ToolInvocationPlan,
     plan_includes_rag,
@@ -88,6 +89,53 @@ class ToolAccessPolicy:
         )
 
     @staticmethod
+    def apply_scope_policy(
+        plan: ToolInvocationPlan,
+        *,
+        scope_policy: ToolScopePolicy,
+        agent_id: str,
+        state: Optional[TraceEmittingRuntimeState] = None,
+    ) -> ToolInvocationPlan:
+        """Narrow plan using dynamic ToolScopePolicy for the requesting agent."""
+        normalized = plan.normalized()
+        requested_rag = plan_includes_rag(normalized.tool_ids)
+        requested_websearch = plan_includes_websearch(normalized.tool_ids)
+
+        filtered_ids = tuple(
+            tool_id
+            for tool_id in normalized.tool_ids
+            if ToolAccessPolicy._is_allowed_by_scope_policy(
+                scope_policy,
+                agent_id=agent_id,
+                tool_id=tool_id,
+            )
+        )
+        filtered_has_rag = plan_includes_rag(filtered_ids)
+        filtered_has_websearch = plan_includes_websearch(filtered_ids)
+
+        if requested_rag and not filtered_has_rag:
+            ToolAccessPolicy._emit_denied(
+                state,
+                message=f"RAG denied by scope policy: {RAG_RETRIEVE_TOOL_ID!r}.",
+            )
+        if requested_websearch and not filtered_has_websearch:
+            ToolAccessPolicy._emit_denied(
+                state,
+                message=f"Websearch denied by scope policy: {WEBSEARCH_QUERY_TOOL_ID!r}.",
+            )
+
+        filtered_inputs = {
+            tool_id: dict(inputs)
+            for tool_id, inputs in normalized.tool_inputs.items()
+            if tool_id in filtered_ids
+        }
+        return ToolInvocationPlan(
+            tool_ids=filtered_ids,
+            use_tools=normalized.use_tools,
+            tool_inputs=filtered_inputs,
+        )
+
+    @staticmethod
     def apply_modality_profile(
         plan: ToolInvocationPlan,
         *,
@@ -114,6 +162,19 @@ class ToolAccessPolicy:
     @staticmethod
     def _allows_websearch(allowed: set[str]) -> bool:
         return bool(allowed.intersection(WEBSEARCH_TOOL_ALIASES))
+
+    @staticmethod
+    def _is_allowed_by_scope_policy(
+        scope_policy: ToolScopePolicy,
+        *,
+        agent_id: str,
+        tool_id: str,
+    ) -> bool:
+        if tool_id in RAG_TOOL_ALIASES:
+            return scope_policy.is_allowed(agent_id=agent_id, tool_id=RAG_RETRIEVE_TOOL_ID)
+        if tool_id in WEBSEARCH_TOOL_ALIASES:
+            return scope_policy.is_allowed(agent_id=agent_id, tool_id=WEBSEARCH_QUERY_TOOL_ID)
+        return scope_policy.is_allowed(agent_id=agent_id, tool_id=tool_id)
 
     @staticmethod
     def is_tool_allowed(tool_name: str, allowed_tools: Optional[Sequence[str]]) -> bool:

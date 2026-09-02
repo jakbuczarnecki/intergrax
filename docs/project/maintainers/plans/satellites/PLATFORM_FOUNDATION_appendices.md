@@ -1,4 +1,4 @@
-# Platform Foundation — appendices B–M
+# Platform Foundation - appendices B–M
 
 **Parent hub:** [`PLATFORM_FOUNDATION.md`](../PLATFORM_FOUNDATION.md)
 
@@ -7,7 +7,7 @@
 
 ---
 
-## Appendix B — Technical debt backlog
+## Appendix B - Technical debt backlog
 
 **Purpose:** consolidated backlog for review and **incremental paydown**.  
 **Source:** canon §2 map, §0.5 maturity, Phase G–K gaps, lab sign-off findings (2026-05-27).  
@@ -18,43 +18,43 @@
 
 | Date | ID | Summary |
 |------|-----|---------|
-| 2026-05-29 | M.6-gcp | `providers/gcp` — cloud_platform facade; ADC/service account + category slug defaults |
-| 2026-05-29 | M.6-azure | `providers/azure` — cloud_platform facade; token health + category slug defaults |
-| 2026-05-29 | M.6-aws | `providers/aws` — cloud_platform facade; STS health + category slug defaults |
+| 2026-05-29 | M.6-gcp | `providers/gcp` - cloud_platform facade; ADC/service account + category slug defaults |
+| 2026-05-29 | M.6-azure | `providers/azure` - cloud_platform facade; token health + category slug defaults |
+| 2026-05-29 | M.6-aws | `providers/aws` - cloud_platform facade; STS health + category slug defaults |
 | 2026-05-29 | M.6-cassandra | `providers/cassandra` + `contracts/document_store.py`; CQL partition-scoped CRUD |
 | 2026-05-29 | M.6-ms365_graph | `providers/ms365_graph` + `contracts/collaboration_suite.py`; Graph mail/calendar/directory |
 | 2026-05-30 | M.6-prometheus | `providers/prometheus` + `contracts/observability_backend.py`; PromQL query API |
 | 2026-05-30 | M.6-confluence | `providers/confluence` + `contracts/wiki_knowledge.py`; REST wiki; single-entry `opens.py` |
 | 2026-05-30 | M.6-jira | `providers/jira` + `contracts/issue_tracker.py`; REST v3; single-entry `opens.py` |
-| 2026-05-30 | M.6-mysql | `providers/mysql` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
+| 2026-05-30 | M.6-mysql | `providers/mysql` - beta `RelationalStore` (pymysql); single-entry `opens.py` |
 | 2026-05-30 | M.6-provider-layout | Providers grouped under `providers/<category>/<slug>`; `layout.py` slug map; tests mirrored by category |
-| 2026-05-30 | M.6-p2-batch | P2/P3 integrations — 22 slugs (`azure_blob`, `gcs`, `dynamodb`, cloud queues, SQL variants, SMTP, OTEL, GitHub/Linear/Azure DevOps, Notion/SharePoint, Google Workspace, Brave/SerpAPI, Playwright); `_shared/p2`; **324** integration unit tests |
-| 2026-05-30 | M.7-agent-guide-integrations | `guides/AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
+| 2026-05-30 | M.6-p2-batch | P2/P3 integrations - 22 slugs (`azure_blob`, `gcs`, `dynamodb`, cloud queues, SQL variants, SMTP, OTEL, GitHub/Linear/Azure DevOps, Notion/SharePoint, Google Workspace, Brave/SerpAPI, Playwright); `_shared/p2`; **324** integration unit tests |
+| 2026-05-30 | M.7-agent-guide-integrations | `guides/AGENT_CREATION_GUIDE.md` Appendix E - agents vs Tier-3 wiring |
 | 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
 | 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
 | 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
-| 2026-05-30 | N.10-new-stack | `scaffold new-stack` — agent + application; `TIER3_READINESS.md` |
-| 2026-05-30 | N.9-scaffold-acceptance | `test_scaffold_acceptance.py` — lab/product runtime E2E; fix product `agent_factories.py` indent |
-| 2026-05-30 | N.8-agent-guide-4e | `guides/AGENT_CREATION_GUIDE.md` Step 4E — `new-application`, Docker scripts, §7.4.8 links |
+| 2026-05-30 | N.10-new-stack | `scaffold new-stack` - agent + application; `TIER3_READINESS.md` |
+| 2026-05-30 | N.9-scaffold-acceptance | `test_scaffold_acceptance.py` - lab/product runtime E2E; fix product `agent_factories.py` indent |
+| 2026-05-30 | N.8-agent-guide-4e | `guides/AGENT_CREATION_GUIDE.md` Step 4E - `new-application`, Docker scripts, §7.4.8 links |
 | 2026-05-30 | N.4-product-scaffold | `--profile product` → FastAPI Core host, `agent_factories.py`, auth stub env; `new_application_product.py` |
 | 2026-05-30 | N.5-docker-build-scripts | `build-docker.sh` / `build-docker.bat` in scaffold + lab/legal/research/poc; `docker_templates.py` |
 | 2026-05-30 | N.0-docs | Canon §7.4.8–§7.4.10 + Phase N plan (application environment, manifest, scaffold steps) |
-| 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log` — lab uses `IntegrationProfile.lab()` |
+| 2026-05-30 | M.8-lab-profile | `wire_lab_integrations()` + `providers/log` - lab uses `IntegrationProfile.lab()` |
 | 2026-05-30 | M.4-kafka-rabbitmq-adopt | Queueing bootstrap + integration tests use `integrations/providers/{kafka,rabbitmq}` only |
 | 2026-05-30 | M.4-rabbitmq | `providers/rabbitmq` + runtime `build_rabbitmq_transport()` delegate |
-| 2026-05-29 | M.4-lab_json | `providers/lab_json` + runtime `create_interaction_adapter(LAB)` delegate — **M.4 P0 complete** |
+| 2026-05-29 | M.4-lab_json | `providers/lab_json` + runtime `create_interaction_adapter(LAB)` delegate - **M.4 P0 complete** |
 | 2026-05-29 | M.4-webhook | `providers/webhook` + runtime `create_notification_adapter(WEBHOOK)` delegate |
 | 2026-05-29 | M.4-teams-adopt | Runtime notifications/interactions/verifier + long_running delegate to `providers/teams` |
-| 2026-05-29 | M.4-teams | `providers/teams` — dual category catalog entry |
+| 2026-05-29 | M.4-teams | `providers/teams` - dual category catalog entry |
 | 2026-05-29 | M.4-slack-adopt | Runtime notifications/interactions/verifier + long_running delegate to `providers/slack` |
-| 2026-05-29 | M.4-slack | `providers/slack` — dual category + resolve dispatches by category |
-| 2026-05-29 | M.4-bing | `providers/bing` — SearchProvider adapter over legacy Bing v7 |
-| 2026-05-29 | M.4-google_cse | `providers/google_cse` — SearchProvider adapter over legacy CSE |
-| 2026-05-29 | M.4-celery | `providers/celery` — message bus + worker helpers; no `kv_store` |
+| 2026-05-29 | M.4-slack | `providers/slack` - dual category + resolve dispatches by category |
+| 2026-05-29 | M.4-bing | `providers/bing` - SearchProvider adapter over legacy Bing v7 |
+| 2026-05-29 | M.4-google_cse | `providers/google_cse` - SearchProvider adapter over legacy CSE |
+| 2026-05-29 | M.4-celery | `providers/celery` - message bus + worker helpers; no `kv_store` |
 | 2026-05-29 | M.4-kafka | `providers/kafka` + transport delegate; requires `kv_store` |
 | 2026-05-29 | M.4-sqlite-adopt | Runtime `open_*` + apps delegate to `integrations/providers/relational_store/sqlite` |
 | 2026-05-29 | M.4-sqlite | `providers/sqlite` + bundle (10 domain stores); lazy bootstrap + package `__init__` |
-| 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` — KV, idempotency, rate limit, semaphore, rerank |
+| 2026-05-29 | M.4-redis | Complete bundle: `create_redis_integration()` - KV, idempotency, rate limit, semaphore, rerank |
 | 2026-05-27 | B.08, B.10 | `wire_nexus_observability` + SQLite defaults in Legal / Research / Lab factories; integration test |
 | 2026-05-27 | B.01, B.02 | `RuntimeCheckpoint` full snapshot + UAEP mid-step cursor/resume; acceptance `05b` |
 | 2026-05-27 | B.12, B.14 | Production `POST /v1/interactions/intake` on lab; Legal legacy `AgentEngine` removed |
@@ -70,73 +70,73 @@
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.01 | **UAEP mid-step checkpoint** — resume inside a long-running step (not only between steps / HITL) | §42.9.3, §26 | **High** | **Done** | Long-running domain agents (Legal, Research) | Tier-1 | `uaep_step_cursor`, `should_resume_uaep_step`, optional `resume_step` (2026-05-27) |
-| B.02 | **Full checkpoint snapshot** — plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | **Done** | Multi-agent graphs, crash recovery | Tier-1 | `plan_snapshot`, `graph_snapshot`, `pending_decisions` in `RuntimeCheckpoint` (2026-05-27) |
-| B.03 | **Policy engine facade** — single `PolicyEngine` for replay, validation, runtime policy | §42.11 | **Medium** | **Done** | Indirect — consistent governance for all agents | Tier-1 | `PolicyEngine` + `coerce_policy_engine`; Nexus/UAEP/interrupt handler (2026-05-27) |
-| B.04 | **Dual `AgentDecision` cleanup** — converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | **Done** | Agents emitting decisions must use one contract | Tier-1 | `ToolPlanDecision` in `tools.core.tool_plan_decision`; no `tools_agent` re-export (2026-06-02) |
-| B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
-| B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | Lifecycle + **tool call** + **agent selection** hooks; decision/interrupt/retry hooks remain optional (2026-05-27) |
-| B.07 | **§42 maturity remainder** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
-| P1-ARCH-03 | **Root README ↔ architecture canon sync** — Overview `(planned)` residuals vs domain L3 closeout (ECC) | hub · domain pairs | **P1** | **Done** | Onboarding / first read | docs | README Overview + Project snapshot aligned with `CODE_CRAFT` closeout (2026-06-17) |
-| P2-ARCH-01 | **System invariants index** — cross-domain `SYS-INV-*` “never violate” guide with CI map | hub · ACP · APP · ORCH | **P2** | **Done** | All authors / auditors | docs | [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) (2026-06-17) |
-| P2-ARCH-02 | **Maturity taxonomy** — four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping; required Maturity Statement block | hub · guides · LCM | **P2** | **Done** | All authors / auditors | docs | [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) (2026-06-20) |
-| P2-ARCH-03 | **Root README platform maturity** — L0–L4 per-area table with plan evidence links (not arbitrary %) | hub · README | **P2** | **Done** | Onboarding / architects | docs | README §Current platform maturity + `harness_maturity_report.py` (2026-06-17) |
-| P2-DOC-LC-1 | **Layer Completion Mode** — canonical deep layer closeout workflow (journal-linked) | guides · strategy | **P2** | **Done** | Maintainers / layer closeout | docs | [`guides/LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) (2026-06-17) |
-| P2-DOC-AA-1 | **Agent author minimal path** — minimal safe Tier-2 authoring guide | guides · ACP | **P2** | **Done** | Tier-2 agent authors | docs | [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md) (2026-06-20) |
-| P2-DOC-T3-1 | **Tier-3 product hypothesis contract** — required product hypothesis before new hosts | guides · APP | **P2** | **Done** | Tier-3 application authors | docs | [`guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](../guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) (2026-06-20) |
+| B.01 | **UAEP mid-step checkpoint** - resume inside a long-running step (not only between steps / HITL) | §42.9.3, §26 | **High** | **Done** | Long-running domain agents (Legal, Research) | Tier-1 | `uaep_step_cursor`, `should_resume_uaep_step`, optional `resume_step` (2026-05-27) |
+| B.02 | **Full checkpoint snapshot** - plan + graph node states + UAEP index + pending decisions in one durable blob | §42.9.2 | **High** | **Done** | Multi-agent graphs, crash recovery | Tier-1 | `plan_snapshot`, `graph_snapshot`, `pending_decisions` in `RuntimeCheckpoint` (2026-05-27) |
+| B.03 | **Policy engine facade** - single `PolicyEngine` for replay, validation, runtime policy | §42.11 | **Medium** | **Done** | Indirect - consistent governance for all agents | Tier-1 | `PolicyEngine` + `coerce_policy_engine`; Nexus/UAEP/interrupt handler (2026-05-27) |
+| B.04 | **Dual `AgentDecision` cleanup** - converge tools-agent variant with canonical §42.7 enum | §42.7 | **Medium** | **Done** | Agents emitting decisions must use one contract | Tier-1 | `ToolPlanDecision` in `tools.core.tool_plan_decision`; no `tools_agent` re-export (2026-06-02) |
+| B.05 | **Escalation policy production path** - `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
+| B.06 | **Hook / middleware parity** - full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | Lifecycle + **tool call** + **agent selection** hooks; decision/interrupt/retry hooks remain optional (2026-05-27) |
+| B.07 | **§42 maturity remainder** - schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
+| P1-ARCH-03 | **Root README ↔ architecture canon sync** - Overview `(planned)` residuals vs domain L3 closeout (ECC) | hub · domain pairs | **P1** | **Done** | Onboarding / first read | docs | README Overview + Project snapshot aligned with `CODE_CRAFT` closeout (2026-06-17) |
+| P2-ARCH-01 | **System invariants index** - cross-domain `SYS-INV-*` “never violate” guide with CI map | hub · ACP · APP · ORCH | **P2** | **Done** | All authors / auditors | docs | [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) (2026-06-17) |
+| P2-ARCH-02 | **Maturity taxonomy** - four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping; required Maturity Statement block | hub · guides · LCM | **P2** | **Done** | All authors / auditors | docs | [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) (2026-06-20) |
+| P2-ARCH-03 | **Root README platform maturity** - L0–L4 per-area table with plan evidence links (not arbitrary %) | hub · README | **P2** | **Done** | Onboarding / architects | docs | README §Current platform maturity + `harness_maturity_report.py` (2026-06-17) |
+| P2-DOC-LC-1 | **Layer Completion Mode** - canonical deep layer closeout workflow (journal-linked) | guides · strategy | **P2** | **Done** | Maintainers / layer closeout | docs | [`guides/LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) (2026-06-17) |
+| P2-DOC-AA-1 | **Agent author minimal path** - minimal safe Tier-2 authoring guide | guides · ACP | **P2** | **Done** | Tier-2 agent authors | docs | [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md) (2026-06-20) |
+| P2-DOC-T3-1 | **Tier-3 product hypothesis contract** - required product hypothesis before new hosts | guides · APP | **P2** | **Done** | Tier-3 application authors | docs | [`guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](../guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) (2026-06-20) |
 
 ### B.2 Observability & debug surface
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.08 | **Application trace store split** — factories used `InMemoryRunTraceStore` while debug API reads SQLite | §33, §42.24 | **High** | **Done** | HTTP `/debug/tasks/*` 503 in product apps | Tier-3 | `wire_nexus_observability` + `open_run_trace_store` (2026-05-27) |
-| B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
-| B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
-| B.11 | **Metrics layer** — event-first, trace-second, **metrics-third** unified export | §42.1, §33 | **Low** | **Done** | Ops visibility, SLOs | Tier-0 | `runtime/metrics/export.py` + `GET /debug/tasks/{run_id}/metrics` (2026-05-27) |
-| P1-ARCH-02 | **Layered event catalog** — spine + `event_kind` + `EventCatalog`; pre-release consolidation | OBS §4.4, §42.1.6 | **P1** | **Done** | All Tier-2/3 authors | Tier-0/1 | OBS-EVOL-9 M0–M3 **Done** (2026-06-17) · ADR-OBS-003 · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02) |
+| B.08 | **Application trace store split** - factories used `InMemoryRunTraceStore` while debug API reads SQLite | §33, §42.24 | **High** | **Done** | HTTP `/debug/tasks/*` 503 in product apps | Tier-3 | `wire_nexus_observability` + `open_run_trace_store` (2026-05-27) |
+| B.09 | **Debug API trace reader** - only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
+| B.10 | **NexusLoop runtime events in app factories** - all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
+| B.11 | **Metrics layer** - event-first, trace-second, **metrics-third** unified export | §42.1, §33 | **Low** | **Done** | Ops visibility, SLOs | Tier-0 | `runtime/metrics/export.py` + `GET /debug/tasks/{run_id}/metrics` (2026-05-27) |
+| P1-ARCH-02 | **Layered event catalog** - spine + `event_kind` + `EventCatalog`; pre-release consolidation | OBS §4.4, §42.1.6 | **P1** | **Done** | All Tier-2/3 authors | Tier-0/1 | OBS-EVOL-9 M0–M3 **Done** (2026-06-17) · ADR-OBS-003 · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02) |
 
 ### B.3 Interaction surfaces (§18)
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.12 | **Production Slack / Teams webhooks** — inbound intake on product hosts | §18 | **Medium** | **Done** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | `POST /v1/interactions/intake` on lab/legal/research/poc via `wire_interaction_intake_service` (2026-05-27) |
-| B.13 | **Outbound delivery hardening** — retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | **Done** | HITL agents in prod | Tier-0 | `RetryingNotificationDelivery` + `SQLiteDeliveryLedger` + debug `/debug/notifications/*` (2026-05-27) |
+| B.12 | **Production Slack / Teams webhooks** - inbound intake on product hosts | §18 | **Medium** | **Done** | Organization Worker, HITL from chat | Tier-0 / Tier-3 | `POST /v1/interactions/intake` on lab/legal/research/poc via `wire_interaction_intake_service` (2026-05-27) |
+| B.13 | **Outbound delivery hardening** - retries, DLQ, delivery receipts for HITL notifications | §18, §42.10 | **Low** | **Done** | HITL agents in prod | Tier-0 | `RetryingNotificationDelivery` + `SQLiteDeliveryLedger` + debug `/debug/notifications/*` (2026-05-27) |
 
 ### B.6 Integration Library (§7.1)
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.18 | **Integration catalog package** — `intergrax/integrations` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
-| B.19 | **P0 provider wraps** — M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
-| B.20 | **PostgreSQL relational_store** — production DB adapter | §7.1.3 | **Medium** | **Done** (beta) | Multi-tenant applications | Tier-0 | `providers/postgresql` — domain stores SQLite-first |
-| B.21 | **Jira + Confluence providers** — issue/wiki ingestion | §7.1.3 | **Medium** | **Done** (beta) | PM / research agents | Tier-0 | Integrations + catalog tools (Phase O.4, 2026-05-30) |
-| B.22 | **MS365 Graph provider** — mail, calendar | §7.1.3 | **Medium** | **Done** (beta) | Org worker, scheduling agents | Tier-0 | `providers/ms365_graph`; client credentials via `opens.py` |
-| B.23 | **Prometheus observability_backend** — PromQL query API | §33, §7.1.3 | **Low** | **Done** (beta) | Ops / SLO | Tier-0 | `providers/prometheus`; complements B.11 metrics layer design |
-| B.28 | **Cassandra document_store** — wide-column adapter for high-volume retention | §7.1.3 P2 | **Medium** | **Done** (beta) | Runtime event archive at scale; ops telemetry | Tier-0 | `providers/cassandra`; single-entry `opens.py` |
-| B.29 | **Elasticsearch observability_backend** — log search / aggregations | §7.1.3 P2 | **Medium** | **Done** (beta) | Ops log triage; optional RAG over logs | Tier-0 | `providers/elasticsearch`; single-entry `opens.py`; complements B.23 |
-| B.30 | **Databricks relational_store** — SQL Warehouse / Unity Catalog SQL | §7.1.3 P2 | **Medium** | **Done** (beta) | Analytics agents, lakehouse reporting | Tier-0 | `providers/databricks`; single-entry `opens.py`; PAT |
-| B.31 | **MongoDB document_store** — flexible JSON persistence | §7.1.3 P2 | **Medium** | **Done** (beta) | Agent memory, unstructured artifacts | Tier-0 | `providers/mongodb`; PyMongo only in `opens.py`; reuses `DocumentStore` |
-| B.32 | **Pinecone vector_store bridge** — catalog entry → `rag` | §7.1.3 P2 | **Medium** | **Done** (beta) | Production RAG agents | Tier-0 | `providers/pinecone` thin adapter; SDK only in `opens.py` |
-| B.33 | **Qdrant + Chroma vector_store bridges** — same pattern as B.32 | §7.1.3 P2 | **Low** | **Done** (beta) | Self-hosted / dev RAG | Tier-0 | `providers/qdrant`, `providers/chroma`; RAG bootstrap via catalog |
-| B.34 | **Object storage contract + S3 provider** — blobs for artifacts / sandboxes | §7.1.3 P2 | **Medium** | **Done** (beta) | Large file handoff, exports | Tier-0 | `contracts/object_storage.py`, `providers/s3`; boto3 only in `opens.py` |
-| B.35 | **Notion + SharePoint wiki_knowledge** — internal docs ingestion | §7.1.3 P3 | **Low** | **Done** (beta) | Research / runbook agents | Tier-0 | REST adapters; `_shared/p2/factories.py` |
-| B.36 | **GitHub + Linear issue_tracker** — dev workflow sources | §7.1.3 P3 | **Low** | **Done** (beta) | Code-aware agents | Tier-0 | REST; thin provider shells |
-| B.37 | **email_smtp notification_channel** — outbound mail without chat | §7.1.3 P3 | **Low** | **Done** (beta) | HITL, scheduled reports | Tier-0 | stdlib SMTP in factory open path |
-| B.38 | **OpenTelemetry observability_backend** — trace/metric export | §33, §7.1.3 P3 | **Low** | **Done** (beta) | Unified ops dashboards | Tier-0 | `providers/otel`; beta noop exporter default |
-| B.39 | **Playwright browser_automation** — dynamic web interaction | §7.1.3 P3 | **Low** | **Done** (beta) | Research on JS-heavy sites | Tier-0 | `providers/playwright`; browser launch in factory |
-| B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws`; infrastructure only |
-| B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure`; infrastructure only |
-| B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp`; infrastructure only |
-| B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | **Done** | Prevents catalog bypass | Tier-2 | `scripts/maintenance/check_agents_vendor_imports.py` + gate test `test_vendor_import_guard_b24` (2026-05-27) |
+| B.18 | **Integration catalog package** - `intergrax/integrations` scaffold | §7.1.1 | **High** | **Done** | All agents needing external systems | Tier-0 | M.1–M.3 + M.5 (2026-05-29) |
+| B.19 | **P0 provider wraps** - M.4 catalog slugs | §7.1.3 | **High** | **Done** | Lab + first prod apps | Tier-0 | All P0 slugs wrapped + runtime adoption (2026-05-29) |
+| B.20 | **PostgreSQL relational_store** - production DB adapter | §7.1.3 | **Medium** | **Done** (beta) | Multi-tenant applications | Tier-0 | `providers/postgresql` - domain stores SQLite-first |
+| B.21 | **Jira + Confluence providers** - issue/wiki ingestion | §7.1.3 | **Medium** | **Done** (beta) | PM / research agents | Tier-0 | Integrations + catalog tools (Phase O.4, 2026-05-30) |
+| B.22 | **MS365 Graph provider** - mail, calendar | §7.1.3 | **Medium** | **Done** (beta) | Org worker, scheduling agents | Tier-0 | `providers/ms365_graph`; client credentials via `opens.py` |
+| B.23 | **Prometheus observability_backend** - PromQL query API | §33, §7.1.3 | **Low** | **Done** (beta) | Ops / SLO | Tier-0 | `providers/prometheus`; complements B.11 metrics layer design |
+| B.28 | **Cassandra document_store** - wide-column adapter for high-volume retention | §7.1.3 P2 | **Medium** | **Done** (beta) | Runtime event archive at scale; ops telemetry | Tier-0 | `providers/cassandra`; single-entry `opens.py` |
+| B.29 | **Elasticsearch observability_backend** - log search / aggregations | §7.1.3 P2 | **Medium** | **Done** (beta) | Ops log triage; optional RAG over logs | Tier-0 | `providers/elasticsearch`; single-entry `opens.py`; complements B.23 |
+| B.30 | **Databricks relational_store** - SQL Warehouse / Unity Catalog SQL | §7.1.3 P2 | **Medium** | **Done** (beta) | Analytics agents, lakehouse reporting | Tier-0 | `providers/databricks`; single-entry `opens.py`; PAT |
+| B.31 | **MongoDB document_store** - flexible JSON persistence | §7.1.3 P2 | **Medium** | **Done** (beta) | Agent memory, unstructured artifacts | Tier-0 | `providers/mongodb`; PyMongo only in `opens.py`; reuses `DocumentStore` |
+| B.32 | **Pinecone vector_store bridge** - catalog entry → `rag` | §7.1.3 P2 | **Medium** | **Done** (beta) | Production RAG agents | Tier-0 | `providers/pinecone` thin adapter; SDK only in `opens.py` |
+| B.33 | **Qdrant + Chroma vector_store bridges** - same pattern as B.32 | §7.1.3 P2 | **Low** | **Done** (beta) | Self-hosted / dev RAG | Tier-0 | `providers/qdrant`, `providers/chroma`; RAG bootstrap via catalog |
+| B.34 | **Object storage contract + S3 provider** - blobs for artifacts / sandboxes | §7.1.3 P2 | **Medium** | **Done** (beta) | Large file handoff, exports | Tier-0 | `contracts/object_storage.py`, `providers/s3`; boto3 only in `opens.py` |
+| B.35 | **Notion + SharePoint wiki_knowledge** - internal docs ingestion | §7.1.3 P3 | **Low** | **Done** (beta) | Research / runbook agents | Tier-0 | REST adapters; `_shared/p2/factories.py` |
+| B.36 | **GitHub + Linear issue_tracker** - dev workflow sources | §7.1.3 P3 | **Low** | **Done** (beta) | Code-aware agents | Tier-0 | REST; thin provider shells |
+| B.37 | **email_smtp notification_channel** - outbound mail without chat | §7.1.3 P3 | **Low** | **Done** (beta) | HITL, scheduled reports | Tier-0 | stdlib SMTP in factory open path |
+| B.38 | **OpenTelemetry observability_backend** - trace/metric export | §33, §7.1.3 P3 | **Low** | **Done** (beta) | Unified ops dashboards | Tier-0 | `providers/otel`; beta noop exporter default |
+| B.39 | **Playwright browser_automation** - dynamic web interaction | §7.1.3 P3 | **Low** | **Done** (beta) | Research on JS-heavy sites | Tier-0 | `providers/playwright`; browser launch in factory |
+| B.25 | **AWS cloud_platform facade** - auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws`; infrastructure only |
+| B.26 | **Azure cloud_platform facade** - MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure`; infrastructure only |
+| B.27 | **GCP cloud_platform facade** - ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp`; infrastructure only |
+| B.24 | **Direct vendor SDK in agents** - audit + lint rule | §5.2, §7.1.4 | **Medium** | **Done** | Prevents catalog bypass | Tier-2 | `scripts/maintenance/check_agents_vendor_imports.py` + gate test `test_vendor_import_guard_b24` (2026-05-27) |
 
 ### B.7 Tool Library (§7.1.6)
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.40 | **Tool Library scaffold** — catalog, profile, wiring context | §7.1.6 | **High** | **Done** | All agents using external capabilities | Tier-0 | Phase O.2; apps wire tools O.8 (2026-05-30) |
-| B.41 | **Context tools** — `rag.retrieve`, `websearch.query` | §7.1.7, §22.1 | **High** | **Done** | RAG / research agents | Tier-0 | Phase O.3 (2026-05-30) |
-| B.42 | **Jira catalog tools** — `jira.get_issue`, `jira.search_tasks`, … | §7.1.6 | **Medium** | **Done** | PM / legal workflow agents | Tier-0 | Phase O.4 (2026-05-30) |
-| B.43 | **Unified tool model** — deprecate `use_rag` / `use_websearch` flags | §7.1.7, §22.2 | **High** | **Done** | Consistent tool policy + MCP | Tier-1 | Phase O.5 (2026-05-30) |
+| B.40 | **Tool Library scaffold** - catalog, profile, wiring context | §7.1.6 | **High** | **Done** | All agents using external capabilities | Tier-0 | Phase O.2; apps wire tools O.8 (2026-05-30) |
+| B.41 | **Context tools** - `rag.retrieve`, `websearch.query` | §7.1.7, §22.1 | **High** | **Done** | RAG / research agents | Tier-0 | Phase O.3 (2026-05-30) |
+| B.42 | **Jira catalog tools** - `jira.get_issue`, `jira.search_tasks`, … | §7.1.6 | **Medium** | **Done** | PM / legal workflow agents | Tier-0 | Phase O.4 (2026-05-30) |
+| B.43 | **Unified tool model** - deprecate `use_rag` / `use_websearch` flags | §7.1.7, §22.2 | **High** | **Done** | Consistent tool policy + MCP | Tier-1 | Phase O.5 (2026-05-30) |
 | B.44 | **Legacy ToolBase migration** | §5.2.2 | **Medium** | **Done** | Single registry | Tier-0 | Phase O.7; `tools_base` deprecated |
 | B.45 | **MCP tool export from catalog** | §7.1.6 | **Low** | **Done** | External MCP clients | Tier-3 | Phase O.6 |
 
@@ -144,41 +144,41 @@
 
 | ID | Item | Canon | Priority | Status | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------|--------------|------|----------------|
-| B.14 | **`ChatAgent` / legacy engine removal** — `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
-| B.15 | **Legal full E2E gate (real LLM)** — deferred acceptance with live model | — | **Low** | **Deferred** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate; enable when CI budget approved |
-| B.16 | **Lab agent auto-discovery** — manifest-driven roster + scaffold | §7.4 | **Low** | **Done** | Onboarding friction | Tier-3 | Phase N: `ApplicationManifest`, `new-stack` (N.10); explicit `AgentBinding` remains by design (2026-05-30) |
-| B.28 | **Per-application `.env.example` missing** — only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Done** | Deployable POC friction | Tier-3 | N.7 backfill + scaffold (2026-05-30) |
-| B.29 | **`new-application` scaffold (lab)** — Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Done** | Lab + product profiles via CLI; gate acceptance | Tier-3 / platform | N.10 `new-stack` optional |
-| B.30 | **No application-level Dockerfile** — only `infra/docker/docling` | §7.4.8 | **Medium** | **Done** | Per-app `docker` + build scripts on lab/legal/research/poc | Tier-3 | N.5–N.7 (2026-05-30) |
+| B.14 | **`ChatAgent` / legacy engine removal** - `LEGAL_USE_LEGACY_AGENT_ENGINE` removed | §39, §41 | **Medium** | **Done** | Single execution path for all agents | Tier-1 / Tier-3 | Legal `fastapi_router` requires `UnifiedTaskRunner`; legacy flags removed (2026-05-27) |
+| B.15 | **Legal full E2E gate (real LLM)** - deferred acceptance with live model | - | **Low** | **Deferred** | Legal quality assurance | Tier-2 / CI | K.6; separate from Agent OS gate; enable when CI budget approved |
+| B.16 | **Lab agent auto-discovery** - manifest-driven roster + scaffold | §7.4 | **Low** | **Done** | Onboarding friction | Tier-3 | Phase N: `ApplicationManifest`, `new-stack` (N.10); explicit `AgentBinding` remains by design (2026-05-30) |
+| B.28 | **Per-application `.env.example` missing** - only root `.env.example`; lab/legal vars in README only | §7.4.8 | **Medium** | **Done** | Deployable POC friction | Tier-3 | N.7 backfill + scaffold (2026-05-30) |
+| B.29 | **`new-application` scaffold (lab)** - Tier-3 hosts hand-copied from legal/lab | §7.4.8 | **High** | **Done** | Lab + product profiles via CLI; gate acceptance | Tier-3 / platform | N.10 `new-stack` optional |
+| B.30 | **No application-level Dockerfile** - only `infra/docker/docling` | §7.4.8 | **Medium** | **Done** | Per-app `docker` + build scripts on lab/legal/research/poc | Tier-3 | N.5–N.7 (2026-05-30) |
 
 ### B.5 Test & certification hygiene
 
 | ID | Item | Canon | Priority | Agent impact | Tier | Recommendation |
 |----|------|-------|----------|--------------|------|----------------|
-| B.17 | **`agents` gate collection** — `signoff_probe` test marks `gate` but lives under `agents` (may not be collected by default `pytest tests`) | — | **Low** | **Done** | Sign-off smoke not in main gate count | Test infra | `testpaths` includes `agents`; canonical gate: `uv run pytest -m gate -q` (2026-05-27) |
-| B.18 | **HTTP observability acceptance** — trace on echo + multi-agent mock (graph path) | Appendix A #9–10 | **Low** | **Done** | Certification confidence | Test | `test_lab_application_runs_echo_with_trace_observability`, `test_lab_application_runs_research_mock_with_graph_trace` (2026-05-27) |
+| B.17 | **`agents` gate collection** - `signoff_probe` test marks `gate` but lives under `agents` (may not be collected by default `pytest tests`) | - | **Low** | **Done** | Sign-off smoke not in main gate count | Test infra | `testpaths` includes `agents`; canonical gate: `uv run pytest -m gate -q` (2026-05-27) |
+| B.18 | **HTTP observability acceptance** - trace on echo + multi-agent mock (graph path) | Appendix A #9–10 | **Low** | **Done** | Certification confidence | Test | `test_lab_application_runs_echo_with_trace_observability`, `test_lab_application_runs_research_mock_with_graph_trace` (2026-05-27) |
 
 ### B.8 Suggested priority order (for planning)
 
 ```text
-1. ~~B.08, B.10~~ — observability consistency (Done 2026-05-27)
-2. ~~B.01, B.02~~ — checkpoint / full snapshot (Done 2026-05-27)
-3. ~~B.03, B.04~~ — governance facade + AgentDecision cleanup (Done 2026-05-27)
-4. ~~B.12, B.14~~ — product interaction + legacy removal (Done 2026-05-27)
-5. ~~B.05~~ — escalation production path (Done 2026-05-27)
-6. ~~B.09, B.17~~ — debug trace injection + gate collection (Done 2026-05-27)
-7. ~~B.06~~ — hook parity doc + lifecycle wiring (Done 2026-05-27)
-8. ~~B.07, B.11, B.13, B.18, B.24~~ — §42 baseline, metrics export, delivery hardening, HTTP trace acceptance, vendor import guard (Done 2026-05-27)
-9. ~~Platform stabilization~~ — all Tier-3 factories aligned (Done 2026-05-27)
-10. B.15 — Legal E2E real LLM (**Deferred** — product/CI decision)
-11. ~~Phase Q~~ — Harness audit remediation — **Done** (Appendix C)
-12. ~~Phase Q+ / Phase R~~ — **Done** (Appendices D, E)
-13. ~~Phase S — Harness environment GA~~ — **Done**
-14. ~~Phase T — Harness cleanliness~~ — **Done**
-15. Phase U — Harness production hardening — **Done**
-16. Harness completion backlog (§4.1) — **Done** (2026-06-02)
-17. Phase K — K.1/K.2 business agents — **Deferred**
-18. Tier-3 product apps / Legal E2E — **Deferred**
+1. ~~B.08, B.10~~ - observability consistency (Done 2026-05-27)
+2. ~~B.01, B.02~~ - checkpoint / full snapshot (Done 2026-05-27)
+3. ~~B.03, B.04~~ - governance facade + AgentDecision cleanup (Done 2026-05-27)
+4. ~~B.12, B.14~~ - product interaction + legacy removal (Done 2026-05-27)
+5. ~~B.05~~ - escalation production path (Done 2026-05-27)
+6. ~~B.09, B.17~~ - debug trace injection + gate collection (Done 2026-05-27)
+7. ~~B.06~~ - hook parity doc + lifecycle wiring (Done 2026-05-27)
+8. ~~B.07, B.11, B.13, B.18, B.24~~ - §42 baseline, metrics export, delivery hardening, HTTP trace acceptance, vendor import guard (Done 2026-05-27)
+9. ~~Platform stabilization~~ - all Tier-3 factories aligned (Done 2026-05-27)
+10. B.15 - Legal E2E real LLM (**Deferred** - product/CI decision)
+11. ~~Phase Q~~ - Harness audit remediation - **Done** (Appendix C)
+12. ~~Phase Q+ / Phase R~~ - **Done** (Appendices D, E)
+13. ~~Phase S - Harness environment GA~~ - **Done**
+14. ~~Phase T - Harness cleanliness~~ - **Done**
+15. Phase U - Harness production hardening - **Done**
+16. Harness completion backlog (§4.1) - **Done** (2026-06-02)
+17. Phase K - K.1/K.2 business agents - **Deferred**
+18. Tier-3 product apps / Legal E2E - **Deferred**
 ```
 
 **Note:** Platform harness (Q–U) is complete. **Harness completion** (legacy + CI) is active. Business agents and product applications are **end of list**.
@@ -192,7 +192,7 @@
 
 ---
 
-## Appendix C — Harness audit traceability (Phase Q)
+## Appendix C - Harness audit traceability (Phase Q)
 
 **Purpose:** Every finding from the harness implementation audit (2026-06-01) maps to exactly one Phase Q deliverable. Update **Status** when the deliverable is **Done** / **Won't fix** (with reason).
 
@@ -241,7 +241,7 @@
 | R-01 | Dead `_build_backend_where` / `_map_hits_to_chunks` | Q-R.1 | Done |
 | R-02 | Four parallel retrieval paths | Q-R.2 | Done |
 | R-03 | `enable_rag` vs `use_rag` in ContextBuilder | Q-R.3 | Done |
-| R-04 | Pipeline `rag_step` always `rag.retrieve` (retired — tool_ids in `on_next_step`) | Q-R.4 | Done |
+| R-04 | Pipeline `rag_step` always `rag.retrieve` (retired - tool_ids in `on_next_step`) | Q-R.4 | Done |
 | R-05 | `top_k` collapses prefetch | Q-R.5 | Done |
 | R-06 | `RuntimeConfig` vs `RagProfile` dual config | Q-R.6 | Done |
 | R-07 | Unused `RagProfile.extras` | Q-R.7 | Done |
@@ -308,7 +308,7 @@
 
 | Date | Q ID | Summary |
 |------|------|---------|
-| 2026-06-01 | Q-D.3 | §0.1 strategic objective — Harness GA vs Phase K vs Phase Q |
+| 2026-06-01 | Q-D.3 | §0.1 strategic objective - Harness GA vs Phase K vs Phase Q |
 | 2026-06-01 | Q-O.1,Q-O.2,Q-O.5,Q-O.7 | RAG plugin bootstrap, tests, metrics lint, lab `/metrics/llm` |
 | 2026-06-01 | Q-N.2,Q-N.7,Q-N.12 | Duplicate HITL normalize; tool_context_helpers; interrupt import |
 | 2026-06-01 | Q-R.1–Q-R.5,Q-R.8 | RAG dead code, single retrieval path, use_rag metadata, prefetch_k |
@@ -319,9 +319,9 @@
 | 2026-06-01 | docs-consolidation | Merged LLM/RAG observability, retry, trace ADR into canon + `architecture/LLM_ADAPTERS.md`; removed satellite `docs/*.md` |
 | 2026-06-01 | Q-N.1,Q-X.2,Wave 9 | `graph_runner`, `task_events`, `lifecycle_bridge`; UAEP `execution_options_for_request`; gate **417 passed** |
 | 2026-06-01 | Q-X.2(partial),Q-X.4,Q-X.5 | Legacy metadata warnings; `tools_base` timeline; M.6 beta slugs; gate **415 passed** |
-| — | — | *(append row per merged PR)* |
+| - | - | *(append row per merged PR)* |
 
-**Coverage:** 58 audit rows → 49 unique Q deliverables (some Q IDs satisfy multiple rows). **Target:** 100% **Done** or **Won't fix** — **achieved** (Phase Q complete).
+**Coverage:** 58 audit rows → 49 unique Q deliverables (some Q IDs satisfy multiple rows). **Target:** 100% **Done** or **Won't fix** - **achieved** (Phase Q complete).
 
 **Appendix B relationship:** Closed by Phase Q where mapped. Residual items tracked in **Appendix D** (Phase Q+).
 
@@ -334,10 +334,10 @@
 
 ---
 
-## Appendix D — Post-audit hardening traceability (Phase Q+)
+## Appendix D - Post-audit hardening traceability (Phase Q+)
 
 **Source:** Technical debt audit (2026-06-01, after Phase Q Wave 9).  
-**Goal:** Cursor-/Claude Code–class harness discipline — typed contracts, single orchestration path, full observability on critical paths.
+**Goal:** Cursor-/Claude Code–class harness discipline - typed contracts, single orchestration path, full observability on critical paths.
 
 **Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
 
@@ -357,7 +357,7 @@
 | `harness_production_mode` not wired in lab | P1 | Q+-O.2 | Done |
 | Thin `GraphExecutor` handoff/retry tests | P1 | Q+-N.4 | Done |
 
-### D.2 First implementation steps (Wave 1 — start here)
+### D.2 First implementation steps (Wave 1 - start here)
 
 Execute in order; one PR per ID where possible.
 
@@ -386,9 +386,9 @@ Execute in order; one PR per ID where possible.
 | 2026-06-01 | **Phase Q+** | All Q+-* deliverables **Done** or **Won't fix**; gate **450 passed** |
 | 2026-06-01 | Appendix C sync, research skill | C.7 T-* / D-05 aligned; `research.literature_scan` bundle; K.1/K.2 **Ready** |
 | 2026-06-01 | Doc sync | §1 alignment table, §6 Phase K cadence, Appendix B.8 renumber, E.1 skill row; README + canon research skill examples |
-| — | — | *(append row per merged PR)* |
+| - | - | *(append row per merged PR)* |
 
-**Coverage target:** 100% **Done** or **Won't fix** — **met** (2026-06-01).
+**Coverage target:** 100% **Done** or **Won't fix** - **met** (2026-06-01).
 
 ---
 
@@ -401,9 +401,9 @@ Execute in order; one PR per ID where possible.
 
 ---
 
-## Appendix E — Harness AI alignment traceability (Phase R)
+## Appendix E - Harness AI alignment traceability (Phase R)
 
-**Source:** Harness AI philosophy audit (2026-06-01) — scaffold, harness+LLM=agent, tool vs skill, context engineering, subagents, policy.  
+**Source:** Harness AI philosophy audit (2026-06-01) - scaffold, harness+LLM=agent, tool vs skill, context engineering, subagents, policy.  
 **Goal:** Step-by-step implementation readiness; every audit theme maps to Phase R deliverables.  
 **Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
 
@@ -416,12 +416,12 @@ Execute in order; one PR per ID where possible.
 | LLM separate from agent module | `llm_adapters` | “Runnable instance” undefined | R.0.2 §5.3 | Done |
 | Tool = atomic operation | `ToolContract`, `ToolRuntime` | Doc said “tool/skill” | R.0.3, R.0.1 | Done |
 | Skill = goal-oriented pack | Was missing (pre-R); **MVP Done** | Registry + importers + first-party packs | R-Skill.1–R-Skill.10 | Done |
-| Option 1: skills = tools | — | **Rejected** — breaks LLM/MCP atomic model | R.0.1 ADR | Done |
-| Option 2: Skill Library | — | **Adopted** | R-Skill.* | Done |
+| Option 1: skills = tools | - | **Rejected** - breaks LLM/MCP atomic model | R.0.1 ADR | Done |
+| Option 2: Skill Library | - | **Adopted** | R-Skill.* | Done |
 | Context engineering | §27–28, `MemoryView`, `TaskContextAssemblyOptions` | No central budget API | R-Context.* | Done |
 | Subagents | `GraphExecutor`, handoff §42.15 | No isolated child namespace | R-Delegate.* | Done |
 | Policy | Multiple engines | No single bundle narrative | R-Policy.* | Done |
-| External skill compatibility | — | No importer | R-Skill.8 | Done |
+| External skill compatibility | - | No importer | R-Skill.8 | Done |
 
 ### E.2 Four-layer capability model (canonical)
 
@@ -441,9 +441,9 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | 2026-06-01 | R-Skill.1–R-Skill.9,R-Context.1,R-Delegate.1,R-Policy.1 | Skill Library MVP, legal pilot, ContextBudget, DelegationSpec, gate **422 passed** |
 | 2026-06-01 | R-Skill.10,R-Context.2,R-Delegate.2–4,R-Policy.2 | Event recording, delegation memory, graph integration test, policy bundle wiring |
 | 2026-06-01 | **Phase R (MVP)** | All R-* deliverables **Done** or **Won't fix**; gate **450 passed** |
-| — | — | *(append row per merged PR)* |
+| - | - | *(append row per merged PR)* |
 
-**Coverage target:** 100% **Done** or **Won't fix** — **met** (2026-06-01). Phase S proceeds on this harness baseline.
+**Coverage target:** 100% **Done** or **Won't fix** - **met** (2026-06-01). Phase S proceeds on this harness baseline.
 
 ---
 
@@ -454,9 +454,9 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-## Appendix F — Harness environment traceability (Phase S)
+## Appendix F - Harness environment traceability (Phase S)
 
-**Source:** Architecture audit + plan pivot (2026-06-01) — **harness environment before business agents**.  
+**Source:** Architecture audit + plan pivot (2026-06-01) - **harness environment before business agents**.  
 **Goal:** Track Phase S deliverables.  
 **Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
 
@@ -478,9 +478,9 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | 2026-06-01 | S.0.* | Strategy doc; canon; initial Phase S |
 | 2026-06-01 | S.0.4 | Pivot: Phase S = harness environment only; K.1/K.2 → Phase K |
 | 2026-06-01 | **Phase S** | harness_lab_stack, harness.* skills, OTEL profile, guides/HARNESS_ENVIRONMENT.md, tests |
-| — | — | *(append row per merged PR)* |
+| - | - | *(append row per merged PR)* |
 
-**Coverage target:** Phase S definition of done met — **yes** (2026-06-01).
+**Coverage target:** Phase S definition of done met - **yes** (2026-06-01).
 
 ---
 
@@ -491,9 +491,9 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-## Appendix G — Harness production audit traceability (Phase U)
+## Appendix G - Harness production audit traceability (Phase U)
 
-**Source:** Harness-system audit (2026-06-01) — lab/Tier-1/Tier-3 only; **no business agents**.  
+**Source:** Harness-system audit (2026-06-01) - lab/Tier-1/Tier-3 only; **no business agents**.  
 **Goal:** Map every finding to exactly one Phase U deliverable. Update **Status** when **Done** / **Won't fix** (with reason).  
 **Status values:** `Open` | `Done` | `Won't fix` | `Deferred`
 
@@ -502,21 +502,21 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Audit ID | Finding | U ID | Status |
 |----------|---------|------|--------|
 | SEC-01 | Lab `POST /v1/lab/run` and `/debug/*` without authentication | U-Sec.1 | Done |
-| SEC-02 | MCP enabled by default (`LAB_INCLUDE_MCP=true`) — second open surface | U-Sec.2 | Done |
+| SEC-02 | MCP enabled by default (`LAB_INCLUDE_MCP=true`) - second open surface | U-Sec.2 | Done |
 | SEC-03 | `sandbox.exec` enabled in default lab tool profile | U-Sec.3 | Done |
-| SEC-04 | `harness_production_mode()` always `False` — no strict production path | U-Sec.4 | Done |
+| SEC-04 | `harness_production_mode()` always `False` - no strict production path | U-Sec.4 | Done |
 
 ### G.2 Contracts & policy (P1)
 
 | Audit ID | Finding | U ID | Status |
 |----------|---------|------|--------|
-| CON-01 | `Agent` (ABC) vs `UAEPAgent` (Protocol) — no unified inheritance | U-Con.1 | Done |
+| CON-01 | `Agent` (ABC) vs `UAEPAgent` (Protocol) - no unified inheritance | U-Con.1 | Done |
 | CON-02 | `RuntimePolicyBundle` built in lab ctx but not applied to `RuntimeConfig` | U-Pol.1 | Done |
-| CON-03 | `PolicyEngine` (NexusLoop) vs `policy_bundle` (RuntimeConfig) — dual systems | U-Pol.2 | Done |
+| CON-03 | `PolicyEngine` (NexusLoop) vs `policy_bundle` (RuntimeConfig) - dual systems | U-Pol.2 | Done |
 | CON-04 | `ToolPlanningService` imports `ToolsAgentConfig` from Tier-0 `tools_agent` | U-Typ.2 | Done |
 | CON-05 | `runtime_state` uses `isinstance(CatalogToolPlanner)` not protocol | U-Typ.3 | Done |
 | CON-06 | `create_lab_interaction_adapter()` uses `IntegrationProfile.lab()` not preset | U-Arch.1 | Done |
-| CON-07 | Skill `skill_ids` resolved at register — no runtime E2E proof in gate | U-Con.3 | Done |
+| CON-07 | Skill `skill_ids` resolved at register - no runtime E2E proof in gate | U-Con.3 | Done |
 
 ### G.3 Typing & hygiene (P2)
 
@@ -534,7 +534,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Audit ID | Finding | U ID | Status |
 |----------|---------|------|--------|
 | LEG-01 | `tools_agent_answer` and ToolsAgent naming in Tier-1 runtime | U-Arch.3 | Done |
-| LEG-02 | `ToolsAgent.run` still full orchestrator — deprecation incomplete | U-Leg.1 | Done |
+| LEG-02 | `ToolsAgent.run` still full orchestrator - deprecation incomplete | U-Leg.1 | Done |
 | LEG-03 | `rag.answers` module remains; tests filtered not removed | U-Leg.2 | Done |
 | LEG-04 | Legacy tool plan booleans (`from_legacy`, `uses_legacy_rag_flag_only`) | U-Leg.3 | Done |
 
@@ -542,7 +542,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 | Audit ID | Finding | U ID | Status |
 |----------|---------|------|--------|
-| DOC-01 | `guides/HARNESS_ENVIRONMENT.md` claims policy bundle wired — lab does not apply bridge | U-Doc.1, U-Pol.1 | Done |
+| DOC-01 | `guides/HARNESS_ENVIRONMENT.md` claims policy bundle wired - lab does not apply bridge | U-Doc.1, U-Pol.1 | Done |
 | DOC-02 | Phase K footer still "after Phase S" in harness docs | U-Doc.3 | Done |
 | CI-01 | harness-smoke omits Phase T unit tests | U-CI.1 | Done |
 | CI-02 | No acceptance test for strict production harness path | U-CI.2 | Done |
@@ -554,7 +554,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 |------|------|---------|
 | 2026-06-01 | U.0.* | Appendix G + Phase U section added to implementation plan (audit → backlog) |
 | 2026-06-02 | §4.1 | Harness completion: U-Leg.1–3, U-Arch.2, U-Typ.4, U-CI.3, harness.skill_registry, research UAEP parity; gate **481** |
-| — | — | *(append row per merged PR)* |
+| - | - | *(append row per merged PR)* |
 
 **Coverage target:** Phase U + §4.1 harness completion backlog **Done** (2026-06-02). **K.1/K.2 deferred** until product prioritization.
 
@@ -567,7 +567,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 ---
 
-## Appendix M — Full architecture audit traceability (Phase FAUDIT-32)
+## Appendix M - Full architecture audit traceability (Phase FAUDIT-32)
 
 **Purpose:** 100% mapping from 32-layer [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §8 audit to concrete **FAUDIT.\*** remediation IDs. **Canonical phase narrative:** [Phase FAUDIT-32](.#phase-faudit-32--full-architecture-audit-closeout).
 
@@ -601,10 +601,10 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 | Theme | Layers affected | Risk |
 |-------|-----------------|------|
-| **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
-| **Dual-path telemetry** | §21, §6 | **L4 Done:** [Phase OBS-BUS](.#phase-obs-bus--unified-observability-spine) — unified journal, `ObservabilityEmitter`, typed payloads, emission coverage, journal export |
+| **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth - do not conflate |
+| **Dual-path telemetry** | §21, §6 | **L4 Done:** [Phase OBS-BUS](.#phase-obs-bus--unified-observability-spine) - unified journal, `ObservabilityEmitter`, typed payloads, emission coverage, journal export |
 | **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
-| **Identity / intake naming** | §3, §4 | Resolved — `TaskEnvelope` in `intergrax/contracts/task_envelope.py`; parity tests in `test_faudit_remediation.py` |
+| **Identity / intake naming** | §3, §4 | Resolved - `TaskEnvelope` in `intergrax/contracts/task_envelope.py`; parity tests in `test_faudit_remediation.py` |
 
 ### M.3 Paydown log
 

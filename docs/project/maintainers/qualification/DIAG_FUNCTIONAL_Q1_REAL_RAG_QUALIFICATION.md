@@ -1,4 +1,4 @@
-# DIAG-FUNCTIONAL-Q1 — Real RAG/C1 Qualification
+# DIAG-FUNCTIONAL-Q1 - Real RAG/C1 Qualification
 
 Qualification gate for Functional Diagnostics on the real UE-11G-C1 / LKW RAG path.
 
@@ -87,7 +87,7 @@ Qualification expectation and DIAG specification do **not** control emitted func
 
 | Case | Intent |
 | --- | --- |
-| Q1-A | Healthy — no false positive |
+| Q1-A | Healthy - no false positive |
 | Q1-B | Controlled real selection failure (ranking query → decoy top-1) |
 | Q1-C | Synthesis failure with correct upstream selection |
 | Q1-D | Missing selection evidence → inconclusive operator view |

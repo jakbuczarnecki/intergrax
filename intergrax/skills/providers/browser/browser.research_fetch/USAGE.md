@@ -42,5 +42,5 @@ Wire `browser_automation` + `search_provider` on integration profile.
 
 ## Related skills
 
-- `research.web_evidence` — search + batch URL fetch
-- `rag.document_ingest` — index captured content
+- `research.web_evidence` - search + batch URL fetch
+- `rag.document_ingest` - index captured content

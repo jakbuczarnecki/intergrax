@@ -4,14 +4,14 @@
 
 ## Purpose
 
-**Web-grounded evidence collection**: search, read individual URLs, and batch-fetch multiple pages. Use when research agents need full page text beyond search snippets — complements `literature_scan` without requiring RAG index hits.
+**Web-grounded evidence collection**: search, read individual URLs, and batch-fetch multiple pages. Use when research agents need full page text beyond search snippets - complements `literature_scan` without requiring RAG index hits.
 
 ## How it works
 
 1. Resolves full `websearch` trio: `query`, `read_url`, `fetch_batch`.
 2. `websearch_executor` or `SearchProvider` binding from Tier-3 integration profile.
 3. Prompt ref: `research.web_evidence.system`.
-4. No index dependency — works with web-only hosts.
+4. No index dependency - works with web-only hosts.
 
 ## How to use
 
@@ -24,7 +24,7 @@ AgentContract(
 )
 ```
 
-Wire `search_provider` integration; enable websearch tools on profile (auto via `extend_tool_profile_for_skills`).
+Wire `search_provider` integration; enable websearch tools on host `ToolProfile`.
 
 ## What you get
 
@@ -44,6 +44,6 @@ Wire `search_provider` integration; enable websearch tools on profile (auto via 
 
 ## Related skills
 
-- `browser.research_fetch` — JS-rendered pages
-- `research.citation_synthesis` — synthesize fetched evidence
-- `legal.case_research` — legal variant with RAG + wiki
+- `browser.research_fetch` - JS-rendered pages
+- `research.citation_synthesis` - synthesize fetched evidence
+- `legal.case_research` - legal variant with RAG + wiki

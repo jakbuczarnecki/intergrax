@@ -1,4 +1,4 @@
-# Application Dependency Model — Plan
+# Application Dependency Model - Plan
 
 **Status:** Active (packaging architecture)  
 **Architecture (1:1):** [`architecture/APPLICATION_DEPENDENCY_MODEL.md`](../../architecture/APPLICATION_DEPENDENCY_MODEL.md)
@@ -31,9 +31,9 @@ Remove manual Dockerfile / script `--extra` assembly as the dependency contract.
 
 ## Isolation semantics (verified)
 
-* **Declaration isolation** — per-app `pyproject.toml` (done).
-* **Dependency graph isolation** — `uv export` / Docker `--project` (done; CI gate).
-* **Physical `.venv` isolation** — not the default monorepo mode; shared root `.venv`
+* **Declaration isolation** - per-app `pyproject.toml` (done).
+* **Dependency graph isolation** - `uv export` / Docker `--project` (done; CI gate).
+* **Physical `.venv` isolation** - not the default monorepo mode; shared root `.venv`
   unless `UV_PROJECT_ENVIRONMENT` is set. Do not claim one `.venv` per app without that.
 
 ## Non-goals

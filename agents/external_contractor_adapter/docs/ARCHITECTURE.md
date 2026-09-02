@@ -1,8 +1,8 @@
-﻿# external_contractor_adapter — architecture
+﻿# external_contractor_adapter - architecture
 
-**Status:** GEC-3…GEC-6 baseline (2026-07-20) — mapping + governed continuation + side-effect policy + descriptive proof profile composition; no transport / partner SDK / receipt persistence  
+**Status:** GEC-3…GEC-6 baseline (2026-07-20) - mapping + governed continuation + side-effect policy + descriptive proof profile composition; no transport / partner SDK / receipt persistence  
 **Vertical:** Governed External Contractor (GEC)  
-**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../../docs/project/technical/platform/governed_external_execution.md) — ownership · lifecycle · invariants
+**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../../docs/project/technical/platform/governed_external_execution.md) - ownership · lifecycle · invariants
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
 **Host architecture:** [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../../../applications/governed_contractor_application/docs/ARCHITECTURE.md)
@@ -32,7 +32,7 @@ The adapter owns discovery, create/correlate, quote/timeline/deliverable/evidenc
 |------------|------|
 | `external_contractor.adapt` | Primary adapter capability (host default) |
 
-Provider feature tokens (`ExternalWorkCapability`) are discovered at runtime — never assumed.
+Provider feature tokens (`ExternalWorkCapability`) are discovered at runtime - never assumed.
 
 ---
 
@@ -45,7 +45,7 @@ Provider feature tokens (`ExternalWorkCapability`) are discovered at runtime —
 | Out | `CommercialQuote` / `MoneyAmount` | For Tier-3 presentation |
 | Out | `ExternalWorkStatus` timeline | Not Nexus `TaskState` |
 | Out | `ExternalDeliverableRef` | Workspace-safe resource URI |
-| Out | Normalized tool/evidence facts | For receipts — not partner hardcoding |
+| Out | Normalized tool/evidence facts | For receipts - not partner hardcoding |
 
 Canonical modules: `intergrax.contracts.external_work`, `intergrax.contracts.money` ([ADR-EXTWORK-001](../../../docs/project/technical/adr/entries/2026-07-20/ADR-EXTWORK-001.md)).
 
@@ -62,7 +62,7 @@ Depends only on the **provider-neutral `ExternalWorkIntegration`** Protocol (GEC
 | Injection | Constructor `external_work=` on the agent; host may supply via `settings.external_work_integration` |
 | Mapping entry | `ExternalWorkAdapter` + `steps/domain_job.py` |
 | Provider neutrality | No `if provider == …` / transport / partner SDK / A2A / HTTP |
-| Fake | `tests/fakes/DeterministicExternalWorkFake` — GEC-3 proof only, not GEC-8/9 stub |
+| Fake | `tests/fakes/DeterministicExternalWorkFake` - GEC-3 proof only, not GEC-8/9 stub |
 
 ---
 
@@ -91,7 +91,7 @@ map quote → surface continuation (QUOTE) → Nexus interrupt (existing)
   → side-effect policy (ACCEPT_QUOTE) → ALLOW → forward via Protocol
 ```
 
-**Identity rule:** task identity and run identity are distinct. Governed continuation is correlated to a real Nexus `run_id` forwarded from the execution context. Consumers must never synthesize run identity from `task_id`. Missing run identity fails closed (structured correlation error) — Tier-2 does not invent Nexus execution identity.
+**Identity rule:** task identity and run identity are distinct. Governed continuation is correlated to a real Nexus `run_id` forwarded from the execution context. Consumers must never synthesize run identity from `task_id`. Missing run identity fails closed (structured correlation error) - Tier-2 does not invent Nexus execution identity.
 
 Adapter APIs: `surface_continuation_blocker` / `with_continuation_surface` / `forward_continuation_evidence`. No `ContinuationRuntime` or quote lifecycle engine here.
 
@@ -102,8 +102,8 @@ Platform contract: `MeaningfulSideEffectRequest` + existing `PolicyDecision` / `
 | Concept | Rule |
 |---------|------|
 | Meaningful side effect | External action that may create commitment, mutation, disclosure, access change, or irreversible consequence |
-| Quote receipt | **Observational** — surfaces governed continuation; does not gate `get_quote` as a mutation |
-| Quote acceptance | **Meaningful** (`ACCEPT_QUOTE`) — policy before `submit_quote_acceptance` |
+| Quote receipt | **Observational** - surfaces governed continuation; does not gate `get_quote` as a mutation |
+| Quote acceptance | **Meaningful** (`ACCEPT_QUOTE`) - policy before `submit_quote_acceptance` |
 | Evidence vs policy | `QuoteAcceptanceEvidence` is continuation evidence, not an allow decision |
 | Fail closed | Missing evaluator / principal / run identity / indeterminate → no provider call |
 | Ownership | Rules in platform/host policy; Tier-2 only describes + composes |
@@ -123,16 +123,16 @@ Provider-bound method classification (`PROVIDER_METHOD_SIDE_EFFECT_CLASS`):
 
 > A proof profile is a description of governed execution, not a receipt, not an audit log, and not an authorization mechanism.
 
-**Invariant:** Every successful policy-authorized meaningful side effect produces a `GovernedProofProfile`. Proof composition is mandatory, not best-effort. Proof-required identities (principal / task / run) are validated before the provider-bound call and reused for policy, execution correlation, and proof — a successful side effect must never return without proof.
+**Invariant:** Every successful policy-authorized meaningful side effect produces a `GovernedProofProfile`. Proof composition is mandatory, not best-effort. Proof-required identities (principal / task / run) are validated before the provider-bound call and reused for policy, execution correlation, and proof - a successful side effect must never return without proof.
 
 After a meaningful side effect succeeds under policy ALLOW, the adapter composes `GovernedProofProfile` ([ADR-GOVERNED-PROOF-001](../../../docs/project/technical/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)):
 
 | Included | Rule |
 |----------|------|
-| principal / tenant / task_id / run_id | Preserved — never invented |
+| principal / tenant / task_id / run_id | Preserved - never invented |
 | action / resource / provider_id | Canonical platform identifiers |
-| `PolicyAction` + rule/reason | Referenced from the ALLOW decision — not recomputed |
-| `GovernanceEvidenceRef` | Points at artifacts (e.g. quote acceptance id) — no payload embed |
+| `PolicyAction` + rule/reason | Referenced from the ALLOW decision - not recomputed |
+| `GovernanceEvidenceRef` | Points at artifacts (e.g. quote acceptance id) - no payload embed |
 | `correlation_id` / `idempotency_key` | Preserved from the request |
 | Optional `ContinuationReason` | When continuation evidence was involved |
 
@@ -174,9 +174,9 @@ Do **not** build an internal orchestration graph that duplicates Nexus.
 | Policy allow/deny | Runtime policy + Tier-3 bundles |
 | HITL quote accept/reject | Runtime HITL + Tier-3 surfaces |
 | Agent Card discovery, quote fetch, status sync, deliverable fetch | **This adapter** |
-| Wallet / payment approval | Tier-3 / runtime — **prohibited here** |
-| Workspace escape / external publication approval | Tier-3 / runtime — **prohibited here** |
-| Reusable contracts | `intergrax` — **not** this package as long-term home |
+| Wallet / payment approval | Tier-3 / runtime - **prohibited here** |
+| Workspace escape / external publication approval | Tier-3 / runtime - **prohibited here** |
+| Reusable contracts | `intergrax` - **not** this package as long-term home |
 
 ---
 

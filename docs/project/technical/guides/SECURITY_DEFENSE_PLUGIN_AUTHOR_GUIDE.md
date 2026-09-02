@@ -4,7 +4,7 @@
 **Architecture owner:** [`docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) (security hook middleware)
 **Platform catalog:** [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) · [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
-This guide is the **implementation workflow** for third-party Security Defense plugins. A defense plugin inspects runtime operations at declared security `HookPoint`s. It is **not** a `PolicyRuleHandler`, **not** a sandbox, and **not** cryptographic attestation — third-party code still runs as **trusted in-process Python**.
+This guide is the **implementation workflow** for third-party Security Defense plugins. A defense plugin inspects runtime operations at declared security `HookPoint`s. It is **not** a `PolicyRuleHandler`, **not** a sandbox, and **not** cryptographic attestation - third-party code still runs as **trusted in-process Python**.
 
 ---
 
@@ -29,7 +29,7 @@ This guide is the **implementation workflow** for third-party Security Defense p
 | D15 | Production checklist | COMPLETE | §15 |
 | D16 | Troubleshooting | COMPLETE | §16 |
 
-**Overall:** **COMPLETE** for the external-EP author path. Local registration uses advanced host composition (`register_security_defense_plugin`) — no Tools-style scaffold.
+**Overall:** **COMPLETE** for the external-EP author path. Local registration uses advanced host composition (`register_security_defense_plugin`) - no Tools-style scaffold.
 
 **Shared truths (all Platform Plugin surfaces):**
 
@@ -41,13 +41,13 @@ This guide is the **implementation workflow** for third-party Security Defense p
 
 ---
 
-## 1. Purpose — Security Defense vs Policy vs Sandbox
+## 1. Purpose - Security Defense vs Policy vs Sandbox
 
 | Surface | Role |
 |---------|------|
 | **Security defense** (`SecurityDefensePlugin`) | Synchronous inspection at UAEP `HookPoint`s; may allow or block (or modify when `fail_mode=FAIL_OPEN`) via `SecurityInspectionResult` |
-| **Policy rule handler** (`PolicyRuleHandler`) | Evaluates declarative policy rules in the PolicyEngine / bundle flow — see [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) |
-| **Built-in V-SEC middleware** | Shipped prompt/tool/tenant defenses wired from `ApplicationSecurityProfile` toggles — not replaced by defense plugins |
+| **Policy rule handler** (`PolicyRuleHandler`) | Evaluates declarative policy rules in the PolicyEngine / bundle flow - see [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) |
+| **Built-in V-SEC middleware** | Shipped prompt/tool/tenant defenses wired from `ApplicationSecurityProfile` toggles - not replaced by defense plugins |
 
 Defense plugins are **hook-level security middleware**. They do not evaluate YAML policy bundles and do not isolate untrusted code.
 
@@ -59,10 +59,10 @@ Import from `intergrax.runtime.security.defense_plugin`:
 
 | Symbol | Role |
 |--------|------|
-| `SecurityDefensePlugin` | `@runtime_checkable` Protocol — author-facing contract |
+| `SecurityDefensePlugin` | `@runtime_checkable` Protocol - author-facing contract |
 | `SecurityInspectionResult` | Pydantic result: `allowed`, `reasons`, `plugin_id`, `hook_point` |
 | `SecurityFailMode` | `FAIL_CLOSED` (default block) or `FAIL_OPEN` (modify with reason, do not block) |
-| `PluginSecurityDefenseMiddleware` | Tier-1 wrapper that hosts invoke — runs `inspect` on a thread pool with timeout |
+| `PluginSecurityDefenseMiddleware` | Tier-1 wrapper that hosts invoke - runs `inspect` on a thread pool with timeout |
 | `DEFAULT_DEFENSE_INSPECTION_TIMEOUT_MS` | Default wall-clock budget (`100` ms) |
 
 `HookContext` and `HookResult` live in `intergrax.runtime.hooks.hook_context`. `HookPoint` enum in `intergrax.runtime.hooks.hook_point`.
@@ -71,7 +71,7 @@ Import from `intergrax.runtime.security.defense_plugin`:
 
 | Attribute | Type | Semantics |
 |-----------|------|-----------|
-| `plugin_id` | `str` | Stable id — used in profile enablement and registry |
+| `plugin_id` | `str` | Stable id - used in profile enablement and registry |
 | `version` | `str` | Author version string |
 | `hook_points` | `frozenset[HookPoint]` | Points this plugin inspects; undeclared points are skipped |
 | `priority` | `int` | Middleware ordering (lower runs earlier in `MiddlewarePipeline`) |
@@ -93,7 +93,7 @@ def inspect(self, point: HookPoint, ctx: HookContext) -> SecurityInspectionResul
 | `get_security_defense_plugin(plugin_id)` | same | Lookup by id (shipped bundles or dynamic registry) |
 | `resolve_security_defense_plugins(plugin_ids, bundle_ids)` | same | Resolve profile ids to plugin instances |
 | `load_security_defense_plugin_report(*, discover_entry_points=True)` | `intergrax.runtime.security.defense_plugin_loader` | Load all `intergrax.security_defenses` EPs; returns typed admission report |
-| `bootstrap_security_providers(*, discover_entry_points=False)` | `intergrax.core.security_bootstrap` | Catalog bootstrap entry — loads EPs when requested |
+| `bootstrap_security_providers(*, discover_entry_points=False)` | `intergrax.core.security_bootstrap` | Catalog bootstrap entry - loads EPs when requested |
 
 Entry point group:
 
@@ -111,7 +111,7 @@ On `ApplicationEnvironmentProfile.security_profile`:
 |-------|------|
 | `defense_bundle_ids` | Shipped bundle ids (e.g. `harness.strict_injection`) |
 | `defense_plugin_ids` | Explicit dynamic / EP plugin ids |
-| Other V-SEC toggles | `prompt_defense_enabled`, `tool_injection_defense_enabled`, … — independent of defense plugins |
+| Other V-SEC toggles | `prompt_defense_enabled`, `tool_injection_defense_enabled`, … - independent of defense plugins |
 
 Enablement is **profile-driven**: discovered EP plugins are registered in the global defense registry but attached to the Nexus middleware pipeline only when their id appears in `defense_plugin_ids` or `defense_bundle_ids` (via `register_application_security_hooks`).
 
@@ -119,7 +119,7 @@ Enablement is **profile-driven**: discovered EP plugins are registered in the gl
 
 ## 3. Minimal implementation
 
-**Test fixture — packaging reference, not production sample.**
+**Test fixture - packaging reference, not production sample.**
 
 ```python
 from intergrax.runtime.hooks.hook_context import HookContext
@@ -216,9 +216,9 @@ register_application_security_hooks(
 )
 ```
 
-`register_security_defense_plugin(..., override=True)` is required to replace a **shipped** bundle id on explicit host registration. EP loader uses `SecurityDefenseAdmissionPolicy` — shipped-id override denied by default (`shipped_id_override="error"`); authorized override requires explicit policy (`allow` / `warn_override`) or `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` (§9).
+`register_security_defense_plugin(..., override=True)` is required to replace a **shipped** bundle id on explicit host registration. EP loader uses `SecurityDefenseAdmissionPolicy` - shipped-id override denied by default (`shipped_id_override="error"`); authorized override requires explicit policy (`allow` / `warn_override`) or `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` (§9).
 
-There is **no** `register_security_defense_plugin` helper exposed as a first-class local-plugin scaffold — parity with Tools is intentionally absent.
+There is **no** `register_security_defense_plugin` helper exposed as a first-class local-plugin scaffold - parity with Tools is intentionally absent.
 
 ---
 
@@ -254,6 +254,18 @@ Defense plugins are **stateless or self-contained** instances. The host does not
 
 ## 9. Registration / discovery
 
+Tool external EP and host-embedded registration converge on one runtime catalog (see [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) §16 D10).
+
+```mermaid
+flowchart TB
+  EP[SecurityDefensePlugin EP] --> AD[Admission policy]
+  AD --> CH[Conflict handling]
+  CH --> REG[Defense registry]
+  REG --> SG[STRICT host gate]
+```
+
+*Interpretation:* EP candidates pass typed admission before registry registration; STRICT host wiring may fail closed on critical reports.
+
 | Step | API |
 |------|-----|
 | Scan EP group | `iter_entry_point_specs("intergrax.security_defenses")` |
@@ -262,7 +274,7 @@ Defense plugins are **stateless or self-contained** instances. The host does not
 
 Default production posture: `discover_entry_points=False` until `INTERGRAX_DISCOVER_PLUGINS` is set (same as other Tier-0 catalogs).
 
-### Conflict semantics — `SecurityDefenseAdmissionPolicy`
+### Conflict semantics - `SecurityDefenseAdmissionPolicy`
 
 `load_security_defense_plugin_report` uses configurable `SecurityDefenseAdmissionPolicy` (production default: fail-closed):
 
@@ -295,7 +307,7 @@ Discovery remains **opt-in** (`discover_entry_points=False` default; `INTERGRAX_
 
 Host applications should gate third-party defense plugins through semantic qualification where the host applies it (`evaluate_package_production_admission` / `require_production_qualification`). Qualification is **not** cryptographic attestation.
 
-**Production package/version qualification:** `QUALIFICATION_STILL_DEFERRED` on the standard host path — automatic production admission is not wired. Semantic host approval remains operator-owned.
+**Production package/version qualification:** `QUALIFICATION_STILL_DEFERRED` on the standard host path - automatic production admission is not wired. Semantic host approval remains operator-owned.
 
 ---
 
@@ -310,7 +322,7 @@ Host applications should gate third-party defense plugins through semantic quali
 | Tenant scope mismatch | any | `BLOCK` (before `inspect`) |
 | `point` not in `hook_points` | any | `ALLOW` (plugin not invoked) |
 
-Plugin exceptions inside `inspect` propagate from the worker thread and are **not** converted to fail-open — treat as runtime failure.
+Plugin exceptions inside `inspect` propagate from the worker thread and are **not** converted to fail-open - treat as runtime failure.
 
 ---
 
@@ -365,13 +377,13 @@ assert get_security_defense_plugin("fixture_ep.defense") is not None
 ## 15. Production checklist
 
 - [ ] `plugin_id` stable and documented for operators
-- [ ] `hook_points` minimal — only points you inspect
+- [ ] `hook_points` minimal - only points you inspect
 - [ ] `fail_mode` explicitly chosen; `FAIL_OPEN` requires product sign-off
 - [ ] `inspect` completes within inspection timeout (default 100 ms)
 - [ ] `INTERGRAX_DISCOVER_PLUGINS` documented for deployment
 - [ ] `ApplicationSecurityProfile.defense_plugin_ids` / `defense_bundle_ids` list only intended plugins
 - [ ] Qualification recorded for third-party wheels (package qualification deferred)
-- [ ] Shipped-id override policy understood — EP cannot silently replace shipped defenses by default
+- [ ] Shipped-id override policy understood - EP cannot silently replace shipped defenses by default
 - [ ] No secrets in EP metadata or `pyproject.toml` plugin tables
 
 ---
@@ -382,12 +394,12 @@ assert get_security_defense_plugin("fixture_ep.defense") is not None
 |---------|----------------|
 | Plugin never runs | Not in `defense_plugin_ids` / `defense_bundle_ids`, or `register_application_security_hooks` not called |
 | Plugin not in registry | Discovery disabled; run `bootstrap_security_providers(discover_entry_points=True)` |
-| Wrong plugin behavior | Check `SecurityDefenseAdmissionPolicy` — shipped override denied by default |
-| `PluginLoadError` at bootstrap | Broken EP import — with default policy, isolated in `failed` report; legacy fail-fast if `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` |
+| Wrong plugin behavior | Check `SecurityDefenseAdmissionPolicy` - shipped override denied by default |
+| `PluginLoadError` at bootstrap | Broken EP import - with default policy, isolated in `failed` report; legacy fail-fast if `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` |
 | Always blocked before `inspect` | Tenant scope mismatch in `runtime_state` |
-| Timeout blocks | `inspect` too slow — optimize or reduce work |
+| Timeout blocks | `inspect` too slow - optimize or reduce work |
 | `ValueError: cannot override shipped` | Host registration without `override=True` on shipped id |
 
 ---
 
-**Reference example gap (DOCS-6):** no installable package under `examples/platform_plugins/` — use `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/` (test fixture only).
+**Reference example gap (DOCS-6):** no installable package under `examples/platform_plugins/` - use `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/` (test fixture only).

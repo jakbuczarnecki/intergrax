@@ -43,7 +43,7 @@ The open curated issues are not a generic implementation backlog. They are a pub
 
 For a time-boxed 5/15/30/60-minute review flow, start with [docs/project/builders/EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md).
 
-## Wave 1 — First evaluator / proof-path feedback
+## Wave 1 - First evaluator / proof-path feedback
 
 | Issue | Purpose | Best for |
 |-------|---------|----------|
@@ -53,7 +53,7 @@ For a time-boxed 5/15/30/60-minute review flow, start with [docs/project/builder
 | [#189 Attestation integration feedback: BoundaryAttest case study](https://github.com/jakbuczarnecki/intergrax/issues/189) | Feedback on the BoundaryAttest case study and Execution Boundary Export pattern | Attestation integrators, auditability builders, governance engineers |
 | [#190 Design partner interest: governed agent applications](https://github.com/jakbuczarnecki/intergrax/issues/190) | Qualified design-partner interest for governed agent applications | AI product teams, platform teams, agent application builders |
 
-## Wave 2 — Architecture clarity and integration surfaces
+## Wave 2 - Architecture clarity and integration surfaces
 
 | Issue | Purpose | Best for |
 |-------|---------|----------|
@@ -62,7 +62,7 @@ For a time-boxed 5/15/30/60-minute review flow, start with [docs/project/builder
 | [#193 Design partner interest: Local Knowledge Workspace alpha](https://github.com/jakbuczarnecki/intergrax/issues/193) | Design-partner feedback on the Local Knowledge Workspace alpha direction | Product teams, local knowledge workflow evaluators, controlled-RAG users |
 | [#194 Integration feedback: MCP as a controlled Intergrax task surface](https://github.com/jakbuczarnecki/intergrax/issues/194) | Feedback on MCP as a controlled task or tool surface | MCP reviewers, integration builders, agent tool-surface evaluators |
 
-## Wave 3 — Architecture discussion
+## Wave 3 - Architecture discussion
 
 | Issue | Purpose | Best for |
 |-------|---------|----------|
@@ -75,7 +75,7 @@ For a time-boxed 5/15/30/60-minute review flow, start with [docs/project/builder
 | [#211 Architecture discussion: governed RAG and memory boundaries](https://github.com/jakbuczarnecki/intergrax/issues/211) | Validate RAG / memory / context boundaries | RAG engineers, knowledge workflow evaluators, governance engineers |
 | [#212 Architecture discussion: agent contracts and production readiness](https://github.com/jakbuczarnecki/intergrax/issues/212) | Validate agents as contracted lifecycle-managed components | Agent platform engineers, AI product teams, architecture reviewers |
 
-## Wave 4 — Product / application validation
+## Wave 4 - Product / application validation
 
 | Issue | Purpose | Best for |
 |-------|---------|----------|
@@ -86,7 +86,7 @@ For a time-boxed 5/15/30/60-minute review flow, start with [docs/project/builder
 | [#217 Product discussion: ProblemRadar and VendorDiscovery agents](https://github.com/jakbuczarnecki/intergrax/issues/217) | Validate business problem discovery and vendor discovery workflows | Founders, product strategists, B2B platform evaluators |
 | [#218 Product discussion: Lab application as universal proof environment](https://github.com/jakbuczarnecki/intergrax/issues/218) | Validate the lab application as a universal public proof environment | First-time evaluators, platform engineers, developer experience reviewers |
 
-## Wave 5 — Deep technical discussion
+## Wave 5 - Deep technical discussion
 
 | Issue | Purpose | Best for |
 |-------|---------|----------|
@@ -134,12 +134,12 @@ For commercial licensing, production use, partnerships, or permission requests, 
 
 ## Source documents
 
-- [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) — maintainer handling rules, close/keep-open criteria, escalation rules, and response templates.
-- [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — expanded architecture, product-validation, and deep technical discussion wave plan.
-- [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) — strategy and draft bodies for curated public issues.
-- [curated_public_issues.yml](curated_public_issues.yml) — single canonical source data for active and expanded public issue automation.
-- [create_curated_issues.py](../../../../scripts/public_adoption/create_curated_issues.py) — maintainer utility for dry-run, sync-check, and explicit issue creation.
-- [manage_curated_issues.bat](../../../../scripts/public_adoption/manage_curated_issues.bat) — Windows wrapper for processing all curated issue waves from the canonical YAML.
-- [docs/project/overview/ROADMAP.md](../../overview/ROADMAP.md) — public adoption roadmap and collaboration priorities.
-- [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) — collaboration model and permission boundaries.
-- [docs/project/builders/EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md) — time-boxed evaluation guide for external reviewers.
+- [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) - maintainer handling rules, close/keep-open criteria, escalation rules, and response templates.
+- [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) - expanded architecture, product-validation, and deep technical discussion wave plan.
+- [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) - strategy and draft bodies for curated public issues.
+- [curated_public_issues.yml](curated_public_issues.yml) - single canonical source data for active and expanded public issue automation.
+- [create_curated_issues.py](../../../../scripts/public_adoption/create_curated_issues.py) - maintainer utility for dry-run, sync-check, and explicit issue creation.
+- [manage_curated_issues.bat](../../../../scripts/public_adoption/manage_curated_issues.bat) - Windows wrapper for processing all curated issue waves from the canonical YAML.
+- [docs/project/overview/ROADMAP.md](../../overview/ROADMAP.md) - public adoption roadmap and collaboration priorities.
+- [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) - collaboration model and permission boundaries.
+- [docs/project/builders/EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md) - time-boxed evaluation guide for external reviewers.

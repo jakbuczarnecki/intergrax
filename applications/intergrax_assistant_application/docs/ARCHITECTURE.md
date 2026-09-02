@@ -1,6 +1,6 @@
-﻿# Intergrax Assistant (IAA) — architecture
+﻿# Intergrax Assistant (IAA) - architecture
 
-**Status:** Architecture baseline v1 (2026-06-08) — lab profile scaffold + hub-and-spoke design  
+**Status:** Architecture baseline v1 (2026-06-08) - lab profile scaffold + hub-and-spoke design  
 **Tier:** Tier-3 application (`intergrax_assistant_application`)  
 **Hub agent:** Tier-2 `intergrax_assistant` (`platform.assist`)  
 **ADR:** [`adr/ADR-INTERGRAX_ASSISTANT-001.md`](adr/ADR-INTERGRAX_ASSISTANT-001.md)
@@ -26,12 +26,12 @@
 
 ## 1. Strategic purpose
 
-**Intergrax Assistant (IAA)** is a **Harness-native conversational environment** — a ChatGPT-shaped product shell that exercises the full Intergrax Agent OS:
+**Intergrax Assistant (IAA)** is a **Harness-native conversational environment** - a ChatGPT-shaped product shell that exercises the full Intergrax Agent OS:
 
-- **Swappable LLM** — local Ollama by default; any registered adapter via env (OpenAI, Groq, Anthropic, vLLM, …).
-- **Full harness planes** — session memory, user LTM, RAG, tools, skills, integrations, trace, policy, HITL hooks.
-- **Hub-and-spoke agents** — one concierge agent for everyday chat; optional delegation to platform specialists (Legal, Research, …) via Nexus — never direct agent-to-agent calls.
-- **Experimentation vehicle** — validate architecture ideas (delegation, memory, local-first) before promoting to a product profile.
+- **Swappable LLM** - local Ollama by default; any registered adapter via env (OpenAI, Groq, Anthropic, vLLM, …).
+- **Full harness planes** - session memory, user LTM, RAG, tools, skills, integrations, trace, policy, HITL hooks.
+- **Hub-and-spoke agents** - one concierge agent for everyday chat; optional delegation to platform specialists (Legal, Research, …) via Nexus - never direct agent-to-agent calls.
+- **Experimentation vehicle** - validate architecture ideas (delegation, memory, local-first) before promoting to a product profile.
 
 IAA is **not** a replacement for domain products (LKW, DSW, Legal SKU). It is the **general harness chat lab** for platform exploration.
 
@@ -46,7 +46,7 @@ IAA is **not** a replacement for domain products (LKW, DSW, Legal SKU). It is th
 | **Tier-3 lab host** | Own manifest, env, Docker, HTTP + MCP on port `8096` |
 | **Conversational entry** | `POST /v1/intergrax_assistant/run` with `capability=platform.assist` |
 | **LLM-agnostic** | `INTERGRAX_LLM_PROVIDER` + `INTERGRAX_LLM_MODEL` on environment profile |
-| **Memory-aware** | Harness memory flags from `lab_defaults()` — session, user/org, task KV, RAG |
+| **Memory-aware** | Harness memory flags from `lab_defaults()` - session, user/org, task KV, RAG |
 | **Delegation-ready** | `INTERGRAX_ASSISTANT_ENGINE_PLANNER=true` → `planner_kind=engine` |
 
 ### 2.2 What IAA is not
@@ -54,13 +54,13 @@ IAA is **not** a replacement for domain products (LKW, DSW, Legal SKU). It is th
 | Not this | Why |
 |----------|-----|
 | Monolithic “god agent” with every tool | Policy + LLM tool-selection limits; curated allow-list on contract |
-| Nested harness / agent spawning agents | Forbidden — Nexus `DelegationSpec` only (§42.14.3) |
+| Nested harness / agent spawning agents | Forbidden - Nexus `DelegationSpec` only (§42.14.3) |
 | Production multi-tenant SaaS | Lab profile; product promotion is a later wave |
 | Replacement for `lab_application` | Lab = debug surface for many agents; IAA = chat-shaped harness product experiment |
 
 ---
 
-## 3. Agent roster — hub and optional specialists
+## 3. Agent roster - hub and optional specialists
 
 ### 3.1 Topology
 
@@ -88,7 +88,7 @@ IAA is **not** a replacement for domain products (LKW, DSW, Legal SKU). It is th
 
 | Agent | Capability | Default mounted | Env flag |
 |-------|------------|-----------------|----------|
-| `intergrax_assistant` | `platform.assist` | **Always** | — |
+| `intergrax_assistant` | `platform.assist` | **Always** | - |
 | `echo` | `echo.basic` | No | `INTERGRAX_ASSISTANT_INCLUDE_ECHO=true` |
 | `legal` | `legal.review` | No | `INTERGRAX_ASSISTANT_INCLUDE_LEGAL=true` |
 | `research` | `research.web_search`, `research.pipeline` | No | `INTERGRAX_ASSISTANT_INCLUDE_RESEARCH=true` |
@@ -100,14 +100,14 @@ Manifest builder: `manifest.py` → `build_intergrax_assistant_manifest(settings
 
 ## 4. LLM adapter selection (key value proposition)
 
-IAA resolves the LLM at **Tier-3 environment profile** — not inside the hub agent.
+IAA resolves the LLM at **Tier-3 environment profile** - not inside the hub agent.
 
 | Mechanism | Location |
 |-----------|----------|
 | Profile factory | `host/environment_profile.py` |
 | Env resolution | `llm_profile_from_env(prefix=INTERGRAX_LLM)` |
 | Adapter creation | `ApplicationEnvironmentProfile.llm_profile.create_adapter()` via harness host runtime |
-| Default (lab) | `ollama` + `llama3.1:latest` — fully local when Ollama is running |
+| Default (lab) | `ollama` + `llama3.1:latest` - fully local when Ollama is running |
 
 ### 4.1 Local-first example
 
@@ -168,14 +168,14 @@ Environment profile id: `intergrax_assistant.harness_lab`.
                                 ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  TIER-1  Nexus Agent OS                                                   │
-│  1. INTAKE          — task + tenant/user/session metadata                 │
-│  2. CLASSIFICATION  — single-agent vs multi-agent vs specialist route       │
-│  3. PLANNING        — engine planner (LLM JSON plan) or default path       │
-│  4. GRAPH EXEC      — hub node and/or DelegationSpec child nodes            │
-│  5. CONTEXT BUILD   — history + RAG + user LTM + budget trim              │
-│  6. AGENT ENGINE    — UAEP steps on selected agent                          │
-│  7. TOOL RUNTIME    — policy-gated tool/skill execution                     │
-│  8. MERGE           — FinalResponseComposer → client JSON                   │
+│  1. INTAKE          - task + tenant/user/session metadata                 │
+│  2. CLASSIFICATION  - single-agent vs multi-agent vs specialist route       │
+│  3. PLANNING        - engine planner (LLM JSON plan) or default path       │
+│  4. GRAPH EXEC      - hub node and/or DelegationSpec child nodes            │
+│  5. CONTEXT BUILD   - history + RAG + user LTM + budget trim              │
+│  6. AGENT ENGINE    - UAEP steps on selected agent                          │
+│  7. TOOL RUNTIME    - policy-gated tool/skill execution                     │
+│  8. MERGE           - FinalResponseComposer → client JSON                   │
 └───────────────────────────────┬──────────────────────────────────────────┘
                                 ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -198,13 +198,13 @@ Environment profile id: `intergrax_assistant.harness_lab`.
 | **5** | `EngineBackedNexusPlanner` | When needed, LLM proposes plan with delegation edges to mounted specialists |
 | **6** | `GraphExecutor` | Runs hub `intergrax_assistant` node; child nodes get isolated `task_id/delegation/{node_id}` memory |
 | **7** | `ContextManager` | Assembles turn context: session history, RAG hits, user facts, tool catalog slice |
-| **8** | `IntergraxAssistantAgent` | UAEP pipeline — LLM turn + optional `CatalogToolPlanner` tool loop |
+| **8** | `IntergraxAssistantAgent` | UAEP pipeline - LLM turn + optional `CatalogToolPlanner` tool loop |
 | **9** | `ToolRuntime` | Executes allowed tools (rag.retrieve, websearch.query, sandbox.exec, …) under policy |
 | **10** | Specialist node (optional) | Legal/Research agent runs in delegated namespace; artifacts in `SharedTaskContext` |
 | **11** | `FinalResponseComposer` | Merges node outputs (`merge_strategy=last_wins` for chat) |
 | **12** | Client | Receives `state`, `answer`, `run_id` for trace inspection via `/debug/*` |
 
-### 6.3 Mermaid — decision flow
+### 6.3 Mermaid - decision flow
 
 ```mermaid
 flowchart TD
@@ -273,7 +273,7 @@ uv run pytest applications/intergrax_assistant_application/tests -q
 
 - Core `Intergrax-ai` from repo root (`uv sync`)
 - Local LLM: Ollama running when `INTERGRAX_LLM_PROVIDER=ollama`
-- Optional cloud keys per provider — see `docs/project/architecture/LLM_ADAPTERS.md`
+- Optional cloud keys per provider - see `docs/project/architecture/LLM_ADAPTERS.md`
 - Deploy triad: `docker`, `BUILD_AND_DEPLOY.md`
 
 ---

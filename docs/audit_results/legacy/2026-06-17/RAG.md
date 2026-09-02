@@ -1,4 +1,4 @@
-# Audit result — `RAG`
+# Audit result - `RAG`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -32,9 +32,9 @@ uv run pytest tests/unit/rag/ -q
 
 ## Backlog P2–P4 (deferred)
 
-- Beta→stable manifest promotion — P2 ops
-- M-RAG.58 AHI adaptive routing — Frozen (AHI domain)
-- Ops soak gates for production SLO — P3
+- Beta→stable manifest promotion - P2 ops
+- M-RAG.58 AHI adaptive routing - Frozen (AHI domain)
+- Ops soak gates for production SLO - P3
 
 ---
 

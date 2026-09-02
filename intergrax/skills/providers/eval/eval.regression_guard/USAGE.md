@@ -28,4 +28,4 @@ Governed access to: `eval.compare_releases`, `eval.summarize_release`, `notify.s
 
 ## Related skills
 
-- Other `eval` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `eval` bundle skills - see bundle [USAGE.md](../USAGE.md)

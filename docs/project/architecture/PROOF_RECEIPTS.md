@@ -1,10 +1,10 @@
-# Proof Receipts — Architecture
+# Proof Receipts - Architecture
 
 **Status:** Canonical architecture (domain pair 1:1)
 **Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)
-**Last updated:** 2026-07-19 — **LKW.7C2 closed** (PROOF-RECEIPTS-1E remains closed)
+**Last updated:** 2026-07-19 - **LKW.7C2 closed** (PROOF-RECEIPTS-1E remains closed)
 
 ---
 
@@ -21,9 +21,9 @@ The source of truth is a **`ProofReceipt`** document persisted through the provi
 | Layer | Owns |
 |-------|------|
 | **Platform** | `ProofReceipt` model (`intergrax/proofs/receipts/contracts.py`); `ProofReceiptStore` engine (`intergrax/proofs/receipts/store.py`); `DocumentRecord` mapping (`intergrax/proofs/receipts/document_store.py`); `DocumentStore` contract; integration catalog/profile selection |
-| **LKW (Tier-3)** | Proof workload execution; building domain/provider evidence payloads; invoking platform persistence — **no** direct MongoDB/pymongo imports |
+| **LKW (Tier-3)** | Proof workload execution; building domain/provider evidence payloads; invoking platform persistence - **no** direct MongoDB/pymongo imports |
 | **Providers** | Vendor backends behind `DocumentStore` (MongoDB default for live proof path; Cassandra, DynamoDB, … as future alternatives) |
-| **Reviewer docs** | Human runbooks and step guides only — never authoritative proof storage |
+| **Reviewer docs** | Human runbooks and step guides only - never authoritative proof storage |
 
 ---
 
@@ -35,14 +35,14 @@ Application proof workload (e.g. LKW)
   → ProofReceiptStore.put()
   → DocumentStore contract (provider-neutral data surface)
   → DocumentStoreVendorIntegrationContract (platform integration boundary)
-  → concrete vendor integration (MongoDB, Cassandra, DynamoDB — PROOF-RECEIPTS-1C)
+  → concrete vendor integration (MongoDB, Cassandra, DynamoDB - PROOF-RECEIPTS-1C)
   → vendor SDK / backend
   → persisted structured receipt
 ```
 
-`DocumentStore` is the **provider-neutral data surface** — `get`, `put`, `delete`, `query`, and `close` without vendor-specific types. `DocumentStoreVendorIntegrationContract` is the **platform integration boundary** between that surface and concrete vendors. It mirrors `ObservabilityVendorIntegrationContract` used for Elasticsearch/Sentry-style observability proofs: category-specific config, `supported_operations`, `for_provider(...)`, safe `public_view()`, and `as_document_store()` for vendor implementations.
+`DocumentStore` is the **provider-neutral data surface** - `get`, `put`, `delete`, `query`, and `close` without vendor-specific types. `DocumentStoreVendorIntegrationContract` is the **platform integration boundary** between that surface and concrete vendors. It mirrors `ObservabilityVendorIntegrationContract` used for Elasticsearch/Sentry-style observability proofs: category-specific config, `supported_operations`, `for_provider(...)`, safe `public_view()`, and `as_document_store()` for vendor implementations.
 
-MongoDB remains the **default/natural live vendor** for ProofReceipt storage. **PROOF-RECEIPTS-1D** adds the optional LKW Docker overlay (`docker-compose.mongodb.yml`) with `lkw-mongodb`, `lkw-mongo-express`, and a platform-backed `DocumentStore` smoke path — **closed**. The smoke record is infrastructure connectivity data, not a `ProofReceipt`. LKW must **never** depend on MongoDB or pymongo directly — only on `ProofReceiptStore` → `DocumentStore` (recording in **PROOF-RECEIPTS-1E**).
+MongoDB remains the **default/natural live vendor** for ProofReceipt storage. **PROOF-RECEIPTS-1D** adds the optional LKW Docker overlay (`docker-compose.mongodb.yml`) with `lkw-mongodb`, `lkw-mongo-express`, and a platform-backed `DocumentStore` smoke path - **closed**. The smoke record is infrastructure connectivity data, not a `ProofReceipt`. LKW must **never** depend on MongoDB or pymongo directly - only on `ProofReceiptStore` → `DocumentStore` (recording in **PROOF-RECEIPTS-1E**).
 
 This mirrors existing platform integration proofs:
 
@@ -77,7 +77,7 @@ Minimum fields:
 | `guardrails` | Negative controls (no mock queue, no in-memory bypass, …) |
 | `metadata` | Extension bag |
 
-The model is **generic** — not hardcoded to LKW.4E or LKW only.
+The model is **generic** - not hardcoded to LKW.4E or LKW only.
 
 ---
 
@@ -102,12 +102,12 @@ Mapping is **provider-neutral**. No MongoDB-specific field names or BSON types l
 
 `ProofReceiptStore` depends only on `DocumentStore`:
 
-- `put(receipt)` — upsert through `DocumentStore.put`
-- `get(application_id, proof_kind, run_id)` — point read
-- `query(application_id, proof_kind=…, limit=…)` — partition query with optional `row_key_prefix`
-- `close()` — delegate resource release
+- `put(receipt)` - upsert through `DocumentStore.put`
+- `get(application_id, proof_kind, run_id)` - point read
+- `query(application_id, proof_kind=…, limit=…)` - partition query with optional `row_key_prefix`
+- `close()` - delegate resource release
 
-Host/application wiring selects the `DocumentStore` implementation from **`IntegrationProfile`** / config via a concrete `DocumentStoreVendorIntegrationContract` subclass — the same layered pattern as Kafka message bus, Sentry observability, and Elasticsearch timeline proofs.
+Host/application wiring selects the `DocumentStore` implementation from **`IntegrationProfile`** / config via a concrete `DocumentStoreVendorIntegrationContract` subclass - the same layered pattern as Kafka message bus, Sentry observability, and Elasticsearch timeline proofs.
 
 ---
 
@@ -117,11 +117,11 @@ Host/application wiring selects the `DocumentStore` implementation from **`Integ
 
 | Artifact | Role |
 |----------|------|
-| `DocumentStoreVendorIntegrationContract` | Platform-owned category contract deriving from `PlatformIntegrationContract` — **only active `document_store` contract** (PROOF-RECEIPTS-1C) |
+| `DocumentStoreVendorIntegrationContract` | Platform-owned category contract deriving from `PlatformIntegrationContract` - **only active `document_store` contract** (PROOF-RECEIPTS-1C) |
 | `DocumentStoreVendorIntegrationConfig` | Typed, secret-safe config (`database_name`, `collection_name`, `namespace`) |
 | `DocumentStoreVendorOperation` | Declared operations: `get`, `put`, `delete`, `query`, `close` |
 | `DocumentStoreVendorKind` | Well-known vendor slugs (`mongodb`, `cassandra`, …) |
-| `as_document_store()` | Boundary method — MongoDB, Cassandra, and DynamoDB return existing `DocumentStore` adapters |
+| `as_document_store()` | Boundary method - MongoDB, Cassandra, and DynamoDB return existing `DocumentStore` adapters |
 
 Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`. Integration identity: `{provider_id}:document_store` (for example `mongodb:document_store`).
 
@@ -131,13 +131,13 @@ Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`. Integration identity: `{p
 
 1. **No pymongo outside the MongoDB provider package** (`intergrax/integrations/providers/document_store/mongodb`).
 2. **LKW must not import pymongo** or call MongoDB APIs directly.
-3. **No LKW-only MongoDB helper** — persistence goes through `ProofReceiptStore` → `DocumentStore`.
-4. **No markdown as source of truth** — `.proof_docs` and reviewer guides are operational aids only.
-5. **No in-memory/fake store as live proof acceptance** — unit-test doubles may validate the store contract only.
+3. **No LKW-only MongoDB helper** - persistence goes through `ProofReceiptStore` → `DocumentStore`.
+4. **No markdown as source of truth** - `.proof_docs` and reviewer guides are operational aids only.
+5. **No in-memory/fake store as live proof acceptance** - unit-test doubles may validate the store contract only.
 
 ---
 
-## I. PROOF-RECEIPTS-1D — LKW MongoDB Docker proof stack (closed)
+## I. PROOF-RECEIPTS-1D - LKW MongoDB Docker proof stack (closed)
 
 **Overlay:** `applications/local_workspace_application/docker/docker-compose.mongodb.yml`
 **Runner:** `applications/local_workspace_application/scripts/run-lkw-mongodb-proof-stack.bat`
@@ -161,7 +161,7 @@ Reviewer (inspection only)
 
 ---
 
-## J. PROOF-RECEIPTS-1E — LKW background-task receipt recording (closed)
+## J. PROOF-RECEIPTS-1E - LKW background-task receipt recording (closed)
 
 **Workload proof:** `applications/local_workspace_application/scripts/run-lkw-background-task-proof.py`
 **Runner:** `applications/local_workspace_application/scripts/run-lkw-background-task-proof.bat` (Kafka + MongoDB overlays)
@@ -186,7 +186,7 @@ LKW background-task workload
 
 ---
 
-## K. LKW.7C2 — File watcher persistent-search receipt
+## K. LKW.7C2 - File watcher persistent-search receipt
 
 **Workload proof:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.py`
 **Runner:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.bat`
@@ -221,7 +221,7 @@ After PROOF-RECEIPTS-1C–1E and LKW.7C2 closeout:
 1. Run LKW proof workload (background task or file-watcher proof with receipt recording).
 2. Application records a `ProofReceipt` through `ProofReceiptStore`.
 3. `IntegrationProfile` selects `document_store=mongodb`.
-4. Reviewer inspects receipt in **Mongo Express** / Mongo UI — not by opening markdown closeout files.
+4. Reviewer inspects receipt in **Mongo Express** / Mongo UI - not by opening markdown closeout files.
 
 Public Steps 9 / Steps 12–13 in `LKW_PLATFORM_PROOF.md` document Mongo Express receipt inspection.
 
@@ -244,13 +244,13 @@ Public Steps 9 / Steps 12–13 in `LKW_PLATFORM_PROOF.md` document Mongo Express
 
 ## N. Protocol v2 proof receipt target invariants (2026-08-18)
 
-Accepted [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–03** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence. Coordinate **LKW-PROOF-04** / **LKW-PROOF-05** manifest/runner obligations in shared proof infrastructure.
+Accepted [`LKW_PRODUCT_PROOF`](../../audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–03** (2026-08-21). Remediation **ACCEPTED / PLANNED** - **not implemented** by audit persistence. Coordinate **LKW-PROOF-04** / **LKW-PROOF-05** manifest/runner obligations in shared proof infrastructure.
 
-1. **Exact source/build identity** — canonical `ProofReceipt` and public-evidence promotion require mandatory execution provenance: source revision and/or tree digest, application/build identity, and proof contract/version beyond receipt schema alone (**LKW-PROOF-02**).
-2. **Dirty-state qualification** — dirty worktree disqualifies public-evidence eligibility / `NOT_PUBLIC_EVIDENCE` promotion; local diagnostic runs may remain allowed (**LKW-PROOF-01**).
-3. **Environment/profile fingerprint** — record relevant environment/profile fingerprint with each receipt and suite receipt (**LKW-PROOF-02**).
-4. **Historical vs current/stale evidence** — historical PASS receipts remain valid historical evidence; **current** certification requires validity envelope match; relevant source/dependency change → `STALE_REVALIDATION_REQUIRED` — never rewrite old PASS as false (**LKW-PROOF-03**).
-5. **Certification validity/invalidation** — certification matrices and public claims must bind to exact source revision, dependency/proof closure digest, proof contract version, and environment profile (**LKW-PROOF-03**).
-6. **No mutable current claim from old receipt alone** — no current product/certification claim may be derived solely from an old PASS receipt without freshness qualification (**LKW-PROOF-03**).
+1. **Exact source/build identity** - canonical `ProofReceipt` and public-evidence promotion require mandatory execution provenance: source revision and/or tree digest, application/build identity, and proof contract/version beyond receipt schema alone (**LKW-PROOF-02**).
+2. **Dirty-state qualification** - dirty worktree disqualifies public-evidence eligibility / `NOT_PUBLIC_EVIDENCE` promotion; local diagnostic runs may remain allowed (**LKW-PROOF-01**).
+3. **Environment/profile fingerprint** - record relevant environment/profile fingerprint with each receipt and suite receipt (**LKW-PROOF-02**).
+4. **Historical vs current/stale evidence** - historical PASS receipts remain valid historical evidence; **current** certification requires validity envelope match; relevant source/dependency change → `STALE_REVALIDATION_REQUIRED` - never rewrite old PASS as false (**LKW-PROOF-03**).
+5. **Certification validity/invalidation** - certification matrices and public claims must bind to exact source revision, dependency/proof closure digest, proof contract version, and environment profile (**LKW-PROOF-03**).
+6. **No mutable current claim from old receipt alone** - no current product/certification claim may be derived solely from an old PASS receipt without freshness qualification (**LKW-PROOF-03**).
 
-LKW and product docs consume this authority — they do **not** define a private receipt contract. Closed PROOF-RECEIPTS-1A–1E delivery facts remain historical; this block extends target design only.
+LKW and product docs consume this authority - they do **not** define a private receipt contract. Closed PROOF-RECEIPTS-1A–1E delivery facts remain historical; this block extends target design only.

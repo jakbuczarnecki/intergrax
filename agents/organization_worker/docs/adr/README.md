@@ -1,4 +1,4 @@
-﻿# organization_worker agent — Architecture Decision Records
+﻿# organization_worker agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/organization_worker`)
 
@@ -36,7 +36,7 @@ ADR-ORGANIZATION_WORKER-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

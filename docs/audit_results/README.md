@@ -19,8 +19,8 @@
 
 | Artifact | Role |
 |----------|------|
-| **Root `README.md` (this file)** | Global campaign registry — discover latest campaign, latest `COMPLETE` campaign, active campaign |
-| **Campaign `README.md`** | Current source of truth for that campaign — metadata, layer register, finding register, rollup, remediation/verification trace |
+| **Root `README.md` (this file)** | Global campaign registry - discover latest campaign, latest `COMPLETE` campaign, active campaign |
+| **Campaign `README.md`** | Current source of truth for that campaign - metadata, layer register, finding register, rollup, remediation/verification trace |
 | **Per-layer report** (`<LAYER_CODE>.md`) | Immutable historical observation at exact `audited_sha` |
 | **Architecture** | Target design |
 | **Implementation plan** | Implementation work unit |
@@ -35,7 +35,7 @@ docs/audit_results/
   AUDIT_PROTOCOL.md
   AUDIT_REMEDIATION_PROTOCOL.md
   <CAMPAIGN_DIR>/
-    README.md              # REQUIRED — campaign master register AND rollup
+    README.md              # REQUIRED - campaign master register AND rollup
     <LAYER_CODE>.md        # immutable per-layer snapshot at exact audited_sha
     ...
   legacy/
@@ -53,7 +53,7 @@ docs/audit_results/
 - **Campaign `README.md`** = master register: metadata, layer register, finding register (authoritative current lifecycle), **audit rollup** (frozen at audit `COMPLETE`), **remediation rollup** (mutable post-audit), remediation/verification trace. **No separate `CAMPAIGN_SUMMARY.md`.**
 - **Per-layer files** = immutable audit snapshots bound to an exact `audited_sha`. Completed historical reports are **not rewritten** to advance remediation status or pretend a problem never existed.
 - **Remediation / verification evidence** is tracked in the campaign finding register, remediation rollup, and via [AUDIT_REMEDIATION_PROTOCOL.md](AUDIT_REMEDIATION_PROTOCOL.md). Remediation normally begins against a `COMPLETE` campaign; remediation completion does **not** change campaign status or frozen audit baseline fields.
-- **Later periodic audits** create new dated campaigns; they do not silently overwrite prior evidence. Closing all findings does **not** retroactively change a prior campaign's `overall_verdict` — a fresh audit determines current platform verdict independently.
+- **Later periodic audits** create new dated campaigns; they do not silently overwrite prior evidence. Closing all findings does **not** retroactively change a prior campaign's `overall_verdict` - a fresh audit determines current platform verdict independently.
 
 ---
 
@@ -61,15 +61,15 @@ docs/audit_results/
 
 | Campaign | started_at | completed_at | status | campaign_start_sha | campaign_end_sha | scope | overall_verdict |
 |----------|------------|--------------|--------|--------------------|------------------|-------|-----------------|
-| [2026-08-20](2026-08-20/README.md) | 2026-08-20 | 2026-08-20 | COMPLETE | `654a7c0e3fe823a43a2620645848248023e1c64e` | publication commit (COMM-5F) | Flagship proof acceptance — COMM-5 governed hybrid knowledge (CTO / principal architect) | B — DIFFERENTIATED COMPOSITION (72/100) |
-| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | `2026-08-21T10:01:40Z` | COMPLETE | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | `edb744940162ecaf317af71a918bb1cac98d19e3` | Platform audit — 36 completed audit units; 217 ACCEPTED findings (8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW) | `FAIL` |
+| [2026-08-20](2026-08-20/README.md) | 2026-08-20 | 2026-08-20 | COMPLETE | `654a7c0e3fe823a43a2620645848248023e1c64e` | publication commit (COMM-5F) | Flagship proof acceptance - COMM-5 governed hybrid knowledge (CTO / principal architect) | B - DIFFERENTIATED COMPOSITION (72/100) |
+| [2026-08-18](2026-08-18/README.md) | 2026-08-18 | `2026-08-21T10:01:40Z` | COMPLETE | `9658224495c775fcefd55ab52bbcc7a94c84fb50` | `edb744940162ecaf317af71a918bb1cac98d19e3` | Platform audit - 36 completed audit units; 217 ACCEPTED findings (8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW) | `FAIL` |
 
 ### Registry lifecycle
 
 **On campaign initialization:**
 
 - Create `docs/audit_results/<CAMPAIGN_DIR>/` and campaign `README.md`.
-- Immediately add **one** row here with `status` = `IN_PROGRESS`, `campaign_end_sha` = `—`, `completed_at` = `—`, `overall_verdict` = `—`.
+- Immediately add **one** row here with `status` = `IN_PROGRESS`, `campaign_end_sha` = `-`, `completed_at` = `-`, `overall_verdict` = `-`.
 - Never append a duplicate registry row for the same `campaign_id`.
 
 **On audit campaign completion:**
@@ -93,9 +93,9 @@ This root `README.md` is:
 
 ### Legacy vs protocol v2
 
-Results under [legacy/](legacy/README.md) were produced under superseded protocols (Legacy Audit Protocol v1, plan-satellite audit registers). They are useful for historical comparison only — **not** evidence of current platform maturity.
+Results under [legacy/](legacy/README.md) were produced under superseded protocols (Legacy Audit Protocol v1, plan-satellite audit registers). They are useful for historical comparison only - **not** evidence of current platform maturity.
 
-**Protocol v2.2** (this tree, from 2026-08-18) is model-driven and periodic. v2.2 additionally requires provider/backend abstraction discipline, dependency inversion, concrete vendor isolation behind provider adapters, and proof that consumers use abstractions rather than paper interfaces. Latest platform audit campaign: [2026-08-18](2026-08-18/README.md) — `COMPLETE` at `2026-08-21T10:01:40Z`, **FAIL** (36 audit units; 217 ACCEPTED findings: 8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW); remediation not begun. Campaign directory date is campaign start date; per-layer reports carry `layer_audited_at` when layer audit date differs.
+**Protocol v2.2** (this tree, from 2026-08-18) is model-driven and periodic. v2.2 additionally requires provider/backend abstraction discipline, dependency inversion, concrete vendor isolation behind provider adapters, and proof that consumers use abstractions rather than paper interfaces. Latest platform audit campaign: [2026-08-18](2026-08-18/README.md) - `COMPLETE` at `2026-08-21T10:01:40Z`, **FAIL** (36 audit units; 217 ACCEPTED findings: 8 CRITICAL / 150 HIGH / 58 MEDIUM / 1 LOW); remediation not begun. Campaign directory date is campaign start date; per-layer reports carry `layer_audited_at` when layer audit date differs.
 
 ### Audit scope shapes (Protocol v2.2)
 

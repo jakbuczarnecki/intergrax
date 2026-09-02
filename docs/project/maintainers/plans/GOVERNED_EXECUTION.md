@@ -1,4 +1,4 @@
-# Governed Execution — Implementation Plan
+# Governed Execution - Implementation Plan
 
 ## Ownership / canonical architecture
 
@@ -6,7 +6,7 @@
 
 - The architecture document owns target design and invariants for Governed Execution.
 - This plan owns implementation and remediation work for the Governed Execution domain.
-- **UE-DOC-0.7 (2026-08-26):** architecture hub frozen Execution-centric governance, admission vs inner evaluation points, authority inheritance, guardrails terminology, and **UEA-INV-021** no-bypass invariant — plan rows unchanged; future implementation must not reintroduce executor-local governance bypass.
+- **UE-DOC-0.7 (2026-08-26):** architecture hub frozen Execution-centric governance, admission vs inner evaluation points, authority inheritance, guardrails terminology, and **UEA-INV-021** no-bypass invariant - plan rows unchanged; future implementation must not reintroduce executor-local governance bypass.
 - Audit source for current accepted blocks: [`docs/audit_results/2026-08-18/POLICY_GOVERNANCE.md`](../../audit_results/2026-08-18/POLICY_GOVERNANCE.md) (AUDIT-5, audited 2026-08-19).
 
 ## Current state
@@ -15,7 +15,7 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 ## Accepted remediation blocks
 
-### PG-FIX-A — Canonical side-effect governance spine
+### PG-FIX-A - Canonical side-effect governance spine
 
 **Status:** IMPLEMENTED (not VERIFIED/CLOSED)
 
@@ -37,7 +37,7 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 - Authority semantics are identical across consumers.
 - Conformance tests demonstrate no bypass.
 
-### PG-FIX-B — Safe policy resolution semantics
+### PG-FIX-B - Safe policy resolution semantics
 
 **Status:** ACCEPTED / PLANNED
 
@@ -56,7 +56,7 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 - DENY/specificity behavior is deterministic.
 - Ordering mistakes cannot weaken authorization.
 
-### PG-FIX-C — Scoped approval consumption
+### PG-FIX-C - Scoped approval consumption
 
 **Status:** ACCEPTED / PLANNED
 
@@ -78,7 +78,7 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 **Note:** Later parallel G5C commits may exist on current development. Do not mark this block implemented or verified from those commits. Historical audit remains tied to its audited SHA.
 
-### PG-FIX-D — Explicit policy matching
+### PG-FIX-D - Explicit policy matching
 
 **Status:** ACCEPTED / PLANNED
 
@@ -99,14 +99,14 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 ## Dependencies / cross-layer relationships
 
-- **Identity/Trust** — principal/authority correctness for effective side-effect authorization.
-- **Unified Execution Runtime** — runtime policy propagation to governed step boundaries.
-- **Reliability / HITL** — exact approval grant consumption and continuation correlation.
-- **Tools / Integrations** — meaningful-side-effect consumers must route through the canonical spine.
+- **Identity/Trust** - principal/authority correctness for effective side-effect authorization.
+- **Unified Execution Runtime** - runtime policy propagation to governed step boundaries.
+- **Reliability / HITL** - exact approval grant consumption and continuation correlation.
+- **Tools / Integrations** - meaningful-side-effect consumers must route through the canonical spine.
 
 <a id="cla-control-plane-governance-integrity-2026-08-18"></a>
 
-### CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY — Control-plane mutation governance boundary (Protocol v2 · 2026-08-18)
+### CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY - Control-plane mutation governance boundary (Protocol v2 · 2026-08-18)
 
 **Status:** `ACCEPTED / PLANNED`
 **Priority:** P0
@@ -118,15 +118,15 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 - extend Governed Execution with **CONTROL_PLANE_MUTATION** as a Governance Evaluation Point class
 - minimum shared authority context: principal, tenant/scope, resource identity, current/target revision, risk, approval evidence, mutation/idempotency identity
-- domain owners still execute their own mutations — no universal mutation executor or `GovernanceEngine`
+- domain owners still execute their own mutations - no universal mutation executor or `GovernanceEngine`
 
 **Consumers (cross-link only):**
 
-- [`AGENT_DISTRIBUTION` plan](AGENT_DISTRIBUTION.md) — activation/rollback
-- [`ADAPTIVE_HARNESS_INTELLIGENCE` plan](ADAPTIVE_HARNESS_INTELLIGENCE.md) — apply/rollback
-- [`ELASTIC_CAPACITY_AND_SCALING` plan](ELASTIC_CAPACITY_AND_SCALING.md) — **ECP-GOVERNED-ACTION-INTEGRITY**
-- [`NEXUS_EXECUTION_FLOW` plan](NEXUS_EXECUTION_FLOW.md) / [`TIER3_APPLICATION_ENVIRONMENT` plan](TIER3_APPLICATION_ENVIRONMENT.md) — **E2E-CONTROL-AUTHORITY-INTEGRITY**
-- [`PLATFORM_PLUGINS` plan](PLATFORM_PLUGINS.md) — activation/admission
+- [`AGENT_DISTRIBUTION` plan](AGENT_DISTRIBUTION.md) - activation/rollback
+- [`ADAPTIVE_HARNESS_INTELLIGENCE` plan](ADAPTIVE_HARNESS_INTELLIGENCE.md) - apply/rollback
+- [`ELASTIC_CAPACITY_AND_SCALING` plan](ELASTIC_CAPACITY_AND_SCALING.md) - **ECP-GOVERNED-ACTION-INTEGRITY**
+- [`NEXUS_EXECUTION_FLOW` plan](NEXUS_EXECUTION_FLOW.md) / [`TIER3_APPLICATION_ENVIRONMENT` plan](TIER3_APPLICATION_ENVIRONMENT.md) - **E2E-CONTROL-AUTHORITY-INTEGRITY**
+- [`PLATFORM_PLUGINS` plan](PLATFORM_PLUGINS.md) - activation/admission
 
 **Acceptance criteria:**
 

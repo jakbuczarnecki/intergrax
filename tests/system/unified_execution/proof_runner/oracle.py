@@ -26,11 +26,17 @@ def functional_oracle_passes(response: LkwRunResponse) -> bool:
     search_diag = response.lkw_evidence.diagnostics.get("lkw.search_summary.v1")
     if search_diag is None:
         return False
-    evidence_count = search_diag.evidence_count or 0
-    num_results = search_diag.num_results or 0
+    if isinstance(search_diag, dict):
+        evidence_count = int(search_diag.get("evidence_count") or 0)
+        num_results = int(search_diag.get("num_results") or 0)
+        source_refs = search_diag.get("source_refs") or []
+        source_refs = source_refs if isinstance(source_refs, list) else []
+    else:
+        evidence_count = search_diag.evidence_count or 0
+        num_results = search_diag.num_results or 0
+        source_refs = search_diag.source_refs or []
     if evidence_count <= 0 and num_results <= 0:
         return False
-    source_refs = search_diag.source_refs or []
     incident_ref = any("incident-report" in ref for ref in source_refs)
     if incident_ref and response.answer and "orion" in response.answer.lower():
         return True

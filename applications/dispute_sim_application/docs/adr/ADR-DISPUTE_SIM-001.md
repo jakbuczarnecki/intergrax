@@ -6,9 +6,9 @@
 
 ## Context
 
-DSW must organize dispute materials, analyze arguments, propose strategy, and simulate court paths — while keeping correspondence drafts behind HITL. A single monolithic agent would mix intake, analysis, strategy, and simulation concerns, complicating testing, policy, and CVL critic attachment.
+DSW must organize dispute materials, analyze arguments, propose strategy, and simulate court paths - while keeping correspondence drafts behind HITL. A single monolithic agent would mix intake, analysis, strategy, and simulation concerns, complicating testing, policy, and CVL critic attachment.
 
-Existing `legal` agent (`legal.review`) covers single-contract review — different bounded context. DSW is a new product environment per explicit reprioritization.
+Existing `legal` agent (`legal.review`) covers single-contract review - different bounded context. DSW is a new product environment per explicit reprioritization.
 
 ## Decision
 
@@ -21,7 +21,7 @@ Split DSW into **four Tier-2 agents** mounted in one Tier-3 product host:
 | `dispute_strategist` | `dispute.strategy` |
 | `dispute_scenario` | `dispute.scenario` |
 
-Orchestration via Nexus capability graph (`dispute.pipeline` — DSW.2), not custom runtime loops.
+Orchestration via Nexus capability graph (`dispute.pipeline` - DSW.2), not custom runtime loops.
 
 Correspondence pitfall review lives in `dispute_scenario` (mode `correspondence_review`) to keep outbound-risk logic with process simulation.
 

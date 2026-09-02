@@ -28,4 +28,4 @@ Governed access to: `workspace.read_file`, `workspace.search`, `memory.read`.
 
 ## Related skills
 
-- Other `workspace` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `workspace` bundle skills - see bundle [USAGE.md](../USAGE.md)

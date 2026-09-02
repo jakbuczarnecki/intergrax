@@ -1,15 +1,15 @@
 
-# DECISION_DELIBERATION — extended architecture
+# DECISION_DELIBERATION - extended architecture
 
 **Parent hub:** [`DECISION_DELIBERATION.md`](../DECISION_DELIBERATION.md)
 
-> **Canon:** frozen target. **DecisionStrategy** is the extension point — **no Council Runtime**.
+> **Canon:** frozen target. **DecisionStrategy** is the extension point - **no Council Runtime**.
 
 ---
 
 ## 1. DecisionStrategy model
 
-**DecisionStrategy** is the platform extension point for proposal and optional multi-participant deliberation. Strategies run **inside Nexus execution** under shared budget and checkpoint semantics — not a second decision runtime.
+**DecisionStrategy** is the platform extension point for proposal and optional multi-participant deliberation. Strategies run **inside Nexus execution** under shared budget and checkpoint semantics - not a second decision runtime.
 
 | Capability | Description |
 | ---------- | ----------- |
@@ -17,25 +17,25 @@
 | Multi-round deliberation | Bounded rounds under shared hosting Execution budget |
 | Parallel proposals | Branching candidates with preserved lineage |
 | Disagreement capture | Structured artifact when participants diverge |
-| Synthesis | Optional merged candidate for verification — does not erase dissent |
+| Synthesis | Optional merged candidate for verification - does not erase dissent |
 
 ---
 
 ## 2. Single Model strategy
 
-One producer emits candidate Decision Versions for verification. Minimal deliberation surface — still versioned, still verification-gated, still lifecycle-owned resolution.
+One producer emits candidate Decision Versions for verification. Minimal deliberation surface - still versioned, still verification-gated, still lifecycle-owned resolution.
 
 ---
 
 ## 3. Rule-Based strategy
 
-Host-supplied deterministic domain logic via typed RuleBasedEvaluator — not Policy/Governance, not execution authorization, not side-effect execution. No LLM, no provider, no platform-owned rule DSL. Produces CandidateDecision; Verification and Lifecycle gates still apply.
+Host-supplied deterministic domain logic via typed RuleBasedEvaluator - not Policy/Governance, not execution authorization, not side-effect execution. No LLM, no provider, no platform-owned rule DSL. Produces CandidateDecision; Verification and Lifecycle gates still apply.
 
 ---
 
 ## 4. Hybrid strategy
 
-Hybrid composition is declarative `DecisionStrategy` sequencing — not a workflow engine. Each `HybridPhase` binds an opaque `HybridPhaseId` to a registered `DecisionStrategyKind`; the canonical registry resolves component strategies. Phase order is developer-defined and preserved exactly.
+Hybrid composition is declarative `DecisionStrategy` sequencing - not a workflow engine. Each `HybridPhase` binds an opaque `HybridPhaseId` to a registered `DecisionStrategyKind`; the canonical registry resolves component strategies. Phase order is developer-defined and preserved exactly.
 
 Hybrid does not own branching, retry, parallelism, checkpoints, or budget. Execution and orchestration remain canonical platform responsibility (Nexus when graph routing is required). Direct Hybrid → Hybrid nesting is rejected in the current contract.
 
@@ -54,7 +54,7 @@ HybridStrategy
 
 ## 5. Council strategy
 
-Council orchestrates parallel participant proposals under Nexus — **no Council Runtime**. Council is one **DecisionStrategy** implementation, not a platform scheduler.
+Council orchestrates parallel participant proposals under Nexus - **no Council Runtime**. Council is one **DecisionStrategy** implementation, not a platform scheduler.
 
 ```mermaid
 flowchart LR
@@ -73,19 +73,19 @@ flowchart LR
 
 ## 6. Participants and roles
 
-Participants are configured **roles** with visibility policies — not hard-coded persona names in platform core (e.g. proposer, skeptic, synthesizer) with explicit contracts.
+Participants are configured **roles** with visibility policies - not hard-coded persona names in platform core (e.g. proposer, skeptic, synthesizer) with explicit contracts.
 
 ---
 
 ## 7. Proposal branches and lineage
 
-Each participant may emit candidates; branches remain in immutable **version lineage**. Concurrent branches preserve history — no last-write-wins at strategy layer.
+Each participant may emit candidates; branches remain in immutable **version lineage**. Concurrent branches preserve history - no last-write-wins at strategy layer.
 
 ---
 
 ## 8. Participant independence
 
-Meaningful separation between participant models/providers — or explicit **non-independent** declaration in strategy profile. Independence supports audit claims about diverse critique, not cosmetic label swaps.
+Meaningful separation between participant models/providers - or explicit **non-independent** declaration in strategy profile. Independence supports audit claims about diverse critique, not cosmetic label swaps.
 
 ---
 
@@ -97,25 +97,25 @@ Per-role visibility policy controls tool-derived context, evidence surfaces, and
 
 ## 10. Provider / model diversity
 
-Strategies may assign distinct providers/models per participant. Diversity is configuration — platform core does not embed vendor-specific council personas.
+Strategies may assign distinct providers/models per participant. Diversity is configuration - platform core does not embed vendor-specific council personas.
 
 ---
 
 ## 11. Disagreement artifact
 
-Structured capture of positions, alternatives, and evidence refs when participants diverge — preserved through synthesis and available to adjudication without private CoT persistence.
+Structured capture of positions, alternatives, and evidence refs when participants diverge - preserved through synthesis and available to adjudication without private CoT persistence.
 
 ---
 
 ## 12. Evidence references in deliberation
 
-Evidence and tool results are **attributed per participant** for audit reconstruction. Deliberation may cite Evidence Claims — strategies do not substitute diagnostics or observability as decision owners.
+Evidence and tool results are **attributed per participant** for audit reconstruction. Deliberation may cite Evidence Claims - strategies do not substitute diagnostics or observability as decision owners.
 
 ---
 
 ## 13. Synthesis
 
-Produces a candidate Decision Version for verification — optional merge of participant outputs. Synthesis is proposal, not finalization.
+Produces a candidate Decision Version for verification - optional merge of participant outputs. Synthesis is proposal, not finalization.
 
 ---
 
@@ -127,7 +127,7 @@ Majority vote or consensus heuristics must **not erase material dissent**. Disag
 
 ## 15. Adjudication boundary
 
-Deadlock or irresolvable conflict routes to **adjudication** or `UNRESOLVED` — not hidden tie-break inside strategy. HITL adjudication is lifecycle-invoked; strategy surfaces structured deadlock signals.
+Deadlock or irresolvable conflict routes to **adjudication** or `UNRESOLVED` - not hidden tie-break inside strategy. HITL adjudication is lifecycle-invoked; strategy surfaces structured deadlock signals.
 
 ---
 
@@ -149,9 +149,9 @@ stateDiagram-v2
 
 ## 17. Hosting Execution budget and crash / resume
 
-Council, verification, and revision **share the hosting execution budget** — no separate Council budget engine. Resume cannot expand a previously granted hosting Execution budget ceiling.
+Council, verification, and revision **share the hosting execution budget** - no separate Council budget engine. Resume cannot expand a previously granted hosting Execution budget ceiling.
 
-Strategy state needed for resume persists through the **canonical hosting Execution checkpoint/persistence boundary** — not a second scheduler. Nexus may participate only when ORCHESTRATION is selected. After crash, deliberation continues from checkpoint without duplicating terminal outcomes.
+Strategy state needed for resume persists through the **canonical hosting Execution checkpoint/persistence boundary** - not a second scheduler. Nexus may participate only when ORCHESTRATION is selected. After crash, deliberation continues from checkpoint without duplicating terminal outcomes.
 
 ---
 
@@ -161,7 +161,7 @@ Strategy state needed for resume persists through the **canonical hosting Execut
 | ---- | ----- | ------- |
 | Deliberation continuation | DecisionStrategy | Next round within budget |
 | Semantic revision | Decision Lifecycle | Challenge / adjudication revision policy |
-| Technical retry | Execution / Reliability appropriate to failing operation | Provider/tool failure — not rubric insufficiency |
+| Technical retry | Execution / Reliability appropriate to failing operation | Provider/tool failure - not rubric insufficiency |
 
 Private chain-of-thought is **not** persisted as authoritative evidence.
 

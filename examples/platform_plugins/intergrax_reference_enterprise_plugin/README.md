@@ -53,6 +53,6 @@ Offline proof: `tests/unit/platform_plugins/test_reference_enterprise_plugin.py`
 
 ## Platform manifest
 
-`pyproject.toml` includes `[tool.intergrax.plugin]` capability descriptors for package-level inventory — domain qualification remains per surface.
+`pyproject.toml` includes `[tool.intergrax.plugin]` capability descriptors for package-level inventory - domain qualification remains per surface.
 
 Canon: [`docs/project/architecture/PLATFORM_PLUGINS.md`](../../../docs/project/architecture/PLATFORM_PLUGINS.md) §21

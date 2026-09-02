@@ -1,4 +1,4 @@
-# Celery integration — copy to Tier-3 settings or export as env vars.
+# Celery integration - copy to Tier-3 settings or export as env vars.
 # Env: INTERGRAX_CELERY_BROKER_URL, INTERGRAX_CELERY_BACKEND_URL, INTERGRAX_CELERY_APP_NAME
 
 app_name: intergrax

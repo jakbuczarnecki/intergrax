@@ -1,4 +1,4 @@
-# Hybrid Ask — unified evidence, query orchestration and read-only live execution
+# Hybrid Ask - unified evidence, query orchestration and read-only live execution
 
 **Status:** ACCEPTED / CLOSED
 **Task:** LKW-HYBRID-ASK-ARCH-1
@@ -32,16 +32,16 @@ WorkspaceAskService
 
 | Area | Current state |
 |------|---------------|
-| Ask mode | **Indexed RAG only** — `WorkspaceAskService` always invokes `local.workspace.search`; no live capability execution |
+| Ask mode | **Indexed RAG only** - `WorkspaceAskService` always invokes `local.workspace.search`; no live capability execution |
 | Evidence model | `WorkspaceAskRun.evidence` is `list[WorkspaceSearchHitV1]` |
 | Citations | `AskCitation` / `WorkspaceAskCitationV1` assume durable documents and sources (`document_id`, `source_id`, `source_path`, `file_name`) |
 | Assembler input | `AskAnswerAssembler.assemble(question, evidence: list[WorkspaceSearchHitV1])` |
 | Evidence indexing | Positional `E1`, `E2`, … indexes over verified hits only |
 | Live Access Bindings | Durable configuration via `WorkspaceLiveAccessBinding`; `WorkspaceLiveAccessBindingService` authorizes bindings but **does not execute** them during Ask |
 | Query Policy V1 | `QueryPolicyModeV1` contains only `indexed_only` and `live_only` |
-| Hybrid / automatic | **Not implemented** — `hybrid` and `automatic` do not exist in models or runtime |
-| Live query executor | **No production executor** — no `WorkspaceLiveCapabilityExecutorPort`, no Knowledge Query Orchestrator |
-| Unified evidence / citation ABI | **Absent** — no discriminated indexed/live union |
+| Hybrid / automatic | **Not implemented** - `hybrid` and `automatic` do not exist in models or runtime |
+| Live query executor | **No production executor** - no `WorkspaceLiveCapabilityExecutorPort`, no Knowledge Query Orchestrator |
+| Unified evidence / citation ABI | **Absent** - no discriminated indexed/live union |
 | Hybrid Ask | **Not implemented** |
 
 Absent Query Policy continues to behave as **indexed-only** unless a separately accepted migration states otherwise.
@@ -73,7 +73,7 @@ Absent Query Policy continues to behave as **indexed-only** unless a separately 
 - A failed required live call must **not** silently downgrade to indexed-only success.
 - No unrestricted model autonomy over provider execution.
 
-### 3.4 `automatic` — deferred
+### 3.4 `automatic` - deferred
 
 Orchestration may not auto-select modes in V2. `automatic` is excluded from `QueryPolicyModeV2`.
 
@@ -92,8 +92,8 @@ QueryPolicyModeV2:
 
 | Request context | Effective mode | Outcome |
 |-----------------|----------------|---------|
-| No persisted Query Policy + `indexed_only` V1 or V2 request | `indexed_only` | **No error** — indexed retrieval proceeds |
-| No persisted Query Policy + `live_only` or `hybrid` request | — | `query_policy_required` → **HTTP 409** |
+| No persisted Query Policy + `indexed_only` V1 or V2 request | `indexed_only` | **No error** - indexed retrieval proceeds |
+| No persisted Query Policy + `live_only` or `hybrid` request | - | `query_policy_required` → **HTTP 409** |
 
 Absent Query Policy does **not** authorize live or hybrid execution.
 
@@ -151,7 +151,7 @@ AudienceContextV1
 | Personal evidence in shared Ask | **Rejected** before synthesis |
 | `PERSONAL_ONLY` Indexed Sources / Live Access Bindings in shared audience | **Rejected** |
 | Mixed personal/shared evidence in one run | **Rejected deterministically** |
-| Prompt instructions as authorization | **Forbidden** — validation is code, not prompt |
+| Prompt instructions as authorization | **Forbidden** - validation is code, not prompt |
 
 The core orchestrator contract is HTTP- and Slack-neutral. V1 HTTP proof may use a personal audience adapter; shared audience follows Conversation Context guards.
 
@@ -226,11 +226,11 @@ These are resolved from committed configuration and registered capability descri
 RequiredEvidenceObligationV1 (discriminated union)
 ├── IndexedEvidenceRequirementV1
 │   ├── requirement_id (unique, nonblank)
-│   ├── semantic_role (audit/explanation only — not enforcement)
+│   ├── semantic_role (audit/explanation only - not enforcement)
 │   └── indexed_source_binding_id (optional scope)
 └── LiveEvidenceRequirementV1
     ├── requirement_id (unique, nonblank)
-    ├── semantic_role (audit/explanation only — not enforcement)
+    ├── semantic_role (audit/explanation only - not enforcement)
     └── call_id (must reference a planned live call)
 ```
 
@@ -274,10 +274,10 @@ flowchart TD
 
 | Source | Role |
 |--------|------|
-| `derive_product_evidence_obligations` | Product-owned **indexed** admissibility obligation for generic HYBRID Workspace Ask — not per planned live call |
+| `derive_product_evidence_obligations` | Product-owned **indexed** admissibility obligation for generic HYBRID Workspace Ask - not per planned live call |
 | `EvidenceObligationDerivationPort` | Policy-derived authoritative obligations from already-resolved typed organizational rules (F3-A) |
 | `ProviderEvidencePlanV1.required_evidence_obligations` | Provider-owned obligations from `WorkspaceAskProviderStrategy.build_plan` |
-| `WorkspaceAskCommandV2.required_evidence_obligations` | **Additive only** — may strengthen, never replace authoritative minimum |
+| `WorkspaceAskCommandV2.required_evidence_obligations` | **Additive only** - may strengthen, never replace authoritative minimum |
 | `compose_evidence_obligations` / `compose_authoritative_evidence_obligations` | Merges layers; duplicate `requirement_id` fails closed |
 
 #### 6.4.2 Policy-derived obligations (COMM-5F3-A)
@@ -298,7 +298,7 @@ flowchart TD
 | Product/base obligations | Authoritative minimum from product planning |
 | Policy-derived obligations | Authoritative from `EvidenceObligationDerivationPort` when configured |
 | Provider-derived obligations | Authoritative from provider strategy |
-| Caller obligations | Additive only — cannot remove prior layers |
+| Caller obligations | Additive only - cannot remove prior layers |
 
 Derivation ownership (F3-A): indexed rules emit obligations only; live rules emit **both** deterministic live-call proposals and matching live obligations so every live obligation references a planned call identity. `derivation_snapshot_id` is a stable hash over canonical typed inputs.
 
@@ -342,7 +342,7 @@ deployment-policy / rev18 / RULE-SEC-DEP-4
 
 F3-C proves that one **derived evidence contract** can require independent live facts from multiple provider classes. Multi-call orchestration is **existing platform capability** (`KnowledgeQueryOrchestratorV1`); F3-C adds reusable provider integrations and a canonical multi-provider proof path.
 
-Proof strength (F3-C-R1): four independent provider classes, four independent connections, four independent capability identities, and **four independent controlled upstream HTTP services** (distinct loopback listeners, ports, and `base_url` values — not a bundled governance mega-server).
+Proof strength (F3-C-R1): four independent provider classes, four independent connections, four independent capability identities, and **four independent controlled upstream HTTP services** (distinct loopback listeners, ports, and `base_url` values - not a bundled governance mega-server).
 
 ```text
 Derived Evidence Contract
@@ -415,13 +415,13 @@ Temporal constraints are derived from typed policy rule parameters, preserved th
 
 Fresh evidence may still report business-negative provider facts (for example `BLOCKED`); temporal admissibility judges **when** evidence is acceptable, not whether the fact is favorable.
 
-`semantic_role` is explanatory for audit — enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
+`semantic_role` is explanatory for audit - enforcement uses structural fields only (`call_id`, `indexed_source_binding_id`, evidence type).
 
 Persisted `WorkspaceAskRunV2` records are **self-consistent**: obligations, per-requirement evaluations, matched evidence IDs, persisted evidence, and final status must agree.
 
 #### 6.4.6 Obligation-level failure semantics (COMM-5F3-E)
 
-F3-E adds typed **per-call execution outcomes** and maps them to requirement-level admissibility reasons. It extends existing execution and admissibility contracts — no second error subsystem.
+F3-E adds typed **per-call execution outcomes** and maps them to requirement-level admissibility reasons. It extends existing execution and admissibility contracts - no second error subsystem.
 
 ```text
 Required evidence obligation
@@ -449,7 +449,7 @@ persisted WorkspaceAskRunV2 structural proof
 
 | Contract | Meaning |
 |----------|---------|
-| `LiveCallFailureV1` | `{call_id, reason}` — bounded structural failure; no raw provider bodies |
+| `LiveCallFailureV1` | `{call_id, reason}` - bounded structural failure; no raw provider bodies |
 | `KnowledgeQueryExecutionResultV1.live_call_failures` | successful evidence and failed calls may coexist in one Ask |
 | `RequirementAdmissibilityReasonCodeV1` | adds `authority_unavailable`, `provider_failed`, `provider_response_invalid` |
 | `WorkspaceAskRunV2.live_call_failures` | reloadable failure semantics without log inference |
@@ -469,7 +469,7 @@ persisted WorkspaceAskRunV2 structural proof
   >
 </picture>
 
-**Flagship proof direction (F3-F acceptance):** final governed decision proof MUST use vendor/system data persisted in Docker-backed external storage (`docker-compose.governed-hybrid-proof.yml` → MongoDB volume `governed_proof_vendor_data` → vendor HTTP → TenantConnection → runtime authority → capability execution → evidence → admissibility). In-process `Controlled*Server.start()` loopback services remain **test accelerators only** — not sufficient as the final external-system proof.
+**Flagship proof direction (F3-F acceptance):** final governed decision proof MUST use vendor/system data persisted in Docker-backed external storage (`docker-compose.governed-hybrid-proof.yml` → MongoDB volume `governed_proof_vendor_data` → vendor HTTP → TenantConnection → runtime authority → capability execution → evidence → admissibility). In-process `Controlled*Server.start()` loopback services remain **test accelerators only** - not sufficient as the final external-system proof.
 
 Proof command (F3-E harness):
 
@@ -481,7 +481,7 @@ uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.docker_per
 
 #### 6.4.7 Advanced flagship proof (COMM-5F3-F)
 
-F3-F composes accepted F3-A/B/C/D/E capabilities into one governed decision scenario. It is **not** a new platform feature campaign — proof infrastructure only.
+F3-F composes accepted F3-A/B/C/D/E capabilities into one governed decision scenario. It is **not** a new platform feature campaign - proof infrastructure only.
 
 **Ordinary agent path:**
 
@@ -503,7 +503,7 @@ question
 → persisted structural proof (WorkspaceAskRunV2)
 ```
 
-**Flagship question:** `Can ORION be deployed to production tonight?` — proof fixture only; no ORION semantics in production platform code.
+**Flagship question:** `Can ORION be deployed to production tonight?` - proof fixture only; no ORION semantics in production platform code.
 
 **Docker topology (four independent vendor services):**
 
@@ -514,7 +514,7 @@ question
 | Change Approval | `change_approval` | `conn.flagship.change-approval` | `vendor.change_approval.change.read` | `change-approval-vendor:8093` | `change_approval_records` |
 | Governance Approval | `governance_approval` | `conn.flagship.governance-approval` | `vendor.governance_approval.approval.read` | `governance-approval-vendor:8094` | `governance_approval_records` |
 
-Shared MongoDB volume `governed_proof_vendor_data` is vendor-owned persistence only — Intergrax never reads Mongo directly.
+Shared MongoDB volume `governed_proof_vendor_data` is vendor-owned persistence only - Intergrax never reads Mongo directly.
 
 <picture>
   <source
@@ -533,7 +533,7 @@ Shared MongoDB volume `governed_proof_vendor_data` is vendor-owned persistence o
 
 **Policy revisions:** REV17 (`security max_age = 24h`) vs REV18 (`security max_age = 1h`) change admissibility without application branching. Same underlying evidence can be admissible under REV17 and temporally invalid under REV18.
 
-**Admissibility vs business answer:** fresh evidence may report business-negative facts (for example `BLOCKED`); admissibility answers whether the LLM may synthesize — not whether deployment is approved.
+**Admissibility vs business answer:** fresh evidence may report business-negative facts (for example `BLOCKED`); admissibility answers whether the LLM may synthesize - not whether deployment is approved.
 
 Proof command:
 
@@ -563,10 +563,10 @@ flowchart TD
 
 | Invariant | Meaning |
 |-----------|---------|
-| Structural matching only | Satisfaction uses evidence type, `call_id`, and `indexed_source_binding_id` — never answer text or semantic labels |
+| Structural matching only | Satisfaction uses evidence type, `call_id`, and `indexed_source_binding_id` - never answer text or semantic labels |
 | Earlier gate | Admissibility runs **before** `HybridAskAnswerAssemblerV2` |
 | Defense in depth | Citation validation and HYBRID indexed+live citation rules remain after synthesis |
-| EPHEMERAL durability | Persisted runs store obligation snapshots, matched evidence IDs, and reason codes — never raw live bodies |
+| EPHEMERAL durability | Persisted runs store obligation snapshots, matched evidence IDs, and reason codes - never raw live bodies |
 
 **Why this matters:** evidence diversity (indexed **and** live present) is not the same as evidence **completeness** (every declared obligation structurally satisfied). Admissibility enforces completeness; citation rules enforce provenance integrity.
 
@@ -647,7 +647,7 @@ resolve(
 - Never read credentials
 - Fail safely when the runtime integration is unavailable
 
-Alternative resolution path: `ConnectionAwareVendorResolver` when wired to the same registry-backed instance — still **one** rehydrated integration, never a duplicate client.
+Alternative resolution path: `ConnectionAwareVendorResolver` when wired to the same registry-backed instance - still **one** rehydrated integration, never a duplicate client.
 
 ### 8.4 `LiveCapabilityHandlerV1` (provider capability implementation)
 
@@ -767,18 +767,18 @@ not in the LKW Hybrid Ask roadmap.
 
 Confluence and Microsoft Graph live search require separate bounded contracts in Vendor Knowledge and must not be simulated through delta, reconciliation or full inventory.
 
-### 9.3 COMM-5C3 — controlled external Project Status proof boundary
+### 9.3 COMM-5C3 - controlled external Project Status proof boundary
 
 **Status:** ACCEPTED proof infrastructure (COMM-5C3)
 **Scope:** real HTTP Vendor Knowledge live read only; no flagship orchestration; no YES/NO business decision.
 
-**Flagship end-to-end proof (COMM-5D):** [`proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md`](proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) — four-scenario ORION deployment readiness proof over real Hybrid Ask, admissibility, authority, and history.
+**Flagship end-to-end proof (COMM-5D):** [`proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md`](proof/GOVERNED_HYBRID_KNOWLEDGE_PROOF.md) - four-scenario ORION deployment readiness proof over real Hybrid Ask, admissibility, authority, and history.
 
 | Layer | Responsibility |
 |-------|----------------|
 | LKW Hybrid Ask | provider-neutral plan + `LiveCapabilityExecutorV1` |
 | Vendor Knowledge | registration, typed request, handler, connection factory |
-| Tenant connection | `base_url`, timeout — **not** LLM-selectable |
+| Tenant connection | `base_url`, timeout - **not** LLM-selectable |
 | Provider adapter | `vendor.project_status.project.read` |
 | **HTTP boundary** | loopback Project Status Service |
 | Proof instrumentation | external read request counter |
@@ -812,11 +812,11 @@ sequenceDiagram
   participant P as Provider path
   participant S as Project Status Service
   participant C as Control API
-  Note over S: STATE A — SEC-417 OPEN
+  Note over S: STATE A - SEC-417 OPEN
   P->>S: HTTP read
   S-->>P: blocker OPEN
   C->>S: OPEN → CLOSED
-  Note over S: STATE B — SEC-417 CLOSED
+  Note over S: STATE B - SEC-417 CLOSED
   P->>S: same HTTP read
   S-->>P: blocker CLOSED
 ```
@@ -898,7 +898,7 @@ Provider identity is permitted in safe provenance. Credentials, private endpoint
 
 ### 10.4 Durable evidence projection (persisted Ask record)
 
-Separate name family — **not** `WorkspaceEvidenceV1`:
+Separate name family - **not** `WorkspaceEvidenceV1`:
 
 ```text
 PersistedAskEvidenceV2
@@ -906,7 +906,7 @@ PersistedAskEvidenceV2
 └── PersistedLiveEvidenceProvenanceV2
 ```
 
-`WorkspaceAskRunV2` stores `list[PersistedAskEvidenceV2]` — provenance projections only, never transient live bodies.
+`WorkspaceAskRunV2` stores `list[PersistedAskEvidenceV2]` - provenance projections only, never transient live bodies.
 
 ### 10.5 Evidence identity rules
 
@@ -970,14 +970,14 @@ Safe final citations may contain only explicitly frozen minimum fields. Under `E
 
 ### 11.5 Public HTTP versioning (frozen path versioning)
 
-Explicit path versioning — **no** content negotiation required to distinguish V1 and V2.
+Explicit path versioning - **no** content negotiation required to distinguish V1 and V2.
 
 | Route | Contract | Behavior |
 |-------|----------|----------|
-| `POST /v1/local_workspace/workspaces/{workspace_id}/ask` | `WorkspaceAskRequestV1` / `WorkspaceAskResponseV1` | **Indexed-only** — never invokes live capabilities; response shape unchanged |
+| `POST /v1/local_workspace/workspaces/{workspace_id}/ask` | `WorkspaceAskRequestV1` / `WorkspaceAskResponseV1` | **Indexed-only** - never invokes live capabilities; response shape unchanged |
 | `GET /v1/local_workspace/asks/{run_id}` | V1 run projection | Indexed-only durable shape for V1 runs |
 | `POST /v2/local_workspace/workspaces/{workspace_id}/ask` | `WorkspaceAskRequestV2` / `WorkspaceAskResponseV2` | Supports `indexed_only`, `live_only`, `hybrid` |
-| `GET /v2/local_workspace/asks/{run_id}` | `WorkspaceAskRunV2` durable projection | Returns durable V2 projection — **not** transient live bodies |
+| `GET /v2/local_workspace/asks/{run_id}` | `WorkspaceAskRunV2` durable projection | Returns durable V2 projection - **not** transient live bodies |
 
 **Rejected alternatives:** `Accept` header versioning, `schema-version` header, `api_version` request field.
 
@@ -1124,10 +1124,10 @@ Must **not** contain transient live evidence bodies or `WorkspaceEvidenceV1.cont
 | Transient vs durable evidence | `WorkspaceEvidenceV1` transient during execution; `PersistedAskEvidenceV2` durable in run |
 | In-flight vs durable | `EvidencePlanV1` and execution receipts are separate types from persisted run evidence |
 | Citation versioning | `citation_schema_version: 1 /| 2` on run; V2 uses discriminated citations |
-| Live fields persisted | Provenance + citations + optional receipt only — never raw body by default |
+| Live fields persisted | Provenance + citations + optional receipt only - never raw body by default |
 | Run metadata | `query_mode`, `configuration_revision`, `plan_id`, `indexed_retrieval_status`, `live_execution_status`, `truncation`, `partial_failure` |
-| GET Run V1 | `GET /v1/local_workspace/asks/{run_id}` — V1 indexed projection only; V2 run → `ask_run_version_mismatch` (409) |
-| GET Run V2 | `GET /v2/local_workspace/asks/{run_id}` — durable `WorkspaceAskRunV2` projection without transient bodies; V1 run → `ask_run_version_mismatch` (409) |
+| GET Run V1 | `GET /v1/local_workspace/asks/{run_id}` - V1 indexed projection only; V2 run → `ask_run_version_mismatch` (409) |
+| GET Run V2 | `GET /v2/local_workspace/asks/{run_id}` - durable `WorkspaceAskRunV2` projection without transient bodies; V1 run → `ask_run_version_mismatch` (409) |
 | Cross-version access | No projection; version mismatch fails with HTTP 409 |
 
 No in-place mutation of historical records without explicit migration task.
@@ -1136,7 +1136,7 @@ No in-place mutation of historical records without explicit migration task.
 
 ## 15. Failure semantics
 
-Stable domain outcomes (fail-closed). Each code has **one** unambiguous HTTP status for V2. Where V1 behavior differs, implementation documents it explicitly (`LKW-HYBRID-ASK-1E`) — do not mix statuses in one cell.
+Stable domain outcomes (fail-closed). Each code has **one** unambiguous HTTP status for V2. Where V1 behavior differs, implementation documents it explicitly (`LKW-HYBRID-ASK-1E`) - do not mix statuses in one cell.
 
 | Code | Meaning | V2 HTTP |
 |------|---------|---------|
@@ -1166,7 +1166,7 @@ Stable domain outcomes (fail-closed). Each code has **one** unambiguous HTTP sta
 
 **Query Policy default (no error):** absent persisted Query Policy + `indexed_only` V1/V2 request → effective `indexed_only`, no error.
 
-Configuration projection failures (`configuration_projection_unstable`, `configuration_projection_invalid`, `query_policy_invalid`) map to **503** — aligned with accepted Knowledge Access HTTP behavior. Do **not** map them to 409.
+Configuration projection failures (`configuration_projection_unstable`, `configuration_projection_invalid`, `query_policy_invalid`) map to **503** - aligned with accepted Knowledge Access HTTP behavior. Do **not** map them to 409.
 
 **Hybrid fail-closed rules:**
 
@@ -1241,7 +1241,7 @@ Identifiers that may contain PII or tenant-identifying material use hashing or r
 
 ## 19. Implementation decomposition
 
-Parent block: **`LKW-HYBRID-ASK-1`** — **IN_PROGRESS**.
+Parent block: **`LKW-HYBRID-ASK-1`** - **IN_PROGRESS**.
 
 **Dependency chain:** `1A → 1B → 1C`.
 
@@ -1267,7 +1267,7 @@ Vendor Knowledge owns:
 - mapping provider responses to the provider-neutral live result boundary.
 ```
 
-### `LKW-HYBRID-ASK-1A` — Provider-neutral core contracts, durable Query Policy V2 and Evidence Plan validation
+### `LKW-HYBRID-ASK-1A` - Provider-neutral core contracts, durable Query Policy V2 and Evidence Plan validation
 
 | | |
 |---|---|
@@ -1278,7 +1278,7 @@ Vendor Knowledge owns:
 | **Tests** | V1 compatibility, V2 persistence, policy resolution, Evidence Plan validation |
 | **Status** | **READY_FOR_REVIEW** |
 
-### `LKW-HYBRID-ASK-1B` — Provider-neutral Live Capability execution and Knowledge Query orchestration
+### `LKW-HYBRID-ASK-1B` - Provider-neutral Live Capability execution and Knowledge Query orchestration
 
 | | |
 |---|---|
@@ -1289,7 +1289,7 @@ Vendor Knowledge owns:
 | **Tests** | Per-mode orchestration, budget enforcement, no durable live bodies |
 | **Status** | **PLANNED** |
 
-### `LKW-HYBRID-ASK-1C` — Workspace Ask integration, HTTP V2 and bounded product acceptance proof
+### `LKW-HYBRID-ASK-1C` - Workspace Ask integration, HTTP V2 and bounded product acceptance proof
 
 | | |
 |---|---|
@@ -1303,11 +1303,11 @@ Vendor Knowledge owns:
 **Slice status after `LKW-HYBRID-ASK-1A`:**
 
 ```text
-LKW-HYBRID-ASK-ARCH-1 — ACCEPTED / CLOSED
-LKW-HYBRID-ASK-1 — IN_PROGRESS
-LKW-HYBRID-ASK-1A — READY_FOR_REVIEW
-LKW-HYBRID-ASK-1B — PLANNED
-LKW-HYBRID-ASK-1C — PLANNED
+LKW-HYBRID-ASK-ARCH-1 - ACCEPTED / CLOSED
+LKW-HYBRID-ASK-1 - IN_PROGRESS
+LKW-HYBRID-ASK-1A - READY_FOR_REVIEW
+LKW-HYBRID-ASK-1B - PLANNED
+LKW-HYBRID-ASK-1C - PLANNED
 ```
 
 ---
@@ -1316,10 +1316,10 @@ LKW-HYBRID-ASK-1C — PLANNED
 
 | Block | Relationship |
 |-------|--------------|
-| `LKW-KNOWLEDGE-ACCESS-1` | **Prerequisite (accepted)** — configuration, bindings, Query Policy V1 |
+| `LKW-KNOWLEDGE-ACCESS-1` | **Prerequisite (accepted)** - configuration, bindings, Query Policy V1 |
 | `LKW-CONVERSATION-CONTEXT-1` | Audience guards feed orchestrator; Hybrid Ask does not reimplement Conversation Context |
 | `LKW-CONVERSATIONAL-FRONTEND-1` | Planner invokes `workspace.ask`; follows this contract |
-| Vendor Knowledge | Connection catalog, capability catalog, integration reuse — platform-owned |
+| Vendor Knowledge | Connection catalog, capability catalog, integration reuse - platform-owned |
 | `KNOWLEDGE_ACCESS_ARCHITECTURE.md` | Target vocabulary; this document freezes Hybrid Ask implementation contract |
 
 ---

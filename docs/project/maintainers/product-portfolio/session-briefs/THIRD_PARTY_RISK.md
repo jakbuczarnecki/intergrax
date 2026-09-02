@@ -1,9 +1,9 @@
-# Third-Party Risk — Product Session Brief
+# Third-Party Risk - Product Session Brief
 
 **Document type:** Durable product-specific session mission artifact  
 **Owner:** Third-Party Risk Product Session (future launch)  
 **Audience:** Future session operator / MP-22 Session Launch Pack assembler  
-**Status:** **SELECTED** — Pre-bootstrap; G0 **PENDING**
+**Status:** **SELECTED** - Pre-bootstrap; G0 **PENDING**
 
 > **This is NOT the final session launch prompt.**  
 > It is a durable product-specific mission and context artifact consumed later by **MP-22 Session Launch Pack**.  
@@ -39,7 +39,7 @@ Portfolio caveat retained: **initial wedge still requires sharpening.**
 
 ## 2. Mission
 
-Move a **real vendor request** from evidence gathering through review to a **defensible decision** — approve, reject, or conditional — with auditability, not merely collect documents or orchestrate tasks.
+Move a **real vendor request** from evidence gathering through review to a **defensible decision** - approve, reject, or conditional - with auditability, not merely collect documents or orchestrate tasks.
 
 **Product-first rule:**
 
@@ -97,7 +97,7 @@ Orchestration alone is **not** claimed as unique. Questionnaire automation is a 
 | Primary buyer | CISO / Risk / Procurement / Compliance |
 | Core job | Reduce time and friction while **increasing defensibility** of vendor-risk decisions |
 | Economic consequence | Breach liability, audit findings, delayed vendor onboarding, wrong-vendor acceptance |
-| Success horizon | Request-to-decision cycle (days to weeks) — not crisis minutes or deployment gates |
+| Success horizon | Request-to-decision cycle (days to weeks) - not crisis minutes or deployment gates |
 | Value unit | Defensible decision record with evidence trail and accountable human roles |
 
 ---
@@ -115,7 +115,7 @@ Vendor request initiated
   → audit-ready decision trace
 ```
 
-G0 must sharpen **wedge before architecture** — what materially improves decision quality beyond orchestration?
+G0 must sharpen **wedge before architecture** - what materially improves decision quality beyond orchestration?
 
 ---
 
@@ -123,10 +123,10 @@ G0 must sharpen **wedge before architecture** — what materially improves decis
 
 | Contrast | Third-Party Risk |
 |----------|------------------|
-| LKW | Workspace knowledge Q&A — not vendor onboarding decisions |
-| Contract Recovery | Post-contract spend leakage — not pre-engagement vendor risk |
-| Supplier Disruption | In-flight supply crisis mitigation — not vendor approval gate |
-| Deployment Guardian | Release authorization — not third-party risk acceptance |
+| LKW | Workspace knowledge Q&A - not vendor onboarding decisions |
+| Contract Recovery | Post-contract spend leakage - not pre-engagement vendor risk |
+| Supplier Disruption | In-flight supply crisis mitigation - not vendor approval gate |
+| Deployment Guardian | Release authorization - not third-party risk acceptance |
 
 Evidence semantics center on **decision defensibility and auditability**, not answer provenance or operational exposure runway.
 
@@ -145,11 +145,11 @@ Evidence semantics center on **decision defensibility and auditability**, not an
 
 ## 10. Major failure modes / category traps
 
-- **Questionnaire chatbot** — form filling without decision quality.
-- **PDF summarizer** — document recap without risk reasoning.
-- **Generic compliance workflow** — tasks without defensible outcome.
-- **Evidence collection without decision** — repository, not operator.
-- **Broad "AI governance platform" expansion** — scope creep before wedge proof.
+- **Questionnaire chatbot** - form filling without decision quality.
+- **PDF summarizer** - document recap without risk reasoning.
+- **Generic compliance workflow** - tasks without defensible outcome.
+- **Evidence collection without decision** - repository, not operator.
+- **Broad "AI governance platform" expansion** - scope creep before wedge proof.
 - **LKW-style RAG answers** mistaken for vendor-risk decisions.
 
 ---
@@ -166,13 +166,13 @@ Evidence semantics center on **decision defensibility and auditability**, not an
 
 Product Session cannot self-approve `EXTENDED_GENERALLY`, `GENUINE_PLATFORM_GAP`, or shared core product-specific behavior.
 
-VIS-3A owns public presentation — not gate status. COMM does not own Portfolio Control authority.
+VIS-3A owns public presentation - not gate status. COMM does not own Portfolio Control authority.
 
 ---
 
 ## 12. Current gate / first allowed action
 
-**G0 Product Baseline** — preparation and acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
+**G0 Product Baseline** - preparation and acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
 
 G0 must **especially sharpen the wedge** before any architecture work. Do **not** start G1, T0, scaffold, or implementation until G0 is accepted.
 

@@ -6,19 +6,19 @@ implementation does not make its dependency a default-core dependency.
 
 ## Categories
 
-- `CORE_FOUNDATION` — contracts, configuration, serialization, and primitives
+- `CORE_FOUNDATION` - contracts, configuration, serialization, and primitives
   required by the canonical core import.
-- `CORE_SERVER` — the default HTTP/runtime server surface unconditionally
+- `CORE_SERVER` - the default HTTP/runtime server surface unconditionally
   required by the core server.
-- `PROVIDER_OPTIONAL` — vendor SDKs used only by a selected provider.
-- `LOCAL_ML_OPTIONAL` — local model runtimes and model-loading libraries.
-- `VECTOR_OPTIONAL` — external vector-store clients.
-- `PARSER_OPTIONAL` — format-specific parsing libraries.
-- `MEDIA_OPTIONAL` — audio, video, and image integrations.
-- `UI_OPTIONAL` — interactive UI and presentation frameworks.
-- `INTEGRATION_OPTIONAL` — external service and platform integrations.
-- `DEV_QUALITY` — test, lint, type-check, and development tooling.
-- `COMPATIBILITY_OPTIONAL` — legacy or compatibility adapters.
+- `PROVIDER_OPTIONAL` - vendor SDKs used only by a selected provider.
+- `LOCAL_ML_OPTIONAL` - local model runtimes and model-loading libraries.
+- `VECTOR_OPTIONAL` - external vector-store clients.
+- `PARSER_OPTIONAL` - format-specific parsing libraries.
+- `MEDIA_OPTIONAL` - audio, video, and image integrations.
+- `UI_OPTIONAL` - interactive UI and presentation frameworks.
+- `INTEGRATION_OPTIONAL` - external service and platform integrations.
+- `DEV_QUALITY` - test, lint, type-check, and development tooling.
+- `COMPATIBILITY_OPTIONAL` - legacy or compatibility adapters.
 
 ## Core invariant
 
@@ -36,11 +36,11 @@ controlled missing-dependency error.
 
 Direct runtime dependencies use one of three visible policies:
 
-- `EXACT_PIN` — reserved for reproducibility-sensitive packages such as the
+- `EXACT_PIN` - reserved for reproducibility-sensitive packages such as the
   pinned NumPy baseline and Chroma provider.
-- `BOUNDED_MAJOR` — a supported lower bound plus an upper boundary before the
+- `BOUNDED_MAJOR` - a supported lower bound plus an upper boundary before the
   next incompatible major family.
-- `UNBOUNDED_MAJOR` — permitted only for packages outside the designated
+- `UNBOUNDED_MAJOR` - permitted only for packages outside the designated
   high-risk runtime/optional policy set.
 
 FastAPI, Starlette, Uvicorn and HTTPX are bounded below major `1` as one

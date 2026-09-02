@@ -1,12 +1,12 @@
-# DIAG-8A — AI Incident Investigation Ownership Audit
+# DIAG-8A - AI Incident Investigation Ownership Audit
 
-> **Historical audit (2026-08-26).** Superseded for current architecture by [`docs/project/architecture/DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) and [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](../qualification/DIAGNOSTIC_HARDENING_CLOSEOUT.md). Retained as decision record — not canonical current architecture.
+> **Historical audit (2026-08-26).** Superseded for current architecture by [`docs/project/architecture/DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) and [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](../qualification/DIAGNOSTIC_HARDENING_CLOSEOUT.md). Retained as decision record - not canonical current architecture.
 
 **Audit ID:** DIAG-8A  
 **Date:** 2026-08-26  
 **Branch:** `development`  
 **Scope:** `platform_proofs/scenarios/ai_incident_investigation/` vs central Diagnostic Engine  
-**Mode:** documentation / architecture audit only — no implementation
+**Mode:** documentation / architecture audit only - no implementation
 
 ---
 
@@ -14,13 +14,13 @@
 
 **One-spine question (§19):** Does `ai_incident_investigation` constitute a second generic Diagnostic Engine?
 
-**Answer: NO** — domain investigator only, but terminology and authority boundaries need cleanup.
+**Answer: NO** - domain investigator only, but terminology and authority boundaries need cleanup.
 
 **Evidence:**
 
 | Central platform responsibility | Present in scenario? |
 |---|---|
-| Canonical `RuntimeEvent` execution truth | **No** — zero imports/references |
+| Canonical `RuntimeEvent` execution truth | **No** - zero imports/references |
 | Causal evidence reconstruction | **No** |
 | `ExecutionReconstructor` / lifecycle anomaly analysis | **No** |
 | `DiagnosticAssessment` / `Problem` / `ProblemId` | **No** |
@@ -33,8 +33,8 @@ The scenario **does** own legitimate domain investigation intelligence (hypothes
 **Residual risks (not second-engine duplication):**
 
 - Terminology conflates **scenario investigation conclusion** (`RESOLVED`, `incident.root_cause_diagnosis`, `ClaimResolution.SUPPORTED`) with **platform root-cause authority**.
-- Parallel domain disposition derivations exist in `domain_reasoning.py` (evaluator oracle) and `validation.py` (runtime critic authority) — same predicates, two call sites; maintenance hazard, not platform duplication.
-- Scenario does not consume central diagnostics today — **integration gap**, not ownership violation.
+- Parallel domain disposition derivations exist in `domain_reasoning.py` (evaluator oracle) and `validation.py` (runtime critic authority) - same predicates, two call sites; maintenance hazard, not platform duplication.
+- Scenario does not consume central diagnostics today - **integration gap**, not ownership violation.
 
 ---
 
@@ -42,8 +42,8 @@ The scenario **does** own legitimate domain investigation intelligence (hypothes
 
 | Term | Recommended meaning | Current scenario usage | Risk |
 |---|---|---|---|
-| **Problem** | Stable platform-tracked operational diagnostic pattern (`ProblemId`, recurrence, tenant scope) | Used only in README narrative (“production problem”) | Low — no code persistence |
-| **Incident Investigation** | Domain workflow investigating one scope with competing hypotheses | Correct — primary scenario identity | None |
+| **Problem** | Stable platform-tracked operational diagnostic pattern (`ProblemId`, recurrence, tenant scope) | Used only in README narrative (“production problem”) | Low - no code persistence |
+| **Incident Investigation** | Domain workflow investigating one scope with competing hypotheses | Correct - primary scenario identity | None |
 | **Hypothesis** | Provisional explanatory possibility (H1/H2/H3) | `HypothesisProposal`, `HypothesisDisposition` (model-owned, non-authoritative) | Low |
 | **EvidenceBackedClaim** | Auditable structured conclusion with evidence refs | Reused from `intergrax.contracts.evidence_claims` | Good reuse |
 | **Root Cause** | Causal claim with platform proof requirements (`PROVEN` only from canonical causal evidence under DIAG-8+) | Claim kind `incident.root_cause_diagnosis`; `RESOLVED` outcome | **High semantic risk** |
@@ -84,8 +84,8 @@ Parallel oracle path (post-run only):
 | Causal platform evidence | Platform diagnostic orchestrator | Runtime events, signals | Causal evidence summaries | Platform | Canonical | Platform | No | Not duplicated |
 | Execution reconstruction | `ExecutionReconstructor` | RuntimeEvent stream | `ExecutionReconstruction` | Platform | Canonical | Platform | No | Absent in scenario |
 | Lifecycle anomaly analysis | `LifecycleAnomalyAnalyzer` | Lifecycle transitions | `LifecycleAnalysis` | Platform | Canonical | Platform | No | Absent |
-| DiagnosticAssessment / Problem | `DiagnosticOrchestrator`, persistence | Orchestration request | `Problem`, assessments | Platform | Canonical | Platform | **Yes — consume** | Scenario has no Problem identity |
-| Problem grouping / recurrence | `ProblemGroupingEngine`, lifecycle | Feature vectors, keys | Stable `ProblemId` | Platform | Canonical | Platform | **Yes — consume** | No cross-run grouping in scenario |
+| DiagnosticAssessment / Problem | `DiagnosticOrchestrator`, persistence | Orchestration request | `Problem`, assessments | Platform | Canonical | Platform | **Yes - consume** | Scenario has no Problem identity |
+| Problem grouping / recurrence | `ProblemGroupingEngine`, lifecycle | Feature vectors, keys | Stable `ProblemId` | Platform | Canonical | Platform | **Yes - consume** | No cross-run grouping in scenario |
 | Tenant isolation (diagnostics) | Platform read service | `tenant_id` | Scoped Problem views | Platform | Canonical | Platform | Later | Scenario uses fixed tenant string |
 | Generic diagnostic subject identity | `DiagnosticSubjectRef` | App/execution refs | Subject tokens | Platform | Canonical | Platform | Later | Not used |
 | Graph execution / agent step | `scenario.py`, `GraphExecutor` | Task, agent registry | `AgentExecutionResult` | Platform runtime | Canonical execution envelope | Platform | No | Correct reuse |
@@ -104,7 +104,7 @@ Parallel oracle path (post-run only):
 | Proof evidence projection | `evidence_builder.py`, `evaluator_evidence.py` | Evaluation + result | `PlatformProofEvidence` | Proof artifact | Derived | Proof layer | No | Publication surface |
 | Investigation observability | `investigation_observability.py` | Planner/reasoning events | `DiagnosticPayload` traces | Scenario telemetry | Derived trace | Scenario | No | Must not be mistaken for RuntimeEvent truth |
 | Scenario evidence store | `tools.ScenarioEvidenceStore` | Tool reads | In-memory nodes | Session-local | Fixture/session | Scenario | No | Allowed local store |
-| Cross-run Problem persistence | — | — | — | — | — | Platform | N/A | **Absent — good** |
+| Cross-run Problem persistence | - | - | - | - | - | Platform | N/A | **Absent - good** |
 
 ---
 
@@ -133,7 +133,7 @@ Parallel oracle path (post-run only):
 ```text
 Model ClaimProposal
     → convert_proposal_to_pending_claims (resolution = PENDING only)
-    → apply_critic_claim_resolutions (validation.py — deterministic domain predicates)
+    → apply_critic_claim_resolutions (validation.py - deterministic domain predicates)
     → IncidentInvestigationValidationEngine.validate (L0 critic via NexusValidationEngine)
     → CriticVerdict.passed + validate_claim_set_against_observations
     → derive_terminal_outcome
@@ -143,10 +143,10 @@ Model ClaimProposal
 
 | Actor | May set resolution? | Scope |
 |---|---|---|
-| LLM / `IncidentReasoningProposal` | **No** (only `PENDING` at conversion) | — |
+| LLM / `IncidentReasoningProposal` | **No** (only `PENDING` at conversion) | - |
 | `apply_critic_claim_resolutions` | **Yes** | Scenario-domain diagnosis claims (`incident.root_cause_diagnosis`) |
 | `IncidentInvestigationValidationEngine` | **Validates** (does not mutate resolutions) | Scenario workflow gate |
-| Platform Critic (generic) | **Indirect** — fails validation, triggers revision loop | Workflow quality, not Problem lifecycle |
+| Platform Critic (generic) | **Indirect** - fails validation, triggers revision loop | Workflow quality, not Problem lifecycle |
 | Central Diagnostic Engine | **No** (not connected) | Future root-cause promotion only |
 
 **Verdict:** Claim resolution is **scenario-domain claim resolution** for the proof workflow. It is **not** platform generic root-cause resolution. A supported H3 claim means “bounded equipment degradation explanation best supported by gathered domain evidence in this investigation,” not `DiagnosticAssessment.certainty = PROVEN`.
@@ -159,16 +159,16 @@ Model ClaimProposal
 
 | Possible meaning | Applies? |
 |---|---|
-| A. Investigation workflow completed with supported **domain** conclusion | **Yes — actual meaning** |
+| A. Investigation workflow completed with supported **domain** conclusion | **Yes - actual meaning** |
 | B. Underlying operational **Problem** is resolved | **No** |
 | C. Platform **root cause PROVEN** | **No** |
 | D. Incident **remediation** completed | **No** |
 
 `UNRESOLVED` means epistemic refusal: critic passed, no `SUPPORTED` diagnosis claim, `completion_mode == unresolved`.
 
-**Semantic risk:** README and SCENARIO_SPEC describe `RESOLVED` as “bounded operational **root-cause diagnosis**,” which readers may equate with platform root-cause proof. HTML reports label “Incident Outcome: RESOLVED” alongside proof PASS — correct for proof, ambiguous for Problem lifecycle.
+**Semantic risk:** README and SCENARIO_SPEC describe `RESOLVED` as “bounded operational **root-cause diagnosis**,” which readers may equate with platform root-cause proof. HTML reports label “Incident Outcome: RESOLVED” alongside proof PASS - correct for proof, ambiguous for Problem lifecycle.
 
-**Non-accepted states:** Critic failure → `RuntimeError(incident_terminal_state_not_accepted)` — neither RESOLVED nor UNRESOLVED.
+**Non-accepted states:** Critic failure → `RuntimeError(incident_terminal_state_not_accepted)` - neither RESOLVED nor UNRESOLVED.
 
 ---
 
@@ -185,10 +185,10 @@ Model ClaimProposal
 
 **Files requiring later rename/separation:**
 
-- `scenario_contract.py` — `DIAGNOSIS_CLAIM_KIND`, `COMPLETION_SUPPORTED_DIAGNOSIS`
-- `validation.py` — `DIAGNOSIS_CLAIM_KIND`, error tokens mentioning `supported_diagnosis`
-- `evaluator_evidence.py` — user-facing “root-cause diagnosis” labels
-- `README.md` / `SCENARIO_SPEC.md` — outcome tables
+- `scenario_contract.py` - `DIAGNOSIS_CLAIM_KIND`, `COMPLETION_SUPPORTED_DIAGNOSIS`
+- `validation.py` - `DIAGNOSIS_CLAIM_KIND`, error tokens mentioning `supported_diagnosis`
+- `evaluator_evidence.py` - user-facing “root-cause diagnosis” labels
+- `README.md` / `SCENARIO_SPEC.md` - outcome tables
 
 ---
 
@@ -250,7 +250,7 @@ Central diagnostics must **not** become a manufacturing analytics engine. Domain
 | Role | How used | Valid? |
 |---|---|---|
 | A. Generic platform governance / falsification | `build_critic_graph_hooks`, `EvaluatorLoopSpec`, `CriticTraceEmitter` | **Yes** |
-| B. Scenario-local root-cause authority | `IncidentInvestigationValidationEngine` + `apply_critic_claim_resolutions` | **Yes, if scoped as domain L0** — not platform PROVEN |
+| B. Scenario-local root-cause authority | `IncidentInvestigationValidationEngine` + `apply_critic_claim_resolutions` | **Yes, if scoped as domain L0** - not platform PROVEN |
 | C. Workflow quality gate | `derive_terminal_outcome`, revision loop, challenge lifecycle | **Yes** |
 
 **Target alignment:** Central diagnostics → bounded facts/Problems → investigator proposes → critic challenges → scenario `EvidenceBackedClaim` → `InvestigationConclusion`. Current implementation matches this **except** missing central input slice and naming cleanup.
@@ -261,10 +261,10 @@ Central diagnostics must **not** become a manufacturing analytics engine. Domain
 
 **Reuse:** `EvidenceBackedClaim`, `EvidenceClaimSet`, `EvidenceChallenge`, `ClaimResolution` from `intergrax.contracts.evidence_claims`.
 
-**Assessment:** Good reuse — scenario does **not** introduce parallel generic claim machinery. Scenario adds:
+**Assessment:** Good reuse - scenario does **not** introduce parallel generic claim machinery. Scenario adds:
 
 - `ClaimHypothesisBinding` (scenario semantic)
-- `incident.root_cause_diagnosis` claim kind (domain-specific kind string — valid extension)
+- `incident.root_cause_diagnosis` claim kind (domain-specific kind string - valid extension)
 - `critic_adapter` challenge projection (GAP-1A alignment)
 
 **DIAG-8 recommendation:** Platform root-cause adjudication should **extend** these contracts (e.g. promotion record linking domain claim → platform PROVEN), not duplicate new claim types.
@@ -288,7 +288,7 @@ Central diagnostics must **not** become a manufacturing analytics engine. Domain
 | `output/*.json`, HTML reports | Proof artifacts (not canonical platform) |
 | Platform Problem persistence | **Not used** |
 
-No scenario-local generic Problem persistence — compliant.
+No scenario-local generic Problem persistence - compliant.
 
 ---
 
@@ -404,7 +404,7 @@ class InvestigationConclusion:
 
 **Canonical reuse:** `ProblemId`, `DiagnosticProblemSummary`, `DiagnosticProblemOccurrenceView`, `DiagnosticFinding`, `DiagnosticLimitation`, `DiagnosticGroupingProvenance`, `EvidenceBackedClaim`, `EvidenceClaimSet`.
 
-**Occurrence choice:** reuse `DiagnosticProblemOccurrenceView` directly — already bounded, carries typed subject refs, read status, optional `DiagnosticAssessment`, and `NON_EXECUTION_SUBJECT` unavailable reason without coupling investigators to read-service pagination internals.
+**Occurrence choice:** reuse `DiagnosticProblemOccurrenceView` directly - already bounded, carries typed subject refs, read status, optional `DiagnosticAssessment`, and `NON_EXECUTION_SUBJECT` unavailable reason without coupling investigators to read-service pagination internals.
 
 **Evidence refs:** no standalone `tuple[str, ...]` handoff in v1; typed refs remain inside `DiagnosticFinding` / `DiagnosticLimitation` (`EventId`, etc.). Richer evidence navigation is future work.
 
@@ -414,7 +414,7 @@ class InvestigationConclusion:
 
 ---
 
-## 22. Root cause promotion model (§22 — design only)
+## 22. Root cause promotion model (§22 - design only)
 
 ```text
 Scenario produces:
@@ -433,12 +433,12 @@ Platform RootCauseAdjudicator (future):
 
 | Slice | Goal | Status |
 |---|---|---|
-| **DIAG-8B** | Define `IncidentInvestigationInput` / `InvestigationConclusion` typed contracts; document mapping from `DiagnosticReadService` | **Complete** — `investigation_contracts.py`, unit + architecture gate tests |
-| **DIAG-8C** | Scenario entry accepts optional `ProblemId`(s); seed investigation scope from `DiagnosticProblemSummary` + limitations (read-only) | **Complete** — `scenario_composition.py`, `platform_diagnostic_context.py`, integration + architecture gate tests |
+| **DIAG-8B** | Define `IncidentInvestigationInput` / `InvestigationConclusion` typed contracts; document mapping from `DiagnosticReadService` | **Complete** - `investigation_contracts.py`, unit + architecture gate tests |
+| **DIAG-8C** | Scenario entry accepts optional `ProblemId`(s); seed investigation scope from `DiagnosticProblemSummary` + limitations (read-only) | **Complete** - `scenario_composition.py`, `platform_diagnostic_context.py`, integration + architecture gate tests |
 | **DIAG-8D** | Rename scenario symbols: `InvestigationConclusion`, `incident.domain_diagnosis` claim kind; decouple `RESOLVED` from “root cause” in docs/UI |
 | **DIAG-8E** | Platform `RootCauseAdjudication` contract; promotion gate from scenario `SUPPORTED` domain claim |
 | **DIAG-8F** | Consolidate `derive_hypothesis_dispositions` with critic resolution helpers or mark evaluator-only; migrate tests |
-| **DIAG-8G** | Proof evaluator labels and report copy — distinguish proof PASS vs investigation conclusion vs platform Problem state |
+| **DIAG-8G** | Proof evaluator labels and report copy - distinguish proof PASS vs investigation conclusion vs platform Problem state |
 | **DIAG-8H** | Optional platform plugin seam: register scenario investigator as extension consuming central diagnostics |
 
 ---
@@ -461,14 +461,14 @@ Platform RootCauseAdjudicator (future):
 | `test_single_execution_provenance.py` | **KEEP-AS-IS** | Provenance |
 | `test_incident_report_quality.py` | **KEEP-BUT-RENAME** | Report copy after terminology split |
 | `conftest.py`, `planner_doubles.py` | **KEEP-AS-IS** | Test infra |
-| — | **ADD-LATER** | Root-cause promotion gate tests (DIAG-8E) |
+| - | **ADD-LATER** | Root-cause promotion gate tests (DIAG-8E) |
 | `test_investigation_contracts.py` | **ADDED (DIAG-8B)** | Boundary validation, execution + application-instance occurrences, tenant integrity |
 | `test_investigation_contracts_no_proof_import_gate.py` | **ADDED (DIAG-8B)** | Platform contract must not import proof scenario |
-| — | **ADD-LATER** | Scenario wiring tests consuming `DiagnosticReadService` output (DIAG-8C) |
+| - | **ADD-LATER** | Scenario wiring tests consuming `DiagnosticReadService` output (DIAG-8C) |
 | `test_diagnostic_platform_integration.py` | **ADDED (DIAG-8C)** | Real central Problem → read service → scenario composition → execution |
 | `test_diagnostic_architecture_gate.py` | **ADDED (DIAG-8C)** | Composition-only read surface; no persistence ownership in scenario runtime |
-| — | **MIGRATE-TO-CENTRAL-DIAGNOSTIC-CONTRACT** | Any future test asserting scenario owns ProblemId |
-| — | **DELETE-AS-DUPLICATE** | None today |
+| - | **MIGRATE-TO-CENTRAL-DIAGNOSTIC-CONTRACT** | Any future test asserting scenario owns ProblemId |
+| - | **DELETE-AS-DUPLICATE** | None today |
 
 ---
 
@@ -478,7 +478,7 @@ Platform RootCauseAdjudicator (future):
 2. **Integration:** Future wiring may tempt scenario to reimplement Problem grouping when central input is delayed.
 3. **Maintenance:** Duplicated disposition logic between `validation.py` and `domain_reasoning.py` may drift.
 4. **Enum overload:** `ClaimResolution` used for both platform-neutral claims and domain-only evaluator assessments.
-5. **Plugin boundary:** `runtime_composition.py` already bridges application environment — clear extension point exists but is not formalized.
+5. **Plugin boundary:** `runtime_composition.py` already bridges application environment - clear extension point exists but is not formalized.
 
 ---
 
@@ -497,7 +497,7 @@ Platform RootCauseAdjudicator (future):
 
 ---
 
-## 29. DIAG-8C — platform-attached investigation (complete)
+## 29. DIAG-8C - platform-attached investigation (complete)
 
 **Modes:**
 
@@ -509,7 +509,7 @@ Platform RootCauseAdjudicator (future):
 **Data path (attached mode only):**
 
 ```text
-ProblemPersistence (central — not imported by scenario runtime)
+ProblemPersistence (central - not imported by scenario runtime)
     ↓
 DiagnosticReadService.get_problem(tenant_id, problem_id)
     ↓
@@ -528,7 +528,7 @@ InvestigationConclusion on ScenarioExecutionResult (attached mode)
 
 **Ownership:** scenario composition (`scenario_composition.py`) is the only module importing `DiagnosticReadService`. Reasoning modules consume materialized `IncidentInvestigationInput`; no persistence, reconstruction, grouping, lifecycle, or orchestrator imports in scenario runtime.
 
-**Identity:** investigation run mints new `TaskId`/`RunId`; investigated occurrence subject retains its own execution or application-instance identity — never reused as investigation run identity.
+**Identity:** investigation run mints new `TaskId`/`RunId`; investigated occurrence subject retains its own execution or application-instance identity - never reused as investigation run identity.
 
 ---
 

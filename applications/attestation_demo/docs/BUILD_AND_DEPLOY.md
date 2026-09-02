@@ -1,4 +1,4 @@
-# Build & deploy — Attestation Demo
+# Build & deploy - Attestation Demo
 
 Tier-3 application package: `applications/attestation_demo`. Operational runbook for local development, verification, and container deployment.
 

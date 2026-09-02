@@ -1,4 +1,4 @@
-# Research agents — architecture
+# Research agents - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 

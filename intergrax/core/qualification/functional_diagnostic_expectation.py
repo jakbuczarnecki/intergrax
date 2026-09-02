@@ -40,6 +40,7 @@ class QualificationCaseExpectation:
     expected_operator_outcome: FunctionalOperatorOutcomeStatus | None = None
     include_output_relation: bool = False
     include_validation: bool = True
+    compare_functional_outcome: bool = True
 
 
 class QualificationComparisonResult(StrEnum):

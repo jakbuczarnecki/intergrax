@@ -3,7 +3,7 @@
 **Bundle id:** `confluence`  
 **Tools:** `confluence.get_page`, `confluence.search_pages`, `confluence.search`
 
-`confluence.search` is a stable alias of `confluence.search_pages` (same handler) — use the shorter id in large LLM tool catalogs.
+`confluence.search` is a stable alias of `confluence.search_pages` (same handler) - use the shorter id in large LLM tool catalogs.
 
 ## Dependencies (`ToolWiringContext`)
 

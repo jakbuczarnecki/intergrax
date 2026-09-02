@@ -1,11 +1,11 @@
-# Collaborative Work — Implementation Plan
+# Collaborative Work - Implementation Plan
 
 **Architecture (1:1):** [`architecture/COLLABORATIVE_WORK.md`](../../architecture/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/plan/MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md)
 
-**Status:** Domain registered — **MP-1 core — production persistence gate OPEN** (final review pending)
+**Status:** Domain registered - **MP-1 core - production persistence gate OPEN** (final review pending)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -30,18 +30,18 @@ Delivery order: **platform architecture/contract slice → platform implementati
 
 ## 2. Delivery principles
 
-1. **Single domain ownership** — no shared ownership with Nexus, Application Hosting, or LKW.
-2. **Semantics before persistence** — contracts and effective-authority model precede storage choices.
-3. **Policy enforces; Collaborative Work defines** — membership/delegation source of truth stays here.
-4. **Execution stays in Nexus** — `RequestIdentity` and `DelegationSpec` remain execution contracts.
-5. **Fail closed** — privileged collaborative mutations require provable effective authority.
-6. **No LKW-owned platform types** — consumer integration only.
+1. **Single domain ownership** - no shared ownership with Nexus, Application Hosting, or LKW.
+2. **Semantics before persistence** - contracts and effective-authority model precede storage choices.
+3. **Policy enforces; Collaborative Work defines** - membership/delegation source of truth stays here.
+4. **Execution stays in Nexus** - `RequestIdentity` and `DelegationSpec` remain execution contracts.
+5. **Fail closed** - privileged collaborative mutations require provable effective authority.
+6. **No LKW-owned platform types** - consumer integration only.
 
 ---
 
 ## 3. Implementation waves
 
-### COLLAB-WORK-0 — Architecture and governance
+### COLLAB-WORK-0 - Architecture and governance
 
 | ID | Task | Status |
 |----|------|--------|
@@ -52,7 +52,7 @@ Delivery order: **platform architecture/contract slice → platform implementati
 
 COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB-WORK-1A** after MP-1 review acceptance.
 
-### COLLAB-WORK-1 — MP-1 architecture / contract slice
+### COLLAB-WORK-1 - MP-1 architecture / contract slice
 
 | Field | Value |
 |-------|-------|
@@ -66,8 +66,8 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **NEW** | `CollaborativePrincipal`, `WorkspaceMembership`, `AuthorityDelegation`, `EffectiveAuthorityRequest`, `EffectiveAuthorityDecision` |
 | **Explicit out of scope** | DB models, repositories, APIs, HTTP routes, membership/delegation services, LKW changes, tests for runtime code, MP-2+ rows |
 | **Acceptance** | Contracts frozen; effective authority intersection documented; membership explicit; delegation non-amplifying; execution contracts not duplicated |
-| **Proof requirements** | `tests/unit/contracts/test_collaborative_work.py` — contract, isolation, fail-closed, delegation validation |
-| **Next step** | COLLAB-WORK-1B — membership/delegation persistence and concurrency |
+| **Proof requirements** | `tests/unit/contracts/test_collaborative_work.py` - contract, isolation, fail-closed, delegation validation |
+| **Next step** | COLLAB-WORK-1B - membership/delegation persistence and concurrency |
 
 | Field | Value |
 |-------|-------|
@@ -82,14 +82,14 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Effective-authority resolution; `CollaborativePrincipal` repository; SQL/Redis/Postgres backends; HTTP/API; LKW adoption; PolicyEngine integration; MP-2+ rows |
 | **Acceptance** | Authoritative create/get/update semantics; no silent last-write-wins; scoped isolation; typed conflict/not-found outcomes; idempotent create replay |
 | **Proof requirements** | `tests/unit/collaborative_work/test_in_memory_repository.py`; contract regression `tests/unit/contracts/test_collaborative_work.py` |
-| **Next step** | COLLAB-WORK-1C — authoritative effective-authority state resolution |
+| **Next step** | COLLAB-WORK-1C - authoritative effective-authority state resolution |
 
 | Field | Value |
 |-------|-------|
 | **ID** | COLLAB-WORK-1C |
 | **Priority** | P0 |
 | **Status** | **APPROVED / CLOSED** |
-| **Purpose** | Authoritative effective-authority state resolution using reloaded `WorkspaceMembership` and `AuthorityDelegation` repository records — collaborative slice only (`acting principal ∩ active membership ∩ active/valid delegation ∩ requested scope structural checks`) |
+| **Purpose** | Authoritative effective-authority state resolution using reloaded `WorkspaceMembership` and `AuthorityDelegation` repository records - collaborative slice only (`acting principal ∩ active membership ∩ active/valid delegation ∩ requested scope structural checks`) |
 | **Dependencies** | COLLAB-WORK-1B approved; `WorkspaceMembershipRepository` and `AuthorityDelegationRepository` ports |
 | **Exact scope** | `CollaborativeWorkAuthorityResolver` in `intergrax/collaborative_work/authority.py`; authoritative rehydration; fail-closed deny paths; deterministic clock injection for delegation validity |
 | **REUSED** | `EffectiveAuthorityRequest`, `EffectiveAuthorityDecision`, `EffectiveAuthorityDenialReason`, `PolicyDecision` / `PolicyAction`; repository ports from COLLAB-WORK-1B |
@@ -97,7 +97,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Workspace policy, resource policy, runtime/tool policy evaluation; principal base-authority source; membership role→capability RBAC mapping; delegator authority non-amplification proof beyond fail-closed `SCOPE_ONLY_INSUFFICIENT`; PolicyEngine changes; execution enforcement; MP-2+ rows |
 | **Acceptance** | Caller-supplied membership/delegation never trusted for authority semantics; repository reload wins; direct and delegated acting paths fail closed when final authority cannot be proven; stale/tampered embedded evidence cannot authorize |
 | **Proof requirements** | `tests/unit/collaborative_work/test_effective_authority.py`; repository and contract regressions |
-| **Next step** | COLLAB-WORK-1D — principal base authority and collaborative authority composition |
+| **Next step** | COLLAB-WORK-1D - principal base authority and collaborative authority composition |
 
 | Field | Value |
 |-------|-------|
@@ -112,7 +112,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Workspace/resource/runtime policy composition; role→permission RBAC; wildcard semantics; PolicyEngine changes; execution enforcement; MP-2+ rows |
 | **Acceptance** | Base authority authoritative not caller-evidence; delegator base authority required for delegated acting; delegation cannot amplify; ALLOW scoped to collaborative slice only; membership role does not substitute base authority |
 | **Proof requirements** | `tests/unit/collaborative_work/test_effective_authority.py`; `tests/unit/collaborative_work/test_in_memory_repository.py`; contract regressions |
-| **Next step** | COLLAB-WORK-1E — policy composition and final enforcement decision boundary |
+| **Next step** | COLLAB-WORK-1E - policy composition and final enforcement decision boundary |
 
 | Field | Value |
 |-------|-------|
@@ -127,7 +127,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Workspace/resource policy evaluators; second PolicyEngine; side-effect execution; widespread runtime rewiring; MP-2+ rows |
 | **Acceptance** | Collaborative ALLOW alone does not authorize execution; missing mandatory layer fails closed; DENY/REQUIRE_HUMAN/ESCALATE/MODIFY never weakened; contributing decisions auditable |
 | **Proof requirements** | `tests/unit/collaborative_work/test_policy_composition.py`; resolver regression if integration requires |
-| **Next step** | COLLAB-WORK-1F — authoritative workspace and resource policy source |
+| **Next step** | COLLAB-WORK-1F - authoritative workspace and resource policy source |
 
 | Field | Value |
 |-------|-------|
@@ -142,7 +142,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Policy DSL; second PolicyEngine; operation applicability classifier; enforcement wiring; policy-management authorization/API; wildcard/inheritance; MP-2+ rows |
 | **Acceptance** | Workspace/resource evaluators return authoritative ``PolicyDecision``; missing/inactive rules DENY; exact scope matching only; outputs compose with 1E; policy administration authorization unsolved |
 | **Proof requirements** | `tests/unit/collaborative_work/test_collaborative_policy_source.py`; `tests/unit/collaborative_work/test_policy_composition.py` regressions |
-| **Next step** | COLLAB-WORK-1G — trusted operation classification and final enforcement gate |
+| **Next step** | COLLAB-WORK-1G - trusted operation classification and final enforcement gate |
 
 | Field | Value |
 |-------|-------|
@@ -157,7 +157,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Broad application adoption; LKW operation catalog; policy management APIs; durable SQL adapter; MP-2+ rows |
 | **Acceptance** | Caller cannot control applicability or authority scope; active profile classifies layers; missing/disabled profile DENY; required resource/runtime validated; final ALLOW only when all required layers ALLOW; no operation execution in gate |
 | **Proof requirements** | `tests/unit/collaborative_work/test_enforcement_gate.py`; `tests/unit/collaborative_work/test_operation_policy_profile_repository.py`; policy composition and policy source regressions |
-| **Next step** | COLLAB-WORK-1H — durable collaborative state and first production enforcement adoption |
+| **Next step** | COLLAB-WORK-1H - durable collaborative state and first production enforcement adoption |
 
 | Field | Value |
 |-------|-------|
@@ -179,7 +179,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **ID** | COLLAB-WORK-1H-R2 |
 | **Priority** | P0 |
 | **Status** | **READY_FOR_REVIEW** |
-| **Purpose** | MP-1 core security and typed-wiring closure — canonical principal membership, delegator membership validity, zero dynamic attribute mutation |
+| **Purpose** | MP-1 core security and typed-wiring closure - canonical principal membership, delegator membership validity, zero dynamic attribute mutation |
 | **Dependencies** | COLLAB-WORK-1H approved lineage; `CollaborativeWorkAuthorityResolver`; repository ports |
 | **Exact scope** | `get_for_principal` membership lookup; principal uniqueness in memory/SQLite; delegator active membership gate; Pydantic repository commands; AST typed-wiring proof |
 | **REUSED** | COLLAB-WORK-1B revision/idempotency semantics; durable SQLite adapter; effective-authority resolver |
@@ -194,7 +194,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **ID** | COLLAB-WORK-1H-R3 |
 | **Priority** | P0 |
 | **Status** | **READY_FOR_REVIEW** |
-| **Purpose** | SQLite canonical membership migration closure — schema parity with fresh databases |
+| **Purpose** | SQLite canonical membership migration closure - schema parity with fresh databases |
 | **Dependencies** | COLLAB-WORK-1H-R2 canonical membership semantics; durable SQLite adapter |
 | **Exact scope** | Transactional rebuild of legacy `workspace_memberships` to `principal_id TEXT NOT NULL` plus unique principal membership |
 | **REUSED** | Canonical `WorkspaceMembership` `record_json`; SQLite adapter `BEGIN IMMEDIATE` conventions |
@@ -209,7 +209,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **ID** | COLLAB-WORK-1J |
 | **Priority** | P0 |
 | **Status** | **READY_FOR_REVIEW** |
-| **Purpose** | PostgreSQL durable backend and production parity — cross-process transactional concurrency proof |
+| **Purpose** | PostgreSQL durable backend and production parity - cross-process transactional concurrency proof |
 | **Dependencies** | COLLAB-WORK-1H durable SQLite adapter; platform PostgreSQL integration (`psycopg`, `PostgreSQLIntegrationConfig`) |
 | **Exact scope** | `PostgreSQLCollaborativeWorkStore` + typed repositories for all MP-1 authoritative ports; `open_postgresql_collaborative_work_repositories`; real PostgreSQL parity/concurrency/integration tests |
 | **REUSED** | Repository ports; serialization; SQLite semantic reference; `infra/docker/postgresql/docker-compose.yml` |
@@ -238,7 +238,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 
 | Field | Value |
 |-------|-------|
-| **PostgreSQL live qualification** | **Accepted** — CW PostgreSQL repository suite: 15 passed / 0 skipped / 0 failed; `real_backend=true`; bounded local Docker qualification host; capability `collaborative_work.persistence.v1`; provider version `16.6` only |
+| **PostgreSQL live qualification** | **Accepted** - CW PostgreSQL repository suite: 15 passed / 0 skipped / 0 failed; `real_backend=true`; bounded local Docker qualification host; capability `collaborative_work.persistence.v1`; provider version `16.6` only |
 | **MP-1 final closure** | Depends on **provider qualification evidence integration** ([`PROVIDER-QUAL-3`](PLATFORM_PLUGINS.md#provider-qual-track-post-plugin-9)), **not** vendor-specific CI jobs or per-provider workflow changes |
 | **Architecture** | [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md) |
 

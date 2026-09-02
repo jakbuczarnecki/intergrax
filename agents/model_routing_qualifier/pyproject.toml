@@ -1,0 +1,28 @@
+# © Artur Czarnecki. All rights reserved.
+# Tier-2 agent dependency project (workspace member).
+# Import path preserved: model_routing_qualifier
+
+[project]
+name = "intergrax-model-routing-qualifier-agent"
+version = "0.1.0"
+description = "Reusable Tier-2 agent package: model_routing_qualifier"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Intergrax-ai",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "model_routing_qualifier",
+  "model_routing_qualifier.steps",
+]
+
+[tool.setuptools.package-dir]
+"model_routing_qualifier" = "."
+
+[tool.uv.sources]
+Intergrax-ai = { workspace = true }

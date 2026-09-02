@@ -16,17 +16,25 @@ def resolve_allowed_tools_from_config(
     explicit: Optional[Sequence[str]] = None,
 ) -> Optional[Sequence[str]]:
     """
-    Merge explicit caller allow-list with Tier-3 ``RuntimePolicyBundle.tool_access``.
+    Resolve effective tool allow-list from Tier-3 ``RuntimePolicyBundle.tool_access``.
 
-    When ``explicit`` is provided it wins. Otherwise a ``StaticToolScopePolicy`` on the
-    bundle yields a sorted allow-list for :class:`ToolAccessPolicy`.
+    Caller ``explicit`` scope narrows (intersects with) upstream policy; it never
+    expands a stricter bundle allow-list. A ``StaticToolScopePolicy`` on the bundle
+    yields a sorted upstream allow-list for :class:`ToolAccessPolicy`. When both
+    authorities apply, the result is their sorted intersection; an empty intersection
+    is ``[]`` (zero allowed tools), not ``None``.
     """
-    if explicit is not None:
-        return explicit
+    upstream: Optional[Sequence[str]] = None
     bundle = config.policy_bundle
-    if bundle is None or bundle.tool_access is None:
+    if bundle is not None and bundle.tool_access is not None:
+        access = bundle.tool_access
+        if isinstance(access, StaticToolScopePolicy):
+            upstream = sorted(access.allowed_tool_ids())
+
+    if upstream is None and explicit is None:
         return None
-    access = bundle.tool_access
-    if isinstance(access, StaticToolScopePolicy):
-        return sorted(access.allowed_tool_ids())
-    return None
+    if upstream is None:
+        return explicit
+    if explicit is None:
+        return upstream
+    return sorted(set(upstream) & set(explicit))

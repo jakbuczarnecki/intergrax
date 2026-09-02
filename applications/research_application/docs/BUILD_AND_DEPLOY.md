@@ -1,4 +1,4 @@
-        # Build & deploy — Research Application
+        # Build & deploy - Research Application
 
         Tier-3 application package: ``applications/research_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
@@ -25,7 +25,7 @@
         cp applications/research_application/.env.example applications/research_application/.env
         ```
 
-        Edit ``.env`` (gitignored). Variables use the application prefix **`RESEARCH_`** — do not put app secrets only in the repository-root ``.env``.
+        Edit ``.env`` (gitignored). Variables use the application prefix **`RESEARCH_`** - do not put app secrets only in the repository-root ``.env``.
 
         | Variable | Default | Role |
         |----------|---------|------|
@@ -109,7 +109,7 @@ Routes are mounted under ``/v1/research``. See ``serving`` and application READM
 
         Override image tag: ``IMAGE_TAG=my-registry/research:1.0.0`` (sh) or ``build-docker.bat my-registry/research:1.0.0`` (bat).
 
-        ### Manual — BuildKit
+        ### Manual - BuildKit
 
         ```bash
         docker buildx build -f applications/research_application/docker/Dockerfile \
@@ -117,7 +117,7 @@ Routes are mounted under ``/v1/research``. See ``serving`` and application READM
           -t research-application .
         ```
 
-        ### Manual — classic Docker
+        ### Manual - classic Docker
 
         ```bash
         cp applications/research_application/docker/.dockerignore .dockerignore

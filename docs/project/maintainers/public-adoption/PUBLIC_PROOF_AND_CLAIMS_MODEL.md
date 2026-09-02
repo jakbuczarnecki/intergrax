@@ -205,7 +205,7 @@ When sources disagree, apply **claim audit rules** (§11): use the lower support
 | Non-duplication rule | Current tasks, slices, dependencies and next steps remain only in the implementation plan |
 
 **LKW product identity ≠ LKW proof/evidence paths.** The Active reference product role
-describes LKW as a product entry — not a proof classification. Accepted LKW proof
+describes LKW as a product entry - not a proof classification. Accepted LKW proof
 documents (for example `LKW_PLATFORM_PROOF.md` and referenced bounded paths) provide
 technical evidence; they do not substitute for LKW product identity.
 
@@ -222,7 +222,7 @@ accepted indexed Ask through production Hybrid Ask
 complete Hybrid Ask combining indexed + live evidence
 ```
 
-The accepted indexed evidence branch of production Hybrid Ask — through the documented Web URL / real-RAG product proof — does **not** establish:
+The accepted indexed evidence branch of production Hybrid Ask - through the documented Web URL / real-RAG product proof - does **not** establish:
 
 - complete live-provider access;
 - Hybrid Ask combining indexed and authorized live evidence in one answer;
@@ -378,10 +378,10 @@ Do not silently choose the more promotional interpretation.
 2. The canonical manifest (`scripts/proof/intergrax_proof_manifest.py`) owns executable proof identity and execution metadata.
 3. A significant public claim presented as executable evidence must reference the exact supporting `proof_id` through **`Proof:`** or **`Proofs:`**.
 4. Proof semantics must cover claim wording. An existing or eligible proof is not automatically evidence for any nearby claim.
-5. `public_evidence_eligible=True` means the proof may be referenced from public evidence surfaces — not that the proof automatically proves adjacent prose.
+5. `public_evidence_eligible=True` means the proof may be referenced from public evidence surfaces - not that the proof automatically proves adjacent prose.
 6. The capability under claim must not be replaced by a fake or mock. Deterministic fixtures are acceptable only when they do not substitute the capability being claimed.
 7. Public docs do not store current execution PASS/FAIL. Current execution status belongs to the runner and receipts.
-8. Commands, profiles, environment requirements, and safety metadata belong to the canonical manifest — not duplicated public prose.
+8. Commands, profiles, environment requirements, and safety metadata belong to the canonical manifest - not duplicated public prose.
 9. Never invent `proof_id` in documentation. If no sufficient proof exists, narrow or remove the claim, or record the evidence gap through normal planning/review.
 10. Live, external, or provider claims require evidence at the corresponding real boundary.
 11. The public-proof-reference validator is **structural**. It does not validate semantic claim↔proof matching.

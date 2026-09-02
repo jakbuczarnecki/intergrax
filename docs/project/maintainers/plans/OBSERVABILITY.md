@@ -1,4 +1,4 @@
-# Observability — Implementation Plan
+# Observability - Implementation Plan
 
 **Architecture (1:1):** [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -6,37 +6,37 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
-**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) — semantic authority for execution identity. Observability records identity; it does not mint it. DIAG is analytical over canonical evidence.
+**Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) - semantic authority for execution identity. Observability records identity; it does not mint it. DIAG is analytical over canonical evidence.
 
-### Architecture sync — UE-DOC-0.6 (2026-08-26)
+### Architecture sync - UE-DOC-0.6 (2026-08-26)
 
 **Target model (from rewritten Observability hub):**
 
-- Execution Runtime establishes canonical Task/Run/Attempt/Execution identity; Observability **records** it on evidence; DIAG **interprets** — no competing execution tree
+- Execution Runtime establishes canonical Task/Run/Attempt/Execution identity; Observability **records** it on evidence; DIAG **interprets** - no competing execution tree
 - **TARGET** identity spine: `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId` + `parent_execution_id` Execution Tree
 - `parent_execution_id` (lineage) ≠ `parent_event_id` (event causality) ≠ `correlation_id` (operational)
-- Unified Run Journal and as-of/bitemporal views are **derived** — not lifecycle authority
+- Unified Run Journal and as-of/bitemporal views are **derived** - not lifecycle authority
 - Embedded DIAG subsystem (DIAG-1..5C-A) preserved under ownership framing; model/grouping output is hypothesis not canonical truth
 
 **CURRENT implementation (descriptive):** TRACE-1A–1C **Done / Closed** four-ID event spine (`TaskId`/`RunId`/`AttemptId`/`EventId`); no canonical `ExecutionId` on `RuntimeEvent`; DIAG reconstruction run-scoped; `resolve_background_execution` mints new `AttemptId` on worker boundary (UEA redelivery debt).
 
-**Architecture clarification:** Historical TRACE-1A/B/C Done rows that cite "canonical" four-ID spine describe the **then-current** milestone — frozen UEA **TARGET** adds `ExecutionId`. TRACE-1A/B/C rows are **not** silently rewritten or deleted.
+**Architecture clarification:** Historical TRACE-1A/B/C Done rows that cite "canonical" four-ID spine describe the **then-current** milestone - frozen UEA **TARGET** adds `ExecutionId`. TRACE-1A/B/C rows are **not** silently rewritten or deleted.
 
 **High-level migration order:** see Observability hub [Implementation readiness §5](../../architecture/OBSERVABILITY.md#5-migration-order-high-level). Detailed code mapping deferred to **UE-DOC-0.9**.
 
-**Plan debt:** substantial ExecutionId / DIAG Execution-scoped row restructuring is **not** in UE-DOC-0.6 — track in UE-DOC-0.9. Background redelivery identity remediation deferred UE-DOC-0.7.
+**Plan debt:** substantial ExecutionId / DIAG Execution-scoped row restructuring is **not** in UE-DOC-0.6 - track in UE-DOC-0.9. Background redelivery identity remediation deferred UE-DOC-0.7.
 
 ---
 
-**Cross-plan — Agent layer (ACP):** Dual observability planes (architecture §31) — `AgentRunTrace` on `AgentRunResult` (Plane B) and `ApplicationRunSummary` on Task completion (Plane A). Delivered in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 3** (`ACP-OBS-1`, `ACP-OBS-2`) and **Wave 7** redaction (`ACP-PROD-8`). Trace spine changes MUST keep step records compatible with `AgentStepRecord` tool/RAG/LLM fields.
+**Cross-plan - Agent layer (ACP):** Dual observability planes (architecture §31) - `AgentRunTrace` on `AgentRunResult` (Plane B) and `ApplicationRunSummary` on Task completion (Plane A). Delivered in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 3** (`ACP-OBS-1`, `ACP-OBS-2`) and **Wave 7** redaction (`ACP-PROD-8`). Trace spine changes MUST keep step records compatible with `AgentStepRecord` tool/RAG/LLM fields.
 
-**Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
+**Cross-plan - Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
 
-**Cross-plan — Application Hosting (APP-HOST-3B):** Application Hosting publishes typed `HostedApplicationEvent` signals through the **platform observability signal** path on the existing HOS spine/export infrastructure (architecture § Execution-scoped vs non-execution observability signals). Hosting lifecycle signals **MUST NOT** synthesize `TaskId`/`RunId`/`AttemptId` or mint per-event `AttemptId`. Corrective implementation: **TRACE-1B-HOS-FIX**. No second event bus.
+**Cross-plan - Application Hosting (APP-HOST-3B):** Application Hosting publishes typed `HostedApplicationEvent` signals through the **platform observability signal** path on the existing HOS spine/export infrastructure (architecture § Execution-scoped vs non-execution observability signals). Hosting lifecycle signals **MUST NOT** synthesize `TaskId`/`RunId`/`AttemptId` or mint per-event `AttemptId`. Corrective implementation: **TRACE-1B-HOS-FIX**. No second event bus.
 
-**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine — do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
+**Cross-feature - Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine - do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
 
-**Last updated:** 2026-08-17 — **TRACE-BITEMP-3** K-only knowledge reconstruction **Done / Closed** (`5c2eedca75fc32101ea7a35e332c2abb3af24985`) · **TRACE-ASOF-2** logical execution projection **Done / Closed** (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`) · **TRACE-BITEMP-2** canonical revision ordering provider **Planned / In Review** · **TRACE-BITEMP-1** typed contracts **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-1C** Done / Closed (`42f196715bbf19aa69667f4a73c6002de61b8dff`) · **TRACE-BITEMP-ARCH-SYNC-R7** acceptance linearization + fenced-out/orphaned durable commit semantics · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-1B** / **TRACE-1B-HOS-FIX** Done / Closed (`dd4cd73598652119010502bfd0f4ff06d4db0ed8`) · **TRACE-1B-ARCH-HOS** Done (`1a3dfa9244a052bd13417562dccc104048d0a492`) · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction ordering · pre-production clean-cut policy.
+**Last updated:** 2026-08-17 - **TRACE-BITEMP-3** K-only knowledge reconstruction **Done / Closed** (`5c2eedca75fc32101ea7a35e332c2abb3af24985`) · **TRACE-ASOF-2** logical execution projection **Done / Closed** (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`) · **TRACE-BITEMP-2** canonical revision ordering provider **Planned / In Review** · **TRACE-BITEMP-1** typed contracts **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-ASOF-1** execution position + `AsOfBoundary` **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`) · **TRACE-1C** Done / Closed (`42f196715bbf19aa69667f4a73c6002de61b8dff`) · **TRACE-BITEMP-ARCH-SYNC-R7** acceptance linearization + fenced-out/orphaned durable commit semantics · **TRACE-BITEMP-ARCH-SYNC-R6** unresolved position resolution ownership + lease/fencing + auditable terminalization · **TRACE-BITEMP-ARCH-SYNC-R5** watermark finality + gap semantics + idempotent acceptance requirements · **TRACE-BITEMP-ARCH-SYNC-R4** domain-owned revision ordering authority + pluggable provider contract · **TRACE-BITEMP-ARCH-SYNC-R3** revision watermark semantics + serialization decision boundary · **TRACE-1B** / **TRACE-1B-HOS-FIX** Done / Closed (`dd4cd73598652119010502bfd0f4ff06d4db0ed8`) · **TRACE-1B-ARCH-HOS** Done (`1a3dfa9244a052bd13417562dccc104048d0a492`) · **TRACE-BITEMP-ARCH-SYNC-R2** deterministic correction ordering · pre-production clean-cut policy.
 
 ---
 
@@ -44,9 +44,9 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY plan).
 
-- **Implement / audit default:** Hub Phase TRACE (§5–§10 arch) · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_implementation_history.md`](plan/satellites/OBSERVABILITY_implementation_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub Phase TRACE (§5–§10 arch) · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_implementation_history.md`](plan/satellites/OBSERVABILITY_implementation_history.md) (closed phases). Phase AUDIT-IDEAL - **Planned** / open rows only. §6.1 maintenance queues - open P0/P1 only
 - **Token Optimization:** read feature pair + rows `TOKEN-OBS-1` / `TOKEN-OBS-2`; use HOS/domain-signal model, do not create private telemetry channel.
-- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) read-scope block only.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -64,44 +64,44 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 
 ---
 
-## Phase TRACE — Execution identity, unified journal strictness, as-of projections, and bitemporal state (Planned)
+## Phase TRACE - Execution identity, unified journal strictness, as-of projections, and bitemporal state (Planned)
 
 **Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §5–§10 · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.1.8  
-**Design:** **TRACE-1** identity + journal + as-of + bitemporal target canon — **Done** (TRACE-ARCH-SYNC-1, TRACE-BITEMP-ARCH-SYNC, TRACE-BITEMP-ARCH-SYNC-R2, TRACE-BITEMP-ARCH-SYNC-R3, TRACE-BITEMP-ARCH-SYNC-R4, TRACE-BITEMP-ARCH-SYNC-R5, TRACE-BITEMP-ARCH-SYNC-R6, TRACE-BITEMP-ARCH-SYNC-R7, 2026-08-17)  
+**Design:** **TRACE-1** identity + journal + as-of + bitemporal target canon - **Done** (TRACE-ARCH-SYNC-1, TRACE-BITEMP-ARCH-SYNC, TRACE-BITEMP-ARCH-SYNC-R2, TRACE-BITEMP-ARCH-SYNC-R3, TRACE-BITEMP-ARCH-SYNC-R4, TRACE-BITEMP-ARCH-SYNC-R5, TRACE-BITEMP-ARCH-SYNC-R6, TRACE-BITEMP-ARCH-SYNC-R7, 2026-08-17)  
 **Implementation:** **TRACE-1A / TRACE-1B / TRACE-1C** identity + journal strictness canon is **Done / Closed**. **TRACE-ASOF-1** execution position + `AsOfBoundary` is **Done / Closed** (`02462d96897daa4ea19d96dce776768a03cbbf53`). **TRACE-BITEMP-1** typed contracts are **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`). **TRACE-ASOF-2** logical execution projection is **Done / Closed** (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`). **TRACE-BITEMP-2** canonical revision ordering provider is **Planned / In Review** (independent audit closes it).
 
 **Pre-production clean-cut (canon):** Intergrax has no active production users. TRACE implementation **removes** unused legacy paths rather than preserving them. No permanent compatibility aliases, dual canonical schemas, or migrations for unused persisted formats (including old checkpoint shapes). Migrate live code to the canonical contract, then delete the old path. See architecture [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §5.7.
 
 **Delivery rule:** one TRACE row per PR; no runtime work in TRACE-ARCH-SYNC-1 doc-only slice.
 
-### TRACE-1 — Identity contracts and journal strictness
+### TRACE-1 - Identity contracts and journal strictness
 
 | ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
 |----|----------|--------|------|------------|----------------------|
 | **TRACE-1A** | P1 | Done / Closed (`3eee3a860cd852e833fa3f2dd3d190ce9d96de08`) | Typed `TaskId`/`RunId`/`AttemptId` via `typing.NewType(..., str)`; strict validation; correct mint ownership; `RuntimeRequest.task_id`/`run_id`; remove canonical identity from metadata | TRACE-1 design complete | No `metadata["run_id"]`; no `task_id or run_id` fallbacks; wire strings only on boundary |
 | **TRACE-1B** | P1 | Done / Closed (`dd4cd73598652119010502bfd0f4ff06d4db0ed8`) | `AttemptId` through `RuntimeExecutionContext`, `EmitContext`, `RuntimeEvent`; attempt-aware emit paths; `TASK_CREATED` as first journal event in A1 | TRACE-1A | Every canonical `RuntimeEvent` carries `TaskId`, `RunId`, `AttemptId`, `EventId` |
 | **TRACE-1B-ARCH-HOS** | P1 | **Done** (`1a3dfa9244a052bd13417562dccc104048d0a492`) | Freeze execution-scoped `RuntimeEvent` vs non-execution platform observability signals; resolve hosting target; one HOS spine, no second bus | TRACE-1A | Architecture canon in [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) § Execution-scoped vs non-execution observability signals |
-| **TRACE-1B-HOS-FIX** | P1 | Done / Closed (`dd4cd73598652119010502bfd0f4ff06d4db0ed8`) | Remove synthetic execution identity from hosting platform signals; route `HostedApplicationEvent` through canonical platform observability path on existing HOS spine/export — no `mint_attempt_id()` per hosting event, no synthetic `TaskId`/`RunId` | TRACE-1B-ARCH-HOS; TRACE-1B | `ObservabilityHostedApplicationEventPublisher` replaces runtime spine adapter; `ExportRecordKind.PLATFORM_SIGNAL`; no second bus; no compatibility alias or historical migration |
+| **TRACE-1B-HOS-FIX** | P1 | Done / Closed (`dd4cd73598652119010502bfd0f4ff06d4db0ed8`) | Remove synthetic execution identity from hosting platform signals; route `HostedApplicationEvent` through canonical platform observability path on existing HOS spine/export - no `mint_attempt_id()` per hosting event, no synthetic `TaskId`/`RunId` | TRACE-1B-ARCH-HOS; TRACE-1B | `ObservabilityHostedApplicationEventPublisher` replaces runtime spine adapter; `ExportRecordKind.PLATFORM_SIGNAL`; no second bus; no compatibility alias or historical migration |
 | **TRACE-1C** | P1 | Done / Closed (`42f196715bbf19aa69667f4a73c6002de61b8dff`) | **Strict journal + legacy removal:** zero identity fallback in journal build; migrate live code to canonical identity; delete unused legacy aliases/fallbacks/adapters; strict journal reconstruction; no `Any`/dynamic adapters on identity boundary; **no** permanent compatibility layer | TRACE-1B; TRACE-1B-HOS-FIX | `build_unified_run_journal` enforces strict contract; legacy aliased identity **removed** from canonical runtime (not merely recognized or flagged) |
 
 **TRACE-1C evidence chain** (independently audited; final acceptance `42f196715bbf19aa69667f4a73c6002de61b8dff`): `94ad240e4a162ede5f6e1a03c55d1b412fffaee8` → `7d5afa7da0aca0c9b195e63613041e91fc5449e6` → `42f196715bbf19aa69667f4a73c6002de61b8dff`.
 
 **TRACE-1B evidence chain** (independently audited; final acceptance `dd4cd73598652119010502bfd0f4ff06d4db0ed8` because TRACE-1B could not close before HOS semantics were corrected): `302669b7c1006be49e1a23d9087de148b9ccc6d1` → `7542adf384a69713fea7faf644a711ed42563ca7` → `1a3dfa9244a052bd13417562dccc104048d0a492` → `dd4cd73598652119010502bfd0f4ff06d4db0ed8`.
 
-### TRACE-ASOF — First-class as-of projections
+### TRACE-ASOF - First-class as-of projections
 
 | ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
 |----|----------|--------|------|------------|----------------------|
 | **TRACE-ASOF-1** | P1 | Done / Closed (`02462d96897daa4ea19d96dce776768a03cbbf53`) | Resolve deterministic historical boundary: run-scoped `ExecutionEventPosition` at persistence acceptance; `PositionedRuntimeEvent` wrapper; typed inclusive `AsOfBoundary`; positioned read prefix; no timestamp-only ambiguity | TRACE-1C | `append` returns canonical position; idempotent `EventId` reuse; journal/list order follows execution position |
 | **TRACE-ASOF-2** | P1 | Done / Closed (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`) | First canonical logical execution projection: `RunExecutionAsOfProjection` from positioned `RuntimeEvent` prefix via pure reducer `project_run_execution_as_of`; read orchestration `reconstruct_run_execution_as_of` + `load_positioned_run_journal_through`; `RunExecutionLifecycleStatus` from `RuntimeEventType` only (no payload parsing); attempt-aware; `HistoricalEventReference` provenance; logical-only (no materialization); exact `AsOfBoundary` existence required | TRACE-ASOF-1; TRACE-BITEMP-1 | Logical projection rebuildable from journal; no new source of truth; exact boundary event must exist (`RunExecutionBoundaryNotFoundError`); prefix completeness verified (limit pagination fail-closed); unknown history fails explicitly; stable historical coordinate after later appends |
 | **TRACE-ASOF-3** | P2 | Planned (**conditional**) | Only if projections are materialized: immutable projection revisions; explicit `revision_id`; explicit `supersedes`; rebuildability | TRACE-ASOF-2 | Skippable if materialization not needed after TRACE-ASOF-2 |
-| **TRACE-ASOF-4** | P1 | Planned | Typed public/internal **execution-as-of** query contract at boundary **E** («What was execution state at E?»); provenance to source execution events; no dynamic projection registry; operator/debug/audit consumption. **Does not** own full E+K+Valid Time+System Time semantics (TRACE-BITEMP-4) | TRACE-ASOF-2; TRACE-ASOF-3 only if materialization shipped | Query surface does not treat projection as proof/evidence; execution-as-of only — not bitemporal knowledge semantics |
+| **TRACE-ASOF-4** | P1 | Planned | Typed public/internal **execution-as-of** query contract at boundary **E** («What was execution state at E?»); provenance to source execution events; no dynamic projection registry; operator/debug/audit consumption. **Does not** own full E+K+Valid Time+System Time semantics (TRACE-BITEMP-4) | TRACE-ASOF-2; TRACE-ASOF-3 only if materialization shipped | Query surface does not treat projection as proof/evidence; execution-as-of only - not bitemporal knowledge semantics |
 
 **TRACE-ASOF-1 evidence chain** (independently audited; final acceptance `02462d96897daa4ea19d96dce776768a03cbbf53`): `ae618fc81817497dbbcf018d92c95856f2d44115` → `d88253dbcfaa470597f93d91eec6a80a30e77007` → `98a2d186d9b512048c01024b67f1e707d72240ee` → `a7a931c6a5c4356e9bd49d7d9f8b5787e9a826b6` → `02462d96897daa4ea19d96dce776768a03cbbf53`.
 
-**Non-goals (canon):** new event store; mandatory materialization. Full bitemporal valid-time / system-time architecture is an **accepted target capability** — see TRACE-BITEMP-* (not a non-goal).
+**Non-goals (canon):** new event store; mandatory materialization. Full bitemporal valid-time / system-time architecture is an **accepted target capability** - see TRACE-BITEMP-* (not a non-goal).
 
-### TRACE-BITEMP — First-class bitemporal historical state
+### TRACE-BITEMP - First-class bitemporal historical state
 
 **Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §8  
 **Design:** **Done** (TRACE-BITEMP-ARCH-SYNC, TRACE-BITEMP-ARCH-SYNC-R2, TRACE-BITEMP-ARCH-SYNC-R3, TRACE-BITEMP-ARCH-SYNC-R4, TRACE-BITEMP-ARCH-SYNC-R5, TRACE-BITEMP-ARCH-SYNC-R6, TRACE-BITEMP-ARCH-SYNC-R7, 2026-08-17) · **TRACE-BITEMP-1** typed contracts **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · production persistence **Planned** (TRACE-BITEMP-2).
@@ -152,35 +152,35 @@ TRACE-1A → TRACE-1B → TRACE-1B-HOS-FIX → TRACE-1C → TRACE-ASOF-1 → TRA
 
 | ID | Priority | Status | Goal | Dependency | Acceptance (summary) |
 |----|----------|--------|------|------------|----------------------|
-| **TRACE-BITEMP-1** | P1 | Done / Closed (`d68c72177403fb634fd4ede2d0252e9814d7adee`) | Canonical temporal semantics and contracts **only** (no production storage): frozen types in `intergrax.contracts.bitemporal_knowledge` — `ValidTimeBasis`, `SystemTimeBasis`, `BitemporalKnowledgeBasis`, `KnowledgeRevisionId`, `RevisionAcceptanceKey`, `KnowledgeRevisionPosition`, `KnowledgeRevisionPositionLifecycle`, `KnowledgeRevisionWatermark`, `KnowledgeOrderingScope` (TENANT), `RevisionOrderingAuthority`. Canonical strategy: tenant-scoped transactional allocation + acceptance. Failure matrix A–J frozen. Architecture §8.11. **MUST NOT** implement production persistence | TRACE-1C; TRACE-ASOF-1 | Identity and execution boundary stable; correction ordering is not timestamp-only; `supersedes` does not define total ordering; position lifecycle and finalized watermark contract frozen; allocated ≠ accepted; `KnowledgeRevisionId` bound to idempotent acceptance; same key + same revision → same K; same key + different revision → conflict; failure/crash scenarios A–J specified; TENANT scope + transactional canonical strategy selected with documented rationale; extension contract remains capable of qualified alternatives; no semantic weakening by provider selection; no storage implementation |
+| **TRACE-BITEMP-1** | P1 | Done / Closed (`d68c72177403fb634fd4ede2d0252e9814d7adee`) | Canonical temporal semantics and contracts **only** (no production storage): frozen types in `intergrax.contracts.bitemporal_knowledge` - `ValidTimeBasis`, `SystemTimeBasis`, `BitemporalKnowledgeBasis`, `KnowledgeRevisionId`, `RevisionAcceptanceKey`, `KnowledgeRevisionPosition`, `KnowledgeRevisionPositionLifecycle`, `KnowledgeRevisionWatermark`, `KnowledgeOrderingScope` (TENANT), `RevisionOrderingAuthority`. Canonical strategy: tenant-scoped transactional allocation + acceptance. Failure matrix A–J frozen. Architecture §8.11. **MUST NOT** implement production persistence | TRACE-1C; TRACE-ASOF-1 | Identity and execution boundary stable; correction ordering is not timestamp-only; `supersedes` does not define total ordering; position lifecycle and finalized watermark contract frozen; allocated ≠ accepted; `KnowledgeRevisionId` bound to idempotent acceptance; same key + same revision → same K; same key + different revision → conflict; failure/crash scenarios A–J specified; TENANT scope + transactional canonical strategy selected with documented rationale; extension contract remains capable of qualified alternatives; no semantic weakening by provider selection; no storage implementation |
 | **TRACE-BITEMP-2** | P1 | Planned / In Review | Implement canonical first-party `CanonicalRevisionOrderingProvider` over durable SQLite (`RevisionOrderingSQLiteStore`, `open_revision_ordering_authority`), fencing/resolution/orphan records, `UnresolvedRevisionRecovery`, host DI, and focused provider proof tests. Implements TRACE-BITEMP-1 + R6 + R7 canon only | TRACE-BITEMP-1 | Canonical default provider operational via host DI; idempotent/concurrent/restart/watermark/orphan proofs pass; contract swappable without semantic change; no vendor leakage on public contract |
-| **TRACE-BITEMP-3** | P1 | Done / Closed (`5c2eedca75fc32101ea7a35e332c2abb3af24985`) | Provider-independent deterministic historical knowledge reconstruction at finalized watermark **K** via `RevisionOrderingAuthority.records_through` + typed `KnowledgeRevisionReader` + pure reducer (`knowledge_reconstruction.py` / `reconstruct_knowledge_at_watermark`). `KnowledgeRevisionPositionRecord.accepted_revision_id` exposes canonical **K → KnowledgeRevisionId** for `ACCEPTED` positions only; `TERMINAL_NON_COMMITTED` and orphaned physical writes excluded. Answers: canonical knowledge at finalized **K**. Closure does **not** deliver `ValidTimeBasis`/`SystemTimeBasis` filtering, T→K resolution, combined E+K projection, combined E+K+temporal query, or public temporal/audit API — downstream TRACE-BITEMP-4 (temporal), TRACE-ASOF-4 (execution query at E); not unresolved TRACE-BITEMP-3 gaps | TRACE-ASOF-2; TRACE-BITEMP-2 | Reconstruction depends on `RevisionOrderingAuthority` contract only; same finalized K → same `HistoricalKnowledgeProjection` after later appends, restart, orphan discovery; incomplete prefix fails closed; focused proof tests pass |
-| **TRACE-BITEMP-4** | P1 | Planned | **Downstream owner:** `ValidTimeBasis` selection/filtering; `SystemTimeBasis` selection/filtering; bitemporal query semantics (valid time + system time — **K** not a temporal axis); wall-clock **T → finalized K**; combined historical **E + K + ValidTimeBasis + SystemTimeBasis** query/audit composition (**Historically Reproducible Execution State**). Temporal query/audit surface consuming **domain abstractions only** — including: What is the highest **finalized** knowledge watermark? Is position K accepted, terminal non-committed, or unresolved? Why can the watermark not advance beyond K? Which positions below/at the watermark are accepted revisions? Which positions represent terminal non-committed outcomes? What knowledge was safely visible at watermark K? What was the authoritative knowledge watermark at system time S? What revisions were accepted ≤ K? What was known at K? What did execution E operate against using knowledge watermark K? What do we now know was valid for the time associated with E? What was believed to be valid at the time E executed? **R6 resolution/lease/fencing audit:** Which K positions are currently `UNRESOLVED`? Why is K unresolved? Which authority currently owns resolution? Is the current lease/ownership stale? What blocks the watermark? Who/what finalized K? Why was K terminalized? What resolution reason was recorded? What fencing/generation authority authorized finalization? When did resolution occur? Which stale/late commits were rejected after finalization? Which terminalized gap allowed watermark to advance? **R7 orphan/integrity audit:** Did a stale writer physically persist data after losing authority? What K did the orphaned write target? Which fencing generation produced it? Which generation won canonical ownership? What is the canonical lifecycle state of K? Was the orphan quarantined? What evidence was recorded? What reconciliation disposition applies? Did any attempted stale commit get rejected? Did any stale physical write land but remain non-canonical? Was the content later legitimately accepted at a new K? Plus valid-time as-of; system-time as-of; combined bitemporal basis; correction-order queries (before/after revision position K; authoritative K1 → K2 → K3 order); correction history; provenance to source revisions/events. Wall-clock audit questions must **not** rely on timestamp sorting alone. Canonical API **MUST NOT** expose provider-specific gap semantics as the audit model. Canonical readers must never need provider-specific internals to determine accepted knowledge. Provider diagnostics **MAY** separately expose implementation details (transaction ID, DB row/version, 2PC coordinator details, internal lease ID, vendor tokens) as diagnostic provenance only — not canonical semantics. Audit surfaces **MUST NOT** expose implementation-specific concepts (database sequence IDs, Kafka offsets, Redis counters, vendor-specific transaction identifiers) as canonical audit meaning — only **KnowledgeRevisionPosition** / **KnowledgeRevisionWatermark** (or TRACE-BITEMP-1 frozen names) | TRACE-BITEMP-3 | Typed query API; deterministic correction-order and finalized watermark-resolution answers; position finality queries supported; no vendor lock-in; canonical audit semantics provider-independent; **R6:** resolution/lease/fencing audit queries supported at domain level; **R7:** orphan/integrity audit queries supported at domain level; canonical readers never infer ACCEPTED from physical storage presence |
-| **TRACE-BITEMP-5** | P1 | Planned | Production proof/invariants + **provider qualification proof matrix**: (A) canonical provider passes complete proof suite; (B) provider conformance suite reusable for alternatives; (C) alternate provider cannot be marked production-qualified without passing equivalent semantic proof; (D) host selection cannot activate an unqualified provider in production-grade profile without explicit fail-closed behavior defined by architecture. Proof areas: **concurrent acceptance**; **clock skew**; **idempotent retry**; **allocation/persistence failure**; **watermark resolution**; **scoped ordering**; **cross-scope behavior**; **repeated historical query**; **deterministic repeated reconstruction**; **causal lineage independence**; **historical immutability**; **audit reconstruction**; **R5 proof scenarios**: (1) transaction rollback gap — K2 allocated then rolled back, K3/K4 succeed, watermark can advance across finalized K2; (2) sequencer orphan — K issued but acceptance never commits; (3) crash between allocation and acceptance; (4) crash after durable acceptance but before caller response; (5) retry after successful-but-unacknowledged acceptance returns same semantic K; (6) duplicate retry does not create second accepted revision; (7) permanent terminal gap does not freeze watermark forever; (8) unresolved gap blocks watermark advancement; (9) highest-allocated ≠ watermark proof; (10) provider swap equivalence — two qualified providers produce equivalent canonical watermark/reconstruction semantics; (11) repeated reconstruction at same finalized watermark is deterministic; (12) wall-clock T → K resolution never returns boundary containing unresolved gaps; **R6 proof scenarios**: (1) writer crashes while K is UNRESOLVED; (2) unresolved K pins watermark; (3) recovery worker detects stale K; (4) lease expires but K is NOT blindly voided; (5) recovery obtains newer fencing authority; (6) original writer returns using stale fence and is rejected; (7) recovery proves no durable acceptance and terminalizes K; (8) immutable resolution record exists; (9) watermark advances across terminalized K; (10) writer commits before recovery obtains newer authority → ACCEPTED wins; (11) recovery wins race first → late writer rejected; (12) ambiguous state remains UNRESOLVED and watermark stays pinned; (13) restart recovers outstanding unresolved positions; (14) hung/in-doubt 2PC operation remains unresolved until safely classified; (15) governance/manual resolution uses same authority/fencing/audit rules; (16) TERMINAL_NON_COMMITTED cannot transition back to ACCEPTED; (17) later legitimate correction uses new acceptance key + new K; (18) provider conformance — two qualified providers produce equivalent lifecycle/resolution/watermark semantics under same crash/race history; (19) resolution record is not reconstructed as a knowledge revision; (20) repeated recovery is idempotent; **R7 proof scenarios**: (1) writer acceptance linearizes before recovery — K remains ACCEPTED, recovery cannot void; (2) recovery terminalization linearizes before stale writer — K remains TERMINAL_NON_COMMITTED; (3) late stale physical write rejected by provider; (4) late stale physical write cannot be physically prevented and becomes durable — detected as orphaned/fenced-out; (5) orphaned durable write does not change K lifecycle; (6) orphaned durable write does not move/change watermark; (7) same watermark reconstruction before and after orphan discovery is identical; (8) orphan evidence is immutable and queryable; (9) orphan content excluded from canonical reads; (10) reconciliation does not mutate terminal K; (11) if orphan content should later be accepted — new RevisionAcceptanceKey + new K; (12) concurrent recovery/writer race has exactly one canonical winner; (13) no timestamp-based winner selection; (14) Provider A rejects late write physically, Provider B quarantines landed late write — both yield identical canonical reader state; (15) restart after orphan creation preserves canonical terminal result; (16) duplicate orphan detection is idempotent; (17) ResolutionRecord and orphan/integrity record remain distinct from knowledge revisions; plus existing: concurrent corrections on same fact; delayed correction; multiple correction chain P1 → P2 → P3; equal/ambiguous timestamps; execution independence; backdated correction; future-effective change; historical-belief reconstruction; current-corrected-history reconstruction; no history destruction. Do **not** implement qualification engine here unless separately scoped | TRACE-BITEMP-4 | All required platform proof scenarios pass including R5 + R6 + R7 scenarios; canonical and alternative providers measured against same semantic suite; unqualified provider activation fail-closed in production-grade profile |
+| **TRACE-BITEMP-3** | P1 | Done / Closed (`5c2eedca75fc32101ea7a35e332c2abb3af24985`) | Provider-independent deterministic historical knowledge reconstruction at finalized watermark **K** via `RevisionOrderingAuthority.records_through` + typed `KnowledgeRevisionReader` + pure reducer (`knowledge_reconstruction.py` / `reconstruct_knowledge_at_watermark`). `KnowledgeRevisionPositionRecord.accepted_revision_id` exposes canonical **K → KnowledgeRevisionId** for `ACCEPTED` positions only; `TERMINAL_NON_COMMITTED` and orphaned physical writes excluded. Answers: canonical knowledge at finalized **K**. Closure does **not** deliver `ValidTimeBasis`/`SystemTimeBasis` filtering, T→K resolution, combined E+K projection, combined E+K+temporal query, or public temporal/audit API - downstream TRACE-BITEMP-4 (temporal), TRACE-ASOF-4 (execution query at E); not unresolved TRACE-BITEMP-3 gaps | TRACE-ASOF-2; TRACE-BITEMP-2 | Reconstruction depends on `RevisionOrderingAuthority` contract only; same finalized K → same `HistoricalKnowledgeProjection` after later appends, restart, orphan discovery; incomplete prefix fails closed; focused proof tests pass |
+| **TRACE-BITEMP-4** | P1 | Planned | **Downstream owner:** `ValidTimeBasis` selection/filtering; `SystemTimeBasis` selection/filtering; bitemporal query semantics (valid time + system time - **K** not a temporal axis); wall-clock **T → finalized K**; combined historical **E + K + ValidTimeBasis + SystemTimeBasis** query/audit composition (**Historically Reproducible Execution State**). Temporal query/audit surface consuming **domain abstractions only** - including: What is the highest **finalized** knowledge watermark? Is position K accepted, terminal non-committed, or unresolved? Why can the watermark not advance beyond K? Which positions below/at the watermark are accepted revisions? Which positions represent terminal non-committed outcomes? What knowledge was safely visible at watermark K? What was the authoritative knowledge watermark at system time S? What revisions were accepted ≤ K? What was known at K? What did execution E operate against using knowledge watermark K? What do we now know was valid for the time associated with E? What was believed to be valid at the time E executed? **R6 resolution/lease/fencing audit:** Which K positions are currently `UNRESOLVED`? Why is K unresolved? Which authority currently owns resolution? Is the current lease/ownership stale? What blocks the watermark? Who/what finalized K? Why was K terminalized? What resolution reason was recorded? What fencing/generation authority authorized finalization? When did resolution occur? Which stale/late commits were rejected after finalization? Which terminalized gap allowed watermark to advance? **R7 orphan/integrity audit:** Did a stale writer physically persist data after losing authority? What K did the orphaned write target? Which fencing generation produced it? Which generation won canonical ownership? What is the canonical lifecycle state of K? Was the orphan quarantined? What evidence was recorded? What reconciliation disposition applies? Did any attempted stale commit get rejected? Did any stale physical write land but remain non-canonical? Was the content later legitimately accepted at a new K? Plus valid-time as-of; system-time as-of; combined bitemporal basis; correction-order queries (before/after revision position K; authoritative K1 → K2 → K3 order); correction history; provenance to source revisions/events. Wall-clock audit questions must **not** rely on timestamp sorting alone. Canonical API **MUST NOT** expose provider-specific gap semantics as the audit model. Canonical readers must never need provider-specific internals to determine accepted knowledge. Provider diagnostics **MAY** separately expose implementation details (transaction ID, DB row/version, 2PC coordinator details, internal lease ID, vendor tokens) as diagnostic provenance only - not canonical semantics. Audit surfaces **MUST NOT** expose implementation-specific concepts (database sequence IDs, Kafka offsets, Redis counters, vendor-specific transaction identifiers) as canonical audit meaning - only **KnowledgeRevisionPosition** / **KnowledgeRevisionWatermark** (or TRACE-BITEMP-1 frozen names) | TRACE-BITEMP-3 | Typed query API; deterministic correction-order and finalized watermark-resolution answers; position finality queries supported; no vendor lock-in; canonical audit semantics provider-independent; **R6:** resolution/lease/fencing audit queries supported at domain level; **R7:** orphan/integrity audit queries supported at domain level; canonical readers never infer ACCEPTED from physical storage presence |
+| **TRACE-BITEMP-5** | P1 | Planned | Production proof/invariants + **provider qualification proof matrix**: (A) canonical provider passes complete proof suite; (B) provider conformance suite reusable for alternatives; (C) alternate provider cannot be marked production-qualified without passing equivalent semantic proof; (D) host selection cannot activate an unqualified provider in production-grade profile without explicit fail-closed behavior defined by architecture. Proof areas: **concurrent acceptance**; **clock skew**; **idempotent retry**; **allocation/persistence failure**; **watermark resolution**; **scoped ordering**; **cross-scope behavior**; **repeated historical query**; **deterministic repeated reconstruction**; **causal lineage independence**; **historical immutability**; **audit reconstruction**; **R5 proof scenarios**: (1) transaction rollback gap - K2 allocated then rolled back, K3/K4 succeed, watermark can advance across finalized K2; (2) sequencer orphan - K issued but acceptance never commits; (3) crash between allocation and acceptance; (4) crash after durable acceptance but before caller response; (5) retry after successful-but-unacknowledged acceptance returns same semantic K; (6) duplicate retry does not create second accepted revision; (7) permanent terminal gap does not freeze watermark forever; (8) unresolved gap blocks watermark advancement; (9) highest-allocated ≠ watermark proof; (10) provider swap equivalence - two qualified providers produce equivalent canonical watermark/reconstruction semantics; (11) repeated reconstruction at same finalized watermark is deterministic; (12) wall-clock T → K resolution never returns boundary containing unresolved gaps; **R6 proof scenarios**: (1) writer crashes while K is UNRESOLVED; (2) unresolved K pins watermark; (3) recovery worker detects stale K; (4) lease expires but K is NOT blindly voided; (5) recovery obtains newer fencing authority; (6) original writer returns using stale fence and is rejected; (7) recovery proves no durable acceptance and terminalizes K; (8) immutable resolution record exists; (9) watermark advances across terminalized K; (10) writer commits before recovery obtains newer authority → ACCEPTED wins; (11) recovery wins race first → late writer rejected; (12) ambiguous state remains UNRESOLVED and watermark stays pinned; (13) restart recovers outstanding unresolved positions; (14) hung/in-doubt 2PC operation remains unresolved until safely classified; (15) governance/manual resolution uses same authority/fencing/audit rules; (16) TERMINAL_NON_COMMITTED cannot transition back to ACCEPTED; (17) later legitimate correction uses new acceptance key + new K; (18) provider conformance - two qualified providers produce equivalent lifecycle/resolution/watermark semantics under same crash/race history; (19) resolution record is not reconstructed as a knowledge revision; (20) repeated recovery is idempotent; **R7 proof scenarios**: (1) writer acceptance linearizes before recovery - K remains ACCEPTED, recovery cannot void; (2) recovery terminalization linearizes before stale writer - K remains TERMINAL_NON_COMMITTED; (3) late stale physical write rejected by provider; (4) late stale physical write cannot be physically prevented and becomes durable - detected as orphaned/fenced-out; (5) orphaned durable write does not change K lifecycle; (6) orphaned durable write does not move/change watermark; (7) same watermark reconstruction before and after orphan discovery is identical; (8) orphan evidence is immutable and queryable; (9) orphan content excluded from canonical reads; (10) reconciliation does not mutate terminal K; (11) if orphan content should later be accepted - new RevisionAcceptanceKey + new K; (12) concurrent recovery/writer race has exactly one canonical winner; (13) no timestamp-based winner selection; (14) Provider A rejects late write physically, Provider B quarantines landed late write - both yield identical canonical reader state; (15) restart after orphan creation preserves canonical terminal result; (16) duplicate orphan detection is idempotent; (17) ResolutionRecord and orphan/integrity record remain distinct from knowledge revisions; plus existing: concurrent corrections on same fact; delayed correction; multiple correction chain P1 → P2 → P3; equal/ambiguous timestamps; execution independence; backdated correction; future-effective change; historical-belief reconstruction; current-corrected-history reconstruction; no history destruction. Do **not** implement qualification engine here unless separately scoped | TRACE-BITEMP-4 | All required platform proof scenarios pass including R5 + R6 + R7 scenarios; canonical and alternative providers measured against same semantic suite; unqualified provider activation fail-closed in production-grade profile |
 
-**TRACE-BITEMP-1 decision ownership:** contract/design only — **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`). TRACE-BITEMP-2 **MUST NOT** invent architecture or re-select the canonical strategy / ordering scope. TRACE-BITEMP-2 implements persistence only.
+**TRACE-BITEMP-1 decision ownership:** contract/design only - **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`). TRACE-BITEMP-2 **MUST NOT** invent architecture or re-select the canonical strategy / ordering scope. TRACE-BITEMP-2 implements persistence only.
 
 ### Downstream trace roadmap (reference)
 
-Detailed delivery for later trace phases may live in other canonical plans. OBSERVABILITY retains cross-layer observability ownership; add dependency links only — do not duplicate full phase specs here.
+Detailed delivery for later trace phases may live in other canonical plans. OBSERVABILITY retains cross-layer observability ownership; add dependency links only - do not duplicate full phase specs here.
 
 | ID | Status | Depends on (observability) | Notes |
 |----|--------|----------------------------|-------|
-| **TRACE-2** | Planned | TRACE-1C | Downstream — export/sink alignment with strict identity |
-| **TRACE-3** | Planned | TRACE-1C | Downstream — operator/debug surfaces |
-| **TRACE-4** | Planned | TRACE-ASOF-2, TRACE-BITEMP-3 | Downstream — eval/OECP consumption of as-of and bitemporal reconstruction |
-| **TRACE-5** | Planned | TRACE-1C, TRACE-ASOF-2, TRACE-BITEMP-3 | Downstream — cross-tier proof/evidence linkage |
-| **TRACE-DOC** | Planned | TRACE-1, TRACE-ASOF-*, TRACE-BITEMP-* | Downstream — operator docs and audit slices |
+| **TRACE-2** | Planned | TRACE-1C | Downstream - export/sink alignment with strict identity |
+| **TRACE-3** | Planned | TRACE-1C | Downstream - operator/debug surfaces |
+| **TRACE-4** | Planned | TRACE-ASOF-2, TRACE-BITEMP-3 | Downstream - eval/OECP consumption of as-of and bitemporal reconstruction |
+| **TRACE-5** | Planned | TRACE-1C, TRACE-ASOF-2, TRACE-BITEMP-3 | Downstream - cross-tier proof/evidence linkage |
+| **TRACE-DOC** | Planned | TRACE-1, TRACE-ASOF-*, TRACE-BITEMP-* | Downstream - operator docs and audit slices |
 
 ---
 
-## Protocol v2 remediation — Observability evidence audit (2026-08-18)
+## Protocol v2 remediation - Observability evidence audit (2026-08-18)
 
-**Source:** Protocol v2 audit [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) — **FAIL**, 6 ACCEPTED findings (2026-08-20). Historical TRACE-1/ASOF/BITEMP **Done / Closed** rows above are **not** reopened.
+**Source:** Protocol v2 audit [`OBSERVABILITY_EVIDENCE`](../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md) - **FAIL**, 6 ACCEPTED findings (2026-08-20). Historical TRACE-1/ASOF/BITEMP **Done / Closed** rows above are **not** reopened.
 
 <a id="obs-evidence-durability-integrity-2026-08-18"></a>
 
-### OBS-EVIDENCE-DURABILITY-INTEGRITY — canonical RuntimeEvent acceptance durability and EventId equivalence
+### OBS-EVIDENCE-DURABILITY-INTEGRITY - canonical RuntimeEvent acceptance durability and EventId equivalence
 
 **Priority:** P0/P1
 **Status:** `ACCEPTED / PLANNED`
@@ -188,14 +188,14 @@ Detailed delivery for later trace phases may live in other canonical plans. OBSE
 
 **Outcome (planning only):**
 
-- Explicit evidence-required vs best-effort durability on the existing `RuntimeEventBus` / `RuntimeEventPersistence` path — persistence acceptance distinct from in-memory history and subscriber dispatch.
+- Explicit evidence-required vs best-effort durability on the existing `RuntimeEventBus` / `RuntimeEventPersistence` path - persistence acceptance distinct from in-memory history and subscriber dispatch.
 - Incomplete canonical evidence cannot masquerade as complete; best-effort mode marks incomplete state observably.
 - `EventId` replay validates full canonical event equivalence across all durable providers; conflicting reuse fails closed.
 - No second event bus or store.
 
 <a id="obs-export-content-integrity-2026-08-18"></a>
 
-### OBS-EXPORT-CONTENT-INTEGRITY — journal/log/vendor export subordinate to safe export boundary
+### OBS-EXPORT-CONTENT-INTEGRITY - journal/log/vendor export subordinate to safe export boundary
 
 **Priority:** P0/P1
 **Status:** `ACCEPTED / PLANNED`
@@ -203,12 +203,12 @@ Detailed delivery for later trace phases may live in other canonical plans. OBSE
 
 **Outcome (planning only):**
 
-- All journal/log/vendor export passes through canonical redaction-safe `ObservabilityExportEnvelope` policy — no raw `RuntimeEvent.payload` escape via `journal_export`.
-- Cross-link existing OBS-EXPORT boundary (`export_boundary`, `export_bridge`, OBS-EXPORT-1/2) — do not weaken the safe export boundary; align default-on journal export with the same policy as vendor export plugins.
+- All journal/log/vendor export passes through canonical redaction-safe `ObservabilityExportEnvelope` policy - no raw `RuntimeEvent.payload` escape via `journal_export`.
+- Cross-link existing OBS-EXPORT boundary (`export_boundary`, `export_bridge`, OBS-EXPORT-1/2) - do not weaken the safe export boundary; align default-on journal export with the same policy as vendor export plugins.
 
 <a id="obs-journal-identity-integrity-2026-08-18"></a>
 
-### OBS-JOURNAL-IDENTITY-INTEGRITY — journal completeness, tenant truth, ordering semantics
+### OBS-JOURNAL-IDENTITY-INTEGRITY - journal completeness, tenant truth, ordering semantics
 
 **Priority:** P1
 **Status:** `ACCEPTED / PLANNED`
@@ -216,9 +216,9 @@ Detailed delivery for later trace phases may live in other canonical plans. OBSE
 
 **Outcome (planning only):**
 
-- Full-run Unified Run Journal proves completeness, exposes pagination/continuation, or fails/marks truncated — reuse `load_positioned_run_journal_through()` completeness machinery; do not build another journal authority.
-- One tenant truth on append: persistence routing tenant and event tenant cannot diverge — coordinate [`IDENTITY_TRUST`](IDENTITY_TRUST.md) remediation where applicable.
-- Explicit task ordering contract: do not use run-local `ExecutionEventPosition` as task-global coordinate — group runs, define task-level order, or document weaker semantics.
+- Full-run Unified Run Journal proves completeness, exposes pagination/continuation, or fails/marks truncated - reuse `load_positioned_run_journal_through()` completeness machinery; do not build another journal authority.
+- One tenant truth on append: persistence routing tenant and event tenant cannot diverge - coordinate [`IDENTITY_TRUST`](IDENTITY_TRUST.md) remediation where applicable.
+- Explicit task ordering contract: do not use run-local `ExecutionEventPosition` as task-global coordinate - group runs, define task-level order, or document weaker semantics.
 
 ---
 
@@ -229,25 +229,25 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) | **OECP** — eval control plane implementation register (active) |
+| [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) | **OECP** - eval control plane implementation register (active) |
 | [`plan/satellites/OBSERVABILITY_implementation_history.md`](plan/satellites/OBSERVABILITY_implementation_history.md) | implementation history (closed phases) |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 ---
 
-## Phase TOKEN-OBS — Token optimization telemetry and regression gates (Planned)
+## Phase TOKEN-OBS - Token optimization telemetry and regression gates (Planned)
 
 **Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
 **Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
 **Priority:** P1 after TOKEN-UER-1; TOKEN-OBS-1 may ship before CE/MEM integrations, TOKEN-OBS-2 after first optimized source exists.  
 **Delivery rule:** one `TOKEN-OBS-*` row per PR; emit through HOS or approved domain-signal path only.
 
-**LKW proof:** **LKW-PF6** is the platform proof workload for token savings telemetry and regression gates ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF). **LKW-PF6-0** proof design (**Done / Closed**) defines required observability attribution fields and redaction rules — see [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0 and [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §10.8. No private telemetry bus.
+**LKW proof:** **LKW-PF6** is the platform proof workload for token savings telemetry and regression gates ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF). **LKW-PF6-0** proof design (**Done / Closed**) defines required observability attribution fields and redaction rules - see [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0 and [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §10.8. No private telemetry bus.
 
-**Early slices (before full TOKEN-OBS-1/2):** **TOKEN-6A-lite** defines the token-savings telemetry payload shape only; HOS emission/exporter wiring remains future work — no private telemetry bus. **TOKEN-6A** adds helper-only telemetry summary/counter payloads for TOKEN-2..4; it does not emit through HOS, does not register runtime subscribers, and does not wire exporters. **TOKEN-6A-R** hardens telemetry summary metadata before future HOS/exporter wiring. Summary metadata passthrough is allow-listed and unsafe/raw-content-like metadata is rejected or dropped. This still does not emit through HOS, does not register subscribers, and does not wire exporters. **TOKEN-6B** adds a deterministic helper-only token regression benchmark runner with default fixtures for `tool_schema`, `context_pack`, and `memory_summary`, plus `scripts/check_token_regression_benchmarks.py` as a local gate; it does not emit through HOS, does not wire exporters, does not execute LKW proof runs, and does not add LLM-as-a-Judge. **TOKEN-6B-R** refines TOKEN-6B validation expectation handling to fail closed: `expect_validation_pass=True` accepts only `passed` / `not_applicable` statuses; `unknown`, `missing`, `failed`, `runner_error`, or unexpected statuses fail the fixture; no HOS/exporter/runtime wiring or LLM-as-a-Judge was added. **TOKEN-OBS-1A** (**Done / Closed**) adds a helper-only token optimization domain signal model, safe metadata sanitizer, builders for optimization outcomes and regression results, and in-memory/no-op sinks; it does not emit through HOS, does not register runtime subscribers, does not wire exporters, does not integrate runtime hot paths, does not execute LKW proof runs, and does not add LLM-as-a-Judge. **TOKEN-OBS-1A-R** refines TOKEN-OBS-1A receipt reference safety: `receipt_ref` metadata is sanitized before being attached to signals; raw content/prompt/context/evidence cannot bypass the sanitizer through `receipt_ref.metadata`; receipt identity fields are preserved; no HOS/exporter/runtime wiring or LLM-as-a-Judge was added. **TOKEN-OBS-1B** (**Done / Closed**) adds a typed token optimization `RuntimeEventPayload`, domain event kind registration (`intergrax.token_optimization.signal`), safe `TokenOptimizationSignal` → payload conversion, and explicit `emit_token_optimization_domain_signal(...)` through `emit_domain_signal(...)`; payload metadata and receipt_ref metadata are sanitized; no optimizer auto-emission, no regression runner auto-emission, no runtime subscribers, no observability exporter wiring, no Elasticsearch/Kibana wiring, no LKW proof execution, and no LLM-as-a-Judge was added. **TOKEN-OBS-1C** (**Done / Closed**) adds explicit opt-in emission helpers that combine the safe signal builders with the HOS domain-signal adapter (`emit_token_optimization_outcome`, `emit_token_regression_result`, `emit_token_regression_summary`); optional dry-run/no-emit mode is supported; metadata and receipt_ref metadata remain sanitized; no optimizer auto-emission, no regression runner auto-emission, no runtime subscribers, no observability exporter wiring, no Elasticsearch/Kibana wiring, no LKW proof execution, and no LLM-as-a-Judge was added. **TOKEN-OBS-1D** (**Done / Closed**) adds policy-gated `maybe_emit_*` runtime emission hooks (`maybe_emit_token_optimization_outcome`, `maybe_emit_token_regression_result`, `maybe_emit_token_regression_summary`); emission policy defaults to disabled; enabled policy emits through the existing safe domain-signal adapter; kind-level gates cover outcomes, regression results, and regression summaries; dry-run policy mode builds signal/payload without emitting; metadata and receipt_ref metadata remain sanitized; no optimizer auto-emission, no regression runner auto-emission, no runtime subscribers, no observability exporter wiring, no Elasticsearch/Kibana wiring, no LKW proof execution, and no LLM-as-a-Judge was added. **TOKEN-OBS-1E** (**Done / Closed**) adds `run_token_regression_benchmarks_with_emission(...)` wrapper around the existing deterministic regression runner; per-result and summary emission use the TOKEN-OBS-1D `maybe_emit_*` helpers only from the wrapper; default policy disabled; `emit_results` / `emit_summary` flags gate attempts; core `regression.py` and `scripts/check_token_regression_benchmarks.py` unchanged; no optimizer auto-emission, no exporter wiring, no LKW proof, and no LLM-as-a-Judge was added. **TOKEN-OBS-2A** (**Done / Closed**) adds a redaction-safe regression benchmark report artifact (`TokenRegressionReport`, `build_token_regression_report`, dict/formatter helpers) for `TokenRegressionSummary` and optional `TokenRegressionEmissionRunResult`; report items include only safe scalar benchmark fields; metadata uses the existing token optimization metadata sanitizer; emission section aggregates status counts without event payloads; core `regression.py`, `regression_emission.py`, and `scripts/check_token_regression_benchmarks.py` unchanged; no LKW integration, no exporter wiring, and no LLM-as-a-Judge was added. **TOKEN-OBS-2B** (**Done / Closed**) expands the deterministic regression benchmark default fixtures with a minimal eval matrix covering compactable savings, protected-region preservation, and validation-failure fallback across `tool_schema`, `context_pack`, and `memory_summary`; expectations are explicit for pass/fail, validation, fallback, savings bounds, and receipt presence; report items expose safe eval metadata (`eval_case`, `expected_behavior`, `expectation_status`) without raw fixture bodies; `scripts/check_token_regression_benchmarks.py` unchanged and still exits 0 for the default suite; no LKW integration, no exporter wiring, and no LLM-as-a-Judge was added. **TOKEN-OBS-2C** (**Done / Closed**) adds a formal regression gate artifact (`TokenRegressionGateThresholds`, `evaluate_token_regression_gate`, dict/formatter helpers) over `TokenRegressionSummary` with optional `TokenRegressionReport` cross-checks; default thresholds pass the current 7-fixture suite; stable failure reason codes cover fixture pass/fail, missing receipts, expectation status, unexpected fallback, and optional aggregate savings floors; metadata uses the existing token optimization metadata sanitizer; core `regression.py`, `regression_report.py`, `regression_emission.py`, and `scripts/check_token_regression_benchmarks.py` unchanged and do not import the gate module; no LKW integration, no exporter wiring, and no LLM-as-a-Judge was added. **TOKEN-OBS-2D** (**Done / Closed**) exposes existing regression report and gate artifacts through `scripts/check_token_regression_benchmarks.py` via `--report`, `--report-json`, `--gate`, `--gate-json`, and gate-only `--min-total-saved-ratio` / `--min-total-saved-tokens`; default and `--json` behavior unchanged; output modes are mutually exclusive; exit code remains non-zero on benchmark failures and gate modes also fail on gate `fail`; report/gate output stays redaction-safe through existing helpers; no files written; no LKW integration, no exporter wiring, and no LLM-as-a-Judge was added. Full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting remain future work. **OBS-HEALTH-lite** adds a minimal operator-visible health/status shape for exporter and token telemetry; it is not full observability production hardening. Full **OBS-VENDOR** production hardening (auth/TLS, retention, batching, dashboards-as-code, CI/live proof automation, and related operational closeout) remains **Planned**.
+**Early slices (before full TOKEN-OBS-1/2):** **TOKEN-6A-lite** defines the token-savings telemetry payload shape only; HOS emission/exporter wiring remains future work - no private telemetry bus. **TOKEN-6A** adds helper-only telemetry summary/counter payloads for TOKEN-2..4; it does not emit through HOS, does not register runtime subscribers, and does not wire exporters. **TOKEN-6A-R** hardens telemetry summary metadata before future HOS/exporter wiring. Summary metadata passthrough is allow-listed and unsafe/raw-content-like metadata is rejected or dropped. This still does not emit through HOS, does not register subscribers, and does not wire exporters. **TOKEN-6B** adds a deterministic helper-only token regression benchmark runner with default fixtures for `tool_schema`, `context_pack`, and `memory_summary`, plus `scripts/check_token_regression_benchmarks.py` as a local gate; it does not emit through HOS, does not wire exporters, does not execute LKW proof runs, and does not add LLM-as-a-Judge. **TOKEN-6B-R** refines TOKEN-6B validation expectation handling to fail closed: `expect_validation_pass=True` accepts only `passed` / `not_applicable` statuses; `unknown`, `missing`, `failed`, `runner_error`, or unexpected statuses fail the fixture; no HOS/exporter/runtime wiring or LLM-as-a-Judge was added. **TOKEN-OBS-1A** (**Done / Closed**) adds a helper-only token optimization domain signal model, safe metadata sanitizer, builders for optimization outcomes and regression results, and in-memory/no-op sinks; it does not emit through HOS, does not register runtime subscribers, does not wire exporters, does not integrate runtime hot paths, does not execute LKW proof runs, and does not add LLM-as-a-Judge. **TOKEN-OBS-1A-R** refines TOKEN-OBS-1A receipt reference safety: `receipt_ref` metadata is sanitized before being attached to signals; raw content/prompt/context/evidence cannot bypass the sanitizer through `receipt_ref.metadata`; receipt identity fields are preserved; no HOS/exporter/runtime wiring or LLM-as-a-Judge was added. **TOKEN-OBS-1B** (**Done / Closed**) adds a typed token optimization `RuntimeEventPayload`, domain event kind registration (`intergrax.token_optimization.signal`), safe `TokenOptimizationSignal` → payload conversion, and explicit `emit_token_optimization_domain_signal(...)` through `emit_domain_signal(...)`; payload metadata and receipt_ref metadata are sanitized; no optimizer auto-emission, no regression runner auto-emission, no runtime subscribers, no observability exporter wiring, no Elasticsearch/Kibana wiring, no LKW proof execution, and no LLM-as-a-Judge was added. **TOKEN-OBS-1C** (**Done / Closed**) adds explicit opt-in emission helpers that combine the safe signal builders with the HOS domain-signal adapter (`emit_token_optimization_outcome`, `emit_token_regression_result`, `emit_token_regression_summary`); optional dry-run/no-emit mode is supported; metadata and receipt_ref metadata remain sanitized; no optimizer auto-emission, no regression runner auto-emission, no runtime subscribers, no observability exporter wiring, no Elasticsearch/Kibana wiring, no LKW proof execution, and no LLM-as-a-Judge was added. **TOKEN-OBS-1D** (**Done / Closed**) adds policy-gated `maybe_emit_*` runtime emission hooks (`maybe_emit_token_optimization_outcome`, `maybe_emit_token_regression_result`, `maybe_emit_token_regression_summary`); emission policy defaults to disabled; enabled policy emits through the existing safe domain-signal adapter; kind-level gates cover outcomes, regression results, and regression summaries; dry-run policy mode builds signal/payload without emitting; metadata and receipt_ref metadata remain sanitized; no optimizer auto-emission, no regression runner auto-emission, no runtime subscribers, no observability exporter wiring, no Elasticsearch/Kibana wiring, no LKW proof execution, and no LLM-as-a-Judge was added. **TOKEN-OBS-1E** (**Done / Closed**) adds `run_token_regression_benchmarks_with_emission(...)` wrapper around the existing deterministic regression runner; per-result and summary emission use the TOKEN-OBS-1D `maybe_emit_*` helpers only from the wrapper; default policy disabled; `emit_results` / `emit_summary` flags gate attempts; core `regression.py` and `scripts/check_token_regression_benchmarks.py` unchanged; no optimizer auto-emission, no exporter wiring, no LKW proof, and no LLM-as-a-Judge was added. **TOKEN-OBS-2A** (**Done / Closed**) adds a redaction-safe regression benchmark report artifact (`TokenRegressionReport`, `build_token_regression_report`, dict/formatter helpers) for `TokenRegressionSummary` and optional `TokenRegressionEmissionRunResult`; report items include only safe scalar benchmark fields; metadata uses the existing token optimization metadata sanitizer; emission section aggregates status counts without event payloads; core `regression.py`, `regression_emission.py`, and `scripts/check_token_regression_benchmarks.py` unchanged; no LKW integration, no exporter wiring, and no LLM-as-a-Judge was added. **TOKEN-OBS-2B** (**Done / Closed**) expands the deterministic regression benchmark default fixtures with a minimal eval matrix covering compactable savings, protected-region preservation, and validation-failure fallback across `tool_schema`, `context_pack`, and `memory_summary`; expectations are explicit for pass/fail, validation, fallback, savings bounds, and receipt presence; report items expose safe eval metadata (`eval_case`, `expected_behavior`, `expectation_status`) without raw fixture bodies; `scripts/check_token_regression_benchmarks.py` unchanged and still exits 0 for the default suite; no LKW integration, no exporter wiring, and no LLM-as-a-Judge was added. **TOKEN-OBS-2C** (**Done / Closed**) adds a formal regression gate artifact (`TokenRegressionGateThresholds`, `evaluate_token_regression_gate`, dict/formatter helpers) over `TokenRegressionSummary` with optional `TokenRegressionReport` cross-checks; default thresholds pass the current 7-fixture suite; stable failure reason codes cover fixture pass/fail, missing receipts, expectation status, unexpected fallback, and optional aggregate savings floors; metadata uses the existing token optimization metadata sanitizer; core `regression.py`, `regression_report.py`, `regression_emission.py`, and `scripts/check_token_regression_benchmarks.py` unchanged and do not import the gate module; no LKW integration, no exporter wiring, and no LLM-as-a-Judge was added. **TOKEN-OBS-2D** (**Done / Closed**) exposes existing regression report and gate artifacts through `scripts/check_token_regression_benchmarks.py` via `--report`, `--report-json`, `--gate`, `--gate-json`, and gate-only `--min-total-saved-ratio` / `--min-total-saved-tokens`; default and `--json` behavior unchanged; output modes are mutually exclusive; exit code remains non-zero on benchmark failures and gate modes also fail on gate `fail`; report/gate output stays redaction-safe through existing helpers; no files written; no LKW integration, no exporter wiring, and no LLM-as-a-Judge was added. Full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting remain future work. **OBS-HEALTH-lite** adds a minimal operator-visible health/status shape for exporter and token telemetry; it is not full observability production hardening. Full **OBS-VENDOR** production hardening (auth/TLS, retention, batching, dashboards-as-code, CI/live proof automation, and related operational closeout) remains **Planned**.
 
-**Maturity bar (LKW-PF0):** Platform proof vs operational proof vs production-grade readiness is defined in [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §9. **Elasticsearch/Kibana** observability export is **closed for platform proof** (see LKW §9.6 example); **OBS-VENDOR** production hardening rows in this plan remain the production hardening backlog — closing the platform proof does not imply production-grade readiness.
+**Maturity bar (LKW-PF0):** Platform proof vs operational proof vs production-grade readiness is defined in [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §9. **Elasticsearch/Kibana** observability export is **closed for platform proof** (see LKW §9.6 example); **OBS-VENDOR** production hardening rows in this plan remain the production hardening backlog - closing the platform proof does not imply production-grade readiness.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
@@ -258,13 +258,13 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase OBS-EXPORT — External observability export boundary (In progress)
+## Phase OBS-EXPORT - External observability export boundary (In progress)
 
 **Purpose:** Define the platform-level export boundary for external observability sinks such as JSONL/file, OTLP, Elasticsearch, Langfuse, Arize/Phoenix.
 
 **OBS-EXPORT-1 status (2026-06-28):**
 
-- **OBS-EXPORT-1-EXPORT-BOUNDARY** — **Done**
+- **OBS-EXPORT-1-EXPORT-BOUNDARY** - **Done**
 - Normalized **`ObservabilityExportEnvelope`** added (`observability_export_envelope.v1`)
 - **`ObservabilityExporter`** async protocol + **`NoOpObservabilityExporter`** + **`InMemoryObservabilityExporter`** / **`TestObservabilityExporter`**
 - Typed source models (`RuntimeEventExportSource`, `GatewayCallExportSource`) and safe mapping helpers from `RuntimeEvent`, `ToolCallRecord`, `RagCallRecord`, and `JournalRef`
@@ -273,11 +273,11 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **OBS-EXPORT-2 status (2026-06-28):**
 
-- **OBS-EXPORT-2-EXPORT-POLICY-AND-WIRING** — **Done**
+- **OBS-EXPORT-2-EXPORT-POLICY-AND-WIRING** - **Done**
 - Typed **`ObservabilityExportPolicy`** with explicit allow/drop/hash posture (`apply_observability_export_policy`, `try_export_observability_envelope`)
 - Default local-first posture remains **disabled by default**; **`export_content=false`** by default; strict redaction by default
 - Raw prompts, documents, RAG chunks, synthesized content, tool args, secrets, and full local file paths are **not exported by default**
-- Exporter failure isolation added — exporter exceptions are logged and never fail product/runtime runs
+- Exporter failure isolation added - exporter exceptions are logged and never fail product/runtime runs
 - Minimal runtime lifecycle wiring implemented via **`make_observability_export_runtime_plugin`** (optional bus subscriber; defaults to **`NoOpObservabilityExporter`**; export runs after canonical bus recording)
 - Vendor adapters **not implemented** (Langfuse, Arize, Phoenix remain OBS-EXPORT-5)
 - JSONL/file exporter remains **OBS-EXPORT-3** (superseded below)
@@ -285,22 +285,22 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **OBS-EXPORT-3 status (2026-06-28):**
 
-- **OBS-EXPORT-3-SAFE-JSONL-FILE-EXPORTER** — **Done**
-- **`JsonlObservabilityExporter`** added — local-first, explicit opt-in JSONL/file sink implementing **`ObservabilityExporter`**
+- **OBS-EXPORT-3-SAFE-JSONL-FILE-EXPORTER** - **Done**
+- **`JsonlObservabilityExporter`** added - local-first, explicit opt-in JSONL/file sink implementing **`ObservabilityExporter`**
 - Exporter writes normalized **`ObservabilityExportEnvelope`** records (one JSON object per line, UTF-8, append by default)
 - Exporter does **not** register globally; platform bootstrap registration remains deferred unless explicitly planned later
-- Redaction/export policy remains upstream — exporter writes the envelope it receives; sanitized metadata-only records when used through **`apply_observability_export_policy`** / **`try_export_observability_envelope`**
+- Redaction/export policy remains upstream - exporter writes the envelope it receives; sanitized metadata-only records when used through **`apply_observability_export_policy`** / **`try_export_observability_envelope`**
 - Raw content export remains **unsupported/disabled by default** (`export_content=false`)
 - Vendor adapters **not implemented** (Langfuse, Arize, Phoenix remain OBS-EXPORT-5)
 - OTLP/Elasticsearch remains **OBS-EXPORT-4**
 
 **OBS-EXPORT-4A status (2026-06-28):**
 
-- **OBS-EXPORT-4A-APPLICATION-ATTRIBUTES-CONTRACT** — **Done**
-- Typed **`ApplicationObservabilityAttributes`** contract added — application developers extend/customize through inheritance (e.g. `LocalWorkspaceObservabilityAttributes`, `BillingObservabilityAttributes`)
-- No arbitrary public `dict[str, Any]` metadata boundary — safe scalar/list values only (`str`, `int`, `float`, `bool`, `None`, `list[str]`)
+- **OBS-EXPORT-4A-APPLICATION-ATTRIBUTES-CONTRACT** - **Done**
+- Typed **`ApplicationObservabilityAttributes`** contract added - application developers extend/customize through inheritance (e.g. `LocalWorkspaceObservabilityAttributes`, `BillingObservabilityAttributes`)
+- No arbitrary public `dict[str, Any]` metadata boundary - safe scalar/list values only (`str`, `int`, `float`, `bool`, `None`, `list[str]`)
 - Namespaced attribute keys (`{namespace}.{field}`) with stable schema/version fields
-- **`sanitize_application_observability_attributes`** applies policy/redaction before export — unsafe/raw/sensitive values rejected, dropped, or path-like values hashed
+- **`sanitize_application_observability_attributes`** applies policy/redaction before export - unsafe/raw/sensitive values rejected, dropped, or path-like values hashed
 - **`ObservabilityExportEnvelope`** integrates optional `application_attributes` (pre-policy input) and `sanitized_application_attributes` (post-policy export)
 - **`JsonlObservabilityExporter`** consumes already-normalized sanitized attributes via envelope JSON serialization
 - Vendor adapters **not implemented** (Langfuse, Arize, Phoenix remain OBS-EXPORT-5)
@@ -308,94 +308,94 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **OBS-EXPORT-4 status (2026-06-28):**
 
-- **OBS-EXPORT-4-OTLP-ADAPTER** — **Done**
-- **`OtlpObservabilityExporter`** added as first remote backend adapter — platform observability package only (not applications, not LKW-specific)
+- **OBS-EXPORT-4-OTLP-ADAPTER** - **Done**
+- **`OtlpObservabilityExporter`** added as first remote backend adapter - platform observability package only (not applications, not LKW-specific)
 - Adapter consumes normalized **`ObservabilityExportEnvelope`** only; expects policy-approved envelopes from **`apply_observability_export_policy`** / **`try_export_observability_envelope`**
-- Adapter consumes **`sanitized_application_attributes`** only — does **not** read or export raw **`application_attributes`**
+- Adapter consumes **`sanitized_application_attributes`** only - does **not** read or export raw **`application_attributes`**
 - Adapter maps sanitized application attributes into OTLP-safe attribute keys (namespaced keys preserved)
 - Adapter does **not** export raw content; **`export_content=false`** posture unchanged
-- Injectable **`OtlpTransport`** protocol — no vendor SDK coupling; no network in unit tests
-- Explicit opt-in — adapter is **not** globally registered in platform bootstrap
+- Injectable **`OtlpTransport`** protocol - no vendor SDK coupling; no network in unit tests
+- Explicit opt-in - adapter is **not** globally registered in platform bootstrap
 - Elasticsearch remains **deferred** unless separately planned
 - Langfuse / Arize / Phoenix remains **OBS-EXPORT-5**
 - Global bootstrap registration remains **deferred** unless explicitly planned later
 
 **OBS-EXPORT-4B status (2026-06-28):**
 
-- **OBS-EXPORT-4B-OTLP-HTTP-TRANSPORT** — **Done**
-- **`OtlpHttpTransport`** added — concrete HTTP POST transport implementing **`OtlpTransport`**
+- **OBS-EXPORT-4B-OTLP-HTTP-TRANSPORT** - **Done**
+- **`OtlpHttpTransport`** added - concrete HTTP POST transport implementing **`OtlpTransport`**
 - Transport belongs to platform observability only (not applications, not LKW-specific)
-- Transport is explicit opt-in — **not** globally registered in platform bootstrap
+- Transport is explicit opt-in - **not** globally registered in platform bootstrap
 - Transport sends only OTLP-safe JSON payloads produced by **`OtlpObservabilityExporter`** from policy-sanitized envelopes
-- Redaction and failure isolation remain upstream — **`apply_observability_export_policy`** / **`try_export_observability_envelope`**
+- Redaction and failure isolation remain upstream - **`apply_observability_export_policy`** / **`try_export_observability_envelope`**
 - Transport does **not** read or export raw **`application_attributes`**; no raw content export
-- No vendor SDK coupling — lightweight **`httpx`** client only; injectable client for tests (no real network in unit tests)
+- No vendor SDK coupling - lightweight **`httpx`** client only; injectable client for tests (no real network in unit tests)
 - Operator/bootstrap wiring remains **deferred** unless explicitly planned later
 - Langfuse / Arize / Phoenix remains **OBS-EXPORT-5**
 
 **OBS-EXPORT-4C status (2026-06-28):**
 
-- **OBS-EXPORT-4C-EXPLICIT-OTLP-OPERATOR-WIRING** — **Done**
-- Explicit OTLP operator wiring helper added — **`build_otlp_observability_exporter`**, **`build_otlp_observability_export_runtime_plugin`**
-- Typed operator config added — **`ObservabilityExportOperatorConfig`**, **`OtlpExportOperatorConfig`**
+- **OBS-EXPORT-4C-EXPLICIT-OTLP-OPERATOR-WIRING** - **Done**
+- Explicit OTLP operator wiring helper added - **`build_otlp_observability_exporter`**, **`build_otlp_observability_export_runtime_plugin`**
+- Typed operator config added - **`ObservabilityExportOperatorConfig`**, **`OtlpExportOperatorConfig`**
 - Disabled by default (`enabled=false`); **`export_content=false`** by default and enforced in runtime plugin wiring
-- No global bootstrap registration — operator/platform code must explicitly construct and register the plugin
-- No LKW wiring — platform observability package only
-- No raw content export; no raw **`application_attributes`** export — policy sanitization remains upstream
+- No global bootstrap registration - operator/platform code must explicitly construct and register the plugin
+- No LKW wiring - platform observability package only
+- No raw content export; no raw **`application_attributes`** export - policy sanitization remains upstream
 - OTLP HTTP export can now be explicitly assembled from operator config (**`ObservabilityExportPolicy`** + **`OtlpObservabilityIntegration`** + **`OtlpObservabilityExporter`** + **`OtlpHttpTransport`** + **`make_observability_export_runtime_plugin`**)
-- Injectable transport for tests — no network in unit tests
+- Injectable transport for tests - no network in unit tests
 - Langfuse / Arize / Phoenix remains **OBS-EXPORT-5**
 - Elasticsearch remains **deferred** unless separately planned
 
 **INTEGRATIONS-1C status (OTLP observability integration alignment):**
 
-- **INTEGRATIONS-1C** — **Done**
-- **`OtlpObservabilityIntegration`** added — first concrete observability vendor integration
+- **INTEGRATIONS-1C** - **Done**
+- **`OtlpObservabilityIntegration`** added - first concrete observability vendor integration
 - Derives from **`ObservabilityVendorIntegrationContract`**; `provider_id=otlp`
 - Wraps existing **`OtlpObservabilityExporter`** / **`OtlpTransport`** as lower-level implementation details
 - Operator wiring (**`build_otlp_observability_integration`**) constructs integration-backed OTLP export path explicitly
-- Consumes only policy-sanitized envelopes; **`sanitized_application_attributes`** only — never raw **`application_attributes`**
-- **`JsonlObservabilityExporter`** unchanged — classified as local file export sink, not remote observability vendor
+- Consumes only policy-sanitized envelopes; **`sanitized_application_attributes`** only - never raw **`application_attributes`**
+- **`JsonlObservabilityExporter`** unchanged - classified as local file export sink, not remote observability vendor
 - No global bootstrap registration; no LKW change; no Langfuse/Arize/Phoenix/Elasticsearch adapters
 
 **INTEGRATIONS-1D status (LKW/local workspace observability platform wiring):**
 
-- **INTEGRATIONS-1D** — **Done**
-- **`build_local_workspace_observability_plugins`** added in LKW host — composes platform **`ObservabilityExportOperatorConfig`** only; no LKW-specific exporter
+- **INTEGRATIONS-1D** - **Done**
+- **`build_local_workspace_observability_plugins`** added in LKW host - composes platform **`ObservabilityExportOperatorConfig`** only; no LKW-specific exporter
 - Disabled by default; **`export_content=false`** enforced via platform **`build_otlp_observability_export_runtime_plugin`**
-- LKW factory accepts optional **`observability_export`** and registers returned **`RuntimePlugin`** only at LKW bootstrap — no global registration
+- LKW factory accepts optional **`observability_export`** and registers returned **`RuntimePlugin`** only at LKW bootstrap - no global registration
 - OTLP integration-backed path only (**`build_otlp_observability_export_runtime_plugin`** → **`OtlpObservabilityIntegration`**); no direct **`OtlpHttpTransport`** from LKW
 - LKW.2 pipeline unchanged; no vendor SDK in LKW; raw content/local paths not exported by default
 - **OBS-EXPORT-5** remains **deferred** until Langfuse/Arize/Phoenix vendor adapters are implemented
 
-**DIAG-FINAL-E2E status (external OTLP collector proof — slice):**
+**DIAG-FINAL-E2E status (external OTLP collector proof - slice):**
 
-- **Done (slice)** — `tests/integration/runtime/test_diag_final_external_otel_e2e.py` with Dockerized OpenTelemetry Collector (`tests/integration/runtime/fixtures/diag_final_otel/`), PRODUCT governed-contractor HTTP host, SQLite RuntimeEvent store, DocumentStore Problem persistence, central diagnostics read path, and explicit OTLP export wiring.
-- **CI** — dedicated `diag-final-external-proof` job (nightly / workflow_dispatch full); skipped locally without Docker.
-- **Not claimed** — full OBS-VENDOR matrix, Langfuse/Arize/Phoenix transports, or non-governed-contractor host topologies.
+- **Done (slice)** - `tests/integration/runtime/test_diag_final_external_otel_e2e.py` with Dockerized OpenTelemetry Collector (`tests/integration/runtime/fixtures/diag_final_otel/`), PRODUCT governed-contractor HTTP host, SQLite RuntimeEvent store, DocumentStore Problem persistence, central diagnostics read path, and explicit OTLP export wiring.
+- **CI** - dedicated `diag-final-external-proof` job (nightly / workflow_dispatch full); skipped locally without Docker.
+- **Not claimed** - full OBS-VENDOR matrix, Langfuse/Arize/Phoenix transports, or non-governed-contractor host topologies.
 
-**OBS-EXPORT-5 status (2026-06-28 — post INTEGRATIONS-2C):**
+**OBS-EXPORT-5 status (2026-06-28 - post INTEGRATIONS-2C):**
 
 | Sub-deliverable | Status | Notes |
 |-----------------|--------|-------|
 | Contract adapters | **Complete** | All **`observability_backend`** slugs have **`ObservabilityVendorIntegrationContract`** subclasses (**INTEGRATIONS-2C**) |
-| Production vendor transports | **Pending** | Injectable transport protocols + fake transports in tests only — no Langfuse/Arize/New Relic/etc. network exporters |
+| Production vendor transports | **Pending** | Injectable transport protocols + fake transports in tests only - no Langfuse/Arize/New Relic/etc. network exporters |
 | Operator / bootstrap wiring | **Pending** | No global registration; LKW unchanged; registry v2 deferred |
-| Production export end-to-end | **Not done** | Contract layer only — do **not** treat OBS-EXPORT-5 as “production export done” |
+| Production export end-to-end | **Not done** | Contract layer only - do **not** treat OBS-EXPORT-5 as “production export done” |
 
 **OBS-EXPORT-5 status (dependency on INTEGRATIONS-1A / INTEGRATIONS-1B / INTEGRATIONS-1C):**
 
 - **OBS-EXPORT-5** remains **paused** until remaining observability integration alignment is complete (OTLP done in INTEGRATIONS-1C; Langfuse/Arize/Phoenix deferred)
-- Generic **`PlatformIntegrationContract`** added in **INTEGRATIONS-1A** — **Done**
-- Observability vendor specialization **`ObservabilityVendorIntegrationContract`** added in **INTEGRATIONS-1B** — **Done**
-- OTLP aligned with **`ObservabilityVendorIntegrationContract`** in **INTEGRATIONS-1C** — **Done**
-- Concrete Langfuse / Arize / Phoenix adapters remain **deferred** — must subclass **`ObservabilityVendorIntegrationContract`**, not ad-hoc exporter classes
-- JSONL remains a local file export sink — not migrated to observability vendor integration contract in INTEGRATIONS-1C
+- Generic **`PlatformIntegrationContract`** added in **INTEGRATIONS-1A** - **Done**
+- Observability vendor specialization **`ObservabilityVendorIntegrationContract`** added in **INTEGRATIONS-1B** - **Done**
+- OTLP aligned with **`ObservabilityVendorIntegrationContract`** in **INTEGRATIONS-1C** - **Done**
+- Concrete Langfuse / Arize / Phoenix adapters remain **deferred** - must subclass **`ObservabilityVendorIntegrationContract`**, not ad-hoc exporter classes
+- JSONL remains a local file export sink - not migrated to observability vendor integration contract in INTEGRATIONS-1C
 - **No LKW change** in INTEGRATIONS-1C
 
 **INTEGRATIONS-2A status (provider category contracts):**
 
-- **`observability_backend`** provider folder aligns with existing **`ObservabilityVendorIntegrationContract`** — no duplicate observability backend contract
+- **`observability_backend`** provider folder aligns with existing **`ObservabilityVendorIntegrationContract`** - no duplicate observability backend contract
 - Runtime **`integration_kind`** for observability vendor integrations remains **`observability_vendor`**; folder name **`observability_backend`** is documented via **`PlatformIntegrationKind.OBSERVABILITY_BACKEND`**
 - Existing **`observability_backend`** catalog providers (Langfuse, Arize, Phoenix, Elasticsearch, Datadog, …) are **still awaiting migration/adaptation** to category contracts
 - **OBS-EXPORT-5** remains **deferred** until those providers are adapted as concrete **`ObservabilityVendorIntegrationContract`** subclasses
@@ -405,19 +405,19 @@ Load **only** the satellite matching your task or cited gap ID.
 - Existing Langfuse **`observability_backend`** provider adapted to **`ObservabilityVendorIntegrationContract`** as reference pilot
 - **Pattern hardened (INTEGRATIONS-2B-FOLLOWUP):** canonical provider package layout, scaffold idempotency, `enabled=True` requires transport at construction
 - **`LangfuseObservabilityIntegration`** consumes policy-sanitized envelopes only; legacy **`ObservabilityBackend`** query facade unchanged
-- **Registry v2 / contract registry wiring deferred** — `register_langfuse_integration()` still registers legacy query facade only
+- **Registry v2 / contract registry wiring deferred** - `register_langfuse_integration()` still registers legacy query facade only
 - **OBS-EXPORT-5** remains **not complete** until remaining observability_backend providers (Arize, Phoenix, …) are adapted
 
-**INTEGRATIONS-2C status (observability_backend provider migration — 2026-06-28):**
+**INTEGRATIONS-2C status (observability_backend provider migration - 2026-06-28):**
 
 - All existing **`observability_backend`** provider packages adapted to **`ObservabilityVendorIntegrationContract`** (Langfuse reference + 25 batch slugs)
 - Each provider: contract-based `integration.py`, `create_<slug>_observability_integration` factory, lazy public API; legacy **`ObservabilityBackend`** query facade unchanged
 - Sanitized **`ObservabilityExportEnvelope`** only; raw **`application_attributes`** rejected; no raw content export
-- Injectable transport protocol only — **no real vendor network transports** in this task; no vendor SDK imports in `integration.py`
+- Injectable transport protocol only - **no real vendor network transports** in this task; no vendor SDK imports in `integration.py`
 - **`enabled=True`** without transport fails at construction (**`IntegrationConfigurationError`**)
 - Parametrized conformance tests in **`test_observability_provider_contract_migration.py`**
-- **Registry v2 / contract registry wiring deferred** — `register_<slug>_integration()` still legacy-only
-- **OBS-EXPORT-5 progress:** contract adapters **complete**; production vendor transports and operator/bootstrap wiring **pending** — not production export done
+- **Registry v2 / contract registry wiring deferred** - `register_<slug>_integration()` still legacy-only
+- **OBS-EXPORT-5 progress:** contract adapters **complete**; production vendor transports and operator/bootstrap wiring **pending** - not production export done
 - No LKW change
 
 **Required decisions:**
@@ -446,17 +446,17 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase OBS-VENDOR — Production observability vendor integration rollout (Planned)
+## Phase OBS-VENDOR - Production observability vendor integration rollout (Planned)
 
-**Observability projections:** **Elasticsearch/Kibana**, **Prometheus/Grafana**, **Tempo** (or equivalent), and **Sentry** are different observability projections — structured event/log timeline, metrics/SLO dashboards, distributed traces/spans, and error issue triage respectively. They complement each other; none replaces the others. Platform contracts remain vendor-neutral; backends are replaceable. See LKW strategic roadmap **LKW-PF5** in [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
+**Observability projections:** **Elasticsearch/Kibana**, **Prometheus/Grafana**, **Tempo** (or equivalent), and **Sentry** are different observability projections - structured event/log timeline, metrics/SLO dashboards, distributed traces/spans, and error issue triage respectively. They complement each other; none replaces the others. Platform contracts remain vendor-neutral; backends are replaceable. See LKW strategic roadmap **LKW-PF5** in [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
 
 **Purpose:** Move from the LKW OTLP proof path to a production-grade, vendor-agnostic observability export model where runtime/LKW call only the contract and vendors own backend I/O.
 
-**Cross-plan — LKW proof workload:** [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-OBS.
+**Cross-plan - LKW proof workload:** [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-OBS.
 
 **Platform contract:** [`intergrax/runtime/integrations/observability.py`](../../../../intergrax/runtime/integrations/observability.py) · **Operator wiring:** [`intergrax/runtime/observability/operator_wiring.py`](../../../../intergrax/runtime/observability/operator_wiring.py) · **LKW wiring:** [`applications/local_workspace_application/host/observability_wiring.py`](../../../../applications/local_workspace_application/host/observability_wiring.py).
 
-### Current state — LKW OTLP proof path (Done)
+### Current state - LKW OTLP proof path (Done)
 
 The following LKW/platform tasks are **Done** and establish the baseline export spine:
 
@@ -464,7 +464,7 @@ The following LKW/platform tasks are **Done** and establish the baseline export 
 |----|--------|---------|
 | **LKW-OBS-OTLP-1A** | **Done** | LKW env-driven OTLP observability export configuration |
 | **LKW-OBS-OTLP-1B** | **Done** | LKW Docker Compose self-hosted OpenTelemetry Collector + persisted JSONL sink |
-| **LKW-OBS-OTLP-1C** | **Done** | Manual Swagger/Compose proof — runtime events exported as OTLP logs to JSONL |
+| **LKW-OBS-OTLP-1C** | **Done** | Manual Swagger/Compose proof - runtime events exported as OTLP logs to JSONL |
 | **LKW-OBS-OTLP-DUP-1** | **Done** | Duplicate export runtime events fixed; duplicate check for current run = 0 |
 | **LKW-OBS-VIEW-1A** | **Done** | Lightweight OTLP log inspector (`inspect_otlp_logs.py`, `inspect-otlp-logs.bat`); focused tests 5 passed; manual duplicate check = 0 |
 
@@ -544,7 +544,7 @@ Wiring selects the concrete integration; product code never branches on vendor S
 |----|------|----------|--------|-------------|------------|
 | **OBS-VENDOR-0** | Docs | P2 | **Done** | Close LKW OTLP inspector status in LKW implementation plan | Implementation plan references `applications/local_workspace_application/scripts/inspect_otlp_logs.py` and `inspect-otlp-logs.bat`; states duplicate check = 0; states focused inspector tests = 5 passed; no code changes |
 | **OBS-VENDOR-1** | Docs/Code | P1 | **Done** | Define canonical vendor integration execution model | Plan states platform/runtime/LKW call only contract-level `export()`; vendor SDK/API calls belong only in provider implementations; LKW remains vendor-agnostic; direct Langfuse/Elastic/Phoenix/Arize calls from LKW, agents, runtime loops, or application code are forbidden |
-| **OBS-VENDOR-2** | Code | P1 | **Done** | Open plugin-based observability backend selection in operator/runtime config | Plan defines where backend selection belongs; invalid backend_id format fails fast; valid but unregistered backend_id fails at builder registry lookup; selection produces `ObservabilityExporter`-compatible integration; existing OTLP behavior preserved. **Scope:** config/wiring shape only — do not implement all vendors at once. **Built-in today:** `otlp`. **Extension:** register additional backend builders by `backend_id`. **Expected env:** `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED=true`, `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=otlp` |
+| **OBS-VENDOR-2** | Code | P1 | **Done** | Open plugin-based observability backend selection in operator/runtime config | Plan defines where backend selection belongs; invalid backend_id format fails fast; valid but unregistered backend_id fails at builder registry lookup; selection produces `ObservabilityExporter`-compatible integration; existing OTLP behavior preserved. **Scope:** config/wiring shape only - do not implement all vendors at once. **Built-in today:** `otlp`. **Extension:** register additional backend builders by `backend_id`. **Expected env:** `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED=true`, `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=otlp` |
 | **OBS-VENDOR-3** | Docs/Code | P1 | **Done** | Formalize safe extension metadata API | `ApplicationObservabilityAttributes` documented as official extension path; artifact refs (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`) as reference-only path; raw artifact content not exported; forbidden fields remain blocked by export policy; arbitrary `RuntimeEvent.payload` fields not auto-exported; optional helper API (e.g. `emit_observability_event(..., application_attributes=..., artifact_ref=...)`) only if needed |
 | **OBS-VENDOR-4A** | Code | P1 | **Done** | **First concrete vendor adapter: Elasticsearch/OpenSearch** | Contract subclass under `intergrax/integrations/providers/observability_backend/elasticsearch`; injectable transport for indexing policy-safe `ObservabilityVendorPayload`; no raw content export; no policy bypass; unit tests with fake transport prove policy-safe delivery, disabled config does not send, unsafe content not exported; no LKW direct dependency on Elasticsearch/OpenSearch SDK |
 | **OBS-VENDOR-5** | Code | P1 | **Done** | Wire selected vendor backend into runtime operator config | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=elasticsearch` builds `ElasticsearchObservabilityIntegration.from_transport(...)`; `otlp` continues `OtlpObservabilityIntegration`; runtime plugin receives only contract/`ObservabilityExporter` object; LKW does not branch on vendor SDK; misconfigured credentials/endpoint fail fast at build time; exporter failures do not fail product runs |
@@ -554,11 +554,11 @@ Wiring selects the concrete integration; product code never branches on vendor S
 
 **OBS-VENDOR-1 status:**
 
-Done — canonical execution model closed. Runtime and applications call only **`ObservabilityVendorIntegrationContract.export()`**; vendor SDK/API calls are restricted to concrete provider implementations under **`observability_backend/<vendor>`**; LKW remains vendor-agnostic. Export policy runs before external export; exporter failure must never fail product runs.
+Done - canonical execution model closed. Runtime and applications call only **`ObservabilityVendorIntegrationContract.export()`**; vendor SDK/API calls are restricted to concrete provider implementations under **`observability_backend/<vendor>`**; LKW remains vendor-agnostic. Export policy runs before external export; exporter failure must never fail product runs.
 
 **OBS-VENDOR-2 status:**
 
-Done — observability backend selection is open and plugin-based. Operator config uses normalized `backend_id` strings rather than a closed vendor enum. Built-in registered backends today: `otlp`, `elasticsearch`. Additional vendors are selected by `backend_id` and become available when a backend builder is registered; valid but unregistered `backend_id`s fail fast with a missing-builder error.
+Done - observability backend selection is open and plugin-based. Operator config uses normalized `backend_id` strings rather than a closed vendor enum. Built-in registered backends today: `otlp`, `elasticsearch`. Additional vendors are selected by `backend_id` and become available when a backend builder is registered; valid but unregistered `backend_id`s fail fast with a missing-builder error.
 
 **OBS-VENDOR-2A correction:**
 
@@ -570,47 +570,47 @@ Generic backend selection no longer carries OTLP-specific configuration requirem
 
 **OBS-VENDOR-3 status:**
 
-Done — safe application extension metadata is formalized. Applications attach typed metadata through ApplicationObservabilityAttributes and artifact references through ObservabilityArtifactReference. The official helper attaches these extensions to ObservabilityExportEnvelope without accepting arbitrary payload dictionaries. Export policy remains the sanitization boundary: raw application_attributes are cleared, sanitized_application_attributes are emitted, artifact references remain reference-only, and raw prompts/content/query/chunks/tool args/secrets/full paths remain forbidden.
+Done - safe application extension metadata is formalized. Applications attach typed metadata through ApplicationObservabilityAttributes and artifact references through ObservabilityArtifactReference. The official helper attaches these extensions to ObservabilityExportEnvelope without accepting arbitrary payload dictionaries. Export policy remains the sanitization boundary: raw application_attributes are cleared, sanitized_application_attributes are emitted, artifact references remain reference-only, and raw prompts/content/query/chunks/tool args/secrets/full paths remain forbidden.
 
 **OBS-VENDOR-4A status:**
 
-Done — concrete Elasticsearch/OpenSearch observability export transport added under `intergrax/integrations/providers/observability_backend/elasticsearch/transport.py`. `ElasticsearchHttpObservabilityTransport` maps policy-safe `ObservabilityVendorPayload` to index documents and delivers via provider-owned `ElasticsearchRestClient.index_document()`. `create_elasticsearch_observability_transport()` and `create_elasticsearch_observability_integration()` expose injectable transport wiring; `enabled=False` sends nothing; `enabled=True` without transport fails at factory time with `IntegrationConfigurationError`. Unit tests use fake transport/indexer only. Follow-up: transport dispatches sync provider-owned indexing via asyncio.to_thread() and indexes append-only by default; event_id/correlation_id remain query fields, not default document IDs.
+Done - concrete Elasticsearch/OpenSearch observability export transport added under `intergrax/integrations/providers/observability_backend/elasticsearch/transport.py`. `ElasticsearchHttpObservabilityTransport` maps policy-safe `ObservabilityVendorPayload` to index documents and delivers via provider-owned `ElasticsearchRestClient.index_document()`. `create_elasticsearch_observability_transport()` and `create_elasticsearch_observability_integration()` expose injectable transport wiring; `enabled=False` sends nothing; `enabled=True` without transport fails at factory time with `IntegrationConfigurationError`. Unit tests use fake transport/indexer only. Follow-up: transport dispatches sync provider-owned indexing via asyncio.to_thread() and indexes append-only by default; event_id/correlation_id remain query fields, not default document IDs.
 
 **OBS-VENDOR-5 status:**
 
-Done — `backend_id="elasticsearch"` now resolves through open `ObservabilityExportBackendRegistry`/operator wiring to `ElasticsearchObservabilityIntegration` with provider-owned transport; OTLP remains working; no LKW vendor SDK/client dependency; Docker/E2E proof deferred.
+Done - `backend_id="elasticsearch"` now resolves through open `ObservabilityExportBackendRegistry`/operator wiring to `ElasticsearchObservabilityIntegration` with provider-owned transport; OTLP remains working; no LKW vendor SDK/client dependency; Docker/E2E proof deferred.
 
 **OBS-VENDOR-6A status:**
 
-Done — Elasticsearch export failures now produce safe provider-owned delivery diagnostics with retriable/non-retriable classification. This closes failure classification for the first vendor backend; batching, retry/backoff execution, dead-letter storage, auth/TLS, and health checks remain separate OBS-VENDOR-6 follow-ups.
+Done - Elasticsearch export failures now produce safe provider-owned delivery diagnostics with retriable/non-retriable classification. This closes failure classification for the first vendor backend; batching, retry/backoff execution, dead-letter storage, auth/TLS, and health checks remain separate OBS-VENDOR-6 follow-ups.
 
 **OBS-VENDOR-6B status:**
 
-Done — Elasticsearch observability delivery now supports bounded provider-owned retry/backoff for retriable delivery failures, with LKW env overrides for deployment-specific calibration. Full OBS-VENDOR-6 remains Planned until batching, dead-letter storage, auth/TLS, health checks, and broader operational hardening are complete.
+Done - Elasticsearch observability delivery now supports bounded provider-owned retry/backoff for retriable delivery failures, with LKW env overrides for deployment-specific calibration. Full OBS-VENDOR-6 remains Planned until batching, dead-letter storage, auth/TLS, health checks, and broader operational hardening are complete.
 
 **OBS-VENDOR-6C-A status:**
 
-Done — Elasticsearch observability export now exposes a provider-owned, optional failed-delivery sink contract with safe diagnostic records only (no raw document or content fields). Invocation occurs on ultimate delivery failure (immediate for non-retriable errors; after retry exhaustion for retriable errors). Full OBS-VENDOR-6C operational hardening (durable dead-letter storage) and full OBS-VENDOR-6 remain Planned.
+Done - Elasticsearch observability export now exposes a provider-owned, optional failed-delivery sink contract with safe diagnostic records only (no raw document or content fields). Invocation occurs on ultimate delivery failure (immediate for non-retriable errors; after retry exhaustion for retriable errors). Full OBS-VENDOR-6C operational hardening (durable dead-letter storage) and full OBS-VENDOR-6 remain Planned.
 
 **OBS-VENDOR-6C-B1 status:**
 
-Done — Elasticsearch provider now ships a file-backed failed-delivery sink (`FileElasticsearchFailedDeliverySink`) that appends one UTF-8 JSON object per line using only safe `ElasticsearchFailedDeliveryRecord` fields. No LKW wiring, env configuration, or operational runbook yet. Full OBS-VENDOR-6C remains Planned until the file sink is wired/configurable and operationally documented. Full OBS-VENDOR-6 remains Planned.
+Done - Elasticsearch provider now ships a file-backed failed-delivery sink (`FileElasticsearchFailedDeliverySink`) that appends one UTF-8 JSON object per line using only safe `ElasticsearchFailedDeliveryRecord` fields. No LKW wiring, env configuration, or operational runbook yet. Full OBS-VENDOR-6C remains Planned until the file sink is wired/configurable and operationally documented. Full OBS-VENDOR-6 remains Planned.
 
 **OBS-VENDOR-6C-B2 status:**
 
-Done — typed operator config (`ElasticsearchExportOperatorConfig.failed_delivery_file_path`) now wires the provider-owned file failed-delivery sink through runtime Elasticsearch export wiring into `create_elasticsearch_observability_transport()`. When unset, transport keeps the no-op failed-delivery sink default. No LKW env, Docker, or operational runbook yet. Full OBS-VENDOR-6C remains Planned until LKW env wiring and operational docs exist. Full OBS-VENDOR-6 remains Planned.
+Done - typed operator config (`ElasticsearchExportOperatorConfig.failed_delivery_file_path`) now wires the provider-owned file failed-delivery sink through runtime Elasticsearch export wiring into `create_elasticsearch_observability_transport()`. When unset, transport keeps the no-op failed-delivery sink default. No LKW env, Docker, or operational runbook yet. Full OBS-VENDOR-6C remains Planned until LKW env wiring and operational docs exist. Full OBS-VENDOR-6 remains Planned.
 
 **OBS-VENDOR-6C-B3 status:**
 
-Done — LKW deployment settings now read `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` and pass a stripped deployment-owned path into `ElasticsearchExportOperatorConfig.failed_delivery_file_path` when `backend_id=elasticsearch`; empty or whitespace disables the file sink. LKW does not implement file/JSON writes or instantiate the provider sink. Full OBS-VENDOR-6C remains Planned until operational docs/proof (Docker, scripts, live proof) are complete. Full OBS-VENDOR-6 remains Planned.
+Done - LKW deployment settings now read `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` and pass a stripped deployment-owned path into `ElasticsearchExportOperatorConfig.failed_delivery_file_path` when `backend_id=elasticsearch`; empty or whitespace disables the file sink. LKW does not implement file/JSON writes or instantiate the provider sink. Full OBS-VENDOR-6C remains Planned until operational docs/proof (Docker, scripts, live proof) are complete. Full OBS-VENDOR-6 remains Planned.
 
 **OBS-VENDOR-6C-B4 status:**
 
-Done — LKW operational docs and read-only failed-delivery JSONL inspector added (`applications/local_workspace_application/docs/BUILD_AND_DEPLOY.md`, `applications/local_workspace_application/scripts/inspect_elasticsearch_failed_deliveries.py`, `inspect-elasticsearch-failed-deliveries.bat`). Documents env path, safe fields, controlled local proof steps, and inspector validation. Full OBS-VENDOR-6C remains Planned until live operational proof is complete. Full OBS-VENDOR-6 remains Planned.
+Done - LKW operational docs and read-only failed-delivery JSONL inspector added (`applications/local_workspace_application/docs/BUILD_AND_DEPLOY.md`, `applications/local_workspace_application/scripts/inspect_elasticsearch_failed_deliveries.py`, `inspect-elasticsearch-failed-deliveries.bat`). Documents env path, safe fields, controlled local proof steps, and inspector validation. Full OBS-VENDOR-6C remains Planned until live operational proof is complete. Full OBS-VENDOR-6 remains Planned.
 
 **OBS-VENDOR-6C-B5 status:**
 
-Done — live local controlled-failure proof recorded. File-backed Elasticsearch failed-delivery JSONL path is operationally complete (OBS-VENDOR-6C file-backed dead-letter proof closed). Full OBS-VENDOR-6C remains **Planned** until rotation/retention, auth/TLS, health checks, batching, and index-based dead-letter storage are done. Full OBS-VENDOR-6 remains Planned.
+Done - live local controlled-failure proof recorded. File-backed Elasticsearch failed-delivery JSONL path is operationally complete (OBS-VENDOR-6C file-backed dead-letter proof closed). Full OBS-VENDOR-6C remains **Planned** until rotation/retention, auth/TLS, health checks, batching, and index-based dead-letter storage are done. Full OBS-VENDOR-6 remains Planned.
 
 **OBS-VENDOR-6C-B5 proof evidence (2026-07-01):**
 
@@ -622,7 +622,7 @@ Done — live local controlled-failure proof recorded. File-backed Elasticsearch
 | LKW run | `POST http:/127.0.0.1:8099/v1/local_workspace/run` (`capability=local.workspace.search`); `run_id=run_f4870c18fced4b83b61c38c8359e6be9` |
 | Inspector command | `applications/local_workspace_application/scripts/inspect-elasticsearch-failed-deliveries.bat --check-safety` |
 | Inspector result | `Records: 36`; `Reason counts: connection_error: 36`; `Validation: all records contain exactly the safe failed-delivery fields`; exit code 0 |
-| Safety result | Passed — each JSONL line contains only `provider_id`, `operation`, `index`, `status_code`, `reason`, `retriable`, `attempts`, `exhausted`; no raw document, prompt, chunks, tool args, secrets, tokens, or absolute payload paths |
+| Safety result | Passed - each JSONL line contains only `provider_id`, `operation`, `index`, `status_code`, `reason`, `retriable`, `attempts`, `exhausted`; no raw document, prompt, chunks, tool args, secrets, tokens, or absolute payload paths |
 
 Sample failed-delivery record:
 
@@ -634,13 +634,13 @@ Sample failed-delivery record:
 
 OBS-VENDOR-7B tooling done: Elasticsearch/OpenSearch readback inspector added for list-runs, run timeline, duplicate check, and safety-key check (`applications/local_workspace_application/scripts/inspect_elasticsearch_observability.py`, `inspect-elasticsearch-observability.bat`). Follow-up: Elasticsearch inspector safety-key check now derives forbidden keys from the canonical runtime export boundary (`FORBIDDEN_EXPORT_CONTENT_FIELDS`) instead of maintaining an independent ad-hoc list. Full OBS-VENDOR-7 remains **Planned** until a live Docker Compose proof records a real `run_id` and backend query result.
 
-### OBS-VENDOR-1 — execution model (reference)
+### OBS-VENDOR-1 - execution model (reference)
 
 1. Runtime emits **`ObservabilityExportEnvelope`** (from spine/journal/runtime metadata).
 2. **`ObservabilityExportPolicy`** sanitizes the envelope (`apply_observability_export_policy` / `try_export_observability_envelope`).
 3. Runtime plugin calls **`ObservabilityVendorIntegrationContract.export(envelope)`**.
 4. Base contract **`map_envelope()`** maps to **`ObservabilityVendorPayload`** (vendor-neutral).
-5. Concrete vendor overrides **`deliver_payload()`** — vendor-specific network/SDK I/O allowed **only** inside provider `transport.py` / `deliver_payload()`.
+5. Concrete vendor overrides **`deliver_payload()`** - vendor-specific network/SDK I/O allowed **only** inside provider `transport.py` / `deliver_payload()`.
 6. LKW and agents **must not** call vendor SDKs directly.
 
 **Forbidden in LKW, agents, runtime loops, and application code:**
@@ -652,7 +652,7 @@ phoenix.log(...)
 arize.log(...)
 ```
 
-### OBS-VENDOR-3 — safe metadata and artifact extension (reference)
+### OBS-VENDOR-3 - safe metadata and artifact extension (reference)
 
 | Path | Allowed | Forbidden |
 |------|---------|-----------|
@@ -661,15 +661,15 @@ arize.log(...)
 
 Export policy blocks forbidden content by default (`export_content=false`). Vendor adapters consume **`sanitized_application_attributes`** only.
 
-### OBS-VENDOR-4A — first adapter decision
+### OBS-VENDOR-4A - first adapter decision
 
 **Recommended first path: Elasticsearch/OpenSearch (`OBS-VENDOR-4A`).**
 
-Rationale: current export records are event/log-oriented (`run_id`, `event_type`, `agent_id`, `tool_id`, `latency_ms`, `status`, `tenant_id`, `workspace_id`). Langfuse, Phoenix, and Arize require additional semantic mapping (trace, span, generation, observation, score) — deferred to **OBS-VENDOR-8**.
+Rationale: current export records are event/log-oriented (`run_id`, `event_type`, `agent_id`, `tool_id`, `latency_ms`, `status`, `tenant_id`, `workspace_id`). Langfuse, Phoenix, and Arize require additional semantic mapping (trace, span, generation, observation, score) - deferred to **OBS-VENDOR-8**.
 
-**Note:** INTEGRATIONS-2C delivered contract stubs for all `observability_backend` slugs including Elasticsearch; **OBS-VENDOR-4A** implements the **production transport** and end-to-end delivery — not the contract scaffold alone.
+**Note:** INTEGRATIONS-2C delivered contract stubs for all `observability_backend` slugs including Elasticsearch; **OBS-VENDOR-4A** implements the **production transport** and end-to-end delivery - not the contract scaffold alone.
 
-### OBS-VENDOR-6 — batching decision
+### OBS-VENDOR-6 - batching decision
 
 **Deferred for initial rollout:** batching is not required for OBS-VENDOR-4A/5/7. Document explicit non-batching in transport; revisit batching in a follow-up row if throughput requires it.
 
@@ -677,7 +677,7 @@ Rationale: current export records are event/log-oriented (`run_id`, `event_type`
 
 | OBS-EXPORT-5 sub-deliverable | OBS-VENDOR coverage |
 |------------------------------|---------------------|
-| Contract adapters (INTEGRATIONS-2C) | **Done** — stubs exist; production I/O pending |
+| Contract adapters (INTEGRATIONS-2C) | **Done** - stubs exist; production I/O pending |
 | Production vendor transports | **OBS-VENDOR-4A**, **OBS-VENDOR-6** |
 | Operator / bootstrap wiring | **OBS-VENDOR-2** **Done**; **OBS-VENDOR-5** **Done** |
 | Production export end-to-end | **OBS-VENDOR-7** |
@@ -685,7 +685,7 @@ Rationale: current export records are event/log-oriented (`run_id`, `event_type`
 
 ---
 
-## Phase OBS-PROBLEM — Plugin-extensible problem/error signal contract (Planned)
+## Phase OBS-PROBLEM - Plugin-extensible problem/error signal contract (Planned)
 
 **Purpose:** Define a vendor-neutral platform contract for problem/error/issue signals before implementing Sentry or other issue-monitoring providers.
 
@@ -706,9 +706,9 @@ ObservabilityExportEnvelope
 
 **Reuse / alignment:** Custom problem metadata should reuse or explicitly align with:
 
-- **`ApplicationObservabilityAttributes`** — typed, namespaced, declared custom fields
-- **`SanitizedApplicationObservabilityAttributes`** — policy-sanitized export surface
-- **`ObservabilityArtifactReference`** — reference-only artifact metadata
+- **`ApplicationObservabilityAttributes`** - typed, namespaced, declared custom fields
+- **`SanitizedApplicationObservabilityAttributes`** - policy-sanitized export surface
+- **`ObservabilityArtifactReference`** - reference-only artifact metadata
 
 Custom fields must be typed, namespaced, declared, and sanitized. No arbitrary raw `dict` payloads.
 
@@ -741,7 +741,7 @@ Custom fields must be typed, namespaced, declared, and sanitized. No arbitrary r
 
 **Artifact refs:** Problem artifacts must be reference-only using **`ObservabilityArtifactReference`** or a directly compatible model (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`). No raw artifact bodies in problem signals.
 
-**Redaction / safety — explicitly forbidden in problem signals and export:**
+**Redaction / safety - explicitly forbidden in problem signals and export:**
 
 - raw prompts
 - raw queries
@@ -763,29 +763,29 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
 | **OBS-PROBLEM-0** | Docs/Architecture | P1 | **Done** | Define plugin-extensible platform problem/error signal contract | Plan states core platform fields, plugin extension model, policy/redaction boundary, reference-only artifacts, vendor boundary, and LKW proof workload role |
-| **OBS-PROBLEM-1** | Code | P1 | **Done** | Minimal vendor-neutral `ProblemSignal` model | `intergrax/runtime/observability/problem_signal.py` — `PlatformProblemSignal`; plugin-extensible taxonomy is string-based (well-known constants, not closed enums); typed app/agent attributes reuse `ApplicationObservabilityAttributes`; artifacts reuse `ObservabilityArtifactReference`; export mapping in OBS-PROBLEM-2 |
-| **OBS-PROBLEM-2** | Code | P1 | **Done** | Map problem signals through observability export policy/envelope | `ExportRecordKind.PROBLEM_SIGNAL` added; `intergrax/runtime/observability/problem_export.py` — minimal `PlatformProblemSignal` → `ObservabilityExportEnvelope` mapping (`problem_kind`, `problem_severity`, `problem_error_code` only); plugin taxonomy remains string-based and open; `application_attributes` sanitized through existing export policy; primary artifact ref only mapped (multi-artifact full projection deferred); `agent_attributes` mapping deferred; `safe_message` export deferred; no Sentry/vendor/LKW proof |
-| **LKW-PF-ERR-1** | Test/Docs | P1 | **Done** | Controlled LKW failure proof for platform problem signals | Added platform-reusable `problem_reporter.py` helper (`ProblemReportContext`, `ProblemReporter`, `build_problem_signal`, `build_problem_export_envelope`, `report_problem`); LKW proof uses helper — not manual low-level signal/envelope/policy calls; proof validates controlled LKW-shaped `lkw.retrieve_failed`; proof validates ProblemSignal → Envelope → Policy/export helper; no raw content leakage; no Sentry/vendor/routing; runtime automatic failure emission deferred |
-| **OBS-PROBLEM-3** | Docs | P1 | **Done** | Runtime/application problem emission boundary | Architecture canon defines allowed/discouraged emission boundaries, duplicate prevention, `RuntimeEvent` relationship, safety rules, and developer examples; boundary/contract only — no Sentry, Elastic, OTLP, routing/fanout, automatic exception catching, `ObservabilityEmitter.emit_problem`, or LKW endpoint wiring |
+| **OBS-PROBLEM-1** | Code | P1 | **Done** | Minimal vendor-neutral `ProblemSignal` model | `intergrax/runtime/observability/problem_signal.py` - `PlatformProblemSignal`; plugin-extensible taxonomy is string-based (well-known constants, not closed enums); typed app/agent attributes reuse `ApplicationObservabilityAttributes`; artifacts reuse `ObservabilityArtifactReference`; export mapping in OBS-PROBLEM-2 |
+| **OBS-PROBLEM-2** | Code | P1 | **Done** | Map problem signals through observability export policy/envelope | `ExportRecordKind.PROBLEM_SIGNAL` added; `intergrax/runtime/observability/problem_export.py` - minimal `PlatformProblemSignal` → `ObservabilityExportEnvelope` mapping (`problem_kind`, `problem_severity`, `problem_error_code` only); plugin taxonomy remains string-based and open; `application_attributes` sanitized through existing export policy; primary artifact ref only mapped (multi-artifact full projection deferred); `agent_attributes` mapping deferred; `safe_message` export deferred; no Sentry/vendor/LKW proof |
+| **LKW-PF-ERR-1** | Test/Docs | P1 | **Done** | Controlled LKW failure proof for platform problem signals | Added platform-reusable `problem_reporter.py` helper (`ProblemReportContext`, `ProblemReporter`, `build_problem_signal`, `build_problem_export_envelope`, `report_problem`); LKW proof uses helper - not manual low-level signal/envelope/policy calls; proof validates controlled LKW-shaped `lkw.retrieve_failed`; proof validates ProblemSignal → Envelope → Policy/export helper; no raw content leakage; no Sentry/vendor/routing; runtime automatic failure emission deferred |
+| **OBS-PROBLEM-3** | Docs | P1 | **Done** | Runtime/application problem emission boundary | Architecture canon defines allowed/discouraged emission boundaries, duplicate prevention, `RuntimeEvent` relationship, safety rules, and developer examples; boundary/contract only - no Sentry, Elastic, OTLP, routing/fanout, automatic exception catching, `ObservabilityEmitter.emit_problem`, or LKW endpoint wiring |
 | **OBS-ROUTING-0** | Code/Docs | P1 | **Done** | Routing/fanout design for `problem_signal` | Vendor-neutral `FanoutObservabilityExporter` operates on policy-safe `ObservabilityExportEnvelope`; route filters for `record_kind` / `problem_kind` / `problem_severity` / `problem_error_code`; per-route failure isolation; `export_with_result(...)` for explicit fanout diagnostics; `export(...)` remains protocol-compatible; no Sentry/Elastic/OTLP provider; no runtime auto-emission; no `ObservabilityEmitter.emit_problem`; no `RuntimeEventBus` subscriber; no LKW endpoint wiring; no operator bootstrap |
 | **OBS-VENDOR-PROBLEM-0** | Code | P1 | **Done** | Shared problem signal fields in observability vendor contract | `ObservabilityVendorSignal.PROBLEMS` added; `ObservabilityVendorPayload` preserves `problem_kind` / `problem_severity` / `problem_error_code`; `problem_signal` maps to `PROBLEMS`; Sentry and Elasticsearch declare `PROBLEMS` in `supported_signals` through the same base contract; no Sentry SDK; no Elasticsearch transport changes; no runtime auto-emission; no LKW wiring; no operator bootstrap |
 | **OBS-SENTRY-1** | Code | P2 | **Done** | Sentry provider maps sanitized problem signals to Sentry issues | Sentry SDK-backed provider transport added under observability backend provider package; `ObservabilityVendorPayload(PROBLEMS)` maps to Sentry issue-shaped event; `sentry_sdk` imported lazily only in provider transport/client; runtime/LKW/agents do not call Sentry SDK; no LKW proof/docker compose/operator bootstrap yet |
 
 ---
 
-## Phase OBS-SENTRY — Sentry error-monitoring integration proof (Done — LKW wiring)
+## Phase OBS-SENTRY - Sentry error-monitoring integration proof (Done - LKW wiring)
 
-**OBS-SENTRY-1 status:** **Done** — platform-level Sentry SDK-backed provider transport; `ObservabilityVendorPayload(PROBLEMS)` → Sentry issue-shaped event via `ObservabilityVendorIntegrationContract`; lazy/provider-owned `sentry_sdk` import; registry construction remains SDK-free.
+**OBS-SENTRY-1 status:** **Done** - platform-level Sentry SDK-backed provider transport; `ObservabilityVendorPayload(PROBLEMS)` → Sentry issue-shaped event via `ObservabilityVendorIntegrationContract`; lazy/provider-owned `sentry_sdk` import; registry construction remains SDK-free.
 
-**LKW-OBS-SENTRY-0 status:** **Done** — LKW controlled problem proof through platform operator wiring (`SentryExportOperatorConfig`, `sentry_export_wiring`), proof helper scripts, and `SENTRY_OBSERVABILITY.md`.
+**LKW-OBS-SENTRY-0 status:** **Done** - LKW controlled problem proof through platform operator wiring (`SentryExportOperatorConfig`, `sentry_export_wiring`), proof helper scripts, and `SENTRY_OBSERVABILITY.md`.
 
-**LKW-OBS-SENTRY-1 status:** **Done** — repo-owned local Sentry Docker Compose proof stack (trimmed self-hosted **24.8.0** services, UI `http://127.0.0.1:9000`, bootstrap local DSN into `docker/sentry-proof/generated.env`), LKW app-level proof endpoint (`POST /v1/local_workspace/proof/sentry-error`), proof helper calls LKW over HTTP.
+**LKW-OBS-SENTRY-1 status:** **Done** - repo-owned local Sentry Docker Compose proof stack (trimmed self-hosted **24.8.0** services, UI `http://127.0.0.1:9000`, bootstrap local DSN into `docker/sentry-proof/generated.env`), LKW app-level proof endpoint (`POST /v1/local_workspace/proof/sentry-error`), proof helper calls LKW over HTTP.
 
-**LKW-OBS-SENTRY-1F status:** **Done** — all-in-one startup fixed: `sentry.services.yml` internal fragment (no `docker-compose.*.yml` double-discovery), `run-local-docker-all.sh`, `sentry-upgrade` lifecycle, local-proof `SENTRY_SECRET_KEY`, atomic `generated.env`, canonical one-script docs.
+**LKW-OBS-SENTRY-1F status:** **Done** - all-in-one startup fixed: `sentry.services.yml` internal fragment (no `docker-compose.*.yml` double-discovery), `run-local-docker-all.sh`, `sentry-upgrade` lifecycle, local-proof `SENTRY_SECRET_KEY`, atomic `generated.env`, canonical one-script docs.
 
 **OBS-SENTRY live proof status:**
 
-**Done (controlled proof path)** — LKW can emit a controlled platform problem signal through the shared observability vendor contract into **local Docker Sentry** using operator configuration and the Sentry overlay. Canonical proof does not require external SaaS DSN. Deterministic unit tests and the proof helper validate the shared export path.
+**Done (controlled proof path)** - LKW can emit a controlled platform problem signal through the shared observability vendor contract into **local Docker Sentry** using operator configuration and the Sentry overlay. Canonical proof does not require external SaaS DSN. Deterministic unit tests and the proof helper validate the shared export path.
 
 **Remaining out of scope (production / hardening):**
 
@@ -801,13 +801,13 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 
 ---
 
-## Phase APP-DIAG — Application diagnostic baseline program (Planned)
+## Phase APP-DIAG - Application diagnostic baseline program (Planned)
 
 **Source:** LKW File Watcher qualification campaign + [`DIAGNOSTIC_GAP_LEDGER.md`](../qualification/DIAGNOSTIC_GAP_LEDGER.md)
 **Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) ONE spine · HOST-DIAG-2/3 · queue causal evidence · `HarnessHostRuntime`
-**Status:** **Registered roadmap only** — no implementation in bootstrap/ledger reconciliation slice
+**Status:** **Registered roadmap only** - no implementation in bootstrap/ledger reconciliation slice
 
-**Proven gap:** APPLICATION DIAGNOSTIC BASELINE NOT GUARANTEED. Current development has typed non-execution diagnostic subjects (HOST-DIAG-2), hosted failure projection (HOST-DIAG-3), terminal execution diagnostic trigger (ONE-SPINE-3), and scaffold observability templates — but **no universal enforcement** that every Tier-3 / scaffold-generated application includes canonical execution identity, RuntimeEvent persistence, diagnostic reconstruction visibility, queue causal evidence, and transport → execution continuity before domain logic ships.
+**Proven gap:** APPLICATION DIAGNOSTIC BASELINE NOT GUARANTEED. Current development has typed non-execution diagnostic subjects (HOST-DIAG-2), hosted failure projection (HOST-DIAG-3), terminal execution diagnostic trigger (ONE-SPINE-3), and scaffold observability templates - but **no universal enforcement** that every Tier-3 / scaffold-generated application includes canonical execution identity, RuntimeEvent persistence, diagnostic reconstruction visibility, queue causal evidence, and transport → execution continuity before domain logic ships.
 
 **Required future baseline (conceptual):**
 
@@ -844,16 +844,16 @@ queue-enabled additionally:
 
 ---
 
-## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+## Phase AUDIT-IDEAL - Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.9, §11 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Done** (2026-06-09) — AUDIT-IDEAL observability rows closed
+**Status:** **Done** (2026-06-09) - AUDIT-IDEAL observability rows closed
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-5.3 | §5 Policy | Governance health dashboard (GOV-PROD.1) | P4 | **Done** |
-| AUDIT-IDEAL-21.1 | §21 Observability | Causal diagnostics beyond trace bridge (ops tooling) | P2 | **Done** — legacy synthetic chain removed (**ONE-SPINE-1**); product dashboard uses `DiagnosticReadService` |
+| AUDIT-IDEAL-21.1 | §21 Observability | Causal diagnostics beyond trace bridge (ops tooling) | P2 | **Done** - legacy synthetic chain removed (**ONE-SPINE-1**); product dashboard uses `DiagnosticReadService` |
 | AUDIT-IDEAL-21.2 | §21 Observability | Quality / governance / cost health dashboard contracts | P2 | **Done** |
 | AUDIT-IDEAL-21.3 | §21 Observability | Unified product observability dashboard | P4 | **Done** |
 | AUDIT-IDEAL-30.2 | §30 Ops | Real deploy SLO window evidence (prod `W_OPS_RELEASE_CYCLES`) | P1 | **Done** |

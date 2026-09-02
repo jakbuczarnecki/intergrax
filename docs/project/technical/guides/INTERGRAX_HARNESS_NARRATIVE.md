@@ -6,7 +6,7 @@ Intergrax is an evidence-backed Harness AI platform for building governed multi-
 
 ## The problem
 
-Many agent frameworks work well for demos but collapse responsibilities when you move toward production. Planning, policy enforcement, tool I/O, memory and RAG wiring, trace capture, evaluation hooks, multi-agent routing, and production evidence often land in a single author-facing class or an ad hoc script layer. That pattern hides control flow, makes state untyped, and turns every new agent into a miniature operating system. Teams then rebuild the same infrastructure—budgets, observability, policy gates, evidence packaging—for each product or pilot, with no durable substrate to swap agents, compare runs, or onboard external reviewers.
+Many agent frameworks work well for demos but collapse responsibilities when you move toward production. Planning, policy enforcement, tool I/O, memory and RAG wiring, trace capture, evaluation hooks, multi-agent routing, and production evidence often land in a single author-facing class or an ad hoc script layer. That pattern hides control flow, makes state untyped, and turns every new agent into a miniature operating system. Teams then rebuild the same infrastructure-budgets, observability, policy gates, evidence packaging-for each product or pilot, with no durable substrate to swap agents, compare runs, or onboard external reviewers.
 
 ## The Intergrax position
 
@@ -25,7 +25,7 @@ Agents own **domain decisions** inside a typed session loop. The harness owns **
 
 **The harness is the product; agents are replaceable.**
 
-An agent framework optimizes for authoring one clever agent quickly. A harness platform optimizes for **reusable execution infrastructure** that survives agent churn, product changes, and external review. Value comes from portable policy, consistent trace and observability, governed tool and skill catalogs, memory and RAG profiles wired through the kernel, multi-agent orchestration without hardcoded class names, and an evidence path that shows what the platform can produce locally—not from any single agent implementation.
+An agent framework optimizes for authoring one clever agent quickly. A harness platform optimizes for **reusable execution infrastructure** that survives agent churn, product changes, and external review. Value comes from portable policy, consistent trace and observability, governed tool and skill catalogs, memory and RAG profiles wired through the kernel, multi-agent orchestration without hardcoded class names, and an evidence path that shows what the platform can produce locally-not from any single agent implementation.
 
 When you swap a research agent for a legal or operations agent, the harness cycle, evidence surfaces, and orchestration model stay the same. When a technical partner evaluates the platform, they inspect durable substrate and proof artifacts, not a demo-specific prompt stack.
 
@@ -75,7 +75,7 @@ The proof path is **local verification of evidence packaging and aggregation**, 
 - cloud cost estimation
 - product-specific acceptance
 
-Treat posture and certification artifacts as harness-platform evidence for onboarding and review—not as enterprise attestation or go-live approval for a specific product.
+Treat posture and certification artifacts as harness-platform evidence for onboarding and review-not as enterprise attestation or go-live approval for a specific product.
 
 ## Who this is for
 

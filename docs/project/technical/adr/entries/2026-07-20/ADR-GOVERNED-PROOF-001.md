@@ -15,21 +15,21 @@ Reuse audit found:
 
 | Existing capability | Role vs GEC-6 |
 |---------------------|---------------|
-| `ProofReceipt` / DocumentStore | Persistence + receipt product — **not** the descriptive profile |
-| `MeaningfulSideEffectRequest` | Pre-execution request — not post-execution proof |
+| `ProofReceipt` / DocumentStore | Persistence + receipt product - **not** the descriptive profile |
+| `MeaningfulSideEffectRequest` | Pre-execution request - not post-execution proof |
 | `PolicyDecision` / `PolicyAction` | Outcome vocabulary to **reference** |
 | `ContinuationEvidenceRefs` / `QuoteAcceptanceEvidence` | Governance artifacts to **reference by id** |
-| Trace / runtime events / provenance | Observability spine — complementary, not a proof profile |
+| Trace / runtime events / provenance | Observability spine - complementary, not a proof profile |
 
 Without an explicit descriptive contract, consumers risk embedding transport payloads, duplicating policy/continuation models, or treating Tier-2 composition as signing/persistence ownership.
 
 ## Decision
 
 1. Introduce a minimal reusable `GovernedProofProfile` (+ `GovernanceEvidenceRef`) in `intergrax.contracts.governed_proof`.
-2. The profile is **descriptive only** — it never authorizes, resumes, evaluates policy, signs, hashes, stores, or publishes.
+2. The profile is **descriptive only** - it never authorizes, resumes, evaluates policy, signs, hashes, stores, or publishes.
 3. Record `PolicyAction` and policy rule/reason strings; do not recompute decisions or embed full nested policy/HITL objects.
 4. Reference governance evidence by kind + id (External Work: `quote_acceptance_evidence` › `acceptance_id`).
-5. Preserve existing `task_id`, `run_id`, `correlation_id`, and `idempotency_key` — never mint new identity.
+5. Preserve existing `task_id`, `run_id`, `correlation_id`, and `idempotency_key` - never mint new identity.
 6. External Work is the first consumer; Tier-2 may compose the profile after a meaningful side effect succeeds under policy ALLOW.
 
 Rejected: reusing `ProofReceipt` as the GEC-6 deliverable; embedding provider SDK/HTTP payloads; Tier-2 receipt stores or cryptographic attestation.

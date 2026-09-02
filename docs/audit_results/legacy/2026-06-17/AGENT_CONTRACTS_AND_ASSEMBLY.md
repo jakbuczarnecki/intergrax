@@ -1,4 +1,4 @@
-# Audit result — `AGENT_CONTRACTS_AND_ASSEMBLY`
+# Audit result - `AGENT_CONTRACTS_AND_ASSEMBLY`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -36,9 +36,9 @@ ACP CI gate: OK (17 agents).
 
 ## Backlog P2–P4 (deferred)
 
-- boundary_demo legacy UAEP → ReflexAgent migration — P2 partner PoC
-- COST-1 graph RunBudget cap — P2 cross-domain
-- FAUDIT-REG.1 eval registry depth — P2 PLATFORM_FOUNDATION
+- boundary_demo legacy UAEP → ReflexAgent migration - P2 partner PoC
+- COST-1 graph RunBudget cap - P2 cross-domain
+- FAUDIT-REG.1 eval registry depth - P2 PLATFORM_FOUNDATION
 
 ---
 

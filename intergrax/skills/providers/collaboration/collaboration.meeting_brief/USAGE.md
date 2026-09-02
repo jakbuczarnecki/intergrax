@@ -28,4 +28,4 @@ Governed access to: `collaboration.list_calendar`, `collaboration.get_user`, `wo
 
 ## Related skills
 
-- Other `collaboration` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `collaboration` bundle skills - see bundle [USAGE.md](../USAGE.md)

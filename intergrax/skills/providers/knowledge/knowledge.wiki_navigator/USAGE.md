@@ -4,14 +4,14 @@
 
 ## Purpose
 
-**Internal documentation navigation**: search wiki/knowledge base, fetch full pages, and search Confluence. Use for enterprise agents answering from runbooks, architecture docs, and team wikis — not for open-web research.
+**Internal documentation navigation**: search wiki/knowledge base, fetch full pages, and search Confluence. Use for enterprise agents answering from runbooks, architecture docs, and team wikis - not for open-web research.
 
 ## How it works
 
 1. `knowledge.search` / `knowledge.get_page` use provider-agnostic `WikiKnowledge` binding.
 2. `confluence.search` uses Confluence-specific wiki backend when that slug is wired.
 3. Prompt ref: `knowledge.wiki_navigator.system`.
-4. Distinct from `rag.retrieve` — optimized for structured wiki pages, not chunked legal corpora.
+4. Distinct from `rag.retrieve` - optimized for structured wiki pages, not chunked legal corpora.
 
 ## How to use
 
@@ -42,6 +42,6 @@ Wire `wiki_knowledge` / Confluence on `IntegrationProfile`; enable knowledge + c
 
 ## Related skills
 
-- `legal.case_research` — includes `knowledge.search` for cases
-- `harness.integration_bridge_smoke` — smoke test for knowledge.search
-- `rag.hybrid_qa` — vector index alternative
+- `legal.case_research` - includes `knowledge.search` for cases
+- `harness.integration_bridge_smoke` - smoke test for knowledge.search
+- `rag.hybrid_qa` - vector index alternative

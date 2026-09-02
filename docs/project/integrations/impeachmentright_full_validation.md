@@ -1,4 +1,4 @@
-# ImpeachmentRight — full validation (Execution Evidence)
+# ImpeachmentRight - full validation (Execution Evidence)
 
 **Date:** 2026-07-21  
 **Verdict:** `FULLY_DEMONSTRABLE` (attestation) · platform completion → [`impeachmentright_platform_completion.md`](impeachmentright_platform_completion.md) (`FULLY_PLATFORM_READY`)  
@@ -13,11 +13,11 @@
 
 | # | Question | Answer |
 |---|----------|--------|
-| 1 | Is `governed_execution_boundary_event.v1` produced by the host? | **Yes** — `governed_contractor_application.host.execution_evidence` |
-| 2 | Is it host-signed? | **Yes** — Ed25519 `HostAttestor` (DI; test attestor offline) |
-| 3 | Is there one portable attested export? | **Yes** — `execution_evidence.proof_receipt.v1` |
-| 4 | Does it bind policy decision, runtime policy bundle identity/digest, provider invocation reference, task/run identity and proof? | **Yes** — `GovernedExecutionResult` + first-class `ProviderInvocation`; pack body via `policy_bundle_artifact` |
-| 5 | Can it be verified offline? | **Yes** — `verify_proof_receipt` recomputes event + pack digests (no provider network) |
+| 1 | Is `governed_execution_boundary_event.v1` produced by the host? | **Yes** - `governed_contractor_application.host.execution_evidence` |
+| 2 | Is it host-signed? | **Yes** - Ed25519 `HostAttestor` (DI; test attestor offline) |
+| 3 | Is there one portable attested export? | **Yes** - `execution_evidence.proof_receipt.v1` |
+| 4 | Does it bind policy decision, runtime policy bundle identity/digest, provider invocation reference, task/run identity and proof? | **Yes** - `GovernedExecutionResult` + first-class `ProviderInvocation`; pack body via `policy_bundle_artifact` |
+| 5 | Can it be verified offline? | **Yes** - `verify_proof_receipt` recomputes event + pack digests (no provider network) |
 | 6 | What remains explicitly outside scope? | DocumentStore/public registry persistence, replay, live/paid providers, wallets, remote KMS/HSM, partner A2A adapter |
 
 ---

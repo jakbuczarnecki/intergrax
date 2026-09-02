@@ -1,4 +1,4 @@
-# Intergrax Core Platform Proof — Local Knowledge Workspace
+# Intergrax Core Platform Proof - Local Knowledge Workspace
 
 ## Choose the right route
 
@@ -72,7 +72,7 @@ A reviewer should not need to inspect raw Docker output or infer what to check f
 > [!NOTE]
 > A **bounded platform proof** validates specific platform and application mechanisms in documented environments. It is **not** product completion, commercial readiness, or universal production certification.
 
-**Historical vs current certification (Protocol v2 audit 2026-08-21):** checked-in certification matrix artifacts record bounded live PASS at specific source revisions (matrix generated 2026-07-21; Windows source `6b71a841...`; Linux Docker source `40a73fbb...`). Those remain **valid historical evidence**. Until [`LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY`](../../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) is remediated, certification freshness is **not** automatically current for the present tree — public docs must not imply silent revalidation on every source change. Current Protocol-v2 gaps do **not** erase historical PASS.
+**Historical vs current certification (Protocol v2 audit 2026-08-21):** checked-in certification matrix artifacts record bounded live PASS at specific source revisions (matrix generated 2026-07-21; Windows source `6b71a841...`; Linux Docker source `40a73fbb...`). Those remain **valid historical evidence**. Until [`LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY`](../../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) is remediated, certification freshness is **not** automatically current for the present tree - public docs must not imply silent revalidation on every source change. Current Protocol-v2 gaps do **not** erase historical PASS.
 
 **Governed Evidence Decision Proof manifest gap (accepted remediation):** `advanced_flagship_proof` is publicly documented with a direct module command but is **not** yet registered in the canonical `scripts/proof/intergrax_proof_manifest.py`. This is accepted audit debt ([`LKW-PROOF-05`](../../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md)), not silently fixed.
 
@@ -121,10 +121,10 @@ The numbered steps below are the concrete technical evidence for these outcomes.
 **Proofs:** `LKW-CORE-PLATFORM-WINDOWS`, `LKW-CORE-PLATFORM-LINUX`, `LKW-CORE-PLATFORM-MACOS`, `LKW-BACKGROUND-TASK`, `LKW-HOSTING`, `LKW-FILE-WATCHER`
 
 Trusted Ask / durable workspace Ask is a separate proof family:
-`LKW-ASK-WORKSPACE-LIVE` — see [Trusted Ask Workspace (MVP-2)](#trusted-ask-workspace-mvp-2).
+`LKW-ASK-WORKSPACE-LIVE` - see [Trusted Ask Workspace (MVP-2)](#trusted-ask-workspace-mvp-2).
 
 Governed Evidence Decision Proof is a separate advanced bounded proof family:
-`advanced_flagship_proof` — see [Governed Evidence Decision Proof](#governed-evidence-decision-proof).
+`advanced_flagship_proof` - see [Governed Evidence Decision Proof](#governed-evidence-decision-proof).
 
 ## Governed Evidence Decision Proof
 
@@ -443,7 +443,7 @@ local host ports (including `8020`). The Trusted Ask live proof uses
 If port `8020` or another required LKW port is already owned by Product Quick
 Start, Core Platform Proof, Trusted Ask proof, or another process, the runner
 should report occupied-port ownership and a recommended action where available.
-Do not delete volumes or reset data by default — stop the conflicting documented
+Do not delete volumes or reset data by default - stop the conflicting documented
 stack non-destructively, then rerun the path you want.
 
 Before running the one-command Core Platform Proof below, stop the Product Quick
@@ -493,7 +493,7 @@ under PROOF-PORTABILITY-1D.
 
 ---
 
-## Step 1 — Start a clean local proof stack
+## Step 1 - Start a clean local proof stack
 
 Canonical **all-in-one** startup (base stack + every top-level
 `docker-compose.*.yml` overlay, including Sentry/Kafka/Elasticsearch when present):
@@ -537,7 +537,7 @@ Do not wait on Docker progress output manually. Step 2 is the readiness check.
 
 ---
 
-## Step 2 — Verify the stack with the proof status checker
+## Step 2 - Verify the stack with the proof status checker
 
 Run:
 
@@ -577,7 +577,7 @@ The raw Docker status command is only for troubleshooting, not for the normal re
 
 ---
 
-## Step 3 — Emit one controlled problem signal into local Sentry
+## Step 3 - Emit one controlled problem signal into local Sentry
 
 Run:
 
@@ -597,7 +597,7 @@ sentry_event_sent=true
 
 ---
 
-## Step 4 — Open the generated Sentry issue
+## Step 4 - Open the generated Sentry issue
 
 Open local Sentry:
 
@@ -631,7 +631,7 @@ intergrax.correlation_id      lkw-sentry-live-001
 
 ---
 
-## Step 5 — Run the Elasticsearch/Kibana proof helper
+## Step 5 - Run the Elasticsearch/Kibana proof helper
 
 Windows:
 
@@ -652,7 +652,7 @@ Copy the printed `run_id`.
 
 ---
 
-## Step 6 — Open Kibana and inspect the run timeline
+## Step 6 - Open Kibana and inspect the run timeline
 
 Open Kibana:
 
@@ -696,7 +696,7 @@ task_completed
 
 ---
 
-## Step 7 — Verify persistent local knowledge after restart
+## Step 7 - Verify persistent local knowledge after restart
 
 Run:
 
@@ -731,7 +731,7 @@ Do not use hard-reset-local-docker-all between the before/after search. Hard res
 
 ---
 
-## Step 8 — Verify background task / queue platform proof
+## Step 8 - Verify background task / queue platform proof
 
 Run:
 
@@ -799,7 +799,7 @@ This proof:
 - verifies read-back and query before printing final `proof_result=PASS`,
 - fails if receipt persistence is unavailable.
 
-**Platform proof guardrails — this step is not satisfied by:**
+**Platform proof guardrails - this step is not satisfied by:**
 
 - mocks or fake queue implementations,
 - in-memory-only or synchronous in-process bypasses,
@@ -831,7 +831,7 @@ Expected in Kafka UI:
 
 ---
 
-## Step 9 — Inspect the structured ProofReceipt in Mongo Express
+## Step 9 - Inspect the structured ProofReceipt in Mongo Express
 
 After Step 8 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted receipt.
 
@@ -909,7 +909,7 @@ worker_execution=asynchronous
 
 ---
 
-## Step 10 — Run the Application Hosting proof
+## Step 10 - Run the Application Hosting proof
 
 Run:
 
@@ -1007,7 +1007,7 @@ This step does not claim Windows Service, systemd, launchd, reboot persistence, 
 
 ---
 
-## Step 11 — Inspect the Application Hosting ProofReceipt in Mongo Express
+## Step 11 - Inspect the Application Hosting ProofReceipt in Mongo Express
 
 After Step 10 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted hosting receipt.
 
@@ -1107,7 +1107,7 @@ None of those replaces the persisted ProofReceipt.
 
 ---
 
-## Step 12 — Run the File Watcher E2E proof
+## Step 12 - Run the File Watcher E2E proof
 
 Run:
 
@@ -1168,7 +1168,7 @@ manual_evidence_injection=false
 
 ---
 
-## Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express
+## Step 13 - Inspect the File Watcher ProofReceipt in Mongo Express
 
 After Step 12 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted file-watcher receipt.
 
@@ -1262,7 +1262,7 @@ API and records proof kind `managed_workspace_folder_sync`.
 
 Hardening (`LKW-PRODUCT-1-HARDENING`) requires durable MessageBus
 execution for sync and typed `search_summary` evidence on `TaskResult`
-— the HTTP router must not read source files or invent scores/snippets.
+- the HTTP router must not read source files or invent scores/snippets.
 
 ### Windows (current certified product path)
 
@@ -1305,7 +1305,7 @@ tenant boundaries.
 4. Start sync and poll until `status=completed`.
 5. Search for each marker and confirm `source_path` / `file_name`.
 6. Create a second workspace and confirm the first marker is absent.
-7. Restart the host and `GET` the original workspace — it must still exist.
+7. Restart the host and `GET` the original workspace - it must still exist.
 8. Inspect the ProofReceipt in Mongo Express for
    `proof_kind=managed_workspace_folder_sync`.
 
@@ -1475,7 +1475,7 @@ Its omission does not invalidate the Core Platform Proof.
 
 Run the matching OS launcher only on that operating system.
 
-## Windows users — Optional W1: Run the Windows PowerShell interaction proof
+## Windows users - Optional W1: Run the Windows PowerShell interaction proof
 
 Windows optional interaction remains implemented and live-certified
 on native Windows through the shared Python client and shared OS
@@ -1574,7 +1574,7 @@ markdown_source_of_truth=false
 
 ---
 
-## Windows users — Optional W2: Inspect the Windows Interaction ProofReceipt
+## Windows users - Optional W2: Inspect the Windows Interaction ProofReceipt
 
 After Optional W1 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted Windows interaction receipt.
 
@@ -1662,7 +1662,7 @@ Markdown is the execution and inspection guide.
 
 ---
 
-## Linux users — Optional interaction proof
+## Linux users - Optional interaction proof
 
 Status: implemented and live-certified in Linux Docker runtime
 
@@ -1720,7 +1720,7 @@ live evidence.
 
 ---
 
-## macOS users — Optional interaction proof
+## macOS users - Optional interaction proof
 
 Status: implemented, not live-certified
 
@@ -1826,7 +1826,7 @@ For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZAT
 
 ---
 
-## Target platform proof direction (planned — not completed)
+## Target platform proof direction (planned - not completed)
 
 **Status honesty:** The Core Platform Proof above validates indexed local-folder knowledge, Ask Workspace over RAG, background ingest, hosting and observability. The following **planned** proof (`LKW-LIVE-PLATFORM-PROOF-1`) is **not** claimed as completed.
 
@@ -1875,7 +1875,7 @@ This proof does not establish combined indexed + live evidence, complete live-pr
 2. Create or select a workspace.
 3. Upload files; add a Web URL.
 4. Configure Microsoft 365, Jira, Confluence (collaboration pack).
-5. Configure Databricks, Power BI, Atlan (data pack) — read-only.
+5. Configure Databricks, Power BI, Atlan (data pack) - read-only.
 6. Ask a Hybrid Ask question requiring indexed and live evidence.
 7. Receive one answer with citations and live freshness markers.
 8. Restart with vLLM; repeat without changing LKW domain behavior.

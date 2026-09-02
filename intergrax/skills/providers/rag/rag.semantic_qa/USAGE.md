@@ -28,4 +28,4 @@ Governed access to: `rag.retrieve`, `rag.get_document`, `memory.search`.
 
 ## Related skills
 
-- Other `rag` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `rag` bundle skills - see bundle [USAGE.md](../USAGE.md)

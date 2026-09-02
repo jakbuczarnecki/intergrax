@@ -25,7 +25,7 @@ infra/
 
 ---
 
-## Quick start (recommended — unified stack)
+## Quick start (recommended - unified stack)
 
 ```bash
 cd infra/integration
@@ -39,7 +39,7 @@ cd infra/integration
 # RAG only
 ./manage.sh start rag
 
-# vLLM (production self-hosted LLM — requires NVIDIA GPU)
+# vLLM (production self-hosted LLM - requires NVIDIA GPU)
 ./manage.sh start vllm
 # or standalone: cd ../docker && ./manage.sh vllm start
 
@@ -69,8 +69,8 @@ cd infra\integration
 | `core` | redis, postgresql |
 | `queue` | kafka, rabbitmq, nats |
 | `rag` | qdrant, chroma, weaviate, neo4j, milvus, ollama, docling |
-| `vllm` | vllm (NVIDIA GPU; opt-in — not in default stack) |
-| `llama-cpp` | llama-cpp, llama-cpp-embed (CPU-friendly; opt-in — not in default stack) |
+| `vllm` | vllm (NVIDIA GPU; opt-in - not in default stack) |
+| `llama-cpp` | llama-cpp, llama-cpp-embed (CPU-friendly; opt-in - not in default stack) |
 | `data` | mongodb, mysql, cassandra, minio, memcached |
 | `secrets` | vault |
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |
@@ -152,15 +152,15 @@ Copy `infra/integration/.env.example` to `infra/integration/.env` to override cr
 
 ## Design principles
 
-- **Profile-based** — avoid running 30+ containers when only Redis is needed.
-- **Single port matrix** — documented in [PORTS.md](PORTS.md); conflicts resolved (ClickHouse native → host `9002`, Vespa → `8089`).
-- **Tool isolation** — each service under `infra/docker/<name>/`.
-- **Optional build** — only Docling uses `Dockerfile`; `manage build` targets Docling in unified stack.
+- **Profile-based** - avoid running 30+ containers when only Redis is needed.
+- **Single port matrix** - documented in [PORTS.md](PORTS.md); conflicts resolved (ClickHouse native → host `9002`, Vespa → `8089`).
+- **Tool isolation** - each service under `infra/docker/<name>/`.
+- **Optional build** - only Docling uses `Dockerfile`; `manage build` targets Docling in unified stack.
 
 ---
 
 ## Related documentation
 
-- [docs/project/architecture/INTEGRATIONS.md](../docs/project/architecture/INTEGRATIONS.md) — provider slugs and `INTERGRAX_*` env vars
-- [docs/project/architecture/intergrax_runtime_architecture.md](../docs/project/architecture/intergrax_runtime_architecture.md) §7.1.2, §33 — RAG/LLM metrics and observability backends (Prometheus/Langfuse/Phoenix)
-- [intergrax/integrations/providers/*/USAGE.md](../intergrax/integrations/providers/) — per-provider connection examples
+- [docs/project/architecture/INTEGRATIONS.md](../docs/project/architecture/INTEGRATIONS.md) - provider slugs and `INTERGRAX_*` env vars
+- [docs/project/architecture/intergrax_runtime_architecture.md](../docs/project/architecture/intergrax_runtime_architecture.md) §7.1.2, §33 - RAG/LLM metrics and observability backends (Prometheus/Langfuse/Phoenix)
+- [intergrax/integrations/providers/*/USAGE.md](../intergrax/integrations/providers/) - per-provider connection examples

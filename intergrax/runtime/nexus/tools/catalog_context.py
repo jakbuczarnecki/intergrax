@@ -32,7 +32,6 @@ def invoke_catalog_context_tool(
     tool_id: str,
     input_payload: BaseModel,
     *,
-    agent_id: str = "nexus",
     step_id: str = "catalog_context",
 ) -> bool:
     """
@@ -51,7 +50,11 @@ def invoke_catalog_context_tool(
         tool_id=tool_id,
         input=input_payload,
     )
-    result = invoker.invoke(state=state, agent_id=agent_id, request=request)
+    result = invoker.invoke(
+        state=state,
+        agent_id=state.request.agent_id,
+        request=request,
+    )
     if not result.success or result.output is None:
         return True
 

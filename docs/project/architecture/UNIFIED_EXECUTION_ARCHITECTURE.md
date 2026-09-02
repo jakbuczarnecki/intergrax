@@ -1,11 +1,11 @@
 # Unified Execution Architecture
 
 **Status:** Canonical cross-domain meta-architecture (frozen target semantics)  
-**Classification:** `META_ARCHITECTURE` — coordinates platform-wide cross-domain execution semantics across existing domain owners; **not** a new platform DOMAIN and **not** paired with a 1:1 implementation plan  
+**Classification:** `META_ARCHITECTURE` - coordinates platform-wide cross-domain execution semantics across existing domain owners; **not** a new platform DOMAIN and **not** paired with a 1:1 implementation plan  
 **Owner:** Intergrax Platform Architecture (semantic coordination)  
 **Audience:** Principal architects, domain owners, implementers, Cursor implementation sessions  
 **Registered in:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md#architecture-artifact-classification-register)  
-**Last updated:** 2026-08-29 — **UE-8P3** pluggable `ExecutionAuthorityPolicy`, **UEA-INV-022** mandatory authority checkpoint
+**Last updated:** 2026-08-29 - **UE-8P3** pluggable `ExecutionAuthorityPolicy`, **UEA-INV-022** mandatory authority checkpoint
 
 ---
 
@@ -35,7 +35,7 @@ What MUST / MUST NOT happen at runtime?
 | Property | Value |
 |----------|-------|
 | **Topology class** | `META_ARCHITECTURE` (cross-domain semantic coordination model) |
-| **Domain pair** | **None** — no `maintainers/plans/UNIFIED_EXECUTION_ARCHITECTURE.md` |
+| **Domain pair** | **None** - no `maintainers/plans/UNIFIED_EXECUTION_ARCHITECTURE.md` |
 | **Relationship to UER** | UER owns Run/Attempt lifecycle and execution coordination contracts; this model defines cross-domain identity and tree semantics UER and others MUST align with |
 | **Relationship to domain pairs** | Each row in [§16](#16-canonical-ownership-matrix) retains detailed semantic ownership |
 
@@ -54,7 +54,7 @@ Do not promote this file to a DOMAIN. Do not create competing owners for capabil
 
 ---
 
-## 3. Mental model — identity hierarchy
+## 3. Mental model - identity hierarchy
 
 **TARGET ARCHITECTURE**
 
@@ -104,7 +104,7 @@ Direct execution **MUST NOT** require Nexus merely because execution identity, g
 
 | Layer | What it is | Owner of semantics |
 |-------|------------|-------------------|
-| **Task** | Canonical work intent — what the user or system wants to achieve | Task/intake contract ([`ORCHESTRATION.md`](ORCHESTRATION.md) §10.1, application intake) |
+| **Task** | Canonical work intent - what the user or system wants to achieve | Task/intake contract ([`ORCHESTRATION.md`](ORCHESTRATION.md) §10.1, application intake) |
 | **Run** | One complete governed lifecycle of a Task | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) (UER) |
 | **Attempt** | One global attempt of the Run; local provider/tool/step retries do **not** automatically mint a new AttemptId | UER |
 | **Execution** | A concrete, independently schedulable/governable unit of work inside an Attempt | Unified Execution Runtime / execution lifecycle layer |
@@ -142,8 +142,8 @@ Execution E1
 
 Each Execution has:
 
-- `execution_id` — unique within the Attempt (and globally addressable with Run/Attempt context)
-- `parent_execution_id` — `None` for root; parent `ExecutionId` for children
+- `execution_id` - unique within the Attempt (and globally addressable with Run/Attempt context)
+- `parent_execution_id` - `None` for root; parent `ExecutionId` for children
 
 Other subsystems may hold **projections or views** but **MUST NOT** create competing execution trees (**UEA-INV-005**).
 
@@ -158,7 +158,7 @@ Other subsystems may hold **projections or views** but **MUST NOT** create compe
 | **Node / NodeId** | Definition/topological position in an `OrchestrationDefinition` | A runtime instance of work |
 | **Execution / ExecutionId** | Specific runtime instance of independently executable work | A graph topology slot |
 
-**Example — dynamic fan-out:**
+**Example - dynamic fan-out:**
 
 ```text
 Node: analyze_customer
@@ -202,7 +202,7 @@ Execution E1
 ```
 
 - Nested/hierarchical orchestration is architecturally legal (**UEA-INV-019**).
-- Initial implementation may constrain max execution depth, orchestration depth, fan-out, or active children — the architecture **MUST NOT** assume a permanently flat DAG.
+- Initial implementation may constrain max execution depth, orchestration depth, fan-out, or active children - the architecture **MUST NOT** assume a permanently flat DAG.
 - **Do not invent `OrchestrationRunId`.** A child orchestration does **not** automatically create a new `RunId`.
 
 **Owner:** Orchestration topology and configuration → [`ORCHESTRATION.md`](ORCHESTRATION.md). Runtime scheduling/control flow → [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md).
@@ -323,7 +323,7 @@ Do **not** create a second general-purpose arbitrary DAG runtime for internal ag
 
 **TARGET ARCHITECTURE**
 
-Not every Execution requires a Decision Lifecycle. When profiled, semantic decision progression runs **inside** canonical Execution — not as a parallel Decision Runtime:
+Not every Execution requires a Decision Lifecycle. When profiled, semantic decision progression runs **inside** canonical Execution - not as a parallel Decision Runtime:
 
 ```text
 Execution
@@ -348,7 +348,7 @@ Execution Strategy
 └── ORCHESTRATION → Nexus
 ```
 
-Execution System owns hosting execution lifecycle and strategy routing. Decision System owns semantic decision progression. Nexus owns orchestration runtime only when ORCHESTRATION is selected. Governed Execution answers whether an **exact Decision Version** may execute — separate from decision correctness.
+Execution System owns hosting execution lifecycle and strategy routing. Decision System owns semantic decision progression. Nexus owns orchestration runtime only when ORCHESTRATION is selected. Governed Execution answers whether an **exact Decision Version** may execute - separate from decision correctness.
 
 **Canonical:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md). **CURRENT production:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
 
@@ -408,7 +408,7 @@ Execution Boundary admission
 
 Conceptual future transport envelope preserves: `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, tenant, effective authority, bounded budget allowance, input/context/policy references, causal/trace correlation. Exact Python schema is **not** frozen here.
 
-**Owner:** Queue/transport/worker execution → [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md). [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) covers package installation/activation only — not distributed execution identity. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
+**Owner:** Queue/transport/worker execution → [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md). [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) covers package installation/activation only - not distributed execution identity. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
 
 <a href="BACKGROUND_TASKS.md">
 <picture>
@@ -427,7 +427,7 @@ Conceptual future transport envelope preserves: `TaskId`, `RunId`, `AttemptId`, 
 
 **TARGET ARCHITECTURE**
 
-Governance owns policy/authority **decisions** and wider governance semantics. Execution **coordinates** with Governance but does **not** absorb it. `ExecutionAuthorityPolicy` owns **child authority-resolution strategy only** — it is **not** a replacement for `PolicyEngine` / Governance.
+Governance owns policy/authority **decisions** and wider governance semantics. Execution **coordinates** with Governance but does **not** absorb it. `ExecutionAuthorityPolicy` owns **child authority-resolution strategy only** - it is **not** a replacement for `PolicyEngine` / Governance.
 
 Every Execution enters governance with canonical identity, tenant/scope, effective authority, execution requirements, and relevant action/effect context. Governance answers whether the Execution or operation is allowed; UER/Execution Runtime applies the lifecycle consequence.
 
@@ -490,7 +490,7 @@ When the developer configures nothing, Intergrax uses **`DefaultStrictAuthorityP
 - nested child comparisons use **immediate parent Execution authority**, not root Run authority and not orchestration `depends_on` graph topology
 - `None` ≠ empty tuple: `None` means inherit parent with no delegation evidence; `()` triggers explicit delegation narrowing
 
-`DefaultStrictAuthorityPolicy` enforces **monotonic narrowing**: child authority cannot exceed immediate parent authority. This is **default platform behavior**, not a universal law — custom `ExecutionAuthorityPolicy` implementations may define different strategies (e.g. strict narrowing, governed elevation, tenant-specific corporate authority, regulated-domain rules). **Governed elevation** and similar strategies are **custom / future** implementations unless explicitly shipped — do not describe them as current platform contracts.
+`DefaultStrictAuthorityPolicy` enforces **monotonic narrowing**: child authority cannot exceed immediate parent authority. This is **default platform behavior**, not a universal law - custom `ExecutionAuthorityPolicy` implementations may define different strategies (e.g. strict narrowing, governed elevation, tenant-specific corporate authority, regulated-domain rules). **Governed elevation** and similar strategies are **custom / future** implementations unless explicitly shipped - do not describe them as current platform contracts.
 
 **Do not** state as universal platform law: “every child authority must be a subset of parent authority.” State instead that the **configured policy** decides at the mandatory checkpoint; the platform default applies strict narrowing (**UEA-INV-009** describes default strict behavior).
 
@@ -498,9 +498,9 @@ When the developer configures nothing, Intergrax uses **`DefaultStrictAuthorityP
 
 Developers may supply a custom policy through:
 
-1. **Direct instance override** — inject `ExecutionAuthorityPolicy` at composition time (highest precedence).
-2. **Python entry-point plugin** — register under entry-point group **`intergrax.execution_authority_policies`**.
-3. **Platform default** — `DefaultStrictAuthorityPolicy` when neither override is configured.
+1. **Direct instance override** - inject `ExecutionAuthorityPolicy` at composition time (highest precedence).
+2. **Python entry-point plugin** - register under entry-point group **`intergrax.execution_authority_policies`**.
+3. **Platform default** - `DefaultStrictAuthorityPolicy` when neither override is configured.
 
 **Resolution order:** explicit instance → explicit entry-point id → `DefaultStrictAuthorityPolicy`.
 
@@ -531,7 +531,7 @@ A plugin **MUST NOT** seize Execution lifecycle ownership or bypass the Executio
 |-------|------|
 | **Execution lifecycle layer** | Mandatory authority checkpoint integration; child execution admission path; active Execution authority binding |
 | **`ExecutionAuthorityPolicy`** | Authority-resolution strategy only |
-| **Nexus** | What executes next; child work requests — **not** authority algorithm, plugin loading, or checkpoint bypass |
+| **Nexus** | What executes next; child work requests - **not** authority algorithm, plugin loading, or checkpoint bypass |
 | **Governance** | Policy/authority decisions and wider governance semantics; custom policies may integrate in future |
 
 ```text
@@ -552,7 +552,7 @@ Tool
 
 **CURRENT IMPLEMENTATION (UE-8P2 / UE-8P2R1):** `ExecutionAuthorityPolicy` Protocol; `DefaultStrictAuthorityPolicy`; direct instance override; entry-point plugin registry; `RuntimeConfig` composition wiring; explicit missing plugin fails closed.
 
-**TARGET / FUTURE:** governed-elevation and richer authority strategies when explicitly implemented — **not** current production contracts.
+**TARGET / FUTURE:** governed-elevation and richer authority strategies when explicitly implemented - **not** current production contracts.
 
 **MIGRATION GAP (broader):** legacy graph/node-centric authority paths may still exist outside the canonical child admission checkpoint on some surfaces; converge on Execution-tree-centric checkpoint admission.
 
@@ -624,7 +624,7 @@ UER resumes SAME Execution identity
 strategy continues
 ```
 
-Human decision is **not** a retry, new Attempt, new Run, or automatic authority expansion. Nexus involvement is conditional — only when the paused Execution uses orchestration strategy. Direct inference or agentic Executions may use HITL without Nexus.
+Human decision is **not** a retry, new Attempt, new Run, or automatic authority expansion. Nexus involvement is conditional - only when the paused Execution uses orchestration strategy. Direct inference or agentic Executions may use HITL without Nexus.
 
 Resume causality must be auditable: authorized decision → Execution resumed. Identity preserved across pause/resume (**UEA-INV-012**).
 
@@ -640,7 +640,7 @@ Checkpoint subsystem persists durable recovery state. Checkpoint is **not** exec
 
 One canonical Run-scoped checkpoint model must be capable of preserving: `RunId`, current `AttemptId`, root `ExecutionId`, Execution Tree, per-Execution lifecycle state, orchestration readiness/scheduling state, Agent/UAEP cursors, pending HITL, budget reservations/reconciliation where required, cancellation state, and required recovery/idempotency state.
 
-There is **no** separate Nexus checkpoint truth, Agent checkpoint truth, or worker checkpoint identity tree — subsystem-local snapshot structures may exist only as components of canonical recovery state.
+There is **no** separate Nexus checkpoint truth, Agent checkpoint truth, or worker checkpoint identity tree - subsystem-local snapshot structures may exist only as components of canonical recovery state.
 
 Pause/resume preserves identity. Checkpoint restoration must resume canonical logical work and **MUST NOT** mint a new `ExecutionId` solely because process or worker changed. Whole-Run retry restoration is an explicit lifecycle decision and follows whole-Run retry identity semantics (**UEA-INV-014**).
 
@@ -690,7 +690,7 @@ Task → Run → Attempt → Execution Tree → RuntimeEvents
 
 ---
 
-## 18. DIAG — diagnostic interpretation
+## 18. DIAG - diagnostic interpretation
 
 **TARGET ARCHITECTURE**
 
@@ -723,7 +723,7 @@ without heuristic guessing.
 
 ## 19. Causal admission
 
-**TARGET ARCHITECTURE — UEA-INV-017**
+**TARGET ARCHITECTURE - UEA-INV-017**
 
 Every independently schedulable Execution must establish **durable causal lineage** before meaningful work begins.
 
@@ -755,7 +755,7 @@ Relationships required for audit/causality may be fail-closed evidence. Not ever
 
 ## 20. Execution boundary
 
-**TARGET ARCHITECTURE — UEA-INV-018**
+**TARGET ARCHITECTURE - UEA-INV-018**
 
 > **Execution coordinates contracts; it does not absorb subsystem ownership.**
 
@@ -783,7 +783,7 @@ Subsystem owners retain their state and decision semantics.
 
 **Execution strategy may vary. Mandatory platform guarantees may not.**
 
-Every independently executable unit enters the canonical Execution Boundary. Every child Execution **re-enters** that same boundary. This is **not** middleware decoration around the public API only — the guarantee is **per Execution**. Nested work **MUST NOT** assume “the parent was governed, therefore the child can call executor internals directly.”
+Every independently executable unit enters the canonical Execution Boundary. Every child Execution **re-enters** that same boundary. This is **not** middleware decoration around the public API only - the guarantee is **per Execution**. Nested work **MUST NOT** assume “the parent was governed, therefore the child can call executor internals directly.”
 
 **Mandatory for every Execution:**
 
@@ -857,7 +857,7 @@ Nexus **MUST NOT** rely on “parent governance already happened” to call Agen
 
 ## 21. Strategy resolution
 
-**TARGET ARCHITECTURE — UEA-INV-020**
+**TARGET ARCHITECTURE - UEA-INV-020**
 
 Developer-facing requests express **what** is required, not low-level engine selection. Internal strategy selection should be deterministic from explicit requirements/capabilities.
 
@@ -865,7 +865,7 @@ Strategy resolution **MUST NOT** silently invent orchestration topology. Dynamic
 
 Do **not** freeze target public APIs such as `mode="react"`, `execute_agent()`, etc.
 
-**TARGET ARCHITECTURE — UEA-INV-021**
+**TARGET ARCHITECTURE - UEA-INV-021**
 
 No execution strategy may bypass the canonical Execution Boundary or its mandatory platform guarantees. Every child Execution re-enters the same canonical boundary.
 
@@ -890,7 +890,7 @@ No execution strategy may bypass the canonical Execution Boundary or its mandato
 | Runtime event / evidence recording | OBSERVABILITY | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
 | Diagnostic interpretation | DIAG | Observability DIAG plane + future DIAG domain docs |
 | Transport identity | Queue / transport subsystem | [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md) |
-| **Cross-domain execution semantics (this document)** | Platform Architecture | Coordinates only — does not steal ownership |
+| **Cross-domain execution semantics (this document)** | Platform Architecture | Coordinates only - does not steal ownership |
 
 <a href="intergrax_runtime_architecture.md">
 <picture>
@@ -911,81 +911,81 @@ Terms follow: **What it is** · **Who owns semantics** · **What it is not**.
 
 ### Identity and lifecycle
 
-**Task** — Canonical work intent (`TaskId`). **Owner:** intake/Task contract. **Not:** a Run or an Execution instance.
+**Task** - Canonical work intent (`TaskId`). **Owner:** intake/Task contract. **Not:** a Run or an Execution instance.
 
-**TaskId** — Stable identifier for work intent across retries and surfaces. **Owner:** Task/intake contract. Observability records/carries it; does not own creation semantics. **Not:** interchangeable with `RunId`.
+**TaskId** - Stable identifier for work intent across retries and surfaces. **Owner:** Task/intake contract. Observability records/carries it; does not own creation semantics. **Not:** interchangeable with `RunId`.
 
-**Run** — One complete governed lifecycle of a Task (`RunId`). **Owner:** UER. **Not:** an Attempt or a single agent session alias.
+**Run** - One complete governed lifecycle of a Task (`RunId`). **Owner:** UER. **Not:** an Attempt or a single agent session alias.
 
-**RunId** — Identifier for one Run. **Owner:** UER. Observability records/carries it. **Not:** `TaskId` or `AttemptId`.
+**RunId** - Identifier for one Run. **Owner:** UER. Observability records/carries it. **Not:** `TaskId` or `AttemptId`.
 
-**Attempt** — One global try within a Run (`AttemptId`). **Owner:** UER. **Not:** every local tool retry or internal step retry.
+**Attempt** - One global try within a Run (`AttemptId`). **Owner:** UER. **Not:** every local tool retry or internal step retry.
 
-**AttemptId** — Minted only at defined attempt boundaries (e.g. whole-Run retry). **Owner:** UER. **Not:** recreated on provider blips inside the same Attempt.
+**AttemptId** - Minted only at defined attempt boundaries (e.g. whole-Run retry). **Owner:** UER. **Not:** recreated on provider blips inside the same Attempt.
 
-**Execution** — Independently schedulable/governable unit of work inside an Attempt. **Owner:** execution lifecycle layer. **Not:** an Agent, a Node, or a transport message.
+**Execution** - Independently schedulable/governable unit of work inside an Attempt. **Owner:** execution lifecycle layer. **Not:** an Agent, a Node, or a transport message.
 
-**Root Execution** — Top-level Execution in an Attempt; `parent_execution_id = None`. **Owner:** execution lifecycle layer. **Not:** optional — every Attempt has at least one.
+**Root Execution** - Top-level Execution in an Attempt; `parent_execution_id = None`. **Owner:** execution lifecycle layer. **Not:** optional - every Attempt has at least one.
 
-**Child Execution** — Execution with non-null `parent_execution_id`. **Owner:** execution lifecycle layer. **Not:** a UAEP step.
+**Child Execution** - Execution with non-null `parent_execution_id`. **Owner:** execution lifecycle layer. **Not:** a UAEP step.
 
-**ExecutionId** — Runtime identity of one Execution instance. **Owner:** execution lifecycle layer / UER coordination. **Not:** `NodeId`, `EventId`, or broker task id.
+**ExecutionId** - Runtime identity of one Execution instance. **Owner:** execution lifecycle layer / UER coordination. **Not:** `NodeId`, `EventId`, or broker task id.
 
-**Execution Tree** — Canonical parent/child graph of Executions within an Attempt. **Owner:** execution lifecycle layer. **Not:** orchestration topology or agent step list.
+**Execution Tree** - Canonical parent/child graph of Executions within an Attempt. **Owner:** execution lifecycle layer. **Not:** orchestration topology or agent step list.
 
-**Execution Strategy** — How an Execution is realized (direct, agentic, orchestration, etc.). **Owner:** execution coordination + domain executors. **Not:** a public `mode=` switch frozen here.
+**Execution Strategy** - How an Execution is realized (direct, agentic, orchestration, etc.). **Owner:** execution coordination + domain executors. **Not:** a public `mode=` switch frozen here.
 
-**Event** — One canonical runtime fact/transition. **Owner:** UER event model + Observability. **Not:** ad-hoc log lines.
+**Event** - One canonical runtime fact/transition. **Owner:** UER event model + Observability. **Not:** ad-hoc log lines.
 
-**EventId** — Unique id per canonical event. **Owner:** UER event contract; Observability records event identity. **Not:** reusable across events.
+**EventId** - Unique id per canonical event. **Owner:** UER event contract; Observability records event identity. **Not:** reusable across events.
 
 ### Orchestration and Nexus
 
-**Orchestration** — Strategy coordinating child Executions to realize a parent Execution. **Owner:** ORCHESTRATION (topology) + Nexus (runtime). **Not:** synonymous with Nexus or UER.
+**Orchestration** - Strategy coordinating child Executions to realize a parent Execution. **Owner:** ORCHESTRATION (topology) + Nexus (runtime). **Not:** synonymous with Nexus or UER.
 
-**OrchestrationDefinition** — Validated, governable description of orchestration topology and policy inputs. **Owner:** ORCHESTRATION. **Not:** the runtime Execution Tree.
+**OrchestrationDefinition** - Validated, governable description of orchestration topology and policy inputs. **Owner:** ORCHESTRATION. **Not:** the runtime Execution Tree.
 
-**Orchestration topology** — Nodes, edges, and structural relationships in a definition. **Owner:** ORCHESTRATION. **Not:** runtime Execution parent/child links.
+**Orchestration topology** - Nodes, edges, and structural relationships in a definition. **Owner:** ORCHESTRATION. **Not:** runtime Execution parent/child links.
 
-**Node** — Topological slot in orchestration definition. **Owner:** ORCHESTRATION. **Not:** a running Execution.
+**Node** - Topological slot in orchestration definition. **Owner:** ORCHESTRATION. **Not:** a running Execution.
 
-**NodeId** — Identifier of a Node in definition space. **Owner:** ORCHESTRATION. **Not:** `ExecutionId`.
+**NodeId** - Identifier of a Node in definition space. **Owner:** ORCHESTRATION. **Not:** `ExecutionId`.
 
-**Nexus** — Tier-1 control flow answering what Executes next; schedules child Executions. **Owner:** NEXUS_EXECUTION_FLOW. **Not:** universal executor, identity owner, or budget ledger.
+**Nexus** - Tier-1 control flow answering what Executes next; schedules child Executions. **Owner:** NEXUS_EXECUTION_FLOW. **Not:** universal executor, identity owner, or budget ledger.
 
 ### Agent stack
 
-**Agent** — Domain decision unit / reusable executor role. **Owner:** AGENT_CONTRACTS_AND_ASSEMBLY. **Not:** an Execution.
+**Agent** - Domain decision unit / reusable executor role. **Owner:** AGENT_CONTRACTS_AND_ASSEMBLY. **Not:** an Execution.
 
-**AgentDefinition** — Configuration/metadata for an Agent. **Owner:** ACP. **Not:** runtime Execution identity.
+**AgentDefinition** - Configuration/metadata for an Agent. **Owner:** ACP. **Not:** runtime Execution identity.
 
-**AgentEngine** — Tier-1 engine running agent sessions for an Execution using agentic strategy. **Owner:** ACP / runtime. **Not:** Nexus or UER.
+**AgentEngine** - Tier-1 engine running agent sessions for an Execution using agentic strategy. **Owner:** ACP / runtime. **Not:** Nexus or UER.
 
-**UAEP** — Unified Agent Execution Protocol; step loop inside agentic Execution. **Owner:** UER §42.5 + ACP. **Not:** generic platform execution protocol for all strategies.
+**UAEP** - Unified Agent Execution Protocol; step loop inside agentic Execution. **Owner:** UER §42.5 + ACP. **Not:** generic platform execution protocol for all strategies.
 
-**Step** — Internal operation within one Execution (UAEP/HarnessKernel). **Owner:** UAEP. **Not:** child Execution unless independently schedulable per §9.
+**Step** - Internal operation within one Execution (UAEP/HarnessKernel). **Owner:** UAEP. **Not:** child Execution unless independently schedulable per §9.
 
 ### Evidence, governance, operations
 
-**RuntimeEvent** — Canonical persisted execution transition with typed identity. **Owner:** OBSERVABILITY + UER. **Not:** TraceEvent or unstructured logs.
+**RuntimeEvent** - Canonical persisted execution transition with typed identity. **Owner:** OBSERVABILITY + UER. **Not:** TraceEvent or unstructured logs.
 
-**Execution Authority** — Effective permission envelope for an Execution, inherited and narrowable. **Owner:** GOVERNED_EXECUTION. **Not:** implicit graph defaults without audit.
+**Execution Authority** - Effective permission envelope for an Execution, inherited and narrowable. **Owner:** GOVERNED_EXECUTION. **Not:** implicit graph defaults without audit.
 
-**Budget allowance / reservation** — Bounded slice of Run budget assigned to an Execution or child. **Owner:** budget subsystem. **Not:** ad-hoc counters inside Nexus.
+**Budget allowance / reservation** - Bounded slice of Run budget assigned to an Execution or child. **Owner:** budget subsystem. **Not:** ad-hoc counters inside Nexus.
 
-**HITL** — Human-in-the-loop governance mechanism; decision owned by Governance, lifecycle by Execution. **Owner:** GOVERNED_EXECUTION + RELIABILITY_FAILURE_AND_HITL. **Not:** a new identity layer.
+**HITL** - Human-in-the-loop governance mechanism; decision owned by Governance, lifecycle by Execution. **Owner:** GOVERNED_EXECUTION + RELIABILITY_FAILURE_AND_HITL. **Not:** a new identity layer.
 
-**Checkpoint** — Run-scoped durable recovery state including tree and cursors. **Owner:** checkpoint/long-running owners. **Not:** source of truth for minting ExecutionId.
+**Checkpoint** - Run-scoped durable recovery state including tree and cursors. **Owner:** checkpoint/long-running owners. **Not:** source of truth for minting ExecutionId.
 
-**Causal lineage** — Durable parent/trigger relations between Executions (and transport→Execution). **Owner:** Observability causal plane + execution admission. **Not:** inferred from logs.
+**Causal lineage** - Durable parent/trigger relations between Executions (and transport→Execution). **Owner:** Observability causal plane + execution admission. **Not:** inferred from logs.
 
-**Causal evidence** — Persisted facts supporting lineage and DIAG. **Owner:** OBSERVABILITY. **Not:** DIAG-owned storage.
+**Causal evidence** - Persisted facts supporting lineage and DIAG. **Owner:** OBSERVABILITY. **Not:** DIAG-owned storage.
 
-**Transport identity** — Broker/worker/delivery ids for infrastructure. **Owner:** queue/transport. **Not:** `RunId` or `ExecutionId`.
+**Transport identity** - Broker/worker/delivery ids for infrastructure. **Owner:** queue/transport. **Not:** `RunId` or `ExecutionId`.
 
-**Observability** — Records execution truth and projections. **Owner:** OBSERVABILITY. **Not:** lifecycle owner or DIAG.
+**Observability** - Records execution truth and projections. **Owner:** OBSERVABILITY. **Not:** lifecycle owner or DIAG.
 
-**DIAG / Diagnostic Engine** — Interprets canonical evidence for explanation. **Owner:** DIAG (Observability plane today). **Not:** execution identity mint or lifecycle driver.
+**DIAG / Diagnostic Engine** - Interprets canonical evidence for explanation. **Owner:** DIAG (Observability plane today). **Not:** execution identity mint or lifecycle driver.
 
 ---
 
@@ -995,11 +995,11 @@ Stable IDs for implementation constraints. Map to domain invariants where they e
 
 | ID | Invariant | Related platform refs |
 |----|-----------|----------------------|
-| **UEA-INV-001** | One canonical identity hierarchy: TaskId → RunId → AttemptId → ExecutionId → EventId | UER §42.1; OBS §5 — *follow-up: align OBS/UER docs with ExecutionId in later UE-DOC slices* |
-| **UEA-INV-002** | Every Run Attempt contains at least one root Execution | — |
+| **UEA-INV-001** | One canonical identity hierarchy: TaskId → RunId → AttemptId → ExecutionId → EventId | UER §42.1; OBS §5 - *follow-up: align OBS/UER docs with ExecutionId in later UE-DOC slices* |
+| **UEA-INV-002** | Every Run Attempt contains at least one root Execution | - |
 | **UEA-INV-003** | Execution ≠ Agent; Agent is reusable executor definition | ACP, UER vs Nexus |
 | **UEA-INV-004** | NodeId (definition topology) ≠ ExecutionId (runtime instance) | ORCHESTRATION |
-| **UEA-INV-005** | One canonical Execution Tree per Attempt; no competing trees | — |
+| **UEA-INV-005** | One canonical Execution Tree per Attempt; no competing trees | - |
 | **UEA-INV-006** | Orchestration topology ≠ canonical runtime Execution Tree | ORCHESTRATION vs this model |
 | **UEA-INV-007** | Nexus orchestrates Executions; not owner of Run lifecycle, execution identity, budget, DIAG, or observability store | NEXUS_EXECUTION_FLOW |
 | **UEA-INV-008** | Direct execution does not require Nexus | UER entry paths |
@@ -1012,7 +1012,7 @@ Stable IDs for implementation constraints. Map to domain invariants where they e
 | **UEA-INV-015** | Observability records execution truth; does not invent it | OBS |
 | **UEA-INV-016** | DIAG interprets evidence; does not mint ExecutionId or own lifecycle | OBS DIAG-1 |
 | **UEA-INV-017** | Causal lineage established before independently schedulable meaningful work | OBS causal admission |
-| **UEA-INV-018** | Execution boundary coordinates contracts; does not absorb subsystem ownership | — |
+| **UEA-INV-018** | Execution boundary coordinates contracts; does not absorb subsystem ownership | - |
 | **UEA-INV-019** | Nested orchestration is legal; depth/fan-out may be bounded in implementation | ORCHESTRATION, Nexus |
 | **UEA-INV-020** | Strategy resolver must not silently invent unaudited orchestration topology | ORCHESTRATION |
 | **UEA-INV-021** | No strategy may bypass Execution Boundary or mandatory guarantees; every child Execution re-enters the canonical boundary | GOVERNED_EXECUTION, UER, NEXUS |
@@ -1034,7 +1034,7 @@ Sections §3–§21 above.
 |------|----------------|
 | Identity spine | `TaskId`, `RunId`, `AttemptId`, `EventId` typed and wired on main harness paths |
 | Active execution identity | `ActiveExecutionIdentity` carries `RunId` + `AttemptId` |
-| Runtime events | `RuntimeEvent` requires Task/Run/Attempt/Event — **no ExecutionId** |
+| Runtime events | `RuntimeEvent` requires Task/Run/Attempt/Event - **no ExecutionId** |
 | DIAG refs | `RuntimeExecutionRef` stops at Task/Run/Attempt |
 | Nexus | `GraphExecutor` agent-centric; direct `AgentEngine` / `AgentExecutionResult` dependency |
 | Agent context | `RuntimeExecutionContext` is agent-specific |
@@ -1053,9 +1053,9 @@ Sections §3–§21 above.
 
 Do **not** claim target behavior is already implemented.
 
-**Detailed implementation mapping (UE-DOC-0.9):** canonical target→current→gap→transformation map — [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md). Subordinate to this document; not an architecture authority.
+**Detailed implementation mapping (UE-DOC-0.9):** canonical target→current→gap→transformation map - [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md). Subordinate to this document; not an architecture authority.
 
-**Implementation readiness gate (UE-DOC-0.10):** final pre-runtime audit — [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md). **IMPLEMENTATION GATE: PASS** (baseline `fc7c76c999e3d49d0532c4bdd07941c688e2553c`).
+**Implementation readiness gate (UE-DOC-0.10):** final pre-runtime audit - [`UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md`](UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md). **IMPLEMENTATION GATE: PASS** (baseline `fc7c76c999e3d49d0532c4bdd07941c688e2553c`).
 
 ---
 
@@ -1066,7 +1066,7 @@ For Cursor and domain implementers:
 1. **Implementation plans may realize this architecture; they may not redefine it.**
 2. Treat **UEA-INV-*** as hard constraints unless architecture is explicitly reopened.
 3. Each implementation slice must list **affected owners and contracts** (UER, OBS, Nexus, etc.).
-4. If implementation appears to require violating an invariant, **stop** and reopen architecture — do not workaround silently.
+4. If implementation appears to require violating an invariant, **stop** and reopen architecture - do not workaround silently.
 5. **Current code shape is not authority** over frozen target semantics in this document.
 6. **Do not create new generic runtime mechanisms** when an existing platform owner should provide the capability.
 7. Prefer extending owning domain contracts over centralizing logic in a new pseudo-domain.

@@ -4,16 +4,16 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# LangChain Independence — Multi-layer Feature Architecture
+# LangChain Independence - Multi-layer Feature Architecture
 
 **Status:** LCI-0A–0C **APPROVED**; LCI-1A–1D **APPROVED**; LCI-2A–2F **APPROVED**; LCI-3A–3D **APPROVED**; LCI-4A–4D **APPROVED**; LCI-5A–5C **APPROVED**; LCI-6A–6E **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-7A–7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **APPROVED**; LangChain Independence **COMPLETE / APPROVED**.
-**Roadmap status:** COMPLETE / APPROVED — historical LCI program closed; Protocol-v2 residual remediation **ACCEPTED / PLANNED** (2026-08-21).
+**Roadmap status:** COMPLETE / APPROVED - historical LCI program closed; Protocol-v2 residual remediation **ACCEPTED / PLANNED** (2026-08-21).
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** NONE — PROGRAM CLOSED; Protocol-v2 remediation blocks **PLANNED** only
-**LangGraph decision:** KEEP_OPTIONAL — retain the optional legacy boundary; any future deprecation/removal requires a separately approved product/architecture decision
-**Next task after acceptance:** NONE — PROGRAM CLOSED
+**Current active task:** NONE - PROGRAM CLOSED; Protocol-v2 remediation blocks **PLANNED** only
+**LangGraph decision:** KEEP_OPTIONAL - retain the optional legacy boundary; any future deprecation/removal requires a separately approved product/architecture decision
+**Next task after acceptance:** NONE - PROGRAM CLOSED
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. The native RAG path continues through embedding, indexing, vector storage and retrieval; LangChain loaders, embeddings and splitters remain optional provider-local compatibility paths.
 
@@ -81,7 +81,7 @@ LangChain adapter to compatibility-only packaging behind
 **Do not read this entire file in one session.**
 
 - **Default:** §Purpose, §Strategic decision, §As-built baseline, §Target architecture, §Import zones.
-- **Inventory work:** load **only** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md) — not both hub sections and full inventory.
+- **Inventory work:** load **only** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md) - not both hub sections and full inventory.
 - **Plan / task selection:** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md) read-scope block + active `LCI-*` section only.
 - **Satellites:** at most **one** `architecture/satellites` or `plan/satellites` file per session unless `RESUME:` cites more.
 
@@ -91,7 +91,7 @@ LangChain adapter to compatibility-only packaging behind
 
 LangChain Independence is a cross-layer platform initiative to **own Intergrax public contracts and core runtime types**, not to ideologically remove every LangChain package from the ecosystem.
 
-Intergrax already defines native LLM message envelopes, adapter contracts, and provider boundaries. The remaining work is to **stop LangChain types from defining the platform ABI** — especially `langchain_core.documents.Document` across the RAG, memory, modality, and integration surfaces — while preserving optional compatibility for provider bridges and legacy paths.
+Intergrax already defines native LLM message envelopes, adapter contracts, and provider boundaries. The remaining work is to **stop LangChain types from defining the platform ABI** - especially `langchain_core.documents.Document` across the RAG, memory, modality, and integration surfaces - while preserving optional compatibility for provider bridges and legacy paths.
 
 **LKW** (Local Knowledge Workspace) is a **client and proof workload** for platform capabilities, including future LangChain-free RAG paths. LKW does **not** own the migration mechanics; domain plans and this feature plan do.
 
@@ -146,12 +146,12 @@ Facts verified against repository state at inventory time.
 
 | # | Fact | Evidence |
 |---|------|----------|
-| 1 | Intergrax defines native LLM messages independent of LangChain | `intergrax/llm/messages.py` — `ChatMessage`, `MessageRole`, `AttachmentRef` |
-| 2 | LLM adapter public contract is native; providers map at boundary | `intergrax/llm_adapters/contracts/llm_adapter.py` — `LLMAdapter` uses `ChatMessage`, not LangChain messages |
+| 1 | Intergrax defines native LLM messages independent of LangChain | `intergrax/llm/messages.py` - `ChatMessage`, `MessageRole`, `AttachmentRef` |
+| 2 | LLM adapter public contract is native; providers map at boundary | `intergrax/llm_adapters/contracts/llm_adapter.py` - `LLMAdapter` uses `ChatMessage`, not LangChain messages |
 | 3 | Canonical/default LLM provider paths use native SDKs; remaining LangChain provider code is explicit compatibility-only | Provider modules under `intergrax/llm_adapters/providers`, the native default resolver, and `pyproject.toml` optional compatibility extras |
 | 4 | `NativeOllamaAdapter` is the canonical/default Ollama LLM path; `LangChainOllamaAdapter` remains an optional compatibility provider behind `llm-langchain-ollama` | `intergrax/llm_adapters/llm_provider_registry.py`, `intergrax/llm_adapters/providers/native_ollama_adapter.py`, `intergrax/llm_adapters/providers/ollama_adapter.py`, `pyproject.toml` |
-| 5 | Core LangChain document contract leaks have been removed. Remaining LangChain production imports are optional provider / compatibility boundaries | `satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md` — **0 core contract leaks** and **0 core implementation dependencies** |
-| 6 | LangGraph is not a core dependency; guard exists | `scripts/maintenance/check_langgraph_not_required.py`; `pyproject.toml` — `langgraph` only under `[project.optional-dependencies] langgraph-legacy` |
+| 5 | Core LangChain document contract leaks have been removed. Remaining LangChain production imports are optional provider / compatibility boundaries | `satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md` - **0 core contract leaks** and **0 core implementation dependencies** |
+| 6 | LangGraph is not a core dependency; guard exists | `scripts/maintenance/check_langgraph_not_required.py`; `pyproject.toml` - `langgraph` only under `[project.optional-dependencies] langgraph-legacy` |
 | 7 | Default packaging no longer declares LangChain/LangGraph packages as direct core dependencies after LCI-7A | `pyproject.toml` `[project].dependencies` is free of `langchain*` and `langgraph`; compatibility/provider packages remain in named extras |
 
 **Import audit scale:** 11 direct production/runtime import statements · 46 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports · 0 core contract leaks · 0 core implementation dependencies · 0 project core LangChain dependencies (see inventory satellite §B/§D and `pyproject.toml`). All remaining production imports are optional providers, compatibility-only adapters, or legacy optional orchestration.
@@ -214,7 +214,7 @@ Enforcement begins at **`LCI-0B`** (architecture boundary guard). See [LCI-0B en
 Only behind explicit, reviewable boundaries:
 
 ```text
-intergrax/compat/langchain/          (LCI-1C — APPROVED)
+intergrax/compat/langchain/          (LCI-1C - APPROVED)
 intergrax/integrations/providers/.../
 intergrax/llm_adapters/providers/.../
 intergrax/legacy/
@@ -240,7 +240,7 @@ Provider paths are allowed only when:
 | **LLM_ADAPTERS** | Provider boundaries; native Ollama sequence `LCI-6A`–`LCI-6E`; LangChain Ollama shim optionalized in `LCI-6E` |
 | **INTEGRATIONS** | Optional provider loading; document-parser and vector-store bridges (`LCI-3D`, `LCI-5C`); community loader isolation (`LCI-5A`, `LCI-5C`) |
 | **MEMORY** | Remove `Document` from session/profile indexing (`LCI-4D`) |
-| **MODALITY** | Multimedia smart loaders — native document output at modality boundary (`LCI-4D`) |
+| **MODALITY** | Multimedia smart loaders - native document output at modality boundary (`LCI-4D`) |
 | **ORCHESTRATION** | LangGraph legacy boundary (`LCI-8A`); Nexus ingestion native document path (`LCI-2F`) |
 | **PLATFORM_FOUNDATION** | Packaging optional extras (`LCI-7A`); lockfile regeneration; documentation closeout (`LCI-7D`) |
 | **EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE** | Boundary guard (`LCI-0B`); conformance gate (`LCI-1D`); install gates (`LCI-7B`, `LCI-7C`) |
@@ -249,13 +249,13 @@ Provider paths are allowed only when:
 
 ## Migration invariants
 
-1. **No big-bang rewrite** — incremental tasks with acceptance gates.
+1. **No big-bang rewrite** - incremental tasks with acceptance gates.
 2. **One migration task active at a time** per stream unless explicitly parallelized in plan.
-3. **Contract first, consumer second** — native type before downstream refactors.
-4. **No removal before parity proof** — keep LangChain path until native path is proven equivalent.
-5. **LKW is client/proof workload** — not owner of document or adapter mechanics.
-6. **No application exceptions in platform core** — `applications` cannot justify contract leaks in `intergrax`.
-7. **Compatibility bridge ≠ second canonical model** — `compat/langchain` maps; it does not replace native contracts.
+3. **Contract first, consumer second** - native type before downstream refactors.
+4. **No removal before parity proof** - keep LangChain path until native path is proven equivalent.
+5. **LKW is client/proof workload** - not owner of document or adapter mechanics.
+6. **No application exceptions in platform core** - `applications` cannot justify contract leaks in `intergrax`.
+7. **Compatibility bridge ≠ second canonical model** - `compat/langchain` maps; it does not replace native contracts.
 8. **Preserve content, metadata, identity, provenance, tenant scope** across migrations.
 9. **Provider-specific objects stay inside provider boundary.**
 10. **Each stage has its own acceptance gate** (see feature plan).
@@ -307,7 +307,7 @@ The validated gates are:
 
 ---
 
-## LCI-1A — Native knowledge document contract (summary)
+## LCI-1A - Native knowledge document contract (summary)
 
 Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (implementation: **LCI-1B**, status **APPROVED**). KnowledgeDocument remains canonical; the LangChain bridge remains compatibility-only; **LCI-1D** enforces native document ABI; dependency optionalization and both installation gates are **APPROVED** under **LCI-7A**–**LCI-7C**.
 
@@ -317,9 +317,9 @@ Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowl
 | Functional owner | RAG |
 | Shared consumers | Memory, modality, integrations |
 | Replaces | `langchain_core.documents.Document` in public contracts (16 inventory leaks) |
-| Schema version | `1` — immutable Pydantic v2, `extra="forbid"`, `frozen=True` |
+| Schema version | `1` - immutable Pydantic v2, `extra="forbid"`, `frozen=True` |
 
-Sub-models: `KnowledgeDocumentIdentity` (persistent IDs + lineage), `KnowledgeDocumentScope` (required `tenant_id`), `KnowledgeDocumentProvenance` (source trace). Content is non-empty `str` only; binary/media normalized before document creation. Vendor Knowledge models inform semantics but are not imported — fetch-stage → RAG-ready normalization is a separate adapter step.
+Sub-models: `KnowledgeDocumentIdentity` (persistent IDs + lineage), `KnowledgeDocumentScope` (required `tenant_id`), `KnowledgeDocumentProvenance` (source trace). Content is non-empty `str` only; binary/media normalized before document creation. Vendor Knowledge models inform semantics but are not imported - fetch-stage → RAG-ready normalization is a separate adapter step.
 
 **Full specification:** [`satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
 
@@ -338,25 +338,25 @@ Sub-models: `KnowledgeDocumentIdentity` (persistent IDs + lineage), `KnowledgeDo
 | **Protected production zones** | all other scanned production paths (contracts, runtime, RAG, memory, modality, integrations shared bridges, agents, applications, etc.) |
 | **Detected namespaces** | `langchain`, `langchain_*`, `langgraph` |
 | **Import forms** | `import`, `from`, nested function imports, literal `importlib.import_module("…")`, literal `__import__("…")` |
-| **Grandfather model** | `scripts/maintenance/langchain_boundary_grandfather.json` — exact fingerprint entries (`path`, `kind`, `module`, sorted `names`) matched to approved `LCI-INV-####` inventory rows; line numbers are not part of identity |
+| **Grandfather model** | `scripts/maintenance/langchain_boundary_grandfather.json` - exact fingerprint entries (`path`, `kind`, `module`, sorted `names`) matched to approved `LCI-INV-####` inventory rows; line numbers are not part of identity |
 | **New vs stale** | `current guarded − grandfathered` → `NEW_FORBIDDEN_IMPORT`; `grandfathered − current` → `STALE_GRANDFATHER_ENTRY` (debt removal requires register cleanup) |
-| **Automatic baseline update** | **none** — no `--update-baseline` / write mode |
+| **Automatic baseline update** | **none** - no `--update-baseline` / write mode |
 | **CI wiring** | PR smoke (`ci-smoke`) and full governance (`gate-governance-tier`) via `scripts/maintenance/check_langchain_boundary.py` |
-| **LangGraph guard relationship** | `check_langgraph_not_required.py` remains — core packaging/non-optional LangGraph dependency guard; `LCI-0B` covers all LangGraph production imports in protected zones with inventory-backed grandfathering |
+| **LangGraph guard relationship** | `check_langgraph_not_required.py` remains - core packaging/non-optional LangGraph dependency guard; `LCI-0B` covers all LangGraph production imports in protected zones with inventory-backed grandfathering |
 | **Register maintenance** | When a grandfathered import is removed during debt paydown, delete the matching register entry in the same change |
 
 ---
 
 ## Protocol v2 langchain independence target invariants (2026-08-18)
 
-Accepted [`LANGCHAIN_INDEPENDENCE`](../../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+Accepted [`LANGCHAIN_INDEPENDENCE`](../../../audit_results/2026-08-18/LANGCHAIN_INDEPENDENCE.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** - **not implemented** by audit persistence.
 
-1. **Trusted scope injection** — compatibility conversion (`from_langchain_document` and callers) receives trusted canonical scope (`tenant_id`, `namespace`, `workspace_id`) separately from foreign metadata. Foreign LangChain or provider metadata may only match or confirm trusted scope; mismatch fails closed. Untrusted metadata cannot establish tenant/workspace/namespace authority. Cross-link [`RAG`](../../architecture/RAG.md) **RAG-SCOPE-CONTRACT-INTEGRITY** and **IDENTITY_TRUST** where applicable.
-2. **Provider-hit identity validation** — legacy/provider conversion (`from_legacy_rag_hit` and equivalent paths) receives expected trusted scope and verifies returned routing identity against it. Provider-returned metadata cannot mint system ownership or provenance authority. Do not create a second document contract.
-3. **Conditional provider exemption** — boundary guard allows specific reviewed compatibility boundaries/capabilities, not entire provider directories. Equivalent eager/optional-boundary enforcement applies to every allowed provider family (`integrations/providers`, `llm_adapters/providers`, `compat/langchain`, `legacy`). New provider compatibility use requires explicit qualification.
-4. **Robust static dynamic-import detection** — LCI-0B tracks common statically resolvable `importlib` aliases and `import_module` aliases (`import importlib as il`, `from importlib import import_module`, etc.) with adversarial regression fixtures. No need for general Python execution or unrestricted dynamic analysis.
-5. **Explicit compatibility packaging semantics** — either native parsing extras remain LangChain-free and compatibility loader dependencies live only in named compatibility extras (`llm-langchain-ollama`, `rag-langchain-loaders`, `rag-langchain-embeddings`, `rag-langchain-splitters`, `langgraph-legacy`), or docs/package contract explicitly declares transitive opt-in (e.g. `parsing-office` / `parsing-pdf` → `langchain-community`).
-6. **Historical inventory vs current conformance evidence** — preserve historical migration inventory (`LANGCHAIN_INDEPENDENCE_dependency_inventory.md` pinned to migration-era SHA) as historical evidence; maintain a separate mechanically generated/current conformance evidence record pinned to a specific repository SHA. Architecture must not present stale inventory counts as current-state proof.
+1. **Trusted scope injection** - compatibility conversion (`from_langchain_document` and callers) receives trusted canonical scope (`tenant_id`, `namespace`, `workspace_id`) separately from foreign metadata. Foreign LangChain or provider metadata may only match or confirm trusted scope; mismatch fails closed. Untrusted metadata cannot establish tenant/workspace/namespace authority. Cross-link [`RAG`](../../architecture/RAG.md) **RAG-SCOPE-CONTRACT-INTEGRITY** and **IDENTITY_TRUST** where applicable.
+2. **Provider-hit identity validation** - legacy/provider conversion (`from_legacy_rag_hit` and equivalent paths) receives expected trusted scope and verifies returned routing identity against it. Provider-returned metadata cannot mint system ownership or provenance authority. Do not create a second document contract.
+3. **Conditional provider exemption** - boundary guard allows specific reviewed compatibility boundaries/capabilities, not entire provider directories. Equivalent eager/optional-boundary enforcement applies to every allowed provider family (`integrations/providers`, `llm_adapters/providers`, `compat/langchain`, `legacy`). New provider compatibility use requires explicit qualification.
+4. **Robust static dynamic-import detection** - LCI-0B tracks common statically resolvable `importlib` aliases and `import_module` aliases (`import importlib as il`, `from importlib import import_module`, etc.) with adversarial regression fixtures. No need for general Python execution or unrestricted dynamic analysis.
+5. **Explicit compatibility packaging semantics** - either native parsing extras remain LangChain-free and compatibility loader dependencies live only in named compatibility extras (`llm-langchain-ollama`, `rag-langchain-loaders`, `rag-langchain-embeddings`, `rag-langchain-splitters`, `langgraph-legacy`), or docs/package contract explicitly declares transitive opt-in (e.g. `parsing-office` / `parsing-pdf` → `langchain-community`).
+6. **Historical inventory vs current conformance evidence** - preserve historical migration inventory (`LANGCHAIN_INDEPENDENCE_dependency_inventory.md` pinned to migration-era SHA) as historical evidence; maintain a separate mechanically generated/current conformance evidence record pinned to a specific repository SHA. Architecture must not present stale inventory counts as current-state proof.
 
 Preserved: LangChain-free core strategy; **KEEP_OPTIONAL** LangGraph decision; historical LCI-0A..8A delivery/APPROVED facts; native `KnowledgeDocument` ownership; native Ollama default; optional compatibility philosophy. Protocol-v2 FAIL does not undo historical migration delivery.
 

@@ -33,24 +33,24 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-12 — CHANGES_REQUIRED |
-| Proof ownership and roadmap deduplication | PX-10 — ACCEPTED / CLOSED |
-| Public-language cleanup | PX-9 — ACCEPTED / CLOSED |
+| Current phase | PX-12 - CHANGES_REQUIRED |
+| Proof ownership and roadmap deduplication | PX-10 - ACCEPTED / CLOSED |
+| Public-language cleanup | PX-9 - ACCEPTED / CLOSED |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | Try LKW |
 | Product-orientation CTA | See the LKW workflow |
-| Supported product quickstart | PX-3 — ACCEPTED / CLOSED |
-| LKW visual evidence | PX-4 — ACCEPTED / CLOSED |
-| LKW Product Tour | PX-5 — ACCEPTED / CLOSED |
-| Builder Quick Start | PX-6 — ACCEPTED / CLOSED |
+| Supported product quickstart | PX-3 - ACCEPTED / CLOSED |
+| LKW visual evidence | PX-4 - ACCEPTED / CLOSED |
+| LKW Product Tour | PX-5 - ACCEPTED / CLOSED |
+| Builder Quick Start | PX-6 - ACCEPTED / CLOSED |
 | Architect route | `ARCHITECTURE_OVERVIEW.md` |
 | Buyer route | `USE_CASES.md` |
 | Partner route | `PARTNERS.md` |
-| Architect, buyer and partner routes | PX-7 — ACCEPTED / CLOSED |
-| Category comparison | PX-8 — ACCEPTED / CLOSED |
+| Architect, buyer and partner routes | PX-7 - ACCEPTED / CLOSED |
+| Category comparison | PX-8 - ACCEPTED / CLOSED |
 | Category comparison owner | `WHY_INTERGRAX.md#where-intergrax-fits` |
-| Root README application | APPLIED IN PX-2 — ACCEPTED / CLOSED |
+| Root README application | APPLIED IN PX-2 - ACCEPTED / CLOSED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -91,7 +91,7 @@ LKW is a Backend Product Alpha / MVP under active development. The current bound
 
 Intergrax is a reusable foundation for governed AI applications.
 
-The category descriptor appears after the concrete problem, outcome, and LKW explanation — not as the opening headline.
+The category descriptor appears after the concrete problem, outcome, and LKW explanation - not as the opening headline.
 
 ---
 
@@ -369,13 +369,13 @@ Harness AI must not be presented as a recognized market category without evidenc
 
 Express differentiation through outcomes and responsibility boundaries, not subsystem names or market labels. The public spine is:
 
-1. **Product owns meaning; platform owns enforcement** — applications define business rules, permissions, and acceptable outcomes; Intergrax supplies reusable enforcement mechanisms at configured execution boundaries.
-2. **Governance spans explicit execution boundaries** — policy evaluation, approval, and denial attach to named execution steps rather than living only in ad hoc application code.
-3. **Consequential external effects cross an explicit governed boundary** — meaningful side effects and tool actions are authorized and recorded through platform mechanisms on wired paths.
-4. **Execution has structural identity and canonical history** — runs, attempts, and events carry typed identity so history can be reconstructed without treating vendor telemetry as the source of truth.
-5. **Recovery distinguishes retry, idempotency, compensation, degradation, and HITL** — failure handling is classified and bounded rather than left to hidden agent loops.
-6. **Important execution can produce structured evidence, not telemetry alone** — governance and execution transitions can be correlated with persisted evidence where mechanisms are connected.
-7. **Agent authors own domain behavior; agents are not private runtimes** — agents declare contracts and domain decisions; the platform owns safe execution, not a second hidden runtime per agent.
+1. **Product owns meaning; platform owns enforcement** - applications define business rules, permissions, and acceptable outcomes; Intergrax supplies reusable enforcement mechanisms at configured execution boundaries.
+2. **Governance spans explicit execution boundaries** - policy evaluation, approval, and denial attach to named execution steps rather than living only in ad hoc application code.
+3. **Consequential external effects cross an explicit governed boundary** - meaningful side effects and tool actions are authorized and recorded through platform mechanisms on wired paths.
+4. **Execution has structural identity and canonical history** - runs, attempts, and events carry typed identity so history can be reconstructed without treating vendor telemetry as the source of truth.
+5. **Recovery distinguishes retry, idempotency, compensation, degradation, and HITL** - failure handling is classified and bounded rather than left to hidden agent loops.
+6. **Important execution can produce structured evidence, not telemetry alone** - governance and execution transitions can be correlated with persisted evidence where mechanisms are connected.
+7. **Agent authors own domain behavior; agents are not private runtimes** - agents declare contracts and domain decisions; the platform owns safe execution, not a second hidden runtime per agent.
 
 These are architectural responsibility choices. They are not claims that every boundary is universally complete, that competitors cannot implement similar patterns, or that Intergrax is uniquely capable because it implements a listed mechanism.
 
@@ -435,7 +435,7 @@ Freeze these category rules:
 - no vendor logo or trademark is used;
 - no scorecard, winner or ranking is published;
 - Intergrax maturity and proof boundaries remain visible;
-- modern agent frameworks and platforms may include persistence, HITL, tracing, guardrails, workflows, and other runtime facilities — category comparison is about **primary responsibility**, not missing features.
+- modern agent frameworks and platforms may include persistence, HITL, tracing, guardrails, workflows, and other runtime facilities - category comparison is about **primary responsibility**, not missing features.
 
 The category comparison is a responsibility map, not a claim that Intergrax already provides every listed foundation completely or at production maturity.
 

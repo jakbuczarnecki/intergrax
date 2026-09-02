@@ -4,7 +4,7 @@
 
 ## Purpose
 
-**Issue tracker triage** across Jira/GitLab/Linear via provider-agnostic `issues.*` tools: search backlog, read issue details, add comments, notify assignees. Use for developer-assistant agents that reduce context switching — not for full project management workflows.
+**Issue tracker triage** across Jira/GitLab/Linear via provider-agnostic `issues.*` tools: search backlog, read issue details, add comments, notify assignees. Use for developer-assistant agents that reduce context switching - not for full project management workflows.
 
 ## How it works
 
@@ -44,5 +44,5 @@ Wire `issue_tracker` integration slug on host.
 
 ## Related skills
 
-- `collaboration.outreach` — email-side follow-up
-- `ops.trace_debug` — link incidents to tracker issues
+- `collaboration.outreach` - email-side follow-up
+- `ops.trace_debug` - link incidents to tracker issues

@@ -1,4 +1,4 @@
-# Agent Contracts And Assembly — Implementation Plan
+# Agent Contracts And Assembly - Implementation Plan
 
 **Architecture (1:1):** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
-**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). ACP may later expose agent-level output/context compactness hints, but agents must not manually assemble prompts or import token optimization internals.
+**Cross-feature - Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). ACP may later expose agent-level output/context compactness hints, but agents must not manually assemble prompts or import token optimization internals.
 
 ---
 
@@ -16,7 +16,7 @@
 
 - **Implement / audit default:** §6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · [`plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md`](plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_implementation_history.md) on demand
 - **Token Optimization:** read feature pair + row `TOKEN-ACP-1` only when adding agent-level hints; do not implement until TOKEN-UER-2 runtime output policy exists.
-- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) read-scope block only.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -24,26 +24,26 @@
 
 ---
 
-## Agent architecture completion — executive summary (2026-06-11)
+## Agent architecture completion - executive summary (2026-06-11)
 
-**Phases ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL (§12–§20):** **Done** (2026-06-13) — platform runtime, fleet migration, production gates, token budget depth, CI matrix, registry snapshot, cap-graph blast-radius, lifecycle on-call.  
-**Parallel track:** [Phase AUDIT-IDEAL](.#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09) — **10/10 Done** (incl. 19.1 · 20.1 · 31.1).
+**Phases ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL (§12–§20):** **Done** (2026-06-13) - platform runtime, fleet migration, production gates, token budget depth, CI matrix, registry snapshot, cap-graph blast-radius, lifecycle on-call.  
+**Parallel track:** [Phase AUDIT-IDEAL](.#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09) - **10/10 Done** (incl. 19.1 · 20.1 · 31.1).
 
 | Track | Scope | Status | Remaining IDs |
 |-------|-------|--------|---------------|
-| **ACP runtime depth** | §25.4–§25.5 token usage, limits, reactions | **Done** | — |
+| **ACP runtime depth** | §25.4–§25.5 token usage, limits, reactions | **Done** | - |
 | **Architecture doc truth** | §28.3 GAP register · §36.4 · §40.13 tables | **Done** | **ACP-FINISH-DOC-1** **Done** (2026-06-13) |
-| **AUDIT-IDEAL (§12–§20)** | Registry snapshot · cap-graph CI · lifecycle owner | **Done** | — |
+| **AUDIT-IDEAL (§12–§20)** | Registry snapshot · cap-graph CI · lifecycle owner | **Done** | - |
 | **Gate maintenance** | §6.1 continuous | **Active** | `pytest -m gate` on every PR |
 
 **Architecture-complete DoD (ACP-FINISH):** GAP-ACP-36/37 **Closed** · §28.3 **37 Closed · 0 Open** · ACP-TOK-* green · domain audit prompt regenerated.
 
-**Ordered queue:** [§6.1bc](.#61bc-harness-implementation-queue--acp-finish-closed) — **Done** (2026-06-13).
+**Ordered queue:** [§6.1bc](.#61bc-harness-implementation-queue--acp-finish-closed) - **Done** (2026-06-13).
 
-### Protocol v2 remediation — STRATEGIC_HARNESS_MODEL (2026-08-18)
+### Protocol v2 remediation - STRATEGIC_HARNESS_MODEL (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md`](../../audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INIT.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INIT.
 
 | Block | Status | Findings | Scope |
 |-------|--------|----------|-------|
@@ -55,13 +55,13 @@
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
-- If parallel work already fixed a finding, do not duplicate — independently verify before lifecycle advancement.
+- If parallel work already fixed a finding, do not duplicate - independently verify before lifecycle advancement.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** only after campaign/remediation rollup confirms closure ([`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md)).
 
-### Protocol v2 remediation — AGENT_SYSTEM (2026-08-18)
+### Protocol v2 remediation - AGENT_SYSTEM (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/AGENT_SYSTEM.md`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-AGENT-SYSTEM-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-AGENT-SYSTEM-PERSIST.
 
 | Block | Status | Findings | Scope |
 |-------|--------|----------|-------|
@@ -70,19 +70,19 @@
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
-- Identity projection finding 04 owned by **AGSYS-IDENTITY-PROJECTION** in [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) — cross-reference registry bootstrap surface here; do not duplicate.
-- If parallel work already fixed a finding, do not duplicate — independently verify before lifecycle advancement.
+- Identity projection finding 04 owned by **AGSYS-IDENTITY-PROJECTION** in [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) - cross-reference registry bootstrap surface here; do not duplicate.
+- If parallel work already fixed a finding, do not duplicate - independently verify before lifecycle advancement.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 
-### Architecture sync — UE-DOC-0.8 (2026-08-26)
+### Architecture sync - UE-DOC-0.8 (2026-08-26)
 
-**Status:** documentation frozen in architecture hub — **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
+**Status:** documentation frozen in architecture hub - **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
 
 Architecture hub additions: execution-first agentic path; UAEP vs `ToolInvocationPattern` loop ownership; AGENT-INV; iterative incident investigation reference scenario; implementation readiness (TARGET/CURRENT/GAPS/migration). Paired domains: [`TOOLS.md`](../../architecture/TOOLS.md), [`CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md), [`MEMORY.md`](../../architecture/MEMORY.md), [`LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md).
 
 ---
 
-## Phase TOKEN-ACP — Optional token optimization agent hints (Deferred)
+## Phase TOKEN-ACP - Optional token optimization agent hints (Deferred)
 
 **Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
 **Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
@@ -110,11 +110,11 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+## Phase AUDIT-IDEAL - Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §17–§19, §31 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Done** (2026-06-13) — 10/10 **Done** · master register [`AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) synced
+**Status:** **Done** (2026-06-13) - 10/10 **Done** · master register [`AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) synced
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|

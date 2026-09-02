@@ -1,11 +1,11 @@
-# Background Tasks — Implementation Plan
+# Background Tasks - Implementation Plan
 
 **Architecture (1:1):** [`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Proof consumer:** LKW.4 ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6)
-**Last updated:** 2026-08-26 — **UE-DOC-0.7** distributed Execution Boundary admission target (architecture hub)
+**Last updated:** 2026-08-26 - **UE-DOC-0.7** distributed Execution Boundary admission target (architecture hub)
 
-> **UE-DOC-0.7:** Worker transport must re-enter canonical Execution Boundary with same runtime identity and required causal evidence — see architecture §B distributed execution target. BG-TASKS phases unchanged.
+> **UE-DOC-0.7:** Worker transport must re-enter canonical Execution Boundary with same runtime identity and required causal evidence - see architecture §B distributed execution target. BG-TASKS phases unchanged.
 
 ---
 
@@ -13,8 +13,8 @@
 
 | Item | Value |
 |------|-------|
-| **Track status** | Planned — architecture defined |
-| **Architecture** | [`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md) — **BG-TASKS-ARCH-1 closed** |
+| **Track status** | Planned - architecture defined |
+| **Architecture** | [`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md) - **BG-TASKS-ARCH-1 closed** |
 | **Current proof consumer** | LKW.4 background ingest |
 | **Next LKW step** | LKW.4E live proof (after LKW.4E-ARCH-1) |
 
@@ -24,7 +24,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ## B. Phases
 
-### BG-TASKS-1 — TaskDefinition and TaskRegistry contract
+### BG-TASKS-1 - TaskDefinition and TaskRegistry contract
 
 **Scope:** Platform registration model for background task types.
 
@@ -40,7 +40,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ---
 
-### BG-TASKS-2 — WorkerRuntime contract
+### BG-TASKS-2 - WorkerRuntime contract
 
 **Scope:** Platform worker execution loop contract (not vendor-specific).
 
@@ -58,7 +58,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ---
 
-### BG-TASKS-3 — TaskEvent lifecycle model
+### BG-TASKS-3 - TaskEvent lifecycle model
 
 **Scope:** Event schema separate from work transport.
 
@@ -74,7 +74,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ---
 
-### BG-TASKS-4 — Pull inspection surface
+### BG-TASKS-4 - Pull inspection surface
 
 **Scope:** Align pull APIs with registry + result store semantics.
 
@@ -86,11 +86,11 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 | Handle normalization | `TaskHandle` fields stable across providers |
 
 **Depends on:** existing `message_bus.*` tools  
-**Status:** Partial — current `TaskQueue` contract exists; registry-aware validation planned
+**Status:** Partial - current `TaskQueue` contract exists; registry-aware validation planned
 
 ---
 
-### BG-TASKS-5 — Event / pub-sub observation surface
+### BG-TASKS-5 - Event / pub-sub observation surface
 
 **Scope:** Subscribe/watch task lifecycle beyond pull.
 
@@ -105,7 +105,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ---
 
-### BG-TASKS-6 — Observability integration
+### BG-TASKS-6 - Observability integration
 
 **Scope:** Logs, metrics, traces for background task lifecycle.
 
@@ -120,9 +120,9 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ---
 
-### BG-TASKS-7 — Local message bus provider for platform proof
+### BG-TASKS-7 - Local message bus provider for platform proof
 
-**Scope:** Real local broker/queue in the LKW proof stack — **not** mocks, fake queues, or in-memory-only bypasses.
+**Scope:** Real local broker/queue in the LKW proof stack - **not** mocks, fake queues, or in-memory-only bypasses.
 
 | Deliverable | Detail |
 |-------------|--------|
@@ -136,7 +136,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ---
 
-### BG-TASKS-8 — Provider portability hardening
+### BG-TASKS-8 - Provider portability hardening
 
 **Scope:** Vendor adapters behind `MessageBus` contract.
 
@@ -151,7 +151,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ---
 
-### BG-TASKS-9 — Production worker process
+### BG-TASKS-9 - Production worker process
 
 **Scope:** Long-running worker deployment model.
 
@@ -174,8 +174,8 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 | **LKW.4B** / **LKW.4B-PROP-1** | `message_bus.*` tool exposure guardrails |
 | **LKW.4C** | Enqueue helper → platform `message_bus.enqueue` |
 | **LKW.4D** | Handler contract → `TaskHandler` + `WorkerRuntime` invocation |
-| **LKW.4E-ARCH-1** | Platform background task architecture ([`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md)) — **this milestone** |
-| **LKW.4E** | Live platform proof with real local MessageBus provider (BG-TASKS-7) — enqueue → async worker → search evidence |
+| **LKW.4E-ARCH-1** | Platform background task architecture ([`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md)) - **this milestone** |
+| **LKW.4E** | Live platform proof with real local MessageBus provider (BG-TASKS-7) - enqueue → async worker → search evidence |
 | **LKW.4F** | Proof closeout and plan alignment |
 
 ---
@@ -185,8 +185,8 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 When BG-TASKS phases are implemented, the platform must satisfy:
 
 1. App or agent can **enqueue a registered task** by `task_name` + validated payload.
-2. Worker resolves `task_name` through **TaskRegistry** — unknown tasks rejected.
-3. Vendor adapter **only transports** `TaskRequest` messages — no handler execution in provider code.
+2. Worker resolves `task_name` through **TaskRegistry** - unknown tasks rejected.
+3. Vendor adapter **only transports** `TaskRequest` messages - no handler execution in provider code.
 4. Handler runs through **platform execution context** (tools, integrations, capabilities).
 5. **Status and result** available via pull (`get_status`, `get_result`, `list_tasks`).
 6. **Lifecycle events** emitted on `TaskEvent` channel for major stages.
@@ -200,7 +200,7 @@ When BG-TASKS phases are implemented, the platform must satisfy:
 ## Related documents
 
 - [`architecture/BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md)
-- [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) — `message_bus` category
+- [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) - `message_bus` category
 - [`plan/INTEGRATIONS.md`](INTEGRATIONS.md)
 - [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7
 - [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6

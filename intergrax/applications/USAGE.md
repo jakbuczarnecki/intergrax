@@ -1,4 +1,4 @@
-# Tier-3 application composition engine — usage
+# Tier-3 application composition engine - usage
 
 **Package:** `intergrax/applications/`  
 **Canon:** `docs/project/architecture/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
@@ -46,7 +46,7 @@ ApplicationManifest  +  ApplicationBuildContext  +  optional builders map
 ## Define a manifest (strongly typed)
 
 Prefer **`AgentBinding.mount()`** with the agent **class** and an optional **factory callable**.  
-Do **not** use string `import_path` / `factory_path` in hand-written application code (those are for scaffold-generated manifests only — `AgentBinding.deserialize()`).
+Do **not** use string `import_path` / `factory_path` in hand-written application code (those are for scaffold-generated manifests only - `AgentBinding.deserialize()`).
 
 ### Simple agent (zero-arg constructor)
 
@@ -329,7 +329,7 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -q
 
 ## Orchestration configuration (ORCH-CONFIG / §56)
 
-Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironmentProfile` (flat §22.1 today · nested bundles §22.6 — [ADR-APP-003](../../docs/project/technical/adr/entries/2026-06-17/ADR-APP-003.md)):
+Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironmentProfile` (flat §22.1 today · nested bundles §22.6 - [ADR-APP-003](../../docs/project/technical/adr/entries/2026-06-17/ADR-APP-003.md)):
 
 | Need | Profile fields | Notes |
 |------|----------------|-------|

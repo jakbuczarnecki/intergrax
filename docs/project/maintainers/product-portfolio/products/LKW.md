@@ -1,4 +1,4 @@
-# Local Knowledge Workspace — Portfolio Control Card
+# Local Knowledge Workspace - Portfolio Control Card
 
 **Document type:** Per-product Portfolio Control index  
 **Owner:** Portfolio Control Session  
@@ -44,7 +44,7 @@ Where architecture documents retain historical “current state” sections pred
 
 ## 3. Current product baseline
 
-**Product level:** Backend Product Alpha — LKW MVP / Hybrid Knowledge Workspace
+**Product level:** Backend Product Alpha - LKW MVP / Hybrid Knowledge Workspace
 
 At this reference baseline, accepted or implemented product areas include:
 
@@ -65,13 +65,13 @@ Not every target in architecture documents is implemented. The implementation pl
 
 ## 4. Current execution position
 
-**Current direct LKW task:** `LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` — **READY_FOR_REVIEW**
+**Current direct LKW task:** `LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` - **READY_FOR_REVIEW**
 
-**Next direct task:** `LKW-INDEXED-SOURCE-LIFECYCLE-1` — **PLANNED**
+**Next direct task:** `LKW-INDEXED-SOURCE-LIFECYCLE-1` - **PLANNED**
 
 **READY_FOR_REVIEW is not ACCEPTED.** Portfolio Control must not treat review-pending work as closed product evidence.
 
-Major planned or incomplete areas (summary only — see implementation plan for order and gates):
+Major planned or incomplete areas (summary only - see implementation plan for order and gates):
 
 - full Indexed Source lifecycle;
 - generic Live Access lifecycle;
@@ -200,7 +200,7 @@ The current implementation plan identifies a bounded Vendor Knowledge problem-ra
 
 | Field | Value |
 |-------|-------|
-| Status | **G4 CANDIDATE — NOT YET CLASSIFIED** |
+| Status | **G4 CANDIDATE - NOT YET CLASSIFIED** |
 | Classification | Not `EXTENDED_GENERALLY` until G4 accepts generalization |
 
 Detail: [IMPLEMENTATION_PLAN.md](../../../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) § B (plugin capability consumption).

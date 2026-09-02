@@ -1,16 +1,16 @@
-﻿# LocalIndexerAgent — architecture
+﻿# LocalIndexerAgent - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 **Capability:** `local.workspace.index`  
 **Host:** [`applications/local_workspace_application`](../../../applications/local_workspace_application/)
-**Status:** Scaffold — domain steps pending Wave LKW.1
+**Status:** Scaffold - domain steps pending Wave LKW.1
 
 ---
 
 ## Purpose
 
-Ingest user-local documents into the Intergrax RAG vector index so downstream agents can semantically search file content. The indexer is **read-only** with respect to the user's filesystem — it reads source files for parsing and embedding but never mutates originals.
+Ingest user-local documents into the Intergrax RAG vector index so downstream agents can semantically search file content. The indexer is **read-only** with respect to the user's filesystem - it reads source files for parsing and embedding but never mutates originals.
 
 ---
 
@@ -21,7 +21,7 @@ Ingest user-local documents into the Intergrax RAG vector index so downstream ag
 | Parse files via `document.parse` / ingest pipeline | Writing to user folders |
 | Chunk, embed, store via `rag.ingest_document` | Web search |
 | Report ingest stats (chunks, parser_id, trace) | Business synthesis |
-| Honor `collection_id` / tenant metadata filters | Filesystem directory walk (Wave 3 — Tier-0 tools) |
+| Honor `collection_id` / tenant metadata filters | Filesystem directory walk (Wave 3 - Tier-0 tools) |
 
 ---
 
@@ -56,18 +56,18 @@ Ingest user-local documents into the Intergrax RAG vector index so downstream ag
   3. summarize_index_job   → structured StepOutput
 ```
 
-Implement domain logic only in `steps` — no Tier-3 imports.
+Implement domain logic only in `steps` - no Tier-3 imports.
 
 ---
 
-## Pattern anchor (Cursor — read instead of runtime grep)
+## Pattern anchor (Cursor - read instead of runtime grep)
 
 | Item | Location |
 |------|----------|
 | Generic `invoke_tool` helpers | [`intergrax/agents/authoring/runtime_tool_helpers.py`(../../../intergrax/agents/authoring/runtime_tool_helpers.py) |
 | Filesystem allowlist | [`intergrax/tools/providers/filesystem/allowlist.py`(../../../intergrax/tools/providers/filesystem/allowlist.py) |
 | RAG ingest tool id | [`intergrax/tools/providers/rag/ingest_service.py`(../../../intergrax/tools/providers/rag/ingest_service.py) |
-| **Implementation point** | [`steps/index_job.py`](../steps/index_job.py) — `run_index_job` |
+| **Implementation point** | [`steps/index_job.py`](../steps/index_job.py) - `run_index_job` |
 
 Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.
 
@@ -75,7 +75,7 @@ Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for thi
 
 ## Integrations, tools, and skills
 
-### Integrations (indirect — Tier-3 `IntegrationProfile`)
+### Integrations (indirect - Tier-3 `IntegrationProfile`)
 
 | Slot | Default slug | Used by |
 |------|--------------|---------|
@@ -83,13 +83,13 @@ Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for thi
 | `vector_store` | `inmemory` / `chroma` | ingest pipeline embed + index |
 | `relational_store` | `sqlite` | task memory for job status |
 
-Agents do **not** import `integrations/providers` — see [`docs/project/architecture/INTEGRATIONS.md`](../../../docs/project/architecture/INTEGRATIONS.md).
+Agents do **not** import `integrations/providers` - see [`docs/project/architecture/INTEGRATIONS.md`](../../../docs/project/architecture/INTEGRATIONS.md).
 
 ### Tools (`ToolProfile` on host)
 
 | tool_id | Role |
 |---------|------|
-| `rag.ingest_document` | Primary — parse, chunk, embed, index |
+| `rag.ingest_document` | Primary - parse, chunk, embed, index |
 | `document.parse` | Pre-flight / single-file parse |
 | `rag.list_collections` | Verify collection after ingest |
 | `memory.write` | Persist ingest job status |
@@ -100,7 +100,7 @@ Invoke via `ctx.invoke_tool(ToolRequest(...))` in UAEP steps.
 
 | `skill_id` | `tool_ids` | Status |
 |------------|------------|--------|
-| `local.workspace.index` | `rag.ingest_document`, `document.parse`, `rag.list_collections` | Planned — register on `AgentContract.skill_ids` |
+| `local.workspace.index` | `rag.ingest_document`, `document.parse`, `rag.list_collections` | Planned - register on `AgentContract.skill_ids` |
 
 Until LKW.2: host `ToolProfile` enables tools; `contract.py` has `skills=[]`.
 

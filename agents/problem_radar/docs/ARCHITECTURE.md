@@ -1,10 +1,10 @@
-# Problem radar agent — architecture
+# Problem radar agent - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
-**Band 3 placeholder** — problem discovery capability (`problem_radar.scan`). No product feature work until K.1 reprioritized.
+**Band 3 placeholder** - problem discovery capability (`problem_radar.scan`). No product feature work until K.1 reprioritized.
 
 ## Capabilities
 
@@ -18,7 +18,7 @@ Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 ## Runtime
 
 - `HarnessReferenceAgent` + UAEP stub step
-- Tier-2 only — imports `intergrax.agents.reference_harness`, not `applications`
+- Tier-2 only - imports `intergrax.agents.reference_harness`, not `applications`
 
 ## Status
 

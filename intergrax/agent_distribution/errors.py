@@ -70,6 +70,10 @@ class RuntimeMaterializationConflict(AgentDistributionError):
     """Immutable runtime materialization authority conflict for one revision."""
 
 
+class EffectiveRosterSnapshotConflict(AgentDistributionError):
+    """Immutable effective roster snapshot authority conflict for one revision."""
+
+
 class MaterializationError(AgentDistributionError):
     """Materialization failed or returned invalid output."""
 

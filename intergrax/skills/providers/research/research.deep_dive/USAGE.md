@@ -28,4 +28,4 @@ Governed access to: `websearch.fetch_batch`, `websearch.read_url`, `workspace.wr
 
 ## Related skills
 
-- Other `research` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `research` bundle skills - see bundle [USAGE.md](../USAGE.md)

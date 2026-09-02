@@ -1,9 +1,9 @@
 ---
-description: Git branch safety — never detach HEAD or create branches without operator approval
+description: Git branch safety - never detach HEAD or create branches without operator approval
 alwaysApply: true
 ---
 
-# Intergrax — Git branch safety
+# Intergrax - Git branch safety
 
 **Default branch:** `development`. Stay on the operator-named branch unless they explicitly request otherwise.
 
@@ -18,7 +18,7 @@ alwaysApply: true
 When the operator pins a revision (`Pinned SHA`, `Current HEAD`, audit revision):
 
 1. **Stay on the named branch** (usually `development`).
-2. **Verify containment** — do not checkout the pin:
+2. **Verify containment** - do not checkout the pin:
 
 ```bash
 git fetch origin development

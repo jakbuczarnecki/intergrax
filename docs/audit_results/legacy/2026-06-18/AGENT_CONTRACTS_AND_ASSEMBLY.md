@@ -1,4 +1,4 @@
-# Audit result — `AGENT_CONTRACTS_AND_ASSEMBLY`
+# Audit result - `AGENT_CONTRACTS_AND_ASSEMBLY`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 6)  
 **Auditor:** cursor-agent · **Verdict:** L3+ mature_revalidated
@@ -57,12 +57,12 @@ ACP close CI + pattern + vendor + lifecycle + capability graph: **OK**. AS-3: **
 
 ## Backlog P2–P4 (planned / deferred)
 
-- ACP-MAINT-01..03 — §6.1av
-- COST-1 graph RunBudget cap — cross-domain
-- FAUDIT-REG.1 — PLATFORM_FOUNDATION
+- ACP-MAINT-01..03 - §6.1av
+- COST-1 graph RunBudget cap - cross-domain
+- FAUDIT-REG.1 - PLATFORM_FOUNDATION
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature (L3+)** — single P2 fleet hygiene item (`boundary_demo`) blocks AS-3 CI honesty until ACP-MAINT-01/02 land.
+**Architecturally Mature (L3+)** - single P2 fleet hygiene item (`boundary_demo`) blocks AS-3 CI honesty until ACP-MAINT-01/02 land.

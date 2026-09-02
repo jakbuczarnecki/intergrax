@@ -1,4 +1,4 @@
-# Portfolio Control Session — Ready-to-Paste Launch Prompt
+# Portfolio Control Session - Ready-to-Paste Launch Prompt
 
 Paste the entire fenced block below as the **first user message** in a new independent session.
 
@@ -37,7 +37,7 @@ GIT / CONCURRENCY RULES
 - Use exact SHA for reviews/gates/evidence.
 - Do not attribute another session's commits to this session.
 
-BOOTSTRAP — MUST DO FIRST
+BOOTSTRAP - MUST DO FIRST
 Using GitHub/current repo:
 1. Resolve development HEAD.
 2. Read in order:

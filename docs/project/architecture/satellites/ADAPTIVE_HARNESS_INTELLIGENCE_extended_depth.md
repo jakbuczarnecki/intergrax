@@ -1,4 +1,4 @@
-# ADAPTIVE_HARNESS_INTELLIGENCE — §8+ extended architecture
+# ADAPTIVE_HARNESS_INTELLIGENCE - §8+ extended architecture
 
 **Parent hub:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../ADAPTIVE_HARNESS_INTELLIGENCE.md)
 
@@ -16,7 +16,7 @@ Tier-2  Agents (bounded local loops; optional bandit hints via profile)
 Tier-3  Applications (AdaptiveProfile weights, business outcome hooks)
 ```
 
-### 8.2 Adaptive Control Plane — box diagram
+### 8.2 Adaptive Control Plane - box diagram
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -77,7 +77,7 @@ Tier-3  Applications (AdaptiveProfile weights, business outcome hooks)
 
 ---
 
-## 9. Adaptive Control Plane — component specification
+## 9. Adaptive Control Plane - component specification
 
 ### 9.1 SignalCollector
 
@@ -131,7 +131,7 @@ Tier-3  Applications (AdaptiveProfile weights, business outcome hooks)
 **Responsibility:** Wrap engine output in existing `AdaptiveLoopProposal` contract:
 
 ```python
-# Existing contract — intergrax/runtime/architecture/adaptive_governance.py
+# Existing contract - intergrax/runtime/architecture/adaptive_governance.py
 AdaptiveLoopProposal(
     envelope=AdaptiveLoopEnvelope(...),
     proposed_change_summary="...",
@@ -146,11 +146,11 @@ AdaptiveLoopProposal(
 
 ### 9.4 Governance Gate (existing + extensions)
 
-**Stage 1 — Envelope validation:** `evaluate_bounded_adaptive_loop(proposal)` (existing).
+**Stage 1 - Envelope validation:** `evaluate_bounded_adaptive_loop(proposal)` (existing).
 
-**Stage 2 — Capability graph impact:** `evaluate_capability_graph_compatibility()` for affected nodes.
+**Stage 2 - Capability graph impact:** `evaluate_capability_graph_compatibility()` for affected nodes.
 
-**Stage 3 — Authority routing:**
+**Stage 3 - Authority routing:**
 
 | `AdaptiveAuthorityLevel` | Behavior |
 |--------------------------|----------|
@@ -158,7 +158,7 @@ AdaptiveLoopProposal(
 | `RECOMMEND` | Ops report + optional auto-shadow if tenant enables |
 | `AUTO_WITH_HUMAN_GATE` | Block until `human_approver_id` confirms via HITL/ops API |
 
-**Stage 4 — Regression pre-check:** Golden scenario smoke before shadow allocation.
+**Stage 4 - Regression pre-check:** Golden scenario smoke before shadow allocation.
 
 ---
 
@@ -194,7 +194,7 @@ ROLLBACK  → restore previous pointer on verification failure
 
 **Checks:**
 
-1. Evaluation registry trend — candidate utility ≥ baseline + `min_improvement_delta`.
+1. Evaluation registry trend - candidate utility ≥ baseline + `min_improvement_delta`.
 2. No increase in `ExecutionGuard` regression rate beyond threshold.
 3. Cost within budget envelope.
 4. Security adversarial suite still green.
@@ -223,7 +223,7 @@ ROLLBACK  → restore previous pointer on verification failure
 | `suggested_action` | `CREATE_SKILL_DRAFT`, `TUNE_ROUTING`, `DOCUMENT_RUNBOOK` |
 | `evidence_run_ids` | Sample for human review |
 
-**Tier handoff:** Skill creation uses `python -m intergrax.scaffold new-skill` — human/agent author completes Tier-2 work.
+**Tier handoff:** Skill creation uses `python -m intergrax.scaffold new-skill` - human/agent author completes Tier-2 work.
 
 ---
 
@@ -331,14 +331,14 @@ For routing tuning, arms are **profile version candidates**:
 ```text
 context = (tenant_id, task_class, time_of_day_bucket)
 arm     = (llm_model_id, rag_tier, orchestration_profile_version)
-reward  = U (delayed — attributed after run completes)
+reward  = U (delayed - attributed after run completes)
 ```
 
 Use ** Thompson sampling** with Beta distribution per arm for v1 (simple, auditable).
 
 ---
 
-## 11. Adaptation loops — four canonical kinds
+## 11. Adaptation loops - four canonical kinds
 
 Maps 1:1 to existing `AdaptiveLoopKind` enum.
 
@@ -350,7 +350,7 @@ Maps 1:1 to existing `AdaptiveLoopKind` enum.
 | **Proposes** | Shift routing weights; RAG `route_mode` thresholds |
 | **Default authority** | `RECOMMEND` → tenant opt-in `AUTO_WITH_HUMAN_GATE` |
 | **Max delta** | 10% traffic shift per proposal |
-| **Existing hook** | `LLMRoutingEvaluator` + `ModelRouter` + `FailoverLLMAdapter` — see [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) § LLM routing rules · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md). Persistent profile versions → **AHI-MAINT-06** / **M-LLM-X.10**. |
+| **Existing hook** | `LLMRoutingEvaluator` + `ModelRouter` + `FailoverLLMAdapter` - see [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) § LLM routing rules · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md). Persistent profile versions → **AHI-MAINT-06** / **M-LLM-X.10**. |
 
 ### 11.2 EXECUTION_STRATEGY_TUNING
 
@@ -377,7 +377,7 @@ Maps 1:1 to existing `AdaptiveLoopKind` enum.
 | Attribute | Value |
 |-----------|-------|
 | **Observes** | benchmark regression deltas |
-| **Proposes** | Trigger re-eval; block promotion — no config auto-apply |
+| **Proposes** | Trigger re-eval; block promotion - no config auto-apply |
 | **Default authority** | `OBSERVE_ONLY` |
 | **Max iterations** | 20 (existing gate allows higher for this kind) |
 | **Existing hook** | `prompt_regression_suite.py`, `evaluation_registry_trends.py` |
@@ -386,7 +386,7 @@ Maps 1:1 to existing `AdaptiveLoopKind` enum.
 
 ## Governance Boundary
 
-Adaptive Harness Intelligence (AHI) is a **controlled mechanism for observation, proposal, and evaluation** of harness changes — not an autonomous self-modifying runtime.
+Adaptive Harness Intelligence (AHI) is a **controlled mechanism for observation, proposal, and evaluation** of harness changes - not an autonomous self-modifying runtime.
 
 **Normative rule:** Adaptive Harness Intelligence may observe, analyze, recommend and evaluate changes. It **MUST NOT** silently mutate production prompts, routing, policies, profiles, retrievers, critic thresholds or tool-selection behavior without explicit governance approval.
 
@@ -441,18 +441,18 @@ AHI **MUST NOT**:
 
 Every AHI-driven or AHI-recommended change follows this lifecycle:
 
-1. **Observe** — collect signals from runs, traces, eval, cost, HITL.
-2. **Detect** — identify recurring patterns, regressions, or optimization opportunities.
-3. **Propose** — emit bounded `AdaptiveLoopProposal` / profile version draft.
-4. **Evaluate** — offline simulation, shadow eval, or regression pre-check.
-5. **Classify risk** — assign low / medium / high / critical (see [Change risk classes](.#change-risk-classes)).
-6. **Collect evidence** — link to `HarnessOutcomeSignal`, eval registry, capability graph impact.
-7. **Request governance approval** — human gate, ops workflow, or explicit product decision.
-8. **Shadow / canary if approved** — traffic shift within envelope limits only.
-9. **Apply only through approved configuration/profile mechanisms** — `ProfileVersionStore` pointer swap; no ad-hoc runtime mutation.
-10. **Monitor** — `VerificationLoop` over SLO window.
-11. **Roll back if needed** — restore previous profile version on failure.
-12. **Record outcome** — persist proposal ID, version lineage, utility delta.
+1. **Observe** - collect signals from runs, traces, eval, cost, HITL.
+2. **Detect** - identify recurring patterns, regressions, or optimization opportunities.
+3. **Propose** - emit bounded `AdaptiveLoopProposal` / profile version draft.
+4. **Evaluate** - offline simulation, shadow eval, or regression pre-check.
+5. **Classify risk** - assign low / medium / high / critical (see [Change risk classes](.#change-risk-classes)).
+6. **Collect evidence** - link to `HarnessOutcomeSignal`, eval registry, capability graph impact.
+7. **Request governance approval** - human gate, ops workflow, or explicit product decision.
+8. **Shadow / canary if approved** - traffic shift within envelope limits only.
+9. **Apply only through approved configuration/profile mechanisms** - `ProfileVersionStore` pointer swap; no ad-hoc runtime mutation.
+10. **Monitor** - `VerificationLoop` over SLO window.
+11. **Roll back if needed** - restore previous profile version on failure.
+12. **Record outcome** - persist proposal ID, version lineage, utility delta.
 
 **Traceability rule:** Every AHI-applied or AHI-recommended change must be traceable through the observability spine and must preserve enough evidence to explain why the change was proposed.
 
@@ -546,7 +546,7 @@ Before adding or modifying AHI behavior, Cursor must verify:
 
 ---
 
-## 12. Lifecycle modes — Observe through Verify
+## 12. Lifecycle modes - Observe through Verify
 
 ### 12.1 Mode definitions
 
@@ -566,7 +566,7 @@ draft ──► shadow ──► canary ──► active ──► retired
                   └─ rollback ◄─┘
 ```
 
-Aligns with `agent_promotion.py` evidence pattern — reuse promotion checklist adapted for profiles.
+Aligns with `agent_promotion.py` evidence pattern - reuse promotion checklist adapted for profiles.
 
 ### 12.3 Relationship to laboratory workflow (§35)
 
@@ -584,7 +584,7 @@ Aligns with `agent_promotion.py` evidence pattern — reuse promotion checklist 
 
 ### 13.1 Business intent
 
-Surface **hidden operational paths** — recurring sequences of tools, agents, and human gates that correlate with high or low utility — without claiming full business process management (BPM).
+Surface **hidden operational paths** - recurring sequences of tools, agents, and human gates that correlate with high or low utility - without claiming full business process management (BPM).
 
 ### 13.2 Example patterns
 
@@ -855,7 +855,7 @@ flowchart LR
 
 ---
 
-## 19. Phased implementation roadmap — Phase W-ADAPT
+## 19. Phased implementation roadmap - Phase W-ADAPT
 
 ### 19.1 Phase overview
 
@@ -872,7 +872,7 @@ flowchart LR
 
 **Total estimate:** 16–20 weeks with gate green after each wave.
 
-### 19.2 Wave W-ADAPT-1 — Observe (L4-O)
+### 19.2 Wave W-ADAPT-1 - Observe (L4-O)
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
@@ -881,7 +881,7 @@ flowchart LR
 | W-ADAPT-1.3 | Utility computation | U populated on signal |
 | W-ADAPT-1.4 | `scripts/release/phase_w_adapt_report.py` | Report lists signals + U trends |
 
-### 19.3 Wave W-ADAPT-2 — Recommend (L4-R)
+### 19.3 Wave W-ADAPT-2 - Recommend (L4-R)
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
@@ -890,7 +890,7 @@ flowchart LR
 | W-ADAPT-2.3 | Integration with `cost_optimization.py` | Cost anomalies → proposals |
 | W-ADAPT-2.4 | Ops report shows gated proposals | No runtime mutation |
 
-### 19.4 Wave W-ADAPT-3 — Shadow (L4-S)
+### 19.4 Wave W-ADAPT-3 - Shadow (L4-S)
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
@@ -899,7 +899,7 @@ flowchart LR
 | W-ADAPT-3.3 | Extend shadow eval metadata | Candidate version in observation |
 | W-ADAPT-3.4 | Unit + integration tests | Gate green |
 
-### 19.5 Wave W-ADAPT-4 — Apply (L4-A)
+### 19.5 Wave W-ADAPT-4 - Apply (L4-A)
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
@@ -908,7 +908,7 @@ flowchart LR
 | W-ADAPT-4.3 | HITL approval for POLICY_LEARNING | Cannot apply without approver |
 | W-ADAPT-4.4 | ADAPTIVE_* runtime events | Events in trace export |
 
-### 19.6 Wave W-ADAPT-5 — Verify (L4-V) — **Done**
+### 19.6 Wave W-ADAPT-5 - Verify (L4-V) - **Done**
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
@@ -917,7 +917,7 @@ flowchart LR
 | W-ADAPT-5.6 | `phase_w_adapt_closeout_gate.py` | `--enforce-l4-runtime` CI gate |
 | W-ADAPT-5.11 | `l4_runtime_evidence.json` | 30-day golden scenario utility artifact |
 
-### 19.7 Wave W-ADAPT-6 — Pattern intelligence — **Done**
+### 19.7 Wave W-ADAPT-6 - Pattern intelligence - **Done**
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
@@ -926,7 +926,7 @@ flowchart LR
 | W-ADAPT-6.3 | Pattern report in `phase_w_adapt_report.py` | `process_patterns.json` export |
 | W-ADAPT-6.5 | `AdaptationScheduler.run_pattern_miner` | Daily job entry point |
 
-### 19.8 Wave W-ADAPT-7 — Tier-3 wiring — **Done**
+### 19.8 Wave W-ADAPT-7 - Tier-3 wiring - **Done**
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
@@ -1002,7 +1002,7 @@ All must pass:
 | Pattern proposal review | Biweekly |
 | L4 evidence audit | Per release candidate |
 
-### 21.3 Runbooks (W-ADAPT-5 — Done)
+### 21.3 Runbooks (W-ADAPT-5 - Done)
 
 - `runbook/adaptive/rollback_profile.md`
 - `runbook/adaptive/approve_policy_learning.md`
@@ -1047,7 +1047,7 @@ All must pass:
 
 **Positioning statement:**
 
-> Intergrax is the Harness AI platform that **operationalizes improvement** — every run makes the runtime smarter within auditable bounds, not the agent autonomously rewriting itself.
+> Intergrax is the Harness AI platform that **operationalizes improvement** - every run makes the runtime smarter within auditable bounds, not the agent autonomously rewriting itself.
 
 ---
 
@@ -1056,32 +1056,32 @@ All must pass:
 ### 24.1 Conclusions
 
 1. **Adaptive Harness Intelligence is strategically aligned** with Intergrax's harness-first mission and L4 maturity vision.
-2. **Implementation is complete** — Phase W-ADAPT **70/70 Done** (Wave 0–7); runtime package `intergrax/runtime/adaptive`.
+2. **Implementation is complete** - Phase W-ADAPT **70/70 Done** (Wave 0–7); runtime package `intergrax/runtime/adaptive`.
 3. **Classical RL is the wrong implementation model**; contextual bandits + governed proposals + verification loops are the right fit.
-4. **L4 runtime readiness is achieved in code** — governance L4 (Phase V) + runtime L4 (W-ADAPT-5 closeout gate); production utility evidence accumulates when lab observe mode is active.
+4. **L4 runtime readiness is achieved in code** - governance L4 (Phase V) + runtime L4 (W-ADAPT-5 closeout gate); production utility evidence accumulates when lab observe mode is active.
 5. **Process pattern discovery belongs in Tier-1 mining + Tier-2 authoring**, keeping Nexus domain-agnostic.
-6. **Differentiation is real** — policy gates, rollback, VerificationLoop, and measurable utility improvement are shipped.
+6. **Differentiation is real** - policy gates, rollback, VerificationLoop, and measurable utility improvement are shipped.
 
 ### 24.2 Recommendations
 
 | # | Recommendation | Priority | Status |
 |---|----------------|----------|--------|
 | R1 | Accept this RFC and add **Phase W-ADAPT** to implementation plan | P0 | **Done** (2026-06-05) |
-| R2 | Default reference apps to safe posture; **lab** enables observe (`enabled=True`, `mode=observe`) | P0 | **Done** — `LAB_ADAPTIVE_OBSERVE`; product hosts remain `enabled=False` |
+| R2 | Default reference apps to safe posture; **lab** enables observe (`enabled=True`, `mode=observe`) | P0 | **Done** - `LAB_ADAPTIVE_OBSERVE`; product hosts remain `enabled=False` |
 | R3 | Implement W-ADAPT-1 before any auto-apply code | P0 | **Done** |
 | R4 | Rename outward-facing term: **Adaptive Harness Intelligence**, not "RL" | P1 | **Done** |
 | R5 | Extend `phase_v_closeout_gate.py` to distinguish governance-L4 vs runtime-L4 | P1 | **Done** (W-ADAPT-5.8) |
-| R6 | Author ADR-ADAPT-001 from Appendix C | P1 | **Done** — [`docs/project/technical/adr/entries/2026-06-05/ADR-ADAPT-001.md`](adr/entries/2026-06-05/ADR-ADAPT-001.md) |
+| R6 | Author ADR-ADAPT-001 from Appendix C | P1 | **Done** - [`docs/project/technical/adr/entries/2026-06-05/ADR-ADAPT-001.md`](adr/entries/2026-06-05/ADR-ADAPT-001.md) |
 | R7 | Defer ProcessPatternMiner until W-ADAPT-5 verifies core loop | P2 | **Done** (W-ADAPT-6 after W-ADAPT-5) |
-| R8 | Enforce `--enforce-l4-runtime` in CI and release pipeline | P1 | **Done** — `unit-tests.yml` + `harness-release.yml` |
+| R8 | Enforce `--enforce-l4-runtime` in CI and release pipeline | P1 | **Done** - `unit-tests.yml` + `harness-release.yml` |
 
-### 24.3 Decision requested — **Closed**
+### 24.3 Decision requested - **Closed**
 
 Phase W-ADAPT Wave 0–7 **Done** (2026-06-02). Ongoing work: §6.1 harness maintenance, lab signal collection, production 30-day L4 evidence when sufficient run volume exists.
 
 ---
 
-## Appendix A — Mapping to existing code
+## Appendix A - Mapping to existing code
 
 | AHIA component | Existing module | Action |
 |----------------|-----------------|--------|
@@ -1102,14 +1102,14 @@ Phase W-ADAPT Wave 0–7 **Done** (2026-06-02). Ongoing work: §6.1 harness main
 
 ---
 
-## Appendix B — Proposed implementation plan task IDs
+## Appendix B - Proposed implementation plan task IDs
 
-Insert into [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) as **Phase W-ADAPT** — **synced 2026-06-05** (70 tasks, Band 2y):
+Insert into [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) as **Phase W-ADAPT** - **synced 2026-06-05** (70 tasks, Band 2y):
 
 ```text
-Phase W-ADAPT — Adaptive Harness Intelligence (AHI)
+Phase W-ADAPT - Adaptive Harness Intelligence (AHI)
 Prerequisite: Phase V Done, Phase V-REM Done, W-OPS Done, EVAL/COST/CG closeouts Done
-Band: 2y (§4.0) — default implementation queue after §6.1 maintenance
+Band: 2y (§4.0) - default implementation queue after §6.1 maintenance
 Scope: Tier-1 intergrax/runtime/adaptive/ + Tier-3 AdaptiveProfile + scripts + tests
 Out of scope: K.1/K.2, deep RL, foundation model training
 
@@ -1118,7 +1118,7 @@ See plan: Phase W-ADAPT master register (W-ADAPT-0.1 … W-ADAPT-7.7) · Appendi
 
 ---
 
-## Appendix C — ADR decision record
+## Appendix C - ADR decision record
 
 **Canonical ADR:** [`docs/project/technical/adr/entries/2026-06-05/ADR-ADAPT-001.md`](adr/entries/2026-06-05/ADR-ADAPT-001.md)
 
@@ -1134,4 +1134,4 @@ See plan: Phase W-ADAPT master register (W-ADAPT-0.1 … W-ADAPT-7.7) · Appendi
 
 ---
 
-*End of document — Intergrax Adaptive Harness Intelligence Architecture v1.0.0*
+*End of document - Intergrax Adaptive Harness Intelligence Architecture v1.0.0*

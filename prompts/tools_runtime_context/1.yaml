@@ -11,7 +11,7 @@ locales:
 
         Use these results if they are relevant to answering the user.
         Do not mention tools unless necessary.
-        Do not assume tool outputs are always correct — reason about them.
+        Do not assume tool outputs are always correct - reason about them.
 
         {context}
       developer: null

@@ -1,6 +1,6 @@
 # Elastic Capacity and Scaling
 
-**Intergrax Elastic Capacity Plane (ECP)** converts harness pressure signals into governed, typed capacity actions across runtime concurrency, worker pools, and infrastructure backends — without taking ownership of orchestration semantics.
+**Intergrax Elastic Capacity Plane (ECP)** converts harness pressure signals into governed, typed capacity actions across runtime concurrency, worker pools, and infrastructure backends - without taking ownership of orchestration semantics.
 
 > **Backpressure limits work. Scaling changes capacity.**
 
@@ -12,7 +12,7 @@ Orchestration decides **how** work runs inside available capacity. ECP decides *
 > [!IMPORTANT]
 > **Implemented scaling backends ≠ proven production autoscaling deployment.** Protocol adapters, REST clients, and gate probes do not by themselves qualify as customer cluster evidence.
 
-**Primary audience:** Principal / Staff engineers and Tier-3 host authors configuring capacity posture — after the platform overview in the root README.
+**Primary audience:** Principal / Staff engineers and Tier-3 host authors configuring capacity posture - after the platform overview in the root README.
 
 ## Why it matters
 
@@ -27,7 +27,7 @@ Without ECP:
 - concurrency ceiling is confused with adding infrastructure,
 - Kubernetes HPA and Celery autoscale are duplicated instead of complemented.
 
-ECP is the Harness **capacity architecture and governed scaling layer** — not an agent planner, graph scheduler, cloud autoscaler replacement, or general infrastructure orchestrator.
+ECP is the Harness **capacity architecture and governed scaling layer** - not an agent planner, graph scheduler, cloud autoscaler replacement, or general infrastructure orchestrator.
 
 ## At a glance
 
@@ -36,19 +36,19 @@ ECP is the Harness **capacity architecture and governed scaling layer** — not 
 | **Responsibility** | Normalize capacity pressure → evaluate policy → govern → provision typed capacity actions |
 | **Pressure signals** | `graph_backpressure_rate`, `queue_depth`; optional Prometheus query helper (env-driven, not auto-wired to collector) |
 | **Collector** | `CapacitySignalCollector` + live `CapacityEventBridge` on `GRAPH_BACKPRESSURE` when host passes `event_bus` |
-| **Evaluator** | `ScalingEvaluator` — rule match, hysteresis, per-rule cooldown, `max_actions_per_hour` |
-| **Policy** | `ScalingPolicy` on `ScalingProfile` — explicit opt-in (`enabled=false` default) |
-| **Scheduler** | `CapacityScheduler` — async ticks **outside** Nexus hot path |
+| **Evaluator** | `ScalingEvaluator` - rule match, hysteresis, per-rule cooldown, `max_actions_per_hour` |
+| **Policy** | `ScalingPolicy` on `ScalingProfile` - explicit opt-in (`enabled=false` default) |
+| **Scheduler** | `CapacityScheduler` - async ticks **outside** Nexus hot path |
 | **HITL** | Optional `require_hitl_for_scale_up` → in-memory `CapacityApprovalQueue` |
 | **Provisioner** | `ScalingProvisioner` → K8s / Celery / orchestration ceiling backends |
 | **K8s backend** | REST `KubernetesDeploymentScaleClient` + protocol; reference `wire_application_scaling()` does **not** inject it |
 | **Celery backend** | `CeleryProductionAdapter` records intents; reference wiring does **not** inject it |
-| **Runtime ceiling** | `BoundedOrchestrationCeilingPatcher` — in-process, bounded raise; not durable across restart |
+| **Runtime ceiling** | `BoundedOrchestrationCeilingPatcher` - in-process, bounded raise; not durable across restart |
 | **Scale-down safety** | No guaranteed graceful drain for external workers/replicas in ECP core |
-| **HPA / Celery autoscale** | Complementary infrastructure mechanisms — ECP does not replace them by default |
+| **HPA / Celery autoscale** | Complementary infrastructure mechanisms - ECP does not replace them by default |
 | **AHI boundary** | AHI may propose ceiling deltas; ECP owns scaling action execution |
 | **Tenant fairness** | UAEP / resource governance owns quotas; ECP consumes/respects limits |
-| **Maturity** | A4 · I3 · P2 · E3 — [Current maturity](#current-maturity) |
+| **Maturity** | A4 · I3 · P2 · E3 - [Current maturity](#current-maturity) |
 
 ## Flagship architecture visual
 
@@ -67,7 +67,7 @@ ECP is the Harness **capacity architecture and governed scaling layer** — not 
 
 ```text
 capacity saturated
-    → backpressure (immediate — limits/suspends additional work)
+    → backpressure (immediate - limits/suspends additional work)
 
 persistent / eligible pressure
     → CapacitySignalCollector
@@ -79,13 +79,13 @@ persistent / eligible pressure
     → capacity evidence (RuntimeEvent spine + metrics)
 ```
 
-1. **Observe** — runtime events (`GRAPH_BACKPRESSURE` via `CapacityEventBridge`), task-index queue depth (when `kv_store` provided), optional host overrides.
-2. **Evaluate** — `ScalingEvaluator` matches `ScalingRule` thresholds with hysteresis (`scale_up_threshold` > `scale_down_threshold`), per-rule cooldown, and hourly action cap.
-3. **Govern** — `CapacityActionGate` (`BEFORE_CAPACITY_ACTION` hook when configured); scale-up may require operator approval via `CapacityApprovalQueue`.
-4. **Provision** — `ScalingProvisioner` applies typed `ScalingActionKind` to configured backends; missing backend **fails visibly** (no silent success).
-5. **Evidence** — `platform.capacity.*` events and `harness_scale_actions_total` metrics; Observability remains evidence owner.
+1. **Observe** - runtime events (`GRAPH_BACKPRESSURE` via `CapacityEventBridge`), task-index queue depth (when `kv_store` provided), optional host overrides.
+2. **Evaluate** - `ScalingEvaluator` matches `ScalingRule` thresholds with hysteresis (`scale_up_threshold` > `scale_down_threshold`), per-rule cooldown, and hourly action cap.
+3. **Govern** - `CapacityActionGate` (`BEFORE_CAPACITY_ACTION` hook when configured); scale-up may require operator approval via `CapacityApprovalQueue`.
+4. **Provision** - `ScalingProvisioner` applies typed `ScalingActionKind` to configured backends; missing backend **fails visibly** (no silent success).
+5. **Evidence** - `platform.capacity.*` events and `harness_scale_actions_total` metrics; Observability remains evidence owner.
 
-ECP reacts to **sustained/eligible pressure**, not every raw metric sample — cooldown, hysteresis, and `max_actions_per_hour` are anti-flapping bounds.
+ECP reacts to **sustained/eligible pressure**, not every raw metric sample - cooldown, hysteresis, and `max_actions_per_hour` are anti-flapping bounds.
 
 ## Backpressure vs scaling
 
@@ -122,7 +122,7 @@ Exact action kinds: `SCALE_K8S_DEPLOYMENT`, `SCALE_CELERY_WORKERS`, `RAISE_ORCHE
 | Backpressure at inflight cap | Orchestration (`GRAPH_BACKPRESSURE`) |
 | Retry / recovery of failed execution | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
 | Future profile improvement proposals | [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) |
-| Tenant CPU/memory/concurrency quotas / fairness | UAEP / resource governance — ECP **respects**, does not own |
+| Tenant CPU/memory/concurrency quotas / fairness | UAEP / resource governance - ECP **respects**, does not own |
 | Evidence recording / audit reconstruction | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
 | K8s/Celery integration clients | [`INTEGRATIONS.md`](INTEGRATIONS.md) |
 | Tier-3 enablement defaults | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) · `ScalingProfile` |
@@ -141,11 +141,11 @@ ECP **MUST NOT**: decide agent topology; modify Nexus plans; bypass runtime poli
 | ------ | ------------ |
 | **Orchestration** | Schedules work **within** available capacity; emits backpressure ECP may consume |
 | **Reliability** | Recovers failed execution; retry storms may surface as pressure but ECP does not own retry policy |
-| **AHI** | Proposes future configuration; `ahi_bridge` maps approved ceiling proposals to `RAISE_ORCHESTRATION_CEILING` — ECP remains action owner |
+| **AHI** | Proposes future configuration; `ahi_bridge` maps approved ceiling proposals to `RAISE_ORCHESTRATION_CEILING` - ECP remains action owner |
 | **Observability** | Records capacity decisions/actions; not a separate capacity audit authority |
-| **Governed Execution** | `CapacityActionGate` is a local gate + optional `BEFORE_CAPACITY_ACTION` hook — not full Governance catalog coverage |
+| **Governed Execution** | `CapacityActionGate` is a local gate + optional `BEFORE_CAPACITY_ACTION` hook - not full Governance catalog coverage |
 | **Integrations** | K8s REST scale client and cloud platform bundle supply external backends |
-| **Cost** | Policy may constrain scaling; ECP does not globally optimize cost — tradeoff is **capacity ↔ latency ↔ cost** within policy |
+| **Cost** | Policy may constrain scaling; ECP does not globally optimize cost - tradeoff is **capacity ↔ latency ↔ cost** within policy |
 
 ```text
 Orchestration → schedules work within available capacity
@@ -172,13 +172,13 @@ ECP **complements** native autoscalers. It understands harness signals (`GRAPH_B
 
 | Backend | Contract implemented? | Concrete adapter? | Reference `wire_application_scaling()`? | Production evidence? |
 | ------- | --------------------- | ----------------- | --------------------------------------- | ---------------------- |
-| **K8s replicas** | `KubernetesScaler` protocol | `KubernetesDeploymentScaleClient` REST; `InMemoryKubernetesScaler` for CI | **No** — inject via host or `production_adapters_enabled` path | Mock/REST unit tests; live cluster **not** established in public proofs |
+| **K8s replicas** | `KubernetesScaler` protocol | `KubernetesDeploymentScaleClient` REST; `InMemoryKubernetesScaler` for CI | **No** - inject via host or `production_adapters_enabled` path | Mock/REST unit tests; live cluster **not** established in public proofs |
 | **Celery workers** | `CeleryScaler` protocol | `CeleryProductionAdapter` (intent counter) | **No** | Gate tests only |
 | **Orchestration ceiling** | `OrchestrationCeilingPatcher` | `BoundedOrchestrationCeilingPatcher` | **Yes** | Gate tests; in-memory only |
 
-**Missing backend behavior:** when `ScalingProvisioner` receives `SCALE_K8S_DEPLOYMENT` or `SCALE_CELERY_WORKERS` without a configured backend, it records failure (`kubernetes backend not configured` / `celery backend not configured`), emits `platform.capacity.scale_failed`, and returns `False` — **no silent success**.
+**Missing backend behavior:** when `ScalingProvisioner` receives `SCALE_K8S_DEPLOYMENT` or `SCALE_CELERY_WORKERS` without a configured backend, it records failure (`kubernetes backend not configured` / `celery backend not configured`), emits `platform.capacity.scale_failed`, and returns `False` - **no silent success**.
 
-Product hosts may enable `ScalingProfile.production_adapters_enabled` on `ApplicationProfile.PRODUCT` via `resolve_production_capacity_wiring()` — separate from default shared wiring.
+Product hosts may enable `ScalingProfile.production_adapters_enabled` on `ApplicationProfile.PRODUCT` via `resolve_production_capacity_wiring()` - separate from default shared wiring.
 
 ## Scale-down safety (current limitation)
 
@@ -188,7 +188,7 @@ ECP core does **not** fully guarantee safe graceful scale-down of active externa
 - Celery adapter enforces `worker_count >= 1` on scale-down delta,
 - ceiling patcher ignores non-positive deltas (no automatic ceiling reduction).
 
-Treat production scale-down as requiring operator runbooks, native autoscaler safeguards, or future ECP hardening — not as automatically safe today.
+Treat production scale-down as requiring operator runbooks, native autoscaler safeguards, or future ECP hardening - not as automatically safe today.
 
 ## Current maturity
 
@@ -211,7 +211,7 @@ Four-axis statement per [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TA
 | Governance / HITL queue | I3 | P2 | E3 |
 | Scale-down safety | I1 | P1 | E1 |
 
-**Safe summary:** ECP is canonical Harness capacity architecture with a working control loop on the harness path when explicitly enabled — not a finished production autoscaler comparable to K8s HPA + Celery autoscale.
+**Safe summary:** ECP is canonical Harness capacity architecture with a working control loop on the harness path when explicitly enabled - not a finished production autoscaler comparable to K8s HPA + Celery autoscale.
 
 ## Evidence / proof
 
@@ -220,8 +220,8 @@ Four-axis statement per [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TA
 | **Architecture** | This hub · [`satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md) · [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md) · [ADR-SCALE-002](../technical/adr/entries/2026-06-09/ADR-SCALE-002.md) |
 | **Unit / gate** | `tests/unit/runtime/capacity/test_ecp_depth_gate.py` · `test_capacity_events_gate.py` · `test_kubernetes_scale_client.py` |
 | **Integration** | `tests/integration/runtime/test_ecp_backpressure_scale.py` (sustained backpressure → mocked K8s) |
-| **Public proof** | No dedicated ECP row in [`PROOFS.md`](../proofs/PROOFS.md) — bounded harness tests only |
-| **Production / customer** | Not inferred — requires external deployment evidence |
+| **Public proof** | No dedicated ECP row in [`PROOFS.md`](../proofs/PROOFS.md) - bounded harness tests only |
+| **Production / customer** | Not inferred - requires external deployment evidence |
 
 ## Go deeper
 
@@ -265,9 +265,9 @@ Technical contracts, module map, and as-built reconciliation. Public sections ab
 
 ECP answers:
 
-> When load grows, how does the platform add execution capacity — runners, workers, replicas — in a governed, observable way?
+> When load grows, how does the platform add execution capacity - runners, workers, replicas - in a governed, observable way?
 
-**Core invariant:** capacity mutations MUST flow through typed `ScalingAction` contracts and integration backends — never ad-hoc SDK calls from `NexusLoop` or agents.
+**Core invariant:** capacity mutations MUST flow through typed `ScalingAction` contracts and integration backends - never ad-hoc SDK calls from `NexusLoop` or agents.
 
 **Strategic positioning:** the Harness owns signals, rules, actions, and audit; infrastructure vendors remain replaceable integrations; Tier-3 applications own deployment manifests and `ScalingProfile` defaults.
 
@@ -286,13 +286,13 @@ Treat ECP as capacity architecture and governed scaling scaffold unless implemen
 | Term | Meaning |
 | ---- | ------- |
 | **Capacity** | Execution slots: host replicas, async workers, modality pools, tenant concurrency budget |
-| **ECP** | Elastic Capacity Plane — this domain |
+| **ECP** | Elastic Capacity Plane - this domain |
 | **CapacitySignal** | Normalized sample: `target`, `metric_name`, `value`, `collected_at` |
 | **ScalingPolicy** | `enabled`, `require_hitl_for_scale_up`, `max_actions_per_hour`, `rules` |
 | **ScalingRule** | Per-metric thresholds, `action_kind`, `delta`, `cooldown_seconds` |
-| **Backpressure** | In-process throttle at inflight cap — **not** provisioning |
+| **Backpressure** | In-process throttle at inflight cap - **not** provisioning |
 | **Provisioner** | `ScalingProvisioner` executing `ScalingAction` via backends |
-| **Flapping** | Rapid oscillation — prevented by cooldown + hysteresis + hourly cap |
+| **Flapping** | Rapid oscillation - prevented by cooldown + hysteresis + hourly cap |
 
 **Not ECP:** agent roster in `NexusPlan`, RAG sharding, trace store migration (see [`OBSERVABILITY.md`](OBSERVABILITY.md)).
 
@@ -327,7 +327,7 @@ class CapacitySignal(BaseModel):
 
 | `metric_name` | Source | `ScalingTarget` |
 | ------------- | ------ | --------------- |
-| `graph_backpressure_rate` | Collector counter / optional override | `ORCHESTRATION_CEILING` (signal) — may trigger `SCALE_K8S_DEPLOYMENT` per rule |
+| `graph_backpressure_rate` | Collector counter / optional override | `ORCHESTRATION_CEILING` (signal) - may trigger `SCALE_K8S_DEPLOYMENT` per rule |
 | `queue_depth` | Task index pending count (`celery` provider default) | `CELERY_POOL` |
 
 #### Collector and live bridge
@@ -340,7 +340,7 @@ runtime events / queue index / optional host providers
 
 - **`CapacityEventBridge`** subscribes to `RuntimeEventType.GRAPH_BACKPRESSURE` and calls `collector.record_backpressure()` when `wire_application_scaling(..., event_bus=...)` attaches it (lab host passes Nexus `event_bus`).
 - **Queue depth:** `make_queue_depth_provider(kv_store, tenant_id)` counts `TaskStatus.PENDING` rows for provider `celery`.
-- **Prometheus:** `prometheus_bridge.query_gauge()` reads `INTERGRAX_PROMETHEUS_URL` — standalone helper; **not** automatically merged into collector samples today.
+- **Prometheus:** `prometheus_bridge.query_gauge()` reads `INTERGRAX_PROMETHEUS_URL` - standalone helper; **not** automatically merged into collector samples today.
 
 On collect, optional `publish` emits `platform.capacity.capacity_signal_collected`.
 
@@ -366,7 +366,7 @@ CapacitySignal[] + ScalingPolicy
 - Match `signal.metric_name` to `rule.metric_name`.
 - **Scale up** when `value >= scale_up_threshold`.
 - **Scale down** when `value <= scale_down_threshold` (negative `delta`).
-- **Hysteresis:** dead band between thresholds prevents oscillation — not ML adaptation.
+- **Hysteresis:** dead band between thresholds prevents oscillation - not ML adaptation.
 - **Cooldown:** per `rule_id`, `cooldown_seconds` blocks repeat trigger.
 - **Rate limit:** `max_actions_per_hour` → `evaluation_status=denied`.
 - **HITL:** when `require_hitl_for_scale_up` and any action has `delta > 0` → `hitl_required` without recording cooldown until approved apply path.
@@ -404,7 +404,7 @@ hitl_required plan → CapacityApprovalQueue (in-memory)
   → drain_approved on next tick → provisioner
 ```
 
-`CapacityApprovalQueue` is **in-process only** — not a durable production approval workflow; pending plans do not survive process restart.
+`CapacityApprovalQueue` is **in-process only** - not a durable production approval workflow; pending plans do not survive process restart.
 
 HITL applies when `require_hitl_for_scale_up=true` and plan contains scale-up (`delta > 0`). Scale-down and noop paths do not automatically require human approval.
 
@@ -412,7 +412,7 @@ HITL applies when `require_hitl_for_scale_up=true` and plan contains scale-up (`
 
 - Default: **allow** when no `before_action` hook configured.
 - Optional: `before_action(action, HookPoint.BEFORE_CAPACITY_ACTION)` → deny before provisioner.
-- Local gate — not full Governed Execution catalog coverage.
+- Local gate - not full Governed Execution catalog coverage.
 
 ### 8. ScalingProvisioner and backends
 
@@ -423,7 +423,7 @@ HITL applies when `require_hitl_for_scale_up=true` and plan contains scale-up (`
 | `SCALE_K8S_DEPLOYMENT` | `KubernetesScaler.scale_workload` | Not injected by default |
 | `SCALE_CELERY_WORKERS` | `CeleryScaler.scale_workers` | Not injected by default |
 | `RAISE_ORCHESTRATION_CEILING` | `BoundedOrchestrationCeilingPatcher.raise_ceiling` | Injected |
-| `REQUEST_HITL` | No-op at provisioner | — |
+| `REQUEST_HITL` | No-op at provisioner | - |
 
 #### Kubernetes implementation classes
 
@@ -437,7 +437,7 @@ HITL applies when `require_hitl_for_scale_up=true` and plan contains scale-up (`
 
 #### Celery implementation
 
-`CeleryProductionAdapter` adjusts an in-memory `worker_count` — records scale **intent** for gates/probes; not broker-autoscale by itself.
+`CeleryProductionAdapter` adjusts an in-memory `worker_count` - records scale **intent** for gates/probes; not broker-autoscale by itself.
 
 #### Orchestration ceiling patcher
 
@@ -469,15 +469,15 @@ When `policy.enabled=true`:
 | `CapacitySignalCollector` | Yes |
 | `CapacityEventBridge` | Yes, if `event_bus` provided |
 | `ScalingEvaluator` | Yes |
-| `ScalingProvisioner` | Yes — `CapacityActionGate` + `BoundedOrchestrationCeilingPatcher` only |
+| `ScalingProvisioner` | Yes - `CapacityActionGate` + `BoundedOrchestrationCeilingPatcher` only |
 | `CapacityScheduler` | Yes |
 | `CapacityApprovalQueue` | If `require_hitl_for_scale_up` |
 
-Returns all `None` when disabled — scaling is **not** an invisible side effect.
+Returns all `None` when disabled - scaling is **not** an invisible side effect.
 
 #### Production adapter path (separate)
 
-`resolve_production_capacity_wiring(env)` when `application_profile=PRODUCT` and `production_adapters_enabled=true` builds `build_production_capacity_adapters()` with K8s + Celery — **not** merged into `wire_application_scaling()` automatically.
+`resolve_production_capacity_wiring(env)` when `application_profile=PRODUCT` and `production_adapters_enabled=true` builds `build_production_capacity_adapters()` with K8s + Celery - **not** merged into `wire_application_scaling()` automatically.
 
 ### 10. Observability and metrics
 
@@ -512,7 +512,7 @@ Anti-flapping: hysteresis band + per-rule cooldown + `max_actions_per_hour`.
 
 | Component | As-built (code truth) | Target / gap |
 | --------- | --------------------- | ------------ |
-| Live `GRAPH_BACKPRESSURE` bridge | Wired when `event_bus` passed | — |
+| Live `GRAPH_BACKPRESSURE` bridge | Wired when `event_bus` passed | - |
 | Queue depth signal | Wired when `kv_store` passed | More providers |
 | Prometheus SLI in collector | Helper only | Auto-wired optional signals |
 | K8s on reference host | Not in `wire_application_scaling` | Host-specific injection |
@@ -562,7 +562,7 @@ Anti-flapping: hysteresis band + per-rule cooldown + `max_actions_per_hour`.
 
 ## Protocol v2 elastic capacity and scaling target invariants (2026-08-18)
 
-Protocol v2 audit **FAIL** at `d2b65885ad1b472bf48254a1e7314dc6a53ca677` — six accepted HIGH findings. This section records **target invariants** for remediation; it does **not** claim they are implemented. Historical ECP delivery facts, backpressure vs scaling boundary, HPA/Celery complementary positioning, opt-in policy default, graceful scale-down limitation, and current **A4 · I3 · P2 · E3** maturity remain unchanged.
+Protocol v2 audit **FAIL** at `d2b65885ad1b472bf48254a1e7314dc6a53ca677` - six accepted HIGH findings. This section records **target invariants** for remediation; it does **not** claim they are implemented. Historical ECP delivery facts, backpressure vs scaling boundary, HPA/Celery complementary positioning, opt-in policy default, graceful scale-down limitation, and current **A4 · I3 · P2 · E3** maturity remain unchanged.
 
 ### 1. Signal identity
 
@@ -579,13 +579,13 @@ Protocol v2 audit **FAIL** at `d2b65885ad1b472bf48254a1e7314dc6a53ca677` — six
   - incompatible `action_kind` / `target` pairs
   - scale-down triggers for action kinds that do not support scale-down
 - Backend apply outcome MUST distinguish **`APPLIED`**, **`NO_CHANGE`**, and **`FAILED`**.
-- Capacity evidence (`SCALE_APPLIED`, metrics, audit events) MUST reflect **actual** capacity effect — a no-op backend result MUST NOT masquerade as applied success.
+- Capacity evidence (`SCALE_APPLIED`, metrics, audit events) MUST reflect **actual** capacity effect - a no-op backend result MUST NOT masquerade as applied success.
 
 ### 3. Governance authority
 
 - Capacity-mutating production posture MUST have explicit authority semantics on the action gate.
 - When production policy requires Governed Execution approval, missing/unavailable required Governance authority MUST **fail closed**.
-- Reuse canonical [`GOVERNED_EXECUTION`](GOVERNED_EXECUTION.md) — do **not** introduce a second permission engine parallel to the platform spine.
+- Reuse canonical [`GOVERNED_EXECUTION`](GOVERNED_EXECUTION.md) - do **not** introduce a second permission engine parallel to the platform spine.
 - Reference host wiring that omits Governance callback is an **accepted gap** for lab posture only; production target state requires bound authority.
 
 ### 4. HITL authority
@@ -597,12 +597,12 @@ Protocol v2 audit **FAIL** at `d2b65885ad1b472bf48254a1e7314dc6a53ca677` — six
   - policy / version
   - decision time and expiry where applicable
 - Local `plan_id` approval without authoritative human decision evidence is **not** production-qualified.
-- Reuse canonical Governance / HITL approval authority — do not treat in-memory queue possession as proof of human decision.
+- Reuse canonical Governance / HITL approval authority - do not treat in-memory queue possession as proof of human decision.
 
 ### 5. Distributed anti-flapping
 
 - Production cooldown and `max_actions_per_hour` bounds MUST survive process restart and multi-host execution via a **shared scope-aware state authority** or equivalent version-fenced coordination contract.
-- Lifecycle MUST distinguish **planned**, **approved**, **attempted**, **applied**, and **failed** — rate-limit accounting MUST NOT advance on plan generation alone when execution is deferred, denied, or fails.
+- Lifecycle MUST distinguish **planned**, **approved**, **attempted**, **applied**, and **failed** - rate-limit accounting MUST NOT advance on plan generation alone when execution is deferred, denied, or fails.
 - Restart or horizontal scale-out MUST NOT silently reset global policy bounds.
 
 ### 6. Plan consistency
@@ -622,7 +622,7 @@ Protocol v2 audit **FAIL** at `d2b65885ad1b472bf48254a1e7314dc6a53ca677` — six
 **Audit layers:** 30 (Operational Excellence) · cross-ref 9 (orchestration backpressure), 21 (observability SLIs)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
 **ADR:** [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md) · [ADR-SCALE-002](../technical/adr/entries/2026-06-09/ADR-SCALE-002.md)
-**Last updated:** 2026-08-18 — DOC-3T design-system modernization; reconciled loop/back-end wiring truth
+**Last updated:** 2026-08-18 - DOC-3T design-system modernization; reconciled loop/back-end wiring truth
 
 ### Document topology
 
@@ -673,5 +673,5 @@ Before modifying ECP behavior, verify:
 
 ### Unresolved drift outside this hub (report only)
 
-- Plan rows mark AUDIT-IDEAL-30.4 Celery/K8s adapters **Done** — accurate for adapter **implementation**, not for default reference host wiring or production cluster evidence (reconciled in this hub).
-- Satellite may contain extended production-gate detail — verify against code before citing operational runbooks; do not duplicate satellite into hub.
+- Plan rows mark AUDIT-IDEAL-30.4 Celery/K8s adapters **Done** - accurate for adapter **implementation**, not for default reference host wiring or production cluster evidence (reconciled in this hub).
+- Satellite may contain extended production-gate detail - verify against code before citing operational runbooks; do not duplicate satellite into hub.

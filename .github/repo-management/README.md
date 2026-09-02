@@ -86,7 +86,7 @@ On push to `main` when `repository-metadata.json` or sync scripts change, workfl
 3. Name: `REPO_METADATA_TOKEN`
 4. Value: the PAT (do not reuse a committed or logged token)
 
-`GITHUB_TOKEN` cannot update repository description or topics — GitHub Actions workflow permissions do not include an `administration` scope.
+`GITHUB_TOKEN` cannot update repository description or topics - GitHub Actions workflow permissions do not include an `administration` scope.
 
 ---
 
@@ -106,7 +106,7 @@ GitHub limits:
 
 ## Manual repository feature settings
 
-The metadata sync workflow updates **only** description, homepage, and topics. Repository **feature toggles** and the Social Preview image are **manual** — set in GitHub **Settings → General** by a maintainer, not by CI.
+The metadata sync workflow updates **only** description, homepage, and topics. Repository **feature toggles** and the Social Preview image are **manual** - set in GitHub **Settings → General** by a maintainer, not by CI.
 
 | Category | Settings |
 |----------|----------|
@@ -135,20 +135,20 @@ After the relevant release reaches `main`:
 4. Confirm **Issues** remains enabled
 5. Confirm **Discussions** remains disabled
 6. Confirm **Pages** remains disabled
-7. Upload canonical Social Preview if not already applied — see [Social preview](#social-preview)
+7. Upload canonical Social Preview if not already applied - see [Social preview](#social-preview)
 8. Verify About description/homepage/topics after metadata CI completes
 
 ---
 
 ## Social preview
 
-**Manual** repository setting — not applied by the metadata sync workflow. See [Manual repository feature settings](#manual-repository-feature-settings) for the auto-sync vs manual boundary.
+**Manual** repository setting - not applied by the metadata sync workflow. See [Manual repository feature settings](#manual-repository-feature-settings) for the auto-sync vs manual boundary.
 
 **Canonical source asset (version-controlled):**
 
 `docs/project/assets/public/github/intergrax-social-preview.png`
 
-The PNG in the repository is the canonical source for the social preview graphic. The existing metadata synchronization workflow (`sync_github_repository_metadata.py`, CI on `main`) updates description, homepage, and topics only — it does **not** upload or change the Social Preview image.
+The PNG in the repository is the canonical source for the social preview graphic. The existing metadata synchronization workflow (`sync_github_repository_metadata.py`, CI on `main`) updates description, homepage, and topics only - it does **not** upload or change the Social Preview image.
 
 **Manual upload (maintainer):**
 
@@ -173,6 +173,6 @@ Apply this step after the asset is released on `main`; do not assume CI will set
 
 ## Security
 
-- `.env` is gitignored — never commit tokens
+- `.env` is gitignored - never commit tokens
 - Prefer fine-grained tokens scoped to `intergrax` only
 - Rotate tokens if exposed

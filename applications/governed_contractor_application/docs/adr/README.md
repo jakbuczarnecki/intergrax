@@ -1,4 +1,4 @@
-# Governed Contractor — Architecture Decision Records
+# Governed Contractor - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/governed_contractor_application`)
 
@@ -36,7 +36,7 @@ ADR-GOVERNED_CONTRACTOR-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [ADR-GOVERNED_CONTRACTOR-001](ADR-GOVERNED_CONTRACTOR-001.md) | GEC vertical — product host + external adapter split | Accepted |
+| [ADR-GOVERNED_CONTRACTOR-001](ADR-GOVERNED_CONTRACTOR-001.md) | GEC vertical - product host + external adapter split | Accepted |
 
 ---
 

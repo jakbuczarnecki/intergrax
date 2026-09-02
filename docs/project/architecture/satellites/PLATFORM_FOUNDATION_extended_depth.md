@@ -1,4 +1,4 @@
-# PLATFORM_FOUNDATION — extended depth
+# PLATFORM_FOUNDATION - extended depth
 
 **Parent hub:** [`PLATFORM_FOUNDATION.md`](../PLATFORM_FOUNDATION.md)
 
@@ -17,7 +17,7 @@
 
 ---
 
-## 7.1 Tier-0: Platform (legacy: Layer 1 — Components / Adapters)
+## 7.1 Tier-0: Platform (legacy: Layer 1 - Components / Adapters)
 
 Layer 1 (Tier-0) contains reusable technical integrations.
 
@@ -42,7 +42,7 @@ Layer 1 (Tier-0) MUST NOT contain business-specific agent logic.
 
 Layer 1 (Tier-0) exposes capabilities to Nexus and agents through stable interfaces.
 
-### 7.1.1 Integration Library — Canonical Catalog
+### 7.1.1 Integration Library - Canonical Catalog
 
 Tier-0 external integrations MUST live in a **single, discoverable catalog** under:
 
@@ -56,7 +56,7 @@ intergrax/integrations/
         └── <slug>/       # vendor package (postgresql, s3, slack, …)
             ├── __init__.py
             ├── adapter.py          # implements category contract(s) (optional for thin P2 shells)
-            ├── bundle.py           # create_* factory — composition root for Tier-3
+            ├── bundle.py           # create_* factory - composition root for Tier-3
             ├── opens.py            # ONLY module that imports vendor SDK (when full package)
             ├── config.py           # pydantic settings + env keys
             ├── config.example.yaml # copy-paste for Tier-3 applications (optional)
@@ -64,18 +64,18 @@ intergrax/integrations/
             └── tests/              # under tests/unit/integrations/providers/<category>/ in repo root
 ```
 
-**Layout map:** `intergrax/integrations/providers/layout.py` — slug → category folder.
+**Layout map:** `intergrax/integrations/providers/layout.py` - slug → category folder.
 
 **Documentation:** all **167** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/docs/generate_integration_usage_docs.py`. Catalog index: [`docs/project/architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md).
 
 **Rules:**
 
-- One **provider folder per integration** under **`providers/<category>/<slug>`** — category matches `IntegrationCategory` (see `providers/layout.py`).
-- Providers implement **category contracts** from `integrations/contracts` — not ad-hoc SDK wrappers.
+- One **provider folder per integration** under **`providers/<category>/<slug>`** - category matches `IntegrationCategory` (see `providers/layout.py`).
+- Providers implement **category contracts** from `integrations/contracts` - not ad-hoc SDK wrappers.
 - Agents and Nexus MUST NOT import vendor SDKs directly when a catalog provider exists (§5.2).
 - Existing Tier-0 modules (`queueing`, `distributed`, `websearch`, `rag`, `runtime/notifications`, `runtime/interactions`) remain valid; new work and refactors **register through** `IntegrationRegistry` and gradually wrap legacy providers (evolve, not rewrite).
-- **`intergrax/llm_adapters` is out of scope** for the Integration Library — LLM providers use `LLMAdapterRegistry` (§5.2.2), not `IntegrationRegistry`. Cloud facades (`aws`, `azure`, `gcp`) MUST NOT wrap or re-export Bedrock, Azure OpenAI, Vertex, or other LLM adapters.
-- Production access from agents goes through **`ToolRuntime`** (tools) or **Tier-3 wiring** (stores, queues, notifications) — never raw clients in `agents`.
+- **`intergrax/llm_adapters` is out of scope** for the Integration Library - LLM providers use `LLMAdapterRegistry` (§5.2.2), not `IntegrationRegistry`. Cloud facades (`aws`, `azure`, `gcp`) MUST NOT wrap or re-export Bedrock, Azure OpenAI, Vertex, or other LLM adapters.
+- Production access from agents goes through **`ToolRuntime`** (tools) or **Tier-3 wiring** (stores, queues, notifications) - never raw clients in `agents`.
 
 **Separation of concerns:**
 
@@ -109,7 +109,7 @@ Each category defines a **small, stable contract** (Protocol or ABC). Providers 
 | **wiki_knowledge** | `contracts/wiki_knowledge.py` | Pages, spaces, search | confluence, notion, sharepoint |
 | **observability_backend** | `contracts/observability_backend.py` | Metrics, logs, traces, error tracking | prometheus, elasticsearch, otel, langfuse, datadog, clickhouse, sentry, langsmith, helicone, posthog, braintrust, signoz, honeycomb, arize, phoenix, wandb, opensearch |
 | **browser_automation** | `contracts/browser_automation.py` | Headless fetch / interact | playwright, firecrawl, selenium |
-| **cloud_platform** | `contracts/cloud_platform.py` | Unified auth, region, credential chain; factory for native **infrastructure** services (storage, queues, secrets — not LLM) | aws, azure, gcp |
+| **cloud_platform** | `contracts/cloud_platform.py` | Unified auth, region, credential chain; factory for native **infrastructure** services (storage, queues, secrets - not LLM) | aws, azure, gcp |
 
 Category contracts MUST be **backend-agnostic**: same method names and DTOs whether the backend is SQLite or Oracle.
 
@@ -117,15 +117,15 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 
 | Concern | Canonical module | Notes |
 |---------|------------------|-------|
-| **LLM providers** | `intergrax/llm_adapters` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) §5.2.2 |
+| **LLM providers** | `intergrax/llm_adapters` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs - [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag` |
 | **Ephemeral Code Craft** | `intergrax/codecraft` + `runtime/codecraft` **Done** (ECC-0…ECC-6) | Composes `runtime/sandbox` + `codecraft.*` tools; not a second sandbox |
-| **Model & modality inference** | `intergrax/model_inference` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs — §7.1.9; **not** LLM slugs in Integration Library |
+| **Model & modality inference** | `intergrax/model_inference` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs - §7.1.9; **not** LLM slugs in Integration Library |
 
 #### RAG stack (Tier-0)
 
-**Canonical domain pair:** [`architecture/RAG.md`](RAG.md) ↔ [`plan/RAG.md`](../plan/RAG.md) — `RetrievalService`, `IngestPipeline`, `RagProfile`, M-RAG register, golden harness, integration boundaries.
+**Canonical domain pair:** [`architecture/RAG.md`](RAG.md) ↔ [`plan/RAG.md`](../plan/RAG.md) - `RetrievalService`, `IngestPipeline`, `RagProfile`, M-RAG register, golden harness, integration boundaries.
 
 Summary: one retrieval path (`rag.retrieve` + Nexus `rag.retrieve` (catalog)); vector stores and parsers via Integration Library catalog bridges; Knowledge vs user memory boundary in [`architecture/MEMORY.md`](MEMORY.md).
 
@@ -133,36 +133,36 @@ Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalo
 
 #### Ephemeral Code Craft (ECC)
 
-**Canonical domain pair:** [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md) ↔ [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md) — harness-orchestrated dynamic codegen loop; `codecraft.*` catalog tools; `CodeCraftProfile`; execution substrate `runtime/sandbox`. ADR: [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../adr/entries/2026-06-10/ADR-CODECRAFT-001.md).
+**Canonical domain pair:** [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md) ↔ [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md) - harness-orchestrated dynamic codegen loop; `codecraft.*` catalog tools; `CodeCraftProfile`; execution substrate `runtime/sandbox`. ADR: [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../adr/entries/2026-06-10/ADR-CODECRAFT-001.md).
 
 ### 7.1.3 Integration Catalog (Initial Backlog)
 
 Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** = target `integrations/providers/<slug>`; **Planned** = not started.
 
-#### P0 — Foundation (lab + first production apps)
+#### P0 - Foundation (lab + first production apps)
 
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
-| `sqlite` | relational_store | **Done** | `providers/sqlite` — **single entry** `create_sqlite_integration()` (trace, events, checkpoints, HITL, task memory, experiments, idempotency, session, org) |
+| `sqlite` | relational_store | **Done** | `providers/sqlite` - **single entry** `create_sqlite_integration()` (trace, events, checkpoints, HITL, task memory, experiments, idempotency, session, org) |
 | `postgresql` | relational_store | Beta | Production relational store (`RelationalStore` via psycopg3); multi-tenant `tenant_schema` |
-| `redis` | key_value_cache | **Done** | `providers/redis` — **single entry** `create_redis_integration()` wraps KV, idempotency, rate limit, semaphore, rerank cache |
-| `kafka` | message_bus | **Done** (+ adopcja) | `providers/kafka` — runtime transport delegates here |
-| `celery` | message_bus | **Done** | `providers/celery` — `create_celery_integration()` + `create_celery_worker_app()` |
-| `google_cse` | search_provider | **Done** | `providers/google_cse` — `create_google_cse_integration()` |
-| `bing` | search_provider | **Done** | `providers/bing` — `create_bing_integration()` |
-| `slack` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/slack` — runtime wiring delegates here |
-| `teams` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/teams` — runtime wiring delegates here |
-| `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook` — generic HTTP outbound |
-| `log` | notification_channel | **Done** (+ adopcja) | `providers/log` — process log; lab profile default |
-| `lab_json` | interaction_surface | **Done** (+ adopcja) | `providers/lab_json` — laboratory JSON intake |
-| `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq` — runtime transport delegates here |
+| `redis` | key_value_cache | **Done** | `providers/redis` - **single entry** `create_redis_integration()` wraps KV, idempotency, rate limit, semaphore, rerank cache |
+| `kafka` | message_bus | **Done** (+ adopcja) | `providers/kafka` - runtime transport delegates here |
+| `celery` | message_bus | **Done** | `providers/celery` - `create_celery_integration()` + `create_celery_worker_app()` |
+| `google_cse` | search_provider | **Done** | `providers/google_cse` - `create_google_cse_integration()` |
+| `bing` | search_provider | **Done** | `providers/bing` - `create_bing_integration()` |
+| `slack` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/slack` - runtime wiring delegates here |
+| `teams` | notification_channel + interaction_surface | **Done** (+ adopcja) | `providers/teams` - runtime wiring delegates here |
+| `webhook` | notification_channel | **Done** (+ adopcja) | `providers/webhook` - generic HTTP outbound |
+| `log` | notification_channel | **Done** (+ adopcja) | `providers/log` - process log; lab profile default |
+| `lab_json` | interaction_surface | **Done** (+ adopcja) | `providers/lab_json` - laboratory JSON intake |
+| `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq` - runtime transport delegates here |
 
-#### P1 — Common enterprise stack
+#### P1 - Common enterprise stack
 
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
 | `mysql` | relational_store | Beta | Production relational store (`RelationalStore` via pymysql); optional `tenant_database` |
-| `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq` — runtime transport delegates here |
+| `rabbitmq` | message_bus | **Done** (+ adopcja) | `providers/rabbitmq` - runtime transport delegates here |
 | `prometheus` | observability_backend | Beta | PromQL instant/range queries via HTTP API v1 |
 | `jira` | issue_tracker | Beta | Task ingestion via REST v3 (`get_issue`, `add_comment`, `search_issues`) |
 | `confluence` | wiki_knowledge | Beta | RAG / runbooks via REST (`get_page`, `search_pages`) |
@@ -174,9 +174,9 @@ Status legend: **Exists** = implemented elsewhere in Tier-0 today; **Catalog** =
 | `azure` | cloud_platform | Beta | Managed identity / service principal; defaults for Blob, Service Bus, Azure SQL |
 | `gcp` | cloud_platform | Beta | ADC / service account; defaults for GCS, Pub/Sub, Cloud SQL |
 
-#### P1.1 Cloud platforms — service mapping
+#### P1.1 Cloud platforms - service mapping
 
-Platform adapters are **facades**: one credential model + region/tenant config, then delegate to **infrastructure** category providers. They do **not** configure LLM — use `LLMAdapterRegistry` separately in Tier-3. Tier-3 may set `cloud_platform: aws` and inherit defaults for object storage and queues without wiring each slug separately.
+Platform adapters are **facades**: one credential model + region/tenant config, then delegate to **infrastructure** category providers. They do **not** configure LLM - use `LLMAdapterRegistry` separately in Tier-3. Tier-3 may set `cloud_platform: aws` and inherit defaults for object storage and queues without wiring each slug separately.
 
 | Platform slug | Auth model | Native services (category → slug) |
 |---------------|------------|-----------------------------------|
@@ -186,7 +186,7 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 
 **Rule:** service-level slugs (`s3`, `azure_blob`, `gcs`, `sqs`) remain in the catalog for **explicit** or **multi-cloud** setups. When an app declares a single cloud, `IntegrationRegistry` MAY resolve category defaults from the platform facade (e.g. `object_storage` → S3 when `cloud_platform: aws`).
 
-#### P2 — Extended / on-demand
+#### P2 - Extended / on-demand
 
 | Slug | Category | Status | Rationale |
 |------|----------|--------|-----------|
@@ -222,13 +222,13 @@ Platform adapters are **facades**: one credential model + region/tenant config, 
 
 P2/P3 batch implementations (2026-05-30) centralize shared logic in `intergrax/integrations/_shared/p2` (`configs.py`, `clients.py`, `factories.py`); `providers/<slug>` packages are thin registration shells except `azure_blob` and `s3` (full packages).
 
-**Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore`. Integration Library adds thin catalog bridges (`providers/<slug>`) so Tier-3 can set `IntegrationProfile.vector_store`. RAG bootstrap (`create_default_vectorstore_manager()`) resolves stores via the catalog — see Phase M.6 P2 in the implementation plan.
+**Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore`. Integration Library adds thin catalog bridges (`providers/<slug>`) so Tier-3 can set `IntegrationProfile.vector_store`. RAG bootstrap (`create_default_vectorstore_manager()`) resolves stores via the catalog - see Phase M.6 P2 in the implementation plan.
 
 New integrations require **human approval** when they introduce a new **category** (§5.2.4). New **providers** within an existing category follow the provider checklist in the implementation plan (Phase M).
 
 ### 7.1.4 IntegrationRegistry And Tier-3 Composition
 
-Applications (Tier-3) **compose** integrations at startup — agents stay vendor-agnostic.
+Applications (Tier-3) **compose** integrations at startup - agents stay vendor-agnostic.
 
 ```text
 applications/legal_application/settings.py
@@ -262,7 +262,7 @@ Declarative YAML (Tier-3 / deployment only):
 
 ```yaml
 integrations:
-  cloud_platform: aws              # optional — sets defaults for aws-native services
+  cloud_platform: aws              # optional - sets defaults for aws-native services
   relational_store: sqlite
   key_value_cache: redis
   message_bus: celery
@@ -280,7 +280,7 @@ integrations:
 | New provider in existing category | Integration team | Contract conformance tests + README |
 | Security / credential rotation | Tier-3 application | Env + secret store; never in agent code |
 | Deprecation | Platform team | Registry marks `deprecated`; 1 release warning |
-| Live vendor tests | CI optional job | `pytest -m integration_live` — secrets in CI only |
+| Live vendor tests | CI optional job | `pytest -m integration_live` - secrets in CI only |
 
 Each provider README MUST document: auth model, required env vars, rate limits, idempotency behavior, and a **smoke command** runnable from lab.
 
@@ -313,18 +313,18 @@ bootstrap_catalogs(
 
 **Rules:**
 
-- No central enum of all integration slugs — identity is `IntegrationManifest.slug` per provider.
+- No central enum of all integration slugs - identity is `IntegrationManifest.slug` per provider.
 - External packages MUST NOT edit Intergrax core; register via entry points or explicit plugin classes at startup.
 - **Runtime Nexus plugins** (`RuntimePlugin`, `plugin_bootstrap.py`) are a **separate** extensibility plane from Tier-0 catalog plugins.
-- Tool execution observability (trace, scope policy, error mapping) lives in `RuntimeToolInvoker` — not in plugin registration.
+- Tool execution observability (trace, scope policy, error mapping) lives in `RuntimeToolInvoker` - not in plugin registration.
 
 Author guide: [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`plan/PLATFORM_FOUNDATION.md) Phase P-Ext + Appendix I.
 
-### 7.1.6 Tool Library — Canonical Catalog
+### 7.1.6 Tool Library - Canonical Catalog
 
 Tier-0 agent-facing capabilities MUST live in a **single, discoverable Tool Library** under `intergrax/tools`, mirroring the Integration Library pattern (§7.1.1).
 
-**Problem this solves:** Integrations answer *how to talk to a backend* (Jira REST, PostgreSQL, Bing API). LLM agents and MCP clients need *what to call* — semantically named operations with JSON schemas, descriptions, risk metadata, and trace-enforced execution. Agents MUST NOT call integration contracts directly.
+**Problem this solves:** Integrations answer *how to talk to a backend* (Jira REST, PostgreSQL, Bing API). LLM agents and MCP clients need *what to call* - semantically named operations with JSON schemas, descriptions, risk metadata, and trace-enforced execution. Agents MUST NOT call integration contracts directly.
 
 **Four-layer capability model (canonical):**
 
@@ -347,7 +347,7 @@ Tier-0  Integration Library   →  vendor/backend Protocols (swappable at deploy
 ```text
 intergrax/tools/
 ├── core/                   # ToolContract, execution models, ToolProvider protocol (exists)
-├── registry/               # ToolCatalog, register_default_tools(), ToolProfile (Phase O — Done)
+├── registry/               # ToolCatalog, register_default_tools(), ToolProfile (Phase O - Done)
 ├── exporters/              # OpenAI / Anthropic / MCP schema export (Phase O)
 ├── _shared/                # schema helpers, LLM description lint, JQL/query builders
 └── providers/
@@ -361,12 +361,12 @@ intergrax/tools/
 
 **Rules:**
 
-- One **domain folder** per tool family (`jira`, `websearch`, `rag`, …) — not one folder per vendor SDK.
-- Tool handlers **compose** integration contracts — they MUST NOT reimplement vendor HTTP/SDK calls when a catalog integration exists.
+- One **domain folder** per tool family (`jira`, `websearch`, `rag`, …) - not one folder per vendor SDK.
+- Tool handlers **compose** integration contracts - they MUST NOT reimplement vendor HTTP/SDK calls when a catalog integration exists.
 - Vendor SDKs remain in `integrations/providers/<slug>/opens.py` only (§7.1.1).
 - Agents and Nexus MUST NOT import `integrations/providers/*` for side effects; they invoke tools via **`ToolRuntime`** / `ToolRequest` (§22, §42.12).
-- Tool handlers receive dependencies through **`ToolWiringContext`** (Tier-3 composition): resolved integrations, RAG managers, websearch executors — injected at startup, not looked up ad hoc inside handlers.
-- **`ToolProvider.register_tools(registry, ctx)`** is the production registration contract (explicit wiring — no magic discovery).
+- Tool handlers receive dependencies through **`ToolWiringContext`** (Tier-3 composition): resolved integrations, RAG managers, websearch executors - injected at startup, not looked up ad hoc inside handlers.
+- **`ToolProvider.register_tools(registry, ctx)`** is the production registration contract (explicit wiring - no magic discovery).
 
 **Separation of concerns:**
 
@@ -376,10 +376,10 @@ intergrax/tools/
 | `tools/providers/<domain>` | LLM-facing semantics + business logic above integrations |
 | `tools/registry` | Catalog, `ToolProfile`, default registration |
 | Tier-3 `applications/<name>` | Which tools are enabled + integration instances passed into `ToolWiringContext` |
-| Tier-2 `agents/<name>` | `allowed_tools` allow-list — capability policy, not vendor wiring |
+| Tier-2 `agents/<name>` | `allowed_tools` allow-list - capability policy, not vendor wiring |
 | Tier-1 `runtime/nexus/tools` | Enforcement: `RuntimeToolInvoker`, `ToolAccessPolicy`, trace, idempotency |
 
-**Tool vs integration — decision rule:**
+**Tool vs integration - decision rule:**
 
 | Question | Answer → layer |
 |----------|----------------|
@@ -392,7 +392,7 @@ intergrax/tools/
 
 | Concern | Canonical module | Notes |
 |---------|------------------|-------|
-| **LLM providers** | `intergrax/llm_adapters` | Not tools — separate registry (§5.2.2) |
+| **LLM providers** | `intergrax/llm_adapters` | Not tools - separate registry (§5.2.2) |
 | **Agent business logic** | `agents/<name>` | Domain steps; may *call* tools, not define platform catalog entries |
 | **Orchestration / planning** | Tier-1 Nexus | Selects tools; does not implement tool handlers |
 | **Cursor-style skill files** | `intergrax/skills/importers` | Import via **`SkillImporter`** → validated `SkillManifest`; MUST NOT register as `ToolContract` |
@@ -405,15 +405,15 @@ Every catalog tool MUST be exportable as:
 2. MCP tool definition (for `applications/<app>/mcp/server.py`),
 3. `ToolRequest.tool_name` value (for UAEP / `RuntimeToolGateway`).
 
-Single source of truth: `ToolContract` in the catalog — not parallel schema definitions per surface.
+Single source of truth: `ToolContract` in the catalog - not parallel schema definitions per surface.
 
-**Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`plan/PLATFORM_FOUNDATION.md).
+**Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) - 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`plan/PLATFORM_FOUNDATION.md).
 
-### 7.1.7 Unified Tool Model — Everything Is a Tool
+### 7.1.7 Unified Tool Model - Everything Is a Tool
 
-**Target architecture (Phase O.5+):** All agent-invokable platform capabilities — including today’s pipeline flags `use_rag`, `use_websearch`, and registered function tools — converge on **one mechanism**: named tools in `ToolRegistry`, invoked through `ToolRuntime`.
+**Target architecture (Phase O.5+):** All agent-invokable platform capabilities - including today’s pipeline flags `use_rag`, `use_websearch`, and registered function tools - converge on **one mechanism**: named tools in `ToolRegistry`, invoked through `ToolRuntime`.
 
-**Current state (2026-06-19, PF-MAINT-LEG-02):** `ToolInvocationPlan` is **`tool_ids`-first** — legacy `use_rag` / `use_websearch` fields removed from the runtime bridge. Gateway payloads may still map deprecated boolean keys to catalog ids silently; `use_tools` remains for the bounded tool planner loop. Context steps (`run_rag_context`, `run_websearch_context`) dispatch when the corresponding catalog tool id is present in `tool_ids`.
+**Current state (2026-06-19, PF-MAINT-LEG-02):** `ToolInvocationPlan` is **`tool_ids`-first** - legacy `use_rag` / `use_websearch` fields removed from the runtime bridge. Gateway payloads may still map deprecated boolean keys to catalog ids silently; `use_tools` remains for the bounded tool planner loop. Context steps (`run_rag_context`, `run_websearch_context`) dispatch when the corresponding catalog tool id is present in `tool_ids`.
 
 **Target state:**
 
@@ -431,22 +431,22 @@ Agent / planner
 | `use_websearch` / `websearch.query` (catalog) | `websearch.query` | `SearchProvider` via `IntegrationProfile.search_provider` |
 | `use_tools` / `run_bounded_tool_loop` / `ctx.invoke_tool` | *(explicit tool_ids)* | `ToolRegistry` entries |
 | Sandbox execution | `sandbox.exec` | `intergrax/runtime/sandbox` (already a tool_id) |
-| Ephemeral Code Craft | `codecraft.*` **Done** (ECC-0…ECC-6) | `intergrax/codecraft` + `runtime/codecraft` — see [`CODE_CRAFT.md`](CODE_CRAFT.md) |
+| Ephemeral Code Craft | `codecraft.*` **Done** (ECC-0…ECC-6) | `intergrax/codecraft` + `runtime/codecraft` - see [`CODE_CRAFT.md`](CODE_CRAFT.md) |
 
 **Migration rules:**
 
-1. **No new boolean capability flags** — new platform capabilities MUST ship as catalog tools with `ToolContract`.
-2. **`ToolInvocationPlan`** uses `tool_ids: Sequence[str]` as canonical — **Done** at runtime bridge (PF-MAINT-LEG-02); gateway payload booleans map to ids only.
+1. **No new boolean capability flags** - new platform capabilities MUST ship as catalog tools with `ToolContract`.
+2. **`ToolInvocationPlan`** uses `tool_ids: Sequence[str]` as canonical - **Done** at runtime bridge (PF-MAINT-LEG-02); gateway payload booleans map to ids only.
 3. **`rag.retrieve` (catalog) / `websearch.query` (catalog)** become thin **compatibility shims** that delegate to `rag.retrieve` / `websearch.query` handlers until all callers migrate.
 4. **`LegalToolPlan` / engine plan models** replace `use_rag` / `use_websearch` with `tools: list[str]` (or structured `PlannedToolCall`).
-5. **Context injection tools:** `rag.retrieve` and `websearch.query` MAY declare `injects_context: true` so Nexus knows to merge results into LLM prompt context (replaces implicit step behavior) — see §22.1.
+5. **Context injection tools:** `rag.retrieve` and `websearch.query` MAY declare `injects_context: true` so Nexus knows to merge results into LLM prompt context (replaces implicit step behavior) - see §22.1.
 
 **Why unify:**
 
 - One policy surface (`ToolAccessPolicy`, `allowed_tools`, trace, idempotency, risk).
 - One schema export path for LLM tool selection and MCP.
 - Agents reason about **tools**, not parallel abstractions (flags vs registry).
-- Tier-3 enables tools via `ToolProfile` — same ergonomics as `IntegrationProfile`.
+- Tier-3 enables tools via `ToolProfile` - same ergonomics as `IntegrationProfile`.
 
 **Forbidden after Phase O.5:**
 
@@ -454,12 +454,12 @@ Agent / planner
 - Agent code branching on `use_rag` instead of invoking `rag.retrieve` or listing it in `allowed_tools`.
 - Direct `rag.retrieve` (catalog) / `websearch.query` (catalog) invocation from Tier-2 agents (must use `ToolRequest`).
 
-### 7.1.8 Skill Library — Composable Capability Packs
+### 7.1.8 Skill Library - Composable Capability Packs
 
 **Status:** Architecture **defined**; implementation **MVP Done** (Phase R, 2026-06-01).  
 **Catalog:** [`architecture/SKILLS.md`](architecture/SKILLS.md) · **Harness AI terms:** §5.3 (this document).
 
-**First-party catalog (2026-06-08):** **149** skills · **41** bundles — full table in [`architecture/SKILLS.md`](architecture/SKILLS.md#first-party-catalog-149-skills--41-bundles). Product-facing examples:
+**First-party catalog (2026-06-08):** **149** skills · **41** bundles - full table in [`architecture/SKILLS.md`](architecture/SKILLS.md#first-party-catalog-149-skills--41-bundles). Product-facing examples:
 
 | skill_id | Bundle | Typical agent |
 |----------|--------|---------------|
@@ -473,7 +473,7 @@ Agent / planner
 
 - **Integrations** answer *how to connect* (Postgres, Bing, Jira).
 - **Tools** answer *what single operation the LLM may invoke* (`rag.retrieve`, `websearch.query`).
-- **Agents** today often duplicate the same bundle of tool allow-lists, prompt instructions, and policy snippets — that bundle is a **skill** in harness terminology, not a tool.
+- **Agents** today often duplicate the same bundle of tool allow-lists, prompt instructions, and policy snippets - that bundle is a **skill** in harness terminology, not a tool.
 
 #### What a skill is
 
@@ -491,7 +491,7 @@ A **skill** is a **versioned, declarative capability pack** that groups:
 Skills are **not** invoked by the LLM as functions. The runtime **resolves** skills at **agent registration** (`AgentRegistry.register`) into:
 
 - merged `allowed_tools` (skill `tool_ids` ∪ `extra_tools`; then intersected with `ToolProfile` / `ToolAccessPolicy` at runtime),
-- `prompt_instruction_ids` and `policy_fragment_id` in `ResolvedSkillPack` (trace + capability graph; **automatic** `ContextManager` / `RuntimePolicyBundle` merge — **SK-BRIDGE.*** in [`plan/SKILLS.md`](plan/SKILLS.md), not yet shipped).
+- `prompt_instruction_ids` and `policy_fragment_id` in `ResolvedSkillPack` (trace + capability graph; **automatic** `ContextManager` / `RuntimePolicyBundle` merge - **SK-BRIDGE.*** in [`plan/SKILLS.md`](plan/SKILLS.md), not yet shipped).
 
 #### What a skill is not
 
@@ -502,7 +502,7 @@ Skills are **not** invoked by the LLM as functions. The runtime **resolves** ski
 | Unvalidated markdown dropped into prompt | No governance, no tool allow-list, not reproducible |
 | Skill calling integrations directly | Must use tools (same rule as agents) |
 
-#### Skill vs tool — decision rule
+#### Skill vs tool - decision rule
 
 | Question | Answer → layer |
 |----------|----------------|
@@ -539,10 +539,10 @@ intergrax/skills/
 AgentContract:
     skills: list[SkillManifest]    # catalog manifest refs; resolved at register
     extra_tools: list[ToolContract]  # optional tools beyond skill union
-    allowed_tools: list[str]       # OUTPUT — set by AgentRegistry after resolution
+    allowed_tools: list[str]       # OUTPUT - set by AgentRegistry after resolution
 ```
 
-Resolution order (canonical — see [`architecture/SKILLS.md`](architecture/SKILLS.md)):
+Resolution order (canonical - see [`architecture/SKILLS.md`](architecture/SKILLS.md)):
 
 1. Validate `contract.skills` against `SkillRegistry`; expand `requires_skills`.
 2. Union skill `tool_ids` with `extra_tools[].tool_id` → replace `allowed_tools`.
@@ -551,7 +551,7 @@ Resolution order (canonical — see [`architecture/SKILLS.md`](architecture/SKIL
 
 #### Relationship to Tier-2 pipelines
 
-UAEP `get_steps` / domain pipelines remain **agent-local orchestration**. A skill MAY include an optional **`step_template_id`** (future) for shared step sequences — it does NOT execute steps itself; `AgentEngine` does.
+UAEP `get_steps` / domain pipelines remain **agent-local orchestration**. A skill MAY include an optional **`step_template_id`** (future) for shared step sequences - it does NOT execute steps itself; `AgentEngine` does.
 
 ### 7.1.9 Model & Modality Plane (Vision, Audio, Classical ML)
 
@@ -566,8 +566,8 @@ A scalable Harness AI MUST support **multimodal cognition** and **deterministic 
 
 | Decision | Verdict |
 |----------|---------|
-| LLM providers (incl. native multimodal APIs) in Integration Catalog | **Rejected** — §7.1.2, §44.10 |
-| Skills wrapping entire CV/TTS pipelines as one fake tool | **Rejected** — §7.1.8 anti-patterns |
+| LLM providers (incl. native multimodal APIs) in Integration Catalog | **Rejected** - §7.1.2, §44.10 |
+| Skills wrapping entire CV/TTS pipelines as one fake tool | **Rejected** - §7.1.8 anti-patterns |
 | Dedicated **Plane C** registry for YOLO/ONNX/sklearn + atomic tools | **Adopted** |
 | Media ingest (Whisper, OCR, parsers) as **Plane B** via existing RAG/document_parser | **Adopted** (partially implemented) |
 | `speech_provider` integration category for SaaS TTS/STT (ElevenLabs, …) | **Adopted** (planned) |
@@ -576,9 +576,9 @@ A scalable Harness AI MUST support **multimodal cognition** and **deterministic 
 #### Three modality planes
 
 ```text
-Plane A — Generative cognition     intergrax/llm_adapters/     (dialog, native vision/audio LLM APIs)
-Plane B — Media → text (ingest)    document_parser + rag/      (indexing, transcripts, OCR text)
-Plane C — Dedicated inference      model_inference/ (planned)  (YOLO, ONNX, sklearn, remote serving)
+Plane A - Generative cognition     intergrax/llm_adapters/     (dialog, native vision/audio LLM APIs)
+Plane B - Media → text (ingest)    document_parser + rag/      (indexing, transcripts, OCR text)
+Plane C - Dedicated inference      model_inference/ (planned)  (YOLO, ONNX, sklearn, remote serving)
 ```
 
 | Plane | Use when | Examples |
@@ -589,18 +589,18 @@ Plane C — Dedicated inference      model_inference/ (planned)  (YOLO, ONNX, sk
 
 **Routing rule:** If the task requires **reproducible geometry** (bounding boxes, masks, calibrated scores) or **fixed latency SLA**, prefer **Plane C**. If the task requires **semantic description in dialog**, prefer **Plane A**. If the task is **knowledge indexing**, use **Plane B** only.
 
-#### Plane A — Generative multimodal (LLM adapters)
+#### Plane A - Generative multimodal (LLM adapters)
 
-- **Canonical module:** `intergrax/llm_adapters` — unchanged separation from integrations.
-- **Message model:** `intergrax/llm/messages.py` — `AttachmentRef` types (`image`, `audio`, `video`, …).
+- **Canonical module:** `intergrax/llm_adapters` - unchanged separation from integrations.
+- **Message model:** `intergrax/llm/messages.py` - `AttachmentRef` types (`image`, `audio`, `video`, …).
 - **Target adapter contract extensions:**
   - `supports_vision()`, `supports_audio_input()`, `supports_audio_output()` (capability flags),
   - mapping `AttachmentRef` → vendor content parts in `generate_messages` / streaming paths.
 - **Policy:** multimodal attachments subject to `ContextBudgetPolicy`, MIME allowlists, and tenant media quotas (extends V-COST).
 
-See [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) — **Multimodal capabilities** section.
+See [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) - **Multimodal capabilities** section.
 
-#### Plane B — Media ingest (existing RAG stack)
+#### Plane B - Media ingest (existing RAG stack)
 
 Plane B is **not** a separate top-level package; it composes:
 
@@ -611,13 +611,13 @@ Plane B is **not** a separate top-level package; it composes:
 | Embeddings | `intergrax/rag/embedding` | `hf`, `openai`, `ollama` providers |
 | Sparse encoders | `rag/vectorstore/sparse` | `bm25_hash`, optional `splade` |
 
-Ingest MUST remain invocable through **tools** (`rag.ingest_document`, retrieval stack) — not ad-hoc agent SDK calls.
+Ingest MUST remain invocable through **tools** (`rag.ingest_document`, retrieval stack) - not ad-hoc agent SDK calls.
 
-#### Plane C — Vision inference engine (extensible)
+#### Plane C - Vision inference engine (extensible)
 
 **Target module:** `intergrax/model_inference` (Tier-0, Phase W-ML).
 
-Designed for **market-standard production CV** and portable classical ML — same extensibility pattern as `llm_adapters` and `integrations`:
+Designed for **market-standard production CV** and portable classical ML - same extensibility pattern as `llm_adapters` and `integrations`:
 
 | Subsystem | Role |
 |-----------|------|
@@ -643,9 +643,9 @@ Designed for **market-standard production CV** and portable classical ML — sam
 **Contract requirements (all Plane C adapters):**
 
 - Typed **input schema** (URI, bytes ref, MIME, optional ROI) and **output schema** (detections, masks, class scores).
-- **`model_id` + `version`** on every invocation; trace exports slug, latency, device, batch size — not raw media by default.
+- **`model_id` + `version`** on every invocation; trace exports slug, latency, device, batch size - not raw media by default.
 - **Idempotency** where inference is side-effect free; **risk_tier** for tools exposing CV output to downstream LLM steps.
-- **Resource policy:** max batch, max resolution, GPU memory class — enforced before invoke (PolicyEngine + `ModalityProfile`).
+- **Resource policy:** max batch, max resolution, GPU memory class - enforced before invoke (PolicyEngine + `ModalityProfile`).
 
 **YOLO / object-detection example flow:**
 
@@ -656,20 +656,20 @@ Agent step  →  ToolRuntime.invoke("vision.detect")
            →  trace + modality_metrics  →  optional LLM step (Plane A) for narrative only
 ```
 
-#### Plane C — Classical ML (non-vision)
+#### Plane C - Classical ML (non-vision)
 
 - **`ModelArtifact`** metadata: id, semver, input/output JSON schema, owner, license, risk_tier.
 - **Tools:** `ml.predict`, `ml.batch_predict` (planned); optional `ml.explain` (high risk).
-- **Artifacts** stored in `object_storage`; loading in worker or remote host — not in Nexus request thread for heavy models.
+- **Artifacts** stored in `object_storage`; loading in worker or remote host - not in Nexus request thread for heavy models.
 
 #### Speech and audio output (SaaS)
 
 - **Category (planned):** `speech_provider` in Integration Library.
 - **Examples:** `elevenlabs`, `azure_speech`, `deepgram`, `openai_tts` (slug placeholders until W-ML.2).
-- **Tools:** `speech.synthesize`, `speech.transcribe` — output URIs via `object_storage` contract.
+- **Tools:** `speech.synthesize`, `speech.transcribe` - output URIs via `object_storage` contract.
 - **Ingest STT** may continue via `document_parser/whisper` (Plane B); SaaS STT is optional Plane C via integration.
 
-#### Hugging Face — platform roles
+#### Hugging Face - platform roles
 
 | Role | Module | Rule |
 |------|--------|------|
@@ -680,7 +680,7 @@ Agent step  →  ToolRuntime.invoke("vision.detect")
 
 Env: `INTERGRAX_DEFAULT_HF_EMBED_MODEL` (existing). Do not conflate Hub download with runtime agent imports.
 
-#### Integration categories (planned — require §5.2.4 approval)
+#### Integration categories (planned - require §5.2.4 approval)
 
 | Category | Contract (planned) | Distinct from |
 |----------|-------------------|---------------|
@@ -688,7 +688,7 @@ Env: `INTERGRAX_DEFAULT_HF_EMBED_MODEL` (existing). Do not conflate Hub download
 | `vision_serving` | Remote CV gRPC/REST (Triton, TorchServe) | Plane A LLM vision |
 | `ml_inference_host` | Managed endpoints (HF, SageMaker, Azure ML, Vertex) | `cloud_platform` facade |
 
-Add rows to §7.1.2 table when each category is approved — do not overload `observability_backend` or `document_parser`.
+Add rows to §7.1.2 table when each category is approved - do not overload `observability_backend` or `document_parser`.
 
 #### Tool surface (planned)
 
@@ -701,7 +701,7 @@ Add rows to §7.1.2 table when each category is approved — do not overload `ob
 | `speech.transcribe` | B/C | Audio → text |
 | `ml.predict` | C | Structured inference |
 
-Each tool is one LLM-callable function with MCP export, risk class, and retry policy — same as §7.1.6.
+Each tool is one LLM-callable function with MCP export, risk class, and retry policy - same as §7.1.6.
 
 #### ModalityProfile (Tier-3 / agent assembly)
 
@@ -731,7 +731,7 @@ Extend V-COST envelopes: `inference_ms`, `media_bytes`, `tts_characters`.
 - Online training, hyperparameter search, feature stores as platform products.
 - Registering LLM slugs as integrations.
 - CV pipelines as monolithic skills without atomic tools.
-- Duplicating `llm_adapters` for each ONNX file — use Plane C registry instead.
+- Duplicating `llm_adapters` for each ONNX file - use Plane C registry instead.
 
 #### Implementation tracker
 
@@ -739,9 +739,9 @@ Phase **W-ML** in [`plan/PLATFORM_FOUNDATION.md). Existing Plane B assets: M.6 (
 
 ---
 
-## 7.2 Tier-1: Nexus Runtime (legacy: Layer 2 — Nexus Runtime)
+## 7.2 Tier-1: Nexus Runtime (legacy: Layer 2 - Nexus Runtime)
 
-Nexus is the central runtime and orchestration layer — the **Agent OS** (Tier-1).
+Nexus is the central runtime and orchestration layer - the **Agent OS** (Tier-1).
 
 Nexus owns:
 
@@ -768,7 +768,7 @@ Nexus MUST NOT become a Legal Agent, Vendor Agent or Problem Radar Agent.
 
 ---
 
-## 7.3 Tier-2: Agents (legacy: Layer 3 — Agents)
+## 7.3 Tier-2: Agents (legacy: Layer 3 - Agents)
 
 Agents are bounded capability modules (Tier-2).
 
@@ -780,7 +780,7 @@ Examples:
 - VendorDiscoveryAgent finds, classifies and evaluates companies for a client need.
 - LegalAgent analyzes legal documents according to defined legal-review rules.
 - OnboardingAgent supports new employees through a structured onboarding process.
-- UXAgent, PMAgent, TesterAgent, MarketerAgent — future Tier-2 role agents sharing the same contracts.
+- UXAgent, PMAgent, TesterAgent, MarketerAgent - future Tier-2 role agents sharing the same contracts.
 
 Agents MUST implement stable contracts.
 
@@ -800,27 +800,27 @@ This split is NOT a deployment detail.
 
 This split is a core architectural boundary.
 
-An **application** is a ready-made environment: Nexus (Tier-1) + configured agent roster (Tier-2) + rules + integrations — analogous to a specialized product like “Cursor for legal work” or “Cursor for agency PM”.
+An **application** is a ready-made environment: Nexus (Tier-1) + configured agent roster (Tier-2) + rules + integrations - analogous to a specialized product like “Cursor for legal work” or “Cursor for agency PM”.
 
 ### 7.4.1 Four Repository Roots
 
 ```text
-intergrax/              Tier-0 + Tier-1 — platform + Nexus Agent OS
-agents/                 Tier-2 — specialized agents
-applications/           Tier-3 — ready-made configured environments
+intergrax/              Tier-0 + Tier-1 - platform + Nexus Agent OS
+agents/                 Tier-2 - specialized agents
+applications/           Tier-3 - ready-made configured environments
 ```
 
 | Root | Tier | Role |
 |------|------|------|
 | `intergrax` (platform packages) | **0** | LLM, RAG, tools, memory, queues, logging, adapters |
 | `intergrax/runtime`, `intergrax/contracts` | **1** | Nexus, registry, task lifecycle, orchestration |
-| `intergrax/agents` | **1** (contract only) | `Agent` ABC, `AgentEngine` — not concrete agents |
+| `intergrax/agents` | **1** (contract only) | `Agent` ABC, `AgentEngine` - not concrete agents |
 | `agents/<name>` | **2** | LegalAgent, ResearchAgent, UXAgent, … |
 | `applications/<name>` | **3** | legal_application, research_application, … |
 
 **Important distinction:**
 
-- `intergrax/agents` is the **framework contract** (`Agent`, `AgentEngine`) — it MUST NOT contain concrete agent implementations.
+- `intergrax/agents` is the **framework contract** (`Agent`, `AgentEngine`) - it MUST NOT contain concrete agent implementations.
 - `agents` at repository root is where **concrete agents** live (`LegalAgent`, `EchoAgent`, future `ResearchAgent`).
 
 ### 7.4.2 What Belongs In Tier-2 (`agents/<name>`)
@@ -840,12 +840,12 @@ An agent capability module MUST NOT contain:
 - FastAPI host or `uvicorn` entrypoint
 - HTTP route definitions (`/v1/...`)
 - environment-specific settings (`.env`, SKU profiles, API keys wiring)
-- product deployment manifests (Dockerfile, k8s) — deployment belongs in **Tier-3** `applications/<name>/docker`, not under `agents`
+- product deployment manifests (Dockerfile, k8s) - deployment belongs in **Tier-3** `applications/<name>/docker`, not under `agents`
 - global orchestration or cross-agent routing
 
 Agents MUST be runnable through Nexus (`AgentEngine`, `NexusLoop`) **without** starting an HTTP server.
 
-Tier-3 applications MUST own Docker/k8s manifests for **their** host — not Tier-2 agents.
+Tier-3 applications MUST own Docker/k8s manifests for **their** host - not Tier-2 agents.
 
 ### 7.4.3 What Belongs In Tier-3 (`applications/<name>`)
 
@@ -855,19 +855,19 @@ An application MUST contain:
 
 - host package (`main.py`, `factory.py`, `settings.py`, `wiring.py`)
 - serving layer (FastAPI routers, request/response mapping)
-- **`.env.example`** — documented, application-prefixed variables (committed); **`.env`** — local overrides (gitignored)
+- **`.env.example`** - documented, application-prefixed variables (committed); **`.env`** - local overrides (gitignored)
 - environment-level configuration (env vars, product profiles, tenant defaults)
-- registration of agents into `AgentRegistry` (explicit `registry.register()` — no auto-discovery)
+- registration of agents into `AgentRegistry` (explicit `registry.register()` - no auto-discovery)
 - `IntegrationProfile` wiring (or equivalent typed composition in `integration_wiring.py`)
 - orchestration config: agent roles, default capabilities, interaction topology
-- **`README.md`** — three-command quickstart: pytest, `uvicorn`, `docker/build-docker.sh` (or `.bat`)
-- **`docker`** — Dockerfile, `.dockerignore`, build scripts, optional compose (Phase N scaffold; see implementation plan)
+- **`README.md`** - three-command quickstart: pytest, `uvicorn`, `docker/build-docker.sh` (or `.bat`)
+- **`docker`** - Dockerfile, `.dockerignore`, build scripts, optional compose (Phase N scaffold; see implementation plan)
 - application integration tests under `<app>_tests` (avoids clashing with repo `tests` package)
 
 An application SHOULD contain (when scaffolded via `new-application`):
 
-- **`manifest.py`** — `ApplicationManifest`: declarative roster, integration profile hints, feature flags (Phase N)
-- optional `integrations.yaml` — ops-friendly profile overlay (env still authoritative in code)
+- **`manifest.py`** - `ApplicationManifest`: declarative roster, integration profile hints, feature flags (Phase N)
+- optional `integrations.yaml` - ops-friendly profile overlay (env still authoritative in code)
 
 An application MUST NOT contain:
 
@@ -877,7 +877,7 @@ An application MUST NOT contain:
 
 Applications are **thin composition layers**.
 
-They wire agents to adapters, config, and transport — they do not implement agent reasoning.
+They wire agents to adapters, config, and transport - they do not implement agent reasoning.
 
 ### 7.4.4 Dependency Direction
 
@@ -962,7 +962,7 @@ If agent logic and host live together, split them before adding a second agent o
 
 ### 7.4.8 Tier-3 Application Environment (Self-Contained Operational Package)
 
-A Tier-3 application is an **isolated, configured execution environment** — not a runtime sandbox (see §7.4.9).
+A Tier-3 application is an **isolated, configured execution environment** - not a runtime sandbox (see §7.4.9).
 
 Each application under `applications/<app>` MUST be operable as a **self-contained package**:
 
@@ -971,17 +971,17 @@ Each application under `applications/<app>` MUST be operable as a **self-contain
 | Configuration | `.env.example` (committed), `.env` (local, gitignored) | Variables use an **application prefix** (e.g. `LAB_`, `LEGAL_`, `MYAPP_`). Root `.env.example` documents Tier-0/platform only. |
 | Python package | `host`, `serving`, `__init__.py` | Import path via `pyproject.toml` `pythonpath` (`applications`). No separate `pyproject.toml` per app required. |
 | Agent roster | `host/wiring.py` and/or `manifest.py` | Explicit `AgentRegistry.register()`; contract id overrides in factory when needed. |
-| Integrations | `integration_wiring.py` + `IntegrationProfile` | Selects sqlite/redis/slack/… — agents stay vendor-agnostic. |
+| Integrations | `integration_wiring.py` + `IntegrationProfile` | Selects sqlite/redis/slack/… - agents stay vendor-agnostic. |
 | Run locally | `README.md` + `host/main.py` | `load_dotenv()` in `main.py` loads **application directory** `.env` when present. |
 | Deploy | `docker/Dockerfile` + `build-docker.sh` / `build-docker.bat` | Image build from monorepo root (scripts wrap BuildKit or classic `docker build`); `CMD` → `uvicorn <package>.host.main:app`. |
 | Verify | `<app>_tests` | Host smoke + optional HTTP contract tests. |
 
-**Canonical layout (target — Phase N scaffold):**
+**Canonical layout (target - Phase N scaffold):**
 
 ```text
 applications/<app>/
     __init__.py
-    manifest.py              # ApplicationManifest — roster, profile, features (Phase N)
+    manifest.py              # ApplicationManifest - roster, profile, features (Phase N)
     README.md
     BUILD_AND_DEPLOY.md   # local run, tests, Docker build/push runbook (scaffold)
     .env.example
@@ -1001,16 +1001,16 @@ applications/<app>/
         .dockerignore
         build-docker.sh      # image build from repo root (Linux/macOS/Git Bash)
         build-docker.bat     # same on Windows (cmd)
-        docker-compose.yml   # optional — ollama, redis, volumes
+        docker-compose.yml   # optional - ollama, redis, volumes
     <app>_tests/
         host/test_*_smoke.py
 ```
 
 **Reference implementations today:**
 
-- `applications/lab_application` — universal experimentation (`IntegrationProfile.lab()`, debug API)
-- `applications/legal_application` — product profile (`fastapi_core`, auth, legal routes)
-- `applications/research_application` — product-style research host
+- `applications/lab_application` - universal experimentation (`IntegrationProfile.lab()`, debug API)
+- `applications/legal_application` - product profile (`fastapi_core`, auth, legal routes)
+- `applications/research_application` - product-style research host
 
 **Goal:** Time from agent POC to **docker-pushable** lab host should match agent scaffold speed (implementation plan Phase N).
 
@@ -1020,8 +1020,8 @@ These terms MUST NOT be conflated in documentation, scaffold CLI, or env variabl
 
 | Term | Tier | Meaning |
 |------|------|---------|
-| **Application environment** | Tier-3 | Product/lab **host** under `applications/<name>` — HTTP entry, env, Docker, agent roster, integrations. |
-| **Runtime sandbox** | Tier-1 | **Task isolation** for tool/file execution — `sandbox.exec`, `SandboxSessionManager`, `metadata.sandbox` on `Task`. Optional per-task; wired through UAEP/Nexus. |
+| **Application environment** | Tier-3 | Product/lab **host** under `applications/<name>` - HTTP entry, env, Docker, agent roster, integrations. |
+| **Runtime sandbox** | Tier-1 | **Task isolation** for tool/file execution - `sandbox.exec`, `SandboxSessionManager`, `metadata.sandbox` on `Task`. Optional per-task; wired through UAEP/Nexus. |
 
 Enabling runtime sandbox on a task does **not** create a new application directory.
 
@@ -1033,18 +1033,18 @@ Task flag / metadata `sandbox=True` enables Tier-1 **runtime sandbox** inside an
 
 Tier-2 agents declare **`AgentContract`** (capabilities, tools, risk).
 
-Tier-3 applications declare an **`ApplicationManifest`** (Phase N.1 — `intergrax/applications/contracts/manifest.py`):
+Tier-3 applications declare an **`ApplicationManifest`** (Phase N.1 - `intergrax/applications/contracts/manifest.py`):
 
 - `app_id`, `route_prefix`, environment defaults
-- `agents[]` — roster entries via **`AgentBinding.mount(AgentClass, factory=...)`** (strongly typed); serialized scaffold uses ``deserialize(import_path=...)`` only
-- `integration_profile` — typed `IntegrationProfile`
-- `features` — scheduler, debug surface, interaction routes, default sandbox-on-task (boolean map)
+- `agents[]` - roster entries via **`AgentBinding.mount(AgentClass, factory=...)`** (strongly typed); serialized scaffold uses ``deserialize(import_path=...)`` only
+- `integration_profile` - typed `IntegrationProfile`
+- `features` - scheduler, debug surface, interaction routes, default sandbox-on-task (boolean map)
 
-The manifest is the **roster contract** (who is mounted). **Instance creation** is unified via ``build_application_registry()`` (Phase N.2.1 — ``intergrax/applications/_shared/wiring.py``):
+The manifest is the **roster contract** (who is mounted). **Instance creation** is unified via ``build_application_registry()`` (Phase N.2.1 - ``intergrax/applications/_shared/wiring.py``):
 
 | Priority | Source | Use when |
 |----------|--------|----------|
-| 1 | ``factory=`` on ``AgentBinding.mount()`` | **Preferred** — typed callable; mypy/IDE see class + factory |
+| 1 | ``factory=`` on ``AgentBinding.mount()`` | **Preferred** - typed callable; mypy/IDE see class + factory |
 | 2 | ``builders[type[Agent]]`` | Type-keyed map in `host/agent_builders.py`` (lab) |
 | 3 | ``builder_key`` / ``factory_path`` strings | Scaffold-generated manifests only |
 | 4 | zero-arg ``agent_type()`` | Simple agents with no Tier-3 config |
@@ -1054,23 +1054,23 @@ The manifest is the **roster contract** (who is mounted). **Instance creation** 
 **Rules:**
 
 - Manifest describes **wiring**, not domain logic.
-- Secrets and heavy config stay in ``settings.from_env()`` — binding ``config`` is for lightweight options only.
+- Secrets and heavy config stay in ``settings.from_env()`` - binding ``config`` is for lightweight options only.
 - `host/wiring.py` calls ``build_application_registry(manifest, ctx, builders=...)``.
 - Reference: ``AgentBinding.mount(EchoAgent)`` + ``LAB_AGENT_BUILDERS`` keyed by type; ``AgentBinding.mount(LegalAgent, factory=build_legal_agent_from_context)``.
 - `python -m intergrax.scaffold new-application` generates manifest + builders skeleton (Phase N.3).
 
 See [`plan/PLATFORM_FOUNDATION.md) Phase N for step-by-step delivery.
 
-**Usage guides:** composition engine — [`intergrax/applications/USAGE.md`](../../../../applications/USAGE.md); application hosts — [`applications/USAGE.md`](../../../../applications/USAGE.md).
+**Usage guides:** composition engine - [`intergrax/applications/USAGE.md`](../../../../applications/USAGE.md); application hosts - [`applications/USAGE.md`](../../../../applications/USAGE.md).
 
 ### 7.4.11 Intergrax Assistant Application (IAA)
 
-**Role:** Harness-native **conversational lab** — ChatGPT-shaped product shell for experimenting with the full Agent OS on a **swappable LLM adapter** (local Ollama default).
+**Role:** Harness-native **conversational lab** - ChatGPT-shaped product shell for experimenting with the full Agent OS on a **swappable LLM adapter** (local Ollama default).
 
 | Piece | Location |
 |-------|----------|
 | Tier-3 host | `applications/intergrax_assistant_application` |
-| Hub agent | `agents/intergrax_assistant` — capability `platform.assist` |
+| Hub agent | `agents/intergrax_assistant` - capability `platform.assist` |
 | Architecture | [`applications/intergrax_assistant_application/docs/ARCHITECTURE.md`](../../applications/intergrax_assistant_application/docs/ARCHITECTURE.md) |
 | ADR | [`ADR-INTERGRAX_ASSISTANT-001`](../../applications/intergrax_assistant_application/docs/adr/ADR-INTERGRAX_ASSISTANT-001.md) |
 
@@ -1089,7 +1089,7 @@ Client (HTTP / MCP)
 
 | Host | Pattern |
 |------|---------|
-| `lab_application` | Multi-agent debug lab — no chat product contract |
+| `lab_application` | Multi-agent debug lab - no chat product contract |
 | `legal_application` | Single-domain chat SKU |
 | `local_workspace_application` | Fixed multi-agent file pipeline (LKW) |
 | **IAA** | General chat hub + **LLM env swap** + optional platform delegation |
@@ -1145,7 +1145,7 @@ It should NOT currently optimize for:
 
 Nexus owns the global reasoning loop.
 
-**Canonical depth:** [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) — three cognition planes, planners, classifiers, `DecisionRecord`.
+**Canonical depth:** [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) - three cognition planes, planners, classifiers, `DecisionRecord`.
 
 Nexus decides:
 
@@ -1220,7 +1220,7 @@ The system must show:
 
 ---
 
-## 8.8 Reuse Tier-0 — Do Not Duplicate Platform Mechanisms
+## 8.8 Reuse Tier-0 - Do Not Duplicate Platform Mechanisms
 
 Intergrax is not a greenfield project. The Tier-0 platform already provides LLM adapters, logging, RAG, tools, memory, queues, tracing primitives, and infrastructure adapters.
 
@@ -1232,17 +1232,17 @@ Intergrax is not a greenfield project. The Tier-0 platform already provides LLM 
 4. **Extend in place.** If Tier-0 is insufficient, prefer extending the existing module over creating a parallel one.
 5. **Human gate for new universals.** New Tier-0 capabilities require explicit human approval (§5.2.4).
 
-Implementation agents (including Cursor AI) that propose new universal modules MUST escalate to the human operator — this is a form of **human-in-the-loop governance for platform evolution**.
+Implementation agents (including Cursor AI) that propose new universal modules MUST escalate to the human operator - this is a form of **human-in-the-loop governance for platform evolution**.
 
 Anti-pattern:
 
 ```text
-# FORBIDDEN — duplicate LLM path in agent
+# FORBIDDEN - duplicate LLM path in agent
 from openai import AsyncOpenAI
 client = AsyncOpenAI(...)
 response = await client.chat.completions.create(...)
 
-# REQUIRED — canonical path
+# REQUIRED - canonical path
 from intergrax.llm_adapters...  # via AgentEngine / configured adapter
 ```
 

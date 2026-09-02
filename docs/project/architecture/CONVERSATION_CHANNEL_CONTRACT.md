@@ -74,14 +74,14 @@ and `(provider_id, category)` registry identity.
 
 Module: `intergrax/integrations/contracts/conversation_channel.py`
 
-- `ConversationAddress` — `installation_id`, `conversation_id`, optional `thread_id`
-- `ConversationActor` — provider-scoped `actor_id`
-- `ConversationEventKind` — `message` | `action`
+- `ConversationAddress` - `installation_id`, `conversation_id`, optional `thread_id`
+- `ConversationActor` - provider-scoped `actor_id`
+- `ConversationEventKind` - `message` | `action`
 - `InboundConversationEvent`
-- `ConversationActionSelection` — `action_id` + `selected_value`
+- `ConversationActionSelection` - `action_id` + `selected_value`
 - `ConversationChoiceOption` / `ConversationSingleChoice` (max 25 options)
-- `OutboundConversationMessage` — text + at most one single-choice component
-- `ConversationDeliveryReceipt` — vendor accepted message (not human read)
+- `OutboundConversationMessage` - text + at most one single-choice component
+- `ConversationDeliveryReceipt` - vendor accepted message (not human read)
 
 Field names are vendor-neutral (no `team_id`, `thread_ts`, Block Kit, Adaptive Cards).
 
@@ -91,10 +91,10 @@ Field names are vendor-neutral (no `team_id`, `thread_ts`, Block Kit, Adaptive C
 
 `ConversationChannelBackend`:
 
-- `start(handler)` — begin vendor event delivery; one handler per instance
-- `stop()` — stop delivery; close resources
-- `send(message)` — outbound text (+ optional single choice)
-- `health()` — provider readiness only
+- `start(handler)` - begin vendor event delivery; one handler per instance
+- `stop()` - stop delivery; close resources
+- `send(message)` - outbound text (+ optional single choice)
+- `health()` - provider readiness only
 
 `ConversationEventHandler = Callable[[InboundConversationEvent], Awaitable[None]]`
 
@@ -176,7 +176,7 @@ for this shared contract document.
 
 ## 14. Provider-specific organizational-history extension
 
-**Classification:** `ARCHITECTURALLY FROZEN` — not part of the mandatory shared v1 contract.
+**Classification:** `ARCHITECTURALLY FROZEN` - not part of the mandatory shared v1 contract.
 
 The shared `ConversationChannelIntegrationContract` remains responsible for near-real-time conversational behavior only:
 
@@ -196,7 +196,7 @@ Do not add generic knowledge-history methods to the shared category contract.
 
 A concrete conversation-channel integration may expose additional typed, bounded provider read primitives when that provider is also a source of organizational knowledge. These methods remain provider-specific operations of the same concrete integration. They do not become mandatory methods of every conversation channel provider and do not create another integration category.
 
-**Slack example (conceptual — `PLANNED`, not implemented):**
+**Slack example (conceptual - `PLANNED`, not implemented):**
 
 ```text
 list accessible conversation inventory
@@ -225,8 +225,8 @@ ARCHITECTURALLY FROZEN (SLACK-KNOWLEDGE-THREE-MODE-ARCH-1):
   three consumption modes: indexed RAG, durable materialization, live access
   Slack-as-frontend and Slack-as-knowledge-source are independent roles
 
-PLANNED — NOT IMPLEMENTED:
-  SLACK-KNOWLEDGE-FOUNDATION-1 (platform — NEXT)
+PLANNED - NOT IMPLEMENTED:
+  SLACK-KNOWLEDGE-FOUNDATION-1 (platform - NEXT)
   LKW-SLACK-CONNECTED-SOURCE-1 (LKW application)
   SLACK-LIVE-CAPABILITY-1 (platform)
   LKW-SLACK-KNOWLEDGE-PROOF-1 (LKW application)

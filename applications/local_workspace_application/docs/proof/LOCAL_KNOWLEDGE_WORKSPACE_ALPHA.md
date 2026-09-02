@@ -1,4 +1,4 @@
-# Local Knowledge Workspace Alpha — Product Validation Narrative
+# Local Knowledge Workspace Alpha - Product Validation Narrative
 
 ## Summary
 
@@ -57,7 +57,7 @@ The alpha track is meant to learn from real use, not to ship a broad feature set
 - policy and HITL boundaries for sensitive actions,
 - multi-agent or multi-step workflow usefulness for document-heavy tasks.
 
-Outcomes inform harness gaps, Tier-3 host patterns, and whether this direction merits deeper investment — not a public production roadmap.
+Outcomes inform harness gaps, Tier-3 host patterns, and whether this direction merits deeper investment - not a public production roadmap.
 
 ---
 
@@ -76,25 +76,25 @@ If you are looking for a finished end-user app or a supported SaaS, this directi
 
 ## What this is not
 
-- **Not a finished end-user product** — capabilities, UX, and scope are exploratory.
-- **Not a hosted SaaS** — the direction assumes local or partner-controlled deployment, not an Intergrax-hosted service.
-- **Not a promise of production-grade privacy or security** — local-first design reduces some risks, but this is not a certification or compliance claim.
-- **Not a replacement for document management systems** — it assists over files; it does not replace ECM, DMS, or enterprise records management.
-- **Not a license grant** — source availability and permitted use follow [LICENSE](../../../../LICENSE); production and commercial use require explicit permission.
-- **Not a claim that arbitrary local files are safe to process without user review** — sensitive content, malware, and policy exceptions remain the operator's responsibility.
-- **Not a commitment to support all file types or workflows** — validation focuses on a realistic subset aligned with partner feedback.
+- **Not a finished end-user product** - capabilities, UX, and scope are exploratory.
+- **Not a hosted SaaS** - the direction assumes local or partner-controlled deployment, not an Intergrax-hosted service.
+- **Not a promise of production-grade privacy or security** - local-first design reduces some risks, but this is not a certification or compliance claim.
+- **Not a replacement for document management systems** - it assists over files; it does not replace ECM, DMS, or enterprise records management.
+- **Not a license grant** - source availability and permitted use follow [LICENSE](../../../../LICENSE); production and commercial use require explicit permission.
+- **Not a claim that arbitrary local files are safe to process without user review** - sensitive content, malware, and policy exceptions remain the operator's responsibility.
+- **Not a commitment to support all file types or workflows** - validation focuses on a realistic subset aligned with partner feedback.
 
 ---
 
 ## Design principles
 
-- **Local-first where possible** — keep source files under user control on the machine or partner environment.
-- **User-controlled files** — indexing and retrieval target paths the user or operator designates.
-- **Read source files; write artifacts to a shadow workspace** — originals are not overwritten by default.
-- **Explicit policy boundaries** — tool and filesystem access stay within configured allowlists and gates.
-- **Inspectable runs** — trace and evidence surfaces support review, not opaque chat-only behavior.
-- **Minimal irreversible actions** — prefer generated outputs and approvals over destructive filesystem changes.
-- **Product learning over broad feature expansion** — alpha feedback shapes scope before larger investment.
+- **Local-first where possible** - keep source files under user control on the machine or partner environment.
+- **User-controlled files** - indexing and retrieval target paths the user or operator designates.
+- **Read source files; write artifacts to a shadow workspace** - originals are not overwritten by default.
+- **Explicit policy boundaries** - tool and filesystem access stay within configured allowlists and gates.
+- **Inspectable runs** - trace and evidence surfaces support review, not opaque chat-only behavior.
+- **Minimal irreversible actions** - prefer generated outputs and approvals over destructive filesystem changes.
+- **Product learning over broad feature expansion** - alpha feedback shapes scope before larger investment.
 
 ---
 

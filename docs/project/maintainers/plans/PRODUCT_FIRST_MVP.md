@@ -59,7 +59,7 @@ problem discovery (parallel, from the start)
 → end-to-end validation
 ```
 
-A real-user problem should be investigated **before and during** MVP construction. Problem discovery and product development inform each other. Formal **solution validation** requires a usable end-to-end workflow; it does not require every intended product capability to exist first. This remains an engineering/product-development rule — not a substitute for building.
+A real-user problem should be investigated **before and during** MVP construction. Problem discovery and product development inform each other. Formal **solution validation** requires a usable end-to-end workflow; it does not require every intended product capability to exist first. This remains an engineering/product-development rule - not a substitute for building.
 
 The following loop is explicitly rejected:
 
@@ -79,13 +79,13 @@ Platform work is justified when it enables, protects, simplifies, or scales an a
 
 ## Parallel problem and customer discovery
 
-Discovery runs **in parallel** with product and proof work. Its purpose is to learn whether a recurring problem exists and which workflows deserve deeper evaluation — **not** to prove Intergrax solves it.
+Discovery runs **in parallel** with product and proof work. Its purpose is to learn whether a recurring problem exists and which workflows deserve deeper evaluation - **not** to prove Intergrax solves it.
 
 ### Three evidence classes
 
 | Class | Question it answers | Timing |
 |-------|---------------------|--------|
-| **Problem / customer discovery** | Do target people experience recurring pain? Are alternatives insufficient? Is the workflow worth investigating? | Now — alongside MVP construction |
+| **Problem / customer discovery** | Do target people experience recurring pain? Are alternatives insufficient? Is the workflow worth investigating? | Now - alongside MVP construction |
 | **Solution / real-user validation** | Can users complete the workflow? Are results useful and trusted? Do they reuse it? | After a usable end-to-end workflow exists |
 | **Commercial validation** | Is there genuine commercial commitment or buying behavior? | Separate later boundary |
 
@@ -180,7 +180,7 @@ The brief must answer the following questions.
 - What tools and habits do they already have?
 - What level of technical knowledge can be assumed?
 
-The first user must be concrete enough that product decisions can be made for that user. Treat the target segment as a **hypothesis** until problem discovery and later solution validation support it — do not claim a validated ICP from interviews alone.
+The first user must be concrete enough that product decisions can be made for that user. Treat the target segment as a **hypothesis** until problem discovery and later solution validation support it - do not claim a validated ICP from interviews alone.
 
 Avoid descriptions such as:
 
@@ -526,7 +526,7 @@ Architecture/review audit steps before scope is issued:
 3. verify the implementation through code, provider, wiring and tests;
 4. classify its actual maturity;
 5. decide whether to reuse it, improve it, or keep the behavior in the product domain;
-6. freeze exact implementation scope — or STOP when classification is unresolved.
+6. freeze exact implementation scope - or STOP when classification is unresolved.
 ```
 
 The architecture/review audit must happen:
@@ -805,7 +805,7 @@ Used when the active product workflow works safely without the improvement.
 
 ```text
 When a required mechanism is absent, incomplete beyond the frozen scope,
-or architecturally ambiguous, implementation scope must not be issued —
+or architecturally ambiguous, implementation scope must not be issued -
 and an already-issued implementation must stop.
 ```
 
@@ -1151,7 +1151,7 @@ The point at which the product is installable, operationally safe, supportable, 
 
 Do not make the complete 1.0 roadmap a prerequisite for MVP validation.
 
-Problem discovery should begin before or during MVP construction. Solution validation requires a usable workflow — not every planned capability. Discovery and implementation should inform each other throughout.
+Problem discovery should begin before or during MVP construction. Solution validation requires a usable workflow - not every planned capability. Discovery and implementation should inform each other throughout.
 
 The required sequence is:
 
@@ -1281,11 +1281,11 @@ Before approving an implementation task, ask:
 
 When implementation feels fragmented, expensive, or directionless, perform this reset.
 
-### Step 1 — Restate the user and problem
+### Step 1 - Restate the user and problem
 
 Write one sentence for each.
 
-### Step 2 — Restate the MVP outcome
+### Step 2 - Restate the MVP outcome
 
 Complete:
 
@@ -1293,15 +1293,15 @@ Complete:
 The MVP is successful when the user can...
 ```
 
-### Step 3 — Draw the shortest end-to-end flow
+### Step 3 - Draw the shortest end-to-end flow
 
 Use no more than ten steps.
 
-### Step 4 — Mark the current missing step
+### Step 4 - Mark the current missing step
 
 Only one step should be the immediate priority.
 
-### Step 5 — Classify all other open work
+### Step 5 - Classify all other open work
 
 Use:
 
@@ -1311,11 +1311,11 @@ Use:
 - platform backlog,
 - discard.
 
-### Step 6 — Stop unrelated implementation
+### Step 6 - Stop unrelated implementation
 
 Do not continue work merely because it has already consumed time.
 
-### Step 7 — Resume with one vertical slice
+### Step 7 - Resume with one vertical slice
 
 The next task must restore visible product progress.
 
@@ -1361,7 +1361,7 @@ LKW may expose reusable platform gaps during this implementation. Those gaps imp
 
 When a later product is intentionally used to test cross-product platform reuse, the experiment must be **pre-registered** using [Cross-Product Reuse Proof Contract](PRODUCT_REUSE_PROOF.md) **before** Product #2 implementation begins.
 
-Product-first remains authoritative: the second product must originate from a real product hypothesis and customer or workflow evidence — not from a desire to exercise platform features or improve reuse metrics. The proof observes inheritance from Intergrax; it does not define the product.
+Product-first remains authoritative: the second product must originate from a real product hypothesis and customer or workflow evidence - not from a desire to exercise platform features or improve reuse metrics. The proof observes inheritance from Intergrax; it does not define the product.
 
 ---
 

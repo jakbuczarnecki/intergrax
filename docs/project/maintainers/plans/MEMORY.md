@@ -1,4 +1,4 @@
-# Memory — Implementation Plan
+# Memory - Implementation Plan
 
 **Architecture (1:1):** [`architecture/MEMORY.md`](../../architecture/MEMORY.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -6,30 +6,30 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
-**Cross-plan — Agent layer (ACP):** Per-agent `memory_view` and `memory_scope` (user vs org §30.9) resolve in `merge_environment` — [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`). Agent session state (`AcpSessionState`) is separate from LTM namespaces; do not store secrets in `acp.state.v1` (architecture §25.2).
+**Cross-plan - Agent layer (ACP):** Per-agent `memory_view` and `memory_scope` (user vs org §30.9) resolve in `merge_environment` - [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`). Agent session state (`AcpSessionState`) is separate from LTM namespaces; do not store secrets in `acp.state.v1` (architecture §25.2).
 
-**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). MEMORY owns persistent summary compression only where staging, validation, compression receipts, and rollback metadata exist.
+**Cross-feature - Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). MEMORY owns persistent summary compression only where staging, validation, compression receipts, and rollback metadata exist.
 
-**Last updated:** 2026-08-05 — **LCI-4D READY_FOR_REVIEW** (session-turn and user-profile vector indexing use `KnowledgeDocument`, explicit scope and native vector-store records).
+**Last updated:** 2026-08-05 - **LCI-4D READY_FOR_REVIEW** (session-turn and user-profile vector indexing use `KnowledgeDocument`, explicit scope and native vector-store records).
 
 **LCI-4D decision:** Memory indexing preserves stable identity, tenant, namespace, workspace, provenance and user metadata without using user metadata as system scope transport. Session and profile vector writes use `VectorStoreRecord` with `VectorStoreScope`; LCI-5A remains planned for the next native text-loader stream.
 
-### Architecture sync — UE-DOC-0.8 (2026-08-26)
+### Architecture sync - UE-DOC-0.8 (2026-08-26)
 
-**Status:** documentation frozen in architecture hub — **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
+**Status:** documentation frozen in architecture hub - **no runtime implementation in this slice**. Code transformation mapping: **UE-DOC-0.9**.
 
 Architecture hub additions: tool-result feedback ≠ automatic durable memory; MEM-INV; implementation readiness.
 
 <a id="protocol-v2-memory-remediation-2026-08-18"></a>
 
-## Protocol v2 — Memory remediation (2026-08-18)
+## Protocol v2 - Memory remediation (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/MEMORY.md`](../../audit_results/2026-08-18/MEMORY.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-MEMORY-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-MEMORY-PERSIST.
 
 <a id="memory-scope-authority-integrity-2026-08-18"></a>
 
-### MEMORY-SCOPE-AUTHORITY-INTEGRITY — one canonical tenant/task/workspace authority
+### MEMORY-SCOPE-AUTHORITY-INTEGRITY - one canonical tenant/task/workspace authority
 
 **Priority:** P0/P1
 **Status:** `ACCEPTED / PLANNED`
@@ -37,13 +37,13 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 **Outcome (planning only):**
 
-- Every LTM retrieval path, including `RetrievalService`-backed recall, supplies the same canonical `VectorStoreScope` as indexing and direct vector querying — coordinate with [`RAG-SCOPE-CONTRACT-INTEGRITY`](RAG.md#rag-scope-contract-integrity-2026-08-18); no second retrieval path.
-- Tenant-bound episodic index cannot switch tenant via per-call override — fixed construction identity or explicit unbound multi-tenant service under trusted authority.
-- `MemoryView` scope derives from canonical trusted execution identity; all read/write/list/delete preserve the same boundary — coordinate IDENTITY_TRUST remediation (`IDT-FIX-A`, `IDT-FIX-D`).
+- Every LTM retrieval path, including `RetrievalService`-backed recall, supplies the same canonical `VectorStoreScope` as indexing and direct vector querying - coordinate with [`RAG-SCOPE-CONTRACT-INTEGRITY`](RAG.md#rag-scope-contract-integrity-2026-08-18); no second retrieval path.
+- Tenant-bound episodic index cannot switch tenant via per-call override - fixed construction identity or explicit unbound multi-tenant service under trusted authority.
+- `MemoryView` scope derives from canonical trusted execution identity; all read/write/list/delete preserve the same boundary - coordinate IDENTITY_TRUST remediation (`IDT-FIX-A`, `IDT-FIX-D`).
 
 <a id="memory-durability-lifecycle-integrity-2026-08-18"></a>
 
-### MEMORY-DURABILITY-LIFECYCLE-INTEGRITY — concurrent mutation and index lifecycle
+### MEMORY-DURABILITY-LIFECYCLE-INTEGRITY - concurrent mutation and index lifecycle
 
 **Priority:** P1
 **Status:** `ACCEPTED / PLANNED`
@@ -51,13 +51,13 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 **Outcome (planning only):**
 
-- Primary-memory forget/delete and derived vector indexes share one lifecycle with deterministic tombstones/removal and retry/reconciliation for partial failure — primary store remains source of truth.
-- `UserProfile` mutation uses versioned optimistic concurrency or another canonical atomic mutation contract with one revision authority — conflicting writes fail explicitly or retry through deterministic merge policy.
+- Primary-memory forget/delete and derived vector indexes share one lifecycle with deterministic tombstones/removal and retry/reconciliation for partial failure - primary store remains source of truth.
+- `UserProfile` mutation uses versioned optimistic concurrency or another canonical atomic mutation contract with one revision authority - conflicting writes fail explicitly or retry through deterministic merge policy.
 - Do not claim universal distributed transactions.
 
 <a id="memory-read-mutation-consistency-2026-08-18"></a>
 
-### MEMORY-READ-MUTATION-CONSISTENCY — uniform retention and deterministic updates
+### MEMORY-READ-MUTATION-CONSISTENCY - uniform retention and deterministic updates
 
 **Priority:** P1/P2
 **Status:** `ACCEPTED / PLANNED`
@@ -65,14 +65,14 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 **Outcome (planning only):**
 
-- Retention semantics apply uniformly across `read`, `list`, and search — one canonical retention-filtering boundary.
-- Unknown memory entry updates return explicit deterministic NOT_FOUND — no loop-variable leakage or unrelated re-index.
+- Retention semantics apply uniformly across `read`, `list`, and search - one canonical retention-filtering boundary.
+- Unknown memory entry updates return explicit deterministic NOT_FOUND - no loop-variable leakage or unrelated re-index.
 
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
-- Historical **Done** rows in this plan remain historical facts — not rewritten as remediation completion.
+- Historical **Done** rows in this plan remain historical facts - not rewritten as remediation completion.
 
 **Recommended remediation order (prioritization, not dependency graph):** MEMORY-SCOPE-AUTHORITY-INTEGRITY → MEMORY-DURABILITY-LIFECYCLE-INTEGRITY → MEMORY-READ-MUTATION-CONSISTENCY
 
@@ -82,9 +82,9 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 **Do not read this entire file in one session** (MEMORY plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/MEMORY_appendices.md`](plan/satellites/MEMORY_appendices.md) · [`plan/satellites/MEMORY_implementation_history.md`](plan/satellites/MEMORY_implementation_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/MEMORY_appendices.md`](plan/satellites/MEMORY_appendices.md) · [`plan/satellites/MEMORY_implementation_history.md`](plan/satellites/MEMORY_implementation_history.md). Phase AUDIT-IDEAL - **Planned** / open rows only. §6.1 maintenance queues - open P0/P1 only
 - **Token Optimization:** read feature pair + row `TOKEN-MEM-1`; inspect only memory summary/consolidation/write paths required for staging/rollback.
-- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/MEMORY.md`](../../architecture/MEMORY.md) read-scope block only.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -106,18 +106,18 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase TOKEN-MEM — MemorySummaryCompressor (Planned)
+## Phase TOKEN-MEM - MemorySummaryCompressor (Planned)
 
 **Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
 **Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
 **Priority:** P2 after TOKEN-UER-1 and preferably after TOKEN-CE-1 receipt path  
 **Delivery rule:** one `TOKEN-MEM-*` row per PR; no live overwrite before validation.
 
-**First implementation slice:** **TOKEN-5A** (feature plan §TOKEN-5A) — helper-only `MemorySummaryCompressor`. TOKEN-MEM-1 remains helper-only unless explicitly expanded in a later row. Live memory-store overwrite, compaction jobs, and runtime wiring are out of scope for TOKEN-MEM-1 / TOKEN-5A.
+**First implementation slice:** **TOKEN-5A** (feature plan §TOKEN-5A) - helper-only `MemorySummaryCompressor`. TOKEN-MEM-1 remains helper-only unless explicitly expanded in a later row. Live memory-store overwrite, compaction jobs, and runtime wiring are out of scope for TOKEN-MEM-1 / TOKEN-5A.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **TOKEN-MEM-1** | Code | P2 | **Done / Closed** | `intergrax/memory/summary_compressor.py` — conservative helper-only `MemorySummaryCompressor` with staged candidate/result model, protected-region validation, compression receipt, rollback metadata, optional `token_counter`, optional `semantic_validation_hook` interface, deterministic light/structural compression only, and benchmark-ready result fields aligned with TOKEN-5A / future TOKEN-6B / LKW-PF6 | Live source never overwritten before validation; failed compression cannot corrupt persistent memory; rollback metadata required on every result; original/compressed hashes stored; memory compression opt-in by policy/profile; no user facts/dates/IDs/policy text silently lost; benchmark-ready result fields (`source_type`, `strategy`, `original_hash`, `optimized_hash`, `original_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`, `receipt`/`receipt_ref`, `rollback_metadata`, `semantic_validation_status` when hook used); `uv run pytest tests/unit/memory/ -q` — **closeout:** helper-only compressor, staged result/rollback metadata, protected-region validation, compression receipts, optional `token_counter` and `semantic_validation_hook`, benchmark-ready result shape; no live memory-store overwrite, vector index mutation, embedding regeneration, LLM rewriting, HOS/runtime wiring, or LKW proof execution |
+| **TOKEN-MEM-1** | Code | P2 | **Done / Closed** | `intergrax/memory/summary_compressor.py` - conservative helper-only `MemorySummaryCompressor` with staged candidate/result model, protected-region validation, compression receipt, rollback metadata, optional `token_counter`, optional `semantic_validation_hook` interface, deterministic light/structural compression only, and benchmark-ready result fields aligned with TOKEN-5A / future TOKEN-6B / LKW-PF6 | Live source never overwritten before validation; failed compression cannot corrupt persistent memory; rollback metadata required on every result; original/compressed hashes stored; memory compression opt-in by policy/profile; no user facts/dates/IDs/policy text silently lost; benchmark-ready result fields (`source_type`, `strategy`, `original_hash`, `optimized_hash`, `original_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`, `receipt`/`receipt_ref`, `rollback_metadata`, `semantic_validation_status` when hook used); `uv run pytest tests/unit/memory/ -q` - **closeout:** helper-only compressor, staged result/rollback metadata, protected-region validation, compression receipts, optional `token_counter` and `semantic_validation_hook`, benchmark-ready result shape; no live memory-store overwrite, vector index mutation, embedding regeneration, LLM rewriting, HOS/runtime wiring, or LKW proof execution |
 
 **Safety rules (TOKEN-MEM-1 / TOKEN-5A):**
 
@@ -130,7 +130,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - no vector index mutation without primary-store source of truth,
 - no lossy compression of legal/security/policy text unless explicitly allowed by policy.
 
-**Refinement TOKEN-5A-R — unsafe lossy truncation guard:**
+**Refinement TOKEN-5A-R - unsafe lossy truncation guard:**
 
 - `max_summary_chars` is treated as **lossy** compression
 - no truncation under default `allow_lossy=False` policy
@@ -142,11 +142,11 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+## Phase AUDIT-IDEAL - Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §7, §16 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Done** — memory-routed rows 14.1–14.2, 15.1–15.3, 16.1–16.2 closed in master register (16.x implemented in CONTEXT_ENGINEERING)
+**Status:** **Done** - memory-routed rows 14.1–14.2, 15.1–15.3, 16.1–16.2 closed in master register (16.x implemented in CONTEXT_ENGINEERING)
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
@@ -155,8 +155,8 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-15.1 | §15 Memory | Org memory 2.5 (organizational LTM scope) | **P0** | **Done** |
 | AUDIT-IDEAL-15.2 | §15 Memory | Episodic / semantic / procedural taxonomy (`MemoryKind` uplift) | P1 | **Done** |
 | AUDIT-IDEAL-15.3 | §15 Memory | Entity graph memory ship (MEM-DEPTH-5.1 beyond RFC) | P2 | **Done** |
-| AUDIT-IDEAL-16.1 | §16 Context | Online context drift monitoring + alerts | P1 | **Done** — owner [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §11 |
-| AUDIT-IDEAL-16.2 | §16 Context | Semantic compression in production profiles | P2 | **Done** — owner CE §11 (`semantic_compression_enabled`) |
+| AUDIT-IDEAL-16.1 | §16 Context | Online context drift monitoring + alerts | P1 | **Done** - owner [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §11 |
+| AUDIT-IDEAL-16.2 | §16 Context | Semantic compression in production profiles | P2 | **Done** - owner CE §11 (`semantic_compression_enabled`) |
 
 **Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 

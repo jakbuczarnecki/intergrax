@@ -1,4 +1,4 @@
-# ADR-ADAPT-002: ADAS (Agent Design Search) inside AHI — not a separate layer
+# ADR-ADAPT-002: ADAS (Agent Design Search) inside AHI - not a separate layer
 
 | Field | Value |
 |-------|-------|
@@ -11,7 +11,7 @@
 
 Industry trends toward **meta-agent building** (agents that propose other agents) create pressure to add a parallel "agent factory" layer, a Tier-3-only lab workflow, or unconstrained code mutation paths.
 
-Intergrax already ships **Adaptive Harness Intelligence (AHI)** — a governed Tier-1 control plane with observe → propose → validate → shadow → canary → apply → verify semantics, policy gates, archive/version stores, and verification loops ([ADR-ADAPT-001](../2026-06-05/ADR-ADAPT-001.md)).
+Intergrax already ships **Adaptive Harness Intelligence (AHI)** - a governed Tier-1 control plane with observe → propose → validate → shadow → canary → apply → verify semantics, policy gates, archive/version stores, and verification loops ([ADR-ADAPT-001](../2026-06-05/ADR-ADAPT-001.md)).
 
 **ADAS (Agent Design Search)** extends AHI to search, evaluate, archive, and promote **agent candidates** instead of runtime profile versions. Without an explicit ADR, implementers may:
 
@@ -31,12 +31,12 @@ ADAPTIVE_HARNESS_INTELLIGENCE
 
 Concrete rules:
 
-1. **Tier-1 ownership** — control plane lives at `intergrax/runtime/adaptive/agent_design_search`; reuses AHI signal, governance, verification, and promotion lifecycle patterns.
-2. **Not a separate top-level harness layer** — no parallel PolicyEngine, evaluation registry, trace system, or promotion stack.
-3. **Not Tier-3-only** — optional `applications/adas_lab` is operator UI/wiring only; archive, evaluation, governance, and promotion semantics remain Tier-1.
-4. **Candidate materialization via scaffold only** — `AgentCandidateDraft` → existing scaffold bridge → sandbox/archive; no direct production source overwrite.
-5. **MAS is a strategy, not the architecture** — Tier-2 agents may propose drafts; they must not self-approve promotion or bypass static/eval/archive gates.
-6. **Evidence over declaration** — promotion requires auditable `AgentCandidateEvidenceBundle` and governed active registration (registry pointer + tenant binding in v1).
+1. **Tier-1 ownership** - control plane lives at `intergrax/runtime/adaptive/agent_design_search`; reuses AHI signal, governance, verification, and promotion lifecycle patterns.
+2. **Not a separate top-level harness layer** - no parallel PolicyEngine, evaluation registry, trace system, or promotion stack.
+3. **Not Tier-3-only** - optional `applications/adas_lab` is operator UI/wiring only; archive, evaluation, governance, and promotion semantics remain Tier-1.
+4. **Candidate materialization via scaffold only** - `AgentCandidateDraft` → existing scaffold bridge → sandbox/archive; no direct production source overwrite.
+5. **MAS is a strategy, not the architecture** - Tier-2 agents may propose drafts; they must not self-approve promotion or bypass static/eval/archive gates.
+6. **Evidence over declaration** - promotion requires auditable `AgentCandidateEvidenceBundle` and governed active registration (registry pointer + tenant binding in v1).
 
 ## Alternatives considered
 

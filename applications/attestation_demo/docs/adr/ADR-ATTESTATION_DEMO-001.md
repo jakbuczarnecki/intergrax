@@ -1,4 +1,4 @@
-# ADR-ATTESTATION_DEMO-001: Partner PoC — unsigned EBE in API response
+# ADR-ATTESTATION_DEMO-001: Partner PoC - unsigned EBE in API response
 
 | Field | Value |
 |-------|-------|
@@ -19,7 +19,7 @@ Partner agreed on:
 
 ## Decision
 
-1. Add Tier-1 **Execution Boundary Export (EBE)** — `execution_boundary_event.v1`, `signed: false`
+1. Add Tier-1 **Execution Boundary Export (EBE)** - `execution_boundary_event.v1`, `signed: false`
 2. Ship Tier-3 **`attestation_demo`** host with `POST /v1/attestation_demo/poc/run` returning `boundary_events[]`
 3. Use Tier-2 **`boundary_demo_agent`** + `records.put` as the reference side-effecting tool
 4. Defer webhook sink, HarnessKernel step-level export, and host-side signing to later phases
@@ -46,7 +46,7 @@ Rejected for PoC v1:
 
 ## Compliance
 
-- Tier boundaries preserved — no `agents` or `applications` imports in `intergrax`
+- Tier boundaries preserved - no `agents` or `applications` imports in `intergrax`
 - BoundaryAttest remains external; no vendor SDK in platform
 - Trust documentation states `client_observed`; no `server_attested` claim from Intergrax
 

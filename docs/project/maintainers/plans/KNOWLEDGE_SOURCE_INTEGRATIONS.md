@@ -1,4 +1,4 @@
-# Vendor Knowledge Facade — Implementation Plan
+# Vendor Knowledge Facade - Implementation Plan
 
 **Status:** `ACCEPTED / CLOSED`
 **Branch:** `development`  
@@ -61,7 +61,7 @@ Materialization remain separate. The facade is not an integration category.
 
 ---
 
-## 1A. Canonical three-mode platform roadmap — current session
+## 1A. Canonical three-mode platform roadmap - current session
 
 This section is the current execution order for Vendor Knowledge platform work.
 The historical execution order and detailed task history below are retained for
@@ -69,10 +69,10 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT` — `ACCEPTED / CLOSED`
+`PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT` - `ACCEPTED / CLOSED`
 
 **NEXT:**
-`NONE — PROVIDER PRODUCTIONIZATION TRACK CLOSED`
+`NONE - PROVIDER PRODUCTIONIZATION TRACK CLOSED`
 
 ### Provider productionization final closeout
 
@@ -84,7 +84,7 @@ PROVIDER PRODUCTIONIZATION TRACK
   ACCEPTED / CLOSED
 
 NEXT:
-  NONE — PROVIDER PRODUCTIONIZATION TRACK CLOSED
+  NONE - PROVIDER PRODUCTIONIZATION TRACK CLOSED
 ```
 
 The implemented Slack, Microsoft Graph, Google Workspace, Jira and
@@ -200,7 +200,7 @@ plugin/capability contract       CLOSED
 Durable                          CLOSED
 Indexed                          CLOSED
 Live                             CLOSED
-provider coverage                CLOSED — truthful, source-kind specific
+provider coverage                CLOSED - truthful, source-kind specific
 frontend neutrality              CLOSED
 cross-provider E2E               CLOSED
 identity/ownership               ACCEPTED / CLOSED
@@ -344,7 +344,7 @@ VK1-GAP-10 documentation                        CLOSED
 
 ```text
 VENDOR KNOWLEDGE ROADMAP
-VK-1 through VK-9 — COMPLETE
+VK-1 through VK-9 - COMPLETE
 ```
 
 Future Google Indexed expansion, Jira/Confluence Live work, Atlan/Power BI
@@ -352,7 +352,7 @@ implementation, Databricks source-kind selection, full ACL propagation and
 commercial API packaging are separate provider/product tasks. They are not
 `VK-10` and do not reopen this architecture roadmap.
 
-#### PROVIDER-PROD-5C — Atlan / Power BI selection gate
+#### PROVIDER-PROD-5C - Atlan / Power BI selection gate
 
 The repository-grounded selection gate result is:
 
@@ -397,7 +397,7 @@ Power BI
   external research:  DEFERRED; required before reopening
 ```
 
-#### PROVIDER-PROD-5D — Additional Providers closeout
+#### PROVIDER-PROD-5D - Additional Providers closeout
 
 `PROVIDER-PROD-5D-ADDITIONAL-PROVIDERS-CLOSEOUT` is **`ACCEPTED / CLOSED`**.
 This closes the Additional Providers track without claiming that all three
@@ -585,7 +585,7 @@ The three modes mean:
 
 ### Session boundary
 
-**This session — Vendor Knowledge platform**
+**This session - Vendor Knowledge platform**
 
 Owns plugin contracts, provider capability modeling, Indexed / RAG platform
 bridging, Durable / Storage / Materialization lifecycle, Live / Realtime
@@ -606,7 +606,7 @@ contracts.
 
 ### Required future execution order
 
-#### VK-1 — Unified three-mode contract audit
+#### VK-1 - Unified three-mode contract audit
 
 `VENDOR-KNOWLEDGE-UNIFIED-THREE-MODE-CONTRACT-AUDIT-1`
 
@@ -616,7 +616,7 @@ plugin registration, capability discovery and frontend neutrality as
 `ACCEPTED`, `PARTIAL`, `MISSING` or `CONTRADICTED`. This audit determines
 implementation work; no speculative rewriting precedes it.
 
-#### VK-2 — Plugin and capability contract finalization
+#### VK-2 - Plugin and capability contract finalization
 
 `VENDOR-KNOWLEDGE-PLUGIN-CAPABILITY-CONTRACT-1`
 
@@ -626,16 +626,16 @@ capability discovery. A source kind may independently support Indexed / RAG,
 Durable / Storage / Materialization and/or Live / Realtime; support is explicit,
 not inferred.
 
-#### VK-3 — Durable lifecycle platform closeout
+#### VK-3 - Durable lifecycle platform closeout
 
-`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1` — **ACCEPTED / CLOSED**
+`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1` - **ACCEPTED / CLOSED**
 
 Closed shared durable lifecycle primitives on the existing coordinator
 foundation and introduced `DocumentStoreDurableKnowledgeSyncSink` as the
 provider-neutral durable materialization implementation of `KnowledgeSyncSink`.
 Indexing remains optional and out of scope for Durable mode (→ VK-4).
 
-#### VK-4 — Generic Indexed / RAG bridge
+#### VK-4 - Generic Indexed / RAG bridge
 
 `VENDOR-KNOWLEDGE-INDEXED-BRIDGE-1`
 
@@ -669,7 +669,7 @@ Conservative / deferred:
 - provider-specific ACL enforcement remains subject to each adapter's visibility
   contract.
 
-#### VK-5 — Live / Realtime platform closeout
+#### VK-5 - Live / Realtime platform closeout
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1`
 
@@ -681,7 +681,7 @@ no accidental persistence and provider-specific limits behind the adapter
 boundary. The accepted implementation is registration-driven; existing Slack
 and Microsoft Graph live implementations remain evidence, not work to duplicate.
 
-#### VK-6 — Provider capability coverage
+#### VK-6 - Provider capability coverage
 
 `VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1`
 
@@ -731,7 +731,7 @@ cross-provider product E2E remains VK-8.
 truthful and platform-aligned; it does not claim every provider supports every
 mode.
 
-#### Google Workspace family closeout — current authoritative status
+#### Google Workspace family closeout - current authoritative status
 
 The current productionized Google Workspace family slice is
 **ACCEPTED / CLOSED** for bounded `drive`, `docs`, `sheets` and `calendar`
@@ -768,7 +768,7 @@ reconciliation semantics. Drive remains a reconciliation foundation with
 canonical textual content, ordinary inventory absence is not deletion, and no
 metadata-only Indexed claim is made.
 
-#### VK-7 — Frontend neutrality proof
+#### VK-7 - Frontend neutrality proof
 
 `VENDOR-KNOWLEDGE-FRONTEND-NEUTRALITY-PROOF-1`
 
@@ -803,7 +803,7 @@ switch literals.
 The existing Slack connected-source flow remains an explicit provider-owned
 strategy/composition path; this closeout does not claim visually identical UX.
 
-#### VK-8 — Cross-provider three-mode E2E
+#### VK-8 - Cross-provider three-mode E2E
 
 `VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1`
 
@@ -819,7 +819,7 @@ failure isolation. Slack deletion propagation and complete per-user ACL
 semantics remain unproven; other providers retain their VK-6 classifications;
 commercial/GA support is not implied.
 
-#### VK-9 — Platform closeout
+#### VK-9 - Platform closeout
 
 `VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1`
 
@@ -943,7 +943,7 @@ activating work. Any older wording that says Google Calendar has no Vendor
 Knowledge adapter is a documentation contradiction and is not capability
 evidence.
 
-### VK-1 — unified three-mode contract audit result
+### VK-1 - unified three-mode contract audit result
 
 **Status:** `ACCEPTED / CLOSED`
 
@@ -966,7 +966,7 @@ not as a roadmap reorder.
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for Indexed / RAG, Durable / Storage / Materialization and Live / Realtime access. The architecture itself does not accept provider mode claims; the Slack live family is now separately **ACCEPTED / CLOSED** through its focused production proof.
 
-`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Google Workspace knowledge work. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` is **ACCEPTED** — provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain. LKW conversation context implementation and shared-channel runtime remain **not** implemented; the separate Slack live capability family is **ACCEPTED / CLOSED**.
+`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Google Workspace knowledge work. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` is **ACCEPTED** - provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain. LKW conversation context implementation and shared-channel runtime remain **not** implemented; the separate Slack live capability family is **ACCEPTED / CLOSED**.
 
 `LKW-SLACK-CONNECTED-SOURCE-1` is **ACCEPTED / CLOSED**. The proof accepts
 selected Slack conversation durable synchronization, root/reply traversal,
@@ -996,9 +996,9 @@ SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 
 DONE:
 SLACK-KNOWLEDGE-FOUNDATION-1
-LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
-SLACK-KNOWLEDGE-LIVE-CAPABILITIES-1 — ACCEPTED / CLOSED
-LKW-SLACK-CONNECTED-SOURCE-1 — ACCEPTED / CLOSED
+LKW-CONVERSATION-CONTEXT-ARCH-1 - ACCEPTED
+SLACK-KNOWLEDGE-LIVE-CAPABILITIES-1 - ACCEPTED / CLOSED
+LKW-SLACK-CONNECTED-SOURCE-1 - ACCEPTED / CLOSED
 
 IN_PROGRESS / CHANGES_REQUIRED:
 none for the accepted Slack connected-source slice
@@ -1015,22 +1015,22 @@ LKW-CONVERSATION-CONTEXT-1
 → LKW-SLACK-KNOWLEDGE-PROOF-1
 
 CURRENT VENDOR KNOWLEDGE / MICROSOFT GRAPH TRACK (independent of Google Workspace):
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 — CHANGES_REQUIRED, correction under review
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1 — CHANGES_REQUIRED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2 — ACCEPTED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A — CHANGES_REQUIRED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1 — CHANGES_REQUIRED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2 — READY_FOR_REVIEW
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B — ACCEPTED through REVIEW-FIX-5-REVIEW-CORRECTION-1
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1 — CHANGES_REQUIRED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2 — CHANGES_REQUIRED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3 — CHANGES_REQUIRED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4 — CHANGES_REQUIRED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5 — CHANGES_REQUIRED
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF — ACCEPTED
-→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
-→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1 — CHANGES_REQUIRED
-→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY — ACCEPTED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 - CHANGES_REQUIRED, correction under review
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1 - CHANGES_REQUIRED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2 - ACCEPTED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A - CHANGES_REQUIRED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1 - CHANGES_REQUIRED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2 - READY_FOR_REVIEW
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B - ACCEPTED through REVIEW-FIX-5-REVIEW-CORRECTION-1
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1 - CHANGES_REQUIRED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2 - CHANGES_REQUIRED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3 - CHANGES_REQUIRED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4 - CHANGES_REQUIRED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5 - CHANGES_REQUIRED
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF - ACCEPTED
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR - ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1 - CHANGES_REQUIRED
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY - ACCEPTED
 → Microsoft Graph adapter-family audit
 
 INDEPENDENT GOOGLE WORKSPACE TRACK (after LKW-SLACK-KNOWLEDGE-PROOF-1 ACCEPTED):
@@ -1608,7 +1608,7 @@ This detailed task history is retained to preserve prior statuses and evidence.
 Its future sequencing is superseded by the canonical VK-1–VK-9 roadmap in §1A.
 No status below is changed by this reframe.
 
-### Phase 0 — Architecture, plan and reuse audit
+### Phase 0 - Architecture, plan and reuse audit
 
 #### `VENDOR-KNOWLEDGE-FACADE-ARCH-1`
 
@@ -1649,7 +1649,7 @@ Confirmed gaps:
 
 ---
 
-### Phase 1 — Facade contracts
+### Phase 1 - Facade contracts
 
 #### `VENDOR-KNOWLEDGE-FACADE-CONTRACT-1`
 
@@ -1706,7 +1706,7 @@ tests/unit/runtime/vendor_knowledge/
 
 ---
 
-### Phase 2 — Facade core and adapter registry
+### Phase 2 - Facade core and adapter registry
 
 #### `VENDOR-KNOWLEDGE-FACADE-CORE-1`
 
@@ -1745,7 +1745,7 @@ Acceptance:
 
 ---
 
-### Phase 3 — Connection and source binding
+### Phase 3 - Connection and source binding
 
 #### `VENDOR-KNOWLEDGE-CONNECTION-1`
 
@@ -1778,7 +1778,7 @@ Rules:
 
 ---
 
-### Phase 4 — Shared synchronization coordinator
+### Phase 4 - Shared synchronization coordinator
 
 #### `VENDOR-KNOWLEDGE-SYNC-1A`
 
@@ -1826,7 +1826,7 @@ Conditional write requirements (from `PLATFORM-DOCUMENT-STORE-CONDITIONAL-1`):
 - implementation must fail closed when the resolved `DocumentStore` does not satisfy `ConditionalDocumentStore`;
 - do not emulate CAS with ordinary `get()` + `put()`.
 
-Retry/backoff is a bounded Vendor Knowledge handler policy only — not a generic delayed queue scheduler. The sync sink remains an injected port; LKW intake remains separate.
+Retry/backoff is a bounded Vendor Knowledge handler policy only - not a generic delayed queue scheduler. The sync sink remains an injected port; LKW intake remains separate.
 
 #### Composition modes
 
@@ -1849,11 +1849,11 @@ VendorKnowledgeSyncRuntime.
 
 #### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1`
 
-**Status:** `CHANGES_REQUIRED` — correction under review
+**Status:** `CHANGES_REQUIRED` - correction under review
 
-**Review fix:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` — `CHANGES_REQUIRED`
+**Review fix:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` - `CHANGES_REQUIRED`
 
-**Review fix 2:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2` — `READY_FOR_REVIEW`
+**Review fix 2:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2` - `READY_FOR_REVIEW`
 
 **Purpose:** Freeze provider-neutral durable reconciliation-finalization semantics so completed snapshot reconciliation can emit deterministic synthetic tombstones for items absent from the synchronized inventory without the checkpoint-failure / `restart=True` nondeterminism present on HEAD.
 
@@ -1884,7 +1884,7 @@ detection is implemented and covered by the accepted Calendar proof.
 
 ---
 
-### Phase 5 — Vendor proofs
+### Phase 5 - Vendor proofs
 
 #### `JIRA-KNOWLEDGE-ADAPTER-1`
 
@@ -2049,24 +2049,24 @@ preserved for audit history and do not override the current matrix or the
 accepted family closeout above.
 
 ```text
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 — CHANGES_REQUIRED, correction under review
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1 — CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2 — ACCEPTED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A — CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1 — CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2 — READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B — ACCEPTED through REVIEW-FIX-5-REVIEW-CORRECTION-1
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1 — CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2 — CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3 — CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4 — CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5 — CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF — ACCEPTED
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1 — CHANGES_REQUIRED
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY — ACCEPTED
-MSGRAPH-KNOWLEDGE-ADAPTERS-1 — READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT — READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 - CHANGES_REQUIRED, correction under review
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1 - CHANGES_REQUIRED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2 - ACCEPTED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A - CHANGES_REQUIRED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1 - CHANGES_REQUIRED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2 - READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B - ACCEPTED through REVIEW-FIX-5-REVIEW-CORRECTION-1
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1 - CHANGES_REQUIRED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2 - CHANGES_REQUIRED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3 - CHANGES_REQUIRED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4 - CHANGES_REQUIRED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5 - CHANGES_REQUIRED
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF - ACCEPTED
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR - ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1 - CHANGES_REQUIRED
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY - ACCEPTED
+MSGRAPH-KNOWLEDGE-ADAPTERS-1 - READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT - READY_FOR_REVIEW
 ```
 
 Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream.
@@ -2115,7 +2115,7 @@ Recommended implementation/proof order inside the Microsoft scope:
 2. mail
 3. teams_channel
 4. teams_chat
-5. calendar — ACCEPTED through `REVIEW-FIX-1-REVIEW-CORRECTION-1` (prior review fix CHANGES_REQUIRED)
+5. calendar - ACCEPTED through `REVIEW-FIX-1-REVIEW-CORRECTION-1` (prior review fix CHANGES_REQUIRED)
 ```
 
 Google Workspace remains an independent workstream. Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream.
@@ -2166,7 +2166,7 @@ First select one precise source kind: Unity Catalog metadata, workspace tree, vo
 
 ---
 
-### Historical Phase 6 — Post-adapter roadmap (superseded)
+### Historical Phase 6 - Post-adapter roadmap (superseded)
 
 After the Microsoft Graph adapter-family audit (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`), platform work splits into durable and live branches converging at Hybrid Ask.
 
@@ -2238,7 +2238,7 @@ Planned tasks:
 - unified provenance
 ```
 
-Maps to existing LKW product blocks — do not create duplicate LKW roadmap blocks:
+Maps to existing LKW product blocks - do not create duplicate LKW roadmap blocks:
 
 ```text
 LKW-KNOWLEDGE-ACCESS-1
@@ -2250,7 +2250,7 @@ LKW-KNOWLEDGE-LIFECYCLE-1
 
 ---
 
-### Historical Phase 7 — LKW convergence (separate session)
+### Historical Phase 7 - LKW convergence (separate session)
 
 #### `LKW-CONNECTED-SOURCE-1`
 
@@ -2279,7 +2279,7 @@ No duplicate parsing or embedding path is allowed.
 
 ---
 
-### Phase 8 — Slack Knowledge vertical (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
+### Phase 8 - Slack Knowledge vertical (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
 
 **Classification:** architecture frozen; platform foundation **IMPLEMENTED**; Slack live family **ACCEPTED / CLOSED**; bounded configured-channel Ask readiness **ACCEPTED / CLOSED**; generic Indexed bridge **ACCEPTED / CLOSED** through VK-4; Slack deletion remains unproven.
 
@@ -2289,7 +2289,7 @@ One existing `SlackConversationChannelIntegration` is reused across indexed RAG,
 
 **Status:** `DONE` (platform)
 
-**Classification:** `IMPLEMENTED` — platform foundation; not the LKW bridge. The separate Slack live family is accepted below.
+**Classification:** `IMPLEMENTED` - platform foundation; not the LKW bridge. The separate Slack live family is accepted below.
 
 Delivered scope includes same-integration bot-token credential model on one `AsyncWebClient`, bot-membership inventory via single `users.conversations` stream, `conversation_kind`-explicit history/reply/exact reads, strict descriptor validation, `thread_broadcast` exclusion from history materialization, and durable sync retry proof for multi-page reply traversal followed by history resumption.
 
@@ -2332,7 +2332,7 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 
 #### `LKW-SLACK-CONNECTED-SOURCE-1`
 
-**Status:** `ACCEPTED / CLOSED` (LKW application — selected Slack
+**Status:** `ACCEPTED / CLOSED` (LKW application - selected Slack
 conversation synchronization, root/reply traversal, typed continuation,
 crash-safe recovery, application-owned materialization and indexed Search/Ask
 proof accepted)
@@ -2361,15 +2361,15 @@ Connecting a Slack conversation as an Indexed Source does **not** activate the b
 
 #### `LKW-CONVERSATION-CONTEXT-1`
 
-**Status:** `PLANNED` (LKW application — LKW-wide, not platform Slack ownership)
+**Status:** `PLANNED` (LKW application - LKW-wide, not platform Slack ownership)
 
 Provider-neutral durable Conversation Context Bindings, observed-audience validation, workspace audience policy, conversation-level state versus thread-level memory, evidence guards and shared `READ_ONLY_ASK` capability boundary. Canonical architecture: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 #### `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`
 
-**Status:** `PLANNED` (LKW application — first provider adapter over generic context layer)
+**Status:** `PLANNED` (LKW application - first provider adapter over generic context layer)
 
-Slack channel/private-channel mention handling (`MENTION_ONLY` activation) over `LKW-CONVERSATION-CONTEXT-1`. Slack-specific event terms (`app_mention`, `message.channels`, etc.) remain in the adapter — not in the LKW core contract.
+Slack channel/private-channel mention handling (`MENTION_ONLY` activation) over `LKW-CONVERSATION-CONTEXT-1`. Slack-specific event terms (`app_mention`, `message.channels`, etc.) remain in the adapter - not in the LKW core contract.
 
 #### `SLACK-LIVE-CAPABILITY-1`
 
@@ -2449,11 +2449,11 @@ approved user selects a Slack conversation
 → citations identify safe Slack message/thread provenance
 ```
 
-**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources — with strict personal/shared audience isolation per [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../CONVERSATION_CONTEXT_ARCHITECTURE.md).
+**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources - with strict personal/shared audience isolation per [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 ---
 
-### Phase 9 — Slack source management (frontend)
+### Phase 9 - Slack source management (frontend)
 
 #### `LKW-SLACK-CONNECTED-SOURCES-1`
 
@@ -2463,13 +2463,13 @@ Add safe source discovery, selection, sync request and status through Slack. Sla
 
 ---
 
-### Phase 10 — Google Workspace Knowledge vertical (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
+### Phase 10 - Google Workspace Knowledge vertical (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
 
 **Architecture:** [`../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8. **Provider usage:** [`../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md`](../../../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md).
 
-`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` is **READY_FOR_REVIEW**. All runtime tasks below are **PLANNED** — no Google knowledge read surface, Vendor Knowledge adapter, live capability or LKW Connected Source is implemented.
+`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` is **READY_FOR_REVIEW**. All runtime tasks below are **PLANNED** - no Google knowledge read surface, Vendor Knowledge adapter, live capability or LKW Connected Source is implemented.
 
-One existing `GoogleWorkspaceCollaborationSuiteIntegration` (`provider_id: google_workspace`, category: `collaboration_suite`) is reused across indexed RAG, durable materialization without RAG and bounded live access. Seven independently scoped source kinds: `drive`, `docs`, `sheets`, `calendar`, `slides`, `mail`, `chat`. Drive may discover all Drive-hosted resources; discovery does not determine durable `source_kind` — the platform derives canonical binding kind server-side. The frontend must not choose or override `source_kind`.
+One existing `GoogleWorkspaceCollaborationSuiteIntegration` (`provider_id: google_workspace`, category: `collaboration_suite`) is reused across indexed RAG, durable materialization without RAG and bounded live access. Seven independently scoped source kinds: `drive`, `docs`, `sheets`, `calendar`, `slides`, `mail`, `chat`. Drive may discover all Drive-hosted resources; discovery does not determine durable `source_kind` - the platform derives canonical binding kind server-side. The frontend must not choose or override `source_kind`.
 
 **Canonical durable resource ownership:**
 
@@ -2488,30 +2488,30 @@ One existing `GoogleWorkspaceCollaborationSuiteIntegration` (`provider_id: googl
 
 **Stable resource identity:** `provider_id = google_workspace` + `connection_ref` + canonical Google resource type + stable Google resource ID. Rename/move (where ID preserved) do not change identity. Export/download URL is never identity. The same native Google file must not become unrelated `drive` and `docs`/`sheets`/`slides` durable objects.
 
-**Overlapping-binding policy (first proof):** explicit selected resources only; broad Drive/folder synchronization deferred. Future broad scopes require Option A (reject overlapping binding) or Option B (canonical deduplication record) — Option B not chosen until Vendor Knowledge and LKW ownership models support it safely; until then broad overlapping scopes fail closed or remain deferred.
+**Overlapping-binding policy (first proof):** explicit selected resources only; broad Drive/folder synchronization deferred. Future broad scopes require Option A (reject overlapping binding) or Option B (canonical deduplication record) - Option B not chosen until Vendor Knowledge and LKW ownership models support it safely; until then broad overlapping scopes fail closed or remain deferred.
 
-**Product rationale:** Microsoft 365 proves enterprise-oriented collaboration and document access. Google Workspace lowers the entry barrier for individual testers, small teams and design partners who can authorize their own account. Supporting both proves that the LKW Connected Source architecture is provider-neutral rather than Microsoft-specific. The goal is not connector count — it is one convincing proof over different real-world source shapes and provider ecosystems. Google Workspace is the second strategic collaboration/document ecosystem, not an open-ended commitment to add every available SaaS provider.
+**Product rationale:** Microsoft 365 proves enterprise-oriented collaboration and document access. Google Workspace lowers the entry barrier for individual testers, small teams and design partners who can authorize their own account. Supporting both proves that the LKW Connected Source architecture is provider-neutral rather than Microsoft-specific. The goal is not connector count - it is one convincing proof over different real-world source shapes and provider ecosystems. Google Workspace is the second strategic collaboration/document ecosystem, not an open-ended commitment to add every available SaaS provider.
 
 #### `GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1`
 
 **Status:** `PLANNED`
 
-**Prerequisites (activation gates — not satisfied):**
+**Prerequisites (activation gates - not satisfied):**
 
 ```text
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 becomes ACCEPTED (currently READY_FOR_REVIEW)
-Google Workspace runtime implementation starts only after LKW-SLACK-KNOWLEDGE-PROOF-1 becomes ACCEPTED (complete Slack Knowledge proof — currently PLANNED)
+Google Workspace runtime implementation starts only after LKW-SLACK-KNOWLEDGE-PROOF-1 becomes ACCEPTED (complete Slack Knowledge proof - currently PLANNED)
 canonical Tenant Connection / credential-reference boundary available
 SecretsStore-owned credential persistence available
 runtime integration rehydration/resolution boundary available
 Vendor Knowledge binding, registry and synchronization contracts available
 ```
 
-Canonical owners: durable tenant Connection Catalog and runtime integration rehydration/resolution — `LKW-KNOWLEDGE-ACCESS-1`. Google Foundation must not introduce another tenant Connection catalog, a Google-only credential database, or OAuth tokens in provider config / bindings / LKW state.
+Canonical owners: durable tenant Connection Catalog and runtime integration rehydration/resolution - `LKW-KNOWLEDGE-ACCESS-1`. Google Foundation must not introduce another tenant Connection catalog, a Google-only credential database, or OAuth tokens in provider config / bindings / LKW state.
 
 Typed Google Workspace integration configuration; credential-reference resolution; least-privilege credential modes; one shared provider client family; provider request execution boundary; pagination token normalization; provider error normalization; rate-limit and retry classification; stable provider resource references; safe timestamps and revisions; safe display labels; bounded request limits; capability declaration; no LKW imports; no RAG imports; no application workspace concepts.
 
-Credential routes (conceptually separated): individual-user OAuth (preferred for first proof); organization/admin-approved Google Workspace access; service-account or delegated organizational access when justified. Exact OAuth scopes and Google SDK signatures are verified in implementation against current official Google documentation — not frozen here. Secrets remain in Connection/SecretsStore; never in bindings, Remote Resources, LKW Sources, citations or cursors.
+Credential routes (conceptually separated): individual-user OAuth (preferred for first proof); organization/admin-approved Google Workspace access; service-account or delegated organizational access when justified. Exact OAuth scopes and Google SDK signatures are verified in implementation against current official Google documentation - not frozen here. Secrets remain in Connection/SecretsStore; never in bindings, Remote Resources, LKW Sources, citations or cursors.
 
 #### `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1`
 
@@ -2550,13 +2550,13 @@ Each adapter substep pairs with its read surface and must be independently revie
 Thin adapters over the same resolved `GoogleWorkspaceCollaborationSuiteIntegration`:
 
 ```text
-GoogleWorkspaceDriveKnowledgeAdapter      (1A — proof-critical)
-GoogleWorkspaceDocsKnowledgeAdapter       (1B — proof-critical)
-GoogleWorkspaceSheetsKnowledgeAdapter     (1C — proof-critical)
-GoogleWorkspaceCalendarKnowledgeAdapter   (1D — proof-critical)
-GoogleWorkspaceSlidesKnowledgeAdapter     (1E — post-proof)
-GoogleWorkspaceMailKnowledgeAdapter       (1F — post-proof)
-GoogleWorkspaceChatKnowledgeAdapter       (1G — post-proof)
+GoogleWorkspaceDriveKnowledgeAdapter      (1A - proof-critical)
+GoogleWorkspaceDocsKnowledgeAdapter       (1B - proof-critical)
+GoogleWorkspaceSheetsKnowledgeAdapter     (1C - proof-critical)
+GoogleWorkspaceCalendarKnowledgeAdapter   (1D - proof-critical)
+GoogleWorkspaceSlidesKnowledgeAdapter     (1E - post-proof)
+GoogleWorkspaceMailKnowledgeAdapter       (1F - post-proof)
+GoogleWorkspaceChatKnowledgeAdapter       (1G - post-proof)
 ```
 
 Registry keys:
@@ -2616,9 +2616,9 @@ user connects one Google account
 → no Google API call is made by Ask after durable synchronization
 ```
 
-User-oriented proof demonstrating narrative document, structured spreadsheet, calendar/event data and ordinary stored file — not merely adapter unit tests.
+User-oriented proof demonstrating narrative document, structured spreadsheet, calendar/event data and ordinary stored file - not merely adapter unit tests.
 
-**Proof-first gate (binding — vertically incremental):**
+**Proof-first gate (binding - vertically incremental):**
 
 ```text
 GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
@@ -2650,7 +2650,7 @@ Each read surface and its adapter must be independently reviewable before procee
 
 ---
 
-## Phase 9 — Unified Vendor Knowledge live capability rollout
+## Phase 9 - Unified Vendor Knowledge live capability rollout
 
 ### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1`
 

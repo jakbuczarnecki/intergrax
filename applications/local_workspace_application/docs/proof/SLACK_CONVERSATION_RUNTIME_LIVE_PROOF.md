@@ -1,4 +1,4 @@
-# Slack conversation runtime — live proof
+# Slack conversation runtime - live proof
 
 ```text
 task ID: SLACK-CONVERSATION-RUNTIME-1-LIVE-PROOF

@@ -27,22 +27,22 @@ Gaps identified in the 2026-06-08 audit:
 
 Alternatives considered:
 
-1. **External APM only (Datadog/OpenTelemetry as source of truth)** — rejected: violates event-first canon, couples operators to vendor, loses typed harness semantics.
-2. **Trace-only (drop RuntimeEvent bus)** — rejected: ops filtering, policy hooks, and middleware require canonical event types.
-3. **Per-tier observability stacks** — rejected: duplicates wiring, breaks unified journal, violates Harness-as-product principle.
-4. **Harness Observability Spine (HOS)** — **accepted**: one bus, typed extension, pluggable persistence, unified read model.
+1. **External APM only (Datadog/OpenTelemetry as source of truth)** - rejected: violates event-first canon, couples operators to vendor, loses typed harness semantics.
+2. **Trace-only (drop RuntimeEvent bus)** - rejected: ops filtering, policy hooks, and middleware require canonical event types.
+3. **Per-tier observability stacks** - rejected: duplicates wiring, breaks unified journal, violates Harness-as-product principle.
+4. **Harness Observability Spine (HOS)** - **accepted**: one bus, typed extension, pluggable persistence, unified read model.
 
 ## Decision
 
 Adopt the **Harness Observability Spine (HOS)** as the single observability mechanism for all tiers:
 
 1. **Event-first:** `RuntimeEvent` is the primary audit signal; `TraceEvent` carries rich `DiagnosticPayload` detail; metrics are derived.
-2. **Single emit API:** `ObservabilityEmitter` facade wraps `RuntimeState.trace_event`, `RuntimeEventBus.record`, and `RunTraceWriter.append` — developers do not choose stores. *(OBS-BUS-2 Done)*
+2. **Single emit API:** `ObservabilityEmitter` facade wraps `RuntimeState.trace_event`, `RuntimeEventBus.record`, and `RunTraceWriter.append` - developers do not choose stores. *(OBS-BUS-2 Done)*
 3. **Typed extension:** All tiers extend `DiagnosticPayload` with stable `schema_id`; agent schemas use `agents.<slug>.diag.*`, applications use `applications.<slug>.diag.*`. *(OBS-BUS-4 Done)*
 4. **TraceScope:** Context manager sets `parent_event_id` for causal trees. *(OBS-BUS-2 Done)*
-5. **Typed canonical payloads:** `payload_registry` + `schema_guard` enforce `payload_schema_id` + structured `data` at the bus layer. *(OBS-BUS-1 Done; Pydantic field union on `RuntimeEvent.payload` is residual — see architecture/OBSERVABILITY.md §8.2)*
+5. **Typed canonical payloads:** `payload_registry` + `schema_guard` enforce `payload_schema_id` + structured `data` at the bus layer. *(OBS-BUS-1 Done; Pydantic field union on `RuntimeEvent.payload` is residual - see architecture/OBSERVABILITY.md §8.2)*
 6. **Unified read model:** `build_unified_run_journal` remains the operator timeline; external sinks subscribe or dual-write from the journal.
-7. **Wiring unchanged at Tier-3:** `wire_application_observability` — no per-product trace stores.
+7. **Wiring unchanged at Tier-3:** `wire_application_observability` - no per-product trace stores.
 
 ## Consequences
 
@@ -62,7 +62,7 @@ Adopt the **Harness Observability Spine (HOS)** as the single observability mech
 
 ## Compliance
 
-- Tier boundaries preserved — Tier-2 does not own stores; Tier-3 wires, does not reimplement
+- Tier boundaries preserved - Tier-2 does not own stores; Tier-3 wires, does not reimplement
 - PII redaction remains at `DiagnosticPayload.redact()` boundary
 - Linked: `architecture/OBSERVABILITY.md`, canon §33 pointer, `intergrax_runtime_architecture.md` Phase OBS-BUS
 

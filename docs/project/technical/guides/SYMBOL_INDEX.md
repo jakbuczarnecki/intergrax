@@ -1,4 +1,4 @@
-# Symbol index (F5 — token-efficient code lookup)
+# Symbol index (F5 - token-efficient code lookup)
 
 Use this **before** repo-wide semantic search. Grep the path directly.
 

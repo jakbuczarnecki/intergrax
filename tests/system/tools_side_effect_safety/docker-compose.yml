@@ -1,4 +1,4 @@
-# TOOLS-SIDE-EFFECT-SAFETY — brutal platform-native Docker E2E proof
+# TOOLS-SIDE-EFFECT-SAFETY - brutal platform-native Docker E2E proof
 # Run from repository root:
 #   docker compose -f tests/system/tools_side_effect_safety/docker-compose.yml up --build --exit-code-from proof-runner --attach proof-runner --attach-dependencies=false
 

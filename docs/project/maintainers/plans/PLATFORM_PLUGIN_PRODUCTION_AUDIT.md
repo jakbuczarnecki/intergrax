@@ -1,4 +1,6 @@
-# PLATFORM-PLUGIN-AUDIT-1 — Production Architecture & Implementation Audit
+# PLATFORM-PLUGIN-AUDIT-1 - Production Architecture & Implementation Audit
+
+> **Historical audit snapshot (2026-08-12).** For current Platform Plugins behavior see [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) and [`EXTENSION_AUTHOR_GUIDE.md`](../../technical/guides/EXTENSION_AUTHOR_GUIDE.md).
 
 **Task:** `PLATFORM-PLUGIN-AUDIT-1`  
 **Status:** `READY_FOR_REVIEW`  
@@ -16,20 +18,20 @@
 | Field | Value |
 |-------|-------|
 | **Overall verdict** | **APPROVED_WITH_GAPS** |
-| **Production-ready (trusted-host model)** | **Yes** — for deployments that treat installed Python as trusted, enable third-party entry points explicitly, and run host qualification before registration |
-| **Enterprise-ready** | **No** — missing unified inventory, verifiable qualification attestation, canonical platform version authority, cross-worker governance, and isolation beyond in-process trust |
-| **Architecture remediation required** | **No** — gaps are documented limitations, hardening backlog, and enterprise-future work; core platform/domain split remains sound |
+| **Production-ready (trusted-host model)** | **Yes** - for deployments that treat installed Python as trusted, enable third-party entry points explicitly, and run host qualification before registration |
+| **Enterprise-ready** | **No** - missing unified inventory, verifiable qualification attestation, canonical platform version authority, cross-worker governance, and isolation beyond in-process trust |
+| **Architecture remediation required** | **No** - gaps are documented limitations, hardening backlog, and enterprise-future work; core platform/domain split remains sound |
 | **Blocking production (single-tenant / trusted host)** | **None** at CRITICAL severity |
-| **Blocking enterprise multi-tenant control plane** | **Multiple** — see §12 and enterprise matrix §11 |
+| **Blocking enterprise multi-tenant control plane** | **Multiple** - see §12 and enterprise matrix §11 |
 
-**Summary:** The Platform Plugin subsystem delivers a coherent **coordination layer** (`intergrax/core/plugins/`) over **domain-owned contracts**. Discovery, manifest validation, compatibility checks, and qualification vocabulary are implemented and tested. PLUGIN-9 closeout invariants hold at the audited SHA. Independent review confirms the implementation matches frozen architecture for the intended **trusted in-process** trust model. Residual risks concentrate on **operational visibility**, **failure isolation adoption**, **semantic-only qualification**, **explicit opt-in activation**, and **enterprise governance surfaces** — not on accidental second plugin frameworks or tier violations.
+**Summary:** The Platform Plugin subsystem delivers a coherent **coordination layer** (`intergrax/core/plugins/`) over **domain-owned contracts**. Discovery, manifest validation, compatibility checks, and qualification vocabulary are implemented and tested. PLUGIN-9 closeout invariants hold at the audited SHA. Independent review confirms the implementation matches frozen architecture for the intended **trusted in-process** trust model. Residual risks concentrate on **operational visibility**, **failure isolation adoption**, **semantic-only qualification**, **explicit opt-in activation**, and **enterprise governance surfaces** - not on accidental second plugin frameworks or tier violations.
 
 ---
 
 ## 2. Audit scope and methodology
 
 - **Repository:** `D:\Projekty\intergrax`, branch `development` only  
-- **Baseline:** `origin/development = f7b6eedf354d43b1459b8077a56f8acd3fdaaa3d` — **verified ancestor of HEAD**  
+- **Baseline:** `origin/development = f7b6eedf354d43b1459b8077a56f8acd3fdaaa3d` - **verified ancestor of HEAD**  
 - **No production code changes** in this task  
 - **Per-domain read cap:** public contract · loader/bootstrap · config/DI · one example · focused tests  
 - **Tests executed:** contract suite · PLUGIN-8 E2E · unit `tests/unit/core/plugins/` · scaffold qualification test  
@@ -50,7 +52,7 @@
 | G. Multi-tenancy | PASS | Catalog metadata global; runtime materialization tenant-scoped in inspected paths |
 | H. Lifecycle & resource ownership | PASS_WITH_RISK | Vocabulary only; domain-owned cleanup; some loaders instantiate at EP load |
 | I. Compatibility & versioning | PASS_WITH_RISK | PEP 440 + specifier checks solid; no canonical runtime version API |
-| J. Qualification | PASS_WITH_RISK | Immutable records; trivial fabrication by host code — intentional |
+| J. Qualification | PASS_WITH_RISK | Immutable records; trivial fabrication by host code - intentional |
 | K. Failure handling | PASS_WITH_RISK | Matrix incomplete in loaders; one bad EP can block group in `fail_fast` paths |
 | L. Scalability | PASS_WITH_RISK | Global catalogs OK for single-app process; multi-app / 1000-plugin ops need discipline |
 | M. Performance | PASS_WITH_RISK | Coordination mostly startup; tool-invocation EP scan on lookup path |
@@ -67,16 +69,16 @@
 
 **Verified:**
 
-1. Platform coordination vs domain ownership — **preserved**. `intergrax/core/plugins/` coordinates discovery/manifest/compatibility/qualification vocabulary; domains own registration semantics (`register_tool_plugin`, RAG bootstrap registries, VK contribution catalog).
-2. No universal runtime wrapper — **confirmed**. No monolithic `PlatformPlugin` runtime type in production paths.
-3. No accidental second plugin architecture — **confirmed**. Single shared `discovery.py`; domain-specific loaders call it; VK uses separate contribution catalog by design.
-4. Public/internal boundaries — **structurally enforceable** via tier boundaries and domain registries; not all surfaces have scaffold/local paths.
-5. Tier layering — **`core/plugins` imports only Tier-0** (packaging, pydantic, importlib.metadata). No imports from `runtime/`, `agents/`, or `applications/`.
-6. Domain contracts authoritative — **yes** per architecture §25 and code paths (e.g. `ToolPlugin`, `SecurityDefensePlugin`).
-7. Host composition location — **Tier-3** `applications/_shared/*_wiring.py` and host factories.
-8. Package coordination does not leak runtime semantics — manifest is metadata-only; EP values are code pointers.
-9. DO-NOT-UNIFY decisions — **still justified** (conflict policy, VK catalog, lifecycle engines remain domain-owned).
-10. Future composability — **yes**; additive EP groups and capability descriptors supported.
+1. Platform coordination vs domain ownership - **preserved**. `intergrax/core/plugins/` coordinates discovery/manifest/compatibility/qualification vocabulary; domains own registration semantics (`register_tool_plugin`, RAG bootstrap registries, VK contribution catalog).
+2. No universal runtime wrapper - **confirmed**. No monolithic `PlatformPlugin` runtime type in production paths.
+3. No accidental second plugin architecture - **confirmed**. Single shared `discovery.py`; domain-specific loaders call it; VK uses separate contribution catalog by design.
+4. Public/internal boundaries - **structurally enforceable** via tier boundaries and domain registries; not all surfaces have scaffold/local paths.
+5. Tier layering - **`core/plugins` imports only Tier-0** (packaging, pydantic, importlib.metadata). No imports from `runtime/`, `agents/`, or `applications/`.
+6. Domain contracts authoritative - **yes** per architecture §25 and code paths (e.g. `ToolPlugin`, `SecurityDefensePlugin`).
+7. Host composition location - **Tier-3** `applications/_shared/*_wiring.py` and host factories.
+8. Package coordination does not leak runtime semantics - manifest is metadata-only; EP values are code pointers.
+9. DO-NOT-UNIFY decisions - **still justified** (conflict policy, VK catalog, lifecycle engines remain domain-owned).
+10. Future composability - **yes**; additive EP groups and capability descriptors supported.
 
 **Score rationale:** PASS_WITH_RISK due to documented absence of canonical Intergrax platform version authority (architecture §20.4, §29).
 
@@ -95,7 +97,7 @@
 | `catalog_bootstrap.py` | Unified Tier-0 bootstrap for integrations/tools/skills + security EP hook | Idempotent shipped flag; global `_tier0_shipped_done` |
 | `memory_bootstrap.py` | Memory store EP discovery | Count-only bootstrap; on-demand rediscovery (see F008, F010) |
 
-**No god module** in platform coordination. **No service locator** in `core/plugins/`. **Duplication:** security/policy/tool-invocation loaders repeat iter/load/instantiate pattern instead of `register_plugins` — acceptable domain variance (instance vs class plugins).
+**No god module** in platform coordination. **No service locator** in `core/plugins/`. **Duplication:** security/policy/tool-invocation loaders repeat iter/load/instantiate pattern instead of `register_plugins` - acceptable domain variance (instance vs class plugins).
 
 ---
 
@@ -104,14 +106,14 @@
 | Question | Answer | Evidence |
 |----------|--------|----------|
 | One bad plugin blocks unrelated discovery? | **Within same EP group, often yes** (`fail_fast` default in `load_entry_point_plugins`) | `discovery.py` `on_load_failure="fail_fast"`; domain loaders do not pass `isolate` |
-| Failures bounded per capability? | **Partial** — `load_entry_point_targets(..., isolate)` exists; RAG/security/policy loaders use fail-fast paths |
-| Deterministic? | **Yes** — `sorted(specs, key=(name, value))` | `iter_entry_point_specs` |
-| Duplicate names handled? | **Yes** — `PluginConflictError` with `ENTRY_POINT_NAME` | `load_entry_point_targets` |
-| Malicious metadata uncontrolled? | **Bounded** — manifest validation rejects secrets/unknown keys; EP load executes installed code (trusted model) |
+| Failures bounded per capability? | **Partial** - `load_entry_point_targets(..., isolate)` exists; RAG/security/policy loaders use fail-fast paths |
+| Deterministic? | **Yes** - `sorted(specs, key=(name, value))` | `iter_entry_point_specs` |
+| Duplicate names handled? | **Yes** - `PluginConflictError` with `ENTRY_POINT_NAME` | `load_entry_point_targets` |
+| Malicious metadata uncontrolled? | **Bounded** - manifest validation rejects secrets/unknown keys; EP load executes installed code (trusted model) |
 | Imports only when expected? | **Yes** for scan vs load separation | `iter_entry_point_specs` scan-only; `load_entry_point_value` on demand |
 | Repeated discovery safe? | **Yes** but may repeat import/load work | No global EP cache |
 
-**Security defense loader** always `override=True` on registration — duplicates silently override (F005).
+**Security defense loader** always `override=True` on registration - duplicates silently override (F005).
 
 ---
 
@@ -119,17 +121,17 @@
 
 **Global catalogs (process-scoped):**
 
-- `integrations/registry/catalog.py` — `_CATALOG` dict
-- Tool/skill/context catalogs — similar snapshots
-- `defense_registry.py` — `_SHIPPED` + `_DYNAMIC`
-- Bootstrap idempotency flags — `_tier0_shipped_done`, `_context_shipped_done`
+- `integrations/registry/catalog.py` - `_CATALOG` dict
+- Tool/skill/context catalogs - similar snapshots
+- `defense_registry.py` - `_SHIPPED` + `_DYNAMIC`
+- Bootstrap idempotency flags - `_tier0_shipped_done`, `_context_shipped_done`
 
 **Classification:** **Acceptable architecture** for single-application-per-process deployments. **Enterprise scaling limitation** for:
 
 - multiple Intergrax application configurations in one process without catalog isolation
 - test order dependence mitigated by `clear_catalog` / `reset_*_for_tests` helpers (F007)
 
-**Thread-safety:** Catalog mutations at bootstrap are not generally locked; assumes single-threaded startup — typical for CPython app servers (worker-per-process).
+**Thread-safety:** Catalog mutations at bootstrap are not generally locked; assumes single-threaded startup - typical for CPython app servers (worker-per-process).
 
 ---
 
@@ -148,7 +150,7 @@
 | Security `HookContext` | Defense plugins receive hook context, not raw secrets API |
 | VK credential references | Binding-scoped in VK composition paths |
 
-**No global DI container** in platform layer. `discover_plugins_enabled()` reads `INTERGRAX_DISCOVER_PLUGINS` — narrow, explicit env gate (F003).
+**No global DI container** in platform layer. `discover_plugins_enabled()` reads `INTERGRAX_DISCOVER_PLUGINS` - narrow, explicit env gate (F003).
 
 ---
 
@@ -174,10 +176,10 @@
 
 ## 10. Multi-tenancy (G)
 
-- Plugin **classes** and catalog **metadata** are global — **safe** (immutable type objects).
+- Plugin **classes** and catalog **metadata** are global - **safe** (immutable type objects).
 - **Runtime instances** (integrations, stores, VK bindings) resolved with `tenant_id` in memory/RAG/VK wiring inspected.
-- **Defense plugins** registered globally; inspection uses per-request `HookContext` — tenant data in context, not in plugin singleton state for shipped plugins.
-- **Risk:** Third-party defense plugin implementing mutable global tenant cache would be a **plugin author defect** — platform does not enforce instance isolation.
+- **Defense plugins** registered globally; inspection uses per-request `HookContext` - tenant data in context, not in plugin singleton state for shipped plugins.
+- **Risk:** Third-party defense plugin implementing mutable global tenant cache would be a **plugin author defect** - platform does not enforce instance isolation.
 
 **Score:** PASS for infrastructure; tenant safety depends on host wiring and plugin author discipline.
 
@@ -185,10 +187,10 @@
 
 ## 11. Lifecycle & resource ownership (H)
 
-- **Discovery lifecycle vocabulary** — `PlatformPluginLifecycleState` enum only; **no runtime state engine**.
-- **Materialization** — domain-owned (`build_registry_from_profile`, RAG managers, VK registries).
-- **EP load** — `_resolve_tier0_plugin_type` may call factory and instantiate classes (`instantiate_entry_point_target` for security/policy).
-- **Cleanup** — no universal plugin shutdown; integrations/RAG domains own client lifecycle.
+- **Discovery lifecycle vocabulary** - `PlatformPluginLifecycleState` enum only; **no runtime state engine**.
+- **Materialization** - domain-owned (`build_registry_from_profile`, RAG managers, VK registries).
+- **EP load** - `_resolve_tier0_plugin_type` may call factory and instantiate classes (`instantiate_entry_point_target` for security/policy).
+- **Cleanup** - no universal plugin shutdown; integrations/RAG domains own client lifecycle.
 - **Leak surface:** EP-loaded plugin instances in `_DYNAMIC` defense registry persist for process lifetime without unload API.
 
 ---
@@ -200,11 +202,11 @@
 | 10 plugins | No concern |
 | 100 plugins | EP enumeration at startup acceptable; catalog dict lookups O(1) |
 | 1000 plugins | Startup EP scan + import cost grows; no lazy catalog for all domains |
-| Multi-app one process | Global catalogs — **contamination risk** without process split |
+| Multi-app one process | Global catalogs - **contamination risk** without process split |
 | Startup | `importlib.metadata.entry_points()` per group; RAG may call `discover_plugins_enabled()` per engine creation |
-| Request path | `load_tool_invocation_pattern` scans all EPs per lookup — **O(N)** (F009) |
-| `discover_session_turn_index_plugin_types` | Re-scans EPs when called — **O(N)** per wiring (F008) |
-| Distributed workers | Each worker independent — **no distributed inventory** |
+| Request path | `load_tool_invocation_pattern` scans all EPs per lookup - **O(N)** (F009) |
+| `discover_session_turn_index_plugin_types` | Re-scans EPs when called - **O(N)** per wiring (F008) |
+| Distributed workers | Each worker independent - **no distributed inventory** |
 
 ---
 
@@ -218,7 +220,7 @@
 - lifecycle state transitions not recorded in runtime
 - qualification results not persisted
 
-**Classification:** **Missing enterprise capability** — acceptable for current program scope.
+**Classification:** **Missing enterprise capability** - acceptable for current program scope.
 
 ---
 
@@ -263,19 +265,19 @@
 
 **Strengths:**
 
-- `tests/contract/core/plugins/test_platform_plugin_contract.py` — cross-stage invariant suite (manifest, discovery, qualification, tier boundaries, no sandbox claims)
-- `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` — real wheel build, isolated install, runtime invocation
-- `tests/unit/core/plugins/test_plugin_discovery.py` — negative cases, isolate mode, security/policy loaders
+- `tests/contract/core/plugins/test_platform_plugin_contract.py` - cross-stage invariant suite (manifest, discovery, qualification, tier boundaries, no sandbox claims)
+- `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` - real wheel build, isolated install, runtime invocation
+- `tests/unit/core/plugins/test_plugin_discovery.py` - negative cases, isolate mode, security/policy loaders
 - Deterministic EP ordering tests; factory-not-invoked-on-scan tests
 
 **Weaknesses:**
 
 | Issue | Evidence |
 |-------|----------|
-| Catalog count test failing at audit SHA | `test_plugin_catalog_counts.py::test_core_integration_preset_count` — expected ≥12 core integrations, got 11 (not in PLUGIN-9 gate) |
+| Catalog count test failing at audit SHA | `test_plugin_catalog_counts.py::test_core_integration_preset_count` - expected ≥12 core integrations, got 11 (not in PLUGIN-9 gate) |
 | Gate subset | CI runs contract + E2E + scaffold only on `ci_smoke` |
 | Linux-only wheel proof | E2E builds wheel on runner OS; Windows packaging not gated |
-| Global reset dependence | Widespread `clear_catalog`, `reset_*_for_tests` — tests prove behavior but mirror global-state architecture |
+| Global reset dependence | Widespread `clear_catalog`, `reset_*_for_tests` - tests prove behavior but mirror global-state architecture |
 | No concurrency tests | Catalog bootstrap assumes single-threaded startup |
 
 **Audit test run (2026-08-12):** 153 passed, 1 failed (`test_plugin_catalog_counts`) in `tests/unit/core/plugins/` + contract + E2E + scaffold.
@@ -288,11 +290,11 @@
 
 **Loose typing (technical debt, not blocking):**
 
-- `PluginConflictError.conflict_kind: object | None` — should be `PlatformPluginConflictKind | None`
-- `PlatformIncompatibilityError.result: object | None` — should be `PlatformCompatibilityResult | None`
-- `ProductionQualificationRequiredError.result: object | None` — should be `PluginQualificationResult | None`
+- `PluginConflictError.conflict_kind: object | None` - should be `PlatformPluginConflictKind | None`
+- `PlatformIncompatibilityError.result: object | None` - should be `PlatformCompatibilityResult | None`
+- `ProductionQualificationRequiredError.result: object | None` - should be `PluginQualificationResult | None`
 
-**Assessment:** PASS_WITH_RISK — API usable and typed at contract level; error attribute typing is loose coupling.
+**Assessment:** PASS_WITH_RISK - API usable and typed at contract level; error attribute typing is loose coupling.
 
 ---
 
@@ -307,7 +309,7 @@
 **Friction:**
 
 - 9 of 12 surfaces lack scaffold/local registration parity with Tools
-- Third-party EP discovery requires `INTERGRAX_DISCOVER_PLUGINS` — easy to misconfigure
+- Third-party EP discovery requires `INTERGRAX_DISCOVER_PLUGINS` - easy to misconfigure
 - Debugging discovery requires understanding per-domain loader (not one CLI inventory)
 - Context surface historically had doc/runtime mismatch (fixed in PLUGIN-9 per closeout)
 
@@ -320,10 +322,10 @@
 | Signed artifacts | ABSENT |
 | Provenance / attestation | ABSENT |
 | SBOM | ABSENT |
-| Allowlists (package) | PARTIAL — env opt-in + host profiles |
+| Allowlists (package) | PARTIAL - env opt-in + host profiles |
 | Plugin repository / catalog service | ABSENT |
-| Policy-controlled activation | PARTIAL — profiles + explicit discovery |
-| Tenant-aware governance | PARTIAL — runtime wiring; not catalog governance |
+| Policy-controlled activation | PARTIAL - profiles + explicit discovery |
+| Tenant-aware governance | PARTIAL - runtime wiring; not catalog governance |
 | Isolation (non-Python / subprocess) | ABSENT |
 | Central qualification authority | ABSENT |
 | Rollout / canary | ABSENT |
@@ -331,7 +333,7 @@
 | Plugin health monitoring | ABSENT |
 | Distributed inventory | ABSENT |
 | Revocation | ABSENT |
-| Observability / control plane | PARTIAL — domain logs; no unified inventory |
+| Observability / control plane | PARTIAL - domain logs; no unified inventory |
 | Trusted in-process execution | CURRENT |
 | Domain capability contracts | CURRENT |
 | EP discovery + manifest coordination | CURRENT |
@@ -354,7 +356,7 @@ None identified with evidence at audited SHA for the **intended trusted-host pro
 |-------|-------|
 | **Severity** | HIGH |
 | **Domain** | Compatibility / platform coordination |
-| **Evidence** | Architecture §20.4: «Explicit host input (`0.1.0` in E2E) — no global runtime version authority»; `check_platform_compatibility` requires caller-supplied version |
+| **Evidence** | Architecture §20.4: «Explicit host input (`0.1.0` in E2E) - no global runtime version authority»; `check_platform_compatibility` requires caller-supplied version |
 | **Impact** | Inconsistent compatibility decisions across hosts; upgrade risk undetected without host discipline |
 | **Current behavior** | Host passes arbitrary `platform_version` string into compatibility/admission helpers |
 | **Expected behavior** | Single authoritative Intergrax platform version for compatibility checks (enterprise) |
@@ -383,7 +385,7 @@ None identified with evidence at audited SHA for the **intended trusted-host pro
 | **Evidence** | `discover_plugins_enabled()` defaults false; `bootstrap_catalogs(..., discover_entry_points=False)` default; `INTERGRAX_DISCOVER_PLUGINS` required for Tier-0 EP wiring in `tool_wiring.py` / `integration_wiring.py` |
 | **Impact** | Fail-closed security posture; operators may believe pip install alone activates plugins |
 | **Current behavior** | Installation ≠ activation; explicit env or parameter required |
-| **Expected behavior** | Documented operator workflow (current) — enterprise may want policy-driven activation UI |
+| **Expected behavior** | Documented operator workflow (current) - enterprise may want policy-driven activation UI |
 | **Remediation class** | DOCUMENTATION / ENTERPRISE_FUTURE |
 | **Blocking production readiness** | No |
 
@@ -478,7 +480,7 @@ None identified with evidence at audited SHA for the **intended trusted-host pro
 |-------|-------|
 | **Severity** | MEDIUM |
 | **Domain** | Public API |
-| **Evidence** | `errors.py` — `conflict_kind` and `result` typed as `object | None` |
+| **Evidence** | `errors.py` - `conflict_kind` and `result` typed as `object | None` |
 | **Remediation class** | DX |
 | **Blocking production readiness** | No |
 
@@ -488,7 +490,7 @@ None identified with evidence at audited SHA for the **intended trusted-host pro
 |-------|-------|
 | **Severity** | MEDIUM |
 | **Domain** | Developer experience |
-| **Evidence** | Architecture §20.3 — local registration documented for Tools/Integrations/Skills only |
+| **Evidence** | Architecture §20.3 - local registration documented for Tools/Integrations/Skills only |
 | **Remediation class** | DX |
 | **Blocking production readiness** | No |
 
@@ -552,7 +554,7 @@ None identified with evidence at audited SHA for the **intended trusted-host pro
 |-------|-------|
 | **Severity** | INFO |
 | **Domain** | Architecture |
-| **Evidence** | VK EP group `intergrax.vendor_knowledge.providers` intentionally excluded from Tier-0 `discovery.py` EP constants — separate contribution catalog |
+| **Evidence** | VK EP group `intergrax.vendor_knowledge.providers` intentionally excluded from Tier-0 `discovery.py` EP constants - separate contribution catalog |
 | **Remediation class** | DOCUMENTATION |
 | **Blocking production readiness** | No |
 
@@ -620,5 +622,5 @@ None for trusted-host production at audited SHA.
 - [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)
 - [`PLATFORM_PLUGIN_9_CLOSEOUT.md`](PLATFORM_PLUGIN_9_CLOSEOUT.md)
 - [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) (roadmap)
-- `intergrax/core/plugins/` — implementation
-- `tests/contract/core/plugins/test_platform_plugin_contract.py` — conformance suite
+- `intergrax/core/plugins/` - implementation
+- `tests/contract/core/plugins/test_platform_plugin_contract.py` - conformance suite

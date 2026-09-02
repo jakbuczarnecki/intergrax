@@ -103,13 +103,13 @@ PLATFORM FEATURE
 | Step | Gate / action | May not be skipped |
 |------|---------------|--------------------|
 | A | Admission / selection evidence | Selection record exists |
-| B | **G0 — Product Baseline** | Portfolio Control accepts G0 |
+| B | **G0 - Product Baseline** | Portfolio Control accepts G0 |
 | C | Product wedge freeze | Initial wedge recorded |
-| D | **G1 — Product Architecture** | Portfolio Control accepts G1 |
+| D | **G1 - Product Architecture** | Portfolio Control accepts G1 |
 | E | Platform Capability Audit | Audit complete against current boundaries |
-| F | **G2 — T0 Reuse Baseline** | T0 accepted and frozen |
+| F | **G2 - T0 Reuse Baseline** | T0 accepted and frozen |
 | G | Application Scaffold | Only after accepted G2 |
-| H | **G3 — First Real Vertical Slice** | Meaningful end-to-end product outcome |
+| H | **G3 - First Real Vertical Slice** | Meaningful end-to-end product outcome |
 | I | Normal development | Asynchronous; product-owned |
 | J | **G4** whenever material shared-platform pressure appears | Before implementing the change |
 
@@ -124,7 +124,7 @@ G5–G8 remain governed by [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md).
 
 ---
 
-## 4. G0 — Product Baseline
+## 4. G0 - Product Baseline
 
 G0 freezes product identity independently of Intergrax.
 
@@ -148,7 +148,7 @@ G0 freezes product identity independently of Intergrax.
 | Explicit non-goals | Yes |
 | Key product risks | Yes |
 | Market evidence references | Yes |
-| Selection record reference | Yes — [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
+| Selection record reference | Yes - [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md) |
 
 **Critical rule:** G0 must **not** contain a positive Intergrax-fit requirement.
 
@@ -186,7 +186,7 @@ Do **not** expand these into product architecture in this document.
 
 ---
 
-## 6. G1 — Product Architecture
+## 6. G1 - Product Architecture
 
 Product Session owns product architecture.
 
@@ -262,7 +262,7 @@ For T0 **expectation** purposes use the exact canonical classifications from [PR
 | `REUSED_CONFIGURED` | Expected reuse through intended configuration / policy / adapter / DI contract |
 | `EXTENDED_GENERALLY` | Expected general platform gap requiring a product-neutral extension |
 | `PRODUCT_OWNED` | Expected product-domain responsibility |
-| `PLATFORM_LEAK` | Defect class — not an acceptable planned outcome |
+| `PLATFORM_LEAK` | Defect class - not an acceptable planned outcome |
 
 At T0 these are **expectations / hypotheses**. Implementation has not yet happened.
 
@@ -272,7 +272,7 @@ Final classification belongs to later evidence-driven audit (T1 / G6).
 
 ---
 
-## 9. G2 — Preregistered T0 reuse baseline
+## 9. G2 - Preregistered T0 reuse baseline
 
 Every newly selected product **must** have accepted T0 before the first implementation commit.
 
@@ -297,8 +297,8 @@ T0 must freeze at minimum:
 | Expected general platform gaps | Expected `EXTENDED_GENERALLY` |
 | Expected `PRODUCT_OWNED` responsibilities | Product-domain scope |
 | Known ambiguity / risk | Open questions frozen as unknown, not scored |
-| M1–M6 measurement methodology | As defined by PRODUCT_REUSE_PROOF — do not redefine |
-| PASS / PARTIAL / FAIL criteria | As defined by PRODUCT_REUSE_PROOF — do not redefine |
+| M1–M6 measurement methodology | As defined by PRODUCT_REUSE_PROOF - do not redefine |
+| PASS / PARTIAL / FAIL criteria | As defined by PRODUCT_REUSE_PROOF - do not redefine |
 | Timestamp / date | T0 freeze time |
 | Evidence / source links | Architecture, audit, selection, baseline |
 
@@ -365,7 +365,7 @@ A scaffold starting successfully is **not** meaningful product proof.
 
 ---
 
-## 13. G3 — First real vertical slice
+## 13. G3 - First real vertical slice
 
 G3 must prove **one real user/business outcome** end-to-end.
 
@@ -392,7 +392,7 @@ The slice must include enough real product semantics to test architecture and pl
 
 ---
 
-## 14. G4 — Material platform pressure
+## 14. G4 - Material platform pressure
 
 Canonical governance: [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md) §7–§8.
 
@@ -548,4 +548,4 @@ A new product is **READY_FOR_IMPLEMENTATION** only when **all** of the following
 - first vertical slice defined;
 - no unresolved material platform change bypasses G4.
 
-Then — and only then — scaffold/code begins.
+Then - and only then - scaffold/code begins.

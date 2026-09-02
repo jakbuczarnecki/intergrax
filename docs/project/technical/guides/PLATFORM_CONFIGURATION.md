@@ -6,7 +6,7 @@ settings, and ownership.
 
 This document describes **active runtime contracts**. Typed settings and
 profiles win over comments in `.env.example`. Application-specific settings
-are out of scope — see [What is not in this document?](#what-is-not-in-this-document).
+are out of scope - see [What is not in this document?](#what-is-not-in-this-document).
 
 **Related:** [LLM adapters](../../architecture/LLM_ADAPTERS.md) (provider catalog) ·
 [Harness environment](HARNESS_ENVIRONMENT.md) (lab stack / OTLP presets) ·
@@ -17,7 +17,7 @@ root [`.env.example`](../../../../.env.example) (copyable template)
 ## How configuration works
 
 Intergrax reads configuration from the **process environment**. The library does
-not load `.env` by itself — your application entrypoint, Compose file, or
+not load `.env` by itself - your application entrypoint, Compose file, or
 operator shell must export variables (many hosts use `python-dotenv`).
 
 ### Precedence
@@ -42,7 +42,7 @@ These are not interchangeable. Every value below is labelled as one of:
 |------|---------|
 | **Platform profile default** | Value the typed platform profile uses when the env var is unset |
 | **Provider adapter fallback** | Value a provider adapter uses when the profile did not pass a model or URL |
-| **Example value** | Copyable illustration in `.env.example` — not a runtime default |
+| **Example value** | Copyable illustration in `.env.example` - not a runtime default |
 | **Application override** | Host- or product-specific setting (not documented here) |
 
 ### Secrets
@@ -222,7 +222,7 @@ INTERGRAX_LLM_MODEL     →  which model id
 ```
 
 Supported built-in provider slugs and adapter behaviour:
-[LLM adapters — provider selection](../../architecture/LLM_ADAPTERS.md#provider-selection).
+[LLM adapters - provider selection](../../architecture/LLM_ADAPTERS.md#provider-selection).
 Do not duplicate that catalog here.
 
 An application host may pass an explicit `LLMProfile` in code. That is an
@@ -236,7 +236,7 @@ Owner: Platform.
 
 Default: Platform profile default: `ollama`.
 
-Required: No — the profile default applies when unset.
+Required: No - the profile default applies when unset.
 
 Accepted values: Built-in slugs:
 
@@ -309,7 +309,7 @@ Used by: Generation LLM governance.
 
 ---
 
-## Generation LLM — provider connection and auth
+## Generation LLM - provider connection and auth
 
 These settings connect to a provider. They do **not** select `INTERGRAX_LLM_PROVIDER`
 or `INTERGRAX_LLM_MODEL`. Set only what the chosen provider needs.
@@ -346,7 +346,7 @@ Owner: Provider connection.
 Default: Provider adapter fallback: `http://127.0.0.1:8000/v1`. Example (Docker
 host map): `http://127.0.0.1:8100/v1`.
 
-Required: Conditional — when using `vllm` and the server is not on the adapter default.
+Required: Conditional - when using `vllm` and the server is not on the adapter default.
 
 Example:
 
@@ -427,7 +427,7 @@ API origins): `INTERGRAX_DEFAULT_GROQ_BASE_URL`,
 | `INTERGRAX_BEDROCK_USE_CONVERSE` | Use Bedrock Converse API when truthy | none (off) | No |
 
 Auth uses the standard AWS credential chain (`AWS_ACCESS_KEY_ID` /
-`AWS_SECRET_ACCESS_KEY`, SSO, or instance role) — not Intergrax-prefixed keys.
+`AWS_SECRET_ACCESS_KEY`, SSO, or instance role) - not Intergrax-prefixed keys.
 
 ### Vertex Gemini
 
@@ -470,7 +470,7 @@ Owner: Platform.
 
 Default: Platform profile default: `ollama`.
 
-Required: No — the profile default applies when unset.
+Required: No - the profile default applies when unset.
 
 Accepted values: `ollama` · `openai` · `hf` · `vllm` · `llama_cpp`.
 
@@ -576,7 +576,7 @@ Owner: Platform integration.
 
 Default: Platform profile default: `http://localhost:8000`.
 
-Required: Conditional — when `INTERGRAX_DOCLING_MODE=server`.
+Required: Conditional - when `INTERGRAX_DOCLING_MODE=server`.
 
 Example:
 
@@ -592,7 +592,7 @@ Owner: Platform integration.
 
 Default: Platform profile default: `/parse`.
 
-Required: Conditional — when mode is `server`.
+Required: Conditional - when mode is `server`.
 
 Example:
 
@@ -644,9 +644,9 @@ Categories:
 `external_work`
 
 Default: none (no env selection). Lab composition often sets slugs in code
-(`sqlite`, `docling`, `log`, …) — that is composition, not an env default.
+(`sqlite`, `docling`, `log`, …) - that is composition, not an env default.
 
-Required: Conditional — required for a category only if the running host
+Required: Conditional - required for a category only if the running host
 resolves that category from env rather than from a coded profile.
 
 Example:
@@ -769,7 +769,7 @@ Owner: Provider connection.
 
 Default: none.
 
-Required: Conditional — when backend is `webhook`.
+Required: Conditional - when backend is `webhook`.
 
 Example:
 
@@ -785,7 +785,7 @@ Owner: Provider connection.
 
 Default: none.
 
-Required: Conditional — when backend is `slack`.
+Required: Conditional - when backend is `slack`.
 
 ### INTERGRAX_TEAMS_WEBHOOK_URL
 
@@ -795,7 +795,7 @@ Owner: Provider connection.
 
 Default: none.
 
-Required: Conditional — when backend is `teams`.
+Required: Conditional - when backend is `teams`.
 
 ### PagerDuty
 
@@ -840,7 +840,7 @@ Owner: Platform.
 
 Default: Platform profile default: `none`. Unknown values fall back to `none`.
 
-Required: Conditional — use `slack` or `teams` for production webhooks.
+Required: Conditional - use `slack` or `teams` for production webhooks.
 
 Accepted values: `none` · `slack` · `teams`.
 
@@ -860,7 +860,7 @@ Owner: Provider connection.
 
 Default: none.
 
-Required: Conditional — when `INTERGRAX_INBOUND_VERIFIER=slack` and verification is enabled.
+Required: Conditional - when `INTERGRAX_INBOUND_VERIFIER=slack` and verification is enabled.
 
 ### INTERGRAX_SLACK_VERIFY_SIGNATURE
 
@@ -883,7 +883,7 @@ Owner: Provider connection.
 
 Default: none.
 
-Required: Conditional — when verifier is `teams` and verification is enabled.
+Required: Conditional - when verifier is `teams` and verification is enabled.
 
 ### INTERGRAX_TEAMS_VERIFY_SIGNATURE
 
@@ -957,7 +957,7 @@ INTERGRAX_ENV=dev
 ```
 
 Notes: Application hosts typically prefer `<APP>_BACKEND_ENV`. Prefix alone is
-not an absolute law — this platform key is the fallback.
+not an absolute law - this platform key is the fallback.
 
 ### INTERGRAX_HARNESS_API_KEY
 
@@ -1001,7 +1001,7 @@ Owner: Runtime infrastructure.
 Default: none. Some workers also accept ecosystem `CELERY_BROKER_URL` or
 modality-specific `INTERGRAX_MODALITY_CELERY_BROKER_URL`.
 
-Required: Conditional — when a worker queue is wired.
+Required: Conditional - when a worker queue is wired.
 
 Example:
 
@@ -1119,6 +1119,6 @@ keys belong in their own templates and docs, not in the root platform example.
 
 ## See also
 
-- [LLM adapters](../../architecture/LLM_ADAPTERS.md) — provider catalog and model-selection architecture
-- [Harness environment](HARNESS_ENVIRONMENT.md) — lab stack, OTLP, integration presets
-- [Documentation map](../DOCUMENTATION_MAP.md) — where to read next
+- [LLM adapters](../../architecture/LLM_ADAPTERS.md) - provider catalog and model-selection architecture
+- [Harness environment](HARNESS_ENVIRONMENT.md) - lab stack, OTLP, integration presets
+- [Documentation map](../DOCUMENTATION_MAP.md) - where to read next

@@ -4,9 +4,9 @@ UAEP-first scaffold. Full process: [`../../docs/project/technical/guides/AGENT_C
 
 ## Docs
 
-- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) — purpose, contracts, runtime layout
-- [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — task queue and verification
-- [`adr/README.md`](docs/adr/README.md) — architecture decision records
+- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) - purpose, contracts, runtime layout
+- [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) - task queue and verification
+- [`adr/README.md`](docs/adr/README.md) - architecture decision records
 
 ## Quick start
 
@@ -32,11 +32,11 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
 ## Layout
 
-- ``intergrax_assistant_agent.py`` — Agent class (UAEP)
-- ``contract.py`` / ``capabilities.py`` — AgentContract
-- ``steps/`` — domain execution
-- ``prompts/`` — prompt assets
-- ``schemas/`` — I/O models
-- ``tests/`` — agent smoke tests
-- ``notebooks/`` — interactive experiments
-- ``docs`` — architecture, plan, ADRs, journal
+- ``intergrax_assistant_agent.py`` - Agent class (UAEP)
+- ``contract.py`` / ``capabilities.py`` - AgentContract
+- ``steps/`` - domain execution
+- ``prompts/`` - prompt assets
+- ``schemas/`` - I/O models
+- ``tests/`` - agent smoke tests
+- ``notebooks/`` - interactive experiments
+- ``docs`` - architecture, plan, ADRs, journal

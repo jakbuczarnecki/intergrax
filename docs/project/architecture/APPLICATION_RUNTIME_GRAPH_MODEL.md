@@ -39,14 +39,14 @@ direct Tier-2 dependencies; transitive Tier-2 dependencies are declared by the
 importing agent. Agent cycles and agent-to-application dependencies fail closed
 (`AGENT_DEPENDENCY_CYCLE`, `AGENT_TIER_VIOLATION`).
 
-Each application image contains the **minimal transitive runtime graph** —
+Each application image contains the **minimal transitive runtime graph** -
 
 ```text
 application + direct agents + transitive agents + platform
 + direct/transitive third-party runtime deps (via uv.lock)
 ```
 
-— and nothing outside that graph. Unresolved local workspace packages fail closed
+- and nothing outside that graph. Unresolved local workspace packages fail closed
 (`RUNTIME_GRAPH_UNRESOLVED`).
 
 ---
@@ -65,7 +65,7 @@ One shared `uv.lock` remains canonical for the monorepo phase.
 `direct_third_party_distributions` lists only third-party dependencies declared
 by the Tier-3 application. Third-party packages contributed by selected agents
 are resolved through those agent projects and `uv.lock`. The graph resolver does
-**not** manually compute the full external transitive closure — `uv.lock` remains
+**not** manually compute the full external transitive closure - `uv.lock` remains
 the source of truth for that closure.
 
 Agents are **not** owned by applications. Do not invent names such as “LKW agents”.
@@ -105,15 +105,15 @@ Local workspace execution may still use the shared root `.venv` unless
 
 | Application | Selected agents (declared) | Notable platform extras |
 |-------------|---------------------------|-------------------------|
-| `attestation_demo` | `boundary_demo` | — |
-| `dispute_sim_application` | dispute_* (4) | — |
-| `governed_contractor_application` | `external_contractor_adapter` | — |
-| `intergrax_assistant_application` | echo, intergrax_assistant, legal, research | — |
-| `lab_application` | echo, lab, problem_radar, research, signoff_probe | — |
-| `legal_application` | legal | — |
+| `attestation_demo` | `boundary_demo` | - |
+| `dispute_sim_application` | dispute_* (4) | - |
+| `governed_contractor_application` | `external_contractor_adapter` | - |
+| `intergrax_assistant_application` | echo, intergrax_assistant, legal, research | - |
+| `lab_application` | echo, lab, problem_radar, research, signoff_probe | - |
+| `legal_application` | legal | - |
 | `local_workspace_application` | local_indexer, local_search, local_synthesizer | slack, mongodb, sentry, kafka |
-| `poc_template_application` | echo | — |
-| `research_application` | research | — |
+| `poc_template_application` | echo | - |
+| `research_application` | research | - |
 
 ### Tier-2 agents
 

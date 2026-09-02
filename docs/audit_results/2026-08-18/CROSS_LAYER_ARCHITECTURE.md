@@ -1,11 +1,11 @@
-# CROSS_LAYER_ARCHITECTURE — Platform Audit
+# CROSS_LAYER_ARCHITECTURE - Platform Audit
 
 ## Metadata
 
 - **Campaign date:** 2026-08-18
 - **Audit unit:** CROSS_LAYER_ARCHITECTURE
 - **Owning architecture/program:** PLATFORM_FOUNDATION · INTERGRAX_ARCHITECTURE_PRINCIPLES · intergrax_runtime_architecture hub · SYSTEM_INVARIANTS · MATURITY_TAXONOMY · TIER3_APPLICATION_ENVIRONMENT · GOVERNED_EXECUTION (meta-architecture / documentation topology)
-- **Tier(s):** cross-layer — documentation topology, invariant index, composition qualification concept, control-plane governance taxonomy, maturity requalification semantics, remediation DAG requirement
+- **Tier(s):** cross-layer - documentation topology, invariant index, composition qualification concept, control-plane governance taxonomy, maturity requalification semantics, remediation DAG requirement
 - **audited_sha:** `ac2a7107393cbf63953c1cfbc9757891aed91de0`
 - **Status:** COMPLETE
 - **Auditor:** independent platform audit
@@ -38,7 +38,7 @@
   - building the final detailed remediation DAG in this persistence task
   - promoting every architecture markdown file to a domain
   - monolithic ProductionEngine or GovernanceEngine
-- **Prior audit reference(s):** all thirty-five completed Protocol-v2 layers at campaign baseline; this layer synthesizes meta-architecture gaps only — does not re-open per-domain findings
+- **Prior audit reference(s):** all thirty-five completed Protocol-v2 layers at campaign baseline; this layer synthesizes meta-architecture gaps only - does not re-open per-domain findings
 - **architecture_sync:** COMPLETE
 - **plan_sync:** COMPLETE
 - **post_sync_sha:** `5111162eb34477c8f507d427377c114214b9f7ac`
@@ -49,11 +49,11 @@
 |---------|---------------------|
 | Audit unit (Protocol v2 layer code) | **CROSS_LAYER_ARCHITECTURE** |
 | Architecture artifact classification / owner register | **PLATFORM_FOUNDATION** + runtime hub |
-| Cross-layer MUST/MUST NOT index | **SYSTEM_INVARIANTS** — compact index; domains remain semantic owners |
+| Cross-layer MUST/MUST NOT index | **SYSTEM_INVARIANTS** - compact index; domains remain semantic owners |
 | Composition qualification closure | **TIER3_APPLICATION_ENVIRONMENT** evaluates closure; domains own domain qualification |
-| Control-plane mutation boundary taxonomy | **GOVERNED_EXECUTION** — domain executors remain specialized |
+| Control-plane mutation boundary taxonomy | **GOVERNED_EXECUTION** - domain executors remain specialized |
 | Maturity requalification semantics | **MATURITY_TAXONOMY** + platform architecture governance |
-| Cross-layer remediation DAG | **campaign rollup** / Platform Foundation coordination — **CLA-REMEDIATION-DAG-INTEGRITY** |
+| Cross-layer remediation DAG | **campaign rollup** / Platform Foundation coordination - **CLA-REMEDIATION-DAG-INTEGRITY** |
 | Per-layer report | `docs/audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md` |
 
 ## Architecture hierarchy under audit
@@ -69,7 +69,7 @@ intergrax_runtime_architecture.md (META_ARCHITECTURE hub + indexes)
         └── SUPPORTING_MODEL / SATELLITE (runtime graph, dependency model, domain satellites)
         │
         ▼
-SYSTEM_INVARIANTS (cross-layer index — not second canon)
+SYSTEM_INVARIANTS (cross-layer index - not second canon)
         │
         ▼
 MATURITY_TAXONOMY (four-axis vocabulary + requalification semantics)
@@ -80,11 +80,11 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 
 ## Executive summary
 
-**Verdict: FAIL.** Five accepted HIGH and one accepted MEDIUM finding show that the runtime hub falsely advertises a complete 24-domain register while canonical owners such as **GOVERNED_EXECUTION**, **AGENT_DISTRIBUTION**, **PLATFORM_PLUGINS**, and **PROOF_RECEIPTS** are absent; **SYSTEM_INVARIANTS** still references a stale domain count and omits durable post-June cross-layer rules; no architecture defines composition-level production qualification closure; **Governed Execution** lacks a first-class **CONTROL_PLANE_MUTATION** evaluation boundary; maturity claims can remain advertised while accepted CRITICAL security findings invalidate prior posture without explicit requalification; and the campaign lacks one cross-layer remediation DAG before implementation. Positive controls: four-tier topology, Nexus/UER/Agent split, domain runtime semantics, single-owner principles, feature coordination without domain replacement, and consolidation-over-parallel-subsystems posture all remain sound. Remediation is **ACCEPTED / PLANNED** meta-architecture sync only — not implemented.
+**Verdict: FAIL.** Five accepted HIGH and one accepted MEDIUM finding show that the runtime hub falsely advertises a complete 24-domain register while canonical owners such as **GOVERNED_EXECUTION**, **AGENT_DISTRIBUTION**, **PLATFORM_PLUGINS**, and **PROOF_RECEIPTS** are absent; **SYSTEM_INVARIANTS** still references a stale domain count and omits durable post-June cross-layer rules; no architecture defines composition-level production qualification closure; **Governed Execution** lacks a first-class **CONTROL_PLANE_MUTATION** evaluation boundary; maturity claims can remain advertised while accepted CRITICAL security findings invalidate prior posture without explicit requalification; and the campaign lacks one cross-layer remediation DAG before implementation. Positive controls: four-tier topology, Nexus/UER/Agent split, domain runtime semantics, single-owner principles, feature coordination without domain replacement, and consolidation-over-parallel-subsystems posture all remain sound. Remediation is **ACCEPTED / PLANNED** meta-architecture sync only - not implemented.
 
 ## Verdict
 
-**FAIL** — 0 CRITICAL / 5 HIGH / 1 MEDIUM / 0 LOW
+**FAIL** - 0 CRITICAL / 5 HIGH / 1 MEDIUM / 0 LOW
 
 ## Findings
 
@@ -97,8 +97,8 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 - **Claim falsified:** `intergrax_runtime_architecture.md` is the complete current architecture ↔ plan owner register.
 - **Observation:** The hub calls itself the "complete 24-domain architecture ↔ plan register" and lists exactly twenty-four domain pairs. The repository also contains canonical platform architecture / implementation-plan owners not represented in that index, including **PLATFORM_PLUGINS**, **PROOF_RECEIPTS**, **AGENT_DISTRIBUTION**, and **GOVERNED_EXECUTION**, plus supporting canonical models requiring explicit classification. [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) requires exactly one architectural owner per reusable capability.
 - **Location:**
-  - `docs/project/architecture/intergrax_runtime_architecture.md` — header claim; § Domain pair index (24)
-  - `docs/project/architecture/PLATFORM_PLUGINS.md`, `PROOF_RECEIPTS.md`, `AGENT_DISTRIBUTION.md`, `GOVERNED_EXECUTION.md` — canonical pairs absent from hub index
+  - `docs/project/architecture/intergrax_runtime_architecture.md` - header claim; § Domain pair index (24)
+  - `docs/project/architecture/PLATFORM_PLUGINS.md`, `PROOF_RECEIPTS.md`, `AGENT_DISTRIBUTION.md`, `GOVERNED_EXECUTION.md` - canonical pairs absent from hub index
 - **Impact:** Operators and agents cannot trust the hub as authoritative topology; ownership drift hides duplicate-authority risk.
 - **Confidence:** CONFIRMED
 
@@ -111,7 +111,7 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 - **Claim falsified:** `SYSTEM_INVARIANTS.md` is the current compact cross-layer authority indexed to the live platform topology.
 - **Observation:** The guide states rules are spread across twenty-two domain pairs and serves as the single cross-layer authority, yet the platform topology is larger and many post-June cross-layer invariants live only in domain Protocol-v2 sections or audit reports. The same document requires new cross-layer rules to be reflected there; [`MATURITY_TAXONOMY.md`](../../project/technical/guides/MATURITY_TAXONOMY.md) A4 explicitly relies on cross-layer mapping through **SYSTEM_INVARIANTS**.
 - **Location:**
-  - `docs/project/technical/guides/SYSTEM_INVARIANTS.md` — §1 Purpose (22 domain pairs); cross-layer sections vs current campaign findings
+  - `docs/project/technical/guides/SYSTEM_INVARIANTS.md` - §1 Purpose (22 domain pairs); cross-layer sections vs current campaign findings
 - **Impact:** Cross-layer audits and A4 maturity claims may reference stale or incomplete invariant coverage.
 - **Confidence:** CONFIRMED
 
@@ -124,8 +124,8 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 - **Claim falsified:** A fully materialized application composition has a canonical architecture model for proving all mandatory components are simultaneously qualified for one target environment.
 - **Observation:** The platform has multiple legitimate local production/maturity mechanisms (A/I/P/E, STRICT, PRODUCT profile, agent production gates, plugin/provider qualification, hosting maturity, Tier-3 production gates, proof evidence). No canonical architecture defines composition-level closure: given **TargetEnvironment** + materialized runtime identity + exact application/environment revision + component qualification references + mandatory evidence freshness → **QUALIFIED | NOT_QUALIFIED | STALE | INCOMPLETE**.
 - **Location:**
-  - `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — local gates/maturity without composition closure model
-  - `docs/project/technical/guides/MATURITY_TAXONOMY.md` — axis vocabulary without composition evaluator
+  - `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` - local gates/maturity without composition closure model
+  - `docs/project/technical/guides/MATURITY_TAXONOMY.md` - axis vocabulary without composition evaluator
 - **Impact:** Product hosts may advertise partial qualification while mandatory components remain unqualified or stale.
 - **Confidence:** CONFIRMED
 
@@ -138,7 +138,7 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 - **Claim falsified:** Governed Execution taxonomy covers state-changing control-plane mutations with a first-class evaluation boundary.
 - **Observation:** Governed Execution defines evaluation boundaries for model/agent/tool/side-effect/output/post-run execution but not control-plane mutation. The platform contains multiple governed state-changing control planes (Agent Distribution activation/rollback, AHI apply/rollback, ECP capacity mutations, live task autonomy changes, plugin/config activation/admission). Domains define their own authorization/gate semantics without a shared **CONTROL_PLANE_MUTATION** authority context.
 - **Location:**
-  - `docs/project/architecture/GOVERNED_EXECUTION.md` — Governance Evaluation Point taxonomy and G3B coverage table
+  - `docs/project/architecture/GOVERNED_EXECUTION.md` - Governance Evaluation Point taxonomy and G3B coverage table
 - **Impact:** Control-plane mutations may bypass consistent authority/evidence semantics across domains.
 - **Confidence:** CONFIRMED
 
@@ -151,8 +151,8 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 - **Claim falsified:** Accepted audit findings trigger explicit maturity impact evaluation before prior claims remain valid.
 - **Observation:** [`MATURITY_TAXONOMY.md`](../../project/technical/guides/MATURITY_TAXONOMY.md) defines P0 risk but no architecture-level rule that accepted findings must evaluate impact on existing maturity claims. The Tier-3 hub still advertises A4/I3/P3/E3 while accepted campaign CRITICAL security defects affect that composition path. Severity alone must not auto-downgrade, but production/evidence-safety findings require explicit requalification decisions.
 - **Location:**
-  - `docs/project/technical/guides/MATURITY_TAXONOMY.md` — maintenance without finding-impact semantics
-  - `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — Current maturity table
+  - `docs/project/technical/guides/MATURITY_TAXONOMY.md` - maintenance without finding-impact semantics
+  - `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` - Current maturity table
 - **Impact:** Stale maturity labels may overstate production posture after new accepted evidence.
 - **Confidence:** CONFIRMED
 
@@ -165,7 +165,7 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 - **Claim falsified:** The campaign has one cross-layer remediation dependency graph before normal implementation starts.
 - **Observation:** Two hundred eleven accepted findings precede this layer with many remediation blocks. Per-layer recommended orders and cross-references exist, but no single DAG describes prerequisites, shared canonical primitives, superseded/merged blocks, safe parallelism, and final recertification ordering with vocabulary `depends_on`, `shares_authority_with`, `merge_into`, `supersedes`, `can_parallelize_with`, `verified_by`.
 - **Location:**
-  - `docs/audit_results/2026-08-18/README.md` — remediation rollup without unified DAG
+  - `docs/audit_results/2026-08-18/README.md` - remediation rollup without unified DAG
 - **Impact:** Parallel duplicate abstractions and unsafe remediation ordering risk during campaign implementation.
 - **Confidence:** CONFIRMED
 
@@ -191,12 +191,12 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 
 | Existing finding / domain | Relationship |
 |-----------------------------|--------------|
-| **TIER_LAYER_BOUNDARIES / TL-FIX-*** | Tier-boundary enforcement — CLA-01/02 address documentation topology, not duplicate TL-FIX scope |
-| **PLATFORM_FOUNDATION / PF-*** | Foundation proof gates — cross-link; CLA does not re-open PF proof-runner defects as new findings |
-| **SECURITY_BOUNDARIES CRITICAL findings** | Evidence invalidating composition maturity — cross-link CLA-05; do not duplicate SEC remediation blocks |
-| **POLICY_GOVERNANCE / PG-FIX-*** | Execution-time governance — CLA-04 extends taxonomy; PG-FIX remains execution spine |
-| **END_TO_END_SYSTEM / E2E-CONTROL-AUTHORITY-INTEGRITY** | Live task autonomy bypass — consumer of CLA-04 target boundary |
-| **Per-domain Protocol-v2 sections** | Semantic owners for rules indexed by CLA-02 — do not copy audit findings verbatim into SYSTEM_INVARIANTS |
+| **TIER_LAYER_BOUNDARIES / TL-FIX-*** | Tier-boundary enforcement - CLA-01/02 address documentation topology, not duplicate TL-FIX scope |
+| **PLATFORM_FOUNDATION / PF-*** | Foundation proof gates - cross-link; CLA does not re-open PF proof-runner defects as new findings |
+| **SECURITY_BOUNDARIES CRITICAL findings** | Evidence invalidating composition maturity - cross-link CLA-05; do not duplicate SEC remediation blocks |
+| **POLICY_GOVERNANCE / PG-FIX-*** | Execution-time governance - CLA-04 extends taxonomy; PG-FIX remains execution spine |
+| **END_TO_END_SYSTEM / E2E-CONTROL-AUTHORITY-INTEGRITY** | Live task autonomy bypass - consumer of CLA-04 target boundary |
+| **Per-domain Protocol-v2 sections** | Semantic owners for rules indexed by CLA-02 - do not copy audit findings verbatim into SYSTEM_INVARIANTS |
 
 ## Systemic consolidation map
 
@@ -207,11 +207,11 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 | Production posture | Composition qualification closure at Tier-3; domain qualification unchanged |
 | Control-plane mutations | CONTROL_PLANE_MUTATION taxonomy in Governed Execution; domain executors unchanged |
 | Maturity claims | Explicit requalification semantics; severity alone does not auto-downgrade |
-| Remediation ordering | Single campaign DAG before implementation — built in CAMPAIGN_ROLLUP, not this task |
+| Remediation ordering | Single campaign DAG before implementation - built in CAMPAIGN_ROLLUP, not this task |
 
 ## Root-cause remediation grouping
 
-### CLA-CANON-TOPOLOGY-INTEGRITY — ownership register + invariant index
+### CLA-CANON-TOPOLOGY-INTEGRITY - ownership register + invariant index
 
 **Priority:** P0  
 **Findings:** CLA-01, CLA-02  
@@ -219,7 +219,7 @@ Per-domain Protocol-v2 target invariants (semantic owners)
 
 One complete current ownership topology and one current cross-layer invariant index.
 
-### CLA-PRODUCTION-QUALIFICATION-INTEGRITY — composition closure + maturity requalification
+### CLA-PRODUCTION-QUALIFICATION-INTEGRITY - composition closure + maturity requalification
 
 **Priority:** P0  
 **Findings:** CLA-03, CLA-05  
@@ -227,16 +227,16 @@ One complete current ownership topology and one current cross-layer invariant in
 
 Production posture is composition-qualified; maturity is requalified when accepted evidence invalidates prior assumptions.
 
-### CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY — control-plane mutation boundary
+### CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY - control-plane mutation boundary
 
 **Priority:** P0  
 **Finding:** CLA-04  
 **Owner:** GOVERNED_EXECUTION  
 **Consumers:** AGENT_DISTRIBUTION · AHI · ECP · task-control/runtime · Platform Plugins activation/admission  
 
-One control-plane permission/evidence semantic boundary; specialized domain executors — no universal mutation executor.
+One control-plane permission/evidence semantic boundary; specialized domain executors - no universal mutation executor.
 
-### CLA-REMEDIATION-DAG-INTEGRITY — campaign dependency graph
+### CLA-REMEDIATION-DAG-INTEGRITY - campaign dependency graph
 
 **Priority:** P0 before campaign remediation  
 **Finding:** CLA-06  
@@ -260,7 +260,7 @@ Build the final cross-layer remediation DAG before implementation. **Not built i
 
 ## Evidence limitations / scope limitations
 
-- Evidence bound exclusively to `audited_sha` `ac2a7107393cbf63953c1cfbc9757891aed91de0`; documentation topology and meta-architecture claims only — no source re-audit beyond pinned SHA context.
+- Evidence bound exclusively to `audited_sha` `ac2a7107393cbf63953c1cfbc9757891aed91de0`; documentation topology and meta-architecture claims only - no source re-audit beyond pinned SHA context.
 - Final detailed remediation DAG intentionally deferred to CAMPAIGN_ROLLUP (**CLA-06**).
 - Remediation not performed in this task.
 - No source, test, CI, or script changes.

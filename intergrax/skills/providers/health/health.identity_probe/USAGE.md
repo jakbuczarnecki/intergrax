@@ -29,4 +29,4 @@ Governed access to: `health.check_identity_provider`, `health.check_key_value_ca
 
 ## Related skills
 
-- Other `health` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `health` bundle skills - see bundle [USAGE.md](../USAGE.md)

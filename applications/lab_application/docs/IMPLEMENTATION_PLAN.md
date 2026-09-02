@@ -1,8 +1,8 @@
-# lab_application — Implementation Plan
+# lab_application - Implementation Plan
 
-**The implementation map** for this Tier-3 harness lab — phases, status, gaps, and verification.
+**The implementation map** for this Tier-3 harness lab - phases, status, gaps, and verification.
 
-Status: **Done** (operational harness lab) — maintenance via §6.1
+Status: **Done** (operational harness lab) - maintenance via §6.1
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)
 Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-LABAPP
@@ -26,8 +26,8 @@ Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](.
 | LABAPP-1 | `build_harness_host_runtime` factory | **Done** | High | AA-LABAPP.2 |
 | LABAPP-2 | Dynamic manifest roster from settings | **Done** | High | Echo, research, org worker flags |
 | LABAPP-3 | Deploy triad + gate | **Done** | High | `test_application_deploy_triad` |
-| LABAPP-4 | Adaptive observe profile default | **Done** | Medium | L4-O — `LAB_ADAPTIVE_OBSERVE` |
-| LABAPP-5 | New harness features | Maintenance | Medium | Platform §6.1 only — no product scope |
+| LABAPP-4 | Adaptive observe profile default | **Done** | Medium | L4-O - `LAB_ADAPTIVE_OBSERVE` |
+| LABAPP-5 | New harness features | Maintenance | Medium | Platform §6.1 only - no product scope |
 
 ---
 

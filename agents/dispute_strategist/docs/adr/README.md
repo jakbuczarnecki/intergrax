@@ -1,4 +1,4 @@
-﻿# dispute_strategist agent — Architecture Decision Records
+﻿# dispute_strategist agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/dispute_strategist`)
 
@@ -36,7 +36,7 @@ ADR-DISPUTE_STRATEGIST-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

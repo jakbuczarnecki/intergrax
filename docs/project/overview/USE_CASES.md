@@ -15,9 +15,9 @@ This is the canonical decision guide for a concrete question: **does Intergrax f
 
 | Decision question | Current answer |
 |-------------------|----------------|
-| Strongest current fit | Private governed knowledge workspace — **Active reference product**, **Backend Product Alpha / MVP**, **PARTIAL** |
+| Strongest current fit | Private governed knowledge workspace - **Active reference product**, **Backend Product Alpha / MVP**, **PARTIAL** |
 | Bounded technical fit | Specialized governed applications and context workflows; a **Reasonable technical evaluation** may be appropriate |
-| Not a fit today | Finished SaaS immediately, no-code automation, retrieval primitives only, or unrestricted OSS — another approach may fit better |
+| Not a fit today | Finished SaaS immediately, no-code automation, retrieval primitives only, or unrestricted OSS - another approach may fit better |
 | Primary next action | Review [PROOFS](../proofs/PROOFS.md) before evaluation or partner discussion |
 
 ## Start with your workflow
@@ -41,10 +41,10 @@ These are fit signals, not a requirement that every workflow use every mechanism
 
 Use this stable vocabulary:
 
-- **STRONGEST CURRENT FIT** — current product proof directly represents a similar workflow.
-- **BOUNDED TECHNICAL FIT** — architecture and supporting mechanisms are plausible, but product-specific validation remains necessary.
-- **NOT YET PROVEN** — the user outcome is structurally plausible, but the required end-to-end outcome is not established.
-- **NOT A FIT** — another class of solution is more appropriate.
+- **STRONGEST CURRENT FIT** - current product proof directly represents a similar workflow.
+- **BOUNDED TECHNICAL FIT** - architecture and supporting mechanisms are plausible, but product-specific validation remains necessary.
+- **NOT YET PROVEN** - the user outcome is structurally plausible, but the required end-to-end outcome is not established.
+- **NOT A FIT** - another class of solution is more appropriate.
 
 ```mermaid
 flowchart TD
@@ -63,7 +63,7 @@ flowchart TD
 
 The diagram is a responsibility-based evaluation route, not a list of completed products. The textual sections below are the authoritative explanation.
 
-**Current evidence boundary:** LKW demonstrates bounded indexed Ask through production Hybrid Ask. **Mixed indexed + authorized live Hybrid Ask is not yet established**; complete external live-provider access is incomplete. Real-user and commercial validation remain open — see [PROOFS](../proofs/PROOFS.md).
+**Current evidence boundary:** LKW demonstrates bounded indexed Ask through production Hybrid Ask. **Mixed indexed + authorized live Hybrid Ask is not yet established**; complete external live-provider access is incomplete. Real-user and commercial validation remain open - see [PROOFS](../proofs/PROOFS.md).
 
 ## Strongest current fit
 
@@ -87,7 +87,7 @@ The diagram is a responsibility-based evaluation route, not a list of completed 
 
 **Current evidence:** LKW is the **Active reference product**, **Backend Product Alpha / MVP**, with **PARTIAL** public status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask.
 
-Canonical verification route: [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) via [PROOFS — LKW Active reference product evidence](../proofs/PROOFS.md#lkw--active-reference-product-evidence).
+Canonical verification route: [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) via [PROOFS - LKW Active reference product evidence](../proofs/PROOFS.md#lkw--active-reference-product-evidence).
 
 ## Other bounded technical fits
 
@@ -135,7 +135,7 @@ Canonical verification route: [LKW Platform Proof](../../../applications/local_w
 
 **Fit:** **BOUNDED TECHNICAL FIT** for a bounded technical evaluation. Supporting evidence does not amount to certification, compliance approval, legal attestation, or universal operational readiness. See the [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) for the responsibility boundary.
 
-**Current proof:** supporting verification route — [BoundaryAttest case study](case-studies/BOUNDARYATTEST_ATTESTATION_POC.md).
+**Current proof:** supporting verification route - [BoundaryAttest case study](case-studies/BOUNDARYATTEST_ATTESTATION_POC.md).
 
 ### Governed context and prompt optimization
 
@@ -153,7 +153,7 @@ Bounded technical fits require product-specific validation; the adopting team ow
 
 ## Not yet proven
 
-The stable outcome **“combine indexed knowledge with authorized live evidence”** is **NOT YET PROVEN**. This is an evidence boundary, not a judgment that the problem is meaningless — see [PROOFS](../proofs/PROOFS.md).
+The stable outcome **“combine indexed knowledge with authorized live evidence”** is **NOT YET PROVEN**. This is an evidence boundary, not a judgment that the problem is meaningless - see [PROOFS](../proofs/PROOFS.md).
 
 ## When another approach is better
 
@@ -180,7 +180,7 @@ Intergrax is a reusable foundation, not a universal replacement for a finished p
 
 ## What Intergrax does not currently offer
 
-These are decision shortcuts — not a substitute for [PROOFS](../proofs/PROOFS.md):
+These are decision shortcuts - not a substitute for [PROOFS](../proofs/PROOFS.md):
 
 - No finished hosted SaaS
 - No complete Hybrid Ask combining indexed and authorized live evidence

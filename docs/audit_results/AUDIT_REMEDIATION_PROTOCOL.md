@@ -21,12 +21,12 @@ This protocol is **canonical**. Executors MUST follow it in order. Deviations re
 | Condition | Action |
 |-----------|--------|
 | Operator names a campaign | Use that campaign if it exists and is not `ABORTED` without operator override. |
-| Operator does not name a campaign | Select the **latest `COMPLETE`** campaign whose scope matches the remediation request. `COMPLETE` is the prerequisite audit baseline for normal remediation — remediation selects a finished audit, not an in-flight one. |
+| Operator does not name a campaign | Select the **latest `COMPLETE`** campaign whose scope matches the remediation request. `COMPLETE` is the prerequisite audit baseline for normal remediation - remediation selects a finished audit, not an in-flight one. |
 | No `COMPLETE` campaign matches | **STOP.** Report gap; do not invent findings or remediate from partial notes. |
 
 **Latest** means most recent `completed_at` (or equivalent) in the campaign metadata. If dates tie, prefer the campaign with higher declared coverage or the one referenced in the operator request.
 
-### A.3 `IN_PROGRESS` campaigns — hard stop
+### A.3 `IN_PROGRESS` campaigns - hard stop
 
 - **Never** begin silent remediation against an `IN_PROGRESS` audit.
 - An `IN_PROGRESS` campaign may be used only when the operator **explicitly** authorizes work against named, already-recorded findings in that campaign.
@@ -71,10 +71,10 @@ Architecture provides **target**. Plan provides **implementation work unit**. No
 
 Construct the queue from:
 
-1. **Campaign `README.md` finding register** — authoritative list of findings, severities, statuses, dependencies, remediation blocks, and cross-references.
-2. **Accepted unresolved findings** — status `ACCEPTED` (and not `DEFERRED` / `REJECTED` / `CLOSED`). When resuming in-flight remediation, include `IMPLEMENTING` explicitly. Do **not** remediate `PROPOSED` findings before operator acceptance.
-3. **Dependencies** — explicit `dependencies` fields in the finding register, implied ordering (e.g., schema before consumer), and plan-block prerequisites.
-4. **Plan blocks** — remediation work units from `docs/project/maintainers/plans/` or capability plan docs paired with architecture targets.
+1. **Campaign `README.md` finding register** - authoritative list of findings, severities, statuses, dependencies, remediation blocks, and cross-references.
+2. **Accepted unresolved findings** - status `ACCEPTED` (and not `DEFERRED` / `REJECTED` / `CLOSED`). When resuming in-flight remediation, include `IMPLEMENTING` explicitly. Do **not** remediate `PROPOSED` findings before operator acceptance.
+3. **Dependencies** - explicit `dependencies` fields in the finding register, implied ordering (e.g., schema before consumer), and plan-block prerequisites.
+4. **Plan blocks** - remediation work units from `docs/project/maintainers/plans/` or capability plan docs paired with architecture targets.
 
 Per-layer snapshots supply historical observation and evidence only; they are **not** a second source of truth for lifecycle state.
 
@@ -83,8 +83,8 @@ Per-layer snapshots supply historical observation and evidence only; they are **
 Sort candidate blocks by:
 
 1. **Severity** (critical → high → medium → low) using the campaign's defined scale.
-2. **Dependency** — unblockers before dependents; no implementation of blocked items.
-3. **Leverage** — prefer changes that close multiple findings or reduce entire failure classes.
+2. **Dependency** - unblockers before dependents; no implementation of blocked items.
+3. **Leverage** - prefer changes that close multiple findings or reduce entire failure classes.
 
 Tie-break: earlier finding ID, then alphabetically by plan block reference.
 
@@ -115,11 +115,11 @@ When sources disagree, resolve in this order:
 |----------|--------|------|
 | 1 | **Campaign finding register** (`docs/audit_results/<CAMPAIGN_DIR>/README.md`) | Authoritative **current** finding lifecycle, remediation block, dependencies, implementation commit, verification evidence. |
 | 2 | **Per-layer audit snapshot** | Immutable **historical** problem description, evidence, reproduction, impact, publication-time operator decision. |
-| 3 | **Architecture doc** (`docs/project/architecture/`, capability architecture) | Describes the **target** — intended design and invariants. |
-| 4 | **Plan doc** (`docs/project/maintainers/plans/`, capability plan) | Describes the **work unit** — phased delivery and acceptance criteria. |
-| 5 | **Codebase** | **Baseline** — what is implemented today; not a substitute for arch/plan when they define the target. |
+| 3 | **Architecture doc** (`docs/project/architecture/`, capability architecture) | Describes the **target** - intended design and invariants. |
+| 4 | **Plan doc** (`docs/project/maintainers/plans/`, capability plan) | Describes the **work unit** - phased delivery and acceptance criteria. |
+| 5 | **Codebase** | **Baseline** - what is implemented today; not a substitute for arch/plan when they define the target. |
 
-### C.1 Conflict handling — STOP
+### C.1 Conflict handling - STOP
 
 **STOP** and escalate to the operator when:
 
@@ -155,7 +155,7 @@ An audit finding defines the **historical observed problem**. It is **not** perm
 
 1. Select the **highest-priority unblocked** item from the remediation queue (Section B).
 2. Restate the block's scope in one paragraph: findings addressed, files likely touched, out-of-scope boundaries.
-3. **Scoped reads only** — open files required for this block (architecture section, plan section, implicated modules, existing tests). Do not load unrelated hubs, full domain guides, or repo-wide search unless the block requires it.
+3. **Scoped reads only** - open files required for this block (architecture section, plan section, implicated modules, existing tests). Do not load unrelated hubs, full domain guides, or repo-wide search unless the block requires it.
 4. If the block expands beyond the stated scope during investigation, **STOP** (see Section G).
 
 ---
@@ -166,9 +166,9 @@ An audit finding defines the **historical observed problem**. It is **not** perm
 
 Before implementation:
 
-1. Present a **roadmap** — ordered blocks with severity and dependencies.
+1. Present a **roadmap** - ordered blocks with severity and dependencies.
 2. Explain in **plain language** what will change and why (problem → target → approach).
-3. State **expected proof** — tests, CI jobs, manual checks, or artifacts that will demonstrate resolution.
+3. State **expected proof** - tests, CI jobs, manual checks, or artifacts that will demonstrate resolution.
 4. Obtain **confirmation** before editing code or docs, unless the operator has pre-authorized autonomous execution for the session.
 
 ### E.2 Non-interactive / batch execution
@@ -188,13 +188,13 @@ When work begins on a block, set implicated findings to `IMPLEMENTING` in the ca
 
 All remediation MUST meet production quality bar for Intergrax:
 
-- **Correctness** — behavior matches architecture target; edge cases from the finding are covered.
-- **Clarity** — code and docs readable; public surfaces documented at the same level as surrounding code.
-- **Safety** — no broadening of trust boundaries; failures fail closed where arch requires it.
-- **Observability** — meaningful errors/logs where the change introduces new failure modes.
-- **Performance** — no gratuitous regression; intentional trade-offs documented in plan or commit message.
-- **Consistency** — naming, patterns, and tier boundaries match existing conventions (`AGENTS.md` import rules).
-- **Minimal diff** — smallest change that fully resolves the block; no drive-by refactors.
+- **Correctness** - behavior matches architecture target; edge cases from the finding are covered.
+- **Clarity** - code and docs readable; public surfaces documented at the same level as surrounding code.
+- **Safety** - no broadening of trust boundaries; failures fail closed where arch requires it.
+- **Observability** - meaningful errors/logs where the change introduces new failure modes.
+- **Performance** - no gratuitous regression; intentional trade-offs documented in plan or commit message.
+- **Consistency** - naming, patterns, and tier boundaries match existing conventions (`AGENTS.md` import rules).
+- **Minimal diff** - smallest change that fully resolves the block; no drive-by refactors.
 
 ---
 
@@ -208,8 +208,8 @@ Executors MUST obey these constraints during remediation:
 | **History** | **No** `reset`, `rebase`, `stash`, `clean`, `amend`, or **force-push** unless operator explicitly requests a specific command. |
 | **Concurrent work** | **Preserve** other in-progress work on the branch; do not discard unrelated changes. |
 | **Staging** | Stage **task-owned files only**; never `git add -A` or blanket staging. |
-| **Reflection** | **No loose reflection** — do not introduce ad-hoc introspection, dynamic attribute hacks, or stringly-typed dispatch to "make tests pass." |
-| **Typing** | **Avoid** `dict[str, Any]` (and equivalent untyped bags) on **critical surfaces** — public APIs, security boundaries, orchestration contracts, persistence schemas. Use typed models or narrow mappings. |
+| **Reflection** | **No loose reflection** - do not introduce ad-hoc introspection, dynamic attribute hacks, or stringly-typed dispatch to "make tests pass." |
+| **Typing** | **Avoid** `dict[str, Any]` (and equivalent untyped bags) on **critical surfaces** - public APIs, security boundaries, orchestration contracts, persistence schemas. Use typed models or narrow mappings. |
 | **Legacy** | **Remove dead legacy** touched by the change; do not leave orphaned code paths that contradict the new behavior. |
 | **Scope** | On **scope expansion** (new findings, new modules, arch/plan drift), **STOP** and re-queue with operator approval. |
 
@@ -221,10 +221,10 @@ Remediation is not complete at implementation time. Each block requires verifica
 
 ### H.1 Required verification types
 
-1. **Automated tests** — unit/integration tests exercising the fixed behavior.
-2. **Negative / bypass tests** — cases proving the original failure mode no longer succeeds (regression guards).
-3. **CI gates** — relevant pipeline jobs green (or explicitly waived by operator with reason recorded).
-4. **Diff inspection** — confirm only intended files changed and no unrelated damage.
+1. **Automated tests** - unit/integration tests exercising the fixed behavior.
+2. **Negative / bypass tests** - cases proving the original failure mode no longer succeeds (regression guards).
+3. **CI gates** - relevant pipeline jobs green (or explicitly waived by operator with reason recorded).
+4. **Diff inspection** - confirm only intended files changed and no unrelated damage.
 
 ### H.2 Insufficient verification
 
@@ -345,7 +345,7 @@ Recommend a **later independent audit** (new campaign) when:
 - Multiple items were deferred.
 - Architecture changed materially during remediation.
 
-Do not claim "fully audited" solely because remediation closed — only that **this campaign's accepted findings were addressed per this protocol**. Fixing and closing every finding does **not** retroactively change the original campaign `overall_verdict`; a fresh audit campaign determines current platform verdict independently.
+Do not claim "fully audited" solely because remediation closed - only that **this campaign's accepted findings were addressed per this protocol**. Fixing and closing every finding does **not** retroactively change the original campaign `overall_verdict`; a fresh audit campaign determines current platform verdict independently.
 
 ---
 

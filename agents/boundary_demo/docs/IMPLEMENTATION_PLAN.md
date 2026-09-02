@@ -1,4 +1,4 @@
-﻿# boundary_demo agent — Implementation Plan
+﻿# boundary_demo agent - Implementation Plan
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md)
@@ -14,7 +14,7 @@ Principle: **stable PoC agent** · **no receipt logic in Tier-2** · **no Tier-3
 |-------|--------|
 | Purpose, contracts, runtime layout | **ARCHITECTURE.md** (this directory) |
 | Task status, phases | **This file** |
-| Agent architecture decisions | **`docs/project/technical/adr`** — [`adr/README.md`](adr/README.md) |
+| Agent architecture decisions | **`docs/project/technical/adr`** - [`adr/README.md`](adr/README.md) |
 | EBE platform / host work | `../../applications/attestation_demo` |
 
 ---

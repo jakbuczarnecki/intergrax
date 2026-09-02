@@ -28,4 +28,4 @@ Governed access to: `platform.list_workflow_runs`, `platform.list_check_suites`,
 
 ## Related skills
 
-- Other `platform` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `platform` bundle skills - see bundle [USAGE.md](../USAGE.md)

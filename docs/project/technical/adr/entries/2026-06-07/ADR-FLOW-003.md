@@ -15,18 +15,18 @@ Product teams need a clear contract: either implement bounded replan, or documen
 
 ## Decision
 
-Adopt **Option B — reserved with explicit non-support in v1**:
+Adopt **Option B - reserved with explicit non-support in v1**:
 
 1. **`MODIFY_PLAN` remains in the enum** for forward compatibility and external adapter parity.
 2. **Nexus runtime v1** treats `MODIFY_PLAN` like `FAIL` with error code `MODIFY_PLAN_NOT_SUPPORTED` unless a future `OrchestrationProfile.allow_dynamic_replan=True` is set (default **False**).
 3. **Authors MUST use** `AgentDecision.HANDOFF` for runtime graph extension and declarative `ApplicationGraphSpec` for static topology.
-4. **Policy hook** at planning boundary (FLOW-11) is the extension point for pre-graph plan mutation — not mid-UAEP `MODIFY_PLAN`.
+4. **Policy hook** at planning boundary (FLOW-11) is the extension point for pre-graph plan mutation - not mid-UAEP `MODIFY_PLAN`.
 
 **Not chosen (v1):**
 
 | Option | Why deferred |
 |--------|--------------|
-| Full dynamic replan mid-graph | Requires plan versioning, checkpoint invalidation, eval baseline re-bind — Tier-1 scope creep |
+| Full dynamic replan mid-graph | Requires plan versioning, checkpoint invalidation, eval baseline re-bind - Tier-1 scope creep |
 
 ## Consequences
 

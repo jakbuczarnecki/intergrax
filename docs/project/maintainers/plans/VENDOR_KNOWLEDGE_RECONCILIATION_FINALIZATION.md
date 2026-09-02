@@ -1,7 +1,7 @@
-# Vendor Knowledge — Reconciliation Finalization Architecture
+# Vendor Knowledge - Reconciliation Finalization Architecture
 
 **Task:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1`
-**Status:** `CHANGES_REQUIRED` — correction under review
+**Status:** `CHANGES_REQUIRED` - correction under review
 **Review fix:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1`
 **Review-fix-1 status:** `CHANGES_REQUIRED`
 **Review fix 2:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2`
@@ -37,7 +37,7 @@ The completed sync checkpoint stores only:
 
 The remote-item state repository does **not** own a durable reconciliation-run lifecycle.
 
-Therefore a naive implementation — *load active IDs, subtract seen IDs, emit missing tombstones on the final page* — is **unsafe**.
+Therefore a naive implementation - *load active IDs, subtract seen IDs, emit missing tombstones on the final page* - is **unsafe**.
 
 ### Failure window (must be eliminated)
 
@@ -113,8 +113,8 @@ The run owns:
 - base completed checkpoint **or** its exact CAS identity (`expected_base_checkpoint_cas`);
 - `applied_page_count` and `last_applied_delivery_id`;
 - exact private cursor state:
-  - `current_input_cursor: KnowledgeCursor | null` — at run start `null`; on resume the exact opaque cursor required by the adapter for the next provider page;
-  - `current_input_cursor_fingerprint` — must correspond to `current_input_cursor`;
+  - `current_input_cursor: KnowledgeCursor | null` - at run start `null`; on resume the exact opaque cursor required by the adapter for the next provider page;
+  - `current_input_cursor_fingerprint` - must correspond to `current_input_cursor`;
 - bounded remaining candidate remote IDs (see §4);
 - **no** prepared page side effects for the current page.
 
@@ -131,7 +131,7 @@ Entry:
 
 Before calling the sink, the coordinator durably prepares the exact page intent.
 
-**Prepared intent — minimum required fields:**
+**Prepared intent - minimum required fields:**
 
 | Field | Purpose |
 |---|---|
@@ -200,7 +200,7 @@ Entered only after **all** of the following:
 
 `FINALIZING` retains:
 
-- `intended_final_completed_checkpoint` — exact private `KnowledgeCursor` derived from `prepared_proposed_checkpoint`;
+- `intended_final_completed_checkpoint` - exact private `KnowledgeCursor` derived from `prepared_proposed_checkpoint`;
 - `intended_final_checkpoint_fingerprint`;
 - `expected_previous_completed_checkpoint` (complete canonical checkpoint identity observed at final page preparation);
 - final `delivery_id`;
@@ -476,7 +476,7 @@ The exact sorted synthetic tombstone IDs and their source-scoped semantic marker
 
 ## 7. Prepared state-mutation templates and delivery-ID contract (frozen)
 
-### Step 1 — prepared state-mutation templates
+### Step 1 - prepared state-mutation templates
 
 `PAGE_PREPARED` stores bounded, safe and exact `prepared_state_mutation_templates`.
 
@@ -509,11 +509,11 @@ absent_from_completed_synchronized_source_inventory
 
 Do not store event bodies, message bodies, attachment bytes, credentials or provider payloads.
 
-### Step 2 — batch payload fingerprint
+### Step 2 - batch payload fingerprint
 
 See §6. `prepared_batch_payload_fingerprint` excludes `delivery_id`.
 
-### Step 3 — delivery ID
+### Step 3 - delivery ID
 
 Compute:
 
@@ -535,7 +535,7 @@ delivery_id = SHA256(canonical_json({
 
 The delivery ID depends on the payload fingerprint, but the payload fingerprint never depends on the delivery ID.
 
-### Step 4 — delivery receipt binding
+### Step 4 - delivery receipt binding
 
 Sink receipt inspection binds to:
 
@@ -712,7 +712,7 @@ Provider reproducibility is irrelevant after the sink proves the exact delivery 
 
 On retry, read the current completed checkpoint. Compare the **complete canonical checkpoint identity**, not cursor version alone.
 
-### Case A — current checkpoint equals expected previous
+### Case A - current checkpoint equals expected previous
 
 Perform CAS:
 
@@ -722,7 +722,7 @@ expected previous → intended final
 
 Then CAS the run to `COMPLETED`.
 
-### Case B — current checkpoint equals intended final
+### Case B - current checkpoint equals intended final
 
 The checkpoint commit succeeded before the process crashed.
 
@@ -737,7 +737,7 @@ Do not:
 
 Only CAS the run from `FINALIZING` to `COMPLETED`.
 
-### Case C — current checkpoint matches neither value
+### Case C - current checkpoint matches neither value
 
 Transition to `RECOVERY_REQUIRED`.
 
@@ -839,18 +839,18 @@ Fail-closed blocking is preferable to silently unlocking an inconsistent binding
 
 | Condition | Category | Retryable | Run transition | Safe message |
 |---|---|---|---|---|
-| lease busy | `LEASE_BUSY` | yes | — | — |
-| provider dependency failure before preparation | `DEPENDENCY_UNAVAILABLE` | yes | — | — |
-| CAS conflict with no contradictory durable state | `DEPENDENCY_UNAVAILABLE` | yes | — | — |
-| receipt inspection operation failed (backend unavailable before returning state) | `DEPENDENCY_UNAVAILABLE` | yes | phase remains `PAGE_PREPARED` | — |
-| prepared page or batch mismatch (both receipts `ABSENT`) | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | — |
-| stored prepared intent corrupt after sink `APPLIED` | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | — |
-| stale binding configuration | `INVALID_CURSOR` | no | → `RECOVERY_REQUIRED` | — |
-| candidate, prepared-intent, or state-mutation policy exceeded | `CONFIGURATION_ERROR` | no | — | — |
-| delivery fingerprint conflict | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | — |
+| lease busy | `LEASE_BUSY` | yes | - | - |
+| provider dependency failure before preparation | `DEPENDENCY_UNAVAILABLE` | yes | - | - |
+| CAS conflict with no contradictory durable state | `DEPENDENCY_UNAVAILABLE` | yes | - | - |
+| receipt inspection operation failed (backend unavailable before returning state) | `DEPENDENCY_UNAVAILABLE` | yes | phase remains `PAGE_PREPARED` | - |
+| prepared page or batch mismatch (both receipts `ABSENT`) | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | - |
+| stored prepared intent corrupt after sink `APPLIED` | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | - |
+| stale binding configuration | `INVALID_CURSOR` | no | → `RECOVERY_REQUIRED` | - |
+| candidate, prepared-intent, or state-mutation policy exceeded | `CONFIGURATION_ERROR` | no | - | - |
+| delivery fingerprint conflict | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | - |
 | sink receipt returned `UNKNOWN` | `DEPENDENCY_UNAVAILABLE` | **no** | → `RECOVERY_REQUIRED` | `Knowledge delivery outcome requires recovery` |
-| completed checkpoint differs from both expected and intended | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | — |
-| cursor object/fingerprint mismatch | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | — |
+| completed checkpoint differs from both expected and intended | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | - |
+| cursor object/fingerprint mismatch | `INVALID_PROVIDER_RESPONSE` | no | → `RECOVERY_REQUIRED` | - |
 
 For sink receipt `UNKNOWN`, do not expose delivery IDs, provider IDs, cursor values, raw URLs, or sink implementation details.
 
@@ -862,40 +862,40 @@ Administrator-configured limits are **not** classified as malformed provider res
 
 Legend:
 
-- **Phase** — durable reconciliation-run phase at retry entry.
-- **Applied** — `applied_page_count` at entry.
-- **Receipts** — durable delivery receipts that may exist.
-- **Provider** — whether the provider is read again.
-- **Sink** — whether sink may be invoked again.
-- **State** — whether item-state mutations may be replayed.
-- **Delivery ID** — same / new / none.
-- **Cursor** — cursor transition on success.
-- **Checkpoint** — whether completed checkpoint may advance.
-- **Next** — next phase after successful retry.
-- **Error** — expected safe error category.
-- **Retry** — retryable.
+- **Phase** - durable reconciliation-run phase at retry entry.
+- **Applied** - `applied_page_count` at entry.
+- **Receipts** - durable delivery receipts that may exist.
+- **Provider** - whether the provider is read again.
+- **Sink** - whether sink may be invoked again.
+- **State** - whether item-state mutations may be replayed.
+- **Delivery ID** - same / new / none.
+- **Cursor** - cursor transition on success.
+- **Checkpoint** - whether completed checkpoint may advance.
+- **Next** - next phase after successful retry.
+- **Error** - expected safe error category.
+- **Retry** - retryable.
 
 | # | Case | Phase | Applied | Receipts | Provider | Sink | State | Delivery ID | Cursor | Checkpoint | Next | Error | Retry |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | First provider page applied | `PAGE_PREPARED` | 0→1 | sink APPLIED + state COMPLETED | no | no | no | same | `prepared_next_cursor` → `current_input_cursor` | no | `COLLECTING` | — | — |
-| 2 | Later provider page applied | `PAGE_PREPARED` | n→n+1 | sink APPLIED + state COMPLETED | no | no | no | same | `prepared_next_cursor` → `current_input_cursor` | no | `COLLECTING` | — | — |
-| 3 | Run returned to `COLLECTING` with prior pages applied | `COLLECTING` | >0 | none for current page | yes (next page) | only after prepare | after sink | new on prepare | advance on each applied page | no | `PAGE_PREPARED` or `COLLECTING` | — | — |
-| 4 | `ABORT_PRISTINE` before any page effects | `COLLECTING` or `PAGE_PREPARED` | 0 | both ABSENT; no prepared delivery | no | no | no | none | unchanged | no | `ABORTED` | — | — |
-| 5 | `ABORT_PRISTINE` after earlier page applied | any | >0 | any | no | no | no | — | — | no | blocked | — | — |
+| 1 | First provider page applied | `PAGE_PREPARED` | 0→1 | sink APPLIED + state COMPLETED | no | no | no | same | `prepared_next_cursor` → `current_input_cursor` | no | `COLLECTING` | - | - |
+| 2 | Later provider page applied | `PAGE_PREPARED` | n→n+1 | sink APPLIED + state COMPLETED | no | no | no | same | `prepared_next_cursor` → `current_input_cursor` | no | `COLLECTING` | - | - |
+| 3 | Run returned to `COLLECTING` with prior pages applied | `COLLECTING` | >0 | none for current page | yes (next page) | only after prepare | after sink | new on prepare | advance on each applied page | no | `PAGE_PREPARED` or `COLLECTING` | - | - |
+| 4 | `ABORT_PRISTINE` before any page effects | `COLLECTING` or `PAGE_PREPARED` | 0 | both ABSENT; no prepared delivery | no | no | no | none | unchanged | no | `ABORTED` | - | - |
+| 5 | `ABORT_PRISTINE` after earlier page applied | any | >0 | any | no | no | no | - | - | no | blocked | - | - |
 | 6 | `PAGE_PREPARED` exceeds payload-byte limit | `COLLECTING` | unchanged | none | no | no | no | none | unchanged | no | `COLLECTING` | `CONFIGURATION_ERROR` | no |
 | 7 | Prepared state-mutation count exceeds limit | `COLLECTING` | unchanged | none | no | no | no | none | unchanged | no | `COLLECTING` | `CONFIGURATION_ERROR` | no |
-| 8 | Both receipts `ABSENT`, provider and payload reproduce exactly | `PAGE_PREPARED` | unchanged | both ABSENT | yes (verify) | yes | yes | same | per success path | no | `COLLECTING` or `FINALIZING` | — | — |
+| 8 | Both receipts `ABSENT`, provider and payload reproduce exactly | `PAGE_PREPARED` | unchanged | both ABSENT | yes (verify) | yes | yes | same | per success path | no | `COLLECTING` or `FINALIZING` | - | - |
 | 9 | Both receipts `ABSENT`, provider page fingerprint differs | `PAGE_PREPARED` | unchanged | both ABSENT | yes (mismatch) | no | no | same | unchanged | no | `RECOVERY_REQUIRED` | `INVALID_PROVIDER_RESPONSE` | no |
 | 10 | Both receipts `ABSENT`, batch payload fingerprint differs | `PAGE_PREPARED` | unchanged | both ABSENT | yes (mismatch) | no | no | same | unchanged | no | `RECOVERY_REQUIRED` | `INVALID_PROVIDER_RESPONSE` | no |
-| 11 | Sink `APPLIED`, state `ABSENT` | `PAGE_PREPARED` | n→n+1 | sink APPLIED; state ABSENT | no | no | replay templates | same | per success path | no | `COLLECTING` or `FINALIZING` | — | — |
-| 12 | State `APPLYING` | `PAGE_PREPARED` | n→n+1 | sink APPLIED; state APPLYING | no | no | replay templates | same | per success path | no | `COLLECTING` or `FINALIZING` | — | — |
-| 13 | State `COMPLETED`, phase still `PAGE_PREPARED` | `PAGE_PREPARED` | n→n+1 | state COMPLETED | no | no | no | same | per success path | no | `COLLECTING` or `FINALIZING` | — | — |
+| 11 | Sink `APPLIED`, state `ABSENT` | `PAGE_PREPARED` | n→n+1 | sink APPLIED; state ABSENT | no | no | replay templates | same | per success path | no | `COLLECTING` or `FINALIZING` | - | - |
+| 12 | State `APPLYING` | `PAGE_PREPARED` | n→n+1 | sink APPLIED; state APPLYING | no | no | replay templates | same | per success path | no | `COLLECTING` or `FINALIZING` | - | - |
+| 13 | State `COMPLETED`, phase still `PAGE_PREPARED` | `PAGE_PREPARED` | n→n+1 | state COMPLETED | no | no | no | same | per success path | no | `COLLECTING` or `FINALIZING` | - | - |
 | 14 | Stored prepared intent corrupt after sink `APPLIED` | `PAGE_PREPARED` | unchanged | sink APPLIED; corrupt intent | no | no | no | same | unchanged | no | `RECOVERY_REQUIRED` | `INVALID_PROVIDER_RESPONSE` | no |
 | 15 | Receipt inspection call dependency failure | `PAGE_PREPARED` | unchanged | inspection failed | no | no | no | same | unchanged | no | `PAGE_PREPARED` | `DEPENDENCY_UNAVAILABLE` | yes |
 | 16 | Sink receipt returned `UNKNOWN` | `PAGE_PREPARED` | unchanged | sink UNKNOWN | no | no | no | same | unchanged | no | `RECOVERY_REQUIRED` | `DEPENDENCY_UNAVAILABLE` | no |
-| 17 | Checkpoint committed, run still `FINALIZING` | `FINALIZING` | final | all complete | no | no | no | same | unchanged | already committed | `COMPLETED` (Case B) | — | — |
-| 18 | Cursor object/fingerprint mismatch | any active | any | — | no | no | no | — | — | no | `RECOVERY_REQUIRED` | `INVALID_PROVIDER_RESPONSE` | no |
-| 19 | Configuration changed while active run exists | any active | any | — | no | no | no | — | — | no | `RECOVERY_REQUIRED` | `INVALID_CURSOR` | no |
+| 17 | Checkpoint committed, run still `FINALIZING` | `FINALIZING` | final | all complete | no | no | no | same | unchanged | already committed | `COMPLETED` (Case B) | - | - |
+| 18 | Cursor object/fingerprint mismatch | any active | any | - | no | no | no | - | - | no | `RECOVERY_REQUIRED` | `INVALID_PROVIDER_RESPONSE` | no |
+| 19 | Configuration changed while active run exists | any active | any | - | no | no | no | - | - | no | `RECOVERY_REQUIRED` | `INVALID_CURSOR` | no |
 
 Additional standard cases (provider read failure, sink failure before APPLIED, candidate limits, lease busy, incremental sync blocked, `restart=True` with side effects) follow §3.4, §4 and §12 with the same column semantics.
 
@@ -912,13 +912,13 @@ No row may equate `COLLECTING == pristine`. No row may reread the provider after
 | item-state accepted | `PAGE_PREPARED` or `FINALIZING` | per §9; increment `applied_page_count` on transition |
 | `FINALIZING` written | `FINALIZING` | checkpoint idempotency per §10 |
 | checkpoint committed, run not `COMPLETED` | `FINALIZING` | Case B: CAS run to `COMPLETED` only |
-| run `COMPLETED` | — | ordinary incremental sync allowed |
+| run `COMPLETED` | - | ordinary incremental sync allowed |
 
 ---
 
 ## 14. Implementation decomposition (later tasks)
 
-Architecture only — implementation is split as follows.
+Architecture only - implementation is split as follows.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`
 
@@ -1000,7 +1000,7 @@ Explicit non-sequence candidate-inventory rejection proof through `reconcile_onc
 
 **Status:** `CHANGES_REQUIRED`
 
-Calendar acceptance proof only — does not own generic reconciliation lifecycle code:
+Calendar acceptance proof only - does not own generic reconciliation lifecycle code:
 
 - non-primary Calendar missing-item detection;
 - no tombstones before the final snapshot page;

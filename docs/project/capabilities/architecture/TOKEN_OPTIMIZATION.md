@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Token Optimization — Multi-layer Feature Architecture
+# Token Optimization - Multi-layer Feature Architecture
 
 **Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED / NOT QUALIFIED**; **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**.
 **Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
@@ -64,7 +64,7 @@ Intergrax provides runtime-controlled token economy for governed AI agents.
 
 ### Platform dependency direction
 
-Token Optimization is a universal Tier-0/runtime platform capability consumed by any application. **LKW** is a later product client and product proof — it must not own or duplicate Token Optimization mechanisms.
+Token Optimization is a universal Tier-0/runtime platform capability consumed by any application. **LKW** is a later product client and product proof - it must not own or duplicate Token Optimization mechanisms.
 
 ```text
 Tier-3 application (including LKW)
@@ -81,7 +81,7 @@ intergrax/runtime/token_optimization → applications/local_workspace_applicatio
 
 The universal runtime must not import, reference, or special-case LKW.
 
-**Research basis (architectural inspiration only):** cache-aware prompt assembly was informed by [Viktor prompt-caching design analysis](https://viktor.com/research/how-we-built-viktor-around-prompt-caching). Intergrax uses platform-owned terminology (`cache-stable prompt assembly`, `stable prefix`, `dynamic tail`, `provider prefix-cache reuse`, `cache-aware optimization`, `in-cache compaction`, `universal Token Optimization proof`) — not “VIKTOR algorithm/cache/runtime”.
+**Research basis (architectural inspiration only):** cache-aware prompt assembly was informed by [Viktor prompt-caching design analysis](https://viktor.com/research/how-we-built-viktor-around-prompt-caching). Intergrax uses platform-owned terminology (`cache-stable prompt assembly`, `stable prefix`, `dynamic tail`, `provider prefix-cache reuse`, `cache-aware optimization`, `in-cache compaction`, `universal Token Optimization proof`) - not “VIKTOR algorithm/cache/runtime”.
 
 ---
 
@@ -98,7 +98,7 @@ docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md
 docs/project/capabilities/plan/satellites/
 ```
 
-Feature hubs are Cursor entry points. Satellites hold bulky cross-domain sync registers and are in `.cursorignore` — load with explicit `Read` or `@` only.
+Feature hubs are Cursor entry points. Satellites hold bulky cross-domain sync registers and are in `.cursorignore` - load with explicit `Read` or `@` only.
 
 The feature coordinates updates across existing domain pairs:
 
@@ -293,7 +293,7 @@ Different source categories require different optimization strategies. The engin
 | `tools` | Compact LLM-facing schema/catalog view | No schema semantics mutation; canonical `ToolContract` immutability |
 | `context` / `RAG` | Structural/light compression after ranking | Provenance and evidence preservation; citation/grounding checks |
 | `memory` | Staged persistent summary compression | Validation and rollback metadata before any live overwrite |
-| `output` | Runtime output shaping (verbosity, section structure) | Shapes model completion length — not source compression |
+| `output` | Runtime output shaping (verbosity, section structure) | Shapes model completion length - not source compression |
 | `policy` / `legal` / `security` text | Exact preservation or explicit opt-in only | No silent lossy compression unless policy explicitly allows |
 
 **Semantic validation / LLM-as-a-Judge (forward-looking, not implemented today):** future regression and evals gates (for example TOKEN-6B) may use semantic validation or LLM-as-a-Judge to assess lossy/semantic compression quality across measured workflows. That layer must **not** replace deterministic protected-region validation or source-specific structural validation in the optimization path. First implementation slices use deterministic validators only; semantic judges belong to the regression/evals layer, not to helper-only compressors.
@@ -321,11 +321,11 @@ Rules:
 
 - policy resolution happens before any lossy or structural change,
 - baseline token counts use the existing LLM adapter token path when available; the engine must not create a second tokenizer,
-- validation failure must fallback to the original payload or a safer/lower optimization level — never return silently degraded content,
+- validation failure must fallback to the original payload or a safer/lower optimization level - never return silently degraded content,
 - every applied optimization produces a receipt or explicit bypass/fallback record when measurement is enabled,
 - observability emission uses the Harness Observability Spine or an approved domain-signal path only.
 
-#### Cache-aware universal runtime lifecycle (TOKEN-10 — planned orchestration)
+#### Cache-aware universal runtime lifecycle (TOKEN-10 - planned orchestration)
 
 Canonical end-to-end lifecycle shared by **universal proof mode** and **application runtime mode**. Both entry modes use the same production contracts and runtime path; the proof runner must not implement an alternative Token Optimization engine.
 
@@ -369,17 +369,17 @@ Not every mechanism belongs in the first public proof. The first proof should pr
 
 | Mechanism | What it optimizes | Typical source/category | Expected measurable metric | Safety risk | Required validator / guardrail | Likely implementation phase | First public proof candidate |
 |-----------|-------------------|-------------------------|----------------------------|-------------|-------------------------------|------------------------------|------------------------------|
-| Tool output compaction | Verbose tool results, logs, and command output replayed into context | `tool_result`, terminal/log output | `saved_tokens` on tool-result category | High — may drop errors, paths, IDs | Protected-region validator; exact error/path preservation | TOKEN-4 light + domain hooks | **Yes** — primary proof candidate |
-| Terminal/log/test-output filtering | Noisy shell, CI, and test transcripts | `terminal_output`, `test_output` | `saved_tokens` on filtered transcript category | Medium — may hide failure signals | Extractive filter rules; protected-region validator; fallback on ambiguity | TOKEN-4 / application hooks | Later — after tool-output compaction proves receipts |
-| Tool catalog/schema compaction | LLM-facing tool descriptions and catalog prose | `tool_catalog` | `saved_tokens` on tool-catalog category | Medium — must not alter schema semantics | Schema-preservation validator; canonical `ToolContract` immutability | TOKEN-3 | **Yes** — primary proof candidate |
-| RAG/context-pack light compression | Retrieved evidence fragments after ranking | `context_pack`, `rag_chunk` | `saved_tokens` on RAG/evidence category | High — may break citations/grounding | Citation/grounding checks; protected-region validator; ranking-before-compression rule | TOKEN-4 light | **Yes** — light/structural only |
-| Memory/context pruning | Low-value history, duplicate blocks, stale summaries | `memory`, `history` | `saved_tokens` on memory/history category | High — persistent loss risk | Staging + rollback; receipt; protected-region validator; quality gate | TOKEN-5 | No — gated until regression gates exist |
-| Cache alignment / stable prompt prefixing | Repeated stable prefixes across steps/runs | `prompt_prefix`, `system_policy` | Cache-hit / prefix-stability signal + `saved_tokens` where measurable | Low when prefix-only | Prefix immutability check; no mutation of dynamic tail | TOKEN-2 / TOKEN-6 | **Yes** — where cache/prefix savings are measurable |
-| Output policy / verbosity shaping | Model completion length and section structure | `model_output` | `output_tokens` vs budget; `saved_tokens` on output category | Medium — may reduce audit clarity | OutputPolicyResolver; high-risk bypass; explicit profile comparison | TOKEN-2 | **Yes** — only where baseline/optimized comparison is explicit |
-| Structured data compression | JSON/YAML/tabular blobs in context | `structured_data` | `saved_tokens` on structured-data category | Medium — schema-sensitive | Schema-shape preservation; protected keys/enums | TOKEN-4 extension | Later |
-| Reversible machine-to-machine representation | Machine-facing payloads that can be re-expanded | `m2m_payload` | `saved_tokens` with reversibility flag | Low–medium — expansion contract must hold | Reversibility validator; round-trip check | TOKEN-4 / plugin | Later — plugin-friendly |
-| Retrieval-on-demand instead of full replay | Full document/chunk replay replaced by retrieval handles | `document_replay`, `chunk_replay` | `saved_tokens` on replay category | Medium — grounding risk | Retrieval handle integrity; citation checks | TOKEN-4 / RAG integration | Later |
-| Deduplication and repeated-context suppression | Repeated paragraphs, tool prose, and duplicate evidence | `context_pack`, `history`, `tool_catalog` | `saved_tokens`; `input_tokens_after_dedup_total` | Low–medium — ordering/semantics | Dedup provenance; mandatory-fragment preservation | TOKEN-4 light | **Yes** — when provenance is recorded |
+| Tool output compaction | Verbose tool results, logs, and command output replayed into context | `tool_result`, terminal/log output | `saved_tokens` on tool-result category | High - may drop errors, paths, IDs | Protected-region validator; exact error/path preservation | TOKEN-4 light + domain hooks | **Yes** - primary proof candidate |
+| Terminal/log/test-output filtering | Noisy shell, CI, and test transcripts | `terminal_output`, `test_output` | `saved_tokens` on filtered transcript category | Medium - may hide failure signals | Extractive filter rules; protected-region validator; fallback on ambiguity | TOKEN-4 / application hooks | Later - after tool-output compaction proves receipts |
+| Tool catalog/schema compaction | LLM-facing tool descriptions and catalog prose | `tool_catalog` | `saved_tokens` on tool-catalog category | Medium - must not alter schema semantics | Schema-preservation validator; canonical `ToolContract` immutability | TOKEN-3 | **Yes** - primary proof candidate |
+| RAG/context-pack light compression | Retrieved evidence fragments after ranking | `context_pack`, `rag_chunk` | `saved_tokens` on RAG/evidence category | High - may break citations/grounding | Citation/grounding checks; protected-region validator; ranking-before-compression rule | TOKEN-4 light | **Yes** - light/structural only |
+| Memory/context pruning | Low-value history, duplicate blocks, stale summaries | `memory`, `history` | `saved_tokens` on memory/history category | High - persistent loss risk | Staging + rollback; receipt; protected-region validator; quality gate | TOKEN-5 | No - gated until regression gates exist |
+| Cache alignment / stable prompt prefixing | Repeated stable prefixes across steps/runs | `prompt_prefix`, `system_policy` | Cache-hit / prefix-stability signal + `saved_tokens` where measurable | Low when prefix-only | Prefix immutability check; no mutation of dynamic tail | TOKEN-2 / TOKEN-6 | **Yes** - where cache/prefix savings are measurable |
+| Output policy / verbosity shaping | Model completion length and section structure | `model_output` | `output_tokens` vs budget; `saved_tokens` on output category | Medium - may reduce audit clarity | OutputPolicyResolver; high-risk bypass; explicit profile comparison | TOKEN-2 | **Yes** - only where baseline/optimized comparison is explicit |
+| Structured data compression | JSON/YAML/tabular blobs in context | `structured_data` | `saved_tokens` on structured-data category | Medium - schema-sensitive | Schema-shape preservation; protected keys/enums | TOKEN-4 extension | Later |
+| Reversible machine-to-machine representation | Machine-facing payloads that can be re-expanded | `m2m_payload` | `saved_tokens` with reversibility flag | Low–medium - expansion contract must hold | Reversibility validator; round-trip check | TOKEN-4 / plugin | Later - plugin-friendly |
+| Retrieval-on-demand instead of full replay | Full document/chunk replay replaced by retrieval handles | `document_replay`, `chunk_replay` | `saved_tokens` on replay category | Medium - grounding risk | Retrieval handle integrity; citation checks | TOKEN-4 / RAG integration | Later |
+| Deduplication and repeated-context suppression | Repeated paragraphs, tool prose, and duplicate evidence | `context_pack`, `history`, `tool_catalog` | `saved_tokens`; `input_tokens_after_dedup_total` | Low–medium - ordering/semantics | Dedup provenance; mandatory-fragment preservation | TOKEN-4 light | **Yes** - when provenance is recorded |
 
 ### 8.3 Strategy / algorithm taxonomy
 
@@ -400,7 +400,7 @@ Strategies are the algorithms a mechanism may apply. A single mechanism may comp
 | Semantic compression | No | Yes | No | No | No | **Yes** | **Yes** | No | **Yes** |
 | Reversible M2M encoding | Yes | No | **Yes** | No | No | Yes | Light | Later | No |
 | Retrieval-on-demand | Partial | Partial | Partial | No | No | Yes | Yes | Later | No |
-| Output verbosity shaping | Partial | Partial | No | No | **Yes** | Light | Yes | **Yes** — explicit comparison only | No |
+| Output verbosity shaping | Partial | Partial | No | No | **Yes** | Light | Yes | **Yes** - explicit comparison only | No |
 
 Rules:
 
@@ -424,7 +424,7 @@ Cache-prefix stabilization defines a provider-cache-aware optimization surface. 
 | vLLM self-hosted automatic prefix caching | Repeated KV-prefix reuse, lower repeated prefill work, cached-token reuse where exposed, prefix-cache hit metrics | Managed-provider billing discounts, Anthropic `cache_control`, guaranteed retention |
 | Content-reduction optimization | Fewer input tokens via dedup/packing/filtering | Provider KV reuse or cache-hit pricing |
 
-Do not claim vLLM provides Claude billing discounts or identical TTL semantics. Use official vLLM documentation for technical claims; do not hard-code release numbers or CLI flags in this architecture — version pinning belongs to implementation tasks.
+Do not claim vLLM provides Claude billing discounts or identical TTL semantics. Use official vLLM documentation for technical claims; do not hard-code release numbers or CLI flags in this architecture - version pinning belongs to implementation tasks.
 
 #### Stable prefix and dynamic tail
 
@@ -480,7 +480,7 @@ Dynamic content belongs in the prompt tail, not in the stable prefix.
 
 Where provider cache reuse is intended, the stable prefix must be **byte/token stable**.
 
-#### Hard invariants (runtime — TOKEN-10B)
+#### Hard invariants (runtime - TOKEN-10B)
 
 For requests expected to share a cache prefix:
 
@@ -495,7 +495,7 @@ For requests expected to share a cache prefix:
 9. Prefix invalidation must produce an explicit reason.
 10. Cache stability is a runtime property, not only a test helper.
 
-Existing helper-level contracts (`build_prefix_snapshot`, `evaluate_prefix_stability`, `preserves_append_only_prefix`) are extended by the production assembler in **`intergrax/runtime/token_optimization/prompt_assembly.py`** (**TOKEN-10B** — implemented / ready for review). Provider cache integration is **TOKEN-10C** (implemented / ready for review).
+Existing helper-level contracts (`build_prefix_snapshot`, `evaluate_prefix_stability`, `preserves_append_only_prefix`) are extended by the production assembler in **`intergrax/runtime/token_optimization/prompt_assembly.py`** (**TOKEN-10B** - implemented / ready for review). Provider cache integration is **TOKEN-10C** (implemented / ready for review).
 
 #### Append-only prompt/thread invariant
 
@@ -607,7 +607,7 @@ Rules:
 
 - do not add cached tokens to content-saved tokens;
 - do not double-count per-layer savings when computing the final aggregate;
-- do not claim a price saving from vLLM unless the proof has an explicit hardware/cost model — the first proof may claim measured compute reuse and latency/prefill improvement only.
+- do not claim a price saving from vLLM unless the proof has an explicit hardware/cost model - the first proof may claim measured compute reuse and latency/prefill improvement only.
 
 #### Cache-aware compaction timing
 
@@ -690,7 +690,7 @@ Contracts and helper live under `intergrax/runtime/token_optimization` (`CacheAw
 Key properties:
 
 ```text
-recommendation-only first — no autonomous production auto-apply
+recommendation-only first - no autonomous production auto-apply
 recommendations use redaction-safe scalar signals only
 may suggest conservative/balanced profile, full context, strategy enable/disable,
   dynamic-tail reduction, cache-prefix preservation, or manual review
@@ -708,7 +708,7 @@ Contracts and helper live under `intergrax/runtime/token_optimization` (`TokenOp
 Key properties:
 
 ```text
-evaluation/reporting only — no autonomous production auto-apply
+evaluation/reporting only - no autonomous production auto-apply
 deterministic per-case evaluation against expected action/reason/confidence
 aggregate pass/fail/manual-review/insufficient-data/non-auto-apply/raw-content-safe counts
 redaction-safe dict and text report formatters
@@ -728,7 +728,7 @@ Supported modes: `disabled`, `report_only`, `dry_run`, `review_only`, `advisory_
 Key properties:
 
 ```text
-policy-gated integration only — no autonomous production auto-apply
+policy-gated integration only - no autonomous production auto-apply
 policy is explicitly passed per request (no global/env/YAML resolver)
 deterministic gate over recommend_token_optimization_action(...)
 modes: disabled, report_only, dry_run, review_only, advisory_allowed
@@ -753,7 +753,7 @@ Supported presets: `disabled`, `report_only`, `dry_run_safe`, `review_first`, `a
 Key properties:
 
 ```text
-named advisory policy presets — deterministic resolver only
+named advisory policy presets - deterministic resolver only
 presets resolve to explicit TokenOptimizationAdvisoryIntegrationPolicy objects
 policy is explicitly passed per request (no global/env/YAML resolver)
 safe overrides adjust safety switches only (not enabled/mode/auto-apply)
@@ -767,7 +767,7 @@ no observability/HOS emission
 
 Contracts and helpers live under `intergrax/runtime/token_optimization` (`TokenOptimizationAdvisoryPolicyPreset`, `TokenOptimizationAdvisoryPolicyOverrides`, `TokenOptimizationAdvisoryPolicyResolution`, `resolve_token_optimization_advisory_policy`, `token_optimization_advisory_policy_resolution_to_dict`, `format_token_optimization_advisory_policy_resolution`).
 
-#### In-cache compaction (**TOKEN-10E** — implementation complete / READY_FOR_REVIEW)
+#### In-cache compaction (**TOKEN-10E** - implementation complete / READY_FOR_REVIEW)
 
 In-cache compaction is an explicitly policy-gated implementation phase. Cross-domain lifecycle
 architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
@@ -781,7 +781,7 @@ invalidation remain out of scope.
 
 Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](.#810-policy-governed-in-cache-compaction-token-10e).
 
-**Historical scope note:** `TOKEN-OPT-5A` intentionally excluded in-cache compaction. That boundary is superseded by **TOKEN-10E** planning — implementation remains future work.
+**Historical scope note:** `TOKEN-OPT-5A` intentionally excluded in-cache compaction. That boundary is superseded by **TOKEN-10E** planning - implementation remains future work.
 
 ### 8.4 Configuration model
 
@@ -815,7 +815,7 @@ token_optimization:
     compare_baseline: true
 ```
 
-**Profiles** (conceptual only — no runtime config files in this architecture slice):
+**Profiles** (conceptual only - no runtime config files in this architecture slice):
 
 | Profile | Intent |
 |---------|--------|
@@ -832,7 +832,7 @@ Effective policy is resolved by `UNIFIED_EXECUTION_RUNTIME` and may be downgrade
 
 Token optimization mechanisms, strategies, and algorithms behave like other platform extension points: **replaceable, policy-governed, observable, and contract-based**.
 
-A developer with a proven third-party token optimizer should integrate through a shared platform contract and a thin adapter/plugin on their side — not by bypassing policy, validation, or telemetry.
+A developer with a proven third-party token optimizer should integrate through a shared platform contract and a thin adapter/plugin on their side - not by bypassing policy, validation, or telemetry.
 
 **Plugin classes allowed:**
 
@@ -934,7 +934,7 @@ known limitations
 
 | Level | Use |
 |-------|-----|
-| `measured` | Baseline and optimized counts captured on the same workflow with receipts and validation — **only level allowed in public proof tables**. |
+| `measured` | Baseline and optimized counts captured on the same workflow with receipts and validation - **only level allowed in public proof tables**. |
 | `estimated` | Projected from partial categories or sampled steps; not for headline public claims. |
 | `projected` | Model-based forecast without full workflow replay. |
 | `not comparable` | Baseline and optimized runs differ in model, profile, or workload shape. |
@@ -1107,7 +1107,7 @@ the possibility of information loss or distortion.
 
 The canonical levels are:
 
-- **`low`** — use when the selected configuration is lossless, or when no
+- **`low`** - use when the selected configuration is lossless, or when no
   optimization is performed, provided there is no independent critical signal
   and the transformation creates no real risk of removing or rephrasing
   material information. This includes `no_optimization`, `exact_only`, exact
@@ -1115,13 +1115,13 @@ The canonical levels are:
   handled by lossless exact preservation. Protected values do not
   automatically raise the level when the transformation is lossless and
   exactly validated.
-- **`medium`** — use when the selected configuration is lossy and may remove,
+- **`medium`** - use when the selected configuration is lossy and may remove,
   omit or compress useful information, but the content has no independent
   critical signal and the operation may run automatically without mandatory
   human control. Extractive filtering of ordinary tool, terminal and log
   output is `medium`; `source_type` must not lower a comparable lossy
   transformation to `low`.
-- **`high`** — use when at least one of the following applies: the content
+- **`high`** - use when at least one of the following applies: the content
   contains an explicit critical signal such as `security_warning`; lossy
   processing could touch protected or critical information; loss or
   rephrasing could change the meaning of a warning, evidence, decision,
@@ -1145,7 +1145,7 @@ accepted or rejected before **RISK-2** and **RISK-3** are complete.
 
 ### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
 
-**Status:** **TOKEN-10E implementation complete; ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**; candidate construction, validation/receipt/rollback-metadata compilation, durable SQLite storage, and CAS activation are implemented over existing UCL contracts. Rollback execution, human-review UX, and production enablement remain out of scope. [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** — it does **not** create a second repository, reservation model, or optimization decision point. **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**.
+**Status:** **TOKEN-10E implementation complete; ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**; candidate construction, validation/receipt/rollback-metadata compilation, durable SQLite storage, and CAS activation are implemented over existing UCL contracts. Rollback execution, human-review UX, and production enablement remain out of scope. [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** - it does **not** create a second repository, reservation model, or optimization decision point. **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**.
 
 #### 1. Status and dependency
 
@@ -1153,11 +1153,11 @@ accepted or rejected before **RISK-2** and **RISK-3** are complete.
 |------|-------|
 | Lifecycle canon | [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
 | ADR | [ADR-UCL-001](../../technical/adr/entries/2026-08-01/ADR-UCL-001.md) |
-| TOKEN-10E-1 | **ACCEPTED / CLOSED** — durable policy, source identity, eligibility, and activation safety contracts |
-| TOKEN-10E-2 | **ACCEPTED / CLOSED** — immutable durable candidate construction, reuse-before-create, and validated artifact storage flow |
-| TOKEN-10E-3 | **ACCEPTED / CLOSED** — protected-region validation, redaction-safe receipt, rollback metadata, and activation requirements |
-| TOKEN-10E-4 | **ACCEPTED / CLOSED** — durable SQLite repository and Memory/Session CAS activation |
-| TOKEN-10D | Accepted / closed — timing gate semantics unchanged |
+| TOKEN-10E-1 | **ACCEPTED / CLOSED** - durable policy, source identity, eligibility, and activation safety contracts |
+| TOKEN-10E-2 | **ACCEPTED / CLOSED** - immutable durable candidate construction, reuse-before-create, and validated artifact storage flow |
+| TOKEN-10E-3 | **ACCEPTED / CLOSED** - protected-region validation, redaction-safe receipt, rollback metadata, and activation requirements |
+| TOKEN-10E-4 | **ACCEPTED / CLOSED** - durable SQLite repository and Memory/Session CAS activation |
+| TOKEN-10D | Accepted / closed - timing gate semantics unchanged |
 
 #### 2. TOKEN-10E responsibility inside UCL
 
@@ -1287,7 +1287,7 @@ Full ephemeral (EPHEMERAL_ASSEMBLY) and durable (DURABLE_COMPACTION) flows, doma
 → [plan/UNIFIED_CONTEXT_LIFECYCLE.md](../../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md)
 → [ADR-UCL-001](../../technical/adr/entries/2026-08-01/ADR-UCL-001.md)
 
-**Compaction target model** (policy allowlist — unchanged semantics): DYNAMIC_TAIL, COLD_HISTORY, SELECTED_HISTORY_RANGE, FULL_THREAD with review defaults for high-risk targets. See plan §TOKEN-10E for task decomposition.
+**Compaction target model** (policy allowlist - unchanged semantics): DYNAMIC_TAIL, COLD_HISTORY, SELECTED_HISTORY_RANGE, FULL_THREAD with review defaults for high-risk targets. See plan §TOKEN-10E for task decomposition.
 
 **Next step:** Independent GitHub audit of **TOKEN-10G**. TOKEN-10H remains planned.
 
@@ -1455,7 +1455,7 @@ Savings must be attributable by:
 
 ### LLM tool-calling router (TOKEN-9 / TOKEN-9-R1 / TOKEN-9-R2)
 
-`TokenOptimizationLLMRouter` (`intergrax/runtime/token_optimization/llm_router.py`) selects one approved configuration ID through native tool calling (`token_optimization.select_configuration`) or structured-output fallback only when the model capability lookup **resolved successfully** and genuinely lacks `tools`. `CatalogCapabilityAdapter` does not erase concrete model capability state: the router unwraps catalog capability overlays only for `model_capabilities` inspection (`unwrap_catalog_capability_adapter`) and continues using the outer adapter for generation, tool calling, structured output, and usage accounting. Request-policy preflight (`policy.enabled=False` → `POLICY_DISABLED`; `profile=OFF` → `PROFILE_OFF`) runs before transport selection, capability lookup, prompt construction, and any adapter generation — zero adapter activity on blocked requests. Unresolved Ollama capabilities fail closed with `CAPABILITY_RESOLUTION_FAILED`; they never enter structured-output fallback. `available_for()` exposes only configurations executable under the current request policy, source type, packing input, and protected-region rules (compiler gates remain defense-in-depth). The model never chooses layer settings, plugins, or policy. A closed catalog compiles selections into `TokenOptimizationPipelineConfig(mode=REPLACE)` and `TokenOptimizationPipelineRunner` executes built-in layers. Invocation is explicit; no global auto-apply. Safe reports use canonical pipeline receipt metadata (`executed_layer_ids`, `completed`, `required_failure_layer_id`) via `token_optimization_router_result_to_safe_dict()` and exclude raw content, prompts, tool arguments, and receipt payloads.
+`TokenOptimizationLLMRouter` (`intergrax/runtime/token_optimization/llm_router.py`) selects one approved configuration ID through native tool calling (`token_optimization.select_configuration`) or structured-output fallback only when the model capability lookup **resolved successfully** and genuinely lacks `tools`. `CatalogCapabilityAdapter` does not erase concrete model capability state: the router unwraps catalog capability overlays only for `model_capabilities` inspection (`unwrap_catalog_capability_adapter`) and continues using the outer adapter for generation, tool calling, structured output, and usage accounting. Request-policy preflight (`policy.enabled=False` → `POLICY_DISABLED`; `profile=OFF` → `PROFILE_OFF`) runs before transport selection, capability lookup, prompt construction, and any adapter generation - zero adapter activity on blocked requests. Unresolved Ollama capabilities fail closed with `CAPABILITY_RESOLUTION_FAILED`; they never enter structured-output fallback. `available_for()` exposes only configurations executable under the current request policy, source type, packing input, and protected-region rules (compiler gates remain defense-in-depth). The model never chooses layer settings, plugins, or policy. A closed catalog compiles selections into `TokenOptimizationPipelineConfig(mode=REPLACE)` and `TokenOptimizationPipelineRunner` executes built-in layers. Invocation is explicit; no global auto-apply. Safe reports use canonical pipeline receipt metadata (`executed_layer_ids`, `completed`, `required_failure_layer_id`) via `token_optimization_router_result_to_safe_dict()` and exclude raw content, prompts, tool arguments, and receipt payloads.
 
 Live native Ollama E2E (`tests/e2e/token_optimization/test_llm_router_ollama_live.py`, `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_E2E=1`) derives summary transport from the registry adapter's concrete `model_capabilities` (`native_tools`, `structured_output`, `unsupported`) and hard-gates policy bypass (0), forbidden execution (0), protected unsafe execution (0), 100% execution/pipeline/review correctness, 100% valid native tool-call rate (preflight cases excluded from denominator), and routing suitability ≥ 80% on `routing_quality_case_count`. Verified model: `qwen2.5:7b`, `repeats=3`.
 2. Do not build a second context compiler. Extend the existing Context Engineering pipeline.
@@ -1470,16 +1470,16 @@ Live native Ollama E2E (`tests/e2e/token_optimization/test_llm_router_ollama_liv
 
 ## Protocol v2 token optimization target invariants (2026-08-18)
 
-Accepted [`TOKEN_OPTIMIZATION`](../../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** — **not implemented** by audit persistence.
+Accepted [`TOKEN_OPTIMIZATION`](../../../audit_results/2026-08-18/TOKEN_OPTIMIZATION.md) findings **01–06** (2026-08-21). Remediation **ACCEPTED / PLANNED** - **not implemented** by audit persistence.
 
-1. **Measurement authority** — only canonical tokenizer/provider measurements use the TOKENS unit and `MEASURED` confidence via the existing LLM-adapter/tokenizer path. Character-based approximation is a different unit with `ESTIMATED` / `NOT_COMPARABLE` semantics. No proof, cost calculation, promotion gate, or savings percentage may treat characters as measured tokens. Cross-link [`LLM_ADAPTERS`](../../architecture/LLM_ADAPTERS.md); do not create a second tokenizer.
-2. **Protected-region integrity** — protected-region validation is occurrence-aware. Preserve exact value, required multiplicity, region kind, and required structural relation/order where relevant. RAG/evidence/tool/schema-sensitive content additionally uses source-specific structural validators rather than substring existence alone. Cross-link [`CONTEXT_ENGINEERING`](../../architecture/CONTEXT_ENGINEERING.md), [`TOOLS`](../../architecture/TOOLS.md), [`RAG`](../../architecture/RAG.md), [`MEMORY`](../../architecture/MEMORY.md) where source-specific validators are owned.
-3. **Lossy-extension safety** — LOSSY transformation always requires the platform minimum validation contract. Plugins may strengthen validation requirements but may not disable canonical minimum safety. Invalid `TokenOptimizationPolicy` / layer-descriptor combinations fail at construction/resolution before layer execution. Do not rely on plugin self-declaration as safety authority.
-4. **Observability authority** — one effective Token Optimization policy resolves both transformation behavior and receipt/observability obligations. When `emit_observability` is required, pipeline/runtime outcome crosses the canonical HOS emission boundary. Missing emission authority is an explicit degraded/failure posture, not a silent independent default-off helper. Cross-link [`OBSERVABILITY_EVIDENCE`](../../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md); do not create a private Token Optimization telemetry bus.
-5. **Receipt identity** — separate deterministic transformation/content fingerprint from receipt/evidence identity. If `receipt_id` denotes an execution receipt it must be unique or scope-bound to concrete execution evidence (`run_id`, `step_id`, tenant attribution). Do not use a content fingerprint as global receipt identity.
-6. **Lifecycle current state** — architecture and plan expose one current lifecycle truth: **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED / NOT QUALIFIED** (`MODEL_BEHAVIOR_MISMATCH`, 14/16, STABLE); **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**. Preserve historical sequencing; do not convert NOT QUALIFIED into success.
+1. **Measurement authority** - only canonical tokenizer/provider measurements use the TOKENS unit and `MEASURED` confidence via the existing LLM-adapter/tokenizer path. Character-based approximation is a different unit with `ESTIMATED` / `NOT_COMPARABLE` semantics. No proof, cost calculation, promotion gate, or savings percentage may treat characters as measured tokens. Cross-link [`LLM_ADAPTERS`](../../architecture/LLM_ADAPTERS.md); do not create a second tokenizer.
+2. **Protected-region integrity** - protected-region validation is occurrence-aware. Preserve exact value, required multiplicity, region kind, and required structural relation/order where relevant. RAG/evidence/tool/schema-sensitive content additionally uses source-specific structural validators rather than substring existence alone. Cross-link [`CONTEXT_ENGINEERING`](../../architecture/CONTEXT_ENGINEERING.md), [`TOOLS`](../../architecture/TOOLS.md), [`RAG`](../../architecture/RAG.md), [`MEMORY`](../../architecture/MEMORY.md) where source-specific validators are owned.
+3. **Lossy-extension safety** - LOSSY transformation always requires the platform minimum validation contract. Plugins may strengthen validation requirements but may not disable canonical minimum safety. Invalid `TokenOptimizationPolicy` / layer-descriptor combinations fail at construction/resolution before layer execution. Do not rely on plugin self-declaration as safety authority.
+4. **Observability authority** - one effective Token Optimization policy resolves both transformation behavior and receipt/observability obligations. When `emit_observability` is required, pipeline/runtime outcome crosses the canonical HOS emission boundary. Missing emission authority is an explicit degraded/failure posture, not a silent independent default-off helper. Cross-link [`OBSERVABILITY_EVIDENCE`](../../../audit_results/2026-08-18/OBSERVABILITY_EVIDENCE.md); do not create a private Token Optimization telemetry bus.
+5. **Receipt identity** - separate deterministic transformation/content fingerprint from receipt/evidence identity. If `receipt_id` denotes an execution receipt it must be unique or scope-bound to concrete execution evidence (`run_id`, `step_id`, tenant attribution). Do not use a content fingerprint as global receipt identity.
+6. **Lifecycle current state** - architecture and plan expose one current lifecycle truth: **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED / NOT QUALIFIED** (`MODEL_BEHAVIOR_MISMATCH`, 14/16, STABLE); **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**. Preserve historical sequencing; do not convert NOT QUALIFIED into success.
 
-Preserved: Token Optimization remains a cross-layer platform capability, not LKW-owned logic; LKW remains a later product client/proof; TOKEN-1..9 and TOKEN-10E/F/F-EVIDENCE-EXTENSION closure facts unchanged; findings harden the existing capability — no second engine required.
+Preserved: Token Optimization remains a cross-layer platform capability, not LKW-owned logic; LKW remains a later product client/proof; TOKEN-1..9 and TOKEN-10E/F/F-EVIDENCE-EXTENSION closure facts unchanged; findings harden the existing capability - no second engine required.
 
 ---
 

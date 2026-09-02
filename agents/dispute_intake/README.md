@@ -1,15 +1,15 @@
 ﻿# DisputeIntakeAgent
 
-Case material intake for **Dispute Simulation Workspace (DSW)** — classify documents, build chronology, ingest to case-scoped RAG.
+Case material intake for **Dispute Simulation Workspace (DSW)** - classify documents, build chronology, ingest to case-scoped RAG.
 
 **Host:** [`applications/dispute_sim_application/`](../../applications/dispute_sim_application/) · **Product architecture:** [ARCHITECTURE.md](../../applications/dispute_sim_application/docs/ARCHITECTURE.md)
 **Agent roster:** [`agents/README.md`](../README.md)
 
 ## Docs
 
-- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) — purpose, contracts, runtime layout
-- [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — task queue and verification
-- [`adr/README.md`](docs/adr/README.md) — architecture decision records
+- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) - purpose, contracts, runtime layout
+- [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) - task queue and verification
+- [`adr/README.md`](docs/adr/README.md) - architecture decision records
 
 ## Quick start
 
@@ -35,11 +35,11 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
 ## Layout
 
-- ``dispute_intake_agent.py`` — Agent class (UAEP)
-- ``contract.py`` / ``capabilities.py`` — AgentContract
-- ``steps/`` — domain execution
-- ``prompts/`` — prompt assets
-- ``schemas/`` — I/O models
-- ``tests/`` — agent smoke tests
-- ``notebooks/`` — interactive experiments
-- ``docs`` — architecture, plan, ADRs, journal
+- ``dispute_intake_agent.py`` - Agent class (UAEP)
+- ``contract.py`` / ``capabilities.py`` - AgentContract
+- ``steps/`` - domain execution
+- ``prompts/`` - prompt assets
+- ``schemas/`` - I/O models
+- ``tests/`` - agent smoke tests
+- ``notebooks/`` - interactive experiments
+- ``docs`` - architecture, plan, ADRs, journal

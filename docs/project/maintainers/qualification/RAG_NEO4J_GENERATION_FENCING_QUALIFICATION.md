@@ -1,4 +1,4 @@
-# RAG-LIVE-15D-R2 — Neo4j Publication-Generation Fencing Live Qualification
+# RAG-LIVE-15D-R2 - Neo4j Publication-Generation Fencing Live Qualification
 
 **Status:** `READY_FOR_REVIEW`  
 **Neo4j GraphRAG baseline:** `LIVE_QUALIFIED_BASELINE`  
@@ -42,7 +42,7 @@ Cypher, coordinator, traversal and cleanup failures fail the test.
 
 ## Live runs
 
-### Live run 1 — PASS
+### Live run 1 - PASS
 
 - Run identifier: `f466a5f53a9b4bbda004851f43c55172`.
 - G1/G2 takeover, late stale writer, reverse completion, reduced topology,
@@ -52,7 +52,7 @@ Cypher, coordinator, traversal and cleanup failures fail the test.
   same module, contention loop and cleanup: PASS.
 - Contention: `iterations=20`, `failures=0`.
 
-### Live run 2 — PASS
+### Live run 2 - PASS
 
 - Run identifier: `2de4cc1062fb4a97aa3011776764a319`.
 - Same gate coverage as live run 1: PASS.
@@ -70,89 +70,89 @@ Both runs started from a new clean qualification scope and completed cleanup.
 - Generation creation used only `acquire()`, `publication_generation()` and
   `promote_publication()`; no fabricated active-generation Cypher.
 
-### G1/G2 takeover — PASS
+### G1/G2 takeover - PASS
 
 - G1 topology `Alpha -> Beta -> Gamma` became invisible after G2 promotion.
 - G2 topology `Alpha -> Quasar -> Zeta` remained authoritative.
 
-### Late stale writer — PASS
+### Late stale writer - PASS
 
 - Physical G1 `RagEvidence` remained in Neo4j after delayed G1 writes.
 - G1 topology stayed invisible; G2 remained visible; G1 could not overwrite G2.
 
-### Reverse completion order — PASS
+### Reverse completion order - PASS
 
 - `start G1 -> start G2 -> promote G2 -> late G1 write`: resolved to G2.
 - `partial G1 -> G2 takeover -> G2 finish -> late G1 cleanup`: resolved to G2.
 - Deterministic lease barriers only; no sleep-based races.
 
-### Reduced topology — PASS
+### Reduced topology - PASS
 
 - G1 `A -> B -> C -> D`, G2 `A -> B`; only G2-visible `A -> B` traversed.
 
-### Generation-specific cleanup — PASS
+### Generation-specific cleanup - PASS
 
 - `unlink_source_generation(source, G1, scope)` removed only G1 evidence.
 - G2 traversal unchanged; repeat cleanup idempotent.
 
-### Shared support — PASS
+### Shared support - PASS
 
 - Source B current support kept `X -> Y` visible after source A G2 promotion.
 - A/G1 cleanup removed only A stale support; removing B removed `X -> Y` when
   no other current support remained.
 
-### Scope isolation — PASS
+### Scope isolation - PASS
 
 - Independent generations across other namespace, workspace and tenant scopes.
 - Promoting A/G2 in the main scope did not fence evidence in other scopes.
 
-### Server-side fencing — PASS
+### Server-side fencing - PASS
 
 - Source inspection of `visibility_query_params`, `find_nodes`, `neighbors` and
   `chunk_ids_for_nodes` showed `coordinator_bound` and `active_pairs`.
 - Live query capture proved generation predicates and active pairs are passed
   into Cypher before topology/evidence reads.
 
-### Find / traversal / chunk lookups — PASS
+### Find / traversal / chunk lookups - PASS
 
 - Fencing applied consistently to `find_nodes`, `neighbors`,
   `chunk_ids_for_nodes`, `node_ids_for_chunks` and canonical `GraphRagRetriever`
   expansion.
 
-### Partial publication — PASS
+### Partial publication - PASS
 
 - Unpromoted G1 physical records remained.
 - Versioned G1 chunk/topology reads were invisible; G2 visible.
 - Physical-stale-vs-logical-visible distinction recorded via physical evidence
   counts plus fenced chunk/traversal assertions.
 
-### Idempotency — PASS
+### Idempotency - PASS
 
 - Repeated current-generation writes did not explode `RagEvidence` counts.
 - Visible topology unchanged; stale G1 not resurrected.
 
-### Coordinator failure — PASS
+### Coordinator failure - PASS
 
 - After versioned evidence existed, injected coordinator lookup failure at the
   GraphStore boundary failed closed (`RuntimeError` on Neo4j reads; empty fenced
   reads on InMemory for versioned evidence).
 
-### Unbound coordinator — PASS
+### Unbound coordinator - PASS
 
 - Versioned evidence with no coordinator was not visible.
 - Legacy `generation IS NULL` evidence remained visible per compatibility law.
 
-### InMemory parity — PASS
+### InMemory parity - PASS
 
 - Same essential scenarios on `InMemoryGraphStore` matched Neo4j visible-result
   law for takeover, late stale writer, cleanup, shared support and coordinator
   failure.
 
-### Contention loop — PASS
+### Contention loop - PASS
 
 - `iterations=20`, `failures=0` deterministic handoff evidence.
 
-### Cleanup — PASS
+### Cleanup - PASS
 
 - Each run removed qualification-owned evidence, chunks, entities, `RAG_REL` and
   run-owned source state; foreign data untouched.

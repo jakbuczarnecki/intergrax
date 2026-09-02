@@ -82,7 +82,7 @@ advances `committed_publication` under the exact current permit and lifecycle
 fence. Before that CAS the immutable manifest, delivery/remote indexes, and
 immutable commit node may already be durable; none of them alone is
 query-visible. After successful CAS no correctness-critical history write is
-required — crash recovery reads the durable head and chain.
+required - crash recovery reads the durable head and chain.
 
 Disable/detach rotate lifecycle revision and token on the same CAS boundary; an
 unexpired permit yields `publication_in_progress`, and after disable or purge

@@ -3,7 +3,7 @@
 **Status:** Canonical  
 **Version:** 1.0 (PP-2)  
 **Audience:** Maintainers, architects, proof authors  
-**Scope:** Executable falsification proofs under `platform_proofs/` — **SCENARIO** and **CONFORMANCE** classes
+**Scope:** Executable falsification proofs under `platform_proofs/` - **SCENARIO** and **CONFORMANCE** classes
 
 ---
 
@@ -49,10 +49,10 @@ Scenario proofs are **problem-first** and may exercise multiple domains and mech
 
 **Examples:**
 
-- AI incident investigation — Scenario proof (`platform_proofs/scenarios/`)
-- TOOLS iterative investigation — Conformance proof (`platform_proofs/`)
-- LKW Product Quick Start — product proof (`applications/local_workspace_application/`)
-- LKW exercising tool runtime during a product workflow — product consumption, **not** independent platform proof
+- AI incident investigation - Scenario proof (`platform_proofs/scenarios/`)
+- TOOLS iterative investigation - Conformance proof (`platform_proofs/`)
+- LKW Product Quick Start - product proof (`applications/local_workspace_application/`)
+- LKW exercising tool runtime during a product workflow - product consumption, **not** independent platform proof
 
 **LKW is a product.** LKW must not appear as a platform domain or inside `platform_proofs/`.
 
@@ -66,22 +66,22 @@ The Intergrax Proof Library distinguishes two public proof classes via `library_
 
 | Class | Role | Entry framing |
 |-------|------|---------------|
-| **CONFORMANCE PROOF** | Executable evidence for a **specific platform mechanism** — CI, regression, development confidence, architectural assurance | Mechanism-first |
-| **SCENARIO PROOF** | **Production-capable autonomous application component** that solves a concrete real-world problem; Proof Library layer falsifies and evidences that application — it does not replace it | Problem-first |
+| **CONFORMANCE PROOF** | Executable evidence for a **specific platform mechanism** - CI, regression, development confidence, architectural assurance | Mechanism-first |
+| **SCENARIO PROOF** | **Production-capable autonomous application component** that solves a concrete real-world problem; Proof Library layer falsifies and evidences that application - it does not replace it | Problem-first |
 
-Both classes remain **executable falsification attempts** — not demos. **Platform proof ≠ product proof.** Product proofs stay under `applications/`.
+Both classes remain **executable falsification attempts** - not demos. **Platform proof ≠ product proof.** Product proofs stay under `applications/`.
 
 **SCENARIO normative definition:**
 
 > A Scenario Proof is a production-capable autonomous application component that solves a concrete real-world problem through normal Intergrax runtime and platform contracts. The Proof Library layer executes adversarial cases, falsifies claims, captures evidence, evaluates outcomes, and renders reports; it does not replace the application itself.
 
-**SCENARIO observability (normative):** a Scenario Proof **MUST NOT** be a black box. Canonical Scenario execution **MUST** be observable and reconstructable from structured production-path artifacts. Every material autonomous decision, external action, evidence acquisition, claim transition, challenge, recovery action, and terminal outcome **MUST** be traceable through application/platform observability (`TraceEvent`, `ToolCallTrace`, typed diagnostics, and evidence projection) — not invented by the Proof layer after execution. Explainability **MUST** use explicit decision summaries, objectives, evidence references, selected actions, and bounded rationales; hidden chain-of-thought is neither required nor accepted. Operational detail: [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Mandatory observability, explainability, and diagnostics.
+**SCENARIO observability (normative):** a Scenario Proof **MUST NOT** be a black box. Canonical Scenario execution **MUST** be observable and reconstructable from structured production-path artifacts. Every material autonomous decision, external action, evidence acquisition, claim transition, challenge, recovery action, and terminal outcome **MUST** be traceable through application/platform observability (`TraceEvent`, `ToolCallTrace`, typed diagnostics, and evidence projection) - not invented by the Proof layer after execution. Explainability **MUST** use explicit decision summaries, objectives, evidence references, selected actions, and bounded rationales; hidden chain-of-thought is neither required nor accepted. Operational detail: [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Mandatory observability, explainability, and diagnostics.
 
-Use **production-capable** (architecture suitable for real deployment; no test-only application shortcuts) — not "production-proven" or "production-validated". Scenario Proof acceptance does **not** automatically establish production validation in live user/environment terms. Operational workflow: [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Scenario Proof — production-capable application contract.
+Use **production-capable** (architecture suitable for real deployment; no test-only application shortcuts) - not "production-proven" or "production-validated". Scenario Proof acceptance does **not** automatically establish production validation in live user/environment terms. Operational workflow: [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Scenario Proof - production-capable application contract.
 
-Every proof declares **`domains_exercised`** (non-empty; no owning or primary domain) and **`mechanisms_exercised`**. A proof does not belong to one domain — it exercises one or more domains. Library metadata (`library_class`, `domains_exercised`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not appear in runner-facing `ProofManifestEntry` unless execution genuinely requires it (currently: domain metadata is not execution authority).
+Every proof declares **`domains_exercised`** (non-empty; no owning or primary domain) and **`mechanisms_exercised`**. A proof does not belong to one domain - it exercises one or more domains. Library metadata (`library_class`, `domains_exercised`, `mechanisms_exercised`, SCENARIO problem fields) is descriptor-owned and does not appear in runner-facing `ProofManifestEntry` unless execution genuinely requires it (currently: domain metadata is not execution authority).
 
-**Scenario documentation:** Scenario design is **problem-owned and multi-domain by default** — required platform capabilities are anticipated during solution design and verified during implementation preparation; participating domains are declared truthfully in `domains_exercised` when the proof package ships. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md).
+**Scenario documentation:** Scenario design is **problem-owned and multi-domain by default** - required platform capabilities are anticipated during solution design and verified during implementation preparation; participating domains are declared truthfully in `domains_exercised` when the proof package ships. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md).
 
 **Scenario-first lifecycle (normative):**
 
@@ -129,7 +129,7 @@ For a platform proof, resolve conflicts in this order:
 |------|--------|------|
 | **1** | **Implementation at exact SHA** | What the system actually does at proof time |
 | **2** | **Architecture owner** | Claim boundary and mechanism under proof |
-| **3** | **Tests / integration evidence** | Supporting evidence — not substitute for proof |
+| **3** | **Tests / integration evidence** | Supporting evidence - not substitute for proof |
 | **4** | **Proof execution evidence** | `SuiteReceipt` and proof artifacts from `scripts/proof/` |
 | **5** | **Published proof documentation** | Scenario, invariants, limitations under `platform_proofs/` |
 
@@ -141,9 +141,9 @@ Architecture defines intended claim boundaries but is **not** runtime evidence.
 
 Every executable platform proof must have a stable **`proof_id`**.
 
-**SCENARIO proofs:** `SCENARIO-<SCENARIO-ID>` — uppercase, hyphenated (e.g. `SCENARIO-AI-INCIDENT-INVESTIGATION`).
+**SCENARIO proofs:** `SCENARIO-<SCENARIO-ID>` - uppercase, hyphenated (e.g. `SCENARIO-AI-INCIDENT-INVESTIGATION`).
 
-**CONFORMANCE proofs:** `<DOMAIN>-<CAPABILITY>` or mechanism-appropriate identifier — uppercase, hyphenated, consistent with existing manifest style.
+**CONFORMANCE proofs:** `<DOMAIN>-<CAPABILITY>` or mechanism-appropriate identifier - uppercase, hyphenated, consistent with existing manifest style.
 
 Do **not** use domain-capability naming as the universal pattern for Scenario proofs. Scenario identity is class-appropriate and problem-owned.
 
@@ -151,10 +151,10 @@ Canonical executable identity is declared in two layers during migration:
 
 | Layer | Role |
 |-------|------|
-| **`proof.json`** (package-owned) | Static descriptor — discovery source (PP-SUITE-1) |
+| **`proof.json`** (package-owned) | Static descriptor - discovery source (PP-SUITE-1) |
 | **`ProofManifestEntry`** (runner-facing) | Normalized manifest contract consumed by `scripts/proof/` |
 
-The central manifest in `scripts/proof/intergrax_proof_manifest.py` remains authoritative for legacy and product entries. Descriptor-backed Platform Proofs under `platform_proofs/` are discovered automatically from package `proof.json` files (PP-SUITE-2). Do **not** duplicate conflicting metadata in ad-hoc local config files — a descriptor/static migration twin with non-equivalent execution metadata fails manifest loading.
+The central manifest in `scripts/proof/intergrax_proof_manifest.py` remains authoritative for legacy and product entries. Descriptor-backed Platform Proofs under `platform_proofs/` are discovered automatically from package `proof.json` files (PP-SUITE-2). Do **not** duplicate conflicting metadata in ad-hoc local config files - a descriptor/static migration twin with non-equivalent execution metadata fails manifest loading.
 
 ---
 
@@ -171,13 +171,13 @@ platform_proofs/<domain>/<proof_slug>/
     ...                 # proof-owned implementation
 ```
 
-**Scenario proofs** — design stage (no executable artifacts yet):
+**Scenario proofs** - design stage (no executable artifacts yet):
 
 ```text
 platform_proofs/scenarios/<scenario_slug>/
     README.md           # public gateway
     SCENARIO_SPEC.md    # deep canonical contract (A/B/C/D/E)
-    assets/             # optional — after Scenario Quality Gate
+    assets/             # optional - after Scenario Quality Gate
 ```
 
 After implementation, Scenario packages add `proof.json`, `run_proof.py`, and other runtime artifacts per [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md). Scenario proofs are **problem-first** and may exercise **multiple domains**; Conformance proofs remain **mechanism-first** and declare every domain they actually exercise in `domains_exercised`.
@@ -185,14 +185,14 @@ After implementation, Scenario packages add `proof.json`, `run_proof.py`, and ot
 **Scenario lifecycle governance (normative):**
 
 - Scenario implementation artifacts **MUST NOT** be initialized before lifecycle acceptance (`ACCEPTED FOR IMPLEMENTATION` in `SCENARIO_SPEC.md` frontmatter).
-- The canonical implementation skeleton **MUST** be created through `scripts/proof/init_scenario_implementation.py` — not by manual directory layout.
+- The canonical implementation skeleton **MUST** be created through `scripts/proof/init_scenario_implementation.py` - not by manual directory layout.
 - `scripts/proof/create_scenario_proof.py` creates the design package only (`README.md` + `SCENARIO_SPEC.md`); it does **not** authorize implementation or generate runtime artifacts.
 
 Operational procedure: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Canonical Scenario Lifecycle](PLATFORM_PROOF_AUTHORING_GUIDE.md#canonical-scenario-lifecycle).
 
 **Why static JSON (`proof.json`):** language-neutral, human-readable, machine-validated, deterministic, inspectable by CI, and free of Python import side effects during discovery. Discovery must **not** import proof modules or execute `run_proof.py` to read metadata.
 
-**Descriptor schema:** `intergrax.platform_proof_descriptor.v3` — implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`. Only the current schema version is accepted; v2 and v1 are rejected with no fallback.
+**Descriptor schema:** `intergrax.platform_proof_descriptor.v3` - implemented in `scripts/proof/intergrax_platform_proof_descriptor.py` and loaded by `scripts/proof/intergrax_platform_proof_descriptor_loader.py`. Only the current schema version is accepted; v2 and v1 are rejected with no fallback.
 
 **Command contract:** structured `argv` only (`shell=False`). No shell strings.
 
@@ -206,7 +206,7 @@ Operational procedure: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Canonical Scenario 
 
 **Roadmap:** PP-SUITE-1 package contract · PP-SUITE-2 dynamic discovery · PP-SUITE-3 evidence validation · PP-SUITE-4 artifact verification · PP-REPORT-3 generic HTML renderer · PP-REPORT-4 TOOLS report integration · PP-SUITE-5 report contract verification · PP-SUITE-6 CI regression profiles.
 
-**Transition:** Phase 1 — descriptor-backed packages ship `proof.json`. Phase 2 — dynamic discovery (current). Phase 3 — static manifest coexists for unmigrated proofs. Phase 4 — migrate remaining platform proofs. Phase 5 — remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).
+**Transition:** Phase 1 - descriptor-backed packages ship `proof.json`. Phase 2 - dynamic discovery (current). Phase 3 - static manifest coexists for unmigrated proofs. Phase 4 - migrate remaining platform proofs. Phase 5 - remove static platform registrations when complete. Duplicate `proof_id` across static manifest and discovery fails unless entries are semantically equivalent migration twins (descriptor wins once).
 
 ---
 
@@ -227,9 +227,9 @@ SCENARIO documentation and descriptors **MUST** include:
 - application responsibility (production-capable component)
 - PASS / FAIL / adversarial conditions
 - excluded claims and limitations
-- `domains_exercised` and `mechanisms_exercised` (metadata — may be multiple)
+- `domains_exercised` and `mechanisms_exercised` (metadata - may be multiple)
 
-SCENARIO **MUST NOT** require a single `mechanism under proof` field — a Scenario may legitimately exercise multiple mechanisms.
+SCENARIO **MUST NOT** require a single `mechanism under proof` field - a Scenario may legitimately exercise multiple mechanisms.
 
 ### CONFORMANCE claim semantics
 
@@ -263,9 +263,9 @@ A proof must exercise the **real boundary** relevant to its claim.
 
 Do not use a fake to replace the mechanism being claimed.
 
-**SCENARIO-specific:** canonical Scenario execution **MUST** exercise the same production-capable application path intended for real deployment. Controlled/synthetic provider implementations **MAY** supply data through normal application contracts when the external system itself is not the claim. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Scenario Proof — production-capable application contract.
+**SCENARIO-specific:** canonical Scenario execution **MUST** exercise the same production-capable application path intended for real deployment. Controlled/synthetic provider implementations **MAY** supply data through normal application contracts when the external system itself is not the claim. See [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) § Scenario Proof - production-capable application contract.
 
-**Deterministic fixtures** are allowed when they provide controlled input — not when they substitute the capability or fake application behavior.
+**Deterministic fixtures** are allowed when they provide controlled input - not when they substitute the capability or fake application behavior.
 
 | Allowed | Not allowed |
 |---------|-------------|
@@ -284,11 +284,11 @@ Class-specific rules supersede any generic "dependency not under proof" allowanc
 | **Scenario unit/integration tests** | Allowed |
 | **Conformance proof** | Allowed only **outside** claimed boundary |
 | **Mechanism under proof** | **MUST NOT** be mocked |
-| **Fixtures (controlled data)** | Allowed when they provide deterministic input through normal contracts — not when they decide outcomes or replace AI behavior material to the claim |
+| **Fixtures (controlled data)** | Allowed when they provide deterministic input through normal contracts - not when they decide outcomes or replace AI behavior material to the claim |
 
 If a proof uses a fake at a material claimed boundary, it **cannot** claim that boundary as proved.
 
-**Legacy summary (Conformance and non-canonical tests):** mocks/fakes remain usable outside the claimed mechanism boundary. Conformance **MAY** legitimately use controlled harnesses/test doubles that do not invalidate the mechanism claim. SCENARIO canonical execution has stricter production-capable application requirements — see Authoring Guide § Fake / mock policy (Scenario canonical path).
+**Legacy summary (Conformance and non-canonical tests):** mocks/fakes remain usable outside the claimed mechanism boundary. Conformance **MAY** legitimately use controlled harnesses/test doubles that do not invalidate the mechanism claim. SCENARIO canonical execution has stricter production-capable application requirements - see Authoring Guide § Fake / mock policy (Scenario canonical path).
 
 ---
 
@@ -305,9 +305,9 @@ Required answer: **YES**. **NO** means the Scenario is **not acceptable**.
 | Owner | Responsibility |
 |-------|----------------|
 | **Application / platform** | Emit canonical structured execution trace, decision provenance, diagnostics, claim/challenge lifecycle |
-| **Proof** | Validate, project, package, render — **MUST NOT** invent post-hoc execution explanations |
+| **Proof** | Validate, project, package, render - **MUST NOT** invent post-hoc execution explanations |
 
-**PASS cannot rely solely on final answer or narrative prose.** Acceptance requires traceability of material decisions, actions, evidence, challenges, recoveries, diagnostics, and terminal outcome. Reports **MUST** derive execution claims from machine-readable structured evidence — not from expected proof truth or renderer-invented story.
+**PASS cannot rely solely on final answer or narrative prose.** Acceptance requires traceability of material decisions, actions, evidence, challenges, recoveries, diagnostics, and terminal outcome. Reports **MUST** derive execution claims from machine-readable structured evidence - not from expected proof truth or renderer-invented story.
 
 Machine-readable provenance for accepted executable SCENARIO proofs **MUST** be available via existing contracts where possible (`PlatformProofEvidence` v3 `scenarios[].steps`, evidence graph, runtime trace export). Do not require a parallel Proof-only logging system.
 
@@ -393,7 +393,7 @@ Execution evidence must identify:
 - duration
 - limitations / diagnostics where appropriate
 
-Reuse **`SuiteReceipt`** from `scripts/proof/` — do not invent a competing suite receipt.
+Reuse **`SuiteReceipt`** from `scripts/proof/` - do not invent a competing suite receipt.
 
 Do **not** merge `SuiteReceipt` with runtime/domain `ProofReceipt`. Preserve the current explicit separation documented in `intergrax_proof_contracts.py`.
 
@@ -403,7 +403,7 @@ Every Platform Proof execution must also produce a human-readable **Proof Report
 (PP-REPORT-1). The report presents typed proof evidence; it is not an independent
 source of truth.
 
-**SCENARIO reports:** execution narrative in the report **MUST** be derivable from structured evidence (`PlatformProofEvidence`, trace steps, evidence graph) — the renderer **MUST NOT** invent tool calls, decisions, rationales, evidence, or challenges absent from canonical artifacts.
+**SCENARIO reports:** execution narrative in the report **MUST** be derivable from structured evidence (`PlatformProofEvidence`, trace steps, evidence graph) - the renderer **MUST NOT** invent tool calls, decisions, rationales, evidence, or challenges absent from canonical artifacts.
 
 ---
 
@@ -435,7 +435,7 @@ Historical platform-capability evidence may later be assessed for conformance wi
 | **scripts/proof/** | Generic execution infrastructure |
 | **applications/** | Real products and their product proofs |
 
-Update `PROOFS.md` only when accepted public evidence or claim boundaries change — not merely because a platform proof was designed or executed internally.
+Update `PROOFS.md` only when accepted public evidence or claim boundaries change - not merely because a platform proof was designed or executed internally.
 
 ---
 
@@ -443,8 +443,8 @@ Update `PROOFS.md` only when accepted public evidence or claim boundaries change
 
 Platform proofs **must** reuse:
 
-- `scripts/proof/intergrax_proof_manifest.py` — canonical manifest and `proof_id` registry
-- `scripts/proof/intergrax_proof_runner.py` — suite runner
-- `scripts/proof/intergrax_proof_contracts.py` — profiles, safety classes, `SuiteReceipt`, `ProofStatus`
+- `scripts/proof/intergrax_proof_manifest.py` - canonical manifest and `proof_id` registry
+- `scripts/proof/intergrax_proof_runner.py` - suite runner
+- `scripts/proof/intergrax_proof_contracts.py` - profiles, safety classes, `SuiteReceipt`, `ProofStatus`
 
 Do **not** create a second manifest, runner, or receipt contract.

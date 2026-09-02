@@ -1,7 +1,7 @@
-# Governed Contractor Application — architecture
+# Governed Contractor Application - architecture
 
-**Status:** GEC-0…GEC-6 (2026-07-20) — product-profile scaffold + Tier-2 mapping + Governed Continuation + side-effect policy + descriptive proof profile; HITL UX/product policy packs/ProofReceipt persistence/providers deferred  
-**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../../docs/project/technical/platform/governed_external_execution.md) — ownership · lifecycle · invariants
+**Status:** GEC-0…GEC-6 (2026-07-20) - product-profile scaffold + Tier-2 mapping + Governed Continuation + side-effect policy + descriptive proof profile; HITL UX/product policy packs/ProofReceipt persistence/providers deferred  
+**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../../docs/project/technical/platform/governed_external_execution.md) - ownership · lifecycle · invariants
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -9,7 +9,7 @@
 **Partner handoff (planned):** [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md) · [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)  
 **Tier-2 adapter:** [`agents/external_contractor_adapter/docs/ARCHITECTURE.md`](../../../agents/external_contractor_adapter/docs/ARCHITECTURE.md)
 
-**Collaboration boundary:** Intergrax is **source-available** for evaluation and technical partner discovery. It is **not** open source. Production, commercial, and redistribution use require explicit permission — see repository [`../../../docs/project/community/COLLABORATION.md`](../../../docs/project/community/COLLABORATION.md) and [`LICENSE`](../../../LICENSE). This vertical is a **proof path**, not a production-readiness or certification claim.
+**Collaboration boundary:** Intergrax is **source-available** for evaluation and technical partner discovery. It is **not** open source. Production, commercial, and redistribution use require explicit permission - see repository [`../../../docs/project/community/COLLABORATION.md`](../../../docs/project/community/COLLABORATION.md) and [`LICENSE`](../../../LICENSE). This vertical is a **proof path**, not a production-readiness or certification claim.
 
 ---
 
@@ -17,7 +17,7 @@
 
 Organizations increasingly buy specialized **external contractor agents** (for example code review, research, or domain analysis) that already own Agent Cards, quote-first commercial flows, task status timelines, tool evidence, and deliverables.
 
-What those products typically lack — and what Intergrax must supply without reimplementing the contractor — is a **governed application shell**:
+What those products typically lack - and what Intergrax must supply without reimplementing the contractor - is a **governed application shell**:
 
 - public task API and tenant configuration,
 - Nexus orchestration and runtime policy,
@@ -37,7 +37,7 @@ GEC may be validated with one or more design partners that already ship A2A-styl
 
 | Layer | Partner-specific content allowed? |
 |-------|-----------------------------------|
-| `intergrax` contracts / runtime / integrations | **No** — provider-neutral only |
+| `intergrax` contracts / runtime / integrations | **No** - provider-neutral only |
 | Tier-2 `external_contractor_adapter` | Neutral mapping to Intergrax contracts; partner config via host/env |
 | Tier-3 `governed_contractor_application` | Tenant/env wiring, policy bundles, proof docs, handoff samples |
 | `docs` partner handoff / public adoption | Named partner materials as **external mapping**, not core identity |
@@ -84,7 +84,7 @@ applications/ MAY import from agents/ and intergrax/
 | Boundary | Inside Intergrax trust | Outside / untrusted until verified |
 |----------|------------------------|------------------------------------|
 | Client → Tier-3 API | Authn/z, tenant isolation, request validation | Raw client payloads |
-| Tier-3 → Nexus / policy / HITL | Runtime decisions, acceptance gates | — |
+| Tier-3 → Nexus / policy / HITL | Runtime decisions, acceptance gates | - |
 | Tier-2 adapter → external agent | Normalized contracts, correlation ids | External Agent Card, quotes, status, tool claims, deliverable bytes |
 | Deliverable workspace | Allowlisted paths under app data home | External publication targets |
 | Receipts | Platform ProofReceipt / DocumentStore facts | Partner-specific receipt products (if any) |
@@ -116,12 +116,12 @@ intake
 | Quote retrieval / forwarding | Tier-2 adapter |
 | Surface governed continuation (`reason=QUOTE`) | Tier-2 adapter (mapping only) |
 | Quote presentation | Tier-3 application |
-| Quote acceptance / rejection | Runtime HITL + Tier-3 surfaces — **not** the adapter |
+| Quote acceptance / rejection | Runtime HITL + Tier-3 surfaces - **not** the adapter |
 | Continue after acceptance | Nexus + policy after HITL decision; Tier-2 forwards evidence |
 
 ### Governed Continuation (GEC-4)
 
-Reusable platform capability — not a quote lifecycle engine ([ADR-GOVERNED-CONTINUATION-001](../../../docs/project/technical/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)):
+Reusable platform capability - not a quote lifecycle engine ([ADR-GOVERNED-CONTINUATION-001](../../../docs/project/technical/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)):
 
 ```text
 External Work quote → GovernedContinuationRequest(QUOTE)
@@ -145,7 +145,7 @@ HITL UX presentation remains deferred; GEC-4 proves composition only.
 |---------|-------|
 | HITL protocol, pause/resume, decision records | Intergrax runtime (Tier-0/1) |
 | Quote accept / reject UX or API | Tier-3 application (deferred product surface) |
-| Wallet / payment approval (if ever in scope) | Tier-3 + runtime — **never** adapter |
+| Wallet / payment approval (if ever in scope) | Tier-3 + runtime - **never** adapter |
 | Adapter reaction to continuation evidence | Tier-2 forwards pre-authorized evidence only |
 
 The adapter **must not** invent acceptance, auto-approve quotes, bypass HITL, or resume Nexus.
@@ -175,7 +175,7 @@ Tier-3 composition root
 | Forward evidence only after ALLOW | Treat evidence or resume as allow |
 | Observational reads (`get_quote`, timeline, …) without mutation policy | Escape workspace allowlists |
 
-Quote **receipt** is observational (continuation surface only). Quote **acceptance** is meaningful (`ACCEPT_QUOTE`). Product policy packs / business rules remain deferred — host injects a deterministic evaluator when proving the path.
+Quote **receipt** is observational (continuation surface only). Quote **acceptance** is meaningful (`ACCEPT_QUOTE`). Product policy packs / business rules remain deferred - host injects a deterministic evaluator when proving the path.
 
 ---
 
@@ -190,13 +190,13 @@ After a meaningful side effect succeeds under policy ALLOW, Tier-2 composes `Gov
 | Observe proof metadata on adapter results | Persist / sign / hash proofs as a product receipt |
 | Join evidence refs to HITL / policy artifacts | Embed provider transport payloads into proofs |
 
-`ProofReceipt` / DocumentStore remain the later persistence path — distinct from the descriptive profile.
+`ProofReceipt` / DocumentStore remain the later persistence path - distinct from the descriptive profile.
 
 ---
 
 ## 8. External integration boundary
 
-External work access is a **platform integration concern** (GEC-2 — Done):
+External work access is a **platform integration concern** (GEC-2 - Done):
 
 ```text
 Intergrax runtime / Tier-2 adapter
@@ -206,7 +206,7 @@ ExternalWorkIntegration  (intergrax/integrations/contracts/external_work.py)
         │
    ┌────┼─────────────┐
    ▼    ▼             ▼
- A2A   REST         Future provider   (deferred — not in GEC-2)
+ A2A   REST         Future provider   (deferred - not in GEC-2)
 ```
 
 | Item | Canonical owner |
@@ -221,7 +221,7 @@ ExternalWorkIntegration  (intergrax/integrations/contracts/external_work.py)
 
 **Rules:**
 
-- Boundary transmits already-authorized `QuoteAcceptanceEvidence` — it does not decide accept/reject.
+- Boundary transmits already-authorized `QuoteAcceptanceEvidence` - it does not decide accept/reject.
 - Mutating ops require idempotency keys; reads may retry; mutating ops are not retried blindly.
 - `ExternalProviderEvidenceRef` ≠ `GovernedProofProfile` ≠ Intergrax `ProofReceipt`.
 - Concrete partner mappers (A2A/REST) and catalog slugs land in later phases; Tier-3 supplies credentials/config only.
@@ -240,7 +240,7 @@ ExternalWorkIntegration  (intergrax/integrations/contracts/external_work.py)
 
 Architecture rule: every external call that can mutate contractor state must carry deterministic idempotency material derived from Intergrax identity + lifecycle stage.
 
-**GEC-1 / GEC-2 platform schemas** (canonical owner — not this application package):
+**GEC-1 / GEC-2 platform schemas** (canonical owner - not this application package):
 
 | Concept | Module |
 |---------|--------|
@@ -250,7 +250,7 @@ Architecture rule: every external call that can mutate contractor state must car
 | Integration boundary | `intergrax.integrations.contracts.external_work.ExternalWorkIntegration` |
 | ADRs | [`ADR-EXTWORK-001`](../../../docs/project/technical/adr/entries/2026-07-20/ADR-EXTWORK-001.md), [`ADR-EXTWORK-002`](../../../docs/project/technical/adr/entries/2026-07-20/ADR-EXTWORK-002.md) |
 
-Nexus `TaskState` is **not** extended with commercial/quote stages — use `ExternalWorkStatus` at the external-work boundary.
+Nexus `TaskState` is **not** extended with commercial/quote stages - use `ExternalWorkStatus` at the external-work boundary.
 
 ---
 
@@ -262,7 +262,7 @@ Deliverables retrieved from the external agent land only in **allowlisted worksp
 |--------|------|
 | Store deliverable bytes | Workspace allowlist + policy |
 | Expose download/list API | Tier-3 serving |
-| Publish outside workspace | Explicit approval path (future) — not adapter-owned |
+| Publish outside workspace | Explicit approval path (future) - not adapter-owned |
 
 ---
 
@@ -271,8 +271,8 @@ Deliverables retrieved from the external agent land only in **allowlisted worksp
 | Artifact | Owner | Notes |
 |----------|-------|-------|
 | HOS / Nexus trace | Platform runtime | Unchanged spine |
-| Provider evidence references | `ExternalProviderEvidenceRef` via integration boundary | GEC-2 — refs only, not proof |
-| External tool evidence (normalized) | Adapter → platform evidence shapes | GEC-3+ — no partner hardcoding in core |
+| Provider evidence references | `ExternalProviderEvidenceRef` via integration boundary | GEC-2 - refs only, not proof |
+| External tool evidence (normalized) | Adapter → platform evidence shapes | GEC-3+ - no partner hardcoding in core |
 | Governed proof profile (descriptive) | Platform `GovernedProofProfile` composed by Tier-2 | GEC-6 |
 | Governed contractor receipt (persistence) | Platform ProofReceipt + Tier-3 exposure | Later (post GEC-6) |
 | Partner-native receipts | External product (optional) | Mapped, not reimplemented |
@@ -328,7 +328,7 @@ Planned public proof (GEC-9 → GEC-11):
 2. Live design-partner integration (operator-gated)
 3. End-to-end PASS matrix: intake → quote HITL → status → deliverable → receipt/trace
 
-Public wording must remain **source-available evaluation / proof path** — not open-source redistribution and not production certification.
+Public wording must remain **source-available evaluation / proof path** - not open-source redistribution and not production certification.
 
 ---
 

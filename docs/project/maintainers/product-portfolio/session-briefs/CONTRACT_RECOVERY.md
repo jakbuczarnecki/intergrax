@@ -1,9 +1,9 @@
-# Contract Recovery — Product Session Brief
+# Contract Recovery - Product Session Brief
 
 **Document type:** Durable product-specific session mission artifact  
 **Owner:** Contract Recovery Product Session (future launch)  
 **Audience:** Future session operator / MP-22 Session Launch Pack assembler  
-**Status:** **SELECTED** — Pre-bootstrap; G0 **PENDING**
+**Status:** **SELECTED** - Pre-bootstrap; G0 **PENDING**
 
 > **This is NOT the final session launch prompt.**  
 > It is a durable product-specific mission and context artifact consumed later by **MP-22 Session Launch Pack**.  
@@ -37,7 +37,7 @@
 
 ## 2. Mission
 
-Find **economic leakage** between contracts and actual spend and support **recovery** — turning defensible discrepancies into economically actionable recovery cases, not merely detecting or reporting them.
+Find **economic leakage** between contracts and actual spend and support **recovery** - turning defensible discrepancies into economically actionable recovery cases, not merely detecting or reporting them.
 
 **Product-first rule:**
 
@@ -50,7 +50,7 @@ Intergrax reuse is observed as a consequence of building the product.
 
 ## 3. Why this product exists independently of Intergrax
 
-Enterprises lose money when contracted rates, terms, and entitlements diverge from invoiced and paid reality. Finance and procurement teams need a path from contract truth and spend truth to **recoverable value** — not another passive analytics dashboard.
+Enterprises lose money when contracted rates, terms, and entitlements diverge from invoiced and paid reality. Finance and procurement teams need a path from contract truth and spend truth to **recoverable value** - not another passive analytics dashboard.
 
 This problem exists whether or not Intergrax is the platform. Selection recorded direct ROI, read-only pilot feasibility, and clear economic value as admission reasons.
 
@@ -95,7 +95,7 @@ Simple leakage **detection** is not claimed as unique. Spend intelligence compet
 | Primary buyer | CFO / Procurement / Finance |
 | Core job | Turn contract/spend discrepancies into economically actionable recovery cases |
 | Economic consequence | Leakage → unrealized or unrecovered money |
-| Success horizon | Financial cycle / audit-driven — not real-time crisis |
+| Success horizon | Financial cycle / audit-driven - not real-time crisis |
 | Value unit | Defensible discrepancy → quantified recovery opportunity → human/business action |
 
 ---
@@ -121,10 +121,10 @@ Do not design architecture in this brief.
 
 | Contrast | Contract Recovery |
 |----------|-------------------|
-| LKW | Knowledge Q&A and provenance — not financial reconciliation |
-| Supplier Disruption | Operational crisis mitigation — not contract/spend leakage |
-| Third-Party Risk | Vendor onboarding decision — not post-contract spend recovery |
-| Deployment Guardian | Release authorization — not economic recovery |
+| LKW | Knowledge Q&A and provenance - not financial reconciliation |
+| Supplier Disruption | Operational crisis mitigation - not contract/spend leakage |
+| Third-Party Risk | Vendor onboarding decision - not post-contract spend recovery |
+| Deployment Guardian | Release authorization - not economic recovery |
 
 Time horizon is **financial/audit**, not seconds-to-mitigate crisis or deployment gate tempo.
 
@@ -143,11 +143,11 @@ Time horizon is **financial/audit**, not seconds-to-mitigate crisis or deploymen
 
 ## 10. Major failure modes / category traps
 
-- **Invoice anomaly dashboard** — charts without recovery workflow.
-- **Generic document extraction** — OCR/LLM summaries without economic linkage.
-- **CLM clone** — repository of contracts without spend reconciliation path.
+- **Invoice anomaly dashboard** - charts without recovery workflow.
+- **Generic document extraction** - OCR/LLM summaries without economic linkage.
+- **CLM clone** - repository of contracts without spend reconciliation path.
 - **"AI finds discrepancies"** without recovery case management.
-- **Architecture theater around RAG** because LKW uses RAG — finance problem first.
+- **Architecture theater around RAG** because LKW uses RAG - finance problem first.
 - **Detection-only product** marketed as recovery.
 
 ---
@@ -164,13 +164,13 @@ Time horizon is **financial/audit**, not seconds-to-mitigate crisis or deploymen
 
 Product Session cannot self-approve `EXTENDED_GENERALLY`, `GENUINE_PLATFORM_GAP`, or shared core product-specific behavior.
 
-VIS-3A owns public presentation of approved facts — not implementation truth or gate status. COMM does not own Portfolio Control authority.
+VIS-3A owns public presentation of approved facts - not implementation truth or gate status. COMM does not own Portfolio Control authority.
 
 ---
 
 ## 12. Current gate / first allowed action
 
-**G0 Product Baseline** — preparation and acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
+**G0 Product Baseline** - preparation and acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
 
 G0 should sharpen the recovery chain before any architecture work. Do **not** start G1, T0, scaffold, or implementation until G0 is accepted.
 

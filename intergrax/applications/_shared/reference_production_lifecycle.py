@@ -31,7 +31,6 @@ from intergrax.agent_distribution.deployment import FakeInMemoryRuntimeDeploymen
 from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
     InMemoryDeploymentInstanceStore,
-    InMemoryRuntimeRevisionStore,
 )
 from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
@@ -85,7 +84,9 @@ class ReferenceProductionLifecycleError(ValueError):
     """Reference lifecycle launcher input or precondition violation."""
 
 
-class ReferenceProductionLifecycleGovernanceBlockedError(ReferenceProductionLifecycleError):
+class ReferenceProductionLifecycleGovernanceBlockedError(
+    ReferenceProductionLifecycleError
+):
     """Control-plane governance blocked reference production activation."""
 
     def __init__(
@@ -108,7 +109,7 @@ def wire_reference_production_lifecycle_services(
     """Construct AP lifecycle services from the composition's shared distribution state."""
     state = composition.agent_platform_runtime.distribution_state
     stores = composition.agent_platform_runtime.stores
-    revision_store = InMemoryRuntimeRevisionStore(state)
+    revision_store = stores.revision_store
     projection_input_store = InMemoryRegistryProjectionInputStore()
     projection_coordinator = ApplicationRegistryProjectionCoordinator(
         revision_store=revision_store,
@@ -139,11 +140,14 @@ class ReferenceProductionLifecycleLauncher:
         composition: ProductionProcessComposition,
         *,
         services: ReferenceProductionLifecycleServices | None = None,
-        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+        mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
+        | None = None,
         environment_tenant_resolver: ApplicationEnvironmentTenantResolver | None = None,
     ) -> None:
         self._composition = composition
-        self._services = services or wire_reference_production_lifecycle_services(composition)
+        self._services = services or wire_reference_production_lifecycle_services(
+            composition
+        )
         self._mutation_authorization_boundary = mutation_authorization_boundary
         self._environment_tenant_resolver = environment_tenant_resolver
 
@@ -239,7 +243,9 @@ class ReferenceProductionLifecycleLauncher:
         validated = candidate.model_copy(
             update={"revision_state": RuntimeRevisionState.VALIDATED}
         )
-        revision_service.mark_validated(runtime_revision_id, validated_revision=validated)
+        revision_service.mark_validated(
+            runtime_revision_id, validated_revision=validated
+        )
 
         self._services.projection_input_store.register(projection_input)
 
@@ -251,11 +257,15 @@ class ReferenceProductionLifecycleLauncher:
             artifact_locator=activation_request.artifact_locator,
         )
         serving_store = self._composition.agent_platform_runtime.stores.serving_store
-        serving = serving_store.get_serving_record(application_id, application_environment_id)
+        serving = serving_store.get_serving_record(
+            application_id, application_environment_id
+        )
         current_traffic_revision_id = (
             serving.traffic_serving_revision_id if serving is not None else None
         )
-        current_pointer_revision = serving.serving_pointer_revision if serving is not None else 0
+        current_pointer_revision = (
+            serving.serving_pointer_revision if serving is not None else 0
+        )
         self._authorize_activation(
             principal=principal,
             application_id=application_id,

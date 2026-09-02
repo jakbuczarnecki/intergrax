@@ -1,4 +1,4 @@
-# Audit result — `LLM_ADAPTERS`
+# Audit result - `LLM_ADAPTERS`
 
 **Run:** 2026-06-19 · **Mode:** audit_only + implement (LLM-MAINT-DOC-01 + M-LLM-X.8 + M-LLM-X-14)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated (L4 enterprise, routing L5)
@@ -69,4 +69,4 @@ check_docs_domain_pairs.py                                      → OK
 
 ## Recommendation
 
-**Enterprise-grade (L4)** — routing L5 maintained; domain backlog X.8 + X-14 closed. Next domain: `TOOLS`.
+**Enterprise-grade (L4)** - routing L5 maintained; domain backlog X.8 + X-14 closed. Next domain: `TOOLS`.

@@ -28,4 +28,4 @@ Governed access to: `ltm.write_fact`, `memory.read`, `context.summarize`.
 
 ## Related skills
 
-- Other `memory` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `memory` bundle skills - see bundle [USAGE.md](../USAGE.md)

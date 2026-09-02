@@ -1,4 +1,4 @@
-# Audit result — `REASONING_AND_COGNITION`
+# Audit result - `REASONING_AND_COGNITION`
 
 **Run:** 2026-06-18 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -21,7 +21,7 @@
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
 | COG-GAP-01 | P2 | §17 taxonomy codes vs `ReasoningFailureKind` enum not 1:1 | `architecture/REASONING_AND_COGNITION.md` §17; `contracts/reasoning_failure.py` | **planned** (COG-MAINT-01) |
-| COG-GAP-02 | P2 | SYS-INV-22 plane-separation — no dedicated gate beyond inline prompt lint | `check_reasoning_gates.py` | **planned** (COG-MAINT-02) |
+| COG-GAP-02 | P2 | SYS-INV-22 plane-separation - no dedicated gate beyond inline prompt lint | `check_reasoning_gates.py` | **planned** (COG-MAINT-02) |
 | COG-GAP-03 | P3 | `allow_dynamic_replan` wired but no acceptance E2E replan scenario | `reasoning_wiring.py`, `interrupt/handler.py` | **planned** (COG-MAINT-03) |
 | COG-GAP-04 | P4 | L4 adaptive planner selection | AHI scope | deferred |
 
@@ -51,11 +51,11 @@ All green (7 planning tests passed).
 
 ## Backlog P2–P4 (planned / deferred)
 
-- COG-MAINT-01..03 — §6.1av
-- L4 adaptive planner selection — AHI (P4)
+- COG-MAINT-01..03 - §6.1av
+- L4 adaptive planner selection - AHI (P4)
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature (L3+)** — runtime cognition plane production-ready; doc/gate hygiene items remain.
+**Architecturally Mature (L3+)** - runtime cognition plane production-ready; doc/gate hygiene items remain.

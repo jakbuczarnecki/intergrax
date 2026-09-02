@@ -28,27 +28,27 @@ They do not define an open-source contribution model, production-support channel
 | 8 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing recruitment templates and positioning guardrails |
 | 9 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) · [curated_public_issues.yml](curated_public_issues.yml) | Strategy, draft rationale and canonical source data for curated public issue automation |
 
-**Intergrax Public Positioning** — [`../../overview/INTERGRAX_PUBLIC_POSITIONING.md`](../../overview/INTERGRAX_PUBLIC_POSITIONING.md)
+**Intergrax Public Positioning** - [`../../overview/INTERGRAX_PUBLIC_POSITIONING.md`](../../overview/INTERGRAX_PUBLIC_POSITIONING.md)
 
 ```text
 Role: Exact first-contact message, product hierarchy, audience value and CTA language
-Status: ACTIVE — applied to root README in PX-2 ACCEPTED / CLOSED
+Status: ACTIVE - applied to root README in PX-2 ACCEPTED / CLOSED
 Public-reader route: no
 ```
 
-**Builder Quick Start** — [`../../builders/BUILDER_QUICKSTART.md`](../../builders/BUILDER_QUICKSTART.md)
+**Builder Quick Start** - [`../../builders/BUILDER_QUICKSTART.md`](../../builders/BUILDER_QUICKSTART.md)
 
 ```text
 Role: First bounded builder orientation and progressive-disclosure route
-Status: PX-6 — ACCEPTED / CLOSED
+Status: PX-6 - ACCEPTED / CLOSED
 Public-reader route: yes, through the root public documentation
 ```
 
-**Public Product Experience Roadmap** — [`../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
+**Public Product Experience Roadmap** - [`../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-12 CHANGES_REQUIRED
+Status: ACTIVE - PX-12 CHANGES_REQUIRED
 Public-reader route: no
 ```
 
@@ -58,9 +58,9 @@ Normal readers should start with the public documentation map:
 
 [Intergrax Public Documentation Map](../../community/PUBLIC_DOCUMENTATION_MAP.md)
 
-**Public proof dashboard:** [`../../../../docs/project/proofs/PROOFS.md`](../../../../docs/project/proofs/PROOFS.md) — reader-facing proof status and verification paths.
+**Public proof dashboard:** [`../../../../docs/project/proofs/PROOFS.md`](../../../../docs/project/proofs/PROOFS.md) - reader-facing proof status and verification paths.
 
-**Maintainer proof rules:** [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) — status vocabulary, evidence requirements, and allowed public wording.
+**Maintainer proof rules:** [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) - status vocabulary, evidence requirements, and allowed public wording.
 
 ## Ownership routes
 
@@ -82,7 +82,7 @@ The roadmap links own detailed implementation progress.
 `../../../../docs/project/proofs/PROOFS.md` does not reproduce their current tasks,
 dependencies or review states.
 
-This directory contains maintainer controls and operational public-adoption material — not the default first-contact path for external reviewers.
+This directory contains maintainer controls and operational public-adoption material - not the default first-contact path for external reviewers.
 
 ## Current program status
 
@@ -153,7 +153,7 @@ NOT_STARTED
 
 No external result is claimed until real sessions are completed, anonymized and reviewed.
 
-The [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md) is a maintainer methodology document — not a normal external first-contact route. Normal readers should start with the [Public Documentation Map](../../community/PUBLIC_DOCUMENTATION_MAP.md).
+The [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md) is a maintainer methodology document - not a normal external first-contact route. Normal readers should start with the [Public Documentation Map](../../community/PUBLIC_DOCUMENTATION_MAP.md).
 
 ## Featured public proof routes
 
@@ -223,11 +223,11 @@ Curated issues are grouped into wave milestones for GitHub UX:
 
 | Wave | Milestone |
 |------|-----------|
-| Wave 1 | Public Adoption — Wave 1 |
-| Wave 2 | Public Adoption — Wave 2 |
-| Wave 3 | Architecture Discussion — Wave 3 |
-| Wave 4 | Product Validation — Wave 4 |
-| Wave 5 | Deep Technical Review — Wave 5 |
+| Wave 1 | Public Adoption - Wave 1 |
+| Wave 2 | Public Adoption - Wave 2 |
+| Wave 3 | Architecture Discussion - Wave 3 |
+| Wave 4 | Product Validation - Wave 4 |
+| Wave 5 | Deep Technical Review - Wave 5 |
 
 Normal milestone workflow:
 

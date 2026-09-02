@@ -17,6 +17,7 @@ LKW_TYPED_DIAGNOSTIC_SCHEMA_IDS: frozenset[str] = frozenset(
         "lkw.index_summary.v1",
         "lkw.search_summary.v1",
         "lkw.synthesize_summary.v1",
+        "lkw.web_search_summary.v1",
     }
 )
 

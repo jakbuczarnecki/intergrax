@@ -2,14 +2,14 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-# ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search — Implementation Plan
+# ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search - Implementation Plan
 
 **Architecture (1:1):** [`architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)
 **Parent architecture hub:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Parent plan hub:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Detailed plan satellite:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
 **ADR:** [`ADR-ADAPT-002`](../../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md)
-**Status:** Planned — Phase **AHI-ADAS-00** complete; implementation begins at **AHI-ADAS-10**  
+**Status:** Planned - Phase **AHI-ADAS-00** complete; implementation begins at **AHI-ADAS-10**  
 **Last updated:** 2026-06-22
 
 ---
@@ -202,7 +202,7 @@ Link evidence bundle when evaluation or promotion gates apply.
 
 ## 6. Phase summaries
 
-### AHI-ADAS-00 — Documentation canon and ADR
+### AHI-ADAS-00 - Documentation canon and ADR
 
 Status: **Done**.
 
@@ -217,7 +217,7 @@ enterprise details: operational envelope, evidence bundle, retention, active reg
 implementation plan top-level file and satellite
 ```
 
-### AHI-ADAS-10 — Contracts and candidate archive
+### AHI-ADAS-10 - Contracts and candidate archive
 
 Purpose: add minimal typed substrate without executing search.
 
@@ -247,7 +247,7 @@ pytest tests/unit/runtime/adaptive/agent_design_search/
 python -m compileall intergrax/runtime/adaptive/agent_design_search
 ```
 
-### AHI-ADAS-20 — Scaffold bridge and static gate
+### AHI-ADAS-20 - Scaffold bridge and static gate
 
 Purpose: materialize candidates safely through existing scaffold and block unsafe candidates.
 
@@ -268,7 +268,7 @@ static gate result model
 unit tests
 ```
 
-### AHI-ADAS-30 — Candidate evaluation and utility scoring
+### AHI-ADAS-30 - Candidate evaluation and utility scoring
 
 Purpose: compare candidate agents against baselines using existing evaluation, signal, cost, and regression concepts.
 
@@ -288,7 +288,7 @@ evaluation report helper
 unit/integration tests
 ```
 
-### AHI-ADAS-40 — Search controller and strategies
+### AHI-ADAS-40 - Search controller and strategies
 
 Purpose: orchestrate bounded candidate search with pluggable strategies.
 
@@ -307,7 +307,7 @@ MetaAgentSearchStrategy stub
 controller tests
 ```
 
-### AHI-ADAS-50 — Hooks and lifecycle events
+### AHI-ADAS-50 - Hooks and lifecycle events
 
 Purpose: make ADAS extensible without letting plugins bypass safety boundaries.
 
@@ -324,7 +324,7 @@ lifecycle event coverage
 hook/event tests
 ```
 
-### AHI-ADAS-60 — Optional Tier-2 MAS agents
+### AHI-ADAS-60 - Optional Tier-2 MAS agents
 
 Purpose: add optional strategy agents that consume ADAS contracts but do not own the control plane.
 
@@ -341,7 +341,7 @@ safety prompt/eval tests
 integration tests
 ```
 
-### AHI-ADAS-70 — Shadow / canary / promotion bridge
+### AHI-ADAS-70 - Shadow / canary / promotion bridge
 
 Purpose: safely make evaluated candidates routable through governed active-registration semantics.
 
@@ -353,8 +353,8 @@ promotion gate adapter
 shadow registration bridge
 canary allocation bridge
 human approval store/link
-active registration mode A — registry pointer
-active registration mode E — tenant/application binding
+active registration mode A - registry pointer
+active registration mode E - tenant/application binding
 optional modes B–D declarations
 rollback pointer model
 candidate verification target
@@ -362,7 +362,7 @@ rollback integration
 promotion tests
 ```
 
-### AHI-ADAS-80 — Optional Tier-3 ADAS Lab application
+### AHI-ADAS-80 - Optional Tier-3 ADAS Lab application
 
 Purpose: provide operator-facing workflow without moving ADAS logic into Tier-3.
 
@@ -379,7 +379,7 @@ rollback action wiring
 tier boundary tests
 ```
 
-### AHI-ADAS-90 — Enterprise hardening
+### AHI-ADAS-90 - Enterprise hardening
 
 Purpose: production-readiness controls for regulated or enterprise deployments.
 

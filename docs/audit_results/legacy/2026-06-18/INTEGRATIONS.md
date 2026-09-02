@@ -1,4 +1,4 @@
-# Audit result — `INTEGRATIONS`
+# Audit result - `INTEGRATIONS`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 11)  
 **Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
@@ -53,11 +53,11 @@ All green: **550 passed**.
 
 ## Backlog P2–P4 (planned / deferred)
 
-- INT-MAINT-01..04 — §6.1av
-- H-INT-GRAPH — existing phase register
+- INT-MAINT-01..04 - §6.1av
+- H-INT-GRAPH - existing phase register
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — vendor boundary enforced; catalog honesty backlog tracked.
+**Architecturally Mature (L3)** - vendor boundary enforced; catalog honesty backlog tracked.

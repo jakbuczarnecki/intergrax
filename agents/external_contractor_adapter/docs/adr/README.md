@@ -1,4 +1,4 @@
-﻿# external_contractor_adapter agent — Architecture Decision Records
+﻿# external_contractor_adapter agent - Architecture Decision Records
 
 **Domain:** Tier-2 adapter agent (`agents/external_contractor_adapter`)
 
@@ -39,7 +39,7 @@ ADR-EXTERNAL_CONTRACTOR_ADAPTER-{NNN}.md
 | [ADR-EXTERNAL_CONTRACTOR_ADAPTER-001](ADR-EXTERNAL_CONTRACTOR_ADAPTER-001.md) | Tier-2 domain adapter (not orchestrator) | Accepted |
 | [ADR-EXTERNAL_CONTRACTOR_ADAPTER-002](ADR-EXTERNAL_CONTRACTOR_ADAPTER-002.md) | Mapping ownership and fake-provider proof (GEC-3) | Accepted |
 
-Platform ADRs (composition owned by platform — no agent-local ADR):
+Platform ADRs (composition owned by platform - no agent-local ADR):
 
 - [`ADR-GOVERNED-CONTINUATION-001`](../../../../docs/project/technical/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)
 - [`ADR-POLICY-SIDE-EFFECT-001`](../../../../docs/project/technical/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)

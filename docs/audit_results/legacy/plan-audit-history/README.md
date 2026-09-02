@@ -5,7 +5,7 @@ Historical audit findings, verdicts, gap registers, and LC closeout evidence mig
 | Field | Value |
 |-------|-------|
 | **Original location** | `docs/project/maintainers/plans/satellites/<DOMAIN>_audit_history.md` |
-| **Original role** | Plan satellite — audit history + layer-completion closeout |
+| **Original role** | Plan satellite - audit history + layer-completion closeout |
 | **Current plan ownership** | `docs/project/maintainers/plans/satellites/<DOMAIN>_implementation_history.md` (implementation phases) |
 | **Protocol** | Legacy Audit Protocol v1 and pre-v2 plan audit workflows |
 

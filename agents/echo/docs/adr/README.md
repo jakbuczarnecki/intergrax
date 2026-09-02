@@ -1,4 +1,4 @@
-﻿# echo agent — Architecture Decision Records
+﻿# echo agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/echo`)
 
@@ -36,7 +36,7 @@ ADR-ECHO-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

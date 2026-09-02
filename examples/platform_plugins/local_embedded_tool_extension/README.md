@@ -1,7 +1,7 @@
 # Local host-embedded Tool extension (PLATFORM-PLUGIN-8)
 
 This folder demonstrates **Mode B** from the Platform Plugin architecture: a
-`ToolPlugin` implementation kept in the application source tree — no wheel, no
+`ToolPlugin` implementation kept in the application source tree - no wheel, no
 setuptools entry point, no `[tool.intergrax.plugin]` manifest.
 
 ## Workflow

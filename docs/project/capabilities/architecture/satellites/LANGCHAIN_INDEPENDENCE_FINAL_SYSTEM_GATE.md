@@ -19,7 +19,7 @@ All required ancestors (`079123ab`, `6e6a446e`, `20bc04d`) are ancestors of the 
 
 ### LCI-7C compatibility installation
 
-**FAIL — `FINAL_GATE_COMPATIBILITY_FAILURE`.**
+**FAIL - `FINAL_GATE_COMPATIBILITY_FAILURE`.**
 
 | Compatibility family | Result |
 |---|---|
@@ -43,8 +43,8 @@ The failures occurred in fresh isolated Python 3.12 environments. No production,
 
 ## Audits and lock
 
-- **Inventory:** PASS — 69 unique inventory IDs, zero duplicates, zero unclassified rows, totals match; direct production/runtime imports: 11; direct test imports: 46; optional provider imports: 7; compatibility-only imports: 2; legacy optional imports: 2; direct tooling imports: 1; core contract leaks: 0; core implementation dependencies: 0; tooling dependency rows: 1.
-- **Boundary:** PASS — 4,435 production files scanned; 10 allowed-zone imports; 5 grandfathered guarded imports; zero new forbidden imports.
+- **Inventory:** PASS - 69 unique inventory IDs, zero duplicates, zero unclassified rows, totals match; direct production/runtime imports: 11; direct test imports: 46; optional provider imports: 7; compatibility-only imports: 2; legacy optional imports: 2; direct tooling imports: 1; core contract leaks: 0; core implementation dependencies: 0; tooling dependency rows: 1.
+- **Boundary:** PASS - 4,435 production files scanned; 10 allowed-zone imports; 5 grandfathered guarded imports; zero new forbidden imports.
 - **LangGraph guard:** four findings, all pre-existing generated `applications/*/docker/runtime-context` findings; zero new canonical findings. Classified `EXPECTED_EXISTING_FINDINGS / NON_BLOCKING`.
 - **Lock:** `uv lock --check` PASS.
 - **CI presence:** `.github/workflows/unit-tests.yml` contains active `langchain-free-core` and `langchain-compatibility` jobs.
@@ -57,7 +57,7 @@ The failures occurred in fresh isolated Python 3.12 environments. No production,
 
 ## Verdict
 
-**`FINAL_GATE_COMPATIBILITY_FAILURE` — NOT READY_FOR_REVIEW.**
+**`FINAL_GATE_COMPATIBILITY_FAILURE` - NOT READY_FOR_REVIEW.**
 
 The evidence supports that the Intergrax default/core installation does not require LangChain or LangGraph, native contracts/providers are canonical, Native Ollama is the default, selected compatibility extras remain available in principle, and native RAG contracts are independent from LangChain `Document`. It does not claim that zero LangChain/LangGraph code exists.
 
@@ -66,7 +66,7 @@ The evidence supports that the Intergrax default/core installation does not requ
 
 ---
 
-## Chronological rerun — Transformers v4 constraint
+## Chronological rerun - Transformers v4 constraint
 
 **Task:** `LCI-FINAL-SYSTEM-GATE-RERUN-AFTER-TRANSFORMERS-V4-CONSTRAINT`
 **Date:** 2026-08-10
@@ -75,7 +75,7 @@ The evidence supports that the Intergrax default/core installation does not requ
 **Branch:** `development`
 **Starting HEAD:** `c8efb2d13df82481f2ae6a6738dfb309b288e136`
 **origin/development:** `c8efb2d13df82481f2ae6a6738dfb309b288e136`
-**Required ancestors:** `c8efb2d1` and `079123ab` — present
+**Required ancestors:** `c8efb2d1` and `079123ab` - present
 **Later commits:** none at preflight
 
 The previous qualification above remains preserved chronologically as
@@ -103,16 +103,16 @@ Torch 2.2.2 incompatibility in `rag-langchain-loaders` and
 
 | Gate | Result |
 |---|---|
-| 7B clean core | **PASS** — zero installed `langchain*`/`langgraph*`; core imports, registry, native Ollama/OpenAI, `KnowledgeDocument`, native RAG, and Nexus/Harness passed |
+| 7B clean core | **PASS** - zero installed `langchain*`/`langgraph*`; core imports, registry, native Ollama/OpenAI, `KnowledgeDocument`, native RAG, and Nexus/Harness passed |
 | `llm-langchain-ollama` | **PASS** |
 | `rag-langchain-loaders` | **PASS** |
 | `rag-langchain-embeddings` | **PASS** |
 | `rag-langchain-splitters` | **PASS** |
 | `langgraph-legacy` | **PASS** |
-| Historical Torch probe | **PASS** — `is_torch_available=True`; `transformers.integrations.tensor_parallel` imported |
-| Native LLM bounded regression | **PASS** — 281 passed, 27 deselected |
-| `KnowledgeDocument` contract regression | **PASS** — 91 passed, 1 existing Pydantic warning |
-| Live Ollama proof | **PASS** — 1 passed; no model pulled |
+| Historical Torch probe | **PASS** - `is_torch_available=True`; `transformers.integrations.tensor_parallel` imported |
+| Native LLM bounded regression | **PASS** - 281 passed, 27 deselected |
+| `KnowledgeDocument` contract regression | **PASS** - 91 passed, 1 existing Pydantic warning |
+| Live Ollama proof | **PASS** - 1 passed; no model pulled |
 
 Native ownership remained unchanged: `LLMProvider.OLLAMA` resolves to
 `NativeOllamaAdapter`, and the default RAG splitter remains native even when
@@ -122,11 +122,11 @@ plain/tools/structured/stream paths passed.
 
 ### Audits and controls
 
-- Inventory: **PASS** — 69 unique IDs, zero duplicate path/line/symbol, zero
+- Inventory: **PASS** - 69 unique IDs, zero duplicate path/line/symbol, zero
   unclassified; 11 production/runtime imports, 46 direct test imports,
   7 optional provider imports, 2 compatibility-only imports, 2 legacy
   optional imports, 0 core contract leaks, 0 core implementation dependencies.
-- Boundary: **PASS** — 4,440 production files scanned, 10 allowed-zone
+- Boundary: **PASS** - 4,440 production files scanned, 10 allowed-zone
   imports, 5 grandfathered guarded imports, 0 new forbidden imports.
 - LangGraph guard: 4 known generated `applications/*/docker/runtime-context`
   findings, 0 new canonical findings; classified
@@ -142,7 +142,7 @@ as existing/out-of-scope and were not repaired here.
 
 ## Final verdict
 
-**`FINAL SYSTEM GATE — PASS / READY_FOR_REVIEW`**
+**`FINAL SYSTEM GATE - PASS / READY_FOR_REVIEW`**
 
 This establishes that the default/core Intergrax installation requires
 neither LangChain nor LangGraph, canonical/default LLM and RAG paths are

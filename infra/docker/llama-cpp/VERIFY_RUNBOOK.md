@@ -1,8 +1,8 @@
-# llama.cpp stack — Docker verify runbook
+# llama.cpp stack - Docker verify runbook
 
 **Audience:** Operators confirming Intergrax llama.cpp infra (chat **8102**, embed **8103**) before production wiring.
 
-**CI policy:** E2E tests live under `tests/e2e/llama_cpp/` with markers `e2e`, `no_ci`, `network` — **never** run in GitHub PR/unit gate.
+**CI policy:** E2E tests live under `tests/e2e/llama_cpp/` with markers `e2e`, `no_ci`, `network` - **never** run in GitHub PR/unit gate.
 
 Related: [`infra/PORTS.md`](../../PORTS.md) · [`intergrax/llm_adapters/USAGE.md`](../../../intergrax/llm_adapters/USAGE.md)
 
@@ -30,7 +30,7 @@ Related: [`infra/PORTS.md`](../../PORTS.md) · [`intergrax/llm_adapters/USAGE.md
 
 ---
 
-## Step 1 — Start stack
+## Step 1 - Start stack
 
 **Standalone (recommended for verify):**
 
@@ -58,7 +58,7 @@ cd infra\integration
 
 ---
 
-## Step 2 — Health probes (manual)
+## Step 2 - Health probes (manual)
 
 ```bash
 curl -s http://127.0.0.1:8102/v1/models
@@ -69,7 +69,7 @@ Both should return JSON (HTTP 200). Chat and embed are **separate** containers.
 
 ---
 
-## Step 3 — Environment
+## Step 3 - Environment
 
 ```bash
 export INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1
@@ -95,7 +95,7 @@ $env:INTERGRAX_LLAMA_CPP_VERIFY = "1"
 
 ---
 
-## Step 4 — Automated E2E (recommended)
+## Step 4 - Automated E2E (recommended)
 
 From **repository root**:
 
@@ -115,11 +115,11 @@ The script waits for `/v1/models`, sets `INTERGRAX_LLAMA_CPP_VERIFY=1`, and runs
 uv run pytest tests/e2e/llama_cpp/ -m "e2e and no_ci" -q
 ```
 
-**Expected:** all tests pass (typically 5). Failures indicate stack or adapter wiring issues — not skipped.
+**Expected:** all tests pass (typically 5). Failures indicate stack or adapter wiring issues - not skipped.
 
 ---
 
-## Step 5 — Manual pytest (alternative)
+## Step 5 - Manual pytest (alternative)
 
 ```bash
 export INTERGRAX_LLAMA_CPP_VERIFY=1
@@ -130,7 +130,7 @@ Without `INTERGRAX_LLAMA_CPP_VERIFY=1`, tests **skip** when the server is down (
 
 ---
 
-## Step 6 — Wire platform LLM
+## Step 6 - Wire platform LLM
 
 ```bash
 export INTERGRAX_LLM_PROVIDER=llama_cpp
@@ -144,9 +144,9 @@ export INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1
 
 | Symptom | Action |
 |---------|--------|
-| Connection refused on 8102 | `docker compose --profile llama-cpp ps` — wait for model download |
+| Connection refused on 8102 | `docker compose --profile llama-cpp ps` - wait for model download |
 | Embed tests fail, chat OK | Start embed service: `./manage.sh llama-cpp` includes both in integration profile |
-| Slow first response | Normal — GGUF load on CPU |
+| Slow first response | Normal - GGUF load on CPU |
 | Port conflict with Weaviate | Use host **8102**, not container default 8080 on host |
 
 ---
@@ -163,4 +163,4 @@ cd infra/integration && ./manage.sh stop llama-cpp
 
 - Not part of `uv run pytest -m "gate and not no_ci"` (PR CI)
 - Not part of `.github/workflows/llm-network-smoke.yml`
-- P5 `interaction_surface/llama_cpp` — deferred (same as vLLM)
+- P5 `interaction_surface/llama_cpp` - deferred (same as vLLM)

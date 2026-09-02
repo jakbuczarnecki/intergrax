@@ -3,8 +3,8 @@
 **Intergrax determines what evidence is required for an answer to be admissible, resolves it through authorized indexed and live sources, revalidates authority at execution time, and preserves structural proof of why a past answer was valid.**
 
 > **Scope note:** COMM-5 bounded proof paths collectively exercise indexed and live
-> evidence mechanisms. The **Advanced Flagship proof (F3-F)** — the public
-> **Governed Evidence Decision Proof** — is specifically **LIVE_ONLY** with four
+> evidence mechanisms. The **Advanced Flagship proof (F3-F)** - the public
+> **Governed Evidence Decision Proof** - is specifically **LIVE_ONLY** with four
 > independent **controlled live providers** (Docker-backed services reached through
 > real runtime HTTP). They are **not** four verified external SaaS systems.
 > Complete indexed + authorized live Hybrid Ask in a single admissibility gate
@@ -15,7 +15,7 @@
 | Level | Meaning |
 |-------|---------|
 | **mock** | Substituted test response; no independent service process |
-| **controlled live provider / service** | A genuinely running, independent service reached through real runtime/network paths, operated inside the proof environment (for example Docker) — not a mock, but not external-provider certification |
+| **controlled live provider / service** | A genuinely running, independent service reached through real runtime/network paths, operated inside the proof environment (for example Docker) - not a mock, but not external-provider certification |
 | **external live provider** | A real vendor system outside proof-harness control (for example production Jira, ServiceNow, or customer VPC SaaS) |
 
 **F3-F uses controlled live providers only.** Real HTTP, separate processes, execution-time authority, failure semantics, and restart persistence are proven. **External SaaS validation is not claimed.**
@@ -77,7 +77,7 @@ flowchart LR
 
 The strongest accepted public evidence is the **Governed Evidence Decision Proof**
 (**Advanced Flagship / F3-F**): a **LIVE_ONLY**, multi-provider, bounded governed
-evidence proof over four independent **controlled live providers** — Docker-backed
+evidence proof over four independent **controlled live providers** - Docker-backed
 organizational services reached through real runtime HTTP, not external SaaS.
 
 F3-F demonstrates that Intergrax can derive mandatory live evidence obligations
@@ -88,8 +88,8 @@ apply temporal admissibility, classify typed evidence failures, suppress LLM
 synthesis when admissibility is unsatisfied, and persist structural proof of why
 a past answer was or was not permitted.
 
-Earlier bounded proofs — indexed policy plus a single live provider (COMM-5D),
-adversarial hardening, and Docker vendor-persistence foundations — remain valid
+Earlier bounded proofs - indexed policy plus a single live provider (COMM-5D),
+adversarial hardening, and Docker vendor-persistence foundations - remain valid
 building blocks documented under [Earlier proof lineage](#earlier-proof-lineage).
 
 ---
@@ -188,7 +188,7 @@ Tests: `tests/unit/proof_infrastructure/test_advanced_flagship_proof.py`
 The flagship proof uses versioned deployment policy rules. Under **REV17**, the
 same two-hour-old security evidence satisfies a 24-hour maximum-age obligation and
 admissibility is **SATISFIED**. Under **REV18**, the policy tightens to a one-hour
-maximum age on the same evidence snapshot — admissibility becomes **UNSATISFIED** and
+maximum age on the same evidence snapshot - admissibility becomes **UNSATISFIED** and
 LLM synthesis is suppressed (`LLM = 0`). After a fresh security evidence refresh
 only, **REV18** admissibility returns to **SATISFIED** (`LLM = 1`).
 
@@ -256,7 +256,7 @@ an accidental validation error.
 
 The Advanced Flagship uses four independent **controlled live providers**
 (Docker-backed HTTP services) accessed only through Intergrax integration
-abstractions — never through direct proof-harness HTTP or storage mutation.
+abstractions - never through direct proof-harness HTTP or storage mutation.
 Vendor state lives outside the Intergrax process but **inside the proof environment**;
 this is not external SaaS validation.
 
@@ -293,7 +293,7 @@ proof runner
 → MongoDB (named volume: governed_proof_vendor_data)
 ```
 
-Proof control (seed, failure injection, readiness) uses typed proof admin ports only — never production integration mutation.
+Proof control (seed, failure injection, readiness) uses typed proof admin ports only - never production integration mutation.
 
 Optional focused Docker persistence runner (F3-E-R1 building block):
 
@@ -312,11 +312,11 @@ uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof.docker_per
 The flagship **Structural history** scenario compares persisted Ask runs across
 **REV17** and **REV18**, demonstrating that structural proof records the policy
 basis, required obligations, admissibility outcome, and answer permission at execution
-time — not a replay of raw live payload bodies.
+time - not a replay of raw live payload bodies.
 
 **Limitation (explicit):** EPHEMERAL live bodies are **not** durably retained.
-Historical proof uses structural identity — `content_hash`, binding/capability IDs,
-timestamps, admissibility — not raw live payload replay.
+Historical proof uses structural identity - `content_hash`, binding/capability IDs,
+timestamps, admissibility - not raw live payload replay.
 
 The **Vendor restart** scenario proves that Docker-backed vendor state survives
 controlled process restart without reseed, while structural Ask-run proof remains
@@ -328,12 +328,12 @@ inspectable across reload.
 
 | Boundary | Status |
 |----------|--------|
-| F3-F mode | **LIVE_ONLY** — not mixed indexed + authorized live Hybrid Ask |
-| Product Quick Start | Separate indexed onboarding path — not this proof |
-| Admissibility | Permits synthesis only — not deployment approval or positive business outcome |
+| F3-F mode | **LIVE_ONLY** - not mixed indexed + authorized live Hybrid Ask |
+| Product Quick Start | Separate indexed onboarding path - not this proof |
+| Admissibility | Permits synthesis only - not deployment approval or positive business outcome |
 | Live payload replay | EPHEMERAL bodies not durably retained |
 | Production readiness | Not claimed |
-| External live provider / SaaS validation | Not claimed — controlled Docker-backed services only |
+| External live provider / SaaS validation | Not claimed - controlled Docker-backed services only |
 | Real enterprise vendor deployment | Not claimed |
 | Universal vendor interoperability | Not claimed |
 | Real-user / commercial validation | Not established |
@@ -357,7 +357,7 @@ COMM-5D (indexed policy + single live provider)
 These proofs remain valid evidence for the mechanisms they exercise. They are
 **building blocks**, not the final public flagship story.
 
-### COMM-5D — indexed policy + single live provider
+### COMM-5D - indexed policy + single live provider
 
 The COMM-5D proof demonstrated indexed deployment policy plus a single authorized
 **Project Status** live provider across four scenarios: Reality, Freshness, Authority,
@@ -390,9 +390,9 @@ uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof --json
 | Provider non-invocation is measurable | Project Status `read_request_count` |
 | Structural historical proof | `WorkspaceAskServiceV2.get_run` / `WorkspaceAskRepository` |
 
-This slice claims **Intergrax behavior only** — not comparisons to other platforms.
+This slice claims **Intergrax behavior only** - not comparisons to other platforms.
 
-#### Story — ORION deployment readiness
+#### Story - ORION deployment readiness
 
 **Project:** ORION  
 **Question (all scenarios):** `Is ORION ready for deployment?`
@@ -400,7 +400,7 @@ This slice claims **Intergrax behavior only** — not comparisons to other platf
 **Approved indexed policy** (managed document path):
 
 ```text
-Deployment Policy — Approved
+Deployment Policy - Approved
 
 A project is ready for deployment only when:
 1. readiness score is at least 90
@@ -409,7 +409,7 @@ A project is ready for deployment only when:
 
 **External live status (controlled HTTP):** readiness `94`, blocker `SEC-417`.
 
-#### 01 — Reality matters
+#### 01 - Reality matters
 
 ```mermaid
 sequenceDiagram
@@ -430,7 +430,7 @@ sequenceDiagram
 | Admissibility | SATISFIED |
 | Decision | **NO** |
 
-#### 02 — Freshness matters
+#### 02 - Freshness matters
 
 Only external state changes: `SEC-417` OPEN → CLOSED.
 
@@ -449,7 +449,7 @@ stateDiagram-v2
 | Admissibility | SATISFIED |
 | Decision | **YES** |
 
-#### 03 — Authority matters
+#### 03 - Authority matters
 
 Binding ACTIVE during planning; **DISABLED** after indexed retrieval, before live HTTP.
 
@@ -472,7 +472,7 @@ flowchart TD
 | Ask status | `INSUFFICIENT_EVIDENCE` |
 | Decision | **CANNOT DETERMINE** |
 
-#### 04 — History matters
+#### 04 - History matters
 
 Current live state may be CLOSED; historical Ask #1 still explains **why NO was valid then**.
 
@@ -491,29 +491,29 @@ flowchart LR
 
 ```text
 ============================================================
-INTERGRAX — GOVERNED HYBRID KNOWLEDGE PROOF
+INTERGRAX - GOVERNED HYBRID KNOWLEDGE PROOF
 ============================================================
 
-01 REALITY — current blocker changes the decision
+01 REALITY - current blocker changes the decision
 HTTP reads: 1
 Admissibility: SATISFIED
 Decision: NO
 RESULT: PASS
 
-02 FRESHNESS — reality changes, policy does not
+02 FRESHNESS - reality changes, policy does not
 HTTP reads: 1
 Admissibility: SATISFIED
 Decision: YES
 RESULT: PASS
 
-03 AUTHORITY — revoked means physically not called
+03 AUTHORITY - revoked means physically not called
 HTTP reads: 0
 Admissibility: UNSATISFIED
 LLM calls: 0
 Decision: CANNOT DETERMINE
 RESULT: PASS
 
-04 HISTORY — why was NO valid then?
+04 HISTORY - why was NO valid then?
 Decision: NO
 RESULT: PASS
 
@@ -528,7 +528,7 @@ RESULT: PASS
 |-------|-----------|
 | Application | `WorkspaceAskServiceV2` |
 | Indexed path | managed local document → `WorkspaceDocumentIndexingService` / `local.workspace.index` → `local.workspace.search` → `WorkspaceIndexedEvidenceRetrieverV1` |
-| Indexed identity | normal tenant/workspace scope, managed-workspace service `user_id`, canonical `TaskId` — no proof identity/scope adapters |
+| Indexed identity | normal tenant/workspace scope, managed-workspace service `user_id`, canonical `TaskId` - no proof identity/scope adapters |
 | Connection | `TenantConnection` → `TenantConnectionRehydrator` → `KnowledgeConnectionRegistry` → `KnowledgeConnectionRegistryIntegrationResolverV1` |
 | Live path | `LiveCapabilityExecutorV1` + `ProjectStatusReadLiveHandlerV1` |
 | Authority revoke | `LiveAccessLifecycleService.disable` → `WorkspaceLiveAccessRuntimeAuthority` reload |
@@ -541,7 +541,7 @@ No fake search-result injection, no manual integration registration, no direct c
 
 ### Adversarial verification
 
-The following **adversarial invariants** are verified against the same real COMM-5D harness (`WorkspaceAskServiceV2`, indexed path, tenant connection, runtime authority, Project Status HTTP, admissibility, persistence). These are architectural proofs — not penetration-test certification.
+The following **adversarial invariants** are verified against the same real COMM-5D harness (`WorkspaceAskServiceV2`, indexed path, tenant connection, runtime authority, Project Status HTTP, admissibility, persistence). These are architectural proofs - not penetration-test certification.
 
 ```mermaid
 flowchart TD
@@ -567,21 +567,21 @@ flowchart TD
 
 | Attack | Expected defense | HTTP | LLM | Result |
 |--------|------------------|-----:|----:|--------|
-| A — required live missing | admissibility UNSATISFIED (indexed alone) | 0 | 0 | PASS |
-| B — mid-flight revoke | execution-time authority deny | 0 | 0 | PASS |
-| C — wrong connection/provider | plan validation reject | 0 | 0 | PASS |
-| D — wrong tenant | workspace scope reject | 0 | 0 | PASS |
-| E — wrong workspace | workspace scope reject | 0 | 0 | PASS |
-| F — malformed / invalid-schema live payload | provider called; admissibility UNSATISFIED | 1 | 0 | PASS |
-| G — 404 / 5xx | provider called; admissibility UNSATISFIED | 1 | 0 | PASS |
-| H — caller downgrade | typed contract reject | 0 | 0 | PASS |
-| I — stale plan | runtime revalidation deny | 0 | 0 | PASS |
-| J — connection disabled | connection authority deny | 0 | 0 | PASS |
-| K — capability mismatch | plan validation reject | 0 | 0 | PASS |
-| L — EPHEMERAL leak | structural provenance only durable | 1 | 1 | PASS |
-| M — historical immutability | persisted run unchanged | 1 | 1 | PASS |
-| N — wrong call evidence | admissibility UNSATISFIED | 0 | 0 | PASS |
-| O — duplicate/replay | NOT REACHABLE BY CONTRACT | 0 | 0 | PASS |
+| A - required live missing | admissibility UNSATISFIED (indexed alone) | 0 | 0 | PASS |
+| B - mid-flight revoke | execution-time authority deny | 0 | 0 | PASS |
+| C - wrong connection/provider | plan validation reject | 0 | 0 | PASS |
+| D - wrong tenant | workspace scope reject | 0 | 0 | PASS |
+| E - wrong workspace | workspace scope reject | 0 | 0 | PASS |
+| F - malformed / invalid-schema live payload | provider called; admissibility UNSATISFIED | 1 | 0 | PASS |
+| G - 404 / 5xx | provider called; admissibility UNSATISFIED | 1 | 0 | PASS |
+| H - caller downgrade | typed contract reject | 0 | 0 | PASS |
+| I - stale plan | runtime revalidation deny | 0 | 0 | PASS |
+| J - connection disabled | connection authority deny | 0 | 0 | PASS |
+| K - capability mismatch | plan validation reject | 0 | 0 | PASS |
+| L - EPHEMERAL leak | structural provenance only durable | 1 | 1 | PASS |
+| M - historical immutability | persisted run unchanged | 1 | 1 | PASS |
+| N - wrong call evidence | admissibility UNSATISFIED | 0 | 0 | PASS |
+| O - duplicate/replay | NOT REACHABLE BY CONTRACT | 0 | 0 | PASS |
 
 Tests: `tests/unit/proof_infrastructure/test_governed_hybrid_knowledge_adversarial.py`
 

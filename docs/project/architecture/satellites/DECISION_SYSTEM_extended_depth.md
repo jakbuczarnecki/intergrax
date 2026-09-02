@@ -1,8 +1,8 @@
-﻿# DECISION_SYSTEM — extended architecture
+﻿# DECISION_SYSTEM - extended architecture
 
 **Parent hub:** [`DECISION_SYSTEM.md`](../DECISION_SYSTEM.md)
 
-> **Canon:** frozen target. Decision Lifecycle is hosted by canonical Execution — no DecisionRuntime.
+> **Canon:** frozen target. Decision Lifecycle is hosted by canonical Execution - no DecisionRuntime.
 
 ---
 
@@ -40,7 +40,7 @@ Every record that can affect authority must bind:
 
 ## 3. Version model
 
-Each **Decision Version** is immutable once minted. Revisions append `v(n+1)` — they never mutate `v(n)` in place.
+Each **Decision Version** is immutable once minted. Revisions append `v(n+1)` - they never mutate `v(n)` in place.
 
 ```mermaid
 stateDiagram-v2
@@ -60,7 +60,7 @@ Parent/branch lineage is preserved for audit even after finalization.
 
 Human or policy approval for `v1` is **invalid** after a revision mints `v2`. Authorization records must reference exact version or fail closed.
 
-Verification results, challenges, adjudication outcomes, and execution authorization records are all version-bound — loose context dicts are not authority identity.
+Verification results, challenges, adjudication outcomes, and execution authorization records are all version-bound - loose context dicts are not authority identity.
 
 ---
 
@@ -98,15 +98,15 @@ flowchart TD
 
 | Outcome | Meaning |
 | ------- | ------- |
-| ACCEPTED | A specific Decision Version satisfies gates — Authoritative Accepted Decision |
-| REJECTED | Process completed — no version accepted as correct |
+| ACCEPTED | A specific Decision Version satisfies gates - Authoritative Accepted Decision |
+| REJECTED | Process completed - no version accepted as correct |
 | UNRESOLVED | Insufficient basis for responsible resolution |
 
 Execution may complete, fail, cancel, or budget-stop while Decision Resolution remains `UNRESOLVED`. Infrastructure failure does not auto-map to `REJECTED`.
 
-Challenges and adjudication requests mint **new versions** through explicit revision — verification never mutates candidates in place.
+Challenges and adjudication requests mint **new versions** through explicit revision - verification never mutates candidates in place.
 
-Optional adjudication resolves competing branches, verifier conflict, deadlocked Council, or human adjudication — may end in any resolution outcome including `UNRESOLVED`.
+Optional adjudication resolves competing branches, verifier conflict, deadlocked Council, or human adjudication - may end in any resolution outcome including `UNRESOLVED`.
 
 | Resolution | Finalization artifact |
 | ---------- | --------------------- |
@@ -117,7 +117,7 @@ Optional adjudication resolves competing branches, verifier conflict, deadlocked
 
 ## 6. Authoritative outcome model
 
-Candidates are proposals under test. **Authoritative** outcomes are terminal per scope — either one accepted version or one resolution record.
+Candidates are proposals under test. **Authoritative** outcomes are terminal per scope - either one accepted version or one resolution record.
 
 Finalize guard enforces **at most one** terminal authoritative lifecycle outcome per decision scope.
 
@@ -135,7 +135,7 @@ Decision System invokes HITL; Policy/Governed Execution owns execution authoriza
 
 Execution authorization must cite the exact Decision Version. Post-revision approvals require re-authorization.
 
-Finalization persists durable authoritative artifacts and closes the lifecycle for the scope — without deleting candidate history.
+Finalization persists durable authoritative artifacts and closes the lifecycle for the scope - without deleting candidate history.
 
 ---
 
@@ -149,7 +149,7 @@ v1 ─┬─
 
 Both branches preserve immutable history. **No last-write-wins** finalization.
 
-Concurrent finalize attempts for the same scope must be idempotent and conflict-detected — duplicate authoritative outcomes are forbidden.
+Concurrent finalize attempts for the same scope must be idempotent and conflict-detected - duplicate authoritative outcomes are forbidden.
 
 Resume and retry paths must not mint duplicate terminal outcomes or duplicate side effects tied to the same decision scope.
 
@@ -157,7 +157,7 @@ Resume and retry paths must not mint duplicate terminal outcomes or duplicate si
 
 ## 9. Crash / recovery
 
-Lifecycle state, version lineage, and finalize guard state are persisted through the canonical hosting Execution checkpoint/persistence boundary — no Decision-owned checkpoint engine.
+Lifecycle state, version lineage, and finalize guard state are persisted through the canonical hosting Execution checkpoint/persistence boundary - no Decision-owned checkpoint engine.
 
 If the hosting Execution uses ORCHESTRATION, Nexus may participate in orchestration checkpointing, but Decision durability MUST NOT depend on Nexus being the selected execution strategy.
 
@@ -187,7 +187,7 @@ sequenceDiagram
 
 Approval for `v1` does **not** authorize `v2`. HITL records bind Decision ID + Version + scope + tenant + execution identity.
 
-Policy evaluates whether a specific version may execute — separate from whether the version passed verification.
+Policy evaluates whether a specific version may execute - separate from whether the version passed verification.
 
 ---
 
@@ -212,13 +212,13 @@ Correlate: Decision ID, Decision Version, lifecycle events, verification events,
 
 | Neighbor | Relationship |
 | -------- | ------------- |
-| **Execution System** | Canonical host — execution lifecycle, identity, strategy routing, hosting Decision capability |
-| **Nexus** | ORCHESTRATION backend — scheduling child Executions when ORCHESTRATION is selected |
-| **Policy / Governance** | Cross-cutting execution authorization — does not determine decision correctness |
-| **HITL** | Canonical human approver / adjudicator — invoked by lifecycle |
-| **Reliability** | Technical retry on provider/tool failure — distinct from semantic revision |
-| **Observability** | Records decision audit evidence — no private CoT |
-| **Diagnostics** | May inform investigation — does not own lifecycle or rubric content |
+| **Execution System** | Canonical host - execution lifecycle, identity, strategy routing, hosting Decision capability |
+| **Nexus** | ORCHESTRATION backend - scheduling child Executions when ORCHESTRATION is selected |
+| **Policy / Governance** | Cross-cutting execution authorization - does not determine decision correctness |
+| **HITL** | Canonical human approver / adjudicator - invoked by lifecycle |
+| **Reliability** | Technical retry on provider/tool failure - distinct from semantic revision |
+| **Observability** | Records decision audit evidence - no private CoT |
+| **Diagnostics** | May inform investigation - does not own lifecycle or rubric content |
 | **Evidence Claims / Eval** | Evidence claims support evidence-backed decisions; online/shadow/offline eval remain **outside** runtime verification ownership |
 | **Tools / LLM adapters** | Invoked by strategies and verification stages under governed boundaries |
 
@@ -226,10 +226,10 @@ Correlate: Decision ID, Decision Version, lifecycle events, verification events,
 ## 13. Security invariants
 
 ```text
-DS-INV-001  Candidate ≠ Authoritative — append versions, never overwrite.
+DS-INV-001  Candidate ≠ Authoritative - append versions, never overwrite.
 DS-INV-002  Decision Resolution ≠ execution termination.
 DS-INV-003  At most one terminal authoritative outcome per decision scope.
-DS-INV-004  Verification checks — does not finalize or authorize alone.
+DS-INV-004  Verification checks - does not finalize or authorize alone.
 DS-INV-005  Approval / authorization binds Decision ID + Version + scope + tenant + execution identity.
 DS-INV-006  UNRESOLVED is a first-class auditable resolution.
 ```
@@ -242,7 +242,7 @@ DS-INV-006  UNRESOLVED is a first-class auditable resolution.
 | ------- | -------- |
 | DecisionStrategy | Registered strategies (Single, Council, Rule, Hybrid, …) |
 | Verification stage plugins | Ordered compositional stages |
-| Decision Artifact kinds | Typed registration — not `dict[str, Any]` payloads |
+| Decision Artifact kinds | Typed registration - not `dict[str, Any]` payloads |
 | Adjudication hooks | Optional human / policy adjudication interfaces |
 
 **Paired depth:** [`DECISION_VERIFICATION_extended_depth.md`](DECISION_VERIFICATION_extended_depth.md) · [`DECISION_DELIBERATION_extended_depth.md`](DECISION_DELIBERATION_extended_depth.md)

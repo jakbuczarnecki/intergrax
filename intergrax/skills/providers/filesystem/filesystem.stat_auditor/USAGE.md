@@ -28,4 +28,4 @@ Governed access to: `filesystem.stat`, `filesystem.list`, `filesystem.read_text`
 
 ## Related skills
 
-- Other `filesystem` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `filesystem` bundle skills - see bundle [USAGE.md](../USAGE.md)

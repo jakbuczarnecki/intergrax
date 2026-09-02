@@ -13,7 +13,7 @@ Assumption held throughout: RAG, tool calling, policy engines, provenance, appro
 
 ## Executive verdict
 
-**Verdict: B — DIFFERENTIATED COMPOSITION**
+**Verdict: B - DIFFERENTIATED COMPOSITION**
 
 The COMM-5 proof demonstrates a **real, enforced composition** on the production Workspace Ask V2 path: typed evidence obligations, indexed retrieval plus live HTTP, configuration reload before provider execution, admissibility evaluation **before** any synthesizer call, and durable **structural** run records.
 
@@ -35,11 +35,11 @@ Thesis under audit:
 
 | Clause | Result | What is actually proven |
 |--------|--------|-------------------------|
-| A — evidence requirements | **PROVEN with qualification** | Typed compose of product + provider obligations; caller may only add; plan proposals are not obligations. Live-required semantics in this proof come from a **proof-local** provider strategy, not from default LKW serving. |
-| B — indexed + live | **PROVEN as composition** | Real ingest → `local.workspace.search` → real HTTP Project Status; one run uses both. Embeddings are hash-based proof doubles. Stronger invariant is obligation identity, not “RAG + API”. |
-| C — execution-time authority | **PROVEN (strongest clause)** | Canonical disable after indexed retrieval; `WorkspaceLiveAccessRuntimeAuthority.is_usable` reloads configuration before `handler.execute`; HTTP reads = 0. Optional executor port is a wiring risk; production serving injects the authority when live catalog is present. |
-| D — admissibility before synthesis | **PROVEN when obligations are on the plan** | `evaluate_execution_admissibility` runs before `HybridAskAnswerAssemblerV2`. LLM cannot override that gate. Generic HYBRID without live obligations can still reach the LLM, then fail citation checks — not the flagship path. |
-| E — history / structural proof | **PROVEN as structural identity, not factual replay** | `get_run` retains run id, revision, obligations, indexed provenance, live hash/binding/call, admissibility, answer/status. EPHEMERAL forbids durable live body and receipts. Scenario 04 does not reconstruct that `SEC-417` was OPEN. |
+| A - evidence requirements | **PROVEN with qualification** | Typed compose of product + provider obligations; caller may only add; plan proposals are not obligations. Live-required semantics in this proof come from a **proof-local** provider strategy, not from default LKW serving. |
+| B - indexed + live | **PROVEN as composition** | Real ingest → `local.workspace.search` → real HTTP Project Status; one run uses both. Embeddings are hash-based proof doubles. Stronger invariant is obligation identity, not “RAG + API”. |
+| C - execution-time authority | **PROVEN (strongest clause)** | Canonical disable after indexed retrieval; `WorkspaceLiveAccessRuntimeAuthority.is_usable` reloads configuration before `handler.execute`; HTTP reads = 0. Optional executor port is a wiring risk; production serving injects the authority when live catalog is present. |
+| D - admissibility before synthesis | **PROVEN when obligations are on the plan** | `evaluate_execution_admissibility` runs before `HybridAskAnswerAssemblerV2`. LLM cannot override that gate. Generic HYBRID without live obligations can still reach the LLM, then fail citation checks - not the flagship path. |
+| E - history / structural proof | **PROVEN as structural identity, not factual replay** | `get_run` retains run id, revision, obligations, indexed provenance, live hash/binding/call, admissibility, answer/status. EPHEMERAL forbids durable live body and receipts. Scenario 04 does not reconstruct that `SEC-417` was OPEN. |
 
 Prompt-only reproduction of the **flagship path** fails at the contracts below, not at model instructions.
 
@@ -49,11 +49,11 @@ Prompt-only reproduction of the **flagship path** fails at the contracts below, 
 
 These are table stakes. Do not sell them as Intergrax-specific:
 
-1. **Vector / indexed RAG** — ingest, chunk, search, cite. Hash embeddings in the proof are weaker than production semantic RAG.
-2. **Live HTTP / tool calling** — an authorized GET of project status is a normal integration.
-3. **Policy configuration** — HYBRID mode, allowed connections/capabilities, budgets, retention enum.
-4. **Workspace / tenant lookup** — `workspace_not_found` is basic ACL, not a knowledge-governance thesis.
-5. **Deterministic fixture synthesis** — YES/NO in 01/02 is a local rule engine (`DeploymentReadinessDeterministicLLM`), not a general LLM behavior proof.
+1. **Vector / indexed RAG** - ingest, chunk, search, cite. Hash embeddings in the proof are weaker than production semantic RAG.
+2. **Live HTTP / tool calling** - an authorized GET of project status is a normal integration.
+3. **Policy configuration** - HYBRID mode, allowed connections/capabilities, budgets, retention enum.
+4. **Workspace / tenant lookup** - `workspace_not_found` is basic ACL, not a knowledge-governance thesis.
+5. **Deterministic fixture synthesis** - YES/NO in 01/02 is a local rule engine (`DeploymentReadinessDeterministicLLM`), not a general LLM behavior proof.
 
 ---
 
@@ -75,7 +75,7 @@ What is **not** differentiation: the ORION story, mermaid diagrams, four PASS ba
 
 ## Four-scenario audit
 
-### 01 REALITY — OPEN blocker → NO
+### 01 REALITY - OPEN blocker → NO
 
 | | |
 |--|--|
@@ -84,7 +84,7 @@ What is **not** differentiation: the ORION story, mermaid diagrams, four PASS ba
 | **CTO interest** | Medium. Shows hybrid inputs actually reach one decision. The interesting part is the gate around it, not YES/NO. |
 | **Strength** | **3 / 5** |
 
-### 02 FRESHNESS — only external state changes → YES
+### 02 FRESHNESS - only external state changes → YES
 
 | | |
 |--|--|
@@ -93,7 +93,7 @@ What is **not** differentiation: the ORION story, mermaid diagrams, four PASS ba
 | **CTO interest** | Medium-high for “live state can flip the answer without re-indexing policy”. |
 | **Strength** | **3 / 5** |
 
-### 03 AUTHORITY — revoke after planning → HTTP 0 / LLM 0
+### 03 AUTHORITY - revoke after planning → HTTP 0 / LLM 0
 
 | | |
 |--|--|
@@ -102,7 +102,7 @@ What is **not** differentiation: the ORION story, mermaid diagrams, four PASS ba
 | **CTO interest** | **High.** This is the clause a buyer cannot get from “the prompt says to check permissions”. |
 | **Strength** | **5 / 5** |
 
-### 04 HISTORY — retrieve prior run after live world changed
+### 04 HISTORY - retrieve prior run after live world changed
 
 | | |
 |--|--|
@@ -135,7 +135,7 @@ Do not treat `test_adversarial_attack_matrix_all_pass` as evidence. It construct
 | **N** wrong call evidence | **MEDIUM** | Unit-level `evaluate_evidence_admissibility` `LIVE_CALL_MISMATCH`. Does not show the orchestrator attempting to swap call ids. |
 | **O** duplicate/replay | **WEAK** | Unique `requirement_id` at compose. Not cryptographic replay protection, not duplicate HTTP replay. |
 
-**Net:** the suite is directionally serious (A/B/F/G/H). It is padded with tenant stubs, a tautological matrix, and a clone of the revoke test. A buyer should be shown A, B, F/G, H — not a 15-row PASS table.
+**Net:** the suite is directionally serious (A/B/F/G/H). It is padded with tenant stubs, a tautological matrix, and a clone of the revoke test. A buyer should be shown A, B, F/G, H - not a 15-row PASS table.
 
 ---
 
@@ -188,7 +188,7 @@ Large codebase ≠ defensibility. Band C is real engineering, not a secret algor
 
 ### Blocker for the flagship claim
 
-None that falsify the **narrow** claim: *Ask V2 can require indexed+live evidence, re-check live authority at execution, skip synthesis when required evidence is missing, and retain structural run identity under EPHEMERAL retention — as exercised by this harness.*
+None that falsify the **narrow** claim: *Ask V2 can require indexed+live evidence, re-check live authority at execution, skip synthesis when required evidence is missing, and retain structural run identity under EPHEMERAL retention - as exercised by this harness.*
 
 The following **would** be blockers if the claim were broadened to “LKW product already does this for every hybrid question” or “historically reconstructable”:
 
@@ -234,12 +234,12 @@ The following **would** be blockers if the claim were broadened to “LKW produc
 
 ### QUALIFIED CLAIMS
 
-- **“Runtime-governed”** — true for the wired Ask V2 live executor with authority injected; not a property of every Intergrax agent loop.
-- **“Fail-closed”** — true for the obligation gate and many plan validations; not true that every HYBRID ask skips the LLM.
-- **“Evidence-aware”** — true as contracts + admissibility; not true as semantic understanding of policy.
-- **“Authorized live knowledge”** — true for binding + connection + capability checks on the live call path.
-- **“LLM cannot bypass required evidence”** — true **once obligations are on the plan and admissibility runs first**. False as a blanket statement about all Ask modes and about a jailbroken model that never gets called.
-- **“Historically explain why NO was valid”** — allowed only as **structural** explanation (obligations, hashes, revision, status). Not as factual replay of blocker state.
+- **“Runtime-governed”** - true for the wired Ask V2 live executor with authority injected; not a property of every Intergrax agent loop.
+- **“Fail-closed”** - true for the obligation gate and many plan validations; not true that every HYBRID ask skips the LLM.
+- **“Evidence-aware”** - true as contracts + admissibility; not true as semantic understanding of policy.
+- **“Authorized live knowledge”** - true for binding + connection + capability checks on the live call path.
+- **“LLM cannot bypass required evidence”** - true **once obligations are on the plan and admissibility runs first**. False as a blanket statement about all Ask modes and about a jailbroken model that never gets called.
+- **“Historically explain why NO was valid”** - allowed only as **structural** explanation (obligations, hashes, revision, status). Not as factual replay of blocker state.
 
 ### UNSAFE CLAIMS (README must not make)
 
@@ -261,7 +261,7 @@ README currently states Hybrid Ask combining indexed and authorized live evidenc
 Governed hybrid knowledge: answers are admissible only when required indexed and live evidence is present under current authority.
 
 **Supporting sentence:**  
-Intergrax plans what evidence is mandatory, fetches it through authorized indexed and live sources, re-checks live permission at execution time, and records structural proof — or returns no answer.
+Intergrax plans what evidence is mandatory, fetches it through authorized indexed and live sources, re-checks live permission at execution time, and records structural proof - or returns no answer.
 
 **Key visual concept:**  
 Policy (indexed) + live system of record + runtime authority → **admissibility gate** → answer **or** stop. Not “chat over documents”.
@@ -273,7 +273,7 @@ Policy (indexed) + live system of record + runtime authority → **admissibility
 | Reality (OPEN blocker) | 1 | 1 | NO |
 | Freshness (blocker closed) | 1 | 1 | YES |
 | Authority revoked after plan | **0** | **0** | cannot determine |
-| History | — | — | prior NO still recorded |
+| History | - | - | prior NO still recorded |
 
 **Command:**  
 `uv run python -m proof_infrastructure.governed_hybrid_knowledge_proof`
@@ -286,10 +286,10 @@ Do not lead with AURORA-17, Slack, or a linear “approved knowledge → grounde
 
 ### Current README
 
-**Yes — the first screen underrepresents, and partly contradicts, current capability.**
+**Yes - the first screen underrepresents, and partly contradicts, current capability.**
 
 - Hero workflow is indexed Ask V1 (AURORA-17, Slack-as-surface, “grounded answer”).
-- Explicit line: hybrid indexed + authorized live is **not yet proven** — false for COMM-5D/E as a **technical proof**; still true that it is not the **product quickstart**.
+- Explicit line: hybrid indexed + authorized live is **not yet proven** - false for COMM-5D/E as a **technical proof**; still true that it is not the **product quickstart**.
 - Platform map still frames Knowledge as RAG-first.
 
 **Relegate:** AURORA-17 / indexed-only quickstart as “simplest local path”, not the thesis.  

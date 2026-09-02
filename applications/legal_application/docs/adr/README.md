@@ -1,4 +1,4 @@
-# Legal — Architecture Decision Records
+# Legal - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/legal_application`)
 
@@ -36,7 +36,7 @@ ADR-LEGAL-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No application ADRs yet* | — |
+| - | *No application ADRs yet* | - |
 
 ---
 

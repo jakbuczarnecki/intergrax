@@ -1,4 +1,4 @@
-# LLM_ADAPTERS — providers catalog
+# LLM_ADAPTERS - providers catalog
 
 **Parent hub:** [`LLM_ADAPTERS.md`](../LLM_ADAPTERS.md)
 
@@ -39,9 +39,9 @@ Per-provider model env vars: `INTERGRAX_DEFAULT_<PROVIDER>_MODEL` (see [`USAGE.m
 | Tier-0 slug | `LLMProvider.OLLAMA` | `LLMProvider.VLLM` | `LLMProvider.LLAMA_CPP` |
 | Local Docker | `infra/docker/ollama` · profile `rag` · port **11434** | `infra/docker/vllm` · profile **`vllm`** (opt-in) · host **8100** | `infra/docker/llama-cpp` · profile **`llama-cpp`** (opt-in) · host **8102** |
 | GPU | Optional (CPU OK for dev) | **NVIDIA GPU required** for practical use | **CPU-first** (optional CUDA in compose) |
-| P5 integration | `interaction_surface/ollama` (health probe) | Not registered — adapter + Docker health (`/v1/models`) | Not registered — same as vLLM |
+| P5 integration | `interaction_surface/ollama` (health probe) | Not registered - adapter + Docker health (`/v1/models`) | Not registered - same as vLLM |
 
-**Do not** add a LangChain-style duplicate adapter for vLLM or llama.cpp — OpenAI-compat factory is the canonical path (M-LLM.3, M-LLM.7).
+**Do not** add a LangChain-style duplicate adapter for vLLM or llama.cpp - OpenAI-compat factory is the canonical path (M-LLM.3, M-LLM.7).
 
 **Intergrax Docker wiring (vLLM):**
 
@@ -60,7 +60,7 @@ export INTERGRAX_LLM_PROVIDER=llama_cpp
 export INTERGRAX_LLM_MODEL=default
 ```
 
-Port **8100** (vLLM) and **8102** (llama.cpp) avoid conflict with Chroma (**8000**) and Weaviate (**8080**) — see [`infra/PORTS.md`](../../infra/PORTS.md).
+Port **8100** (vLLM) and **8102** (llama.cpp) avoid conflict with Chroma (**8000**) and Weaviate (**8080**) - see [`infra/PORTS.md`](../../infra/PORTS.md).
 
 **Live smoke (vLLM only):** `test_vllm_live_one_shot` in `tests/unit/llm_adapters/test_network_smoke.py` (marker `network`; weekly GitHub workflow).
 
@@ -78,7 +78,7 @@ Port **8100** (vLLM) and **8102** (llama.cpp) avoid conflict with Chroma (**8000
 | Soft governance warn | `INTERGRAX_LLM_GOVERNANCE_WARN_TOKENS` |
 | Pushgateway | `INTERGRAX_LLM_PROMETHEUS_PUSHGATEWAY_URL` |
 | Distributed rate limit | `set_llm_distributed_rate_limiter` + `use_distributed_rate_limit` |
-| Context preflight | `verify_context_preflight()` — default **`adapter.count_messages_tokens`** |
+| Context preflight | `verify_context_preflight()` - default **`adapter.count_messages_tokens`** |
 
 ---
 
@@ -117,8 +117,8 @@ Do not merge counters without explicit bridge code.
 ## Resilience & secrets
 
 - **`LLMCallConfig`:** retries, timeout, in-process rate limit, circuit breaker, optional Redis distributed limit.
-- **Failover:** profile chain via `fallback_profiles` / `FailoverLLMAdapter` — Done.
-- **Secrets:** `registry/secrets.py` — env + `llm/<provider>/api_key`.
+- **Failover:** profile chain via `fallback_profiles` / `FailoverLLMAdapter` - Done.
+- **Secrets:** `registry/secrets.py` - env + `llm/<provider>/api_key`.
 
 ---
 

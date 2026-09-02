@@ -1,4 +1,4 @@
-# ImpeachmentRight — Platform Completion Audit
+# ImpeachmentRight - Platform Completion Audit
 
 **Date:** 2026-07-21  
 **Branch:** `development`  
@@ -117,5 +117,5 @@ signer-failure recovery).
 READY TO DRAFT PARTNER RESPONSE
 ```
 
-Do not draft the public `@impeachmentright` reply in this change set — await
+Do not draft the public `@impeachmentright` reply in this change set - await
 independent diff audit.

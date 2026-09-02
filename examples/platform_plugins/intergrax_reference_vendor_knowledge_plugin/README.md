@@ -2,7 +2,7 @@
 
 Installable reference package for third-party **Vendor Knowledge** providers. It demonstrates the full contribution ABI (adapter, connection factory, discovery, indexed materializer) without coupling to Intergrax core.
 
-**Not** a Tier-0 catalog plugin — discovery uses `intergrax.vendor_knowledge.providers` and host builder composition with `discover_entry_points=True`.
+**Not** a Tier-0 catalog plugin - discovery uses `intergrax.vendor_knowledge.providers` and host builder composition with `discover_entry_points=True`.
 
 ## Install
 

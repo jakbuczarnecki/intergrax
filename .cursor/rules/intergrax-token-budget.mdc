@@ -1,9 +1,9 @@
 ---
-description: Intergrax I1+O1 token budget — minimize context; ask before expand
+description: Intergrax I1+O1 token budget - minimize context; ask before expand
 alwaysApply: true
 ---
 
-# Intergrax — Token budget (I1 input · O1 output)
+# Intergrax - Token budget (I1 input · O1 output)
 
 **Default:** minimize tokens. Expand only when operator approves or Full mode is triggered.
 
@@ -21,19 +21,19 @@ Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch h
 
 **CI/test hotfixes:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. `AGENT_INSTRUCTIONS.md` is **forbidden** unless operator writes `ALLOW_FULL_AGENT_INSTRUCTIONS`. Words like "verification", "GitHub", or "audit" alone do **not** authorize loading it.
 
-## I1 — input (read / tools)
+## I1 - input (read / tools)
 
 - **Read:** `offset`/`limit` or `grep` before full file; hub **read-scope block** only unless implementing cited §.
 - **Docs-only step:** max **2** source files; max **1** file **>300 lines** without offset.
 - **No** parallel full-file reads of plan/arch hubs in one turn.
 - **No** `Task`/explore subagents unless operator asks or `RESUME:` requires it.
-- **Expand context** (full hub, subagent, >3 source files outside operator read scope, repo-wide semantic search): **STOP** — one short question; wait for OK.
-- **LKW Tier-2 tasks:** read `agents/local_indexer/steps/index_job.py` (or sibling LKW step modules) for `invoke_tool` + allowlist — **do not** open `uaep.py`, `boundary_demo`, or Nexus loop sources for pattern discovery.
+- **Expand context** (full hub, subagent, >3 source files outside operator read scope, repo-wide semantic search): **STOP** - one short question; wait for OK.
+- **LKW Tier-2 tasks:** read `agents/local_indexer/steps/index_job.py` (or sibling LKW step modules) for `invoke_tool` + allowlist - **do not** open `uaep.py`, `boundary_demo`, or Nexus loop sources for pattern discovery.
 - **Expansion budget:** max **3 files** outside operator **read scope** per task; then STOP and ask.
 - Grep + path filter before semantic search. Respect `.cursorignore`. No `docs/audit_results/` or `audit_results/` unless explicitly `@`-referenced or `RESUME:` cites it.
-- **Doc topology:** domain-layer `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md`; multi-layer feature `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — [`docs/project/capabilities/README.md`](../../docs/project/capabilities/README.md).
+- **Doc topology:** domain-layer `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md`; multi-layer feature `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` - [`docs/project/capabilities/README.md`](../../docs/project/capabilities/README.md).
 
-## O1 — output (reply)
+## O1 - output (reply)
 
 | Mode | Trigger |
 |------|---------|
@@ -45,4 +45,4 @@ Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch h
 
 **Prompt vs O1 conflict** (long checklist without Full trigger): deliver terse + offer Full.
 
-Full template: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md` § Operator communication — load only in Full mode.
+Full template: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md` § Operator communication - load only in Full mode.

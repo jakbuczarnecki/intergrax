@@ -1,4 +1,4 @@
-# RAG Enterprise Handoff — RAG-ENT-3
+# RAG Enterprise Handoff - RAG-ENT-3
 
 **Status:** `ENTERPRISE_READY`  
 **Closeout date:** 2026-08-10  
@@ -19,7 +19,7 @@ create a follow-on enterprise roadmap.
 | **RAG enterprise readiness** | `ENTERPRISE_READY` |
 | **RAG-ENT track** | `CLOSED` |
 | **RAG session** | `CLOSED` |
-| **Post-ENT-2 drift** | None — HEAD equals ENT-2 commit `915994fe` |
+| **Post-ENT-2 drift** | None - HEAD equals ENT-2 commit `915994fe` |
 
 `WITH_LIMITATIONS` is the final production contract, not unfinished work.
 
@@ -104,7 +104,7 @@ for navigation only.
 
 ## 8. Reopening criteria
 
-Reuse the existing consolidated lists — do not maintain a second conflicting set:
+Reuse the existing consolidated lists - do not maintain a second conflicting set:
 
 - Production: [`RAG_PRODUCTION_HANDOFF.md`](RAG_PRODUCTION_HANDOFF.md) § Reopening criteria
 - Live backends: [`RAG_LIVE_BACKEND_CLOSEOUT.md`](RAG_LIVE_BACKEND_CLOSEOUT.md) §9

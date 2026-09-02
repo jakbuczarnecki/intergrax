@@ -1,14 +1,14 @@
-# AGENT_CONTRACTS_AND_ASSEMBLY — production gates (§40+)
+# AGENT_CONTRACTS_AND_ASSEMBLY - production gates (§40+)
 
 **Parent hub:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../AGENT_CONTRACTS_AND_ASSEMBLY.md)
 
 # 40. Production Reliability, Safety, Persistence, and Release Gates
 
-**Purpose:** Close the gap between **canonical architecture** (§13–§39) and **safe production coding**. New Tier-2 agents for mutating workloads MUST satisfy **ACP-PROD-*** platform modules **and** **ACP-CLOSE-PROD-*** host depth before `production_mode` promotion — both tracks **Done** at platform level (2026-06-13).
+**Purpose:** Close the gap between **canonical architecture** (§13–§39) and **safe production coding**. New Tier-2 agents for mutating workloads MUST satisfy **ACP-PROD-*** platform modules **and** **ACP-CLOSE-PROD-*** host depth before `production_mode` promotion - both tracks **Done** at platform level (2026-06-13).
 
 **Cross-domain:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.12 tools · [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) eval gates · §20 lifecycle governance
 
-**Status:** Normative spec — **platform implemented** (ACP-PROD-1..12 **Done**); **host depth + prod evidence** (**ACP-CLOSE-PROD-1..8 Done**); CI aggregate **`check_agent_acp_close_ci.py` green**; per-agent promotion via §40.15 scoreboard thresholds.
+**Status:** Normative spec - **platform implemented** (ACP-PROD-1..12 **Done**); **host depth + prod evidence** (**ACP-CLOSE-PROD-1..8 Done**); CI aggregate **`check_agent_acp_close_ci.py` green**; per-agent promotion via §40.15 scoreboard thresholds.
 
 ---
 
@@ -30,7 +30,7 @@ Builds on §37.2 `state_delta` and Nexus task checkpoints.
 After HarnessKernel.execute_step completes successfully AND:
   - state_delta applied + _version bumped
   - all tool/RAG/LLM calls for step recorded in side_effect_ledger
-  - policy post-check passed (or step marked failed with no partial commit — see 40.1.3)
+  - policy post-check passed (or step marked failed with no partial commit - see 40.1.3)
 
 Default: checkpoint_every_step = true (§29.2.1 AgentExecutionOptions)
 Override: long steps may set checkpoint_every_step=false only for read-only steps declared on tool contract
@@ -38,14 +38,14 @@ Override: long steps may set checkpoint_every_step=false only for read-only step
 
 ### 40.1.3 Transaction boundary (step vs side effects)
 
-**Normative rule — step checkpoint is transactional with respect to agent state, not always with external systems:**
+**Normative rule - step checkpoint is transactional with respect to agent state, not always with external systems:**
 
 | Phase | On failure | State | External side effect |
 |-------|------------|-------|----------------------|
 | Pre-tool policy deny | Roll back step intent | No `_version` bump | None executed |
 | Tool in flight | See §40.2 idempotency | Step not checkpointed | At-least-once + idempotency key |
-| Tool succeeded, state merge fails | **Critical** — mark step `INTERNAL_ERROR`; do not advance `step_index` | Replay from last checkpoint | Rely on tool idempotency §40.2 |
-| Tool succeeded, checkpoint write fails | Retry checkpoint write; if exhausted → HITL + alert | Same | Side effect may exist — ledger records `committed_externally=true` |
+| Tool succeeded, state merge fails | **Critical** - mark step `INTERNAL_ERROR`; do not advance `step_index` | Replay from last checkpoint | Rely on tool idempotency §40.2 |
+| Tool succeeded, checkpoint write fails | Retry checkpoint write; if exhausted → HITL + alert | Same | Side effect may exist - ledger records `committed_externally=true` |
 
 **Anti-pattern:** advancing `step_index` without durable checkpoint when `checkpoint_every_step=true`.
 
@@ -63,11 +63,11 @@ Override: long steps may set checkpoint_every_step=false only for read-only step
 
 | Mode | Behavior |
 |------|----------|
-| **Trace replay** | Read-only reconstruction from `AgentRunTrace` — no tool re-invoke |
+| **Trace replay** | Read-only reconstruction from `AgentRunTrace` - no tool re-invoke |
 | **Deterministic replay** | Lab only; mock gateways; same inputs → compare StepOutcome |
 | **Production replay** | **Forbidden** for mutating tools without explicit `dry_run` + new run_id |
 
-**Plan:** ACP-PROD-1 + ACP-CLOSE-PROD-1..2 — `checkpoint_store.py` + `acp_checkpoint_host_wiring.py` + harness task enricher (**Done** on all Tier-3 harness hosts).
+**Plan:** ACP-PROD-1 + ACP-CLOSE-PROD-1..2 - `checkpoint_store.py` + `acp_checkpoint_host_wiring.py` + harness task enricher (**Done** on all Tier-3 harness hosts).
 
 ---
 
@@ -79,8 +79,8 @@ Required for **mutating** tools in both immediate and declarative modes (§32.8)
 
 ```text
 SideEffectRecord:
-    side_effect_id: str              # uuid — unique per attempted effect
-    idempotency_key: str             # stable business key — dedupe scope
+    side_effect_id: str              # uuid - unique per attempted effect
+    idempotency_key: str             # stable business key - dedupe scope
     run_id: str
     step_index: int
     kind: tool | rag_write | llm_cache_write | artifact_publish
@@ -89,7 +89,7 @@ SideEffectRecord:
     committed_at: datetime | null
     external_ref: str | null         # provider message id, ticket id, etc.
 
-StepActionRequest (declarative — §32.8):
+StepActionRequest (declarative - §32.8):
     ... existing fields ...
     idempotency_key: str             # REQUIRED for mutating kind
     side_effect_id: str | null        # assigned by harness if omitted
@@ -111,7 +111,7 @@ Authors MAY supply explicit keys for business-level dedupe (e.g. `email:{case_id
 | **Mutating idempotent** | **Effective exactly-once** via key + store | Dedupe on retry/resume |
 | **Mutating non-idempotent** | **Blocked in STRICT prod** unless tool declares idempotency support | Register gate ACP-PROD-2 |
 
-**Dedupe policy:** `ReliabilityProfile.idempotency_store` (see [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)) — TTL ≥ max task duration.
+**Dedupe policy:** `ReliabilityProfile.idempotency_store` (see [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)) - TTL ≥ max task duration.
 
 ### 40.2.3 Retry policy (side effects)
 
@@ -123,7 +123,7 @@ SideEffectRetryPolicy:
     non_retriable: POLICY_DENIED, VALIDATION_FAILED
 ```
 
-Retries MUST reuse same `idempotency_key`. **Plan:** ACP-PROD-2 (**Done** — `SideEffectLedger`).
+Retries MUST reuse same `idempotency_key`. **Plan:** ACP-PROD-2 (**Done** - `SideEffectLedger`).
 
 ---
 
@@ -169,7 +169,7 @@ CompensationRequest:
     idempotency_key: str                # distinct key derived from original
 ```
 
-Compensation runs through same gateways; recorded in trace. **Plan:** ACP-PROD-3 + ACP-CLOSE-PROD-5 (**Done** — enqueue, durable `CompensationQueueStore`, `drain_pending_compensation_jobs`).
+Compensation runs through same gateways; recorded in trace. **Plan:** ACP-PROD-3 + ACP-CLOSE-PROD-5 (**Done** - enqueue, durable `CompensationQueueStore`, `drain_pending_compensation_jobs`).
 
 ---
 
@@ -185,9 +185,9 @@ Agent session inherits **`ReliabilityProfile`** from host (circuit breaker, time
 | Circuit breaker | `ReliabilityProfile` | Integration slugs |
 | Nexus task | `OrchestrationProfile.max_run_retries` | Task-level only |
 
-**Rule:** agent MUST NOT implement private retry loops for tools — use harness retry + idempotency.
+**Rule:** agent MUST NOT implement private retry loops for tools - use harness retry + idempotency.
 
-**Plan:** ACP-PROD-4 — `AgentSessionReliability` in `HarnessKernel.execute_step` (**Done**).
+**Plan:** ACP-PROD-4 - `AgentSessionReliability` in `HarnessKernel.execute_step` (**Done**).
 
 ---
 
@@ -217,7 +217,7 @@ SharedContextView:
     get(key) -> (value, version)
     publish(key, value, *, expected_version: int | null) -> PublishResult
         # expected_version match → atomic write, version++
-        # mismatch → CONFLICT — caller replan or HITL
+        # mismatch → CONFLICT - caller replan or HITL
     compare_and_swap(key, expected_version, new_value) -> bool
 ```
 
@@ -234,7 +234,7 @@ SharedContextView:
 | **Optimistic lock + replan** | Default BALANCED |
 | **HITL on conflict** | STRICT prod shared mutable keys |
 
-**Plan:** ACP-PROD-5 (**Done** — per-key `publish` / `compare_and_swap` on `SharedContextView`).
+**Plan:** ACP-PROD-5 (**Done** - per-key `publish` / `compare_and_swap` on `SharedContextView`).
 
 ---
 
@@ -247,7 +247,7 @@ ArtifactRef:
     schema_version: str = "artifact_ref.v1"
     artifact_id: str
     type: str                           # report, attachment, structured_json, ...
-    uri: str                            # s3, file, memory blob ref — no secrets in uri query
+    uri: str                            # s3, file, memory blob ref - no secrets in uri query
     mime_type: str | null
     provenance: ArtifactProvenance
     retention_class: str                # maps to host retention policy §40.8
@@ -269,13 +269,13 @@ ArtifactProvenance:
 
 - Harness registers artifacts when tools return artifact payloads or `StepOutcome.artifacts` lists ids.
 - Two agents publishing same logical artifact → distinct `artifact_id`; dedupe via `checksum` optional at app layer.
-- **Plan:** ACP-PROD-6 (**Done** — `intergrax/contracts/artifact_ref.py`, `AgentRunResult.artifact_refs`).
+- **Plan:** ACP-PROD-6 (**Done** - `intergrax/contracts/artifact_ref.py`, `AgentRunResult.artifact_refs`).
 
 ---
 
 ## 40.7 Threat model (agent layer)
 
-Formal requirements — enforcement via policy, gateways, CI (§40.10).
+Formal requirements - enforcement via policy, gateways, CI (§40.10).
 
 | Threat | Vector | Mitigation | Verify |
 |--------|--------|------------|--------|
@@ -289,9 +289,9 @@ Formal requirements — enforcement via policy, gateways, CI (§40.10).
 | **Malicious document content** | RAG/intake files | sandbox parse, modality scanners | ingest pipeline |
 | **Agent-to-agent data leak** | Over-broad `shared_context.publish` | visibility + CAS §40.5 | graph test |
 | **SDK bypass** | Direct vendor import in Tier-2 | tier boundary, `check_agents_vendor_imports.py` | CI |
-| **Org rule bypass** | configure_run widen in STRICT | §39.4 STRICT deny | **Closed** — ACP-CLOSE-ORG-1 |
+| **Org rule bypass** | configure_run widen in STRICT | §39.4 STRICT deny | **Closed** - ACP-CLOSE-ORG-1 |
 
-**Plan:** ACP-PROD-7 (**Done** — `scripts/maintenance/check_agent_threat_model.py`).
+**Plan:** ACP-PROD-7 (**Done** - `scripts/maintenance/check_agent_threat_model.py`).
 
 ---
 
@@ -323,10 +323,10 @@ Host **`ObservabilityProfile`** + **`MemoryProfile`** declare default classifica
 ### 40.8.3 Redaction
 
 - Intake redaction before `AgentRunRequest.metadata` persisted.
-- `AgentStepRecord.state_snapshot` — redacted view of `acp.state.v1`.
-- `PolicyVerdictRecord.message` — no raw user content.
+- `AgentStepRecord.state_snapshot` - redacted view of `acp.state.v1`.
+- `PolicyVerdictRecord.message` - no raw user content.
 
-**Plan:** ACP-PROD-8 (**Done** — `privacy_redaction.py` on policy verdict reasons).
+**Plan:** ACP-PROD-8 (**Done** - `privacy_redaction.py` on policy verdict reasons).
 
 ---
 
@@ -356,7 +356,7 @@ Register in **Evaluation registry**; wired via Tier-3 host before roster `produc
 dev → eval suites green → staging shadow → certification §20 → production_mode
 ```
 
-**Plan:** ACP-PROD-9 (**Done** — `scripts/gates/check_agent_release_gates.py`).
+**Plan:** ACP-PROD-9 (**Done** - `scripts/gates/check_agent_release_gates.py`).
 
 ---
 
@@ -369,7 +369,7 @@ Normative CI checks before merge to agent roster (extends §45).
 | CI-01 | Agent contract fields complete | `check_agents_lifecycle_metadata.py` |
 | CI-02 | No vendor SDK in Tier-2 | `check_agents_vendor_imports.py` |
 | CI-03 | No `os.environ` in agents | lint / dedicated script |
-| CI-04 | UAEP / run path — post-LEG fleet migration | `check_agent_fleet_migration.py` · `check_agent_acp_close_ci.py` |
+| CI-04 | UAEP / run path - post-LEG fleet migration | `check_agent_fleet_migration.py` · `check_agent_acp_close_ci.py` |
 | CI-05 | Capability declared matches class | `check_agent_pattern_conformance.py` (ACP-13) |
 | CI-06 | Capability routing integration | ACP-CON-6 test |
 | CI-07 | state_delta merge unit | ACP-CON-2 test |
@@ -382,12 +382,12 @@ Normative CI checks before merge to agent roster (extends §45).
 | CI-14 | Checkpoint resume smoke | ACP-PROD-1 test |
 | CI-15 | Release eval suites | ACP-PROD-9 |
 | CI-16 | Production readiness scoreboard blockers | `check_agent_acp_close_ci.py` |
-| CI-17 | ACP-AP-02 — no tool loops in graph orchestration | `check_agent_acp_ap02_tool_loop_boundary.py` |
-| CI-18 | Token budget contract — kernel metering + no agent budget `state_delta` | `check_agent_token_budget_contract.py` |
+| CI-17 | ACP-AP-02 - no tool loops in graph orchestration | `check_agent_acp_ap02_tool_loop_boundary.py` |
+| CI-18 | Token budget contract - kernel metering + no agent budget `state_delta` | `check_agent_token_budget_contract.py` |
 
 **Rule:** new agent PR MUST declare which CI rows apply; all applicable rows green.
 
-**Plan:** ACP-PROD-10 (**Done** — `scripts/gates/check_acp_ci_conformance_matrix.py`).
+**Plan:** ACP-PROD-10 (**Done** - `scripts/gates/check_acp_ci_conformance_matrix.py`).
 
 ---
 
@@ -401,32 +401,32 @@ All runtime contracts carry **`schema_version`**. Breaking changes require ADR +
 | `AgentRunResult` | `agent_run.v1` | Same |
 | `AgentRunTrace` | `agent_run_trace.v1` | Trace consumers ignore unknown step fields |
 | `acp.state.v1` | embedded in state | `_version` int; merge patch only §37.2 |
-| `StateDelta` | merge patch | No schema field — keys only |
-| `ArtifactRef` | `artifact_ref.v1` | — |
+| `StateDelta` | merge patch | No schema field - keys only |
+| `ArtifactRef` | `artifact_ref.v1` | - |
 | `SideEffectRecord` | `side_effect.v1` | Required for resume |
 | `OrganizationalPolicyEnvelope` | `org_policy_envelope.v1` | Host reload on change |
 
 **Migration strategy:**
 
-1. Additive fields — minor bump, old readers ignore.
-2. Semantic change — new schema_version; adapter layer for one release (`intergrax/contracts/migrations/agent_run_v1_to_v2.py`).
-3. Deprecation — `DeprecationWarning` in harness one release; remove with ADR.
+1. Additive fields - minor bump, old readers ignore.
+2. Semantic change - new schema_version; adapter layer for one release (`intergrax/contracts/migrations/agent_run_v1_to_v2.py`).
+3. Deprecation - `DeprecationWarning` in harness one release; remove with ADR.
 
-**Plan:** ACP-PROD-11 (**Done** — `intergrax/contracts/migrations/registry.py` + `check_contract_schema_versions.py`).
+**Plan:** ACP-PROD-11 (**Done** - `intergrax/contracts/migrations/registry.py` + `check_contract_schema_versions.py`).
 
 ---
 
 ## 40.12 Production readiness checklist
 
-Before **`production_mode`** on roster entry — all MUST be true:
+Before **`production_mode`** on roster entry - all MUST be true:
 
 ```text
-□ §29–§32 run/on_next_step/advance_step/kernel path used — not legacy AgentEngine-only
+□ §29–§32 run/on_next_step/advance_step/kernel path used - not legacy AgentEngine-only
 □ §37 enums for errors and terminal_reason
 □ §40.1 checkpoint + resume tested for mutating agent
 □ §40.2 idempotency keys on all mutating tools in agent tests
 □ §40.3 ToolExecutionProfile declared for each used mutating tool
-□ §40.6 ArtifactRef populated — not raw paths only
+□ §40.6 ArtifactRef populated - not raw paths only
 □ §40.7 threat mitigations verified for agent's data classes
 □ §40.8 retention/redaction profile wired on host
 □ §40.9 eval suites registered and green on staging
@@ -436,15 +436,15 @@ Before **`production_mode`** on roster entry — all MUST be true:
 □ §20 lifecycle certification recorded
 ```
 
-Waivers require ADR + operator sign-off — not silent skip.
+Waivers require ADR + operator sign-off - not silent skip.
 
-**Aggregated view:** use **Agent Production Readiness Scoreboard** §40.15 (`ACP-PROD-12`) — single report per agent instead of manual checklist hunting.
+**Aggregated view:** use **Agent Production Readiness Scoreboard** §40.15 (`ACP-PROD-12`) - single report per agent instead of manual checklist hunting.
 
 ---
 
 ## 40.15 Agent Production Readiness Scoreboard
 
-**Purpose:** One typed **`AgentProductionReadinessReport`** per agent — 10 dimensions scored **0–100%**, rolling up to `overall_pct` and `production_eligible_recommendation`. Replaces scattered gate knowledge for roster promotion decisions.
+**Purpose:** One typed **`AgentProductionReadinessReport`** per agent - 10 dimensions scored **0–100%**, rolling up to `overall_pct` and `production_eligible_recommendation`. Replaces scattered gate knowledge for roster promotion decisions.
 
 **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) §6.1az · implementation **ACP-PROD-12**.
 
@@ -461,9 +461,9 @@ Waivers require ADR + operator sign-off — not silent skip.
 | Lifecycle | §20 |
 | Capability routing | §37.6 |
 
-**Production roster (mutating / customer-facing):** `overall_pct ≥ 90` and no scored dimension below **80%** (unless `not_applicable`) — plus ACP-PROD-1..3 and ACP-PROD-9..10 **Done** in code. Thresholds are **not negotiable** without ADR.
+**Production roster (mutating / customer-facing):** `overall_pct ≥ 90` and no scored dimension below **80%** (unless `not_applicable`) - plus ACP-PROD-1..3 and ACP-PROD-9..10 **Done** in code. Thresholds are **not negotiable** without ADR.
 
-**Fleet migration:** Wave **8** (`ACP-MIG-*`) must reach Runtime **100%** roster-wide before declaring ACP-LEG-2 Done — see plan fleet tracker.
+**Fleet migration:** Wave **8** (`ACP-MIG-*`) must reach Runtime **100%** roster-wide before declaring ACP-LEG-2 Done - see plan fleet tracker.
 
 ---
 
@@ -476,29 +476,29 @@ Waivers require ADR + operator sign-off — not silent skip.
 | **Production coding** | + §40 implemented (ACP-PROD) | Mutating prod agents, org simulation prod |
 | **Roster production_mode** | + §40.9 gates green | Customer-facing deployment |
 
-**Audit scores (2026-06-13 — post ACP-FINISH):**
+**Audit scores (2026-06-13 - post ACP-FINISH):**
 
 | Dimension | Score |
 |-----------|--------|
 | Conceptual architecture | **10/10** ✓ |
 | Platform implementation (ACP waves 0–8 + ACP-FINISH) | **9.5/10** ✓ |
 | Architecture ↔ code doc sync | **10/10** ✓ (ACP-FINISH-DOC-1) |
-| Mutating agents production-ready | **Done** — §40.12 + ACP-CLOSE-PROD-* + ACP-TOK-* + STRICT configure_run deny + compensation queue + CI-1/3 + UC-11 product golden **Done** |
+| Mutating agents production-ready | **Done** - §40.12 + ACP-CLOSE-PROD-* + ACP-TOK-* + STRICT configure_run deny + compensation queue + CI-1/3 + UC-11 product golden **Done** |
 
 ### 40.13.1 Audit acceptance (2026-06)
 
-**Accepted as target canon** — architecture §13–§40 and plan register ACP-* are **decision-complete and implementation-complete** for token budget depth (§25.4–§25.5). Further architecture iteration MUST be driven by **implementation gaps** (ADR + plan row), not open-ended doc expansion.
+**Accepted as target canon** - architecture §13–§40 and plan register ACP-* are **decision-complete and implementation-complete** for token budget depth (§25.4–§25.5). Further architecture iteration MUST be driven by **implementation gaps** (ADR + plan row), not open-ended doc expansion.
 
 | Decision | Verdict |
 |----------|---------|
-| Adopt §13–§39 execution model (`run` / `on_next_step` / `advance_step` / `HarnessKernel` / `NexusLoop`) | **Yes** — **delivered** |
-| Adopt §40 production gate for mutating / customer-facing agents | **Yes** — **delivered** |
-| Update implementation plan from this canon | **Yes** — Phase ACP · ACP-CLOSE · **ACP-FINISH Done** (2026-06-13) |
+| Adopt §13–§39 execution model (`run` / `on_next_step` / `advance_step` / `HarnessKernel` / `NexusLoop`) | **Yes** - **delivered** |
+| Adopt §40 production gate for mutating / customer-facing agents | **Yes** - **delivered** |
+| Update implementation plan from this canon | **Yes** - Phase ACP · ACP-CLOSE · **ACP-FINISH Done** (2026-06-13) |
 | Platform ACP modules (ACP-DX through ACP-PROD-12) | **Done** (2026-06-11) |
-| Token metering + limits + reactions (§25.4–§25.5) | **Yes** — **delivered** (ACP-TOK-1..3 · ACP-TOK-CI) |
-| Declare mutating agents **production-ready** | **Yes** — when host passes ACP-PROD + ACP-CLOSE-PROD + APP-PROD gates |
+| Token metering + limits + reactions (§25.4–§25.5) | **Yes** - **delivered** (ACP-TOK-1..3 · ACP-TOK-CI) |
+| Declare mutating agents **production-ready** | **Yes** - when host passes ACP-PROD + ACP-CLOSE-PROD + APP-PROD gates |
 
-**Clarification (2026-06-13):** §25.4–§25.5 closed via ACP-FINISH; AUDIT-IDEAL-19.1/20.1/31.1 **Done** — §12–§20 layer complete. Nexus `RunBudget` graph env cap remains COST-1 **Partial** (does not block per-agent enforcement).
+**Clarification (2026-06-13):** §25.4–§25.5 closed via ACP-FINISH; AUDIT-IDEAL-19.1/20.1/31.1 **Done** - §12–§20 layer complete. Nexus `RunBudget` graph env cap remains COST-1 **Partial** (does not block per-agent enforcement).
 
 **Next work (non-blocking):** COST-1 graph cap · per-roster `production_mode` promotion (§40.15) · gate maintenance §6.1.
 
@@ -519,10 +519,10 @@ Waivers require ADR + operator sign-off — not silent skip.
 | ACP-PROD-9 | Release eval gates + certification script |
 | ACP-PROD-10 | CI conformance matrix automation |
 | ACP-PROD-11 | Schema version registry + migration adapters |
-| ACP-PROD-12 | Agent Production Readiness Scoreboard — §40.15 |
-| ACP-MIG-1..7 | Fleet migration program — plan Wave 8 |
+| ACP-PROD-12 | Agent Production Readiness Scoreboard - §40.15 |
+| ACP-MIG-1..7 | Fleet migration program - plan Wave 8 |
 | ACP-DOC.9 | This section §40 |
-| ACP-DOC.13 | Wave 8 + scoreboard plan — §6.1az |
+| ACP-DOC.13 | Wave 8 + scoreboard plan - §6.1az |
 
 ---
 
@@ -541,38 +541,38 @@ Before implementing a new agent, answer:
 8. What is the maximum acceptable cost/time?
 9. How will success be evaluated?
 10. How will Nexus route tasks to this agent?
-11. Is **`on_next_step`** (or a cognitive pattern base delegating to it) the sole author control loop — §32.5?
-12. Are **`StepOutcome`** factories the only control-flow returns — no author `decide_after_step` (§32.0.4 · §13.3)?
-13. Is **UAEP** (`get_steps` / `run_step` / `AgentDecision`) absent from Tier-2 author code — framework-internal bridge only (§13.3–§13.5)?
+11. Is **`on_next_step`** (or a cognitive pattern base delegating to it) the sole author control loop - §32.5?
+12. Are **`StepOutcome`** factories the only control-flow returns - no author `decide_after_step` (§32.0.4 · §13.3)?
+13. Is **UAEP** (`get_steps` / `run_step` / `AgentDecision`) absent from Tier-2 author code - framework-internal bridge only (§13.3–§13.5)?
 14. Are all tool calls routed through ToolRuntime (§42.12)?
 15. Are forbidden runtime patterns avoided (§42.41)?
 16. Which **cognitive pattern** applies (§26.1): reflex, react, plan_execute, decomposition, reflection?
-17. Does the agent respect **three cognition planes** (§23) — no private multi-agent graph in `run_step`?
-18. Is incremental state stored in `RuntimeExecutionContext.metadata` / `acp.state.v1` — not globals?
-19. Is author entry **`run(AgentRunRequest)`** — not private `AgentEngine.run` (§29)?
+17. Does the agent respect **three cognition planes** (§23) - no private multi-agent graph in `run_step`?
+18. Is incremental state stored in `RuntimeExecutionContext.metadata` / `acp.state.v1` - not globals?
+19. Is author entry **`run(AgentRunRequest)`** - not private `AgentEngine.run` (§29)?
 20. Are per-agent memory/tools/RAG declared on contract + binding, with host overrides via `metadata` (§30)?
-21. Is domain logic in **`on_next_step`** — not in `HarnessKernel` or `NexusLoop` (§32 · §38)?
+21. Is domain logic in **`on_next_step`** - not in `HarnessKernel` or `NexusLoop` (§32 · §38)?
 22. Does `AgentRunResult.trace` capture steps, tools, RAG, LLM, decisions (§31)?
 23. Is per-step LLM choice within host `LLMProfile` via `StepLLMRouter` (§33)?
-24. Is cross-agent state only via `SharedContextView` — not raw Nexus globals (§34)?
+24. Is cross-agent state only via `SharedContextView` - not raw Nexus globals (§34)?
 25. Which **use case** from §35 applies (chat, multi-agent, super-agent, HITL)?
 26. Are `terminal_reason` and errors from controlled enums §37.4–§37.5?
-27. Is `state_delta` merge-patch only — not full state rewrite §37.2?
+27. Is `state_delta` merge-patch only - not full state rewrite §37.2?
 28. Is side-effect mode explicit (immediate vs declarative) per step §32.8?
 29. Does Nexus route by **capability token**, not class name §37.6?
 30. Is **`NexusLoop` orchestration** separate from **`HarnessKernel.execute_step`** §38?
-31. Are org rules in **environment envelope** — not hardcoded in agent §39?
+31. Are org rules in **environment envelope** - not hardcoded in agent §39?
 32. Will compliance produce **`PolicyVerdictRecord`** per step for measurement §39.5?
 33. Is **§40 production readiness** satisfied before prod promotion (checkpoint, idempotency, gates)?
-34. Are **artifacts** typed `ArtifactRef` — not loose strings §40.6?
+34. Are **artifacts** typed `ArtifactRef` - not loose strings §40.6?
 35. Does agent pass **CI conformance matrix** §40.10 before roster promotion?
 36. Is **`RequestIdentity`** (`tenant_id` + `user_id` when scope=user) set by host intake §30.9?
-37. Is **`memory_scope`** explicit (user vs org vs task) — org agents not user-partitioned by mistake?
-38. Does every step **read state** via typed `AcpSessionState` (or agent subclass) — not raw `dict` keys §32.0?
-39. Does every step **update state** only via `StepOutcome.state_delta` from typed `model_dump` — not in-place mutation §32.0?
+37. Is **`memory_scope`** explicit (user vs org vs task) - org agents not user-partitioned by mistake?
+38. Does every step **read state** via typed `AcpSessionState` (or agent subclass) - not raw `dict` keys §32.0?
+39. Does every step **update state** only via `StepOutcome.state_delta` from typed `model_dump` - not in-place mutation §32.0?
 40. Does every step **decide control flow** via one explicit `StepOutcome` factory (`continue_with`, `complete`, `fail`, `pause_hitl`, `replan`) §32.0?
-41. Is `on_next_step` short enough to review — domain work delegated to `_step_*` helpers §32.0.4?
-42. Can a reviewer understand terminal vs continue from the **final `return` only** — without tracing harness internals §32.0?
+41. Is `on_next_step` short enough to review - domain work delegated to `_step_*` helpers §32.0.4?
+42. Can a reviewer understand terminal vs continue from the **final `return` only** - without tracing harness internals §32.0?
 ```
 
 If these questions cannot be answered, do not implement the agent yet. **Author guide:** §29–§36 · **ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md).

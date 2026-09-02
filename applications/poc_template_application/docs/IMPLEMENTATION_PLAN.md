@@ -1,6 +1,6 @@
-# poc_template_application — Implementation Plan
+# poc_template_application - Implementation Plan
 
-**The implementation map** for this Tier-3 reference shell — phases, status, gaps, and verification.
+**The implementation map** for this Tier-3 reference shell - phases, status, gaps, and verification.
 
 Status: **Done** (canonical lab scaffold reference)
 
@@ -26,7 +26,7 @@ Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](.
 | POC-1 | Manifest + `build_harness_host_runtime` | **Done** | High | AA-POC.1 |
 | POC-2 | Parity with `new-application` scaffold | **Done** | High | AA-POC.2 |
 | POC-3 | Deploy triad | **Done** | High | Docker gate |
-| POC-4 | Stay minimal — do not accrete product logic | Ongoing | High | Copy via scaffold, not edit in place |
+| POC-4 | Stay minimal - do not accrete product logic | Ongoing | High | Copy via scaffold, not edit in place |
 
 ---
 

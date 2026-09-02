@@ -26,6 +26,6 @@ Governed access to: `rag.retrieve`.
 
 ## Related skills
 
-- `local.workspace.index` — populate the index before search
-- `local.workspace.synthesize` — consume search evidence in drafts
-- Other `local` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- `local.workspace.index` - populate the index before search
+- `local.workspace.synthesize` - consume search evidence in drafts
+- Other `local` bundle skills - see bundle [USAGE.md](../USAGE.md)

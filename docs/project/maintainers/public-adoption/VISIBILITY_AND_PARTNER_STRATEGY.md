@@ -10,7 +10,7 @@ This document defines a practical, step-by-step public-adoption strategy for Int
 
 It is intentionally a **public-safe visibility and partner strategy**, not a confidential fundraising plan, valuation memo, acquisition strategy, investor data room, sales forecast, or binding commercial offer.
 
-Intergrax remains **source-available proprietary**. It is **not** open source. Evaluation, collaboration, Authorized Forks, patches, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](../../../../LICENSE). Controlled internal evaluation by organizations — including multiple Evaluation Participants — is permitted. Contributors retain copyright in Code Contributions and Documentation Contributions but license submitted contributions to the maintainer upon submission. Production use, commercial use, hosted services, redistribution, incorporation into products or services, and commercial derivative works require **explicit written permission**. See [`LICENSE`](../../../../LICENSE), [`../../community/COLLABORATION.md`](../../community/COLLABORATION.md), and [`../../community/PARTNERS.md`](../../community/PARTNERS.md).
+Intergrax remains **source-available proprietary**. It is **not** open source. Evaluation, collaboration, Authorized Forks, patches, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](../../../../LICENSE). Controlled internal evaluation by organizations - including multiple Evaluation Participants - is permitted. Contributors retain copyright in Code Contributions and Documentation Contributions but license submitted contributions to the maintainer upon submission. Production use, commercial use, hosted services, redistribution, incorporation into products or services, and commercial derivative works require **explicit written permission**. See [`LICENSE`](../../../../LICENSE), [`../../community/COLLABORATION.md`](../../community/COLLABORATION.md), and [`../../community/PARTNERS.md`](../../community/PARTNERS.md).
 
 ---
 
@@ -99,7 +99,7 @@ Use this message consistently:
 
 Expanded version:
 
-> **Intergrax proves itself through LKW — a real local knowledge application that exercises RAG, policy, trace, evidence, tool execution, observability export, and product-host boundaries end-to-end.**
+> **Intergrax proves itself through LKW - a real local knowledge application that exercises RAG, policy, trace, evidence, tool execution, observability export, and product-host boundaries end-to-end.**
 
 ---
 
@@ -174,7 +174,7 @@ main review issue
 
 Preferred headline:
 
-> **Harness AI / Agent OS runtime for governed agent applications — separating domain decisions, policy-controlled execution, orchestration, and product-host boundaries.**
+> **Harness AI / Agent OS runtime for governed agent applications - separating domain decisions, policy-controlled execution, orchestration, and product-host boundaries.**
 
 Alternative problem-first headline:
 
@@ -313,16 +313,16 @@ Before external promotion, prepare a compact public package.
 Recommended 2-4 minute demo:
 
 ```text
-0:00 — Problem: agent demos are not governed products
-0:20 — Intergrax model: Application → Nexus → Agent → Harness → Tools/RAG
-0:45 — Start Quick Start or LKW stack
-1:15 — Submit LKW request
-1:45 — Show run_id
-2:00 — Show Kibana timeline
-2:30 — Show tool_requested/tool_completed
-2:50 — Show proof helper PASS
-3:10 — Explain what this proves and does not prove
-3:40 — CTA: review the proof / contact for design-partner fit
+0:00 - Problem: agent demos are not governed products
+0:20 - Intergrax model: Application → Nexus → Agent → Harness → Tools/RAG
+0:45 - Start Quick Start or LKW stack
+1:15 - Submit LKW request
+1:45 - Show run_id
+2:00 - Show Kibana timeline
+2:30 - Show tool_requested/tool_completed
+2:50 - Show proof helper PASS
+3:10 - Explain what this proves and does not prove
+3:40 - CTA: review the proof / contact for design-partner fit
 ```
 
 ### 6.3 What not to claim
@@ -558,7 +558,7 @@ For Intergrax, launch only after creating:
 Potential positioning:
 
 ```text
-Intergrax — governed Agent OS runtime for AI applications
+Intergrax - governed Agent OS runtime for AI applications
 ```
 
 Avoid launching LKW as if it were a consumer product unless LKW becomes a standalone product.
@@ -964,7 +964,7 @@ Can a platform make agent/application/runtime boundaries, policy-controlled tool
 The proof path is LKW:
 task → agent → rag.retrieve → runtime events → policy-safe export → Elasticsearch/Kibana timeline → duplicate/safety PASS.
 
-Would you be open to 15 minutes of critical feedback? I am not looking for generic praise — I am looking for where the proof is unclear or not convincing.
+Would you be open to 15 minutes of critical feedback? I am not looking for generic praise - I am looking for where the proof is unclear or not convincing.
 ```
 
 ### 13.3 Design-partner outreach message
@@ -1013,7 +1013,7 @@ Use five recurring pillars:
 
 ### 14.2 LinkedIn post sequence
 
-#### Post 1 — Problem
+#### Post 1 - Problem
 
 ```text
 Most AI agents work in demos.
@@ -1027,7 +1027,7 @@ The hard part begins when a team asks:
 This is why I am building Intergrax as a governed Agent OS runtime rather than another single-agent demo.
 ```
 
-#### Post 2 — LKW proof
+#### Post 2 - LKW proof
 
 ```text
 LKW is not the product thesis.
@@ -1037,7 +1037,7 @@ It exists to test whether Intergrax can run a real application path:
 Task → Agent → Tool → Runtime events → Policy-safe export → Kibana timeline → PASS.
 ```
 
-#### Post 3 — Lessons learned
+#### Post 3 - Lessons learned
 
 ```text
 Building LKW forced platform fixes that a synthetic demo would not expose:
@@ -1050,7 +1050,7 @@ Building LKW forced platform fixes that a synthetic demo would not expose:
 This is why real product-host proofs matter.
 ```
 
-#### Post 4 — Reviewer ask
+#### Post 4 - Reviewer ask
 
 ```text
 I am looking for 10 technical reviewers to challenge one claim:
@@ -1146,7 +1146,7 @@ Avoid spending a week only planning.
 
 ## 17. Launch sequence
 
-### 17.1 Phase 0 — Proof completion
+### 17.1 Phase 0 - Proof completion
 
 Goal: make LKW proof-complete.
 
@@ -1166,7 +1166,7 @@ Exit criteria:
 An external reviewer can understand the claim, inspect the proof, and provide feedback without a private explanation.
 ```
 
-### 17.2 Phase 1 — Quiet reviewer loop
+### 17.2 Phase 1 - Quiet reviewer loop
 
 Goal: get quality feedback before broad launch.
 
@@ -1187,7 +1187,7 @@ Success metric:
 1 serious design-partner style conversation
 ```
 
-### 17.3 Phase 2 — Public technical launch
+### 17.3 Phase 2 - Public technical launch
 
 Goal: create visible technical signal.
 
@@ -1215,7 +1215,7 @@ Success metric:
 1+ serious technical conversation
 ```
 
-### 17.4 Phase 3 — Partner discovery
+### 17.4 Phase 3 - Partner discovery
 
 Goal: convert interest into conversations.
 
@@ -1234,7 +1234,7 @@ Success metric:
 1 potential pilot or advisory opportunity
 ```
 
-### 17.5 Phase 4 — Investor/scout visibility
+### 17.5 Phase 4 - Investor/scout visibility
 
 Goal: become discoverable and credible to investors/scouts.
 
@@ -1493,7 +1493,7 @@ Avoid:
 
 ## 23. 14-day execution plan
 
-### Day 1-2 — Proof visibility
+### Day 1-2 - Proof visibility
 
 - Add Kibana screenshot.
 - Add proof-helper PASS screenshot.
@@ -1501,32 +1501,32 @@ Avoid:
 - Add or designate main review issue.
 - Update README with visual proof.
 
-### Day 3-4 — Proof story
+### Day 3-4 - Proof story
 
 - Write `What LKW proves about Intergrax`.
 - Write `What LKW forced us to fix in the platform`.
 - Add links from README and LKW proof.
 
-### Day 5-6 — Demo recording
+### Day 5-6 - Demo recording
 
 - Record 2-4 minute demo.
 - Add link to README and LKW proof.
 - Prepare short description for sharing.
 
-### Day 7-10 — Quiet reviewer outreach
+### Day 7-10 - Quiet reviewer outreach
 
 - Send 30 targeted messages.
 - Ask for criticism of one claim.
 - Direct all feedback to one issue.
 - Record objections and friction.
 
-### Day 11-12 — Adjust docs
+### Day 11-12 - Adjust docs
 
 - Fix top friction points.
 - Add “changed after feedback” note.
 - Keep scope narrow.
 
-### Day 13-14 — Public post
+### Day 13-14 - Public post
 
 - Publish LinkedIn post.
 - Share in one selected community.
@@ -1536,7 +1536,7 @@ Avoid:
 
 ## 24. 90-day plan
 
-### Month 1 — Proof and reviewer loop
+### Month 1 - Proof and reviewer loop
 
 Goal:
 
@@ -1552,7 +1552,7 @@ Deliverables:
 - reviewer outreach;
 - first public feedback loop.
 
-### Month 2 — Design-partner discovery
+### Month 2 - Design-partner discovery
 
 Goal:
 
@@ -1567,7 +1567,7 @@ Deliverables:
 - 3-5 partner conversations;
 - one concrete pilot candidate.
 
-### Month 3 — Commercial and investor packaging
+### Month 3 - Commercial and investor packaging
 
 Goal:
 

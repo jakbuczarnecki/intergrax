@@ -4,7 +4,7 @@
 
 ## Purpose
 
-**Orchestrated batch jobs**: trigger eval runs, RAG refresh pipelines, or Prefect/Airflow workflows and monitor completion. Use when agents coordinate offline work — not for synchronous user chat.
+**Orchestrated batch jobs**: trigger eval runs, RAG refresh pipelines, or Prefect/Airflow workflows and monitor completion. Use when agents coordinate offline work - not for synchronous user chat.
 
 ## How it works
 
@@ -41,5 +41,5 @@ Wire `workflow_orchestrator` slug (`prefect`, `airflow`, `temporal`, etc.).
 
 ## Related skills
 
-- `rag.document_ingest` — often chained after refresh workflow
-- `ops.trace_debug` — debug failed workflow runs
+- `rag.document_ingest` - often chained after refresh workflow
+- `ops.trace_debug` - debug failed workflow runs

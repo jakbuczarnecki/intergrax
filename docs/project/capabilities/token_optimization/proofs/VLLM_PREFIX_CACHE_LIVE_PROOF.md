@@ -1,4 +1,4 @@
-# Intergrax Token Optimization — vLLM Prefix-Cache Live Proof
+# Intergrax Token Optimization - vLLM Prefix-Cache Live Proof
 
 > **See also:** [Token Optimization Engine guide](../README.md) · [Architecture](../../architecture/TOKEN_OPTIMIZATION.md) · [Plan](../../plan/TOKEN_OPTIMIZATION.md)
 
@@ -127,7 +127,7 @@ Use **two terminals** on Windows: Terminal A for vLLM logs, Terminal B for check
 
 All commands assume the **repository root** as the working directory.
 
-### Step 1 — Verify repository tooling
+### Step 1 - Verify repository tooling
 
 **Goal:** Confirm `uv` can run Python in this checkout.
 
@@ -147,7 +147,7 @@ Python 3.12.x
 
 **Failure signal:** `uv` or Python not found → **ENVIRONMENT_BLOCKED**.
 
-### Step 2 — Verify Docker
+### Step 2 - Verify Docker
 
 **Goal:** Confirm Docker client, server, and Compose are available.
 
@@ -167,7 +167,7 @@ docker compose version
 
 **Failure signal:** Cannot connect to Docker daemon → **ENVIRONMENT_BLOCKED**.
 
-### Step 3 — Verify NVIDIA GPU
+### Step 3 - Verify NVIDIA GPU
 
 **Goal:** Confirm a GPU is visible on the host.
 
@@ -189,7 +189,7 @@ NVIDIA GeForce RTX 4080 Laptop GPU, 12282 MiB, ...
 
 **Failure signal:** `nvidia-smi` fails or returns no GPU → **ENVIRONMENT_BLOCKED**.
 
-### Step 4 — Select canonical model
+### Step 4 - Select canonical model
 
 **Goal:** Pin the 3B proof model for Compose and the Intergrax runner.
 
@@ -214,11 +214,11 @@ Qwen/Qwen2.5-3B-Instruct
 
 **Failure signal:** Empty or wrong model name → fix before starting vLLM.
 
-### Step 5 — Start vLLM (Terminal A)
+### Step 5 - Start vLLM (Terminal A)
 
 **Goal:** Start pinned vLLM with prefix caching and observe startup logs.
 
-**Command (Terminal A — leave running):**
+**Command (Terminal A - leave running):**
 
 ```powershell
 docker compose -f infra/docker/vllm/docker-compose.yml up --force-recreate vllm
@@ -255,13 +255,13 @@ No available memory for the cache blocks
 Engine core initialization failed
 ```
 
-Classification: **ENVIRONMENT_BLOCKED** — typically wrong model for available VRAM (7B on 12 GB) or GPU not passed to the container.
+Classification: **ENVIRONMENT_BLOCKED** - typically wrong model for available VRAM (7B on 12 GB) or GPU not passed to the container.
 
 **Container restart loop:** Compose sets `restart: unless-stopped`. After a failed start, the same startup sequence may repeat in Terminal A. That is one container being restarted, not multiple proof runs. Stop it with the cleanup command in Step 18 before retrying.
 
 **First start:** Hugging Face model download can take several minutes; wait until health succeeds (Step 6).
 
-### Step 6 — Verify health (Terminal B)
+### Step 6 - Verify health (Terminal B)
 
 **Goal:** Confirm the vLLM HTTP server is reachable on the host-mapped port.
 
@@ -283,7 +283,7 @@ StatusCode
 
 **Failure signal:** Connection error or non-200 after startup should have finished → **ENVIRONMENT_BLOCKED**.
 
-### Step 7 — Verify version
+### Step 7 - Verify version
 
 **Goal:** Confirm the pinned vLLM release.
 
@@ -305,7 +305,7 @@ version
 
 **Failure signal:** Version mismatch → **ENVIRONMENT_BLOCKED** (or **PROOF_FAILED** if the runner completes against a non-canonical server).
 
-### Step 8 — Verify required metrics
+### Step 8 - Verify required metrics
 
 **Goal:** Confirm prefix-cache metrics exist without dumping the full `/metrics` body.
 
@@ -335,7 +335,7 @@ $metrics | Where-Object {
 
 **Failure signal:** Filter returns no lines for a required name → **ENVIRONMENT_BLOCKED**.
 
-### Step 9 — Smoke inference
+### Step 9 - Smoke inference
 
 **Goal:** Confirm OpenAI-compatible chat completion works before the full proof.
 
@@ -376,7 +376,7 @@ uv run python -m intergrax.runtime.token_optimization.proofs.vllm_prefix_cache_l
 
 **Behavior:**
 
-- `manage_vllm` defaults to **false** — the runner **does not** start or stop Docker; it connects to the server you started manually.
+- `manage_vllm` defaults to **false** - the runner **does not** start or stop Docker; it connects to the server you started manually.
 - Shared/manual servers are **never** stopped by the runner.
 - Managed lifecycle (`--manage-vllm`): the runner may start vLLM via Compose; after proof it runs `docker compose … stop vllm` only when it started or recreated the container and `--keep-vllm-running` is not set.
 - The runner performs one **warmup** inference (non-measured) then **three canonical runs**.
@@ -644,5 +644,5 @@ Do not delete the `vllm_cache` volume after each proof; retained Hugging Face we
 - Managed/shared lifecycle describes server ownership, not proof correctness.
 - Cache reuse metrics are not a content-reduction benchmark.
 - vLLM prefix-cache reuse does not imply billing savings on other providers.
-- Full universal proof, checked-in public proof, and README promotion belong to **TOKEN-10F**, **TOKEN-10G**, and **TOKEN-10H** — not completed by this document.
+- Full universal proof, checked-in public proof, and README promotion belong to **TOKEN-10F**, **TOKEN-10G**, and **TOKEN-10H** - not completed by this document.
 - TOKEN-10G and TOKEN-10H must not be treated as closed based on TOKEN-10C alone.

@@ -1,4 +1,4 @@
-# TOOLS-SIDE-EFFECT-SAFETY — Brutal Docker E2E Proof
+# TOOLS-SIDE-EFFECT-SAFETY - Brutal Docker E2E Proof
 
 Platform-native proof for idempotent side-effect safety with an **external Postgres oracle**.
 

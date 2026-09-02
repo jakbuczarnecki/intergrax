@@ -125,7 +125,7 @@ Offline correctness and live model behavior are separate claims.
 - Protected-value preservation at final runtime boundary: `PROVEN`
 - Measure-only final-content preservation: `PROVEN`
 - Full model behavioral compliance: `NOT_PROVEN`
-- Model case-level compliance: `PARTIALLY_PROVEN — 14/16`
+- Model case-level compliance: `PARTIALLY_PROVEN - 14/16`
 - High-risk recognition by model: `NOT_PROVEN`
 - Deterministic high-risk runtime enforcement: `PROVEN`
 - Stable repeated outcomes: `PROVEN for two runs under this configuration`

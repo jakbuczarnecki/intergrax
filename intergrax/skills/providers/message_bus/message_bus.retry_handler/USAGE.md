@@ -28,4 +28,4 @@ Governed access to: `message_bus.get_status`, `message_bus.enqueue`, `notify.sen
 
 ## Related skills
 
-- Other `message_bus` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `message_bus` bundle skills - see bundle [USAGE.md](../USAGE.md)

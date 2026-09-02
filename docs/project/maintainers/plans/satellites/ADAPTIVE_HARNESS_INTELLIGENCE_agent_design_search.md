@@ -2,13 +2,13 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-# ADAPTIVE_HARNESS_INTELLIGENCE — ADAS / Agent Design Search Implementation Plan
+# ADAPTIVE_HARNESS_INTELLIGENCE - ADAS / Agent Design Search Implementation Plan
 
 **Parent hub:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Architecture hub:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Architecture satellite:** [`ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)
 **ADR:** [`ADR-ADAPT-002`](../../../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md)
-**Status:** Planned — Phase **AHI-ADAS-00** complete; implementation begins at **AHI-ADAS-10**  
+**Status:** Planned - Phase **AHI-ADAS-00** complete; implementation begins at **AHI-ADAS-10**  
 **Last updated:** 2026-06-22
 
 ---
@@ -69,7 +69,7 @@ Before implementing **AHI-ADAS-10**, run a scoped audit with these checks:
 
 ---
 
-## 2. Phase AHI-ADAS — Agent Design Search
+## 2. Phase AHI-ADAS - Agent Design Search
 
 **Goal:** Implement ADAS as an enterprise-grade, governed agent-candidate design loop inside `ADAPTIVE_HARNESS_INTELLIGENCE`.
 
@@ -142,7 +142,7 @@ Parallel tracing system
 
 ---
 
-## 5. Traceability — architecture section to task IDs
+## 5. Traceability - architecture section to task IDs
 
 | Architecture topic | Section | Task IDs |
 |--------------------|---------|----------|
@@ -170,7 +170,7 @@ Parallel tracing system
 
 ## 6. Master deliverables register
 
-### Phase AHI-ADAS-00 — Documentation canon and ADR
+### Phase AHI-ADAS-00 - Documentation canon and ADR
 
 **Status:** **Done** (2026-06-22)  
 **Purpose:** Establish ADAS as a canonical AHI sub-capability before implementation.
@@ -188,7 +188,7 @@ Parallel tracing system
 
 ---
 
-### Phase AHI-ADAS-10 — Contracts and candidate archive
+### Phase AHI-ADAS-10 - Contracts and candidate archive
 
 **Status:** Planned  
 **Purpose:** Add the minimal typed substrate for ADAS without executing search.
@@ -221,7 +221,7 @@ python -m compileall intergrax/runtime/adaptive/agent_design_search
 
 ---
 
-### Phase AHI-ADAS-20 — Scaffold bridge and static gate
+### Phase AHI-ADAS-20 - Scaffold bridge and static gate
 
 **Status:** Planned  
 **Purpose:** Materialize candidate agents safely through the existing scaffold and block unsafe candidates before evaluation.
@@ -252,7 +252,7 @@ pytest tests/unit/runtime/adaptive/agent_design_search/test_static_gate.py
 
 ---
 
-### Phase AHI-ADAS-30 — Candidate evaluation and utility scoring
+### Phase AHI-ADAS-30 - Candidate evaluation and utility scoring
 
 **Status:** Planned  
 **Purpose:** Compare candidate agents against baselines using existing evaluation, signal, cost, and regression concepts.
@@ -282,7 +282,7 @@ pytest tests/integration/runtime/adaptive/agent_design_search/test_candidate_eva
 
 ---
 
-### Phase AHI-ADAS-40 — Search controller and strategies
+### Phase AHI-ADAS-40 - Search controller and strategies
 
 **Status:** Planned  
 **Purpose:** Orchestrate bounded candidate search while keeping candidate generation pluggable.
@@ -311,7 +311,7 @@ pytest tests/unit/runtime/adaptive/agent_design_search/test_search_policy.py
 
 ---
 
-### Phase AHI-ADAS-50 — Hooks and lifecycle events
+### Phase AHI-ADAS-50 - Hooks and lifecycle events
 
 **Status:** Planned  
 **Purpose:** Make ADAS extensible without letting plugins bypass safety boundaries.
@@ -338,7 +338,7 @@ pytest tests/unit/runtime/adaptive/agent_design_search/test_events.py
 
 ---
 
-### Phase AHI-ADAS-60 — Optional Tier-2 MAS agents
+### Phase AHI-ADAS-60 - Optional Tier-2 MAS agents
 
 **Status:** Planned  
 **Purpose:** Add optional agent-based design strategies that consume ADAS contracts but do not own the control plane.
@@ -365,7 +365,7 @@ pytest tests/integration/runtime/adaptive/agent_design_search/test_mas_strategy_
 
 ---
 
-### Phase AHI-ADAS-70 — Shadow / canary / promotion bridge
+### Phase AHI-ADAS-70 - Shadow / canary / promotion bridge
 
 **Status:** Planned  
 **Purpose:** Safely make evaluated candidates routable through governed active-registration semantics.
@@ -377,8 +377,8 @@ pytest tests/integration/runtime/adaptive/agent_design_search/test_mas_strategy_
 | AHI-ADAS-70.3 | Shadow registration bridge | Planned | Critical | Candidate can be routed to shadow evaluation without production traffic |
 | AHI-ADAS-70.4 | Canary allocation bridge | Planned | High | Tenant allowlist / traffic percentage; no default broad rollout |
 | AHI-ADAS-70.5 | Human approval store/link | Planned | High | Approval record included in evidence bundle |
-| AHI-ADAS-70.6 | Active registration mode A — registry pointer | Planned | Critical | Active registry entry points to candidate/package ref; rollback pointer preserved |
-| AHI-ADAS-70.7 | Active registration mode E — tenant/application binding | Planned | Critical | Binding links objective/candidate to tenant/application scope |
+| AHI-ADAS-70.6 | Active registration mode A - registry pointer | Planned | Critical | Active registry entry points to candidate/package ref; rollback pointer preserved |
+| AHI-ADAS-70.7 | Active registration mode E - tenant/application binding | Planned | Critical | Binding links objective/candidate to tenant/application scope |
 | AHI-ADAS-70.8 | Optional modes B–D declarations | Planned | Medium | Contract version, routing profile, materialization require explicit mode selection |
 | AHI-ADAS-70.9 | Rollback pointer model | Planned | Critical | Previous active registration snapshot restored on failure |
 | AHI-ADAS-70.10 | Candidate verification target | Planned | High | Verification loop can compare promoted candidate vs baseline |
@@ -396,7 +396,7 @@ pytest tests/integration/runtime/adaptive/agent_design_search/test_candidate_pro
 
 ---
 
-### Phase AHI-ADAS-80 — Optional Tier-3 ADAS Lab application
+### Phase AHI-ADAS-80 - Optional Tier-3 ADAS Lab application
 
 **Status:** Planned  
 **Purpose:** Provide operator-facing workflow without moving ADAS logic into Tier-3.
@@ -422,7 +422,7 @@ pytest tests/integration/applications/adas_lab/
 
 ---
 
-### Phase AHI-ADAS-90 — Enterprise hardening
+### Phase AHI-ADAS-90 - Enterprise hardening
 
 **Status:** Planned  
 **Purpose:** Production-readiness controls for regulated or enterprise deployments.

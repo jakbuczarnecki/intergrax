@@ -28,4 +28,4 @@ Governed access to: `crm.get_account`, `collaboration.send_mail`, `notify.send`.
 
 ## Related skills
 
-- Other `collaboration` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `collaboration` bundle skills - see bundle [USAGE.md](../USAGE.md)

@@ -28,4 +28,4 @@ Governed access to: `cache.set`, `cache.get`, `rag.retrieve`.
 
 ## Related skills
 
-- Other `cache` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `cache` bundle skills - see bundle [USAGE.md](../USAGE.md)

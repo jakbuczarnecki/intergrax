@@ -1,8 +1,8 @@
-# Governed Contractor — Implementation Plan
+# Governed Contractor - Implementation Plan
 
-**The implementation map** for the Governed External Contractor (GEC) vertical — phases, status, and verification.
+**The implementation map** for the Governed External Contractor (GEC) vertical - phases, status, and verification.
 
-**Status:** Working draft (2026-07-20) — **GEC-0…GEC-6 Done**; GEC-7…GEC-11 Planned  
+**Status:** Working draft (2026-07-20) - **GEC-0…GEC-6 Done**; GEC-7…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Agent tracker:** [`agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md`](../../../agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md)
@@ -18,7 +18,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 |-------|--------|
 | Host purpose, trust, lifecycle, non-goals | **ARCHITECTURE.md** |
 | Task status, phases, gates | **This file** |
-| Application architecture decisions | **`adr`** — [`adr/README.md`](adr/README.md) |
+| Application architecture decisions | **`adr`** - [`adr/README.md`](adr/README.md) |
 | Deploy runbook | **BUILD_AND_DEPLOY.md** |
 | Partner quickstart | **PARTNER_HANDOFF.md** |
 | Adapter contracts / prohibited duties | `../../../agents/external_contractor_adapter/docs` |
@@ -58,7 +58,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-0 — Bootstrap and canonical documentation
+## GEC-0 - Bootstrap and canonical documentation
 
 | Field | Content |
 |-------|---------|
@@ -74,7 +74,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-1 — Contractor domain contracts
+## GEC-1 - Contractor domain contracts
 
 | Field | Content |
 |-------|---------|
@@ -93,17 +93,17 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | Required GEC concept | Existing Intergrax mechanism | Decision |
 |----------------------|------------------------------|----------|
 | Intergrax task identity | `Task.task_id`, `AgentRunRequest` / result `run_id` strings | **reuse** |
-| External task identity | No external-task foreign-key contract | **new** — `ExternalTaskCorrelation.external_task_id` (foreign key only) |
+| External task identity | No external-task foreign-key contract | **new** - `ExternalTaskCorrelation.external_task_id` (foreign key only) |
 | Correlation | `AgentRunRequest.correlation_id` field pattern | **reuse** (optional string on correlation model) |
 | Idempotency | Tool/runtime `idempotency_key` string + `IdempotencyStore` | **reuse** (optional key field; no new store) |
-| Contractor identity | Integration catalog `provider_id` / slug; no Agent Card type | **compose/new** — `ExternalContractorIdentity` wraps `provider_id` + external ids + optional descriptor ref/digest (no URL) |
-| Contractor status | Nexus `TaskState` (orchestration); no quote commercial stages | **new** — `ExternalWorkStatus` (Nexus `TaskState` unchanged) |
-| Quote / money | `AgentRunCost` float USD token proxy; budgets are token/limit scopes | **new** — `MoneyAmount` (`Decimal`) + `CommercialQuote` |
-| Quote acceptance | `HumanDecisionRecord.decision_id`, `ExecutionInterrupt.interrupt_id`, `ActorIdentity`, `PolicyDecision` | **compose/new** — `QuoteAcceptanceEvidence` refs only; no authz/payment |
-| Deliverable reference | `ArtifactRef` / `ApplicationArtifactRef` / workspace refs (require harness provenance) | **compose/new** — `ExternalDeliverableRef` (workspace-safe URI + digest/size conventions) |
-| Content digest | Hosted `sha256:<64 hex>` convention | **reuse** — `validate_content_digest` |
-| Expiration | Per-model datetime validators elsewhere | **reuse** pattern — aware UTC + `expires_at > created_at` |
-| Acceptance matching | `ValidationResult` | **reuse** — `validate_quote_acceptance_match` |
+| Contractor identity | Integration catalog `provider_id` / slug; no Agent Card type | **compose/new** - `ExternalContractorIdentity` wraps `provider_id` + external ids + optional descriptor ref/digest (no URL) |
+| Contractor status | Nexus `TaskState` (orchestration); no quote commercial stages | **new** - `ExternalWorkStatus` (Nexus `TaskState` unchanged) |
+| Quote / money | `AgentRunCost` float USD token proxy; budgets are token/limit scopes | **new** - `MoneyAmount` (`Decimal`) + `CommercialQuote` |
+| Quote acceptance | `HumanDecisionRecord.decision_id`, `ExecutionInterrupt.interrupt_id`, `ActorIdentity`, `PolicyDecision` | **compose/new** - `QuoteAcceptanceEvidence` refs only; no authz/payment |
+| Deliverable reference | `ArtifactRef` / `ApplicationArtifactRef` / workspace refs (require harness provenance) | **compose/new** - `ExternalDeliverableRef` (workspace-safe URI + digest/size conventions) |
+| Content digest | Hosted `sha256:<64 hex>` convention | **reuse** - `validate_content_digest` |
+| Expiration | Per-model datetime validators elsewhere | **reuse** pattern - aware UTC + `expires_at > created_at` |
+| Acceptance matching | `ValidationResult` | **reuse** - `validate_quote_acceptance_match` |
 
 **Why new abstractions are platform-level**
 
@@ -115,7 +115,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-2 — Canonical External Work model and provider-neutral integration boundary
+## GEC-2 - Canonical External Work model and provider-neutral integration boundary
 
 | Field | Content |
 |-------|---------|
@@ -135,13 +135,13 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 |---------|-------------------|----------|
 | Provider / work identity | `ExternalContractorIdentity`, `ExternalTaskCorrelation` | **reuse** |
 | Quote / acceptance / status / deliverables | GEC-1 models | **reuse** |
-| Discovery metadata | No external-work descriptor | **new** — `ExternalWorkProviderDescriptor` (+ `ExternalWorkCapability`) |
-| Integration interface style | Sync `Protocol` under `integrations/contracts` | **extend** — `ExternalWorkIntegration` |
-| Result/error model | `IntegrationError` family | **extend** — `ExternalWorkError` + `ExternalWorkErrorCode` |
+| Discovery metadata | No external-work descriptor | **new** - `ExternalWorkProviderDescriptor` (+ `ExternalWorkCapability`) |
+| Integration interface style | Sync `Protocol` under `integrations/contracts` | **extend** - `ExternalWorkIntegration` |
+| Result/error model | `IntegrationError` family | **extend** - `ExternalWorkError` + `ExternalWorkErrorCode` |
 | Cancellation / idempotency | Idempotency keys on correlation + tool ledger (tools only) | **reuse** keys on mutating ops; document retry rules (no new middleware) |
-| Timeline | Runtime traces / events (different domain) | **new** — `ExternalWorkTimelineEvent` (provider-observed facts) |
-| Provider evidence | ProofReceipt (later) / `GovernedProofProfile` (GEC-6) | **new** refs only — `ExternalProviderEvidenceRef` (distinct from proof) |
-| Registry/binding | `IntegrationProfile` / `IntegrationCategory` | **reuse** — `external_work` slot; catalog slug deferred to provider phase |
+| Timeline | Runtime traces / events (different domain) | **new** - `ExternalWorkTimelineEvent` (provider-observed facts) |
+| Provider evidence | ProofReceipt (later) / `GovernedProofProfile` (GEC-6) | **new** refs only - `ExternalProviderEvidenceRef` (distinct from proof) |
+| Registry/binding | `IntegrationProfile` / `IntegrationCategory` | **reuse** - `external_work` slot; catalog slug deferred to provider phase |
 
 **Why “External Work” not “Contractor”:** same boundary serves AI contractors, human services, SaaS jobs, and future protocols. GEC remains the first consumer.
 
@@ -149,7 +149,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-3 — Tier-2 adapter agent
+## GEC-3 - Tier-2 adapter agent
 
 | Field | Content |
 |-------|---------|
@@ -166,7 +166,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-4 — Governed Continuation composition
+## GEC-4 - Governed Continuation composition
 
 | Field | Content |
 |-------|---------|
@@ -184,7 +184,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-5 — Meaningful side-effect policy
+## GEC-5 - Meaningful side-effect policy
 
 | Field | Content |
 |-------|---------|
@@ -200,7 +200,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-6 — Governed proof profile
+## GEC-6 - Governed proof profile
 
 | Field | Content |
 |-------|---------|
@@ -216,7 +216,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-7 — Tier-3 API and proof workflow
+## GEC-7 - Tier-3 API and proof workflow
 
 | Field | Content |
 |-------|---------|
@@ -232,7 +232,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-8 — Partner handoff and mapping
+## GEC-8 - Partner handoff and mapping
 
 | Field | Content |
 |-------|---------|
@@ -248,7 +248,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-9 — Deterministic stub integration
+## GEC-9 - Deterministic stub integration
 
 | Field | Content |
 |-------|---------|
@@ -264,7 +264,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-10 — Live external partner integration
+## GEC-10 - Live external partner integration
 
 | Field | Content |
 |-------|---------|
@@ -280,7 +280,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-11 — Public end-to-end proof and PASS matrix
+## GEC-11 - Public end-to-end proof and PASS matrix
 
 | Field | Content |
 |-------|---------|
@@ -312,7 +312,7 @@ uv run pytest tests/unit/applications/test_application_deploy_triad.py -q -k gov
 uv run pytest tests/unit/scaffold/test_adr_scaffold.py -q -k governed_contractor
 ```
 
-Local run (scaffold smoke only — not GEC domain proof):
+Local run (scaffold smoke only - not GEC domain proof):
 
 ```bash
 cp applications/governed_contractor_application/.env.example applications/governed_contractor_application/.env
@@ -324,4 +324,4 @@ curl -s http://127.0.0.1:8000/health
 
 ## 3. Recommended first task after GEC-6
 
-**GEC-7:** Tier-3 API and proof workflow — expose intake/quote/status and proof-profile surfaces (still no wallet/payment product; ProofReceipt persistence remains later).
+**GEC-7:** Tier-3 API and proof workflow - expose intake/quote/status and proof-profile surfaces (still no wallet/payment product; ProofReceipt persistence remains later).

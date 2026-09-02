@@ -76,6 +76,14 @@ class RoutingEvaluatingLLMAdapter(LLMAdapter):
     def inner_adapter(self) -> LLMAdapter:
         return self._inner
 
+    @property
+    def context_provider(self) -> RoutingContextProvider:
+        return self._context_provider
+
+    @property
+    def on_evaluated_observer(self) -> RoutingEvaluationObserver | None:
+        return self._on_evaluated
+
     def set_context_provider(self, provider: RoutingContextProvider) -> None:
         self._context_provider = provider
 

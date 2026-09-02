@@ -13,16 +13,16 @@ After ACP fleet migration (Wave 8), no Tier-2 agent used `RuntimeEngine`, `NoPla
 
 Agent execution is exclusively:
 
-- **ACP** — `IntergraxAgent.run` / `on_next_step` + `HarnessKernel`
-- **UAEP shim** — `get_steps` / `run_step` on legacy stubs only (gate tests), not production agents
+- **ACP** - `IntergraxAgent.run` / `on_next_step` + `HarnessKernel`
+- **UAEP shim** - `get_steps` / `run_step` on legacy stubs only (gate tests), not production agents
 
 ## Decision
 
 1. **Delete** `intergrax/runtime/nexus/pipelines`, `runtime_steps`, `engine/runtime.py` (`RuntimeEngine`), engine planner stack (`engine_planner*`, `plan_loop_controller`, `step_planner`), and `uaep_pipeline_bridge.py`.
 2. **Preserve** reusable tool/context helpers under `nexus/tools` (`tool_loop.py`, `plan_context_invocation.py`) and `nexus/context/tool_context_helpers.py`.
-3. **Remove** `RuntimeConfig.pipeline`, `plan_loop_policy`, and related planner config fields — policy bundle remains the source for plan-loop policy when needed.
-4. **Scaffold** — ACP-only; `--uaep` and `steps/pipeline.py` generation removed.
-5. **Nexus multi-agent planning** (`task_planner`, `nexus_llm_plan_builder`) is unchanged — distinct from the retired per-run pipeline.
+3. **Remove** `RuntimeConfig.pipeline`, `plan_loop_policy`, and related planner config fields - policy bundle remains the source for plan-loop policy when needed.
+4. **Scaffold** - ACP-only; `--uaep` and `steps/pipeline.py` generation removed.
+5. **Nexus multi-agent planning** (`task_planner`, `nexus_llm_plan_builder`) is unchanged - distinct from the retired per-run pipeline.
 
 ## Consequences
 

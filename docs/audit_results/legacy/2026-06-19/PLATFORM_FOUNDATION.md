@@ -1,4 +1,4 @@
-# Audit result — `PLATFORM_FOUNDATION`
+# Audit result - `PLATFORM_FOUNDATION`
 
 **Run:** 2026-06-19 · **Mode:** audit_only (Mode A2 interactive)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated (L3)
@@ -36,10 +36,10 @@
 | PF-LEG-02 | P3 | Legacy booleans removed from `ToolInvocationPlan` | `tool_runtime.py`; gate 1498 passed, no use_rag DeprecationWarning | **closed** → PF-MAINT-LEG-02 |
 | PF-AUDIT-02 | P4 | Phase K business agents (K.1/K.2) | plan §6.3 | **deferred** |
 | PF-AUDIT-03 | P4 | Long-term §50 marketplace/visual builder | architecture / DX canon | **deferred** |
-| PF-TIER-01 | — | Tier boundaries enforced | tier import gate scripts | **closed** |
-| PF-DOC-01 | — | 22 domain pairs 1:1 | `check_docs_domain_pairs.py` | **closed** |
-| PF-GATE-01 | — | getattr ban; ADR; capability graph | gate scripts (2026-06-19) | **closed** |
-| PF-CG-01 | — | Capability graph via `harness_manifest_catalog` | `harness_manifest_catalog.py` | **closed** |
+| PF-TIER-01 | - | Tier boundaries enforced | tier import gate scripts | **closed** |
+| PF-DOC-01 | - | 22 domain pairs 1:1 | `check_docs_domain_pairs.py` | **closed** |
+| PF-GATE-01 | - | getattr ban; ADR; capability graph | gate scripts (2026-06-19) | **closed** |
+| PF-CG-01 | - | Capability graph via `harness_manifest_catalog` | `harness_manifest_catalog.py` | **closed** |
 
 No open P0/P1 in PLATFORM_FOUNDATION gate-maintenance scope.
 
@@ -76,11 +76,11 @@ All green (2026-06-19): **1498 passed** gate tests; **197** integration slugs af
 
 ## Backlog
 
-- Phase K K.1/K.2 — deferred §6.3
-- Marketplace/visual builder — §50 deferred
+- Phase K K.1/K.2 - deferred §6.3
+- Marketplace/visual builder - §50 deferred
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — Harness-as-product frame intact; four-tier boundaries CI-enforced. Next interactive domain: `UNIFIED_EXECUTION_RUNTIME`.
+**Architecturally Mature (L3)** - Harness-as-product frame intact; four-tier boundaries CI-enforced. Next interactive domain: `UNIFIED_EXECUTION_RUNTIME`.

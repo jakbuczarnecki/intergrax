@@ -1,4 +1,4 @@
-# Local Workspace Application — Implementation Plan
+# Local Workspace Application - Implementation Plan
 
 **Status:** Product-first MVP roadmap (2026-07-31)  
 **Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
@@ -16,28 +16,28 @@
 
 ```text
 CURRENT PRODUCT LEVEL
-Backend Product Alpha — LKW MVP / Hybrid Knowledge Workspace
+Backend Product Alpha - LKW MVP / Hybrid Knowledge Workspace
 
 LAST ACCEPTED PRODUCT BLOCK
-LKW-CONVERSATION-CONTEXT-1C — ACCEPTED / CLOSED
-LKW-CONVERSATIONAL-FRONTEND-1 — ACCEPTED / CLOSED
+LKW-CONVERSATION-CONTEXT-1C - ACCEPTED / CLOSED
+LKW-CONVERSATIONAL-FRONTEND-1 - ACCEPTED / CLOSED
 Supporting accepted blocks:
-  LKW-KNOWLEDGE-ACCESS-1 — ACCEPTED / CLOSED
-  LKW-HYBRID-ASK-1 — ACCEPTED / CLOSED
-  LKW-HYBRID-ASK-1A — ACCEPTED / CLOSED
-  LKW-HYBRID-ASK-1B — ACCEPTED / CLOSED
-  LKW-HYBRID-ASK-1C — ACCEPTED / CLOSED
-  LKW-CONVERSATIONAL-INTERACTION-1A — ACCEPTED / CLOSED
-  LKW-CONVERSATIONAL-INTERACTION-1B — ACCEPTED / CLOSED
-  LKW-CONVERSATIONAL-INTERACTION-1C — ACCEPTED / CLOSED
-  LKW-CONVERSATION-CONTEXT-1B2 — ACCEPTED / CLOSED
-  LKW-CONVERSATION-CONTEXT-1B3 — ACCEPTED / CLOSED
+  LKW-KNOWLEDGE-ACCESS-1 - ACCEPTED / CLOSED
+  LKW-HYBRID-ASK-1 - ACCEPTED / CLOSED
+  LKW-HYBRID-ASK-1A - ACCEPTED / CLOSED
+  LKW-HYBRID-ASK-1B - ACCEPTED / CLOSED
+  LKW-HYBRID-ASK-1C - ACCEPTED / CLOSED
+  LKW-CONVERSATIONAL-INTERACTION-1A - ACCEPTED / CLOSED
+  LKW-CONVERSATIONAL-INTERACTION-1B - ACCEPTED / CLOSED
+  LKW-CONVERSATIONAL-INTERACTION-1C - ACCEPTED / CLOSED
+  LKW-CONVERSATION-CONTEXT-1B2 - ACCEPTED / CLOSED
+  LKW-CONVERSATION-CONTEXT-1B3 - ACCEPTED / CLOSED
 
 CURRENT DIRECT LKW TASK
-LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 — READY_FOR_REVIEW
+LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 - READY_FOR_REVIEW
 
 NEXT DIRECT LKW TASKS
-LKW-INDEXED-SOURCE-LIFECYCLE-1 — PLANNED
+LKW-INDEXED-SOURCE-LIFECYCLE-1 - PLANNED
 
 PARALLEL NON-BLOCKING PLATFORM/PLUGIN TRACKS
 Vendor Knowledge core session; individual vendor-plugin sessions;
@@ -148,18 +148,18 @@ tracks.
 
 ## Protocol v2 LKW product proof remediation (2026-08-18)
 
-Accepted [`LKW_PRODUCT_PROOF`](../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–06** (2026-08-21). All blocks below are **ACCEPTED / PLANNED** — not IMPLEMENTED, VERIFIED, or CLOSED.
+Accepted [`LKW_PRODUCT_PROOF`](../../../docs/audit_results/2026-08-18/LKW_PRODUCT_PROOF.md) findings **01–06** (2026-08-21). All blocks below are **ACCEPTED / PLANNED** - not IMPLEMENTED, VERIFIED, or CLOSED.
 
-### LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY — P0/P1
+### LKW-PROOF-EXECUTION-QUALIFICATION-INTEGRITY - P0/P1
 
 **Findings:** LKW-PROOF-04, LKW-PROOF-05  
 **Owner:** shared proof manifest/runner (`scripts/proof/`); LKW consumes manifest authority  
 
 - Explicit required vs optional proof membership in canonical manifest.
 - `--profile live` must not return shell success when required live proofs were blocked (`PASS_WITH_BLOCKED` limitation until remediated).
-- Fold Governed Evidence Decision Proof (`advanced_flagship_proof`) into canonical `ProofManifestEntry` and public reference governance — no second flagship proof path.
+- Fold Governed Evidence Decision Proof (`advanced_flagship_proof`) into canonical `ProofManifestEntry` and public reference governance - no second flagship proof path.
 
-### LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY — P2
+### LKW-PROOF-REVIEWER-SEMANTICS-INTEGRITY - P2
 
 **Findings:** LKW-PROOF-06  
 **Owner:** LKW plan + [`PROOFS.md`](../../../docs/project/proofs/PROOFS.md)  
@@ -167,10 +167,10 @@ Accepted [`LKW_PRODUCT_PROOF`](../../../docs/audit_results/2026-08-18/LKW_PRODUC
 - Make proof profile semantics explicit: `--profile quick` does **not** execute Product Quick Start today.
 - Either add bounded flagship LKW product smoke to QUICK or rename/document profiles so QUICK cannot be read as Product Quick Start coverage.
 
-### Cross-link — LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY — P0
+### Cross-link - LKW-PROOF-SOURCE-PROVENANCE-INTEGRITY - P0
 
 **Findings:** LKW-PROOF-01, LKW-PROOF-02, LKW-PROOF-03  
-**Primary owner:** [`docs/project/maintainers/plans/PROOF_RECEIPTS.md`](../../../docs/project/maintainers/plans/PROOF_RECEIPTS.md) — LKW consumes shared receipt/provenance authority; does not invent private receipt contract.
+**Primary owner:** [`docs/project/maintainers/plans/PROOF_RECEIPTS.md`](../../../docs/project/maintainers/plans/PROOF_RECEIPTS.md) - LKW consumes shared receipt/provenance authority; does not invent private receipt contract.
 
 This section does **not** change the current direct LKW roadmap task (`LKW-PLUGIN-CAPABILITY-CONFIGURATION-1`) or falsely mark Product 1.0 work complete.
 
@@ -183,8 +183,8 @@ implementation has started.
 
 ### A. Conversation Context completion
 
-1. `LKW-CONVERSATION-CONTEXT-1B2` — **ACCEPTED / CLOSED**.
-2. `LKW-CONVERSATION-CONTEXT-1C` — **ACCEPTED / CLOSED**: integrate bounded
+1. `LKW-CONVERSATION-CONTEXT-1B2` - **ACCEPTED / CLOSED**.
+2. `LKW-CONVERSATION-CONTEXT-1C` - **ACCEPTED / CLOSED**: integrate bounded
    durable thread-memory reconstruction and exactly-once exchange persistence.
 
 Required outcome:
@@ -197,7 +197,7 @@ Required outcome:
 
 ### B. Generic plugin capability consumption
 
-`LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` — **READY_FOR_REVIEW**.
+`LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` - **READY_FOR_REVIEW**.
 
 The product must be able to:
 
@@ -233,7 +233,7 @@ problem-radar finding, not an LKW vendor blocker.
 
 ### C. Generic Indexed Source lifecycle
 
-`LKW-INDEXED-SOURCE-LIFECYCLE-1` — **PLANNED**.
+`LKW-INDEXED-SOURCE-LIFECYCLE-1` - **PLANNED**.
 
 The direct product lifecycle covers:
 
@@ -254,7 +254,7 @@ plugin. The LKW lifecycle consumes normalized operations and statuses.
 
 ### D. Generic Live Access lifecycle
 
-`LKW-LIVE-ACCESS-LIFECYCLE-1` — **PLANNED**.
+`LKW-LIVE-ACCESS-LIFECYCLE-1` - **PLANNED**.
 
 The direct product lifecycle covers:
 
@@ -273,7 +273,7 @@ Live execution is selected from discovered provider-neutral capabilities.
 
 ### E. Unified configuration and inspection
 
-`LKW-KNOWLEDGE-INSPECTION-AND-OPERATIONS-1` — **PLANNED**.
+`LKW-KNOWLEDGE-INSPECTION-AND-OPERATIONS-1` - **PLANNED**.
 
 The product must answer and operate on questions such as:
 
@@ -292,7 +292,7 @@ private locators or provider-specific business logic.
 
 ### F. Natural-language administration completion
 
-`LKW-NATURAL-LANGUAGE-ADMINISTRATION-1` — **PLANNED**.
+`LKW-NATURAL-LANGUAGE-ADMINISTRATION-1` - **PLANNED**.
 
 Extend the accepted planner/executor vocabulary to generic plugin operations:
 
@@ -314,7 +314,7 @@ not infer a fixed vendor catalog or implement vendor-specific actions.
 
 ### G. Product hardening
 
-`LKW-PRODUCT-HARDENING-1` — **PLANNED**.
+`LKW-PRODUCT-HARDENING-1` - **PLANNED**.
 
 Minimum scope:
 
@@ -336,7 +336,7 @@ Minimum scope:
 
 ### H. Deployment and onboarding
 
-`LKW-DEPLOYMENT-AND-OPERATIONS-1` — **PLANNED**.
+`LKW-DEPLOYMENT-AND-OPERATIONS-1` - **PLANNED**.
 
 Minimum scope:
 
@@ -354,7 +354,7 @@ Minimum scope:
 
 ### I. Product acceptance and platform proof
 
-`LKW-PRODUCT-ACCEPTANCE-PROOF-1` — **PLANNED**.
+`LKW-PRODUCT-ACCEPTANCE-PROOF-1` - **PLANNED**.
 
 Required proof:
 
@@ -382,7 +382,7 @@ deterministic conforming fixture. It must not require every planned vendor.
 
 ### J. Release gate
 
-`LKW-1.0-RELEASE-GATE` — **PLANNED**.
+`LKW-1.0-RELEASE-GATE` - **PLANNED**.
 
 The gate requires:
 
@@ -394,7 +394,7 @@ The gate requires:
 - known platform gaps recorded as problem-radar findings;
 - no requirement that the full vendor catalog be complete.
 
-## PARALLEL PLATFORM AND PLUGIN ROADMAPS — NOT LKW RELEASE BLOCKERS
+## PARALLEL PLATFORM AND PLUGIN ROADMAPS - NOT LKW RELEASE BLOCKERS
 
 These tracks remain valid and useful, but they are outside the direct LKW 1.0
 execution order. They run in separate sessions at two levels:
@@ -478,7 +478,7 @@ task.
 
 ---
 
-## HISTORICAL IMPLEMENTATION DETAIL — NOT CURRENT STATUS
+## HISTORICAL IMPLEMENTATION DETAIL - NOT CURRENT STATUS
 
 The sections below preserve implementation evidence, earlier decomposition and
 historical task identity for traceability. They do not define the current
@@ -571,9 +571,9 @@ NEXT IMPLEMENTATION:
 LKW-HYBRID-ASK-1
 → IN_PROGRESS
 → RAG + LIVE KNOWLEDGE QUERY WITH UNIFIED PROVENANCE
-  1A — provider-neutral core contracts, Query Policy V2, Evidence Plan validation — ACCEPTED / CLOSED
-  1B — provider-neutral live execution + Knowledge Query orchestration — ACCEPTED / CLOSED
-  1C — Workspace Ask integration, HTTP V2, bounded acceptance proof — READY_FOR_REVIEW
+  1A - provider-neutral core contracts, Query Policy V2, Evidence Plan validation - ACCEPTED / CLOSED
+  1B - provider-neutral live execution + Knowledge Query orchestration - ACCEPTED / CLOSED
+  1C - Workspace Ask integration, HTTP V2, bounded acceptance proof - READY_FOR_REVIEW
 
 LKW-CONVERSATIONAL-FRONTEND-1
 → NATURAL-LANGUAGE EXECUTION AND LIVE SLACK CUTOVER
@@ -628,11 +628,11 @@ Provider-neutral personal/shared conversation context architecture precedes shar
 | `LKW-CONVERSATION-CONTEXT-ARCH-1` | LKW application (docs) | Provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards | **ACCEPTED** |
 | `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` | Platform (docs) | Architecture frozen: one Slack integration reused across indexed RAG, durable materialization and live access; frontend and knowledge-source roles separated | **DONE** |
 | `SLACK-KNOWLEDGE-FOUNDATION-1` | Platform | Platform can safely read and durably synchronize selected Slack conversations (bot token + bot-membership inventory for public/private/IM/MPIM) for any Intergrax application; no new Slack command or LKW feature implied yet | **DONE** |
-| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **IN_PROGRESS / CHANGES_REQUIRED** (`REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted) |
+| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **IN_PROGRESS / CHANGES_REQUIRED** (`REVIEW-FIX-2` - **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted) |
 | `LKW-CONVERSATION-CONTEXT-1` | LKW application | Durable Conversation Context Bindings, workspace audience policy, memory partitioning and evidence guards | **PLANNED** |
 | `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` | LKW application | Slack channel/private-channel mention handling over the generic LKW context layer | **PLANNED** |
 | `SLACK-LIVE-CAPABILITY-1` | Platform | Authorized applications can read bounded current Slack information at request time without waiting for complete durable synchronization | **PLANNED** |
-| `LKW-SLACK-KNOWLEDGE-PROOF-1` | LKW application | User asking through Slack receives one grounded answer combining indexed Slack history, authorized live Slack evidence and other workspace sources with strict audience isolation — requires Hybrid Ask | **PLANNED** |
+| `LKW-SLACK-KNOWLEDGE-PROOF-1` | LKW application | User asking through Slack receives one grounded answer combining indexed Slack history, authorized live Slack evidence and other workspace sources with strict audience isolation - requires Hybrid Ask | **PLANNED** |
 
 **`LKW-CONVERSATION-CONTEXT-1` implementation slices:**
 
@@ -648,7 +648,7 @@ Provider-neutral personal/shared conversation context architecture precedes shar
 
 ```text
 SLACK-KNOWLEDGE-FOUNDATION-1
-→ LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
+→ LKW-CONVERSATION-CONTEXT-ARCH-1 - ACCEPTED
 → LKW-SLACK-CONNECTED-SOURCE-1          # independent from conversational activation
 → LKW-CONVERSATION-CONTEXT-1            # LKW-wide prerequisite for shared adapters
 → LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
@@ -666,7 +666,7 @@ LKW-SLACK-CONNECTED-SOURCE-1
 → LKW-SLACK-KNOWLEDGE-PROOF-1
 ```
 
-`LKW-CONVERSATION-CONTEXT-1` is a prerequisite/supporting block of the wider conversational frontend execution path — not a competing planner/executor. Final Slack proof cannot claim indexed + live combined evidence before Hybrid Ask exists. Google Workspace runtime implementation (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**); `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` remains **READY_FOR_REVIEW**. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`).
+`LKW-CONVERSATION-CONTEXT-1` is a prerequisite/supporting block of the wider conversational frontend execution path - not a competing planner/executor. Final Slack proof cannot claim indexed + live combined evidence before Hybrid Ask exists. Google Workspace runtime implementation (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**); `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` remains **READY_FOR_REVIEW**. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`).
 
 **Available today:** The user can operate LKW through Slack DM, continue a
 canonical thread with bounded durable recent turns, and ask about knowledge
@@ -734,11 +734,11 @@ The following table preserves accepted intake foundations and the accepted WEB_U
 | `LKW-WORKSPACE-CONTENTS-1B-5-2-C1` | Harden production index path and real RAG proof | ACCEPTED (correction to `1B-5-2`) |
 | `LKW-WORKSPACE-CONTENTS-1B-5-2-C2` | Close retrieval evidence and regression review | ACCEPTED (correction to `1B-5-2`) |
 
-`LKW-CONVERSATIONAL-INTERACTION-1A` — channel-neutral structured interaction plan contract and provider-neutral LLM planner (**ACCEPTED / CLOSED**).
+`LKW-CONVERSATIONAL-INTERACTION-1A` - channel-neutral structured interaction plan contract and provider-neutral LLM planner (**ACCEPTED / CLOSED**).
 
 ---
 
-## 5. `LKW-WORKSPACE-CONTENTS-1B-4-2` — Slack Source Candidate selection
+## 5. `LKW-WORKSPACE-CONTENTS-1B-4-2` - Slack Source Candidate selection
 
 **One-sentence outcome:** An approved Slack user can list and select a numbered preconfigured folder for the active workspace while Slack receives only safe candidate metadata and opaque identity.
 
@@ -766,7 +766,7 @@ Slack remains a replaceable frontend and must not own folder discovery or indexi
 
 ---
 
-## 6. `LKW-WORKSPACE-CONTENTS-1B-5` — explicit Web URL intake
+## 6. `LKW-WORKSPACE-CONTENTS-1B-5` - explicit Web URL intake
 
 **One-sentence outcome:** A trusted client can attach an allowed Web URL as workspace knowledge through the same durable Knowledge Intake and operation lifecycle.
 
@@ -801,7 +801,7 @@ Platform prerequisite: [`docs/project/architecture/WEB_CONTENT_CAPTURE.md`](../.
 
 Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md). The sections below summarize one-sentence outcomes. Detailed `1B-6` / `1C`–`1E` material is preserved in §8–§10 as implementation reference mapped into the blocks above.
 
-### 7.1 `LKW-MODEL-RUNTIME-1` — Ollama / vLLM end-to-end portability
+### 7.1 `LKW-MODEL-RUNTIME-1` - Ollama / vLLM end-to-end portability
 
 **One-sentence outcome:** The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates.
 
@@ -816,9 +816,9 @@ vLLM Qwen/Qwen2.5-3B-Instruct
 
 The proof covers basic generation, structured Conversation Interaction planning, deterministic plan validation, native tool calling, real `local.workspace.search` execution, public HTTP Ask, verified citations, persisted Ask runs and full shared-index invariance without reindexing. Canonical evidence: [`LKW_MODEL_RUNTIME_PORTABILITY.md`](evidence/LKW_MODEL_RUNTIME_PORTABILITY.md).
 
-Provider switch may require application restart. Conversation LLM and embedding provider remain separate — switching chat runtime must not silently reindex. Runtime hot swapping and universal model compatibility are not claimed.
+Provider switch may require application restart. Conversation LLM and embedding provider remain separate - switching chat runtime must not silently reindex. Runtime hot swapping and universal model compatibility are not claimed.
 
-### 7.2 `LKW-KNOWLEDGE-ACCESS-1` — Workspace Knowledge Configuration
+### 7.2 `LKW-KNOWLEDGE-ACCESS-1` - Workspace Knowledge Configuration
 
 **One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials. All user-managed product configuration that must survive restart is durable; tenant Connections are stored in a platform-owned durable Connection Catalog with `SecretsStore`-owned credentials and runtime registry rehydration.
 
@@ -826,7 +826,7 @@ Provider switch may require application restart. Conversation LLM and embedding 
 
 Expected capabilities: durable tenant Connection catalog with restart-safe rehydration; connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
 
-**Internal decomposition** (historical slice identity — all slices **ACCEPTED** as part of closed parent `LKW-KNOWLEDGE-ACCESS-1`):
+**Internal decomposition** (historical slice identity - all slices **ACCEPTED** as part of closed parent `LKW-KNOWLEDGE-ACCESS-1`):
 
 | Slice | Title | Status |
 |-------|-------|--------|
@@ -859,7 +859,7 @@ Expected capabilities: durable tenant Connection catalog with restart-safe rehyd
 
 Do not claim that connector-management actions are already implemented.
 
-### 7.3 `LKW-HYBRID-ASK-ARCH-1` — Hybrid Ask architecture contract
+### 7.3 `LKW-HYBRID-ASK-ARCH-1` - Hybrid Ask architecture contract
 
 **One-sentence outcome:** Freeze the production-grade architecture and implementation contract for combining indexed RAG evidence with authorized read-only live provider evidence in one grounded Workspace Ask response with unified provenance, strict policy enforcement and no automatic persistence of live result bodies.
 
@@ -867,13 +867,13 @@ Do not claim that connector-management actions are already implemented.
 
 Canonical contract: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md).
 
-### 7.4 `LKW-HYBRID-ASK-1` — Hybrid Ask with unified provenance
+### 7.4 `LKW-HYBRID-ASK-1` - Hybrid Ask with unified provenance
 
 **One-sentence outcome:** One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance.
 
 **Status:** **IN_PROGRESS**.
 
-Architecture: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md). Provider-specific live handlers are **Vendor Knowledge** scope; LKW owns provider-neutral contracts, policy, plan validation, orchestration and Ask integration. `LKW-HYBRID-ASK-1C` requires at least one accepted Vendor Knowledge `LiveCapabilityHandler` — provider selection is not an LKW roadmap decision.
+Architecture: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md). Provider-specific live handlers are **Vendor Knowledge** scope; LKW owns provider-neutral contracts, policy, plan validation, orchestration and Ask integration. `LKW-HYBRID-ASK-1C` requires at least one accepted Vendor Knowledge `LiveCapabilityHandler` - provider selection is not an LKW roadmap decision.
 
 Initial live access is read-only.
 
@@ -889,7 +889,7 @@ Initial live access is read-only.
 
 **Acceptance gate:** Must prove that indexed evidence and live evidence can be combined; live evidence is **not** automatically persisted; each evidence item retains mode and provenance; at least one indexed and one live citation in one grounded answer (at `1C` with Vendor Knowledge handler).
 
-### 7.5 `LKW-CONVERSATIONAL-FRONTEND-1` — Natural-language execution and Slack cutover
+### 7.5 `LKW-CONVERSATIONAL-FRONTEND-1` - Natural-language execution and Slack cutover
 
 **One-sentence outcome:** A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities.
 
@@ -916,7 +916,7 @@ A Microsoft Graph live search capability requires a separate bounded contract an
 **Execution order:**
 
 ```text
-1. conversation context architecture accepted (`LKW-CONVERSATION-CONTEXT-ARCH-1` — **ACCEPTED**);
+1. conversation context architecture accepted (`LKW-CONVERSATION-CONTEXT-ARCH-1` - **ACCEPTED**);
 2. complete Slack Knowledge vertical (implementation tracks through SLACK-LIVE-CAPABILITY-1; final proof joins LKW-HYBRID-ASK-1 at LKW-SLACK-KNOWLEDGE-PROOF-1);
 3. complete Google Workspace proof-critical path (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` → vertically incremental Drive/Docs/Sheets/Calendar read surfaces and adapters → `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` → `LKW-GOOGLE-WORKSPACE-PROOF-1`);
 4. complete Teams Chat and Calendar durable adapters (Calendar after first accepted Google LKW proof);
@@ -926,13 +926,13 @@ A Microsoft Graph live search capability requires a separate bounded contract an
 8. converge at Hybrid Ask.
 ```
 
-The immediate current platform task in the Slack vertical is complete (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**). `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical implementation task is `LKW-CONVERSATION-CONTEXT-1`. Global LKW product next implementation block is `LKW-HYBRID-ASK-1` (**IN_PROGRESS**; `LKW-HYBRID-ASK-1A` **READY_FOR_REVIEW**). Google Workspace knowledge architecture is frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Google runtime (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) is **PLANNED** and gated on `LKW-SLACK-KNOWLEDGE-PROOF-1` becoming **ACCEPTED** (currently **PLANNED**). Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the first accepted Google Workspace LKW proof.
+The immediate current platform task in the Slack vertical is complete (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**). `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` - **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical implementation task is `LKW-CONVERSATION-CONTEXT-1`. Global LKW product next implementation block is `LKW-HYBRID-ASK-1` (**IN_PROGRESS**; `LKW-HYBRID-ASK-1A` **READY_FOR_REVIEW**). Google Workspace knowledge architecture is frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Google runtime (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) is **PLANNED** and gated on `LKW-SLACK-KNOWLEDGE-PROOF-1` becoming **ACCEPTED** (currently **PLANNED**). Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the first accepted Google Workspace LKW proof.
 
 ### 7.7 `LKW-VENDOR-ACCESS-DATA-1`
 
 **One-sentence outcome:** LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask.
 
-**Status:** **PLANNED**. All queries pass capability-specific validation and policy — no unrestricted user SQL/DAX.
+**Status:** **PLANNED**. All queries pass capability-specific validation and policy - no unrestricted user SQL/DAX.
 
 **Acceptance gate:** Must state per resource whether it supports durable materialization, RAG indexing, live query, or a documented subset. Do not assume Power BI, Databricks and Atlan should all be copied into RAG.
 
@@ -942,7 +942,7 @@ The immediate current platform task in the Slack vertical is complete (`SLACK-KN
 
 **Status:** **PLANNED**. Consolidates former `1C`, `1D`, `1E` slices (§8–§10).
 
-### 7.9 `LKW-LIVE-PLATFORM-PROOF-1` — Complete demonstrable platform proof
+### 7.9 `LKW-LIVE-PLATFORM-PROOF-1` - Complete demonstrable platform proof
 
 **One-sentence outcome:** A live demonstration shows Slack conversations, Google Docs/Sheets/Calendar (when implemented), Microsoft 365 sources, local files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace.
 
@@ -964,9 +964,9 @@ one durable vendor connection (reconstructed after restart)
 
 ---
 
-## 8. `LKW-WORKSPACE-CONTENTS-1B-6` — VENDOR-KNOWLEDGE integration (historical reference)
+## 8. `LKW-WORKSPACE-CONTENTS-1B-6` - VENDOR-KNOWLEDGE integration (historical reference)
 
-**Status:** **REPLANNED** — scope distributed across `LKW-KNOWLEDGE-ACCESS-1`, `LKW-HYBRID-ASK-1`, `LKW-VENDOR-ACCESS-COLLABORATION-1`, `LKW-VENDOR-ACCESS-DATA-1` and `LKW-KNOWLEDGE-LIFECYCLE-1`. Retained for ownership-boundary detail.
+**Status:** **REPLANNED** - scope distributed across `LKW-KNOWLEDGE-ACCESS-1`, `LKW-HYBRID-ASK-1`, `LKW-VENDOR-ACCESS-COLLABORATION-1`, `LKW-VENDOR-ACCESS-DATA-1` and `LKW-KNOWLEDGE-LIFECYCLE-1`. Retained for ownership-boundary detail.
 
 ### 8.1 Ordering rule
 
@@ -1042,7 +1042,7 @@ They must not expose:
 - raw credentials;
 - internal checkpoint or cursor material unless explicitly converted into a safe public status.
 
-### 8.4 `1B-6-0` — integration contract and ownership gate
+### 8.4 `1B-6-0` - integration contract and ownership gate
 
 Freeze, from the real VENDOR-KNOWLEDGE implementation rather than assumptions:
 
@@ -1059,7 +1059,7 @@ Freeze, from the real VENDOR-KNOWLEDGE implementation rather than assumptions:
 
 Do not freeze a provider-specific LKW Source architecture. Exact names of new `KnowledgeInputKind` or Source representation remain an architecture decision for this gate.
 
-### 8.5 `1B-6-1` — safe connection and resource discovery
+### 8.5 `1B-6-1` - safe connection and resource discovery
 
 Expose tenant-scoped, authorized and safely labelled vendor connections/resources. Discovery must support unavailable states without leaking credentials or technical locator details.
 
@@ -1076,7 +1076,7 @@ Representative resource families:
 | Data catalog | Atlan |
 | Reports and analytics | Power BI |
 
-### 8.6 `1B-6-2` — vendor resource Knowledge Intake
+### 8.6 `1B-6-2` - vendor resource Knowledge Intake
 
 Attach one real vendor resource end to end:
 
@@ -1094,7 +1094,7 @@ safe opaque vendor resource selection
 
 This task proves one representative provider. It must not attempt to implement every provider listed in the roadmap.
 
-### 8.7 `1B-6-3` — provider-neutral verification
+### 8.7 `1B-6-3` - provider-neutral verification
 
 Demonstrate that materially different provider families can reuse the same LKW contracts and lifecycle. The verification may use focused adapters/fakes where full production integrations are not yet justified, but it must prove that adding another vendor does not require:
 
@@ -1107,7 +1107,7 @@ Demonstrate that materially different provider families can reuse the same LKW c
 
 ---
 
-## 9. `LKW-WORKSPACE-CONTENTS-1C` — shared synchronization and completion lifecycle
+## 9. `LKW-WORKSPACE-CONTENTS-1C` - shared synchronization and completion lifecycle
 
 **Mapped into:** `LKW-KNOWLEDGE-LIFECYCLE-1` (**PLANNED**).
 
@@ -1127,7 +1127,7 @@ Completion notification must not be implemented as a Slack-only ingestion mechan
 
 ---
 
-## 10. `LKW-WORKSPACE-CONTENTS-1D` — document inspection and provenance
+## 10. `LKW-WORKSPACE-CONTENTS-1D` - document inspection and provenance
 
 **Mapped into:** `LKW-KNOWLEDGE-LIFECYCLE-1` (**PLANNED**).
 
@@ -1145,7 +1145,7 @@ Every persisted Document remains owned by exactly one durable Source.
 
 ---
 
-## 11. `LKW-WORKSPACE-CONTENTS-1E` — safe source-owned knowledge removal
+## 11. `LKW-WORKSPACE-CONTENTS-1E` - safe source-owned knowledge removal
 
 **Mapped into:** `LKW-KNOWLEDGE-LIFECYCLE-1` (**PLANNED**).
 
@@ -1203,11 +1203,11 @@ Parallel work rules:
 
 ---
 
-## 13. LKW-PF6 — Token Optimization product proof (planned)
+## 13. LKW-PF6 - Token Optimization product proof (planned)
 
 **Status:** **LKW-PF6-0** Done / Closed (proof design only). **LKW-PF6-A**–**C** planned after universal platform proof.
 
-Token Optimization is a platform capability under `intergrax/runtime/token_optimization`. LKW integrates through public contracts only — no duplication of router, pipeline, cache-aware gate, or proof harness.
+Token Optimization is a platform capability under `intergrax/runtime/token_optimization`. LKW integrates through public contracts only - no duplication of router, pipeline, cache-aware gate, or proof harness.
 
 | Phase | Depends on | Scope |
 |-------|------------|-------|
@@ -1237,7 +1237,7 @@ A second conversational adapter and broad provider matrix do not delay the curre
 
 ---
 
-## Appendix A — Historical task summary
+## Appendix A - Historical task summary
 
 ```text
 ARCHITECTURE:
@@ -1269,14 +1269,14 @@ LKW-HYBRID-ASK-1 → RAG + live with unified provenance
 → LKW-LIVE-PLATFORM-PROOF-1
 
 FINAL TARGET:
-Live Slack platform proof — indexed + live + Hybrid Ask + Ollama/vLLM portability
+Live Slack platform proof - indexed + live + Hybrid Ask + Ollama/vLLM portability
 
 ARCHITECTURE DOC:
-KNOWLEDGE_ACCESS_ARCHITECTURE.md — indexed/live/hybrid, Connections,
+KNOWLEDGE_ACCESS_ARCHITECTURE.md - indexed/live/hybrid, Connections,
 Live Access Bindings, Workspace Knowledge Configuration, Query Policy,
 Knowledge Query Orchestrator, Evidence Items, MCP boundary, security.
 
-HYBRID_ASK_ARCHITECTURE.md — unified evidence, orchestrator, live executor,
+HYBRID_ASK_ARCHITECTURE.md - unified evidence, orchestrator, live executor,
 retention, Ask Run V2, implementation slices 1A–1C.
 → READY_FOR_REVIEW
 
@@ -1288,7 +1288,7 @@ Conversational planning (CONV-1A):
 - The existing deterministic request validator remains the final grounding boundary.
 ```
 
-## Appendix B — Status vocabulary
+## Appendix B - Status vocabulary
 
 | Label | Meaning |
 |---|---|

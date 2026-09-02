@@ -1,4 +1,4 @@
-# MODALITY — tool surface detail
+# MODALITY - tool surface detail
 
 **Parent hub:** [`MODALITY.md`](../MODALITY.md)
 
@@ -11,17 +11,17 @@ Atomic tools (LLM-selectable, MCP-exportable):
 | `vision.detect` | C | **Done** |
 | `vision.segment` | C | **Done** |
 | `vision.ocr_regions` | C | **Done** |
-| `speech.synthesize` | C + `speech_provider` | **Done** — `SpeechProviderBackend` from Integration Library via `wire_integration_tool_context()` |
-| `speech.transcribe` | C + `speech_provider` (or Plane B ingest) | **Done** — catalog slug (e.g. `deepgram`) or ingest parsers for files |
+| `speech.synthesize` | C + `speech_provider` | **Done** - `SpeechProviderBackend` from Integration Library via `wire_integration_tool_context()` |
+| `speech.transcribe` | C + `speech_provider` (or Plane B ingest) | **Done** - catalog slug (e.g. `deepgram`) or ingest parsers for files |
 | `ml.predict` | C | **Done** |
 | `ml.explain` | C | **Done** (feature importance stub) |
 | `ml.batch_predict` | C | **Done** |
 
-Skills MAY bundle these `tool_ids` (e.g. `harness.vision_qa`) — skills are not new inference engines.
+Skills MAY bundle these `tool_ids` (e.g. `harness.vision_qa`) - skills are not new inference engines.
 
 ---
 
-## Agent assembly — ModalityProfile
+## Agent assembly - ModalityProfile
 
 Extend harness composition (canon §7.1.9, ideal §17):
 
@@ -41,13 +41,13 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 
 | Plane | Operator action | When to use | Escalation |
 |-------|-----------------|-------------|------------|
-| **A — Generative** | Route via `ModalityProfile.allowed_planes` includes `generative`; monitor `llm_metrics` token/cost | Multimodal Q&A, captioning, unstructured media understanding | LLM adapter failover — [`LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md) |
-| **B — Ingest** | Use RAG/parser pipeline; never bypass `ParserPipeline` for prod ingest | Document/audio ingest to retrieval index | RAG ops — [`RAG.md`](../plan/RAG.md) §6.1av |
-| **C — Deterministic CV/ML** | Set `require_deterministic_cv=true`; verify `opencv_runtime_available()` in runner; use harness registry artifacts | Regulated vision, golden-test CV, Celery modality jobs | MOD-MAINT OpenCV probe + `tests/unit/model_inference` |
+| **A - Generative** | Route via `ModalityProfile.allowed_planes` includes `generative`; monitor `llm_metrics` token/cost | Multimodal Q&A, captioning, unstructured media understanding | LLM adapter failover - [`LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md) |
+| **B - Ingest** | Use RAG/parser pipeline; never bypass `ParserPipeline` for prod ingest | Document/audio ingest to retrieval index | RAG ops - [`RAG.md`](../plan/RAG.md) §6.1av |
+| **C - Deterministic CV/ML** | Set `require_deterministic_cv=true`; verify `opencv_runtime_available()` in runner; use harness registry artifacts | Regulated vision, golden-test CV, Celery modality jobs | MOD-MAINT OpenCV probe + `tests/unit/model_inference` |
 
-**Boundary rule:** Plane C outputs are tool-attributed (`modality_metrics`); Plane A outputs are LLM-attributed — do not mix cost attribution on a single step without explicit `ModalityProfile` plane selection.
+**Boundary rule:** Plane C outputs are tool-attributed (`modality_metrics`); Plane A outputs are LLM-attributed - do not mix cost attribution on a single step without explicit `ModalityProfile` plane selection.
 
-**MOD-MAINT-04 backlog:** Triton/HF remote serving depth remains incremental post W-ML — register only; no online training scope.
+**MOD-MAINT-04 backlog:** Triton/HF remote serving depth remains incremental post W-ML - register only; no online training scope.
 
 ---
 
@@ -81,7 +81,7 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 | **Speech** | `IntegrationProfile.speech_provider` slot **or** `intergrax.speech_adapters.SpeechProfile` | `profile.resolve(SPEECH_PROVIDER)` → `SpeechProviderBackend`; env slug resolves against integration catalog ([ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)) |
 | **Execution** | `intergrax.model_inference.execution.ModalityExecutionProfile` | `build_modality_inference_executor()` → `ModalityInferenceExecutor` (`in_process`, `thread_pool`, `celery`) |
 
-**Speech rule:** prefer `IntegrationProfile` for Tier-3 hosts. `SpeechProfile` is a thin env/lab helper over catalog slug resolution — not a parallel vendor registry.
+**Speech rule:** prefer `IntegrationProfile` for Tier-3 hosts. `SpeechProfile` is a thin env/lab helper over catalog slug resolution - not a parallel vendor registry.
 
 **Execution env (harness):**
 
@@ -107,7 +107,7 @@ integration = IntegrationProfile(speech_provider=DEEPGRAM)
 speech_backend = integration.resolve(IntegrationCategory.SPEECH_PROVIDER)
 ```
 
-Registries: `VisionAdapterRegistry` (vision slugs). Speech SaaS vendors use **Integration Library** catalog registration — not a closed enum.
+Registries: `VisionAdapterRegistry` (vision slugs). Speech SaaS vendors use **Integration Library** catalog registration - not a closed enum.
 
 ## Harness environment variables
 
@@ -115,7 +115,7 @@ Registries: `VisionAdapterRegistry` (vision slugs). Speech SaaS vendors use **In
 |----------|---------|
 | `INTERGRAX_VISION_PROVIDER` or legacy `INTERGRAX_VISION_ADAPTER` | `stub` \| `onnxruntime` (OpenCV, default) \| `yolo_ultralytics` |
 | `INTERGRAX_VISION_ARTIFACT_ID` | Optional artifact override for `vision.detect` default |
-| `INTERGRAX_SPEECH_PROVIDER` | Integration catalog slug (e.g. `elevenlabs`, `deepgram`, `stub`) — resolved via `IntegrationProfile`, not enum |
+| `INTERGRAX_SPEECH_PROVIDER` | Integration catalog slug (e.g. `elevenlabs`, `deepgram`, `stub`) - resolved via `IntegrationProfile`, not enum |
 | `INTERGRAX_SPEECH_VOICE_ID` | Optional default TTS voice for `speech.synthesize` |
 | `INTERGRAX_ELEVENLABS_*` / `INTERGRAX_DEEPGRAM_*` | Per-slug integration env prefixes (see provider `USAGE.md`) |
 | `INTERGRAX_TRITON_URL` | Triton/KServe base URL for `VisionProvider.TRITON` |
@@ -149,11 +149,11 @@ Registries: `VisionAdapterRegistry` (vision slugs). Speech SaaS vendors use **In
 [ ] 2. VisionInferenceAdapter implementation under model_inference/providers/<slug>/
 [ ] 3. Register in VisionInferenceRegistry + VisionModelProfile defaults
 [ ] 4. Optional: integration slug if remote-only (vision_serving / ml_inference_host)
-[ ] 5. ToolContract(s) with JSON schema I/O — one atomic operation per tool_id
+[ ] 5. ToolContract(s) with JSON schema I/O - one atomic operation per tool_id
 [ ] 6. Policy: risk_tier, max_batch, allowed MIME types, tenant allowlist
 [ ] 7. Metrics + trace fields on ToolInvocation
 [ ] 8. Unit tests (golden tensors or fixture images) + gate subset
 [ ] 9. USAGE.md under provider folder; update architecture/INTEGRATIONS.md or this file
 ```
 
-Agents: declare `tool_ids` / `ModalityProfile` — never import vendor SDKs.
+Agents: declare `tool_ids` / `ModalityProfile` - never import vendor SDKs.

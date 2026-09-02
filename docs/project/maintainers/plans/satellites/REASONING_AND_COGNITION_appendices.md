@@ -1,8 +1,8 @@
-# REASONING_AND_COGNITION — appendices
+# REASONING_AND_COGNITION - appendices
 
 **Parent hub:** [`REASONING_AND_COGNITION.md`](../REASONING_AND_COGNITION.md)
 
-## Appendix A — Reasoning and Cognition traceability (Phase COG-DEPTH)
+## Appendix A - Reasoning and Cognition traceability (Phase COG-DEPTH)
 
 | Architecture § | Topic | Task IDs |
 |----------------|--------|----------|
@@ -21,7 +21,7 @@
 
 ### Historical closeout traceability (pre-RCL domain)
 
-These items implemented under FLOW/ORCH phases — **Done**; canon now owned by RCL:
+These items implemented under FLOW/ORCH phases - **Done**; canon now owned by RCL:
 
 | Legacy ID | Deliverable | RCL architecture § |
 |-----------|-------------|-------------------|
@@ -35,11 +35,11 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 
 ---
 
-## Appendix B — FAUDIT-32 §7 scorecard (baseline)
+## Appendix B - FAUDIT-32 §7 scorecard (baseline)
 
 | Audit question | Pre-RCL | Post COG-DOC | Post COG-DEPTH target |
 |----------------|---------|--------------|----------------------|
-| Structured plan contract? | Yes (`NexusPlan`) | Yes — canon §10 | Maintain |
+| Structured plan contract? | Yes (`NexusPlan`) | Yes - canon §10 | Maintain |
 | DecisionRecord per step? | UAEP only | Documented §14 | Planning + UAEP |
 | Reasoning separated from execution? | Yes (UAEP) | Canon §4, §8 | Maintain |
 | Planning strategies explicit? | Yes | Canon §10, Appendix B | Maintain |
@@ -49,16 +49,16 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 
 ---
 
-## Appendix C — Operator reading order
+## Appendix C - Operator reading order
 
-1. [`architecture/REASONING_AND_COGNITION.md`](../architecture/REASONING_AND_COGNITION.md) — RCL canon
-2. This plan — COG-DEPTH register when implementing
-3. [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) — end-to-end flow only
-4. [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix I §I.4 — host planner configuration
+1. [`architecture/REASONING_AND_COGNITION.md`](../architecture/REASONING_AND_COGNITION.md) - RCL canon
+2. This plan - COG-DEPTH register when implementing
+3. [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) - end-to-end flow only
+4. [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix I §I.4 - host planner configuration
 
 ---
 
-### COG-DEPTH — Paydown log
+### COG-DEPTH - Paydown log
 
 | Date | COG ID | Summary |
 |------|--------|---------|

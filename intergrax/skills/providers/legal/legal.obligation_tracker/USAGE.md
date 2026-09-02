@@ -28,4 +28,4 @@ Governed access to: `memory.write`, `memory.read`, `workspace.write_file`.
 
 ## Related skills
 
-- Other `legal` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `legal` bundle skills - see bundle [USAGE.md](../USAGE.md)

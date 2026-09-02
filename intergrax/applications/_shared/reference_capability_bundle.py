@@ -29,25 +29,10 @@ def harness_lab_capability_bundle(*, harness_tools: bool = True) -> CapabilityBu
     """Shared lab harness tools/skills/integration stack (legal, research, lab hosts)."""
     from intergrax.applications._shared.skill_wiring import lab_skill_profile
 
-    tool_enabled = ["rag.retrieve", "websearch.query"]
-    if harness_tools:
-        tool_enabled.extend(
-            [
-                "errors.capture",
-                "sandbox.exec",
-                "speech.synthesize",
-                "speech.transcribe",
-                "vision.detect",
-                "vision.segment",
-                "vision.ocr_regions",
-                "ml.predict",
-                "ml.explain",
-                "ml.batch_predict",
-            ]
-        )
+    del harness_tools  # integrations/features use this flag; skills need full catalog tools.
     return CapabilityBundle(
         integrations=IntegrationProfile.lab_harness_preset(),
-        tools=ToolProfile(enabled=tool_enabled),
+        tools=ToolProfile(register_all_catalog_bundles=True),
         skills=lab_skill_profile(),
         llm=LLMProfile.lab(),
         modality=lab_default_modality_profile(),

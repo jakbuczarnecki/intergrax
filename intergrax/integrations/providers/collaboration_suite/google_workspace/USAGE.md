@@ -22,7 +22,7 @@ Present today:
 
 Not implemented: production Google OAuth, Google API client construction, Drive inventory, Docs/Sheets/Slides content reads, Calendar/Gmail/Chat knowledge synchronization, Google Vendor Knowledge adapters, Google live capabilities, LKW Google Connected Sources, Google Search/Ask proof.
 
-## Knowledge architecture (frozen — `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
+## Knowledge architecture (frozen - `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
 
 Canonical architecture: [`docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8.
 
@@ -74,9 +74,9 @@ canonical Google resource type
 stable Google resource ID
 ```
 
-Rename/move (where Google preserves ID) do not change identity. Export/download URL is never identity. Revision/ETag/modified time/content hash are change state — not identity. The same native Google file must not become unrelated `drive` and `docs`/`sheets`/`slides` durable objects.
+Rename/move (where Google preserves ID) do not change identity. Export/download URL is never identity. Revision/ETag/modified time/content hash are change state - not identity. The same native Google file must not become unrelated `drive` and `docs`/`sheets`/`slides` durable objects.
 
-**Overlapping-binding policy (first proof):** explicit selected resources only; broad Drive/folder synchronization deferred. Future broad scopes require Option A (reject overlapping binding in same workspace) or Option B (canonical deduplication record) — Option B not chosen until Vendor Knowledge and LKW ownership models support it safely.
+**Overlapping-binding policy (first proof):** explicit selected resources only; broad Drive/folder synchronization deferred. Future broad scopes require Option A (reject overlapping binding in same workspace) or Option B (canonical deduplication record) - Option B not chosen until Vendor Knowledge and LKW ownership models support it safely.
 
 **Separation of concerns:**
 
@@ -89,7 +89,7 @@ LKW Connected Source          → generic Connected Source pattern (proved by Sl
 
 Drive read surface owns inventory, hierarchy, resource classification, folder/drive traversal, ordinary binary content and change-feed primitives. Docs, Sheets and Slides read surfaces own typed native content extraction, native structure and exact native content reads. A Drive adapter may call a shared typed native-content primitive internally only when the durable binding remains canonical and duplication is prevented.
 
-**Foundation prerequisites (activation gates — not satisfied):** `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` becomes **ACCEPTED** (currently **READY_FOR_REVIEW**); Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**); canonical Tenant Connection / credential-reference boundary; `SecretsStore`-owned credentials; runtime integration rehydration/resolution; Vendor Knowledge binding/registry/sync contracts. Connection Catalog and rehydration owned by `LKW-KNOWLEDGE-ACCESS-1` — no second Connection system or Google-only credential store.
+**Foundation prerequisites (activation gates - not satisfied):** `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` becomes **ACCEPTED** (currently **READY_FOR_REVIEW**); Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**); canonical Tenant Connection / credential-reference boundary; `SecretsStore`-owned credentials; runtime integration rehydration/resolution; Vendor Knowledge binding/registry/sync contracts. Connection Catalog and rehydration owned by `LKW-KNOWLEDGE-ACCESS-1` - no second Connection system or Google-only credential store.
 
 **Execution placement (vertically incremental):** Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** → Foundation → each read surface + matching adapter + contract proof (Drive → Docs → Sheets → Calendar) → LKW Connected Source → LKW proof → remaining surfaces (Slides, Mail, Chat) → other provider expansion.
 

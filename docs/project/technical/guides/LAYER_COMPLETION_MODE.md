@@ -1,10 +1,10 @@
-# Intergrax — Layer Completion Mode
+# Intergrax - Layer Completion Mode
 
 **Status:** Canonical (2026-06-17)  
 **Audience:** Maintainers, architects, implementation agents  
 **Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules)
 
-**Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) — single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
+**Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) - single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
 
 ---
 
@@ -35,26 +35,26 @@ The goal is not merely to implement existing architecture. The goal is to bring 
 
 ## 3. Repository bootstrap (before Step 1)
 
-Read **only** documents required for the designated layer — do **not** load all of `docs`.
+Read **only** documents required for the designated layer - do **not** load all of `docs`.
 
 | Priority | Document | Role |
 |----------|----------|------|
 | 1 | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, work cycle |
-| 2 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | `SYS-INV-*` never-violate index (P2-ARCH-01) — mandatory skim |
-| 3 | [intergrax_runtime_architecture.md](../../architecture/intergrax_runtime_architecture.md) | Hub — domain pair picker |
+| 2 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | `SYS-INV-*` never-violate index (P2-ARCH-01) - mandatory skim |
+| 3 | [intergrax_runtime_architecture.md](../../architecture/intergrax_runtime_architecture.md) | Hub - domain pair picker |
 | 4 | `docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md` | Canon + plan for **this layer only** (1:1 basename) |
-| 4b | [`capabilities/README.md`](../../capabilities/README.md) + matching feature pair | When closing a **multi-layer feature** — feature architecture + feature plan, then smallest domain-owned slice |
+| 4b | [`capabilities/README.md`](../../capabilities/README.md) + matching feature pair | When closing a **multi-layer feature** - feature architecture + feature plan, then smallest domain-owned slice |
 | 5 | [audit_results/AUDIT_PROTOCOL.md](../../../audit_results/AUDIT_PROTOCOL.md) | Adversarial layer audit procedure and campaign model |
 | 6 | [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Tier imports, scope, verification commands |
 | 7 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) | North star for Step 1A strategic review |
 
 **Reading rule:** one `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md` pair per iteration. No monolithic implementation plan file.
 
-**Architectural safety fuse:** if domain plan, domain architecture, and ideal architecture conflict — **STOP**, explain to the operator, propose doc updates **before** touching code.
+**Architectural safety fuse:** if domain plan, domain architecture, and ideal architecture conflict - **STOP**, explain to the operator, propose doc updates **before** touching code.
 
-**Strategic frame:** the Harness is the product; agents are replaceable. Default platform queue is gate maintenance ([`plan/PLATFORM_FOUNDATION.md`](../../maintainers/plans/PLATFORM_FOUNDATION.md) §6.1) unless the operator selects otherwise. Phase K and §6.3 — **do not start** without explicit reprioritization.
+**Strategic frame:** the Harness is the product; agents are replaceable. Default platform queue is gate maintenance ([`plan/PLATFORM_FOUNDATION.md`](../../maintainers/plans/PLATFORM_FOUNDATION.md) §6.1) unless the operator selects otherwise. Phase K and §6.3 - **do not start** without explicit reprioritization.
 
-**Language:** repository artifacts (code, docs, tests, commits) — **English**. Operator-facing session communication — operator session language.
+**Language:** repository artifacts (code, docs, tests, commits) - **English**. Operator-facing session communication - operator session language.
 
 ---
 
@@ -71,11 +71,11 @@ Bring the designated layer to a state that is:
 - aligned with the implementation plan,
 - ready for long-term evolution.
 
-**Maturity vocabulary:** terms like *complete*, *production-ready*, and *frozen* (Step 12 State C) **MUST** be expressed as explicit [four-axis maturity](MATURITY_TAXONOMY.md) (**A** / **I** / **P** / **E**) in the final report — see [MATURITY_TAXONOMY.md §3](MATURITY_TAXONOMY.md#3-labeling-rule-normative).
+**Maturity vocabulary:** terms like *complete*, *production-ready*, and *frozen* (Step 12 State C) **MUST** be expressed as explicit [four-axis maturity](MATURITY_TAXONOMY.md) (**A** / **I** / **P** / **E**) in the final report - see [MATURITY_TAXONOMY.md §3](MATURITY_TAXONOMY.md#3-labeling-rule-normative).
 
 ---
 
-## 5. Step 1 — Layer audit
+## 5. Step 1 - Layer audit
 
 **First:** skim [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md). Classify every `SYS-INV-*` violation at minimum as **P0** (see Step 3).
 
@@ -106,7 +106,7 @@ Detect:
 
 ---
 
-## 6. Step 1A — Strategic architecture review
+## 6. Step 1A - Strategic architecture review
 
 Before updating architecture, perform a strategic review of the layer.
 
@@ -141,7 +141,7 @@ Do **not** update architecture yet. Present proposals to the operator. Wait for 
 
 ---
 
-## 7. Step 2 — Architecture and documentation update
+## 7. Step 2 - Architecture and documentation update
 
 After accepted changes, update **first**:
 
@@ -163,11 +163,11 @@ When finished:
 
 ---
 
-## 8. Step 3 — Problem classification
+## 8. Step 3 - Problem classification
 
 Assign a severity level to each problem.
 
-### P0 — Critical architecture defect
+### P0 - Critical architecture defect
 
 Prevents correct layer behavior or breaks fundamental architecture assumptions.
 
@@ -179,7 +179,7 @@ Examples:
 - incorrect control flow,
 - tier boundary violation.
 
-### P1 — Production gap
+### P1 - Production gap
 
 Does not break architecture but prevents treating the layer as production-ready.
 
@@ -191,21 +191,21 @@ Examples:
 - missing observability,
 - missing security controls.
 
-### P2 — Hardening
+### P2 - Hardening
 
 Quality and resilience improvements (extra validation, logging, safeguards).
 
-### P3 — Optimization
+### P3 - Optimization
 
 Ergonomics, performance, maintainability.
 
-### P4 — Future evolution
+### P4 - Future evolution
 
 Ideas not required to declare the layer complete.
 
 ---
 
-## 9. Step 4 — Implementation plan
+## 9. Step 4 - Implementation plan
 
 Compare:
 
@@ -224,7 +224,7 @@ Sprints address **P0 and P1 only**. Place **P2, P3, P4** in the layer backlog.
 
 ---
 
-## 10. Step 5 — Sprint execution
+## 10. Step 5 - Sprint execution
 
 Execute sprints sequentially.
 
@@ -238,11 +238,11 @@ After each sprint:
 
 Advance to the next sprint **only** when the current sprint is closed and no P0/P1 blocker remains.
 
-Do not stop without a real blocker — but **do not** expand scope beyond the designated layer without operator approval.
+Do not stop without a real blocker - but **do not** expand scope beyond the designated layer without operator approval.
 
 ---
 
-## 11. Step 6 — Final audit
+## 11. Step 6 - Final audit
 
 After all sprints:
 
@@ -268,17 +268,17 @@ After the final audit, score maturity (0–100% each):
 - Documentation Consistency
 - Implementation Consistency
 
-Also publish a [Maturity Statement](MATURITY_TAXONOMY.md#required-maturity-block) (**A** / **I** / **P** / **E**) — percentages alone are not sufficient for cross-doc comparison.
+Also publish a [Maturity Statement](MATURITY_TAXONOMY.md#required-maturity-block) (**A** / **I** / **P** / **E**) - percentages alone are not sufficient for cross-doc comparison.
 
-### State A — Not ready
+### State A - Not ready
 
 P0 or P1 issues remain. Layer needs another iteration.
 
-### State B — Architecturally mature
+### State B - Architecturally mature
 
 No P0 or P1 issues. Layer is production-ready. Remaining work is P2–P4 only. **Recommend closing** layer completion work.
 
-### State C — Frozen
+### State C - Frozen
 
 Layer was previously declared mature. Further iterations yield little value. Changes are mainly hardening, optimization, or future extensions.
 
@@ -296,7 +296,7 @@ A layer may be declared **complete** when:
 - **no open `SYS-INV-*` violations in layer scope**,
 - layer is ready for production use.
 
-P2, P3, and P4 do **not** block completion — record them in the layer backlog.
+P2, P3, and P4 do **not** block completion - record them in the layer backlog.
 
 ---
 

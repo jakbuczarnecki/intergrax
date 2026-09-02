@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Accepted — semantic contracts frozen; persistence and runtime implementation NOT STARTED |
+| **Status** | Accepted - semantic contracts frozen; persistence and runtime implementation NOT STARTED |
 | **Date** | 2026-08-11 |
 | **Deciders** | Intergrax platform architecture (MP-1A ownership freeze) |
 | **Related** | [ADR-MP-001](ADR-MP-001.md) · [`architecture/COLLABORATIVE_WORK.md`](../../../../architecture/COLLABORATIVE_WORK.md) · [`capabilities/architecture/MULTIPLAYER_AI.md`](../../../../capabilities/architecture/MULTIPLAYER_AI.md) |
@@ -13,9 +13,9 @@ ADR-MP-001 assigns COLLABORATIVE_WORK as owner. MP-1 requires a coherent semanti
 
 Existing contracts provide **execution and enforcement hooks**, not collaborative semantics:
 
-- `RequestIdentity` + `PrincipalType` (`USER`, `SERVICE`, `ORG_SYSTEM`) — authenticated principal for one agent run.
-- `DelegationSpec` — Nexus graph child-run delegation (objective, child agent, isolated memory namespace).
-- `MeaningfulSideEffectRequest.principal_id` — optional field for policy evaluation before external side effects.
+- `RequestIdentity` + `PrincipalType` (`USER`, `SERVICE`, `ORG_SYSTEM`) - authenticated principal for one agent run.
+- `DelegationSpec` - Nexus graph child-run delegation (objective, child agent, isolated memory namespace).
+- `MeaningfulSideEffectRequest.principal_id` - optional field for policy evaluation before external side effects.
 
 These must be reused at enforcement boundaries without becoming the canonical collaborative Principal, Membership, or authority-Delegation model.
 
@@ -41,15 +41,15 @@ Implementation enum/class location remains open until MP-1 implementation justif
 - Membership is **explicit** collaborative membership in a workspace scope.
 - Scope carries `tenant_id` + `workspace_id` where applicable.
 - Role and capability direction is part of membership semantics; membership is **not inferred** from tenant/workspace identifiers alone.
-- `tenant_id` is ownership/admin scope — not authorization proof.
+- `tenant_id` is ownership/admin scope - not authorization proof.
 
 ### Delegation (authority)
 
 Distinct from `DelegationSpec` (execution graph child run):
 
-- **Delegator principal** — authority source.
-- **Delegate principal** — actor receiving scoped authority.
-- **Scoped authority** — bounded subset of delegator authority.
+- **Delegator principal** - authority source.
+- **Delegate principal** - actor receiving scoped authority.
+- **Scoped authority** - bounded subset of delegator authority.
 - Optional **resource** and **time** boundaries (direction only; concrete fields at implementation).
 - **Never amplifies** delegator authority.
 - Agent authority must not silently equal delegating human authority.

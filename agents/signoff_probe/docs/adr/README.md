@@ -1,4 +1,4 @@
-﻿# signoff_probe agent — Architecture Decision Records
+﻿# signoff_probe agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/signoff_probe`)
 
@@ -36,7 +36,7 @@ ADR-SIGNOFF_PROBE-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

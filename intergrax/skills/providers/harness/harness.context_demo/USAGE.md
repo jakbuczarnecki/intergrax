@@ -4,7 +4,7 @@
 
 ## Purpose
 
-**Context assembly exercises** for `ContextBudgetPolicy` and `ContextManager` — retrieval-only pack without web search noise. Use in lab tests for R-Context trimming and `CONTEXT_ASSEMBLED` trace events.
+**Context assembly exercises** for `ContextBudgetPolicy` and `ContextManager` - retrieval-only pack without web search noise. Use in lab tests for R-Context trimming and `CONTEXT_ASSEMBLED` trace events.
 
 ## How it works
 

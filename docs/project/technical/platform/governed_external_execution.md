@@ -1,6 +1,6 @@
 # Governed External Execution
 
-**Status:** Architecture closure (GEC-0…GEC-6.1) + host platform completion (PC-1…PC-10) — 2026-07-21  
+**Status:** Architecture closure (GEC-0…GEC-6.1) + host platform completion (PC-1…PC-10) - 2026-07-21  
 **Role:** Primary architectural reference for the reusable platform capability  
 **Not:** Implementation tracker, product UX spec, or ADR substitute  
 **Host lifecycle:** [`governed_external_work_host_lifecycle.md`](governed_external_work_host_lifecycle.md)
@@ -16,11 +16,11 @@ This document consolidates ownership, lifecycle, invariants, and extensibility f
 | **Governed External Execution** | Platform capability: intent → policy-gated external side effect → descriptive proof |
 | **External Work** | Domain vocabulary and integration boundary (`external_work` contracts + `ExternalWorkIntegration`) |
 | **GEC (Governed External Contractor)** | First vertical product proving the capability (`governed_contractor_application` + `external_contractor_adapter`) |
-| **Governed Continuation** | Composition over Nexus interrupt / HITL / resume — not a second runtime |
+| **Governed Continuation** | Composition over Nexus interrupt / HITL / resume - not a second runtime |
 | **Meaningful side effect** | External action that may create commitment, mutation, disclosure, access change, or irreversible consequence |
-| **GovernedProofProfile** | Descriptive post-execution proof metadata — not a receipt, audit log, or authorization token |
-| **Execution Evidence & Host Attestation** | Downstream host capability after proof — see [`execution_evidence_and_host_attestation.md`](execution_evidence_and_host_attestation.md) |
-| **ProofReceipt (execution evidence)** | Portable host-attested export of a governed boundary event — **not** owned by GEC |
+| **GovernedProofProfile** | Descriptive post-execution proof metadata - not a receipt, audit log, or authorization token |
+| **Execution Evidence & Host Attestation** | Downstream host capability after proof - see [`execution_evidence_and_host_attestation.md`](execution_evidence_and_host_attestation.md) |
+| **ProofReceipt (execution evidence)** | Portable host-attested export of a governed boundary event - **not** owned by GEC |
 | **ProofReceipt (DocumentStore)** | Separate LKW persistence product (`intergrax.proofs.receipts`) |
 
 ---
@@ -37,9 +37,9 @@ This document consolidates ownership, lifecycle, invariants, and extensibility f
 
 Domain composition notes (not ADR substitutes):
 
-- [`docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) — GEC-4…GEC-6 composition sections
-- [`agents/external_contractor_adapter/docs/ARCHITECTURE.md`](../../../../agents/external_contractor_adapter/docs/ARCHITECTURE.md) — Tier-2 mapping consumer
-- [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../../../../applications/governed_contractor_application/docs/ARCHITECTURE.md) — Tier-3 host vertical
+- [`docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) - GEC-4…GEC-6 composition sections
+- [`agents/external_contractor_adapter/docs/ARCHITECTURE.md`](../../../../agents/external_contractor_adapter/docs/ARCHITECTURE.md) - Tier-2 mapping consumer
+- [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../../../../applications/governed_contractor_application/docs/ARCHITECTURE.md) - Tier-3 host vertical
 
 ---
 
@@ -138,7 +138,7 @@ Exactly one primary owner per capability. “Does not” columns eliminate ambig
 | Continuation surface + evidence forward | Tier-2 (mapping only) |
 | Provider-bound mutation | Provider (after ALLOW) |
 | Descriptive proof composition | Tier-2 (mandatory after success) |
-| Receipt / audit / attestation products | Downstream Execution Evidence (host) — see dedicated platform doc; beyond GEC closure |
+| Receipt / audit / attestation products | Downstream Execution Evidence (host) - see dedicated platform doc; beyond GEC closure |
 
 ---
 
@@ -148,14 +148,14 @@ Collected from accepted ADRs and GEC-3…GEC-6 architecture (not invented here).
 
 1. **Policy precedes meaningful side effects.** No provider-bound mutation without prior `PolicyDecision` ALLOW (fail closed on missing evaluator, principal, run identity, or indeterminate).
 2. **Evidence never authorizes.** `QuoteAcceptanceEvidence` / continuation evidence is not an allow decision; policy still gates the subsequent side effect.
-3. **Proof never authorizes.** `GovernedProofProfile` is descriptive only — never allow, resume, or evaluate policy.
+3. **Proof never authorizes.** `GovernedProofProfile` is descriptive only - never allow, resume, or evaluate policy.
 4. **Continuation never executes work.** It surfaces interruption and forwards decision evidence; it does not call mutating provider methods.
 5. **Tier-2 never persists proofs.** No signing, hashing, DocumentStore writes, or receipt products in the adapter.
 6. **Providers never evaluate policy.** The Protocol transmits already-authorized evidence; it does not decide accept/reject/pay/publish.
-7. **Real execution identity is preserved.** `task_id` and `run_id` are distinct; run identity is forwarded from Nexus context — never synthesized from `task_id` or placeholders.
+7. **Real execution identity is preserved.** `task_id` and `run_id` are distinct; run identity is forwarded from Nexus context - never synthesized from `task_id` or placeholders.
 8. **No meaningful side effect succeeds without proof.** After ALLOW + successful mutation, composition of `GovernedProofProfile` is mandatory (not best-effort).
 9. **Correlation and idempotency are preserved.** Keys derived from Intergrax identity + stage are forwarded; mutating calls are not blindly retried.
-10. **Host owns receipts (future).** Persistence and product receipt exposure remain host/platform receipt paths — distinct from descriptive proof.
+10. **Host owns receipts (future).** Persistence and product receipt exposure remain host/platform receipt paths - distinct from descriptive proof.
 11. **Proof profiles are descriptive only.** Not receipts, audit logs, or authorization mechanisms.
 12. **External Work status ≠ Nexus `TaskState`.** Commercial/quote stages stay in `ExternalWorkStatus`.
 13. **Observational reads are not mutation gates.** e.g. `get_quote` may surface continuation; it is not itself a meaningful side-effect gate.
@@ -164,7 +164,7 @@ Collected from accepted ADRs and GEC-3…GEC-6 architecture (not invented here).
 
 ---
 
-## Extensibility — adding a new governed external provider
+## Extensibility - adding a new governed external provider
 
 Target path:
 
@@ -180,11 +180,11 @@ Target path:
 
 | Layer | Change required to add a provider? |
 |-------|-------------------------------------|
-| Policy engine / `MeaningfulSideEffectRequest` | **No** — inject rules/evaluator; do not fork the engine |
-| `GovernedProofProfile` / proof contracts | **No** — compose with existing fields |
-| Governed Continuation contracts | **No** — reuse reasons/evidence refs; add domain evidence mappers only if a new reason needs them |
+| Policy engine / `MeaningfulSideEffectRequest` | **No** - inject rules/evaluator; do not fork the engine |
+| `GovernedProofProfile` / proof contracts | **No** - compose with existing fields |
+| Governed Continuation contracts | **No** - reuse reasons/evidence refs; add domain evidence mappers only if a new reason needs them |
 | Governance abstractions (Nexus interrupt, HITL, `PolicyDecision`) | **No** |
-| Tier-2 mapping core | **No** provider branches — only if a new *domain* mapping concern appears (not transport) |
+| Tier-2 mapping core | **No** provider branches - only if a new *domain* mapping concern appears (not transport) |
 
 ### May require (local to the new provider)
 
@@ -195,24 +195,24 @@ Target path:
 
 ### Extensibility verdict
 
-Adding a provider **does not** require changing the policy engine, proof contracts, continuation contracts, or governance abstractions — provided the provider stays behind `ExternalWorkIntegration` and the host injects policy. Gap if violated: any `if provider == …` in Tier-2/core or provider-side authorization would break neutrality and must be rejected in review.
+Adding a provider **does not** require changing the policy engine, proof contracts, continuation contracts, or governance abstractions - provided the provider stays behind `ExternalWorkIntegration` and the host injects policy. Gap if violated: any `if provider == …` in Tier-2/core or provider-side authorization would break neutrality and must be rejected in review.
 
 ---
 
 ## Future platform capabilities
 
-Outside GEC-0…GEC-6.1 closure. Documented as boundaries only — no contracts or implementations claimed here.
+Outside GEC-0…GEC-6.1 closure. Documented as boundaries only - no contracts or implementations claimed here.
 
 | Capability | Boundary vs governed external execution |
 |------------|----------------------------------------|
-| **Execution Evidence & Host Attestation** | Implemented downstream capability — [`execution_evidence_and_host_attestation.md`](execution_evidence_and_host_attestation.md); does not reopen GEC |
+| **Execution Evidence & Host Attestation** | Implemented downstream capability - [`execution_evidence_and_host_attestation.md`](execution_evidence_and_host_attestation.md); does not reopen GEC |
 | **DocumentStore Proof Receipt** | Persistence / queryable LKW receipt product; does not replace `GovernedProofProfile` or governed attested export |
 | **Persistent Audit** | Durable audit store for governed executions; complementary to descriptive proof and HOS trace |
-| **Harness Execution Boundary Events** | Tool/step BoundaryAttest export (`execution_boundary_event.v1`) — sibling of governed EBE |
+| **Harness Execution Boundary Events** | Tool/step BoundaryAttest export (`execution_boundary_event.v1`) - sibling of governed EBE |
 | **Verification (critic)** | Critic / verification engines that judge outcomes; distinct from descriptive proof and receipt signature verify |
 | **Replay** | Reconstruct or re-drive runs from trace; does not authorize side effects |
-| **Provider transport & catalog** | A2A/REST mappers, partner stubs, catalog slugs — behind Protocol; not governance |
-| **Product HITL UX / policy packs** | Host product surfaces and business rule packs — consumers of continuation + policy, not new runtimes |
+| **Provider transport & catalog** | A2A/REST mappers, partner stubs, catalog slugs - behind Protocol; not governance |
+| **Product HITL UX / policy packs** | Host product surfaces and business rule packs - consumers of continuation + policy, not new runtimes |
 
 ---
 

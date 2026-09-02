@@ -22,7 +22,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 def test_application_environment_profile_lab_defaults() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults()
-    assert env.tool_profile.enabled
+    assert env.tool_profile.register_all_catalog_bundles is True
     assert env.modality_profile is not None
 
 

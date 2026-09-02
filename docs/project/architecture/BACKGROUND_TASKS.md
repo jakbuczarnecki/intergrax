@@ -1,10 +1,10 @@
-# Background Tasks — Platform Architecture
+# Background Tasks - Platform Architecture
 
-**Status:** Target platform architecture (not production implementation yet)  
+**Status:** Target platform architecture with **CURRENT** implementation foundations (not universal production qualification)  
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
-**Last updated:** 2026-08-26 — **UE-DOC-0.7** cross-strategy execution guarantees; distributed Execution Boundary admission target
+**Last updated:** 2026-08-26 - **UE-DOC-0.7** cross-strategy execution guarantees; distributed Execution Boundary admission target
 
 ---
 
@@ -14,9 +14,9 @@ This document defines the **target platform architecture** for background task r
 
 | Statement | Meaning |
 |-----------|---------|
-| **Target architecture** | Direction for platform implementation; not all components exist in code yet |
+| **Target architecture** | Direction for platform implementation; core components exist with convergence work remaining |
 | **Generalizes LKW.4** | LKW background ingest is the first proof workload, not a bespoke queue design |
-| **Not production yet** | No claim that `TaskRegistry`, `WorkerRuntime`, or `TaskEvent` are fully implemented |
+| **Not production yet** | No claim of universal production maturity; `TaskRegistry`, `WorkerRuntime`, and `TaskEvent` foundations **exist** in code with UER identity convergence **PARTIAL** |
 | **LKW.4E proof** | Must use **real platform components** and a **real local MessageBus provider** in the proof stack (for example RabbitMQ in Docker); mocks, fake queues, and in-memory-only bypasses are **not** platform proof |
 
 Future platform code should converge on **TaskRegistry + WorkerRuntime + TaskEvent lifecycle**. Applications and agents must not invent application-owned queue systems.
@@ -41,7 +41,7 @@ Handlers contain developer custom logic but run through platform contracts.
 
 ### Distributed execution target (UE-DOC-0.7)
 
-**TARGET ARCHITECTURE** — aligned with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §11, §20, **UEA-INV-011**, **UEA-INV-021**:
+**TARGET ARCHITECTURE** - aligned with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §11, §20, **UEA-INV-011**, **UEA-INV-021**:
 
 ```text
 Execution Boundary / scheduler
@@ -54,7 +54,7 @@ Execution Boundary admission
   ↓ strategy executor / registered TaskHandler
 ```
 
-Workers **re-enter** the canonical Execution Boundary — they do not bypass governance, budget, evidence, or lifecycle guarantees because transport delivered the message. [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) is package installation/activation only. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
+Workers **re-enter** the canonical Execution Boundary - they do not bypass governance, budget, evidence, or lifecycle guarantees because transport delivered the message. [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) is package installation/activation only. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
 
 Future transport envelopes carry canonical runtime identity including `ExecutionId` where the admitted unit is an Execution (see UEA §11). Exact Python schema is not frozen in this slice.
 
@@ -64,7 +64,7 @@ All supported background execution paths use the platform-owned canonical backgr
 
 #### CURRENT IMPLEMENTATION
 
-**CURRENT IMPLEMENTATION / UEA MIGRATION DEBT:** The as-built worker admission path below is factual current behavior — **not** frozen UEA target semantics.
+**CURRENT IMPLEMENTATION / UEA MIGRATION DEBT:** The as-built worker admission path below is factual current behavior - **not** frozen UEA target semantics.
 
 - `BackgroundExecutionIdentityPersistence.resolve_or_create` stabilizes `TaskId` and `RunId` keyed by `BackgroundTransportExecutionRef` (tenant + provider + transport_task_id).
 - Current `bootstrap_background_execution` mints a **fresh** `AttemptId` on each worker execution entry, including transport redelivery/retry of the same logical work.
@@ -78,7 +78,7 @@ BackgroundTransportExecutionRef (tenant + provider + transport_task_id)
        ↓
 BackgroundExecutionIdentityPersistence.resolve_or_create → stable TaskId + RunId
        ↓
-bootstrap_background_execution → mint new AttemptId (CURRENT — per execution entry/redelivery)
+bootstrap_background_execution → mint new AttemptId (CURRENT - per execution entry/redelivery)
        ↓
 execute_logical_task / NexusWorkerRuntime.run_task
        ↓
@@ -88,8 +88,8 @@ runtime (TaskId, RunId, AttemptId)
 | Field | Owner at worker boundary (CURRENT) |
 |-------|-------------------------------------|
 | `TaskId` | Central identity persistence (`resolve_or_create`) keyed by transport ref |
-| `RunId` | Central identity persistence — **not** `TaskRequest.run_id`; stable across retry/redelivery |
-| `AttemptId` | Central bootstrap — mint per worker execution entry/redelivery (**CURRENT debt**) — **not** Celery `request.retries` |
+| `RunId` | Central identity persistence - **not** `TaskRequest.run_id`; stable across retry/redelivery |
+| `AttemptId` | Central bootstrap - mint per worker execution entry/redelivery (**CURRENT debt**) - **not** Celery `request.retries` |
 | `tenant_id` | Validated single scope; mismatch fails closed |
 
 Stable `TaskId`/`RunId` across process restart and concurrent workers requires atomic identity persistence: `DistributedKVStore.compare_and_set` or `ConditionalDocumentStore.put_if_absent`. Generic `DocumentStore` without conditional create is rejected at composition; there is no process-local fallback.
@@ -129,7 +129,7 @@ If required evidence persistence fails: handler invocation count = 0, no busines
 
 **Writer integration: DONE** for supported background execution paths (`BrokerWorkerBase`, `WorkerRuntime`, Celery `intergrax.execute`, `DocumentStoreTaskWorker`). Ordering: transport → identity bootstrap → `admit_background_execution_handler` (required `TRANSPORT_TASK_TRIGGERED_EXECUTION`) → `execute_logical_task`. Fail-closed on persistence failure.
 
-**CURRENT implementation:** worker retry/redelivery currently mints new `AttemptId` and causal evidence through the existing bootstrap — known UEA migration debt.
+**CURRENT implementation:** worker retry/redelivery currently mints new `AttemptId` and causal evidence through the existing bootstrap - known UEA migration debt.
 
 **TARGET:** same-work redelivery preserves `AttemptId`/`ExecutionId`; new transport-delivery causal evidence may record the changed transport delivery/worker relation without minting new runtime identity.
 
@@ -145,7 +145,7 @@ Entry points that invoke the bootstrap: `BrokerWorkerBase.process_message`, `Wor
 |---------|------|
 | **TaskDefinition / JobDefinition** | Declarative registration of a background task type: `task_name`, payload schema, handler reference, policy, required capabilities/tools/integrations |
 | **TaskRegistry** | Platform catalog mapping `task_name` → `TaskDefinition`; source of truth for what tasks may be enqueued and executed |
-| **TaskRequest** | Immutable enqueue envelope: `tenant_id`, `run_id`, `task_name`, `payload` (bytes), optional `idempotency_key`, `priority` — see [`intergrax/queueing/contracts/task_queue.py`](../../../intergrax/queueing/contracts/task_queue.py) |
+| **TaskRequest** | Immutable enqueue envelope: `tenant_id`, `run_id`, `task_name`, `payload` (bytes), optional `idempotency_key`, `priority` - see [`intergrax/queueing/contracts/task_queue.py`](../../../intergrax/queueing/contracts/task_queue.py) |
 | **TaskHandle** | Opaque handle returned after enqueue: `task_id`, `provider`, optional `tenant_id` |
 | **TaskResult** | Final outcome: `status`, optional `output` (bytes), `error_message`, `attempts` |
 | **TaskStatus** | Lifecycle enum: `PENDING`, `RUNNING`, `SUCCEEDED`, `FAILED` (current contract; extended states may map to events) |
@@ -154,7 +154,7 @@ Entry points that invoke the bootstrap: `BrokerWorkerBase.process_message`, `Wor
 
 All supported background handlers implement one canonical platform handler contract (`BackgroundTaskHandler`) and receive `BackgroundExecutionIdentity` explicitly through `execute_logical_task`.
 | **TaskEvent** | Lifecycle/progress fact emitted on an event channel (separate from work transport) |
-| **MessageBus / TaskQueue** | Tier-0 transport contract for enqueue, status, result, list, cancel, purge — [`MessageBus`](../../../intergrax/integrations/contracts/message_bus.py) aliases `TaskQueue` |
+| **MessageBus / TaskQueue** | Tier-0 transport contract for enqueue, status, result, list, cancel, purge - [`MessageBus`](../../../intergrax/integrations/contracts/message_bus.py) aliases `TaskQueue` |
 | **Provider adapter** | Integration implementing `MessageBus` for a vendor (e.g. Kafka publish/consume, SQS poll/lease); serializes/deserializes `TaskRequest`, does not execute handlers |
 | **TaskObserver / subscription** | Consumer of `TaskEvent` stream or pull APIs for status/result; may be app UI, agent loop, workflow, notification bridge, observability backend |
 | **TaskPolicy** | Retry, timeout, concurrency, rate limit, dead-letter, cancellation, idempotency, and tenant-scoping rules attached to a `TaskDefinition` |
@@ -164,18 +164,18 @@ All supported background handlers implement one canonical platform handler contr
 
 ## D. Programmer model
 
-A developer defines a custom background task through platform contracts — **not** by putting code on a queue.
+A developer defines a custom background task through platform contracts - **not** by putting code on a queue.
 
 ### Steps
 
-1. **Define payload schema** — typed model (e.g. Pydantic) serialized to JSON/protobuf bytes in `TaskRequest.payload`.
-2. **Define `task_name`** — stable, namespaced string (e.g. `lkw.background_ingest.v1`, `acme.report.export.v1`).
-3. **Implement handler** — decode payload, execute domain logic through platform tools/integrations/runtime; no vendor SDK imports.
-4. **Declare task policy** — retries, timeout, concurrency, idempotency semantics, dead-letter behavior.
-5. **Declare required tools/integrations/capabilities** — e.g. `local.workspace.index`, `rag.ingest`, `relational_store.query`.
-6. **Register `TaskDefinition` in `TaskRegistry`** — wires `task_name` → schema + handler + policy (host bootstrap or application factory).
-7. **Enqueue from app/agent** — `message_bus.enqueue` or future `background_tasks.enqueue` with encoded payload.
-8. **Observe status/result/events** — pull (`get_status`, `get_result`, `list_tasks`) and/or subscribe to `TaskEvent` stream.
+1. **Define payload schema** - typed model (e.g. Pydantic) serialized to JSON/protobuf bytes in `TaskRequest.payload`.
+2. **Define `task_name`** - stable, namespaced string (e.g. `lkw.background_ingest.v1`, `acme.report.export.v1`).
+3. **Implement handler** - decode payload, execute domain logic through platform tools/integrations/runtime; no vendor SDK imports.
+4. **Declare task policy** - retries, timeout, concurrency, idempotency semantics, dead-letter behavior.
+5. **Declare required tools/integrations/capabilities** - e.g. `local.workspace.index`, `rag.ingest`, `relational_store.query`.
+6. **Register `TaskDefinition` in `TaskRegistry`** - wires `task_name` → schema + handler + policy (host bootstrap or application factory).
+7. **Enqueue from app/agent** - `message_bus.enqueue` or future `background_tasks.enqueue` with encoded payload.
+8. **Observe status/result/events** - pull (`get_status`, `get_result`, `list_tasks`) and/or subscribe to `TaskEvent` stream.
 
 ### Example task types (illustrative)
 
@@ -190,7 +190,7 @@ A developer defines a custom background task through platform contracts — **no
 | `acme.cache.clear.v1` | Clear namespaced cache |
 | `acme.embeddings.batch.v1` | Run batch embeddings |
 
-**Critical rule:** the queue carries `TaskRequest { task_name, payload }`. **WorkerRuntime** resolves `task_name` to **pre-registered handler code**. Payload is data only — paths, IDs, options — not executable logic.
+**Critical rule:** the queue carries `TaskRequest { task_name, payload }`. **WorkerRuntime** resolves `task_name` to **pre-registered handler code**. Payload is data only - paths, IDs, options - not executable logic.
 
 ---
 
@@ -272,7 +272,7 @@ The platform hides provider-specific mechanics behind **TaskQueue/MessageBus + W
 
 ## G. Pull model
 
-Pull inspection is the **mandatory baseline** — works for all providers and supports deterministic agent/workflow checking.
+Pull inspection is the **mandatory baseline** - works for all providers and supports deterministic agent/workflow checking.
 
 | API | Purpose |
 |-----|---------|
@@ -282,11 +282,11 @@ Pull inspection is the **mandatory baseline** — works for all providers and su
 | `cancel(TaskHandle)` | Request cancellation (provider/handler dependent) |
 | `purge_completed(tenant_id, …)` | Retention cleanup for completed task records |
 
-**Current tool surface:** `message_bus.get_status`, `message_bus.get_result`, `message_bus.list_tasks`, `message_bus.cancel`, `message_bus.purge_completed` — see [`intergrax/tools/providers/message_bus/service.py`](../../../intergrax/tools/providers/message_bus/service.py).
+**Current tool surface:** `message_bus.get_status`, `message_bus.get_result`, `message_bus.list_tasks`, `message_bus.cancel`, `message_bus.purge_completed` - see [`intergrax/tools/providers/message_bus/service.py`](../../../intergrax/tools/providers/message_bus/service.py).
 
 **Semantics:**
 
-- Enqueue returns `TaskHandle` immediately; execution is asynchronous. LKW.4E platform proof must observe this async lifecycle — synchronous in-process bypass is not sufficient.
+- Enqueue returns `TaskHandle` immediately; execution is asynchronous. LKW.4E platform proof must observe this async lifecycle - synchronous in-process bypass is not sufficient.
 - Pull APIs are provider-neutral; callers pass `task_id` + `provider` (+ `tenant_id` when required).
 - Agents waiting on background work should prefer pull + events rather than blocking vendor consumers.
 
@@ -326,7 +326,7 @@ Pull inspection is the **mandatory baseline** — works for all providers and su
 - Application UI (progress, completion)
 - Agent waiting/polling loop
 - Workflow orchestrator
-- Notification channel bridge (Slack, email — **observers only**)
+- Notification channel bridge (Slack, email - **observers only**)
 - Observability backend (traces, metrics)
 - Audit / debug tooling
 
@@ -339,8 +339,8 @@ Pull inspection is the **mandatory baseline** — works for all providers and su
 | **Pull status/result** | Baseline; always available |
 | **Event subscription / stream** | Real-time lifecycle for UIs and orchestrators |
 | **Callback / webhook** | Optional push to external HTTP endpoint on terminal states |
-| **`notification_channel`** | Optional human-facing notify (Slack, email) — **not** core execution |
-| **HITL prompt** | Optional human decision gate — observer to `TaskEvent` or terminal status |
+| **`notification_channel`** | Optional human-facing notify (Slack, email) - **not** core execution |
+| **HITL prompt** | Optional human decision gate - observer to `TaskEvent` or terminal status |
 
 Slack, email, and similar integrations **subscribe** to `TaskEvent` or poll final status. They do **not** execute background tasks.
 
@@ -391,7 +391,7 @@ Slack, email, and similar integrations **subscribe** to `TaskEvent` or poll fina
 ### Logs
 
 - Structured lifecycle logs at enqueue, dispatch, start, progress, complete, fail, ack, dead-letter.
-- **No raw payload content by default** — log `task_name`, sizes, hashes, redacted summaries.
+- **No raw payload content by default** - log `task_name`, sizes, hashes, redacted summaries.
 - Payload redaction follows platform observability rules; secrets and document bodies must not appear in logs.
 
 ---
@@ -429,7 +429,7 @@ Operators and developers should be able to answer:
 | **No arbitrary code from queue** | Payload is data; handler code is pre-registered |
 | **Permissions / capabilities** | Handler declares required capabilities; runtime enforces tool/integration allowlists |
 | **Rate limits / concurrency** | `TaskPolicy` per task type and per tenant |
-| **Cancellation** | Cooperative cancel signal through runtime; follows Execution Tree semantics — transport cancel must not create a second canonical cancellation tree |
+| **Cancellation** | Cooperative cancel signal through runtime; follows Execution Tree semantics - transport cancel must not create a second canonical cancellation tree |
 | **Retry / dead-letter** | Policy-driven; terminal failure → `task.dead_lettered` |
 | **Payload redaction** | Logs, events, and traces redact sensitive payload fields |
 | **No vendor SDK in apps/agents** | Tier-2/3 use `message_bus.*` tools only |
@@ -450,7 +450,7 @@ Operators and developers should be able to answer:
 **Evolution:**
 
 - Existing `TaskQueue` is the **current base** for transport and pull.
-- Future **TaskRegistry**, **WorkerRuntime**, and **TaskEvent** model **build on** this contract — they do not replace it with an application-specific design.
+- Future **TaskRegistry**, **WorkerRuntime**, and **TaskEvent** model **build on** this contract - they do not replace it with an application-specific design.
 - **LKW.4E** must align with this architecture; it must **not** invent an LKW-only queue/worker stack.
 
 ---
@@ -491,14 +491,14 @@ Explicitly **out of scope** for this architecture document and the BG-TASKS trac
 - Slack notify (LKW.6b)
 - OS daemon (LKW.6)
 - Arbitrary code serialization on the queue
-- Cloud-managed vendor backends (SQS, Service Bus, Pub/Sub, etc.) in LKW.4E first pass — a **local** broker/provider in the proof stack is required
+- Cloud-managed vendor backends (SQS, Service Bus, Pub/Sub, etc.) in LKW.4E first pass - a **local** broker/provider in the proof stack is required
 - Mocks, fake queues, in-memory-only bypasses, and unit-test-only handler invocation as LKW.4E platform proof
 
 ---
 
 ## Related documents
 
-- [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md) — implementation phases
-- [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) — `message_bus` provider category
-- [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7 — LKW.4 product architecture
-- [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6 — LKW.4 task schedule
+- [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md) - implementation phases
+- [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) - `message_bus` provider category
+- [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7 - LKW.4 product architecture
+- [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6 - LKW.4 task schedule

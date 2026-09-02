@@ -1,4 +1,4 @@
-# Intergrax Assistant — Architecture Decision Records
+# Intergrax Assistant - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/intergrax_assistant_application`)
 

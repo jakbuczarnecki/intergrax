@@ -1,5 +1,5 @@
 # llama.cpp OpenAI-compatible embedding server.
-# Separate from chat llama.cpp — exposes /v1/embeddings when started with --embeddings.
+# Separate from chat llama.cpp - exposes /v1/embeddings when started with --embeddings.
 # Host port 8103; wire RAG: INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL=http://127.0.0.1:8103/v1
 
 services:

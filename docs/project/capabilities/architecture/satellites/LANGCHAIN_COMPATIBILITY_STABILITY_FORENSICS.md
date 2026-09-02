@@ -6,7 +6,7 @@
 **Python:** 3.12.11
 **uv:** 0.8.15
 **Validated HEAD:** `924478ee499b182bf12cd0ff2567a16194b802d6`
-**Status:** `ROOT_CAUSE_RESOLVED — READY_FOR_FINAL_GATE_RERUN`
+**Status:** `ROOT_CAUSE_RESOLVED - READY_FOR_FINAL_GATE_RERUN`
 
 ## Preflight and scope
 
@@ -120,7 +120,7 @@ Loader case E, splitter case F, and direct splitter case D all PASS; `uv pip che
 DIFFERENT_RESOLUTION
 ```
 
-The earlier PASS was not the same resolved dependency set. The current unbounded `uv pip install` resolves a newer Transformers release whose own availability gate rejects the pinned Torch version, while its import surface still references the missing global. The cache comparison does not support `E — uv/cache resolution instability` as the root cause.
+The earlier PASS was not the same resolved dependency set. The current unbounded `uv pip install` resolves a newer Transformers release whose own availability gate rejects the pinned Torch version, while its import surface still references the missing global. The cache comparison does not support `E - uv/cache resolution instability` as the root cause.
 
 ## Invocation and lifecycle audit
 
@@ -136,7 +136,7 @@ The two accepted historical PASS environments and the current failing environmen
 
 ## Root cause and decision
 
-**Category: `A — dependency version incompatibility`.**
+**Category: `A - dependency version incompatibility`.**
 
 The project pins `torch==2.2.2` and allows `sentence-transformers>=3.0`; it does not constrain the transitive Transformers major line. Current resolution selects `transformers 5.14.1`, whose `is_torch_available()` policy requires Torch `>=2.4`, but whose tensor-parallel module still unconditionally evaluates `torch.autograd.Function`. This is why both compatibility families fail through their shared sentence-transformers import surface.
 
@@ -150,7 +150,7 @@ No production, RAG, gate, `pyproject.toml`, or lockfile fix was applied. A packa
 
 ## Conclusion
 
-The former classification `E — prior failure non-reproducible` is superseded. The failure is recurrent and deterministic for the current resolution: 5/5 fresh loader environments and 5/5 fresh splitter environments fail with the same upstream traceback. Final system gate rerun is not authorized until the dependency constraint decision and compatibility requalification are complete. `LCI-8A` was not started.
+The former classification `E - prior failure non-reproducible` is superseded. The failure is recurrent and deterministic for the current resolution: 5/5 fresh loader environments and 5/5 fresh splitter environments fail with the same upstream traceback. Final system gate rerun is not authorized until the dependency constraint decision and compatibility requalification are complete. `LCI-8A` was not started.
 
 ## LCI-7C-STABILITY-2 requalification
 
@@ -193,5 +193,5 @@ The fresh 7B clean-core gate passed with zero installed LangChain and LangGraph
 distributions. Targeted regression tests passed (`62 passed`), and inventory,
 boundary, and `uv lock --check` audits passed.
 
-**Current status:** `ROOT_CAUSE_RESOLVED — READY_FOR_FINAL_GATE_RERUN`.
+**Current status:** `ROOT_CAUSE_RESOLVED - READY_FOR_FINAL_GATE_RERUN`.
 The Final System Gate was not started and `LCI-8A` was not started.

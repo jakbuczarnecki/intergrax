@@ -4,7 +4,7 @@
 
 ## Purpose
 
-**Shadow workspace drafting** — read, write, search files in the isolated shadow workspace and persist notes to task memory. Use for LKW `local_synthesizer`, report generators, and coding assistants that produce artifacts without touching the host filesystem directly.
+**Shadow workspace drafting** - read, write, search files in the isolated shadow workspace and persist notes to task memory. Use for LKW `local_synthesizer`, report generators, and coding assistants that produce artifacts without touching the host filesystem directly.
 
 ## How it works
 
@@ -48,6 +48,6 @@ Enable shadow workspace in environment profile / `wire_shadow_workspace(env)` so
 
 ## Related skills
 
-- `research.citation_synthesis` — writes reports to workspace
-- `rag.hybrid_qa` — source material for drafts
-- `legal.clause_compare` — clause diff output to workspace
+- `research.citation_synthesis` - writes reports to workspace
+- `rag.hybrid_qa` - source material for drafts
+- `legal.clause_compare` - clause diff output to workspace

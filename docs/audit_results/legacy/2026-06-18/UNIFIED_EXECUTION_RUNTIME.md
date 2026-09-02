@@ -1,4 +1,4 @@
-# Audit result — `UNIFIED_EXECUTION_RUNTIME`
+# Audit result - `UNIFIED_EXECUTION_RUNTIME`
 
 **Run:** 2026-06-18 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -29,9 +29,9 @@
 | UAEP-AUDIT-05 | P3 | §42.43 product reference host deferred §6.3 (FLOW-8 product) | plan FLOW-8 Partial | deferred |
 | UAEP-AUDIT-06 | P3 | GOV-PROD.1 product observability dashboard deferred | plan GOV-PROD.1 | deferred |
 | UAEP-AUDIT-07 | P3 | OBS-EVOL-9.7 event catalog consolidation pending | cross-plan OBSERVABILITY | deferred |
-| UAEP-AUDIT-08 | P2 | Audit prompt gap "HTTP mid-run autonomy lab-only" stale — all 8 hosts mount autonomy routes | `harness_task_routes.py:101-109` | closed |
+| UAEP-AUDIT-08 | P2 | Audit prompt gap "HTTP mid-run autonomy lab-only" stale - all 8 hosts mount autonomy routes | `harness_task_routes.py:101-109` | closed |
 | UAEP-AUDIT-09 | P4 | Full gate suite 3 failed + 1 error (cross-domain / env) | `pytest -m gate` | open |
-| UAEP-AUDIT-10 | — | R-Policy, R-Delegate, SEC/COST/GR/REL wiring Done | policy_bundle, delegation, CI scripts | closed |
+| UAEP-AUDIT-10 | - | R-Policy, R-Delegate, SEC/COST/GR/REL wiring Done | policy_bundle, delegation, CI scripts | closed |
 
 No open P0/P1.
 
@@ -48,14 +48,14 @@ No open P0/P1.
 
 ## Backlog P2–P4 (planned / deferred)
 
-- P2 UAEP-AUDIT-01 — tenant_id on all RuntimeEvent emitters + regression gate (§6.1av)
-- P3 UAEP-MAINT-02 — STEP_COMPLETED deduplication (§6.1av)
-- P3 UAEP-MAINT-03 — security middleware layout diagram Appendix H (§6.1av)
-- P3 supervisor escalation target (§42.38) — deferred
-- P3 FLOW-8 product host, GOV-PROD.1, OBS-EVOL-9.7 — deferred
+- P2 UAEP-AUDIT-01 - tenant_id on all RuntimeEvent emitters + regression gate (§6.1av)
+- P3 UAEP-MAINT-02 - STEP_COMPLETED deduplication (§6.1av)
+- P3 UAEP-MAINT-03 - security middleware layout diagram Appendix H (§6.1av)
+- P3 supervisor escalation target (§42.38) - deferred
+- P3 FLOW-8 product host, GOV-PROD.1, OBS-EVOL-9.7 - deferred
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature** — UAEP L3+; address P2 tenant_id gap for multi-tenant audit completeness.
+**Architecturally Mature** - UAEP L3+; address P2 tenant_id gap for multi-tenant audit completeness.

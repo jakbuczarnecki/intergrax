@@ -55,12 +55,12 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 
 ### Key security mechanisms
 
-- **PolicyEngine** — pre-run, pre-tool, post-tool governance hooks
-- **ToolRuntime** — unified tool gateway with policy, trace, and idempotency
-- **Tier boundaries** — agents cannot bypass Nexus to access integrations directly
-- **Human-in-the-loop (HITL)** — governance gates for sensitive operations
-- **Trace & audit** — observability for security-relevant events
-- **Cost governance** — budget controls for LLM and tool usage
+- **PolicyEngine** - pre-run, pre-tool, post-tool governance hooks
+- **ToolRuntime** - unified tool gateway with policy, trace, and idempotency
+- **Tier boundaries** - agents cannot bypass Nexus to access integrations directly
+- **Human-in-the-loop (HITL)** - governance gates for sensitive operations
+- **Trace & audit** - observability for security-relevant events
+- **Cost governance** - budget controls for LLM and tool usage
 
 ---
 
@@ -69,7 +69,7 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 ### Secrets
 
 - **Never** commit API keys, tokens, passwords, or `.env` files
-- Use environment variables — see integration docs in [docs/project/architecture/INTEGRATIONS.md](docs/project/architecture/INTEGRATIONS.md)
+- Use environment variables - see integration docs in [docs/project/architecture/INTEGRATIONS.md](docs/project/architecture/INTEGRATIONS.md)
 - Rotate credentials if accidentally exposed
 
 ### Dependencies
@@ -85,7 +85,7 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 
 ### Infrastructure
 
-- Local Docker backends: [infra/README.md](infra/README.md) — do not expose to public networks in development
+- Local Docker backends: [infra/README.md](infra/README.md) - do not expose to public networks in development
 - Lab harness presets: [docs/project/technical/guides/HARNESS_ENVIRONMENT.md](docs/project/technical/guides/HARNESS_ENVIRONMENT.md)
 
 ---

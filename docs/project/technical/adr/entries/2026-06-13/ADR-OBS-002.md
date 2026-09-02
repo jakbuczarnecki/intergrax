@@ -19,10 +19,10 @@ Partner PoC requirements (agreed):
 
 Alternatives considered:
 
-1. **Extend HOS `RuntimeEvent` with receipt fields** — rejected: couples internal journal to external receipt semantics; violates vendor-neutral spine.
-2. **Agent-level export in Tier-2** — rejected: duplicates boundary; agents must not own attestation logic.
-3. **Intergrax signs boundary events in PoC v1** — rejected: overstates trust without key management; partner chose local signing.
-4. **Optional EBE side channel at invoker** — **accepted**: unsigned `execution_boundary_event.v1`, memory buffer, Tier-3 profile.
+1. **Extend HOS `RuntimeEvent` with receipt fields** - rejected: couples internal journal to external receipt semantics; violates vendor-neutral spine.
+2. **Agent-level export in Tier-2** - rejected: duplicates boundary; agents must not own attestation logic.
+3. **Intergrax signs boundary events in PoC v1** - rejected: overstates trust without key management; partner chose local signing.
+4. **Optional EBE side channel at invoker** - **accepted**: unsigned `execution_boundary_event.v1`, memory buffer, Tier-3 profile.
 
 ## Decision
 
@@ -36,7 +36,7 @@ Add **Execution Boundary Export (EBE)** as an optional Tier-1 side channel:
 
 Deferred: webhook sink, host-side event signing.
 
-**EBE-8 (2026-06-13):** HarnessKernel step-level export added — `boundary_type: harness_step`, `event_sequence` per run, `step_level_enabled` on profile. HOS spine unchanged.
+**EBE-8 (2026-06-13):** HarnessKernel step-level export added - `boundary_type: harness_step`, `event_sequence` per run, `step_level_enabled` on profile. HOS spine unchanged.
 
 ## Consequences
 
@@ -54,8 +54,8 @@ Deferred: webhook sink, host-side event signing.
 
 ## Compliance
 
-- Tier boundaries preserved — EBE in `intergrax/runtime/attestation`; no `agents` imports in platform
-- HOS unchanged — no receipt logic in unified journal
+- Tier boundaries preserved - EBE in `intergrax/runtime/attestation`; no `agents` imports in platform
+- HOS unchanged - no receipt logic in unified journal
 - AgentReceipt remains external; no vendor SDK in Intergrax
 - Application ADR: `ADR-ATTESTATION_DEMO-001` records Tier-3 PoC decisions
 

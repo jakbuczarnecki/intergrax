@@ -1,8 +1,8 @@
-﻿# boundary_demo agent — architecture
+﻿# boundary_demo agent - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
-**Status:** Stable PoC baseline — legacy UAEP (not ACP scaffold).
+**Status:** Stable PoC baseline - legacy UAEP (not ACP scaffold).
 
 ---
 
@@ -18,10 +18,10 @@ Tier-2 **partner sandbox** agent for Execution Boundary Export (EBE). One step s
 
 | Path | Role |
 |------|------|
-| `boundary_demo_agent.py` | `BoundaryDemoAgent` — UAEP `get_steps` / `run_step` |
+| `boundary_demo_agent.py` | `BoundaryDemoAgent` - UAEP `get_steps` / `run_step` |
 | `capabilities.py` | Capability ids |
 | `tests` | Standalone contract smoke tests |
-| `docs/project/technical/adr` | Agent ADRs — [`adr/README.md`](adr/README.md) |
+| `docs/project/technical/adr` | Agent ADRs - [`adr/README.md`](adr/README.md) |
 
 ## Runtime
 
@@ -46,12 +46,12 @@ run_step(store_demo_record):
 | `agent_id` | `boundary_demo_agent` |
 | `capabilities` | `attestation.demo` |
 | `skills` | `data.records_admin` |
-| `allowed_tools` (author) | `[]` — runtime merge via registry |
+| `allowed_tools` (author) | `[]` - runtime merge via registry |
 | `max_steps` | 1 |
 
 ## Tier hygiene
 
-- Imports only `intergrax.*` and `boundary_demo` — **no** `applications` imports
+- Imports only `intergrax.*` and `boundary_demo` - **no** `applications` imports
 - Tool wiring supplied by `applications/attestation_demo/host/tool_wiring.py`
 
 ## Registration

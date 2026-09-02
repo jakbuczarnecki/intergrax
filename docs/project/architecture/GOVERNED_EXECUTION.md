@@ -6,11 +6,11 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Governed Execution
 
-**Governance & Policy Enforcement** — reusable platform mechanisms that enforce configured execution boundaries around **every Execution** and its meaningful operations.
+**Governance & Policy Enforcement** - reusable platform mechanisms that enforce configured execution boundaries around **every Execution** and its meaningful operations.
 
 Every Execution enters governance with canonical identity, tenant/scope, effective authority, execution requirements, and relevant action/effect context. Governance answers whether an Execution or operation is allowed under effective authority and policy. UER/Execution Runtime applies the lifecycle consequence (allow, deny, pause, terminate, resume).
 
-Agent and model behavior are common **examples** of inner evaluation points — not the scope boundary of governance. The product or application owns business rules; Intergrax supplies reusable mechanisms that carry identity and context, evaluate configured policy, enforce decisions, pause for human approval when required, and record governance evidence.
+Agent and model behavior are common **examples** of inner evaluation points - not the scope boundary of governance. The product or application owns business rules; Intergrax supplies reusable mechanisms that carry identity and context, evaluate configured policy, enforce decisions, pause for human approval when required, and record governance evidence.
 
 **Applications define the rules; Intergrax enforces the execution boundaries.**
 
@@ -30,7 +30,7 @@ Primary audience: Principal / Staff engineers, architects, CTOs, security and go
 | **Approval / HITL** | One canonical human-in-the-loop path when policy requires human decision |
 | **Tool and action boundaries** | Controlled tool invocation and meaningful side-effect authorization on demonstrated paths |
 | **Evidence / provenance** | Governance decisions correlated with execution evidence where mechanisms are wired |
-| **Extension** | Policy handlers through the existing platform plugin / policy architecture — not a second plugin framework |
+| **Extension** | Policy handlers through the existing platform plugin / policy architecture - not a second plugin framework |
 
 ---
 
@@ -80,13 +80,13 @@ Every Execution enters the canonical Execution Boundary with:
 | Is this Execution / operation allowed under effective authority and policy? | **Governance** |
 | What lifecycle consequence follows (RUNNING, PAUSED, FAILED, RESUMED, …)? | **UER / Execution Runtime** |
 
-No strategy — inference, agentic, orchestration, distributed worker, or future executor — may bypass governance admission or applicable inner evaluation points merely because it runs inside another Execution.
+No strategy - inference, agentic, orchestration, distributed worker, or future executor - may bypass governance admission or applicable inner evaluation points merely because it runs inside another Execution.
 
 ---
 
 ## Execution admission vs inner evaluation points
 
-Two levels — do **not** conflate them.
+Two levels - do **not** conflate them.
 
 ### A. Execution admission / effective authority
 
@@ -110,7 +110,7 @@ Conditional boundaries **inside** an Execution when applicable:
 - control-plane mutation
 - post-run
 
-Not every inner point executes for every strategy (simple inference may have no tool invocation boundary). No strategy may **bypass** an applicable inner point. Inner evaluation remains reachable only through platform-owned boundaries — no executor-local private governance engine and no competing general systems such as `InferenceGuardrailRuntime`, `AgentGuardrailRuntime`, or `NexusGuardrailRuntime`.
+Not every inner point executes for every strategy (simple inference may have no tool invocation boundary). No strategy may **bypass** an applicable inner point. Inner evaluation remains reachable only through platform-owned boundaries - no executor-local private governance engine and no competing general systems such as `InferenceGuardrailRuntime`, `AgentGuardrailRuntime`, or `NexusGuardrailRuntime`.
 
 ---
 
@@ -138,13 +138,13 @@ Tool
 
 **Governance/policy** = decision authority (ALLOW, DENY, REQUIRE_HUMAN, …).
 
-**Guardrails** = one class of enforcement mechanisms/constraints — not a parallel policy system. Applicable guardrails participate at model, tool, input/output, side-effect, or other platform-owned boundaries. They must be reached through those boundaries; they do not replace governance admission.
+**Guardrails** = one class of enforcement mechanisms/constraints - not a parallel policy system. Applicable guardrails participate at model, tool, input/output, side-effect, or other platform-owned boundaries. They must be reached through those boundaries; they do not replace governance admission.
 
 ---
 
 ## Governance plane
 
-Conceptual platform model — not a single runtime class or universal wrapper:
+Conceptual platform model - not a single runtime class or universal wrapper:
 
 ```text
                          GOVERNED EXECUTION
@@ -203,7 +203,7 @@ Each decision may carry **advisory** or **mandatory** enforcement level. Mandato
 
 ## Evaluation boundaries
 
-Conceptual boundary classes in the governance plane model. These are **inner evaluation points** (level B) where policy may apply inside an Execution — not substitutes for Execution admission (level A). Coverage varies by strategy; applicable boundaries must not be bypassed.
+Conceptual boundary classes in the governance plane model. These are **inner evaluation points** (level B) where policy may apply inside an Execution - not substitutes for Execution admission (level A). Coverage varies by strategy; applicable boundaries must not be bypassed.
 
 | Boundary class | Role |
 | -------------- | ---- |
@@ -213,7 +213,7 @@ Conceptual boundary classes in the governance plane model. These are **inner eva
 | **Meaningful external side effect** | Authorization for effects that leave the bounded runtime |
 | **Output** | Pre-output policy bridges where wired |
 | **Replay / post-run governance** | Post-run evaluation, metrics, and guard mechanisms |
-| **Control-plane mutation** | Authorization/evidence for state-changing control-plane operations (activation, rollback, capacity, live task control, plugin/config admission) — **target taxonomy**; live coverage **GAP** |
+| **Control-plane mutation** | Authorization/evidence for state-changing control-plane operations (activation, rollback, capacity, live task control, plugin/config admission) - **target taxonomy**; live coverage **GAP** |
 
 These classes describe **where policy may apply** in the platform model. **Current implementation coverage varies by boundary.** Do not infer a uniform evaluation-point API or complete platform-wide coverage from this list.
 
@@ -225,7 +225,7 @@ Frozen architecture (G1A): [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries
 
 A **Governance Evaluation Point** is a named execution boundary at which Intergrax evaluates configured governance state before, during, or after a meaningful execution operation and produces an explicit governance outcome according to that boundary's contract. It is **not** one class, method, enum, or middleware stack.
 
-**One governance plane, multiple enforcement owners.** Governed Execution composes specialized owners — authorization (`ToolAccessPolicy`, `ToolScopePolicy`), live policy (`RuntimePolicyEngine`, `PolicyEngine` facade for live + replay evaluators), declarative tool policy (`DeclarativePolicyEnforcer`), canonical HITL, post-run governance (`GovernanceService`, `ExecutionGuard`), and evidence/observability — without a universal `GovernanceEngine`.
+**One governance plane, multiple enforcement owners.** Governed Execution composes specialized owners - authorization (`ToolAccessPolicy`, `ToolScopePolicy`), live policy (`RuntimePolicyEngine`, `PolicyEngine` facade for live + replay evaluators), declarative tool policy (`DeclarativePolicyEnforcer`), canonical HITL, post-run governance (`GovernanceService`, `ExecutionGuard`), and evidence/observability - without a universal `GovernanceEngine`.
 
 | Concern | Question |
 | ------- | -------- |
@@ -239,34 +239,34 @@ These compose sequentially; they are **not** interchangeable. Authorization ALLO
 
 **Failure posture:** security-sensitive indeterminate outcomes at meaningful external side effects and explicitly restricted authorization paths **fail closed**. Declarative `AUDIT_ONLY` may record would-deny without blocking. Other boundaries are evaluation-point-specific (see ADR).
 
-**Reference pattern (not universal topology):** `DeclarativePolicyEnforcer` at `RuntimeToolInvoker` — typed context, deterministic precedence, provenance, enforcement mode, block before handler, scoped HITL. Other boundaries should match this contract quality where critical, not necessarily this implementation path.
+**Reference pattern (not universal topology):** `DeclarativePolicyEnforcer` at `RuntimeToolInvoker` - typed context, deterministic precedence, provenance, enforcement mode, block before handler, scoped HITL. Other boundaries should match this contract quality where critical, not necessarily this implementation path.
 
-**PolicyEngine** is a facade over live `RuntimePolicyEngine` and optional replay `ExecutionPolicyEngine` — **not** the whole of Governed Execution. It does not own tool access/scope, declarative enforcer, HITL, or evidence.
+**PolicyEngine** is a facade over live `RuntimePolicyEngine` and optional replay `ExecutionPolicyEngine` - **not** the whole of Governed Execution. It does not own tool access/scope, declarative enforcer, HITL, or evidence.
 
-Contract hardening (**G1B**) — **implemented core** on owned live paths (not platform-wide coverage):
+Contract hardening (**G1B**) - **implemented core** on owned live paths (not platform-wide coverage):
 
 - **G1B-1:** typed live policy evaluation contexts for agent decision, pre-model, and critic governance; unused pre-output semantic context removed. Security-sensitive live evaluation on these owned paths no longer depends on opaque `dict` bags.
 - **G1B-2:** typed meaningful-side-effect runtime rules (`MeaningfulSideEffectPolicyRule`, explicit `rule_id`, existing `PolicyAction`); `RuntimePolicyEngine` does not parse dynamic type/decision/id strings; fail-closed semantics preserved.
-- **G1B-3:** hardened `PolicyDecision` — immutable, extra fields forbidden, explicit canonical provenance; bundle provenance either absent or complete; sha256 digest structurally validated; `audit_payload` remains diagnostic/non-authoritative. `EvaluatedPolicyDecision` remains the bundle-backed typed evidence contract; no duplicate evidence framework.
+- **G1B-3:** hardened `PolicyDecision` - immutable, extra fields forbidden, explicit canonical provenance; bundle provenance either absent or complete; sha256 digest structurally validated; `audit_payload` remains diagnostic/non-authoritative. `EvaluatedPolicyDecision` remains the bundle-backed typed evidence contract; no duplicate evidence framework.
 
 Not closed by this core: `RuntimePolicyBundle.domain_fragments` hardening, `MeaningfulSideEffectRequest` context/correlation hardening, remaining facade terminology, universal rule catalog, universal evaluation-point coverage, `decision_id` on every policy producer, or durable evidence persistence.
 
-### G3B — Governance Evaluation Point execution coverage (2026-08-17)
+### G3B - Governance Evaluation Point execution coverage (2026-08-17)
 
 Frozen audit baseline (G3) closed only where a live mechanism is wired to a mandatory execution boundary with enforced outcomes. Status vocabulary: **COVERED**, **PARTIAL**, **GAP**, **OBSERVE_ONLY**, **NOT_APPLICABLE**.
 
 | Evaluation point | Status | Owner / mechanism | Canonical enforcement boundary | Qualification / remaining gap |
 | ---------------- | ------ | ----------------- | ------------------------------ | ----------------------------- |
-| **AGENT_DECISION** | **COVERED** | `RuntimePolicyEngine.evaluate_decision` via `ExecutionInterruptHandler.resolve_decision` | `UAEPExecutor` step loop — `GovernanceResolution.should_block_execution` before decision-driven control flow | Custom policy engines may return DENY; enforcement is mandatory at UAEP boundary |
+| **AGENT_DECISION** | **COVERED** | `RuntimePolicyEngine.evaluate_decision` via `ExecutionInterruptHandler.resolve_decision` | `UAEPExecutor` step loop - `GovernanceResolution.should_block_execution` before decision-driven control flow | Custom policy engines may return DENY; enforcement is mandatory at UAEP boundary |
 | **interrupt sub-boundary** | **COVERED** | `RuntimePolicyEngine.evaluate_interrupt` via `resolve_decision` / `resolve_interrupt` | `GovernanceResolution.should_block_execution` + `should_pause` on blocking interrupts | HITL semantic consolidation deferred to G5 |
 | **PRE_MODEL** | **COVERED** | `PolicyEngine.evaluate_pre_llm` | `PlanningRunner` (Nexus planning) · `PolicyEnforcingLLMRouter` wrapping `StepLLMRouter.complete` (ACP agent-step LLM) | Non-ACP direct adapter callers outside `StepLLMRouter` remain host-qualified |
 | **TOOL_PLAN_OR_ACCESS** | **COVERED** | `ToolAccessPolicy.apply` (+ optional `ToolScopePolicy` via bundle resolution) | `tool_runtime.execute_plan` before plan exposure / context side-effects | Host-owned planners outside Nexus `tool_runtime` path are host-qualified |
-| **TOOL_INVOCATION authorization** | **COVERED** | `RuntimeToolInvoker` authorization | Pre-handler authorization gate | Unchanged — regression-protected |
-| **TOOL_INVOCATION declarative policy** | **COVERED** | `DeclarativePolicyEnforcer` | `RuntimeToolInvoker` before handler | Unchanged — regression-protected |
+| **TOOL_INVOCATION authorization** | **COVERED** | `RuntimeToolInvoker` authorization | Pre-handler authorization gate | Unchanged - regression-protected |
+| **TOOL_INVOCATION declarative policy** | **COVERED** | `DeclarativePolicyEnforcer` | `RuntimeToolInvoker` before handler | Unchanged - regression-protected |
 | **MEANINGFUL_SIDE_EFFECT** | **PARTIAL** | `MeaningfulSideEffectAuthorizationBoundary` (collaborative-work) · `MeaningfulSideEffectEvaluator` at adapter boundary | `ExternalWorkAdapter._evaluate_side_effect` before provider call (runtime-only) · `MeaningfulSideEffectAuthorizationBoundary.authorize` (collaborative-work) | Not every runtime side-effect path is wired through `MeaningfulSideEffectAuthorizationBoundary`; collaborative-work hosts must inject the boundary |
 | **PRE_OUTPUT** | **COVERED** | `PolicyEngine.evaluate_pre_output` | `HarnessKernel._policy_post_check` (terminal step) · `apply_pre_output_policy` in `NexusLoop._finish_task` | Non-terminal harness steps skip post-output evaluation by design |
 | **POST_RUN** | **PARTIAL** | `GovernanceService` → `ExecutionGuard.evaluate_run` | `invoke_post_run_governance` at `NexusLoop._finish_task` and `UAEPExecutor.execute` completion when `governance_service` is configured | Runs without an injected `GovernanceService` skip post-run evaluation by configuration |
-| **CONTROL_PLANE_MUTATION** | **GAP** | Domain-specialized executors (Agent Distribution, AHI, ECP, task-control, Platform Plugins) | Target: shared authority context before mutating active platform/application state — **not** a universal mutation executor | Minimum context: principal, tenant/scope, resource identity, current/target revision, risk, approval evidence, mutation/idempotency identity — see [Protocol v2 control-plane target invariants](#protocol-v2-control-plane-mutation-target-invariants-2026-08-18) |
+| **CONTROL_PLANE_MUTATION** | **GAP** | Domain-specialized executors (Agent Distribution, AHI, ECP, task-control, Platform Plugins) | Target: shared authority context before mutating active platform/application state - **not** a universal mutation executor | Minimum context: principal, tenant/scope, resource identity, current/target revision, risk, approval evidence, mutation/idempotency identity - see [Protocol v2 control-plane target invariants](#protocol-v2-control-plane-mutation-target-invariants-2026-08-18) |
 
 ---
 
@@ -314,7 +314,7 @@ Maintainer roadmap context (not public proof): [PLATFORM_PLUGIN_ENTERPRISE_ROADM
 
 Frozen architecture (G2A): [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md).
 
-The **Policy Catalog** is the canonical registry of policy **definitions** available for application selection. It answers *what governance capabilities can this application select?* It is **not** implemented as a runtime catalog in G2A — this section freezes identity and ownership only.
+The **Policy Catalog** is the canonical registry of policy **definitions** available for application selection. It answers *what governance capabilities can this application select?* It is **not** implemented as a runtime catalog in G2A - this section freezes identity and ownership only.
 
 | Question | Concept | Identity |
 | -------- | ------- | -------- |
@@ -348,15 +348,15 @@ The catalog describes capability; bundles carry what was configured; handlers ex
 
 **Catalog is not:** `PolicyRuleRegistry`, `RuntimePolicyBundle`, `ImmutableRuntimePolicyBundle`, `PolicyEngine`, `RuntimePolicyEngine`, enforcer, HITL, evidence persistence, or a second plugin framework.
 
-**Catalog vs bundle:** the catalog holds what **can** be selected (e.g. `external_commitment_approval` v2); a configured rule is what the application **did** select (e.g. `finance.contracts.require_cfo`); a runtime bundle is the **active** composed policy state containing that rule. Policy definition version and bundle version are separate — one definition version may appear in many bundles.
+**Catalog vs bundle:** the catalog holds what **can** be selected (e.g. `external_commitment_approval` v2); a configured rule is what the application **did** select (e.g. `finance.contracts.require_cfo`); a runtime bundle is the **active** composed policy state containing that rule. Policy definition version and bundle version are separate - one definition version may appear in many bundles.
 
-**G2B typed contract:** `intergrax.contracts.policy_catalog` implements immutable `PolicyDefinition` metadata — `policy_id`, definition `version`, `display_name`, `description`, `handler_id`, `configuration_contract_id`, and `source` (`built_in` / `plugin`). This answers *what policy capability exists* at the contract level only.
+**G2B typed contract:** `intergrax.contracts.policy_catalog` implements immutable `PolicyDefinition` metadata - `policy_id`, definition `version`, `display_name`, `description`, `handler_id`, `configuration_contract_id`, and `source` (`built_in` / `plugin`). This answers *what policy capability exists* at the contract level only.
 
-**G2C-1 resolution core:** `intergrax.runtime.policy.catalog.PolicyCatalog` implements deterministic exact `PolicyDefinition` resolution by `(policy_id, version)` — multi-version coexistence, explicit unknown-policy failure, explicit unsupported-version failure, deterministic duplicate conflict rejection, and **no** latest/fallback/downgrade behavior. `PolicyCatalog` does **not** resolve `handler_id` or `configuration_contract_id`; plugin discovery/admission is outside this module.
+**G2C-1 resolution core:** `intergrax.runtime.policy.catalog.PolicyCatalog` implements deterministic exact `PolicyDefinition` resolution by `(policy_id, version)` - multi-version coexistence, explicit unknown-policy failure, explicit unsupported-version failure, deterministic duplicate conflict rejection, and **no** latest/fallback/downgrade behavior. `PolicyCatalog` does **not** resolve `handler_id` or `configuration_contract_id`; plugin discovery/admission is outside this module.
 
 **G2C-2A rule / handler identity separation:** on the declarative runtime path, `rule_id` is configured rule instance identity and `handler_id` is runtime handler implementation identity. `PolicyRuleRegistry` resolves handlers by `handler_id`; evidence and outcomes attribute decisions to `rule_id`. G2C-2A-R1 completed active caller and fixture migration after the initial core identity split.
 
-**G2C-2B first built-in policy — Tool Invocation Control:** canonical built-in catalog and typed composition for one real policy capability:
+**G2C-2B first built-in policy - Tool Invocation Control:** canonical built-in catalog and typed composition for one real policy capability:
 
 ```text
 PolicyDefinition (policy_id = tool_invocation_control, version = 1, source = built_in)
@@ -379,11 +379,11 @@ DeclarativePolicyEnforcer (ALLOW / DENY / REQUIRE_HITL)
 
 ## Existing implementation map
 
-Conceptual pieces mapped to existing mechanisms — **without** blanket maturity claims:
+Conceptual pieces mapped to existing mechanisms - **without** blanket maturity claims:
 
 | Concept | Existing mechanism | Notes |
 | -------- | ------------------- | ----- |
-| Runtime policy contracts | `intergrax.contracts.runtime_policy` — `PolicyAction`, `PolicyDecision`, `EnforcementLevel` | Typed decision vocabulary |
+| Runtime policy contracts | `intergrax.contracts.runtime_policy` - `PolicyAction`, `PolicyDecision`, `EnforcementLevel` | Typed decision vocabulary |
 | Policy facade | `intergrax.runtime.policy.PolicyEngine` | Facade over runtime and replay-oriented evaluators |
 | Runtime evaluation | `intergrax.runtime.policy.RuntimePolicyEngine` | Interrupt, side-effect, and runtime-bound evaluation |
 | Declarative tool-path enforcement | `DeclarativePolicyEnforcer`, declarative policy rules / bundles | DENY and REQUIRE_HITL before tool handler on wired paths |
@@ -400,21 +400,21 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 
 | Area | Status |
 | ---- | ------ |
-| Runtime policy decision contracts | **Implemented** — `PolicyDecision` / `PolicyAction` vocabulary |
-| Policy facade and runtime engine | **Implemented slices** — bounded evaluation paths |
-| Declarative policy on tool path | **Implemented slices** — DENY before handler; REQUIRE_HITL on demonstrated paths |
-| Meaningful side-effect authorization | **Implemented mechanism** — not universal every-effect coverage |
-| Canonical HITL integration | **Implemented** — bounded paths; not every evaluation point |
-| Policy plugin / handler infrastructure | **Implemented slices** — admission / provenance partial |
-| Post-run governance | **Implemented mechanisms** — `GovernanceService` / `ExecutionGuard` |
-| Governance Evaluation Point architecture (G1A) | **Accepted** — [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
-| Contract hardening across critical runtime paths (G1B) | **Implemented core** — typed live contexts, typed meaningful-side-effect rules, immutable `PolicyDecision` and explicit bundle provenance invariants |
-| Uniform evaluation-point runtime enum / god engine | **Rejected** — multiple owners preserved |
-| Policy Catalog architecture (G2A) | **Accepted** — [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
-| Typed Policy Catalog contracts (G2B) | **Implemented** — immutable `PolicyDefinition` identity/source/configuration-contract metadata |
-| Policy Catalog resolution core (G2C-1) | **Implemented** — exact `(policy_id, version)` resolution and deterministic conflict rejection |
-| Declarative rule / handler identity separation (G2C-2A) | **Implemented** — configured rule identity and handler implementation identity are distinct on the declarative runtime path; G2C-2A-R1 completed active caller and fixture migration |
-| Canonical built-in policy catalog | **Implemented core** — first canonical built-in policy `tool_invocation_control@1`; broader policy inventory and qualification ongoing |
+| Runtime policy decision contracts | **Implemented** - `PolicyDecision` / `PolicyAction` vocabulary |
+| Policy facade and runtime engine | **Implemented slices** - bounded evaluation paths |
+| Declarative policy on tool path | **Implemented slices** - DENY before handler; REQUIRE_HITL on demonstrated paths |
+| Meaningful side-effect authorization | **Implemented mechanism** - not universal every-effect coverage |
+| Canonical HITL integration | **Implemented** - bounded paths; not every evaluation point |
+| Policy plugin / handler infrastructure | **Implemented slices** - admission / provenance partial |
+| Post-run governance | **Implemented mechanisms** - `GovernanceService` / `ExecutionGuard` |
+| Governance Evaluation Point architecture (G1A) | **Accepted** - [ADR-GOVERNED-EXECUTION-001](../technical/adr/entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) |
+| Contract hardening across critical runtime paths (G1B) | **Implemented core** - typed live contexts, typed meaningful-side-effect rules, immutable `PolicyDecision` and explicit bundle provenance invariants |
+| Uniform evaluation-point runtime enum / god engine | **Rejected** - multiple owners preserved |
+| Policy Catalog architecture (G2A) | **Accepted** - [ADR-GOVERNED-EXECUTION-002](../technical/adr/entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) |
+| Typed Policy Catalog contracts (G2B) | **Implemented** - immutable `PolicyDefinition` identity/source/configuration-contract metadata |
+| Policy Catalog resolution core (G2C-1) | **Implemented** - exact `(policy_id, version)` resolution and deterministic conflict rejection |
+| Declarative rule / handler identity separation (G2C-2A) | **Implemented** - configured rule identity and handler implementation identity are distinct on the declarative runtime path; G2C-2A-R1 completed active caller and fixture migration |
+| Canonical built-in policy catalog | **Implemented core** - first canonical built-in policy `tool_invocation_control@1`; broader policy inventory and qualification ongoing |
 | Complete platform-wide coverage | **Not claimed** |
 | Dedicated accepted public Governed Execution proof | **Not established** |
 | Production qualification | **Not established** |
@@ -427,13 +427,13 @@ Owner boundaries stay with each module and domain pair. This table is an orienta
 
 ## Protocol v2.2 policy/governance target invariants (2026-08-18)
 
-Accepted [`POLICY_GOVERNANCE`](../../audit_results/2026-08-18/POLICY_GOVERNANCE.md) findings **01–05** (layer audited 2026-08-19). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
+Accepted [`POLICY_GOVERNANCE`](../../audit_results/2026-08-18/POLICY_GOVERNANCE.md) findings **01–05** (layer audited 2026-08-19). **Target state** - remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-BATCH-PERSIST-2.
 
-1. **One canonical meaningful-side-effect authorization spine** — product adapters may adapt domain requests but must not own an independent policy semantics path (**PG-FIX-A**).
-2. **Composable effective authorization** — principal/effective authority, tenant/workspace, resource, external target, effect kind, operation/action, and exact side-effect scope id/digest (**PG-FIX-A**).
-3. **Explicit deterministic policy resolution** — broad ALLOW must not accidentally shadow a more-specific DENY because of list order (**PG-FIX-B**).
-4. **Scoped human approval grant** — canonical grant authorizes exactly the approved continuation/operation; neither global ALLOW nor mere untrusted evidence (**PG-FIX-C**).
-5. **Explicit policy matching** — critical matching uses typed fields; no hidden `rule_id` suffix dispatch (**PG-FIX-D**).
+1. **One canonical meaningful-side-effect authorization spine** - product adapters may adapt domain requests but must not own an independent policy semantics path (**PG-FIX-A**).
+2. **Composable effective authorization** - principal/effective authority, tenant/workspace, resource, external target, effect kind, operation/action, and exact side-effect scope id/digest (**PG-FIX-A**).
+3. **Explicit deterministic policy resolution** - broad ALLOW must not accidentally shadow a more-specific DENY because of list order (**PG-FIX-B**).
+4. **Scoped human approval grant** - canonical grant authorizes exactly the approved continuation/operation; neither global ALLOW nor mere untrusted evidence (**PG-FIX-C**).
+5. **Explicit policy matching** - critical matching uses typed fields; no hidden `rule_id` suffix dispatch (**PG-FIX-D**).
 
 Remediation blocks: **PG-FIX-A**, **PG-FIX-B**, **PG-FIX-C**, **PG-FIX-D** in [`plan/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md).
 
@@ -441,14 +441,14 @@ Remediation blocks: **PG-FIX-A**, **PG-FIX-B**, **PG-FIX-C**, **PG-FIX-D** in [`
 
 ## Protocol v2 control-plane mutation target invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-04). **Target state** — remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-CROSS-LAYER-ARCHITECTURE-PERSIST.
+Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-04). **Target state** - remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-CROSS-LAYER-ARCHITECTURE-PERSIST.
 
-1. **CONTROL_PLANE_MUTATION evaluation class** — extend Governance Evaluation Point taxonomy with state-changing control-plane mutations distinct from in-run tool/side-effect and post-run governance paths.
-2. **Minimum shared authority context** — principal; tenant/scope; resource identity; current revision/state; requested target revision/state; risk; approval evidence; mutation/idempotency identity.
-3. **Specialized domain executors** — Agent Distribution activation/rollback, AHI apply/rollback, ECP capacity mutations, live task autonomy changes, plugin/config activation/admission remain domain-owned — no universal `GovernanceEngine` or universal mutation executor.
-4. **Coverage honesty** — G3B marks **CONTROL_PLANE_MUTATION** as **GAP** until domain consumers converge on the shared boundary; do not claim platform-wide live coverage.
+1. **CONTROL_PLANE_MUTATION evaluation class** - extend Governance Evaluation Point taxonomy with state-changing control-plane mutations distinct from in-run tool/side-effect and post-run governance paths.
+2. **Minimum shared authority context** - principal; tenant/scope; resource identity; current revision/state; requested target revision/state; risk; approval evidence; mutation/idempotency identity.
+3. **Specialized domain executors** - Agent Distribution activation/rollback, AHI apply/rollback, ECP capacity mutations, live task autonomy changes, plugin/config activation/admission remain domain-owned - no universal `GovernanceEngine` or universal mutation executor.
+4. **Coverage honesty** - G3B marks **CONTROL_PLANE_MUTATION** as **GAP** until domain consumers converge on the shared boundary; do not claim platform-wide live coverage.
 
-Remediation: **CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY** in [`plan/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md). Cross-link **E2E-CONTROL-AUTHORITY-INTEGRITY**, **AHI-***, **ECP-GOVERNED-ACTION-INTEGRITY**, Agent Distribution activation, Platform Plugins admission — coordinate; do not duplicate.
+Remediation: **CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY** in [`plan/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md). Cross-link **E2E-CONTROL-AUTHORITY-INTEGRITY**, **AHI-***, **ECP-GOVERNED-ACTION-INTEGRITY**, Agent Distribution activation, Platform Plugins admission - coordinate; do not duplicate.
 
 ---
 
@@ -456,12 +456,12 @@ Remediation: **CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY** in [`plan/GOVERNED_EXECU
 
 | Capability | Relationship |
 | ---------- | ------------- |
-| **Decision System** *(TARGET)* | Decides **what the system concluded** (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) — **separate from** execution authorization; see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · **CURRENT:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| **Decision System** *(TARGET)* | Decides **what the system concluded** (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) - **separate from** execution authorization; see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · **CURRENT:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | **Governed Execution** | Controls **what execution may proceed** under configured policy |
-| **Observability & Auditability** | Records and reconstructs **what happened** — complementary, not interchangeable |
+| **Observability & Auditability** | Records and reconstructs **what happened** - complementary, not interchangeable |
 | **Token Optimization** | Optimizes selected context / prompt paths **under policy** |
 | **Platform Extensibility** | Packages independent capability extensions, including policy extensions |
-| **HITL** | One governance mechanism inside Governed Execution — not the whole capability |
+| **HITL** | One governance mechanism inside Governed Execution - not the whole capability |
 
 ---
 
@@ -469,7 +469,7 @@ Remediation: **CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY** in [`plan/GOVERNED_EXECU
 
 ### Evidence
 
-No dedicated public domain proof is established today. [`PROOFS.md`](../proofs/PROOFS.md) lists **bounded** LKW proofs (for example Governed Evidence Decision Proof) that exercise policy-derived obligations on controlled paths — **not** a full Governed Execution domain qualification.
+No dedicated public domain proof is established today. [`PROOFS.md`](../proofs/PROOFS.md) lists **bounded** LKW proofs (for example Governed Evidence Decision Proof) that exercise policy-derived obligations on controlled paths - **not** a full Governed Execution domain qualification.
 
 ### Core implementation
 

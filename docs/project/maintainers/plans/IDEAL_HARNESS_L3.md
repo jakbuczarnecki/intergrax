@@ -1,9 +1,9 @@
-# Ideal Harness L3 — Implementation Plan
+# Ideal Harness L3 - Implementation Plan
 
 **Architecture target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §12.3
 **Audit map:** [`../../../audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md) §8 (32 layers)
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2ax** · queue **§6.1at**  
-**Status:** **W2 Done** (2026-06-09) — P0+P1 harness depth closed; scorecard **32/32 L3**; Band 3 rows remain deferred
+**Status:** **W2 Done** (2026-06-09) - P0+P1 harness depth closed; scorecard **32/32 L3**; Band 3 rows remain deferred
 
 > **Scope:** Harness infrastructure only. Band 3 product rows (K.1/K.2, FLOW-8 product, CFG-14, GOV-PROD.1) remain in [§6.3](PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
 
@@ -31,15 +31,15 @@ One **IDEAL-* ID** per PR → update this register + affected domain plan row �
 
 | ID | Layer | AUDIT § | Priority | Deliverable | Status |
 |----|-------|---------|----------|-------------|--------|
-| IDEAL-1.1 | Strategic Harness Model | 1 | P2 | `scripts/gates/harness_maturity_report.py` — 32-layer scorecard | **Done** |
+| IDEAL-1.1 | Strategic Harness Model | 1 | P2 | `scripts/gates/harness_maturity_report.py` - 32-layer scorecard | **Done** |
 | IDEAL-1.2 | Strategic Harness Model | 1 | P3 | Quarterly strategy review process (docs only) | **Done** |
-| IDEAL-2.1 | Tier boundaries | 2 | P2 | `check_agents_no_tier3_imports.py` (existing) — extend agents→apps gate | **Done** |
+| IDEAL-2.1 | Tier boundaries | 2 | P2 | `check_agents_no_tier3_imports.py` (existing) - extend agents→apps gate | **Done** |
 | IDEAL-2.2 | Tier boundaries | 2 | P1 | `scripts/maintenance/check_agents_no_vendor_sdk_imports.py` | **Done** |
 | IDEAL-3.1 | Task intake | 3 | P1 | Intake parity gate in `test_ideal_harness_l3_depth_gate.py` | **Done** |
 | IDEAL-3.2 | Task intake | 3 | P1 | SLA/risk metadata validation on `TaskEnvelope` | **Done** |
 | IDEAL-3.3 | Task intake | 3 | P2 | Streaming intake contract | **Done** |
 | IDEAL-3.4 | Task intake | 3 | P2 | Durable async task index (product hosts) | **Done** |
-| IDEAL-4.1 | Identity & trust | 4 | P0 | `actor_resolution.py` — user/service/agent from envelope | **Done** |
+| IDEAL-4.1 | Identity & trust | 4 | P0 | `actor_resolution.py` - user/service/agent from envelope | **Done** |
 | IDEAL-4.2 | Identity & trust | 4 | P0 | Delegation scope narrowing in `actor_resolution.py` | **Done** |
 | IDEAL-4.3 | Identity & trust | 4 | P0 | Tenant isolation gate tests | **Done** |
 | IDEAL-4.4 | Identity & trust | 4 | P1 | Secrets rotation via IntegrationProfile hooks | **Done** |
@@ -120,7 +120,7 @@ One **IDEAL-* ID** per PR → update this register + affected domain plan row �
 | IDEAL-23.4 | Security | 23 | P1 | Immutable security audit trail | **Done** |
 | IDEAL-23.5 | Security | 23 | P1 | Retention per classification | **Done** |
 | IDEAL-23.6 | Security | 23 | P1 | Output PII redaction middleware | **Done** |
-| IDEAL-24.1 | Cost | 24 | P0 | `production_budget_policy.py` — mandatory `run_budget` | **Done** |
+| IDEAL-24.1 | Cost | 24 | P0 | `production_budget_policy.py` - mandatory `run_budget` | **Done** |
 | IDEAL-24.2 | Cost | 24 | P1 | Per-tenant cost metrics | **Done** |
 | IDEAL-24.3 | Cost | 24 | P2 | Token anomaly via W-ADAPT | **Done** |
 | IDEAL-24.4 | Cost | 24 | P2 | Cost-aware model routing | **Done** |
@@ -187,13 +187,13 @@ Phase **IDEAL-L3** closes when:
 
 **Quarterly review (IDEAL-1.2):** operator reviews `docs/project/maintainers/plans/IDEAL_HARNESS_L3.md` + `docs/project/technical/guides/ARCHITECTURE_DEBT_REGISTER.md` each quarter; update scorecard rows when layer maturity shifts.
 
-**ADR policy:** No new ADR unless contract change — depth gates only; record **no ADR needed** on W2 close.
+**ADR policy:** No new ADR unless contract change - depth gates only; record **no ADR needed** on W2 close.
 
 ---
 
-## Successor phase — AUDIT-IDEAL (post-L3 ideal gaps)
+## Successor phase - AUDIT-IDEAL (post-L3 ideal gaps)
 
-**Status:** **Planned** (2026-06-09) — baseline **32/32 L3** achieved; next uplift toward full [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) vision.
+**Status:** **Planned** (2026-06-09) - baseline **32/32 L3** achieved; next uplift toward full [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) vision.
 
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2az** · queue **§6.1au** in [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md)
 

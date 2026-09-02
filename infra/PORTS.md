@@ -1,4 +1,4 @@
-# Intergrax infrastructure — host port matrix
+# Intergrax infrastructure - host port matrix
 
 All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*` env vars and integration tests.
 
@@ -46,13 +46,13 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 
 | Conflict | Resolution |
 |----------|------------|
-| Chroma 8000 vs Weaviate | Weaviate **8080**, Chroma **8000** — different ports |
+| Chroma 8000 vs Weaviate | Weaviate **8080**, Chroma **8000** - different ports |
 | Chroma 8000 vs vLLM container | vLLM API on container **8000**; host mapped to **8100** |
 | Weaviate 8080 vs llama.cpp container | llama.cpp API on container **8080**; host mapped to **8102** |
 | MinIO 9000 vs ClickHouse native 9000 | ClickHouse native mapped to host **9002** |
 | Weaviate 8080 vs Vespa default 8080 | Vespa app on host **8089** |
 | Pub/Sub vs Weaviate | Emulator on **8085** |
-| Prometheus 9090 vs Kafka | Kafka **9092** — no overlap |
+| Prometheus 9090 vs Kafka | Kafka **9092** - no overlap |
 
 ## Compose profiles
 
@@ -61,14 +61,14 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | `core` | redis, postgresql |
 | `queue` | kafka, rabbitmq, nats |
 | `rag` | qdrant, chroma, weaviate, neo4j, milvus, ollama, docling |
-| `vllm` | vllm, vllm-embed (NVIDIA GPU required; opt-in — not in `default`) |
-| `llama-cpp` | llama-cpp, llama-cpp-embed (CPU-friendly; opt-in — not in `default`) |
+| `vllm` | vllm, vllm-embed (NVIDIA GPU required; opt-in - not in `default`) |
+| `llama-cpp` | llama-cpp, llama-cpp-embed (CPU-friendly; opt-in - not in `default`) |
 | `data` | mongodb, mysql, cassandra, minio, memcached |
 | `secrets` | vault |
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |
 | `cloud` | localstack, azurite, pubsub-emulator |
 | `heavy` | temporal, vespa, selenium, keycloak, airflow |
 | `p6` | keycloak, typesense, airflow (+ `core` PostgreSQL via manage scripts) |
-| `all` | alias — same as enabling every profile above |
+| `all` | alias - same as enabling every profile above |
 
 **Default stack** (`./manage.sh start`): `core` + `queue` + `rag` + `data` + `secrets`.

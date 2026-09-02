@@ -32,4 +32,4 @@ Provider status: `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED` (RAG-PROD-13).
 
 ## Removed
 
-- Public `adapter.py` facade — behavior merged into `QdrantVectorStoreIntegration`.
+- Public `adapter.py` facade - behavior merged into `QdrantVectorStoreIntegration`.

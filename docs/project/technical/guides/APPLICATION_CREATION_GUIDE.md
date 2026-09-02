@@ -1,16 +1,16 @@
-# Intergrax — Application Creation Guide
+# Intergrax - Application Creation Guide
 
 **Canonical author workflow for Tier-3 application environments** (`applications/<app>`).
 
 Product hypothesis (required first): [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md)  
 Architecture canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §31 · §45 · §47
-Cross-domain invariants: [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — especially APP-INV / SYS-INV tier boundaries (P2-ARCH-01)  
+Cross-domain invariants: [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) - especially APP-INV / SYS-INV tier boundaries (P2-ARCH-01)  
 Agent roster and Nexus path: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Step 4E · Appendix F  
 Composition engine: [`intergrax/applications/USAGE.md`](../../../../intergrax/applications/USAGE.md) · [`applications/USAGE.md`](../../../../applications/USAGE.md)
 
 **Audience:** platform engineers, product teams, LLM coding agents.
 
-**Success metric:** scaffold → first `UnifiedTaskRunner.run_task()` through host factory in **under one hour** — **zero** Nexus forks and **zero** business logic in `host/factory.py`.
+**Success metric:** scaffold → first `UnifiedTaskRunner.run_task()` through host factory in **under one hour** - **zero** Nexus forks and **zero** business logic in `host/factory.py`.
 
 ---
 
@@ -33,7 +33,7 @@ Tier-3 **wires** the Harness; Tier-2 **thinks**. Pick one recipe:
 `python -m intergrax.scaffold new-application` scaffolds with `include_queue_worker=False` by default. Enable durable async execution explicitly:
 
 ```python
-# applications/<app>/host/factory.py — opt-in when ORCH-MAINT-01 applies
+# applications/<app>/host/factory.py - opt-in when ORCH-MAINT-01 applies
 from intergrax.queueing.nexus_task_worker import QueuedNexusExecutionAdapter
 ```
 
@@ -41,7 +41,7 @@ See [`plan/ORCHESTRATION.md`](../../maintainers/plans/ORCHESTRATION.md) §6.1av 
 
 ### 1.1 Profile bundles (architecture §22.6 · P1-ARCH-01)
 
-`ApplicationEnvironmentProfile` remains the **single composition root**. Target structure groups **43 flat fields** into **seven bundles** — implementation `APP-EVOL-8` (M1–M3):
+`ApplicationEnvironmentProfile` remains the **single composition root**. Target structure groups **43 flat fields** into **seven bundles** - implementation `APP-EVOL-8` (M1–M3):
 
 | Bundle | Configure when you need… |
 |--------|--------------------------|
@@ -53,7 +53,7 @@ See [`plan/ORCHESTRATION.md`](../../maintainers/plans/ORCHESTRATION.md) §6.1av 
 | `TopologyBundle` | `ApplicationGraphSpec` |
 | `IsolationBundle` | shadow workspace, sandbox |
 
-Until M1, use the flat fields in §22.1 (`env.tool_profile`, …). **M1 Done (2026-06-17):** nested bundles + flat shims — `environment_profile` package. Canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §22.6 · [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md).
+Until M1, use the flat fields in §22.1 (`env.tool_profile`, …). **M1 Done (2026-06-17):** nested bundles + flat shims - `environment_profile` package. Canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §22.6 · [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md).
 
 ---
 
@@ -64,7 +64,7 @@ Until M1, use the flat fields in §22.1 (`env.tool_profile`, …). **M1 Done (20
 2. Declare ApplicationManifest + ApplicationEnvironmentProfile (manifest.py)
 3. AgentBinding.mount() roster + typed factories (host/agent_factories.py)
 4. Optional ApplicationHost for HookPoint reactions (not a cognition loop)
-5. host/factory.py → build_harness_host_runtime() — mount HTTP/MCP/task routes
+5. host/factory.py → build_harness_host_runtime() - mount HTTP/MCP/task routes
 6. pytest applications/<app>/ tests + ApplicationRunSummary assertion
 7. Prod: same profile shape; tenant-specific OrganizationalPolicyEnvelope (UC-11)
 ```
@@ -91,22 +91,22 @@ Answer **before** shipping:
 ```text
  1. Product hypothesis this environment tests?
  2. app_id and deployment posture (§23.1)?
- 3. Roster — AgentBinding.mount for each agent?
- 4. Capability routing — explicit L1 or classifier L3?
- 5. Single vs multi-agent — graph_spec or pipeline token (§23.4)?
- 6. Full ApplicationEnvironmentProfile — no orphan slices? (see §1.1 bundles when APP-EVOL-8 lands)
- 7. wire_application_environment() — no getattr on manifest?
- 8. build_harness_host_runtime() — not ad-hoc NexusLoop?
+ 3. Roster - AgentBinding.mount for each agent?
+ 4. Capability routing - explicit L1 or classifier L3?
+ 5. Single vs multi-agent - graph_spec or pipeline token (§23.4)?
+ 6. Full ApplicationEnvironmentProfile - no orphan slices? (see §1.1 bundles when APP-EVOL-8 lands)
+ 7. wire_application_environment() - no getattr on manifest?
+ 8. build_harness_host_runtime() - not ad-hoc NexusLoop?
  9. All surfaces → UnifiedTaskRunner.run_task()?
 10. IdentityProfile matches auth story?
 11. execution_mode=STRICT for production?
 12. ObservabilityProfile + ApplicationRunSummary on task completion?
 13. Business logic only in Tier-2 agents?
-14. Org simulation — OrganizationalPolicyEnvelope when needed (§39)?
-15. Dynamic reactions — ApplicationHost hooks (§32) vs profile-only?
+14. Org simulation - OrganizationalPolicyEnvelope when needed (§39)?
+15. Dynamic reactions - ApplicationHost hooks (§32) vs profile-only?
 16. Deploy triad (Docker, BUILD_AND_DEPLOY.md, .env.example)?
 17. pytest smoke for manifest + host factory?
-18. Product ARCHITECTURE.md updated — not duplicated in platform plan?
+18. Product ARCHITECTURE.md updated - not duplicated in platform plan?
 ```
 
 If any item is unanswered, **do not ship**.
@@ -122,7 +122,7 @@ Run:
 uv run python scripts/gates/check_application_production_gates.py
 ```
 
-Capability-specific rows (HITL, multi-agent, budget, virtual org) apply when the host claims that capability — see architecture §46.2.
+Capability-specific rows (HITL, multi-agent, budget, virtual org) apply when the host claims that capability - see architecture §46.2.
 
 ---
 
@@ -174,7 +174,7 @@ Tier-3 hosts **wire** domain signals; agents **emit** them. Do not add `RuntimeE
 
 | Layer | Emits | Subscribes |
 |-------|-------|------------|
-| Tier-2 agent | `emit_domain_signal(kind, payload)` | — |
+| Tier-2 agent | `emit_domain_signal(kind, payload)` | - |
 | Tier-3 host | Optional adapters (kind → spine) | `kind_prefix="applications.<app>."` on `RuntimeEventBus` |
 | Platform | `emit_platform_event` (lifecycle spine) | `event_category` / `ops_hint` |
 
@@ -184,7 +184,7 @@ Tier-3 hosts **wire** domain signals; agents **emit** them. Do not add `RuntimeE
 def on_legal_clause_flagged(event: RuntimeEvent) -> None:
     if event.event_kind != "agents.legal.clause_flagged":
         return
-  # escalate, audit log, metrics — no Nexus fork
+  # escalate, audit log, metrics - no Nexus fork
 
 bus.subscribe(
     on_legal_clause_flagged,
@@ -194,9 +194,9 @@ bus.subscribe(
 
 Until OBS-EVOL-9.5 ships, filter on `event.event_kind` inside a wildcard subscriber.
 
-### 8.3 Adapter pattern — domain kind → platform spine
+### 8.3 Adapter pattern - domain kind → platform spine
 
-When a domain signal must trigger **platform** behaviour (HITL, policy), implement a **Tier-3 adapter** — never extend the spine enum from the product:
+When a domain signal must trigger **platform** behaviour (HITL, policy), implement a **Tier-3 adapter** - never extend the spine enum from the product:
 
 ```text
 agents.dispute_sim.risk_threshold_exceeded
@@ -204,14 +204,14 @@ agents.dispute_sim.risk_threshold_exceeded
     → HUMAN_APPROVAL_REQUESTED   # existing spine
 ```
 
-Keep adapters in `host` wiring modules, registered at `build_harness_host_runtime()` — not in `intergrax/runtime`.
+Keep adapters in `host` wiring modules, registered at `build_harness_host_runtime()` - not in `intergrax/runtime`.
 
 ### 8.4 Checklist (add to §45 when emitting custom signals)
 
 ```text
-19. Domain signals use emit_domain_signal + registered payload — not RuntimeEventType?
-20. Tier-3 hooks subscribe by kind_prefix / event_category — not per-enum lists?
-21. HITL escalation uses adapter to existing spine — not new platform enum?
+19. Domain signals use emit_domain_signal + registered payload - not RuntimeEventType?
+20. Tier-3 hooks subscribe by kind_prefix / event_category - not per-enum lists?
+21. HITL escalation uses adapter to existing spine - not new platform enum?
 ```
 
 ### 8.5 Verification (post OBS-EVOL-9)

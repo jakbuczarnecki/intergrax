@@ -52,7 +52,7 @@ PROVIDER PRODUCTIONIZATION TRACK
   ACCEPTED / CLOSED
 
 NEXT:
-  NONE — PROVIDER PRODUCTIONIZATION TRACK CLOSED
+  NONE - PROVIDER PRODUCTIONIZATION TRACK CLOSED
 ```
 
 Implemented Slack, Microsoft Graph, Google Workspace, Jira and Confluence
@@ -128,9 +128,9 @@ its implementation state is explicitly recorded below.
 
 | Mode | Generic foundation | Boundary |
 |---|---|---|
-| Indexed | `YES` — LKW document ingestion, canonical document indexing, vector retrieval and query/Ask paths | Local-file/LKW capability is not transferred to Vendor Knowledge providers. |
-| Durable materialization | `YES` — `DocumentStore`, idempotent sink, remote-item state, checkpoints, leases, reconciliation, queue/worker and recovery | Provider adapter/sync proof is not application-owned materialization proof. |
-| Live | `YES` — current typed binding/catalog contracts, exact handler registry, validated executor, bounded limits, normalized evidence, receipts and retention | `FOUNDATION-1` provides the accepted shared boundary; the Graph family closeout verifies five provider-specific list handlers on the same integration and executor. |
+| Indexed | `YES` - LKW document ingestion, canonical document indexing, vector retrieval and query/Ask paths | Local-file/LKW capability is not transferred to Vendor Knowledge providers. |
+| Durable materialization | `YES` - `DocumentStore`, idempotent sink, remote-item state, checkpoints, leases, reconciliation, queue/worker and recovery | Provider adapter/sync proof is not application-owned materialization proof. |
+| Live | `YES` - current typed binding/catalog contracts, exact handler registry, validated executor, bounded limits, normalized evidence, receipts and retention | `FOUNDATION-1` provides the accepted shared boundary; the Graph family closeout verifies five provider-specific list handlers on the same integration and executor. |
 
 ## 5. VK-6 authoritative provider/source-kind coverage
 
@@ -430,7 +430,7 @@ access.
    adapter-level attachment inventory and from any three-mode claim.
 7. Databricks source-kind selection is still a roadmap decision.
 
-## 11. Follow-up sequencing — superseded by the canonical platform roadmap
+## 11. Follow-up sequencing - superseded by the canonical platform roadmap
 
 The matrix records evidence and gaps; it does not activate implementation.
 Its former follow-up sequence is superseded by the canonical VK-1–VK-9 order in
@@ -456,10 +456,10 @@ for any of them. The accepted Slack connected-source result remains
 ### Canonical input and roadmap
 
 - [`VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md`](VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md)
-  — accepted inventory, source-specific adapter/reconciliation boundaries and
+  - accepted inventory, source-specific adapter/reconciliation boundaries and
   evidence references.
 - [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md)
-  — roadmap status, Slack LKW correction state, generic durable/live plans
+  - roadmap status, Slack LKW correction state, generic durable/live plans
   and the Google Workspace family closeout.
 
 ### Generic platform and application surfaces
@@ -478,30 +478,30 @@ for any of them. The accepted Slack connected-source result remains
 ### Focused proof surfaces
 
 - `applications/local_workspace_application/tests/workspaces/test_slack_connected_source_end_to_end.py`
-  — Slack discovery, sync, index, Search, Ask, citation and retry path.
+  - Slack discovery, sync, index, Search, Ask, citation and retry path.
 - `applications/local_workspace_application/tests/workspaces/test_knowledge_live_access_service.py`
-  — provider-neutral live binding validation and safe configuration lifecycle.
+  - provider-neutral live binding validation and safe configuration lifecycle.
 - `applications/local_workspace_application/tests/workspaces/test_knowledge_access_indexed_live_reuse_proof.py`
-  — provider-neutral indexed/live reuse and boundary proof.
+  - provider-neutral indexed/live reuse and boundary proof.
 - `tests/unit/integrations/providers/collaboration_suite/google_workspace/test_tenant_connection_factory.py`
   and `tests/unit/runtime/vendor_knowledge/test_tenant_connections.py`
-  — shared Google Workspace connection factory and restart rehydration proof.
+  - shared Google Workspace connection factory and restart rehydration proof.
 - `tests/unit/runtime/vendor_knowledge/test_google_workspace_calendar_knowledge_adapter.py`
   and `tests/unit/runtime/vendor_knowledge/test_google_workspace_calendar_knowledge_sync.py`
-  — accepted Calendar adapter/sync proof.
+  - accepted Calendar adapter/sync proof.
 - `tests/unit/runtime/vendor_knowledge/test_google_workspace_docs_knowledge_adapter.py`
   and `tests/unit/runtime/vendor_knowledge/test_google_workspace_docs_knowledge_sync.py`
-  — accepted Docs adapter/sync proof.
+  - accepted Docs adapter/sync proof.
 - `tests/unit/runtime/vendor_knowledge/test_google_workspace_sheets_knowledge_adapter.py`
   and `tests/unit/runtime/vendor_knowledge/test_google_workspace_sheets_knowledge_sync.py`
-  — accepted Sheets adapter/sync proof.
+  - accepted Sheets adapter/sync proof.
 - `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`
   and `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py`
-  — Google LKW Search/Ask and provider-coverage proof.
+  - Google LKW Search/Ask and provider-coverage proof.
 - `tests/unit/integrations/providers/collaboration_suite/google_workspace/test_drive_content.py`
-  — Drive binary-content contract evidence.
+  - Drive binary-content contract evidence.
 - `tests/unit/integrations/providers/collaboration_suite/google_workspace/test_calendar.py`
-  — current Google Calendar exact read/integration proof; not Vendor Knowledge
+  - current Google Calendar exact read/integration proof; not Vendor Knowledge
   adapter or mode proof.
 
 The accepted audit's provider-specific adapter tests are referenced rather than
@@ -509,7 +509,7 @@ re-read here; they prove adapter/sync layers, not the higher application modes.
 
 ---
 
-## 13. Historical unified live capability rollout evidence — SUPERSEDED BY VK-6/VK-9
+## 13. Historical unified live capability rollout evidence - SUPERSEDED BY VK-6/VK-9
 
 ### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1`
 
@@ -517,7 +517,7 @@ re-read here; they prove adapter/sync layers, not the higher application modes.
 
 Historical architecture reference:
 [`VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md`](../../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md)
-— `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` —
+- `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` -
 `READY_FOR_REVIEW`.
 
 This addendum is retained for historical traceability only. The VK-6 matrix
@@ -745,7 +745,7 @@ errors/evidence, safe locators, private receipts, credential non-disclosure,
 contract tests and production proof. Google additionally proves that all seven
 handlers reuse the existing shared `GoogleWorkspaceCollaborationSuiteIntegration`.
 
-### Historical Live rollout evidence — SUPERSEDED BY VK-6/VK-9
+### Historical Live rollout evidence - SUPERSEDED BY VK-6/VK-9
 
 The following rollout order and status record is retained for traceability only.
 It is superseded by the accepted VK-6 capability matrix and VK-9 platform
@@ -754,13 +754,13 @@ closeout and must not be interpreted as current sequencing or active work.
 Historical rollout sequence:
 
 ```text
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 — ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE — ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL — ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL — ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT — ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR — ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT — READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 - ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE - ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL - ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL - ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT - ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR - ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT - READY_FOR_REVIEW
 ```
 
 Historically, the complete order was frozen in
@@ -770,14 +770,14 @@ readiness gate and independently gated Google source tasks, to both family
 closeouts and:
 
 ```text
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1 — PLANNED
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1 - PLANNED
 ```
 
 That historical audit intent is superseded. The current capability truth is
 the VK-6 matrix above; future Jira, Confluence or Google implementation is
 separate provider/product expansion and is not VK-10.
 
-### Historical rollout status — SUPERSEDED / TRACEABILITY ONLY
+### Historical rollout status - SUPERSEDED / TRACEABILITY ONLY
 
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
@@ -811,10 +811,10 @@ capability statuses, not platform defects.
 
 Current canonical authority is:
 
-- VK-9 platform closeout reconciliation — authoritative for platform state;
-- the VK-6 provider/source-kind capability matrix — authoritative for current
+- VK-9 platform closeout reconciliation - authoritative for platform state;
+- the VK-6 provider/source-kind capability matrix - authoritative for current
   selective capability status;
-- historical Live rollout sections — superseded and retained for traceability
+- historical Live rollout sections - superseded and retained for traceability
   only.
 
 The matrix is consumed together with the final closeout in
@@ -828,7 +828,7 @@ The authoritative roadmap state is:
 
 ```text
 VENDOR KNOWLEDGE PLATFORM
-VK-1 through VK-9 — COMPLETE
+VK-1 through VK-9 - COMPLETE
 NEXT: NONE
 ```
 

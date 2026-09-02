@@ -1,4 +1,4 @@
-# STRATEGIC_HARNESS_MODEL — Platform Audit
+# STRATEGIC_HARNESS_MODEL - Platform Audit
 
 ## Metadata
 
@@ -7,7 +7,7 @@
 - **Tier(s):** conceptual cross-domain slice spanning Tier-1 execution/runtime, Tier-2 agent authoring, and Tier-3 production-host contract where relevant
 - **audited_sha:** `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Status:** COMPLETE
-- **Auditor:** OpenAI ChatGPT / GPT-5.6 Sol — independent auditor
+- **Auditor:** OpenAI ChatGPT / GPT-5.6 Sol - independent auditor
 - **Architecture doc(s):**
   - `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`
   - `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md`
@@ -33,19 +33,19 @@
 - **post_sync_sha:** `def29be1adf2e099c300b7a8471c32b946e9c957`
 - **Exact audit-start time:** not captured before first Protocol v2 persistence; date-level UTC precision is preserved rather than fabricating a clock time.
 
-### Correction provenance (Protocol v2 conformance — not a re-audit)
+### Correction provenance (Protocol v2 conformance - not a re-audit)
 
 - **initial_sync_sha:** `363a8a1f10ea4198d479c3a708af6122ac72144b`
 - **initial_traceability_sha:** `1c6341021c830eeba365f23e000a8028aee0c676`
 - Independent verification found documentation/protocol-conformance defects in the persisted layer artifact.
 - This correction completes required Protocol v2 evidence/schema fields.
 - **No finding meaning, severity, verdict, accepted status, or audited_sha changed.**
-- Category spelling and primary-category normalization (`IMPLEMENTATION/ARCHITECTURE DRIFT`, `IMPLEMENTATION DEFECT` with related TEST GAP note for finding 09) were Protocol conformance only — not an operator decision change.
+- Category spelling and primary-category normalization (`IMPLEMENTATION/ARCHITECTURE DRIFT`, `IMPLEMENTATION DEFECT` with related TEST GAP note for finding 09) were Protocol conformance only - not an operator decision change.
 - Git history remains the provenance of the originally persisted form.
 
 ## Executive summary
 
-**Verdict: FAIL.** The strategic harness invariant is not yet proven or enforced universally. Ten accepted findings (6 HIGH, 4 MEDIUM) show distributed rather than structurally guaranteed pre-effect governance, resume/kernel divergence, identity bridge gaps, untyped author surfaces, product-shaped core transport, and maturity claims that exceed independently verified state. HarnessKernel, Nexus wiring, and tool gateways are materially real on wired paths — FAIL does not mean the entire runtime is non-functional or all execution is ungoverned.
+**Verdict: FAIL.** The strategic harness invariant is not yet proven or enforced universally. Ten accepted findings (6 HIGH, 4 MEDIUM) show distributed rather than structurally guaranteed pre-effect governance, resume/kernel divergence, identity bridge gaps, untyped author surfaces, product-shaped core transport, and maturity claims that exceed independently verified state. HarnessKernel, Nexus wiring, and tool gateways are materially real on wired paths - FAIL does not mean the entire runtime is non-functional or all execution is ungoverned.
 
 ## Verdict
 
@@ -61,14 +61,14 @@
 - **Category:** ARCHITECTURE DEFECT
 - **Status at publication:** ACCEPTED
 - **Claim falsified:** HarnessKernel (or equivalent compositional boundary) is the universal pre-execution safety boundary before meaningful side effects; architecture presents kernel-governed execution as the structural guarantee (`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` L87-L89, L133 @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`).
-- **Observation:** Direct ACP calls `agent.on_next_step(...)` before `HarnessKernel.execute_step(...)`. UAEP bridge calls `agent.run_step(...)` before `HarnessKernel.execute_step(...)`. Author/runtime paths can invoke immediate tool execution before the kernel processes the resulting `StepOutcome`. Tool gateways provide separate enforcement on governed paths — not every tool call is ungoverned; the defect is that HarnessKernel itself is not the universal pre-execution boundary.
+- **Observation:** Direct ACP calls `agent.on_next_step(...)` before `HarnessKernel.execute_step(...)`. UAEP bridge calls `agent.run_step(...)` before `HarnessKernel.execute_step(...)`. Author/runtime paths can invoke immediate tool execution before the kernel processes the resulting `StepOutcome`. Tool gateways provide separate enforcement on governed paths - not every tool call is ungoverned; the defect is that HarnessKernel itself is not the universal pre-execution boundary.
 - **Location:**
   - `intergrax/agents/authoring/step_loop.py:L48-L57` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `intergrax/agents/authoring/uaep_step_bridge.py:L197-L204` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md:L87-L89,L133` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Reproduction:**
-  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/step_loop.py` — inspect `advance_step`: `on_next_step` at L48 precedes `HarnessKernel.execute_step` at L57.
-  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/uaep_step_bridge.py` — inspect `execute_uaep_step_via_kernel`: `run_step` at L197 precedes `HarnessKernel.execute_step` at L204.
+  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/step_loop.py` - inspect `advance_step`: `on_next_step` at L48 precedes `HarnessKernel.execute_step` at L57.
+  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/uaep_step_bridge.py` - inspect `execute_uaep_step_via_kernel`: `run_step` at L197 precedes `HarnessKernel.execute_step` at L204.
 - **Impact:** Platform safety enforcement is distributed rather than structurally guaranteed by one universal boundary; direct side effects performed by agent code can occur before kernel policy/state/budget handling under production stresses.
 - **Confidence:** CONFIRMED
 
@@ -112,16 +112,16 @@
 - **Severity:** HIGH
 - **Category:** IMPLEMENTATION/ARCHITECTURE DRIFT
 - **Status at publication:** ACCEPTED
-- **Claim falsified:** Both entry paths converge on the same author hook — `on_next_step()` — before platform-governed execution (`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` L94, L127-L132 @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`).
+- **Claim falsified:** Both entry paths converge on the same author hook - `on_next_step()` - before platform-governed execution (`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` L94, L127-L132 @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`).
 - **Observation:** Direct ACP → `on_next_step()`. Generic `IntergraxAgent` UAEP → `run_step()` → authored `@step`. `CognitiveAgent` UAEP → `run_step()` → shim → `on_next_step()`. Architecture claim that both paths universally converge on `on_next_step()` is not true for all `IntergraxAgent` subclasses.
 - **Location:**
   - `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md:L94,L127-L132` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `intergrax/agents/authoring/base.py:L172-L205` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `intergrax/agents/authoring/acp_uaep_shim.py:L219` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Reproduction:**
-  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — read L94 and L127-L132 convergence claims.
-  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/base.py` — `on_next_step` calls `run_step` (L172); generic `run_step` invokes `@step` methods (L205-L209).
-  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_uaep_shim.py` — shim path calls `on_next_step` (L219).
+  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` - read L94 and L127-L132 convergence claims.
+  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/base.py` - `on_next_step` calls `run_step` (L172); generic `run_step` invokes `@step` methods (L205-L209).
+  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_uaep_shim.py` - shim path calls `on_next_step` (L219).
 - **Impact:** Class-dependent author semantics undermine one canonical certified contract; governance and typing guarantees may differ by agent subclass and entry path.
 - **Confidence:** CONFIRMED
 
@@ -138,8 +138,8 @@
   - `intergrax/agents/agent_engine.py:L34,L157,L160-L175` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `intergrax/runtime/policy/runtime_policy_engine.py:L36-L50` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Reproduction:**
-  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/agent_engine.py` — `_DEFAULT_UAEP` at L34; `_resolve_static_executor` returns it at L157; `run_agent` has no host/profile gate at L160-L175.
-  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/runtime/policy/runtime_policy_engine.py` — `evaluate_meaningful_side_effect` fail-closed default at L36-L50.
+  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/agent_engine.py` - `_DEFAULT_UAEP` at L34; `_resolve_static_executor` returns it at L157; `run_agent` has no host/profile gate at L160-L175.
+  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/runtime/policy/runtime_policy_engine.py` - `evaluate_meaningful_side_effect` fail-closed default at L36-L50.
 - **Impact:** Production and dev execution boundaries are not structurally separated; weaker default executor path may be used without explicit lab marking.
 - **Confidence:** CONFIRMED
 
@@ -157,9 +157,9 @@
   - `intergrax/agents/authoring/step_outcome.py:L17-L34` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `intergrax/agents/authoring/acp_uaep_shim.py:L77,L132` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Reproduction:**
-  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/contracts/agent_step_context.py` — L30-L32 untyped fields.
-  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/step_outcome.py` — L17-L34 untyped maps.
-  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_uaep_shim.py` — `uaep_exec_ctx` metadata channel L77, L132.
+  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/contracts/agent_step_context.py` - L30-L32 untyped fields.
+  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/step_outcome.py` - L17-L34 untyped maps.
+  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_uaep_shim.py` - `uaep_exec_ctx` metadata channel L77, L132.
 - **Impact:** Authors can depend on unbounded dict channels and hidden runtime escape hatches at the critical boundary, weakening platform-owned effect control and static verification.
 - **Confidence:** CONFIRMED
 
@@ -176,8 +176,8 @@
   - `intergrax/agents/uaep.py:L560-L567` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `intergrax/agents/authoring/acp_run.py:L565-L570` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Reproduction:**
-  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/uaep.py` — L562-L567 domain summary promotion loop.
-  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_run.py` — L565-L570 LKW handoff comment and promotion loop.
+  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/uaep.py` - L562-L567 domain summary promotion loop.
+  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_run.py` - L565-L570 LKW handoff comment and promotion loop.
 - **Impact:** Core platform execution encodes product/application output vocabulary, coupling Tier-1 runtime to LKW/product semantics.
 - **Confidence:** CONFIRMED
 
@@ -196,10 +196,10 @@
   - `intergrax/agents/runtime_request_bridge.py:L54-L55` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `intergrax/agents/authoring/acp_run.py:L73-L89` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Reproduction:**
-  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/runtime/nexus/nexus_loop.py` — bind/mint AttemptId L386-L397.
-  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/runtime/nexus/responses/response_schema.py` — RuntimeRequest fields L151-L152 (no attempt_id).
-  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/runtime_request_bridge.py` — metadata task_id/run_id only L54-L55.
-  4. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_run.py` — `mint_attempt_id()` at L89.
+  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/runtime/nexus/nexus_loop.py` - bind/mint AttemptId L386-L397.
+  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/runtime/nexus/responses/response_schema.py` - RuntimeRequest fields L151-L152 (no attempt_id).
+  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/runtime_request_bridge.py` - metadata task_id/run_id only L54-L55.
+  4. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_run.py` - `mint_attempt_id()` at L89.
 - **Impact:** One logical Nexus execution can appear as Task T, Run R, Attempt A1 in Nexus and Attempt A2 inside ACP without a retry boundary, conflicting with canonical retry/resume AttemptId semantics and trace correlation.
 - **Confidence:** CONFIRMED
 
@@ -218,12 +218,12 @@
   - `intergrax/agents/authoring/acp_run.py:L471-L479` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `tests/unit/agents/authoring/test_acp_session_identity.py:L117,L135` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Reproduction:**
-  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/contracts/runtime_execution_context.py` — required `attempt_id` L84.
-  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_uaep_shim.py` — construction without `attempt_id` L102-L108.
-  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_run.py` — call site in session loop L471-L479.
-  4. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:tests/unit/agents/authoring/test_acp_session_identity.py` — mocks at L117, L135.
+  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/contracts/runtime_execution_context.py` - required `attempt_id` L84.
+  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_uaep_shim.py` - construction without `attempt_id` L102-L108.
+  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:intergrax/agents/authoring/acp_run.py` - call site in session loop L471-L479.
+  4. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:tests/unit/agents/authoring/test_acp_session_identity.py` - mocks at L117, L135.
 - **Impact:** Runtime execution context at the ACP catalog boundary may lack canonical attempt identity; regression risk is masked by tests that mock the defective helper.
-- **Confidence:** CONFIRMED — No independent failing runtime test was executed during the audit. Confidence is based on directly read constructor contract + directly read reachable call path.
+- **Confidence:** CONFIRMED - No independent failing runtime test was executed during the audit. Confidence is based on directly read constructor contract + directly read reachable call path.
 
 ### AUDIT-20260818-STRATEGIC_HARNESS_MODEL-10
 
@@ -233,40 +233,40 @@
 - **Category:** PROCESS / CLAIM
 - **Status at publication:** ACCEPTED
 - **Claim falsified:** Current maturity/completeness claims (A4/I4, architecture-complete, platform-ready gates Done) accurately reflect independently verified invariant closure at audited_sha.
-- **Observation:** Architecture and plan documents at audited_sha assert ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL Done, A4/I4 maturity, and architecture-complete DoD closure while implementation exhibits accepted Protocol v2 boundary, identity, typing, and neutrality gaps. Do not rewrite history — prior gaps may have been correctly closed against then-known scope; **current** claims must be reopened/qualified.
+- **Observation:** Architecture and plan documents at audited_sha assert ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL Done, A4/I4 maturity, and architecture-complete DoD closure while implementation exhibits accepted Protocol v2 boundary, identity, typing, and neutrality gaps. Do not rewrite history - prior gaps may have been correctly closed against then-known scope; **current** claims must be reopened/qualified.
 - **Location:**
   - `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md:L35,L368-L374` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md:L220-L226,L238` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
   - `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md:L29-L41,L77` @ `9658224495c775fcefd55ab52bbcc7a94c84fb50`
 - **Reproduction:**
-  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — platform-ready Done claim L35; A4/I4 maturity L368-L374.
-  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — A4/I4 maturity L220-L226, L238.
-  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — Done rows L29-L41, L77.
+  1. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` - platform-ready Done claim L35; A4/I4 maturity L368-L374.
+  2. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` - A4/I4 maturity L220-L226, L238.
+  3. `git show 9658224495c775fcefd55ab52bbcc7a94c84fb50:docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` - Done rows L29-L41, L77.
   4. Cross-check against findings 01–09 evidence at same audited_sha.
 - **Impact:** Operators and implementers may treat harness path as fully invariant-closed when accepted Protocol v2 findings show material open gaps; remediation priority and production qualification posture may be misjudged.
 - **Confidence:** CONFIRMED
 
 ## Falsification log (negative results)
 
-1. **HarnessKernel is real** — provides substantive policy/state/budget/trace behavior on wired paths (`step_loop.py`, `uaep_step_bridge.py`, kernel session wiring in `uaep.py`).
-2. **Nexus wires real infrastructure** — policy, middleware, events, workspace, sandbox, memory, and context infrastructure are substantively present on governed Nexus paths.
-3. **Tool gateway on RuntimeExecutionContext** — tool invocation through `RuntimeExecutionContext` uses a tool gateway on governed paths; finding 01 does **not** claim every tool call is ungoverned.
-4. **Meaningful external side-effect policy** — fail-closed where explicitly used (`runtime_policy_engine.py` `evaluate_meaningful_side_effect`).
-5. **Finding 02 qualification** — does **not** claim resume bypasses all governance; outer UAEP middleware/governance remains; defect is kernel-equivalent step semantics only.
-6. **Finding 03 qualification** — did **not** prove a normal production path intentionally running without kernel context.
-7. **Finding 09 qualification** — did **not** observe a failing runtime execution; evidence was static contract + reachable call path only.
+1. **HarnessKernel is real** - provides substantive policy/state/budget/trace behavior on wired paths (`step_loop.py`, `uaep_step_bridge.py`, kernel session wiring in `uaep.py`).
+2. **Nexus wires real infrastructure** - policy, middleware, events, workspace, sandbox, memory, and context infrastructure are substantively present on governed Nexus paths.
+3. **Tool gateway on RuntimeExecutionContext** - tool invocation through `RuntimeExecutionContext` uses a tool gateway on governed paths; finding 01 does **not** claim every tool call is ungoverned.
+4. **Meaningful external side-effect policy** - fail-closed where explicitly used (`runtime_policy_engine.py` `evaluate_meaningful_side_effect`).
+5. **Finding 02 qualification** - does **not** claim resume bypasses all governance; outer UAEP middleware/governance remains; defect is kernel-equivalent step semantics only.
+6. **Finding 03 qualification** - did **not** prove a normal production path intentionally running without kernel context.
+7. **Finding 09 qualification** - did **not** observe a failing runtime execution; evidence was static contract + reachable call path only.
 
 ## Prior-audit comparison
 
 Revalidation against pre-Protocol-v2 working STRATEGIC_HARNESS_MODEL audit (no prior Protocol v2 canonical SHA recovered):
 
-- Prior resume bypass severity **CRITICAL → Protocol v2 HIGH** — no concrete exploit/outage evidence justified CRITICAL.
-- Fail-open fallback **HIGH → MEDIUM** — normal production reachability of missing-kernel path was not proven.
-- Canonical-hook finding refined — generic `IntergraxAgent` has `on_next_step`, but generic UAEP does not universally execute through it; `CognitiveAgent` shim does.
+- Prior resume bypass severity **CRITICAL → Protocol v2 HIGH** - no concrete exploit/outage evidence justified CRITICAL.
+- Fail-open fallback **HIGH → MEDIUM** - normal production reachability of missing-kernel path was not proven.
+- Canonical-hook finding refined - generic `IntergraxAgent` has `on_next_step`, but generic UAEP does not universally execute through it; `CognitiveAgent` shim does.
 - Product-result leakage confirmed (`search_summary`, `ingest_summary`, `domain_summary` promotion).
 - Typed-context finding strengthened to include `StepOutcome` untyped maps.
 - `AttemptId` continuity break confirmed across Nexus → ACP bridge.
-- Maturity drift confirmed — A4/I4 claims exceed verified invariant closure.
+- Maturity drift confirmed - A4/I4 claims exceed verified invariant closure.
 - **NEW under revalidation:** universal pre-effect kernel-boundary defect (finding 01).
 - **NEW under revalidation:** `RuntimeExecutionContext` construction missing `attempt_id` / test mock gap (finding 09).
 
@@ -274,7 +274,7 @@ Protocol v2 canonical audit remains bound only to audited_sha `9658224495c775fce
 
 ## Open questions / blocked items
 
-- **SHM-01:** Architectural decision needed — pure-intent kernel model vs explicitly compositional mandatory enforcement.
+- **SHM-01:** Architectural decision needed - pure-intent kernel model vs explicitly compositional mandatory enforcement.
 - **SHM-03:** Separate normal production reachability of the missing-kernel fallback was not demonstrated.
 - **SHM-04:** Decide one universal author hook vs explicitly separate typed contracts.
 - **SHM-09:** Runtime regression reproduction still required during remediation.
@@ -289,26 +289,26 @@ These are **not** reasons to change ACCEPTED status.
 - **Disputed:** none
 - **Rejected:** none
 
-## Remediation grouping (planning only — not implemented by this task)
+## Remediation grouping (planning only - not implemented by this task)
 
-These blocks are accepted remediation groupings only — **not** implementation performed by audit persistence.
+These blocks are accepted remediation groupings only - **not** implementation performed by audit persistence.
 
-### SHM-FIX-A — Execution boundary
+### SHM-FIX-A - Execution boundary
 
 **Findings:** 01, 02, 03, 04  
 **Goal:** one canonical governed execution semantics across direct, Nexus, normal, and resume paths.
 
-### SHM-FIX-B — Identity and typed context
+### SHM-FIX-B - Identity and typed context
 
 **Findings:** 06, 08, 09  
 **Goal:** typed critical author/runtime boundary and correct Task/Run/Attempt continuity.
 
-### SHM-FIX-C — Host and platform neutrality
+### SHM-FIX-C - Host and platform neutrality
 
 **Findings:** 05, 07  
 **Goal:** explicit production hosting requirements and product-neutral result transport.
 
-### SHM-FIX-D — Maturity and recertification
+### SHM-FIX-D - Maturity and recertification
 
 **Finding:** 10 plus verification requirements produced by A–C  
 **Goal:** re-run certification only after implementation blocks are independently verified; current historical Done records remain historical.

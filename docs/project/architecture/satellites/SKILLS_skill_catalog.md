@@ -1,4 +1,4 @@
-# SKILLS — skill catalog
+# SKILLS - skill catalog
 
 **Parent hub:** [`SKILLS.md`](../SKILLS.md)
 
@@ -33,7 +33,7 @@
 | `cost`, `identity`, `filesystem`, `agent` | 2 each | **Done** |
 | `catalog`, `cloud_platform`, `code`, `http`, `jira`, `gitlab`, `ml`, `openai`, `context`, `vector_store`, `crm`, `billing`, `metrics`, `browser`, `interaction` | 1–2 each | **Done** |
 
-**SK-EXP5 (2026-06-08):** +50 compositional packs — product verticals (legal ops, on-call SRE, research lab, data platform, sandbox dev) without new bundles.
+**SK-EXP5 (2026-06-08):** +50 compositional packs - product verticals (legal ops, on-call SRE, research lab, data platform, sandbox dev) without new bundles.
 
 Per-skill `USAGE.md` under `intergrax/skills/providers/<bundle>`.
 Verify: `register_default_skills()` → **149** · gate: `test_sk_exp5_skill_bundles.py`, `test_skill_usage_docs.py`.
@@ -43,9 +43,9 @@ Verify: `register_default_skills()` → **149** · gate: `test_sk_exp5_skill_bun
 ## Rules
 
 - Do **not** model skills as `ToolContract`.
-- Do **not** import integrations from skill code — reference `tool_id`s only.
+- Do **not** import integrations from skill code - reference `tool_id`s only.
 - LLM tool-calling surface remains **tools** only.
-- Skills expand allow-lists **before** run — not at LLM invoke time.
+- Skills expand allow-lists **before** run - not at LLM invoke time.
 - Prompt and evaluation governance for skill packs should follow Phase V streams:
   - prompt architecture/regression: `V-PE.*`
   - evaluation baselines/trends: `V-EVAL.*`

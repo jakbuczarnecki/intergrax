@@ -9,11 +9,11 @@
 
 ## Context
 
-`run_bounded_tool_loop` / `ctx.invoke_tool` executed a single planner pass and injected tool output via a system prompt — not a native `role=tool` chain. ReAct agents (`ReActAgent`) maintained a separate cognitive loop with budget counters not mirrored in `acp.state.v1.budget` (DEBT-ACP-18 · GAP-ACP-04).
+`run_bounded_tool_loop` / `ctx.invoke_tool` executed a single planner pass and injected tool output via a system prompt - not a native `role=tool` chain. ReAct agents (`ReActAgent`) maintained a separate cognitive loop with budget counters not mirrored in `acp.state.v1.budget` (DEBT-ACP-18 · GAP-ACP-04).
 
 ## Decision
 
-1. Introduce `run_bounded_tool_loop` in `intergrax/runtime/nexus/tools` — shared plan→invoke→observe loop with `max_tool_iterations` (default **1** for backward compatibility).
+1. Introduce `run_bounded_tool_loop` in `intergrax/runtime/nexus/tools` - shared plan→invoke→observe loop with `max_tool_iterations` (default **1** for backward compatibility).
 2. Add `RuntimeConfig.max_tool_iterations`; `run_bounded_tool_loop` / `ctx.invoke_tool` delegates to the loop module.
 3. Add `ToolPlanningService.plan_native_round` for one native LLM round returning typed `LLMToolCall` + `ToolCallPlan`.
 4. When `max_tool_iterations > 1`, append `assistant` + `role=tool` messages to `messages_for_llm`; legacy single-pass keeps system-prompt injection.
@@ -36,12 +36,12 @@
 
 ## Compliance
 
-- Tier boundaries preserved — loop composes `ToolPlanningService` + `RuntimeToolInvoker`.
+- Tier boundaries preserved - loop composes `ToolPlanningService` + `RuntimeToolInvoker`.
 - Tests: `tests/integration/runtime/test_tool_loop_integration.py`.
 
 ## Implementation notes
 
 - `intergrax/runtime/nexus/tools`
-- `intergrax/runtime/nexus/tools/tool_planning_service.py` — `plan_native_round`
+- `intergrax/runtime/nexus/tools/tool_planning_service.py` - `plan_native_round`
 - `intergrax/agents/authoring/patterns/react_budget.py`
-- `intergrax/contracts/acp_state.py` — budget fields
+- `intergrax/contracts/acp_state.py` - budget fields

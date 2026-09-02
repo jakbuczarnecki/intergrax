@@ -1,8 +1,8 @@
-﻿# echo agent — Implementation Plan
+﻿# echo agent - Implementation Plan
 
-**The implementation map** for this Tier-2 agent — phases, status, gaps, and verification.
+**The implementation map** for this Tier-2 agent - phases, status, gaps, and verification.
 
-Status: **Done** (harness reference baseline) — maintenance only
+Status: **Done** (harness reference baseline) - maintenance only
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-ECHO
@@ -29,7 +29,7 @@ Principle: **stable harness reference** · **gate smoke must stay green** · **n
 | ECHO-1 | Harness reference UAEP smoke | **Done** | High | `tests/test_echo` via gate |
 | ECHO-2 | `ARCHITECTURE.md` conformance | **Done** | High | Phase AA-ECHO.1 |
 | ECHO-3 | Lab + POC manifest registration | **Done** | Medium | `LAB_INCLUDE_ECHO`, POC default |
-| ECHO-4 | Domain expansion | Deferred | Low | Not a product agent — keep minimal |
+| ECHO-4 | Domain expansion | Deferred | Low | Not a product agent - keep minimal |
 
 ---
 

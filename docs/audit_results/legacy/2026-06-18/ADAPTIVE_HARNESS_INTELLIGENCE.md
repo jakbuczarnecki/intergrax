@@ -1,4 +1,4 @@
-# Audit result — `ADAPTIVE_HARNESS_INTELLIGENCE`
+# Audit result - `ADAPTIVE_HARNESS_INTELLIGENCE`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 19)  
 **Auditor:** cursor-agent · **Verdict:** L3+ mature_revalidated
@@ -50,4 +50,4 @@ uv run pytest tests/unit/runtime/adaptive/ -q
 
 ## Recommendation
 
-**Architecturally Mature (L3+)** — L4 runtime Done; product-gated thresholds tracked.
+**Architecturally Mature (L3+)** - L4 runtime Done; product-gated thresholds tracked.

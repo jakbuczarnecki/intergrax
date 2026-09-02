@@ -11,7 +11,7 @@
   >
   <img
     src="../intergrax-three-entry-points-light.png"
-    alt="Three public entry points — Scenario Proofs for difficult problems and executable evidence, Products for user workflows and reference applications, Platform for governed foundations and architecture."
+    alt="Three public entry points - Scenario Proofs for difficult problems and executable evidence, Products for user workflows and reference applications, Platform for governed foundations and architecture."
   >
 </picture>
 

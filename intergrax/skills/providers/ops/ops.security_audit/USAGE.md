@@ -41,5 +41,5 @@ Enable `security_scanner` integration + shadow workspace on host.
 
 ## Related skills
 
-- `harness.reliability_smoke` — includes `security.scan` in harness context
-- `workspace.authoring` — produces artifacts to audit
+- `harness.reliability_smoke` - includes `security.scan` in harness context
+- `workspace.authoring` - produces artifacts to audit

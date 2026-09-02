@@ -27,7 +27,7 @@ Add optional **EBE-9 host signing** to Execution Boundary Export:
    - `context`: `boundaryattest.host-attestation.v1`
    - `payload_schema_id`, `signed_payload_hash`, `signature_algorithm`, `public_key_id`, `signed_at`
 5. **Wire:** `boundary_events[]` element includes `signed: true` and `host_attestation` envelope; when disabled: `signed: false`, `host_attestation: null`
-6. **Trust label:** `host_attested` in API `trust_model` when signing enabled — not `server_attested` and not proof of business truth
+6. **Trust label:** `host_attested` in API `trust_model` when signing enabled - not `server_attested` and not proof of business truth
 
 ## Consequences
 

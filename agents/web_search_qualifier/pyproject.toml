@@ -1,0 +1,29 @@
+# © Artur Czarnecki. All rights reserved.
+# Tier-2 agent dependency project (workspace member).
+# Import path preserved: web_search_qualifier
+
+[project]
+name = "intergrax-web-search-qualifier-agent"
+version = "0.1.0"
+description = "Reusable Tier-2 agent package: web_search_qualifier"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Intergrax-ai",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "web_search_qualifier",
+  "web_search_qualifier.steps",
+  "web_search_qualifier.source_selection",
+]
+
+[tool.setuptools.package-dir]
+"web_search_qualifier" = "."
+
+[tool.uv.sources]
+Intergrax-ai = { workspace = true }

@@ -1,4 +1,4 @@
-# Audit result — `TIER3_APPLICATION_ENVIRONMENT`
+# Audit result - `TIER3_APPLICATION_ENVIRONMENT`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** drift_detected
@@ -20,7 +20,7 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| T3-AUDIT-01 | P1 | APP-EVOL-8.6 M3 `spec_version` 2.0 nested canonical wire — Planned | `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` T3-BL-P1-01 | open |
+| T3-AUDIT-01 | P1 | APP-EVOL-8.6 M3 `spec_version` 2.0 nested canonical wire - Planned | `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` T3-BL-P1-01 | open |
 | T3-AUDIT-02 | P2 | CFG-14 LKW hybrid deferred §6.3 | ORCHESTRATION cross-ref | deferred |
 
 **p0_open:** 0 · **p1_open:** 1
@@ -38,9 +38,9 @@ uv run python scripts/gates/check_application_production_gates.py
 
 ## Backlog P2–P4 (deferred)
 
-- APP-EVOL-8 M3 spec_version 2.0 — P2
-- CFG-14 LKW hybrid — deferred §6.3
-- MCP mount research app test — P3
+- APP-EVOL-8 M3 spec_version 2.0 - P2
+- CFG-14 LKW hybrid - deferred §6.3
+- MCP mount research app test - P3
 
 ---
 

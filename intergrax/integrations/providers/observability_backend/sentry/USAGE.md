@@ -10,7 +10,7 @@ Category: `observability_backend`
 
 ## Provider-level export (OBS-SENTRY-1)
 
-Build transport and integration explicitly — registry construction does not open the Sentry SDK.
+Build transport and integration explicitly - registry construction does not open the Sentry SDK.
 
 ```python
 from intergrax.integrations.providers.observability_backend.sentry import (
@@ -38,6 +38,6 @@ if policy.exported and policy.envelope is not None:
     await integration.export(policy.envelope)
 ```
 
-DSN and SDK settings belong to provider config/env (`INTERGRAX_SENTRY_DSN`, etc.) — never to `ObservabilityVendorPayload`.
+DSN and SDK settings belong to provider config/env (`INTERGRAX_SENTRY_DSN`, etc.) - never to `ObservabilityVendorPayload`.
 
 **Deferred:** LKW endpoint proof, docker compose, and live Sentry operator docs.

@@ -41,7 +41,7 @@ A later PAUSE or STOP does **not** erase an earlier ACCELERATE decision. History
 | Immutability | IDs are never reused |
 | Orientation | Append-only; do not rewrite historical decisions |
 
-Later decisions may reverse or supersede earlier ones by reference — not by erasure.
+Later decisions may reverse or supersede earlier ones by reference - not by erasure.
 
 ---
 
@@ -76,7 +76,7 @@ Every future `PD-*` entry should include:
 
 ## Initial decision records
 
-### PD-001 — Adopt multi-product program
+### PD-001 - Adopt multi-product program
 
 | Field | Value |
 |-------|-------|
@@ -92,7 +92,7 @@ Evidence: [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md); [MUL
 
 ---
 
-### PD-002 — Include LKW as reference product
+### PD-002 - Include LKW as reference product
 
 | Field | Value |
 |-------|-------|
@@ -101,12 +101,12 @@ Evidence: [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md); [MUL
 | **Trigger / evidence** | Portfolio must evaluate all active Intergrax applications together |
 | **Reason** | LKW provides live product pressure baseline; Portfolio Control requires visibility across all active applications. |
 | **Affected products** | LKW |
-| **Program effect** | LKW joins program as reference product — **not** as a fifth result of MP-1→MP-8 market selection |
+| **Program effect** | LKW joins program as reference product - **not** as a fifth result of MP-1→MP-8 market selection |
 | **Status** | **ACTIVE** |
 
 ---
 
-### PD-003 — Admit four newly selected products
+### PD-003 - Admit four newly selected products
 
 | Field | Value |
 |-------|-------|
@@ -122,7 +122,7 @@ Full selection rationale: [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SEL
 
 ---
 
-### PD-004 — Agent Governance as challenger
+### PD-004 - Agent Governance as challenger
 
 | Field | Value |
 |-------|-------|
@@ -136,7 +136,7 @@ Full selection rationale: [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SEL
 
 ---
 
-### PD-005 — Prior Authorization as future/wildcard
+### PD-005 - Prior Authorization as future/wildcard
 
 | Field | Value |
 |-------|-------|
@@ -150,7 +150,7 @@ Full selection rationale: [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SEL
 
 ---
 
-### PD-006 — Session model
+### PD-006 - Session model
 
 | Field | Value |
 |-------|-------|
@@ -164,7 +164,7 @@ Full selection rationale: [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SEL
 
 ---
 
-### PD-007 — G4 escalation requirement
+### PD-007 - G4 escalation requirement
 
 | Field | Value |
 |-------|-------|
@@ -178,7 +178,7 @@ Full selection rationale: [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SEL
 
 ---
 
-### PD-008 — Asynchronous pacing and portfolio recommendations
+### PD-008 - Asynchronous pacing and portfolio recommendations
 
 | Field | Value |
 |-------|-------|

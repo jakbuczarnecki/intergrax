@@ -1,4 +1,4 @@
-# Audit result — `MODALITY`
+# Audit result - `MODALITY`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -32,9 +32,9 @@ uv run pytest tests/unit/model_inference/ -q
 
 ## Backlog P2–P4 (deferred)
 
-- OpenCV test env opencv-python-headless — P2
-- Online training — out of scope
-- Plane A/C boundary ops docs — P4
+- OpenCV test env opencv-python-headless - P2
+- Online training - out of scope
+- Plane A/C boundary ops docs - P4
 
 ---
 

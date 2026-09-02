@@ -1,9 +1,9 @@
-# Supplier Disruption — Product Session Brief
+# Supplier Disruption - Product Session Brief
 
 **Document type:** Durable product-specific session mission artifact  
 **Owner:** Supplier Disruption Product Session (future launch)  
 **Audience:** Future session operator / MP-22 Session Launch Pack assembler  
-**Status:** **SELECTED** — Pre-bootstrap; G0 **PENDING**
+**Status:** **SELECTED** - Pre-bootstrap; G0 **PENDING**
 
 > **This is NOT the final session launch prompt.**  
 > It is a durable product-specific mission and context artifact consumed later by **MP-22 Session Launch Pack**.  
@@ -37,7 +37,7 @@
 
 ## 2. Mission
 
-Turn an **active supply disruption** into a **mitigation plan** and ultimately **controlled mitigation actions** before operational impact materializes — not stop at alerts or recommendations.
+Turn an **active supply disruption** into a **mitigation plan** and ultimately **controlled mitigation actions** before operational impact materializes - not stop at alerts or recommendations.
 
 **Product-first rule:**
 
@@ -50,7 +50,7 @@ Intergrax reuse is observed as a consequence of building the product.
 
 ## 3. Why this product exists independently of Intergrax
 
-Supply disruptions compress decision time while exposure spreads across SKUs, orders, and sites. Operations leaders need a workflow that converts disruption signal into scoped exposure and **controlled mitigation** — not a news feed or generic copilot summary.
+Supply disruptions compress decision time while exposure spreads across SKUs, orders, and sites. Operations leaders need a workflow that converts disruption signal into scoped exposure and **controlled mitigation** - not a news feed or generic copilot summary.
 
 Selection recorded severe operational pain, high economic consequence, and crisis-oriented workflow as admission reasons. Integration and GTM complexity remain material caveats.
 
@@ -95,7 +95,7 @@ Detection plus recommendation alone is **not** claimed as differentiated. Incumb
 | Primary buyer | COO / Supply Chain / Procurement |
 | Core job | Convert disruption into affected business scope, time/risk picture, and controlled mitigation |
 | Economic consequence | Stockouts, line stoppages, revenue loss, expedite cost |
-| Success horizon | **Crisis tempo** — hours to days, not financial audit cycles |
+| Success horizon | **Crisis tempo** - hours to days, not financial audit cycles |
 | Value unit | Scoped exposure + actionable mitigation with human approval boundaries |
 
 ---
@@ -120,10 +120,10 @@ G0 must sharpen: **disruption → affected supplier/SKU/order → exposure/runwa
 
 | Contrast | Supplier Disruption |
 |----------|---------------------|
-| LKW | Durable knowledge operations — not supply-chain crisis response |
-| Contract Recovery | Contract/spend leakage — not operational disruption mitigation |
-| Third-Party Risk | Vendor onboarding risk decision — not in-flight supply crisis |
-| Deployment Guardian | Software release gate — not physical supply exposure |
+| LKW | Durable knowledge operations - not supply-chain crisis response |
+| Contract Recovery | Contract/spend leakage - not operational disruption mitigation |
+| Third-Party Risk | Vendor onboarding risk decision - not in-flight supply crisis |
+| Deployment Guardian | Software release gate - not physical supply exposure |
 
 Evidence semantics center on **operational exposure and mitigation**, not provenance of answers or financial discrepancy.
 
@@ -142,10 +142,10 @@ Evidence semantics center on **operational exposure and mitigation**, not proven
 
 ## 10. Major failure modes / category traps
 
-- **News / supplier-risk monitoring dashboard** — awareness without mitigation path.
-- **Generic alert summarizer** — LLM recap of headlines without scoped business impact.
-- **Recommendation-only agent** — plans without controlled execution hooks.
-- **Unrealistic autonomous supplier switching** — fantasy automation before trust.
+- **News / supplier-risk monitoring dashboard** - awareness without mitigation path.
+- **Generic alert summarizer** - LLM recap of headlines without scoped business impact.
+- **Recommendation-only agent** - plans without controlled execution hooks.
+- **Unrealistic autonomous supplier switching** - fantasy automation before trust.
 - **Giant integration project** before proving user value in a bounded slice.
 - **Copying LKW RAG patterns** for operational crisis workflows.
 
@@ -163,13 +163,13 @@ Evidence semantics center on **operational exposure and mitigation**, not proven
 
 Product Session cannot self-approve `EXTENDED_GENERALLY`, `GENUINE_PLATFORM_GAP`, or shared core product-specific behavior.
 
-VIS-3A owns public presentation — not gate status. COMM does not own Portfolio Control authority.
+VIS-3A owns public presentation - not gate status. COMM does not own Portfolio Control authority.
 
 ---
 
 ## 12. Current gate / first allowed action
 
-**G0 Product Baseline** — preparation and acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
+**G0 Product Baseline** - preparation and acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
 
 G0 sharpens disruption-to-mitigation chain before architecture. Do **not** start G1, T0, scaffold, or implementation until G0 is accepted.
 

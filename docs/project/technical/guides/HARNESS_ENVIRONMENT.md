@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-06-07 · Phase V + ORCH + TS + INT + RAG + CTX + PE + FLOW + CRIT-V (partial) **Done/Active**; gate **990**
 
-Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
+Operator and author guide for the **lab harness stack** - Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
 **Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) Phase S/U/V · [architecture/SKILLS.md](architecture/SKILLS.md) · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) · Architecture [§5.3](architecture/PLATFORM_FOUNDATION.md#53-harness-ai-alignment-conceptual-model) and [§53](architecture/PLATFORM_FOUNDATION.md#53-harness-architecture-hardening-addendum-post-u)
 
@@ -25,7 +25,7 @@ Phase S completes **environment** readiness so any new agent uses Integration �
 
 **Plan:** [`HARNESS_EVIDENCE_PACK.md`](../../maintainers/plans/HARNESS_EVIDENCE_PACK.md) (Band 2ae · Phase HEP).
 
-**~10-minute onboarding** after clone/install — separate **repo health** from **core evidence packaging**:
+**~10-minute onboarding** after clone/install - separate **repo health** from **core evidence packaging**:
 
 ```bash
 # 1) Repo wiring + gate scripts
@@ -56,20 +56,20 @@ build/evidence/trace/timeline.md
 |---------|----------------|----------|-----------|
 | **pytest gate** | `uv run pytest -m gate -q` | Do tests pass? | Unit/integration matrix |
 | **doctor** | `uv run intergrax doctor` | Is repo wiring healthy? | Script checks, not live harness E2E |
-| **certify core** | `uv run intergrax certify core` | Does CORE contract catalog pass with report? | **Deterministic mock evidence** — validates contracts + writes JSON/Markdown |
+| **certify core** | `uv run intergrax certify core` | Does CORE contract catalog pass with report? | **Deterministic mock evidence** - validates contracts + writes JSON/Markdown |
 | **trace show** | `uv run intergrax trace show` | What happened step-by-step? | Renders report-derived deterministic mock timeline to stdout |
 | **trace export** | `uv run intergrax trace export` | Can the timeline be shared as artifacts? | Writes `timeline.json` and `timeline.md`; not live runtime trace |
-| **W-ADAPT L4** | `check_l4_runtime_evidence.py` | Closed-loop adaptive utility OK? | **Different product** — 30-day utility/rollback, not CORE-L* |
+| **W-ADAPT L4** | `check_l4_runtime_evidence.py` | Closed-loop adaptive utility OK? | **Different product** - 30-day utility/rollback, not CORE-L* |
 
 **Important:** `intergrax certify core` (HEP-1) is **not** full live runtime certification across HarnessKernel, Nexus, real LLM adapters, or external providers. The runner emits evidence refs that satisfy scenario **contracts** using controlled mocks (`CORE_CERTIFICATION_EVIDENCE_KIND = deterministic_mock`). Future live Tier-0 probes: **EVID-CORE-FU-01** in the evidence pack plan (post HEP-1).
 
-**Important (trace):** `trace show` and `trace export` (HEP-2) read `build/evidence/core_certification/report.json` only. Report-derived deterministic mock timeline, not live runtime trace — not RuntimeEventBus, persisted trace store, or provider tracing.
+**Important (trace):** `trace show` and `trace export` (HEP-2) read `build/evidence/core_certification/report.json` only. Report-derived deterministic mock timeline, not live runtime trace - not RuntimeEventBus, persisted trace store, or provider tracing.
 
 ### CLI options
 
 | Flag | Default | Meaning |
 |------|---------|---------|
-| `--level` | `L2` | `CORE-L1` (4) · `CORE-L2` (8) · `CORE-L3` (12) — cumulative |
+| `--level` | `L2` | `CORE-L1` (4) · `CORE-L2` (8) · `CORE-L3` (12) - cumulative |
 | `--output-dir` | `build/evidence/core_certification` | Report directory |
 | `--root` | cwd | Used when resolving default output path |
 
@@ -122,7 +122,7 @@ Environment variables (see `applications/lab_application/.env.example`):
 | `INTERGRAX_OTEL_ENDPOINT` | Collector URL (default `http://localhost:4318`) |
 | `INTERGRAX_OTEL_SERVICE_NAME` | Service name tag (default `intergrax`) |
 
-Without a collector, the OTEL adapter uses a **noop exporter** — safe for CI and local gate tests.
+Without a collector, the OTEL adapter uses a **noop exporter** - safe for CI and local gate tests.
 
 **Trace and metrics (debug API):**
 
@@ -144,7 +144,7 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 
 **Tier-3 evaluation wiring (Phase EVAL):** `wire_application_evaluation()` maps `EvaluationProfile` to `OnlineEvaluationRegistry` / governance bridge; `wire_policy_bundle()` merges `evaluation_governance` into `RuntimePolicyBundle`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix U](guides/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout). CI: `scripts/maintenance/check_harness_evaluation_wiring.py`.
 
-**Context engineering events** (Tier-1): `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` — see architecture §28.1.
+**Context engineering events** (Tier-1): `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` - see architecture §28.1.
 
 ---
 
@@ -164,7 +164,7 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 | `harness.policy_smoke` | `rag.retrieve`, `websearch.query` | Policy bundle smoke (W-OPS.8) |
 | `harness.stack_demo` | requires `harness.tool_smoke` | `requires_skills` chain demo (W-OPS.9) |
 
-Reference harness agents **must** set `AgentContract.skill_ids` — echo and signoff_probe use `harness.tool_smoke`; do not duplicate tool lists in agent code.
+Reference harness agents **must** set `AgentContract.skill_ids` - echo and signoff_probe use `harness.tool_smoke`; do not duplicate tool lists in agent code.
 
 ---
 
@@ -174,7 +174,7 @@ Default enabled tools: `rag.retrieve`, `websearch.query`.
 
 Harness mode (`wire_lab_tools(..., harness=True)`) additionally enables runtime-bound `workspace.*` / `memory.*`, P6 integration-backed tools from `extend_tool_profile_for_integration()`, and harness modality / observability tools.
 
-`sandbox.exec` is enabled when `ToolWiringContext.sandbox_session` is set (local runtime sandbox) **or** when `IntegrationProfile.sandbox_host` resolves to a hosted backend — `wire_application_environment()` opens `HostedSandboxSession` via `resolve_hosted_sandbox_session()` (M.6 P6). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
+`sandbox.exec` is enabled when `ToolWiringContext.sandbox_session` is set (local runtime sandbox) **or** when `IntegrationProfile.sandbox_host` resolves to a hosted backend - `wire_application_environment()` opens `HostedSandboxSession` via `resolve_hosted_sandbox_session()` (M.6 P6). Skills may still declare `sandbox.exec` for harness exercises - wire a session before expecting successful invocations.
 
 **P6 integration tool wiring:** `wire_integration_tool_context()` maps `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, and `workflow_orchestrator` from `IntegrationProfile` into `ToolWiringContext` (see `applications/_shared/integration_tool_wiring.py`). `extend_tool_profile_for_integration()` appends matching Tier-1 tool_ids to `ToolProfile` when categories are configured.
 
@@ -194,11 +194,11 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **Lab stack health (W-OPS.10):** `health_check_harness_lab_stack()` probes every `HARNESS_LAB_STABLE_SLUGS` catalog entry via `health_check_catalog_slugs` with circuit breaker protection.
 
-**M.6 P4 harness ROI probes (W-OPS.10 extension):** `health_check_harness_m6_p4_probes()` probes `pgvector`, `duckdb`, `grafana`, `loki`, `tempo`, `doppler`, `unleash`, `github_actions`, and `ollama` — catalog slugs promoted to **STABLE** for harness production wiring.
+**M.6 P4 harness ROI probes (W-OPS.10 extension):** `health_check_harness_m6_p4_probes()` probes `pgvector`, `duckdb`, `grafana`, `loki`, `tempo`, `doppler`, `unleash`, `github_actions`, and `ollama` - catalog slugs promoted to **STABLE** for harness production wiring.
 
-**M.6 P5 harness depth probes (W-OPS.10 extension):** `health_check_harness_m6_p5_probes()` probes 21 slugs (`HARNESS_M6_P5_PROBE_SLUGS`) — metrics/CI/eval/async/data-plane harness stack. Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack`.
+**M.6 P5 harness depth probes (W-OPS.10 extension):** `health_check_harness_m6_p5_probes()` probes 21 slugs (`HARNESS_M6_P5_PROBE_SLUGS`) - metrics/CI/eval/async/data-plane harness stack. Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack`.
 
-**M.6 P6 harness expansion probes (W-OPS.10 extension):** `health_check_harness_m6_p6_probes()` probes 15 slugs (`HARNESS_M6_P6_PROBE_SLUGS`) — security/sandbox/identity/speech/workflow harness stack. Tier-3 presets: `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack`.
+**M.6 P6 harness expansion probes (W-OPS.10 extension):** `health_check_harness_m6_p6_probes()` probes 15 slugs (`HARNESS_M6_P6_PROBE_SLUGS`) - security/sandbox/identity/speech/workflow harness stack. Tier-3 presets: `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack`.
 
 **Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|m6_p5|m6_p6|all` (circuit-breaker catalog probes for operators).
 
@@ -245,13 +245,13 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 
 ## Policy bundle
 
-`build_runtime_policy_bundle()` on lab registry build — typed `BudgetPolicy` / `PlanLoopPolicy` slots on `RuntimePolicyBundle`. Applied via `build_lab_agent_runtime_context()` (Phase U-Pol.1). Read order: architecture §42.11.5.
+`build_runtime_policy_bundle()` on lab registry build - typed `BudgetPolicy` / `PlanLoopPolicy` slots on `RuntimePolicyBundle`. Applied via `build_lab_agent_runtime_context()` (Phase U-Pol.1). Read order: architecture §42.11.5.
 
 ---
 
 ## Harness control plane (authoring)
 
-Governance, policy, and observability are **composable control-plane layers** — configured via `ApplicationEnvironmentProfile` (§22.1 flat today · §22.6 nested bundles target — [ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)), `RuntimePolicyBundle`, hooks, and plugin entry points; enforced by Nexus on every run.
+Governance, policy, and observability are **composable control-plane layers** - configured via `ApplicationEnvironmentProfile` (§22.1 flat today · §22.6 nested bundles target - [ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)), `RuntimePolicyBundle`, hooks, and plugin entry points; enforced by Nexus on every run.
 
 | Need | Where |
 |------|--------|
@@ -265,9 +265,9 @@ Governance, policy, and observability are **composable control-plane layers** �
 | Security wire-time closeout (§23) | [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](plan/UNIFIED_EXECUTION_RUNTIME.md) |
 | Cost wire-time closeout (§24) | [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](plan/UNIFIED_EXECUTION_RUNTIME.md) |
 
-**Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
+**Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` - without changing Tier-2 agent code.
 
-**Orchestration:** graph execution, delegation, handoff, hooks — [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**; Phase FLOW **Done** 18/18 harness). Multi-agent quick start: [Appendix C](guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
+**Orchestration:** graph execution, delegation, handoff, hooks - [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**; Phase FLOW **Done** 18/18 harness). Multi-agent quick start: [Appendix C](guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
 
 ---
 
@@ -335,9 +335,9 @@ Current baseline delivered (Phase V V1):
 
 ### Adaptive Harness Intelligence ops (W-ADAPT-7)
 
-**Lab host (`lab_application`):** `AdaptiveProfile(enabled=True, mode="observe")` by default — collects `HarnessOutcomeSignal` on every Nexus run without apply/shadow/canary. Disable with `LAB_ADAPTIVE_OBSERVE=false`.
+**Lab host (`lab_application`):** `AdaptiveProfile(enabled=True, mode="observe")` by default - collects `HarnessOutcomeSignal` on every Nexus run without apply/shadow/canary. Disable with `LAB_ADAPTIVE_OBSERVE=false`.
 
-**Reference product hosts** (`legal_application`, `poc_template_application`, `research_application`): `AdaptiveProfile(enabled=False, mode="observe")` — enable closed-loop behavior only in controlled environments.
+**Reference product hosts** (`legal_application`, `poc_template_application`, `research_application`): `AdaptiveProfile(enabled=False, mode="observe")` - enable closed-loop behavior only in controlled environments.
 
 | Variable / flag | Purpose |
 |-----------------|--------|
@@ -346,7 +346,7 @@ Current baseline delivered (Phase V V1):
 | `LAB_ADAPTIVE_FEATURE_FLAG` | Optional feature-flag slug (e.g. `unleash`) for adaptive rollout gate wiring |
 | `LAB_SECRETS_BACKEND` | Optional secrets slug (`doppler`, `vault`, `aws_secrets_manager`); with `INTERGRAX_ENV=prod` selects `harness_production_defaults()` |
 | `LAB_HARNESS` | When `true`, enables harness tool bundle and mounts `GET /debug/integrations/health` |
-| `AdaptiveProfile.feature_flag_slug` | Tier-3 rollout guard — modes beyond `observe` downgrade unless flag backend enables `rollout_flag_key` |
+| `AdaptiveProfile.feature_flag_slug` | Tier-3 rollout guard - modes beyond `observe` downgrade unless flag backend enables `rollout_flag_key` |
 | `AdaptiveProfile.rollout_flag_key` | Flag key evaluated via `IntegrationProfile.feature_flag` (default `harness.adaptive.recommend`) |
 | `AdaptiveProfile.enabled` | Master switch for adaptive stores, executor, and signal collector |
 | `AdaptiveProfile.mode` | `observe` \| `recommend` \| `shadow` \| `canary` \| `apply` |
@@ -366,10 +366,10 @@ Authoring guide: [`guides/AGENT_CREATION_GUIDE.md` Appendix V](guides/AGENT_CREA
 
 Execution references in the implementation plan:
 
-- **Phase V stream map:** `Phase V — Harness Architecture Hardening (post-U)`
-- **Execution order:** `Phase V — Execution matrix (dependencies and order)`
-- **Acceptance thresholds:** `Phase V — KPI thresholds and acceptance metrics`
-- **Maturity gates:** `Phase V — L3/L4 gate evidence (architecture maturity)`
+- **Phase V stream map:** `Phase V - Harness Architecture Hardening (post-U)`
+- **Execution order:** `Phase V - Execution matrix (dependencies and order)`
+- **Acceptance thresholds:** `Phase V - KPI thresholds and acceptance metrics`
+- **Maturity gates:** `Phase V - L3/L4 gate evidence (architecture maturity)`
 
 ---
 
@@ -417,7 +417,7 @@ uv run pytest tests/unit/applications/test_lab_strict_harness.py -m gate -q
 
 ## Elastic capacity reference policy (ECP-1.5)
 
-Lab hosts wire `ScalingProfile` via `wire_application_scaling()` — **no-op** when `scaling_profile.policy.enabled=false` (default). Enable for experiments:
+Lab hosts wire `ScalingProfile` via `wire_application_scaling()` - **no-op** when `scaling_profile.policy.enabled=false` (default). Enable for experiments:
 
 ```json
 {
@@ -456,6 +456,6 @@ Link W-OPS SLO checks: `scripts/maintenance/check_observability_gates.py` + `scr
 
 ---
 
-## Product agents and applications (end of plan — not default next)
+## Product agents and applications (end of plan - not default next)
 
-Business agents (K.1 Problem Radar, K.2 Vendor Discovery) and new Tier-3 **product** applications are **last** in the [implementation plan](intergrax_runtime_architecture.md) (§4.0 Band 3, **§6.3**). Harness work uses **§6.1 + §6.2 (Phase V)**. Product work starts only after an explicit prioritization decision — not because Phase U, §4.1, or initial Phase V waves are active.
+Business agents (K.1 Problem Radar, K.2 Vendor Discovery) and new Tier-3 **product** applications are **last** in the [implementation plan](intergrax_runtime_architecture.md) (§4.0 Band 3, **§6.3**). Harness work uses **§6.1 + §6.2 (Phase V)**. Product work starts only after an explicit prioritization decision - not because Phase U, §4.1, or initial Phase V waves are active.

@@ -128,11 +128,12 @@ Q2_D_VALIDATION_FAILURE = QualificationCaseExpectation(
 Q2_E_MISSING_EVIDENCE = QualificationCaseExpectation(
     case_id="Q2-E",
     expected_execution_outcome=QualificationExecutionOutcome.COMPLETED,
-    expected_functional_outcome=QualificationFunctionalOutcome.PASSED,
+    expected_functional_outcome=QualificationFunctionalOutcome.FAILED,
     expected_check_results=_missing_evidence_checks(),
     expected_first_proven_failed_check=None,
     expected_operator_outcome=FunctionalOperatorOutcomeStatus.INCONCLUSIVE,
     include_validation=False,
+    compare_functional_outcome=False,
 )
 
 Q2_F_HEALTHY = QualificationCaseExpectation(

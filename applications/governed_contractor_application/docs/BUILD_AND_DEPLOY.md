@@ -1,11 +1,11 @@
-# Build & deploy — Governed Contractor
+# Build & deploy - Governed Contractor
 
 Tier-3 application package: `applications/governed_contractor_application`. This document is the **operational runbook** for local development, verification, and container deployment.
 
-> Vertical: Governed External Contractor (GEC) — architecture [`ARCHITECTURE.md`](ARCHITECTURE.md) · plan [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · partner [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md)  
+> Vertical: Governed External Contractor (GEC) - architecture [`ARCHITECTURE.md`](ARCHITECTURE.md) · plan [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · partner [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md)  
 > Layout canon: [`applications/USAGE.md`](../../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../intergrax/applications/USAGE.md)
 
-**Note:** GEC-0 is scaffold + documentation. Domain proof APIs arrive in later phases. Local `/health` and scaffold `/run` are smoke surfaces only — not a production or partner contract claim.
+**Note:** GEC-0 is scaffold + documentation. Domain proof APIs arrive in later phases. Local `/health` and scaffold `/run` are smoke surfaces only - not a production or partner contract claim.
 
 ---
 
@@ -28,7 +28,7 @@ Tier-2 agents used by this host: **external_contractor_adapter** (under `agents`
 cp applications/governed_contractor_application/.env.example applications/governed_contractor_application/.env
 ```
 
-Edit `.env` (gitignored). Variables use the application prefix **`GOVERNED_CONTRACTOR_`** — do not put app secrets only in the repository-root `.env`.
+Edit `.env` (gitignored). Variables use the application prefix **`GOVERNED_CONTRACTOR_`** - do not put app secrets only in the repository-root `.env`.
 
 | Variable | Default | Role |
 |----------|---------|------|
@@ -38,7 +38,7 @@ Edit `.env` (gitignored). Variables use the application prefix **`GOVERNED_CONTR
 
 Agent roster and integrations: `manifest.py`, `host/wiring.py`, `host/integration_wiring.py`.
 
-Partner endpoint credentials (future GEC-10) must stay in env/config — never in `intergrax` core.
+Partner endpoint credentials (future GEC-10) must stay in env/config - never in `intergrax` core.
 
 ---
 
@@ -100,7 +100,7 @@ applications\governed_contractor_application\docker\build-docker.bat
 
 Override image tag: `IMAGE_TAG=my-registry/governed_contractor:1.0.0` (sh) or `build-docker.bat my-registry/governed_contractor:1.0.0` (bat).
 
-### Manual — BuildKit
+### Manual - BuildKit
 
 ```bash
 docker buildx build -f applications/governed_contractor_application/docker/Dockerfile \
@@ -108,7 +108,7 @@ docker buildx build -f applications/governed_contractor_application/docker/Docke
   -t governed_contractor-application .
 ```
 
-### Manual — classic Docker
+### Manual - classic Docker
 
 ```bash
 cp applications/governed_contractor_application/docker/.dockerignore .dockerignore
@@ -188,7 +188,7 @@ applications/governed_contractor_application/scripts/build-local-docker.sh
 
 ---
 
-*Tier-3 product scaffold runbook — GEC vertical.*
+*Tier-3 product scaffold runbook - GEC vertical.*
 
 ## Application dependency project
 

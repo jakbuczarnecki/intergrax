@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Partners and Pilots
 
-If your team runs a **private or controlled knowledge workflow** — approved sources, grounded answers, explicit access boundaries, source and evidence traceability, reviewable execution, and repeatability where it matters — a bounded pilot can answer a concrete decision question:
+If your team runs a **private or controlled knowledge workflow** - approved sources, grounded answers, explicit access boundaries, source and evidence traceability, reviewable execution, and repeatability where it matters - a bounded pilot can answer a concrete decision question:
 
 **Can Intergrax make this workflow useful, controlled, and reviewable enough to justify deeper adoption or integration?**
 
@@ -25,7 +25,7 @@ A useful starting point is simple:
 - **one team** with an identifiable domain owner;
 - **one concrete knowledge-intensive workflow** (not a platform wish list);
 - a clear picture of what information or actions the workflow uses today; and
-- a stated problem — why the current approach is insufficient.
+- a stated problem - why the current approach is insufficient.
 
 You do not need a completed pilot brief for the first conversation. Send **3–5 sentences** covering who the user or team is, what workflow they want to improve, what information or actions are involved, why the current approach falls short, and what result would make an evaluation worthwhile.
 
@@ -45,7 +45,7 @@ A bounded pilot is an evaluation, not a guarantee. Appropriate decision question
 - Do users judge the result **useful enough to reuse**?
 - Are **remaining gaps** clear enough to decide whether deeper investment makes sense?
 
-Answers to these questions — with evidence — are the pilot's value. They support a decision; they do not automatically prove production readiness or universal performance.
+Answers to these questions - with evidence - are the pilot's value. They support a decision; they do not automatically prove production readiness or universal performance.
 
 ---
 
@@ -67,7 +67,7 @@ one team
 → CONTINUE / REVISE / STOP
 ```
 
-This aligns with Intergrax's **strongest current fit**: private governed knowledge workspaces where approved sources, grounded answers, access boundaries, and reviewability matter. Other engagement types — specialized AI applications, evidence-aware integration, platform capability evaluation — are possible; see [USE_CASES](../overview/USE_CASES.md) for fit classes.
+This aligns with Intergrax's **strongest current fit**: private governed knowledge workspaces where approved sources, grounded answers, access boundaries, and reviewability matter. Other engagement types - specialized AI applications, evidence-aware integration, platform capability evaluation - are possible; see [USE_CASES](../overview/USE_CASES.md) for fit classes.
 
 ---
 
@@ -77,9 +77,9 @@ Within current boundaries, Intergrax can provide:
 
 - **bounded workflow and technical fit assessment** against current evidence;
 - **scoped configuration or implementation** for the agreed evaluation where appropriate;
-- **governed boundary definition** — allowed actions, forbidden actions, and approval points;
+- **governed boundary definition** - allowed actions, forbidden actions, and approval points;
 - **reviewable evidence and proof artifacts** where supported;
-- **documented gap assessment** — what worked, what did not, and what remains missing; and
+- **documented gap assessment** - what worked, what did not, and what remains missing; and
 - an **end-of-pilot decision summary**.
 
 This does not include free custom development, SLA, production support, certification, implementation timeline commitments, commercial deployment, or custom features without agreement.
@@ -95,7 +95,7 @@ Keep the partner side lightweight:
 - **representative authorized data, knowledge, or integration access** within agreed boundaries;
 - **feedback** on fit, evidence, and gaps during the evaluation;
 - **one decision owner** accountable for the pilot outcome; and
-- **agreed success criteria** — what would make the evaluation worthwhile.
+- **agreed success criteria** - what would make the evaluation worthwhile.
 
 The first contact requires only the short workflow note above. A detailed pilot brief comes after initial fit discussion.
 
@@ -117,12 +117,12 @@ flowchart LR
     F -->|Insufficient fit or value| I[STOP]
 ```
 
-1. **Workflow note** — Send 3–5 sentences describing users, workflow, problem, and desired result.
-2. **Fit discussion** — Confirm workflow clarity, mutual interest, and current evidence fit.
-3. **Scope and evidence** — Define allowed and forbidden actions, approvals, environment, and what evidence the evaluation must produce. Complete a concise pilot brief at this stage if proceeding.
-4. **Bounded evaluation** — Run an evaluation-only pilot under [LICENSE](../../../LICENSE), or an authorized pilot if operational activity requires explicit permission.
-5. **Review evidence** — Assess outcomes against agreed success criteria.
-6. **Decision** — CONTINUE, REVISE, or STOP.
+1. **Workflow note** - Send 3–5 sentences describing users, workflow, problem, and desired result.
+2. **Fit discussion** - Confirm workflow clarity, mutual interest, and current evidence fit.
+3. **Scope and evidence** - Define allowed and forbidden actions, approvals, environment, and what evidence the evaluation must produce. Complete a concise pilot brief at this stage if proceeding.
+4. **Bounded evaluation** - Run an evaluation-only pilot under [LICENSE](../../../LICENSE), or an authorized pilot if operational activity requires explicit permission.
+5. **Review evidence** - Assess outcomes against agreed success criteria.
+6. **Decision** - CONTINUE, REVISE, or STOP.
 
 Labels such as **pilot**, **sandbox**, **test**, or **proof of concept** do **not** determine permission status. Actual activity and the terms of [LICENSE](../../../LICENSE) control.
 
@@ -134,7 +134,7 @@ After the bounded evaluation, review:
 
 - useful task completion on representative questions or tasks;
 - evidence and citation correctness;
-- policy and permission behavior — unauthorized sources excluded as designed;
+- policy and permission behavior - unauthorized sources excluded as designed;
 - setup repeatability;
 - restart and recovery behavior where applicable;
 - user or domain-owner judgment of usefulness; and

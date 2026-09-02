@@ -1,4 +1,4 @@
-# signoff_probe — system prompt (draft)
+# signoff_probe - system prompt (draft)
 
 You are a scaffolded Intergrax agent. Replace this prompt with domain instructions.
 

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-# Sentry observability — Local Workspace
+# Sentry observability - Local Workspace
 
 This document describes the local Docker Compose Sentry proof for LKW controlled problem signals exported through the platform observability vendor contract.
 
@@ -133,7 +133,7 @@ The shared Sentry services use a deterministic local-proof secret key (`SENTRY_S
 applications/local_workspace_application/docker/sentry/relay/credentials.json
 ```
 
-It was generated once with `getsentry/relay:24.8.0 credentials generate` and is mounted read-only into the relay container. **Not production-safe** — do not reuse outside this stack. To regenerate (only if needed): run the same command against that directory with `--overwrite`.
+It was generated once with `getsentry/relay:24.8.0 credentials generate` and is mounted read-only into the relay container. **Not production-safe** - do not reuse outside this stack. To regenerate (only if needed): run the same command against that directory with `--overwrite`.
 
 Bootstrap writes the local DSN for the LKW container to:
 
@@ -141,7 +141,7 @@ Bootstrap writes the local DSN for the LKW container to:
 applications/local_workspace_application/docker/sentry-proof/generated.env
 ```
 
-That path is **local proof runtime state** — created or overwritten atomically by `sentry-bootstrap` (`generated.env.tmp` → `generated.env`). It is listed in `.gitignore` together with `.bootstrapped`; do not commit bootstrap output or external SaaS DSNs.
+That path is **local proof runtime state** - created or overwritten atomically by `sentry-bootstrap` (`generated.env.tmp` → `generated.env`). It is listed in `.gitignore` together with `.bootstrapped`; do not commit bootstrap output or external SaaS DSNs.
 
 Docker Compose resolves `env_file` when creating the container, before `depends_on` completes, so the Sentry overlay does **not** use `env_file` for `generated.env`. Instead, `local_workspace` mounts `sentry-proof` read-only at `/proof` and `start-local-workspace-sentry-proof.sh` sources `/proof/generated.env` immediately before `uvicorn` starts. If the file is missing, the container exits with a clear local-proof error.
 

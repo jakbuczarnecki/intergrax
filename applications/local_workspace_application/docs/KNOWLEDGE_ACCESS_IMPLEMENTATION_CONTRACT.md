@@ -159,7 +159,7 @@ LKW configuration stores only `connection_ref`. It never constructs vendor clien
 | Jira | `jira` | `issue_tracker` | `jira.issues` | `jira_project` | inventory, content, reconciliation |
 | Confluence | `confluence` | `wiki_knowledge` | `confluence.pages` | `confluence_space` | inventory, rich_text content |
 | MS365 Graph | `ms365_graph` | `collaboration_suite` | `msgraph.drive`, `msgraph.mail`, `msgraph.teams_channel` | `msgraph_drive`, etc. | delta/incremental reads |
-| Google Workspace | `google_workspace` | `collaboration_suite` | `drive`, `docs`, `sheets`, `calendar`, `slides`, `mail`, `chat` | per-surface scope types | **PLANNED** — `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW** |
+| Google Workspace | `google_workspace` | `collaboration_suite` | `drive`, `docs`, `sheets`, `calendar`, `slides`, `mail`, `chat` | per-surface scope types | **PLANNED** - `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW** |
 
 Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live capability IDs are **planned** in architecture docs, **not implemented** as a registry.
 
@@ -256,12 +256,12 @@ See [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) §4.9
 | Concern | Owner | Verified / decision |
 |---------|-------|---------------------|
 | Raw credentials and tokens | Integration / `SecretsStore` | Confirmed - not in LKW models; only opaque `credential_ref` in durable records |
-| Durable `TenantConnection` catalog | Platform connection foundation | **Gap — `LKW-KNOWLEDGE-ACCESS-1C-1`:** model, repository, service, administrative lifecycle, restart rehydration |
+| Durable `TenantConnection` catalog | Platform connection foundation | **Gap - `LKW-KNOWLEDGE-ACCESS-1C-1`:** model, repository, service, administrative lifecycle, restart rehydration |
 | Runtime integration registration | `KnowledgeConnectionRegistry` | Instance-local runtime projection / cache; **not** durable catalog; **not** administrative source of truth |
 | Application integration bootstrap | `IntegrationProfile` | Application-level composition; **not** tenant Connection database, workspace configuration, multi-tenant connector catalog or credential record |
 | Vendor API client | Existing integration instance | Confirmed via `IntegrationProfile` / connection registry after rehydration |
 | Remote Resource discovery | Vendor Knowledge adapters + future list port | `inspect_scope` exists; `RemoteResourceDescriptorV1` ephemeral by default; list candidates in `1C-2` |
-| Workspace connection attachment | **LKW** | New `WorkspaceConnectionAttachment` record — reference + safe cached label only |
+| Workspace connection attachment | **LKW** | New `WorkspaceConnectionAttachment` record - reference + safe cached label only |
 | Tenant knowledge source binding | **Vendor Knowledge** (`KnowledgeSourceBinding`) | Authoritative provider/resource/scope/connection; durable; stores `connection_ref` and optional `credential_ref`; LKW references via `knowledge_source_binding_ref` |
 | Indexed Source authorization | **LKW** | `WorkspaceIndexedSourceBinding` (authorization reference) + `WorkspaceSource(CONNECTED_SOURCE)` |
 | Live Access Binding | **LKW** | New `WorkspaceLiveAccessBinding` |
@@ -272,7 +272,7 @@ See [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) §4.9
 | Live execution authorization | LKW + platform policy | LKW binding allowlist + executor gate |
 | Live evidence normalization | Provider-neutral boundary (future executor) | Ephemeral by default |
 | Slack presentation | Slack frontend only | Confirmed thin-client architecture |
-| Deployment topology | Deployment configuration | Environment variables, manifests, bootstrap — not automatically tenant/workspace product configuration |
+| Deployment topology | Deployment configuration | Environment variables, manifests, bootstrap - not automatically tenant/workspace product configuration |
 
 **Current gap (documented, sequenced):** Architecture describes a durable tenant `TenantConnection` record. Repository has only opaque `connection_ref` on bindings and an **instance-local** `KnowledgeConnectionRegistry`. **Owner:** `LKW-KNOWLEDGE-ACCESS-1C-1`. LKW never persists Connection metadata beyond cached safe labels on attachments.
 
@@ -286,10 +286,10 @@ A **Connection** is not a standalone durable LKW entity today. It is:
 
 1. An opaque **`connection_ref`** string carried on `KnowledgeSourceRef` / `KnowledgeSourceBinding`.
 2. A runtime registration in **`KnowledgeConnectionRegistry`** mapping `(tenant_id, connection_ref)` to an already-constructed integration instance with matching `provider_id` and `integration_kind`. The registry stores constructed integration objects only; it does not load secrets, create clients or persist Connection metadata. It is **not** durable state.
-3. Application **`IntegrationProfile`** bootstrap for deployment-level integration composition — **not** a tenant Connection database.
-4. An architectural durable tenant `TenantConnection` record documented here and in platform canon — **not yet persisted** in code; **to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**.
+3. Application **`IntegrationProfile`** bootstrap for deployment-level integration composition - **not** a tenant Connection database.
+4. An architectural durable tenant `TenantConnection` record documented here and in platform canon - **not yet persisted** in code; **to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**.
 
-### 6.1.1 Target durable `TenantConnection` (platform-owned — not implemented)
+### 6.1.1 Target durable `TenantConnection` (platform-owned - not implemented)
 
 ```text
 connection_ref
@@ -310,7 +310,7 @@ connected_principal_ref      # optional
 
 **Platform connection foundation owns (to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`):** `TenantConnection` model, `TenantConnectionRepository` port, durable repository implementation, `TenantConnectionService`, administrative lifecycle, configuration-version concurrency, `credential_ref` association, safe public projection, restart reconstruction contract.
 
-**`KnowledgeConnectionRegistry` owns:** instance-local mapping `(tenant_id, connection_ref) -> constructed integration instance`; runtime identity validation; runtime resolution. Documented as runtime projection / cache — not durable catalog, not administrative source of truth.
+**`KnowledgeConnectionRegistry` owns:** instance-local mapping `(tenant_id, connection_ref) -> constructed integration instance`; runtime identity validation; runtime resolution. Documented as runtime projection / cache - not durable catalog, not administrative source of truth.
 
 **`IntegrationProfile` owns:** application-level integration composition; bootstrap defaults; category-to-provider selection; construction of application infrastructure. Must not be reused as tenant Connection database, workspace configuration, multi-tenant connector catalog or credential record.
 
@@ -1197,27 +1197,27 @@ A mismatch is corruption or ownership conflict. Do not clean it automatically. R
 
 Freeze the following algorithm for every successful mutation that requires an actual state change. This is the only allowed transaction design for `1B`. Semantic no-op mutations (Section 12.6) exit before Step 5.
 
-### Step 1 — validate required headers
+### Step 1 - validate required headers
 
 Validate `If-Match` and `Idempotency-Key`. Do not mutate durable state yet.
 
-### Step 2 — normalize request
+### Step 2 - normalize request
 
 Calculate `normalized_request_hash`, `semantic_identity_hash`, deterministic entity IDs.
 
-### Step 3 — reserve mutation record
+### Step 3 - reserve mutation record
 
 Create `RESERVED` with `target_revision=None`, `committed_revision=None`, `outcome=None` using `put_if_absent`. Resolve replay or conflict when the row already exists.
 
-### Step 4 — semantic no-op detection
+### Step 4 - semantic no-op detection
 
 Check current committed projection. When state already satisfies the request: commit mutation as `EXISTING_RESULT`, return existing result. No writer slot.
 
-### Step 5 — validate If-Match against current committed head
+### Step 5 - validate If-Match against current committed head
 
 When mutation requires an actual state change: provided `If-Match` must equal current committed revision. Mismatch -> `409 configuration_revision_conflict`.
 
-### Step 6 — acquire writer slot
+### Step 6 - acquire writer slot
 
 CAS idle head:
 
@@ -1229,21 +1229,21 @@ N / pending N+1 / mutation ID
 
 Use `replace_if_match`. If CAS fails -> `409 configuration_revision_conflict` unless the competing pending mutation requires recovery, in which case -> `503 configuration_recovery_required`.
 
-### Step 7 — assign target revision
+### Step 7 - assign target revision
 
 Conditionally replace mutation: `RESERVED` -> `RESERVED` with `target_revision=N+1`. The assignment must be persisted **before** staged rows are written. Do not assign placeholder `target_revision=1` before writer-slot acquisition.
 
-### Step 8 — write and validate staged records
+### Step 8 - write and validate staged records
 
 Write all required immutable child versions with `effective_revision = N + 1`, `mutation_id = current mutation`. For Indexed Source creation, also create the pending connected Source according to Section 15 using `put_if_absent`. These records remain invisible because `effective_revision > head.committed_revision`.
 
 Read back all staged records. Validate correct tenant, workspace, `mutation_id`, target revision, expected semantic identity, expected result ID, expected Source relationship, no forbidden provider/credential fields.
 
-### Step 9 — mark PREPARED
+### Step 9 - mark PREPARED
 
 Use `replace_if_match` to set mutation status `PREPARED`.
 
-### Step 10 — publish head
+### Step 10 - publish head
 
 CAS the head:
 
@@ -1264,7 +1264,7 @@ This single head replacement is the publication point. After this succeeds, the 
 
 `last_committed_mutation_id` may remain as diagnostic hint, fast-path optimization and recent mutation trace. It must **not** be the only proof that a mutation was published.
 
-### Step 11 — finalize mutation
+### Step 11 - finalize mutation
 
 Replace the mutation record `PREPARED -> COMMITTED`, `outcome=APPLIED`, `committed_revision=R`. Store `result_entity_type`, `result_entity_id`, `committed_at`.
 
@@ -2035,7 +2035,7 @@ Do not move capability discovery from `1C-2` into `1B`.
 
 **Outcome:** A tenant Connection is stored durably with safe configuration and an opaque credential reference, and the application can reconstruct its single runtime integration registration after restart without storing credentials in LKW.
 
-**Dependencies:** 1B (for workspace binding resolution only — catalog itself is platform-owned).
+**Dependencies:** 1B (for workspace binding resolution only - catalog itself is platform-owned).
 
 **Exact scope:**
 
@@ -2198,7 +2198,7 @@ Hybrid Ask, live Jira/Confluence/Graph queries, MCP execution, provider sync wor
 
 | Blocker | Severity | Mitigation |
 |---------|----------|------------|
-| No durable tenant `TenantConnection` catalog | Medium | **`LKW-KNOWLEDGE-ACCESS-1C-1`** — model, repository, service, rehydration |
+| No durable tenant `TenantConnection` catalog | Medium | **`LKW-KNOWLEDGE-ACCESS-1C-1`** - model, repository, service, rehydration |
 | No typed live capability catalog | Medium | `TenantLiveCapabilityCatalogPort` in **`1C-2`**; bindings-only in `1D` |
 | No live capability executor | Medium | Executor in later platform task |
 | `list_source_candidates` not implemented on facade | Low | Use `inspect_scope` + adapter list in **`1C-2`** |

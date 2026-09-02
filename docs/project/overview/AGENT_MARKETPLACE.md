@@ -4,7 +4,7 @@ Intergrax is source-available under the Intergrax Evaluation and Collaboration L
 See LICENSE for permitted evaluation, collaboration, and contribution use.
 -->
 
-# Intergrax Agent Marketplace — Concept and Reference Architecture
+# Intergrax Agent Marketplace - Concept and Reference Architecture
 
 > **Document type:** Public product and architecture concept  
 > **Audience:** CTOs, principal/staff engineers, AI architects, agent developers, enterprise platform teams, technical evaluators, product decision makers  
@@ -15,10 +15,10 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 > | **AVAILABLE TODAY** | Implemented and inspectable in the current repository |
 > | **ARCHITECTURE FROZEN** | Canonical design accepted; not a product claim |
 > | **UNDER IMPLEMENTATION** | Active engineering against frozen architecture |
-> | **FUTURE PRODUCT** | Planned marketplace or distribution product capability — not shipped |
+> | **FUTURE PRODUCT** | Planned marketplace or distribution product capability - not shipped |
 
 > [!IMPORTANT]
-> **Truthfulness contract:** This document describes a **future governed distribution ecosystem** built on Intergrax's existing agent platform. It does **not** claim that a public marketplace website, publisher portal, billing, or LKW marketplace UI exists today. Where examples name agents (Research Agent, Legal Agent, etc.), they illustrate **reusable capability patterns** — not guaranteed catalog listings.
+> **Truthfulness contract:** This document describes a **future governed distribution ecosystem** built on Intergrax's existing agent platform. It does **not** claim that a public marketplace website, publisher portal, billing, or LKW marketplace UI exists today. Where examples name agents (Research Agent, Legal Agent, etc.), they illustrate **reusable capability patterns** - not guaranteed catalog listings.
 
 ---
 
@@ -43,7 +43,7 @@ Nexus routes work.
 Intergrax governs execution.
 ```
 
-Applications compose **governed agent capabilities**. **Nexus** routes tasks by **capability**, not by marketplace origin. **Intergrax** owns verification, materialization, activation, and runtime enforcement — the marketplace is a **catalog and discovery layer**, not a second execution engine.
+Applications compose **governed agent capabilities**. **Nexus** routes tasks by **capability**, not by marketplace origin. **Intergrax** owns verification, materialization, activation, and runtime enforcement - the marketplace is a **catalog and discovery layer**, not a second execution engine.
 
 ```mermaid
 flowchart LR
@@ -86,7 +86,7 @@ flowchart TB
     RA --> FUT["Future applications"]
 ```
 
-The marketplace is the **discovery and distribution network** for that reuse — not a replacement for Agent Distribution, AgentRegistry, or Nexus.
+The marketplace is the **discovery and distribution network** for that reuse - not a replacement for Agent Distribution, AgentRegistry, or Nexus.
 
 ---
 
@@ -96,10 +96,10 @@ Intergrax organizes work across four tiers:
 
 ```mermaid
 flowchart TB
-    T0["Tier-0 — Platform / Distribution\ncontracts · trust · catalog ports · installation stores"]
-    T1["Tier-1 — Runtime / Nexus\nAgentRegistry · capability routing · governed execution"]
-    T2["Tier-2 — Reusable agents\nAgentContract · agent packages · cognitive patterns"]
-    T3["Tier-3 — Applications\nmanifests · UX · product workflows · host admin surface"]
+    T0["Tier-0 - Platform / Distribution\ncontracts · trust · catalog ports · installation stores"]
+    T1["Tier-1 - Runtime / Nexus\nAgentRegistry · capability routing · governed execution"]
+    T2["Tier-2 - Reusable agents\nAgentContract · agent packages · cognitive patterns"]
+    T3["Tier-3 - Applications\nmanifests · UX · product workflows · host admin surface"]
 
     T3 --> T0
     T3 --> T1
@@ -111,7 +111,7 @@ flowchart TB
 | Tier | Marketplace relationship |
 |------|---------------------------|
 | **Tier-0** | Owns `CatalogSourceProvider`, installation, binding, trust, dependency lock, activation |
-| **Tier-1** | **Unchanged** — AgentRegistry and Nexus do not become marketplace-aware |
+| **Tier-1** | **Unchanged** - AgentRegistry and Nexus do not become marketplace-aware |
 | **Tier-2** | What publishers build and distribute |
 | **Tier-3** | What binds, configures, and enables agents for a product |
 
@@ -119,7 +119,7 @@ flowchart TB
 
 ### Mandatory execution chain
 
-All catalog sources — built-in, local developer, enterprise private, official marketplace, governed third party — converge into the **same** pipeline:
+All catalog sources - built-in, local developer, enterprise private, official marketplace, governed third party - converge into the **same** pipeline:
 
 ```text
 Marketplace / private catalog / builtin / local developer source
@@ -228,7 +228,7 @@ Agent itself          executes through Intergrax governed runtime
 | **Built-in Intergrax** | `builtin` | First-party monorepo agents shipped with the platform |
 | **Local developer** | `local_developer` | Workspace/path packages during agent authoring |
 | **Enterprise private catalog** | `enterprise_private` | Org registry, air-gapped bundles, approved vendors |
-| **Official Intergrax marketplace** | `official_catalog` | **FUTURE PRODUCT** — public discovery index |
+| **Official Intergrax marketplace** | `official_catalog` | **FUTURE PRODUCT** - public discovery index |
 | **Governed third party** | `governed_third_party` | Partner catalogs under enterprise trust policy |
 
 ```mermaid
@@ -295,7 +295,7 @@ flowchart TB
 
 ## Conceptual marketplace listing
 
-The following card is a **conceptual UI sketch only** — not a screenshot of implemented frontend.
+The following card is a **conceptual UI sketch only** - not a screenshot of implemented frontend.
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
@@ -303,7 +303,7 @@ The following card is a **conceptual UI sketch only** — not a screenshot of im
 │  Publisher: Example Labs                                │
 │  Capability: research.deep · research.citation          │
 │  Trust: Enterprise Qualified                            │
-│  Risk: Medium — reads documents, web search, models     │
+│  Risk: Medium - reads documents, web search, models     │
 │  Version: 2.3.1  ·  Digest-pinned install               │
 │  Intergrax: ≥ 0.9  ·  Integrations: web, workspace docs │
 │  [ Inspect permissions ]  [ Request install ]           │
@@ -476,9 +476,9 @@ Local Knowledge Workspace (example)
 ├── local_indexer          (built-in / default)
 ├── local_search             (built-in / default)
 ├── local_synthesizer        (built-in / default)
-├── Research Agent           (marketplace — FUTURE PRODUCT path)
-├── Project Manager Agent    (enterprise private catalog — FUTURE)
-└── Legal Agent              (official catalog — FUTURE)
+├── Research Agent           (marketplace - FUTURE PRODUCT path)
+├── Project Manager Agent    (enterprise private catalog - FUTURE)
+└── Legal Agent              (official catalog - FUTURE)
 ```
 
 ```mermaid
@@ -506,7 +506,7 @@ flowchart TB
 | Enterprise private | Same distribution pipeline, different catalog |
 | Locally developed | `local_developer` provider |
 
-**EffectiveRoster** merges manifest defaults and durable bindings into **one** roster per application environment — the runtime never sees conflicting "marketplace" and "builtin" branches.
+**EffectiveRoster** merges manifest defaults and durable bindings into **one** roster per application environment - the runtime never sees conflicting "marketplace" and "builtin" branches.
 
 ---
 
@@ -542,7 +542,7 @@ Marketplace listings describe **what an agent may require**; applications decide
 
 ## Permissions and security model
 
-Agent installation is **security-sensitive** because agents are not passive libraries — they are **autonomous capability packages** that can invoke tools and access data through governed runtime boundaries.
+Agent installation is **security-sensitive** because agents are not passive libraries - they are **autonomous capability packages** that can invoke tools and access data through governed runtime boundaries.
 
 ### Example permission classes
 
@@ -585,7 +585,7 @@ flowchart TB
     RP --> OK["Activation allowed"]
 ```
 
-**ARCHITECTURE FROZEN:** Trust patterns reuse evidence pipeline concepts from platform plugins — but agent packages are a **distinct trust subject** from plugins.
+**ARCHITECTURE FROZEN:** Trust patterns reuse evidence pipeline concepts from platform plugins - but agent packages are a **distinct trust subject** from plugins.
 
 ### Revocation semantics
 
@@ -600,7 +600,7 @@ flowchart TB
 
 ## Enterprise private marketplace
 
-Enterprises need the **same platform interfaces** as a public marketplace — with a **private catalog boundary**:
+Enterprises need the **same platform interfaces** as a public marketplace - with a **private catalog boundary**:
 
 ```text
 ACME Private Agent Catalog
@@ -665,7 +665,7 @@ flowchart LR
     G --> H["Deprecate / retire"]
 ```
 
-Publishing product features sit **above** frozen distribution — they do not introduce a parallel runtime.
+Publishing product features sit **above** frozen distribution - they do not introduce a parallel runtime.
 
 ---
 
@@ -676,7 +676,7 @@ Publishing product features sit **above** frozen distribution — they do not in
 | Concept | Behavior |
 |---------|----------|
 | **Installation slot** | Stable identity per environment + package line |
-| **Active digest** | Production authority — not floating `latest` |
+| **Active digest** | Production authority - not floating `latest` |
 | **Previous digest** | Retained for rollback when policy allows |
 
 **Upgrade:**
@@ -702,7 +702,7 @@ New versions must re-run:
 - certification / org policy  
 - configuration validation  
 
-**Rollback** restores the **exact** previous `RuntimeRevision` and lock digest — not an ambiguous "older latest" label.
+**Rollback** restores the **exact** previous `RuntimeRevision` and lock digest - not an ambiguous "older latest" label.
 
 **ARCHITECTURE FROZEN / UNDER IMPLEMENTATION:** Activation and rollback orchestration are specified; durable services are AP-4+ work.
 
@@ -768,7 +768,7 @@ Separating planes is central to scaling from local dev agents to a global market
 
 ```mermaid
 flowchart TB
-    subgraph CP["Control plane — marketplace / distribution"]
+    subgraph CP["Control plane - marketplace / distribution"]
         CAT["Catalogs · listings"]
         INST["Installations · slots"]
         BIND["Bindings · config"]
@@ -776,7 +776,7 @@ flowchart TB
         REV["Runtime revisions"]
     end
 
-    subgraph EP["Execution plane — unchanged Tier-1 spine"]
+    subgraph EP["Execution plane - unchanged Tier-1 spine"]
         REG["AgentRegistry"]
         NEX["Nexus"]
         AC["AgentContract / harness"]
@@ -807,7 +807,7 @@ AgentRegistry
   → Nexus routing
 ```
 
-Marketplace source remains **provenance and audit metadata** — not execution routing logic. Nexus continues to resolve **`required_capability`** → registry entries by **`capabilities[]`**, as defined in [Agent Contracts and Assembly](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+Marketplace source remains **provenance and audit metadata** - not execution routing logic. Nexus continues to resolve **`required_capability`** → registry entries by **`capabilities[]`**, as defined in [Agent Contracts and Assembly](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md).
 
 ```mermaid
 sequenceDiagram
@@ -849,7 +849,7 @@ sequenceDiagram
     RA-->>LKW: governed answer + evidence
 ```
 
-**AVAILABLE TODAY:** LKW uses built-in local agents (`local_indexer`, `local_search`, `local_synthesizer`) via application manifest and registry wiring — not marketplace installation UX.
+**AVAILABLE TODAY:** LKW uses built-in local agents (`local_indexer`, `local_search`, `local_synthesizer`) via application manifest and registry wiring - not marketplace installation UX.
 
 ---
 
@@ -857,27 +857,27 @@ sequenceDiagram
 
 Short scenarios illustrating the model. Agents named are **examples**, not confirmed listings.
 
-### A — Legal team installs Legal Research Agent into LKW
+### A - Legal team installs Legal Research Agent into LKW
 
 Legal ops discovers a qualified agent, requests install through org policy, binds matter-scoped integrations, enables for the workspace. Nexus routes legal research tasks without embedding legal logic in LKW application code.
 
-### B — Product team composes UX Research + Project Manager agents
+### B - Product team composes UX Research + Project Manager agents
 
 A strategy workspace installs two agents from different publishers (future public + private catalogs). EffectiveRoster merges both into one runtime revision; Nexus routes UX vs planning capabilities independently.
 
-### C — Enterprise publishes private SAP Support Agent
+### C - Enterprise publishes private SAP Support Agent
 
 ACME packages an internal agent into their private catalog. Only ACME environments resolve the catalog entry; execution still flows through Agent Distribution and digest-pinned materialization.
 
-### D — SaaS vendor embeds marketplace agents
+### D - SaaS vendor embeds marketplace agents
 
 A vertical SaaS application built on Intergrax binds ISV agents alongside its own Tier-3 code. Customers receive governed capabilities without the vendor maintaining duplicate agent implementations.
 
-### E — Organization revokes compromised third-party agent
+### E - Organization revokes compromised third-party agent
 
 Security revokes publisher trust. New enables block immediately; policy triggers disable on next materialization attempt; active digest-pinned revision remains reproducible for forensic rollback until replaced.
 
-### F — Developer upgrades agent, retains configuration
+### F - Developer upgrades agent, retains configuration
 
 Installation slot moves from digest A → B. Binding-level configuration survives where schema-compatible. Trust, dependencies, and certification re-validate before activation swaps.
 
@@ -896,9 +896,9 @@ Installation slot moves from digest A → B. Binding-level configuration survive
 
 ---
 
-## Commercial and ecosystem model — future only
+## Commercial and ecosystem model - future only
 
-> **FUTURE PRODUCT POSSIBILITY** — pricing, billing, and revenue share are **not** architecturally finalized and **not** implemented.
+> **FUTURE PRODUCT POSSIBILITY** - pricing, billing, and revenue share are **not** architecturally finalized and **not** implemented.
 
 Conceptual models that may exist in a mature marketplace:
 
@@ -916,7 +916,7 @@ No payment system design is implied here. Commercial features must not bypass tr
 
 ## Marketplace quality signals
 
-**FUTURE PRODUCT:** Signals below are conceptual discovery aids — distinct from security qualification.
+**FUTURE PRODUCT:** Signals below are conceptual discovery aids - distinct from security qualification.
 
 | Signal | Type | Purpose |
 |--------|------|---------|
@@ -971,7 +971,7 @@ flowchart TB
 | Package disappears from marketplace | Active digest-pinned runtime **unchanged**; new installs blocked if unresolved |
 | Publisher revoked | New installs blocked; existing flagged |
 | Installed agent becomes vulnerable | Block enable / force remediation path |
-| Dependency conflict | Candidate graph fails closed — no partial activation |
+| Dependency conflict | Candidate graph fails closed - no partial activation |
 | New version fails validation | Prior revision remains active |
 | Runtime activation fails | Failed activation; automatic rollback to `rollback_target_revision_id` when configured |
 
@@ -1002,7 +1002,7 @@ flowchart LR
 | Capability routing | N/A | Nexus `capabilities[]` routing |
 | Organization governance | Store allowlist | Catalog + publisher + risk policy |
 
-The UX may feel familiar — the **architecture is intentionally stronger** because agents are not passive UI extensions.
+The UX may feel familiar - the **architecture is intentionally stronger** because agents are not passive UI extensions.
 
 ---
 
@@ -1036,7 +1036,7 @@ flowchart LR
     F --> A --> I --> P
 ```
 
-> Intergrax is **source-available** and under active R&D. See the [public roadmap](../overview/ROADMAP.md) for outcome-gated product sequencing — marketplace delivery follows distribution implementation, not the reverse.
+> Intergrax is **source-available** and under active R&D. See the [public roadmap](../overview/ROADMAP.md) for outcome-gated product sequencing - marketplace delivery follows distribution implementation, not the reverse.
 
 ---
 
@@ -1055,7 +1055,7 @@ flowchart TB
     DEV --> GOV --> APP --> NEX --> USR
 ```
 
-The marketplace is a **distribution network for the Agent layer** — not a new execution system. Long term, it extends the same Tier model that already separates:
+The marketplace is a **distribution network for the Agent layer** - not a new execution system. Long term, it extends the same Tier model that already separates:
 
 - **what** agents are (Tier-2),  
 - **how** they run (Tier-1), and  
@@ -1085,5 +1085,5 @@ That separation is what allows the model to scale from **local private agents** 
 |------|-------|
 | Path | `docs/project/overview/AGENT_MARKETPLACE.md` |
 | Intended future link target | Repository README / public product index (separate session) |
-| Canonical architecture conflicts | **None identified** — concept aligns with frozen Agent Distribution model |
+| Canonical architecture conflicts | **None identified** - concept aligns with frozen Agent Distribution model |
 | README modified | **No** |

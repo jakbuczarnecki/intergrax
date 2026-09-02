@@ -1,4 +1,4 @@
-﻿# intergrax_assistant agent — Architecture Decision Records
+﻿# intergrax_assistant agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/intergrax_assistant`)
 
@@ -36,7 +36,7 @@ ADR-INTERGRAX_ASSISTANT-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

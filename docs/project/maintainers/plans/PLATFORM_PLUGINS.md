@@ -1,11 +1,19 @@
-# Platform Plugins — Maintainer Roadmap
+# Platform Plugins - Maintainer Roadmap
 
 **Program:** Platform Plugin architecture
-**Status:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** · PLATFORM-PLUGIN-3 **Done** · PLATFORM-PLUGIN-4 **Done** · PLATFORM-PLUGIN-5 **Done** · PLATFORM-PLUGIN-6 **Done** · PLATFORM-PLUGIN-7 **Done** · PLATFORM-PLUGIN-8 **Done** · PLATFORM-PLUGIN-9 **Done** — program **CLOSED**
+**Status:** CLOSED
+**Implementation roadmap:** COMPLETE
+**Architecture:** FROZEN
+**Final production verdict:** PRODUCTION-GRADE — ROADMAP COMPLETE
+**Documentation:** COMPLETE
+**Closed:** 2026-09-02
+
+**Stages:** PLATFORM-PLUGIN-1 **Done** · PLATFORM-PLUGIN-2 **Done** · PLATFORM-PLUGIN-3 **Done** · PLATFORM-PLUGIN-4 **Done** · PLATFORM-PLUGIN-5 **Done** · PLATFORM-PLUGIN-6 **Done** · PLATFORM-PLUGIN-7 **Done** · PLATFORM-PLUGIN-8 **Done** · PLATFORM-PLUGIN-9 **Done**
 **Audit evidence:** [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)
 **Canonical architecture:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
+**Documentation closeout:** [`PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md`](PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md)
 
-**Last updated:** 2026-08-12
+**Last updated:** 2026-09-02
 
 **Post-program production audit:** [`PLATFORM_PLUGIN_PRODUCTION_AUDIT.md`](PLATFORM_PLUGIN_PRODUCTION_AUDIT.md) (`PLATFORM-PLUGIN-AUDIT-1`, verdict `APPROVED_WITH_GAPS`, SHA `f7b6eedf354d43b1459b8077a56f8acd3fdaaa3d`).
 
@@ -53,13 +61,13 @@ See audit document for inventory, taxonomy proposal, gaps, and evidence matrix.
 |----------------|------------------------------|
 | **Integrations** | Largest Tier-0 catalog; dual shipped manifest vs `IntegrationPlugin` model; registry v2 metadata track |
 | **Tools / Skills** | Tier-0 catalog plugins; profile-gated materialization |
-| **Context Engineering** | `ContextPlugin` public EP catalog; qualification domain-owned — see [EXTENSION_AUTHOR_GUIDE](guides/EXTENSION_AUTHOR_GUIDE.md) and [CONTEXT_ENGINEERING architecture](../../architecture/CONTEXT_ENGINEERING.md) |
+| **Context Engineering** | `ContextPlugin` public EP catalog; qualification domain-owned - see [EXTENSION_AUTHOR_GUIDE](guides/EXTENSION_AUTHOR_GUIDE.md) and [CONTEXT_ENGINEERING architecture](../../architecture/CONTEXT_ENGINEERING.md) |
 | **RAG** | Separate EP groups per component type; bootstrap-time registry, not global catalog |
 | **Vendor Knowledge** | Separate contribution catalog and EP group; host composition required |
 | **Security / Policy** | Separate EP groups; hook/policy integration |
 | **Runtime (Nexus)** | `RuntimePlugin` host-composed; distinct from Tier-0 catalogs |
 | **Observability** | Extension SDK for payload schemas; not a plugin loader |
-| **Agents** | `AgentRegistry` — host registration only; no setuptools discovery |
+| **Agents** | `AgentRegistry` - host registration only; no setuptools discovery |
 
 **Principle (frozen in PLATFORM-PLUGIN-2):** Platform Plugin program **coordinates** cross-cutting discovery, trust, lifecycle, and author experience at the **package boundary**. It **must not** replace domain contracts (integration category contracts, tool contracts, VK contributions, etc.). See [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §6–§7.
 
@@ -69,15 +77,15 @@ See audit document for inventory, taxonomy proposal, gaps, and evidence matrix.
 
 | Stage | Name | Status | Depends on | Exit criteria (summary) |
 |-------|------|--------|------------|-------------------------|
-| **PLATFORM-PLUGIN-1** | Global extension surface inventory & architecture audit | **Done** | — | Audit/evidence doc; this roadmap; no production code changes |
-| **PLATFORM-PLUGIN-2** | Architecture decision & canonical domain doc | **Done** | PLUGIN-1 | [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) — taxonomy, platform/domain boundary, DO-NOT-UNIFY, contract scope |
+| **PLATFORM-PLUGIN-1** | Global extension surface inventory & architecture audit | **Done** | - | Audit/evidence doc; this roadmap; no production code changes |
+| **PLATFORM-PLUGIN-2** | Architecture decision & canonical domain doc | **Done** | PLUGIN-1 | [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) - taxonomy, platform/domain boundary, DO-NOT-UNIFY, contract scope |
 | **PLATFORM-PLUGIN-3** | Author contract & packaging model | **Done** | PLUGIN-2 | Package-level Platform Plugin contract in `intergrax/core/plugins/`; optional `[tool.intergrax.plugin]` manifest parsing; multi-capability metadata rules; entry points remain required for discovery |
 | **PLATFORM-PLUGIN-4** | Discovery & registration harmonization (where approved) | **Done** | PLUGIN-2, PLUGIN-3 | Shared `discovery.py` scan/load primitives adopted by security, policy, tool-invocation loaders; RAG already on shared utility; VK composition unchanged |
 | **PLATFORM-PLUGIN-5** | Configuration, secrets & DI conventions | **Done** | PLUGIN-2 | Cross-surface config matrix (architecture §12.3); canonical flow §12.4; host-resolved config and credential bindings documented; integration `env_prefix` preserved; no global DI/secrets API |
 | **PLATFORM-PLUGIN-6** | Lifecycle, compatibility & conflict policy | **Done** | PLUGIN-2 | `platform_semantics.py`: `check_platform_compatibility` / `PlatformCompatibilityResult`; `PlatformPluginLifecycleState`; `PlatformPluginConflictKind`; EP conflict classification; domain `ConflictPolicy` unchanged |
 | **PLATFORM-PLUGIN-7** | Trust, qualification & production gates | **Done** | PLUGIN-2, PLUGIN-6 | `platform_qualification.py`: qualification contracts + production gates; trust model; external + host-embedded delivery; no sandbox/signing |
 | **PLATFORM-PLUGIN-8** | Third-party developer experience & executable E2E proof | **Done** | PLUGIN-3, PLUGIN-7 | Reference external wheel (`examples/platform_plugins/intergrax_reference_tool_plugin/`); host-embedded example (`examples/platform_plugins/local_embedded_tool_extension/`); scaffold `extensions/` hook; E2E `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`; author guide §16; architecture §20.3–§20.4 |
-| **PLATFORM-PLUGIN-9** | Qualification, rollout, deprecation & program closeout | **Done** | PLUGIN-4–8 | Contract tests, CI gates, deprecation audit, final closeout evidence — [`PLATFORM_PLUGIN_9_CLOSEOUT.md`](PLATFORM_PLUGIN_9_CLOSEOUT.md) |
+| **PLATFORM-PLUGIN-9** | Qualification, rollout, deprecation & program closeout | **Done** | PLUGIN-4–8 | Contract tests, CI gates, deprecation audit, final closeout evidence - [`PLATFORM_PLUGIN_9_CLOSEOUT.md`](PLATFORM_PLUGIN_9_CLOSEOUT.md) |
 
 ### PLATFORM-PLUGIN-2 output (complete)
 
@@ -85,9 +93,9 @@ Canonical architecture hub: [`docs/project/architecture/PLATFORM_PLUGINS.md`](..
 
 **Frozen decisions (summary):**
 
-- Taxonomy: PEP, IP, HCE, IEP, NE — unchanged from audit.
-- Platform Plugin = **package-level coordination** + shared vocabulary — **not** a universal runtime wrapper.
-- **Canonical Platform Plugin Contract:** **yes** — package metadata scope only; domain contracts unchanged.
+- Taxonomy: PEP, IP, HCE, IEP, NE - unchanged from audit.
+- Platform Plugin = **package-level coordination** + shared vocabulary - **not** a universal runtime wrapper.
+- **Canonical Platform Plugin Contract:** **yes** - package metadata scope only; domain contracts unchanged.
 - Multi-capability packages: **allowed**; capabilities separately discoverable via domain EP groups.
 - Discovery: shared `discovery.py` utility **yes**; single global EP group **no**; domain groups retained.
 - Manifest: **optional** coordination layer; domain manifests + entry points remain authoritative.
@@ -105,7 +113,7 @@ PLUGIN-1 (audit)
         → PLUGIN-3 (author contract)
         → PLUGIN-5 (config/secrets)
         → PLUGIN-6 (lifecycle/conflicts)
-            → PLUGIN-4 (harmonization — only approved items)
+            → PLUGIN-4 (harmonization - only approved items)
             → PLUGIN-7 (trust/qualification)
                 → PLUGIN-8 (DX)
                     → PLUGIN-9 (rollout)
@@ -119,13 +127,13 @@ PLUGIN-4 is intentionally **after** architecture decision: harmonization without
 
 **FACT:** [`docs/audit_results/`](../../audit_results/README.md) exists on `development`. It stores **dated outputs from orchestrated harness architecture audits** ([`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)): `YYYY-MM-DD/` folders with `legacy campaign README`, `RUN_SUMMARY.md`, and per-domain `<DOMAIN>.md` results, initialized and validated via `scripts/docs/` tooling.
 
-**FACT:** PLATFORM-PLUGIN-1 evidence lives in [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md) under `maintainers/plans/` — **retained here** because it is **program-specific** extension-surface inventory and architecture audit evidence, not an orchestrated per-domain run in the harness audit workflow. Domain programs persist Mode A2 results under `docs/audit_results/`; the Platform Plugin program coordinates cross-cutting extension architecture and keeps its audit alongside this roadmap.
+**FACT:** PLATFORM-PLUGIN-1 evidence lives in [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md) under `maintainers/plans/` - **retained here** because it is **program-specific** extension-surface inventory and architecture audit evidence, not an orchestrated per-domain run in the harness audit workflow. Domain programs persist Mode A2 results under `docs/audit_results/`; the Platform Plugin program coordinates cross-cutting extension architecture and keeps its audit alongside this roadmap.
 
 ---
 
 ## Program closeout criteria (PLATFORM-PLUGIN-9)
 
-Before the Platform Plugin program can be marked **CLOSED**, a final audit must confirm:
+Historical criteria evaluated at PLUGIN-9 closeout (2026-08-12) and reaffirmed at formal program closure (2026-09-02). All items satisfied.
 
 1. Canonical [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) matches implementation.
 2. Maintainer and author documentation matches executable behavior.
@@ -137,28 +145,122 @@ Before the Platform Plugin program can be marked **CLOSED**, a final audit must 
 
 ---
 
-## Changes discovered during PLATFORM-PLUGIN-1
+## Final closure
 
-1. **Unified discovery loader is partial** — `core/plugins/discovery.py` covers Tier-0 groups; VK, security, policy, tool-invocation patterns use separate loaders.
-2. **Integrations dual registration model** — shipped `manifest.py` + factory vs third-party `IntegrationPlugin` is intentional but increases author cognitive load.
-3. **Context entry points exist in code** — `EXTENSION_AUTHOR_GUIDE` still lists Context as "Planned"; doc drift recorded in audit.
-4. **Token optimization plugin descriptor** — contract exists; no setuptools loader or production registration path found.
-5. **Integration registry v2** — additive metadata registry; not an extension surface for third parties.
-6. **`docs/audit_results/` exists** for orchestrated harness domain audits — PLATFORM-PLUGIN-1 program evidence correctly placed under `maintainers/plans/` (see § Audit evidence placement).
+> The Platform Plugins implementation roadmap is formally closed. The delivered subsystem is production-grade within its documented trusted in-process model. Remaining extensibility maturity targets are explicitly outside this roadmap and require separate future programs.
+
+### Implementation
+
+`COMPLETE`
+
+### Architecture
+
+`FROZEN`
+
+### Production readiness
+
+`PRODUCTION-GRADE — ROADMAP COMPLETE`
+
+### Documentation
+
+`COMPLETE` — see [`PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md`](PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md)
+
+### Cross-flow
+
+`ESTABLISHED`
+
+### Remaining blockers
+
+`NONE`
+
+### Material C1/C2 defects
+
+`NONE`
+
+### Technical debt
+
+`LOW`
+
+### Remaining maturity boundaries
+
+Separate future maturity programs — not unfinished Platform Plugins work:
+
+- universal production qualification rollout
+- Tier-0 / Tool / RAG typed evidence expansion
+- optional Vendor Knowledge evidence adapter
+- entry-point cache lifecycle policy
+- Protocol v2 extensibility findings (see § Protocol v2 platform extensibility remediation)
+
+> These are separate future maturity programs and do not keep the Platform Plugins implementation roadmap open.
+
+### PLUGIN-8 limitation (classification)
+
+| Area | Status |
+|------|--------|
+| Tool discovery / registration / qualification proof | **established** |
+| invoke-stage trace bridge issue | pre-existing execution/trace test debt |
+| Plugin Engine blocker | **NO** |
+
+Do not treat PLUGIN-8 as 100% green invoke E2E.
+
+### Closure evidence
+
+| Evidence | Location |
+|----------|----------|
+| Architecture canon | [`docs/project/architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) |
+| Documentation closeout | [`PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md`](PLATFORM_PLUGIN_DOCUMENTATION_CLOSEOUT.md) |
+| Cross-flow proof | [`tests/integration/platform_plugins/test_plugin_engine_cross_flow.py`](../../../../tests/integration/platform_plugins/test_plugin_engine_cross_flow.py) |
+| Contract proof | [`tests/contract/core/plugins/test_platform_plugin_contract.py`](../../../../tests/contract/core/plugins/test_platform_plugin_contract.py) |
+| Tool external EP proof | [`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`](../../../../tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py) |
+| Memory materialization proof | [`tests/unit/memory/test_memory_store_resolver.py::test_fixture_ep_discovery_materializes_external_stores`](../../../../tests/unit/memory/test_memory_store_resolver.py) |
+
+### Program state (final)
+
+```text
+PLATFORM-PLUGIN-1  ✅
+PLATFORM-PLUGIN-2  ✅
+PLATFORM-PLUGIN-3  ✅
+PLATFORM-PLUGIN-4  ✅
+PLATFORM-PLUGIN-5  ✅
+PLATFORM-PLUGIN-6  ✅
+PLATFORM-PLUGIN-7  ✅
+PLATFORM-PLUGIN-8  ✅
+PLATFORM-PLUGIN-9  ✅
+
+Final architecture audit       ✅
+Cross-flow proof               ✅
+Documentation finalization     ✅
+Formal closure                 ✅
+
+PROGRAM STATUS: CLOSED
+```
+
+**Closure decision:** No further Platform Plugins implementation tasks are required. Future extensibility work must be opened as separate programs.
 
 ---
 
-## PROVIDER-QUAL track (post PLUGIN-9)
+## Changes discovered during PLATFORM-PLUGIN-1
 
-Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qualification engine. Architecture: [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md).
+1. **Unified discovery loader is partial** - `core/plugins/discovery.py` covers Tier-0 groups; VK, security, policy, tool-invocation patterns use separate loaders.
+2. **Integrations dual registration model** - shipped `manifest.py` + factory vs third-party `IntegrationPlugin` is intentional but increases author cognitive load.
+3. **Context entry points exist in code** - `EXTENSION_AUTHOR_GUIDE` still lists Context as "Planned"; doc drift recorded in audit.
+4. **Token optimization plugin descriptor** - contract exists; no setuptools loader or production registration path found.
+5. **Integration registry v2** - additive metadata registry; not an extension surface for third parties.
+6. **`docs/audit_results/` exists** for orchestrated harness domain audits - PLATFORM-PLUGIN-1 program evidence correctly placed under `maintainers/plans/` (see § Audit evidence placement).
+
+---
+
+## PROVIDER-QUAL track (separate future maturity program)
+
+Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qualification engine. **Not** a continuation of the PLATFORM-PLUGIN-1..9 implementation roadmap. Architecture: [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md).
 
 | ID | Task | Status | Purpose |
 |----|------|--------|---------|
-| **PROVIDER-QUAL-0** | Architecture decision | **Done** | `EXTEND_EXISTING` — reuse core qualification + platform coordination + ProofReceipt |
+| **PROVIDER-QUAL-0** | Architecture decision | **Done** | `EXTEND_EXISTING` - reuse core qualification + platform coordination + ProofReceipt |
 | **PROVIDER-QUAL-1** | Architecture freeze + contract design | **READY_FOR_REVIEW** | Subject/run/status/evidence/admission/CI boundary freeze; PostgreSQL template; Oracle extensibility proof |
 | **PROVIDER-QUAL-2** | Typed contracts | **Done** | `ProviderQualificationSubject`, `ProviderQualificationRun`, evidence kinds; unit/contract tests; vendor-neutrality invariants |
 | **PROVIDER-QUAL-3A** | Provider binding audit | **Done** | Initial audit; superseded by **PROVIDER-QUAL-3A-R1** correction |
-| **PROVIDER-QUAL-3A-R1** | Provider binding correction | **Done** | **EXTEND_EXISTING_PROVIDER_BINDING** — reuse Integrations resolution; extend with typed domain-provider bridge; satellite §15 freeze; INV-1..INV-8 |
+| **PROVIDER-QUAL-3A-R1** | Provider binding correction | **Done** | **EXTEND_EXISTING_PROVIDER_BINDING** - reuse Integrations resolution; extend with typed domain-provider bridge; satellite §15 freeze; INV-1..INV-8 |
 | **PROVIDER-QUAL-3B** | Typed domain-provider binding | **READY_FOR_REVIEW** | Initial `CollaborativeWorkPersistenceProvider` bridge; superseded by **PROVIDER-QUAL-3B-R1** lifecycle correction |
 | **PROVIDER-QUAL-3B-R1** | Lifecycle-safe provider materialization | **READY_FOR_REVIEW** | Single provider lifecycle; `_collaborative_work_materialization` catalog path; no abandoned generic relational runtime; connection_factory preserved |
 | **PROVIDER-QUAL-3B-R2** | Explicit typed materialization factory | **READY_FOR_REVIEW** | `CollaborativeWorkPersistenceFactory` + `CollaborativeWorkMaterializationBinding`; no magic keyword protocol; no `TypeError` capability probing; pre-built SQLite fail-closed |
@@ -173,7 +275,9 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 | **PROVIDER-QUAL-5-R1** | Terminal revocation + bounded current view | **READY_FOR_REVIEW** | REVOKED terminal per qualification_run_id; later CURRENT/STALE cannot reactivate; current view uses bounded DocumentStore queries (revocation existence + latest evaluation); history API remains full append-only |
 | **PROVIDER-QUAL-5-R2** | Canonical validity time + consistent latest record resolution | **READY_FOR_REVIEW** | REVOKED current-view query selects newest REVOKED deterministically; validity `evaluated_at` persisted canonically in UTC; storage current view matches pure resolver semantics; no migration (existing PROVIDER-QUAL-5 records already UTC in all construction paths) |
 | **PROVIDER-QUAL-6** | Requalification decision + new-run identity | **READY_FOR_REVIEW** | Derived `ProviderRequalificationDecision` from `QualificationValidityInterpretation`; CURRENT not required; STALE/REVOKED required with preserved reason; immutable prior run; `prepare_provider_requalification_run_identity` mints new `qualification_run_id` via existing helper; no scheduler/runner/store; shared execution runner = PROVIDER-QUAL-7 |
-| **PROVIDER-QUAL-4-R2** | DocumentStore query contract hardening | **READY_FOR_REVIEW** | Generic `DocumentStore` query semantics consistent across InMemory and MongoDB: per-field asc/desc keyset pagination, query-bound authenticated v2 cursors (equalities, sort, upper bound), legacy v1 cursors for simple partition scans; storage-side filtering/keyset pagination — not a claim of physical secondary indexes |
+| **PROVIDER-QUAL-6-R1** | Validity interpretation contract hardening | **READY_FOR_REVIEW** | `QualificationValidityInterpretation` is now a fail-closed typed contract: the selected latest record must belong to the same qualification run and carry the same effective validity |
+| **PROVIDER-QUAL-4-R2** | DocumentStore query contract hardening | **READY_FOR_REVIEW** | Generic `DocumentStore` query semantics consistent across InMemory and MongoDB: per-field asc/desc keyset pagination, query-bound authenticated v2 cursors (equalities, sort, upper bound), legacy v1 cursors for simple partition scans; storage-side filtering/keyset pagination - not a claim of physical secondary indexes |
+| **PROVIDER-QUAL-7** | Shared execution runner | **READY_FOR_REVIEW** | `execute_provider_qualification` synchronous coordinator; typed `ProviderQualificationDomainBinding` + domain suite contract; Integrations resolution + PROVIDER-QUAL-3B materialization; PROVIDER-QUAL-3C persistence; requalification prepared run ID preserved; idempotent persist; PostgreSQL + SQLite CW proofs; no scheduler/queue/vendor dispatch |
 
 **Explicit out of scope (PROVIDER-QUAL-1):** runtime Python changes, GHA vendor jobs, LKW integration, MP-2, admission policy engine, automatic staleness engine.
 
@@ -194,11 +298,11 @@ Extends PLUGIN-7 qualification for **provider-scoped** evidence without a new qu
 
 ---
 
-## Protocol v2 platform extensibility remediation (2026-08-18 audit)
+## Protocol v2 platform extensibility remediation (separate future maturity program)
 
-Accepted audit unit [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md) (**FAIL**, 6 ACCEPTED findings, `audited_sha` `70c947c889f40222e5efb191241bdd8fa9035b17`, operator accepted 2026-08-21). Canonical architecture target: [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) — [Protocol v2 platform extensibility target invariants (2026-08-18)](../../architecture/PLATFORM_PLUGINS.md#protocol-v2-platform-extensibility-target-invariants-2026-08-18).
+Accepted audit unit [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTENSIBILITY.md) (**FAIL**, 6 ACCEPTED findings, `audited_sha` `70c947c889f40222e5efb191241bdd8fa9035b17`, operator accepted 2026-08-21). Canonical architecture target: [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) - [Protocol v2 platform extensibility target invariants (2026-08-18)](../../architecture/PLATFORM_PLUGINS.md#protocol-v2-platform-extensibility-target-invariants-2026-08-18).
 
-**Status rule:** all blocks below are **ACCEPTED / PLANNED** only. Do **not** mark IMPLEMENTED, VERIFIED, CLOSED, or DONE in this section. Do **not** reopen historical PLATFORM-PLUGIN-1..9 rows. Cross-link **PROVIDER-QUAL** (§ PROVIDER-QUAL track) for provider-scoped evidence — do not duplicate or overwrite ongoing PROVIDER-QUAL work.
+**Status rule:** all blocks below are **ACCEPTED / PLANNED** only — separate future maturity program, not unfinished Platform Plugins work. Do **not** mark IMPLEMENTED, VERIFIED, CLOSED, or DONE in this section. Do **not** reopen historical PLATFORM-PLUGIN-1..9 rows. Cross-link **PROVIDER-QUAL** (§ PROVIDER-QUAL track) for provider-scoped evidence - do not duplicate or overwrite ongoing PROVIDER-QUAL work.
 
 ### PLATFORM-EXTENSIBILITY-QUALIFICATION-AUTHORITY-INTEGRITY
 
@@ -222,7 +326,7 @@ All supported public PEP domains consume the common production-admission boundar
 **Findings:** `AUDIT-20260818-PLATFORM_EXTENSIBILITY-05`, `06`  
 **Status:** ACCEPTED / PLANNED
 
-Manifest failures remain diagnosable (VALID / ABSENT / INVALID / UNREADABLE + safe reason codes). Installed-plugin lifecycle/discovery cache semantics become explicit (immutable process lifetime **or** controlled rediscovery) — not incidental cache behavior.
+Manifest failures remain diagnosable (VALID / ABSENT / INVALID / UNREADABLE + safe reason codes). Installed-plugin lifecycle/discovery cache semantics become explicit (immutable process lifetime **or** controlled rediscovery) - not incidental cache behavior.
 
 ---
 

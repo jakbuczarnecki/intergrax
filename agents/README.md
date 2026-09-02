@@ -1,13 +1,13 @@
 # Tier-2 agents (`agents/`)
 
-**Role:** Reusable domain capabilities — contracts, typed step loop (`on_next_step`), prompts.
+**Role:** Reusable domain capabilities - contracts, typed step loop (`on_next_step`), prompts.
 **Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.
 **Workflow:** [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) · Appendix AC
-**Terminology (canonical):** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §29](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) — session/run/step vocabulary
+**Terminology (canonical):** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §29](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) - session/run/step vocabulary
 **Architecture:** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · **§32.0** readability
-**Implementation plan:** [`docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
+**Implementation plan:** [`docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** - waves §6.1aw
 
-**Migration (2026):** full fleet program — plan **Wave 8** (`ACP-MIG-*`). Bridge compat in Wave 4; **body migration** per-agent via tiered batches (T0→T4). Tracker: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) fleet migration tracker. New agents: **READ → UPDATE → DECIDE** + scoreboard (`ACP-PROD-12`).
+**Migration (2026):** full fleet program - plan **Wave 8** (`ACP-MIG-*`). Bridge compat in Wave 4; **body migration** per-agent via tiered batches (T0→T4). Tracker: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) fleet migration tracker. New agents: **READ → UPDATE → DECIDE** + scoreboard (`ACP-PROD-12`).
 
 ```text
 agents/<slug>/     →  reusable Tier-2 packages (no applications/ imports)
@@ -15,14 +15,14 @@ applications/      →  deployable environments that compose declared agents
 ```
 
 Each agent owns `agents/<slug>/pyproject.toml` (`intergrax-<slug>-agent` workspace member).
-Applications select agents by package dependency — see
+Applications select agents by package dependency - see
 [`docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md`](../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ### ACP fleet migration (Wave 8)
 
 | Tier | Batch | Agents | Status |
 |------|-------|--------|--------|
-| **T0** harness | MIG-3 pilot | `echo`, `signoff_probe` | **Done** — typed `ReflexAgent` + UAEP shim |
+| **T0** harness | MIG-3 pilot | `echo`, `signoff_probe` | **Done** - typed `ReflexAgent` + UAEP shim |
 | **T1** staging read | MIG-3 pilot | `research` | **Done** |
 | **T1** staging read | MIG-4 | `summary`, `local_search` | **Done** |
 | **T2** staging mutating | MIG-4 | `legal`, LKW trio, DSW quartet | **Done** |
@@ -55,7 +55,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 | **IntergraxAssistantAgent** | `platform.assist` | development | `intergrax_assistant_application` | [`intergrax_assistant/`](intergrax_assistant/) |
 | **ProblemRadarAgent** | `problem_radar.scan` | experimental | certified K.1 deploy path | [`problem_radar/`](problem_radar/) |
 | **VendorDiscoveryAgent** | `vendor_discovery.search` | experimental | certified K.2 deploy path | [`vendor_discovery/`](vendor_discovery/) |
-| **Lab mock agents** | harness fixtures | — | `lab_application` tests | [`lab/mock_agents.py`](lab/mock_agents.py) |
+| **Lab mock agents** | harness fixtures | - | `lab_application` tests | [`lab/mock_agents.py`](lab/mock_agents.py) |
 
 ---
 
@@ -88,7 +88,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 |-------|------------|
 | `legal` | `legal.review` |
 
-**Host:** [`applications/legal_application/`](../applications/legal_application/) — contract review; distinct from DSW dispute lifecycle.
+**Host:** [`applications/legal_application/`](../applications/legal_application/) - contract review; distinct from DSW dispute lifecycle.
 
 ### Research (multi-agent)
 
@@ -103,9 +103,9 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 
 | Agent | Capability | Role |
 |-------|------------|------|
-| `intergrax_assistant` | `platform.assist` | Conversational hub — default chat entry |
+| `intergrax_assistant` | `platform.assist` | Conversational hub - default chat entry |
 
-Optional specialists (Legal, Research, …) are mounted in the same Tier-3 host via env flags; Nexus delegates — hub does not call them directly.
+Optional specialists (Legal, Research, …) are mounted in the same Tier-3 host via env flags; Nexus delegates - hub does not call them directly.
 
 **Host:** [`applications/intergrax_assistant_application/`](../applications/intergrax_assistant_application/) · **Architecture:** [ARCHITECTURE.md](../applications/intergrax_assistant_application/docs/ARCHITECTURE.md)
 
@@ -113,7 +113,7 @@ Optional specialists (Legal, Research, …) are mounted in the same Tier-3 host 
 
 ## Harness / lab agents
 
-Use **`lab_application`** (port `8090`) to experiment with any registered agent — debug API, trace inspection, optional plugin discovery.
+Use **`lab_application`** (port `8090`) to experiment with any registered agent - debug API, trace inspection, optional plugin discovery.
 
 | Agent | Typical use |
 |-------|-------------|

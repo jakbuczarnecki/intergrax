@@ -171,12 +171,31 @@ class ToolRuntime:
         from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
         cfg = state.context.config
+        incoming_plan = plan.normalized()
         effective_allowed = resolve_allowed_tools_from_config(cfg, explicit=allowed_tools)
+        has_authoritative_scope = (
+            allowed_tools is not None
+            or effective_allowed is not None
+            or bool(incoming_plan.tool_ids)
+        )
+        authoritative_empty_scope = (
+            has_authoritative_scope
+            and effective_allowed is not None
+            and len(effective_allowed) == 0
+        )
         plan = ToolAccessPolicy.apply(
-            plan.normalized(),
+            incoming_plan,
             allowed_tools=effective_allowed,
             state=state,
         )
+        scope_policy = cfg.tool_scope_policy
+        if scope_policy is not None:
+            plan = ToolAccessPolicy.apply_scope_policy(
+                plan,
+                scope_policy=scope_policy,
+                agent_id=state.request.agent_id,
+                state=state,
+            )
         modality_profile = cfg.modality_profile
         if modality_profile is not None:
             plan = ToolAccessPolicy.apply_modality_profile(plan, profile=modality_profile)
@@ -207,13 +226,13 @@ class ToolRuntime:
                     level=TraceLevel.WARNING,
                 )
 
-        if plan.use_tools:
+        if plan.use_tools or (incoming_plan.use_tools and authoritative_empty_scope):
             if cfg.tool_planner and cfg.tool_invoker and cfg.tools_mode != "off":
                 from intergrax.runtime.nexus.tools.catalog_dispatch import catalog_tool_ids
 
                 planner_constraints = catalog_tool_ids(plan.tool_ids)
                 previous_constraints = state.tool_planner_allowed_tool_ids
-                if planner_constraints:
+                if has_authoritative_scope:
                     state.tool_planner_allowed_tool_ids = planner_constraints
                 try:
                     await run_tools_context(state)

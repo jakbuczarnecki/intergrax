@@ -7,20 +7,20 @@
 
 ## What is the Proof Library?
 
-The **Intergrax Proof Library** (`platform_proofs/`) contains **executable falsification attempts** for bounded **real-world Scenario claims** and reusable platform **Conformance claims** — not product workflow demos and not a substitute for unit or integration tests.
+The **Intergrax Proof Library** (`platform_proofs/`) contains **executable falsification attempts** for bounded **real-world Scenario claims** and reusable platform **Conformance claims** - not product workflow demos and not a substitute for unit or integration tests.
 
 The library has two top-level classes:
 
 | Class | Role | Entry framing |
 |-------|------|---------------|
-| **SCENARIO** | **Production-capable autonomous application component** that solves a concrete real-world problem — plus adversarial falsification, evidence, evaluation, and report | Problem-first — **primary public class** |
-| **CONFORMANCE** | **Mechanism-level executable proof** — CI, regression, contract verification, architecture confidence | Mechanism-first — secondary class |
+| **SCENARIO** | **Production-capable autonomous application component** that solves a concrete real-world problem - plus adversarial falsification, evidence, evaluation, and report | Problem-first - **primary public class** |
+| **CONFORMANCE** | **Mechanism-level executable proof** - CI, regression, contract verification, architecture confidence | Mechanism-first - secondary class |
 
 **SCENARIO in one line:** production-capable application component + adversarial proof layer that falsifies and evidences it (the proof layer does **not** substitute for the application).
 
 **CONFORMANCE in one line:** platform mechanism → controlled harness → contract/invariant → evidence.
 
-Normative detail: [Authoring Guide § Scenario Proof — production-capable application contract](PLATFORM_PROOF_AUTHORING_GUIDE.md#scenario-proof--production-capable-application-contract) · [Authoring Guide § Application Survival Test](PLATFORM_PROOF_AUTHORING_GUIDE.md#application-survival-test) · [Protocol § B Proof Library classes](PLATFORM_PROOF_PROTOCOL.md#b-proof-library-classes) · [Protocol § G Mock/fixture policy](PLATFORM_PROOF_PROTOCOL.md#g-mock--fixture-policy)
+Normative detail: [Authoring Guide § Scenario Proof - production-capable application contract](PLATFORM_PROOF_AUTHORING_GUIDE.md#scenario-proof--production-capable-application-contract) · [Authoring Guide § Application Survival Test](PLATFORM_PROOF_AUTHORING_GUIDE.md#application-survival-test) · [Protocol § B Proof Library classes](PLATFORM_PROOF_PROTOCOL.md#b-proof-library-classes) · [Protocol § G Mock/fixture policy](PLATFORM_PROOF_PROTOCOL.md#g-mock--fixture-policy)
 
 Products under `applications/` may **consume** platform mechanisms, but product execution is **not** independent proof of those mechanisms.
 
@@ -53,11 +53,11 @@ flowchart LR
 | **Framing** | Problem-first | Mechanism-first |
 | **Claim** | Bounded real-world system claim | Bounded mechanism / invariant claim |
 | **Application** | Production-capable application component required | Controlled harness |
-| **Domains / mechanisms** | May exercise **multiple** — declared as metadata | Declares mechanism under proof |
-| **Public role** | Primary Proof Library presentation | Secondary — CI, regression, contract confidence |
+| **Domains / mechanisms** | May exercise **multiple** - declared as metadata | Declares mechanism under proof |
+| **Public role** | Primary Proof Library presentation | Secondary - CI, regression, contract confidence |
 | **Canonical location** | `platform_proofs/scenarios/<scenario_slug>/` | `platform_proofs/<domain>/<proof_slug>/` (existing Conformance packages) |
 
-A proof does **not** belong to one platform domain. It may exercise one or more domains and mechanisms — declared in descriptor metadata (`domains_exercised`, `mechanisms_exercised`), not by top-level taxonomy.
+A proof does **not** belong to one platform domain. It may exercise one or more domains and mechanisms - declared in descriptor metadata (`domains_exercised`, `mechanisms_exercised`), not by top-level taxonomy.
 
 **Scenario application ≠ Product.** A Scenario may have real business workflow and production-capable application core; it still belongs under `platform_proofs/scenarios/`, not `applications/`. Product proofs remain product-owned.
 
@@ -93,12 +93,12 @@ Full workflow: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Canonical Scenario Lifecycl
 
 | Path | Responsibility |
 |------|----------------|
-| [`platform_proofs/`](.) | Proof Library — protocol, authoring workflow, proof packages |
-| [`platform_proofs/scenarios/<scenario_slug>/`](scenarios/) | **Canonical Scenario packages** — each package is the source of truth for that scenario (`README.md`, `SCENARIO_SPEC.md`, and post-implementation artifacts) |
-| [`scripts/proof/`](../scripts/proof/) | **Canonical execution infrastructure** — discovery, profiles, runner, `SuiteReceipt` |
-| [`docs/project/proofs/PROOF_LIBRARY.md`](../docs/project/proofs/PROOF_LIBRARY.md) | **Public** Scenario presentation — user-facing catalog (not maintained inside `platform_proofs/`) |
+| [`platform_proofs/`](.) | Proof Library - protocol, authoring workflow, proof packages |
+| [`platform_proofs/scenarios/<scenario_slug>/`](scenarios/) | **Canonical Scenario packages** - each package is the source of truth for that scenario (`README.md`, `SCENARIO_SPEC.md`, and post-implementation artifacts) |
+| [`scripts/proof/`](../scripts/proof/) | **Canonical execution infrastructure** - discovery, profiles, runner, `SuiteReceipt` |
+| [`docs/project/proofs/PROOF_LIBRARY.md`](../docs/project/proofs/PROOF_LIBRARY.md) | **Public** Scenario presentation - user-facing catalog (not maintained inside `platform_proofs/`) |
 | [`docs/project/proofs/PROOFS.md`](../docs/project/proofs/PROOFS.md) | **Public** evidence and claims dashboard |
-| [`applications/`](../applications/) | **Products** and their **product proofs** — not platform proof packages |
+| [`applications/`](../applications/) | **Products** and their **product proofs** - not platform proof packages |
 
 **LKW** (`applications/local_workspace_application/`) is a **product**. LKW proofs remain product-owned. They do not qualify as Scenario or Conformance proofs under `platform_proofs/`.
 
@@ -110,7 +110,7 @@ There is **no** manual scenario registry in `platform_proofs/`. Scenario existen
 
 | Document | Role |
 |----------|------|
-| [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | Normative architecture — classification, claim semantics, falsification, evidence |
+| [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | Normative architecture - classification, claim semantics, falsification, evidence |
 | [PLATFORM_PROOF_AUTHORING_GUIDE.md](PLATFORM_PROOF_AUTHORING_GUIDE.md) | Practical workflow for independent Scenario and Conformance proof sessions |
 | [README.md](README.md) | This gateway |
 
@@ -119,13 +119,13 @@ There is **no** manual scenario registry in `platform_proofs/`. Scenario existen
 - [Public Scenario catalog](../docs/project/proofs/PROOF_LIBRARY.md)
 - [Public proof dashboard](../docs/project/proofs/PROOFS.md)
 - [Public proof and claims model](../docs/project/maintainers/public-adoption/PUBLIC_PROOF_AND_CLAIMS_MODEL.md)
-- [Runtime architecture hub](../docs/project/architecture/intergrax_runtime_architecture.md) — canonical domain topology (metadata reference, not proof taxonomy)
+- [Runtime architecture hub](../docs/project/architecture/intergrax_runtime_architecture.md) - canonical domain topology (metadata reference, not proof taxonomy)
 
 ---
 
 ## Create a new Scenario package
 
-Scenario authoring is **two canonical steps** — do not skip or merge them:
+Scenario authoring is **two canonical steps** - do not skip or merge them:
 
 | Step | When | Command |
 |------|------|---------|

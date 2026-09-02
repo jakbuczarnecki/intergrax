@@ -1,4 +1,4 @@
-# Requires PostgreSQL with database `langfuse` — start infra/integration postgresql first.
+# Requires PostgreSQL with database `langfuse` - start infra/integration postgresql first.
 services:
   langfuse:
     image: langfuse/langfuse:2

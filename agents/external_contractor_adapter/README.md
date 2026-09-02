@@ -1,6 +1,6 @@
 # external_contractor_adapter agent
 
-Typed **reflex** Tier-2 external-work adapter (GEC-3) — maps via injected ``ExternalWorkIntegration``.
+Typed **reflex** Tier-2 external-work adapter (GEC-3) - maps via injected ``ExternalWorkIntegration``.
 
 **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
 
@@ -14,7 +14,7 @@ From repository root:
 uv run pytest agents/external_contractor_adapter/tests -q
 ```
 
-Stub LLM + ``tests/fakes/DeterministicExternalWorkFake`` keep tests offline — no network / Tier-3 host required.
+Stub LLM + ``tests/fakes/DeterministicExternalWorkFake`` keep tests offline - no network / Tier-3 host required.
 
 ## Register (programmatic)
 
@@ -39,13 +39,13 @@ See **Step 4** in ``../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`
 
 ## Layout
 
-- ``external_contractor_adapter_agent.py`` — Agent class (ACP hooks)
-- ``contract.py`` / ``capabilities.py`` — AgentContract
-- ``steps/`` — domain execution
-- ``prompts/`` — prompt assets
-- ``schemas/`` — I/O models
-- ``tracing/`` — DiagnosticPayload extensions
-- ``signals/`` — domain signal payloads
-- ``tests/`` — standalone agent smoke tests
-- ``notebooks/`` — interactive experiments
-- ``docs`` — architecture, plan, ADRs, journal
+- ``external_contractor_adapter_agent.py`` - Agent class (ACP hooks)
+- ``contract.py`` / ``capabilities.py`` - AgentContract
+- ``steps/`` - domain execution
+- ``prompts/`` - prompt assets
+- ``schemas/`` - I/O models
+- ``tracing/`` - DiagnosticPayload extensions
+- ``signals/`` - domain signal payloads
+- ``tests/`` - standalone agent smoke tests
+- ``notebooks/`` - interactive experiments
+- ``docs`` - architecture, plan, ADRs, journal

@@ -8,7 +8,7 @@
 
 ## How it works
 
-Pairs `vision.detect` with `rag.retrieve` — agent can describe image regions and cross-check against indexed docs.
+Pairs `vision.detect` with `rag.retrieve` - agent can describe image regions and cross-check against indexed docs.
 
 ## How to use
 

@@ -1,6 +1,6 @@
 # Intergrax Integrations
 
-**Intergrax Integrations** are typed provider boundaries that connect platform capabilities to concrete backends — databases, caches, vector stores, observability vendors, collaboration suites, and similar — **without exposing vendor SDK details to agents or application logic**.
+**Intergrax Integrations** are typed provider boundaries that connect platform capabilities to concrete backends - databases, caches, vector stores, observability vendors, collaboration suites, and similar - **without exposing vendor SDK details to agents or application logic**.
 
 ## Why it matters
 
@@ -19,29 +19,29 @@ Integrations address this through **`PlatformIntegrationContract`**, category-sp
 > [!NOTE]
 > **Maturity boundary:** Broad **contract migration** and **runtime cutover** exist across **186** provider/category slugs (gate-tested), with **9** deferred `llm_guardrail` slugs. That is **not** 186 production-qualified vendor deployments. Catalog scale ≠ production qualification. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
 
-**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `IntegrationProfile`, provider packages, or third-party `IntegrationPlugin` paths — after the platform overview in the root README.
+**Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `IntegrationProfile`, provider packages, or third-party `IntegrationPlugin` paths - after the platform overview in the root README.
 
 ## At a glance
 
 | Concern | Summary |
 | -------- | -------- |
 | **Responsibility** | Typed provider/backend binding behind platform capabilities |
-| **Host selection** | Tier-3 `IntegrationProfile` chooses provider per category — not the agent |
-| **Public base contract** | `PlatformIntegrationContract` — identity, typed config, capabilities, security posture, health, safe `public_view()` |
+| **Host selection** | Tier-3 `IntegrationProfile` chooses provider per category - not the agent |
+| **Public base contract** | `PlatformIntegrationContract` - identity, typed config, capabilities, security posture, health, safe `public_view()` |
 | **Category contract** | One contract per provider category (e.g. `VectorStoreIntegrationContract`) |
-| **Provider identity** | `provider_id` — shared backend/vendor identity (e.g. `elasticsearch`) |
-| **Category identity** | `integration_kind` / folder category — role (e.g. `vector_store`, `observability_vendor`) |
+| **Provider identity** | `provider_id` - shared backend/vendor identity (e.g. `elasticsearch`) |
+| **Category identity** | `integration_kind` / folder category - role (e.g. `vector_store`, `observability_vendor`) |
 | **Integration identity** | `integration_id` = `{provider_id}:{integration_kind}` |
 | **Runtime resolution** | `IntegrationProfile` → open catalog `get_entry` / factory → Integration instance |
-| **Registry v2** | Additive typed metadata registry — **not** universal runtime binding authority |
-| **INTEGRATIONS-3B** | **Planned** — explicit registry-backed runtime binding not shipped |
+| **Registry v2** | Additive typed metadata registry - **not** universal runtime binding authority |
+| **INTEGRATIONS-3B** | **Planned** - explicit registry-backed runtime binding not shipped |
 | **Plugin extension** | `IntegrationPlugin` → catalog registration → profile enablement → factory construction |
 | **Default enablement** | Contract config `enabled=false` by default; profile selection is explicit host opt-in |
 | **Secrets / diagnostics** | Secrets stay in provider wiring; `public_view()` must not expose secrets |
-| **Health** | Contract may expose health snapshot — readiness signal, not production SLO proof |
-| **Failure semantics** | Category/policy dependent — observability export may be isolated; critical data paths may surface failure |
+| **Health** | Contract may expose health snapshot - readiness signal, not production SLO proof |
+| **Failure semantics** | Category/policy dependent - observability export may be isolated; critical data paths may surface failure |
 | **Tools relation** | `ToolRuntime` → handler → Integration → vendor |
-| **Skills relation** | Skill → `tool_ids` → Tool → Integration — no vendor SDK in Skill |
+| **Skills relation** | Skill → `tool_ids` → Tool → Integration - no vendor SDK in Skill |
 | **RAG relation** | RAG owns retrieval semantics; Integrations supply vector/graph/search/parser backends |
 | **Observability relation** | Sanitized export envelope → `ObservabilityVendorIntegrationContract` → OTLP/Langfuse/etc. |
 | **Provider scale** | **195** catalog slugs · **186** runtime cutover slugs · **9** deferred `llm_guardrail` |
@@ -106,7 +106,7 @@ Integration instance
 | **Integration** | Concrete backend/vendor binding for a platform category |
 | **Tool** | Executable platform operation (`tool_id`, schema, handler) |
 | **Skill** | Reusable capability requirements and tool composition |
-| **Agent** | Reasoning/decision module — proposes tool intent, not vendor calls |
+| **Agent** | Reasoning/decision module - proposes tool intent, not vendor calls |
 
 **Example:**
 
@@ -129,7 +129,7 @@ The agent does **not** invoke a Jira client directly.
 2. **`IntegrationProfile.resolve(category)`** calls **`resolve_from_profile`** → open catalog resolution.
 3. Resolution order for slug selection: **explicit slug** → **profile binding** → **cloud-platform defaults (when configured)** → **`INTERGRAX_INTEGRATION_<CATEGORY>` env** → **configuration error**.
 4. Catalog **`get_entry(slug)`** validates category membership and invokes the provider **`factory`** (compatibility shim delegating to the Integration class).
-5. Tool handlers receive wired Integration instances through **`ToolWiringContext`** — not through agent code.
+5. Tool handlers receive wired Integration instances through **`ToolWiringContext`** - not through agent code.
 
 ### Agent-side effects
 
@@ -162,7 +162,7 @@ flowchart TB
 
 ### Registry v2 (metadata path)
 
-**`IntegrationRegistry` v2** (`intergrax/runtime/integrations/registry_v2.py`, INTEGRATIONS-3A) registers typed **`(provider_id, category)`** metadata — contract class, integration class, factory reference, capabilities, security posture — for validation and inspection.
+**`IntegrationRegistry` v2** (`intergrax/runtime/integrations/registry_v2.py`, INTEGRATIONS-3A) registers typed **`(provider_id, category)`** metadata - contract class, integration class, factory reference, capabilities, security posture - for validation and inspection.
 
 > **Registry v2 is not automatically the runtime binding authority.**
 
@@ -174,7 +174,7 @@ IntegrationProfile
   → Integration instance
 ```
 
-**INTEGRATIONS-3B** (explicit registry-backed runtime binding) is **planned** — not shipped. Do not assume `registry_v2` replaces `IntegrationProfile` + catalog factories until 3B lands.
+**INTEGRATIONS-3B** (explicit registry-backed runtime binding) is **planned** - not shipped. Do not assume `registry_v2` replaces `IntegrationProfile` + catalog factories until 3B lands.
 
 ## Responsibility boundaries
 
@@ -210,7 +210,7 @@ IntegrationProfile
 | [**Skills**](SKILLS.md) | Skill composes `tool_ids`; must not depend on vendor SDK or raw provider client |
 | [**RAG**](RAG.md) | RAG owns ingest/retrieval semantics; Integrations supply vector store, graph store, search, parser, reranker backends |
 | [**Observability**](OBSERVABILITY.md) | Observability pipeline → sanitized `ObservabilityExportEnvelope` → vendor Integration; export failure isolation is observability-specific |
-| [**LLM Adapters**](LLM_ADAPTERS.md) | LLM Adapters own model invocation; Integrations own platform backend categories — separate catalogs |
+| [**LLM Adapters**](LLM_ADAPTERS.md) | LLM Adapters own model invocation; Integrations own platform backend categories - separate catalogs |
 | [**CodeCraft**](CODE_CRAFT.md) / Sandbox | `sandbox_host` Integration supplies hosted sandbox backend; CodeCraft owns craft lifecycle |
 | [**Governed Execution**](GOVERNED_EXECUTION.md) | Policy/HITL on tool and side-effect paths; Integrations do not grant business permission |
 
@@ -234,7 +234,7 @@ Observability pipeline
 
 ### First-party providers
 
-Canonical package layout under `intergrax/integrations/providers/<category>/<slug>` — see [Provider package pattern](#provider-package-pattern-integrations-2b-follow-up) in engineering canon.
+Canonical package layout under `intergrax/integrations/providers/<category>/<slug>` - see [Provider package pattern](#provider-package-pattern-integrations-2b-follow-up) in engineering canon.
 
 ### Third-party plugins
 
@@ -243,7 +243,7 @@ Canonical package layout under `intergrax/integrations/providers/<category>/<slu
 | Protocol | `IntegrationPlugin` (`intergrax.integrations.core.plugin`) |
 | Manifest | `IntegrationManifest` |
 | Register | `register_integration_plugin()` · EP group `intergrax.integrations` |
-| Enablement | Host `IntegrationProfile` slot + secrets — import/discovery ≠ automatic runtime enablement |
+| Enablement | Host `IntegrationProfile` slot + secrets - import/discovery ≠ automatic runtime enablement |
 | Registry v2 | Metadata built from first-party package conventions today; third-party drop-in registry binding **not** automatic |
 
 ```text
@@ -263,12 +263,12 @@ Quickstart: [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_G
 | **INTEGRATIONS-1B** observability vendor category | **Done** |
 | **INTEGRATIONS-2A** category contracts (31 `SLUG_CATEGORY` folders) | **Done** |
 | **INTEGRATIONS-2B–2D** provider package + contract migration | **Done** (9 `llm_guardrail` deferred) |
-| **INTEGRATIONS-2E** single public Integration entrypoint / runtime cutover | **Done** — **186** slugs; legacy factories are shims |
-| **INTEGRATIONS-3A** registry v2 metadata | **In progress** — additive registry shipped; not runtime authority |
-| **INTEGRATIONS-3B** explicit runtime binding | **Planned** — not implemented |
+| **INTEGRATIONS-2E** single public Integration entrypoint / runtime cutover | **Done** - **186** slugs; legacy factories are shims |
+| **INTEGRATIONS-3A** registry v2 metadata | **In progress** - additive registry shipped; not runtime authority |
+| **INTEGRATIONS-3B** explicit runtime binding | **Planned** - not implemented |
 | **IntegrationProfile** + catalog factory resolution | **Active canonical runtime path** |
-| **Plugin path** | `IntegrationPlugin` + profile resolution — proven in unit tests |
-| **INT-P8** dynamic selection / MCP gateway / workspace store | **Planned** — architecture only |
+| **Plugin path** | `IntegrationPlugin` + profile resolution - proven in unit tests |
+| **INT-P8** dynamic selection / MCP gateway / workspace store | **Planned** - architecture only |
 
 **Conformance gates:** `test_provider_runtime_cutover.py` (`CUTOVER_SLUGS`), `test_provider_category_contract_migration.py`, `test_contract_registry_v2.py`, config safety and public API/shim guards.
 
@@ -279,10 +279,10 @@ Implementation maturity: **I4**
 Production readiness: **P2**  
 Evidence maturity: **E3**
 
-- **A4** — Clear Tool/Integration/Skill/Agent boundary; `PlatformIntegrationContract` + category contracts; `(provider_id, category)` identity; multi-category class discipline; `IntegrationProfile` host selection; provider package conventions; adjacent-domain boundaries documented; cutover and registry gates enforce architecture at scale. Not A5 — deferred `llm_guardrail` category, INT-P8 planned surfaces, and registry/runtime split remain.
-- **I4** — Category contracts; **186**-slug runtime cutover; single public Integration entrypoint; active catalog/profile resolution; registry v2 additive metadata; plugin path; representative category runtime implementations. Not I5 — INTEGRATIONS-3B not shipped; registry v2 does not own runtime binding; nine `llm_guardrail` slugs deferred; multi-category metadata vs single-slug catalog paths coexist.
-- **P2** — Harness/lab qualification on representative provider construction and Tool→Integration wiring; not representative customer production deployments, universal vendor SLO evidence, or runbook-backed operations (not P4).
-- **E3** — Unit/gate tests (contract inheritance, registry v2, cutover completeness, config safety, plugin path, IntegrationProfile resolution). No dedicated Integrations-domain public proof in [`PROOFS.md`](../proofs/PROOFS.md); LKW exercises integrations only in **bounded** supporting-foundation scope.
+- **A4** - Clear Tool/Integration/Skill/Agent boundary; `PlatformIntegrationContract` + category contracts; `(provider_id, category)` identity; multi-category class discipline; `IntegrationProfile` host selection; provider package conventions; adjacent-domain boundaries documented; cutover and registry gates enforce architecture at scale. Not A5 - deferred `llm_guardrail` category, INT-P8 planned surfaces, and registry/runtime split remain.
+- **I4** - Category contracts; **186**-slug runtime cutover; single public Integration entrypoint; active catalog/profile resolution; registry v2 additive metadata; plugin path; representative category runtime implementations. Not I5 - INTEGRATIONS-3B not shipped; registry v2 does not own runtime binding; nine `llm_guardrail` slugs deferred; multi-category metadata vs single-slug catalog paths coexist.
+- **P2** - Harness/lab qualification on representative provider construction and Tool→Integration wiring; not representative customer production deployments, universal vendor SLO evidence, or runbook-backed operations (not P4).
+- **E3** - Unit/gate tests (contract inheritance, registry v2, cutover completeness, config safety, plugin path, IntegrationProfile resolution). No dedicated Integrations-domain public proof in [`PROOFS.md`](../proofs/PROOFS.md); LKW exercises integrations only in **bounded** supporting-foundation scope.
 
 ### Catalog scale vs production qualification
 
@@ -345,28 +345,28 @@ No dedicated public domain proof is established today. See the evidence table be
 
 ## Protocol v2.2 provider/backend abstraction target invariants (2026-08-18)
 
-Accepted Protocol v2.2 audit layer [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+Accepted Protocol v2.2 audit layer [`PROVIDER_BACKEND_ABSTRACTION`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only - **not implemented**:
 
-**Finding 02 — observability export boundary**
+**Finding 02 - observability export boundary**
 
 1. All external observability vendor I/O from platform/domain consumers flows through the canonical sanitized observability export/provider boundary or an explicitly equivalent canonical contract ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 2. RAG/parser telemetry must not directly call Sentry/Langfuse/vendor APIs ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 3. `source`/`error` metadata must cross the normal observability safety/export boundary before vendor delivery ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 
-**Finding 03 — guardrail configuration ownership**
+**Finding 03 - guardrail configuration ownership**
 
 4. Generic host/platform guardrail profiles remain provider-neutral ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 5. Vendor-specific configuration belongs to provider-owned typed configuration selected/resolved in composition ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 6. `LlmGuardrailBackend` remains the behavior contract ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 7. Do not encode new vendor-specific fields into generic shared profiles ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 
-**Finding 04 — vendor-boundary governance**
+**Finding 04 - vendor-boundary governance**
 
 8. Vendor-boundary governance must inspect high-level consumers rather than bless known vendor-call files through broad filename exceptions ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 9. Explicit exceptions must correspond to genuine provider-owned boundaries or narrowly justified provider-specific tooling ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 10. Proof must cover direct vendor imports/calls sufficiently to prevent the confirmed parser-trace bypass class ([`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)).
 
-The invariant is ownership-aware boundary enforcement — not a giant universal SDK blacklist as architecture.
+The invariant is ownership-aware boundary enforcement - not a giant universal SDK blacklist as architecture.
 
 Remediation tracked as **PBA-FIX-B** (findings 02, 04) and **PBA-FIX-C** (finding 03) in [plan](../maintainers/plans/INTEGRATIONS.md#protocol-v22-providerbackend-abstraction-remediation-2026-08-18). **Not implemented** by audit persistence.
 
@@ -374,33 +374,33 @@ Remediation tracked as **PBA-FIX-B** (findings 02, 04) and **PBA-FIX-C** (findin
 
 ## Protocol v2 integrations target invariants (2026-08-18)
 
-Accepted Protocol v2 audit layer [`INTEGRATIONS`](../../audit_results/2026-08-18/INTEGRATIONS.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only — **not implemented**:
+Accepted Protocol v2 audit layer [`INTEGRATIONS`](../../audit_results/2026-08-18/INTEGRATIONS.md) (**FAIL**, 5 ACCEPTED findings). Canonical evidence: [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/README.md). Target state only - **not implemented**:
 
-**Finding 01 — pre-built instance contract parity**
+**Finding 01 - pre-built instance contract parity**
 
-1. Dependency-injected/pre-built integration instances must satisfy the exact canonical category-specific integration contract for the profile slot — same contract identity as catalog-created providers ([`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+1. Dependency-injected/pre-built integration instances must satisfy the exact canonical category-specific integration contract for the profile slot - same contract identity as catalog-created providers ([`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 2. Validate provider/category/integration identity as appropriate at the host binding boundary; do not remove dependency injection merely to solve validation ([`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 3. Do not introduce a second integration abstraction ([`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 
-**Finding 02 — provider lifecycle runtime qualification**
+**Finding 02 - provider lifecycle runtime qualification**
 
-4. Provider lifecycle status (`STABLE` / `BETA` / `DEPRECATED`) must have explicit runtime/bootstrap qualification semantics — not decorative metadata ([`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+4. Provider lifecycle status (`STABLE` / `BETA` / `DEPRECATED`) must have explicit runtime/bootstrap qualification semantics - not decorative metadata ([`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 5. Canonical production binding must not treat STABLE, BETA, and DEPRECATED as automatically equivalent ([`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 6. Typed host/provider qualification policy: stable default eligibility; beta explicit opt-in where desired; deprecated fail-closed for new production bindings or explicitly authorized compatibility posture ([`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 
-**Finding 03 — declared → registered → resolvable host readiness**
+**Finding 03 - declared → registered → resolvable host readiness**
 
 7. Explicit host configuration must follow a deterministic declared → admitted/registered → resolvable lifecycle ([`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
-8. Before host readiness, every selected integration must be proven resolvable by the active runtime authority — fail fast before serving work ([`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+8. Before host readiness, every selected integration must be proven resolvable by the active runtime authority - fail fast before serving work ([`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 9. Plugin declaration before registration may remain a supported authoring phase; production/startup validation must not defer catalog admission to first `resolve()` ([`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 
-**Finding 04 — catalog metadata round-trip**
+**Finding 04 - catalog metadata round-trip**
 
 10. Catalog normalization must preserve all contractually meaningful provider metadata exactly, except explicitly documented normalization fields ([`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 11. Registration must round-trip deployment/security metadata such as `requires_local_container` ([`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
-12. Finding is metadata-integrity — not proven active security bypass until remediation and verification ([`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
+12. Finding is metadata-integrity - not proven active security bypass until remediation and verification ([`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 
-**Finding 05 — canonical integration identity**
+**Finding 05 - canonical integration identity**
 
 13. `PlatformIntegrationContract` has one canonical integration identity truth: `integration_id = provider_id:integration_kind` ([`AUDIT-20260818-INTEGRATIONS-05`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
 14. Either derive `integration_id` from `provider_id` + `integration_kind` or validate strict equality at construction ([`AUDIT-20260818-INTEGRATIONS-05`](../../audit_results/2026-08-18/INTEGRATIONS.md)).
@@ -408,8 +408,8 @@ Accepted Protocol v2 audit layer [`INTEGRATIONS`](../../audit_results/2026-08-18
 
 **Transitional boundary (preserved)**
 
-16. Registry v2 remains additive typed metadata — **not** universal runtime binding authority today ([`INTEGRATIONS-3A`](../maintainers/plans/INTEGRATIONS.md)).
-17. **INTEGRATIONS-3B** explicit registry-backed runtime binding remains **Planned** — not shipped; remediation coordinates with 3B rather than a competing resolver ([`INTEGRATIONS-3B`](../maintainers/plans/INTEGRATIONS.md)).
+16. Registry v2 remains additive typed metadata - **not** universal runtime binding authority today ([`INTEGRATIONS-3A`](../maintainers/plans/INTEGRATIONS.md)).
+17. **INTEGRATIONS-3B** explicit registry-backed runtime binding remains **Planned** - not shipped; remediation coordinates with 3B rather than a competing resolver ([`INTEGRATIONS-3B`](../maintainers/plans/INTEGRATIONS.md)).
 18. Broad **194**-slug catalog scale does **not** imply universal production qualification ([catalog-scale ≠ production-qualification](#evidence-and-maturity)).
 
 Remediation tracked as **INTEGRATIONS-RUNTIME-BINDING-INTEGRITY** (findings 01–03) and **INTEGRATIONS-CONTRACT-METADATA-INTEGRITY** (findings 04–05) in [plan](../maintainers/plans/INTEGRATIONS.md#protocol-v2-integrations-remediation-2026-08-18). **Not implemented** by audit persistence.
@@ -428,7 +428,7 @@ Remediation tracked as **INTEGRATIONS-RUNTIME-BINDING-INTEGRITY** (findings 01�
 **Do not read this entire file in one session** (INTEGRATIONS canon).
 
 - **Implement / audit default:** IntegrationLayer contract + wiring + checklists (hub). Provider catalog: [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md).
-- **Use** table of contents below — `Read` with offset/limit per §.
+- **Use** table of contents below - `Read` with offset/limit per §.
 - **Plan hub:** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md) (scoped §6 only).
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
@@ -481,7 +481,7 @@ Shared concerns on the base contract: identity (`integration_id`, `provider_id`,
 | `ElasticsearchVectorStoreIntegration` | `elasticsearch` | `vector_store` |
 | `ElasticsearchSearchIntegration` | `elasticsearch` | `search_provider` |
 
-Category-specific contracts (for example **`ObservabilityVendorIntegrationContract`**, **`VectorStoreIntegrationContract`**) **derive from** **`PlatformIntegrationContract`** — they do not replace it.
+Category-specific contracts (for example **`ObservabilityVendorIntegrationContract`**, **`VectorStoreIntegrationContract`**) **derive from** **`PlatformIntegrationContract`** - they do not replace it.
 
 **Mental model:**
 
@@ -497,7 +497,7 @@ PineconeVectorStoreIntegration
 
 **Code:** `intergrax/runtime/integrations/observability.py`
 
-Observability backends (Langfuse, Arize, Phoenix, Elasticsearch, OTLP-oriented vendors, custom sinks) are **observability vendor integrations** — not ad-hoc exporters or one-off SDK wrappers. Concrete adapters must subclass **`ObservabilityVendorIntegrationContract`**, which **derives from** **`PlatformIntegrationContract`**.
+Observability backends (Langfuse, Arize, Phoenix, Elasticsearch, OTLP-oriented vendors, custom sinks) are **observability vendor integrations** - not ad-hoc exporters or one-off SDK wrappers. Concrete adapters must subclass **`ObservabilityVendorIntegrationContract`**, which **derives from** **`PlatformIntegrationContract`**.
 
 | Type | Role |
 |------|------|
@@ -507,9 +507,9 @@ Observability backends (Langfuse, Arize, Phoenix, Elasticsearch, OTLP-oriented v
 | **`ObservabilityVendorPayload`** | Vendor-neutral payload mapped from policy-sanitized envelopes |
 | **`ObservabilityVendorMappingResult`** | Envelope → payload mapping result |
 
-**Input boundary:** vendor integrations accept only **`ObservabilityExportEnvelope`** records that have already passed **`ObservabilityExportPolicy`** / **`try_export_observability_envelope`**. They consume **`sanitized_application_attributes`** only — never raw **`application_attributes`**, never **`RuntimeEvent`** raw payloads, and never bypass export policy.
+**Input boundary:** vendor integrations accept only **`ObservabilityExportEnvelope`** records that have already passed **`ObservabilityExportPolicy`** / **`try_export_observability_envelope`**. They consume **`sanitized_application_attributes`** only - never raw **`application_attributes`**, never **`RuntimeEvent`** raw payloads, and never bypass export policy.
 
-**Why not ad-hoc exporters:** **`OtlpObservabilityIntegration`** (INTEGRATIONS-1C) is the first concrete observability vendor integration — it subclasses **`ObservabilityVendorIntegrationContract`** and wraps the lower-level **`OtlpObservabilityExporter`** / **`OtlpTransport`** delivery path. Future Langfuse/Arize/Phoenix/Elasticsearch adapters share identity, capabilities, health, failure isolation posture, and mapping through this contract — one integration class per category, not scattered SDK calls from runtime hot paths.
+**Why not ad-hoc exporters:** **`OtlpObservabilityIntegration`** (INTEGRATIONS-1C) is the first concrete observability vendor integration - it subclasses **`ObservabilityVendorIntegrationContract`** and wraps the lower-level **`OtlpObservabilityExporter`** / **`OtlpTransport`** delivery path. Future Langfuse/Arize/Phoenix/Elasticsearch adapters share identity, capabilities, health, failure isolation posture, and mapping through this contract - one integration class per category, not scattered SDK calls from runtime hot paths.
 
 **JSONL classification:** **`JsonlObservabilityExporter`** is a **local file export sink**, not a remote observability vendor integration. It remains a transport-oriented exporter until a separate local-sink integration contract is introduced (if needed). Do not classify JSONL as **`ObservabilityVendorIntegrationContract`**.
 
@@ -522,7 +522,7 @@ Observability backends (Langfuse, Arize, Phoenix, Elasticsearch, OTLP-oriented v
 | **`OtlpObservabilityExporter`** | Lower-level OTLP mapper/exporter (implementation detail behind integration) |
 | **`OtlpTransport`** / **`OtlpHttpTransport`** | Lower-level OTLP delivery (implementation detail behind integration) |
 
-Explicit operator wiring (**`build_otlp_observability_integration`**, **`build_otlp_observability_exporter`**, **`build_otlp_observability_export_runtime_plugin`**) constructs the integration-backed OTLP path — no global bootstrap registration.
+Explicit operator wiring (**`build_otlp_observability_integration`**, **`build_otlp_observability_exporter`**, **`build_otlp_observability_export_runtime_plugin`**) constructs the integration-backed OTLP path - no global bootstrap registration.
 
 #### Provider category contract layer (INTEGRATIONS-2A)
 
@@ -534,7 +534,7 @@ Each provider folder under `intergrax/integrations/providers/<category>` maps to
 | Module | Categories covered |
 |--------|-------------------|
 | `categories/data.py` | `relational_store`, `document_store`, `key_value_cache`, `graph_store` |
-| `categories/messaging.py` | `message_bus`, `notification_channel`, `conversation_channel` — background task execution model: [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md); conversation semantics: [`CONVERSATION_CHANNEL_CONTRACT.md`](CONVERSATION_CHANNEL_CONTRACT.md) (`slack` has Socket Mode/Web API runtime; other conversation providers remain unbound) |
+| `categories/messaging.py` | `message_bus`, `notification_channel`, `conversation_channel` - background task execution model: [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md); conversation semantics: [`CONVERSATION_CHANNEL_CONTRACT.md`](CONVERSATION_CHANNEL_CONTRACT.md) (`slack` has Socket Mode/Web API runtime; other conversation providers remain unbound) |
 | `categories/search.py` | `search_provider`, `rerank_provider` |
 | `categories/storage.py` | `object_storage`, `vector_store` |
 | `categories/devops.py` | `ci_cd`, `security_scanner`, `sandbox_host`, `workflow_orchestrator`, `cloud_platform` |
@@ -545,20 +545,20 @@ Each provider folder under `intergrax/integrations/providers/<category>` maps to
 
 **Provider identity vs integration kind (mandatory):**
 
-- **`provider_id`** — catalog slug (for example `elasticsearch`, `pinecone`).
-- **`integration_kind`** — provider category string (for example `vector_store`, `observability_vendor`).
-- **`integration_id`** — `{provider_id}:{integration_kind}` via `derive_platform_integration_id`.
-- One provider may appear in **multiple categories** through **separate integration classes** — never one multi-category “monster” class.
+- **`provider_id`** - catalog slug (for example `elasticsearch`, `pinecone`).
+- **`integration_kind`** - provider category string (for example `vector_store`, `observability_vendor`).
+- **`integration_id`** - `{provider_id}:{integration_kind}` via `derive_platform_integration_id`.
+- One provider may appear in **multiple categories** through **separate integration classes** - never one multi-category “monster” class.
 
 **Observability backend alias (engineering note):** provider folder `observability_backend` aligns with **`ObservabilityVendorIntegrationContract`** (INTEGRATIONS-1B). Registry maps `observability_backend` → **`ObservabilityVendorIntegrationContract`**; runtime **`integration_kind`** remains `observability_vendor`. **`PlatformIntegrationKind.OBSERVABILITY_BACKEND`** documents the folder taxonomy; **`OBSERVABILITY_VENDOR`** remains the runtime integration kind.
 
 **`PlatformIntegrationKind`:** extended with all `SLUG_CATEGORY` folder names. Legacy shorthand values (`search`, `storage`, `notification`) remain for backward compatibility.
 
-**Removed category:** `interaction_surface` (INTERACTIONS-TAXONOMY-1). Non-vendor adapters (`lab_json`, `slash_command`) live under `intergrax/runtime/interactions`. Mailgun is `notification_channel`. Ollama is `model_serving_runtime` — see [`OLLAMA_PROVIDER_CLASSIFICATION.md`](OLLAMA_PROVIDER_CLASSIFICATION.md). Near-real-time bidirectional chat vendors use `conversation_channel` — see [`CONVERSATION_CHANNEL_CONTRACT.md`](CONVERSATION_CHANNEL_CONTRACT.md). Do not recreate a generic `interaction_surface`.
+**Removed category:** `interaction_surface` (INTERACTIONS-TAXONOMY-1). Non-vendor adapters (`lab_json`, `slash_command`) live under `intergrax/runtime/interactions`. Mailgun is `notification_channel`. Ollama is `model_serving_runtime` - see [`OLLAMA_PROVIDER_CLASSIFICATION.md`](OLLAMA_PROVIDER_CLASSIFICATION.md). Near-real-time bidirectional chat vendors use `conversation_channel` - see [`CONVERSATION_CHANNEL_CONTRACT.md`](CONVERSATION_CHANNEL_CONTRACT.md). Do not recreate a generic `interaction_surface`.
 
 **Conversation vs notification (architecture example):** `notification_channel` = one-way/outbound event style; `conversation_channel` = bidirectional human↔app interaction. Slack may participate in both via **separate** Integration classes per category.
 
-**Scope boundary (INTEGRATIONS-2A):** category contracts only — no concrete provider migration, no vendor SDK imports, no registry/bootstrap wiring in the 2A task itself.
+**Scope boundary (INTEGRATIONS-2A):** category contracts only - no concrete provider migration, no vendor SDK imports, no registry/bootstrap wiring in the 2A task itself.
 
 **Provider package migration pattern (INTEGRATIONS-2B pilot):** adapt existing provider packages by adding a contract-based integration class (for example **`LangfuseObservabilityIntegration`**) inside the same slug folder. Do **not** duplicate providers or create parallel adapter packages. Keep legacy provider facades (for example **`ObservabilityBackend`** query APIs) backward-compatible when possible.
 
@@ -568,27 +568,27 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>`:
 
 | File | Responsibility |
 |------|----------------|
-| `integration.py` | **Hand-edited only** — concrete contract-based integration class, provider config, transport protocol, `provider_id`, supported signals/capabilities. No registry, manifest, bootstrap, or SDK imports unless isolated and optional. |
-| `bundle.py` | **Factory facade** — exports legacy catalog factory and contract-based factory (`create_<slug>_integration`). May import `integration.py` types only to construct factories. No registry or network I/O. |
-| `manifest.py` | **Metadata only** — slug, categories, status, `env_prefix`, description. No provider logic or client creation. |
-| `register.py` | **Registry hook** — catalog registration via legacy factory; registry v2 metadata is built separately (INTEGRATIONS-3A) and does not replace this hook. |
-| `__init__.py` | **Lazy public API** — factories and optional public integration types via `__getattr__`; no heavy imports or SDK loads. |
-| `USAGE.md` | Operator docs — legacy facade vs contract-based integration, opt-in and transport requirements. |
+| `integration.py` | **Hand-edited only** - concrete contract-based integration class, provider config, transport protocol, `provider_id`, supported signals/capabilities. No registry, manifest, bootstrap, or SDK imports unless isolated and optional. |
+| `bundle.py` | **Factory facade** - exports legacy catalog factory and contract-based factory (`create_<slug>_integration`). May import `integration.py` types only to construct factories. No registry or network I/O. |
+| `manifest.py` | **Metadata only** - slug, categories, status, `env_prefix`, description. No provider logic or client creation. |
+| `register.py` | **Registry hook** - catalog registration via legacy factory; registry v2 metadata is built separately (INTEGRATIONS-3A) and does not replace this hook. |
+| `__init__.py` | **Lazy public API** - factories and optional public integration types via `__getattr__`; no heavy imports or SDK loads. |
+| `USAGE.md` | Operator docs - legacy facade vs contract-based integration, opt-in and transport requirements. |
 
-**Generated vs hand-edited boundary:** maintenance provider shell generators (`wire_p2` through `wire_p7`) may (re)generate thin legacy shells for unmigrated providers. When `integration.py` exists, all canonical files are **preserved** — generators must not overwrite `integration.py` or strip contract factory exports from `bundle.py` / `__init__.py`. Migrated providers are safe from legacy scaffold overwrite.
+**Generated vs hand-edited boundary:** maintenance provider shell generators (`wire_p2` through `wire_p7`) may (re)generate thin legacy shells for unmigrated providers. When `integration.py` exists, all canonical files are **preserved** - generators must not overwrite `integration.py` or strip contract factory exports from `bundle.py` / `__init__.py`. Migrated providers are safe from legacy scaffold overwrite.
 
 **Rules:**
 
-- One integration class per category — no multi-category monster classes.
+- One integration class per category - no multi-category monster classes.
 - No duplicate provider adapters or parallel packages for the same slug.
 - `enabled=True` without required transport/client must fail at construction time (`IntegrationConfigurationError`), not during export.
 - Langfuse pilot (`observability_backend/langfuse`) is the reference implementation.
 
-**INTEGRATIONS-2C (batch migration — Done):** all existing `observability_backend` provider packages migrated using the Langfuse pattern — no duplicate provider adapters or parallel packages. `integration.py` holds contract-based provider logic; `register.py` remains legacy catalog hook; `manifest.py` metadata-only. Legacy **`ObservabilityBackend`** factories and **`register_<slug>_integration`** hooks remain backward-compatible. Injectable transport only in contract path; no vendor SDK imports in `integration.py`; no production network transports in the migration task.
+**INTEGRATIONS-2C (batch migration - Done):** all existing `observability_backend` provider packages migrated using the Langfuse pattern - no duplicate provider adapters or parallel packages. `integration.py` holds contract-based provider logic; `register.py` remains legacy catalog hook; `manifest.py` metadata-only. Legacy **`ObservabilityBackend`** factories and **`register_<slug>_integration`** hooks remain backward-compatible. Injectable transport only in contract path; no vendor SDK imports in `integration.py`; no production network transports in the migration task.
 
-**INTEGRATIONS-2D (remaining categories — Done):** all non-`observability_backend` slugs with per-slug provider packages now follow the same layout — existing provider package + contract-based integration class in `integration.py`; legacy catalog factory preserved in `bundle.py`; **`register.py`** remains catalog hook. No duplicate provider adapters. Nine `llm_guardrail` slugs deferred (shared `bundles` layout). Completeness tests derive expected slugs from `SLUG_CATEGORY`.
+**INTEGRATIONS-2D (remaining categories - Done):** all non-`observability_backend` slugs with per-slug provider packages now follow the same layout - existing provider package + contract-based integration class in `integration.py`; legacy catalog factory preserved in `bundle.py`; **`register.py`** remains catalog hook. No duplicate provider adapters. Nine `llm_guardrail` slugs deferred (shared `bundles` layout). Completeness tests derive expected slugs from `SLUG_CATEGORY`.
 
-**INTEGRATIONS-2E (runtime cutover — Done):** each provider/category exposes exactly **one** public entrypoint: `<ProviderPascal><CategoryPascal>Integration` in `integration.py`. Legacy catalog factories in `bundle.py` remain as **compatibility shims** that delegate to the Integration class; they must not return parallel public adapter/facade types. Former public adapters (e.g. `adapter.py` classes sharing the Integration name) are **removed or privatized** (`_ProviderRuntime`, `_ProviderBridge`). Private SDK clients, bridges, and mappers are allowed as implementation details only. Cut-over completeness tracked in `test_provider_runtime_cutover.py` (`CUTOVER_SLUGS` — **186** slugs derived from `SLUG_CATEGORY`, excluding 9 deferred `llm_guardrail` slugs).
+**INTEGRATIONS-2E (runtime cutover - Done):** each provider/category exposes exactly **one** public entrypoint: `<ProviderPascal><CategoryPascal>Integration` in `integration.py`. Legacy catalog factories in `bundle.py` remain as **compatibility shims** that delegate to the Integration class; they must not return parallel public adapter/facade types. Former public adapters (e.g. `adapter.py` classes sharing the Integration name) are **removed or privatized** (`_ProviderRuntime`, `_ProviderBridge`). Private SDK clients, bridges, and mappers are allowed as implementation details only. Cut-over completeness tracked in `test_provider_runtime_cutover.py` (`CUTOVER_SLUGS` - **186** slugs derived from `SLUG_CATEGORY`, excluding 9 deferred `llm_guardrail` slugs).
 
 **Mental model:**
 
@@ -622,19 +622,19 @@ Additive, contract-aware metadata registry. **Does not:**
 - prevent duplicate registrations,
 - reject `default_enabled=true` registrations,
 - expose deterministic list/get inspection,
-- build snapshots via `build_contract_registry()` (**190** rows today — multi-category providers register multiple categories).
+- build snapshots via `build_contract_registry()` (**190** rows today - multi-category providers register multiple categories).
 
 **Deferred from registry v2 completeness:** nine `llm_guardrail` slugs until package normalization (INTEGRATIONS-2F).
 
-**INTEGRATIONS-3B:** explicit integration binding / registry-backed profile resolution — **planned**, not implemented. Runtime remains **`IntegrationProfile` + open catalog factory** path.
+**INTEGRATIONS-3B:** explicit integration binding / registry-backed profile resolution - **planned**, not implemented. Runtime remains **`IntegrationProfile` + open catalog factory** path.
 
 #### Default safety and opt-in rules
 
-- Integrations are **explicit opt-in** at the contract config layer — `PlatformIntegrationConfig.enabled=false` by default.
-- Tier-3 **`IntegrationProfile`** selecting a provider slug/plugin is itself **explicit host configuration** — distinct from auto-enabled registry objects.
+- Integrations are **explicit opt-in** at the contract config layer - `PlatformIntegrationConfig.enabled=false` by default.
+- Tier-3 **`IntegrationProfile`** selecting a provider slug/plugin is itself **explicit host configuration** - distinct from auto-enabled registry objects.
 - **`PlatformIntegrationSecurityPosture`** defaults: no secret exposure, no raw payload exposure, sanitized diagnostics.
 - **`public_view()`** on contract/config must remain safe for logs and operator UIs.
-- **`expects_failure_isolation`** on **`PlatformIntegrationContract`** defaults to `true` as **declared posture metadata** — not automatic swallowing of every backend failure. Semantics are **category/policy dependent**:
+- **`expects_failure_isolation`** on **`PlatformIntegrationContract`** defaults to `true` as **declared posture metadata** - not automatic swallowing of every backend failure. Semantics are **category/policy dependent**:
   - observability export integrations align with export-policy isolation (`try_export_observability_envelope`),
   - critical relational/document store failures may surface to the caller and fail the task,
   - callers and category contracts own whether failure is isolated, retried, or propagated.
@@ -646,9 +646,9 @@ Additive, contract-aware metadata registry. **Does not:**
 
 #### What Integration is (vs Tool)
 
-Integrations are **infrastructure/provider backends** — databases, caches, object storage, vector stores, message buses, observability vendors, and similar. They supply typed clients to the host and to tools via `ToolWiringContext`. They are **not** agent-invokable operations (that is the **Tool** surface).
+Integrations are **infrastructure/provider backends** - databases, caches, object storage, vector stores, message buses, observability vendors, and similar. They supply typed clients to the host and to tools via `ToolWiringContext`. They are **not** agent-invokable operations (that is the **Tool** surface).
 
-#### Public contract — third-party path only
+#### Public contract - third-party path only
 
 | Item | Value |
 |------|-------|
@@ -674,8 +674,8 @@ Same contract; different delivery. `pip install` ≠ discovered ≠ enabled ≠ 
 
 - Host selects provider per category on `IntegrationProfile` (plugin class, manifest, slug, or instance).
 - Options: `IntegrationProfile.options={slug: {…}}` merged into factory kwargs.
-- **Secrets:** host-owned — never in manifest, EP values, or plugin metadata.
-- **`IntegrationManifest.env_prefix`:** domain-specific exception — factory may read env vars under that prefix. Do **not** generalize to Tool/Skill plugins.
+- **Secrets:** host-owned - never in manifest, EP values, or plugin metadata.
+- **`IntegrationManifest.env_prefix`:** domain-specific exception - factory may read env vars under that prefix. Do **not** generalize to Tool/Skill plugins.
 
 #### Runtime resolution
 
@@ -689,11 +689,11 @@ cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 ctx = ToolWiringContext.from_integration_profile(profile)
 ```
 
-Resolution order (slug selection): explicit slug → profile binding → env → configuration error. Instance bindings bypass slug resolution and return the pre-built object directly — **target invariant (Protocol v2 audit):** pre-built instances must still satisfy the same category contract and canonical integration identity as catalog-created providers ([Protocol v2 integrations target invariants](#protocol-v2-integrations-target-invariants-2026-08-18)).
+Resolution order (slug selection): explicit slug → profile binding → env → configuration error. Instance bindings bypass slug resolution and return the pre-built object directly - **target invariant (Protocol v2 audit):** pre-built instances must still satisfy the same category contract and canonical integration identity as catalog-created providers ([Protocol v2 integrations target invariants](#protocol-v2-integrations-target-invariants-2026-08-18)).
 
 #### Lifecycle ownership
 
-No generic Platform Plugin shutdown API. The host owns process lifetime; integration factories may return pooled clients — document and perform category-specific cleanup in the adapter when required.
+No generic Platform Plugin shutdown API. The host owns process lifetime; integration factories may return pooled clients - document and perform category-specific cleanup in the adapter when required.
 
 #### Failure and troubleshooting (summary)
 
@@ -704,7 +704,7 @@ No generic Platform Plugin shutdown API. The host owns process lifetime; integra
 | EP load failure | `PluginLoadError` |
 | Unconfigured category | `IntegrationConfigurationError` |
 | Category mismatch | `IntegrationCategoryMismatchError` |
-| Qualification | Host gate — semantic approval, not attestation |
+| Qualification | Host gate - semantic approval, not attestation |
 
 Full matrix: EXTENSION_AUTHOR_GUIDE §2 · tests: `tests/unit/integrations/test_external_plugin.py`
 
@@ -722,7 +722,7 @@ Integrations **MAY**:
 - provide low-level clients for platform-owned services,
 - handle retry only when it is backend/protocol-level and does not conflict with runtime retry policy.
 
-Integration retries are **R0 — Backend/protocol** layer — [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#retry-layers). Must not duplicate R1–R4 retries or hide semantic failures from the Attempt Ledger.
+Integration retries are **R0 - Backend/protocol** layer - [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#retry-layers). Must not duplicate R1–R4 retries or hide semantic failures from the Attempt Ledger.
 
 ### Disallowed integration responsibilities
 
@@ -773,7 +773,7 @@ Platform service -> Integration adapter
 
 ### Slack / Teams / collaboration adapters
 
-Intergrax supports Slack and Teams as **interaction surfaces** — examples of collaboration adapters, not the definition of the integration layer.
+Intergrax supports Slack and Teams as **interaction surfaces** - examples of collaboration adapters, not the definition of the integration layer.
 
 Slack and Teams adapters **may** normalize external messages into tasks and send approved outputs back, but they **must not** own runtime orchestration.
 
@@ -790,7 +790,7 @@ They may provide:
 
 #### Google Workspace knowledge direction (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
 
-`GoogleWorkspaceCollaborationSuiteIntegration` (`provider_id: google_workspace`, category: `collaboration_suite`) is the single public Google entrypoint. Knowledge use adds typed read surfaces and thin Vendor Knowledge adapters per source kind (`drive`, `docs`, `sheets`, `calendar`, `slides`, `mail`, `chat`) — not parallel public integrations. Architecture: [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8. Provider usage: [`../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md`](../../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md). Runtime tasks are **PLANNED**; execution follows the complete Slack Knowledge vertical.
+`GoogleWorkspaceCollaborationSuiteIntegration` (`provider_id: google_workspace`, category: `collaboration_suite`) is the single public Google entrypoint. Knowledge use adds typed read surfaces and thin Vendor Knowledge adapters per source kind (`drive`, `docs`, `sheets`, `calendar`, `slides`, `mail`, `chat`) - not parallel public integrations. Architecture: [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8. Provider usage: [`../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md`](../../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md). Runtime tasks are **PLANNED**; execution follows the complete Slack Knowledge vertical.
 
 **Correct:**
 
@@ -842,19 +842,19 @@ Before implementing a new adapter, answer:
 
 Adapters should be generic and reusable.
 
-### Phase INT-P8 — Dynamic Integration Selection & Agent Workspace Gateways (Planned)
+### Phase INT-P8 - Dynamic Integration Selection & Agent Workspace Gateways (Planned)
 
-**Status:** Architecture & plan only — **not shipped**  
-**Plan (1:1):** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md) — Phase INT-P8  
-**Catalog (planned slugs):** [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8 planned categories
+**Status:** Architecture & plan only - **not shipped**  
+**Plan (1:1):** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md) - Phase INT-P8  
+**Catalog (planned slugs):** [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md) - §INT-P8 planned categories
 
-**Purpose:** Extend the mature integration catalog (**195** shipped slugs per `layout.py` · `SLUG_CATEGORY`, Full Harness LC **Done**) with **selection metadata**, **gateway-style connectors**, and **agent workspace backends** — without expanding the vendor catalog for its own sake.
+**Purpose:** Extend the mature integration catalog (**195** shipped slugs per `layout.py` · `SLUG_CATEGORY`, Full Harness LC **Done**) with **selection metadata**, **gateway-style connectors**, and **agent workspace backends** - without expanding the vendor catalog for its own sake.
 
 #### Why INT-P8 (product value, not catalog padding)
 
 | Mechanism | Need |
 |-----------|------|
-| Dynamic selection metadata + selection engine | Harness chooses provider by capability, risk, cost, locality, and task intent — not slug alone |
+| Dynamic selection metadata + selection engine | Harness chooses provider by capability, risk, cost, locality, and task intent - not slug alone |
 | `tool_protocol_gateway` / `mcp` | Controlled access to MCP ecosystem tools/resources through ToolRuntime |
 | `api_connector` / `openapi_http` | Universal REST attachment without one provider per vendor |
 | `workspace_store` / `local_workspace` | Policy-scoped agent working directory (distinct from `filesystem` object storage) |
@@ -871,7 +871,7 @@ Agent -> Tool / Skill -> ToolRuntime -> Integration
 ```
 
 - Integrations remain **backend/vendor-facing**; agents **MUST NOT** invoke integrations directly.
-- MCP tools, OpenAPI write methods, workspace writes, git commits/patches — **all** side effects through **ToolRuntime** with policy/approval gates.
+- MCP tools, OpenAPI write methods, workspace writes, git commits/patches - **all** side effects through **ToolRuntime** with policy/approval gates.
 - INT-P8 **MUST NOT** add LLM providers, vector DBs, observability vendors, browser automation, or project-management SaaS without a product driver.
 
 #### Invariants preserved by INT-P8
@@ -883,7 +883,7 @@ Agent -> Tool / Skill -> ToolRuntime -> Integration
 | Explainable integration choice | Selection engine returns reason, ranked candidates, trace/diagnostic payload |
 | Safe refusal | Engine may refuse when no safe integration matches constraints |
 | Audit trail | All side effects logged through existing ToolRuntime / observability spine |
-| Catalog honesty | Planned categories/slugs documented as **Planned** — not registered in `layout.py` until implementation PRs |
+| Catalog honesty | Planned categories/slugs documented as **Planned** - not registered in `layout.py` until implementation PRs |
 
 #### Planned new categories (summary)
 
@@ -901,10 +901,10 @@ Selection metadata fields (INT-P8.1): `capabilities`, `operations`, `read_write`
 
 | Product / agent class | INT-P8 mechanisms |
 |----------------------|-------------------|
-| Local Knowledge Workspace | `local_workspace_stack` — workspace + git + parser + vector |
+| Local Knowledge Workspace | `local_workspace_stack` - workspace + git + parser + vector |
 | Dispute Simulation Workspace | workspace + document parser + local vector |
 | Research agents | `openapi_http`, search/RAG slots (existing), selection metadata |
-| Coding agents | `coding_agent_stack` — git + workspace + code intelligence + security scanner |
+| Coding agents | `coding_agent_stack` - git + workspace + code intelligence + security scanner |
 | Automation agents | `openapi_http`, MCP gateway, enterprise API stack |
 | Enterprise assistant | `enterprise_api_stack`, identity, secrets, observability |
 | Repo architecture audit agents | `local_git`, `sourcegraph`, semgrep (existing) |
@@ -918,4 +918,4 @@ Selection metadata fields (INT-P8.1): `capabilities`, `operations`, `read_write`
 - No Git **push** in first wave
 - No direct agent invocation of MCP tools or OpenAPI write methods without ToolRuntime approval
 
-**Implementation:** deferred to Phase INT-P8 tasks in [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md) — architecture update first; no runtime catalog changes until per-task PRs.
+**Implementation:** deferred to Phase INT-P8 tasks in [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md) - architecture update first; no runtime catalog changes until per-task PRs.

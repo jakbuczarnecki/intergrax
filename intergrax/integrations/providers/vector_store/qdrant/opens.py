@@ -9,11 +9,14 @@ Only this module may import ``qdrant_client`` before constructing the RAG store.
 
 from __future__ import annotations
 
-import os
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.vector_index_administration import VectorIndexAdministration
 from intergrax.integrations.contracts.vector_store import VectorStore
+from intergrax.integrations.providers.vector_store.qdrant.index_administration import (
+    QdrantVectorIndexAdministration,
+)
 from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
 
@@ -33,8 +36,6 @@ def _build_rag_config(config: QdrantIntegrationConfig) -> Any:
     from intergrax.integrations.providers.vector_store.qdrant.rag_store import QdrantConfig
 
     url = config.resolved_url()
-    sparse_raw = os.getenv("INTERGRAX_RAG_QDRANT_SPARSE", "").strip().lower()
-    enable_sparse = sparse_raw in ("1", "true", "yes", "on")
     return QdrantConfig(
         collection_name=config.collection_name,
         tenant_id=config.tenant_id,
@@ -42,7 +43,7 @@ def _build_rag_config(config: QdrantIntegrationConfig) -> Any:
         batch_size=config.batch_size,
         qdrant_url=url,
         qdrant_api_key=config.api_key or None,
-        enable_sparse_vectors=enable_sparse,
+        enable_sparse_vectors=config.enable_sparse_vectors,
     )
 
 
@@ -57,6 +58,21 @@ def _open_rag_store(
     from intergrax.integrations.providers.vector_store.qdrant.rag_store import QdrantVectorStore
 
     return QdrantVectorStore(_build_rag_config(config))
+
+
+def _build_qdrant_client(config: QdrantIntegrationConfig) -> object:
+    QdrantClient = _import_qdrant_client()
+    if config.resolved_url():
+        return QdrantClient(url=config.resolved_url(), api_key=config.api_key or None)
+    return QdrantClient(host=config.host, port=config.port, api_key=config.api_key or None)
+
+
+def open_qdrant_vector_index_administration(
+    config: QdrantIntegrationConfig,
+) -> VectorIndexAdministration:
+    """Public opener for Qdrant vector index administration (control plane)."""
+    client = _build_qdrant_client(config)
+    return QdrantVectorIndexAdministration(_client=client, _config=config)
 
 
 def open_qdrant_vector_store(

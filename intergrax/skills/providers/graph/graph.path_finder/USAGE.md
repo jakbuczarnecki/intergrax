@@ -28,4 +28,4 @@ Governed access to: `graph.run_query`, `graph.get_node`, `memory.read`.
 
 ## Related skills
 
-- Other `graph` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `graph` bundle skills - see bundle [USAGE.md](../USAGE.md)

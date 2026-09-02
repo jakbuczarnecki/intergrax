@@ -1,4 +1,4 @@
-# EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE — production gates (§40+)
+# EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE - production gates (§40+)
 
 **Parent hub:** [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
 
@@ -22,7 +22,7 @@ Architecture health MUST be measured, not inferred.
 |---------|------|
 | `intergrax/scaffold` | `new-agent`, `new-application`, `new-skill` |
 | `intergrax/cli/doctor.py` | Harness health checks |
-| `docs/project/maintainers/bootstrap/idea_audit.txt` | **Mode I** — idea intake procedure (natural language in chat; [`.cursor/rules/intergrax-idea-audit.mdc`](../../.cursor/rules/intergrax-idea-audit.mdc)) |
+| `docs/project/maintainers/bootstrap/idea_audit.txt` | **Mode I** - idea intake procedure (natural language in chat; [`.cursor/rules/intergrax-idea-audit.mdc`](../../.cursor/rules/intergrax-idea-audit.mdc)) |
 | `scripts/ci/test.bat` / `pytest -m gate` | Mandatory merge gates |
 | `guides/AGENT_CREATION_GUIDE.md` | Author workflow |
 
@@ -90,7 +90,7 @@ The README exposes the short operator-facing version of this proof path for deve
 
 # 44. MVP-to-Product Evolution Layer
 
-Every Intergrax product starts as a **prototype or MVP** on the same Harness stack. The platform MUST provide **systematic tools** for iterative design, evaluation, real-life and simulated testing, and evidence-based promotion to production — not ad-hoc scripts per team.
+Every Intergrax product starts as a **prototype or MVP** on the same Harness stack. The platform MUST provide **systematic tools** for iterative design, evaluation, real-life and simulated testing, and evidence-based promotion to production - not ad-hoc scripts per team.
 
 This layer is a **competitive differentiator**: developers ship fast; the Harness supplies feedback, gates, and promotion discipline.
 
@@ -108,23 +108,23 @@ PROTOTYPE → MVP → BETA → PRODUCTION → OPTIMIZE (L4 / AHI)
 | **PRODUCTION** | SLO-backed operation | `STRICT`, critic gates, reliability profiles | SLO window, incident budget, PRR |
 | **OPTIMIZE** | Closed-loop improvement | AHI proposals, bounded policy learning | Eval deltas + human approval |
 
-Promotion between stages is **evidence-driven** — see §44.5 and [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
+Promotion between stages is **evidence-driven** - see §44.5 and [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
 
 ## 44.2 Developer toolchain (as-built + target)
 
 | Tool / surface | Role in MVP evolution | Status |
 |----------------|----------------------|--------|
-| `intergrax/scaffold` (`new-agent`, `new-stack`, `--minimal`) | Zero-to-first-run in minutes | **Done** — DX phase |
+| `intergrax/scaffold` (`new-agent`, `new-stack`, `--minimal`) | Zero-to-first-run in minutes | **Done** - DX phase |
 | `intergrax doctor` | Harness health before iterate | **Done** |
 | `intergrax run` / lab `POST /v1/lab/run` | Fast local and harness validation | **Done** |
 | **Agent Lab** (`lab_application`) | Compose and probe agents without product polish | **Done** |
-| **Evaluation subsystem** (§42) | Offline / online / shadow / human modes | **Done** — EVAL phase |
-| **Shadow workspace** | Compare candidate path without user impact | **Done** — REL Phase F |
-| **Replay environment** | Deterministic re-run from trace store | **Partial** — `intergrax mvp replay` CLI (MVP-EVOL.3); no Tier-3 HTTP router |
-| **Agent simulator** | Multi-agent contention and failure injection | **Partial** — `intergrax mvp simulate` CLI + `test_orchestration_cfg_simulation.py`; not wired to product hosts |
-| **Trace Explorer** | Decision / tool / context visibility | **Partial** — lab debug APIs; UI deferred (GOV-PROD.1 §6.3) |
-| **Promotion gates** | MVP → Beta evidence | **Done** — `scripts/gates/check_mvp_promotion_gates.py` (MVP-EVOL.1) |
-| **Product KPI / satisfaction** | Tenant metrics + CSAT bridge | **Done** — `product_kpi_registry.py`, `user_satisfaction.py` (MVP-EVOL.4–5); export surfaces CLI-only |
+| **Evaluation subsystem** (§42) | Offline / online / shadow / human modes | **Done** - EVAL phase |
+| **Shadow workspace** | Compare candidate path without user impact | **Done** - REL Phase F |
+| **Replay environment** | Deterministic re-run from trace store | **Partial** - `intergrax mvp replay` CLI (MVP-EVOL.3); no Tier-3 HTTP router |
+| **Agent simulator** | Multi-agent contention and failure injection | **Partial** - `intergrax mvp simulate` CLI + `test_orchestration_cfg_simulation.py`; not wired to product hosts |
+| **Trace Explorer** | Decision / tool / context visibility | **Partial** - lab debug APIs; UI deferred (GOV-PROD.1 §6.3) |
+| **Promotion gates** | MVP → Beta evidence | **Done** - `scripts/gates/check_mvp_promotion_gates.py` (MVP-EVOL.1) |
+| **Product KPI / satisfaction** | Tenant metrics + CSAT bridge | **Done** - `product_kpi_registry.py`, `user_satisfaction.py` (MVP-EVOL.4–5); export surfaces CLI-only |
 
 **IDEAL reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §22 (Developer Experience Layer).
 
@@ -134,12 +134,12 @@ Promotion between stages is **evidence-driven** — see §44.5 and [`ADAPTIVE_HA
 |------|------|-----------|
 | **Unit / contract** | Every PR | `pytest -m gate`, agent contract tests |
 | **Golden offline eval** | Pre-merge / nightly | `EvaluationProfile` + `evaluation_assets` |
-| **Shadow production** | MVP → Beta | `online_evaluation_registry` — candidate vs baseline |
+| **Shadow production** | MVP → Beta | `online_evaluation_registry` - candidate vs baseline |
 | **Simulation** | Before real users | Harness CFG matrix, orchestration sim tests, future agent simulator |
 | **Real-life pilot** | Beta | Sampled online eval + observability SLOs |
 | **Human rubric** | Regulated / subjective quality | CVL + HITL scoring |
 
-Raw text outputs are insufficient — structured results feed evaluators (§39.5, §42).
+Raw text outputs are insufficient - structured results feed evaluators (§39.5, §42).
 
 ## 44.4 KPI, metrics, and user satisfaction
 
@@ -158,24 +158,24 @@ Run → trace + eval score → trend registry → promotion gate / AHI proposal
 User feedback → online eval registry → dashboard + optional HITL review
 ```
 
-**Rule:** satisfaction and product KPIs are **not** inferred silently — explicit capture adapters or UI events with tenant scope.
+**Rule:** satisfaction and product KPIs are **not** inferred silently - explicit capture adapters or UI events with tenant scope.
 
 ## 44.5 Promotion gates (prototype → product)
 
 | Gate | Checks |
 |------|--------|
-| **G0 — Runnable** | Scaffold smoke, `doctor` clean, one Nexus path green |
-| **G1 — Eval baseline** | Offline golden set registered; score recorded |
-| **G2 — Policy** | `ReliabilityProfile` + autonomy ceiling documented |
-| **G3 — Multi-agent** | If N>1: `graph_spec` + merge + CFG proof |
-| **G4 — Ops** | SLO catalog, runbook stub, checkpoint/resume if long-running |
-| **G5 — Production PRR** | Phase V evidence, compatibility graph, owner sign-off |
+| **G0 - Runnable** | Scaffold smoke, `doctor` clean, one Nexus path green |
+| **G1 - Eval baseline** | Offline golden set registered; score recorded |
+| **G2 - Policy** | `ReliabilityProfile` + autonomy ceiling documented |
+| **G3 - Multi-agent** | If N>1: `graph_spec` + merge + CFG proof |
+| **G4 - Ops** | SLO catalog, runbook stub, checkpoint/resume if long-running |
+| **G5 - Production PRR** | Phase V evidence, compatibility graph, owner sign-off |
 
 Gates G0–G2 are **platform-enforced** via CI scripts; G3–G5 are product checklists in Tier-3 `ARCHITECTURE.md`.
 
 ## 44.6 Feedback into platform improvement
 
-MVP iteration MUST feed the Harness — not only the product:
+MVP iteration MUST feed the Harness - not only the product:
 
 | Feedback source | Consumer |
 |-----------------|----------|

@@ -15,7 +15,7 @@ Large catalogs benefit from category-aware narrowing before LLM schema export. C
 
 1. Add `ToolSelectionMode.HIERARCHICAL` and `HierarchicalToolSelectionStrategy`.
 2. **v1 algorithm (deterministic):** `rank_categories()` by query overlap on category + tool metadata → bounded category pass budget (`tool_selection_max_hierarchy_passes`) → keyword rank tools within selected branches → top-k allow-list.
-3. Defer **LLM category schema pass** (extra planner round-trip per branch) to a follow-up row — v1 closes category→tool narrowing without new prompts.
+3. Defer **LLM category schema pass** (extra planner round-trip per branch) to a follow-up row - v1 closes category→tool narrowing without new prompts.
 4. Add `RuntimeConfig.tool_selection_strategy` instance override (surface A) and `tool_selection_strategy_id` entry-point lookup via `intergrax.tool_selection_strategies` (surface B).
 5. Emit `ToolSelectionDiagV1` (`ops:tool_selection`) on every ToolsStep selection resolve (TOOL-ENG-32).
 
@@ -31,7 +31,7 @@ Large catalogs benefit from category-aware narrowing before LLM schema export. C
 
 ### Negative
 
-- v1 is keyword-based category rank — not LLM category pick; operators must read ADR before expecting extra LLM passes.
+- v1 is keyword-based category rank - not LLM category pick; operators must read ADR before expecting extra LLM passes.
 - Entry-point group empty until host packages register strategies.
 
 ## Compliance

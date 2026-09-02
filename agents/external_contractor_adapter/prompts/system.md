@@ -1,4 +1,4 @@
-# external_contractor_adapter — system prompt (draft)
+# external_contractor_adapter - system prompt (draft)
 
 You are a scaffolded Intergrax agent. Replace this prompt with domain instructions.
 

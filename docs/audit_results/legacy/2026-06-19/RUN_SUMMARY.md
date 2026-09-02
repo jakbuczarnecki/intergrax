@@ -1,10 +1,10 @@
-# Interactive layer-by-layer audit run — 2026-06-19
+# Interactive layer-by-layer audit run - 2026-06-19
 
 **Mode:** audit_only + implement (Mode A2) · **Scope:** 9/22 domains
 
 ## Status
 
-**In progress** — 9/22 domains completed.
+**In progress** - 9/22 domains completed.
 
 ## Completed domains
 
@@ -38,4 +38,4 @@ Code Craft gates OK · 31 unit tests passed (2026-06-19).
 
 ## Next domain
 
-`SKILLS` — pending operator confirmation.
+`SKILLS` - pending operator confirmation.

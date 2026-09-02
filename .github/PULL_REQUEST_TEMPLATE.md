@@ -18,7 +18,7 @@ Before submitting substantial work, read [docs/project/community/COLLABORATION.m
 
 ## Documentation updated
 
-<!-- One source of truth per topic — list files updated in docs/ -->
+<!-- One source of truth per topic - list files updated in docs/ -->
 
 - [ ] No documentation changes needed
 - [ ] docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
@@ -58,7 +58,7 @@ uv run pytest -m gate -q
 
 ## Checklist
 
-- [ ] Minimal scope — no unrelated changes
+- [ ] Minimal scope - no unrelated changes
 - [ ] No secrets committed
 - [ ] Copyright header on new files
 - [ ] Follows [CONTRIBUTING.md](../CONTRIBUTING.md) work cycle

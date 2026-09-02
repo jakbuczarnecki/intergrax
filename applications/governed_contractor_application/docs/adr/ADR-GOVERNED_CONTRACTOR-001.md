@@ -1,4 +1,4 @@
-# ADR-GOVERNED_CONTRACTOR-001: GEC vertical — product host + external adapter split
+# ADR-GOVERNED_CONTRACTOR-001: GEC vertical - product host + external adapter split
 
 | Field | Value |
 |-------|-------|
@@ -43,7 +43,7 @@ Rejected:
 ## Compliance
 
 - Tier boundaries preserved
-- Source-available / collaboration wording retained — no open-source or production-ready claims
+- Source-available / collaboration wording retained - no open-source or production-ready claims
 - No GEC-1 domain runtime introduced in this ADR’s closeout
 
 ## Implementation notes

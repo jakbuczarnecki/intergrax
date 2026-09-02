@@ -2,14 +2,14 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-# Local Knowledge Workspace (LKW) — User Journey
+# Local Knowledge Workspace (LKW) - User Journey
 
 **Status:** target onboarding narrative for the final LKW experience  
 **Scope:** from GitHub discovery to first useful local workspace run  
-**Primary daily-use interface (LKW 1.0):** **Slack** — conversational UX for
+**Primary daily-use interface (LKW 1.0):** **Slack** - conversational UX for
 workspace selection, Ask, citations, source state, sync, and recovery.
 **Installation / evaluation paths:** quickstart scripts, curl/API proof, Docker
-bootstrap — prove infrastructure and backend capability; they are **not** the
+bootstrap - prove infrastructure and backend capability; they are **not** the
 primary daily-use client.
 **Related:** [`../../README.md`](../../README.md) · [`../ARCHITECTURE.md`](../ARCHITECTURE.md) · [`../KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) · [`../KNOWLEDGE_INTAKE_DISCOVERY.md`](../KNOWLEDGE_INTAKE_DISCOVERY.md) · [`../PLATFORM_PROOF_LOOP.md`](../PLATFORM_PROOF_LOOP.md)
 
@@ -19,8 +19,8 @@ primary daily-use client.
 
 | Path | Role | LKW 1.0 status |
 |------|------|----------------|
-| **Slack conversational UX** | Primary/reference daily-use product experience | **Frozen contract** — PRODUCT-3D (first-run) and PRODUCT-4 (daily-use) |
-| **Quickstart / GitHub scripts** | Installation and zero-to-value proof | **PRODUCT-2 CLOSED** — proves install infrastructure; not the primary client |
+| **Slack conversational UX** | Primary/reference daily-use product experience | **Frozen contract** - PRODUCT-3D (first-run) and PRODUCT-4 (daily-use) |
+| **Quickstart / GitHub scripts** | Installation and zero-to-value proof | **PRODUCT-2 CLOSED** - proves install infrastructure; not the primary client |
 | **curl / HTTP API proof** | Technical/API evaluation and advanced developer path | Valid; not primary daily-use UX |
 | **Docker bootstrap** | Installation/evaluation | Valid; not primary daily-use UX |
 | **Future web / mobile / Teams / CLI** | Interchangeable thin clients over same API boundaries | Not primary LKW 1.0 UX |
@@ -28,8 +28,8 @@ primary daily-use client.
 
 Accepted reusable backend capabilities consumed by Slack and future clients:
 
-- **PRODUCT-3B CLOSED** — knowledge inventory and operations HTTP projection.
-- **PRODUCT-3C CLOSED** — setup snapshot and derivation-only orchestration
+- **PRODUCT-3B CLOSED** - knowledge inventory and operations HTTP projection.
+- **PRODUCT-3C CLOSED** - setup snapshot and derivation-only orchestration
   contract (`GET …/setup-snapshot`).
 
 ---
@@ -76,7 +76,7 @@ User sources (e.g. connected local folder)
   -> answer, draft, and trace/evidence
 ```
 
-Target input modes (product direction — not all implemented yet):
+Target input modes (product direction - not all implemented yet):
 
 | User action | Target semantic |
 |-------------|-----------------|
@@ -97,12 +97,12 @@ Uploaded folder snapshot ≠ connected local folder. Slack and other remote chat
 | Create workspace | **IMPLEMENTED** |
 | Upload files | **IMPLEMENTED** (HTTP; Slack attachments via adapter) |
 | Add Web URL | **ACCEPTED** (`1B-5-2`, including C1 and C2) |
-| Configure Connections (MS365, Google Workspace, Jira, …) | **PLANNED** (`LKW-KNOWLEDGE-ACCESS-1`; Google — `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` **PLANNED**) |
-| Attach Slack conversation as indexed source | **IMPLEMENTED** (`LKW-SLACK-CONNECTED-SOURCE-1` — HTTP discovery/create/sync, PERSONAL_ONLY) |
-| Attach Google Workspace resources as indexed source | **PLANNED** (`LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` — reuses generic Connected Source; first proof `LKW-GOOGLE-WORKSPACE-PROOF-1`) |
+| Configure Connections (MS365, Google Workspace, Jira, …) | **PLANNED** (`LKW-KNOWLEDGE-ACCESS-1`; Google - `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` **PLANNED**) |
+| Attach Slack conversation as indexed source | **IMPLEMENTED** (`LKW-SLACK-CONNECTED-SOURCE-1` - HTTP discovery/create/sync, PERSONAL_ONLY) |
+| Attach Google Workspace resources as indexed source | **PLANNED** (`LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` - reuses generic Connected Source; first proof `LKW-GOOGLE-WORKSPACE-PROOF-1`) |
 | Choose indexed vs live access per resource | **PLANNED** |
-| Ask through Slack with Hybrid Ask | **PARTIAL** — indexed Ask **IMPLEMENTED**; live/hybrid **PLANNED** |
-| Inspect citations and live freshness | **PARTIAL** — indexed citations **IMPLEMENTED**; live freshness **PLANNED** |
+| Ask through Slack with Hybrid Ask | **PARTIAL** - indexed Ask **IMPLEMENTED**; live/hybrid **PLANNED** |
+| Inspect citations and live freshness | **PARTIAL** - indexed citations **IMPLEMENTED**; live freshness **PLANNED** |
 | Switch model runtime and repeat | **PLANNED** |
 
 Full journey reference: [`../../KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md).
@@ -116,13 +116,13 @@ daily-use product experience for LKW 1.0.**
 
 | User type | Goal | Entry path |
 |-----------|------|------------|
-| **Daily LKW user** | Ask grounded questions, inspect sources, manage knowledge daily | **Slack** — conversational UX (PRODUCT-3D first-run → PRODUCT-4 daily-use) |
+| **Daily LKW user** | Ask grounded questions, inspect sources, manage knowledge daily | **Slack** - conversational UX (PRODUCT-3D first-run → PRODUCT-4 daily-use) |
 | Product evaluator | Verify install and indexed Ask proof without Slack | README → [Try LKW](../../README.md#try-lkw) → managed sample upload → indexed Ask → grounded answer and citation → persisted Ask-run verification |
 | Platform evaluator | See that Intergrax can produce repeatable agent applications | README -> LKW platform proof loop -> scaffold/build/deploy docs |
 | Developer contributor | Extend or improve LKW / Intergrax | architecture -> implementation plan -> one wave -> tests -> platform propagation |
 
 The supported product quickstart ([QUICKSTART.md](QUICKSTART.md)) is
-**implemented and PRODUCT-2 CLOSED** — one OS command, managed sample upload,
+**implemented and PRODUCT-2 CLOSED** - one OS command, managed sample upload,
 indexed Ask, citation, and persisted Ask-run verification. It proves
 installation/zero-to-value infrastructure; it does **not** redefine the primary
 daily-use client.
@@ -155,20 +155,20 @@ intended flow is:
 
 ---
 
-## 4. Step-by-step local run (developer / API evaluation — not primary daily-use UX)
+## 4. Step-by-step local run (developer / API evaluation - not primary daily-use UX)
 
 The following documents a **technical evaluation and advanced developer path**
 via HTTP/curl. It is **not** the primary LKW 1.0 daily-use experience. Daily
 use is Slack-first (§0, §2).
 
-### Step 1 — Clone the repository
+### Step 1 - Clone the repository
 
 ```bash
 git clone <repo-url>
 cd intergrax
 ```
 
-### Step 2 — Install dependencies
+### Step 2 - Install dependencies
 
 Final target:
 
@@ -184,7 +184,7 @@ uv sync
 
 The final product should not require every heavy experimental dependency for the first LKW run. If the current dependency model still requires a full install, that is a platform packaging gap to close through `../../../../applications/local_workspace_application/pyproject.toml` and optional dependency groups.
 
-### Step 3 — Open the LKW application folder
+### Step 3 - Open the LKW application folder
 
 ```bash
 cd applications/local_workspace_application
@@ -201,7 +201,7 @@ host/
 serving/
 ```
 
-### Step 4 — Create local environment config
+### Step 4 - Create local environment config
 
 ```bash
 cp .env.example .env
@@ -226,9 +226,9 @@ Final product rule:
 - prod mode must fail closed when required security/policy/auth settings are missing;
 - `../../../../applications/local_workspace_application/.env.example` must match `../../../../applications/local_workspace_application/host/settings.py` and generated application scaffold behavior.
 
-### Step 5 — Choose data access
+### Step 5 - Choose data access
 
-#### Target path — channel-neutral Knowledge Intake (PLANNED / FROZEN CONTRACT)
+#### Target path - channel-neutral Knowledge Intake (PLANNED / FROZEN CONTRACT)
 
 Replaceable clients (Slack, web, mobile, desktop, MCP, HTTP) submit a Knowledge Input to the public LKW Knowledge Intake capability. LKW accepts a durable Ingestion Operation, processes asynchronously, and notifies through a channel-neutral lifecycle event. See [`../KNOWLEDGE_INTAKE_DISCOVERY.md`](../KNOWLEDGE_INTAKE_DISCOVERY.md).
 
@@ -243,7 +243,7 @@ submit input
 → Ask with grounded results
 ```
 
-#### CURRENT LOW-LEVEL / DEVELOPER FLOW — NOT THE TARGET CHANNEL-NEUTRAL KNOWLEDGE INTAKE CONTRACT
+#### CURRENT LOW-LEVEL / DEVELOPER FLOW - NOT THE TARGET CHANNEL-NEUTRAL KNOWLEDGE INTAKE CONTRACT
 
 The following remain valid **current development** mechanisms. They are **not** the target contract for Slack, mobile, web or other interchangeable product clients.
 
@@ -263,7 +263,7 @@ INTERGRAX_ALLOWED_READ_ROOTS=/path/to/docs,/path/to/projects
 
 LKW may read from those folders. It must not write into them. Remote chat adapters do not accept typed filesystem paths as product commands.
 
-### Step 6 — Start the local backend
+### Step 6 - Start the local backend
 
 From repository root:
 
@@ -290,7 +290,7 @@ LKW backend
 
 Thin clients must not contain RAG, LLM, or agent-loop logic.
 
-### Step 7 — Verify the host
+### Step 7 - Verify the host
 
 ```bash
 curl -s http://127.0.0.1:8020/health
@@ -303,7 +303,7 @@ Expected result:
 - `/agents` shows the local agent roster;
 - the user can see at least `../../../../agents/local_indexer`, `../../../../agents/local_search`, and `../../../../agents/local_synthesizer` or their declared capabilities.
 
-### Step 8 — Index a document
+### Step 8 - Index a document
 
 Target request:
 
@@ -335,7 +335,7 @@ Request
 
 The user should not need to understand internal RAG wiring to use this.
 
-### Step 9 — Search indexed content
+### Step 9 - Search indexed content
 
 ```bash
 curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
@@ -363,7 +363,7 @@ Request
 
 The answer should explain what was found and where it came from.
 
-### Step 10 — Generate a draft into the shadow workspace
+### Step 10 - Generate a draft into the shadow workspace
 
 ```bash
 curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
@@ -393,7 +393,7 @@ Request
 
 LKW must not modify original user files.
 
-### Step 11 — Inspect what happened
+### Step 11 - Inspect what happened
 
 The user should be able to inspect a run without reading internal code.
 
@@ -419,7 +419,7 @@ uv run intergrax trace export <run-id>
 
 or an equivalent LKW debug endpoint / UI surface.
 
-### Step 12 — Continue through MCP or another thin client
+### Step 12 - Continue through MCP or another thin client
 
 Once HTTP works, the same backend can be controlled through MCP:
 
@@ -481,7 +481,7 @@ If Docker requires special dependency workarounds, copied files, or modified uv 
 
 ---
 
-## 6. Final packaged local daemon path (future — not primary LKW 1.0 UX)
+## 6. Final packaged local daemon path (future - not primary LKW 1.0 UX)
 
 For a future end-user oriented release, a packaged daemon path may include tray
 or web surfaces. **LKW 1.0 does not require a web frontend** for daily use;

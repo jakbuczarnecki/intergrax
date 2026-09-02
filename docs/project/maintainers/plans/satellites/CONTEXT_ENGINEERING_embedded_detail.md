@@ -1,4 +1,4 @@
-# CONTEXT_ENGINEERING — embedded detail
+# CONTEXT_ENGINEERING - embedded detail
 
 **Parent hub:** [`CONTEXT_ENGINEERING.md`](../CONTEXT_ENGINEERING.md)
 

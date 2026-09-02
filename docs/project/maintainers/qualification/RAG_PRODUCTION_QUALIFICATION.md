@@ -1,4 +1,4 @@
-# RAG-PROD-13 — Production Qualification Record
+# RAG-PROD-13 - Production Qualification Record
 
 **Qualification date:** 2026-08-10<br>
 **Status:** `READY_FOR_REVIEW`<br>
@@ -191,7 +191,7 @@ store. No live Neo4j qualification was claimed.
 - An external entry-point chunker executed through the canonical splitter /
   ingest path.
 - Native core LangChain claim:
-  `QUALIFIED_OFFLINE_CONTRACT` — the canonical native RAG ABI/path does not
+  `QUALIFIED_OFFLINE_CONTRACT` - the canonical native RAG ABI/path does not
   require LangChain.
 - Optional LangChain compatibility/provider paths remain allowed.
 - No claim was made that the repository contains zero LangChain imports.

@@ -15,10 +15,11 @@ class ProductIdentifierType(StrEnum):
     PRODUCT_ID = "product_id"
 
 
-def _require_non_empty_str(value: str, *, field_name: str) -> str:
+def _require_non_empty_str(value: str, *, field_name: str) -> None:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
-    return value.strip()
+    if value != value.strip():
+        raise ValueError(f"{field_name} must not have leading or trailing whitespace")
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,9 +29,7 @@ class ProductOfferId:
     value: str
 
     def __post_init__(self) -> None:
-        normalized = _require_non_empty_str(self.value, field_name="ProductOfferId.value")
-        if normalized != self.value:
-            object.__setattr__(self, "value", normalized)
+        _require_non_empty_str(self.value, field_name="ProductOfferId.value")
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,14 +41,9 @@ class ProductIdentifier:
     source_field: str | None = None
 
     def __post_init__(self) -> None:
-        normalized = _require_non_empty_str(self.value, field_name="ProductIdentifier.value")
-        if normalized != self.value:
-            object.__setattr__(self, "value", normalized)
-        source_field = self.source_field
-        if source_field is not None:
-            normalized_source = _require_non_empty_str(
-                source_field,
+        _require_non_empty_str(self.value, field_name="ProductIdentifier.value")
+        if self.source_field is not None:
+            _require_non_empty_str(
+                self.source_field,
                 field_name="ProductIdentifier.source_field",
             )
-            if normalized_source != source_field:
-                object.__setattr__(self, "source_field", normalized_source)

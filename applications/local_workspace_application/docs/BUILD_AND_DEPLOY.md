@@ -1,4 +1,4 @@
-# Build & deploy — Local Workspace
+# Build & deploy - Local Workspace
 
 Tier-3 application package: `applications/local_workspace_application`. This document is the operational runbook for local development, verification, and container deployment.
 
@@ -56,10 +56,10 @@ local_workspace_application.host.main:app
 The host reads `LOCAL_WORKSPACE_*` settings plus the platform `INTERGRAX_*`
 settings. In production (`INTERGRAX_ENV=prod`), configure all of the following:
 
-- `LOCAL_WORKSPACE_DATA_HOME` — explicit operator-owned data root;
-- `INTERGRAX_MONGODB_URI` — durable workspace configuration, lifecycle,
+- `LOCAL_WORKSPACE_DATA_HOME` - explicit operator-owned data root;
+- `INTERGRAX_MONGODB_URI` - durable workspace configuration, lifecycle,
   publication, operation and recovery state;
-- `LOCAL_WORKSPACE_VECTOR_STORE=qdrant` and `INTERGRAX_QDRANT_URL` — indexed
+- `LOCAL_WORKSPACE_VECTOR_STORE=qdrant` and `INTERGRAX_QDRANT_URL` - indexed
   content backend;
 - the production API-key settings already required by the host.
 
@@ -100,8 +100,8 @@ LKW receives a provider-neutral `LLMAdapter` through application wiring. The LKW
 
 | Profile | Existing configuration | Status |
 |---------|------------------------|--------|
-| **Ollama** (default) | `INTERGRAX_LLM_PROVIDER=ollama`, `INTERGRAX_LLM_MODEL` | **IMPLEMENTED** — default local stack |
-| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_VLLM_BASE_URL` | **BOUNDED PROOF** — Ollama/vLLM model runtime portability (`LKW-MODEL-RUNTIME`); see [`PROOFS.md`](../../../docs/project/proofs/PROOFS.md) |
+| **Ollama** (default) | `INTERGRAX_LLM_PROVIDER=ollama`, `INTERGRAX_LLM_MODEL` | **IMPLEMENTED** - default local stack |
+| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_VLLM_BASE_URL` | **BOUNDED PROOF** - Ollama/vLLM model runtime portability (`LKW-MODEL-RUNTIME`); see [`PROOFS.md`](../../../docs/project/proofs/PROOFS.md) |
 
 **Embedding provider is separate** from the conversation/reasoning LLM. Switching `INTERGRAX_LLM_PROVIDER` must not silently change embedding model, vector dimensions or indexed collections. Reindexing is not required merely because the chat model changes.
 
@@ -284,7 +284,7 @@ docker compose -f docker-compose.yml -f docker-compose.<overlay>.yml ... up --bu
 
 ### Run with Elasticsearch/OpenSearch-compatible observability backend
 
-Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof. This is the stack used by the public platform proof — step-by-step evaluation: [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md).
+Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof. This is the stack used by the public platform proof - step-by-step evaluation: [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md).
 
 ```bash
 docker compose \
@@ -396,18 +396,18 @@ elasticsearch  → Elasticsearch/OpenSearch-compatible HTTP index API
 |----------|---------|-------------|
 | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED` | `false` | Enable observability export (disabled by default for manual/non-compose runs) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND` | `otlp` | Export backend: `otlp` or `elasticsearch` |
-| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT` | — | Required for `backend_id=otlp`; e.g. `http://otel-collector:4318/v1/logs` |
-| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL` | — | Required for `backend_id=elasticsearch`; e.g. `http://elasticsearch:9200` in compose |
+| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT` | - | Required for `backend_id=otlp`; e.g. `http://otel-collector:4318/v1/logs` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL` | - | Required for `backend_id=elasticsearch`; e.g. `http://elasticsearch:9200` in compose |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX` | `intergrax-lkw-observability` | Elasticsearch/OpenSearch index for policy-safe documents |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_TIMEOUT_SECONDS` | `30` | Elasticsearch HTTP transport timeout |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_ENABLED` | `true` | Enable bounded retry for retriable Elasticsearch delivery failures |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS` | `3` | Total delivery attempts including the first one (`1` = no retry) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS` | `0.25` | Initial sleep before the second attempt |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS` | `2.0` | Maximum sleep between attempts |
-| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` | — | Optional JSONL file for safe Elasticsearch failed-delivery diagnostics; leave empty to disable. Point to a controlled runtime/app data directory (for example under `applications/local_workspace_application/.observability`) |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` | - | Optional JSONL file for safe Elasticsearch failed-delivery diagnostics; leave empty to disable. Point to a controlled runtime/app data directory (for example under `applications/local_workspace_application/.observability`) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
-| `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
-| `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | - | OTLP resource `service.version` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | - | OTLP resource `deployment.environment` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT` | `false` | Forced to `false` by policy; raw content is never exported |
 | `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_TIMEOUT_SECONDS` | `30` | OTLP HTTP transport timeout |
 
@@ -545,7 +545,7 @@ To verify no duplicate export for the same runtime event, group persisted record
 - Export is **disabled by default** in `.env.example`; no remote observability export occurs without explicit configuration.
 - OTLP endpoint is **required** when `backend_id=otlp` and export is enabled.
 - Elasticsearch URL and index are **required** when `backend_id=elasticsearch` and export is enabled.
-- `export_content=false` — raw documents, chunks, prompts, tool args, secrets, and full local paths are not exported by default.
+- `export_content=false` - raw documents, chunks, prompts, tool args, secrets, and full local paths are not exported by default.
 - Export failure must not fail product runs.
 - Elasticsearch/OpenSearch export failures are classified inside the provider transport with safe diagnostics (`operation`, `index`, `status_code`, `reason`, `retriable`) and must not include raw exported document content, prompts, secrets, or full local paths in error messages.
 - No Grafana, Loki, Langfuse, Arize, Phoenix, Jaeger, Tempo, or vendor SDK is included.

@@ -1,6 +1,6 @@
 ﻿# LegalAgent
 
-Contract review capability — distinct from **DSW** dispute lifecycle agents.
+Contract review capability - distinct from **DSW** dispute lifecycle agents.
 
 **Host:** [`applications/legal_application/`](../../applications/legal_application/) · **Roster:** [`agents/README.md`](../README.md)  
 Architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) · Guide: [`../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
@@ -29,10 +29,10 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
 ## Layout
 
-- ``legal_agent.py`` — Agent class (UAEP)
-- ``contract.py`` / ``capabilities.py`` — AgentContract
-- ``steps/`` — domain execution
-- ``prompts/`` — prompt assets
-- ``schemas/`` — I/O models
-- ``tests/`` — agent smoke tests
-- ``notebooks/`` — interactive experiments
+- ``legal_agent.py`` - Agent class (UAEP)
+- ``contract.py`` / ``capabilities.py`` - AgentContract
+- ``steps/`` - domain execution
+- ``prompts/`` - prompt assets
+- ``schemas/`` - I/O models
+- ``tests/`` - agent smoke tests
+- ``notebooks/`` - interactive experiments

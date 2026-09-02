@@ -1,4 +1,4 @@
-# Harness Evidence Pack — Implementation Plan
+# Harness Evidence Pack - Implementation Plan
 
 **Phase:** HEP (Harness Evidence Pack)  
 **Band:** 2ae  
@@ -6,23 +6,23 @@
 **Architecture (DX owns smoke/e2e evidence):** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
-> **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
+> **Placement:** §6.1 harness infrastructure extension - **not** §6.3 product work.  
+> **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` - L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations - **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5); **EVID-COST** Cost Evidence **Done** (C1–C5 Done; EVID-COST-01…05 Done); **A2** End-to-end evidence smoke audit **Done**.
+**Last updated:** 2026-06-21 - HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5); **EVID-COST** Cost Evidence **Done** (C1–C5 Done; EVID-COST-01…05 Done); **A2** End-to-end evidence smoke audit **Done**.
 
 ---
 
 ## Cursor read scope (token budget)
 
 - **Implement HEP-1 (closed):** § Mode I summary · § Certification semantics · § CORE levels · **EVID-CORE-*** rows.
-- **Implement HEP-2 Trace:** § Mode I — HEP-2 · § Trace semantics · open **EVID-TRACE-*** rows only.
+- **Implement HEP-2 Trace:** § Mode I - HEP-2 · § Trace semantics · open **EVID-TRACE-*** rows only.
 - **HEP-3 Posture (closed):** § HEP-3 closeout · § HEP-3 operator path · **EVID-POSTURE-*** rows.
 - **EVID-CORE-FU-01 (closed):** § EVID-CORE-FU-01 closeout · **EVID-CORE-FU-01A…E** rows.
-- **EVID-EVAL (closed):** § Mode I — EVID-EVAL · § EVID-EVAL closeout · **EVID-EVAL-01…05** rows · § Future waves.
-- **EVID-COST (Done):** § Mode I — EVID-COST · **EVID-COST-01…05 Done** · § EVID-COST closeout · § Evidence ROI roadmap · § Future waves.
+- **EVID-EVAL (closed):** § Mode I - EVID-EVAL · § EVID-EVAL closeout · **EVID-EVAL-01…05** rows · § Future waves.
+- **EVID-COST (Done):** § Mode I - EVID-COST · **EVID-COST-01…05 Done** · § EVID-COST closeout · § Evidence ROI roadmap · § Future waves.
 - **Skip** HEP-4+ unless implementing those waves.
-- **Architecture:** DX read-scope block only — smoke/e2e evidence owns list.
+- **Architecture:** DX read-scope block only - smoke/e2e evidence owns list.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
 
 ---
@@ -37,7 +37,7 @@
 | **Tier** | Tier-0 (`intergrax/cli`, `intergrax/runtime/evidence`) |
 | **Domains** | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` (primary) · `PLATFORM_FOUNDATION` (hub) |
 
-**Reason:** Mechanisms exist across IDEAL-* gates, doctor, trace, policy, eval, cost, W-OPS, and W-ADAPT — but no single **productized runtime certification path** (`intergrax certify core`). Value = packaging + executable proof + onboarding clarity.
+**Reason:** Mechanisms exist across IDEAL-* gates, doctor, trace, policy, eval, cost, W-OPS, and W-ADAPT - but no single **productized runtime certification path** (`intergrax certify core`). Value = packaging + executable proof + onboarding clarity.
 
 **ADR:** No ADR needed for HEP-0 + HEP-1 (packaging existing contracts; no Nexus/UAEP/HarnessKernel semantic change).
 
@@ -48,10 +48,10 @@
 Intergrax is **architecture-heavy** (32/32 L3 scorecard, extensive CI gates) but **evidence-heavy adoption** is fragmented:
 
 - Repo health (`pytest -m gate`, `intergrax doctor --ci`) ≠ live harness runtime proof.
-- W-ADAPT L4 evidence measures adaptive utility improvement — not core E2E certification.
-- Agent certification (`agent_certification.py`) is per-agent — not harness core.
+- W-ADAPT L4 evidence measures adaptive utility improvement - not core E2E certification.
+- Agent certification (`agent_certification.py`) is per-agent - not harness core.
 
-**Goal:** One operator path — `intergrax certify core` — with JSON/Markdown report under `build/evidence/core_certification`.
+**Goal:** One operator path - `intergrax certify core` - with JSON/Markdown report under `build/evidence/core_certification`.
 
 ---
 
@@ -66,7 +66,7 @@ Intergrax is **architecture-heavy** (32/32 L3 scorecard, extensive CI gates) but
 | `check_mvp_promotion_gates.py` G0–G2 | MVP runnable baseline exists? | File existence checks | G0–G2 OK |
 | **`intergrax certify core`** | Does the CORE evidence contract path execute end-to-end? | Deterministic mock evidence, no network/real LLM; not live HarnessKernel/Nexus/provider E2E | CORE-L* + JSON/Markdown certification report |
 
-**CI placement (operator decision):** `certify core` is **operator-local** at HEP-1 launch. **Not** a default PR gate. Optional later: CORE-L1 as nightly or release preflight — not in scope for HEP-1.
+**CI placement (operator decision):** `certify core` is **operator-local** at HEP-1 launch. **Not** a default PR gate. Optional later: CORE-L1 as nightly or release preflight - not in scope for HEP-1.
 
 ---
 
@@ -104,11 +104,11 @@ build/evidence/posture/
 ## Non-goals
 
 - **Not** §6.3 product work (K.1, K.2, LKW, Legal, new Tier-3 apps).
-- **Not** W-ADAPT L4 replacement — keep `check_l4_runtime_evidence.py` separate semantics.
-- **Not** duplicate doctor — do not add certify scenarios as new `check_*.py` entries in `doctor.py`.
-- **Not** per-agent or business agent certification — see `agent_certification.py`, `business_agent_certification.py`.
-- **Not** full Trace Explorer, Policy DSL, Extension SDK — deferred HEP-2+ (see § Future waves).
-- **Not** new Tier-0 parallel subsystems — reuse event spine, reference harness, golden scenario IDs.
+- **Not** W-ADAPT L4 replacement - keep `check_l4_runtime_evidence.py` separate semantics.
+- **Not** duplicate doctor - do not add certify scenarios as new `check_*.py` entries in `doctor.py`.
+- **Not** per-agent or business agent certification - see `agent_certification.py`, `business_agent_certification.py`.
+- **Not** full Trace Explorer, Policy DSL, Extension SDK - deferred HEP-2+ (see § Future waves).
+- **Not** new Tier-0 parallel subsystems - reuse event spine, reference harness, golden scenario IDs.
 
 ---
 
@@ -133,13 +133,13 @@ Condensed matrix from external infrastructure audit → existing evidence → ga
 
 ---
 
-## Implementation register — Wave HEP-0 + HEP-1
+## Implementation register - Wave HEP-0 + HEP-1
 
 | ID | Wave | Priority | Status | Deliverable | Acceptance criteria |
 |----|------|----------|--------|-------------|---------------------|
 | **EVID-CORE-01** | HEP-0 | P1 | **Done** | External audit → evidence matrix in plan | § External audit mapping (2026-06-21) |
-| **EVID-CORE-02** | HEP-0 | P1 | **Done** (doc) | Certification spec: CI gate vs certify-core vs W-ADAPT L4 | § Certification semantics + § CORE levels delivered in docs; **code enums** (`CoreCertificationLevel`, etc.) ship with EVID-CORE-03 in C1 — not a separate reopen of this row |
-| **EVID-CORE-03** | HEP-0 | P1 | **Done** | Runtime scenario contracts (12 scenarios) | `intergrax/runtime/evidence` — Pydantic contracts; deterministic; no network; `validate_core_scenario_catalog()` |
+| **EVID-CORE-02** | HEP-0 | P1 | **Done** (doc) | Certification spec: CI gate vs certify-core vs W-ADAPT L4 | § Certification semantics + § CORE levels delivered in docs; **code enums** (`CoreCertificationLevel`, etc.) ship with EVID-CORE-03 in C1 - not a separate reopen of this row |
+| **EVID-CORE-03** | HEP-0 | P1 | **Done** | Runtime scenario contracts (12 scenarios) | `intergrax/runtime/evidence` - Pydantic contracts; deterministic; no network; `validate_core_scenario_catalog()` |
 | **EVID-CORE-04** | HEP-1 | P0 | **Done** | `intergrax certify core` CLI | `intergrax/cli/certify.py`; `--level L1/|L2/|L3`; exit non-zero on failure |
 | **EVID-CORE-05** | HEP-1 | P1 | **Done** | JSON + Markdown certification report | `build/evidence/core_certification/report.json` + `report.md` |
 | **EVID-CORE-06** | HEP-1 | P2 | **Done** | README / HARNESS_ENVIRONMENT evidence path | Quick start + HARNESS_ENVIRONMENT § Core certification; mock vs live narrative |
@@ -150,9 +150,9 @@ Condensed matrix from external infrastructure audit → existing evidence → ga
 
 | Scenario ID | CORE min level | Reuse path |
 |-------------|----------------|------------|
-| `basic_run_completed` | L1 | `EchoAgent` + `AgentEngine` — `tests/integration/agents/test_agent_engine_uaep_echo.py` |
-| `trace_persisted` | L1 | `SQLiteRunTraceStore` readback — IDEAL-27.1 trace store |
-| `tool_denied_by_policy` | L1 | Policy deny — IDEAL-5.5 adversarial fixtures; `test_kernel_policy_pre_deny` |
+| `basic_run_completed` | L1 | `EchoAgent` + `AgentEngine` - `tests/integration/agents/test_agent_engine_uaep_echo.py` |
+| `trace_persisted` | L1 | `SQLiteRunTraceStore` readback - IDEAL-27.1 trace store |
+| `tool_denied_by_policy` | L1 | Policy deny - IDEAL-5.5 adversarial fixtures; `test_kernel_policy_pre_deny` |
 | `certification_report_emitted` | L1 | EVID-CORE-05 report models (new) |
 | `high_risk_tool_hitl` | L2 | IDEAL-11.3 HITL policy pattern |
 | `budget_exceeded_handled` | L2 | IDEAL-24.5 quota hard-stop |
@@ -163,7 +163,7 @@ Condensed matrix from external infrastructure audit → existing evidence → ga
 | `rag_context_event_recorded` | L3 | RAG/CTX `CONTEXT_ASSEMBLED` events |
 | `cost_report_generated` | L3 | `assembly_cost.py` / budget policy |
 
-Golden scenario IDs for echo baseline: `golden-echo`, `golden-policy`, `golden-routing` (from `l4_runtime_evidence.py` — reuse IDs only, not W-ADAPT utility semantics).
+Golden scenario IDs for echo baseline: `golden-echo`, `golden-policy`, `golden-routing` (from `l4_runtime_evidence.py` - reuse IDs only, not W-ADAPT utility semantics).
 
 ---
 
@@ -187,11 +187,11 @@ tests/unit/runtime/evidence/
 
 **Docs (EVID-CORE-06):** README Quick start + `guides/HARNESS_ENVIRONMENT.md` § Core certification evidence path (HEP).
 
-**Follow-up (EVID-CORE-FU-01):** **Done** — selected live Tier-0 probes alongside deterministic CORE certification; see § EVID-CORE-FU-01 closeout. Does not replace CORE-L* certification.
+**Follow-up (EVID-CORE-FU-01):** **Done** - selected live Tier-0 probes alongside deterministic CORE certification; see § EVID-CORE-FU-01 closeout. Does not replace CORE-L* certification.
 
-**Tier boundaries:** Tier-0 only — no `applications` imports in evidence runner; use `reference_harness.py` / echo agent patterns.
+**Tier boundaries:** Tier-0 only - no `applications` imports in evidence runner; use `reference_harness.py` / echo agent patterns.
 
-**Optional preflight:** `certify core --with-doctor` may run doctor checks before scenarios — does not add scenarios to doctor.
+**Optional preflight:** `certify core --with-doctor` may run doctor checks before scenarios - does not add scenarios to doctor.
 
 ---
 
@@ -223,7 +223,7 @@ tests/unit/runtime/evidence/
 
 ---
 
-## Mode I — HEP-2 Trace Evidence Path
+## Mode I - HEP-2 Trace Evidence Path
 
 | Field | Value |
 |-------|-------|
@@ -235,7 +235,7 @@ tests/unit/runtime/evidence/
 
 **Verdict:** `partial_overlap`
 
-**Reason:** Trace routes, event spine, trace stores, and debug endpoints already exist; HEP-1 report path is delivered. The gap is a lightweight, canonical evidence timeline contract and operator path (`intergrax trace show`) — not a full Trace Explorer UI in HEP-2.
+**Reason:** Trace routes, event spine, trace stores, and debug endpoints already exist; HEP-1 report path is delivered. The gap is a lightweight, canonical evidence timeline contract and operator path (`intergrax trace show`) - not a full Trace Explorer UI in HEP-2.
 
 **ADR:** No ADR needed for HEP-2 Trace (packaging timeline over existing evidence artifacts; no Nexus/UAEP/HarnessKernel semantic change).
 
@@ -284,7 +284,7 @@ HEP-2 may read `build/evidence/core_certification/report.json` as an input artif
 
 ---
 
-## Implementation register — Wave HEP-2 Trace Evidence Path
+## Implementation register - Wave HEP-2 Trace Evidence Path
 
 | ID | Wave | Priority | Status | Deliverable | Acceptance criteria |
 |----|------|----------|--------|-------------|---------------------|
@@ -295,7 +295,7 @@ HEP-2 may read `build/evidence/core_certification/report.json` as an input artif
 
 ---
 
-## Suggested implementation order — HEP-2
+## Suggested implementation order - HEP-2
 
 | Step | IDs | Scope |
 |------|-----|-------|
@@ -350,7 +350,7 @@ uv run intergrax trace export
 **Operator semantics (C6 hotfix):**
 
 - Timeline is **report-derived only** from `build/evidence/core_certification/report.json`.
-- Evidence basis matches HEP-1: `deterministic_mock` — not live runtime trace, event bus, or trace store.
+- Evidence basis matches HEP-1: `deterministic_mock` - not live runtime trace, event bus, or trace store.
 - `trace show` renders to stdout; `trace export` writes `build/evidence/trace/timeline.{json,md}`.
 - Policy/budget/HITL facets are descriptive markers mapped from scenario evidence refs, not runtime probes.
 
@@ -376,11 +376,11 @@ uv run intergrax trace export
 
 The timeline is derived from `build/evidence/core_certification/report.json` and uses deterministic mock evidence. It is not live RuntimeEventBus, persisted trace store, or provider tracing.
 
-The `certification_report_emitted` scenario is represented in the timeline by a `REPORT_WRITTEN` event kind — not a separate scenario lifecycle triplet.
+The `certification_report_emitted` scenario is represented in the timeline by a `REPORT_WRITTEN` event kind - not a separate scenario lifecycle triplet.
 
 ---
 
-## Mode I — HEP-3 Evidence Posture / Scoreboard
+## Mode I - HEP-3 Evidence Posture / Scoreboard
 
 | Field | Value |
 |-------|-------|
@@ -435,7 +435,7 @@ The posture surface should make Intergrax easier to evaluate without reading the
 
 ---
 
-## Implementation register — Wave HEP-3 Evidence Posture / Scoreboard
+## Implementation register - Wave HEP-3 Evidence Posture / Scoreboard
 
 | ID | Wave | Priority | Status | Deliverable | Acceptance criteria |
 |----|------|----------|--------|-------------|---------------------|
@@ -446,7 +446,7 @@ The posture surface should make Intergrax easier to evaluate without reading the
 
 ---
 
-## Suggested implementation order — HEP-3
+## Suggested implementation order - HEP-3
 
 | Step | IDs | Scope |
 |------|-----|-------|
@@ -510,7 +510,7 @@ uv run intergrax evidence posture export
 **Operator semantics:**
 
 - Posture reads existing artifacts (`report.json`, `timeline.json`); it does not run doctor, pytest, certify core, or trace export.
-- Posture is not live runtime proof — `LIVE_TIER0_PROBES` remains **DEFERRED**; `W-ADAPT L4` remains **SEPARATE**.
+- Posture is not live runtime proof - `LIVE_TIER0_PROBES` remains **DEFERRED**; `W-ADAPT L4` remains **SEPARATE**.
 - `evidence posture` renders to stdout; `evidence posture export` writes `build/evidence/posture/posture.{json,md}`.
 
 ---
@@ -547,7 +547,7 @@ uv run intergrax evidence posture
 uv run intergrax evidence posture export
 ```
 
-`intergrax doctor` and `pytest -m gate` are **optional preflight** surfaces — repo health and test-gate signals, not required to run posture.
+`intergrax doctor` and `pytest -m gate` are **optional preflight** surfaces - repo health and test-gate signals, not required to run posture.
 
 `certify core` and `trace export` produce the artifacts posture reads (`report.json`, `timeline.json`).
 
@@ -567,12 +567,12 @@ Expected posture summary should clearly state:
 
 ---
 
-## Follow-up Mode I — EVID-CORE-FU-01 Selected Live Tier-0 Probes
+## Follow-up Mode I - EVID-CORE-FU-01 Selected Live Tier-0 Probes
 
 | Field | Value |
 |-------|-------|
 | **Idea label** | `selected-live-tier0-probes` |
-| **Verdict** | `approved_for_small_follow_up` (Mode I approved — small follow-up only) |
+| **Verdict** | `approved_for_small_follow_up` (Mode I approved - small follow-up only) |
 | **Type** | `harness_capability` · `improvement` · `evidence_packaging` |
 | **Tier** | Tier-0 (`intergrax/runtime/evidence`, future live probe runner) |
 | **Domains** | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · `PLATFORM_FOUNDATION` |
@@ -584,7 +584,7 @@ Expected posture summary should clearly state:
 | HEP-1 `certify core` | Deterministic mock contract evidence (CORE-L*) |
 | HEP-2 `trace show` / `trace export` | Report-derived deterministic mock timeline |
 | HEP-3 `evidence posture` | Read-only aggregation over existing evidence artifacts |
-| **EVID-CORE-FU-01** | Future **selected live Tier-0 probes** — small controlled follow-up only |
+| **EVID-CORE-FU-01** | Future **selected live Tier-0 probes** - small controlled follow-up only |
 
 ### Problem statement
 
@@ -647,7 +647,7 @@ Only these three probes are approved for the first wave:
 | Execution boundary | `LOCAL_NO_NETWORK` |
 | Scope | `SELECTED_TIER0_PROBES` |
 
-`LIVE_RUNTIME` here means the selected probe path exercises real Tier-0 runtime mechanisms locally — **not** full production runtime, **not** a real provider, **not** real LLM proof.
+`LIVE_RUNTIME` here means the selected probe path exercises real Tier-0 runtime mechanisms locally - **not** full production runtime, **not** a real provider, **not** real LLM proof.
 
 ### Planned artifacts
 
@@ -669,7 +669,7 @@ This command was implemented in C15.
 
 After EVID-CORE-FU-01 implementation, `intergrax evidence posture` should read the live core probe report when present and map `LIVE_TIER0_PROBES` from **DEFERRED** to **PASSED** / **FAILED** / **UNKNOWN**. If the live probe report is missing, posture should continue to show `LIVE_TIER0_PROBES` as **DEFERRED**.
 
-Posture must still label this surface as selected live Tier-0 evidence — not full runtime certification, not production certification, not provider-validated proof.
+Posture must still label this surface as selected live Tier-0 evidence - not full runtime certification, not production certification, not provider-validated proof.
 
 ### Suggested implementation order
 
@@ -683,7 +683,7 @@ Posture must still label this surface as selected live Tier-0 evidence — not f
 
 ---
 
-## Implementation register — EVID-CORE-FU-01 Selected Live Tier-0 Probes
+## Implementation register - EVID-CORE-FU-01 Selected Live Tier-0 Probes
 
 | ID | Priority | Status | Deliverable | Acceptance criteria |
 |----|----------|--------|-------------|---------------------|
@@ -699,7 +699,7 @@ Posture must still label this surface as selected live Tier-0 evidence — not f
 
 **Implementation note (C15):** C15 added `intergrax evidence live-core`, live core probe report JSON/Markdown export, and posture integration. When `live_core_report.json` exists, posture maps `LIVE_TIER0_PROBES` from DEFERRED to PASSED/FAILED/UNKNOWN based on selected live probe results. This remains selected local no-network evidence with mock LLM/tools, not full runtime certification.
 
-**Implementation note (C16):** C16 closeout docs — final operator path and semantics documented; no code changes.
+**Implementation note (C16):** C16 closeout docs - final operator path and semantics documented; no code changes.
 
 ---
 
@@ -736,7 +736,7 @@ uv run intergrax evidence posture export
 
 ---
 
-## Mode I — EVID-EVAL Eval Regression Evidence
+## Mode I - EVID-EVAL Eval Regression Evidence
 
 | Field | Value |
 |-------|-------|
@@ -754,7 +754,7 @@ uv run intergrax evidence posture export
 | HEP-2 `trace show` / `trace export` | Report-derived deterministic mock timeline |
 | HEP-3 `evidence posture` | Read-only aggregation over existing evidence artifacts |
 | EVID-CORE-FU-01 `evidence live-core` | Selected local no-network live Tier-0 probes |
-| **EVID-EVAL** | **Done** — eval regression evidence packaging; read-only wrapper over existing eval checks (`check_eval_scenario_library.py`, IDEAL-25.x); not a new eval framework |
+| **EVID-EVAL** | **Done** - eval regression evidence packaging; read-only wrapper over existing eval checks (`check_eval_scenario_library.py`, IDEAL-25.x); not a new eval framework |
 
 ### Problem statement
 
@@ -803,7 +803,7 @@ uv run intergrax evidence eval
 
 ---
 
-## Implementation register — EVID-EVAL Eval Regression Evidence
+## Implementation register - EVID-EVAL Eval Regression Evidence
 
 | ID | Priority | Status | Deliverable | Acceptance criteria |
 |----|----------|--------|-------------|---------------------|
@@ -856,7 +856,7 @@ uv run intergrax evidence posture export
 
 ---
 
-## Mode I — EVID-COST Cost Evidence
+## Mode I - EVID-COST Cost Evidence
 
 | Field | Value |
 |-------|-------|
@@ -938,7 +938,7 @@ This command is planned for implementation after C1.
 
 ---
 
-## Implementation register — EVID-COST Cost Evidence
+## Implementation register - EVID-COST Cost Evidence
 
 | ID | Priority | Status | Deliverable | Acceptance criteria |
 |----|----------|--------|-------------|---------------------|
@@ -989,12 +989,12 @@ uv run intergrax evidence posture export
 
 | Wave | IDs | Status |
 |------|-----|--------|
-| HEP-1 Core Certification | EVID-CORE-01 … EVID-CORE-06 | **Done** — `certify core` report path delivered |
-| HEP-2 Trace Evidence Path | EVID-TRACE-01 … EVID-TRACE-04 | **Done** — `trace show` / `trace export` report-derived timeline delivered |
-| HEP-3 Evidence Posture / Scoreboard | EVID-POSTURE-01 … EVID-POSTURE-04 | **Done** — `evidence posture` / `evidence posture export` delivered |
-| EVID-CORE-FU-01 Selected Live Tier-0 Probes | EVID-CORE-FU-01A … EVID-CORE-FU-01E | **Done** — `evidence live-core` + posture integration delivered |
-| EVID-EVAL Eval Regression Evidence | EVID-EVAL-01 … EVID-EVAL-05 | **Done** — `evidence eval` + optional posture `EVAL_REGRESSION` delivered |
-| EVID-COST Cost Evidence | EVID-COST-01 … EVID-COST-05 | **Done** — `evidence cost` + optional posture `COST_EVIDENCE` delivered |
+| HEP-1 Core Certification | EVID-CORE-01 … EVID-CORE-06 | **Done** - `certify core` report path delivered |
+| HEP-2 Trace Evidence Path | EVID-TRACE-01 … EVID-TRACE-04 | **Done** - `trace show` / `trace export` report-derived timeline delivered |
+| HEP-3 Evidence Posture / Scoreboard | EVID-POSTURE-01 … EVID-POSTURE-04 | **Done** - `evidence posture` / `evidence posture export` delivered |
+| EVID-CORE-FU-01 Selected Live Tier-0 Probes | EVID-CORE-FU-01A … EVID-CORE-FU-01E | **Done** - `evidence live-core` + posture integration delivered |
+| EVID-EVAL Eval Regression Evidence | EVID-EVAL-01 … EVID-EVAL-05 | **Done** - `evidence eval` + optional posture `EVAL_REGRESSION` delivered |
+| EVID-COST Cost Evidence | EVID-COST-01 … EVID-COST-05 | **Done** - `evidence cost` + optional posture `COST_EVIDENCE` delivered |
 
 ---
 
@@ -1072,11 +1072,11 @@ No immediate HEP evidence ROI task remains; future work should move to deferred 
 
 Reason:
 
-Minimal ROI, strong ROI, and polished/adopter-ready ROI are closed. A2 verified the canonical local evidence command sequence. A3 updated README onboarding. A4 added the local artifact/docs checker. A5 added the external one-page harness narrative. See § Evidence ROI roadmap and § A2–§ A5 closeout sections. Deferred waves (EVID-POL, EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT) remain deferred until explicitly prioritized—not approved for immediate implementation.
+Minimal ROI, strong ROI, and polished/adopter-ready ROI are closed. A2 verified the canonical local evidence command sequence. A3 updated README onboarding. A4 added the local artifact/docs checker. A5 added the external one-page harness narrative. See § Evidence ROI roadmap and § A2–§ A5 closeout sections. Deferred waves (EVID-POL, EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT) remain deferred until explicitly prioritized-not approved for immediate implementation.
 
 ---
 
-## A5 — External one-page harness narrative closeout
+## A5 - External one-page harness narrative closeout
 
 A5 External one-page harness narrative: **Done**
 
@@ -1084,16 +1084,16 @@ A5 External one-page harness narrative: **Done**
 
 | File | Change |
 |------|--------|
-| `docs/project/technical/guides/INTERGRAX_HARNESS_NARRATIVE.md` | External-facing one-page narrative — harness vs agent framework, proof path, boundaries, audience |
+| `docs/project/technical/guides/INTERGRAX_HARNESS_NARRATIVE.md` | External-facing one-page narrative - harness vs agent framework, proof path, boundaries, audience |
 | `README.md` | Link to narrative under § Proof of platform |
 | `HARNESS_EVIDENCE_PACK.md` | A5 closeout; ROI counters all **0**; HEP evidence ROI path closed |
-| `PLATFORM_FOUNDATION.md` | §6.1aw — A5 Done; polished/adopter-ready ROI closed |
+| `PLATFORM_FOUNDATION.md` | §6.1aw - A5 Done; polished/adopter-ready ROI closed |
 
 **Implementation note (A5):** Docs-only. No code, runtime changes, proof-path execution, or smoke audit rerun. Polished/adopter-ready ROI is closed; no immediate HEP evidence ROI task remains.
 
 ---
 
-## A4 — Evidence artifact sanity checker / docs checker closeout
+## A4 - Evidence artifact sanity checker / docs checker closeout
 
 A4 Evidence artifact sanity checker / docs checker: **Done**
 
@@ -1104,13 +1104,13 @@ A4 Evidence artifact sanity checker / docs checker: **Done**
 | `scripts/maintenance/check_evidence_artifacts.py` | Local, deterministic, no-network checker for 12 expected proof-path artifacts and README proof-path references |
 | `README.md` | Concise checker command under § Proof of platform |
 | `HARNESS_EVIDENCE_PACK.md` | A4 closeout; ROI counters; recommended next wave → A5 |
-| `PLATFORM_FOUNDATION.md` | §6.1aw — A4 Done; next polished/adopter-ready path → A5 |
+| `PLATFORM_FOUNDATION.md` | §6.1aw - A4 Done; next polished/adopter-ready path → A5 |
 
 **Implementation note (A4):** Validates existing local artifacts and docs only. Does not run the proof path, generate evidence, call providers, or import Intergrax runtime modules. Operator command: `python scripts/maintenance/check_evidence_artifacts.py`.
 
 ---
 
-## A3 — README / onboarding update after smoke audit closeout
+## A3 - README / onboarding update after smoke audit closeout
 
 A3 README / onboarding update after smoke audit: **Done**
 
@@ -1118,9 +1118,9 @@ A3 README / onboarding update after smoke audit: **Done**
 
 | File | Change |
 |------|--------|
-| `README.md` | Strengthened § Proof of platform — framing, canonical commands, artifact table, prove/does-not-prove boundaries, next steps |
+| `README.md` | Strengthened § Proof of platform - framing, canonical commands, artifact table, prove/does-not-prove boundaries, next steps |
 | `HARNESS_EVIDENCE_PACK.md` | A3 closeout; ROI counters; recommended next wave → A4 |
-| `PLATFORM_FOUNDATION.md` | §6.1aw — strong ROI closed; polished/adopter-ready path |
+| `PLATFORM_FOUNDATION.md` | §6.1aw - strong ROI closed; polished/adopter-ready path |
 
 ### Operator onboarding outcome
 
@@ -1130,7 +1130,7 @@ Early developers/adopters can answer from README alone: what the proof path is, 
 
 ---
 
-## A2 — End-to-end evidence smoke audit closeout
+## A2 - End-to-end evidence smoke audit closeout
 
 A2 End-to-end evidence smoke audit: **Done**
 
@@ -1169,9 +1169,9 @@ Posture `posture.json` includes: `CORE_CERTIFICATION`, `TRACE_TIMELINE` (trace s
 
 | Wave | IDs | Audit priority |
 |------|-----|----------------|
-| HEP-2 / EVID-COST | **EVID-COST** | **Done** — cost evidence packaging + optional posture `COST_EVIDENCE` |
-| HEP-4 | EVID-POL | External audit #3 — not Mode I approved yet |
-| HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 — not Mode I approved yet |
+| HEP-2 / EVID-COST | **EVID-COST** | **Done** - cost evidence packaging + optional posture `COST_EVIDENCE` |
+| HEP-4 | EVID-POL | External audit #3 - not Mode I approved yet |
+| HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 - not Mode I approved yet |
 
 Register future rows in this file when Mode I approves each wave.
 
@@ -1179,9 +1179,9 @@ Register future rows in this file when Mode I approves each wave.
 
 ## Definition of Done (HEP-1)
 
-1. **Contract** — Pydantic report + scenario contracts in `intergrax/runtime/evidence`
-2. **Trace** — scenarios assert `RuntimeEvent` / trace persistence where applicable
-3. **Test** — integration tests deterministic, no network
-4. **Documentation** — this plan + EVID-CORE-06 onboarding path
-5. **No regression** — `pytest -m gate` green; certify-core does not break doctor
-6. **Reuse Tier-0** — extend existing harness paths; no parallel certification stack
+1. **Contract** - Pydantic report + scenario contracts in `intergrax/runtime/evidence`
+2. **Trace** - scenarios assert `RuntimeEvent` / trace persistence where applicable
+3. **Test** - integration tests deterministic, no network
+4. **Documentation** - this plan + EVID-CORE-06 onboarding path
+5. **No regression** - `pytest -m gate` green; certify-core does not break doctor
+6. **Reuse Tier-0** - extend existing harness paths; no parallel certification stack

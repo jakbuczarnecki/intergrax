@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Native Knowledge Document Contract — LCI-1A
+# Native Knowledge Document Contract - LCI-1A
 
 **Status:** KnowledgeDocument ABI: **APPROVED**; LCI-1B–LCI-1D implementation and conformance: **APPROVED**
 **Owner:** RAG (functional) · Tier-0 `intergrax/knowledge` (neutral shared core)
@@ -36,7 +36,7 @@ This satellite is the **source of truth** for the canonical Intergrax knowledge 
 provider parser -> ParsedDocumentFragment -> scoped loader/handler -> KnowledgeDocument
 `
 
-ParsedDocumentFragment is a short-lived extraction-stage result. Parser load(source) receives only a source URI — no authoritative tenant, namespace, or document scope — so parser-stage code must not construct KnowledgeDocument or invent a default tenant.
+ParsedDocumentFragment is a short-lived extraction-stage result. Parser load(source) receives only a source URI - no authoritative tenant, namespace, or document scope - so parser-stage code must not construct KnowledgeDocument or invent a default tenant.
 
 ### End-to-end native ingest boundary (LCI-2F)
 
@@ -63,7 +63,7 @@ Chunk lineage remains the native contract: chunk identity and parent/root relati
 | **Canonical type** | `KnowledgeDocument` |
 | **Target module (LCI-1B)** | `intergrax/knowledge/contracts/document.py` |
 | **Public import** | `from intergrax.knowledge.contracts import KnowledgeDocument` |
-| **Package tier** | Tier-0 shared core — neutral, not under `intergrax/rag` |
+| **Package tier** | Tier-0 shared core - neutral, not under `intergrax/rag` |
 | **Functional owner** | RAG domain owns contract semantics and evolution |
 | **Shared consumers** | Memory, modality, integrations import from `intergrax.knowledge.contracts`; they must not define parallel document types |
 
@@ -98,7 +98,7 @@ From `intergrax/runtime/vendor_knowledge/models.py`:
 |-------|--------|
 | `KnowledgeSourceRef` | Integration-layer connection/scope descriptor; not RAG-ready document |
 | `KnowledgeItemDescriptor` | Inventory/fetch stage aggregate |
-| `KnowledgeContent` | Holds binary/rich_text/structured_record — pre-normalization |
+| `KnowledgeContent` | Holds binary/rich_text/structured_record - pre-normalization |
 | `IntegrationCategory` | Integration taxonomy; would couple shared core → runtime/integrations |
 
 **Decision:** Vendor Knowledge models represent the **external source item** stage. `KnowledgeDocument` represents the **RAG-ready normalized text** stage. They are adjacent pipeline stages, not duplicates.
@@ -143,7 +143,7 @@ Normalization adapter implementation is **out of scope** for LCI-1A; belongs to 
 
 ---
 
-## LCI-4C-A1 — Canonical workspace scope ABI
+## LCI-4C-A1 - Canonical workspace scope ABI
 
 Status: **APPROVED**
 
@@ -194,7 +194,7 @@ KnowledgeDocumentProvenance
 Illustrative target signatures (LCI-1B):
 
 ```python
-# intergrax/knowledge/contracts/document.py — implementation in LCI-1B only
+# intergrax/knowledge/contracts/document.py - implementation in LCI-1B only
 class KnowledgeDocumentIdentity(BaseModel): ...
 class KnowledgeDocumentScope(BaseModel): ...
 class KnowledgeDocumentProvenance(BaseModel): ...
@@ -247,7 +247,7 @@ class KnowledgeDocument(BaseModel): ...
 ## 5. Invariants
 
 1. All models are immutable (`frozen=True`) and reject unknown fields (`extra="forbid"`).
-2. `content` is always a `str` ready for RAG processing — never bytes, media handles, or provider objects.
+2. `content` is always a `str` ready for RAG processing - never bytes, media handles, or provider objects.
 3. `tenant_id` is always required; missing tenant context is a validation error.
 4. Identity fields are caller-supplied; the contract never mints IDs.
 5. Lineage invariants enforced by LCI-1B validators (see §6).
@@ -346,7 +346,7 @@ The local model blocks self-reference (`parent_document_id == document_id`). Ful
 
 ### 8.1 Allowed value types
 
-`str`, `int`, `float`, `bool`, `null`, `list`, `dict` with string keys — recursively JSON-compatible. `float` values must be finite; `NaN`, `Infinity`, and `-Infinity` are forbidden.
+`str`, `int`, `float`, `bool`, `null`, `list`, `dict` with string keys - recursively JSON-compatible. `float` values must be finite; `NaN`, `Infinity`, and `-Infinity` are forbidden.
 
 ### 8.2 Forbidden in metadata
 
@@ -452,7 +452,7 @@ Bridge implementation: **LCI-1C** (`intergrax/compat/langchain`). Conversion rul
 | metadata `content_hash` | `provenance.content_hash` | Optional |
 | metadata `source_parent_id` | `provenance.source_parent_id` | Optional |
 | Remaining JSON-safe metadata | `metadata` | Preserved without loss; reserved keys excluded |
-| — | `schema_version` | Set to `1` on conversion to native |
+| - | `schema_version` | Set to `1` on conversion to native |
 
 ### 12.2 Bridge error policy
 
@@ -587,7 +587,7 @@ ParsedDocumentFragment
 - Parser
 ative_handle is **RAG-local**, **private**, **non-ABI**, **non-serialized**, **temporary** runtime state carried on a loader-local KnowledgeDocument subclass via Pydantic PrivateAttr; it is not written to public metadata, model_dump, or dump_knowledge_document.
 - Legacy chunkers receive
-ative_handle only through 	o_legacy_rag_document() under DocumentMetadataKey.DOCLING_DOCUMENT_META immediately before splitting (removed in **LCI-2D — native chunking migration**).
+ative_handle only through 	o_legacy_rag_document() under DocumentMetadataKey.DOCLING_DOCUMENT_META immediately before splitting (removed in **LCI-2D - native chunking migration**).
 - DocumentsLoader applies a temporary normalization/metadata LangChain bridge (removed in LCI-2C).
 
 ## LCI-2C native ingest boundary
@@ -623,11 +623,11 @@ KnowledgeDocument source
 
 Derivative chunk lineage:
 
-- `chunk.document_id` — deterministyczne ID chunka
-- `chunk.root_document_id` — root dokumentu źródłowego
-- `chunk.parent_document_id` — dokument bezpośrednio dzielony
-- `chunk.scope` — niezmieniony
-- `chunk.provenance` — zachowane źródło, nowy `content_hash`
+- `chunk.document_id` - deterministyczne ID chunka
+- `chunk.root_document_id` - root dokumentu źródłowego
+- `chunk.parent_document_id` - dokument bezpośrednio dzielony
+- `chunk.scope` - niezmieniony
+- `chunk.provenance` - zachowane źródło, nowy `content_hash`
 
 Docling private parser `native_handle` is consumed by the native Docling splitter, is not copied into chunk metadata, and does not appear in serialized output. Native recursive chunking is the default and core-safe path. LangChain recursive chunking is an optional provider behind the `rag-langchain-splitters` extra, registered explicitly through the existing registry/plugin boundary; missing the extra is a stable configuration error.
 
@@ -690,7 +690,7 @@ query vector + explicit scope
 
 Tenant and namespace are authoritative routing fields. User metadata and filters cannot override them; delete and count fail closed unless tenant isolation is proven.
 
-## LCI-3D — Native vector-store provider transport
+## LCI-3D - Native vector-store provider transport
 
 The vector-store boundary is native and does not construct LangChain Document values.
 
@@ -715,13 +715,13 @@ GraphStore backends remain tenant-bound where applicable. Namespace and workspac
 
 The active graph retrieval boundary returns the existing native RetrievalHit containing the KnowledgeDocument, score, rank, channel and optional vector ID. No parallel graph document or retrieval result type is introduced. GraphStore backend internals remain unchanged.
 
-LCI-3D — APPROVED. LCI-4A — APPROVED. LCI-4B — APPROVED. LCI-4C — APPROVED. LCI-4D — APPROVED.
+LCI-3D - APPROVED. LCI-4A - APPROVED. LCI-4B - APPROVED. LCI-4C - APPROVED. LCI-4D - APPROVED.
 
 ## LCI-4A retrieval result contract decision
 
 Retrieval uses a native immutable hit/result contract containing `KnowledgeDocument`, score and rank. Active retrievers and RAG tools do not expose LangChain `Document`. `VectorStoreHit` remains the provider/vector-store result and is mapped at the retriever boundary. Reranking remains a separate LCI-4B boundary; graph retrieval remains LCI-4C.
 
-Roadmap state: LCI-3D — APPROVED; LCI-4A — APPROVED; LCI-4B — APPROVED; LCI-4C — APPROVED; LCI-4D — APPROVED.
+Roadmap state: LCI-3D - APPROVED; LCI-4A - APPROVED; LCI-4B - APPROVED; LCI-4C - APPROVED; LCI-4D - APPROVED.
 
 ## LCI-4D consumer closeout
 

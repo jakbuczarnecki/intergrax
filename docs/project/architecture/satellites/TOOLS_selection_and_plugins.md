@@ -1,15 +1,15 @@
-# TOOLS — selection and plugins
+# TOOLS - selection and plugins
 
 **Parent hub:** [`TOOLS.md`](../TOOLS.md)
 
-## Tool selection — strategies and layers
+## Tool selection - strategies and layers
 
-Two orthogonal concepts — do not conflate them:
+Two orthogonal concepts - do not conflate them:
 
 | Concept | Question | Mechanism |
 |---------|----------|-----------|
-| **Selection layers (L0–L7)** | Which tools *may* this run use? | Policy, profile, skills, modality, plan filter, invoker scope — [§Selection detail](.#selection-detail-layers) |
-| **Selection modes (production strategies)** | How is the planner schema *narrowed* before the LLM chooses? | `ToolSelectionStrategy` + `ToolSelectionMode` — [§Production strategies](.#tool-selection-modes-production-strategies) |
+| **Selection layers (L0–L7)** | Which tools *may* this run use? | Policy, profile, skills, modality, plan filter, invoker scope - [§Selection detail](.#selection-detail-layers) |
+| **Selection modes (production strategies)** | How is the planner schema *narrowed* before the LLM chooses? | `ToolSelectionStrategy` + `ToolSelectionMode` - [§Production strategies](.#tool-selection-modes-production-strategies) |
 
 Layers run **before and around** modes: e.g. `ToolProfile` may leave 80 tools in the registry; `tool_selection_mode=retrieval_top_k` may pass only 20 to the LLM.
 
@@ -26,9 +26,9 @@ flowchart LR
     end
 
     subgraph Mode["Selection mode (L6)"]
-        STD[Standard — full schema]
-        SEM[Semantic — vector top-k]
-        HIE[Hierarchical — category passes]
+        STD[Standard - full schema]
+        SEM[Semantic - vector top-k]
+        HIE[Hierarchical - category passes]
     end
 
     subgraph LLM["L6b planner"]
@@ -62,7 +62,7 @@ ToolsStep → resolve_planner_allowed_tool_ids(FULL_CATALOG | STATIC with no pla
 
 | `ToolSelectionMode` | Maps to standard? | Notes |
 |---------------------|-------------------|-------|
-| `full_catalog` | **Yes** — explicit standard | No L6 filter; full runtime registry |
+| `full_catalog` | **Yes** - explicit standard | No L6 filter; full runtime registry |
 | `static` | **Yes** when no `plan_allowed_tool_ids` | Returns `None` → full registry at planner |
 
 **Mitigations without changing mode:** `ToolProfile.enabled_bundles`, `description_short` in exporters, host-level catalog subset.
@@ -78,7 +78,7 @@ bootstrap / registry change → ToolCatalogEmbedder → in-memory index
 ToolsStep query → embed → cosine top-k → tool_ids → ToolPlanningService
 ```
 
-Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index.
+Reuse Tier-0 `embedding_manager` - distinct from `rag.retrieve` document index.
 
 **Observability:** `ToolSelectionDiagV1` (`ops:tool_selection`) with semantic scores when available (TOOL-ENG-32).
 
@@ -86,7 +86,7 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 
 **Definition:** Tools are organized in a **tree** (bundle → `category` → `tool_id`). The LLM traverses the tree in bounded passes: e.g. (1) pick `category=issue_tracker`, (2) receive schema for `jira.*` + `issues.*` only, (3) emit final `tool_call`.
 
-**Implementation today:** **Done** (TOOL-ENG-14 · ADR-TOOL-005). `ToolSelectionMode.HIERARCHICAL` → deterministic category rank → tool rank within branches (`hierarchical_tool_selector.py`). **Optional LLM category pass (TOOL-MAINT-01b):** set `RuntimeConfig.tool_selection_hierarchical_llm_pass=True` — async resolver calls `rank_categories_with_llm` on Nexus hot path; default remains deterministic.
+**Implementation today:** **Done** (TOOL-ENG-14 · ADR-TOOL-005). `ToolSelectionMode.HIERARCHICAL` → deterministic category rank → tool rank within branches (`hierarchical_tool_selector.py`). **Optional LLM category pass (TOOL-MAINT-01b):** set `RuntimeConfig.tool_selection_hierarchical_llm_pass=True` - async resolver calls `rank_categories_with_llm` on Nexus hot path; default remains deterministic.
 
 **Audit revalidation (2026-06-19, TOOL-MAINT-DOC-01):** §6.1av TOOL-MAINT-01..04 confirmed · TOOL-MAINT-01b wired · catalog **200** tools · provider unit tests green · tool CI gates green.
 
@@ -98,24 +98,24 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 |---------------------|-----------------|----------------|--------|
 | `full_catalog` | **Standard** | `FullCatalogSelectionStrategy` | **Done** (TOOL-ENG-5) |
 | `static` | **Standard** (+ plan constraint) | `StaticAllowListSelectionStrategy` | **Done** (TOOL-ENG-4/5) |
-| `skill_pack` | *Auxiliary narrowing* (not a production mode) | `SkillPackSelectionStrategy` — skill → `tool_ids` | **Done** (TOOL-ENG-5) |
-| `retrieval_top_k` / `keyword_top_k` | *Keyword pre-filter* | `RetrievalTopKSelectionStrategy` — token overlap | **Done** (TOOL-ENG-5/15) |
+| `skill_pack` | *Auxiliary narrowing* (not a production mode) | `SkillPackSelectionStrategy` - skill → `tool_ids` | **Done** (TOOL-ENG-5) |
+| `retrieval_top_k` / `keyword_top_k` | *Keyword pre-filter* | `RetrievalTopKSelectionStrategy` - token overlap | **Done** (TOOL-ENG-5/15) |
 | `semantic` | **Semantic** | `SemanticToolIndexSelectionStrategy` | **Done** TOOL-ENG-13 |
 | `hierarchical` | **Hierarchical** | `HierarchicalToolSelectionStrategy` | **Done** TOOL-ENG-14 (v1 deterministic) |
 
 **Config:** `RuntimeConfig.tool_selection_mode`, `tool_selection_top_k`; bridged from `ApplicationEnvironmentProfile` via `catalog_runtime_bridge.py`.
 
-**Adaptive mode pick:** TOOL-ENG-10 (AHI) may select standard vs semantic vs hierarchical per run — depends on TOOL-ENG-13/14.
+**Adaptive mode pick:** TOOL-ENG-10 (AHI) may select standard vs semantic vs hierarchical per run - depends on TOOL-ENG-13/14.
 
 ### Selection layer checklist (L0–L5, orthogonal to mode)
 
-1. **Profile narrowing** — `ToolProfile.enabled` / `enabled_bundles` at bootstrap.
-2. **Integration auto-enable** — `extend_tool_profile_for_integration()` when `IntegrationProfile` slots are set.
-3. **Agent `allowed_tools`** — `ToolAccessPolicy` on capability plan; invoker scope via `tool_scope_policy` (TOOL-ENG-3 **Done**).
-4. **Skill packs** — `SkillResolver` at bind; optional `skill_pack` selection mode.
-5. **RAG/web shims** — `rag.retrieve` / `websearch.query` when enabled.
-6. **Plan constraints** — `EnginePlan.tool_ids` intersected with strategy (TOOL-ENG-4 **Done**).
-7. **Reasoning prompts** — `tool_planner_prompt_id` via catalog bridge (TOOL-ENG-0 **Done**).
+1. **Profile narrowing** - `ToolProfile.enabled` / `enabled_bundles` at bootstrap.
+2. **Integration auto-enable** - `extend_tool_profile_for_integration()` when `IntegrationProfile` slots are set.
+3. **Agent `allowed_tools`** - `ToolAccessPolicy` on capability plan; invoker scope via `tool_scope_policy` (TOOL-ENG-3 **Done**).
+4. **Skill packs** - `SkillResolver` at bind; optional `skill_pack` selection mode.
+5. **RAG/web shims** - `rag.retrieve` / `websearch.query` when enabled.
+6. **Plan constraints** - `EnginePlan.tool_ids` intersected with strategy (TOOL-ENG-4 **Done**).
+7. **Reasoning prompts** - `tool_planner_prompt_id` via catalog bridge (TOOL-ENG-0 **Done**).
 
 ### Scale roadmap (200-tool catalog)
 
@@ -129,8 +129,8 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 | `retrieval_top_k` naming clarity (`keyword_top_k` alias) | **Done** | TOOL-ENG-15 |
 | Selection strategy plugin registry | **Done** | TOOL-ENG-26 |
 | Direct strategy instance on `RuntimeConfig` | **Done** | TOOL-ENG-31 |
-| Risk-based routing (`ToolRiskLevel` → HITL) | **Done** | TOOL-ENG-7 — trace + enforce block |
-| AHI dynamic mode / subset | **Done** | TOOL-ENG-10 — `ToolEngineHook` + `recommend_tool_modes` |
+| Risk-based routing (`ToolRiskLevel` → HITL) | **Done** | TOOL-ENG-7 - trace + enforce block |
+| AHI dynamic mode / subset | **Done** | TOOL-ENG-10 - `ToolEngineHook` + `recommend_tool_modes` |
 
 ---
 
@@ -145,8 +145,8 @@ Layer **L6** narrows which `tool_id` values reach the LLM planner **before** `To
 
 | Principle | Meaning |
 |-----------|---------|
-| **Protocol-first** | Every selection algorithm implements `ToolSelectionStrategy` — one method, typed context |
-| **Shipped defaults** | Standard, semantic, hierarchical ship as named strategy classes — not runtime branches in `run_bounded_tool_loop` / `ctx.invoke_tool` |
+| **Protocol-first** | Every selection algorithm implements `ToolSelectionStrategy` - one method, typed context |
+| **Shipped defaults** | Standard, semantic, hierarchical ship as named strategy classes - not runtime branches in `run_bounded_tool_loop` / `ctx.invoke_tool` |
 | **Host override** | Tier-3 MAY inject a custom strategy instance or register via entry point |
 | **Compose with policy** | Strategy output is always intersected with L0–L5 allow-lists and plan `tool_ids` (TOOL-ENG-4) |
 | **Observable** | Trace `tool_selection_mode`, `strategy_id`, candidate ids, scores |
@@ -160,12 +160,12 @@ flowchart TD
         PLAN[plan_allowed_tool_ids]
     end
 
-    subgraph L6["L6 — ToolSelectionStrategy plugin"]
+    subgraph L6["L6 - ToolSelectionStrategy plugin"]
         RESOLVE[resolve_selection_strategy]
         STRAT[select_tool_ids ctx]
     end
 
-    subgraph L6b["L6b — LLM planner"]
+    subgraph L6b["L6b - LLM planner"]
         TPS[ToolPlanningService]
         TC[tool_calls]
     end
@@ -210,7 +210,7 @@ ToolSelectionStrategy (Protocol):
 | *Auxiliary* | `skill_pack` | `SkillPackSelectionStrategy` | **Done** |
 | *Keyword pre-filter* | `retrieval_top_k` | `RetrievalTopKSelectionStrategy` | **Done** (not semantic) |
 
-#### Standard — `FullCatalogSelectionStrategy` / `StaticAllowListSelectionStrategy`
+#### Standard - `FullCatalogSelectionStrategy` / `StaticAllowListSelectionStrategy`
 
 Export the L0–L5 allow-list (or plan subset) directly to LLM. Model performs final tool choice.
 
@@ -219,9 +219,9 @@ select_tool_ids → None | plan_ids
 ToolPlanningService → generate_with_tools(allowed_tool_ids=…)
 ```
 
-#### Semantic — `SemanticToolIndexSelectionStrategy` **Done** (TOOL-ENG-13)
+#### Semantic - `SemanticToolIndexSelectionStrategy` **Done** (TOOL-ENG-13)
 
-Vector index of tool metadata — **not** document RAG.
+Vector index of tool metadata - **not** document RAG.
 
 ```text
 # Index lifecycle (TOOL-ENG-13)
@@ -237,14 +237,14 @@ query text → embed → similarity_search(top_k) → tool_ids
 | Component | Reuse from Tier-0 |
 |-----------|-------------------|
 | Embeddings | `embedding_manager` from `ToolWiringContext` |
-| Vector store | dedicated collection — **not** `rag.retrieve` index |
+| Vector store | dedicated collection - **not** `rag.retrieve` index |
 | Reindex hook | `register_tool_plugin()` / profile rebuild |
 
 **Trace payload:** `strategy_id=semantic`, `candidates=[{tool_id, score}]`, `ops:tool_selection` (TOOL-ENG-32).
 
-#### Hierarchical — `HierarchicalToolSelectionStrategy` **Done** (TOOL-ENG-14)
+#### Hierarchical - `HierarchicalToolSelectionStrategy` **Done** (TOOL-ENG-14)
 
-Multi-pass **LLM-assisted** traversal of a category tree — not the same as `skill_pack` (declarative, no LLM category pass).
+Multi-pass **LLM-assisted** traversal of a category tree - not the same as `skill_pack` (declarative, no LLM category pass).
 
 ```text
 Pass 1: LLM picks category / bundle from taxonomy schema (no individual tools)
@@ -257,17 +257,17 @@ Final pass: ToolPlanningService on leaf tool_ids only
 | Tree nodes | `ToolContract.category`, bundle membership, optional host `ToolCategoryTaxonomy` |
 | Pass budget | `RuntimeConfig.tool_selection_max_hierarchy_passes` |
 
-### Custom strategy — three extension surfaces
+### Custom strategy - three extension surfaces
 
 Authors MUST implement `ToolSelectionStrategy` and plug in via one of:
 
 | Surface | When | Status | Plan ID |
 |---------|------|--------|---------|
-| **A — Config instance** | Host/agent wires a Python class at bootstrap (tests, bespoke hosts) | **Done** | TOOL-ENG-31 — `RuntimeConfig.tool_selection_strategy` overrides mode enum |
-| **B — Entry point** | Distributable plugin package | **Done** | TOOL-ENG-26 — `intergrax.tool_selection_strategies` + `tool_selection_strategy_id` |
-| **C — Custom planner** | Full control of selection + planning in one component | **Done** | inject `ToolPlannerProtocol` via `RuntimeConfig.tool_planner` — bypasses L6 narrow step |
+| **A - Config instance** | Host/agent wires a Python class at bootstrap (tests, bespoke hosts) | **Done** | TOOL-ENG-31 - `RuntimeConfig.tool_selection_strategy` overrides mode enum |
+| **B - Entry point** | Distributable plugin package | **Done** | TOOL-ENG-26 - `intergrax.tool_selection_strategies` + `tool_selection_strategy_id` |
+| **C - Custom planner** | Full control of selection + planning in one component | **Done** | inject `ToolPlannerProtocol` via `RuntimeConfig.tool_planner` - bypasses L6 narrow step |
 
-**Rule:** Surfaces A/B affect **only L6** — execution still flows through `ToolPlanningService` (or custom planner on C) and `RuntimeToolInvoker`. Custom selection MUST NOT call handlers or integrations directly.
+**Rule:** Surfaces A/B affect **only L6** - execution still flows through `ToolPlanningService` (or custom planner on C) and `RuntimeToolInvoker`. Custom selection MUST NOT call handlers or integrations directly.
 
 **Example custom strategy (sketch):**
 
@@ -288,7 +288,7 @@ class DomainWeightedSelectionStrategy:
 | **Selection (`ToolSelectionStrategy`)** | **Yes** | all shipped modes | **Yes** | **Yes** | **Yes** |
 | Invocation (`ToolInvocationPattern`) | **Yes** | all shipped modes | **Yes** | **Yes** | **Yes** |
 
-### Selection plugin gap register — closed (2026-06-12)
+### Selection plugin gap register - closed (2026-06-12)
 
 | ID | Deliverable | Status |
 |----|-------------|--------|
@@ -300,7 +300,7 @@ class DomainWeightedSelectionStrategy:
 | TOOL-ENG-DOC.7 | Selection plugin model canon (this section) | **Done** |
 | TOOL-ENG-32 | Selection trace: `strategy_id`, candidates, scores in `ToolsSummaryDiagV1` | P2 |
 
-**ADR:** ADR-TOOL-004 — selection plugin registry, semantic index boundary vs `rag.retrieve`, hierarchical pass semantics.
+**ADR:** ADR-TOOL-004 - selection plugin registry, semantic index boundary vs `rag.retrieve`, hierarchical pass semantics.
 
 ### Introspection tools (builder DX)
 
@@ -314,7 +314,7 @@ class DomainWeightedSelectionStrategy:
 
 ## §42.12 gateway surface (`ToolRequest`)
 
-Contracts: `intergrax/contracts/tool_request.py` — `ToolRequest`, `ToolResponse`, `ToolResponseStatus`.
+Contracts: `intergrax/contracts/tool_request.py` - `ToolRequest`, `ToolResponse`, `ToolResponseStatus`.
 
 ### `BoundToolGateway` routing (`uaep_tool_gateway.py`)
 
@@ -325,7 +325,7 @@ ToolRequest.tool_name
     └── else                  → RuntimeToolGateway.for_state(...)
 ```
 
-### `RuntimeToolGateway` — known capability tools
+### `RuntimeToolGateway` - known capability tools
 
 | `tool_name` | Maps to |
 |-------------|---------|
@@ -335,7 +335,7 @@ ToolRequest.tool_name
 | `nexus.tools`, `tools` | `use_tools` → `run_bounded_tool_loop` / `ctx.invoke_tool` |
 | **Any other catalog `tool_id`** | `catalog_dispatch` → `RuntimeToolInvoker` (TOOL-ENG-2 **Done**) |
 
-### Runtime-bound catalog (`RUNTIME_BOUND_TOOL_IDS`) — **18 tools**
+### Runtime-bound catalog (`RUNTIME_BOUND_TOOL_IDS`) - **18 tools**
 
 Dispatched via `invoke_runtime_bound_tool` (no `RuntimeToolInvoker`, no pipeline):
 
@@ -378,7 +378,7 @@ EnginePlan.tool_ids=["rag.retrieve"]          # use_rag → RagStep
 ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 ```
 
-**TOOL-ENG-6 Done:** `run_bounded_tool_loop` — multi-iteration native tool messages when `max_tool_iterations > 1`.
+**TOOL-ENG-6 Done:** `run_bounded_tool_loop` - multi-iteration native tool messages when `max_tool_iterations > 1`.
 
 ---
 
@@ -402,8 +402,8 @@ ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 | Output schema | `RuntimeToolInvoker._validate_output` | All invoker paths |
 | Trace + preview | `ToolInvocationEndDiagV1` | 300-char output preview |
 | Middleware after | `AFTER_TOOL_CALL` | Gateway |
-| HIGH+ verify gate | `run_post_tool_verify` | **Done** — trace + optional enforce block (**TOOL-ENG-7**) |
-| Semantic verify (L1 critic) | `eval.judge`, `eval.trajectory` | Adjacent CVL path — optional via `CriticProfile` |
+| HIGH+ verify gate | `run_post_tool_verify` | **Done** - trace + optional enforce block (**TOOL-ENG-7**) |
+| Semantic verify (L1 critic) | `eval.judge`, `eval.trajectory` | Adjacent CVL path - optional via `CriticProfile` |
 
 ### Per-tool L1 critic trace contract (TOOL-MAINT-02)
 
@@ -417,7 +417,7 @@ Cross-ref: [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) ·
 Gate scripts: ``check_tool_injection_defense.py`` · CVL gates in
 ``check_reasoning_gates.py`` when critic hooks are enabled on the host.
 
-| Agent validate | `agent.validate` | UAEP final answer — not per-tool |
+| Agent validate | `agent.validate` | UAEP final answer - not per-tool |
 
 ### `tools_mode=required`
 
@@ -427,7 +427,7 @@ Raises `ToolsRequiredError` when no tool traces (**TOOL-ENG-8** **Done**).
 
 ## Engine gap register (canon)
 
-Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (updated 2026-06-12 — invocation-pattern audit):
+Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (updated 2026-06-12 - invocation-pattern audit):
 
 ### Selection & planning (L6–L6b)
 
@@ -453,22 +453,22 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | TOOL-ENG-2 | Full-catalog `ToolRequest` → `RuntimeToolInvoker` in gateway | **Done** |
 | TOOL-ENG-3 | Wire `config.tool_scope_policy` → `RuntimeToolInvoker` | **Done** |
 
-### Invocation orchestration (2a) — 2026-06-12 audit
+### Invocation orchestration (2a) - 2026-06-12 audit
 
 | ID | Gap | Priority |
 |----|-----|----------|
 | TOOL-ENG-DOC.5 | Canon: four invocation patterns + `ToolInvocationPattern` target contract | **Done** |
 | TOOL-ENG-16 | `ToolInvocationPattern` Protocol + `ToolInvocationResult` models | **Done** |
-| TOOL-ENG-17 | `SinglePassPattern` — extract current single-iteration path | **Done** |
-| TOOL-ENG-18 | `BoundedReactPattern` — refactor `run_bounded_tool_loop` | **Done** |
-| TOOL-ENG-9 | `ParallelBatchPattern` — concurrent read-only batch invoke | **Done** |
+| TOOL-ENG-17 | `SinglePassPattern` - extract current single-iteration path | **Done** |
+| TOOL-ENG-18 | `BoundedReactPattern` - refactor `run_bounded_tool_loop` | **Done** |
+| TOOL-ENG-9 | `ParallelBatchPattern` - concurrent read-only batch invoke | **Done** |
 | TOOL-ENG-20 | `DeterministicChainPattern` + `ToolChainSpec` field mapping | **Done** |
-| TOOL-ENG-25 | `ParallelSemanticBatchPattern` — semantic top-k + parallel + aggregate | **Done** |
+| TOOL-ENG-25 | `ParallelSemanticBatchPattern` - semantic top-k + parallel + aggregate | **Done** |
 | TOOL-ENG-21 | `RuntimeConfig.tool_invocation_pattern` + `pattern_for_mode()` factory | **Done** |
 | TOOL-ENG-22 | `run_bounded_tool_loop` / `ctx.invoke_tool` delegates to injected pattern (remove hardcoded loop) | **Done** |
 | TOOL-ENG-23 | `ApplicationEnvironmentProfile` + `catalog_runtime_bridge` wiring | **Done** |
 | TOOL-ENG-24 | Entry-point registry `intergrax.tool_invocation_patterns` | **Done** |
-| TOOL-ENG-29 | `ToolInvocationAggregate` — batch result merge contract | **Done** |
+| TOOL-ENG-29 | `ToolInvocationAggregate` - batch result merge contract | **Done** |
 | TOOL-ENG-27 | Trace telemetry: `ops:tool_invocation_pattern`, pattern_id in diag | **Done** |
 | TOOL-ENG-28 | CI gate `check_tool_invocation_patterns.py` | **Done** |
 | TOOL-ENG-30 | `lab_application` reference wiring for each shipped pattern | **Done** |
@@ -516,7 +516,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | Stable bundles | **47** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
-**Bundle index (selected):** `interaction` (3) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `eval` (7) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) — full list in [Full tool index](.#full-tool-index) below.
+**Bundle index (selected):** `interaction` (3) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `eval` (7) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) - full list in [Full tool index](.#full-tool-index) below.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -545,11 +545,11 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `rag.search_by_metadata` | **Done** | Metadata-only index scan (exact key/value filters) | `vectorstore_manager` + `VectorstoreIndexLifecycleBinding` |
 | `rag.purge_collection` | **Done** | Controlled collection purge (dry-run + tenant scope) | `vectorstore_manager` |
 
-**Catalog providers:** Phase O complete — all first-party tools registered; applications wire via `host/tool_wiring.py`.
+**Catalog providers:** Phase O complete - all first-party tools registered; applications wire via `host/tool_wiring.py`.
 
-**Ready-to-use hosts:** `lab_application`, `legal_application`, `research_application`, `poc_template_application` — see [`intergrax/tools/USAGE.md`](../../../../intergrax/tools/USAGE.md).
+**Ready-to-use hosts:** `lab_application`, `legal_application`, `research_application`, `poc_template_application` - see [`intergrax/tools/USAGE.md`](../../../../intergrax/tools/USAGE.md).
 
-**Product env flags:** `LEGAL_ENABLE_RAG` / `LEGAL_ENABLE_RAG_INGEST`, `RESEARCH_ENABLE_RAG` / `RESEARCH_ENABLE_RAG_INGEST` — wire vectorstore + embedding managers in `host/tool_wiring.py`.
+**Product env flags:** `LEGAL_ENABLE_RAG` / `LEGAL_ENABLE_RAG_INGEST`, `RESEARCH_ENABLE_RAG` / `RESEARCH_ENABLE_RAG_INGEST` - wire vectorstore + embedding managers in `host/tool_wiring.py`.
 
 ### Execution & sandbox
 
@@ -557,7 +557,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 |---------|--------|-------------|----------|
 | `sandbox.exec` | **Done** | Execute allowlisted operation in runtime sandbox | `sandbox_session` via `ToolWiringContext`; optional `sandbox_host` integration → `HostedSandboxSession` bridge (M.6 P6) |
 
-**Orchestrated ephemeral codegen** (`codecraft.*`) is **not** owned by this catalog — see [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md) ↔ [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md). Low-level primitives (`code.exec`, `script.run`, `sandbox.exec`) remain substrate for ECC and direct agent use.
+**Orchestrated ephemeral codegen** (`codecraft.*`) is **not** owned by this catalog - see [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md) ↔ [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md). Low-level primitives (`code.exec`, `script.run`, `sandbox.exec`) remain substrate for ECC and direct agent use.
 
 ### Security (M.6 P6)
 
@@ -629,14 +629,14 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `pagerduty.trigger_incident` | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
 | `pagerduty.acknowledge_incident` | **Done** (T10) | Acknowledge incident by dedup key | `NotificationChannel` (`pagerduty`) |
 
-### Speech (modality — Phase W-ML)
+### Speech (modality - Phase W-ML)
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
 | `speech.synthesize` | **Done** | Text-to-speech synthesis | `SpeechProviderBackend` (`deepgram`, `elevenlabs`, …) via `ToolWiringContext.speech_provider` |
 | `speech.transcribe` | **Done** | Speech-to-text transcription | `SpeechProviderBackend` |
 
-### Vision (modality — Plane C)
+### Vision (modality - Plane C)
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
@@ -690,7 +690,7 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | Bundle | tool_ids | Composes |
 |--------|----------|----------|
 | `knowledge` | `knowledge.get_page`, `knowledge.search` | `WikiKnowledge` (any wiki slug) |
-| `document` | `document.parse`, `document.parse_preview` | `DocumentParser` — enable explicitly in `ToolProfile` (not auto-enabled from ingest-only profiles) |
+| `document` | `document.parse`, `document.parse_preview` | `DocumentParser` - enable explicitly in `ToolProfile` (not auto-enabled from ingest-only profiles) |
 | `browser` | `browser.fetch_page` | `BrowserAutomation` |
 | `storage` | `storage.get`, `storage.put`, `storage.presigned_url`, `storage.delete`, `storage.exists` | `ObjectStorage` |
 | `issues` | `issues.get_issue`, `issues.add_comment`, `issues.search`, `issues.create_issue` | `IssueTracker` + `IssueCreator` (provider-agnostic; complements `jira.*` / `gitlab.*`) |
@@ -710,7 +710,7 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 
 ---
 
-## Tool metadata (contract — Phase O.1 Done)
+## Tool metadata (contract - Phase O.1 Done)
 
 | Field | Purpose | Status |
 |-------|---------|--------|
@@ -721,9 +721,9 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | `input_schema` / `output_schema` | Pydantic models → JSON Schema export | **Done** |
 | `risk_level` | `ToolRiskLevel`: LOW \| MEDIUM \| HIGH \| CRITICAL | **Done** |
 | `side_effects` | Whether invocation mutates external state | **Done** |
-| `injects_context` | When true, Nexus merges output into LLM prompt (§22.1) | **Done** — catalog shim in `catalog_context.py` |
+| `injects_context` | When true, Nexus merges output into LLM prompt (§22.1) | **Done** - catalog shim in `catalog_context.py` |
 | `timeout_ms` | Runtime-enforced ceiling via `RuntimeToolInvoker` | **Done** |
-| `retry_policy` | `ToolRetryPolicy` — runtime-managed retries | **Done** |
+| `retry_policy` | `ToolRetryPolicy` - runtime-managed retries | **Done** |
 | `error_mapping` | Exception type → `RuntimeErrorCode` | **Done** |
 | `category` / `tags` | Filtering for large tool sets and MCP grouping | **Done** |
 
@@ -738,7 +738,7 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | `ToolInvocationPlan.use_tools` | `use_tools=True` (`CatalogToolPlanner` over registry) |
 | `LegalToolPlan.use_rag` / `use_websearch` | `tool_ids` + legacy booleans (auto-synced) |
 
-**Rule:** No new platform capability flags — ship as catalog tools. Legacy booleans emit deprecation trace when used without explicit `tool_ids`. See §7.1.7 and Phase O.5 (**Done**).
+**Rule:** No new platform capability flags - ship as catalog tools. Legacy booleans emit deprecation trace when used without explicit `tool_ids`. See §7.1.7 and Phase O.5 (**Done**).
 
 ---
 
@@ -753,17 +753,17 @@ ToolRegistry (from wire_*_tools)
     → FastMCP server (alongside list_agents, run_agent)
 ```
 
-OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by `CatalogToolPlanner` / `ToolPlanningService`.
+OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` - used by `CatalogToolPlanner` / `ToolPlanningService`.
 
 ---
 
 ## Full tool index
 
-Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7** + **T8** + **T9** + **T10**).
+Alphabetical reference - all **150** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7** + **T8** + **T9** + **T10**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
-| `braintrust.log_eval` | braintrust | observability | **Done** | `braintrust` — [USAGE](../../../../intergrax/tools/providers/braintrust/USAGE.md) |
+| `braintrust.log_eval` | braintrust | observability | **Done** | `braintrust` - [USAGE](../../../../intergrax/tools/providers/braintrust/USAGE.md) |
 | `browser.fetch_page` | browser | browser | **Done** | `BrowserAutomation` |
 | `cache.get` | cache | cache | **Done** | `KeyValueCache` |
 | `cache.set` | cache | cache | **Done** | `KeyValueCache` |
@@ -789,7 +789,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `database.describe_schema` | database | database | **Done** | `RelationalStore` (sqlite introspection) |
 | `database.execute` | database | database | **Done** | `RelationalStore` |
 | `database.query` | database | database | **Done** | `RelationalStore` |
-| `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.get_page` | confluence | wiki | **Done** | `confluence` - [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
 | `document.parse` | document | document | **Done** | `DocumentParser` |
 | `document.parse_preview` | document | document | **Done** | `DocumentParser` (bounded preview) |
 | `filesystem.glob` | filesystem | filesystem | **Done** | allowlisted read roots |
@@ -802,12 +802,12 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `eval.record_observation` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.summarize_release` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.export_observations` | eval | eval | **Done** (T10) | `OnlineEvaluationRegistry` (V-EVAL) |
-| `eval.judge` | eval | eval | **Done** (T13 / CRIT-V) | LLM-as-judge semantic scoring — `CriticProfile` |
+| `eval.judge` | eval | eval | **Done** (T13 / CRIT-V) | LLM-as-judge semantic scoring - `CriticProfile` |
 | `eval.trajectory` | eval | eval | **Done** (T13 / CRIT-V) | Trajectory/process scoring from run trace |
-| `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
-| `confluence.search_pages` | confluence | wiki | **Done** | `confluence` — [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
-| `errors.capture` | observability | observability | **Done** | `sentry` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
-| `gitlab.create_issue` | gitlab | issue_tracker | **Done** | `gitlab` — [USAGE](../../../../intergrax/tools/providers/gitlab/USAGE.md) |
+| `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) - [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.search_pages` | confluence | wiki | **Done** | `confluence` - [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
+| `errors.capture` | observability | observability | **Done** | `sentry` - [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `gitlab.create_issue` | gitlab | issue_tracker | **Done** | `gitlab` - [USAGE](../../../../intergrax/tools/providers/gitlab/USAGE.md) |
 | `graph.get_node` | graph | graph | **Done** | `GraphStore` |
 | `graph.run_query` | graph | graph | **Done** | `GraphStore` |
 | `harness.get_run` | harness | harness | **Done** | `RunTraceReader` / `trace_reader` ctx slot |
@@ -844,9 +844,9 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `identity.verify_token` | identity | identity | **Done** | `IdentityProviderBackend` |
 | `knowledge.get_page` | knowledge | knowledge | **Done** | `WikiKnowledge` |
 | `knowledge.search` | knowledge | knowledge | **Done** | `WikiKnowledge` |
-| `jira.add_comment` | jira | issue_tracker | **Done** | `jira` — [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
-| `jira.get_issue` | jira | issue_tracker | **Done** | `jira` — [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
-| `jira.search_tasks` | jira | issue_tracker | **Done** | `jira` — [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.add_comment` | jira | issue_tracker | **Done** | `jira` - [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.get_issue` | jira | issue_tracker | **Done** | `jira` - [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.search_tasks` | jira | issue_tracker | **Done** | `jira` - [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
 | `memory.list_keys` | memory | memory | **Done** | `TaskMemoryViewBinding` |
 | `memory.read` | memory | memory | **Done** | `TaskMemoryViewBinding` |
 | `memory.write` | memory | memory | **Done** | `TaskMemoryViewBinding` |
@@ -857,19 +857,19 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `message_bus.get_status` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.list_tasks` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.purge_completed` | message_bus | message_bus | **Done** (T10) | `MessageBus` (`TaskQueue.purge_completed`) |
-| `logs.search` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
-| `logs.tail` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
-| `metrics.query_instant` | observability | observability | **Done** | `prometheus` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
-| `metrics.query_range` | observability | observability | **Done** | `prometheus` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `logs.search` | observability | observability | **Done** | `elasticsearch` / `opensearch` - [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `logs.tail` | observability | observability | **Done** | `elasticsearch` / `opensearch` - [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `metrics.query_instant` | observability | observability | **Done** | `prometheus` - [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `metrics.query_range` | observability | observability | **Done** | `prometheus` - [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
 | `ml.batch_predict` | ml | ml | **Done** | `intergrax/model_inference` |
 | `ml.explain` | ml | ml | **Done** | `model_inference` |
 | `ml.predict` | ml | ml | **Done** | `model_inference` |
-| `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.send_batch` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.schedule` | notify | notification | **Done** (T10) | `ScheduledNotificationBinding` — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.list_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.cancel_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.dispatch_due` | notify | notification | **Done** (T12) | Tier-0 scheduled notification dispatcher — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.send` | notify | notification | **Done** | `notification_channel` slug - [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.send_batch` | notify | notification | **Done** | `notification_channel` slug - [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.schedule` | notify | notification | **Done** (T10) | `ScheduledNotificationBinding` - [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.list_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` - [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.cancel_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` - [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.dispatch_due` | notify | notification | **Done** (T12) | Tier-0 scheduled notification dispatcher - [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
 | `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
 | `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
@@ -877,29 +877,29 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `platform.get_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
 | `platform.cancel_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
 | `platform.list_workflow_runs` | platform | platform | **Done** | `CiCdBackend` |
-| `observability.query_traces` | observability | observability | **Done** | `langfuse` / observability slug — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
-| `openai.file_search.query` | openai_vector_store | retrieval | **Beta** | OpenAI `file_search` — [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
-| `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
-| `openai.vector_store.upload` | openai_vector_store | retrieval | **Beta** | OpenAI Files API — [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
-| `pagerduty.trigger_incident` | pagerduty | notification | **Done** | `pagerduty` — [USAGE](../../../../intergrax/tools/providers/pagerduty/USAGE.md) |
-| `pagerduty.acknowledge_incident` | pagerduty | notification | **Done** (T10) | `pagerduty` adapter — [USAGE](../../../../intergrax/tools/providers/pagerduty/USAGE.md) |
-| `rag.check_index_status` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.delete_documents` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.describe_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.get_document` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.ingest_document` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.purge_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.search_by_metadata` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `observability.query_traces` | observability | observability | **Done** | `langfuse` / observability slug - [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `openai.file_search.query` | openai_vector_store | retrieval | **Beta** | OpenAI `file_search` - [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API - [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `openai.vector_store.upload` | openai_vector_store | retrieval | **Beta** | OpenAI Files API - [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `pagerduty.trigger_incident` | pagerduty | notification | **Done** | `pagerduty` - [USAGE](../../../../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `pagerduty.acknowledge_incident` | pagerduty | notification | **Done** (T10) | `pagerduty` adapter - [USAGE](../../../../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `rag.check_index_status` | rag | retrieval | **Done** | `vectorstore_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.delete_documents` | rag | retrieval | **Done** | `vectorstore_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.describe_collection` | rag | retrieval | **Done** | `vectorstore_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.get_document` | rag | retrieval | **Done** | `vectorstore_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.ingest_document` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.purge_collection` | rag | retrieval | **Done** | `vectorstore_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.search_by_metadata` | rag | retrieval | **Done** | `vectorstore_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
 | `records.describe_collection` | records | records | **Done** | `DocumentStore` |
 | `records.delete` | records | records | **Done** | `DocumentStore` |
 | `records.get` | records | records | **Done** | `DocumentStore` |
 | `records.put` | records | records | **Done** | `DocumentStore` |
 | `records.query` | records | records | **Done** | `DocumentStore` |
 | `records.count` | records | records | **Done** (T10) | `DocumentStore` |
-| `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` - [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.rerank` | rag | retrieval | **Done** | `reranker_manager` / `RerankProvider` |
-| `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../../../../intergrax/tools/providers/sandbox/USAGE.md) |
+| `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` - [USAGE](../../../../intergrax/tools/providers/sandbox/USAGE.md) |
 | `storage.delete` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.get` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.presigned_url` | storage | storage | **Done** | `ObjectStorage` |
@@ -916,10 +916,10 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `vector_store.delete` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
 | `vector_store.health` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
 | `vector_store.list_collections` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
-| `websearch.fetch_batch` | websearch | retrieval | **Done** | page fetch pipeline — [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
-| `websearch.query` | websearch | retrieval | **Done** | `websearch_executor`, `search_provider` — [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
-| `websearch.read_url` | websearch | retrieval | **Done** | page fetch — [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
-| `websearch.invalidate_cache` | websearch | retrieval | **Done** | `WebSearchCacheBinding` — [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.fetch_batch` | websearch | retrieval | **Done** | page fetch pipeline - [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.query` | websearch | retrieval | **Done** | `websearch_executor`, `search_provider` - [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.read_url` | websearch | retrieval | **Done** | page fetch - [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.invalidate_cache` | websearch | retrieval | **Done** | `WebSearchCacheBinding` - [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
 | `workflow.cancel_run` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.fetch_logs` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.poll` | workflow | workflow | **Done** | `workflow_orchestrator` |
@@ -963,15 +963,15 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 
 ## Adding a new tool
 
-1. Add handler under `intergrax/tools/providers/<domain>` — subclass `ServiceToolHandler` (or `WiringContextToolHandler` for custom logic); put business logic in `service.py`.
-2. Compose existing integration contracts — add integration provider first if missing.
+1. Add handler under `intergrax/tools/providers/<domain>` - subclass `ServiceToolHandler` (or `WiringContextToolHandler` for custom logic); put business logic in `service.py`.
+2. Compose existing integration contracts - add integration provider first if missing.
 3. Register in `register_default_tools()` (Phase O.2).
 4. Add unit tests under `tests/unit/tools/providers/<domain>`.
 5. Add `providers/<domain>/USAGE.md` (English).
 6. Update this catalog and Phase O tracker in the implementation plan.
 7. Wire in one Tier-3 application via `ToolProfile` + `ToolWiringContext`.
 
-Delivery checklist: [plan/TOOLS.md) — Phase O.4 workflow.
+Delivery checklist: [plan/TOOLS.md) - Phase O.4 workflow.
 
 ---
 

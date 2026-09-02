@@ -1,4 +1,4 @@
-# Audit result — `CODE_CRAFT`
+# Audit result - `CODE_CRAFT`
 
 **Run:** 2026-06-19 · **Mode:** audit_only + implement (ECC-MAINT-DOC-01)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated (L3+)
@@ -60,4 +60,4 @@ check_codecraft_layer.py                                                       �
 
 ## Recommendation
 
-**Architecturally Mature (L3+)** — runtime Done; §6.1aw closed. Next domain: `SKILLS`.
+**Architecturally Mature (L3+)** - runtime Done; §6.1aw closed. Next domain: `SKILLS`.

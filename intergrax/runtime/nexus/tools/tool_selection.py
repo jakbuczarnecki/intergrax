@@ -58,7 +58,7 @@ class StaticAllowListSelectionStrategy:
     """Use explicit plan ``tool_ids`` when present; otherwise no strategy filter."""
 
     def select_tool_ids(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
-        if ctx.plan_allowed_tool_ids:
+        if ctx.plan_allowed_tool_ids is not None:
             return tuple(ctx.plan_allowed_tool_ids)
         return None
 
@@ -256,15 +256,13 @@ def resolve_planner_allowed_tool_ids(
         entry_point_strategy_id=entry_point_strategy_id,
     )
     strategy_ids = strategy.select_tool_ids(ctx)
-    plan_ids = tuple(catalog_tool_ids(ctx.plan_allowed_tool_ids or ()))
-
-    if plan_ids and strategy_ids is not None:
-        allowed = frozenset(strategy_ids)
-        intersected = tuple(tool_id for tool_id in plan_ids if tool_id in allowed)
-        return intersected
-
-    if plan_ids:
+    if ctx.plan_allowed_tool_ids is not None:
+        plan_ids = tuple(catalog_tool_ids(ctx.plan_allowed_tool_ids))
+        if strategy_ids is not None:
+            allowed = frozenset(strategy_ids)
+            return tuple(tool_id for tool_id in plan_ids if tool_id in allowed)
         return plan_ids
+
     return strategy_ids
 
 
@@ -286,14 +284,13 @@ async def resolve_planner_allowed_tool_ids_async(
         strategy_ids = await strategy.select_tool_ids_async(ctx)
     else:
         strategy_ids = strategy.select_tool_ids(ctx)
-    plan_ids = tuple(catalog_tool_ids(ctx.plan_allowed_tool_ids or ()))
-
-    if plan_ids and strategy_ids is not None:
-        allowed = frozenset(strategy_ids)
-        return tuple(tool_id for tool_id in plan_ids if tool_id in allowed)
-
-    if plan_ids:
+    if ctx.plan_allowed_tool_ids is not None:
+        plan_ids = tuple(catalog_tool_ids(ctx.plan_allowed_tool_ids))
+        if strategy_ids is not None:
+            allowed = frozenset(strategy_ids)
+            return tuple(tool_id for tool_id in plan_ids if tool_id in allowed)
         return plan_ids
+
     return strategy_ids
 
 

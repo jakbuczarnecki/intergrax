@@ -28,4 +28,4 @@ Governed access to: `message_bus.list_tasks`, `message_bus.purge_completed`, `lo
 
 ## Related skills
 
-- Other `message_bus` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `message_bus` bundle skills - see bundle [USAGE.md](../USAGE.md)

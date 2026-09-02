@@ -4,7 +4,7 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# TOKEN_OPTIMIZATION — domain architecture cross-references
+# TOKEN_OPTIMIZATION - domain architecture cross-references
 
 **Parent hub:** [`TOKEN_OPTIMIZATION.md`](../TOKEN_OPTIMIZATION.md)  
 **Feature plan (1:1):** [`../../plan/TOKEN_OPTIMIZATION.md`](../../plan/TOKEN_OPTIMIZATION.md)  
@@ -29,7 +29,7 @@ After direct domain architecture documents are updated, this file remains useful
 Each participating domain architecture should contain a concise line or section near the header/read-scope block:
 
 ```markdown
-**Cross-feature — Token Optimization:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../features/architecture/TOKEN_OPTIMIZATION.md) · [`features/plan/TOKEN_OPTIMIZATION.md`](../../features/plan/TOKEN_OPTIMIZATION.md). <DOMAIN-SPECIFIC OWNERSHIP SENTENCE>
+**Cross-feature - Token Optimization:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../features/architecture/TOKEN_OPTIMIZATION.md) · [`features/plan/TOKEN_OPTIMIZATION.md`](../../features/plan/TOKEN_OPTIMIZATION.md). <DOMAIN-SPECIFIC OWNERSHIP SENTENCE>
 ```
 
 Use relative links appropriate to `docs/project/architecture/<DOMAIN>.md`:
@@ -113,7 +113,7 @@ Optional edit scope, only before starting the corresponding TOKEN slice:
 - docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md
 - docs/project/architecture/RAG.md
 
-In each file, add one concise `Cross-feature — Token Optimization` entry in the header/read-scope area, with links to:
+In each file, add one concise `Cross-feature - Token Optimization` entry in the header/read-scope area, with links to:
 - ../features/architecture/TOKEN_OPTIMIZATION.md
 - ../features/plan/TOKEN_OPTIMIZATION.md
 
@@ -140,6 +140,6 @@ When auditing TOKEN-10 implementation, verify:
 - metric-family separation (content reduction vs prefix-cache reuse)
 - universal proof ownership under intergrax/runtime/token_optimization/proof/ (not LKW)
 - no LKW duplication of router, pipeline, cache gate, or proof harness
-- README promotion gate — only TOKEN-10H after TOKEN-10G passes
+- README promotion gate - only TOKEN-10H after TOKEN-10G passes
 
 Cross-domain rows: TOKEN-LLM-2, TOKEN-LLM-3 in docs/project/maintainers/plans/LLM_ADAPTERS.md; LKW-PF6-A..C in LKW docs after universal proof.

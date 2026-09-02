@@ -1,23 +1,23 @@
 
-# DECISION_VERIFICATION — extended architecture
+# DECISION_VERIFICATION - extended architecture
 
 **Parent hub:** [`DECISION_VERIFICATION.md`](../DECISION_VERIFICATION.md)
 
-> **Canon:** frozen target. Verification checks — Decision Lifecycle revises and finalizes.
+> **Canon:** frozen target. Verification checks - Decision Lifecycle revises and finalizes.
 
 ---
 
 ## 1. Verification Pipeline model
 
-The **Verification Pipeline** evaluates exactly one **Decision Version** per invocation and returns a **Verification Result** — optionally containing a **Challenge** that requests lifecycle revision. Pipelines are **declarative compositions** of registered stages, not a monolithic orchestrator class.
+The **Verification Pipeline** evaluates exactly one **Decision Version** per invocation and returns a **Verification Result** - optionally containing a **Challenge** that requests lifecycle revision. Pipelines are **declarative compositions** of registered stages, not a monolithic orchestrator class.
 
 Verification answers whether this version satisfies configured correctness gates. It does **not** authorize execution, finalize authoritative decisions, own global retry, or invoke HITL.
 
 | Output | Meaning |
 | ------ | ------- |
-| Pass | Stages satisfied for this version — lifecycle may continue |
-| Challenge | Semantic insufficiency — lifecycle mints new version |
-| Fail / block | Required stage failed — bounded revision or terminal resolution |
+| Pass | Stages satisfied for this version - lifecycle may continue |
+| Challenge | Semantic insufficiency - lifecycle mints new version |
+| Fail / block | Required stage failed - bounded revision or terminal resolution |
 
 ---
 
@@ -25,7 +25,7 @@ Verification answers whether this version satisfies configured correctness gates
 
 Each **VerificationStage** is a typed plugin with explicit **required vs optional** posture, ordering constraints, and stage-kind contract. Stages emit **typed sub-results** aggregated into the Verification Result.
 
-Stages register through platform contracts — domain teams add structural, deterministic, evidence, semantic, trajectory, or independent verifiers without forking the pipeline kernel.
+Stages register through platform contracts - domain teams add structural, deterministic, evidence, semantic, trajectory, or independent verifiers without forking the pipeline kernel.
 
 ---
 
@@ -33,7 +33,7 @@ Stages register through platform contracts — domain teams add structural, dete
 
 First-line validation of **Decision Artifact** shape, schema version, and contract validity. Cheap rejection before probabilistic stages.
 
-Fails closed on malformed payloads — no downstream semantic spend on structurally invalid candidates.
+Fails closed on malformed payloads - no downstream semantic spend on structurally invalid candidates.
 
 ---
 
@@ -47,9 +47,9 @@ Deterministic failure blocks acceptance unless profile routes to revision with b
 
 ## 5. Evidence verification
 
-Validates evidence references, claim admissibility, and provenance requirements for evidence-backed decisions. Integrates with Evidence Claims domain semantics — eval/shadow systems remain **outside** runtime pipeline ownership.
+Validates evidence references, claim admissibility, and provenance requirements for evidence-backed decisions. Integrates with Evidence Claims domain semantics - eval/shadow systems remain **outside** runtime pipeline ownership.
 
-Missing or inadmissible evidence fails closed per profile — no synthetic pass.
+Missing or inadmissible evidence fails closed per profile - no synthetic pass.
 
 ---
 
@@ -57,13 +57,13 @@ Missing or inadmissible evidence fails closed per profile — no synthetic pass.
 
 Rubric-backed LLM evaluation when configured. Requires **rubric provenance** (named, versioned criteria) before execution. Missing rubric → fail closed.
 
-Semantic stages use **independent provider/model configuration** from the producer — or declare **non-independent** mode explicitly in profile.
+Semantic stages use **independent provider/model configuration** from the producer - or declare **non-independent** mode explicitly in profile.
 
 ---
 
 ## 7. Trajectory verification
 
-Evaluates multi-step reasoning paths where configured — distinct from single-shot semantic rubric on final artifact. Useful for agentic trajectories without conflating trajectory critique with authorization.
+Evaluates multi-step reasoning paths where configured - distinct from single-shot semantic rubric on final artifact. Useful for agentic trajectories without conflating trajectory critique with authorization.
 
 ---
 
@@ -88,7 +88,7 @@ flowchart TD
     VR -->|pass| NEXT[Continue lifecycle]
 ```
 
-Stages run in configured order. Conflicting **required** stage outcomes fail closed or route to adjudication / `UNRESOLVED` per profile — not last-stage wins.
+Stages run in configured order. Conflicting **required** stage outcomes fail closed or route to adjudication / `UNRESOLVED` per profile - not last-stage wins.
 
 ---
 
@@ -97,7 +97,7 @@ Stages run in configured order. Conflicting **required** stage outcomes fail clo
 | Class | Fail-closed rule |
 | ----- | ---------------- |
 | Required stage | Unavailable → no synthetic pass |
-| Optional stage | May be skipped when disabled — never silently substitute pass |
+| Optional stage | May be skipped when disabled - never silently substitute pass |
 
 Optional stages never mask required-stage failure.
 
@@ -105,19 +105,19 @@ Optional stages never mask required-stage failure.
 
 ## 11. Fail-closed semantics
 
-Missing required stage, unavailable verifier, unresolved rubric, or unresolved canonical identity → **no synthetic pass**. Profiles may route to `UNRESOLVED` or HITL — never silent acceptance.
+Missing required stage, unavailable verifier, unresolved rubric, or unresolved canonical identity → **no synthetic pass**. Profiles may route to `UNRESOLVED` or HITL - never silent acceptance.
 
 ---
 
 ## 12. Verifier unavailability
 
-Required verifier unavailable → fail closed (profile may route to `UNRESOLVED` or HITL — never silent pass). Infrastructure outage is not automatic REJECTED — resolution semantics remain lifecycle-owned.
+Required verifier unavailable → fail closed (profile may route to `UNRESOLVED` or HITL - never silent pass). Infrastructure outage is not automatic REJECTED - resolution semantics remain lifecycle-owned.
 
 ---
 
 ## 13. Producer / verifier separation
 
-Semantic stages must use meaningfully independent provider/model configuration from the producer — or declare **non-independent** mode explicitly in profile. Self-judge without declaration is forbidden in regulated profiles.
+Semantic stages must use meaningfully independent provider/model configuration from the producer - or declare **non-independent** mode explicitly in profile. Self-judge without declaration is forbidden in regulated profiles.
 
 ---
 
@@ -125,19 +125,19 @@ Semantic stages must use meaningfully independent provider/model configuration f
 
 Named rubrics resolve to versioned criteria with provenance before semantic evaluation. Judge construction isolates **trusted instructions / rubric** from **untrusted candidate content**.
 
-Verification records bind Decision ID + Version + tenant + execution identity (`TaskId` / `RunId` / `AttemptId` / TARGET `ExecutionId`) — no default-tenant fallbacks.
+Verification records bind Decision ID + Version + tenant + execution identity (`TaskId` / `RunId` / `AttemptId` / TARGET `ExecutionId`) - no default-tenant fallbacks.
 
 ---
 
 ## 15. Prompt-injection boundary
 
-Trusted vs untrusted boundary: rubric and system instructions are trusted; candidate content and retrieved context are untrusted inputs to the judge. Posture resists indirect prompt injection in verification — without persisting private chain-of-thought as authority.
+Trusted vs untrusted boundary: rubric and system instructions are trusted; candidate content and retrieved context are untrusted inputs to the judge. Posture resists indirect prompt injection in verification - without persisting private chain-of-thought as authority.
 
 ---
 
 ## 16. Challenge artifact and revision request boundary
 
-A **Challenge** signals semantic insufficiency with structured fields consumed by revision policy. The pipeline **does not** mutate the candidate — **Decision Lifecycle** mints `v(n+1)`.
+A **Challenge** signals semantic insufficiency with structured fields consumed by revision policy. The pipeline **does not** mutate the candidate - **Decision Lifecycle** mints `v(n+1)`.
 
 ```mermaid
 sequenceDiagram
@@ -153,7 +153,7 @@ sequenceDiagram
 
 ## 17. Stage verdict vs Decision Resolution
 
-Passing verification stages is **necessary but not sufficient** for ACCEPTED — Lifecycle applies resolution, optional adjudication, and finalization rules. Stage pass ≠ execution allowed.
+Passing verification stages is **necessary but not sufficient** for ACCEPTED - Lifecycle applies resolution, optional adjudication, and finalization rules. Stage pass ≠ execution allowed.
 
 | Layer | Question |
 | ----- | -------- |
@@ -165,6 +165,6 @@ Passing verification stages is **necessary but not sufficient** for ACCEPTED —
 
 ## 18. Provenance and audit evidence
 
-Observability records per-stage outcomes, rubric refs, challenge payloads, and correlation keys — without private CoT. Reconstruct: Decision ID, Decision Version, stage sequence, challenges, and handoff to revision.
+Observability records per-stage outcomes, rubric refs, challenge payloads, and correlation keys - without private CoT. Reconstruct: Decision ID, Decision Version, stage sequence, challenges, and handoff to revision.
 
 **Paired depth:** [`DECISION_SYSTEM_extended_depth.md`](DECISION_SYSTEM_extended_depth.md) · [`DECISION_DELIBERATION_extended_depth.md`](DECISION_DELIBERATION_extended_depth.md)

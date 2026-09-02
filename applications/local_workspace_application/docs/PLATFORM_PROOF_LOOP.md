@@ -1,4 +1,4 @@
-# Local Knowledge Workspace (LKW) — Platform Proof Loop
+# Local Knowledge Workspace (LKW) - Platform Proof Loop
 
 **Status:** active governance rule for LKW implementation  
 **Parent:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
@@ -19,8 +19,8 @@ A wave is not complete when LKW works manually but the reusable platform, scaffo
 
 Every non-trivial LKW step must include two acceptance layers:
 
-1. **Product acceptance** — the LKW capability works.
-2. **Platform acceptance** — the reusable lesson is propagated to the platform, scaffold, settings, build/deploy path, or CI/CD surface when applicable.
+1. **Product acceptance** - the LKW capability works.
+2. **Platform acceptance** - the reusable lesson is propagated to the platform, scaffold, settings, build/deploy path, or CI/CD surface when applicable.
 
 This prevents proving only a hand-built LKW application while leaving the platform unable to generate the next application correctly.
 
@@ -30,9 +30,9 @@ This prevents proving only a hand-built LKW application while leaving the platfo
 
 Before closing any LKW task, classify every discovered bug, workaround, repeated implementation pattern, missing diagnostic, scaffold gap, configuration mismatch, Docker/build issue, dependency issue, or CI/runbook gap as one of:
 
-1. `LKW-specific` — belongs only to the local workspace domain; record why no platform propagation is needed.
-2. `Platform-reusable` — affects how future Intergrax applications should be generated, configured, run, tested, observed, packaged, or deployed; update the reusable surface in the same task when safe.
-3. `Platform-reusable deferred` — reusable, but too large for the current task; record a blocking follow-up before moving to the next LKW wave.
+1. `LKW-specific` - belongs only to the local workspace domain; record why no platform propagation is needed.
+2. `Platform-reusable` - affects how future Intergrax applications should be generated, configured, run, tested, observed, packaged, or deployed; update the reusable surface in the same task when safe.
+3. `Platform-reusable deferred` - reusable, but too large for the current task; record a blocking follow-up before moving to the next LKW wave.
 
 This gate applies to both implementation and diagnostic work.
 
@@ -117,13 +117,13 @@ The LKW implementation order becomes:
 
 This is the correct proof model: LKW proves the platform by forcing the platform to absorb every reusable lesson from the product implementation.
 
-**Platform proof scope (2026-07):** The loop now explicitly covers provider-switch and production-maturity proofs beyond product capability slices — including model serving providers, persistence/database, vector stores, observability backends, metrics/tracing/error monitoring, token optimization, and scaffold/deploy propagation. Strategic roadmap: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF.
+**Platform proof scope (2026-07):** The loop now explicitly covers provider-switch and production-maturity proofs beyond product capability slices - including model serving providers, persistence/database, vector stores, observability backends, metrics/tracing/error monitoring, token optimization, and scaffold/deploy propagation. Strategic roadmap: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF.
 
 ---
 
 ## 9. Platform proof maturity bar (LKW-PF0)
 
-LKW-driven platform proofs use four distinct maturity levels. Future proofs — including **Token Optimization** (`LKW-PF6`) — must apply this bar before claiming closure or production readiness.
+LKW-driven platform proofs use four distinct maturity levels. Future proofs - including **Token Optimization** (`LKW-PF6`) - must apply this bar before claiming closure or production readiness.
 
 ### 9.1 Platform proof
 
@@ -137,7 +137,7 @@ A platform proof may be **closed** when all of the following hold:
 - application-specific code did not bypass platform boundaries;
 - known production gaps are explicitly recorded.
 
-**Does not mean:** production-grade readiness. Closing a platform proof validates the integration boundary and reusable lesson — not full production operation.
+**Does not mean:** production-grade readiness. Closing a platform proof validates the integration boundary and reusable lesson - not full production operation.
 
 ### 9.2 Operational proof
 
@@ -151,11 +151,11 @@ An operational proof may be **closed** when all of the following hold:
 - proof results can be inspected;
 - limitations are documented.
 
-**Does not mean:** full production readiness. Operational proof confirms repeatability and inspectability in a proof environment — not hardened production deployment.
+**Does not mean:** full production readiness. Operational proof confirms repeatability and inspectability in a proof environment - not hardened production deployment.
 
 ### 9.3 Production-grade readiness
 
-**Definition:** A higher maturity level requiring production-oriented concerns to be implemented and verified — not merely planned or deferred.
+**Definition:** A higher maturity level requiring production-oriented concerns to be implemented and verified - not merely planned or deferred.
 
 Claim production-grade readiness only when applicable items below are **actually implemented and verified**:
 
@@ -178,7 +178,7 @@ Claim production-grade readiness only when applicable items below are **actually
 
 Rules:
 
-- **`closed proof != production complete`** — a closed platform proof remains valid; production gaps do not reopen proof scope.
+- **`closed proof != production complete`** - a closed platform proof remains valid; production gaps do not reopen proof scope.
 - Record gaps in the owning platform plan (for example [`docs/project/maintainers/plans/OBSERVABILITY.md`](../../../docs/project/maintainers/plans/OBSERVABILITY.md) Phase OBS-VENDOR for observability vendors).
 - Future hardening work continues without invalidating or reopening the already-valid platform proof.
 - Do not downgrade closed proof status when adding backlog items.
@@ -190,9 +190,9 @@ When closing any LKW-driven platform proof wave:
 1. State which maturity level is being closed (platform proof, operational proof, or production-grade).
 2. If closing platform or operational proof, record remaining production gaps in the production hardening backlog.
 3. Do not imply production-grade readiness unless §9.3 criteria are met.
-4. Preserve platform boundary discipline — no application-specific bypass of contracts or integration paths.
+4. Preserve platform boundary discipline - no application-specific bypass of contracts or integration paths.
 
-### 9.6 Canonical example — Elasticsearch/Kibana observability
+### 9.6 Canonical example - Elasticsearch/Kibana observability
 
 | Maturity level | Status | Notes |
 |----------------|--------|-------|
@@ -205,13 +205,13 @@ When closing any LKW-driven platform proof wave:
 
 ---
 
-## 10. LKW-PF6-0 — Token Optimization proof design
+## 10. LKW-PF6-0 - Token Optimization proof design
 
 **Status:** **Done / Closed** (docs-only, 2026-07-01).
 
 **Maturity level closed:** proof design only. Does **not** close `LKW-PF6` platform proof, operational proof, or production-grade readiness.
 
-**Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate **before** `TOKEN-1A` code starts. Token Optimization is a **cross-layer platform capability** — not a private LKW feature. Narrative: Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos.
+**Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate **before** `TOKEN-1A` code starts. Token Optimization is a **cross-layer platform capability** - not a private LKW feature. Narrative: Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems - not hand-wired demos.
 
 Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0. Implementation schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout.
 
@@ -230,7 +230,7 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 | **LKW-TOK-W3** | Repeated synthesis run with similar tool/catalog/context exposure | Measures recurring tool-catalog and context-pack savings across runs with stable exposure. |
 | **LKW-TOK-W4** | Failure/safety-preserving run where exact regions must not be compressed | Proves optimization rejection/fallback when protected regions or safety boundaries would be violated. |
 
-Proof design only — no fixtures or scripts in this step.
+Proof design only - no fixtures or scripts in this step.
 
 ### 10.2 Baseline measurement shape
 
@@ -371,9 +371,9 @@ The later public-grade LKW token proof (`LKW-PF6-C`) must include:
 
 ---
 
-## 11. LKW-PF6 — Token Optimization product proof (planned)
+## 11. LKW-PF6 - Token Optimization product proof (planned)
 
-**Prerequisite:** Universal platform proof **TOKEN-10G** must pass before LKW product proof begins. **LKW-PF6-0** (proof design) is **Done / Closed** — see §10.
+**Prerequisite:** Universal platform proof **TOKEN-10G** must pass before LKW product proof begins. **LKW-PF6-0** (proof design) is **Done / Closed** - see §10.
 
 ### Canonical ordering
 
@@ -385,19 +385,19 @@ LKW-PF6-B             → runtime integration (consume platform contracts)
 LKW-PF6-C             → baseline-vs-optimized product proof
 ```
 
-### LKW-PF6-A — Product baseline
+### LKW-PF6-A - Product baseline
 
 Measure real LKW flows **without** optimization: workspace search; evidence/context assembly; synthesis; tool exposure; repeated conversational steps; protected evidence path.
 
-### LKW-PF6-B — Runtime integration
+### LKW-PF6-B - Runtime integration
 
 LKW supplies product policy, classifications, evidence, identity, and explicit enablement. LKW consumes stable prompt/runtime contract, router, cache-aware gate, pipeline, receipts, and metrics. **LKW must not duplicate** Token Optimization components.
 
-### LKW-PF6-C — Product proof
+### LKW-PF6-C - Product proof
 
 Compare baseline and optimized runs: input tokens, content-reduction savings, prefix-cache reuse, latency, evidence preservation, tenant isolation, protected regions, answer quality, fallbacks, receipts, observability attribution.
 
-**Maturity:** LKW-PF6-C closure is product proof — not automatic production-grade readiness. Distinction: proof design → platform proof → operational proof → production-grade readiness.
+**Maturity:** LKW-PF6-C closure is product proof - not automatic production-grade readiness. Distinction: proof design → platform proof → operational proof → production-grade readiness.
 
 Canonical detail: [`docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md`](../../../docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6 proof phase map; schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6.
 
@@ -409,8 +409,8 @@ The canonical gateway answers: **which Intergrax capabilities can be proven on t
 
 | Artifact | Role |
 |----------|------|
-| `scripts/proof/intergrax_proof_manifest.py` | Typed manifest — proof membership, profiles, commands, environment/platform requirements |
-| `scripts/proof/intergrax_proof_runner.py` | Master runner — selection, subprocess execution, aggregation, receipt |
+| `scripts/proof/intergrax_proof_manifest.py` | Typed manifest - proof membership, profiles, commands, environment/platform requirements |
+| `scripts/proof/intergrax_proof_runner.py` | Master runner - selection, subprocess execution, aggregation, receipt |
 | `scripts/proof/run-intergrax-proof-suite.py` | Operator entrypoint |
 
 ### Commands
@@ -427,7 +427,7 @@ uv run python scripts/proof/run-intergrax-proof-suite.py --profile live
 
 | Profile | Semantics |
 |---------|-----------|
-| `quick` | Fast, deterministic, local proofs — no required external-provider calls |
+| `quick` | Fast, deterministic, local proofs - no required external-provider calls |
 | `full` | All locally executable proofs for the current machine (includes `quick`) |
 | `live` | Adds real external-provider proofs (includes `full`) |
 
@@ -451,13 +451,13 @@ uv run python scripts/proof/run-intergrax-proof-suite.py --profile live
 
 ### Receipts
 
-Machine-readable receipts are written to `.artifacts/proof/<timestamp>-<profile>-<short-sha>.json` (gitignored). Receipts include commit SHA, dirty-worktree flag, per-proof status, and safe diagnostics — never tokens, API keys, or environment values.
+Machine-readable receipts are written to `.artifacts/proof/<timestamp>-<profile>-<short-sha>.json` (gitignored). Receipts include commit SHA, dirty-worktree flag, per-proof status, and safe diagnostics - never tokens, API keys, or environment values.
 
 ### Tests vs proofs vs qualification
 
-- **Unit/integration tests** — regression gates in CI; not public evidence by themselves.
-- **Proof scripts** — bounded, operator-runnable evidence workloads referenced by the manifest.
-- **Real-provider qualification** — live `PASS` against Slack/Google/M365 requires credentials and explicit `live` profile execution; implementation `PASS` alone is not external qualification.
+- **Unit/integration tests** - regression gates in CI; not public evidence by themselves.
+- **Proof scripts** - bounded, operator-runnable evidence workloads referenced by the manifest.
+- **Real-provider qualification** - live `PASS` against Slack/Google/M365 requires credentials and explicit `live` profile execution; implementation `PASS` alone is not external qualification.
 
 Canonical manifest is the source of truth. Individual LKW reviewer guides (for example [`applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md`](proof/LKW_PLATFORM_PROOF.md)) explain how to run domain proofs; the suite orchestrates them without duplicating their implementation.
 

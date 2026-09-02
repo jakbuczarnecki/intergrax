@@ -1,4 +1,4 @@
-# Audit result — `SKILLS`
+# Audit result - `SKILLS`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -32,9 +32,9 @@ uv run pytest tests/unit/skills/ -q
 
 ## Backlog P2–P4 (deferred)
 
-- check_agent_skill_resolution boundary_demo legacy — P2 ACP
-- Knowledge bundle BETA maturity — P3
-- Optional SK-PRESET depth packs — P4
+- check_agent_skill_resolution boundary_demo legacy - P2 ACP
+- Knowledge bundle BETA maturity - P3
+- Optional SK-PRESET depth packs - P4
 
 ---
 

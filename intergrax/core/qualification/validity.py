@@ -149,3 +149,16 @@ class QualificationValidityInterpretation:
     qualification_run_id: QualificationRunId
     validity: QualificationEvidenceValidity
     latest_record: QualificationValidityRecord
+
+    def __post_init__(self) -> None:
+        validate_qualification_run_id(self.qualification_run_id)
+        if not isinstance(self.validity, QualificationEvidenceValidity):
+            raise TypeError("validity must be QualificationEvidenceValidity")
+        if not isinstance(self.latest_record, QualificationValidityRecord):
+            raise TypeError("latest_record must be QualificationValidityRecord")
+        if self.latest_record.qualification_run_id != self.qualification_run_id:
+            raise ValueError(
+                "latest_record.qualification_run_id must match qualification_run_id",
+            )
+        if self.latest_record.validity != self.validity:
+            raise ValueError("latest_record.validity must match validity")

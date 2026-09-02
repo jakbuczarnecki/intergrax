@@ -1,4 +1,4 @@
-# UNIFIED_EXECUTION_RUNTIME — §42.8+ runtime depth
+# UNIFIED_EXECUTION_RUNTIME - §42.8+ runtime depth
 
 **Parent hub:** [`UNIFIED_EXECUTION_RUNTIME.md`](../UNIFIED_EXECUTION_RUNTIME.md)
 
@@ -111,7 +111,7 @@ AgentDecision.REQUEST_HUMAN | Interrupt → HUMAN_JUDGMENT_REQUIRED
     → emit HUMAN_APPROVAL_REQUESTED
     → Middleware: BEFORE_HUMAN_APPROVAL
     → PauseRecord created; task → waiting_for_human (§23)
-    → Notification via Tier-0 adapter (Slack/Teams/UI) — triggered by Nexus, NOT agent
+    → Notification via Tier-0 adapter (Slack/Teams/UI) - triggered by Nexus, NOT agent
     → Human responds: APPROVE | REJECT | MODIFY | DELEGATE
     → emit HUMAN_APPROVAL_RECEIVED
     → Middleware: AFTER_HUMAN_APPROVAL
@@ -214,32 +214,32 @@ RuntimePolicyBundle:
 **Composition rules:**
 
 - Tier-3 application factory builds the bundle once at startup → `ApplicationBuildContext.policy_bundle` → `RuntimeConfig.policy_bundle` / `RuntimeContext.policy_bundle` via `applications/_shared/runtime_config_bridge.py` (also maps `RuntimePolicyBundle.tool_access` → `RuntimeConfig.tool_scope_policy` when the bundle carries a `ToolScopePolicy` implementation).
-- Nexus and UAEP read from the bundle — agents MUST NOT construct parallel policy objects.
-- Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
+- Nexus and UAEP read from the bundle - agents MUST NOT construct parallel policy objects.
+- Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy - never bypasses `ToolRuntime`.
 
 Implementation: [`plan/UNIFIED_EXECUTION_RUNTIME.md) R-Policy (Done).
 
 ### 42.11.5 How to read policy for a run (operator)
 
-For a single task/run, policy is **composed once** at Tier-3 startup and read downstream — do not hunt per-agent ad-hoc rules.
+For a single task/run, policy is **composed once** at Tier-3 startup and read downstream - do not hunt per-agent ad-hoc rules.
 
 | Step | What to inspect | Where |
 |------|-----------------|--------|
 | 1 | Application bundle | `ApplicationBuildContext.policy_bundle` → `RuntimePolicyBundle` (tool access, budget, HITL, plan-loop, `domain_fragments`) |
 | 2 | Agent + skills | `AgentContract.skill_ids` → resolved `allowed_tools` + `policy_fragment_ids` (`SKILL_RESOLVED` event) |
 | 3 | Nexus execution | `ToolAccessPolicy` / `ToolRuntime` enforce allow-list per step (`resolve_allowed_tools_from_config` reads bundle + agent contract); `BudgetPolicy` on token/cost ceilings |
-| 4 | Legal / org overlays | `domain_fragments` keys (e.g. `legal.contract_review.policy`) — org settings may clamp flags before runtime |
+| 4 | Legal / org overlays | `domain_fragments` keys (e.g. `legal.contract_review.policy`) - org settings may clamp flags before runtime |
 | 5 | Human gates | `PolicyDecision.action == REQUIRE_HUMAN` → HITL pause; resume via checkpoint / approval metadata |
 
 **Trace checklist:** `RuntimeEvent` stream (`PLAN_CREATED`, `SKILL_RESOLVED`, `CONTEXT_ASSEMBLED`, tool events) + Nexus trace DB for planner/tool steps. Planner hard failures emit `PLAN_FAILED` (parse / PlanSource).
 
-**Authoring reference:** Tier-3 control-plane map (profiles, bundles, observability mandatory vs optional, verification commands) — [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane). Harness operator context: [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#harness-control-plane-authoring).
+**Authoring reference:** Tier-3 control-plane map (profiles, bundles, observability mandatory vs optional, verification commands) - [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane). Harness operator context: [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#harness-control-plane-authoring).
 
 ### 42.11.6 Guardrail catalog (operator index)
 
-**Terminology:** In Intergrax, **guardrails** are **not** a separate Tier-0/Tier-1 package. They are the **enforcement surface** of Policy & Governance — typed checks at UAEP hook points that produce `PolicyDecision`, `ValidationResult`, security inspection results, or provider safety signals (`refusal`, `content_filter`). Canonical Harness AI term: [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §5.3.1.
+**Terminology:** In Intergrax, **guardrails** are **not** a separate Tier-0/Tier-1 package. They are the **enforcement surface** of Policy & Governance - typed checks at UAEP hook points that produce `PolicyDecision`, `ValidationResult`, security inspection results, or provider safety signals (`refusal`, `content_filter`). Canonical Harness AI term: [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §5.3.1.
 
-**Ideal model:** prompt, output, tools, cost, execution time — [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.3. **Third-party guardrail engines** (NeMo Guardrails, Guardrails AI, LLM Guard, OpenGuardrails, …) are wired as **Integration Library** backends — see [`INTEGRATIONS.md`](INTEGRATIONS.md) §47.
+**Ideal model:** prompt, output, tools, cost, execution time - [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.3. **Third-party guardrail engines** (NeMo Guardrails, Guardrails AI, LLM Guard, OpenGuardrails, …) are wired as **Integration Library** backends - see [`INTEGRATIONS.md`](INTEGRATIONS.md) §47.
 
 #### Guardrail types → hook points → owners
 
@@ -283,14 +283,14 @@ Terminal:
     CVL final verification if require_critic_on_completion
 ```
 
-**Verification safety:** L0 / L1 / L2 authority, high-risk side-effect rules, and disallowed patterns — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8
+**Verification safety:** L0 / L1 / L2 authority, high-risk side-effect rules, and disallowed patterns - [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8
 
 #### What is explicitly not a guardrail layer
 
 | Anti-pattern | Why |
 |--------------|-----|
 | Agent-local `if` checks without trace | Untestable, bypasses PolicyEngine |
-| Direct vendor guardrail SDK in Tier-2 | Violates tier boundaries — use Integration → middleware |
+| Direct vendor guardrail SDK in Tier-2 | Violates tier boundaries - use Integration → middleware |
 | Duplicate policy objects per agent | Use `RuntimePolicyBundle` only (§42.11.4) |
 | CVL rubrics in Nexus for domain logic | Tier-2 owns rubric content; Nexus orchestrates only |
 
@@ -329,7 +329,7 @@ ToolResponse:
 1. **No direct adapter imports** in `agents` (§42.41).
 2. `ToolAccessPolicy` MUST filter against `AgentContract.allowed_tools`.
 3. Every invoke MUST emit `TOOL_REQUESTED` and terminal `TOOL_*` event.
-4. Denied tools return `ToolResponse(status=DENIED)` — agents MUST handle gracefully via `AgentDecision`.
+4. Denied tools return `ToolResponse(status=DENIED)` - agents MUST handle gracefully via `AgentDecision`.
 5. Sandbox-required tools MUST route through `SandboxAdapter` policy.
 6. Retries for tools are **runtime-managed** (§42.34), not agent loops.
 
@@ -337,7 +337,7 @@ ToolResponse:
 
 ## 42.13 Shared Execution Contracts
 
-Canonical contract bundle — all MUST be implemented or delegated by `AgentEngine`:
+Canonical contract bundle - all MUST be implemented or delegated by `AgentEngine`:
 
 | Contract | Owner | Purpose |
 |----------|-------|---------|
@@ -373,7 +373,7 @@ RuntimeExecutionContext:
     metadata: dict
 ```
 
-Agents receive `RuntimeExecutionContext` — never raw global singletons.
+Agents receive `RuntimeExecutionContext` - never raw global singletons.
 
 ---
 
@@ -426,7 +426,7 @@ Handoff payloads in shared context use keys prefixed with `handoff:` (see §42.1
 
 ### 42.14.3 Graph Delegation (Subagent Equivalent)
 
-Harness literature describes **subagents** as autonomous units with their own rules, model, and memory. Intergrax implements the **same outcome** through Tier-1 orchestration — not nested harness instances.
+Harness literature describes **subagents** as autonomous units with their own rules, model, and memory. Intergrax implements the **same outcome** through Tier-1 orchestration - not nested harness instances.
 
 | Harness subagent | Intergrax delegation |
 |------------------|----------------------|
@@ -446,7 +446,7 @@ DelegationSpec:
     child_agent_id: str
     isolated_memory_namespace: str
     context_assembly: TaskContextAssemblyOptions | null
-    inherit_tool_policy: bool              # default true — intersect with child contract
+    inherit_tool_policy: bool              # default true - intersect with child contract
 ```
 
 ---
@@ -509,11 +509,11 @@ ValidationResult:
 
 ### 42.16.2 Validation Stages (ordered)
 
-1. **Step-local** — agent `validate_step()` (optional)
-2. **Agent-local** — agent `validate()` (§13, required)
-3. **Runtime** — `NexusValidationEngine`
-4. **Dedicated ValidatorAgent** — graph node (§42.30)
-5. **Human** — when policy requires
+1. **Step-local** - agent `validate_step()` (optional)
+2. **Agent-local** - agent `validate()` (§13, required)
+3. **Runtime** - `NexusValidationEngine`
+4. **Dedicated ValidatorAgent** - graph node (§42.30)
+5. **Human** - when policy requires
 
 Failure at CRITICAL severity MUST NOT silently downgrade to WARNING.
 
@@ -614,7 +614,7 @@ Location: `intergrax/agents/agent_engine.py` (evolving toward full §42 complian
 - Invoke validation stages
 - Emit `RuntimeEvent` stream for agent execution
 - Assemble `AgentExecutionResult`
-- Return control to Nexus — never own global task loop
+- Return control to Nexus - never own global task loop
 
 ### 42.19.2 AgentEngine MUST NOT
 
@@ -646,7 +646,7 @@ class AgentEngine:
         ...
 ```
 
-Agents implement **`run_step` / domain pipeline** — NOT **`execute` lifecycle**.
+Agents implement **`run_step` / domain pipeline** - NOT **`execute` lifecycle**.
 
 ---
 
@@ -687,7 +687,7 @@ middleware_stack = [
 ### 42.20.3 Rules
 
 - Middleware MUST be stateless or use scoped context only.
-- Middleware MAY return BLOCK — core operation MUST NOT run.
+- Middleware MAY return BLOCK - core operation MUST NOT run.
 - Agent code MUST NOT register middleware; Tier-3 applications register at bootstrap.
 
 ---
@@ -696,14 +696,14 @@ middleware_stack = [
 
 Extensions are allowed only through **approved extension points**:
 
-1. `HookRegistry` — hooks (§42.3)
-2. `ToolRegistry` — new tools (Tier-0 + registration)
-3. `AgentRegistry` — new agents (Tier-2)
-4. `PolicyEngine` rules — Tier-3 config + `intergrax.policy_rules` EP (S3)
-5. `ValidationEngine` rules — registered validators
-6. Middleware plugins — Tier-3 bootstrap (`RuntimePlugin`)
-7. **Security defense plugins** — `intergrax.security_defenses` EP → S2 middleware (Phase SEC-PLANES; §42.45.3)
-8. **Integration catalog** — vendor security backends (`llm_guardrail`, `secrets_store`, `identity_provider`, `security_scanner`) — S1/S2 via Tier-3 profile slugs
+1. `HookRegistry` - hooks (§42.3)
+2. `ToolRegistry` - new tools (Tier-0 + registration)
+3. `AgentRegistry` - new agents (Tier-2)
+4. `PolicyEngine` rules - Tier-3 config + `intergrax.policy_rules` EP (S3)
+5. `ValidationEngine` rules - registered validators
+6. Middleware plugins - Tier-3 bootstrap (`RuntimePlugin`)
+7. **Security defense plugins** - `intergrax.security_defenses` EP → S2 middleware (Phase SEC-PLANES; §42.45.3)
+8. **Integration catalog** - vendor security backends (`llm_guardrail`, `secrets_store`, `identity_provider`, `security_scanner`) - S1/S2 via Tier-3 profile slugs
 
 ### Forbidden Extension Points
 
@@ -787,7 +787,7 @@ Every run MUST produce a **TraceRecord** containing:
 
 ### 42.24.3 Inspectability Guarantee
 
-An operator MUST reconstruct **why** the runtime stopped using trace + events alone — without reading agent source code.
+An operator MUST reconstruct **why** the runtime stopped using trace + events alone - without reading agent source code.
 
 **Unified run journal (OBS-DEPTH.1):** ``build_unified_run_journal()`` in
 ``intergrax/runtime/events/unified_run_journal.py`` merges persisted
@@ -828,7 +828,7 @@ cancel(task_id, reason, initiated_by)
 
 ### Rules
 
-- Cancellation is cooperative at step boundaries — steps MUST checkpoint frequently.
+- Cancellation is cooperative at step boundaries - steps MUST checkpoint frequently.
 - Parallel nodes: cancellation propagates to all descendants unless isolated branch policy says otherwise.
 - Cancelled tasks MUST NOT emit COMPLETE decisions.
 
@@ -920,7 +920,7 @@ for batch in graph.topological_batches():
 
 ## 42.31 Runtime Execution Phases
 
-Canonical **`ExecutionPhase`** enum — aligns events, hooks, traces, and state machine:
+Canonical **`ExecutionPhase`** enum - aligns events, hooks, traces, and state machine:
 
 ```text
 INTAKE
@@ -954,17 +954,17 @@ class DomainAgent(Agent):
         """Declarative step list OR runtime-generated from pipeline template."""
 
     async def run_step(self, step, ctx: RuntimeExecutionContext) -> StepOutput:
-        """Domain logic ONLY. No adapter calls — use ctx.tool_gateway."""
+        """Domain logic ONLY. No adapter calls - use ctx.tool_gateway."""
 
     def decide_after_step(self, step, output, ctx) -> AgentDecision:
-        """Return CONTINUE | INTERRUPT | ... — no side effects."""
+        """Return CONTINUE | INTERRUPT | ... - no side effects."""
 ```
 
 ### Rules
 
 - `max_steps` from contract enforced by AgentEngine (hard stop → FAIL decision).
 - No `while True` without step counter and runtime checkpoint.
-- Local loop iteration = one `AgentStep` per iteration — **not** hidden inner loops.
+- Local loop iteration = one `AgentStep` per iteration - **not** hidden inner loops.
 
 ---
 
@@ -973,7 +973,7 @@ class DomainAgent(Agent):
 The **runtime** owns the loop construct; the agent owns **step bodies**.
 
 ```text
-# CORRECT — runtime loop
+# CORRECT - runtime loop
 steps = agent.get_steps(ctx)
 for step in steps:
     if ctx.should_cancel(): break
@@ -981,7 +981,7 @@ for step in steps:
     if decision.type != CONTINUE:
         return decision
 
-# FORBIDDEN — agent-owned loop calling adapters (§42.41)
+# FORBIDDEN - agent-owned loop calling adapters (§42.41)
 async def execute(...):
     while not done:
         await postgres.query(...)   # FORBIDDEN
@@ -1037,7 +1037,7 @@ MemoryView:
 
 See §42.12. Summary:
 
-- `ctx.tool_gateway.invoke(ToolRequest)` — only path
+- `ctx.tool_gateway.invoke(ToolRequest)` - only path
 - Policy + contract enforced on every call
 - Tool results attached to trace automatically
 - Agent code receives `ToolResponse`, not raw adapter clients
@@ -1056,7 +1056,7 @@ Governance layers:
     4. ValidationEngine (multi-stage)
     5. HookRegistry (cross-cutting rules)
     6. Tier-3 application config (industry rules)
-    7. Optional llm_guardrail integration (vendor scanners — §42.11.6, INTEGRATIONS §47)
+    7. Optional llm_guardrail integration (vendor scanners - §42.11.6, INTEGRATIONS §47)
 ```
 
 No single layer is sufficient alone. **Guardrail catalog** (types, hooks, fail modes): §42.11.6.
@@ -1132,7 +1132,7 @@ The following are **explicitly forbidden** in Tier-2 agents and discouraged ever
 | **Custom EventBus instances** | Fragments observability |
 | **Human prompts inside agent** | Must use REQUEST_HUMAN decision |
 | **Duplicate Tier-0 mechanisms** | Second LLM layer, logger, tool registry, RAG stack, DB client (§5.2) |
-| **§42 scaffold as parallel platform** | Must wire into existing trace/tools/LLM — not replace them |
+| **§42 scaffold as parallel platform** | Must wire into existing trace/tools/LLM - not replace them |
 | **New universal Tier-0 without human approval** | Violates §5.2.4 platform governance |
 
 Violation in code review MUST block merge.
@@ -1204,9 +1204,9 @@ Task: "Design and validate new checkout flow for SaaS product"
    → TRACE_PERSISTENCE → COMPLETION
 ```
 
-All cross-agent data via `SharedTaskContext` / artifacts — never direct calls.
+All cross-agent data via `SharedTaskContext` / artifacts - never direct calls.
 
-**Authoring reference:** orchestration control plane (Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, customization surfaces) — [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane).
+**Authoring reference:** orchestration control plane (Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, customization surfaces) - [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane).
 
 **End-to-end flow reference (diagrams, edge cases, plan traceability):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md).
 
@@ -1259,8 +1259,8 @@ Every execution MUST carry identity, scope, and data boundaries (AUDIT_MAP §4).
 ### 42.44.2 Tenancy rules
 
 - `tenant_id` REQUIRED on trace events and policy evaluation for multi-tenant hosts.
-- Subagents MUST NOT inherit unrestricted parent permissions — delegation contracts cap scope.
-- Secrets ONLY via integration secrets backends — never in agent code or manifests.
+- Subagents MUST NOT inherit unrestricted parent permissions - delegation contracts cap scope.
+- Secrets ONLY via integration secrets backends - never in agent code or manifests.
 
 ### 42.44.3 Code map
 
@@ -1278,7 +1278,7 @@ Tier-3 declares posture in `IdentityProfile`; Tier-1 enforces on execution path.
 
 ## 42.45 Security and Data Governance
 
-Agent-native threats MUST have explicit defenses (AUDIT_MAP §23). Security is a **runtime property of the Harness Agent OS** — not a separate tier, domain pair, or parallel execution engine.
+Agent-native threats MUST have explicit defenses (AUDIT_MAP §23). Security is a **runtime property of the Harness Agent OS** - not a separate tier, domain pair, or parallel execution engine.
 
 **Canonical index:** Security & Trust Planes (§42.45.3) · guardrail hook map (§42.11.6) · ideal model §3.2–3.3 · **Plan:** [Phase SEC-PLANES](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-active) (Done) · [Phase SEC-PLANES-EVOL](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-active) (Active).
 
@@ -1298,16 +1298,16 @@ Agent-native threats MUST have explicit defenses (AUDIT_MAP §23). Security is a
 | Override without audit | S1 | `critical_action_signing.py`, immutable audit trail |
 | Audit trail gap | S1+S3 | Policy + trace on governance-critical actions |
 
-`ApplicationSecurityProfile` (Tier-3) toggles S2 defenses per host. Wiring MUST reach `ToolRuntime` and RAG retrieval path — not documentation-only.
+`ApplicationSecurityProfile` (Tier-3) toggles S2 defenses per host. Wiring MUST reach `ToolRuntime` and RAG retrieval path - not documentation-only.
 
-### 42.45.2 Architectural decision — no separate Security tier
+### 42.45.2 Architectural decision - no separate Security tier
 
 | Decision | Rationale |
 |----------|-----------|
 | **No** standalone `SecurityEngine` or 23rd domain pair | Violates **SYS-INV-10** (one canonical path per concern); duplicates UAEP + PolicyEngine |
 | **No** guardrails as a separate Tier-0/Tier-1 package | Guardrails are the **enforcement surface** of Policy & Governance (§42.11.6) |
-| **Yes** Security & Trust Planes as a **logical index** inside UAEP | Same pattern as modality planes ([`MODALITY.md`](MODALITY.md)) — documentation + provider catalog, not a new runtime loop |
-| **Yes** modular providers and plugins | Through approved extension points (§42.21) — integrations, `policy_rules`, `intergrax.security_defenses` EP |
+| **Yes** Security & Trust Planes as a **logical index** inside UAEP | Same pattern as modality planes ([`MODALITY.md`](MODALITY.md)) - documentation + provider catalog, not a new runtime loop |
+| **Yes** modular providers and plugins | Through approved extension points (§42.21) - integrations, `policy_rules`, `intergrax.security_defenses` EP |
 
 Governance failures MUST default to **fail-closed** on strict / CRITICAL-risk hosts (`SecurityEnvelope.strict()`).
 
@@ -1317,13 +1317,13 @@ Three planes compose security on the **same UAEP hook timeline** (§42.11.6). Pl
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  S1 — Identity & Trust Plane                                             │
+│  S1 - Identity & Trust Plane                                             │
 │  Who acts? Which tenant? Where do secrets live? Is the action signed?    │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  S2 — Runtime Defense Plane                                              │
+│  S2 - Runtime Defense Plane                                              │
 │  Is this payload / tool / chunk safe? (inspection at UAEP hooks)          │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  S3 — Governance & Compliance Plane                                      │
+│  S3 - Governance & Compliance Plane                                      │
 │  May execution continue? Limits? HITL? Data classification? Org rules?   │
 └──────────────────────────────────────────────────────────────────────────┘
                               ▲
@@ -1342,7 +1342,7 @@ Three planes compose security on the **same UAEP hook timeline** (§42.11.6). Pl
 
 **Ideal model mapping:** S1 ↔ IDEAL §3.2 Identity & Trust · S2+S3 ↔ IDEAL §3.3 Policy & Governance · AUDIT_MAP §4, §5, §23.
 
-### 42.45.4 Composition root — `SecurityEnvelope`
+### 42.45.4 Composition root - `SecurityEnvelope`
 
 Tier-3 hosts declare the full trust boundary in one typed bundle (`intergrax/applications/contracts/environment_profile/bundles.py`):
 
@@ -1358,11 +1358,11 @@ SecurityEnvelope
 
 **Shipped presets:** `SecurityEnvelope.lab()`, `SecurityEnvelope.strict()` (S1+S2 defense bundles), `SecurityEnvelope.production()` (S1+S2+S3 + encryption bridge) · integration preset `harness_defense_stack()`.
 
-**Wiring entry points (Tier-3):** `wire_application_security()`, `wire_application_guardrail()`, `wire_policy_bundle()`, `build_harness_host_runtime()` — assembly validated by `security_assembly_resolver` + CI `check_harness_security_wiring.py`.
+**Wiring entry points (Tier-3):** `wire_application_security()`, `wire_application_guardrail()`, `wire_policy_bundle()`, `build_harness_host_runtime()` - assembly validated by `security_assembly_resolver` + CI `check_harness_security_wiring.py`.
 
 ### 42.45.5 Provider and extension catalog
 
-Modularity is delivered through **four extension surfaces** — not a monolithic engine:
+Modularity is delivered through **four extension surfaces** - not a monolithic engine:
 
 | Surface | Entry point / mechanism | Plane | Shipped examples | Author extension |
 |---------|-------------------------|-------|------------------|------------------|
@@ -1374,7 +1374,7 @@ Modularity is delivered through **four extension surfaces** — not a monolithic
 
 **Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](../guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [Appendix S](../guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §10 (policy rules) · §12 (security defenses).
 
-Tier-2 agents **MUST NOT** implement parallel security — they consume a host already configured via `SecurityEnvelope`.
+Tier-2 agents **MUST NOT** implement parallel security - they consume a host already configured via `SecurityEnvelope`.
 
 ### 42.45.6 Execution timeline (single run)
 
@@ -1408,13 +1408,13 @@ TERMINAL
 | Pattern | Why forbidden |
 |---------|---------------|
 | Standalone `SecurityEngine` beside UAEP | Duplicate path; SYS-INV-10 |
-| Vendor guardrail SDK in Tier-2 agents | SYS-INV-17 — use Integration → middleware |
+| Vendor guardrail SDK in Tier-2 agents | SYS-INV-17 - use Integration → middleware |
 | Defense in agent code without trace | Untestable; bypasses PolicyEngine |
 | Parallel policy object per agent | Single `RuntimePolicyBundle` per host |
 | Harness-native blockchain / receipt product | Out of scope M.6; Tier-3 adapter pattern when product requires portable attestation |
 | Tier-0 encryption SDK in agents | Use `secrets_store` integration + ENC bridge (§42.45.9) |
 
-### 42.45.8 Maturity — Done vs planned
+### 42.45.8 Maturity - Done vs planned
 
 | Capability | Status | Plan ID |
 |------------|--------|---------|
@@ -1429,7 +1429,7 @@ TERMINAL
 | Encryption enforcement bridge (`RESTRICTED` → secrets_store) | **Done** | ENC-* |
 | Author map Appendix H / EXTENSION §12 sync | **Done** | SEC-PLANES-DOC.2–3 |
 
-**Follow-on (enterprise hardening):** [Phase SEC-PLANES-EVOL](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-closed) — **Done** (2026-06-19).
+**Follow-on (enterprise hardening):** [Phase SEC-PLANES-EVOL](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-closed) - **Done** (2026-06-19).
 
 | Capability | Status | Plan ID |
 |------------|--------|---------|
@@ -1446,15 +1446,15 @@ TERMINAL
 |-------|-----------|-------|
 | **Transit** | TLS on HTTP/MCP hosts | Tier-3 deployment / reverse proxy |
 | **Secrets at rest** | `IntegrationProfile.secrets_store` slug (Vault, Doppler, …) | S1 integration catalog |
-| **RESTRICTED payload gate** | `EncryptionEnforcementMiddleware` + `require_secrets_store_for_encryption` | S2/S3 profile on strict hosts — **deny** when backend missing |
-| **RESTRICTED payload transform** | Encrypt via `secrets_store` integration adapter before persist/tool return | S1 integration — **Done** SEC-EVOL-4 / SEC-ENT-1 |
-| **Field-level KMS** | Not in harness — use integration adapter in Tier-3 product | Out of SEC-PLANES scope |
+| **RESTRICTED payload gate** | `EncryptionEnforcementMiddleware` + `require_secrets_store_for_encryption` | S2/S3 profile on strict hosts - **deny** when backend missing |
+| **RESTRICTED payload transform** | Encrypt via `secrets_store` integration adapter before persist/tool return | S1 integration - **Done** SEC-EVOL-4 / SEC-ENT-1 |
+| **Field-level KMS** | Not in harness - use integration adapter in Tier-3 product | Out of SEC-PLANES scope |
 
-No duplicate KMS SDK in Tier-0 — agents consume resolved secrets via platform integrations only.
+No duplicate KMS SDK in Tier-0 - agents consume resolved secrets via platform integrations only.
 
-### 42.45.10 Enterprise hardening — maturity model and backlog
+### 42.45.10 Enterprise hardening - maturity model and backlog
 
-Phase SEC-PLANES (2026-06-19) delivers a **harness-grade** Security & Trust Planes foundation. The items below close gaps identified in the post-implementation enterprise audit — they do **not** introduce a new tier or `SecurityEngine`.
+Phase SEC-PLANES (2026-06-19) delivers a **harness-grade** Security & Trust Planes foundation. The items below close gaps identified in the post-implementation enterprise audit - they do **not** introduce a new tier or `SecurityEngine`.
 
 | Maturity area | SEC-PLANES baseline | SEC-PLANES-EVOL target |
 |---------------|---------------------|------------------------|

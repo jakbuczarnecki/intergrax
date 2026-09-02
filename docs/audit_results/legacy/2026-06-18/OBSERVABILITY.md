@@ -1,4 +1,4 @@
-# Audit result — `OBSERVABILITY`
+# Audit result - `OBSERVABILITY`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 16)  
 **Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
@@ -22,7 +22,7 @@
 |----|----------|---------|----------|--------|
 | OBS-GAP-01 | P3 | OBS-EVOL-9.9 `runtime_event.v2` deferred | OBS-LC deferred | **planned** (OBS-MAINT-01) |
 | OBS-GAP-02 | P4 | Product dashboards §6.3a | Phase K scope | **planned** (OBS-MAINT-02 cross-ref) |
-| OBS-GAP-03 | P3 | Audit prompt stale — OBS-EVOL-9 Planned | M0–M3 **Done** | **planned** (OBS-MAINT-03) |
+| OBS-GAP-03 | P3 | Audit prompt stale - OBS-EVOL-9 Planned | M0–M3 **Done** | **planned** (OBS-MAINT-03) |
 | OBS-GAP-04 | P3 | Pre-release spine consolidation checklist depth | audit prompt | **planned** (OBS-MAINT-04) |
 
 No open P0/P1. OBS-EVOL-9 M0–M3 **Done** · OBS-LC **Done**.
@@ -52,10 +52,10 @@ All green: **107 passed**.
 
 ## Backlog P2–P4 (planned / deferred)
 
-- OBS-MAINT-01..04 — §6.1av
+- OBS-MAINT-01..04 - §6.1av
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature (L3)** — spine Done; post-publication schema + prompt sync tracked.
+**Architecturally Mature (L3)** - spine Done; post-publication schema + prompt sync tracked.

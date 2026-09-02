@@ -66,15 +66,11 @@ from intergrax.runtime.execution.active_execution_budget import (
     reset_active_execution_budget,
 )
 from intergrax.runtime.execution.active_execution_resume import (
-    ActiveExecutionResumePlan,
-    bind_active_execution_resume_plan,
     peek_active_execution_resume_plan,
-    reset_active_execution_resume_plan,
 )
 from intergrax.runtime.execution.active_execution_work_port import (
     ActiveExecutionWorkPortBinding,
 )
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.execution.budget.consumption import consume_llm_call
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
@@ -99,8 +95,6 @@ from intergrax.runtime.governance.active_execution_authority import (
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
-    build_task_checkpoint_resume_plan,
-    prepare_task_for_checkpoint_resume,
     resolve_task_runtime_checkpoint,
 )
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
@@ -114,12 +108,15 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionNode,
-    ExecutionNodeStatus,
 )
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
+from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -133,7 +130,6 @@ _AGENT_B = "agent_b"
 _AGENT_C = "agent_c"
 _AGENT_D = "agent_d"
 _CAPABILITY = "cap.shared"
-_AUTHORITY = ParentExecutionAuthority.scoped(("capability:read",))
 _DECISION_CONTRACT_GLOB = "intergrax/contracts/decision*.py"
 _FORBIDDEN_DECISION_TOKENS = (
     "intergrax.runtime.nexus",
@@ -141,6 +137,20 @@ _FORBIDDEN_DECISION_TOKENS = (
     "GraphExecutor",
     "OrchestrationExecutor",
     "StrategyExecutionRouter(",
+)
+_FORBIDDEN_DECISION_RECOVERY_TOKENS = (
+    "prepare_task_for_checkpoint_resume",
+    "build_task_checkpoint_resume_plan",
+    "bind_active_execution_resume_plan",
+    "reset_active_execution_resume_plan",
+    "UnifiedTaskRunner",
+)
+_FORBIDDEN_MAIN_PROOF_RECOVERY_CALLS = (
+    "build_task_checkpoint_resume_plan",
+    "prepare_task_for_checkpoint_resume",
+    "bind_active_execution_resume_plan",
+    "reset_active_execution_resume_plan",
+    "_run_graph",
 )
 _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget(max_llm_calls=50))
 
@@ -342,6 +352,55 @@ class _RecordingDecisionCheckpointPersistence(
         self._store[checkpoint.finalization.key] = checkpoint
 
 
+def _sequential_plan(task: Task) -> NexusPlan:
+    return NexusPlan(
+        task_id=task.task_id,
+        classification=TaskClassification.MULTI_AGENT.value,
+        steps=[
+            PlanStep(
+                step_id=_NODE_A,
+                agent_id=_AGENT_A,
+                capability=_CAPABILITY,
+            ),
+            PlanStep(
+                step_id=_NODE_B,
+                agent_id=_AGENT_B,
+                capability=_CAPABILITY,
+                depends_on=[_NODE_A],
+            ),
+            PlanStep(
+                step_id=_NODE_C,
+                agent_id=_AGENT_C,
+                capability=_CAPABILITY,
+                depends_on=[_NODE_B],
+            ),
+            PlanStep(
+                step_id=_NODE_D,
+                agent_id=_AGENT_D,
+                capability=_CAPABILITY,
+                depends_on=[_NODE_C],
+            ),
+        ],
+    )
+
+
+class _DeterministicSequentialPlanner:
+    """Composition-root planner returning the DS-NEXUS-02 sequential graph."""
+
+    def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
+        del registry
+        return _sequential_plan(task)
+
+
+class _DeterministicClassifier:
+    """Composition-root classifier for deterministic Nexus orchestration."""
+
+    def classify(self, task: Task) -> Task:
+        task.runtime.classification.value = TaskClassification.MULTI_AGENT.value
+        task.sync_metadata()
+        return task
+
+
 def _sequential_graph(task_id: TaskId) -> ExecutionGraph:
     return ExecutionGraph(
         graph_id="ds-nexus-02-resume-tree",
@@ -428,52 +487,6 @@ class _OrchestrationOnlyRouter:
     ) -> TaskResult:
         del request
         return await self._executor.execute(self._task)
-
-
-class _GraphOrchestrationDelegate:
-    __slots__ = ("_executor", "_graph", "_task")
-
-    def __init__(
-        self,
-        executor: GraphExecutor,
-        graph: ExecutionGraph,
-        task: Task,
-    ) -> None:
-        self._executor = executor
-        self._graph = graph
-        self._task = task
-
-    async def execute(self, request: object) -> tuple[object, ...]:
-        del request
-        budget_token = bind_root_execution_budget(
-            execution_id=require_active_execution_id(),
-            ledger=_UNLIMITED_LEDGER,
-        )
-        try:
-            return await self._executor.execute(self._graph, self._task)
-        finally:
-            reset_active_execution_budget(budget_token)
-
-
-async def _run_graph(
-    *,
-    executor: GraphExecutor,
-    task: Task,
-    graph: ExecutionGraph,
-    run_id: RunId,
-    attempt_id: AttemptId,
-    root_execution_id: ExecutionId,
-) -> tuple[object, ...]:
-    boundary = ExecutionBoundary(
-        _GraphOrchestrationDelegate(executor, graph, task),
-        identity=ExecutionIdentityBinding(
-            run_id=run_id,
-            attempt_id=attempt_id,
-            execution_id=root_execution_id,
-        ),
-        authority=_AUTHORITY,
-    )
-    return await boundary.execute(None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -669,28 +682,12 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
     loaded = store.get_by_token(task_id, tenant_id, "rt_ds_nexus_02")
     assert loaded is not None and loaded.runtime is not None
 
-    resumed_root = mint_execution_id()
-    assert resumed_root != orchestration_root_before
-
     task_resume = Task(
         task_id=task_id,
         tenant_id=tenant_id,
         user_id="u1",
         message="ds-nexus-02 resume",
         context=TaskContext(capability=_CAPABILITY),
-    )
-    resume_plan = build_task_checkpoint_resume_plan(
-        task_resume,
-        loaded,
-        active_attempt_id=attempt_id,
-        active_root_execution_id=resumed_root,
-    )
-    prepare_task_for_checkpoint_resume(
-        task_resume,
-        loaded,
-        active_attempt_id=attempt_id,
-        active_root_execution_id=resumed_root,
-        resume_plan=resume_plan,
     )
 
     gate_state.gate_open = True
@@ -699,22 +696,15 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         engine=engine,
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
     )
-    resume_graph = _sequential_graph(task_id)
-
-    resume_plan_token = bind_active_execution_resume_plan(
-        ActiveExecutionResumePlan(plan=resume_plan),
+    loop = NexusLoop(
+        registry,
+        graph_executor=resume_executor,
+        planner=_DeterministicSequentialPlanner(),
+        classifier=_DeterministicClassifier(),
+        retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
     )
-    try:
-        await _run_graph(
-            executor=resume_executor,
-            task=task_resume,
-            graph=resume_graph,
-            run_id=run_id,
-            attempt_id=attempt_id,
-            root_execution_id=resumed_root,
-        )
-    finally:
-        reset_active_execution_resume_plan(resume_plan_token)
+    runner = UnifiedTaskRunner(loop)
+    await runner.run_task(task_resume, resume_checkpoint=loaded)
 
     counts_final = engine.snapshot_counts()
     assert counts_final.agent_a == 1
@@ -738,8 +728,8 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         if entry.parent_execution_id is None
     ]
     assert len(root_entries) == 1
-    assert root_entries[0].execution_id == resumed_root
-    assert root_entries[0].execution_id != orchestration_root_before
+    resumed_root = root_entries[0].execution_id
+    assert resumed_root != orchestration_root_before
 
     execution_c_after = _execution_id_for_node(runtime_after, _NODE_C)
     assert execution_c_after is not None
@@ -757,7 +747,6 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
     assert entry_d.resumed_from_execution_id is None
     assert entry_d.status is ExecutionCheckpointStatus.COMPLETED
 
-    assert resume_graph.node_by_id(_NODE_D).status == ExecutionNodeStatus.COMPLETED
     assert any(authority_observed)
 
     restored_decision = load_decision_checkpoint(
@@ -869,15 +858,6 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
     assert capture.decision_key is not None
     saves_before = decision_store.save_calls
 
-    runtime_before = resolve_task_runtime_checkpoint(task)
-    assert runtime_before is not None
-    execution_a_before = _execution_id_for_node(runtime_before, _NODE_A)
-    execution_b_before = _execution_id_for_node(runtime_before, _NODE_B)
-    execution_c_before = _execution_id_for_node(runtime_before, _NODE_C)
-    assert execution_a_before is not None
-    assert execution_b_before is not None
-    assert execution_c_before is not None
-
     checkpoint = TaskCheckpoint(
         task_id=task_id,
         tenant_id=tenant_id,
@@ -895,9 +875,20 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
     corrupt_runtime = checkpoint.runtime.model_copy(
         update={"attempt_id": mismatched_attempt},
     )
+    corrupt_checkpoint = checkpoint.model_copy(update={"runtime": corrupt_runtime})
+
+    task_resume = Task(
+        task_id=task_id,
+        tenant_id=tenant_id,
+        user_id="u1",
+        message="ds-nexus-02 malformed resume",
+        context=TaskContext(capability=_CAPABILITY),
+    )
+    loop = NexusLoop(registry)
+    runner = UnifiedTaskRunner(loop)
 
     with pytest.raises(ValueError, match="attempt_id mismatch"):
-        corrupt_runtime.validate_canonical()
+        await runner.run_task(task_resume, resume_checkpoint=corrupt_checkpoint)
 
     reloaded = load_decision_checkpoint(decision_store, key=capture.decision_key)
     assert reloaded is not None
@@ -959,3 +950,50 @@ def test_child_execution_runner_used_by_work_port() -> None:
     ).read_text(encoding="utf-8")
     assert "ChildExecutionRunner" in port_source
     assert "child_execution_work_port" in port_source
+
+
+def _class_source(tree: ast.Module, class_name: str) -> str:
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            return ast.get_source_segment(
+                Path(__file__).read_text(encoding="utf-8"),
+                node,
+            ) or ""
+    raise AssertionError(f"class not found: {class_name}")
+
+
+def _function_source(tree: ast.Module, function_name: str) -> str:
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name:
+            return ast.get_source_segment(
+                Path(__file__).read_text(encoding="utf-8"),
+                node,
+            ) or ""
+    raise AssertionError(f"function not found: {function_name}")
+
+
+def test_main_recovery_proof_avoids_manual_resume_helpers() -> None:
+    source = Path(__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    proof_source = _function_source(
+        tree,
+        "test_decision_orchestration_checkpoint_recovery_participation",
+    )
+    for token in _FORBIDDEN_MAIN_PROOF_RECOVERY_CALLS:
+        assert token not in proof_source, (
+            f"main DS-NEXUS-02 proof must not call {token!r}"
+        )
+
+
+def test_decision_facing_code_does_not_invoke_recovery() -> None:
+    source = Path(__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    for class_name in (
+        "DecisionFacingOrchestrationProbe",
+        "_DecisionHostedOrchestrationDelegate",
+    ):
+        class_source = _class_source(tree, class_name)
+        for token in _FORBIDDEN_DECISION_RECOVERY_TOKENS:
+            assert token not in class_source, (
+                f"{class_name} must not reference recovery token {token!r}"
+            )

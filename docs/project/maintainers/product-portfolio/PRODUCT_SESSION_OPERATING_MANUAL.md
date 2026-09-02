@@ -142,7 +142,7 @@ For work inside a Product Session:
 
 **Product definition:**
 
-- pre-G0: selection record — [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md);
+- pre-G0: selection record - [PRODUCT_PORTFOLIO_SELECTION.md](PRODUCT_PORTFOLIO_SELECTION.md);
 - after G0: accepted G0.
 
 **Architecture:**
@@ -159,7 +159,7 @@ For work inside a Product Session:
 
 **Portfolio state:**
 
-- Portfolio Control artifacts — [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md), control cards, [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md), [DECISION_LOG.md](DECISION_LOG.md).
+- Portfolio Control artifacts - [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md), control cards, [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md), [DECISION_LOG.md](DECISION_LOG.md).
 
 **Rule:**
 
@@ -174,7 +174,7 @@ Do not change a Product Session artifact in order to make Portfolio Control stat
 Every Product Session cycle starts with:
 
 1. resolve current `development` HEAD;
-2. read product control card — see [products/](products/);
+2. read product control card - see [products/](products/);
 3. read current product architecture / plan if they exist;
 4. determine current accepted gate;
 5. determine next allowed action;
@@ -221,7 +221,7 @@ Platform analysis follows product architecture need. Architecture-before-platfor
 
 ## 7. New product bootstrap sequence
 
-For the four new products — see [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md):
+For the four new products - see [PRODUCT_BOOTSTRAP_RULES.md](PRODUCT_BOOTSTRAP_RULES.md):
 
 ```text
 Selection / admission
@@ -913,7 +913,7 @@ Explicitly prohibit:
 |-----------|-----|-------------------|
 | Program role | Existing reference product | Newly selected applications |
 | Program State | **ACTIVE** | **SELECTED** / Pre-bootstrap |
-| Retroactive bootstrap | **No** — no retroactive G0 / G1 / T0 | G0 required |
+| Retroactive bootstrap | **No** - no retroactive G0 / G1 / T0 | G0 required |
 | T0 / T1 | **No** retroactive T0 / T1 reuse scoring | T0 required before implementation |
 | Operating path | Continue authoritative roadmap | Full bootstrap sequence |
 | G4 | Applies prospectively | Applies when triggered |

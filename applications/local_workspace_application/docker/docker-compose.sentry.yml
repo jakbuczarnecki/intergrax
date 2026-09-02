@@ -8,7 +8,7 @@
 #
 # Starts a repo-owned local Sentry stack (UI http://127.0.0.1:9000) and configures
 # LKW to export safe problem metadata through the platform Sentry provider.
-# External SaaS DSN is optional override only — not required for canonical proof.
+# External SaaS DSN is optional override only - not required for canonical proof.
 
 include:
   - sentry.services.yml

@@ -1,8 +1,8 @@
-# LLM_ADAPTERS — routing and failover
+# LLM_ADAPTERS - routing and failover
 
 **Parent hub:** [`LLM_ADAPTERS.md`](../LLM_ADAPTERS.md)
 
-Deep technical canon for **profile routing** and **profile-chain failover** only. Hub public front, adapter envelope, `ModelCatalog`, provider catalog, and routing wave maturity register live elsewhere — do not duplicate them here.
+Deep technical canon for **profile routing** and **profile-chain failover** only. Hub public front, adapter envelope, `ModelCatalog`, provider catalog, and routing wave maturity register live elsewhere - do not duplicate them here.
 
 | Depth | Route |
 | ----- | ----- |
@@ -30,7 +30,7 @@ Deep technical canon for **profile routing** and **profile-chain failover** only
 
 ## Deterministic mental model
 
-Routing is **policy-driven and evidence-backed** — declarative rules over `RoutingContext` signals (budget, task class, step index, model hint, tenant/agent identity). It is **not** "AI automatically chooses the best model."
+Routing is **policy-driven and evidence-backed** - declarative rules over `RoutingContext` signals (budget, task class, step index, model hint, tenant/agent identity). It is **not** "AI automatically chooses the best model."
 
 ```text
 RoutingContext snapshot
@@ -41,14 +41,14 @@ RoutingEvaluation (selected_profile, policy_route_hint, routing_reason)
       ↓
 ModelRouter (order primary + fallback_profiles per policy hint)
       ↓
-LLMProfile.create_adapter_with_failover()  — or single adapter when no chain
+LLMProfile.create_adapter_with_failover()  - or single adapter when no chain
       ↓
 FailoverLLMAdapter (when chain length > 1)
       ↓
 adapter call(s)
 ```
 
-Live cost/latency/quality routing on AHI product paths is **wired** (AUDIT-IDEAL-6.2 **Done**) — hints and approved profiles feed `ModelRouter`; AHI `RoutingTuningEngine` may **recommend** profile order; policy engine **approves**; runtime executes the chain in-process (M-LLM-X.4 **Done**). Central LLM gateway microservice is an explicit non-goal.
+Live cost/latency/quality routing on AHI product paths is **wired** (AUDIT-IDEAL-6.2 **Done**) - hints and approved profiles feed `ModelRouter`; AHI `RoutingTuningEngine` may **recommend** profile order; policy engine **approves**; runtime executes the chain in-process (M-LLM-X.4 **Done**). Central LLM gateway microservice is an explicit non-goal.
 
 ---
 
@@ -60,7 +60,7 @@ Live cost/latency/quality routing on AHI product paths is **wired** (AUDIT-IDEAL
 | ---- | ---- |
 | `RoutingContext` | Immutable snapshot: `task_class`, `budget_remaining_ratio`, `tokens_used`, `step_index`, `model_hint`, `tenant_id`, `agent_id`, `budget_degrade_active` |
 | `RoutingTarget` | Rule output: `LLMProfile \| None`, `RoutingHint \| None`, `reason: str` |
-| `LLMRoutingRule` | **Protocol** — `rule_id`, `priority`, `matches(ctx)`, `resolve(ctx)` |
+| `LLMRoutingRule` | **Protocol** - `rule_id`, `priority`, `matches(ctx)`, `resolve(ctx)` |
 | `LLMRoutingRuleBase` | Optional ABC with helpers (`budget_below`, `task_is`, `tokens_above`, …) |
 | `LLMRoutingProfile` | Tier-3: `default_profile`, `allowed_profiles`, `rules: tuple[LLMRoutingRule, ...]` |
 | `RoutingEvaluation` | Evaluator result: `matched_rule_id`, `selected_profile`, `policy_route_hint`, `routing_reason` |
@@ -99,7 +99,7 @@ Built-in parametric rules (Tier-0 catalog) and custom Tier-3 `LLMRoutingRule` su
 | `CompositeAllRule` / `CompositeAnyRule` | AND / OR |
 | `AlwaysRule` | explicit catch-all |
 
-Full wave delivery checklist (M-LLM-X.9–16): audit register satellite — not repeated here.
+Full wave delivery checklist (M-LLM-X.9–16): audit register satellite - not repeated here.
 
 ### Custom rule example (Tier-3)
 
@@ -127,9 +127,9 @@ Wired in manifest: `LLMRoutingProfile(rules=(LowBudgetForceLocalRule(), BudgetBe
 ### Three-layer model
 
 ```text
-Layer 1 — Author rules (LLMRoutingProfile on Tier-3)     → explicit logic; wins over tuning hints
-Layer 2 — LLMRoutingEvaluator + ModelRouter (Tier-0)    → hot path (single router — SYS-INV-10)
-Layer 3 — AHI ROUTING_TUNING (optional)                  → bandit proposes ProfileVersion;
+Layer 1 - Author rules (LLMRoutingProfile on Tier-3)     → explicit logic; wins over tuning hints
+Layer 2 - LLMRoutingEvaluator + ModelRouter (Tier-0)    → hot path (single router - SYS-INV-10)
+Layer 3 - AHI ROUTING_TUNING (optional)                  → bandit proposes ProfileVersion;
                                                            does not execute arbitrary author code
 ```
 
@@ -168,30 +168,30 @@ Tier-3 wiring: `ApplicationEnvironmentProfile.llm_profile`, `resolve_llm_adapter
 
 ## Nexus run precedence
 
-Within a single Nexus run (hub canon — not reordered here):
+Within a single Nexus run (hub canon - not reordered here):
 
 ```text
-1. RuntimeConfig.llm_adapter           — primary producer
-2. resolve_planner_llm_adapter()       — optional separate planner adapter (Reasoning)
-3. CriticProfile / EvaluationProfile   — separate LLMProfile for judge paths
-4. ModelRouter + fallback_profiles     — runtime selection before adapter create (Done — M-LLM-X.4)
+1. RuntimeConfig.llm_adapter           - primary producer
+2. resolve_planner_llm_adapter()       - optional separate planner adapter (Reasoning)
+3. CriticProfile / EvaluationProfile   - separate LLMProfile for judge paths
+4. ModelRouter + fallback_profiles     - runtime selection before adapter create (Done - M-LLM-X.4)
 ```
 
-`RoutingEvaluatingLLMAdapter` (Tier-3 wrapper, M-LLM-X.11–12 **Done**) re-evaluates routing before LLM calls on core Nexus/UAEP paths; context refresh via `refresh_llm_routing_context()` at step boundaries. Secondary surfaces (tool planner, websearch, critic) receive routing snapshot sync or explicit routing metadata per M-LLM-X.12.12 / X-13 policy — see audit register.
+`RoutingEvaluatingLLMAdapter` (Tier-3 wrapper, M-LLM-X.11–12 **Done**) re-evaluates routing before LLM calls on core Nexus/UAEP paths; context refresh via `refresh_llm_routing_context()` at step boundaries. Secondary surfaces (tool planner, websearch, critic) receive routing snapshot sync or explicit routing metadata per M-LLM-X.12.12 / X-13 policy - see audit register.
 
 ---
 
 ## ACP `StepLLMRouter`
 
-**Done** — AUDIT-IDEAL-6.6 / M-LLM-X.5.4.
+**Done** - AUDIT-IDEAL-6.6 / M-LLM-X.5.4.
 
-`StepLLMRouter` (`intergrax/agents/authoring/llm_router.py`) resolves per-step `model_hint` against catalog + `LLMAdapter` allowlists. It is a **step-scoped hint port** within ACP contracts — not a replacement for `LLMRoutingProfile` rule authoring. When `llm_port` is wired, completion delegates to `LLMAdapter.generate_messages` (single DX).
+`StepLLMRouter` (`intergrax/agents/authoring/llm_router.py`) resolves per-step `model_hint` against catalog + `LLMAdapter` allowlists. It is a **step-scoped hint port** within ACP contracts - not a replacement for `LLMRoutingProfile` rule authoring. When `llm_port` is wired, completion delegates to `LLMAdapter.generate_messages` (single DX).
 
 ---
 
 ## Profile failover semantics
 
-Failover switches **profile / provider / model** on the ordered chain — not the same as per-call retry on one adapter.
+Failover switches **profile / provider / model** on the ordered chain - not the same as per-call retry on one adapter.
 
 ```text
 primary profile
@@ -200,17 +200,17 @@ adapter call (with per-call resilience on that adapter)
       ↓
 retriable provider failure?
    yes → next fallback profile (deterministic order)
-   no  → raise — failure remains visible; do not mask
+   no  → raise - failure remains visible; do not mask
 ```
 
-**Implementation:** `FailoverLLMAdapter` (`intergrax/llm_adapters/registry/failover_adapter.py`) + `LLMProfile.create_adapter_with_failover()` (**Done** — AUDIT-IDEAL-6.5 / LC-3).
+**Implementation:** `FailoverLLMAdapter` (`intergrax/llm_adapters/registry/failover_adapter.py`) + `LLMProfile.create_adapter_with_failover()` (**Done** - AUDIT-IDEAL-6.5 / LC-3).
 
 Retriability uses `is_retriable_provider_error()` (`intergrax/llm_adapters/_shared/retry.py`):
 
 - HTTP status in `LLMCallConfig.retry_on_status` (default `429, 500, 502, 503, 504`)
 - Exception type name contains `timeout`, `connection`, `rate`, or `overloaded`
 
-**Non-retriable failures** (validation errors, auth failures, content policy, malformed requests, etc.) **do not** advance the chain — they propagate to the caller per current contracts.
+**Non-retriable failures** (validation errors, auth failures, content policy, malformed requests, etc.) **do not** advance the chain - they propagate to the caller per current contracts.
 
 Primary adapter owns `context_window_tokens` and token estimation for the wrapper. Streaming selects the first chain member that `supports_streaming()`.
 
@@ -218,14 +218,14 @@ Primary adapter owns `context_window_tokens` and token estimation for the wrappe
 
 ## Per-call resilience ≠ profile failover
 
-Two separate layers — do not merge mentally or in wiring.
+Two separate layers - do not merge mentally or in wiring.
 
 | Layer | Mechanism | Scope |
 | ----- | --------- | ----- |
 | **Per-call resilience** | `LLMCallConfig`: `max_retries`, `retry_backoff_sec`, `retry_on_status`, `timeout_sec`, circuit breaker, rate limit (`intergrax/llm_adapters/_shared/resilience.py`) | Same adapter / same profile |
 | **Profile failover** | `fallback_profiles` + `FailoverLLMAdapter` | Switch to next `LLMProfile` after retriable failure exhausts or bypasses single-adapter retry |
 
-`call_with_retry()` may retry transient errors **on the current adapter** before failover sees the exception (adapter implementations apply call policy). Quota / tenant hard stops (`check_llm_tenant_quota`) are a third layer — not adapter retry or profile failover.
+`call_with_retry()` may retry transient errors **on the current adapter** before failover sees the exception (adapter implementations apply call policy). Quota / tenant hard stops (`check_llm_tenant_quota`) are a third layer - not adapter retry or profile failover.
 
 ---
 
@@ -237,7 +237,7 @@ Two separate layers — do not merge mentally or in wiring.
 | `LLMRoutingAttemptDiagV1` | Failover attempt (provider, model, error) | same module; step `llm_routing_attempt` |
 | `LLMRoutingAttemptRecord` | In-process failover audit on `FailoverLLMAdapter.routing_attempts` | `failover_adapter.py` |
 
-Trace bridges wire rule id, `routing_reason`, and attempt records on Nexus/UAEP/ACP paths (M-LLM-X.10.3–X-13.2 **Done**). Catalog-miss spine (`ModelCatalogMissDiagV1`) is adjacent — owned by hub §Model catalog; see audit register M-LLM-X.15–16.
+Trace bridges wire rule id, `routing_reason`, and attempt records on Nexus/UAEP/ACP paths (M-LLM-X.10.3–X-13.2 **Done**). Catalog-miss spine (`ModelCatalogMissDiagV1`) is adjacent - owned by hub §Model catalog; see audit register M-LLM-X.15–16.
 
 CI gates: `scripts/maintenance/check_llm_routing_rules.py`, `check_llm_routing_context_wiring.py`, `check_llm_routing_tier_boundary.py`, `check_live_model_routing_wiring.py`.
 
@@ -247,7 +247,7 @@ CI gates: `scripts/maintenance/check_llm_routing_rules.py`, `check_llm_routing_c
 
 | Capability | Status | Primary modules |
 | ---------- | ------ | --------------- |
-| `ModelCatalog` | **Done** | `registry/model_catalog.py` — routing consumes metadata; catalog miss diagnostics separate |
+| `ModelCatalog` | **Done** | `registry/model_catalog.py` - routing consumes metadata; catalog miss diagnostics separate |
 | `LLMRoutingEvaluator` + built-in rules | **Done** | `routing/evaluator.py`, `routing/builtin_rules.py` |
 | `ModelRouter` | **Done** | `registry/model_router.py` |
 | Profile failover chain | **Done** | `registry/failover_adapter.py`, `profile.create_adapter_with_failover()` |
@@ -255,7 +255,7 @@ CI gates: `scripts/maintenance/check_llm_routing_rules.py`, `check_llm_routing_c
 | Mid-run re-eval (`RoutingEvaluatingLLMAdapter`) | **Done** | Tier-3 `applications/_shared/` evaluating wrapper + runtime bridges |
 | `StepLLMRouter` + `LLMAdapter` DX | **Done** | `agents/authoring/llm_router.py` |
 | Planner adapter separation | **Done** | `resolve_planner_llm_adapter()` in Nexus factory |
-| Full provider plugin ecosystem | **Planned** | `LLM-PROVIDER-PLUGIN-1` — registry `register()` exists; thin plugin layer backlog |
+| Full provider plugin ecosystem | **Planned** | `LLM-PROVIDER-PLUGIN-1` - registry `register()` exists; thin plugin layer backlog |
 
 Resolver entry points: `resolve_llm_adapter()`, `resolve_environment_llm_adapter()`, `resolve_live_model_routing_wiring()` (product hosts), runtime bridges under `intergrax/runtime/wiring/llm_routing_*` and `intergrax/applications/_shared/llm_routing_*`.
 

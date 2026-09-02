@@ -1,4 +1,4 @@
-# Local Knowledge Workspace — documentation index
+# Local Knowledge Workspace - documentation index
 
 Application-local documentation for the Tier-3 `local_workspace_application` host.
 

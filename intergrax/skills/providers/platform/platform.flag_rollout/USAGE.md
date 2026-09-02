@@ -28,4 +28,4 @@ Governed access to: `platform.evaluate_feature_flag`, `notify.send`, `metrics.qu
 
 ## Related skills
 
-- Other `platform` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `platform` bundle skills - see bundle [USAGE.md](../USAGE.md)

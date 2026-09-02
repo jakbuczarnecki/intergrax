@@ -1,6 +1,6 @@
-# Governed External Work — Host Lifecycle
+# Governed External Work - Host Lifecycle
 
-**Status:** Platform completion (PC-5…PC-8) — 2026-07-21  
+**Status:** Platform completion (PC-5…PC-8) - 2026-07-21  
 **Role:** Host orchestration, persistence, attestation recovery, offline demo  
 **Upstream GEC boundary:** [`governed_external_execution.md`](governed_external_execution.md)  
 **Attestation:** [`execution_evidence_and_host_attestation.md`](execution_evidence_and_host_attestation.md)
@@ -14,7 +14,7 @@
 | Tier-2 | Mapping, policy request composition, provider execution, `GovernedProofProfile` |
 | Host | Lifecycle orchestration, `ExecutionBoundaryEvent`, signing, receipt, persistence, recovery |
 | Runtime / Nexus | `task_id`, `run_id`, continuation interrupt identity |
-| Verifier | Offline validation only — no authorization, no execution |
+| Verifier | Offline validation only - no authorization, no execution |
 
 ---
 
@@ -124,7 +124,7 @@ uv run intergrax receipt verify \
   --store build/external_work_recovery_demo
 ```
 
-`retry-attestation` signs only from persisted GER/EBE — no provider side effect.
+`retry-attestation` signs only from persisted GER/EBE - no provider side effect.
 `provider_calls.json` in the demo store stays unchanged across retries.
 Second retry returns `reason: attested_idempotent`, `provider_invoked: false`.
 

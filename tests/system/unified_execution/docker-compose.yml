@@ -1,4 +1,4 @@
-# UE-11G-C1 — real agentic production E2E certification
+# UE-11G-C1 - real agentic production E2E certification
 # Run from repository root:
 #   docker compose -f tests/system/unified_execution/docker-compose.yml up --build --exit-code-from proof-runner
 
@@ -85,6 +85,8 @@ services:
       OLLAMA_HOST: http://ollama:11434
       INTERGRAX_EMBEDDING_PROVIDER: ollama
       INTERGRAX_EMBEDDING_MODEL: nomic-embed-text
+      INTERGRAX_LLM_PROVIDER: ollama
+      INTERGRAX_LLM_MODEL: llama3.1:latest
       LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT: http://otel-collector:4318/v1/logs
       LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED: "true"
       LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND: otlp
@@ -96,6 +98,11 @@ services:
       LOCAL_WORKSPACE_ENABLE_RAG_INGEST: "true"
       INTERGRAX_SQLITE_DATA_DIR: /var/lib/intergrax/lkw/data/sqlite
       INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET: ue-11g-c1-diagnostic-cursor-secret-local-only
+      INTERGRAX_TAVILY_API_KEY: ${INTERGRAX_TAVILY_API_KEY:-}
+      INTERGRAX_BRAVE_API_KEY: ${INTERGRAX_BRAVE_API_KEY:-}
+      INTERGRAX_GOOGLE_CSE_API_KEY: ${INTERGRAX_GOOGLE_CSE_API_KEY:-}
+      INTERGRAX_GOOGLE_CSE_CX: ${INTERGRAX_GOOGLE_CSE_CX:-}
+      INTERGRAX_EXA_API_KEY: ${INTERGRAX_EXA_API_KEY:-}
     volumes:
       - lkw_application_data:/var/lib/intergrax/lkw
       - ./fixtures/workspace:/cert-fixtures/workspace:ro

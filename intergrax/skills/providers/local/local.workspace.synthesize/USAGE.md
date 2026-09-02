@@ -26,6 +26,6 @@ Governed access to: `workspace.write_file`.
 
 ## Related skills
 
-- `local.workspace.search` — source evidence for synthesis
-- `workspace.authoring` — broader shadow workspace drafting pack
-- Other `local` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- `local.workspace.search` - source evidence for synthesis
+- `workspace.authoring` - broader shadow workspace drafting pack
+- Other `local` bundle skills - see bundle [USAGE.md](../USAGE.md)

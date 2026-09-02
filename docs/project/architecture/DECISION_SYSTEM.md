@@ -1,16 +1,16 @@
 # Decision System
 
-**Intergrax Decision System** is the platform capability that leads a decision from proposal through optional deliberation, verification, revision, optional adjudication, resolution, and finalization to an **authoritative lifecycle outcome** — a **semantic capability hosted inside canonical Execution**, not a second runtime.
+**Intergrax Decision System** is the platform capability that leads a decision from proposal through optional deliberation, verification, revision, optional adjudication, resolution, and finalization to an **authoritative lifecycle outcome** - a **semantic capability hosted inside canonical Execution**, not a second runtime.
 
-The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** — classification, recommendation, selection, plan, approval, finding, or evidence-backed conclusion. It is **not** an „ulepszony Critic”, **not** Council Runtime, and **not** a parallel execution engine.
+The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - classification, recommendation, selection, plan, approval, finding, or evidence-backed conclusion. It is **not** an „ulepszony Critic”, **not** Council Runtime, and **not** a parallel execution engine.
 
 > [!IMPORTANT]
 > **Maturity boundary (frozen target vs current production):**
 >
-> - **Architecture:** **TARGET CANON — FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
-> - **Implementation:** **NOT YET MIGRATED** — no Decision System runtime classes shipped.
+> - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
+> - **Implementation:** **NOT YET MIGRATED** - no Decision System runtime classes shipped.
 > - **Production:** **CURRENT** correctness path remains [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) (`CriticOrchestrator`, CVL) until clean-cut migration.
-> - **Evidence:** Decision System E2E not yet qualified — no production-ready claim.
+> - **Evidence:** Decision System E2E not yet qualified - no production-ready claim.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
@@ -40,26 +40,26 @@ The Decision System provides **typed lifecycle semantics, version lineage, compo
 | Concern | Summary |
 | -------- | -------- |
 | **Core question** | What is the authoritative decision outcome for this scope? |
-| **Execution host** | **Execution System** — canonical execution lifecycle, identity, and strategy routing |
-| **Decision capability** | Semantic lifecycle inside hosting Execution — **no** DecisionRuntime |
+| **Execution host** | **Execution System** - canonical execution lifecycle, identity, and strategy routing |
+| **Decision capability** | Semantic lifecycle inside hosting Execution - **no** DecisionRuntime |
 | **Lifecycle** | Proposal → optional Deliberation → Verification → Revision → optional Adjudication → Resolution → Finalization |
-| **Decision Resolution** | `ACCEPTED` · `REJECTED` · **`UNRESOLVED`** — merytoryczny wynik lifecycle; oddzielny od termination wykonania |
-| **Strategy** | Pluggable `DecisionStrategy` — Single Model, Council, Rule-Based, Hybrid, future registered strategies |
-| **Artifact** | Typed `Decision Artifact` family — not universal `payload: dict[str, Any]` |
+| **Decision Resolution** | `ACCEPTED` · `REJECTED` · **`UNRESOLVED`** - merytoryczny wynik lifecycle; oddzielny od termination wykonania |
+| **Strategy** | Pluggable `DecisionStrategy` - Single Model, Council, Rule-Based, Hybrid, future registered strategies |
+| **Artifact** | Typed `Decision Artifact` family - not universal `payload: dict[str, Any]` |
 | **Candidate vs authoritative** | Candidates are proposals; **ACCEPTED** binds a specific **Decision Version**; terminal **REJECTED** / **UNRESOLVED** persist an authoritative **resolution record** without a fake accepted version |
-| **Verification** | Compositional **Verification Pipeline** — see [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
-| **Deliberation** | Optional strategy capability — see [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
+| **Verification** | Compositional **Verification Pipeline** - see [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
+| **Deliberation** | Optional strategy capability - see [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | **UNRESOLVED** | First-class auditable outcome when material is insufficient or conflict is irresolvable |
-| **Decision ≠ Authorization ≠ Execution** | Three separate platform responsibilities — see [below](#decision--authorization--execution) |
+| **Decision ≠ Authorization ≠ Execution** | Three separate platform responsibilities - see [below](#decision--authorization--execution) |
 | **Version binding** | Every verification result, challenge, approval, adjudication, and authorization record binds **Decision ID + Decision Version + scope + tenant + execution identity** |
 | **Concurrency** | Parallel proposal branches preserve lineage; no duplicate authoritative decisions per scope |
-| **Crash / resume** | Canonical hosting Execution checkpoint/persistence — **no** Decision checkpoint engine |
-| **Retry boundaries** | Technical retry (Execution / Reliability) · decision revision (Decision Lifecycle) · deliberation rounds (Decision Strategy) — never one generic loop |
-| **HITL** | Invokes platform HITL — does not implement Human Engine |
-| **Policy** | Cross-cutting authorization — Decision System does not own Runtime Policy Engine |
-| **Diagnostics** | May feed investigation — does not own Decision System |
-| **Observability** | Full decision audit trail — no private chain-of-thought |
-| **Maturity** | **A4 target / I0 / P0 / E0** for Decision System — see [Current maturity](#current-maturity) |
+| **Crash / resume** | Canonical hosting Execution checkpoint/persistence - **no** Decision checkpoint engine |
+| **Retry boundaries** | Technical retry (Execution / Reliability) · decision revision (Decision Lifecycle) · deliberation rounds (Decision Strategy) - never one generic loop |
+| **HITL** | Invokes platform HITL - does not implement Human Engine |
+| **Policy** | Cross-cutting authorization - Decision System does not own Runtime Policy Engine |
+| **Diagnostics** | May feed investigation - does not own Decision System |
+| **Observability** | Full decision audit trail - no private chain-of-thought |
+| **Maturity** | **A4 target / I0 / P0 / E0** for Decision System - see [Current maturity](#current-maturity) |
 
 ---
 
@@ -119,10 +119,10 @@ Execution System routes work
 | Domain | Owns | Does not own |
 | ------ | ---- | ------------ |
 | **Decision System** | Lifecycle semantics, candidate/authoritative semantics, version lineage, resolution (incl. UNRESOLVED), strategy orchestration contract | Global retry, authorization, side effects, diagnostics classification, private CoT, execution hosting |
-| **Verification Pipeline** | Check correctness of a **Decision Version** — stages, challenges, fail-closed rules | Finalize authoritative decision, mutate versions, policy, HITL, global retry |
+| **Verification Pipeline** | Check correctness of a **Decision Version** - stages, challenges, fail-closed rules | Finalize authoritative decision, mutate versions, policy, HITL, global retry |
 | **Decision Strategy** | Deliberation rounds, parallel proposals, disagreement artifacts, synthesis candidates | Separate runtime, scheduler, checkpoint engine, authorization |
 | **Execution System** | Execution lifecycle, identity, root execution establishment, canonical boundary, strategy routing, hosting Decision capability | Domain rubric content, decision semantics |
-| **Nexus** | ORCHESTRATION execution strategy — scheduling child Executions, dependency/readiness/fan-out/merge, orchestration control flow | Universal host of Decision System, Decision persistence by definition, mandatory path for every Decision |
+| **Nexus** | ORCHESTRATION execution strategy - scheduling child Executions, dependency/readiness/fan-out/merge, orchestration control flow | Universal host of Decision System, Decision persistence by definition, mandatory path for every Decision |
 | **Governance / Policy** | Execution authorization for consequential actions | Whether a decision artifact is correct |
 | **HITL** | Human approver / adjudicator / escalation records | Decision lifecycle orchestration |
 | **Reliability** | Technical retry on provider/tool failure | Semantic revision loops |
@@ -137,7 +137,7 @@ Domain   → artifact types, rubrics, strategy selection, correctness criteria
 ### Public invariants
 
 ```text
-Decision Lifecycle hosted by canonical Execution — never a second DecisionRuntime.
+Decision Lifecycle hosted by canonical Execution - never a second DecisionRuntime.
 ```
 
 ```text
@@ -154,7 +154,7 @@ Decision correctness ≠ permission to execute ≠ execution itself.
 ```
 
 ```text
-Candidate Decision ≠ Authoritative Decision — history is never overwritten.
+Candidate Decision ≠ Authoritative Decision - history is never overwritten.
 ```
 
 ```text
@@ -181,7 +181,7 @@ Approval for v1 does NOT authorize v2.
 
 ## Decision Lifecycle
 
-The lifecycle is a **state machine model** hosted by canonical Execution — semantic stages execute within the hosting Execution boundary. Work required by a Decision Strategy is routed through the Execution System (INFERENCE, AGENTIC, or ORCHESTRATION).
+The lifecycle is a **state machine model** hosted by canonical Execution - semantic stages execute within the hosting Execution boundary. Work required by a Decision Strategy is routed through the Execution System (INFERENCE, AGENTIC, or ORCHESTRATION).
 
 <a href="assets/fullsize/decision-lifecycle.md">
 <picture>
@@ -197,14 +197,14 @@ The lifecycle is a **state machine model** hosted by canonical Execution — sem
 | Stage | Purpose |
 | ----- | ------- |
 | **Proposal** | Mint initial **Candidate Decision** with typed **Decision Artifact** |
-| **Deliberation** | Optional — strategy produces one or more candidates (e.g. Council) |
+| **Deliberation** | Optional - strategy produces one or more candidates (e.g. Council) |
 | **Verification** | Compositional pipeline evaluates a specific **Decision Version** |
 | **Revision** | Explicit process mints **new Decision Version** when verification challenges |
-| **Adjudication** | Optional — resolve competing proposals, verifier conflict, deadlocked Council, or human adjudication |
-| **Resolution** | `ACCEPTED` · `REJECTED` · **`UNRESOLVED`** — bounded, auditable **Decision Resolution** |
-| **Finalization** | Persist authoritative **lifecycle outcome** — accepted decision version or terminal resolution record |
+| **Adjudication** | Optional - resolve competing proposals, verifier conflict, deadlocked Council, or human adjudication |
+| **Resolution** | `ACCEPTED` · `REJECTED` · **`UNRESOLVED`** - bounded, auditable **Decision Resolution** |
+| **Finalization** | Persist authoritative **lifecycle outcome** - accepted decision version or terminal resolution record |
 
-Council is **only** a Decision Strategy implementation — not a mandatory stage.
+Council is **only** a Decision Strategy implementation - not a mandatory stage.
 
 ---
 
@@ -219,7 +219,7 @@ Council is **only** a Decision Strategy implementation — not a mandatory stage
 
 Council may use ORCHESTRATION but is not synonymous with Nexus as a system. Single Model and Rule-Based may operate without Nexus.
 
-### Example — simple decision (no Nexus)
+### Example - simple decision (no Nexus)
 
 ```text
 Execution
@@ -233,7 +233,7 @@ Verification
 ACCEPTED
 ```
 
-### Example — rule decision (no Nexus)
+### Example - rule decision (no Nexus)
 
 ```text
 Execution
@@ -245,7 +245,7 @@ Rule-Based Strategy
 REJECTED
 ```
 
-### Example — council (Nexus when orchestration required)
+### Example - council (Nexus when orchestration required)
 
 ```text
 Execution
@@ -265,16 +265,16 @@ Nexus
 child Executions
 ```
 
-Nexus appears because orchestration work is required — not because every Decision mandates it.
+Nexus appears because orchestration work is required - not because every Decision mandates it.
 
 ### Decision capability optionality
 
 Decision System is **optional per flow**. When no authoritative decision is required, ordinary Execution completes without entering Decision Lifecycle.
 
-- **Absence** means Decision Lifecycle is **not entered** — not a `NoDecisionStrategy` / null-strategy workaround.
-- **No global on/off flag** — optionality is per flow, not a `DECISION_SYSTEM_ENABLED` switch.
-- **Orthogonal to ExecutionStrategy** — INFERENCE, AGENTIC, and ORCHESTRATION each work without Decision capability; neither axis implies the other.
-- **Optional host seam** — Execution runtime may reference optional Decision capability hooks (DS-EXEC-01); ordinary flows remain fully valid without selecting or entering Decision Lifecycle.
+- **Absence** means Decision Lifecycle is **not entered** - not a `NoDecisionStrategy` / null-strategy workaround.
+- **No global on/off flag** - optionality is per flow, not a `DECISION_SYSTEM_ENABLED` switch.
+- **Orthogonal to ExecutionStrategy** - INFERENCE, AGENTIC, and ORCHESTRATION each work without Decision capability; neither axis implies the other.
+- **Optional host seam** - Execution runtime may reference optional Decision capability hooks (DS-EXEC-01); ordinary flows remain fully valid without selecting or entering Decision Lifecycle.
 
 Proof gate: DS-EXEC-00 (`tests/unit/runtime/execution/test_decision_optionality.py`).
 
@@ -302,7 +302,7 @@ canonical DecisionLifecycle contracts (decision_lifecycle.py)
 | **DecisionLifecycleHost** | Typed access to canonical lifecycle operations (`start`, `transition`) |
 | **`decision_lifecycle.py`** | State machine semantics and legal transitions |
 | **StrategyExecutionRouter** | Physical `ExecutionStrategy` routing (INFERENCE · AGENTIC · ORCHESTRATION) |
-| **ExecutionBoundary** | Context / admission / delegate coordination — no Decision semantics |
+| **ExecutionBoundary** | Context / admission / delegate coordination - no Decision semantics |
 
 Proof gate: DS-EXEC-01 (`tests/unit/runtime/execution/test_decision_lifecycle_host.py`).
 
@@ -333,7 +333,7 @@ existing DecisionCheckpointState contracts
 | **ExecutionRuntime** | Persistence hosting scope (optional scoped bind/reset around canonical boundary) |
 | **DecisionCheckpointPersistence** | Execution-facing durability port (`load`, `save`) keyed by `DecisionFinalizationKey` |
 | **`decision_checkpoint.py`** | Checkpoint semantics and validation |
-| **DecisionLifecycleHost** | Lifecycle operations only (`start`, `transition`) — no persistence ownership |
+| **DecisionLifecycleHost** | Lifecycle operations only (`start`, `transition`) - no persistence ownership |
 
 Execution hosts persistence access. Decision contracts own checkpoint semantics. No automatic save/load/resume.
 
@@ -341,7 +341,7 @@ Proof gate: DS-EXEC-02 (`tests/unit/runtime/execution/test_decision_checkpoint_r
 
 ### Execution-hosted Decision work submission (DS-NEXUS-01)
 
-Decision Strategy implementations may require physical work (INFERENCE, AGENTIC, or ORCHESTRATION) without knowing internal execution engines. Decision-aware delegate code obtains an optional execution-scoped `ExecutionWorkPort` and submits canonical `ExecutionRequest` values — including `ExecutionCapability.ORCHESTRATION` when orchestration is required.
+Decision Strategy implementations may require physical work (INFERENCE, AGENTIC, or ORCHESTRATION) without knowing internal execution engines. Decision-aware delegate code obtains an optional execution-scoped `ExecutionWorkPort` and submits canonical `ExecutionRequest` values - including `ExecutionCapability.ORCHESTRATION` when orchestration is required.
 
 ```text
 ExecutionRuntime
@@ -364,9 +364,9 @@ StrategyExecutionRouter
 | **Work port presence ≠ orchestration required** | Ordinary Execution flows remain valid without configuring a work port |
 | **Decision does not route strategies** | `StrategyExecutionRouter`, `OrchestrationExecutor`, and Nexus are Execution-owned composition concerns |
 | **Child lineage preserved** | Work port submits child Executions under the active parent via `ChildExecutionRunner` |
-| **Missing backend fails closed** | ORCHESTRATION requests without a configured backend raise canonical Execution errors — no Decision-specific fallback |
+| **Missing backend fails closed** | ORCHESTRATION requests without a configured backend raise canonical Execution errors - no Decision-specific fallback |
 
-Nexus appears only when Execution strategy routing selects ORCHESTRATION for submitted work — not because Decision System exists.
+Nexus appears only when Execution strategy routing selects ORCHESTRATION for submitted work - not because Decision System exists.
 
 Proof gate: DS-NEXUS-01 (`tests/unit/runtime/execution/test_decision_execution_work.py`).
 
@@ -393,7 +393,7 @@ Proof gate: DS-NEXUS-02 (`tests/unit/runtime/execution/test_decision_orchestrati
 | ------- | ------- |
 | **`ACCEPTED`** | A specific **Decision Version** satisfied required lifecycle gates and is the accepted decision for the scope |
 | **`REJECTED`** | Lifecycle executed correctly, but **no** proposed version was accepted as the right decision |
-| **`UNRESOLVED`** | The system lacks sufficient basis for a responsible resolution — not a synthetic pass/fail |
+| **`UNRESOLVED`** | The system lacks sufficient basis for a responsible resolution - not a synthetic pass/fail |
 
 Proposal history, disagreement artifacts, and verification lineage **remain preserved** for all three outcomes.
 
@@ -411,7 +411,7 @@ Decision Resolution = UNRESOLVED
 Execution = COMPLETED
 ```
 
-is a **valid** result — the system ran correctly and responsibly refused an artificial resolution.
+is a **valid** result - the system ran correctly and responsibly refused an artificial resolution.
 
 ```text
 Execution = FAILED
@@ -423,7 +423,7 @@ does **not** automatically imply:
 Decision Resolution = REJECTED
 ```
 
-Infrastructure failure, cancellation, timeout, and budget stop are **execution/lifecycle termination** events — not substitutes for merytoryczne `REJECTED` or `UNRESOLVED`.
+Infrastructure failure, cancellation, timeout, and budget stop are **execution/lifecycle termination** events - not substitutes for merytoryczne `REJECTED` or `UNRESOLVED`.
 
 ---
 
@@ -433,13 +433,13 @@ Infrastructure failure, cancellation, timeout, and budget stop are **execution/l
 
 | Decision Resolution | Finalization artifact |
 | ------------------- | --------------------- |
-| **`ACCEPTED`** | **Authoritative Accepted Decision** — binds the accepted **Decision Version** and its typed artifact |
-| **`REJECTED`** | **Authoritative Resolution Record** — terminal lifecycle outcome with `REJECTED`; **no** accepted Decision Version is minted |
-| **`UNRESOLVED`** | **Authoritative Resolution Record** — terminal lifecycle outcome with `UNRESOLVED`; **no** accepted Decision Version is minted |
+| **`ACCEPTED`** | **Authoritative Accepted Decision** - binds the accepted **Decision Version** and its typed artifact |
+| **`REJECTED`** | **Authoritative Resolution Record** - terminal lifecycle outcome with `REJECTED`; **no** accepted Decision Version is minted |
+| **`UNRESOLVED`** | **Authoritative Resolution Record** - terminal lifecycle outcome with `UNRESOLVED`; **no** accepted Decision Version is minted |
 
 There is **no** `fake decision` workaround. Candidate versions and proposal history remain in auditable lineage after finalization.
 
-For a given decision scope, **at most one** terminal authoritative lifecycle outcome may exist — either one **Authoritative Accepted Decision** or one terminal **Authoritative Resolution Record**.
+For a given decision scope, **at most one** terminal authoritative lifecycle outcome may exist - either one **Authoritative Accepted Decision** or one terminal **Authoritative Resolution Record**.
 
 Pure finalize guard semantics define authoritative conflict/idempotency rules in contracts. Durable atomic enforcement belongs to the hosting Execution persistence boundary (DS-CORE-06+).
 
@@ -461,7 +461,7 @@ A **Decision Artifact** is the typed, contract-bound payload a decision carries.
 
 **Evidence Claims** remain a valuable, reusable artifact family for evidence-backed decisions ([`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md) · evidence architecture). Not every decision is an `EvidenceClaimSet`.
 
-Extensibility is **typed and contractual** — registered artifact kinds and schema contracts, not `payload: dict[str, Any]`.
+Extensibility is **typed and contractual** - registered artifact kinds and schema contracts, not `payload: dict[str, Any]`.
 
 ---
 
@@ -469,10 +469,10 @@ Extensibility is **typed and contractual** — registered artifact kinds and sch
 
 | Concept | Meaning |
 | ------- | ------- |
-| **Candidate Decision** | A proposed decision version — may fail verification or remain non-final |
-| **Authoritative Accepted Decision** | The specific **Decision Version** that satisfied required lifecycle gates — only when Decision Resolution is **`ACCEPTED`** |
-| **Authoritative Resolution Record** | Terminal lifecycle outcome for **`REJECTED`** or **`UNRESOLVED`** — authoritative without an accepted Decision Version |
-| **Decision Version** | Immutable identity in lineage — `v1 → challenge → v2 → verification → v3 authoritative` |
+| **Candidate Decision** | A proposed decision version - may fail verification or remain non-final |
+| **Authoritative Accepted Decision** | The specific **Decision Version** that satisfied required lifecycle gates - only when Decision Resolution is **`ACCEPTED`** |
+| **Authoritative Resolution Record** | Terminal lifecycle outcome for **`REJECTED`** or **`UNRESOLVED`** - authoritative without an accepted Decision Version |
+| **Decision Version** | Immutable identity in lineage - `v1 → challenge → v2 → verification → v3 authoritative` |
 
 v1 and v2 remain in auditable lineage after v3 is authoritative. **Never mutate** a prior version in place.
 
@@ -493,11 +493,11 @@ v1 and v2 remain in auditable lineage after v3 is authoritative. **Never mutate*
 
 | Responsibility | Question |
 | -------------- | -------- |
-| **Authoritative Accepted Decision / Resolution Record** | What did the system finally conclude, recommend, find — or explicitly refuse to resolve? |
+| **Authoritative Accepted Decision / Resolution Record** | What did the system finally conclude, recommend, find - or explicitly refuse to resolve? |
 | **Execution Authorization** | May this specific action execute in this authority/policy context? |
 | **Execution** | What did the hosting Execution actually execute? |
 
-A correct **Authoritative Decision** may still be **blocked**, **deferred**, or **require human approval** before side effects. Policy evaluates at configured execution points — not solely as one post-decision gate ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md)).
+A correct **Authoritative Decision** may still be **blocked**, **deferred**, or **require human approval** before side effects. Policy evaluates at configured execution points - not solely as one post-decision gate ([`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md)).
 
 The Decision System does **not** own Governance, Runtime Policy Engine, Execution Authority, or HITL infrastructure.
 
@@ -538,7 +538,7 @@ Approval for `v1` does **not** pass to `v2`. Authorization for `v1` does **not**
 
 ## Execution / orchestration boundary
 
-**Hard rule:** Decision Lifecycle is hosted by canonical Execution — **no** DecisionRuntime.
+**Hard rule:** Decision Lifecycle is hosted by canonical Execution - **no** DecisionRuntime.
 
 The Decision Lifecycle:
 
@@ -568,7 +568,7 @@ The legacy **L2 Human Critic** concept is **removed** from the target model. Hum
 - policy-required authority,
 - escalation target.
 
-The Decision System **invokes** the existing HITL mechanism ([`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)) — it does **not** implement a Human Engine.
+The Decision System **invokes** the existing HITL mechanism ([`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md)) - it does **not** implement a Human Engine.
 
 <a href="assets/fullsize/decision-hitl-version-binding.md">
 <picture>
@@ -625,7 +625,7 @@ The Decision System must support full reconstruction of:
   <source media="(prefers-color-scheme: dark)" srcset="assets/decision-observability-audit-reconstruction-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/decision-observability-audit-reconstruction-light.svg">
   <img
-    alt="Audit reconstruction chain from request through proposal, verification, challenge, revision, resolution, human and policy records to execution — excluding private chain-of-thought."
+    alt="Audit reconstruction chain from request through proposal, verification, challenge, revision, resolution, human and policy records to execution - excluding private chain-of-thought."
     src="assets/decision-observability-audit-reconstruction-light.svg"
   >
 </picture>
@@ -647,7 +647,7 @@ The system must **not** be forced into synthetic `ACCEPTED` / `REJECTED` when:
 - verifiers conflict irreconcilably,
 - parallel branches remain legitimately competing.
 
-**`UNRESOLVED`** is a first-class, auditable **Decision Resolution** outcome — distinct from execution failure.
+**`UNRESOLVED`** is a first-class, auditable **Decision Resolution** outcome - distinct from execution failure.
 
 ---
 
@@ -669,7 +669,7 @@ For a given decision scope, **at most one** terminal authoritative lifecycle out
 
 ## Crash / resume
 
-Decision state must be recoverable via the **canonical hosting Execution checkpoint / persistence boundary** — **no** Decision checkpoint engine.
+Decision state must be recoverable via the **canonical hosting Execution checkpoint / persistence boundary** - **no** Decision checkpoint engine.
 
 If the hosting Execution uses ORCHESTRATION, Nexus may participate in orchestration checkpointing, but Decision durability **MUST NOT** depend on Nexus being the selected execution strategy.
 
@@ -687,7 +687,7 @@ If the hosting Execution uses ORCHESTRATION, Nexus may participate in orchestrat
 | Requirement | Rule |
 | ----------- | ---- |
 | Durability | Lifecycle state, version lineage, finalize guard state persisted through canonical hosting Execution checkpoint/persistence boundary |
-| Resume | Continue from persisted stage — not full deliberation restart without cause |
+| Resume | Continue from persisted stage - not full deliberation restart without cause |
 | Crash safety | Cannot mint duplicate authoritative decision |
 | Budget | Resume cannot expand prior granted budget |
 
@@ -707,9 +707,9 @@ Do **not** merge these into one generic retry loop.
 
 ## Plugin / extension posture
 
-- **Decision Strategy** — registered strategies behind stable strategy contract; lifecycle unaware of Council internals.
-- **Verification stages** — compositional plugins with typed stage contracts ([`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md)).
-- **Decision Artifact kinds** — typed registration — not reflection over loose dicts.
+- **Decision Strategy** - registered strategies behind stable strategy contract; lifecycle unaware of Council internals.
+- **Verification stages** - compositional plugins with typed stage contracts ([`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md)).
+- **Decision Artifact kinds** - typed registration - not reflection over loose dicts.
 
 Platform plugin architecture applies at extension boundaries ([`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md)).
 
@@ -727,7 +727,7 @@ Platform plugin architecture applies at extension boundaries ([`PLATFORM_PLUGINS
 
 No scenario requires a special-case exception to the frozen fundamentals above.
 
-### Scenario walkthrough — AI Incident Investigation
+### Scenario walkthrough - AI Incident Investigation
 
 <a href="assets/fullsize/decision-scenario-incident-investigation.md">
 <picture>
@@ -740,7 +740,7 @@ No scenario requires a special-case exception to the frozen fundamentals above.
 </picture>
 </a>
 
-### Scenario walkthrough — Regulated Action
+### Scenario walkthrough - Regulated Action
 
 <a href="assets/fullsize/decision-scenario-regulated-action.md">
 <picture>
@@ -770,15 +770,15 @@ stateDiagram-v2
 
 | Neighbor | Relationship |
 | -------- | ------------- |
-| [**Unified Execution Architecture**](UNIFIED_EXECUTION_ARCHITECTURE.md) | Canonical host — lifecycle, identity, strategy routing |
+| [**Unified Execution Architecture**](UNIFIED_EXECUTION_ARCHITECTURE.md) | Canonical host - lifecycle, identity, strategy routing |
 | [**Nexus Execution Flow**](NEXUS_EXECUTION_FLOW.md) | ORCHESTRATION backend when selected by Execution strategy routing |
 | [**Unified Execution Runtime**](UNIFIED_EXECUTION_RUNTIME.md) | Profiles, budgets, checkpoint ports |
 | [**Decision Verification**](DECISION_VERIFICATION.md) | Compositional verification pipeline |
 | [**Decision Deliberation**](DECISION_DELIBERATION.md) | Strategy / Council / deliberation |
-| [**Governed Execution**](GOVERNED_EXECUTION.md) | Execution authorization — separate from decision correctness |
+| [**Governed Execution**](GOVERNED_EXECUTION.md) | Execution authorization - separate from decision correctness |
 | [**Reliability / HITL**](RELIABILITY_FAILURE_AND_HITL.md) | Technical retry; canonical HITL invocation |
 | [**Observability**](OBSERVABILITY.md) | Decision audit evidence |
-| [**CRITIC_VERIFICATION**](CRITIC_VERIFICATION.md) | **CURRENT IMPLEMENTATION SNAPSHOT** — pending clean-cut DELETE |
+| [**CRITIC_VERIFICATION**](CRITIC_VERIFICATION.md) | **CURRENT IMPLEMENTATION SNAPSHOT** - pending clean-cut DELETE |
 
 ---
 
@@ -802,7 +802,7 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
 | **CURRENT production** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
-| **Public proof** | Not claimed — pending DS-E2E Docker qualification phase |
+| **Public proof** | Not claimed - pending DS-E2E Docker qualification phase |
 
 ### Production qualification boundary
 
@@ -812,7 +812,7 @@ The Decision System is **not** production-qualified after:
 - integration tests,
 - mocked E2E.
 
-**Production qualification** requires completion of the real **Docker E2E qualification phase** ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) — Phase DS-E2E).
+**Production qualification** requires completion of the real **Docker E2E qualification phase** ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) - Phase DS-E2E).
 
 ---
 
@@ -820,7 +820,7 @@ The Decision System is **not** production-qualified after:
 
 | Depth | Route |
 | ----- | ----- |
-| **Extended engineering model** | [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) — identity, versioning, lifecycle, authority, concurrency, recovery, platform boundaries |
+| **Extended engineering model** | [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) - identity, versioning, lifecycle, authority, concurrency, recovery, platform boundaries |
 | Verification pipeline | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | Deliberation / Council | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
@@ -838,7 +838,7 @@ The Decision System is **not** production-qualified after:
 **Default:** this hub read-scope block + at-a-glance + one cited diagram section.
 
 - **Implement Decision System:** read this file + [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) hub only.
-- **Architecture satellite:** [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) on demand — one per session unless RESUME cites more.
+- **Architecture satellite:** [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) on demand - one per session unless RESUME cites more.
 - **Verification slice:** add [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) + [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md).
 - **Deliberation slice:** add [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) + [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md).
 - **Skip** full [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) unless auditing CURRENT implementation or migration disposition.

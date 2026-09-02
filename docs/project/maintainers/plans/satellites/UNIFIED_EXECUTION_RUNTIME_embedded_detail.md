@@ -1,18 +1,18 @@
-# UNIFIED_EXECUTION_RUNTIME — embedded detail
+# UNIFIED_EXECUTION_RUNTIME - embedded detail
 
 **Parent hub:** [`UNIFIED_EXECUTION_RUNTIME.md`](../UNIFIED_EXECUTION_RUNTIME.md)
 
-### 6.1aw Harness implementation queue — Security & Trust Planes (SEC-PLANES) — **Closed**
+### 6.1aw Harness implementation queue - Security & Trust Planes (SEC-PLANES) - **Closed**
 
-**Source:** Idea audit (2026-06-19) — modular security layer without duplicate tier · canon [§42.45.3](../architecture/UNIFIED_EXECUTION_RUNTIME.md#42453-security-and-trust-planes-canonical)  
-**Priority ladder:** **Band 2bb** (§4.0) — incremental after §6.1 gate maintenance; **one ID per PR**  
+**Source:** Idea audit (2026-06-19) - modular security layer without duplicate tier · canon [§42.45.3](../architecture/UNIFIED_EXECUTION_RUNTIME.md#42453-security-and-trust-planes-canonical)  
+**Priority ladder:** **Band 2bb** (§4.0) - incremental after §6.1 gate maintenance; **one ID per PR**  
 **Prerequisites:** Phase SEC **Done** (SEC-1–3) · Phase M.12 **Done** (llm_guardrail) · GOV-DOC.3 **Done** (`policy_rules` EP)  
-**Status:** **Done** (2026-06-19) — **17/17** · **Follow-on:** [Phase SEC-PLANES-EVOL](.#phase-sec-planes-evol--enterprise-hardening-active) (Band **2bc**)
+**Status:** **Done** (2026-06-19) - **17/17** · **Follow-on:** [Phase SEC-PLANES-EVOL](.#phase-sec-planes-evol--enterprise-hardening-active) (Band **2bc**)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **SEC-PLANES-DOC.1** | Docs | P1 | **Done** | Security & Trust Planes canon §42.45.2–§42.45.8 | Architecture + plan register linked |
-| 2 | **SEC-PLANES-DOC.2** | Docs | P2 | **Done** | `AGENT_CREATION_GUIDE.md` Appendix H — Security Planes operator index + preset matrix | Cross-ref §42.45; no new runtime code |
+| 2 | **SEC-PLANES-DOC.2** | Docs | P2 | **Done** | `AGENT_CREATION_GUIDE.md` Appendix H - Security Planes operator index + preset matrix | Cross-ref §42.45; no new runtime code |
 | 3 | **SEC-PLANES-ADR-1** | ADR | P2 | **Done** | ADR: SecurityDefensePlugin EP + S1/S2/S3 plane discipline | Linked from §42.45 + hub; `check_harness_adr.py` green |
 | 4 | **SEC-EXT-1** | Code | P1 | **Done** | `SecurityDefensePlugin` protocol + `SecurityInspectionResult` typed contract | Unit tests on protocol + schema |
 | 5 | **SEC-EXT-2** | Code | P1 | **Done** | Entry point group `intergrax.security_defenses` + `register_security_defense_plugins()` | EP discovery gate; lab fixture package |
@@ -21,28 +21,28 @@
 | 8 | **SEC-EXT-5** | Test | P2 | **Done** | Lab reference plugin + gate tests (`tests/unit/runtime/security`) | Plugin on `BEFORE_TOOL_CALL` blocks + traces |
 | 9 | **SEC-BUNDLE-1** | Code | P2 | **Done** | Shipped defense bundle manifest pattern (native rule packs) | At least one bundle: `harness.strict_injection` |
 | 10 | **SEC-BUNDLE-2** | Code | P2 | **Done** | `harness_defense_stack()` preset + `SecurityEnvelope.production()` factory | Preset composes S1+S2+S3 toggles; doc example |
-| 11 | **SEC-BUNDLE-3** | Code | P3 | **Done** | `bootstrap_security_providers()` helper | Shipped bundles at import; EP via explicit call — **follow-on** SEC-EVOL-1 for `catalog_bootstrap` |
-| 12 | **ENC-1** | Code | P1 | **Done** | `EncryptionEnforcementPolicy` — `DataClassification.RESTRICTED` requires resolved `secrets_store` | Fail-closed when backend missing on strict profile |
+| 11 | **SEC-BUNDLE-3** | Code | P3 | **Done** | `bootstrap_security_providers()` helper | Shipped bundles at import; EP via explicit call - **follow-on** SEC-EVOL-1 for `catalog_bootstrap` |
+| 12 | **ENC-1** | Code | P1 | **Done** | `EncryptionEnforcementPolicy` - `DataClassification.RESTRICTED` requires resolved `secrets_store` | Fail-closed when backend missing on strict profile |
 | 13 | **ENC-2** | Code | P2 | **Done** | Hook enforcement at memory write + sensitive tool output paths | RESTRICTED payload denied or encrypted via integration adapter |
 | 14 | **ENC-3** | Test | P2 | **Done** | Gate tests + `check_harness_encryption_policy.py` CI script | Strict host without secrets backend fails assembly |
 | 15 | **ENC-DOC.1** | Docs | P3 | **Done** | Encryption posture matrix (transit TLS vs at-rest integration) in §42.45 | No duplicate KMS SDK in Tier-0 |
-| 16 | **SEC-PLANES-DOC.3** | Docs | P2 | **Done** | `EXTENSION_AUTHOR_GUIDE.md` §12 — `intergrax.security_defenses` author surface | Depends on SEC-EXT-2; cross-ref §42.21 item 7 |
-| 17 | **SEC-EXT-6** | CI | P3 | **Done** | `check_harness_security_defense_plugins.py` — EP + assembly smoke | CI workflow step; strict profile lab |
+| 16 | **SEC-PLANES-DOC.3** | Docs | P2 | **Done** | `EXTENSION_AUTHOR_GUIDE.md` §12 - `intergrax.security_defenses` author surface | Depends on SEC-EXT-2; cross-ref §42.21 item 7 |
+| 17 | **SEC-EXT-6** | CI | P3 | **Done** | `check_harness_security_defense_plugins.py` - EP + assembly smoke | CI workflow step; strict profile lab |
 
 **Suggested PR order:** SEC-PLANES-DOC.1 → SEC-PLANES-DOC.2 → SEC-PLANES-ADR-1 → SEC-EXT-1 → SEC-EXT-2 → SEC-EXT-3 → SEC-EXT-4 → SEC-EXT-5 → SEC-BUNDLE-1 → SEC-BUNDLE-2 → SEC-BUNDLE-3 → ENC-1 → ENC-2 → ENC-3 → ENC-DOC.1 → SEC-PLANES-DOC.3 → SEC-EXT-6.
 
 **Phase complete when:** all **Planned** rows **Done**; §42.45.8 maturity table shows zero **Planned** for SEC-PLANES scope; gate green.
 
-**Explicitly excluded:** standalone `SecurityEngine` tier or package; harness-native blockchain integration (M.6 exclusion); Tier-3 attestation/receipt products (product wiring only); new business agents — [§6.3a](.#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** standalone `SecurityEngine` tier or package; harness-native blockchain integration (M.6 exclusion); Tier-3 attestation/receipt products (product wiring only); new business agents - [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
-### 6.1bc Harness implementation queue — SEC-PLANES-EVOL (enterprise hardening) — **Closed**
+### 6.1bc Harness implementation queue - SEC-PLANES-EVOL (enterprise hardening) - **Closed**
 
 **Source:** Post-SEC-PLANES enterprise audit (2026-06-19) · canon [§42.45.10](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424510-enterprise-hardening--maturity-model-and-backlog)  
-**Priority ladder:** **Band 2bc** (§4.0) — incremental after SEC-PLANES closeout; **one ID per PR**  
+**Priority ladder:** **Band 2bc** (§4.0) - incremental after SEC-PLANES closeout; **one ID per PR**  
 **Prerequisites:** Phase SEC-PLANES **Done** (17/17) · Phase OBS spine **Done** (ADR-OBS-003)  
-**Status:** **Done** (2026-06-19) — **7/7**
+**Status:** **Done** (2026-06-19) - **7/7**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
@@ -58,11 +58,11 @@
 
 **Phase complete when:** all **Planned** rows **Done**; §42.45.8 follow-on table has zero **Planned**; gate green.
 
-**Explicitly excluded:** harness-native blockchain; Tier-0 KMS SDK; SOC2/ISO certification artifacts; new business agents — [§6.3a](.#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** harness-native blockchain; Tier-0 KMS SDK; SOC2/ISO certification artifacts; new business agents - [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
-### FAUDIT-32 — Layer scorecard (summary)
+### FAUDIT-32 - Layer scorecard (summary)
 
 | # | Layer | Score | Crit | High | Plan accurate? |
 |---|-------|-------|------|------|----------------|
@@ -99,4 +99,4 @@
 | 31 | Agent Lifecycle Governance | L2 | 0 | 2 | Partial |
 | 32 | Architecture Governance and Documentation Loop | L3 | 0 | 1 | Yes |
 
-**Plan accuracy note:** Rows marked **No** or **Partial** mean the phase closeout register claims **Done** for **wiring/bridge** work, but FAUDIT found **High** gaps vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` / `INTEGRAX_HARNESS_AUDIT_MAP.md` §8 — tracked as **FAUDIT.\*** residuals, not reopening closed closeout phases.
+**Plan accuracy note:** Rows marked **No** or **Partial** mean the phase closeout register claims **Done** for **wiring/bridge** work, but FAUDIT found **High** gaps vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` / `INTEGRAX_HARNESS_AUDIT_MAP.md` §8 - tracked as **FAUDIT.\*** residuals, not reopening closed closeout phases.

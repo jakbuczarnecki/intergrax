@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -36,6 +37,9 @@ class LexicalChannelScore:
 
     bm25_score: float
 
+    def __post_init__(self) -> None:
+        _validate_finite_numeric(self.bm25_score, field_name="LexicalChannelScore.bm25_score")
+
 
 @dataclass(frozen=True, slots=True)
 class StructuredChannelScore:
@@ -61,6 +65,14 @@ class VectorChannelScore:
 
     cosine_similarity: float
 
+    def __post_init__(self) -> None:
+        value = _validate_finite_numeric(
+            self.cosine_similarity,
+            field_name="VectorChannelScore.cosine_similarity",
+        )
+        if value < -1.0 or value > 1.0:
+            raise ValueError("VectorChannelScore.cosine_similarity must be within [-1.0, 1.0]")
+
 
 ChannelScore = (
     ExactChannelScore | LexicalChannelScore | StructuredChannelScore | VectorChannelScore
@@ -74,10 +86,18 @@ _CHANNEL_SCORE_TYPES: dict[RetrievalChannel, type[ChannelScore]] = {
 }
 
 
-def _validate_rank(rank: int) -> int:
+def _validate_finite_numeric(value: float, *, field_name: str) -> float:
+    if type(value) not in (int, float):
+        raise ValueError(f"{field_name} must be a float or int")
+    numeric = float(value)
+    if not math.isfinite(numeric):
+        raise ValueError(f"{field_name} must be finite")
+    return numeric
+
+
+def _validate_rank(rank: int) -> None:
     if type(rank) is not int or rank < 0:
         raise ValueError("rank must be a non-negative int")
-    return rank
 
 
 def _validate_channel_score(channel: RetrievalChannel, score: ChannelScore | None) -> None:
@@ -102,9 +122,7 @@ class ProductCandidate:
     channel_score: ChannelScore | None = None
 
     def __post_init__(self) -> None:
-        rank = _validate_rank(self.rank)
-        if rank != self.rank:
-            object.__setattr__(self, "rank", rank)
+        _validate_rank(self.rank)
         if self.source_ref.offer_id != self.offer_id:
             raise ValueError("source_ref.offer_id must match candidate offer_id")
         _validate_channel_score(self.channel, self.channel_score)
@@ -118,11 +136,11 @@ class ChannelCandidateBatch:
     candidates: tuple[ProductCandidate, ...]
 
     def __post_init__(self) -> None:
-        candidates = tuple(self.candidates)
-        for candidate in candidates:
+        if not isinstance(self.candidates, tuple):
+            raise TypeError("candidates must be a tuple")
+        for candidate in self.candidates:
             if candidate.channel != self.channel:
                 raise ValueError("all candidates in a batch must share the batch channel")
-        object.__setattr__(self, "candidates", candidates)
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,4 +160,5 @@ class MultiChannelCandidateCollection:
         return cls(candidates=tuple(merged))
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "candidates", tuple(self.candidates))
+        if not isinstance(self.candidates, tuple):
+            raise TypeError("candidates must be a tuple")

@@ -1,4 +1,4 @@
-# Audit result — `REASONING_AND_COGNITION`
+# Audit result - `REASONING_AND_COGNITION`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -35,9 +35,9 @@ All green (6 planning tests passed).
 
 ## Backlog P2–P4 (deferred)
 
-- §17 doc taxonomy vs enum 1:1 mapping — P2
-- SYS-INV-22 dedicated plane-separation gate — P2
-- L4 adaptive planner selection — AHI scope (P4)
+- §17 doc taxonomy vs enum 1:1 mapping - P2
+- SYS-INV-22 dedicated plane-separation gate - P2
+- L4 adaptive planner selection - AHI scope (P4)
 
 ---
 

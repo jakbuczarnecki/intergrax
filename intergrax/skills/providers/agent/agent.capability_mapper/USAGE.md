@@ -28,4 +28,4 @@ Governed access to: `agent.get_contract`, `skill.resolve`, `catalog.describe_too
 
 ## Related skills
 
-- Other `agent` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `agent` bundle skills - see bundle [USAGE.md](../USAGE.md)

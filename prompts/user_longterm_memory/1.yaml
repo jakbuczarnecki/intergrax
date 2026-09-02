@@ -8,7 +8,7 @@ locales:
         USER LONG-TERM MEMORY
 
         Use the following entries as factual user memory only if they are relevant to the current question or task.
-        If they are not relevant — ignore them completely and do not mention them in the answer.
+        If they are not relevant - ignore them completely and do not mention them in the answer.
 
         These entries represent persistent knowledge about the user, not conversation history.
       developer: null

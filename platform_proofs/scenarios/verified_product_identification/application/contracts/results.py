@@ -11,9 +11,6 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
     ProductCandidate,
     RetrievalChannel,
 )
-from platform_proofs.scenarios.verified_product_identification.application.domain.identifiers import (
-    ProductOfferId,
-)
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
     ProductSourceRecord,
 )
@@ -23,80 +20,78 @@ def _validate_channel_candidates(
     *,
     channel: RetrievalChannel,
     candidates: tuple[ProductCandidate, ...],
-) -> tuple[ProductCandidate, ...]:
-    normalized = tuple(candidates)
-    for candidate in normalized:
+) -> None:
+    if not isinstance(candidates, tuple):
+        raise TypeError("candidates must be a tuple")
+    for candidate in candidates:
         if candidate.channel != channel:
             raise ValueError(f"all candidates must use channel {channel.value}")
-    return normalized
+
+
+def _validate_search_result_state(
+    *,
+    candidates: tuple[ProductCandidate, ...],
+    failure: CatalogSearchFailure | None,
+) -> None:
+    if failure is not None and len(candidates) > 0:
+        raise ValueError("failure and candidates are mutually exclusive")
 
 
 @dataclass(frozen=True, slots=True)
 class ExactIdentifierLookupResult:
+    """Exact lookup outcome — success candidates or failure, never both."""
+
     candidates: tuple[ProductCandidate, ...]
     failure: CatalogSearchFailure | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "candidates",
-            _validate_channel_candidates(
-                channel=RetrievalChannel.EXACT,
-                candidates=self.candidates,
-            ),
-        )
+        _validate_search_result_state(candidates=self.candidates, failure=self.failure)
+        _validate_channel_candidates(channel=RetrievalChannel.EXACT, candidates=self.candidates)
 
 
 @dataclass(frozen=True, slots=True)
 class LexicalSearchResult:
+    """Lexical search outcome — success candidates or failure, never both."""
+
     candidates: tuple[ProductCandidate, ...]
     failure: CatalogSearchFailure | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "candidates",
-            _validate_channel_candidates(
-                channel=RetrievalChannel.LEXICAL,
-                candidates=self.candidates,
-            ),
-        )
+        _validate_search_result_state(candidates=self.candidates, failure=self.failure)
+        _validate_channel_candidates(channel=RetrievalChannel.LEXICAL, candidates=self.candidates)
 
 
 @dataclass(frozen=True, slots=True)
 class StructuredSearchResult:
+    """Structured search outcome — success candidates or failure, never both."""
+
     candidates: tuple[ProductCandidate, ...]
     failure: CatalogSearchFailure | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "candidates",
-            _validate_channel_candidates(
-                channel=RetrievalChannel.STRUCTURED,
-                candidates=self.candidates,
-            ),
+        _validate_search_result_state(candidates=self.candidates, failure=self.failure)
+        _validate_channel_candidates(
+            channel=RetrievalChannel.STRUCTURED,
+            candidates=self.candidates,
         )
 
 
 @dataclass(frozen=True, slots=True)
 class VectorSearchResult:
+    """Vector search outcome — success candidates or failure, never both."""
+
     candidates: tuple[ProductCandidate, ...]
     failure: CatalogSearchFailure | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "candidates",
-            _validate_channel_candidates(
-                channel=RetrievalChannel.VECTOR,
-                candidates=self.candidates,
-            ),
-        )
+        _validate_search_result_state(candidates=self.candidates, failure=self.failure)
+        _validate_channel_candidates(channel=RetrievalChannel.VECTOR, candidates=self.candidates)
 
 
 @dataclass(frozen=True, slots=True)
 class SourceRecordFetchResult:
+    """Source fetch outcome — resolved record or failure, never both."""
+
     record: ProductSourceRecord | None
     failure: CatalogSearchFailure | None = None
 

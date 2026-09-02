@@ -28,4 +28,4 @@ Governed access to: `database.query`, `records.query`, `health.check_relational_
 
 ## Related skills
 
-- Other `data` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `data` bundle skills - see bundle [USAGE.md](../USAGE.md)

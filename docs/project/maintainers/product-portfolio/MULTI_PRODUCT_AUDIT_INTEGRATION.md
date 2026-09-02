@@ -56,15 +56,15 @@ Not every gate should create an audit campaign. Avoid audit inflation and campai
 
 | Gate | Primary purpose | Canonical control mode | Audit engine |
 |------|-----------------|------------------------|--------------|
-| **G0 — Product Baseline** | Product/market baseline acceptance | Portfolio Control review | **NO** canonical audit campaign by default |
-| **G1 — Product Architecture** | Architecture acceptance | Portfolio Control architecture review | **CONDITIONAL** — bounded DOMAIN/LAYER or CONCEPTUAL/CROSS-DOMAIN audit only when architectural risk or uncertainty justifies adversarial audit |
-| **G2 — T0 Reuse Baseline** | Preregistration per [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md) | PRODUCT_REUSE_PROOF / Portfolio Control acceptance | **NO** audit campaign — T0 is a frozen experimental baseline, not an audit result |
-| **G3 — First Real Vertical Slice** | Product evidence / end-to-end product outcome | Product Session evidence + Portfolio Control gate review | **NO** audit campaign by default — may be triggered if platform-conformance uncertainty is material |
-| **G4 — Material Platform Pressure** | Decide product-owned vs platform-owned / general extension | Portfolio Control decision | **CONDITIONAL / recommended** for ambiguity or materiality — PLATFORM CONSUMER AUDIT and/or CONCEPTUAL/CROSS-DOMAIN AUDIT |
-| **G5 — MVP / Major Proof** | Major product/proof acceptance | Product Session + Portfolio Control | **CONDITIONAL** — existing audit engine may provide independent proof when material claims require adversarial evidence |
-| **G6 — T1 Reuse Audit** | Final independent reuse/platform-consumer evaluation | PRODUCT_REUSE_PROOF T1 + Portfolio Control | **REQUIRED** — MUST use PLATFORM CONSUMER AUDIT as independent implementation evidence; T1 / M1–M6 remain owned by PRODUCT_REUSE_PROOF |
-| **G7 — Market Validation** | Customer/market evidence | Portfolio Control / business review | **NO** platform audit campaign |
-| **G8 — Continue / Accelerate / Reduce / Pause / Stop** | Portfolio decision | Portfolio Control | **NO** audit campaign by default — may consume prior audit evidence but does not become an audit |
+| **G0 - Product Baseline** | Product/market baseline acceptance | Portfolio Control review | **NO** canonical audit campaign by default |
+| **G1 - Product Architecture** | Architecture acceptance | Portfolio Control architecture review | **CONDITIONAL** - bounded DOMAIN/LAYER or CONCEPTUAL/CROSS-DOMAIN audit only when architectural risk or uncertainty justifies adversarial audit |
+| **G2 - T0 Reuse Baseline** | Preregistration per [PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md) | PRODUCT_REUSE_PROOF / Portfolio Control acceptance | **NO** audit campaign - T0 is a frozen experimental baseline, not an audit result |
+| **G3 - First Real Vertical Slice** | Product evidence / end-to-end product outcome | Product Session evidence + Portfolio Control gate review | **NO** audit campaign by default - may be triggered if platform-conformance uncertainty is material |
+| **G4 - Material Platform Pressure** | Decide product-owned vs platform-owned / general extension | Portfolio Control decision | **CONDITIONAL / recommended** for ambiguity or materiality - PLATFORM CONSUMER AUDIT and/or CONCEPTUAL/CROSS-DOMAIN AUDIT |
+| **G5 - MVP / Major Proof** | Major product/proof acceptance | Product Session + Portfolio Control | **CONDITIONAL** - existing audit engine may provide independent proof when material claims require adversarial evidence |
+| **G6 - T1 Reuse Audit** | Final independent reuse/platform-consumer evaluation | PRODUCT_REUSE_PROOF T1 + Portfolio Control | **REQUIRED** - MUST use PLATFORM CONSUMER AUDIT as independent implementation evidence; T1 / M1–M6 remain owned by PRODUCT_REUSE_PROOF |
+| **G7 - Market Validation** | Customer/market evidence | Portfolio Control / business review | **NO** platform audit campaign |
+| **G8 - Continue / Accelerate / Reduce / Pause / Stop** | Portfolio decision | Portfolio Control | **NO** audit campaign by default - may consume prior audit evidence but does not become an audit |
 
 Gate meanings G0–G8 remain as defined in [MULTI_PRODUCT_PROGRAM.md](MULTI_PRODUCT_PROGRAM.md). This document adds audit-integration semantics only.
 
@@ -98,7 +98,7 @@ Do not invent a special G4 audit shape. Use existing Protocol v2.2 scope types o
 
 ---
 
-## 5. G6 / T1 — required integration
+## 5. G6 / T1 - required integration
 
 For preregistered new products, G6 requires canonical audit integration. The sequence is:
 
@@ -133,7 +133,7 @@ T1 methodology, metrics, and outcome rules remain canonical in [PRODUCT_REUSE_PR
 
 ---
 
-## 6. Two classification systems — do not collapse
+## 6. Two classification systems - do not collapse
 
 ### Canonical audit consumer classifications
 
@@ -175,11 +175,11 @@ Conservative guidance for T1 evaluators. Ambiguous cases require explicit reason
 | `JUSTIFIED SPECIALIZATION` | Does not automatically mean `PRODUCT_OWNED`; shared platform responsibility may still be reused beneath product-owned specialization; evaluate responsibility granularity against T0 |
 | `DUPLICATED` | Strong evidence of `PLATFORM_LEAK` / M4 violation where T0 classified the responsibility as platform-owned; do not silently reclassify after implementation |
 | `BYPASSED` | Strong evidence of `PLATFORM_LEAK` where mandatory platform guarantees were expected; severity and effect depend on exact T0 responsibility and audit findings |
-| `MISSING PLATFORM CAPABILITY` | Indicates a genuine gap may exist; does **NOT** automatically equal `EXTENDED_GENERALLY` — that requires a general reusable extension actually accepted and implemented under program governance |
-| `NOT APPLICABLE` | Valid where the product truly does not require the concern; compare against T0 — unexpected N/A requires explanation |
+| `MISSING PLATFORM CAPABILITY` | Indicates a genuine gap may exist; does **NOT** automatically equal `EXTENDED_GENERALLY` - that requires a general reusable extension actually accepted and implemented under program governance |
+| `NOT APPLICABLE` | Valid where the product truly does not require the concern; compare against T0 - unexpected N/A requires explanation |
 | `INSUFFICIENT EVIDENCE` | Cannot be treated as successful reuse; T1 must remain unresolved or qualified for that responsibility until evidence exists |
 
-**`PRODUCT_OWNED`:** determined from product responsibility ownership, T0, and architecture — not generated automatically by consumer audit classification.
+**`PRODUCT_OWNED`:** determined from product responsibility ownership, T0, and architecture - not generated automatically by consumer audit classification.
 
 ---
 
@@ -323,7 +323,7 @@ At G6 for preregistered new products:
 | Audit campaigns and findings | `docs/audit_results/<campaign>/README.md` |
 | Remediation methodology | [docs/audit_results/AUDIT_REMEDIATION_PROTOCOL.md](../../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md) |
 | T0 / T1 / M1–M6 reuse experiment | [docs/project/maintainers/plans/PRODUCT_REUSE_PROOF.md](../plans/PRODUCT_REUSE_PROOF.md) |
-| Gate status / product status | Portfolio Control — [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md), control cards |
+| Gate status / product status | Portfolio Control - [PORTFOLIO_STATUS.md](PORTFOLIO_STATUS.md), control cards |
 | Product architecture / implementation | Respective Product Session |
 | Accepted platform impact | [PLATFORM_IMPACT_LEDGER.md](PLATFORM_IMPACT_LEDGER.md) |
 | Public presentation | Downstream docs / VIS stream |

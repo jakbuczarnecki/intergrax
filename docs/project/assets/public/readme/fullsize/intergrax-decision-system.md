@@ -1,4 +1,4 @@
-# Decision System — public overview
+# Decision System - public overview
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../intergrax-decision-system-dark.png">

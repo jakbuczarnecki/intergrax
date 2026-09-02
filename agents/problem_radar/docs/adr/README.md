@@ -1,4 +1,4 @@
-﻿# problem_radar agent — Architecture Decision Records
+﻿# problem_radar agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/problem_radar`)
 
@@ -36,7 +36,7 @@ ADR-PROBLEM_RADAR-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

@@ -17,6 +17,8 @@ _FORBIDDEN_ATTRIBUTES = frozenset({"__dict__", "__setattr__"})
 _SCOPED_PRODUCTION_FILES = (
     "intergrax/core/qualification/provider.py",
     "intergrax/core/qualification/validity.py",
+    "intergrax/core/qualification/execution.py",
+    "intergrax/core/qualification/suite.py",
 )
 
 

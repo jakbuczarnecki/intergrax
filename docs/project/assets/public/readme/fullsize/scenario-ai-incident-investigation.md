@@ -11,7 +11,7 @@
   >
   <img
     src="../scenario-ai-incident-investigation-light.png"
-    alt="AI incident investigation scenario — operational signals, conflicting evidence, independent verification, and bounded RESOLVED or UNRESOLVED outcomes."
+    alt="AI incident investigation scenario - operational signals, conflicting evidence, independent verification, and bounded RESOLVED or UNRESOLVED outcomes."
   >
 </picture>
 

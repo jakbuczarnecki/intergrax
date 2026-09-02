@@ -4,7 +4,7 @@
 
 ## Purpose
 
-End-to-end **document ingestion into the vector index**: parse source files, chunk + embed + index, and verify collection status. Use for indexer agents (LKW `local_indexer`), legal corpus onboarding, or research corpora — instead of declaring parse/ingest tools manually.
+End-to-end **document ingestion into the vector index**: parse source files, chunk + embed + index, and verify collection status. Use for indexer agents (LKW `local_indexer`), legal corpus onboarding, or research corpora - instead of declaring parse/ingest tools manually.
 
 ## How it works
 
@@ -24,7 +24,7 @@ from intergrax.applications._shared.skill_wiring import lkw_skill_profile
 env.skill_profile = lkw_skill_profile()  # includes rag bundle
 ```
 
-Ensure `tool_profile` enables `document` bundle tools (auto-added by `extend_tool_profile_for_skills`) and RAG managers are wired in `build_application_tool_wiring`.
+Ensure `tool_profile` enables `document` bundle tools and RAG managers are wired in `build_application_tool_wiring`.
 
 ### Agent contract
 
@@ -63,5 +63,5 @@ skills=[RAG_DOCUMENT_INGEST, RAG_HYBRID_QA]  # ingest then query
 
 ## Related skills
 
-- `rag.hybrid_qa` — query after ingest
-- `workspace.authoring` — draft artifacts alongside indexed sources
+- `rag.hybrid_qa` - query after ingest
+- `workspace.authoring` - draft artifacts alongside indexed sources

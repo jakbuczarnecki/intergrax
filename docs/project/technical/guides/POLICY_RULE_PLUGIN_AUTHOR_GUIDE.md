@@ -4,7 +4,7 @@
 **Architecture owner:** [`docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) (PolicyEngine §42.11)
 **Platform catalog:** [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) · [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
-This guide documents the **author contract** for `PolicyRuleHandler` plugins and the **current** host wiring path. Policy handlers evaluate **declarative rules** (`DeclarativePolicyRule`); they are distinct from **Security Defense** hook middleware — see [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md).
+This guide documents the **author contract** for `PolicyRuleHandler` plugins and the **current** host wiring path. Policy handlers evaluate **declarative rules** (`DeclarativePolicyRule`); they are distinct from **Security Defense** hook middleware - see [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md).
 
 ---
 
@@ -29,19 +29,19 @@ This guide documents the **author contract** for `PolicyRuleHandler` plugins and
 | D15 | Production checklist | COMPLETE | §15 |
 | D16 | Troubleshooting | COMPLETE | §16 |
 
-**Overall:** **COMPLETE** — contract, packaging, YAML schema, EP discovery, typed `DeclarativePolicyRuntime` composition, and declarative enforcement at the standard tool boundary are shipped. Production package/version qualification remains **deferred** (§10).
+**Overall:** **COMPLETE** - contract, packaging, YAML schema, EP discovery, typed `DeclarativePolicyRuntime` composition, and declarative enforcement at the standard tool boundary are shipped. Production package/version qualification remains **deferred** (§10).
 
 **Shared truths:** `installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified` · trusted in-process Python · host-owned qualification · no secrets in EP metadata · no sandbox.
 
 ---
 
-## 1. Purpose — Policy vs Security Defense
+## 1. Purpose - Policy vs Security Defense
 
 | Surface | Evaluates | Runtime path |
 |---------|-----------|----------------|
 | **Policy rule handler** | `DeclarativePolicyRule` records (YAML / inline) keyed by `rule_id` | `PolicyRuleRegistry.evaluate_rule` → `PolicyRuleAction` |
 | **Security defense** | Live `HookContext` at `HookPoint`s | `SecurityDefensePlugin.inspect` → middleware block/allow |
-| **PolicyEngine** (facade) | Agent decisions, budgets, tool access, replay policies | `intergrax.runtime.policy.policy_engine` — separate from handler EP loading |
+| **PolicyEngine** (facade) | Agent decisions, budgets, tool access, replay policies | `intergrax.runtime.policy.policy_engine` - separate from handler EP loading |
 
 A package providing a handler **does not** activate a policy. YAML / `PolicyRulesProfile` and handler registration are **host-owned** composition steps.
 
@@ -73,7 +73,7 @@ class PolicyRuleHandler(Protocol):
 | Field | Type | Notes |
 |-------|------|-------|
 | `rule_id` | `str` | Configured rule instance identity (audit / evidence) |
-| `handler_id` | `str` | Runtime handler lookup — must match `PolicyRuleHandler.rule_id` |
+| `handler_id` | `str` | Runtime handler lookup - must match `PolicyRuleHandler.rule_id` |
 | `resource_kind` | `str` | e.g. `tool`, `agent`, `capability` |
 | `resource_id` | `str` | Target id or `*` |
 | `action` | `PolicyRuleAction` | `allow`, `deny`, `require_hitl` |
@@ -122,7 +122,7 @@ EP semantics: class instantiated once; instance returned as-is (`test_plugin_dis
 from intergrax.runtime.policy.rules.loader import load_policy_rules_from_path
 ```
 
-Supports `.yaml`, `.yml`, `.json` — top-level **list** of rule objects.
+Supports `.yaml`, `.yml`, `.json` - top-level **list** of rule objects.
 
 ### `PolicyRulesProfile` (Tier-3)
 
@@ -194,6 +194,16 @@ deny_sandbox = "acme_policy_rules.handlers:DenySandboxExecHandler"
 
 ### Three-part activation (package ≠ policy ≠ handler)
 
+```mermaid
+flowchart TB
+  EP[Rule handler EP\n+ policy definition EP/YAML\n+ package qualification]
+  EP --> PW[Policy wiring]
+  PW --> PR[Provenance]
+  PR --> RR[Runtime registry]
+```
+
+*Interpretation:* handlers, declarative rules, and qualification evidence merge in policy wiring - `pip install` alone activates nothing.
+
 ```text
 1. pip install acme-policy-rules                    # handler code installed
 2. Host sets PolicyRulesProfile on ApplicationEnvironmentProfile:
@@ -261,7 +271,7 @@ Tenant / application policy configuration belongs on **`ApplicationEnvironmentPr
 
 ## 7. Secrets / credentials
 
-Policy handlers receive `context: dict[str, str]` — typically `tool_id`, agent ids, etc. No credentials in YAML or EP tables.
+Policy handlers receive `context: dict[str, str]` - typically `tool_id`, agent ids, etc. No credentials in YAML or EP tables.
 
 ---
 
@@ -275,9 +285,9 @@ Handlers are stateless instances. Host may register the same handler class once.
 
 | Mechanism | Called from shipped Tier-3 wiring? |
 |-----------|-----------------------------------|
-| `load_policy_rule_plugin_report(registry, ...)` | **Yes** — when `policy_rules` set and `INTERGRAX_DISCOVER_PLUGINS` enabled |
+| `load_policy_rule_plugin_report(registry, ...)` | **Yes** - when `policy_rules` set and `INTERGRAX_DISCOVER_PLUGINS` enabled |
 | `PolicyRuleRegistry.register(handler)` | Host / tests; EP path via loader |
-| `load_policy_rules_from_path` | Yes — via `PolicyRulesProfile` when `wire_policy_bundle` runs |
+| `load_policy_rules_from_path` | Yes - via `PolicyRulesProfile` when `wire_policy_bundle` runs |
 
 EP discovery uses the same `INTERGRAX_DISCOVER_PLUGINS` / explicit `discover_entry_points` posture as other catalogs.
 
@@ -297,7 +307,7 @@ Standard policy wiring uses `PolicyRuleLoadPolicy` with `on_load_failure="isolat
 
 Semantic host approval for third-party handler packages. Installing a handler wheel does not imply rules in YAML reference it or that the host enabled evaluation.
 
-**Production package/version qualification:** `QUALIFICATION_STILL_DEFERRED` — `evaluate_package_production_admission` requires caller-supplied package version and platform compatibility evidence not wired on the standard host path. Handler allowlist and provenance are shipped; automatic production qualification is **not** claimed.
+**Production package/version qualification:** `QUALIFICATION_STILL_DEFERRED` - `evaluate_package_production_admission` requires caller-supplied package version and platform compatibility evidence not wired on the standard host path. Handler allowlist and provenance are shipped; automatic production qualification is **not** claimed.
 
 ---
 
@@ -315,7 +325,7 @@ Tool invocation request
   → PolicyEnforcementMode.AUDIT_ONLY: non-blocking audit trace only
 ```
 
-Typed runtime is on `RuntimePolicyBundle.declarative_policy_runtime` — not `domain_fragments` string-key lookup.
+Typed runtime is on `RuntimePolicyBundle.declarative_policy_runtime` - not `domain_fragments` string-key lookup.
 
 Unknown handler → **DENY** fail-closed. `REQUIRE_HITL` reaches canonical Nexus pause/approve/resume (`WAITING_FOR_HUMAN`).
 
@@ -334,7 +344,7 @@ No unload API. Registry is per-bundle instance.
 | Condition | Behavior |
 |-----------|----------|
 | Unknown `rule_id` | `evaluate_rule` → `DENY` (`unknown_handler=True`) |
-| Handler missing for YAML `rule_id` | Same — fail-closed |
+| Handler missing for YAML `rule_id` | Same - fail-closed |
 | Malformed YAML / JSON | `ValueError` or `ValidationError` at load time |
 | Duplicate handler `rule_id` | Admission policy governs (`error` default; shipped handler collision denied) |
 | Non-allowlisted handler EP | Rejected at registration when allowlist configured |
@@ -402,14 +412,14 @@ assert action == PolicyRuleAction.DENY
 
 ---
 
-## Historical baseline (ENTERPRISE-1 audit — closed)
+## Historical baseline (ENTERPRISE-1 audit - closed)
 
 | Gap (baseline) | Status |
 |----------------|--------|
 | EP handler bootstrap not in `wire_policy_bundle` | **CLOSED** (ENTERPRISE-3) |
 | Declarative rules not evaluated at runtime | **CLOSED** (ENTERPRISE-4) |
 | No centrally governed handler allowlist | **CLOSED** (ENTERPRISE-4) |
-| No provenance-tracked policy bundles | **CLOSED** — `PolicyBundleProvenance` shipped; signing not required |
-| Production package/version qualification | **DEFERRED** — `QUALIFICATION_STILL_DEFERRED` |
+| No provenance-tracked policy bundles | **CLOSED** - `PolicyBundleProvenance` shipped; signing not required |
+| Production package/version qualification | **DEFERRED** - `QUALIFICATION_STILL_DEFERRED` |
 
 **Reference example gap (DOCS-6):** no installable example under `examples/platform_plugins/`.

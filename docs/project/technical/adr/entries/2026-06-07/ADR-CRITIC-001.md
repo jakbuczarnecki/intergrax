@@ -1,4 +1,4 @@
-# ADR-CRITIC-001: Critic & Verification Layer — tier-separated PEV verify stack
+# ADR-CRITIC-001: Critic & Verification Layer - tier-separated PEV verify stack
 
 | Field | Value |
 |-------|-------|
@@ -14,13 +14,13 @@ Intergrax needs a production-grade mechanism to verify partial and final agent o
 - Strong L0 structural validation (`NexusValidationEngine`) and evaluation **wiring** (Phase EVAL Done).
 - No platform primitive for semantic judging or trajectory evaluation.
 - LLM-as-judge explicitly documented as opt-in with scores supplied externally.
-- Evaluation audit layer at **L2** maturity — closeout ≠ execution depth.
+- Evaluation audit layer at **L2** maturity - closeout ≠ execution depth.
 
 Alternatives considered:
 
-1. **Monolithic platform critic in Nexus** — single LLM call in `NexusLoop` for all domains.
-2. **Application-only critics** — each Tier-3 app implements full verify stack ad hoc.
-3. **Tier-separated CVL (chosen)** — Harness provides orchestration + Tier-0 tools; agents/apps provide rubrics and policy.
+1. **Monolithic platform critic in Nexus** - single LLM call in `NexusLoop` for all domains.
+2. **Application-only critics** - each Tier-3 app implements full verify stack ad hoc.
+3. **Tier-separated CVL (chosen)** - Harness provides orchestration + Tier-0 tools; agents/apps provide rubrics and policy.
 
 ## Decision
 
@@ -35,10 +35,10 @@ Adopt the **Critic & Verification Layer (CVL)** with a **three-layer stack (L0/L
 
 **Rejected:**
 
-- **Monolithic Nexus critic** — violates fat-nexus anti-pattern; cannot encode domain rubrics correctly.
-- **Application-only** — duplicates infrastructure; breaks observability and release gates.
+- **Monolithic Nexus critic** - violates fat-nexus anti-pattern; cannot encode domain rubrics correctly.
+- **Application-only** - duplicates infrastructure; breaks observability and release gates.
 
-**LLM-as-judge is opt-in** via `CriticProfile` — not mandatory on every run (consistent with [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) §18).
+**LLM-as-judge is opt-in** via `CriticProfile` - not mandatory on every run (consistent with [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) §18).
 
 **L0 always runs before L1** when L1 is enabled.
 
@@ -54,17 +54,17 @@ Adopt the **Critic & Verification Layer (CVL)** with a **three-layer stack (L0/L
 ### Negative
 
 - Additional Tier-1 module surface (`runtime/critic`).
-- Authors must configure `CriticProfile` for semantic verification — not zero-config.
+- Authors must configure `CriticProfile` for semantic verification - not zero-config.
 - Judge calibration against human baseline remains operational work (documented, not automated in v1).
 
 ## Compliance
 
-- Tier boundaries preserved — no domain logic in Tier-1; agents use ToolRuntime for L1.
+- Tier boundaries preserved - no domain logic in Tier-1; agents use ToolRuntime for L1.
 - Extends existing evaluation control plane (Appendix U), does not fork it.
 - ADR linked from canon §55 and plan Phase CRIT-V.
 
 ## Implementation notes
 
 - Architecture: [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)
-- Plan: Phase CRIT-V (Band 2ak) — waves CRIT-V-0 through CRIT-V-7
+- Plan: Phase CRIT-V (Band 2ak) - waves CRIT-V-0 through CRIT-V-7
 - Verification: `uv run pytest -m gate -q` after each wave; critic-specific tests under `tests/unit/runtime/critic`

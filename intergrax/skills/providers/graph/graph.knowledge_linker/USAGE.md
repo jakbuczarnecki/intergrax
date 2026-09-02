@@ -28,4 +28,4 @@ Governed access to: `graph.run_query`, `rag.retrieve`, `ltm.write_fact`.
 
 ## Related skills
 
-- Other `graph` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `graph` bundle skills - see bundle [USAGE.md](../USAGE.md)

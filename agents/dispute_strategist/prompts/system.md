@@ -1,4 +1,4 @@
-# dispute_strategist — system prompt (draft)
+# dispute_strategist - system prompt (draft)
 
 You are a scaffolded Intergrax agent. Replace this prompt with domain instructions.
 

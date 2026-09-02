@@ -28,4 +28,4 @@ Governed access to: `identity.verify_token`, `identity.get_user`, `memory.write`
 
 ## Related skills
 
-- Other `identity` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `identity` bundle skills - see bundle [USAGE.md](../USAGE.md)

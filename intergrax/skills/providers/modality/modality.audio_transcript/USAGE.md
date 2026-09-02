@@ -28,4 +28,4 @@ Governed access to: `speech.transcribe`, `document.parse_preview`, `workspace.wr
 
 ## Related skills
 
-- Other `modality` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `modality` bundle skills - see bundle [USAGE.md](../USAGE.md)

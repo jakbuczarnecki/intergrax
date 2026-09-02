@@ -17,10 +17,10 @@ Invocation-pattern audit 2026-06-12 identified four production patterns (single,
 
 1. Introduce `ToolInvocationPattern` Protocol with `pattern_id` and `execute(...) -> ToolInvocationResult` in `intergrax/runtime/nexus/tools/tool_invocation_pattern.py`.
 2. Ship `SinglePassPattern` (TOOL-ENG-17) and `BoundedReactPattern` (TOOL-ENG-18) under `patterns`; atomic invoke stays `RuntimeToolInvoker` (unchanged).
-3. Add `ToolInvocationMode` enum and `pattern_for_mode()` factory (TOOL-ENG-21); `RuntimeConfig.tool_invocation_mode` optional — `None` infers bounded ReAct when `max_tool_iterations > 1` (ADR-TOOL-002 compat).
+3. Add `ToolInvocationMode` enum and `pattern_for_mode()` factory (TOOL-ENG-21); `RuntimeConfig.tool_invocation_mode` optional - `None` infers bounded ReAct when `max_tool_iterations > 1` (ADR-TOOL-002 compat).
 4. `run_bounded_tool_loop` delegates to resolved pattern (TOOL-ENG-22); `plan_context_invocation` passes config mode.
 5. Bridge `ApplicationEnvironmentProfile.tool_invocation_mode` via `catalog_runtime_bridge.py` (TOOL-ENG-23).
-6. Defer `ParallelBatchPattern`, `DeterministicChainPattern`, `ParallelSemanticBatchPattern` to TOOL-ENG-9/20/25 — factory raises `NotImplementedError` until shipped.
+6. Defer `ParallelBatchPattern`, `DeterministicChainPattern`, `ParallelSemanticBatchPattern` to TOOL-ENG-9/20/25 - factory raises `NotImplementedError` until shipped.
 
 **Rejected:** Tool-level ReAct inside `GraphExecutor` (ADR-TOOL-002). Replacing `RuntimeToolInvoker` with pattern-specific invoke paths.
 
@@ -39,12 +39,12 @@ Invocation-pattern audit 2026-06-12 identified four production patterns (single,
 
 ## Compliance
 
-- Tier boundaries preserved — patterns compose `ToolPlannerProtocol` + `RuntimeToolInvoker` only.
+- Tier boundaries preserved - patterns compose `ToolPlannerProtocol` + `RuntimeToolInvoker` only.
 - Tests: `test_tool_invocation_pattern.py`, `test_tool_loop_integration.py`, bridge unit test.
 
 ## Implementation notes
 
 - `intergrax/runtime/nexus/tools/tool_invocation_pattern.py`
 - `intergrax/runtime/nexus/tools/patterns`
-- `intergrax/runtime/nexus/config_types.py` — `ToolInvocationMode`
+- `intergrax/runtime/nexus/config_types.py` - `ToolInvocationMode`
 - `intergrax/applications/_shared/catalog_runtime_bridge.py`

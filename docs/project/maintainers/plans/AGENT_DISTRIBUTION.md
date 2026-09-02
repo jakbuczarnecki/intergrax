@@ -1,6 +1,6 @@
-# Agent Distribution and Management — Plan
+# Agent Distribution and Management - Plan
 
-**Status:** Active (architecture frozen — AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1)  
+**Status:** Active (architecture frozen - AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1)  
 **Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md)  
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../../technical/adr/entries/2026-08-12/ADR-AGENT-004.md)  
 **Evidence:** [`audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md)  
@@ -12,10 +12,10 @@
 
 Implement the Tier-0 Agent Distribution domain so operators can discover, install, bind, configure, enable, upgrade, rollback, and uninstall agents **without** hot-loading Python, **without** LKW-local stores, and **without** breaking deterministic runtime graphs or Nexus capability routing.
 
-### Protocol v2 remediation — TIER_LAYER_BOUNDARIES (2026-08-18)
+### Protocol v2 remediation - TIER_LAYER_BOUNDARIES (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md`](../../audit_results/2026-08-18/TIER_LAYER_BOUNDARIES.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-TIER-LAYER-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-TIER-LAYER-PERSIST.
 
 | Block | Status | Findings | Acceptance intent |
 |-------|--------|----------|-------------------|
@@ -26,10 +26,10 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 - Revalidate finding against then-current `development` HEAD before implementation.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 
-### Protocol v2 remediation — AGENT_SYSTEM (2026-08-18)
+### Protocol v2 remediation - AGENT_SYSTEM (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/AGENT_SYSTEM.md`](../../audit_results/2026-08-18/AGENT_SYSTEM.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-AGENT-SYSTEM-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-AGENT-SYSTEM-PERSIST.
 
 | Block | Status | Findings | Acceptance intent |
 |-------|--------|----------|-------------------|
@@ -38,17 +38,17 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 **Remediation rules:**
 
 - Revalidate finding against then-current `development` HEAD before implementation.
-- Contract/routing integrity findings 01–03, 05–06 owned by **AGSYS-CONTRACT-INTEGRITY** in [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) — cross-reference only; do not duplicate.
-- **TL-FIX-B** remains separate ownership for colliding Tier-1/Tier-2 concrete implementations; AGSYS-IDENTITY-PROJECTION addresses registry bootstrap identity rewrite — explicitly cross-link where bootstrap could admit competing identities.
+- Contract/routing integrity findings 01–03, 05–06 owned by **AGSYS-CONTRACT-INTEGRITY** in [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) - cross-reference only; do not duplicate.
+- **TL-FIX-B** remains separate ownership for colliding Tier-1/Tier-2 concrete implementations; AGSYS-IDENTITY-PROJECTION addresses registry bootstrap identity rewrite - explicitly cross-link where bootstrap could admit competing identities.
 - Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 
-## Architecture delivery (AGENT-PLATFORM-2) — Done
+## Architecture delivery (AGENT-PLATFORM-2) - Done
 
 | Item | Status |
 |------|--------|
 | Canonical `AGENT_DISTRIBUTION.md` | done |
 | Deterministic `MaterializedRuntimeLock` model | done (architecture) |
-| `RuntimeRevision` + activation semantics | done (architecture — ARCH-AGENT-ACTIVATION-1 frozen) |
+| `RuntimeRevision` + activation semantics | done (architecture - ARCH-AGENT-ACTIVATION-1 frozen) |
 | Effective roster merge specification | done (architecture) |
 | Cross-link from agent execution hub | done |
 | Plan pair (this file) | done |
@@ -85,7 +85,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 
 ## AGENT-PLATFORM-3 gate
 
-**READY_FOR_CLOSE** (2026-08-12) — Tier-0 contracts and store ports under `intergrax/agent_distribution/`; AP-3-FIX-1 hardened namespace alignment, deep immutability, recursive secret rejection, typed ports, and shared digest validation.
+**READY_FOR_CLOSE** (2026-08-12) - Tier-0 contracts and store ports under `intergrax/agent_distribution/`; AP-3-FIX-1 hardened namespace alignment, deep immutability, recursive secret rejection, typed ports, and shared digest validation.
 
 | Deliverable | Status |
 |-------------|--------|
@@ -105,7 +105,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 
 ## AGENT-PLATFORM-4 gate
 
-**READY_FOR_CLOSE** (2026-08-13) — transactional domain services with explicit store-port atomic operations; no runtime capability discovery in AP-4 services.
+**READY_FOR_CLOSE** (2026-08-13) - transactional domain services with explicit store-port atomic operations; no runtime capability discovery in AP-4 services.
 
 | Deliverable | Status |
 |-------------|--------|
@@ -126,7 +126,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 
 ## AGENT-PLATFORM-5 gate
 
-**READY_FOR_CLOSE** (2026-08-13) — fail-closed `AgentPackageTrustCoordinator` with typed policy,
+**READY_FOR_CLOSE** (2026-08-13) - fail-closed `AgentPackageTrustCoordinator` with typed policy,
 revocation evaluation, deterministic reason codes, digest-pinned trust records, and installation
 verification gate.
 
@@ -148,7 +148,7 @@ verification gate.
 
 ## AGENT-PLATFORM-6 gate
 
-**READY_FOR_CLOSE** (2026-08-13) — deterministic effective roster merge with durable default-agent override, secret-safe manifest defaults, L2 installed-agent requirement set, and L3 `CandidateDependencySpecification` builder under `intergrax/agent_distribution/`.
+**READY_FOR_CLOSE** (2026-08-13) - deterministic effective roster merge with durable default-agent override, secret-safe manifest defaults, L2 installed-agent requirement set, and L3 `CandidateDependencySpecification` builder under `intergrax/agent_distribution/`.
 
 | Deliverable | Status |
 |-------------|--------|
@@ -172,7 +172,7 @@ verification gate.
 
 ## AGENT-PLATFORM-7 gate
 
-**READY_FOR_CLOSE** (2026-08-13) — deterministic `MaterializedRuntimeLock` producer, resolver port,
+**READY_FOR_CLOSE** (2026-08-13) - deterministic `MaterializedRuntimeLock` producer, resolver port,
 in-memory lock store, and candidate runtime graph simulation gates under `intergrax/agent_distribution/`.
 
 | Deliverable | Status |
@@ -197,7 +197,7 @@ in-memory lock store, and candidate runtime graph simulation gates under `interg
 
 ## AGENT-PLATFORM-7-FIX-1 gate
 
-**READY_FOR_CLOSE** (2026-08-13) — enforce true content-addressed lock identity and consolidate
+**READY_FOR_CLOSE** (2026-08-13) - enforce true content-addressed lock identity and consolidate
 runtime-graph semantics into neutral `intergrax/runtime_graph_semantics.py`.
 
 | Deliverable | Status |
@@ -216,7 +216,7 @@ runtime-graph semantics into neutral `intergrax/runtime_graph_semantics.py`.
 
 ## AGENT-PLATFORM-8 gate
 
-**READY_FOR_CLOSE** (2026-08-13) — topology-agnostic materialization coordinator, explicit adapters,
+**READY_FOR_CLOSE** (2026-08-13) - topology-agnostic materialization coordinator, explicit adapters,
 graph-authoritative staging, lock-driven OCI install manifest, digest-verified package artifact
 staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 
@@ -230,7 +230,7 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 | Digest-verified `.intergrax-artifacts/` staging keyed by `package_digest` | done |
 | Lock-driven `.intergrax-runtime-install.txt` from `MaterializedRuntimeLock` | done |
 | Third-party production install requires `package_digest` + `--hash=` enforcement | done |
-| OCI Dockerfile uses lock install manifest — not repository `uv.lock` authority | done |
+| OCI Dockerfile uses lock install manifest - not repository `uv.lock` authority | done |
 | `DockerBuildRunner` explicit `image_ref` contract + RepoDigest/image-ID inspect | done |
 | `FakeRuntimeMaterializationAdapter` deterministic test adapter | done |
 | `OciImageMaterializationAdapter` production staging + docker boundary | done |
@@ -242,7 +242,7 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 
 **Evidence:** `intergrax/agent_distribution/materialization_service.py`, `materialization_adapters.py`, `runtime_context_staging.py`, `package_artifact_provider.py`, `errors.py`, `tests/unit/agent_distribution/test_agent_distribution_materialization.py`, `test_agent_distribution_materialization_adapter.py`
 
-**Next:** AP-11 delivered — generic V1 admin control plane. AP-12 is LKW consumer proof wiring.
+**Next:** AP-11 delivered - generic V1 admin control plane. AP-12 is LKW consumer proof wiring.
 
 ### AP-10 evidence (registry projection)
 
@@ -256,16 +256,16 @@ staging (`.intergrax-artifacts/<digest>/`), and explicit VENV unsupported port.
 | Revision-bound projection uses exact `(package_digest, factory_reference)` resolver | done |
 | Host builders map is not production authority for AP-10 projection | done |
 | `VenvBundleRuntimeAgentFactoryResolver` for `VENV_BUNDLE` artifact authority | done |
-| `PRODUCTION_RUNTIME_FACTORY_ADAPTER_DEFERRED` | partial — `VENV_BUNDLE` implemented; OCI/sidecar deferred |
+| `PRODUCTION_RUNTIME_FACTORY_ADAPTER_DEFERRED` | partial - `VENV_BUNDLE` implemented; OCI/sidecar deferred |
 | AP-10 focused tests + AP-9 activation regression | done |
 
 **Evidence:** `intergrax/applications/_shared/runtime_agent_factory_resolver.py`, `wiring.py`, `registry_projection.py`, `tests/unit/applications/test_registry_projection_ap10.py`
 
-**Next:** AP-12 may begin after AP-11 close — LKW consumer proof wiring.
+**Next:** AP-12 may begin after AP-11 close - LKW consumer proof wiring.
 
 ## AGENT-PLATFORM-11 gate
 
-**READY_FOR_REVIEW** (2026-08-14) — generic V1 Agent Platform administration control plane:
+**READY_FOR_REVIEW** (2026-08-14) - generic V1 Agent Platform administration control plane:
 typed `AgentPlatformAdminService` facade over AP-3..AP-10 services, shared FastAPI routes
 under `/v1/agent-platform`, reused `require_harness_api_key` authorization, desired vs serving
 read models, and enable/disable that never mutate the serving RuntimeRevision.
@@ -286,7 +286,7 @@ read models, and enable/disable that never mutate the serving RuntimeRevision.
 
 **Evidence:** `intergrax/agent_distribution/admin_service.py`, `admin_models.py`, `intergrax/applications/_shared/agent_platform_admin_routes.py`, `tests/unit/agent_distribution/test_agent_platform_admin_service.py`, `tests/unit/applications/test_agent_platform_admin_routes.py`
 
-**Next:** AP-12 may begin — LKW consumer proof wiring of this admin control plane. Production topology factory loaders remain a separate host/runtime adapter.
+**Next:** AP-12 may begin - LKW consumer proof wiring of this admin control plane. Production topology factory loaders remain a separate host/runtime adapter.
 
 ### AP-9 evidence (activation orchestration)
 

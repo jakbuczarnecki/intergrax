@@ -1,4 +1,4 @@
-# Audit result — `MEMORY`
+# Audit result - `MEMORY`
 
 **Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -32,9 +32,9 @@ uv run pytest tests/unit/memory/ -q
 
 ## Backlog P2–P4 (deferred)
 
-- Procedural memory depth — P3
-- Org memory maturity — P3
-- LangMem/Zep parity on entity graph — P4
+- Procedural memory depth - P3
+- Org memory maturity - P3
+- LangMem/Zep parity on entity graph - P4
 
 ---
 

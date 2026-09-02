@@ -1,8 +1,8 @@
-﻿# research agents — Implementation Plan
+﻿# research agents - Implementation Plan
 
-**The implementation map** for Tier-2 research + summary agents — phases, status, gaps, and verification.
+**The implementation map** for Tier-2 research + summary agents - phases, status, gaps, and verification.
 
-Status: **Harness baseline Done** — graph/delegation depth optional
+Status: **Harness baseline Done** - graph/delegation depth optional
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Host: [`applications/research_application`](../../../applications/research_application/)

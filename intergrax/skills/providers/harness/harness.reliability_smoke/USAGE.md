@@ -8,7 +8,7 @@
 
 ## How it works
 
-Four-tool union — broader than `harness.tool_smoke`. Security and workflow tools resolve only when integrations present; skill declaration is unconditional.
+Four-tool union - broader than `harness.tool_smoke`. Security and workflow tools resolve only when integrations present; skill declaration is unconditional.
 
 ## How to use
 
@@ -28,5 +28,5 @@ Single pack for W-OPS reliability gate coverage.
 
 ## Related skills
 
-- `ops.security_audit` — production security audit variant
-- `ops.workflow_runner` — full workflow poll/logs
+- `ops.security_audit` - production security audit variant
+- `ops.workflow_runner` - full workflow poll/logs

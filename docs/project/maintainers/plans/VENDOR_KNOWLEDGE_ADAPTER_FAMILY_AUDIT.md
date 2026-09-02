@@ -10,17 +10,17 @@
 The repository proves five active Vendor Knowledge families or explicit
 provider adapters:
 
-- **Microsoft Graph** — the accepted reference family with `drive`, `mail`,
+- **Microsoft Graph** - the accepted reference family with `drive`, `mail`,
   `teams_channel`, `teams_chat` and `calendar`.
-- **Slack** — foundation, adapter and durable reconciliation exist; the LKW
+- **Slack** - foundation, adapter and durable reconciliation exist; the LKW
   connected-source path remains `CHANGES_REQUIRED`, and live access is absent.
-- **Google Workspace** — `drive`, `docs` and `sheets` have production adapters
+- **Google Workspace** - `drive`, `docs` and `sheets` have production adapters
   and focused sync proof, despite stale roadmap wording. `slides`, `calendar`,
   `mail` and `chat` exist only in the shared low-level source-kind/transport
   surface.
-- **Jira** — the `issues` adapter supports bounded project reconciliation and
+- **Jira** - the `issues` adapter supports bounded project reconciliation and
   exact structured issue reads.
-- **Confluence** — the `pages` adapter supports bounded space reconciliation
+- **Confluence** - the `pages` adapter supports bounded space reconciliation
   and exact rich-text page reads.
 
 Databricks is a roadmap entry, not an adapter family yet: no precise
@@ -244,24 +244,24 @@ The next task can start when:
 
 ### Runtime and integration surfaces
 
-- `intergrax/runtime/vendor_knowledge/registry.py` — explicit instance-local
+- `intergrax/runtime/vendor_knowledge/registry.py` - explicit instance-local
   key `(provider_id, integration_kind, source_kind)` and adapter resolution.
-- `intergrax/runtime/vendor_knowledge/adapters/__init__.py` — exported
+- `intergrax/runtime/vendor_knowledge/adapters/__init__.py` - exported
   registration helpers for the 11 active adapters.
-- `intergrax/runtime/vendor_knowledge/adapters/slack_conversation.py` —
+- `intergrax/runtime/vendor_knowledge/adapters/slack_conversation.py` -
   `slack_conversation`, structured records, bounded conversation inventory,
   exact reads and attachment metadata.
-- `intergrax/runtime/vendor_knowledge/adapters/jira_issues.py` —
+- `intergrax/runtime/vendor_knowledge/adapters/jira_issues.py` -
   `issues`, structured issue mapping, paging and reconciliation.
-- `intergrax/runtime/vendor_knowledge/adapters/confluence_pages.py` —
+- `intergrax/runtime/vendor_knowledge/adapters/confluence_pages.py` -
   `pages`, rich-text mapping, paging and reconciliation.
 - `intergrax/runtime/vendor_knowledge/adapters/google_workspace_drive.py`,
-  `google_workspace_docs.py`, `google_workspace_sheets.py` — the three
+  `google_workspace_docs.py`, `google_workspace_sheets.py` - the three
   registered Google adapters and their declared capabilities.
 - `intergrax/integrations/providers/collaboration_suite/google_workspace/contracts.py`
-  — exact low-level Google source kinds: `drive`, `docs`, `sheets`, `slides`,
+  - exact low-level Google source kinds: `drive`, `docs`, `sheets`, `slides`,
   `calendar`, `mail`, `chat`.
-- `docs/project/maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md` — accepted Microsoft Graph
+- `docs/project/maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md` - accepted Microsoft Graph
   registry keys, source matrices, Jira/Confluence deferred scope, Slack
   status, Google roadmap wording and Databricks deferral.
 

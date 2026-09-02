@@ -1,17 +1,17 @@
 # Verified Product Identification at Catalog Scale
 
-> **Can a system establish verified product identity from incomplete natural-language requests against millions of noisy catalog offers — without mistaking the top search result for a verified match?**
+> **Can a system establish verified product identity from incomplete natural-language requests against millions of noisy catalog offers - without mistaking the top search result for a verified match?**
 
-A large industrial distributor maintains a catalog of millions of product offers sourced from heterogeneous retailers. A technician, buyer, or support agent describes a part imperfectly — by model fragment, compatibility requirement, partial identifier, or natural language. Several candidates look almost identical. Selecting the wrong variant ships an incompatible component, triggers a return, or causes downtime. This scenario tests whether a system can **retrieve plausible candidates, verify material identity constraints from catalog evidence, and refuse when certainty is not justified** — not merely return something semantically similar.
+A large industrial distributor maintains a catalog of millions of product offers sourced from heterogeneous retailers. A technician, buyer, or support agent describes a part imperfectly - by model fragment, compatibility requirement, partial identifier, or natural language. Several candidates look almost identical. Selecting the wrong variant ships an incompatible component, triggers a return, or causes downtime. This scenario tests whether a system can **retrieve plausible candidates, verify material identity constraints from catalog evidence, and refuse when certainty is not justified** - not merely return something semantically similar.
 
 > [!NOTE]
-> **Scenario status:** DESIGN / NOT YET ACCEPTED — design ready for quality gate; real 3.77M-offer dataset foundation validated; solution architecture documented; implementation not initialized; no executable proof, evidence, or report exists yet.
+> **Scenario status:** DESIGN / NOT YET ACCEPTED - design ready for quality gate; real 3.77M-offer dataset foundation validated; solution architecture documented; implementation not initialized; no executable proof, evidence, or report exists yet.
 
 ## Abstract
 
 Enterprise parts and product catalogs contain millions of noisy, heterogeneous offers: missing brands, conflicting attributes, retailer-local SKUs, near-identical variants, and multilingual descriptions. Users rarely provide perfect identifiers. They describe what they need in natural language, partial model numbers, or compatibility constraints.
 
-The naive answer — embed the catalog, retrieve top-k, let an LLM pick the best match — optimizes for **similarity**, not **identity**. Top-ranked retrieval can confidently select a near-identical variant with incompatible voltage, interface, or capacity. Wrong identification has real operational cost: wrong replacement parts, RMAs, procurement errors, and service delays.
+The naive answer - embed the catalog, retrieve top-k, let an LLM pick the best match - optimizes for **similarity**, not **identity**. Top-ranked retrieval can confidently select a near-identical variant with incompatible voltage, interface, or capacity. Wrong identification has real operational cost: wrong replacement parts, RMAs, procurement errors, and service delays.
 
 This scenario asks whether a system can combine independent retrieval channels (exact identifiers, lexical search, structured attributes, dense vectors), rerank for recall-quality ordering, and then **verify** material identity constraints against traceable catalog evidence. When evidence is contradictory, ambiguous, or insufficient, the system must return a bounded non-verified outcome instead of presenting the highest-ranked candidate as fact.
 
@@ -22,13 +22,13 @@ The WOW moment is simple and uncomfortable: **top search result ≠ verified pro
 | Field | Value |
 | --- | --- |
 | **Problem** | Verify product identity from incomplete, imprecise user descriptions against a noisy multi-million-offer catalog |
-| **Dataset** | Web Data Commons Large Scale Product Corpus V2 — canonical selected subset |
+| **Dataset** | Web Data Commons Large Scale Product Corpus V2 - canonical selected subset |
 | **Scale** | 3,770,377 real product offers; 2,753,163 cluster references; 24.6M structured attribute entries |
 | **Observed difficulty** | Missing fields, multilingual noise, near-identical variants, conflicting KVP/spec tables, identifier collisions |
 | **Trap** | Semantic similarity and top-1 retrieval treated as verified product identity |
 | **Decision risk** | Wrong variant procured, incompatible replacement installed, return/RMA, downtime, wasted technician time |
 | **Scenario outcomes** | RESOLVED (`VERIFIED`, conclusive `NO_MATCH`) or UNRESOLVED (`AMBIGUOUS`, `INSUFFICIENT_INFORMATION`) |
-| **Status** | DESIGN / NOT YET ACCEPTED — design ready for quality gate |
+| **Status** | DESIGN / NOT YET ACCEPTED - design ready for quality gate |
 | **Proof class** | SCENARIO |
 | **Slug** | `verified_product_identification` |
 
@@ -37,7 +37,7 @@ The WOW moment is simple and uncomfortable: **top search result ≠ verified pro
 <a href="assets/scenario-overview.png">
   <img
     src="assets/scenario-overview.png"
-    alt="Verified Product Identification at Catalog Scale — multi-channel product retrieval, reranking, evidence verification and bounded outcomes"
+    alt="Verified Product Identification at Catalog Scale - multi-channel product retrieval, reranking, evidence verification and bounded outcomes"
   >
 </a>
 
@@ -80,10 +80,10 @@ A large distributor, manufacturer, or ecommerce catalog operator receives produc
 or:
 
 ```text
-"replacement feeder motor for line 4 — same voltage as the old Lenze unit"
+"replacement feeder motor for line 4 - same voltage as the old Lenze unit"
 ```
 
-The catalog holds **3.77 million real product offers** with heterogeneous structure: GTINs, MPNs, retailer SKUs, key-value attributes, spec tables, noisy descriptions, and missing fields. Several candidates may look semantically close. The business need is not "find something similar" — it is **establish whether a specific product identity is supported by evidence** before procurement, replacement, or compatibility action.
+The catalog holds **3.77 million real product offers** with heterogeneous structure: GTINs, MPNs, retailer SKUs, key-value attributes, spec tables, noisy descriptions, and missing fields. Several candidates may look semantically close. The business need is not "find something similar" - it is **establish whether a specific product identity is supported by evidence** before procurement, replacement, or compatibility action.
 
 ## The risk
 
@@ -97,17 +97,17 @@ Wrong product identification creates operational harm:
 - procurement of the wrong SKU at scale;
 - service delay while the correct variant is re-identified.
 
-The risk is not a bad chat reply — it is a **wrong identity decision** with downstream physical or financial consequence.
+The risk is not a bad chat reply - it is a **wrong identity decision** with downstream physical or financial consequence.
 
 ## The naive failure / trap
 
 Three weak approaches that **do not** satisfy this scenario:
 
-1. **Dense vector search only** — embed catalog and query, return top-1. Semantically similar ≠ materially identical. Near variants (M.2 SATA vs NVMe, ECC vs non-ECC, ABC-123 vs ABC-123A) can rank highest.
+1. **Dense vector search only** - embed catalog and query, return top-1. Semantically similar ≠ materially identical. Near variants (M.2 SATA vs NVMe, ECC vs non-ECC, ABC-123 vs ABC-123A) can rank highest.
 
-2. **Top-k + LLM picker** — retrieve top-10, ask a model to choose. The model may confidently select a convincing but incompatible candidate. Ranking probability is not identity proof.
+2. **Top-k + LLM picker** - retrieve top-10, ask a model to choose. The model may confidently select a convincing but incompatible candidate. Ranking probability is not identity proof.
 
-3. **Exact identifier lookup only** — fails when the user omits identifiers, provides partial/incorrect codes, mixes model names with constraints, or must distinguish close variants sharing a product family name.
+3. **Exact identifier lookup only** - fails when the user omits identifiers, provides partial/incorrect codes, mixes model names with constraints, or must distinguish close variants sharing a product family name.
 
 The trap to avoid in evaluation: PASS because the system returned **something plausible**. PASS requires evidence-backed verification or an honest bounded refusal.
 
@@ -119,7 +119,7 @@ reranker score       ≠  verification
 
 ## Why the dataset is hard
 
-The canonical catalog is real, large, and messy — not a curated demo fixture:
+The canonical catalog is real, large, and messy - not a curated demo fixture:
 
 | Fact | Value |
 | --- | --- |
@@ -135,7 +135,7 @@ The canonical catalog is real, large, and messy — not a curated demo fixture:
 
 Observed real-data problems include missing categories and brands, multilingual content, encoding damage, retailer-local identifiers, GTIN/MPN/SKU mixtures, incorrect categories, spec-table boilerplate, shipping/size tables masquerading as specs, conflicting `keyValuePairs` vs `specTableContent`, and near-identical variants differing by critical parameters.
 
-`cluster_id` supplies candidate matching reference from WDC — useful for benchmark construction, **not** infallible ground truth.
+`cluster_id` supplies candidate matching reference from WDC - useful for benchmark construction, **not** infallible ground truth.
 
 ## Adversarial challenge
 
@@ -197,15 +197,15 @@ Platform proof envelope mapping:
 | **RESOLVED** | `VERIFIED`; `NO_MATCH` when conclusively established |
 | **UNRESOLVED** | `AMBIGUOUS`; `INSUFFICIENT_INFORMATION` |
 
-`NO_MATCH` is not retrieval failure — it is a conclusive identity judgment after evidence review.
+`NO_MATCH` is not retrieval failure - it is a conclusive identity judgment after evidence review.
 
 ## Dataset / reproducibility
 
-**Provenance:** [Web Data Commons Large Scale Product Corpus V2](https://webdatacommons.org/largecorpus/productcorpus/v2/index.html) — `offers_corpus_all_v2_non_norm` (26,507,210 source offers).
+**Provenance:** [Web Data Commons Large Scale Product Corpus V2](https://webdatacommons.org/largecorpus/productcorpus/v2/index.html) - `offers_corpus_all_v2_non_norm` (26,507,210 source offers).
 
 **Selection rule (deterministic):** keep every record where `keyValuePairs != null` OR `specTableContent != null`.
 
-**Canonical artifact:** `selected_offers.parquet` — Parquet + ZSTD, one `record_json` column per selected offer, ~1.71 GiB, 3,770,377 records. Built by the deterministic streaming builder in [`dataset/build_wdc_dataset.py`](dataset/build_wdc_dataset.py).
+**Canonical artifact:** `selected_offers.parquet` - Parquet + ZSTD, one `record_json` column per selected offer, ~1.71 GiB, 3,770,377 records. Built by the deterministic streaming builder in [`dataset/build_wdc_dataset.py`](dataset/build_wdc_dataset.py).
 
 **Dataset distribution:** **OPEN / MUST RESOLVE BEFORE PUBLIC REPRODUCTION.** The canonical ~1.71 GiB artifact is not yet publicly hosted or auto-resolved by the proof runner. A public reviewer should not have to manually discover WDC, download 26.5M raw offers, and run 30+ minutes of preprocessing. Preferred future experience: clone repo → canonical dataset auto-resolved with checksum verification → database initialized → proof ready. Hosting mechanism (dedicated proof-assets repo, GitHub Release, external immutable storage) is not yet chosen.
 
@@ -230,8 +230,8 @@ Do not run ad-hoc retrieval experiments against local dataset artifacts and trea
 
 ## Limitations
 
-- Bounded to **product identification under catalog evidence** — not universal compatibility checking across arbitrary systems.
-- Uses a real public product corpus with measured statistics — not a synthetic toy catalog — but `cluster_id` is reference signal, not infallible truth.
+- Bounded to **product identification under catalog evidence** - not universal compatibility checking across arbitrary systems.
+- Uses a real public product corpus with measured statistics - not a synthetic toy catalog - but `cluster_id` is reference signal, not infallible truth.
 - Does not claim perfect attribute normalization across 337k+ raw attribute names.
 - Does not claim zero false positives in production search at arbitrary scale without stated benchmark thresholds.
 - Dataset distribution and public reproduction path are **not finalized**.
@@ -241,4 +241,4 @@ Full limitations and excluded claims: [Scenario Specification § B](SCENARIO_SPE
 
 ## Go deeper
 
-**[Read the full Scenario Specification](SCENARIO_SPEC.md)** — deep contract for scenario design, solution semantics, Intergrax fit, gap decision, and proof build (A/B/C/D/E).
+**[Read the full Scenario Specification](SCENARIO_SPEC.md)** - deep contract for scenario design, solution semantics, Intergrax fit, gap decision, and proof build (A/B/C/D/E).

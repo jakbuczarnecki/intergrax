@@ -4,13 +4,13 @@ Enterprise-scale qualification ledger for diagnostics beyond functional HARDEN p
 
 Status vocabulary:
 
-- `PROVEN` — bounded proof exists in this repository for the stated semantics
-- `REQUALIFICATION_REQUIRED` — prior proof invalidated; remediation in flight
-- `NOT_YET_QUALIFIED` — not proven in-repo yet; do not treat as production scale guarantee
+- `PROVEN` - bounded proof exists in this repository for the stated semantics
+- `REQUALIFICATION_REQUIRED` - prior proof invalidated; remediation in flight
+- `NOT_YET_QUALIFIED` - not proven in-repo yet; do not treat as production scale guarantee
 
-## E1 — Scalable Problem reads (`DIAG-ENTERPRISE-1` / `DIAG-ENTERPRISE-1-R1` / `DIAG-ENTERPRISE-1-R2` / `DIAG-ENTERPRISE-1-R3` / `DIAG-ENTERPRISE-1-R4` / `DIAG-ENTERPRISE-1-R5` / `DIAG-ENTERPRISE-1-R6`)
+## E1 - Scalable Problem reads (`DIAG-ENTERPRISE-1` / `DIAG-ENTERPRISE-1-R1` / `DIAG-ENTERPRISE-1-R2` / `DIAG-ENTERPRISE-1-R3` / `DIAG-ENTERPRISE-1-R4` / `DIAG-ENTERPRISE-1-R5` / `DIAG-ENTERPRISE-1-R6`)
 
-**Status:** `PROVEN` — R6 first-page failure recovery (awaiting E1 freeze decision)
+**Status:** `PROVEN` - R6 first-page failure recovery (awaiting E1 freeze decision)
 
 Operator Problem list reads are bounded by page/query instead of materializing entire tenant cardinality. Stale/orphan derived list projections have a bounded maintenance path; active writer transitions are never deleted by maintenance. Callers cannot bypass `MIN_SAFE_PROJECTION_AGE` (5 minutes).
 
@@ -41,11 +41,11 @@ Operator Problem list reads are bounded by page/query instead of materializing e
 - `DiagnosticReadService.list_problems` uses persistence query only; maintenance is explicit (`reconcile_list_indexes`), not hot-path destructive.
 - `total_count` is exact only when `cursor is None` and `has_more is False`; dashboard exposes `problem_count_is_exact` / `open_problem_count_is_exact`.
 - Pagination is cursor-based continuation, not snapshot isolation; concurrent updates may shift ordering between pages without loops or cross-tenant leakage.
-- Production cursor secret: `INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` — minimum 32 UTF-8 bytes, randomly generated; restart invalidates prior cursors.
+- Production cursor secret: `INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET` - minimum 32 UTF-8 bytes, randomly generated; restart invalidates prior cursors.
 
-## E2 — Bounded occurrence history (`DIAG-ENTERPRISE-2`)
+## E2 - Bounded occurrence history (`DIAG-ENTERPRISE-2`)
 
-**Status:** `IN_PROGRESS` — R6 partition-atomic storage (InMemory + Mongo qualification)
+**Status:** `IN_PROGRESS` - R6 partition-atomic storage (InMemory + Mongo qualification)
 
 Canonical `Problem` is a bounded aggregate (no inline `occurrences` / `current_subject_refs`). Durable occurrence history uses `ProblemOccurrencePersistence` with `DocumentStoreProblemOccurrencePersistence` over `PartitionAtomicDocumentStore` (extends `ConditionalDocumentStore`; InMemory + Mongo replica-set).
 
@@ -67,18 +67,18 @@ Canonical `Problem` is a bounded aggregate (no inline `occurrences` / `current_s
 
 - Occurrence partition: `intergrax.diagnostic_problem_occurrence.v1:{tenant_id}:{problem_id}`
 - Row key: `occ:{inverted_observed_at_micros}:{occurrence_id}` where `occurrence_id = subject_ref.index_token`
-- Partition fingerprint: `meta:occurrence_partition_fingerprint` (`write_generation`, `min_row_key`, `max_row_key`) — advanced atomically with `CREATED` append via `PartitionAtomicDocumentStore.execute_partition_atomic_batch`
+- Partition fingerprint: `meta:occurrence_partition_fingerprint` (`write_generation`, `min_row_key`, `max_row_key`) - advanced atomically with `CREATED` append via `PartitionAtomicDocumentStore.execute_partition_atomic_batch`
 - Repair snapshot rows: ascending `row_key` with `min_row_key <= row_key <= terminal_row_key`; stable fingerprint across scan required for `CONSISTENT`
 - Subject ownership index remains on `ProblemPersistence` via `indexed_subject_refs` on create/update (not on aggregate)
 - Source hierarchy: execution evidence → occurrence rows → derived aggregate → Problem record
 
-## E3 — Contention / hot-partition load
+## E3 - Contention / hot-partition load
 
 **Status:** `NOT_YET_QUALIFIED`
 
 Tenant partition hotspot and write-contention qualification remain separate from read-index delivery.
 
-## E4 — Async distributed P4
+## E4 - Async distributed P4
 
 **Status:** `NOT_YET_QUALIFIED`
 

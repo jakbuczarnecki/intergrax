@@ -1,10 +1,10 @@
-# lab_application — architecture
+# lab_application - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
-Universal **Harness lab** — multi-agent roster, debug API, interactions, scheduler, strict harness profile.
+Universal **Harness lab** - multi-agent roster, debug API, interactions, scheduler, strict harness profile.
 
 ## Factory
 
@@ -18,12 +18,12 @@ Universal **Harness lab** — multi-agent roster, debug API, interactions, sched
 
 ## Deploy triad
 
-- `docker`, `BUILD_AND_DEPLOY.md` — see gate `test_application_deploy_triad`
+- `docker`, `BUILD_AND_DEPLOY.md` - see gate `test_application_deploy_triad`
 
 ## Manifest environment
 
 - `build_lab_environment_profile(settings)` embedded in `manifest.environment`
-- **Adaptive (L4-O):** `AdaptiveProfile(enabled=True, mode=observe)` by default — `LAB_ADAPTIVE_OBSERVE=false` to disable signal collection
+- **Adaptive (L4-O):** `AdaptiveProfile(enabled=True, mode=observe)` by default - `LAB_ADAPTIVE_OBSERVE=false` to disable signal collection
 
 ## Dependencies
 

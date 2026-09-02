@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Accepted — architecture and contract planning only; runtime implementation NOT STARTED |
+| **Status** | Accepted - architecture and contract planning only; runtime implementation NOT STARTED |
 | **Date** | 2026-08-11 |
 | **Deciders** | Intergrax platform architecture (MP-1A ownership freeze) |
 | **Related** | [`architecture/COLLABORATIVE_WORK.md`](../../../../architecture/COLLABORATIVE_WORK.md) · [`plan/COLLABORATIVE_WORK.md`](../../../../maintainers/plans/COLLABORATIVE_WORK.md) · [`capabilities/architecture/MULTIPLAYER_AI.md`](../../../../capabilities/architecture/MULTIPLAYER_AI.md) · [ADR-MP-002](ADR-MP-002.md) |
@@ -21,9 +21,9 @@ Before runtime implementation, Intergrax requires exactly one architectural owne
 Evidence from repository canon:
 
 - **Application Hosting** owns process lifecycle and supervision; it explicitly does not own cognition, orchestration, business tasks, or identity/authorization semantics.
-- **Unified Execution Runtime** owns execution (`Task`, `run_id`, UAEP). `RequestIdentity` is run-scoped authenticated intake; `DelegationSpec` is Nexus graph child-run delegation — not authority between collaborative principals.
-- **Platform Foundation** owns tier structure and spine governance — not collaborative product semantics.
-- **Policy** evaluates authority via incidental `principal_id` fields on requests such as `MeaningfulSideEffectRequest` — enforcement, not semantic source of truth for membership/delegation.
+- **Unified Execution Runtime** owns execution (`Task`, `run_id`, UAEP). `RequestIdentity` is run-scoped authenticated intake; `DelegationSpec` is Nexus graph child-run delegation - not authority between collaborative principals.
+- **Platform Foundation** owns tier structure and spine governance - not collaborative product semantics.
+- **Policy** evaluates authority via incidental `principal_id` fields on requests such as `MeaningfulSideEffectRequest` - enforcement, not semantic source of truth for membership/delegation.
 - **Memory** is explicitly not the membership/delegation source of truth in Multiplayer canon.
 
 LKW is the first consumer. Platform primitives must not be owned by LKW or split across Nexus + Hosting + Runtime.
@@ -32,11 +32,11 @@ LKW is the first consumer. Platform primitives must not be owned by LKW or split
 
 ### 1. PLATFORM_FOUNDATION
 
-Rejected. Tier governance and verification gates — not collaborative identity semantics. Would dilute an already cross-cutting foundation domain.
+Rejected. Tier governance and verification gates - not collaborative identity semantics. Would dilute an already cross-cutting foundation domain.
 
 ### 2. APPLICATION_HOSTING
 
-Rejected. Hosting answers how an application instance lives; not who collaborates or with what authority. ADR-HOST-001 established a dedicated domain when reusable hosting was discovered — the same pattern applies here for a distinct capability.
+Rejected. Hosting answers how an application instance lives; not who collaborates or with what authority. ADR-HOST-001 established a dedicated domain when reusable hosting was discovered - the same pattern applies here for a distinct capability.
 
 ### 3. UNIFIED_EXECUTION_RUNTIME
 
@@ -69,7 +69,7 @@ Accepted.
    - WorkspaceMembership,
    - Delegation (authority),
    - effective authority semantics,
-   - future MP-2…MP-6 primitives on the collaborative work plane (WorkItem, WorkArtifact, Decision, Activity — each gated by its own ADR/MP phase).
+   - future MP-2…MP-6 primitives on the collaborative work plane (WorkItem, WorkArtifact, Decision, Activity - each gated by its own ADR/MP phase).
 
 3. **Dependencies compose existing capabilities:**
 
@@ -85,7 +85,7 @@ Accepted.
 
    - Nexus does not own collaborative membership or WorkItem lifecycle.
    - Application Hosting does not own collaborative identity.
-   - LKW remains consumer — no `LkwPrincipal`, `LkwWorkspaceMember`, `LkwDelegation`.
+   - LKW remains consumer - no `LkwPrincipal`, `LkwWorkspaceMember`, `LkwDelegation`.
    - Memory is not Membership/Delegation source of truth.
 
 5. **Multiplayer feature hub** coordinates MP phases but does not replace domain ownership.
@@ -120,7 +120,7 @@ Accepted.
 
 ## Compliance
 
-- Tier boundaries preserved — contracts in Tier-0; no application-owned primitives.
+- Tier boundaries preserved - contracts in Tier-0; no application-owned primitives.
 - PLATFORM-INV-001, PLATFORM-INV-002, PLATFORM-INV-003 satisfied.
 - Linked architecture, plan, and Multiplayer hub docs updated.
 - No runtime implementation in MP-1A.

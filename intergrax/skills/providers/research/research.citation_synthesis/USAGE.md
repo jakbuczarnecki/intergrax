@@ -41,6 +41,6 @@ Use `research_skill_profile()` + shadow workspace enabled.
 
 ## Related skills
 
-- `research.literature_scan` — upstream scan
-- `workspace.authoring` — edit drafts post-synthesis
-- `data.sql_analyst` — embed tabular results in reports
+- `research.literature_scan` - upstream scan
+- `workspace.authoring` - edit drafts post-synthesis
+- `data.sql_analyst` - embed tabular results in reports

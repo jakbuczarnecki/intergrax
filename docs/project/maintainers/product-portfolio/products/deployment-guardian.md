@@ -1,4 +1,4 @@
-# Deployment / Change Guardian — Portfolio Control Card
+# Deployment / Change Guardian - Portfolio Control Card
 
 **Document type:** Per-product Portfolio Control index  
 **Owner:** Portfolio Control Session  
@@ -15,7 +15,7 @@
 | Program role | Newly selected application |
 | Program State | **SELECTED** |
 | Product Stage | Pre-bootstrap |
-| Baseline type | **None** — bootstrap not started |
+| Baseline type | **None** - bootstrap not started |
 | Portfolio recommendation | **CONTINUE** |
 | Relative priority | **HIGH** |
 | Future session | Deployment Guardian Product Session (not yet launched) |
@@ -40,7 +40,7 @@ From [PRODUCT_PORTFOLIO_SELECTION.md](../PRODUCT_PORTFOLIO_SELECTION.md) §5:
 
 Determine whether a software change is safe and authorized to reach production and progressively enforce that decision.
 
-**Pre-G0 hypothesis — subject to G0 validation/refinement.**
+**Pre-G0 hypothesis - subject to G0 validation/refinement.**
 
 ---
 
@@ -77,7 +77,7 @@ GitHub, GitLab, Harness, cloud, and DevOps incumbents have strong distribution. 
 | Customer validation | **NOT CLAIMED** |
 | Commercial validation | **NOT CLAIMED** |
 
-Next portfolio gate: **G0 — product baseline** per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
+Next portfolio gate: **G0 - product baseline** per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
 
 ---
 
@@ -87,7 +87,7 @@ This card indexes Portfolio Control state. It does **not** override product-owne
 
 | Topic | Authoritative document |
 |-------|------------------------|
-| Selection record | [PRODUCT_PORTFOLIO_SELECTION.md](../PRODUCT_PORTFOLIO_SELECTION.md) §5 — Deployment / Change Guardian |
+| Selection record | [PRODUCT_PORTFOLIO_SELECTION.md](../PRODUCT_PORTFOLIO_SELECTION.md) §5 - Deployment / Change Guardian |
 | Bootstrap contract | [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md) |
 | Live portfolio state | [PORTFOLIO_STATUS.md](../PORTFOLIO_STATUS.md) |
 
@@ -126,7 +126,7 @@ This card indexes Portfolio Control state. It does **not** override product-owne
 
 ## 9. Current evidence / non-claims
 
-**Current evidence:** Selection record only — [PRODUCT_PORTFOLIO_SELECTION.md](../PRODUCT_PORTFOLIO_SELECTION.md) §5.
+**Current evidence:** Selection record only - [PRODUCT_PORTFOLIO_SELECTION.md](../PRODUCT_PORTFOLIO_SELECTION.md) §5.
 
 This card does **not** prove or claim:
 
@@ -171,7 +171,7 @@ Product Session will own detailed product truth. Portfolio Control will verify a
 
 ## 12. Next gate
 
-**G0 — Product Baseline** — pending acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
+**G0 - Product Baseline** - pending acceptance per [PRODUCT_BOOTSTRAP_RULES.md](../PRODUCT_BOOTSTRAP_RULES.md).
 
 Product remains **SELECTED** / Pre-bootstrap until G0 is accepted. Material shared-platform pressure must pass G4 when it arises.
 

@@ -1,15 +1,15 @@
 ---
-description: Intergrax Harness AI — iteration workflow, session protocol (F3)
+description: Intergrax Harness AI - iteration workflow, session protocol (F3)
 alwaysApply: false
 ---
 
-# Intergrax — Iteration Instruction
+# Intergrax - Iteration Instruction
 
 Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok). Full reference: `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md`. Symbol lookup: `@docs/project/technical/guides/SYMBOL_INDEX.md`.
 
-**I1/O1:** always-on `intergrax-token-budget.mdc` — input/output token budget.
+**I1/O1:** always-on `intergrax-token-budget.mdc` - input/output token budget.
 
-## F3 — session
+## F3 - session
 
 ```text
 ONE DOMAIN = ONE NEW CHAT

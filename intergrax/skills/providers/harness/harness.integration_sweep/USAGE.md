@@ -28,4 +28,4 @@ Governed access to: `health.check_integration`, `catalog.list_tools`, `skill.res
 
 ## Related skills
 
-- Other `harness` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `harness` bundle skills - see bundle [USAGE.md](../USAGE.md)

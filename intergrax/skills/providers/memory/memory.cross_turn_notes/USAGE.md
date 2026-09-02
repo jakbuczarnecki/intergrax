@@ -28,4 +28,4 @@ Governed access to: `memory.write`, `memory.list_keys`, `memory.read`.
 
 ## Related skills
 
-- Other `memory` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `memory` bundle skills - see bundle [USAGE.md](../USAGE.md)

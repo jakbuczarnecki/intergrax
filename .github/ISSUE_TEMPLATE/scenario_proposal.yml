@@ -10,7 +10,7 @@ body:
 
         This is **not** a generic feature request, proof execution feedback, product support ticket, or integration proposal.
 
-        You do **not** need to know Intergrax architecture, RAG, memory, critic, or governance internals — describe the problem; maintainers determine mechanism fit.
+        You do **not** need to know Intergrax architecture, RAG, memory, critic, or governance internals - describe the problem; maintainers determine mechanism fit.
 
         See the [Intergrax Proof Library](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/project/proofs/PROOF_LIBRARY.md).
 

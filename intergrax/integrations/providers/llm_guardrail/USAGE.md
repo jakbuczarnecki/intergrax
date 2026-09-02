@@ -1,6 +1,6 @@
 # LLM guardrail integrations (M.12)
 
-Vendor LLM safety scanners for Tier-3 hosts. Agents **must not** import these SDKs — use `IntegrationProfile.llm_guardrail` + `GuardrailProfile`.
+Vendor LLM safety scanners for Tier-3 hosts. Agents **must not** import these SDKs - use `IntegrationProfile.llm_guardrail` + `GuardrailProfile`.
 
 ## Quick start
 
@@ -15,10 +15,10 @@ guardrail_profile = GuardrailProfile(enabled=True, scan_input=True, scan_output=
 ## Optional dependencies
 
 ```bash
-# Presidio (shipped extra — no torch conflict)
+# Presidio (shipped extra - no torch conflict)
 uv sync --extra integrations-guardrails
 
-# Heavy vendors — separate venv recommended (torch/docling pin conflict)
+# Heavy vendors - separate venv recommended (torch/docling pin conflict)
 pip install llm-guard guardrails-ai nemoguardrails
 ```
 

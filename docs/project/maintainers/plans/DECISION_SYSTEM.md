@@ -1,4 +1,4 @@
-# Decision System — Implementation Plan
+# Decision System - Implementation Plan
 
 **Architecture (1:1):** [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -8,7 +8,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub**.
 
-**Last updated:** 2026-08-30 — DS-DOC-CLEAN plan consolidation.
+**Last updated:** 2026-08-30 - DS-DOC-CLEAN plan consolidation.
 
 ---
 
@@ -17,11 +17,11 @@
 **Do not read this entire file in one session.**
 
 - **Implement / audit default:** architecture frozen banner · Critic disposition · Phase DS-E2E blocking gate summary.
-- **Use** `Read` with offset/limit — open **P0/P1** rows with Status ≠ Done in **one** phase section only.
+- **Use** `Read` with offset/limit - open **P0/P1** rows with Status ≠ Done in **one** phase section only.
 - **Skip** **Done** / closed unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) read-scope block only.
-- **Paired architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) — one per session max.
-- **CURRENT implementation:** [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) — migration audit only.
+- **Paired architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) - one per session max.
+- **CURRENT implementation:** [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) - migration audit only.
 - **Extended depth:** [`architecture/satellites/DECISION_SYSTEM_extended_depth.md`](../../architecture/satellites/DECISION_SYSTEM_extended_depth.md) on demand.
 
 ---
@@ -30,12 +30,12 @@
 
 | Layer | Status |
 | ----- | ------ |
-| **Target architecture** | **FROZEN** — [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) canon |
-| **Verification architecture** | **FROZEN** — [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) |
-| **Deliberation architecture** | **FROZEN** — [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) |
-| **Runtime implementation** | **PLANNED** — no Decision System classes shipped |
-| **Production path** | **CURRENT** — `intergrax/runtime/critic/**` until clean cut |
-| **Evidence** | **PLANNED** — DS-E2E Docker qualification phase after migration |
+| **Target architecture** | **FROZEN** - [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) canon |
+| **Verification architecture** | **FROZEN** - [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) |
+| **Deliberation architecture** | **FROZEN** - [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) |
+| **Runtime implementation** | **PLANNED** - no Decision System classes shipped |
+| **Production path** | **CURRENT** - `intergrax/runtime/critic/**` until clean cut |
+| **Evidence** | **PLANNED** - DS-E2E Docker qualification phase after migration |
 
 ---
 
@@ -44,6 +44,7 @@
 | Phase | Status | Detail section |
 | ----- | ------ | -------------- |
 | **DS-CORE** | PLANNED | [below](#phase-ds-core--decision-lifecycle-foundation) |
+| **DS-REV** | **DONE** | [below](#phase-ds-rev--revision-policy-foundation) |
 | **DS-VER-PIPE / DS-VER-STAGES** | PLANNED | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | **DS-DELIB / DS-COUNCIL** | PLANNED | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | **DS-MIG** (Critic clean cut) | PLANNED | [below](#phase-ds-mig--critic-clean-cut-migration) |
@@ -51,18 +52,24 @@
 
 ---
 
-## Phase DS-CORE — Decision Lifecycle foundation (PLANNED)
+## Phase DS-CORE - Decision Lifecycle foundation (PLANNED)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-CORE-01 | P0 | Decision ID / Version / scope typed contracts | **Done** — `intergrax/contracts/decision_identity.py`; `tests/unit/contracts/test_decision_identity.py` |
-| DS-CORE-02 | P0 | Candidate vs Authoritative Decision records + immutable lineage | **Done** — `intergrax/contracts/decision_record.py`; `tests/unit/contracts/test_decision_record.py` |
-| DS-CORE-03 | P0 | Lifecycle state machine hosted by canonical Execution (no second runtime) | **Done** — `intergrax/contracts/decision_lifecycle.py`; `tests/unit/contracts/test_decision_lifecycle.py` |
-| DS-CORE-04 | P0 | Resolution semantics (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) | **Done** — `intergrax/contracts/decision_resolution.py`; `tests/unit/contracts/test_decision_resolution.py` |
-| DS-CORE-05 | P1 | Finalize guard — one authoritative per decision scope | **Done** — `intergrax/contracts/decision_finalization.py`; `tests/unit/contracts/test_decision_finalization.py` |
-| DS-CORE-06 | P1 | Execution-hosted checkpoint persistence for Decision lifecycle state | **Done** — `intergrax/contracts/decision_checkpoint.py`; `intergrax/runtime/execution/decision_checkpoint_persistence.py`; `tests/unit/contracts/test_decision_checkpoint.py` |
+| DS-CORE-01 | P0 | Decision ID / Version / scope typed contracts | **Done** - `intergrax/contracts/decision_identity.py`; `tests/unit/contracts/test_decision_identity.py` |
+| DS-CORE-02 | P0 | Candidate vs Authoritative Decision records + immutable lineage | **Done** - `intergrax/contracts/decision_record.py`; `tests/unit/contracts/test_decision_record.py` |
+| DS-CORE-03 | P0 | Lifecycle state machine hosted by canonical Execution (no second runtime) | **Done** - `intergrax/contracts/decision_lifecycle.py`; `tests/unit/contracts/test_decision_lifecycle.py` |
+| DS-CORE-04 | P0 | Resolution semantics (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) | **Done** - `intergrax/contracts/decision_resolution.py`; `tests/unit/contracts/test_decision_resolution.py` |
+| DS-CORE-05 | P1 | Finalize guard - one authoritative per decision scope | **Done** - `intergrax/contracts/decision_finalization.py`; `tests/unit/contracts/test_decision_finalization.py` |
+| DS-CORE-06 | P1 | Execution-hosted checkpoint persistence for Decision lifecycle state | **Done** - `intergrax/contracts/decision_checkpoint.py`; `intergrax/runtime/execution/decision_checkpoint_persistence.py`; `tests/unit/contracts/test_decision_checkpoint.py` |
 | DS-CORE-07 | P1 | Parallel proposal branch lineage | **Done** |
-| DS-CORE-08 | P2 | Core typed Decision Artifact kind registration contracts | **Done** — `intergrax/contracts/decision_artifact_registry.py`; `tests/unit/contracts/test_decision_artifact_registry.py` |
+| DS-CORE-08 | P2 | Core typed Decision Artifact kind registration contracts | **Done** - `intergrax/contracts/decision_artifact_registry.py`; `tests/unit/contracts/test_decision_artifact_registry.py` |
+
+### Phase DS-REV - Revision policy foundation (DONE)
+
+| ID | Priority | Item | Status |
+|----|----------|------|--------|
+| DS-REV-01 | P0 | Decision revision policy foundation (challenge → bounded authorization → revised candidate minting) | **Done** - `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
 ### Plugin architecture (PLANNED)
 
@@ -74,7 +81,7 @@
 
 ---
 
-## Phase DS-INTEGRATION — Execution host · orchestration · governance · observability · recovery (PLANNED)
+## Phase DS-INTEGRATION - Execution host · orchestration · governance · observability · recovery (PLANNED)
 
 ### Execution-host integration
 
@@ -84,7 +91,7 @@
 | DS-EXEC-01 | P0 | Execution host optional scoped Decision Lifecycle capability (`DecisionLifecycleHost` + active binding in `ExecutionRuntime`) | **Done** |
 | DS-EXEC-02 | P1 | Lifecycle stage persistence via canonical Execution checkpoint ports | **Done** |
 
-### DS-EXEC-00 — Decision System optionality / bypass contract (DONE)
+### DS-EXEC-00 - Decision System optionality / bypass contract (DONE)
 
 Decision System is **optional per flow**. Ordinary Execution work must complete without entering Decision Lifecycle when no authoritative decision is required.
 
@@ -108,7 +115,7 @@ Application → Execution → Decision Lifecycle → strategy / verification / r
 
 **Future invariant:** No Decision artifacts or lifecycle state are created for a flow that does not request Decision capability.
 
-**Future test matrix (runtime — not in DS-DELIB-02 slice):**
+**Future test matrix (runtime - not in DS-DELIB-02 slice):**
 
 | Flow class | Without Decision | With Decision |
 | ---------- | ---------------- | ------------- |
@@ -116,21 +123,21 @@ Application → Execution → Decision Lifecycle → strategy / verification / r
 | AGENTIC | ordinary agentic flow without Decision | Decision-enabled agentic flow |
 | ORCHESTRATION | ordinary orchestration flow without Decision | Decision-enabled orchestration flow |
 
-Goal: **Decision capability orthogonal to ExecutionStrategy** — none of INFERENCE, AGENTIC, or ORCHESTRATION require Decision System.
+Goal: **Decision capability orthogonal to ExecutionStrategy** - none of INFERENCE, AGENTIC, or ORCHESTRATION require Decision System.
 
-**Non-goals for DS-EXEC-00 scoping:** no premature global `DECISION_SYSTEM_ENABLED` flag; no `NoDecisionStrategy` / `NullDecisionStrategy` workaround — absence means Lifecycle is not entered. DS-EXEC-00 does **not** forbid optional Decision host seams in Execution (DS-EXEC-01); it proves ordinary flows do not **require** Decision configuration or lifecycle entry.
+**Non-goals for DS-EXEC-00 scoping:** no premature global `DECISION_SYSTEM_ENABLED` flag; no `NoDecisionStrategy` / `NullDecisionStrategy` workaround - absence means Lifecycle is not entered. DS-EXEC-00 does **not** forbid optional Decision host seams in Execution (DS-EXEC-01); it proves ordinary flows do not **require** Decision configuration or lifecycle entry.
 
-### DS-EXEC-01 — Execution-hosted Decision Lifecycle capability (DONE)
+### DS-EXEC-01 - Execution-hosted Decision Lifecycle capability (DONE)
 
-`ExecutionRuntime` may accept an optional `decision_lifecycle_host`. When configured, the host is bound for the execution scope around canonical `ExecutionBoundary` work and reset in `finally` — success or failure. Decision-aware delegate code obtains the host via `require_active_decision_lifecycle_host()` and explicitly calls `start(identity)` / `transition(...)`.
+`ExecutionRuntime` may accept an optional `decision_lifecycle_host`. When configured, the host is bound for the execution scope around canonical `ExecutionBoundary` work and reset in `finally` - success or failure. Decision-aware delegate code obtains the host via `require_active_decision_lifecycle_host()` and explicitly calls `start(identity)` / `transition(...)`.
 
 **Invariants:** host presence does not create `DecisionIdentity` or lifecycle state; `ExecutionBoundary` and `StrategyExecutionRouter` remain Decision-neutral; canonical lifecycle semantics stay in `intergrax/contracts/decision_lifecycle.py`.
 
 Proof gate: `tests/unit/runtime/execution/test_decision_lifecycle_host.py`.
 
-### DS-EXEC-02 — Execution-hosted Decision checkpoint persistence (DONE)
+### DS-EXEC-02 - Execution-hosted Decision checkpoint persistence (DONE)
 
-`ExecutionRuntime` may accept an optional `decision_checkpoint_persistence`. When configured, the port is bound for the execution scope around canonical `ExecutionBoundary` work and reset in `finally` — success or failure. Decision-aware delegate code obtains persistence via `require_active_decision_checkpoint_persistence()` and explicitly calls `save_decision_checkpoint(...)` / `load_decision_checkpoint(...)`.
+`ExecutionRuntime` may accept an optional `decision_checkpoint_persistence`. When configured, the port is bound for the execution scope around canonical `ExecutionBoundary` work and reset in `finally` - success or failure. Decision-aware delegate code obtains persistence via `require_active_decision_checkpoint_persistence()` and explicitly calls `save_decision_checkpoint(...)` / `load_decision_checkpoint(...)`.
 
 **Invariants:** persistence presence does not auto-save or auto-load checkpoints; `DecisionLifecycleHost` does not own persistence; `ExecutionBoundary` and `StrategyExecutionRouter` remain Decision-neutral; canonical checkpoint semantics stay in `intergrax/contracts/decision_checkpoint.py`.
 
@@ -143,15 +150,15 @@ Proof gate: `tests/unit/runtime/execution/test_decision_checkpoint_runtime_integ
 | DS-NEXUS-01 | P0 | Canonical Execution work submission for Decision Strategy work (ORCHESTRATION capability via Execution-owned child seam; Nexus remains private) | **Done** |
 | DS-NEXUS-02 | P1 | Orchestration checkpoint participation when ORCHESTRATION is selected | **Done** |
 
-#### DS-NEXUS-02 — Orchestration checkpoint/recovery participation (DONE)
+#### DS-NEXUS-02 - Orchestration checkpoint/recovery participation (DONE)
 
 Decision semantic checkpoint and physical orchestration recovery remain independently owned. Decision-triggered `ORCHESTRATION` child work participates in canonical Execution checkpoint/resume without Decision importing Nexus or invoking recovery helpers.
 
 Proof gate: `tests/unit/runtime/execution/test_decision_orchestration_recovery.py`.
 
-#### DS-NEXUS-01 — Decision → Execution work seam (DONE)
+#### DS-NEXUS-01 - Decision → Execution work seam (DONE)
 
-Decision-aware code submits canonical `ExecutionRequest` work through an optional execution-scoped `ExecutionWorkPort` hosted by `ExecutionRuntime`. Child work is minted via `ChildExecutionRunner` and routed by the wired `StrategyExecutionRouter` — Decision does **not** import Nexus, construct orchestration backends, or select `ExecutionStrategy`.
+Decision-aware code submits canonical `ExecutionRequest` work through an optional execution-scoped `ExecutionWorkPort` hosted by `ExecutionRuntime`. Child work is minted via `ChildExecutionRunner` and routed by the wired `StrategyExecutionRouter` - Decision does **not** import Nexus, construct orchestration backends, or select `ExecutionStrategy`.
 
 ```text
 Decision Strategy (decision-aware delegate)
@@ -199,7 +206,7 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 ---
 
-## Phase DS-MIG — Critic clean-cut migration (PLANNED)
+## Phase DS-MIG - Critic clean-cut migration (PLANNED)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
@@ -217,8 +224,8 @@ Audited against `intergrax/runtime/critic/**` and [`CRITIC_VERIFICATION.md`](../
 
 | Current Critic capability | Target owner | Disposition |
 | ------------------------- | ------------ | ----------- |
-| L0 deterministic (`L0Gateway`, `NexusValidationEngine`) | Decision Verification — structural/deterministic stages | **MOVE/REUSE** |
-| L1 semantic (`L1Gateway`, `eval.judge`) | Decision Verification — semantic stage | **MOVE/REUSE** |
+| L0 deterministic (`L0Gateway`, `NexusValidationEngine`) | Decision Verification - structural/deterministic stages | **MOVE/REUSE** |
+| L1 semantic (`L1Gateway`, `eval.judge`) | Decision Verification - semantic stage | **MOVE/REUSE** |
 | L1 trajectory (`eval.trajectory`, `trajectory_judge_path`) | Decision Verification / evaluation boundary | **MOVE/REUSE** |
 | L2 Human (`L2Gateway`, `ESCALATE_HITL`) | Platform HITL | **DELETE** from Critic model |
 | `CriticOrchestrator` | Verification Pipeline + Decision Lifecycle orchestration | **REPLACE** |
@@ -230,7 +237,7 @@ Audited against `intergrax/runtime/critic/**` and [`CRITIC_VERIFICATION.md`](../
 | `evaluator_loop_metadata` | Decision Lifecycle revision state | **MOVE** |
 | `policy_bridge` / `resolve_critic_action` | Policy boundary + Lifecycle routing | **SPLIT/DELETE** |
 | `critic_governance_from_fragment` | Policy profile ingestion only | **SPLIT** |
-| `guardrail_l0` / `merge_guardrail_l0` | Decision Verification — deterministic stage | **MOVE/REUSE** |
+| `guardrail_l0` / `merge_guardrail_l0` | Decision Verification - deterministic stage | **MOVE/REUSE** |
 | `CriticGraphHooks` / `critic_wiring` | Nexus graph → Decision Lifecycle hooks | **REPLACE** |
 | `CriticTraceEmitter` / `CriticVerdictDiagV1` | Observability decision/verification events | **MOVE** |
 | `CriticProfile` / `CriticScope` / `CriticVerdict` contracts | Decision + Verification typed contracts | **REPLACE** |
@@ -241,7 +248,7 @@ Audited against `intergrax/runtime/critic/**` and [`CRITIC_VERIFICATION.md`](../
 | `borderline_l1_score` L2 escalation heuristic | HITL policy trigger via Lifecycle | **MOVE** |
 | `ToolRegistryCriticEvalClient` | Verification stage tool client | **REUSE** |
 
-**CRITIC_VERIFICATION docs:** **CURRENT IMPLEMENTATION SNAPSHOT** — physical **DELETE** planned in clean-cut slice ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
+**CRITIC_VERIFICATION docs:** **CURRENT IMPLEMENTATION SNAPSHOT** - physical **DELETE** planned in clean-cut slice ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
 
 ---
 
@@ -256,11 +263,11 @@ Re-owned from [`CRITIC_VERIFICATION` plan](CRITIC_VERIFICATION.md) Protocol v2 f
 | DS-VER-ADVERSARIAL-SEMANTIC | Verification | ACCEPTED / PLANNED |
 | DS-DEC-EXECUTION-IDENTITY-BINDING | Decision System | ACCEPTED / PLANNED |
 | DS-VER-RESULT-COHERENCE | Verification | ACCEPTED / PLANNED |
-| DS-DEC-REVISION-LOOP-BOUNDEDNESS | Decision System | ACCEPTED / PLANNED |
+| DS-DEC-REVISION-LOOP-BOUNDEDNESS | Decision System | **Done** - `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
 ---
 
-## Phase DS-E2E — Docker production qualification (PLANNED) — **blocking gate**
+## Phase DS-E2E - Docker production qualification (PLANNED) - **blocking gate**
 
 Real Docker E2E qualification is the **final gate** before any Decision System production-qualified claim. Unit, integration, and mocked E2E alone are **insufficient**.
 
@@ -283,14 +290,14 @@ Real Docker E2E qualification is the **final gate** before any Decision System p
 
 ---
 
-## Definition of done — production qualification
+## Definition of done - production qualification
 
 The Decision System is **not** production-qualified after unit tests, integration tests, or mocked E2E alone.
 
 **Production qualification** requires:
 
 1. Runtime migration slices through DS-CORE / DS-MIG complete for in-scope capabilities.
-2. **Phase DS-E2E** rows executed as **real Docker E2E** — not mocks.
+2. **Phase DS-E2E** rows executed as **real Docker E2E** - not mocks.
 3. **DS-FINAL-AUDIT** passed at an exact commit pin.
 
 Until then, production correctness remains **CVL / Critic** ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)).

@@ -1,4 +1,4 @@
-# Intergrax — Maturity Taxonomy
+# Intergrax - Maturity Taxonomy
 
 **Status:** Canonical (2026-06-20)  
 **Audience:** Architects, reviewers, implementation agents, external auditors  
@@ -9,7 +9,7 @@
 
 ## 1. Purpose
 
-Intergrax documentation and closeout artifacts use overlapping maturity words — *L3*, *L4*, *L5*, *production-ready*, *enterprise-ready*, *frozen*, *partial*, *beta*, *done*, *stable*, *scaffold*, *target*, *implemented* — without a shared definition. That ambiguity is dangerous: readers may assume production safety when only architecture or partial implementation exists.
+Intergrax documentation and closeout artifacts use overlapping maturity words - *L3*, *L4*, *L5*, *production-ready*, *enterprise-ready*, *frozen*, *partial*, *beta*, *done*, *stable*, *scaffold*, *target*, *implemented* - without a shared definition. That ambiguity is dangerous: readers may assume production safety when only architecture or partial implementation exists.
 
 This document is the **single cross-layer maturity vocabulary**. It defines **four independent axes**. A subsystem may be strong on one axis and weak on another; never collapse them into one headline label.
 
@@ -69,7 +69,7 @@ This layer is L5 production-ready.
 ```text
 Architecture maturity: A5 (stable, enforced by invariants)
 Implementation maturity: I4 (integrated across Nexus path)
-Production readiness: P3 (controlled production candidate — tenant allowlist only)
+Production readiness: P3 (controlled production candidate - tenant allowlist only)
 Evidence maturity: E3 (integration/smoke on golden scenarios)
 ```
 
@@ -79,13 +79,13 @@ When only one axis is relevant (e.g. a design-only ADR), state the axis explicit
 
 # Maturity Taxonomy
 
-Four **independent** axes. Levels are **ordinal within an axis only** — **A4 does not imply I4 or P4**.
+Four **independent** axes. Levels are **ordinal within an axis only** - **A4 does not imply I4 or P4**.
 
 ---
 
 ## 1. Architecture maturity
 
-Describes how clearly a layer or subsystem has a defined architectural model, contracts, and boundaries — **in documentation and enforced design**, not in code volume.
+Describes how clearly a layer or subsystem has a defined architectural model, contracts, and boundaries - **in documentation and enforced design**, not in code volume.
 
 | Level | Name | Meaning |
 |-------|------|---------|
@@ -102,7 +102,7 @@ Describes how clearly a layer or subsystem has a defined architectural model, co
 
 ## 2. Implementation maturity
 
-Describes how much of the architecture is **actually built in code** and wired into the harness — not plan status or doc completeness.
+Describes how much of the architecture is **actually built in code** and wired into the harness - not plan status or doc completeness.
 
 | Level | Name | Meaning |
 |-------|------|---------|
@@ -119,7 +119,7 @@ Describes how much of the architecture is **actually built in code** and wired i
 
 ## 3. Production readiness maturity
 
-Describes suitability for **real production environments** — safety, operability, limits, and blast radius — independent of how complete the architecture doc is.
+Describes suitability for **real production environments** - safety, operability, limits, and blast radius - independent of how complete the architecture doc is.
 
 | Level | Name | Meaning |
 |-------|------|---------|
@@ -132,13 +132,13 @@ Describes suitability for **real production environments** — safety, operabili
 
 **Typical signals:** runbooks, on-call playbooks, quota/budget enforcement, HITL gates, release-board sign-off, operational evidence windows.
 
-**Important:** **P4** and **P5** are the only levels where **"production-ready"** or **"enterprise-ready"** may appear — and only when paired with explicit **A**, **I**, and **E** levels in the same statement.
+**Important:** **P4** and **P5** are the only levels where **"production-ready"** or **"enterprise-ready"** may appear - and only when paired with explicit **A**, **I**, and **E** levels in the same statement.
 
 ---
 
 ## 4. Evidence maturity
 
-Describes **what proof exists** that the subsystem behaves as claimed — independent of intent (architecture) or code presence alone.
+Describes **what proof exists** that the subsystem behaves as claimed - independent of intent (architecture) or code presence alone.
 
 | Level | Name | Meaning |
 |-------|------|---------|
@@ -163,18 +163,18 @@ Historical Intergrax docs use shorthand that **does not map 1:1** to a single ax
 |--------------|---------------------------|-------------------------------|
 | **L3** | Phase V architecture hardening / contract closeout | Often **A4–A5** + **E1–E2**; **not** automatically **P4** or **I5** |
 | **L4** | Governance or runtime adaptive loop milestone (e.g. L4-O … L4-V modes) | Split: governance **A4/A5** + **E2** vs runtime loop **I3–I4** + **E3–E4** |
-| **L5** | Informal "max maturity" in older tables | **Deprecated** — replace with explicit **A/I/P/E** tuple |
+| **L5** | Informal "max maturity" in older tables | **Deprecated** - replace with explicit **A/I/P/E** tuple |
 | **production-ready** | Layer Completion "State B" or marketing language | Requires **P4** or **P5** plus stated **A**, **I**, **E** |
 | **enterprise-ready** | Regulated / multi-tenant aspiration | Requires **P5** + **E5** evidence cited |
-| **frozen** | Plan queue frozen (Band 3) or "State C" in LCM | **Process state**, not **A5** — say *plan frozen* vs *architecture stable* |
+| **frozen** | Plan queue frozen (Band 3) or "State C" in LCM | **Process state**, not **A5** - say *plan frozen* vs *architecture stable* |
 | **partial** | Incomplete implementation | Usually **I2**; state what works |
 | **beta** | Exposed but limited | Usually **P2–P3** + **I3** |
 | **done** / **complete** | Plan task or phase checkbox | Map to **I** and **E**; **done** in plan ≠ **P4** |
-| **stable** | API or architecture stability | Usually **A5** or **I4** — specify which |
+| **stable** | API or architecture stability | Usually **A5** or **I4** - specify which |
 | **scaffold** / **target** | Scaffold code or future intent | **I1** or **A1–A2** respectively |
-| **implemented** | Code exists | Usually **I2–I4** — specify integration depth |
+| **implemented** | Code exists | Usually **I2–I4** - specify integration depth |
 
-**Phase / gate codes (L4-O, L4-R, …):** lifecycle **mode names** for Adaptive Harness Intelligence — document under **Implementation** and **Evidence** axes for the mode in question, not as a global "L4" badge for the whole platform.
+**Phase / gate codes (L4-O, L4-R, …):** lifecycle **mode names** for Adaptive Harness Intelligence - document under **Implementation** and **Evidence** axes for the mode in question, not as a global "L4" badge for the whole platform.
 
 **Migration policy:** domain pair owners add a [Maturity Statement](.#required-maturity-block) when touching a file; bulk retrofits are optional follow-up work tracked in plan hubs.
 
@@ -205,7 +205,7 @@ Architecture and plan hub documents **SHOULD** include this block at the **top**
 - Production readiness: P2
 - Evidence maturity: E3
 - Notes:
-  - Legacy label in §12: "L4 runtime target" — governance L4 Done (A5/E2); closed-loop runtime I3/E3.
+  - Legacy label in §12: "L4 runtime target" - governance L4 Done (A5/E2); closed-loop runtime I3/E3.
   - Not production-ready; lab and golden-scenario smoke only.
 ```
 
@@ -217,7 +217,7 @@ Common **safe** combinations readers should understand:
 
 | Pattern | Typical tuple | Reader takeaway |
 |---------|---------------|-----------------|
-| Architecture-first | A4, I1, P1, E1 | Designed but not built — do not deploy |
+| Architecture-first | A4, I1, P1, E1 | Designed but not built - do not deploy |
 | Lab-usable | A3, I3, P2, E3 | Good for dev; not production |
 | Gate-green, ops-thin | A5, I4, P2, E2 | CI contracts pass; need ops evidence before P4 |
 | Production candidate | A4, I4, P3, E4 | Controlled rollout with allowlists |
@@ -230,7 +230,7 @@ Common **safe** combinations readers should understand:
 
 ## Finding- and evidence-driven maturity impact (2026-08-18)
 
-Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-05). **Target state only** — **not implemented** by audit persistence.
+Accepted Protocol v2 audit layer [`CROSS_LAYER_ARCHITECTURE`](../../audit_results/2026-08-18/CROSS_LAYER_ARCHITECTURE.md) (**FAIL**, CLA-05). **Target state only** - **not implemented** by audit persistence.
 
 When a finding is **ACCEPTED**, domain and composition owners MUST record an explicit maturity impact decision. **Severity alone MUST NOT automatically downgrade maturity.** Production/evidence-safety findings MUST trigger an explicit requalification review.
 
@@ -238,12 +238,12 @@ When a finding is **ACCEPTED**, domain and composition owners MUST record an exp
 |--------|---------|
 | **NO_CHANGE** | Accepted finding is outside the claimed maturity scope (bounded qualification documents why) |
 | **RESTRICTED** | Prior claim remains only for a narrower scope/environment/profile until remediation closes |
-| **REQUALIFICATION_REQUIRED** | Prior four-axis tuple cannot stand without new bounded evidence — re-run qualification before external claim |
-| **DOWNGRADE_REQUIRED** | Prior claim is falsified for the advertised scope — lower axis level(s) until remediation and reverification |
+| **REQUALIFICATION_REQUIRED** | Prior four-axis tuple cannot stand without new bounded evidence - re-run qualification before external claim |
+| **DOWNGRADE_REQUIRED** | Prior claim is falsified for the advertised scope - lower axis level(s) until remediation and reverification |
 
 A maturity claim may remain **P3** (or any level) only with explicit bounded qualification proving the defect is outside the claimed production posture. Hub summaries and legacy labels are not substitutes for this decision.
 
-Remediation: **CLA-PRODUCTION-QUALIFICATION-INTEGRITY** in [`TIER3_APPLICATION_ENVIRONMENT` plan](../../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) — **ACCEPTED / PLANNED** only.
+Remediation: **CLA-PRODUCTION-QUALIFICATION-INTEGRITY** in [`TIER3_APPLICATION_ENVIRONMENT` plan](../../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) - **ACCEPTED / PLANNED** only.
 
 
 ## 6. Maintenance
@@ -262,8 +262,8 @@ Remediation: **CLA-PRODUCTION-QUALIFICATION-INTEGRITY** in [`TIER3_APPLICATION_E
 
 ## 7. Reading order
 
-1. This file — [Labeling rule](.#3-labeling-rule-normative) + four axes
-2. [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — rules that apply regardless of maturity  
+1. This file - [Labeling rule](.#3-labeling-rule-normative) + four axes
+2. [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) - rules that apply regardless of maturity  
 3. Hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 4. One domain pair for your task  
 5. Layer closeout: [`LAYER_COMPLETION_MODE.md`](LAYER_COMPLETION_MODE.md)

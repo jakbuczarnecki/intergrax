@@ -28,4 +28,4 @@ Governed access to: `harness.get_run`, `logs.search`, `workspace.write_file`.
 
 ## Related skills
 
-- Other `ops` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `ops` bundle skills - see bundle [USAGE.md](../USAGE.md)

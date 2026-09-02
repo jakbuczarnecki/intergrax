@@ -4,12 +4,12 @@
 
 ## Purpose
 
-**Intergrax Assistant hub pack** — retrieval, web evidence, session memory read, and skill introspection. Designed for `intergrax_assistant` (`platform.assist`): everyday chat with grounded answers and the ability to inspect which skills/tools would apply before delegating to specialists.
+**Intergrax Assistant hub pack** - retrieval, web evidence, session memory read, and skill introspection. Designed for `intergrax_assistant` (`platform.assist`): everyday chat with grounded answers and the ability to inspect which skills/tools would apply before delegating to specialists.
 
 ## How it works
 
 1. Unions `rag.retrieve`, `websearch.query`, `memory.read`, `skill.resolve`.
-2. `skill.resolve` is a catalog diagnostic tool — returns merged tool/prompt/policy ids for given `skill_ids` without executing them.
+2. `skill.resolve` is a catalog diagnostic tool - returns merged tool/prompt/policy ids for given `skill_ids` without executing them.
 3. Hub agent uses skills for allow-list; Nexus delegation routes to Legal/Research when capability classifier decides.
 4. Prompt ref: `platform.concierge.system`.
 
@@ -51,6 +51,6 @@ Wire `search_provider` + RAG stack on integration profile for retrieval and web 
 
 ## Related skills
 
-- `rag.hybrid_qa` — deeper index Q&A without web/skill.resolve
-- `research.web_evidence` — heavier web fetch pack
-- `legal.contract_review` — delegate target for legal turns
+- `rag.hybrid_qa` - deeper index Q&A without web/skill.resolve
+- `research.web_evidence` - heavier web fetch pack
+- `legal.contract_review` - delegate target for legal turns

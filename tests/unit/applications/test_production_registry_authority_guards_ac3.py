@@ -13,10 +13,18 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 REPO = Path(__file__).resolve().parents[3]
 
 _PRODUCTION_AUTHORITY_SOURCES = (
-    REPO / "intergrax" / "applications" / "_shared" / "production_registry_projection_input_bundle.py",
+    REPO
+    / "intergrax"
+    / "applications"
+    / "_shared"
+    / "production_registry_projection_input_bundle.py",
     REPO / "intergrax" / "applications" / "_shared" / "production_host_composition.py",
     REPO / "intergrax" / "applications" / "_shared" / "active_registry_projection.py",
-    REPO / "intergrax" / "applications" / "_shared" / "venv_bundle_runtime_agent_factory_resolver.py",
+    REPO
+    / "intergrax"
+    / "applications"
+    / "_shared"
+    / "venv_bundle_runtime_agent_factory_resolver.py",
 )
 
 _FORBIDDEN_IMPORT_TOKENS = (
@@ -37,14 +45,18 @@ def _import_block(source: str) -> str:
     return "\n".join(lines)
 
 
-@pytest.mark.parametrize("source_path", _PRODUCTION_AUTHORITY_SOURCES, ids=lambda p: p.name)
+@pytest.mark.parametrize(
+    "source_path", _PRODUCTION_AUTHORITY_SOURCES, ids=lambda p: p.name
+)
 def test_production_authority_sources_forbid_synthetic_runtime_tokens(
     source_path: Path,
 ) -> None:
     text = source_path.read_text(encoding="utf-8")
     imports = _import_block(text)
     for token in _FORBIDDEN_IMPORT_TOKENS:
-        assert token not in imports, f"{source_path.name} imports forbidden symbol {token!r}"
+        assert token not in imports, (
+            f"{source_path.name} imports forbidden symbol {token!r}"
+        )
 
 
 def test_production_registry_input_module_has_no_dynamic_attribute_access() -> None:
@@ -58,3 +70,25 @@ def test_production_registry_input_module_has_no_dynamic_attribute_access() -> N
     text = source.read_text(encoding="utf-8")
     for token in ("getattr(", "setattr(", "hasattr("):
         assert token not in text
+
+
+def test_production_registry_input_public_api_has_no_caller_authority_params() -> None:
+    import inspect
+
+    from intergrax.applications._shared import (
+        production_registry_projection_input_bundle as module,
+    )
+
+    forbidden = frozenset(
+        {
+            "runtime_revision",
+            "materialized_runtime_lock",
+            "artifact_locator",
+            "materialization_artifact_digest",
+        }
+    )
+    for name in module.__all__:
+        if not name.startswith("build_production_registry_projection"):
+            continue
+        signature = inspect.signature(getattr(module, name))
+        assert forbidden.isdisjoint(signature.parameters), name

@@ -1,25 +1,25 @@
-# TOOLS — implementation history + LC closeout
+# TOOLS - implementation history + LC closeout
 
 **Parent hub:** [`TOOLS.md`](../TOOLS.md)
 
 > **Plan ownership:** Implementation phases and LC closeout below. Historical audit findings/verdicts archived at [docs/audit_results/legacy/plan-audit-history/TOOLS_implementation_history.md](../../../../audit_results/legacy/plan-audit-history/TOOLS_implementation_history.md).
 
 
-## Phase LEG — Legacy tool plan boolean closeout
+## Phase LEG - Legacy tool plan boolean closeout
 
-**Status:** **Done** (2026-06-02) — **3/3** deliverables Done (LEG-1–2); gate **612 passed**
+**Status:** **Done** (2026-06-02) - **3/3** deliverables Done (LEG-1–2); gate **612 passed**
 
 **Audit basis:** Phase O.5a residual; `check_legacy_tool_plan_booleans.py`; Appendix J §J.6.
 
-**Priority ladder:** **Band 2o** (§4.0) — closed; default queue = **§6.1** maintenance.
+**Priority ladder:** **Band 2o** (§4.0) - closed; default queue = **§6.1** maintenance.
 
-### LEG — Master register
+### LEG - Master register
 
 | ID | Area | Deliverable | Status | Modules | Acceptance |
 |----|------|-------------|--------|---------|------------|
-| LEG-1 | LEG1 | **`tool_invocation_plan_from_capability_payload`** — gateway maps booleans → `tool_ids` without `from_legacy` | **Done** | `tool_runtime.py`, `tool_gateway.py` | `test_capability_payload_tool_plan.py` |
-| LEG-2 | LEG2 | **Engine planner `tool_ids`** — parser populates `EnginePlan.tool_ids`; schema optional `tool_ids` | **Done** | `engine_planner_parse.py`, `nexus_llm_plan_builder.py` | `test_engine_plan_json_parser.py` |
-| LEG-3 | LEG3 | **`plan_from_like` canonical path** — `from_tool_ids` only; `tool_gateway` removed from audit grandfather | **Done** | `tool_runtime.py`, `check_legacy_tool_plan_booleans.py` | audit script green |
+| LEG-1 | LEG1 | **`tool_invocation_plan_from_capability_payload`** - gateway maps booleans → `tool_ids` without `from_legacy` | **Done** | `tool_runtime.py`, `tool_gateway.py` | `test_capability_payload_tool_plan.py` |
+| LEG-2 | LEG2 | **Engine planner `tool_ids`** - parser populates `EnginePlan.tool_ids`; schema optional `tool_ids` | **Done** | `engine_planner_parse.py`, `nexus_llm_plan_builder.py` | `test_engine_plan_json_parser.py` |
+| LEG-3 | LEG3 | **`plan_from_like` canonical path** - `from_tool_ids` only; `tool_gateway` removed from audit grandfather | **Done** | `tool_runtime.py`, `check_legacy_tool_plan_booleans.py` | audit script green |
 
 **Residual:** `ToolInvocationPlan.from_legacy()` retained in `tool_runtime.py` for explicit deprecation tests only; `EnginePlan.use_rag`/`use_websearch` remain on LLM schema for backward-compatible planner output.
 
@@ -27,30 +27,30 @@
 
 ---
 
-## Phase TS — Tools & skills control plane closeout
+## Phase TS - Tools & skills control plane closeout
 
-**Status:** **Done** (2026-06-02) — **5/5** deliverables Done (TS-DOC.* + TS-1–3); gate **589 passed**
+**Status:** **Done** (2026-06-02) - **5/5** deliverables Done (TS-DOC.* + TS-1–3); gate **589 passed**
 
 
-**Priority ladder:** **Band 2k** (§4.0) — closed; default queue = **§6.1** maintenance.
+**Priority ladder:** **Band 2k** (§4.0) - closed; default queue = **§6.1** maintenance.
 
 **Execution order:** [§6.2bc](.#62bc-phase-ts-execution-order-band-2k--closed) · queue: [§6.1c](.#61c-harness-implementation-queue--toolsskills-closeout-closed)
 
 **Delivery rule:** One **TS-*** ID per PR → update master table + §6.1c + paydown log below → `pytest -m gate` + §6.1 scripts green.
 
-### TS — Master register
+### TS - Master register
 
 | ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
 |----|------|-------------|--------|----------|---------|------------|
-| TS-DOC.1 | TS0 | **Appendix J** — tools & skills control plane map (§J.1–J.7) | **Done** | High | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
-| TS-DOC.2 | TS0 | **Cross-ref sync** — plan, README, AUDIT_MAP §11–§12, audit prompt ref #7 | **Done** | Medium | `docs/*` | Links resolve |
-| TS-1 | TS1 | **`catalog_runtime_bridge.py`** — `tool_profile` / `skill_profile` on `RuntimeConfig` via `materialize_runtime_config` | **Done** | **Critical** | `catalog_runtime_bridge.py`, `runtime_config_bridge.py`, `config.py` | `test_catalog_runtime_bridge.py` |
-| TS-2 | TS2 | **Harness host LLM wiring** — `resolve_llm_adapter(env)` → `build_nexus_loop_from_environment` | **Done** | High | `harness_host_runtime.py` | `test_harness_host_runtime_llm.py` |
-| TS-3 | TS3 | **`SkillResolverProtocol`** — typed contract for skill composition resolution | **Done** | Medium | `skills/resolver.py`, `contract_resolution.py` | existing skill resolver tests green |
+| TS-DOC.1 | TS0 | **Appendix J** - tools & skills control plane map (§J.1–J.7) | **Done** | High | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| TS-DOC.2 | TS0 | **Cross-ref sync** - plan, README, AUDIT_MAP §11–§12, audit prompt ref #7 | **Done** | Medium | `docs/*` | Links resolve |
+| TS-1 | TS1 | **`catalog_runtime_bridge.py`** - `tool_profile` / `skill_profile` on `RuntimeConfig` via `materialize_runtime_config` | **Done** | **Critical** | `catalog_runtime_bridge.py`, `runtime_config_bridge.py`, `config.py` | `test_catalog_runtime_bridge.py` |
+| TS-2 | TS2 | **Harness host LLM wiring** - `resolve_llm_adapter(env)` → `build_nexus_loop_from_environment` | **Done** | High | `harness_host_runtime.py` | `test_harness_host_runtime_llm.py` |
+| TS-3 | TS3 | **`SkillResolverProtocol`** - typed contract for skill composition resolution | **Done** | Medium | `skills/resolver.py`, `contract_resolution.py` | existing skill resolver tests green |
 
-**Residual (not TS scope — track separately):** legacy `use_rag`/`use_websearch` booleans in `engine_planner` / `tool_gateway` (deprecation warnings; `check_legacy_tool_plan_booleans.py`).
+**Residual (not TS scope - track separately):** legacy `use_rag`/`use_websearch` booleans in `engine_planner` / `tool_gateway` (deprecation warnings; `check_legacy_tool_plan_booleans.py`).
 
-### TS — Paydown log
+### TS - Paydown log
 
 | Date | TS ID | Summary |
 |------|-------|---------|
@@ -61,22 +61,22 @@
 
 ---
 
-## Phase TOOL-ENG-DOC — Tool engine documentation canon (Band 2ar / 2bb)
+## Phase TOOL-ENG-DOC - Tool engine documentation canon (Band 2ar / 2bb)
 
-**Status:** **Done** (2026-06-12) — **7/7** DOC rows · pipeline · selection modes · invocation patterns · selection plugin · graph boundary
+**Status:** **Done** (2026-06-12) - **7/7** DOC rows · pipeline · selection modes · invocation patterns · selection plugin · graph boundary
 **Prerequisites:** Phase TS **Done** · Phase O **Done** · Phase LEG **Done**
-**Goal:** Canon in [`architecture/TOOLS.md`](../architecture/TOOLS.md) for selection (L6), orchestration (2a), atomic invoke (2b), logging — plus plugin extensibility
+**Goal:** Canon in [`architecture/TOOLS.md`](../architecture/TOOLS.md) for selection (L6), orchestration (2a), atomic invoke (2b), logging - plus plugin extensibility
 **ADR:** **No ADR needed** for DOC rows; implementation rows TOOL-ENG-13/14/16/26 require ADR at code merge
 
 | ID | Deliverable | Status | Priority | Module / doc | Acceptance |
 |----|-------------|--------|----------|--------------|------------|
-| TOOL-ENG-DOC.1 | **Tool execution pipeline** — diagram + phase table + entry paths | **Done** | Critical | `architecture/TOOLS.md` | select → orchestrate → invoke → log |
-| TOOL-ENG-DOC.2 | **Component naming** — Tool engine vs `ToolRuntime` | **Done** | High | same | §Tool engine table |
-| TOOL-ENG-DOC.3 | **Cross-ref sync** — FLOW §15, AUDIT_MAP §11, Appendix J | **Done** | Medium | `docs/*` | Links resolve |
-| TOOL-ENG-DOC.4 | **Selection modes** — standard / semantic / hierarchical | **Done** | Critical | `architecture/TOOLS.md`, FLOW §15 | §modes |
-| TOOL-ENG-DOC.5 | **Invocation patterns** — single / parallel / ReAct / chain / graph boundary | **Done** | Critical | `architecture/TOOLS.md`, FLOW §15.1, ORCH §50.4 | §patterns |
+| TOOL-ENG-DOC.1 | **Tool execution pipeline** - diagram + phase table + entry paths | **Done** | Critical | `architecture/TOOLS.md` | select → orchestrate → invoke → log |
+| TOOL-ENG-DOC.2 | **Component naming** - Tool engine vs `ToolRuntime` | **Done** | High | same | §Tool engine table |
+| TOOL-ENG-DOC.3 | **Cross-ref sync** - FLOW §15, AUDIT_MAP §11, Appendix J | **Done** | Medium | `docs/*` | Links resolve |
+| TOOL-ENG-DOC.4 | **Selection modes** - standard / semantic / hierarchical | **Done** | Critical | `architecture/TOOLS.md`, FLOW §15 | §modes |
+| TOOL-ENG-DOC.5 | **Invocation patterns** - single / parallel / ReAct / chain / graph boundary | **Done** | Critical | `architecture/TOOLS.md`, FLOW §15.1, ORCH §50.4 | §patterns |
 | TOOL-ENG-DOC.6 | **Graph vs tool-pattern boundary** | **Done** | High | `ORCHESTRATION.md`, `NEXUS_EXECUTION_FLOW.md` | §50.4 + §15.1 |
-| TOOL-ENG-DOC.7 | **Selection plugin model** — `ToolSelectionStrategy`, surfaces A/B/C | **Done** | Critical | `architecture/TOOLS.md` | §selection plugin |
+| TOOL-ENG-DOC.7 | **Selection plugin model** - `ToolSelectionStrategy`, surfaces A/B/C | **Done** | Critical | `architecture/TOOLS.md` | §selection plugin |
 
 ### TOOL-ENG-DOC traceability
 
@@ -89,7 +89,7 @@
 | Logging | §pipeline · FLOW §17 · OBS | `trace_event`, `TOOL_*`, `run_bounded_tool_loop` / `ctx.invoke_tool` |
 | Gaps | §[Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon) | Phase **TOOL-ENG** master register |
 
-### TOOL-ENG-DOC — Paydown log
+### TOOL-ENG-DOC - Paydown log
 
 | Date | ID | Summary |
 |------|-----|---------|
@@ -99,7 +99,7 @@
 
 ---
 
-### 6.1d Harness implementation queue — tool engine docs (closed)
+### 6.1d Harness implementation queue - tool engine docs (closed)
 
 **Purpose:** Phase **TOOL-ENG-DOC** (Band 2ar) documentation closeout. **Closed 2026-06-08**.
 
@@ -112,7 +112,7 @@
 
 ---
 
-### Phase O — Tool Library & Unified Tool Model (Tier-0)
+### Phase O - Tool Library & Unified Tool Model (Tier-0)
 
 **Canon:** §7.1.6–§7.1.7, §22, §42.12
 **Goal:** Ship a reusable **Tool Library** catalog (mirror Integration Library) and migrate legacy pipeline flags (`use_rag`, `use_websearch`) to explicit catalog tools.
@@ -121,7 +121,7 @@
 
 **Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md)
 
-**Delivery rule:** One domain or migration slice per iteration — implement → gate → update `architecture/TOOLS.md` → next step.
+**Delivery rule:** One domain or migration slice per iteration - implement → gate → update `architecture/TOOLS.md` → next step.
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
@@ -135,12 +135,12 @@
 | O.6 | Schema exporters (OpenAI + MCP) | **Done** | §7.1.6 | `tools/exporters`; MCP catalog mount on lab/poc_template (2026-05-30) |
 | O.7 | Migrate legacy `ToolBase` → `ToolContract` | **Done** | §5.2.2 | `ChatAgent` → registry; `tools_base` deprecated (2026-05-30) |
 | O.8 | `ToolProfile` in Tier-3 scaffold | **Done** | §7.4.8 | `tool_wiring.py` template; lab + poc_template reference (2026-05-30) |
-| O.9 | Agent Creation Guide Appendix E update | **Done** | — | Unified model + ToolProfile examples (2026-05-30) |
-| O.10 | Gate tests for catalog conformance | **Done** | — | `tests/unit/tools/providers` — all catalog bundles (2026-05-30) |
+| O.9 | Agent Creation Guide Appendix E update | **Done** | - | Unified model + ToolProfile examples (2026-05-30) |
+| O.10 | Gate tests for catalog conformance | **Done** | - | `tests/unit/tools/providers` - all catalog bundles (2026-05-30) |
 | O.11 | Phase P wave 2 context tools: `websearch.read_url`, `confluence.search` | **Done** | §7.1.7, §22.1 | `providers/websearch/read_url_*`, confluence alias (2026-05-30) |
 | O.12 | Phase P wave 3 tools: `websearch.fetch_batch`, `rag.list_collections`, `observability.query_traces` | **Done** | §7.1.7, §22.1 | Extended `ObservabilityBackend.query_traces`, vector `list_collections` (2026-05-30) |
 
-#### O — Step-by-step implementation sequence
+#### O - Step-by-step implementation sequence
 
 Execute **strictly in order** for foundation (O.1–O.4); O.5–O.10 may overlap after O.4 reference tools land.
 
@@ -148,23 +148,23 @@ Execute **strictly in order** for foundation (O.1–O.4); O.5–O.10 may overlap
 |------|-----|--------|-----------|
 | 1 | O.1 | Extend `ToolContract` + update `RuntimeToolInvoker` for new fields | Unit tests pass; backward compatible defaults |
 | 2 | O.2 | Add `tools/registry/catalog.py`, `profile.py`, `ToolWiringContext` dataclass | `register_default_tools()` no-op registry; profile enables subset |
-| 3 | O.3 | Implement `providers/rag` and `providers/websearch` handlers | **Done** — `rag.retrieve`, `websearch.query` + tests |
-| 4 | O.4 | Implement `providers/jira` bundle (3 tools) | **Done** — conformance tests with mocked `IssueTracker` |
-| 4b | O.4b | Implement remaining catalog bundles (`confluence`, `notify`, `observability`, `sandbox`) | **Done** — all tool_ids in `register_default_tools()` |
-| 5 | O.5a | Add `tool_ids` to plan models; map legacy booleans → tool_ids | **Done** — `ToolInvocationPlan`, `LegalToolPlan` |
-| 6 | O.5b | `rag.retrieve` (catalog) / `websearch.query` (catalog) delegate to catalog tools | **Done** — `catalog_context.py` shim |
-| 7 | O.5c | Update `LegalToolPlan` / engine plans to tool list | **Done** — bridge passes `tool_ids` |
-| 8 | O.6 | MCP + OpenAI exporters from single catalog | **Done** — `tools/exporters` |
-| 9 | O.7 | Remove `ToolBase` usage from production paths | **Done** — `ChatAgent` uses registry `ToolRegistry` |
+| 3 | O.3 | Implement `providers/rag` and `providers/websearch` handlers | **Done** - `rag.retrieve`, `websearch.query` + tests |
+| 4 | O.4 | Implement `providers/jira` bundle (3 tools) | **Done** - conformance tests with mocked `IssueTracker` |
+| 4b | O.4b | Implement remaining catalog bundles (`confluence`, `notify`, `observability`, `sandbox`) | **Done** - all tool_ids in `register_default_tools()` |
+| 5 | O.5a | Add `tool_ids` to plan models; map legacy booleans → tool_ids | **Done** - `ToolInvocationPlan`, `LegalToolPlan` |
+| 6 | O.5b | `rag.retrieve` (catalog) / `websearch.query` (catalog) delegate to catalog tools | **Done** - `catalog_context.py` shim |
+| 7 | O.5c | Update `LegalToolPlan` / engine plans to tool list | **Done** - bridge passes `tool_ids` |
+| 8 | O.6 | MCP + OpenAI exporters from single catalog | **Done** - `tools/exporters` |
+| 9 | O.7 | Remove `ToolBase` usage from production paths | **Done** - `ChatAgent` uses registry `ToolRegistry` |
 | 10 | O.8–O.10 | Scaffold, docs, gate | **Done** |
 
-#### O.4 — Adding a new tool provider (checklist)
+#### O.4 - Adding a new tool provider (checklist)
 
 Copy into every `tools/providers/<domain>/USAGE.md`:
 
 ```text
 [ ] 1. Define Input/Output Pydantic models (LLM-friendly field names)
-[ ] 2. Implement ToolHandler — compose integration contract(s), no vendor SDK
+[ ] 2. Implement ToolHandler - compose integration contract(s), no vendor SDK
 [ ] 3. Build ToolContract per tool (description tuned for model selection)
 [ ] 4. register_<domain>_tools(registry, ctx: ToolWiringContext)
 [ ] 5. Register in tools/registry/catalog.py
@@ -173,7 +173,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 [ ] 8. Update architecture/TOOLS.md status + this plan tracker
 ```
 
-#### T-EXPAND — Integration bridge catalog expansion (2026-06-07) — **Done**
+#### T-EXPAND - Integration bridge catalog expansion (2026-06-07) - **Done**
 
 **Goal:** Close the integration→tool coverage gap (~78% integrations without LLM tools) by shipping provider-agnostic bundles that compose existing `IntegrationCategory` contracts.
 
@@ -192,7 +192,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 - `extend_tool_profile_for_integration()` P6 auto-enable (excludes ingest-only `document_parser`)
 - Gate: **909** passed (`uv run pytest -m gate -q`)
 
-**Follow-up (2026-06-07) — Done:**
+**Follow-up (2026-06-07) - Done:**
 
 - `IssueCreator` protocol + `issues.create_issue` (no `getattr` in GitLab tool path)
 - `harness.integration_bridge_smoke` skill pack + resolver test fix (skills vs tools `build_registry_from_profile`)
@@ -200,7 +200,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 - PoC template `extend_tool_profile_for_integration()` wiring
 - MCP full-catalog export smoke (130 tools)
 
-#### T-EXPAND T4 — Agent Builder Essentials (2026-06-07) — **Done**
+#### T-EXPAND T4 - Agent Builder Essentials (2026-06-07) - **Done**
 
 **Goal:** Close highest-ROI integration→tool gaps for agent/environment builders (SQL, document JSON, RAG lifecycle, workspace DX, collaboration read path, auto-enable wiring).
 
@@ -215,7 +215,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **81** catalog `tool_id` values · **30** shipped bundles.
 
-#### T-EXPAND T5 — Production Harness Ops (2026-06-07) — **Done**
+#### T-EXPAND T5 - Production Harness Ops (2026-06-07) - **Done**
 
 **Goal:** Production harness operations for identity, persisted run trace read, integration health probes, online evaluation registry, and platform/security extensions.
 
@@ -231,7 +231,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **95** catalog `tool_id` values · **34** shipped bundles.
 
-#### T-EXPAND T6 — LKW Filesystem + Harness Economics (2026-06-07) — **Done**
+#### T-EXPAND T6 - LKW Filesystem + Harness Economics (2026-06-07) - **Done**
 
 **Goal:** LKW read-only filesystem browse (LKW.3), V-COST/billing tool surface, rerank/cache/CRM/platform extensions.
 
@@ -248,7 +248,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **110** catalog `tool_id` values · **38** shipped bundles.
 
-#### T-EXPAND T7 — Index Lifecycle + Async Queue (2026-06-07) — **Done**
+#### T-EXPAND T7 - Index Lifecycle + Async Queue (2026-06-07) - **Done**
 
 **Goal:** RAG index inspection, async task queue ops, observability range/tail, eval release compare, cost forecast.
 
@@ -265,7 +265,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **120** catalog `tool_id` values · **38** shipped bundles.
 
-#### T-EXPAND T8 — Governance + Agent Safety + LKW write (2026-06-07) — **Done**
+#### T-EXPAND T8 - Governance + Agent Safety + LKW write (2026-06-07) - **Done**
 
 **Goal:** Read-only HITL ops, allowlisted filesystem write, RAG metadata search/purge, schema introspection, CI/CD workflow ops.
 
@@ -282,7 +282,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **130** catalog `tool_id` values · **39** shipped bundles.
 
-#### T-EXPAND T9 — Async orchestration + interaction (2026-06-07) — **Done**
+#### T-EXPAND T9 - Async orchestration + interaction (2026-06-07) - **Done**
 
 **Goal:** Workflow run ops, notify batch, collaboration write-back, websearch cache invalidation, harness run diff/export, interaction session reads.
 
@@ -303,7 +303,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}`
 
-#### T-EXPAND T10 — LKW storage bridge + deferred scheduling (2026-06-07) — **Done**
+#### T-EXPAND T10 - LKW storage bridge + deferred scheduling (2026-06-07) - **Done**
 
 **Goal:** Close T8/T9 deferred tools (`workspace.export_artifact`, `notify.schedule`) and extend builder/LKW ops without new bundles.
 
@@ -330,12 +330,12 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergr
 | Area | Platform behavior | Product follow-up |
 |------|-------------------|-------------------|
 | `notify.schedule` | Records deferred delivery in `ScheduledNotificationBinding` (in-memory default via Tier-3 wiring) | Production dispatcher/cron in application host |
-| `message_bus.purge_completed` | **Done** — KV task index on broker queues (`rabbitmq`, `kafka`); Celery unchanged | Residual: Celery result-backend purge |
-| `pagerduty.acknowledge_incident` | **Done** — `PagerDutyEventsClient.acknowledge_incident` + adapter + typed `PagerDutyIncidentChannel` | — |
+| `message_bus.purge_completed` | **Done** - KV task index on broker queues (`rabbitmq`, `kafka`); Celery unchanged | Residual: Celery result-backend purge |
+| `pagerduty.acknowledge_incident` | **Done** - `PagerDutyEventsClient.acknowledge_incident` + adapter + typed `PagerDutyIncidentChannel` | - |
 
 Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}`
 
-#### T-EXPAND T11 — HITL write path + cloud/vector store ops (2026-06-07) — **Done**
+#### T-EXPAND T11 - HITL write path + cloud/vector store ops (2026-06-07) - **Done**
 
 **Goal:** Close T8/T10 deferred governance and integration-bridge gaps without product scope.
 
@@ -354,7 +354,7 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergr
 
 Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store,health}`
 
-#### T-EXPAND T12 — Integration slot health + notify dispatcher (2026-06-07) — **Done**
+#### T-EXPAND T12 - Integration slot health + notify dispatcher (2026-06-07) - **Done**
 
 **Goal:** Close post-T11 harness ops gaps (category health probes, scheduled notify dispatch, Celery purge index).
 
@@ -364,12 +364,12 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergr
 | `notify` (+1) | `notify.dispatch_due` | **Done** |
 | queue | Celery optional KV task index + `purge_completed` | **Done** |
 | contracts | `ScheduledNotificationBinding.mark_delivered` | **Done** |
-| planner | LEG-DEPTH — remove `use_rag`/`use_websearch` from LLM schema; deprecation trace | **Done** |
+| planner | LEG-DEPTH - remove `use_rag`/`use_websearch` from LLM schema; deprecation trace | **Done** |
 | observability | OBS-DEPTH.2 trace bridge phase gate; live emit via `runtime_event_bus` | **Done** |
 
 **Delivered:** **170** catalog `tool_id` values · **42** shipped bundles.
 
-#### T-EXPAND T13 — CRIT-V eval tools (2026-06-07) — **Done**
+#### T-EXPAND T13 - CRIT-V eval tools (2026-06-07) - **Done**
 
 **Goal:** Ship semantic verification tools for Phase CRIT-V (PEV verify depth) without Nexus orchestrator wiring.
 
@@ -383,9 +383,9 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergr
 
 Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md)
 
-#### T-EXPAND T14 — Agent Builder DX introspection (2026-06-08) — **Done**
+#### T-EXPAND T14 - Agent Builder DX introspection (2026-06-08) - **Done**
 
-**Goal:** Runtime/catalog introspection for agent builders — discover tools, agents, and skill resolution without reading source.
+**Goal:** Runtime/catalog introspection for agent builders - discover tools, agents, and skill resolution without reading source.
 
 | Bundle | Tools | Status |
 |--------|------:|--------|
@@ -395,7 +395,7 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_V
 
 **Delivered:** **175** catalog `tool_id` values · **45** shipped bundles.
 
-#### T-EXPAND T15 — Sandbox execution depth (2026-06-08) — **Done**
+#### T-EXPAND T15 - Sandbox execution depth (2026-06-08) - **Done**
 
 **Goal:** Close `SANDBOX_REQUIRED_TOOLS` policy gap (`code.exec`, `script.run`, `browser.run`) and sandbox self-discovery.
 
@@ -406,9 +406,9 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_V
 
 **Delivered:** **179** catalog `tool_id` values · **45** shipped bundles.
 
-**ADR:** **No ADR needed** — extends existing sandbox session ops; policy constants already referenced in `sandbox_runtime.py`.
+**ADR:** **No ADR needed** - extends existing sandbox session ops; policy constants already referenced in `sandbox_runtime.py`.
 
-#### T-EXPAND T16 — Memory & context builder surface (2026-06-08) — **Done**
+#### T-EXPAND T16 - Memory & context builder surface (2026-06-08) - **Done**
 
 **Goal:** Agent-facing LTM, task memory search, and context budget helpers.
 
@@ -421,7 +421,7 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_V
 
 **Delivered:** **184** catalog `tool_id` values · **47** shipped bundles.
 
-#### T-EXPAND T17 — Integration completeness (2026-06-08) — **Done**
+#### T-EXPAND T17 - Integration completeness (2026-06-08) - **Done**
 
 **Goal:** HTTP allowlist client, interaction reply, issue update, RAG preview dry-run.
 
@@ -440,11 +440,11 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_V
 Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{catalog,agent,skill_tool,ltm,context_tool,http}`
 
 
-**Problem (Phase O):** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
+**Problem (Phase O):** Two parallel mechanisms - boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
 
 **Phase O outcome:** Unified **contracts** (`tool_ids` on plans, catalog shims for rag/websearch). **Phase TOOL-ENG** closes runtime **dispatch** and **gateway** gaps.
 
-### Dispatch state — actual vs target
+### Dispatch state - actual vs target
 
 ```text
 LEGACY (deprecated, still mapped):
@@ -472,7 +472,7 @@ TARGET (remaining TOOL-ENG):
 
 **Context injection:** `rag.retrieve` and `websearch.query` set `injects_context=true`; pipeline merges via `catalog_context` + `run_bounded_tool_loop` / `ctx.invoke_tool` system inject (§22.1).
 
-**Configuration reference:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Runtime configuration reference](../architecture/TOOLS.md#runtime-configuration-reference), [Multi-tool execution](../architecture/TOOLS.md#multi-tool-execution-semantics), [§42.12 gateway](../architecture/TOOLS.md#4212-gateway-surface-toolrequest).
+**Configuration reference:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) - [Runtime configuration reference](../architecture/TOOLS.md#runtime-configuration-reference), [Multi-tool execution](../architecture/TOOLS.md#multi-tool-execution-semantics), [§42.12 gateway](../architecture/TOOLS.md#4212-gateway-surface-toolrequest).
 
 **Out of scope (TOOL-ENG):**
 

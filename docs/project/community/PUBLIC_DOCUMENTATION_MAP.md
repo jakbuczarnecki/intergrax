@@ -10,13 +10,13 @@ Use this map when you know what you want to do but not which document to open.
 
 | Gateway | Role |
 | --- | --- |
-| [README](../../../README.md) | First contact — Scenarios, Products, Platform entry points, persona paths, LKW product discovery |
-| **This map** | Intent-based fallback router — find the right next document by goal |
-| [Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog — difficult real-world problems and executable falsification |
+| [README](../../../README.md) | First contact - Scenarios, Products, Platform entry points, persona paths, LKW product discovery |
+| **This map** | Intent-based fallback router - find the right next document by goal |
+| [Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog - difficult real-world problems and executable falsification |
 | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Project-level architectural mental model |
-| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index — primary domain-pair baseline + additional canonical pairs + cross-layer feature pairs |
+| [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) | Complete technical index - primary domain-pair baseline + additional canonical pairs + cross-layer feature pairs |
 
-**First contact** stays in the [README](../../../README.md) — including the three public entry points (**Scenarios**, **Products**, **Platform**), grouped Platform Map, and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
+**First contact** stays in the [README](../../../README.md) - including the three public entry points (**Scenarios**, **Products**, **Platform**), grouped Platform Map, and documentation-layer guide. This file routes by **reader intent**; it does not duplicate the full platform index or persona table.
 
 ---
 
@@ -27,7 +27,7 @@ Use this map when you know what you want to do but not which document to open.
 | **Scenarios** | [Proof Library](../proofs/PROOF_LIBRARY.md) | Difficult real-world problems, executable falsification, evidence, verdict, reproduction |
 | **Products** | [LKW Product Tour](../../../applications/local_workspace_application/docs/product/LKW_PRODUCT_TOUR.md) | Real user workflows, reference applications, bounded product proof |
 | **Platform** | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) · [Platform Map](../../../README.md#explore-the-intergrax-platform) | Reusable governed foundations, architecture, mechanisms |
-| **Audit claims** | [PROOFS](../proofs/PROOFS.md) | Evidence-first dashboard — what is proven and what may be claimed |
+| **Audit claims** | [PROOFS](../proofs/PROOFS.md) | Evidence-first dashboard - what is proven and what may be claimed |
 
 ---
 
@@ -69,23 +69,24 @@ with Try LKW as the repository’s primary product action.
 | Inspect bounded LKW technical evidence | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) |
 | Start building with Intergrax | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) |
 | Plan a deeper build | [BUILD_WITH_INTERGRAX](../builders/BUILD_WITH_INTERGRAX.md) |
-| Review as an architect or platform engineer | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) — then [Platform Map](../../../README.md#explore-the-intergrax-platform) for grouped domain exploration |
+| Review as an architect or platform engineer | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) - then [Platform Map](../../../README.md#explore-the-intergrax-platform) for grouped domain exploration |
 | Assess fit as a CTO, product lead or technical buyer | [Use Cases](../overview/USE_CASES.md) |
-| Evaluate as an investor, business decision maker or strategic evaluator | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) — then [PROOFS](../proofs/PROOFS.md) for evidence |
+| Evaluate as an investor, business decision maker or strategic evaluator | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) - then [PROOFS](../proofs/PROOFS.md) for evidence |
 | Explore difficult real-world Scenario Proofs | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Audit evidence and public claims | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
-| Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) — candidate proposals, verification, deliberation, authoritative outcomes separate from authorization (**target canon**; **CURRENT:** [Critic Verification](../architecture/CRITIC_VERIFICATION.md)) |
+| Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) - candidate proposals, verification, deliberation, authoritative outcomes separate from authorization (**target canon**; **CURRENT:** [Critic Verification](../architecture/CRITIC_VERIFICATION.md)) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
-| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) — see [Strategic directions](#strategic-directions) below |
+| Explore Virtual Workforce / Virtual Workers | [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work](../architecture/AUTONOMOUS_WORK.md) |
+| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) - see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore Scenario Proofs (problem-first) | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Compare Intergrax with modern agent/platform alternatives | [Alternatives and trade-offs](../overview/ALTERNATIVES_AND_TRADEOFFS.md) |
 | Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
 | Understand permission boundaries | [Collaboration](COLLABORATION.md) and [LICENSE](../../../LICENSE) |
-| Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) · [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (24-domain index) |
+| Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) · [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (canonical domain index) |
 | Understand why Intergrax exists | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) |
 | See where the product-validation program is heading | [Roadmap](../overview/ROADMAP.md) |
 | Read general first-contact questions | [FAQ](../overview/FAQ.md) |
@@ -96,16 +97,16 @@ with Try LKW as the repository’s primary product action.
 
 ## Documentation layers
 
-Use the right layer for your question — do not start in maintainer plans, satellites, or ADRs unless you need implementation depth.
+Use the right layer for your question - do not start in maintainer plans, satellites, or ADRs unless you need implementation depth.
 
 | Layer | Role | Entry |
 | --- | --- | --- |
 | **First contact** | Problem, paths, platform map, maturity snapshot | [README](../../../README.md) |
 | **Intent routing** (this map) | Find docs by what you want to do | This file |
 | **Architecture mental model** | Responsibility boundaries and governed execution flow | [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) |
-| **Domain architecture** | What each platform area should do | `docs/project/architecture/<DOMAIN>.md` — see [Platform Map](../../../README.md#explore-the-intergrax-platform) |
-| **Feature architecture** | Cross-layer capabilities | `docs/project/capabilities/architecture/<FEATURE>.md` — index: [capabilities README](../capabilities/README.md) |
-| **Satellites** | Extended engineering registers | Load on demand from domain or feature hubs — not public first-contact |
+| **Domain architecture** | What each platform area should do | `docs/project/architecture/<DOMAIN>.md` - see [Platform Map](../../../README.md#explore-the-intergrax-platform) |
+| **Feature architecture** | Cross-layer capabilities | `docs/project/capabilities/architecture/<FEATURE>.md` - index: [capabilities README](../capabilities/README.md) |
+| **Satellites** | Extended engineering registers | Load on demand from domain or feature hubs - not public first-contact |
 | **Technical guides** | How to configure, build, extend, or operate | [Technical guides](../technical/guides/README.md) |
 | **Plans / ADR / proofs** | Implementation status, decisions, bounded evidence | [PROOFS](../proofs/PROOFS.md) · [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) |
 
@@ -119,11 +120,11 @@ README → domain / feature architecture → optional satellite
 
 ## Current product / proof paths
 
-Bounded product and capability proof routes — not a second proof dashboard. For the full status legend and evidence inventory, use [PROOFS](../proofs/PROOFS.md). For first-contact LKW context, see the [README LKW section](../../../README.md#local-knowledge-workspace-lkw).
+Bounded product and capability proof routes - not a second proof dashboard. For the full status legend and evidence inventory, use [PROOFS](../proofs/PROOFS.md). For first-contact LKW context, see the [README LKW section](../../../README.md#local-knowledge-workspace-lkw).
 
 ### Local Knowledge Workspace
 
-**Active reference product** — **Backend Product Alpha / MVP** — **PARTIAL**
+**Active reference product** - **Backend Product Alpha / MVP** - **PARTIAL**
 
 Local Knowledge Workspace (LKW) is the current primary product-development and platform-validation program. The reader route is:
 
@@ -137,11 +138,11 @@ Start with the [LKW Product Tour](../../../applications/local_workspace_applicat
 
 ### Governed Evidence Decision Proof
 
-**Bounded evidence admissibility proof — LKW application stack**
+**Bounded evidence admissibility proof - LKW application stack**
 
 LKW demonstrates governed answer admissibility over live organizational evidence
 through the **Governed Evidence Decision Proof** (`LIVE_ONLY`, four independent
-controlled live providers via real runtime/HTTP execution — not external SaaS
+controlled live providers via real runtime/HTTP execution - not external SaaS
 validation; policy-derived obligations, execution-time authority, temporal
 admissibility, typed failure semantics, LLM gating, persisted structural proof).
 This is **not** complete indexed + authorized live Hybrid Ask qualification and
@@ -151,9 +152,9 @@ This is **not** complete indexed + authorized live Hybrid Ask qualification and
 
 ### Governed Execution
 
-**Platform capability — implemented mechanisms; consolidation / qualification ongoing**
+**Platform capability - implemented mechanisms; consolidation / qualification ongoing**
 
-Intergrax provides reusable policy and approval enforcement around agent decisions, tool and action boundaries, meaningful side effects, canonical HITL, and plugin-extensible policy rules. Meaningful enforcement slices exist on bounded paths; a dedicated accepted public **Governed Execution** domain proof is **not yet established**. The Governed Evidence Decision Proof above exercises bounded evidence admissibility — not full Governed Execution qualification.
+Intergrax provides reusable policy and approval enforcement around agent decisions, tool and action boundaries, meaningful side effects, canonical HITL, and plugin-extensible policy rules. Meaningful enforcement slices exist on bounded paths; a dedicated accepted public **Governed Execution** domain proof is **not yet established**. The Governed Evidence Decision Proof above exercises bounded evidence admissibility - not full Governed Execution qualification.
 
 [Open the Governed Execution architecture](../architecture/GOVERNED_EXECUTION.md)
 
@@ -169,26 +170,32 @@ Intergrax includes a deterministic, policy-governed Token Optimization Engine wi
 
 ## Strategic directions
 
-Future ecosystem and platform directions — **not** current product proofs and **not** equivalent to shipped platform domains. These remain lower priority than accepted evidence above. Compact status also appears in the [README platform capabilities table](../../../README.md#platform-capabilities) and [future strategic directions](../../../README.md#future-strategic-directions).
+Future ecosystem and platform directions - **not** current product proofs and **not** equivalent to shipped platform domains. These remain lower priority than accepted evidence above. Compact status also appears in the [README platform capabilities table](../../../README.md#platform-capabilities) and [future strategic directions](../../../README.md#future-strategic-directions).
 
 ### Multiplayer AI
 
-**Future collaborative-AI direction — architecture concept**
+**Future collaborative-AI direction - architecture concept**
 
 [Open the Multiplayer AI architecture concept](../capabilities/architecture/MULTIPLAYER_AI.md)
 
+### Autonomous Work / Virtual Workforce
+
+**Persistent Virtual Workers - canonical architecture; runtime not implemented**
+
+[Open the Virtual Workforce overview](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work architecture](../architecture/AUTONOMOUS_WORK.md)
+
 ### Platform Extensibility / Plugins
 
-**Strategic platform capability — canonical architecture frozen with implemented slices; complete third-party E2E qualification not established**
+**Strategic platform capability - canonical architecture frozen with implemented slices; complete third-party E2E qualification not established**
 
 [Open the Platform Extensibility / Plugins architecture](../architecture/PLATFORM_PLUGINS.md)
 
 ### Agent Marketplace
 
-**Future ecosystem direction — product and architecture concept**
+**Future ecosystem direction - product and architecture concept**
 
 The Agent Marketplace describes a governed distribution layer for reusable
-governed agents — built on Agent Distribution, trust verification, application
+governed agents - built on Agent Distribution, trust verification, application
 binding, immutable materialization, RuntimeRevision activation, AgentRegistry,
 and Nexus capability routing. It is **not** a shipped public marketplace,
 publisher portal, or commercial catalog today.
@@ -203,11 +210,11 @@ Use the [intent table](#start-by-what-you-want-to-do) first. This quick index he
 
 | Document | Purpose |
 |----------|---------|
-| [README](../../../README.md) | First-contact landing — problem, value, quick start, maturity snapshot |
+| [README](../../../README.md) | First-contact landing - problem, value, quick start, maturity snapshot |
 | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) | Problem, value, audience, category fit and fair comparison with common approaches |
-| [ALTERNATIVES_AND_TRADEOFFS](../overview/ALTERNATIVES_AND_TRADEOFFS.md) | Named modern agent/platform alternatives — decision trade-offs, not a feature scorecard |
-| [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md) | Public architecture overview — responsibility boundaries and system flow |
-| [GOVERNED_EXECUTION](../architecture/GOVERNED_EXECUTION.md) | Governed Execution platform capability — policy definition, enforcement, HITL, and maturity boundary |
+| [ALTERNATIVES_AND_TRADEOFFS](../overview/ALTERNATIVES_AND_TRADEOFFS.md) | Named modern agent/platform alternatives - decision trade-offs, not a feature scorecard |
+| [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md) | Public architecture overview - responsibility boundaries and system flow |
+| [GOVERNED_EXECUTION](../architecture/GOVERNED_EXECUTION.md) | Governed Execution platform capability - policy definition, enforcement, HITL, and maturity boundary |
 | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) | First bounded builder orientation and progressive-disclosure route |
 | [BUILD_WITH_INTERGRAX](../builders/BUILD_WITH_INTERGRAX.md) | Deeper application composition planning |
 | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) | Bounded evaluation method for one selected claim/workflow using a pinned revision, canonical path, evidence and PROCEED / DEFER / STOP decision |
@@ -221,9 +228,9 @@ Use the [intent table](#start-by-what-you-want-to-do) first. This quick index he
 | [LKW Quick Start](../../../applications/local_workspace_application/docs/product/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
 | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
-| [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) | Future ecosystem direction — governed agent distribution concept and reference architecture (not a shipped product) |
-| [Intergrax Proofs](../proofs/PROOFS.md) | Current evidence status / public evidence dashboard — status legend and verification paths |
-| [Intergrax Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog — difficult real-world problems and executable scenarios |
+| [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) | Future ecosystem direction - governed agent distribution concept and reference architecture (not a shipped product) |
+| [Intergrax Proofs](../proofs/PROOFS.md) | Current evidence status / public evidence dashboard - status legend and verification paths |
+| [Intergrax Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog - difficult real-world problems and executable scenarios |
 
 Maintainer contracts and claim controls are intentionally excluded
 from normal reader navigation and remain indexed
@@ -236,7 +243,7 @@ from docs/project/maintainers/public-adoption/README.md.
 ## Technical documentation
 
 Developers, architects,
-and deep technical reviewers should use the technical map — not this public map:
+and deep technical reviewers should use the technical map - not this public map:
 
 [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md)
 

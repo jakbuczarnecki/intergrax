@@ -1,4 +1,4 @@
-# Audit result — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
+# Audit result - `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
 
 **Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 21)  
 **Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated

@@ -1,4 +1,4 @@
-# Ideal Architecture Gap Register — Post-L3 Audit (2026-06-09)
+# Ideal Architecture Gap Register - Post-L3 Audit (2026-06-09)
 
 **Architecture target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0–§26
 **Platform canon (scope):** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) · cross-domain register (no 1:1 pair)
@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/gates/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../../technical/guides/ARCHITECTURE_DEBT_REGISTER.md)
-**Status:** **AUDIT-IDEAL complete** (2026-06-18) — **90/90 Done** · **0 Deferred §6.3** · **0 Planned**
+**Status:** **AUDIT-IDEAL complete** (2026-06-18) - **90/90 Done** · **0 Deferred §6.3** · **0 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -22,7 +22,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 
 | Wave | Focus | Priority |
 |------|-------|----------|
-| **W0** | Register + domain plan sync + hub cross-ref | — |
+| **W0** | Register + domain plan sync + hub cross-ref | - |
 | **W1** | P0 harness depth (memory org, ECP doc sync, registry durable) | P0 |
 | **W2** | P1 L4 + elasticity (AHI evidence, reasoning, shadow eval, DX HTTP) | P1 |
 | **W3** | P2 completeness (modality live, cost forecast, prompt UI, swarm templates) | P2 |
@@ -45,12 +45,12 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-5.2 | Policy & governance | 5 | Compliance profile templates per regulated domain class | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.3 | Policy & governance | 5 | Governance health dashboard (GOV-PROD.1) | P4 | `OBSERVABILITY` | **Done** |
 | AUDIT-IDEAL-6.1 | LLM adapters | 6 | Structured output validation on 100% reference + certified agent paths | P1 | `LLM_ADAPTERS` | **Done** |
-| AUDIT-IDEAL-6.2 | LLM adapters | 6 | Live cost/latency/quality model routing (AHI integration prod path) | P2 | `LLM_ADAPTERS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** — M-LLM-X.5.3 · `check_live_model_routing_wiring.py` |
-| AUDIT-IDEAL-6.3 | LLM adapters | 6 | Central `ModelCatalog` + unified context window resolution | P0 | `LLM_ADAPTERS` | **Done** — M-LLM-X.1.7 · `CatalogCapabilityAdapter` |
-| AUDIT-IDEAL-6.4 | LLM adapters | 6 | Tokenizer-consistent context preflight (adapter path) | P0 | `LLM_ADAPTERS` · `CONTEXT_ENGINEERING` | **Done** — M-LLM-X.3.2 · `count_message_tokens(adapter=)` |
-| AUDIT-IDEAL-6.5 | LLM adapters | 6 | Profile failover chain on retriable provider errors | P1 | `LLM_ADAPTERS` · `RELIABILITY_FAILURE_AND_HITL` | **Done** — M-LLM-X.4.1–4.4 |
-| AUDIT-IDEAL-6.6 | LLM adapters | 6 | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | `LLM_ADAPTERS` · `NEXUS_EXECUTION_FLOW` | **Done** — M-LLM-X.5.4 |
-| AUDIT-IDEAL-6.7 | LLM adapters | 6 | Developer `USAGE.md` + startup validation | P2 | `LLM_ADAPTERS` · `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** — M-LLM-X.7.2 · `check_llm_profile_runtime.py` + doctor |
+| AUDIT-IDEAL-6.2 | LLM adapters | 6 | Live cost/latency/quality model routing (AHI integration prod path) | P2 | `LLM_ADAPTERS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** - M-LLM-X.5.3 · `check_live_model_routing_wiring.py` |
+| AUDIT-IDEAL-6.3 | LLM adapters | 6 | Central `ModelCatalog` + unified context window resolution | P0 | `LLM_ADAPTERS` | **Done** - M-LLM-X.1.7 · `CatalogCapabilityAdapter` |
+| AUDIT-IDEAL-6.4 | LLM adapters | 6 | Tokenizer-consistent context preflight (adapter path) | P0 | `LLM_ADAPTERS` · `CONTEXT_ENGINEERING` | **Done** - M-LLM-X.3.2 · `count_message_tokens(adapter=)` |
+| AUDIT-IDEAL-6.5 | LLM adapters | 6 | Profile failover chain on retriable provider errors | P1 | `LLM_ADAPTERS` · `RELIABILITY_FAILURE_AND_HITL` | **Done** - M-LLM-X.4.1–4.4 |
+| AUDIT-IDEAL-6.6 | LLM adapters | 6 | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | `LLM_ADAPTERS` · `NEXUS_EXECUTION_FLOW` | **Done** - M-LLM-X.5.4 |
+| AUDIT-IDEAL-6.7 | LLM adapters | 6 | Developer `USAGE.md` + startup validation | P2 | `LLM_ADAPTERS` · `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** - M-LLM-X.7.2 · `check_llm_profile_runtime.py` + doctor |
 | AUDIT-IDEAL-7.1 | Cognition | 7 | Ship `ReasoningProfile` contract + environment wire | P1 | `REASONING_AND_COGNITION` | **Done** |
 | AUDIT-IDEAL-7.2 | Cognition | 7 | Complete `allow_dynamic_replan` runtime path | P1 | `REASONING_AND_COGNITION` | **Done** |
 | AUDIT-IDEAL-7.3 | Cognition | 7 | Reasoning failure taxonomy on all planner kinds | P2 | `REASONING_AND_COGNITION` | **Done** |
@@ -71,13 +71,13 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-14.1 | RAG | 14 | Graph RAG as default production retrieval profile | P1 | `RAG` · `MEMORY` | **Done** |
 | AUDIT-IDEAL-14.2 | RAG | 14 | Retrieval poisoning defense live on product hosts | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-14.3 | RAG | 14 | Wire `RagProfile.query_expansion` to retrieval path | P0 | `RAG` | **Done** |
-| AUDIT-IDEAL-14.4 | RAG | 14 | Dual-index + hierarchical retriever default bootstrap | P1 | `RAG` | **Done** — M-RAG.24 · `check_rag_hierarchical_bootstrap.py` |
-| AUDIT-IDEAL-14.5 | RAG | 14 | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | `RAG` · `UNIFIED_EXECUTION_RUNTIME` | **Done** — M-RAG.25 · `check_rag_catalog_poisoning_defense.py` |
+| AUDIT-IDEAL-14.4 | RAG | 14 | Dual-index + hierarchical retriever default bootstrap | P1 | `RAG` | **Done** - M-RAG.24 · `check_rag_hierarchical_bootstrap.py` |
+| AUDIT-IDEAL-14.5 | RAG | 14 | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | `RAG` · `UNIFIED_EXECUTION_RUNTIME` | **Done** - M-RAG.25 · `check_rag_catalog_poisoning_defense.py` |
 | AUDIT-IDEAL-14.6 | RAG | 14 | Large-corpus async ingest (stream / job orchestration) | P1 | `RAG` | **Done** |
 | AUDIT-IDEAL-14.7 | RAG | 14 | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | `RAG` · `OBSERVABILITY` | **Done** |
 | AUDIT-IDEAL-15.1 | Memory | 15 | Org memory 2.5 (organizational LTM scope) | **P0** | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.2 | Memory | 15 | Episodic / semantic / procedural memory taxonomy (`MemoryKind` uplift) | P1 | `MEMORY` | **Done** |
-| AUDIT-IDEAL-15.3 | Memory | 15 | Entity graph memory ship (beyond RFC — MEM-DEPTH-5.1) | P2 | `MEMORY` | **Done** |
+| AUDIT-IDEAL-15.3 | Memory | 15 | Entity graph memory ship (beyond RFC - MEM-DEPTH-5.1) | P2 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-16.1 | Context | 16 | Online context drift monitoring + alerts | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-16.2 | Context | 16 | Semantic compression strategy in production profiles | P2 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-17.1 | Prompt registry | 17 | Prompt approval workflow (beyond registry metadata) | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |

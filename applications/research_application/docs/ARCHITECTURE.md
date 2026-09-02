@@ -1,4 +1,4 @@
-# research_application — architecture
+# research_application - architecture
 
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
@@ -13,7 +13,7 @@ Multi-agent HTTP host for **ResearchAgent** + **SummaryAgent** with Nexus loop e
 
 ## Settings
 
-- `RESEARCH_USE_NEXUS_LOOP` (default `true`) — legacy agent-engine flag removed
+- `RESEARCH_USE_NEXUS_LOOP` (default `true`) - legacy agent-engine flag removed
 
 ## Factory
 
@@ -22,7 +22,7 @@ Multi-agent HTTP host for **ResearchAgent** + **SummaryAgent** with Nexus loop e
 
 ## Deploy triad
 
-- `docker`, `BUILD_AND_DEPLOY.md` — verified by deploy triad gate
+- `docker`, `BUILD_AND_DEPLOY.md` - verified by deploy triad gate
 
 ## Dependencies
 

@@ -1,6 +1,6 @@
 ﻿# DisputeStrategistAgent
 
-Litigation strategy for **DSW** — attack/defense lines, emphasis map, negotiation posture.
+Litigation strategy for **DSW** - attack/defense lines, emphasis map, negotiation posture.
 
 **Host:** [`applications/dispute_sim_application/`](../../applications/dispute_sim_application/) · **Roster:** [`agents/README.md`](../README.md)
 
@@ -32,11 +32,11 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
 ## Layout
 
-- ``dispute_strategist_agent.py`` — Agent class (UAEP)
-- ``contract.py`` / ``capabilities.py`` — AgentContract
-- ``steps/`` — domain execution
-- ``prompts/`` — prompt assets
-- ``schemas/`` — I/O models
-- ``tests/`` — agent smoke tests
-- ``notebooks/`` — interactive experiments
-- ``docs`` — architecture, plan, ADRs, journal
+- ``dispute_strategist_agent.py`` - Agent class (UAEP)
+- ``contract.py`` / ``capabilities.py`` - AgentContract
+- ``steps/`` - domain execution
+- ``prompts/`` - prompt assets
+- ``schemas/`` - I/O models
+- ``tests/`` - agent smoke tests
+- ``notebooks/`` - interactive experiments
+- ``docs`` - architecture, plan, ADRs, journal

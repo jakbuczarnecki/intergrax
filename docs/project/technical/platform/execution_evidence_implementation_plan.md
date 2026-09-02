@@ -1,9 +1,9 @@
-﻿# Execution Evidence & Host Attestation — Implementation Plan
+﻿# Execution Evidence & Host Attestation - Implementation Plan
 
 **Status:** Working (2026-07-20)
 **Architecture:** docs/project/technical/platform/execution_evidence_and_host_attestation.md
 **ADRs:** ADR-RUNTIME-POLICY-BUNDLE-001 · ADR-EXECUTION-BOUNDARY-EVENT-001 · ADR-HOST-ATTESTATION-001
-**Not:** GEC tracker — do not mark GEC-7…GEC-11 Done from this file
+**Not:** GEC tracker - do not mark GEC-7…GEC-11 Done from this file
 
 ## Queue
 

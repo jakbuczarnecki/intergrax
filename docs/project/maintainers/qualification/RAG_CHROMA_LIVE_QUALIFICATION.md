@@ -1,4 +1,4 @@
-# RAG-LIVE-15B-R2 — Chroma Live Qualification
+# RAG-LIVE-15B-R2 - Chroma Live Qualification
 
 **Status:** `READY_FOR_REVIEW`
 **Provider status:** `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED`
@@ -33,7 +33,7 @@ Both runs used the environment gate:
 INTERGRAX_RUN_CHROMA_LIVE=1 uv run pytest tests/integration/rag/vectorstore/test_chroma_live_qualification.py -q -s
 ```
 
-### Live run 1 — PASS
+### Live run 1 - PASS
 
 - Run identifier: `e49d90098a7f44ff8fec3c91e3e75010`
 - Scope matrix, adversarial isolation and server-side filter evidence: PASS
@@ -43,7 +43,7 @@ INTERGRAX_RUN_CHROMA_LIVE=1 uv run pytest tests/integration/rag/vectorstore/test
 - Soak: 50 records, 5 query rounds, p95 `47.75 ms`, threshold `5000.00 ms`
 - Cleanup: PASS
 
-### Live run 2 — PASS
+### Live run 2 - PASS
 
 - Run identifier: `8336fad58be14d828422a6f1e207a748`
 - Scope matrix, adversarial isolation and server-side filter evidence: PASS

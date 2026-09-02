@@ -1,4 +1,4 @@
-# DEP-2 — Effective LLM and Local-ML Optionalization
+# DEP-2 - Effective LLM and Local-ML Optionalization
 
 **Status:** `READY_FOR_REVIEW`
 **Qualification date:** 2026-08-10

@@ -1,16 +1,16 @@
-# TIER3_APPLICATION_ENVIRONMENT — production gates (§40+)
+# TIER3_APPLICATION_ENVIRONMENT - production gates (§40+)
 
 **Parent hub:** [`TIER3_APPLICATION_ENVIRONMENT.md`](../TIER3_APPLICATION_ENVIRONMENT.md)
 
 # 40. Production Reliability, Safety, and Release Gates (Tier-3)
 
-Symmetric to ACP §40 — **host environments** that run mutating workloads.
+Symmetric to ACP §40 - **host environments** that run mutating workloads.
 
 ## 40.1 Host readiness dimensions
 
 | Dimension | Requirement |
 |-----------|-------------|
-| Wiring | `build_harness_host_runtime` — no ad-hoc Nexus |
+| Wiring | `build_harness_host_runtime` - no ad-hoc Nexus |
 | Identity | `IdentityProfile` enforced on prod routes |
 | Execution mode | `STRICT` in production |
 | Reliability | `ReliabilityProfile` + task checkpoints when long-running |
@@ -23,14 +23,14 @@ Symmetric to ACP §40 — **host environments** that run mutating workloads.
 
 | ID | Deliverable | Status | Command / test |
 |----|-------------|--------|----------------|
-| APP-PROD-1 | `check_application_production_gates.py` — no ad-hoc Nexus, harness runtime | **Done** | `python scripts/gates/check_application_production_gates.py` |
+| APP-PROD-1 | `check_application_production_gates.py` - no ad-hoc Nexus, harness runtime | **Done** | `python scripts/gates/check_application_production_gates.py` |
 | APP-PROD-2 | Reference hosts use `build_harness_host_runtime` exclusively | **Done** | H-APP-WIRING |
 | APP-PROD-3 | `ApplicationHost` mounted when provided | **Done** | `test_application_host_wiring` |
 | APP-PROD-4 | Manifest conformance | **Done** | `test_manifest_conformance` |
 | APP-PROD-5 | Deploy triad | **Done** | `test_application_deploy_triad` |
-| APP-PROD-6 | `check_environment_state_usage` — hooks use `app_env_state.v1` | **Done** | `check_environment_state_usage.py` · `environment_state_usage_wiring.py` |
-| APP-PROD-7 | `check_budget_enforcement` — COST profile on STRICT product hosts | **Done** | `check_budget_enforcement.py` |
-| APP-PROD-8 | `check_workspace_cleanup` — factory lifespan cleanup hooks | **Done** | `check_workspace_cleanup.py` · `build_factory_lifespans` |
+| APP-PROD-6 | `check_environment_state_usage` - hooks use `app_env_state.v1` | **Done** | `check_environment_state_usage.py` · `environment_state_usage_wiring.py` |
+| APP-PROD-7 | `check_budget_enforcement` - COST profile on STRICT product hosts | **Done** | `check_budget_enforcement.py` |
+| APP-PROD-8 | `check_workspace_cleanup` - factory lifespan cleanup hooks | **Done** | `check_workspace_cleanup.py` · `build_factory_lifespans` |
 | APP-PROD-9 | Gate test + CI `gate-governance-tier` | **Done** | `test_check_application_production_gates.py` |
 
 ## 40.3 Mutating product checklist
@@ -45,9 +45,9 @@ Before claiming production-ready for mutating hosts:
 
 ---
 
-# 41. Composition Primitives — Separation Matrix
+# 41. Composition Primitives - Separation Matrix
 
-Normative mapping — **do not conflate** these primitives:
+Normative mapping - **do not conflate** these primitives:
 
 | Primitive | Layer | Answers | Does NOT |
 |-----------|-------|---------|----------|
@@ -74,7 +74,7 @@ Cognition    → Agent.on_next_step() ONLY
 
 **Contract:** `intergrax/applications/contracts/environment_state.py` · schema **`app_env_state.v2`** on wire key **`app_env_state.v1`**.
 
-Hooks receive `HookContext.runtime_state: dict`. Application authors MUST use the typed model — not ad-hoc keys.
+Hooks receive `HookContext.runtime_state: dict`. Application authors MUST use the typed model - not ad-hoc keys.
 
 ## 42.1 Core fields
 
@@ -111,7 +111,7 @@ ApplicationEnvironmentState:
 | State class | Scope | Persistence |
 |-------------|-------|-------------|
 | `app_env_state.v1` | Single **Task** lifecycle | MODIFY merges across hooks; cleared on new task |
-| Agent cognition `acp.state.v1` | Agent run | ACP checkpoint — separate plane |
+| Agent cognition `acp.state.v1` | Agent run | ACP checkpoint - separate plane |
 | Artifacts §48 | Task + retention policy | Filesystem / object store |
 | Trace / summary | Ops | OBS spine + `ApplicationRunSummary` |
 
@@ -119,7 +119,7 @@ ApplicationEnvironmentState:
 
 ## 42.4 Helpers
 
-- `seed_application_environment_state(...)` — intake bootstrap
+- `seed_application_environment_state(...)` - intake bootstrap
 - `ApplicationEnvironmentState.from_runtime_state(ctx.runtime_state)`
 - `state.patch_runtime_state()` → `HookResult.modified_payload`
 
@@ -129,7 +129,7 @@ ApplicationEnvironmentState:
 
 # 43. Budget Reactions and Token Governance
 
-Symmetric to ACP §25.5 — **application configures**, **harness enforces**, **agents read**. Full agent-side detail: ACP §25.4–§25.5.
+Symmetric to ACP §25.5 - **application configures**, **harness enforces**, **agents read**. Full agent-side detail: ACP §25.4–§25.5.
 
 ## 43.1 End-to-end runtime flow
 
@@ -186,8 +186,8 @@ BudgetReactionProfile:
 | **`hitl`** | `pause_hitl` / Nexus HITL runner | `HitlEscalationState` §42 |
 | **`degrade_model`** | `StepLLMRouter` cheapest allowed model | Trace warning |
 | **`notify_only`** | Continue if advisory; always emit events | Slack/webhook/in_app via integration slugs |
-| **`custom_hook`** | Emit payload to host registry | Billing, paging, CRM — **no vendor SDK in Tier-2** |
-| **`pause_graph`** | Environment exceed only — freeze graph | Task status + summary |
+| **`custom_hook`** | Emit payload to host registry | Billing, paging, CRM - **no vendor SDK in Tier-2** |
+| **`pause_graph`** | Environment exceed only - freeze graph | Task status + summary |
 
 ## 43.6 Acceptance tests (gates)
 
@@ -256,8 +256,8 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 | # | Criterion | Evidence |
 |---|-----------|----------|
 | P1 | `ApplicationManifest` + full `ApplicationEnvironmentProfile` on manifest | `test_manifest_conformance` |
-| P2 | `build_harness_host_runtime()` — no ad-hoc `NexusLoop(...)` | Code review / APP-PROD-1 |
-| P3 | `wire_application_environment()` — no `getattr` on manifest | `check_harness_no_getattr` |
+| P2 | `build_harness_host_runtime()` - no ad-hoc `NexusLoop(...)` | Code review / APP-PROD-1 |
+| P3 | `wire_application_environment()` - no `getattr` on manifest | `check_harness_no_getattr` |
 | P4 | All surfaces → `UnifiedTaskRunner.run_task()` | Factory + router review |
 | P5 | `execution_mode=strict` in production profile | `environment_profile.py` |
 | P6 | `IdentityProfile` matches deployed auth | Integration test or manual runbook |
@@ -282,19 +282,19 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 
 | Dimension | Target | Current (2026-06-14) |
 |-----------|--------|----------------------|
-| Architecture completeness | 10/10 | **10/10** — APP-CON §24–§48 + evolution §49 + ops §50 |
-| Hook runtime wiring | 10/10 | **10/10** — APP-CON-1 · APP-CON-5 Done |
-| Budget / prod gates | 10/10 | **10/10** — APP-PROD-1..9 **Done** · ACP-TOK-1..3 · ACP-TOK-CI **Done** |
-| Evolution / governance | 10/10 | **10/10** — APP-EVOL-1..7 **Done** · §49.2.4 typed migrations |
-| Platform operations | 10/10 | **10/10** — APP-OPS-1..4 **Done** · health score · registry CLI |
-| **Overall production readiness** | — | **~9.5/10** reference platform; enterprise marketplace/distribution **P4** |
-| **Architecture freeze readiness** | — | **Architecturally Mature** — §24–§51 + APP-* **Done**; P4 = marketplace UI + semver on graph/envelope models |
+| Architecture completeness | 10/10 | **10/10** - APP-CON §24–§48 + evolution §49 + ops §50 |
+| Hook runtime wiring | 10/10 | **10/10** - APP-CON-1 · APP-CON-5 Done |
+| Budget / prod gates | 10/10 | **10/10** - APP-PROD-1..9 **Done** · ACP-TOK-1..3 · ACP-TOK-CI **Done** |
+| Evolution / governance | 10/10 | **10/10** - APP-EVOL-1..7 **Done** · §49.2.4 typed migrations |
+| Platform operations | 10/10 | **10/10** - APP-OPS-1..4 **Done** · health score · registry CLI |
+| **Overall production readiness** | - | **~9.5/10** reference platform; enterprise marketplace/distribution **P4** |
+| **Architecture freeze readiness** | - | **Architecturally Mature** - §24–§51 + APP-* **Done**; P4 = marketplace UI + semver on graph/envelope models |
 
 ---
 
 # 47. Developer Mental Model
 
-**“What do I implement for environment type X?”** — five recipes. Cognition stays in agents only.
+**“What do I implement for environment type X?”** - five recipes. Cognition stays in agents only.
 
 ## 47.1 Minimal lab application
 
@@ -355,7 +355,7 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 
 **Contract:** `intergrax/applications/contracts/application_artifacts.py`
 
-Artifacts are **first-class outputs** of application environments — linked to `task_id`, `run_id`, `graph_id`, with provenance and retention.
+Artifacts are **first-class outputs** of application environments - linked to `task_id`, `run_id`, `graph_id`, with provenance and retention.
 
 ## 48.1 Reference types
 
@@ -391,13 +391,13 @@ provenance: application | shadow_workspace | sandbox | tool
 produce → classify → attach to task metadata → expose in summary → retain/purge per policy
 ```
 
-**Rule:** operators discover artifacts via summary + bundle — not by scanning host filesystem ad hoc.
+**Rule:** operators discover artifacts via summary + bundle - not by scanning host filesystem ad hoc.
 
 ---
 
 # 49. Runtime Evolution and Governance
 
-Operational lifecycle for Tier-3 environments at scale — **versioning, migration, capability sunset, agent promotion, recovery, diff, packaging**. This chapter does **not** introduce a new cognition loop or Nexus fork; it defines how **declarative** application artifacts evolve and how **hosts** react when reality diverges from config.
+Operational lifecycle for Tier-3 environments at scale - **versioning, migration, capability sunset, agent promotion, recovery, diff, packaging**. This chapter does **not** introduce a new cognition loop or Nexus fork; it defines how **declarative** application artifacts evolve and how **hosts** react when reality diverges from config.
 
 **Design principle:** configuration is immutable-at-a-point-in-time; **snapshots** + **migrations** make change auditable. Runtime always executes against a **resolved snapshot**, not “latest YAML on disk” in STRICT production.
 
@@ -447,12 +447,12 @@ EnvironmentSnapshot:
 **Rules:**
 
 - STRICT production Tasks SHOULD record `profile_snapshot_id` on `ApplicationEnvironmentState` (§42).
-- Lab MAY run without snapshot persistence — product hosts MUST NOT.
+- Lab MAY run without snapshot persistence - product hosts MUST NOT.
 - Snapshot is the **unit of replay** for simulation and post-incident audit.
 
 ### 49.1.3 ApplicationVersion
 
-Logical release of a Tier-3 host — ties together manifest semver, container image tag, and optional changelog:
+Logical release of a Tier-3 host - ties together manifest semver, container image tag, and optional changelog:
 
 ```text
 ApplicationVersion:
@@ -499,7 +499,7 @@ MigrationStep:
 | **`ApplicationGraphSpec`** | Node rename, edge change | Graph migration + golden trace replay |
 | **`OrganizationalPolicyEnvelope`** | Playbook/tool deny change | Envelope version + eval golden refresh |
 | **`AgentBinding`** | Capability rename, agent swap | Roster migration + alias period (§49.3) |
-| **Hooks** | New HookPoint behavior | Host code deploy — not data migration |
+| **Hooks** | New HookPoint behavior | Host code deploy - not data migration |
 
 ### 49.2.3 EnvironmentUpgrade flow (runtime)
 
@@ -513,11 +513,11 @@ MigrationStep:
 5. In-flight Tasks: finish on intake snapshot OR policy-driven drain (product choice)
 ```
 
-**Anti-pattern EVOL-AP-01:** Editing production YAML without version bump — breaks audit and replay.
+**Anti-pattern EVOL-AP-01:** Editing production YAML without version bump - breaks audit and replay.
 
 ### 49.2.4 Typed migration primitives (**Done** · APP-EVOL-2b)
 
-`ApplicationMigration` orchestrates **typed** sub-migrations — one schema per primitive, composable in CI:
+`ApplicationMigration` orchestrates **typed** sub-migrations - one schema per primitive, composable in CI:
 
 ```text
 ProfileMigration:
@@ -549,7 +549,7 @@ OrgEnvelopeMigration:
 
 - Each primitive migration MUST have a **golden replay** or eval scenario when `breaking=true`.
 - `ProfileMigration` runs before `GraphSpecMigration` before `OrgEnvelopeMigration` (dependency order).
-- Partial migrations are forbidden in STRICT — all three digests must match target snapshot (§49.1.2).
+- Partial migrations are forbidden in STRICT - all three digests must match target snapshot (§49.1.2).
 
 **Status:** `ApplicationMigration` + typed sub-migrations **Done** (`APP-EVOL-2` · `APP-EVOL-2b` · `application_migration.py` · `check_application_migrations.py`).
 
@@ -562,7 +562,7 @@ Tier-3 routes work via **capability tokens** on `Task` and `AgentBinding.capabil
 ### 49.3.1 Capability registry model (normative · **Done** APP-EVOL-3)
 
 ```text
-CapabilityDescriptor:                    # UAEP §42.27 — harness-wide
+CapabilityDescriptor:                    # UAEP §42.27 - harness-wide
     capability: str                       # e.g. research.pipeline
     version: semver
     agent_id: str
@@ -592,7 +592,7 @@ CapabilityDeprecation:
 | Breaking capability change | Major semver bump; alias window ≥ 14 days |
 | `research.pipeline` retired | Remove from `AgentBinding`; keep alias redirect in registry until sunset |
 
-**Example:** `research.pipeline` superseded by `research.orchestrate` — Tier-3 manifest updates bindings; harness registry serves alias during migration window.
+**Example:** `research.pipeline` superseded by `research.orchestrate` - Tier-3 manifest updates bindings; harness registry serves alias during migration window.
 
 **Status:** `CapabilityDescriptor` + `CapabilityAlias` **Done** (`capability_alias.py` · `capability_alias_wiring.py` · intake middleware APP-EVOL-3); retired-agent routing filter **Done** (V-REM-ALG.1).
 
@@ -637,8 +637,8 @@ AgentCertification:
 |---------|------|
 | **STRICT production** | `registry_assembly_resolver` rejects non-`PRODUCTION` agents unless explicit waiver in product ARCHITECTURE |
 | **STAGING host** | `STAGING` + `PRODUCTION` allowed |
-| **Lab** | All states except `RETIRED` (retired blocked — V-REM-ALG.1) |
-| **Deprecation** | `evaluate_agent_lifecycle_transition()` — migration window + guide refs required |
+| **Lab** | All states except `RETIRED` (retired blocked - V-REM-ALG.1) |
+| **Deprecation** | `evaluate_agent_lifecycle_transition()` - migration window + guide refs required |
 
 **Promotion flow:** agent passes ACP-PROD gates → lifecycle `STAGING` → product host eval → `PRODUCTION` → added to `ApplicationManifest.agents`.
 
@@ -648,7 +648,7 @@ AgentCertification:
 
 ## 49.5 Runtime Recovery
 
-Reliability primitives exist (`ReliabilityProfile`, checkpoints, idempotency, compensation). Tier-3 needs an explicit **Application Recovery Contract** — what the **host** guarantees after failure.
+Reliability primitives exist (`ReliabilityProfile`, checkpoints, idempotency, compensation). Tier-3 needs an explicit **Application Recovery Contract** - what the **host** guarantees after failure.
 
 ### 49.5.1 Failure scenarios
 
@@ -777,7 +777,7 @@ integration_profile         → providers available
 graph_spec nodes            → roster capabilities satisfied
 ```
 
-**Scaffold today:** `new-stack` bundles agent + application; `agent_catalog.py` resolves specs — precursor to full `ApplicationPackage`.
+**Scaffold today:** `new-stack` bundles agent + application; `agent_catalog.py` resolves specs - precursor to full `ApplicationPackage`.
 
 ### 49.7.3 Distribution rules
 
@@ -810,7 +810,7 @@ graph_spec nodes            → roster capabilities satisfied
 
 # 50. Platform Operations Canon
 
-Final freeze-ready layer for **reference platform architecture** — connects Tier-3 environments to harness-wide **capability graph**, **operational ownership**, **health scoring**, and **registry** surfaces. Does not alter Nexus, `ApplicationHost`, profile/graph/envelope primitives, or hook semantics (§32).
+Final freeze-ready layer for **reference platform architecture** - connects Tier-3 environments to harness-wide **capability graph**, **operational ownership**, **health scoring**, and **registry** surfaces. Does not alter Nexus, `ApplicationHost`, profile/graph/envelope primitives, or hook semantics (§32).
 
 **Symmetry with ACP:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) describes the **executing unit** (agent); this document describes the **executing environment** (application). Together they form two peer pillars:
 
@@ -823,7 +823,7 @@ Application (TIER3)  → how the environment composes, constrains, evolves, oper
 
 ## 50.1 Capability Graph (environment-scoped)
 
-> **Canonical graph model:** ACP §19 — this section covers **Tier-3 environment view and ops** only; do not fork graph taxonomy here.
+> **Canonical graph model:** ACP §19 - this section covers **Tier-3 environment view and ops** only; do not fork graph taxonomy here.
 
 `ApplicationPackage.dependencies` (§49.7) lists **direct** refs. **CapabilityGraph** models the full **transitive** harness chain from IDEAL §19.4:
 
@@ -869,7 +869,7 @@ wire_environment_capability_graph(manifest, env, snapshot)
 |-----------|--------------|-------------------|
 | **Lineage** | `build_capability_lineage_report(graph)` | What upstream integrations/tools feed this agent? |
 | **Blast radius** | `build_capability_impact_report(graph)` | If tool X changes, what else breaks? |
-| **Impact preview** | `policy_change_impact.py` | Policy deny addition — affected nodes |
+| **Impact preview** | `policy_change_impact.py` | Policy deny addition - affected nodes |
 | **Deprecation** | `SUPERSEDES` edge + §49.3 alias | Safe sunset window for `research.pipeline` |
 | **Deploy review** | env graph diff vs previous snapshot | Unexpected new dependencies? |
 
@@ -879,10 +879,10 @@ wire_environment_capability_graph(manifest, env, snapshot)
 |------|-----------|
 | Every product host SHOULD expose graph view in ops/debug (read-only) | Impact analysis before profile edits |
 | STRICT deploy CI SHOULD fail when blast radius includes uncertified agent | Governance §49.4 |
-| Graph is **derived** from manifest + profile — not hand-edited parallel truth | Single source of composition |
+| Graph is **derived** from manifest + profile - not hand-edited parallel truth | Single source of composition |
 | `ApplicationDependency` MUST resolve to graph node ids | Package ↔ graph linkage |
 
-**Gap vs package-only model:** `ApplicationPackage` knows **what** depends on **what**; `CapabilityGraph` knows **impact**, **lineage**, and **blast radius** — required for platform-scale change management.
+**Gap vs package-only model:** `ApplicationPackage` knows **what** depends on **what**; `CapabilityGraph` knows **impact**, **lineage**, and **blast radius** - required for platform-scale change management.
 
 **Status:** harness graph + lineage/impact **Done** (V-CG.1–3); Tier-3 `EnvironmentCapabilityGraphView` **Done**; APP-OPS-1 STRICT deploy gate **Done** (`capability_graph_deploy_gate.py`).
 
@@ -929,7 +929,7 @@ ApplicationEscalationContact:
 |---------|-------|--------|
 | `ApplicationManifest` | `ownership: ApplicationOperationalOwnership /| null` | **Done** APP-OPS-2 |
 | Product `ARCHITECTURE.md` frontmatter | owner, maintainer, on-call | **Required today** (informal) |
-| `ApplicationEnvironmentProfile` | inherit from manifest | **Deferred P4** — manifest gate sufficient today |
+| `ApplicationEnvironmentProfile` | inherit from manifest | **Deferred P4** - manifest gate sufficient today |
 | APP-PROD gate | product hosts must declare ownership | **Done** `check_application_ownership.py` |
 
 ### 50.2.3 Enforcement
@@ -1009,7 +1009,7 @@ ApplicationHealthScore:
 
 **CLI:** `intergrax doctor health-app --app legal` (`--json` · `--write` · `--fail-below`).
 
-**Relation to §42:** `EnvironmentHealthStatus` on `ApplicationEnvironmentState` is **runtime task-scoped**; `EnvironmentHealthScore` is **ops platform-scoped** — complementary, not duplicate.
+**Relation to §42:** `EnvironmentHealthStatus` on `ApplicationEnvironmentState` is **runtime task-scoped**; `EnvironmentHealthScore` is **ops platform-scoped** - complementary, not duplicate.
 
 **Status:** **Done** (`environment_health_score.py` · `health_score_wiring.py` · `check_application_health_score.py` · APP-OPS-3).
 
@@ -1017,7 +1017,7 @@ ApplicationHealthScore:
 
 ## 50.4 Application and environment registry
 
-Platform engineering surface — **inventory** of what exists, where it runs, at which version. Distinct from runtime Nexus registry (agent instances).
+Platform engineering surface - **inventory** of what exists, where it runs, at which version. Distinct from runtime Nexus registry (agent instances).
 
 ### 50.4.1 ApplicationRegistry **Done** (APP-OPS-4)
 
@@ -1038,9 +1038,9 @@ ApplicationRegistryEntry:
 
 **Operations:**
 
-- `list_applications()` — all Tier-3 packages in monorepo + external
-- `get_application(app_id)` — manifest + latest health
-- `register_application(package)` — on scaffold / CI publish
+- `list_applications()` - all Tier-3 packages in monorepo + external
+- `get_application(app_id)` - manifest + latest health
+- `register_application(package)` - on scaffold / CI publish
 
 ### 50.4.2 EnvironmentRegistry **Done** (APP-OPS-4)
 
@@ -1098,22 +1098,22 @@ EnvironmentDeployment:
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | **Done** | `check_application_registry.py` |
 | APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | **Done** | `migration_wiring.py` typed validators |
 
-**Architecture freeze boundary:** APP-OPS-1..4 **Done** — Tier-3 canon is **feature-complete** for reference platform; remaining work is implementation, not structural redesign.
+**Architecture freeze boundary:** APP-OPS-1..4 **Done** - Tier-3 canon is **feature-complete** for reference platform; remaining work is implementation, not structural redesign.
 
 ---
 
 # 51. Cross-Document Consistency (Freeze)
 
-Pre-freeze **semantic audit** — overlap between Tier-3, ACP, UAEP, and IDEAL. Full evidence: [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md).
+Pre-freeze **semantic audit** - overlap between Tier-3, ACP, UAEP, and IDEAL. Full evidence: [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md).
 
 ## 51.1 Verdict (2026-06-11)
 
 | Question | Result |
 |----------|--------|
-| Two definitions of capability? | **No** — routing (`CapabilityDescriptor` / `AgentRegistry`) vs structure (`CapabilityGraph`) are layered |
-| Two registries for the same thing? | **No** — runtime `AgentRegistry` ≠ ops `ApplicationRegistry` / `EnvironmentRegistry` |
-| Ownership duplicates lifecycle? | **No** — lifecycle = state; ownership = on-call contacts (agent vs application scopes) |
-| Health score duplicates APP-PROD? | **No** — gates = boolean blockers; score = continuous rollup |
+| Two definitions of capability? | **No** - routing (`CapabilityDescriptor` / `AgentRegistry`) vs structure (`CapabilityGraph`) are layered |
+| Two registries for the same thing? | **No** - runtime `AgentRegistry` ≠ ops `ApplicationRegistry` / `EnvironmentRegistry` |
+| Ownership duplicates lifecycle? | **No** - lifecycle = state; ownership = on-call contacts (agent vs application scopes) |
+| Health score duplicates APP-PROD? | **No** - gates = boolean blockers; score = continuous rollup |
 | §50 vs IDEAL conflict? | **No** |
 
 ## 51.2 Naming risks (glossary discipline)
@@ -1136,7 +1136,7 @@ Shared        → CapabilityGraph (ACP §19), routing (UAEP §42.27), registries
 
 ---
 
-**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) — [fidelity matrix](../plan/TIER3_APPLICATION_ENVIRONMENT.md#architecture-fidelity-matrix--20-51) · [APP-* master backlog](../plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified) · phases H-APP-CON · H-APP-EVOL · H-APP-OPS · H-APP-FREEZE  
+**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) - [fidelity matrix](../plan/TIER3_APPLICATION_ENVIRONMENT.md#architecture-fidelity-matrix--20-51) · [APP-* master backlog](../plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified) · phases H-APP-CON · H-APP-EVOL · H-APP-OPS · H-APP-FREEZE  
 **Consistency audit:** [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md)
 
 ---

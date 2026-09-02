@@ -13,7 +13,7 @@ application_vs_proof_ownership: COMPLETED
 **Scenario:** AI Incident Investigation with Independent Verification  
 **Slug:** `ai_incident_investigation`  
 **Proof class:** SCENARIO  
-**Status:** FULL-1 RESOLVED and FULL-2 UNRESOLVED implemented and executable — public Scenario Proof not yet accepted or published.
+**Status:** FULL-1 RESOLVED and FULL-2 UNRESOLVED implemented and executable - public Scenario Proof not yet accepted or published.
 
 [← Back to public Scenario page](README.md)
 
@@ -29,7 +29,7 @@ This is a **fully fictional operational scenario**. The organization, facility, 
 
 A fictional industrial manufacturer monitors production throughput and target attainment across multiple production lines at Plant A. During a Tuesday–Thursday window, target attainment on **Line 4** degrades sharply: production performance drops from roughly 94% to 78% while cycle-time degradation concentrates on heavier, more complex product assemblies.
 
-Operations leadership asks an AI investigation system to determine the most **defensible root-cause diagnosis** so staffing, line allocation, and capacity decisions can be made before an upcoming high-volume production window. The investigation must use operational telemetry, staffing records, equipment signals, and production workload records — the same fragmented sources a human incident lead would query — not a single curated dashboard.
+Operations leadership asks an AI investigation system to determine the most **defensible root-cause diagnosis** so staffing, line allocation, and capacity decisions can be made before an upcoming high-volume production window. The investigation must use operational telemetry, staffing records, equipment signals, and production workload records - the same fragmented sources a human incident lead would query - not a single curated dashboard.
 
 This is an **operational incident investigation**: wrong conclusions trigger real operational harm, not a SQL tutorial exercise.
 
@@ -87,7 +87,7 @@ and recommends capacity and staffing responses. That story is **plausible, leade
 
 ### WOW factor
 
-WOW is **not** two agents, SQL, RAG, tool count, or orchestration depth — and **not** that the AI eventually guesses the fixture's correct answer.
+WOW is **not** two agents, SQL, RAG, tool count, or orchestration depth - and **not** that the AI eventually guesses the fixture's correct answer.
 
 The impressive result is that:
 
@@ -106,7 +106,7 @@ A successful proof run must make that transition **visually obvious** in the fin
 
 A simple Investigator + Critic graph is **insufficient** for this scenario because it typically provides:
 
-- no **hidden ground truth isolation** — fixture truth leaks through prompts, metadata, or naming;
+- no **hidden ground truth isolation** - fixture truth leaks through prompts, metadata, or naming;
 - no **observable evidence** sufficient to distinguish competing hypotheses without evaluator truth;
 - no **verifier independence** from investigator private reasoning or ground truth;
 - no stable **evidence identity** across investigation and challenge passes;
@@ -144,11 +144,11 @@ At least one apparently relevant staffing snapshot is **outside the incident-val
 
 #### D. Missing evidence
 
-Material evidence needed to distinguish overload vs equipment fault — e.g., **machine / robotic handling / feeder station telemetry for the complex-assembly step** — is not available in the initial investigation pass. The system must not fabricate it.
+Material evidence needed to distinguish overload vs equipment fault - e.g., **machine / robotic handling / feeder station telemetry for the complex-assembly step** - is not available in the initial investigation pass. The system must not fabricate it.
 
 #### E. Hidden causal factor (discoverable, not leaked)
 
-The fixture encodes an actual incident factor: **intermittent feeder unit #4 degradation affecting the complex-assembly handling step** — not sustained workload overload. This is **ground truth for fixture construction and deterministic evaluation only**. It must be discoverable through admissible follow-up investigation; it must **not** leak through model-visible instructions, naming, or metadata (see **Ground truth isolation** in § B. SOLUTION).
+The fixture encodes an actual incident factor: **intermittent feeder unit #4 degradation affecting the complex-assembly handling step** - not sustained workload overload. This is **ground truth for fixture construction and deterministic evaluation only**. It must be discoverable through admissible follow-up investigation; it must **not** leak through model-visible instructions, naming, or metadata (see **Ground truth isolation** in § B. SOLUTION).
 
 Replacing one correlation with another is insufficient. The intended follow-up evidence must support a **best-supported bounded operational root-cause diagnosis**, not a new unsupported temporal correlation (`equipment fault ↑` + `throughput ↓` → therefore causation).
 
@@ -157,9 +157,9 @@ Replacing one correlation with another is insufficient. The intended follow-up e
 The system must explicitly distinguish at least these plausible hypotheses:
 
 ```text
-H1 — sustained production overload from workload growth
-H2 — understaffing on the affected shift / line
-H3 — intermittent equipment / process degradation
+H1 - sustained production overload from workload growth
+H2 - understaffing on the affected shift / line
+H3 - intermittent equipment / process degradation
 ```
 
 The final **RESOLVED** outcome must not merely identify H3. It must show why available admissible evidence makes H3 the **best-supported bounded operational diagnosis** and why key alternatives are weakened or rejected.
@@ -216,8 +216,8 @@ The investigation system behaves like a disciplined incident lead:
 2. Form a **candidate** diagnosis only when tied to cited evidence items.
 3. Run an **independent falsification attempt** on material causal claims.
 4. If falsification finds a concrete evidence defect, perform **targeted follow-up** (not infinite re-litigation).
-5. Accept a **revised RESOLVED diagnosis** only when material claims survive falsification, are supported by admissible observable evidence, and constitute the **best-supported bounded operational root-cause diagnosis** among competing hypotheses — not universal scientific causality.
-6. Emit **UNRESOLVED** when critical evidence is unavailable or hypotheses remain indistinguishable — without confident guessing and **without** using evaluator ground truth to “know” the answer.
+5. Accept a **revised RESOLVED diagnosis** only when material claims survive falsification, are supported by admissible observable evidence, and constitute the **best-supported bounded operational root-cause diagnosis** among competing hypotheses - not universal scientific causality.
+6. Emit **UNRESOLVED** when critical evidence is unavailable or hypotheses remain indistinguishable - without confident guessing and **without** using evaluator ground truth to “know” the answer.
 
 ### Ground truth isolation
 
@@ -322,30 +322,30 @@ Evaluator determines whether the observable run satisfies the proof invariants.
 #### RESOLVED path (intended success story)
 
 ```text
-INCIDENT — Line 4 target attainment degradation (Tue–Thu)
+INCIDENT - Line 4 target attainment degradation (Tue–Thu)
 ↓
 initial evidence gathering (workload, throughput by line, assembly complexity cohorts, staffing feeds)
 ↓
-plausible candidate diagnosis — “workload surge overloaded Line 4”
+plausible candidate diagnosis - “workload surge overloaded Line 4”
 ↓
 independent falsification attempt on causal claim
 ↓
-specific evidentiary challenge — e.g., normalized throughput per unit vs workload;
+specific evidentiary challenge - e.g., normalized throughput per unit vs workload;
   conflicting staffing sources; stale roster treated as current
 ↓
-targeted follow-up investigation — machine / feeder station telemetry / fault signals for complex-assembly step
+targeted follow-up investigation - machine / feeder station telemetry / fault signals for complex-assembly step
 ↓
-new evidence — before/during/after pattern: feeder unit #4 degradation correlates with
+new evidence - before/during/after pattern: feeder unit #4 degradation correlates with
   complex-assembly throughput drop and cycle-time spike; unaffected lines stable; staffing normal
 ↓
-revised diagnosis — best-supported operational root-cause diagnosis:
+revised diagnosis - best-supported operational root-cause diagnosis:
   intermittent feeder unit #4 degradation affecting complex-assembly throughput;
   workload growth is a contributing amplifier, not the initiating cause
 ↓
 independent verification of revised claim against evidence graph;
   H1 (overload) and H2 (understaffing) weakened by comparative evidence
 ↓
-RESOLVED — bounded operational diagnosis with auditable evidence trail
+RESOLVED - bounded operational diagnosis with auditable evidence trail
   (not universal causality; not merely matching hidden ground truth)
 ```
 
@@ -360,7 +360,7 @@ critical distinguishing evidence unavailable (e.g., equipment telemetry cannot b
 ↓
 credible hypotheses remain indistinguishable (H1 overload vs H2 understaffing vs H3 equipment fault)
 ↓
-UNRESOLVED — explicit refusal to assert root cause; documented evidence gaps
+UNRESOLVED - explicit refusal to assert root cause; documented evidence gaps
   (model-visible outcome remains UNRESOLVED even if evaluator privately knows fixture truth)
 ```
 
@@ -379,7 +379,7 @@ If critical evidence necessary to distinguish competing hypotheses is unavailabl
 
 ### Guarantees
 
-Candidate system-level guarantees (design stage — not yet demonstrated):
+Candidate system-level guarantees (design stage - not yet demonstrated):
 
 - Material incident diagnoses are backed by **auditable evidence identities**, not prose confidence.
 - **Evidence dependencies** are explicit: each material claim cites admissible observations.
@@ -388,7 +388,7 @@ Candidate system-level guarantees (design stage — not yet demonstrated):
 - **Missing** evidence cannot be hallucinated; gaps are explicit.
 - Falsification cites a **concrete evidence defect** (unsupported leap, conflict, staleness, gap).
 - Challenge/revise behavior is **bounded** (no infinite loop).
-- Final outcome is **reconstructable** from observable evidence and evaluator checks — without hidden evaluator truth.
+- Final outcome is **reconstructable** from observable evidence and evaluator checks - without hidden evaluator truth.
 - **UNRESOLVED** is a first-class outcome when certainty is not justified.
 - **Ground truth** never enters Investigator or Verifier model-visible context.
 - **RESOLVED** requires evidence-supported discrimination among competing hypotheses (H1, H2, H3).
@@ -398,13 +398,13 @@ Candidate system-level guarantees (design stage — not yet demonstrated):
 
 ### Claim
 
-Candidate bounded falsifiable claim (design — **not** a proven public claim):
+Candidate bounded falsifiable claim (design - **not** a proven public claim):
 
 > **No material incident diagnosis is accepted unless its material claims are supported by auditable evidence and survive an independent falsification attempt.**
 
 “Material” means claims that would justify operational actions (root-cause attribution, staffing changes, line reallocation, capacity decisions). Correlation-only narratives do not qualify.
 
-“Independent falsification” means the verifier evaluates claims against observable cited evidence per the **Verifier independence** contract — not investigator private reasoning, not hidden ground truth, not expected answers.
+“Independent falsification” means the verifier evaluates claims against observable cited evidence per the **Verifier independence** contract - not investigator private reasoning, not hidden ground truth, not expected answers.
 
 ### PASS
 
@@ -417,12 +417,12 @@ Candidate PASS semantics at scenario level:
 - Stale evidence **cannot** silently become current.
 - Missing evidence **cannot** be fabricated.
 - Challenge can request **targeted follow-up** evidence gathering.
-- Final **RESOLVED** diagnosis must be supported by admissible **observable** evidence — not evaluator ground truth.
+- Final **RESOLVED** diagnosis must be supported by admissible **observable** evidence - not evaluator ground truth.
 - Material competing hypotheses (H1, H2, H3) must be **addressed**; accepted diagnosis must be best-supported among alternatives.
 - Hidden ground truth **never** exposed to Investigator or Verifier.
 - Verifier does **not** depend on Investigator private reasoning.
 - Verifier challenge is **evidence-grounded** (concrete defect class, not “I disagree”).
-- **UNRESOLVED** remains correct when distinguishing evidence is unavailable — even if evaluator privately knows fixture truth.
+- **UNRESOLVED** remains correct when distinguishing evidence is unavailable - even if evaluator privately knows fixture truth.
 - Causal diagnosis uses **before/during/after** comparative evidence, not a single correlation swap.
 - Insufficient evidence yields explicit **UNRESOLVED**, not confident guessing.
 - Challenge/revise execution is **bounded**.
@@ -457,9 +457,9 @@ Explicit FAIL if any of the following occurs:
 | Conflicting staffing feeds | Surface conflict; do not pick favorites silently |
 | Stale roster export | Mark staleness; do not treat as current incident staffing |
 | Missing equipment telemetry initially | Acknowledge gap; follow-up or UNRESOLVED |
-| Pressure to “just pick one hypothesis” | UNRESOLVED if distinguishers stay unavailable — even if evaluator knows truth |
-| Ground-truth leakage via naming/metadata | FAIL — investigator/verifier must not receive hidden answer |
-| Fluent but empty critic | FAIL — challenge must cite evidence defect |
+| Pressure to “just pick one hypothesis” | UNRESOLVED if distinguishers stay unavailable - even if evaluator knows truth |
+| Ground-truth leakage via naming/metadata | FAIL - investigator/verifier must not receive hidden answer |
+| Fluent but empty critic | FAIL - challenge must cite evidence defect |
 
 ### Excluded claims
 

@@ -1,4 +1,4 @@
-# Research — Architecture Decision Records
+# Research - Architecture Decision Records
 
 **Domain:** Tier-3 application host (`applications/research_application`)
 
@@ -36,7 +36,7 @@ ADR-RESEARCH-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No application ADRs yet* | — |
+| - | *No application ADRs yet* | - |
 
 ---
 

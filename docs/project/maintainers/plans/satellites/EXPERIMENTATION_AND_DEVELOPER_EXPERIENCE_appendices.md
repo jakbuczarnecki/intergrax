@@ -1,4 +1,4 @@
-# EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE — appendices
+# EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE - appendices
 
 **Parent hub:** [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
 
@@ -7,7 +7,7 @@
 
 ---
 
-## Appendix A — Business agents readiness checklist
+## Appendix A - Business agents readiness checklist
 
 Gate before Problem Radar / Vendor Discovery. Run:
 
@@ -74,14 +74,14 @@ Agent exercise: signoff_probe
 Capability:     signoff.probe
 Time to first run: ~15 min (scaffold + smoke test)
 Runtime files modified: none (only agents/signoff_probe/ added)
-Smoke test:     agents/signoff_probe/tests — 1 passed
+Smoke test:     agents/signoff_probe/tests - 1 passed
 HTTP proof:     lab_application wiring + POST /v1/lab/run
 Trace proof:    GET /debug/tasks/{id}, /trace?include_runtime=true, /events
                 (test_lab_application_runs_signoff_probe_with_trace)
 Acceptance suite: pass (tests/acceptance/agent_os)
 Gate suite:     pass (228+ tests)
 Trace:          NexusLoop smoke + HTTP debug API (SQLite trace store in lab factory)
-Decision:       L1 certified — GO Phase S (harness environment), then Phase K (K.1/K.2)
+Decision:       L1 certified - GO Phase S (harness environment), then Phase K (K.1/K.2)
 ```
 
 ---
@@ -93,7 +93,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 
 ---
 
-## Appendix I — Plugin catalog traceability (Phase P-Ext)
+## Appendix I - Plugin catalog traceability (Phase P-Ext)
 
 **Purpose:** Task-level tracker for plugin-native Integration, Tool, and Skill catalogs. **Canonical phase narrative:** [Phase P-Ext](.#phase-p-ext--plugin-catalogs-integrations-tools-skills) · paydown: [P-Ext.6](.#p-ext6--production-closure-paydown).
 
@@ -190,9 +190,9 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 | Date | P-Ext ID | Summary |
 |------|----------|---------|
-| 2026-06-02 | — | Phase P-Ext + Appendix I added (migrated from `PLUGIN_CATALOG_PLAN.md`) |
+| 2026-06-02 | - | Phase P-Ext + Appendix I added (migrated from `PLUGIN_CATALOG_PLAN.md`) |
 | 2026-06-02 | 0.1–0.4, 1.1–1.2, 2.1–2.8, 3.1–3.5, 4.1–4.2, 4.4, 5.2–5.4 | MVP: protocols, bootstrap, 13 tool + 3 skill plugins, lazy catalog, `custom_memory_kv` test |
-| 2026-06-02 | — | Plan updated: **MVP Done** + **P-Ext.6 paydown** backlog (EP fixture, external tool/skill tests, ops/docs) |
+| 2026-06-02 | - | Plan updated: **MVP Done** + **P-Ext.6 paydown** backlog (EP fixture, external tool/skill tests, ops/docs) |
 | 2026-06-02 | 1.* audit | Integrations audit: 12 core / ~99 full manifest path; `resolve_typed` partial; Tier-3 integration_wiring gap; +P-Ext.1.3a, 1.8–1.12 |
 | 2026-06-02 | M.6 P5 closeout | Catalog **135** full (`12` core); timeline 99→127→135; P-Ext integration counts synced |
 | 2026-06-02 | 3.* audit | Skills audit: 3/3 `SkillPlugin`, 8 skill_id; Tier-3 `skill_wiring` OK; scaffold legacy; +P-Ext.3.9–3.12, 6.8 |
@@ -204,6 +204,6 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-02 | TYP-06, U-Typ.4 | `IntegrationProfile` explicit binding accessors; removed `tools_agent.AgentDecision` alias |
 | 2026-06-02 | W-OPS.0 | Harness maturity audit → Phase W-OPS + §6.2w in implementation plan |
 | 2026-06-05 | V-REM.0.* | Plan audit → Phase V-REM + Appendix J + §6.1z queue (10 open) |
-| — | — | *(append row per merged PR)* |
+| - | - | *(append row per merged PR)* |
 
 ---

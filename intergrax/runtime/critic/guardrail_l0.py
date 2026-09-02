@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from intergrax.contracts.guardrail_verification import assess_guardrail_scan
+from intergrax.integrations.contracts.llm_guardrail import GuardrailScanResult
 from intergrax.runtime.critic.contracts import CriticLayer, LayerVerdict
 
 
@@ -14,13 +16,31 @@ def guardrail_scan_from_context(context: dict[str, Any]) -> dict[str, Any] | Non
     return raw if isinstance(raw, dict) else None
 
 
+def _guardrail_scan_from_mapping(scan: dict[str, Any]) -> GuardrailScanResult:
+    allowed = scan.get("allowed")
+    resolved_allowed = True if allowed is None else bool(allowed)
+    detail = str(scan.get("detail") or "")
+    categories_raw = scan.get("categories")
+    categories: tuple[str, ...] = ()
+    if isinstance(categories_raw, (list, tuple)):
+        categories = tuple(str(category) for category in categories_raw)
+    elif isinstance(categories_raw, str) and categories_raw:
+        categories = (categories_raw,)
+    return GuardrailScanResult(
+        allowed=resolved_allowed,
+        detail=detail,
+        categories=categories,
+    )
+
+
 def merge_guardrail_l0(verdict: LayerVerdict, *, context: dict[str, Any]) -> LayerVerdict:
     """Augment L0 with guardrail scan metadata when Tier-3 passes ``guardrail_scan`` in critic context."""
-    scan = guardrail_scan_from_context(context)
-    if scan is None:
+    scan_mapping = guardrail_scan_from_context(context)
+    if scan_mapping is None:
         return verdict
-    if scan.get("allowed") is False:
-        detail = str(scan.get("detail") or "guardrail scan blocked output")
+    assessment = assess_guardrail_scan(_guardrail_scan_from_mapping(scan_mapping))
+    if not assessment.passed:
+        detail = assessment.detail or "guardrail scan blocked output"
         return LayerVerdict(
             layer=CriticLayer.L0_DETERMINISTIC,
             passed=False,
@@ -28,10 +48,7 @@ def merge_guardrail_l0(verdict: LayerVerdict, *, context: dict[str, Any]) -> Lay
             errors=[*verdict.errors, f"guardrail_l0: {detail}"],
             warnings=list(verdict.warnings),
         )
-    categories = scan.get("categories")
     warnings = list(verdict.warnings)
-    if isinstance(categories, (list, tuple)) and categories:
-        warnings.append(f"guardrail_l0: categories={list(categories)}")
-    elif isinstance(categories, str) and categories:
-        warnings.append(f"guardrail_l0: categories=[{categories}]")
+    if assessment.categories:
+        warnings.append(f"guardrail_l0: categories={list(assessment.categories)}")
     return verdict.model_copy(update={"warnings": warnings})

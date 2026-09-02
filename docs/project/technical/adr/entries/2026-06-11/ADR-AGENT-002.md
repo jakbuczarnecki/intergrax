@@ -23,13 +23,13 @@ ADR-AGENT-001 rejected **removing Nexus** or **absorbing Agent OS into agent cla
 
 ## Decision
 
-**Adopted — Option III (hybrid):**
+**Adopted - Option III (hybrid):**
 
 1. **`AgentRunRequest` / `AgentRunResult`** are the canonical author I/O contracts (planned types; map from/to `RuntimeRequest` / `AgentExecutionResult` until implemented).
-2. **`IntergraxAgent.run(request)`** (and ACP subclasses) is the **primary author API** — tracing, policy, errors, UAEP step boundaries, and ACP loops run inside the base implementation.
-3. **UAEP remains the internal execution protocol** — `get_steps` / `run_step` / `decide_after_step` are framework-wired; authors override **hooks** (`perceive`, `reason`, `act`, `evaluate`) or `@step` methods, not the harness loop.
+2. **`IntergraxAgent.run(request)`** (and ACP subclasses) is the **primary author API** - tracing, policy, errors, UAEP step boundaries, and ACP loops run inside the base implementation.
+3. **UAEP remains the internal execution protocol** - `get_steps` / `run_step` / `decide_after_step` are framework-wired; authors override **hooks** (`perceive`, `reason`, `act`, `evaluate`) or `@step` methods, not the harness loop.
 4. **Nexus remains the application entry** for `Task` lifecycle and multi-agent orchestration; graph nodes invoke the **same** agent `run` / UAEP path.
-5. **Per-agent resource binding** — memory namespaces, tool/skill allowlists, RAG/knowledge backends — is declared on `AgentContract` + `AgentBinding` and **materialized at run time** from Tier-3 profile + request metadata overrides (§30).
+5. **Per-agent resource binding** - memory namespaces, tool/skill allowlists, RAG/knowledge backends - is declared on `AgentContract` + `AgentBinding` and **materialized at run time** from Tier-3 profile + request metadata overrides (§30).
 6. **Legacy author paths deprecated:** direct `AgentEngine.run` from Tier-2, `on_next_step` bridge (ACP-LEG).
 
 **Rejected:**
@@ -51,13 +51,13 @@ ADR-AGENT-001 rejected **removing Nexus** or **absorbing Agent OS into agent cla
 
 ### Negative
 
-- Two entry postures remain (direct `run` vs `Task`) — documented explicitly in §29.3.
+- Two entry postures remain (direct `run` vs `Task`) - documented explicitly in §29.3.
 - Implementation work: `AgentRunRequest`/`Result`, profile merge, ACP-DX plan rows.
 
 ## Compliance
 
 - ADR-AGENT-001 preserved: Nexus not moved into Tier-2 business packages.
-- Tier boundaries: agents use `ctx.invoke_tool`, `memory_view` — no vendor SDKs.
+- Tier boundaries: agents use `ctx.invoke_tool`, `memory_view` - no vendor SDKs.
 - Documentation updated before ACP-DX code (ACP-DOC.4).
 
 ## Implementation notes

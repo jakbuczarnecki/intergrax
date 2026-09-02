@@ -18,7 +18,7 @@ applications/research_application/docker/build-docker.sh
 # Windows: applications\research_application\docker\build-docker.bat
 ```
 
-**MCP:** FastMCP at `/mcp` — `list_agents`, `run_agent`, `run_research_pipeline`, `list_catalog_tools`, `describe_catalog_tool` (`RESEARCH_INCLUDE_MCP`).
+**MCP:** FastMCP at `/mcp` - `list_agents`, `run_agent`, `run_research_pipeline`, `list_catalog_tools`, `describe_catalog_tool` (`RESEARCH_INCLUDE_MCP`).
 
 **Tools:** `websearch.query` enabled by default (`RESEARCH_ENABLE_WEBSEARCH`). Wiring: `host/tool_wiring.py` → `ApplicationBuildContext` → `ResearchAgent` `RuntimeConfig`. See [`intergrax/tools/USAGE.md`](../../intergrax/tools/USAGE.md).
 

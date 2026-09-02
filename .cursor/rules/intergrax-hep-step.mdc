@@ -1,9 +1,9 @@
 ---
-description: HEP step execution — strict scoped implementation
+description: HEP step execution - strict scoped implementation
 alwaysApply: false
 ---
 
-# Intergrax — HEP step execution
+# Intergrax - HEP step execution
 
 Use only when operator explicitly asks for a HEP / EVID implementation step.
 

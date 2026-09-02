@@ -28,4 +28,4 @@ Governed access to: `logs.search`, `observability.query_traces`, `notify.send`.
 
 ## Related skills
 
-- Other `ops` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `ops` bundle skills - see bundle [USAGE.md](../USAGE.md)

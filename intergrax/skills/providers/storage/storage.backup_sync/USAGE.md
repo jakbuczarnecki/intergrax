@@ -28,4 +28,4 @@ Governed access to: `storage.get`, `storage.put`, `workspace.snapshot`.
 
 ## Related skills
 
-- Other `storage` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `storage` bundle skills - see bundle [USAGE.md](../USAGE.md)

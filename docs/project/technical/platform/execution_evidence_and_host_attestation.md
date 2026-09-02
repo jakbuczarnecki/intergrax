@@ -68,7 +68,7 @@ GovernedExecutionResult (atomic: EvaluatedPolicyDecision + ProviderInvocation + 
 
 | Existing | Role | Reuse? |
 |----------|------|--------|
-| Harness `ExecutionBoundaryEventV1` (`execution_boundary_event.v1`) | Tool/step BoundaryAttest export | **Sibling** — not overloaded |
+| Harness `ExecutionBoundaryEventV1` (`execution_boundary_event.v1`) | Tool/step BoundaryAttest export | **Sibling** - not overloaded |
 | `HostAttestationSealer` / Ed25519 | Harness EBE-9 signing | Crypto + `canonical_json` patterns reused |
 | Live `RuntimePolicyBundle` dataclass | Nexus wiring composition | **Not** the attested pack |
 | `intergrax.proofs.receipts.ProofReceipt` | DocumentStore LKW persistence | **Not** the portable attested export |
@@ -89,7 +89,7 @@ Immutable pack: `bundle_id`, `version`, ordered `rules` (`rule_id`, `effect`, `m
 `RuntimePolicyBundleEvaluator` **interprets pack rules directly** and emits
 `EvaluatedPolicyDecision` (decision + bundle identity/digest + matched rule +
 request digest + evaluation timestamp). Pack identity is set at evaluation time
-— never stamped afterwards.
+- never stamped afterwards.
 
 `PolicyDecision` carries `policy_bundle_id` / `policy_bundle_version` /
 `policy_bundle_digest`. When attestation is required, missing pack identity
@@ -116,7 +116,7 @@ Default test/local: Ed25519 over canonical event bytes. DI-replaceable by KMS/HS
 Preferred composer input: `GovernedExecutionResult` via
 `attest_governed_execution_result` (strict first-class `invocation_id`).  
 Legacy adapter-result compose may use heuristic invocation fallback only for
-non-attested / compatibility paths — never for strict attested production.
+non-attested / compatibility paths - never for strict attested production.
 
 **PC-10 ports:** `HostKeyResolver`, `HostKeyMetadataProvider` (current key id,
 algorithm allowlist, deprecated verification keys).
@@ -135,15 +135,15 @@ No provider network. No authorization side effects. Verifier **never signs**.
 Receipt JSON + `key_id` alone is **not** sufficient. CLI requires exactly one of:
 
 ```bash
-# A — store-backed public key resolver
+# A - store-backed public key resolver
 uv run intergrax receipt verify receipt.json --store build/external_work_demo
 
-# B — explicit public key
+# B - explicit public key
 uv run intergrax receipt verify receipt.json \
   --public-key-file public_key.hex --key-id <KEY_ID>
 # or: --public-key-hex <HEX> --key-id <KEY_ID>
 
-# C — explicit local/test demo key (known demo key_id only)
+# C - explicit local/test demo key (known demo key_id only)
 uv run intergrax receipt verify receipt.json --demo-key
 ```
 
@@ -185,7 +185,7 @@ Host lifecycle / recovery / CLI: [`governed_external_work_host_lifecycle.md`](go
 | Policy DENY | No provider call; no success receipt |
 | Provider failure | No success receipt |
 | Proof composition failure | No signed receipt |
-| Attestation failure after success | `execution_succeeded=True`, `attestation_succeeded=False` — **do not** retry provider |
+| Attestation failure after success | `execution_succeeded=True`, `attestation_succeeded=False` - **do not** retry provider |
 | Missing attestor when required | Fail closed (no attested claim) |
 
 ---

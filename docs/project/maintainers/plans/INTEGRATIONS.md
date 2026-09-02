@@ -1,4 +1,4 @@
-# Integrations — Implementation Plan
+# Integrations - Implementation Plan
 
 **Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
@@ -6,15 +6,15 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
-**RAG engine (layer 14):** [`architecture/RAG.md`](../../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
+**RAG engine (layer 14):** [`architecture/RAG.md`](../../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) - M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
-**Last updated:** 2026-08-02 — **GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1** architecture frozen (`READY_FOR_REVIEW`); Google knowledge runtime **PLANNED** after complete Slack vertical — see [`plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md) Phase 10.
+**Last updated:** 2026-08-02 - **GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1** architecture frozen (`READY_FOR_REVIEW`); Google knowledge runtime **PLANNED** after complete Slack vertical - see [`plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md) Phase 10.
 
 ---
 
-## Active cross-feature work — LangChain Independence
+## Active cross-feature work - LangChain Independence
 
-### LCI-2A — Document parser boundary migration
+### LCI-2A - Document parser boundary migration
 
 | Field | Value |
 |-------|-------|
@@ -23,7 +23,7 @@
 | **Provider internals changed** | no |
 | **Provider optionalization** | LCI-5A APPROVED; LCI-5C READY_FOR_REVIEW |
 
-### LCI-3D — Native vector-store provider adapters
+### LCI-3D - Native vector-store provider adapters
 
 | Field | Value |
 |-------|-------|
@@ -41,7 +41,7 @@ Provider runtime matrix:
 | LanceDB | native | absent | keyword-only | verified | B metadata-scoped fallback |
 | Typesense | native | absent | keyword-only | verified | C unsupported, fail closed |
 
-### LCI-4B — Native rerank provider boundary
+### LCI-4B - Native rerank provider boundary
 
 | Field | Value |
 |-------|-------|
@@ -57,8 +57,8 @@ Provider runtime matrix:
 
 **Do not read this entire file in one session** (INTEGRATIONS plan).
 
-- **Implement / audit default:** Phase INT / H-INT hub queues · §6.1 open P0/P1 · M.6 expansion registers — satellite on demand
-- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Implement / audit default:** Phase INT / H-INT hub queues · §6.1 open P0/P1 · M.6 expansion registers - satellite on demand
+- **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) read-scope block only.
 - **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
@@ -68,14 +68,14 @@ Provider runtime matrix:
 
 <a id="protocol-v22-providerbackend-abstraction-remediation-2026-08-18"></a>
 
-### Protocol v2.2 — provider/backend abstraction remediation (2026-08-18)
+### Protocol v2.2 - provider/backend abstraction remediation (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-PROVIDER-BACKEND-ABSTRACTION-PERSIST-1.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-PROVIDER-BACKEND-ABSTRACTION-PERSIST-1.
 
 <a id="protocol-v22-pba-fix-b--observability-export-and-vendor-governance-2026-08-18"></a>
 
-#### PBA-FIX-B — Observability export boundary and vendor governance
+#### PBA-FIX-B - Observability export boundary and vendor governance
 
 **Status:** `ACCEPTED / PLANNED`
 **Findings:** [`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-02`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md), [`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-04`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)
@@ -90,7 +90,7 @@ Provider runtime matrix:
 
 <a id="protocol-v22-pba-fix-c--provider-owned-guardrail-configuration-2026-08-18"></a>
 
-#### PBA-FIX-C — Provider-owned guardrail configuration
+#### PBA-FIX-C - Provider-owned guardrail configuration
 
 **Status:** `ACCEPTED / PLANNED`
 **Finding:** [`AUDIT-20260818-PROVIDER_BACKEND_ABSTRACTION-03`](../../audit_results/2026-08-18/PROVIDER_BACKEND_ABSTRACTION.md)
@@ -113,14 +113,14 @@ Provider runtime matrix:
 
 <a id="protocol-v2-integrations-remediation-2026-08-18"></a>
 
-### Protocol v2 — integrations remediation (2026-08-18)
+### Protocol v2 - integrations remediation (2026-08-18)
 
 **Audit:** [`docs/audit_results/2026-08-18/INTEGRATIONS.md`](../../audit_results/2026-08-18/INTEGRATIONS.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
-**Status:** ACCEPTED findings — **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INTEGRATIONS-PERSIST.
+**Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-INTEGRATIONS-PERSIST.
 
 <a id="integrations-runtime-binding-integrity-2026-08-18"></a>
 
-#### INTEGRATIONS-RUNTIME-BINDING-INTEGRITY — typed pre-built instances, lifecycle eligibility, startup resolvability
+#### INTEGRATIONS-RUNTIME-BINDING-INTEGRITY - typed pre-built instances, lifecycle eligibility, startup resolvability
 
 **Status:** `ACCEPTED / PLANNED`
 **Findings:** [`AUDIT-20260818-INTEGRATIONS-01`](../../audit_results/2026-08-18/INTEGRATIONS.md), [`AUDIT-20260818-INTEGRATIONS-02`](../../audit_results/2026-08-18/INTEGRATIONS.md), [`AUDIT-20260818-INTEGRATIONS-03`](../../audit_results/2026-08-18/INTEGRATIONS.md)
@@ -128,15 +128,15 @@ Provider runtime matrix:
 **Outcome (planning only):**
 
 - One fail-closed host provider binding boundary covering typed pre-built instances, lifecycle eligibility, and startup resolvability.
-- Pre-built instances must satisfy the same category contract identity as catalog-created providers — validate provider/category/integration identity without removing dependency injection.
-- Provider lifecycle status (`STABLE` / `BETA` / `DEPRECATED`) gains explicit runtime/bootstrap qualification semantics — not decorative metadata.
-- Host readiness proves every profile-selected integration is registered and resolvable by the active runtime authority — fail fast before serving work.
+- Pre-built instances must satisfy the same category contract identity as catalog-created providers - validate provider/category/integration identity without removing dependency injection.
+- Provider lifecycle status (`STABLE` / `BETA` / `DEPRECATED`) gains explicit runtime/bootstrap qualification semantics - not decorative metadata.
+- Host readiness proves every profile-selected integration is registered and resolvable by the active runtime authority - fail fast before serving work.
 - Coordinate with planned **INTEGRATIONS-3B** explicit registry-backed runtime binding rather than building a competing resolver; cross-link 3B deliverables while keeping Protocol v2 finding IDs traceable.
 - Registry v2 remains additive metadata today; do not claim 3B shipped until implementation lands.
 
 <a id="integrations-contract-metadata-integrity-2026-08-18"></a>
 
-#### INTEGRATIONS-CONTRACT-METADATA-INTEGRITY — lossless catalog metadata and canonical integration identity
+#### INTEGRATIONS-CONTRACT-METADATA-INTEGRITY - lossless catalog metadata and canonical integration identity
 
 **Status:** `ACCEPTED / PLANNED`
 **Findings:** [`AUDIT-20260818-INTEGRATIONS-04`](../../audit_results/2026-08-18/INTEGRATIONS.md), [`AUDIT-20260818-INTEGRATIONS-05`](../../audit_results/2026-08-18/INTEGRATIONS.md)
@@ -145,7 +145,7 @@ Provider runtime matrix:
 
 - Catalog `register_integration()` round-trips deployment/security metadata (`requires_local_container` and peers).
 - Conformance proof that registration preserves contractually meaningful provider metadata except documented normalization fields.
-- `PlatformIntegrationContract` enforces one canonical identity truth — derive `integration_id` from `provider_id:integration_kind` or validate strict equality at construction.
+- `PlatformIntegrationContract` enforces one canonical identity truth - derive `integration_id` from `provider_id:integration_kind` or validate strict equality at construction.
 - Registry v2 `(provider_id, category)` identity must not disagree with base integration contract identity.
 
 **Remediation rules:**
@@ -157,14 +157,14 @@ Provider runtime matrix:
 
 ---
 
-## Phase H-INT-GRAPH — graph_store expansion (Planned)
+## Phase H-INT-GRAPH - graph_store expansion (Planned)
 
 **Purpose:** New `graph_store` vendor slugs required before RAG adapters M-RAG.49–M-RAG.51.  
 **RAG coordination:** [`plan/RAG.md`](RAG.md) Wave G4 · GAP-RAG-33.
 
 | ID | Slug | Category | Priority | Status | RAG deliverable | Notes |
 |----|------|----------|----------|--------|-----------------|-------|
-| H-INT-GRAPH-1 | `neptune` | graph_store | **P3** | **Done** | M-RAG.49 | AWS Neptune — OpenCypher HTTP bridge |
+| H-INT-GRAPH-1 | `neptune` | graph_store | **P3** | **Done** | M-RAG.49 | AWS Neptune - OpenCypher HTTP bridge |
 | H-INT-GRAPH-2 | `orientdb` | graph_store | **P3** | **Done** | M-RAG.50 | OrientDB OpenCypher HTTP bridge |
 | H-INT-GRAPH-3 | `arangodb` | graph_store | **P3** | **Done** | M-RAG.51 | ArangoDB AQL HTTP bridge |
 
@@ -189,7 +189,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase INTEGRATIONS-2A — provider category contracts (Done)
+## Phase INTEGRATIONS-2A - provider category contracts (Done)
 
 **Purpose:** Category-specific base contracts aligned with `layout.py` `SLUG_CATEGORY` taxonomy before concrete provider migration.  
 **Architecture:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-category-contract-layer-integrations-2a)
@@ -208,7 +208,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase INTEGRATIONS-2B — observability provider contract migration pilot (Done — pattern hardened)
+## Phase INTEGRATIONS-2B - observability provider contract migration pilot (Done - pattern hardened)
 
 **Purpose:** Adapt existing `observability_backend` provider packages to category contracts without duplicating providers.  
 **Architecture:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up)
@@ -231,17 +231,17 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase INTEGRATIONS-2C — observability_backend provider contract migration (Done)
+## Phase INTEGRATIONS-2C - observability_backend provider contract migration (Done)
 
 **Purpose:** Migrate all existing `observability_backend` provider packages to **`ObservabilityVendorIntegrationContract`** using the Langfuse reference pattern.  
 **Architecture:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up)
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **INTEGRATIONS-2C-WAVE1** | Code | P1 | **Done** | LLM/agent observability providers | Arize, Phoenix, Langsmith, Helicone, Braintrust, W&B — `integration.py` + contract factory; legacy facade unchanged |
-| **INTEGRATIONS-2C-WAVE2** | Code | P1 | **Done** | Telemetry/APM/log vendors | Datadog, Sentry, SigNoz, Honeycomb, New Relic, Splunk, PostHog — same pattern |
-| **INTEGRATIONS-2C-WAVE3** | Code | P1 | **Done** | OpenTelemetry/storage/query backends | Prometheus, Elasticsearch, OpenSearch, OTel, OpenTelemetry Collector, Grafana, Loki, Tempo, InfluxDB, ClickHouse, MLflow — same pattern |
-| **INTEGRATIONS-2C-TESTS** | Test | P1 | **Done** | Parametrized conformance suite | `test_observability_provider_contract_migration.py` — shared tests for all migrated slugs |
+| **INTEGRATIONS-2C-WAVE1** | Code | P1 | **Done** | LLM/agent observability providers | Arize, Phoenix, Langsmith, Helicone, Braintrust, W&B - `integration.py` + contract factory; legacy facade unchanged |
+| **INTEGRATIONS-2C-WAVE2** | Code | P1 | **Done** | Telemetry/APM/log vendors | Datadog, Sentry, SigNoz, Honeycomb, New Relic, Splunk, PostHog - same pattern |
+| **INTEGRATIONS-2C-WAVE3** | Code | P1 | **Done** | OpenTelemetry/storage/query backends | Prometheus, Elasticsearch, OpenSearch, OTel, OpenTelemetry Collector, Grafana, Loki, Tempo, InfluxDB, ClickHouse, MLflow - same pattern |
+| **INTEGRATIONS-2C-TESTS** | Test | P1 | **Done** | Parametrized conformance suite | `test_observability_provider_contract_migration.py` - shared tests for all migrated slugs |
 
 **INTEGRATIONS-2C status (2026-06-28):**
 
@@ -250,7 +250,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - Legacy **`create_<slug>_observability_backend`** / **`register_<slug>_integration`** remain backward-compatible; **`register.py`** still registers legacy facade only
 - **`enabled=True`** without transport raises **`IntegrationConfigurationError`**; no vendor SDK imports in `integration.py`; no network I/O in tests
 - **Registry v2 / contract registry wiring remains deferred**
-- **Deferred providers:** none — full `observability_backend` category complete
+- **Deferred providers:** none - full `observability_backend` category complete
 - **OBS-EXPORT-5 linkage:** contract adapters complete; production vendor transports and operator wiring pending (not production export done)
 - No LKW change; no global bootstrap registration
 
@@ -258,7 +258,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase INTEGRATIONS-2D — remaining provider category contract migration (Done)
+## Phase INTEGRATIONS-2D - remaining provider category contract migration (Done)
 
 **Purpose:** Migrate all non-`observability_backend` provider slugs in `SLUG_CATEGORY` to category-specific **`PlatformIntegrationContract`** subclasses using the Langfuse package pattern (not observability semantics).
 
@@ -270,7 +270,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **CONVERSATION-CHANNEL-1** | Code | P1 | **Done** | Conversational category | `conversation_channel` contract + seven contract-defined providers (runtime unbound); multi-category with notification for slack/teams/discord/telegram |
 | **INTEGRATIONS-2D-WAVE4** | Code | P1 | **Done** | Platform/security/ops | `cloud_platform`, `secrets_store`, `feature_flag`, `ci_cd`, `security_scanner`, `sandbox_host`, `identity_provider`, `workflow_orchestrator` |
 | **INTEGRATIONS-2D-WAVE5** | Code | P1 | **Done** | AI/service/business | `speech_provider`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm` |
-| **INTEGRATIONS-2D-TESTS** | Test | P1 | **Done** | Parametrized conformance suite | `test_provider_category_contract_migration.py` — completeness derived from `SLUG_CATEGORY` |
+| **INTEGRATIONS-2D-TESTS** | Test | P1 | **Done** | Parametrized conformance suite | `test_provider_category_contract_migration.py` - completeness derived from `SLUG_CATEGORY` |
 
 **INTEGRATIONS-2D status (2026-06-28):**
 
@@ -278,14 +278,14 @@ Load **only** the satellite matching your task or cited gap ID.
 - Legacy catalog factories unchanged; **`register.py`** remains legacy-compatible (no contract factory registration)
 - **`enabled=True`** without injectable client raises **`IntegrationConfigurationError`**; no vendor SDK imports in `integration.py`
 - **Registry v2 / contract registry wiring remains deferred**
-- **Deferred slugs (9):** `llm_guardrail` catalog slugs (`llm_guard`, `guardrails_ai`, `nemo_guardrails`, `openguardrails`, `presidio`, `llama_guard`, `lakera`, `azure_content_safety`, `bedrock_guardrails`) — shared `llm_guardrail/bundles` layout without per-slug provider packages
+- **Deferred slugs (9):** `llm_guardrail` catalog slugs (`llm_guard`, `guardrails_ai`, `nemo_guardrails`, `openguardrails`, `presidio`, `llama_guard`, `lakera`, `azure_content_safety`, `bedrock_guardrails`) - shared `llm_guardrail/bundles` layout without per-slug provider packages
 - No LKW change; no global bootstrap registration
 
 **Migrated categories (30):** all `SLUG_CATEGORY` folders except deferred `llm_guardrail` slugs (category contract exists; per-slug packages deferred).
 
 ---
 
-## Phase INTEGRATIONS-2E — runtime cutover to single provider entrypoint (Done)
+## Phase INTEGRATIONS-2E - runtime cutover to single provider entrypoint (Done)
 
 **Purpose:** Convert contract migration shells into real single-entrypoint providers. Each slug exposes exactly one public class: `<ProviderPascal><CategoryPascal>Integration`. Legacy catalog factories remain as compatibility shims delegating to that class; parallel public adapter/facade classes are removed or privatized.
 
@@ -306,23 +306,23 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **INTEGRATIONS-2E status (2026-06-29):**
 
-- Cut over (behavior tests pass): **185 slugs** — all `SLUG_CATEGORY` entries except deferred `llm_guardrail` (includes e.g. `chroma`, `slack`, `filesystem`, `github` across all 30 migrated categories)
-- Legacy catalog factories (e.g. `create_<slug>_vector_store`, `create_<slug>_notification_channel`) are compatibility shims — construct the Integration class directly or via `.from_store()` / `.as_*()` views
+- Cut over (behavior tests pass): **185 slugs** - all `SLUG_CATEGORY` entries except deferred `llm_guardrail` (includes e.g. `chroma`, `slack`, `filesystem`, `github` across all 30 migrated categories)
+- Legacy catalog factories (e.g. `create_<slug>_vector_store`, `create_<slug>_notification_channel`) are compatibility shims - construct the Integration class directly or via `.from_store()` / `.as_*()` views
 - Public `adapter.py` removed for cut-over slugs; no symbol shadowing in `bundle.py`
 - Contract factory unchanged; `register.py` remains legacy catalog hook
 - No registry v2; no LKW change; no bootstrap change
 
-**Cut-over registry:** `CUTOVER_SLUGS` in `tests/unit/integrations/providers/test_provider_runtime_cutover.py` — derived from `SLUG_CATEGORY` minus deferred `llm_guardrail` slugs (not a hand-maintained subset)
+**Cut-over registry:** `CUTOVER_SLUGS` in `tests/unit/integrations/providers/test_provider_runtime_cutover.py` - derived from `SLUG_CATEGORY` minus deferred `llm_guardrail` slugs (not a hand-maintained subset)
 
-**Deferred (9):** `azure_content_safety`, `bedrock_guardrails`, `guardrails_ai`, `lakera`, `llama_guard`, `llm_guard`, `nemo_guardrails`, `openguardrails`, `presidio` — shared `bundles` layout; do not mark cut over until package normalization.
+**Deferred (9):** `azure_content_safety`, `bedrock_guardrails`, `guardrails_ai`, `lakera`, `llama_guard`, `llm_guard`, `nemo_guardrails`, `openguardrails`, `presidio` - shared `bundles` layout; do not mark cut over until package normalization.
 
 ---
 
-## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+## Phase AUDIT-IDEAL - Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+**Status:** **Planned** - incremental after IDEAL-L3 W2 closeout
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
@@ -333,7 +333,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-### 6.1d Harness implementation queue — integration closeout (closed)
+### 6.1d Harness implementation queue - integration closeout (closed)
 
 **Purpose:** Single ordered list for **Phase INT** (Band 2l). **Closed 2026-06-02**.
 
@@ -346,11 +346,11 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-### 6.1x Harness implementation queue — Integration depth (M.6 P5 done)
+### 6.1x Harness implementation queue - Integration depth (M.6 P5 done)
 
-**Purpose:** Closeout record for **Phase M.6 P5** (Band 2ab). **Status:** **Done** (2026-06-02) — **33/34**.  
-**Register:** [M.6 P5 — Master register](.#m6-p5--master-register-34-slugs) · **Execution order:** [§6.2af](.#62af-phase-m6-p5-execution-order-band-2ab--planned)
-**Policy:** One slug per PR (or one harden wave ≤4 slugs); runs **in parallel** with §6.1 maintenance — pull when W-OPS / W-ADAPT / EVAL / prod stack needs the slug.
+**Purpose:** Closeout record for **Phase M.6 P5** (Band 2ab). **Status:** **Done** (2026-06-02) - **33/34**.  
+**Register:** [M.6 P5 - Master register](.#m6-p5--master-register-34-slugs) · **Execution order:** [§6.2af](.#62af-phase-m6-p5-execution-order-band-2ab--planned)
+**Policy:** One slug per PR (or one harden wave ≤4 slugs); runs **in parallel** with §6.1 maintenance - pull when W-OPS / W-ADAPT / EVAL / prod stack needs the slug.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
 |-------|------|-----|-----------------|----------|--------|
@@ -363,11 +363,11 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](.#m6-p5--harness-integration-depth-done--3334).
 
-### 6.1y Harness implementation queue — Integration expansion (M.6 P6 Done)
+### 6.1y Harness implementation queue - Integration expansion (M.6 P6 Done)
 
-**Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) — **32/32**.  
-**Register:** [M.6 P6 — Master register](.#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](.#62ag-phase-m6-p6-execution-order-band-2ac--done)
-**Policy:** One slug per PR (or one CAT wave before first slug in a new category); runs **in parallel** with §6.1 maintenance — pull when security/sandbox/identity/GitOps/speech harness gaps block ops.
+**Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) - **32/32**.  
+**Register:** [M.6 P6 - Master register](.#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](.#62ag-phase-m6-p6-execution-order-band-2ac--done)
+**Policy:** One slug per PR (or one CAT wave before first slug in a new category); runs **in parallel** with §6.1 maintenance - pull when security/sandbox/identity/GitOps/speech harness gaps block ops.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
 |-------|------|-----|-----------------|----------|--------|
@@ -387,10 +387,10 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Closeout target:** catalog **167** slugs; optional `HARNESS_M6_P6_PROBE_SLUGS`; four Tier-3 presets; gate green.
 
-### 6.1z Harness implementation queue — Agent-developer expansion (M.7 P7 done)
+### 6.1z Harness implementation queue - Agent-developer expansion (M.7 P7 done)
 
-**Purpose:** Ordered backlog for **Phase M.7 P7** (Band 2ad). **Status:** **Done** (2026-06-08) — **18/18**.  
-**Register:** [M.7 P7 — Master register](.#m7-p7--agent-developer-integration-expansion-done--1818)
+**Purpose:** Ordered backlog for **Phase M.7 P7** (Band 2ad). **Status:** **Done** (2026-06-08) - **18/18**.  
+**Register:** [M.7 P7 - Master register](.#m7-p7--agent-developer-integration-expansion-done--1818)
 **Policy:** Reuse existing category contracts; `_shared/p8` thin factories; auto-wire `search_provider` / `document_parser` / `vector_store` catalog tools.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
@@ -400,13 +400,13 @@ Load **only** the satellite matching your task or cited gap ID.
 | 3 | H-INT-P7-3 | M-P7.10–M-P7.14 | Workflow + wiki + identity + cache: `n8n`, `wikipedia`, `clerk`, `upstash_redis`, `upstash_qstash` | **P0/P1** | **Done** |
 | 4 | H-INT-P7-4 | M-P7.15–M-P7.18 | Data warehouse: `okta`, `bigquery`, `motherduck`, `airbyte` | **P1** | **Done** |
 | 5 | PRE | M-P7-PRE.1 | Tier-3 presets: `research_web_stack`, `document_ingest_stack`, `chat_bot_stack` | **P0** | **Done** |
-| 6 | WIRE | M-P7-WIRE.1 | `extend_tool_profile_for_integration` — search/RAG auto-wiring | **P0** | **Done** |
+| 6 | WIRE | M-P7-WIRE.1 | `extend_tool_profile_for_integration` - search/RAG auto-wiring | **P0** | **Done** |
 
 **Closeout target:** catalog **185** slugs; `HARNESS_M7_P7_PROBE_SLUGS`; three Tier-3 presets; gate green.
 
 ---
 
-### 6.2bd Phase INT execution order (Band 2l — closed 2026-06-02)
+### 6.2bd Phase INT execution order (Band 2l - closed 2026-06-02)
 
 **Status:** **Done** · register: [Phase INT](plan/INTEGRATIONS.md) · queue: [§6.1d](.#61d-harness-implementation-queue--integration-closeout-closed)
 
@@ -418,7 +418,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-### 6.2bc Phase TS execution order (Band 2k — closed 2026-06-02)
+### 6.2bc Phase TS execution order (Band 2k - closed 2026-06-02)
 
 **Status:** **Done** · register: [Phase TS](plan/TOOLS.md) · queue: [§6.1c](.#61c-harness-implementation-queue--toolsskills-closeout-closed)
 
@@ -427,13 +427,13 @@ Work **one TS ID per PR**; after each step update the TS master table + §6.1c +
 | Step | ID | Deliverable | Priority | Depends on |
 |------|-----|-------------|----------|------------|
 | 1 | TS-1 | `catalog_runtime_bridge` + `materialize_runtime_config` | Critical | TS-DOC.* (parallel OK) |
-| 2 | TS-2 | Harness host LLM adapter wiring | High | — |
-| 3 | TS-3 | `SkillResolverProtocol` | Medium | — |
+| 2 | TS-2 | Harness host LLM adapter wiring | High | - |
+| 3 | TS-3 | `SkillResolverProtocol` | Medium | - |
 | 4 | TS-DOC.1–2 | Appendix J + plan sync | Low | TS-1–3 |
 
 ---
 
-### 6.2af Phase M.6 P5 execution order (Band 2ab — Planned)
+### 6.2af Phase M.6 P5 execution order (Band 2ab - Planned)
 
 **Status:** **Done** (2026-06-02) · register: [M.6 P5](.#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](.#61x-harness-implementation-queue--integration-depth-m6-p5-done)
 
@@ -448,7 +448,7 @@ Wave PRE (presets):         M-P5-PRE.1  (after H-INT-6 P0 slugs wired)
 
 **Prerequisites:** Phase M.6 P4 **Done**; M-P4.FU wiring **Done**; Phase INT closeout **Done** (health probe patterns).  
 **Parallelism:** H-INT-6 unblocks W-OPS metrics + multi-CI; H-INT-7 unblocks EVAL/W-ADAPT; H-INT-8 is lab-only.  
-**Closeout target:** catalog **136** slugs; `HARNESS_M6_P5_PROBE_SLUGS` + four Tier-3 presets; gate green.### 6.2ae Phase M.6 P4 execution order (Band 2aa — Done)
+**Closeout target:** catalog **136** slugs; `HARNESS_M6_P5_PROBE_SLUGS` + four Tier-3 presets; gate green.### 6.2ae Phase M.6 P4 execution order (Band 2aa - Done)
 
 **Status:** **Done** (2026-06-02) · register: [M.6 P4](.#m6-p4--harness-platform-expansion-done) · queue: [§6.1w](.#61w-harness-implementation-queue--integration-expansion-m6-p4-closed)
 
@@ -462,52 +462,52 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 ```
 
 **Prerequisites:** Phase M core + M.6 P1/P2/P3 **Done**; Phase INT closeout **Done** (health probe patterns).  
-**Parallelism:** Any wave after H-INT-0 may start when a slug is needed — prefer H-INT-1 → H-INT-2 → H-INT-3 order for W-OPS/adaptive unblock.  
-**Closeout:** **Done** — catalog **127** in `layout.py`; `tests/unit/integrations/providers/test_p5_m6_p4_providers.py` (42 tests).
+**Parallelism:** Any wave after H-INT-0 may start when a slug is needed - prefer H-INT-1 → H-INT-2 → H-INT-3 order for W-OPS/adaptive unblock.  
+**Closeout:** **Done** - catalog **127** in `layout.py`; `tests/unit/integrations/providers/test_p5_m6_p4_providers.py` (42 tests).
 
 ---
 
-## Phase INTEGRATIONS-LC — Full Harness Layer Completion closeout (2026-06-17)
+## Phase INTEGRATIONS-LC - Full Harness Layer Completion closeout (2026-06-17)
 
-**Status:** **Done** (2026-06-17) — re-validates M.6 P5/P6, M.7 P7, M.12, H-INT-GRAPH; no open P0/P1  
+**Status:** **Done** (2026-06-17) - re-validates M.6 P5/P6, M.7 P7, M.12, H-INT-GRAPH; no open P0/P1  
 **Prerequisites:** Phase INT **Closed** · catalog **185** slugs · AUDIT-IDEAL-13.1/13.2 **Done**  
-**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**Goal:** Formal Full Harness LC closeout - gate verification, journal  
 **ADR:** **No ADR needed**
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| INTEGRATIONS-LC-S1 | **Re-audit** — M.6/M.7/M.12 register + tier-0 verdict | **Done** | High | No P0/P1 |
-| INTEGRATIONS-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| INTEGRATIONS-LC-S1 | **Re-audit** - M.6/M.7/M.12 register + tier-0 verdict | **Done** | High | No P0/P1 |
+| INTEGRATIONS-LC-S2 | **Plan/architecture sync** - Full Harness LC note | **Done** | High | Domain pair consistent |
 | INTEGRATIONS-LC-S3 | **Gate verification** | **Done** | High | 550 unit tests · 2 CI gate scripts |
 | INTEGRATIONS-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
 **Deferred P2–P4:** beta→stable slug promotion honesty · thin P4 provider shells · SaaS-only slugs without local container · nginx/ingress slug (ECP cross-ref)
 
-### 6.1av Harness implementation queue — Integrations audit maintenance (planned)
+### 6.1av Harness implementation queue - Integrations audit maintenance (planned)
 
-**Source:** Layer 11 audit (2026-06-18) — `INTEGRATIONS` layer 13 · [`../audit_results/2026-06-18/INTEGRATIONS.md`](../../../audit_results/2026-06-18/INTEGRATIONS.md)
-**Priority ladder:** **Band 1** (§6.1) — catalog honesty + provider depth; **one ID per PR**
+**Source:** Layer 11 audit (2026-06-18) - `INTEGRATIONS` layer 13 · [`../audit_results/2026-06-18/INTEGRATIONS.md`](../../../audit_results/2026-06-18/INTEGRATIONS.md)
+**Priority ladder:** **Band 1** (§6.1) - catalog honesty + provider depth; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **INT-MAINT-01** | CI | P2 | **Done** | Beta→stable promotion gate — `check_integration_maturity_labels.py` or conformance extension | STABLE slugs have health probe + test evidence |
-| 2 | **INT-MAINT-02** | Code | P3 | **Done** | Thin P4 provider shells — hardening checklist + minimal health probe per shell | Each P4 shell passes probe unit test |
-| 3 | **INT-MAINT-03** | Docs/Metadata | P3 | **Done** | SaaS-only slugs — honest lab-stack docs + `requires_local_container` metadata | Manifest field + USAGE honesty |
-| 4 | **INT-MAINT-04** | Cross-ref | P4 | **Done** | nginx/ingress slug — cross-ref [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | ECP owns slug; INT documents bridge |
+| 1 | **INT-MAINT-01** | CI | P2 | **Done** | Beta→stable promotion gate - `check_integration_maturity_labels.py` or conformance extension | STABLE slugs have health probe + test evidence |
+| 2 | **INT-MAINT-02** | Code | P3 | **Done** | Thin P4 provider shells - hardening checklist + minimal health probe per shell | Each P4 shell passes probe unit test |
+| 3 | **INT-MAINT-03** | Docs/Metadata | P3 | **Done** | SaaS-only slugs - honest lab-stack docs + `requires_local_container` metadata | Manifest field + USAGE honesty |
+| 4 | **INT-MAINT-04** | Cross-ref | P4 | **Done** | nginx/ingress slug - cross-ref [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | ECP owns slug; INT documents bridge |
 
 **Suggested PR order:** INT-MAINT-01 → INT-MAINT-03 → INT-MAINT-02 → INT-MAINT-04.
 
-**Explicitly excluded from MAINT:** H-INT-GRAPH — remains in existing phase register (post IDEAL-L3 W2).
+**Explicitly excluded from MAINT:** H-INT-GRAPH - remains in existing phase register (post IDEAL-L3 W2).
 
 ### Speech catalog alignment (MOD-SPEECH-ARCH cross-ref)
 
 **Source:** Idea audit 2026-06-19 · [ADR-MOD-001](../../technical/adr/entries/2026-06-19/ADR-MOD-001.md)
 **Owner domain:** [`plan/MODALITY.md`](MODALITY.md) MOD-SPEECH-ARCH.*  
-**Policy:** Hard cutover — delete `SpeechProvider` enum legacy; no transitional compatibility layer.
+**Policy:** Hard cutover - delete `SpeechProvider` enum legacy; no transitional compatibility layer.
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **INT-SPEECH-ARCH.1** | Docs/Code | P2 | **Done** | Canon sync — `speech_provider` is sole vendor path for `speech.*` tools; remove enum references from integration wiring docs | [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) §Speech provider + MOD-SPEECH-ARCH gates green |
+| 1 | **INT-SPEECH-ARCH.1** | Docs/Code | P2 | **Done** | Canon sync - `speech_provider` is sole vendor path for `speech.*` tools; remove enum references from integration wiring docs | [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) §Speech provider + MOD-SPEECH-ARCH gates green |
 
 Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring unification).
 
@@ -521,12 +521,12 @@ Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring
 
 ---
 
-## Phase INT-P8 — Dynamic Integration Selection & Agent Workspace Gateways (Planned)
+## Phase INT-P8 - Dynamic Integration Selection & Agent Workspace Gateways (Planned)
 
-**Status:** **Planned** — architecture & implementation backlog only (no code in this phase doc update)  
+**Status:** **Planned** - architecture & implementation backlog only (no code in this phase doc update)  
 **Prerequisites:** Phase INTEGRATIONS-LC **Done** · catalog **194** shipped slugs (`layout.py`) · Full Harness LC unchanged  
-**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) — §Phase INT-P8
-**Catalog (planned slugs):** [`architecture/satellites/INTEGRATIONS_provider_catalog.md`](../../architecture/satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8
+**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) - §Phase INT-P8
+**Catalog (planned slugs):** [`architecture/satellites/INTEGRATIONS_provider_catalog.md`](../../architecture/satellites/INTEGRATIONS_provider_catalog.md) - §INT-P8
 **Band:** 2ae (post–Full Harness LC strategic depth)  
 **Policy:** One implementation ID per PR; **do not** register planned slugs in `layout.py` until the matching task PR; **do not** mark any INT-P8 task **Done** until code ships.
 
@@ -534,7 +534,7 @@ Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring
 
 | Layer | This update | Follow-up PRs |
 |-------|-------------|---------------|
-| Architecture canon | INT-P8 boundaries, invariants, product mapping, non-goals | — |
+| Architecture canon | INT-P8 boundaries, invariants, product mapping, non-goals | - |
 | Provider catalog satellite | Planned categories/slugs (**Planned**, not shipped) | Register slug + contract + tests per task |
 | Runtime / `layout.py` | **No change** | Per INT-P8.2–INT-P8.6 task |
 | Tier-3 presets (`presets.py`) | Document only (INT-P8.9) | Preset functions in dedicated PR |
@@ -543,11 +543,11 @@ Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring
 ### Execution order (recommended)
 
 ```text
-Wave ARCH:  INT-P8.12 (docs — this update) → INT-P8.1 (selection metadata design)
+Wave ARCH:  INT-P8.12 (docs - this update) → INT-P8.1 (selection metadata design)
 Wave CORE:  INT-P8.7 (selection engine contract) → INT-P8.8 (ToolRuntime policy alignment)
 Wave GATE:  INT-P8.2 (mcp) ∥ INT-P8.3 (openapi_http) ∥ INT-P8.4 (local_workspace) ∥ INT-P8.5 (local_git)
-Wave INTEL: INT-P8.6 (sourcegraph) — after INT-P8.5 recommended
-Wave PRE:   INT-P8.9 (Tier-3 presets) — after gateway providers wired
+Wave INTEL: INT-P8.6 (sourcegraph) - after INT-P8.5 recommended
+Wave PRE:   INT-P8.9 (Tier-3 presets) - after gateway providers wired
 Wave MAP:   INT-P8.10 (product mapping validation) · INT-P8.11 (non-goals gate in reviews)
 ```
 
@@ -564,7 +564,7 @@ Wave MAP:   INT-P8.10 (product mapping validation) · INT-P8.11 (non-goals gate 
 | **INT-P8.3** | OpenAPI HTTP Connector (`api_connector` / `openapi_http`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Load OpenAPI from file/URL; list/describe operations; request schema validation; read-only execution; write ops only with ToolRuntime approval; HTTP method risk classification; auth metadata; health probe; mock API server; tests: GET/POST, auth missing, schema invalid, blocked unsafe method |
 | **INT-P8.4** | Local Workspace Integration (`workspace_store` / `local_workspace`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Root-scoped workspace; list tree, read, text search; write/delete/move gated; glob allow/deny; file size limit; path traversal + symlink escape blocked; health probe; security path tests; **not** a alias of `filesystem` object storage |
 | **INT-P8.5** | Local Git Worktree Integration (`code_repository` / `local_git`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Repo detection; status, branch, changed files, diff, log, read file at ref, blame; apply_patch + commit approval-gated; push **out of scope**; branch allowlist; dirty repo detection; health probe; temp-repo tests |
-| **INT-P8.6** | Code Intelligence Integration (`code_intelligence` / `sourcegraph`) | Code | **P1** | **Planned** | INT-P8.1 | `sourcegraph`: code/symbol/commit/diff/repo search, fetch file by repo/ref/path, repo allowlist, read-only contract, health probe, mock GraphQL tests, no-token-logging test; `github_code` optional follow-up — **not** in first wave |
+| **INT-P8.6** | Code Intelligence Integration (`code_intelligence` / `sourcegraph`) | Code | **P1** | **Planned** | INT-P8.1 | `sourcegraph`: code/symbol/commit/diff/repo search, fetch file by repo/ref/path, repo allowlist, read-only contract, health probe, mock GraphQL tests, no-token-logging test; `github_code` optional follow-up - **not** in first wave |
 | **INT-P8.7** | Integration Selection Engine Contract | Design + Code | **P0** | **Planned** | INT-P8.1 | Input: task intent, required capabilities, risk tolerance, locality, read/write, data sensitivity; output: category, provider slug, operation, reason, required approvals; candidate ranking, fallback, safe refusal, explainability, trace/diagnostic event |
 | **INT-P8.8** | ToolRuntime Policy Gate Alignment | Design + Code | **P0** | **Planned** | INT-P8.1 | Read-only without approval; write with approval; destructive with explicit HITL; external side effects always via ToolRuntime; MCP tool classification pre-exec; OpenAPI unsafe methods blocked default; workspace write/delete/move gated; git commit/patch gated; audit trail for all side effects; cross-ref [`plan/TOOLS.md`](TOOLS.md) |
 | **INT-P8.9** | New Tier-3 Integration Presets | Code | **P1** | **Planned** | INT-P8.2–INT-P8.6 (partial OK per preset) | `local_workspace_stack()`, `coding_agent_stack()`, `enterprise_api_stack()`, `mcp_gateway_stack()` documented + implemented in `registry/presets.py`; each composes existing + new slugs per architecture §INT-P8.9 |
@@ -574,7 +574,7 @@ Wave MAP:   INT-P8.10 (product mapping validation) · INT-P8.11 (non-goals gate 
 
 ---
 
-### INT-P8.9 — Tier-3 preset composition (planned)
+### INT-P8.9 - Tier-3 preset composition (planned)
 
 | Preset | Composes (existing + planned) |
 |--------|------------------------------|
@@ -585,7 +585,7 @@ Wave MAP:   INT-P8.10 (product mapping validation) · INT-P8.11 (non-goals gate 
 
 ---
 
-### INT-P8.10 — Product mapping
+### INT-P8.10 - Product mapping
 
 | Product / agent class | Primary INT-P8 stack | Key integrations |
 |----------------------|---------------------|------------------|
@@ -600,7 +600,7 @@ Wave MAP:   INT-P8.10 (product mapping validation) · INT-P8.11 (non-goals gate 
 
 ---
 
-### INT-P8.11 — Explicit non-goals
+### INT-P8.11 - Explicit non-goals
 
 INT-P8 implementation PRs **MUST NOT** add:
 

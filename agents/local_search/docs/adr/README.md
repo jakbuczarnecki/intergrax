@@ -1,4 +1,4 @@
-﻿# local_search agent — Architecture Decision Records
+﻿# local_search agent - Architecture Decision Records
 
 **Domain:** Tier-2 business agent (`agents/local_search`)
 
@@ -36,7 +36,7 @@ ADR-LOCAL_SEARCH-{NNN}.md
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| — | *No agent ADRs yet* | — |
+| - | *No agent ADRs yet* | - |
 
 ---
 

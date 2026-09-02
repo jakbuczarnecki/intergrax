@@ -1,10 +1,10 @@
-# CODE_CRAFT — §7+ extended architecture
+# CODE_CRAFT - §7+ extended architecture
 
 **Parent hub:** [`CODE_CRAFT.md`](../CODE_CRAFT.md)
 
 ## 7. Tool surface (`codecraft.*`)
 
-Catalog tools **Done** (ECC-1…ECC-5) — all route through `ToolRuntime`:
+Catalog tools **Done** (ECC-1…ECC-5) - all route through `ToolRuntime`:
 
 | tool_id | Role |
 |---------|------|
@@ -16,7 +16,7 @@ Catalog tools **Done** (ECC-1…ECC-5) — all route through `ToolRuntime`:
 | `codecraft.dispose` | Release resources |
 | `codecraft.list_ephemeral_tools` | Introspection for active craft session |
 
-**Low-level primitives remain:** `code.exec`, `sandbox.exec`, `script.run` — for direct agent use when full ECC loop is not needed. ECC is the **governed orchestration path**; primitives are **substrate escape hatches**.
+**Low-level primitives remain:** `code.exec`, `sandbox.exec`, `script.run` - for direct agent use when full ECC loop is not needed. ECC is the **governed orchestration path**; primitives are **substrate escape hatches**.
 
 ---
 
@@ -54,7 +54,7 @@ sequenceDiagram
     ECC-->>Agent: structured output + craft transcript ref
 ```
 
-**CVL integration:** ECC uses `CriticOrchestrator` / L0Gateway for structural verdicts — not a parallel critic stack. Semantic pass optional via `eval.judge` when profile enables L1.
+**CVL integration:** ECC uses `CriticOrchestrator` / L0Gateway for structural verdicts - not a parallel critic stack. Semantic pass optional via `eval.judge` when profile enables L1.
 
 ---
 
@@ -105,7 +105,7 @@ sequenceDiagram
 
 Correlation: `craft_id` ↔ `sandbox_session_id` ↔ `task_id` ↔ `run_id` ↔ `correlation_id`.
 
-### 10.2 Metrics (shipped — ECC-MAINT-04)
+### 10.2 Metrics (shipped - ECC-MAINT-04)
 
 - Iterations to success, static gate failure rate, exec vs generation time ratio, token cost per craft, HITL rate in supervised mode.
 - Emitted via ``codecraft.metrics_snapshot`` trace step and ``CodeCraftMetricsSnapshot.to_panel()`` (`runtime/codecraft/trace.py`).
@@ -120,11 +120,11 @@ CodeCraft may synthesize, test and execute short-lived helper code **only** thro
 
 CodeCraft **MUST NOT** become a second autonomous runtime, private tool system or unrestricted code execution channel.
 
-ECC is a **controlled, auditable, sandboxed auxiliary mechanism** — not an alternate AgentEngine, Nexus loop, or agent-local subprocess runtime. Agents declare goals and invoke `codecraft.*` through `ToolRuntime`; the Harness owns orchestration, gating, execution substrate, verification and promotion boundaries.
+ECC is a **controlled, auditable, sandboxed auxiliary mechanism** - not an alternate AgentEngine, Nexus loop, or agent-local subprocess runtime. Agents declare goals and invoke `codecraft.*` through `ToolRuntime`; the Harness owns orchestration, gating, execution substrate, verification and promotion boundaries.
 
 **Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §10 · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`TOOLS.md`](TOOLS.md) · [`SKILLS.md`](SKILLS.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`INTEGRATIONS.md`](INTEGRATIONS.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §21
 
-Implementation profile modes (`disabled`, `dry_run`, `assist_only`, `supervised`, `autonomous`) — §6.3 — map onto the governance-facing [execution modes](.#execution-modes) below. When in doubt, treat **Lab** or **Supervised** as the safe default; **Governed production** is never implicit.
+Implementation profile modes (`disabled`, `dry_run`, `assist_only`, `supervised`, `autonomous`) - §6.3 - map onto the governance-facing [execution modes](.#execution-modes) below. When in doubt, treat **Lab** or **Supervised** as the safe default; **Governed production** is never implicit.
 
 ---
 
@@ -170,7 +170,7 @@ CodeCraft **MUST NOT**:
 
 ## Execution modes
 
-Governance-facing modes for operators, reviewers and Cursor. Map to `CodeCraftProfile.mode` and isolation settings — §6.2–§6.3.
+Governance-facing modes for operators, reviewers and Cursor. Map to `CodeCraftProfile.mode` and isolation settings - §6.2–§6.3.
 
 ### Disabled
 
@@ -207,7 +207,7 @@ CodeCraft may run in production **only** when **all** conditions are met:
 
 **Governed production is not the default.**
 
-Typical profile mapping: `autonomous` or `supervised` with `isolation_tier=container` or `cloud`, production `CodeCraftProfile`, and documented four-axis maturity — not `local` subprocess isolation alone.
+Typical profile mapping: `autonomous` or `supervised` with `isolation_tier=container` or `cloud`, production `CodeCraftProfile`, and documented four-axis maturity - not `local` subprocess isolation alone.
 
 ---
 
@@ -236,7 +236,7 @@ See also §9 (Security and isolation) and [`INTEGRATIONS.md`](INTEGRATIONS.md) (
 
 ## Promotion boundary
 
-Generated helper code is **ephemeral by default** — scoped to `craft_id` and disposed unless explicitly promoted.
+Generated helper code is **ephemeral by default** - scoped to `craft_id` and disposed unless explicitly promoted.
 
 Promotion into durable tool/catalog code requires:
 
@@ -295,20 +295,20 @@ Before adding or modifying CodeCraft behavior, Cursor must verify:
 
 | Capability | Status (2026-06-13) | Notes |
 |------------|----------------------|-------|
-| Isolated exec | **Done** — `runtime/sandbox`, `code.exec` | Substrate reused |
-| Cloud sandbox | **Done** — `HostedSandboxSession`, e2b/modal/daytona | ECC-4 default for regulated hosts |
-| Tool policy | **Done** — `SANDBOX_REQUIRED_TOOLS`, UAEP gateway | Extended for `codecraft.*` |
-| Harness craft loop | **Done** — `CodeCraftOrchestrator` | ECC-2 |
-| Ephemeral tool registry | **Done** — task-scoped registry | ECC-5 |
-| CodeCraftProfile | **Done** — Tier-3 profile | ECC-3 |
-| Static code gate | **Done** — `StaticCodeGate` | ECC-1 |
-| Promotion contract | **Done** — `CraftResult` | ECC-3 |
-| CODECRAFT trace events | **Done** — full §10.1 taxonomy | S8 |
-| Graph node | **Done** — optional `CodeCraftNode` | ECC-5 |
-| AHI adaptive trigger | **Done** — `adaptive_trigger.py` | ECC-6 |
-| Metrics dashboards | **Done** — §10.2 trace panel via `codecraft.metrics_snapshot` | ECC-MAINT-04 |
+| Isolated exec | **Done** - `runtime/sandbox`, `code.exec` | Substrate reused |
+| Cloud sandbox | **Done** - `HostedSandboxSession`, e2b/modal/daytona | ECC-4 default for regulated hosts |
+| Tool policy | **Done** - `SANDBOX_REQUIRED_TOOLS`, UAEP gateway | Extended for `codecraft.*` |
+| Harness craft loop | **Done** - `CodeCraftOrchestrator` | ECC-2 |
+| Ephemeral tool registry | **Done** - task-scoped registry | ECC-5 |
+| CodeCraftProfile | **Done** - Tier-3 profile | ECC-3 |
+| Static code gate | **Done** - `StaticCodeGate` | ECC-1 |
+| Promotion contract | **Done** - `CraftResult` | ECC-3 |
+| CODECRAFT trace events | **Done** - full §10.1 taxonomy | S8 |
+| Graph node | **Done** - optional `CodeCraftNode` | ECC-5 |
+| AHI adaptive trigger | **Done** - `adaptive_trigger.py` | ECC-6 |
+| Metrics dashboards | **Done** - §10.2 trace panel via `codecraft.metrics_snapshot` | ECC-MAINT-04 |
 
-**Maturity:** **L3+** — ECC-0…ECC-6 + post-closeout S7–S11 (2026-06-13). Depth backlog GAP-ECC-20…23 **closed** (ECC-MAINT-01..04, 2026-06-18).
+**Maturity:** **L3+** - ECC-0…ECC-6 + post-closeout S7–S11 (2026-06-13). Depth backlog GAP-ECC-20…23 **closed** (ECC-MAINT-01..04, 2026-06-18).
 
 **Audit revalidation (2026-06-19, ECC-MAINT-DOC-01):** §6.1av confirmed · 31 unit tests + `check_codecraft_layer.py` green · no open P0/P1.
 
@@ -322,7 +322,7 @@ Before adding or modifying CodeCraft behavior, Cursor must verify:
 | Register ephemeral tools in global ToolRegistry | Catalog pollution |
 | New parallel sandbox runtime | Violates §5.2 reuse |
 | Direct `subprocess` in agents | Violates UAEP §42.12 |
-| ECC without sandbox session | Fail-closed — no host exec fallback |
+| ECC without sandbox session | Fail-closed - no host exec fallback |
 | Treating local sandbox as production security | Misleading isolation guarantee |
 
 ---
@@ -367,7 +367,7 @@ Tier-0 contracts and gate (ECC-1+):
 |--------|----------------|
 | `intergrax/codecraft/contracts.py` | `CraftResult`, `StaticGateResult`, session I/O models |
 | `intergrax/codecraft/profile.py` | `CodeCraftProfile`, `CraftMode` |
-| `intergrax/codecraft/static_gate.py` | `StaticCodeGate` — AST, imports, size, forbidden patterns |
+| `intergrax/codecraft/static_gate.py` | `StaticCodeGate` - AST, imports, size, forbidden patterns |
 | `intergrax/codecraft/codegen_adapter.py` | LLM code generation (ECC-2) |
 | `intergrax/codecraft/test_runner.py` | `CraftTestRunner` (ECC-2) |
 | `intergrax/codecraft/promoter.py` | `CraftResultPromoter` (ECC-3) |
@@ -389,7 +389,7 @@ Tool surface (`ToolRuntime`):
 | Module | Responsibility |
 |--------|----------------|
 | `intergrax/tools/providers/codecraft/bundle.py` | Register `codecraft.*` catalog tools |
-| `intergrax/tools/providers/codecraft/service.py` | Handler services — gate + sandbox delegate |
+| `intergrax/tools/providers/codecraft/service.py` | Handler services - gate + sandbox delegate |
 
 Tier-3 wiring (ECC-3):
 
@@ -398,8 +398,8 @@ Tier-3 wiring (ECC-3):
 | `intergrax/applications/_shared/codecraft_wiring.py` | `wire_application_codecraft()` |
 | `ApplicationEnvironmentProfile.codecraft_profile` | Host profile field |
 
-**Trace integration:** `TraceComponent.CODECRAFT` diagnostic steps (`codecraft.session_opened`, `codecraft.static_gate`, …) — correlated via `craft_id`, `sandbox_session_id`, `run_id`. Full `RuntimeEventType` enum extension deferred until observability spine unifies tool-domain events.
+**Trace integration:** `TraceComponent.CODECRAFT` diagnostic steps (`codecraft.session_opened`, `codecraft.static_gate`, …) - correlated via `craft_id`, `sandbox_session_id`, `run_id`. Full `RuntimeEventType` enum extension deferred until observability spine unifies tool-domain events.
 
 **Policy:** `codecraft.*` tools added to `SANDBOX_REQUIRED_TOOLS` (same routing as `code.exec`). Fail-closed when `codecraft_profile` missing, `mode=disabled`, or sandbox session absent.
 
-**CI gate:** `scripts/maintenance/check_codecraft_layer.py` — catalog tools, wiring, trace steps, health probe registration (ECC-9).
+**CI gate:** `scripts/maintenance/check_codecraft_layer.py` - catalog tools, wiring, trace steps, health probe registration (ECC-9).

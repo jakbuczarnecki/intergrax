@@ -28,4 +28,4 @@ Governed access to: `cost.get_run_budget`, `billing.list_usage`, `workspace.writ
 
 ## Related skills
 
-- Other `cost` bundle skills — see bundle [USAGE.md](../USAGE.md)
+- Other `cost` bundle skills - see bundle [USAGE.md](../USAGE.md)
