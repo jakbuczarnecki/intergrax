@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -133,6 +133,38 @@ class PassedStage:
 
 
 @dataclass(frozen=True, slots=True)
+class StringExecutionClassStage:
+    kind: VerificationStageKind
+    execution_class: str
+
+    async def verify(
+        self,
+        candidate: CandidateDecision[IncidentDecisionPayload],
+    ) -> VerificationStageRecord:
+        return verification_stage_record(
+            proposal_ref=candidate_decision_ref(candidate),
+            stage=self.kind,
+            outcome=VerificationStageOutcome.PASSED,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class NoneExecutionClassStage:
+    kind: VerificationStageKind
+    execution_class: None = None
+
+    async def verify(
+        self,
+        candidate: CandidateDecision[IncidentDecisionPayload],
+    ) -> VerificationStageRecord:
+        return verification_stage_record(
+            proposal_ref=candidate_decision_ref(candidate),
+            stage=self.kind,
+            outcome=VerificationStageOutcome.PASSED,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class MismatchKindStage:
     kind: VerificationStageKind = validate_verification_stage_kind("other")
     execution_class: VerificationStageExecutionClass = (
@@ -200,14 +232,52 @@ def test_duplicate_kind_rejected() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 def test_registry_immutable() -> None:
-    stage = PassedStage(
+    source = _MODULE_PATH.read_text(encoding="utf-8")
+    for contract_name in (
+        "VerificationStageRegistration",
+        "VerificationStageRegistry",
+    ):
+        marker = f"class {contract_name}"
+        start = source.index(marker)
+        decorator_region = source[max(0, start - 120) : start]
+        assert "@dataclass(frozen=True, slots=True)" in decorator_region
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_invalid_execution_class_string_rejected() -> None:
+    stage = StringExecutionClassStage(
         kind=validate_verification_stage_kind("schema"),
-        execution_class=VerificationStageExecutionClass.DETERMINISTIC,
+        execution_class="deterministic",
     )
-    registration = _registration(kind="schema", stage=stage)
-    registry = verification_stage_registry((registration,))
-    with pytest.raises((AttributeError, FrozenInstanceError)):
-        setattr(registry, "registrations", ())
+    registration_kwargs: dict = {
+        "kind": validate_verification_stage_kind("schema"),
+        "stage": stage,
+        "required": True,
+    }
+    with pytest.raises(
+        TypeError,
+        match="VerificationStageRegistration.stage.execution_class",
+    ):
+        VerificationStageRegistration(**registration_kwargs)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_invalid_execution_class_none_rejected() -> None:
+    stage = NoneExecutionClassStage(
+        kind=validate_verification_stage_kind("schema"),
+    )
+    registration_kwargs: dict = {
+        "kind": validate_verification_stage_kind("schema"),
+        "stage": stage,
+        "required": True,
+    }
+    with pytest.raises(
+        TypeError,
+        match="VerificationStageRegistration.stage.execution_class",
+    ):
+        VerificationStageRegistration(**registration_kwargs)
 
 
 @pytest.mark.unit

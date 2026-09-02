@@ -83,6 +83,11 @@ class VerificationStageRegistration(Generic[T]):
             )
         if type(self.required) is not bool:
             raise TypeError("VerificationStageRegistration.required must be bool")
+        if type(self.stage.execution_class) is not VerificationStageExecutionClass:
+            raise TypeError(
+                "VerificationStageRegistration.stage.execution_class must be "
+                "VerificationStageExecutionClass",
+            )
 
 
 @dataclass(frozen=True, slots=True)
