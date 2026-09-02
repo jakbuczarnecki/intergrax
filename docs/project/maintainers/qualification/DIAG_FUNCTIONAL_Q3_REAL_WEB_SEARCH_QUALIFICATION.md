@@ -11,10 +11,16 @@ From repository root (requires running LKW docker stack with Ollama + search pro
 ./tests/system/functional_diagnostics_q3/run_q3_qualification.ps1
 ```
 
-Direct module entry:
+Direct module entry (loads root `.env` via `scripts/proof/intergrax_proof_environment.py` — no manual key export):
 
 ```bash
 uv run python -m tests.system.functional_diagnostics_q3.runner
+```
+
+Docker stack (explicit env file):
+
+```bash
+docker compose --env-file .env -f tests/system/unified_execution/docker-compose.yml up -d
 ```
 
 Architecture / evidence-fidelity unit gate (no external services):
@@ -32,8 +38,8 @@ uv run python scripts/build/build_application_image.py `
   --application local_workspace_application `
   --context-dir applications/local_workspace_application/docker/runtime-context `
   --materialize-only
-docker compose -f tests/system/unified_execution/docker-compose.yml build --no-cache local_workspace
-docker compose -f tests/system/unified_execution/docker-compose.yml up -d
+docker compose --env-file .env -f tests/system/unified_execution/docker-compose.yml build --no-cache local_workspace
+docker compose --env-file .env -f tests/system/unified_execution/docker-compose.yml up -d
 ```
 
 Pull generative model:
@@ -46,7 +52,7 @@ Set:
 
 - `LKW_BASE_URL=http://localhost:8021`
 - `LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_API_KEY=ue-11g-c1-certification-secret`
-- **One** real search provider credential (first match wins):
+- **One** real search provider credential (first match wins); canonical source is repository-root `.env` loaded by the Q3 runner / proof environment loader (`override=False`, process env wins):
   - `INTERGRAX_TAVILY_API_KEY` (preferred)
   - `INTERGRAX_BRAVE_API_KEY`
   - `INTERGRAX_GOOGLE_CSE_API_KEY` + `INTERGRAX_GOOGLE_CSE_CX`
@@ -213,15 +219,50 @@ New static gate: `test_q3_anti_forcing.py` (behavioral + AST).
 
 New live gates: `selection_decision_fidelity`, `extraction_decision_fidelity`, `post_decision_forcing = NONE`.
 
-### R2 live qualification verdict
+### R2 first attempt (env wiring)
 
-**Q3-R2 = BLOCKED** — host and LKW container lack `INTERGRAX_TAVILY_API_KEY`; static gates **37 passed**; mechanism changes deployed; full 11-case live matrix not executed.
+**Q3-R2 = BLOCKED** — runner did not load repository-root `.env`; `INTERGRAX_TAVILY_API_KEY` absent on host process; static gates **37 passed**; full 11-case live matrix not executed.
 
-Preserved artifact: `.tmp/session/diag-functional-q3/qualification-report.json`
+### R2-LIVE (2026-09-02) — canonical `.env` wiring + authentic matrix
+
+| Item | Value |
+| --- | --- |
+| START_HEAD | `b35e4fc233fc085565be459bc20bfe85fa76f843` |
+| FINAL_HEAD | `a28dfd970ba8a22e986c52eeeb839d02229af64e` |
+| Root `.env` | YES |
+| Key loaded (no manual export) | YES |
+| Canonical loader | `scripts/proof/intergrax_proof_environment.py` |
+| Compose `--env-file .env` | YES |
+| Container key non-empty | YES |
+| Tavily preflight | provider=tavily, network=REAL, auth=PASS, hits≥1 |
+| Static gates | **41 passed** (+ `test_q3_proof_environment.py`) |
+| Materialize + LKW rebuild | YES |
+
+Preserved history:
+
+| Phase | Result |
+| --- | --- |
+| INITIAL | BLOCKED (no provider credentials) |
+| INITIAL LIVE | FAILED 6/11 |
+| R1 live | 11/11 — rejected by independent audit (self-fulfilling injection) |
+| R2 first attempt | BLOCKED — `.env` not loaded by runner |
+
+### R2-LIVE authentic matrix result
+
+**Q3 = BLOCKED** — mandatory controlled real failure not inducible without post-decision forcing.
+
+| Gate | Result |
+| --- | --- |
+| Q3-C (selection bias) | INDUCED — LLM selected `python-3120rc3` (wrong) under pre-decision bias; DIAG `SELECTION` fail |
+| Q3-D (extraction bias) | **NOT INDUCED** — LLM extracted `2023-10-02` despite bias; blocked at `q3_d_not_inducible` |
+| Q3-F | PASS trace — selection absent → `INSUFFICIENT_EVIDENCE` → extraction PASS → operator `INCONCLUSIVE` |
+| post_decision_forcing | **NONE** |
+
+Preserved artifact: `.tmp/session/diag-functional-q3-r2/qualification-report.json`
 
 ### Recommendation
 
-Configure `INTERGRAX_TAVILY_API_KEY` on host, forward into compose/LKW, rebuild `local_workspace`, re-run canonical runner. If Q3-C/D bias fails to induce wrong source/extraction without post-decision override, report `Q3 = BLOCKED` with inducibility reason — do not reintroduce forcing.
+Q3-D extraction bias cannot honestly induce wrong-date failure with current Ollama `llama3.1:latest` without post-decision override. **Do not reintroduce forcing.** Options: stronger pre-decision extraction bias (R3), alternate model/temperature, or accept Q3-D as non-inducible boundary case. Q3-C selection bias remains inducible on live Tavily candidates.
 
 ## H1
 

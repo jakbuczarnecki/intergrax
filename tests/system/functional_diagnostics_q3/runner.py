@@ -8,10 +8,18 @@ import sys
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+_Q3_PROOF_PACKAGE_DIR = Path(__file__).resolve().parent
 for _path in (_REPO_ROOT, _REPO_ROOT / "agents", _REPO_ROOT / "applications"):
     _path_str = str(_path)
     if _path_str not in sys.path:
         sys.path.insert(0, _path_str)
+
+from scripts.proof.intergrax_proof_environment import load_proof_environment
+
+load_proof_environment(
+    proof_package_dir=_Q3_PROOF_PACKAGE_DIR,
+    repository_root=_REPO_ROOT,
+)
 
 import json
 import os
