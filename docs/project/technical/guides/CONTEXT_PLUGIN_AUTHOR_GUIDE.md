@@ -351,6 +351,18 @@ There is no generic service locator. Providers must not import Tier-3 applicatio
 
 ## 9. Registration and discovery
 
+Context plugins flow through catalog admission and profile selection (D9):
+
+```mermaid
+flowchart TB
+  EP[ContextPlugin EP] --> AD[Admission]
+  AD --> CAT[Context catalog]
+  CAT --> CP[ContextProfile ids]
+  CP --> SW[STRICT host wiring]
+```
+
+*Interpretation:* admission populates the catalog; `ContextProfile.context_plugin_ids` selects materialized plugins; `ApplicationEnvironmentWiring` does **not** expose a final public context registry/engine artifact - that is a documented maturity boundary, not a bootstrap bug.
+
 ```python
 from intergrax.context.bootstrap import bootstrap_context_catalog
 

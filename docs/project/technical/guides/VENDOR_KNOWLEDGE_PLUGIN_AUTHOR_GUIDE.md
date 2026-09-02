@@ -91,6 +91,18 @@ logic lives in the plugin package and its contribution factory.
 | **Built-in** | Deterministic builders inside `intergrax.runtime.vendor_knowledge.*_contribution` | Always loaded by `build_default_vendor_knowledge_contribution_catalog()` |
 | **External** | Same `VendorKnowledgeProviderContribution` ABI | Loaded only when `discover_entry_points=True` on catalog bootstrap |
 
+Vendor Knowledge uses an **instance-local publication model** by design (D12):
+
+```mermaid
+flowchart TB
+  PC[Provider contributions] --> CAT[VendorKnowledgeContributionCatalog]
+  CAT --> PS[Publication snapshot]
+  PS --> TB[Tenant-scoped bindings]
+  TB --> KF[Runtime knowledge facade]
+```
+
+*Interpretation:* `VendorKnowledgeContributionCatalog` is instance-local composition - intentional **DO-NOT-UNIFY** with Tier-0 global plugin catalogs.
+
 Built-ins and externals feed the **same** catalog and registries. External
 provider installation is **not** built-in provider registration. Do not edit the
 built-in aggregator to register an external vendor.

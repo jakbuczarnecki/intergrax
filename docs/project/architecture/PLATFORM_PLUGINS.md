@@ -1,5 +1,7 @@
 # Platform Plugins
 
+> **Architecture status:** FROZEN · **Implementation roadmap:** COMPLETE · **Production model:** TRUSTED IN-PROCESS · **Primary host composition:** `wire_application_environment()` · **Cross-flow proof:** ESTABLISHED · **Universal qualification:** NOT UNIVERSAL / DOMAIN-OWNED
+
 **Platform Plugins** is Intergrax's canonical coordination layer for third-party extension packages: shared packaging, discovery, manifest metadata, configuration, secrets/DI conventions, trust, qualification, compatibility, and lifecycle vocabulary - without replacing domain-owned runtime semantics for Tools, Skills, Integrations, RAG, context, or agents.
 
 ## Why it matters
@@ -19,14 +21,21 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 
 **A. Canonical / frozen architecture.** PLATFORM-PLUGIN-2 freezes taxonomy, platform-vs-domain boundaries, DO-NOT-UNIFY decisions, and cross-cutting coordination rules. Domain documents ([`INTEGRATIONS.md`](INTEGRATIONS.md), [`TOOLS.md`](TOOLS.md), [`SKILLS.md`](SKILLS.md), [`RAG.md`](RAG.md), [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md), etc.) remain **authoritative for runtime semantics**.
 
-**B. Implemented slices (capability-specific).** PLATFORM-PLUGIN-3..9 program stages delivered package-level contracts, shared discovery primitives, config/secrets/DI conventions (PLUGIN-5 **Done**), lifecycle/compatibility/trust/qualification vocabulary, reference external and host-embedded examples, and a dual-mode Tools E2E proof (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`). These are **partial, surface-specific** outcomes - not a universal plugin runtime.
+**B. Implemented production coordination (roadmap complete).** PLATFORM-PLUGIN-3..9 delivered package-level contracts, shared discovery primitives, config/secrets/DI conventions (PLUGIN-5 **Done**), lifecycle/compatibility/trust/qualification vocabulary, reference external and host-embedded examples, Tier-3 cross-flow host proof, and domain-owned admission/report paths for Security, Policy, Context, and Memory. This is **COMMON PLATFORM COORDINATION + DOMAIN-OWNED CAPABILITY CONTRACTS** - not a universal plugin runtime or single global registry.
 
-**C. Program closeout vs ongoing domain work.** The PLATFORM-PLUGIN-1..9 program is **closed** per maintainer plan; residual Protocol v2 audit findings (§Protocol v2 platform extensibility target invariants) remain **planned, not implemented**. Domain programs continue to own capability behavior independently.
+**C. Program closeout vs ongoing domain work.** The PLATFORM-PLUGIN-1..9 implementation roadmap is **closed** with verdict **PRODUCTION-GRADE — ROADMAP COMPLETE**; residual Protocol v2 audit findings (§Protocol v2 platform extensibility target invariants) remain **planned, not implemented**. Domain programs continue to own capability behavior independently.
 
-**D. Not yet established.** A **complete third-party install-to-runtime E2E proof** across all public extension surfaces is **not** implied. Discoverable ≠ production-qualified. Installation does not imply activation. Platform Plugins ≠ universal execution engine.
+**D. Cross-flow production evidence (established).** A production Tier-3 cross-flow proof is established for the key Platform Plugin coordination path across Tool, Policy, Security, Context, and Memory. The complete evidence chain combines:
+
+- application cross-flow host proof (`tests/integration/platform_plugins/test_plugin_engine_cross_flow.py`)
+- Tool external EP dual-mode proof (`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`)
+- Memory concrete materialization proof (`tests/unit/memory/test_memory_store_resolver.py::test_fixture_ep_discovery_materializes_external_stores`)
+- Platform Plugin contract suite (`tests/contract/core/plugins/test_platform_plugin_contract.py`)
+
+This does **not** mean every extension surface has identical maturity or universal production qualification. Discoverable ≠ production-qualified. Installation does not imply activation. Platform Plugins ≠ universal execution engine.
 
 > [!NOTE]
-> **Maturity boundary:** Canonical architecture is frozen. Implementation maturity is slice-specific. Frozen architecture documentation is not equivalent to universal production rollout or complete third-party lifecycle qualification.
+> **Maturity boundary:** Canonical architecture is frozen. Implementation maturity is slice-specific. Frozen architecture documentation is not equivalent to universal production rollout across every surface.
 
 **Primary audience:** CTOs, principal/staff engineers, and extension authors evaluating how Intergrax coordinates packages without collapsing domain contracts.
 
@@ -48,19 +57,51 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 | **Compatibility** | `platform_semantics.py` explicit-version checks |
 | **Lifecycle** | Vocabulary frozen; no global lifecycle engine |
 | **Domain ownership** | Integrations, Tools, Skills, RAG, context, VK, security, agents - domain docs own semantics |
-| **Maturity** | Architecture frozen; slice-specific implementation; universal E2E proof not established - see [Current reality](#current-reality--maturity-boundary) and §26 |
+| **Maturity** | Roadmap complete; cross-flow proof established; per-surface qualification and typed evidence vary - see [Current reality](#current-reality--maturity-boundary) and [Maturity boundaries](#maturity-boundaries) |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§6 Platform Plugin definition](#6-platform-plugin-definition) · [§7 responsibility model](#7-platform-vs-domain-responsibility-model) · [plan](../maintainers/plans/PLATFORM_PLUGINS.md) |
 
 ## Core mental model
 
+A Platform Plugin package does **not** activate itself. The host owns discovery enablement, profile selection, configuration, qualification posture, materialization, and STRICT execution posture.
+
 ```text
-third-party package
-  → plugin metadata / manifest
-  → discovery
-  → trust + compatibility + config
-  → domain-owned registration / composition
-  → domain runtime
+plugin package
+    ↓
+domain contract
+    ↓
+entry point / explicit host contribution
+    ↓
+discovery
+    ↓
+domain admission
+    ↓
+compatibility / qualification where required
+    ↓
+host profile / config
+    ↓
+domain materialization
+    ↓
+runtime
+    ↓
+operator evidence
 ```
+
+**Lifecycle states (not every surface has every stage):** `installed` ≠ `discovered` ≠ `admitted` ≠ `selected` ≠ `production-qualified` ≠ `active`.
+
+The diagram below is the 20-second overview (D1).
+
+```mermaid
+flowchart LR
+  P[Plugin package] --> C[Domain contract]
+  C --> D[Discovery]
+  D --> A[Admission]
+  A --> Q[Compatibility / Qualification]
+  Q --> H[Host selection]
+  H --> M[Domain runtime]
+  M --> E[Evidence]
+```
+
+*Interpretation:* coordination stops at the package boundary; semantics and materialization remain domain-owned; evidence is produced for operators at admission and bootstrap, not implied by `pip install`.
 
 **Platform Plugins ≠ universal execution engine.** Platform Plugins ≠ replacement for Tools / Skills / Integrations / RAG / Agent Distribution. Platform Plugins coordinates packaging, discovery, and trust; **domain contracts own semantics**.
 
@@ -71,6 +112,119 @@ DOMAIN-OWNED CAPABILITY CONTRACTS
 ```
 
 Third-party authors install Python packages. Hosts and applications decide which discovered capabilities are enabled, configured, injected, and qualified for production.
+
+### Platform vs domain vs host ownership (D2)
+
+```mermaid
+flowchart TB
+  PC[Platform coordination\npackaging · discovery · trust vocabulary\nqualification vocabulary · evidence primitives]
+  PC --> DS[Domain-owned semantics\ncontract · registry · validation\nruntime · materialization]
+  DS --> HO[Tier-3 host ownership\nenable · configure · select\nSTRICT posture · production admission]
+```
+
+*Interpretation:* Platform harmonizes the package boundary; domains own runtime meaning; the host decides what runs in production.
+
+> [!IMPORTANT]
+> **Trust model:** Platform Plugins use a **trusted in-process Python extension model**. Installing third-party code is equivalent to choosing to deploy code into the host process. Platform Plugins provide discovery, admission, qualification, and activation controls; they do **not** sandbox arbitrary Python packages. Absence of sandboxing is an explicit architectural choice, not a documented defect.
+
+### Tier-3 host composition (D3)
+
+Canonical Tier-3 adoption wires domains through `wire_application_environment(...)`:
+
+```mermaid
+flowchart TB
+  M[ApplicationManifest\n+ ApplicationEnvironmentProfile\n+ INTERGRAX_DISCOVER_PLUGINS] --> W[wire_application_environment]
+  W --> S[Security]
+  W --> C[Context]
+  W --> Mem[Memory]
+  W --> T[Tools]
+  W --> Sk[Skills]
+  W --> Pol[Policy]
+  S --> BC[ApplicationBuildContext]
+  C --> BC
+  Mem --> BC
+  T --> BC
+  Sk --> BC
+  Pol --> BC
+  BC --> E[ApplicationPlatformPluginEvidence]
+```
+
+*Interpretation:* one composition entry coordinates domain wiring; domains are not bootstrapped identically; evidence aggregates reference domains (Security, Policy, Context, Memory) today.
+
+**Application discovery contract (distinct from plugin discovery):** an Intergrax application is a direct directory under `applications/` containing `manifest.py`. `manifest.py` → `ApplicationEnvironmentProfile` → `wire_application_environment()` → domain wiring → `ApplicationPlatformPluginEvidence`. Do not name applications with a `_application` suffix as a platform convention.
+
+### STRICT fail-closed posture (D4)
+
+| Domain | Typed report | STRICT critical failure | non-STRICT |
+|--------|--------------|-------------------------|------------|
+| Security | YES | fail closed | domain behavior |
+| Policy | YES | fail closed | domain behavior |
+| Context | YES | fail closed | rejected/failed remains evidence |
+| Memory | YES | fail closed | isolated failure can remain evidence |
+
+```mermaid
+flowchart TB
+  D[Domain discovery] --> R[DomainPluginLoadReport]
+  R --> C{critical_bootstrap_acceptable?}
+  C -->|yes| OK[Continue bootstrap]
+  C -->|no| S{ExecutionMode.STRICT?}
+  S -->|yes| F[Domain error / STOP]
+  S -->|no| I[Preserve evidence / continue where domain allows]
+```
+
+*Interpretation:* in **STRICT**, a bad critical report stops host bootstrap. In **non-STRICT**, a bad sibling plugin is isolated or rejected, evidence is preserved, and the host may continue - a rejected plugin is **not** activated.
+
+### Observability chain (D5)
+
+```mermaid
+flowchart LR
+  EP[Entry points] --> AR[accepted / rejected / failed]
+  AR --> DR[DomainPluginLoadReport]
+  DR --> AP[ApplicationPlatformPluginEvidence]
+  AP --> OP[Operator / audit]
+```
+
+Minimum per-domain report fields: `accepted`, `rejected`, `failed`, `critical_bootstrap_acceptable`. Tier-3 `ApplicationPlatformPluginEvidence` aggregates reference domains (Security, Policy, Context, Memory). Tools, RAG, and Vendor Knowledge typed load reports in that aggregate are **future maturity** - do not assume them today.
+
+### System proof chain (D13)
+
+Evidence is intentionally a **chain** of focused tests - not one monolithic install-to-invoke proof for every surface:
+
+```mermaid
+flowchart TB
+  CS[Platform Plugin contract suite]
+  CF[Tier-3 cross-flow proof]
+  TE[Tool external EP proof]
+  MM[Memory materialization proof]
+  CS --> PE[Production Plugin Engine evidence]
+  CF --> PE
+  TE --> PE
+  MM --> PE
+```
+
+| Proof | Path | What it establishes |
+|-------|------|---------------------|
+| Contract suite | `tests/contract/core/plugins/test_platform_plugin_contract.py` | Shared coordination contracts and admission vocabulary |
+| Cross-flow | `tests/integration/platform_plugins/test_plugin_engine_cross_flow.py` | Tier-3 host wiring across Security, Policy, Context, Memory |
+| Tool EP | `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` | External wheel + host-embedded Tool discovery/registration/qualification |
+| Memory | `tests/unit/memory/test_memory_store_resolver.py::test_fixture_ep_discovery_materializes_external_stores` | Classified EP discovery → resolver materialization |
+
+**Tool invoke-stage limitation (scoped):** the Tool external EP proof establishes discovery, registration, and qualification paths. The current invoke-stage fixture has a separate execution identity / trace bridge dependency (`RuntimeError: active execution identity or explicit execution_id required for trace bridge`). Classify that as **execution/trace test integration debt** - not Plugin Engine discovery/admission/activation failure.
+
+### Maturity boundaries
+
+| Boundary | Current state | Status |
+|----------|---------------|--------|
+| Tier-0 typed load evidence | partial | future maturity |
+| RAG typed load report/isolation | partial | future maturity |
+| Universal qualification rollout | partial | future maturity |
+| VK typed evidence adapter | absent | optional future |
+| EP cache lifetime policy | implementation stable, policy not formally frozen | docs/protocol-v2 |
+| Context host runtime artifact exposure | not public | non-blocking |
+| Tool evidence in `ApplicationPlatformPluginEvidence` | absent | future maturity |
+| Protocol v2 findings | planned | separate program |
+
+These are **maturity boundaries**, not open Plugin Engine blockers.
 
 ## Engineering canon
 
@@ -352,7 +506,7 @@ Runtime execution always flows through **domain contracts and host composition**
 
 **Rule:** The Platform Plugin layer **must not bypass** domain validation, policy, or security gates.
 
-**Tier-3 adoption (APP-ADOPTION-1 / APP-ADOPTION-1A):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence` (Memory, Policy when declarative policy participates, Context). Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only - not `PRODUCTION_QUALIFIED` (package gate 10 remains separate).
+**Tier-3 adoption (APP-ADOPTION-1 / APP-ADOPTION-1A):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence` (Security, Policy, Context, Memory). Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only - not `PRODUCTION_QUALIFIED` (package gate 10 remains separate). Domain-specific diagrams: [Policy](../technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md#9-registration--discovery) · [Security](../technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md#9-registration--discovery) · [Memory](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md#9-registration-and-discovery-critical) · [Context](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md#9-registration-and-discovery) · [Tools](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#16-dual-mode-developer-quickstarts-platform-plugin-8) · [Vendor Knowledge](../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md#1-purpose-and-extension-model) · [RuntimePlugin](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#8-do-not-confuse-with-nexus-runtime-plugins).
 
 ---
 
@@ -402,11 +556,13 @@ A single plugin package **may** expose zero, one, or many capabilities across on
 |-------|---------|
 | **Installed** | Python distribution present in environment (pip/uv install). |
 | **Discovered** | Loader found entry point(s) or registration callable for a domain group. |
+| **Admitted** | Domain admission policy accepted the candidate (may still be unselected). |
 | **Loadable** | Import/instantiation succeeded; domain contract validation may still fail. |
-| **Enabled** | Host/application/profile explicitly selects the capability for use in this process. |
+| **Selected** | Host profile or wiring names the capability for this process. |
+| **Production-qualified** | Host/domain qualification evidence threshold met for target environment. |
 | **Active** | Materialized into runtime registry and invokable per domain rules. |
 
-**Architecture rule:** `installed ≠ discovered ≠ enabled ≠ qualified ≠ active`.
+**Architecture rule:** `installed ≠ discovered ≠ admitted ≠ selected ≠ production-qualified ≠ active`.
 
 Default discovery for Tier-0 wiring helpers remains **opt-in** (`INTERGRAX_DISCOVER_PLUGINS`) unless a domain document specifies otherwise. Harmonization of flags is allowed in PLATFORM-PLUGIN-4 **only** as additive aliases - not silent behavior change.
 
@@ -800,6 +956,7 @@ Author-facing summary of all canonical setuptools entry-point surfaces (§20.1).
 | Host-embedded example | `examples/platform_plugins/local_embedded_tool_extension/` |
 | Application scaffold hook | `extensions/` + `register_<app>_local_tool_extensions(...)` after `require_production_qualification` in generated `host/tool_wiring.py` |
 | Executable E2E proof | `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` |
+| Invoke-stage scope | Discovery/registration/qualification proven; invoke fixture has separate execution identity / trace bridge dependency (not admission failure) |
 | Wheel build | `uv build --wheel` on reference package (no new build dependency) |
 | Isolated install | `uv pip install <wheel> --target <tmpdir> --no-deps` |
 | Discovery | `iter_entry_point_specs` / `load_entry_point_plugins` + `bootstrap_catalogs(discover_entry_points=True)` |
@@ -853,7 +1010,7 @@ FROZEN from PLATFORM-PLUGIN-1 §P:
 |-----------|----------|-----------|
 | Vendor Knowledge contribution catalog | **KEEP DOMAIN-SPECIFIC** | Publication snapshot, LKW qualification, tenant semantics |
 | Security defense plugins | **KEEP DOMAIN-SPECIFIC** | Hook-point model, override policy, fail modes |
-| `RuntimePlugin` | **KEEP DOMAIN-SPECIFIC** | Tier-3 lifecycle, event bus - HCE not catalog discovery |
+| `RuntimePlugin` | **KEEP DOMAIN-SPECIFIC** | Tier-3 lifecycle, event bus - HCE not setuptools EP catalog discovery |
 | `AgentRegistry` | **KEEP DOMAIN-SPECIFIC** | Tier-2 assembly; no third-party EP by design |
 | RAG component registries | **KEEP DOMAIN-SPECIFIC** | Per-component DI (vector store, embeddings) |
 | Integration registry v2 | **KEEP DOMAIN-SPECIFIC** | Metadata-only transitional layer - not author surface |
@@ -957,7 +1114,10 @@ Accepted [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTE
 | [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) | Current author-facing EP index + PLUGIN-8 dual-mode quickstarts (§16) |
 | `examples/platform_plugins/intergrax_reference_tool_plugin/` | PLUGIN-8 external wheel reference package |
 | `examples/platform_plugins/local_embedded_tool_extension/` | PLUGIN-8 host-embedded Tools example |
-| `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` | PLUGIN-8 executable dual-mode E2E proof |
+| `tests/contract/core/plugins/test_platform_plugin_contract.py` | Platform Plugin contract suite |
+| `tests/integration/platform_plugins/test_plugin_engine_cross_flow.py` | Tier-3 cross-flow host proof (Security, Policy, Context, Memory) |
+| `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` | Tool external EP + host-embedded discovery/registration/qualification proof |
+| `tests/unit/memory/test_memory_store_resolver.py::test_fixture_ep_discovery_materializes_external_stores` | Memory classified EP → materialized store proof |
 | `intergrax/core/plugins/discovery.py` | Unified EP loader (partial adoption) |
 | `intergrax/core/plugin_env.py` | `INTERGRAX_DISCOVER_PLUGINS` |
 | `tests/fixtures/plugin_packages/intergrax_catalog_fixture/` | Multi-capability package evidence |

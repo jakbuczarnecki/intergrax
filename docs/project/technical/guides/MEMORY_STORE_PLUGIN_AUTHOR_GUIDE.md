@@ -255,7 +255,22 @@ Plugins return store instances; managers (`UserProfileManager`, `SessionManager`
 
 ## 9. Registration and discovery (critical)
 
-Memory store plugins follow the standard platform plugin flow. Host wiring performs discovery and activation - authors do not call a separate bootstrap API.
+Memory store plugins follow classified discovery and profile-driven materialization (D8):
+
+```mermaid
+flowchart TB
+  EP[memory EP] --> CL[Classification]
+  CL --> UP[UserProfile]
+  CL --> SS[SessionStorage]
+  CL --> STI[SessionTurnIndex]
+  UP --> MP[MemoryProfile]
+  SS --> MP
+  STI --> MP
+  MP --> RW[resolve_memory_platform_wiring]
+  RW --> MS[Store materialization]
+```
+
+*Interpretation:* one EP group, three factory shapes; host profile ids select which plugin materializes each store kind.
 
 ```text
 plugin contract (Protocol + plugin_id)

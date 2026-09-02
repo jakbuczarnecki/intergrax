@@ -2,7 +2,7 @@
 
 > **Application dependencies:** each Tier-3 host owns applications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-**Last updated:** 2026-08-12 · PLATFORM-PLUGIN-DOCS-4
+**Last updated:** 2026-09-02 · PLUGIN-PLATFORM-DOCUMENTATION-FINALIZATION-1
 
 Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry points. Shipped providers and third-party pip packages register through the same discovery protocol.
 
@@ -108,6 +108,58 @@ Working Tools reference: §16.2 · [`examples/platform_plugins/local_embedded_to
 | **Documented explicit registration** | Integrations (`register_integration_plugin`), Tools (`register_tool_plugin` + scaffold `extensions/`), Skills (`register_skill_plugin`) |
 | **Host composition possible; incomplete developer path** | Context (`register_context_plugin` - no scaffold hook yet), Memory stores (host invokes factory callables / `MemoryPlatformWiring`), Vendor Knowledge (host builder + bindings - not Tier-0 catalog registration) |
 | **External-EP-first / advanced host composition only** | RAG chunker, RAG retriever, RAG reranker (registry `register` APIs - see RAG guide §0.2), Security defense, Policy rule handler, Tool invocation pattern |
+
+---
+
+## Understand the lifecycle
+
+Every surface follows the same coordination story at the package boundary (details vary by domain):
+
+```mermaid
+flowchart LR
+  P[Package] --> C[Domain contract]
+  C --> D[Discovery]
+  D --> A[Admission]
+  A --> Q[Qualification]
+  Q --> H[Host profile]
+  H --> R[Runtime]
+  R --> E[Evidence]
+```
+
+Canon: [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) · `installed` ≠ `discovered` ≠ `admitted` ≠ `selected` ≠ `production-qualified` ≠ `active`.
+
+**Canonical Tier-3 composition:** `wire_application_environment(env, manifest=...)` wires Security, Context, Memory, Tools, Skills, and Policy from `ApplicationEnvironmentProfile` and returns `ApplicationPlatformPluginEvidence` on the wiring bundle.
+
+---
+
+## What production-ready means
+
+Production-ready for a Platform Plugin capability is **host-owned** and combines:
+
+| Gate | Meaning |
+|------|---------|
+| **Compatibility** | Optional package/platform version check (`check_platform_compatibility`) - compatible ≠ qualified |
+| **Admission** | Domain loader accepted the EP or explicit registration (`DomainPluginLoadReport.accepted`) |
+| **Qualification** | Host/domain semantic evidence (`evaluate_package_production_admission`, domain suites) - **not** automatic for every surface |
+| **Host activation** | Profile selects capability ids; materialization runs (`ToolProfile`, `MemoryProfile`, `ContextProfile`, …) |
+| **STRICT posture** | Bad `critical_bootstrap_acceptable` report stops bootstrap in STRICT; non-STRICT may preserve evidence and continue |
+
+Policy STRICT with production qualification bundle is the strongest current reference surface. Universal production qualification rollout across all domains is a **future maturity** target.
+
+---
+
+## Debugging plugin activation
+
+| Symptom | Inspect |
+|---------|---------|
+| Plugin not found | Discovery flag / EP group name / `INTERGRAX_DISCOVER_PLUGINS` |
+| Found but rejected | `DomainPluginLoadReport.rejected` |
+| Failed import | `DomainPluginLoadReport.failed` |
+| Accepted but inactive | Host profile ids (`ToolProfile`, `MemoryProfile`, `ContextProfile`, …) |
+| STRICT stops bootstrap | `critical_bootstrap_acceptable` on domain report |
+| Qualified package rejected | Compatibility result + qualification evidence |
+
+Tier-3 aggregate: `ApplicationEnvironmentWiring.platform_plugin_evidence` (Security, Policy, Context, Memory today).
 
 ---
 
@@ -730,6 +782,18 @@ pytest tests/unit/core/plugins tests/unit/integrations/test_external_plugin.py -
 | Tier-0 catalog plugins (this guide) | Register integrations, tools, skills in catalog |
 | `RuntimePlugin` / `plugin_bootstrap.py` | Nexus middleware, metrics, persistence hooks |
 
+`RuntimePlugin` ≠ setuptools Platform Plugin capability catalog. Host composes a `RuntimePlugin` tuple explicitly; there is **no** setuptools discovery by design.
+
+```mermaid
+flowchart TB
+  T[Host-composed RuntimePlugin tuple] --> C[Compatibility check]
+  C --> B[bootstrap_runtime_plugins]
+  B --> H[Hooks / register lifecycle]
+  H --> SH[Shutdown callbacks]
+```
+
+*Interpretation:* Nexus runtime plugins are host-composed lifecycle extensions - not EP-discovered Platform Plugin surfaces.
+
 Agents consume **tools** via `ToolRegistry` and **skills** via `SkillResolver` → `allowed_tools`. Agents MUST NOT import vendor SDKs or integration slugs directly when a catalog tool exists.
 
 ---
@@ -1042,6 +1106,22 @@ Evidence records are immutable and safe to log - never include secrets or raw cr
 ## 16. Dual-mode developer quickstarts (PLATFORM-PLUGIN-8)
 
 **Canon:** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) §20.3–§20.4 · executable proof: [`tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py`](../../../../tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py)
+
+Both delivery modes converge on one Tool runtime path (D10):
+
+```mermaid
+flowchart TB
+  EW[External wheel\nintergrax.tools EP] --> Cat[Tool catalog]
+  HR[Host embedded\nregister_tool_plugin] --> Cat
+  Cat --> TP[ToolProfile]
+  TP --> TR[ToolRegistry]
+```
+
+External path: EP → shared discovery → catalog → profile → registry. Host-embedded path: same `ToolPlugin` contract → explicit registration → profile → registry. Host-embedded code does **not** need to masquerade as a wheel package.
+
+**Tool selection:** EP → load → instantiate → `ToolSelectionStrategy` validation → runtime. Invalid target → `TypeError`.
+
+**Invoke-stage note:** the Plugin8 proof establishes discovery, registration, and qualification. The invoke-stage fixture may fail on execution identity / trace bridge dependencies - classify as execution test debt, not discovery failure.
 
 Both delivery modes converge on the same domain contract and runtime (`ToolPlugin` → catalog → `ToolWiringContext` → `RuntimeToolInvoker`). Choose **external package** when distributing a reusable installable plugin; choose **host-embedded** when the code lives in your application tree.
 

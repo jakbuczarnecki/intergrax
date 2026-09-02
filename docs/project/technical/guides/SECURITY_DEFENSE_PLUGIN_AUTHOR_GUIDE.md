@@ -254,6 +254,18 @@ Defense plugins are **stateless or self-contained** instances. The host does not
 
 ## 9. Registration / discovery
 
+Tool external EP and host-embedded registration converge on one runtime catalog (see [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) §16 D10).
+
+```mermaid
+flowchart TB
+  EP[SecurityDefensePlugin EP] --> AD[Admission policy]
+  AD --> CH[Conflict handling]
+  CH --> REG[Defense registry]
+  REG --> SG[STRICT host gate]
+```
+
+*Interpretation:* EP candidates pass typed admission before registry registration; STRICT host wiring may fail closed on critical reports.
+
 | Step | API |
 |------|-----|
 | Scan EP group | `iter_entry_point_specs("intergrax.security_defenses")` |

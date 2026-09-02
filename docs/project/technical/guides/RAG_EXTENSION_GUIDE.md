@@ -89,9 +89,10 @@ Chunkers transform `KnowledgeDocument` sequences. Retrievers map `RetrieverQuery
 
 - `installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`
 - Third-party plugins are **trusted in-process Python**
-- Qualification is **host-owned semantic approval**, not attestation
+- Qualification is **host-owned semantic approval**, not attestation - not automatic across every RAG component surface
 - Secrets stay in host/integration configuration - not EP values
 - No universal Platform Plugin lifecycle/unload manager
+- Shared discovery primitives apply where EP groups exist; typed `DomainPluginLoadReport` / cross-surface RAG evidence in `ApplicationPlatformPluginEvidence` is a **future maturity** target - per-component registries and bootstrap remain domain-owned today
 
 ### 0.1 Discovery timing (chunker / retriever / reranker)
 

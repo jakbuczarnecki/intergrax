@@ -194,6 +194,16 @@ deny_sandbox = "acme_policy_rules.handlers:DenySandboxExecHandler"
 
 ### Three-part activation (package ≠ policy ≠ handler)
 
+```mermaid
+flowchart TB
+  EP[Rule handler EP\n+ policy definition EP/YAML\n+ package qualification]
+  EP --> PW[Policy wiring]
+  PW --> PR[Provenance]
+  PR --> RR[Runtime registry]
+```
+
+*Interpretation:* handlers, declarative rules, and qualification evidence merge in policy wiring - `pip install` alone activates nothing.
+
 ```text
 1. pip install acme-policy-rules                    # handler code installed
 2. Host sets PolicyRulesProfile on ApplicationEnvironmentProfile:

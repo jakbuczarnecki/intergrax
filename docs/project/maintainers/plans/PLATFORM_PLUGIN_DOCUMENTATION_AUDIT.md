@@ -1,5 +1,7 @@
 # Platform Plugin Developer Documentation Audit
 
+> **Historical audit snapshot (2026-08-12).** For current Platform Plugins behavior see [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) and [`EXTENSION_AUTHOR_GUIDE.md`](../../technical/guides/EXTENSION_AUTHOR_GUIDE.md).
+
 **Task:** PLATFORM-PLUGIN-DOCS-1  
 **Status:** READY_FOR_REVIEW  
 **Date:** 2026-08-12  
