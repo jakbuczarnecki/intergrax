@@ -901,15 +901,19 @@ Provider-neutral application stages - storage/retrieval backends are configured 
 
 **Implementation note (VPI-IMPLEMENTATION-1):** Provider-neutral catalog/search contracts and immutable scenario-owned domain models established under `application/domain`, `application/contracts`, `application/ports`, and `application/catalog`. No real storage provider implemented yet.
 
-1. **Catalog runtime / storage** - immutable `record_json`, identifier tables, configuration via catalog/search **contracts**; wire qualified vector and lexical backends behind platform integration boundaries.
-2. **Preprocessing / search representation** - deterministic ingest from `selected_offers.parquet`; normalized identifiers, lexical text, structured attribute subset, embeddings.
-3. **Candidate channels** - application query understanding; exact identifier lookup; lexical retrieval; structured filters; dense vector via configured vector backend.
-4. **Hybrid fusion + reranker** - fuse channel results with attribution (`reciprocal_rank_fusion` or score-sum); wire `RetrievalService` reranker stage on finalists.
-5. **Verification** - evidence extraction from source fields; constraint support/contradiction/missing; terminal outcome selection.
-6. **Clarification / outcomes** - `INSUFFICIENT_INFORMATION` loop; `AMBIGUOUS` abstention; `NO_MATCH` vs retrieval-empty distinction.
-7. **Observability** - application trace schema covering § A contract; hook into `RetrievalTrace` + custom diagnostics.
-8. **Benchmark / proof** - gold cases, hidden evaluator, full-corpus runs, baseline variants A–C from § B.
-9. **Public reproduction** - resolve `DATASET_DISTRIBUTION`; checksum auto-resolve; documented reproduction path.
+**Implementation note (VPI-IMPLEMENTATION-2):** Provider-neutral derived search representation (`DerivedOfferSearchRepresentation`) established for one source offer → exact / lexical / structured / semantic channels. Deterministic derivation only; no indexing, embeddings, or identity grouping yet.
+
+1. **Search representation** - deterministic ingest from `selected_offers.parquet`; derived exact identifiers, lexical fields, structured attribute subset, semantic text; versioned derivation (`v1`).
+2. **Offer candidate channels** - application query understanding; exact identifier lookup; lexical retrieval; structured filters; dense vector via configured vector backend.
+3. **Offer-level fusion** - fuse per-offer channel results with attribution before identity hypothesis formation.
+4. **Identity hypothesis formation** - group offer candidates into provisional product-identity hypotheses without treating `cluster_id` as verified truth.
+5. **Cross-offer evidence aggregation** - aggregate agreement/contradiction signals across offers within one identity hypothesis.
+6. **Identity-level ranking / reranking** - rank identity hypotheses (`reciprocal_rank_fusion` or score-sum); wire `RetrievalService` reranker stage on finalists.
+7. **Verification** - evidence extraction from source fields; constraint support/contradiction/missing; terminal outcome selection.
+8. **Clarification / outcomes** - `INSUFFICIENT_INFORMATION` loop; `AMBIGUOUS` abstention; `NO_MATCH` vs retrieval-empty distinction.
+9. **Observability** - application trace schema covering § A contract; hook into `RetrievalTrace` + custom diagnostics.
+10. **Benchmark / proof** - gold cases, hidden evaluator, full-corpus runs, baseline variants A–C from § B.
+11. **Public reproduction** - resolve `DATASET_DISTRIBUTION`; checksum auto-resolve; documented reproduction path.
 
 ### Platform gap priority (canonical reference configuration only)
 
