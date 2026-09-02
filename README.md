@@ -64,6 +64,12 @@ Intergrax centralizes reusable mechanisms so product teams can focus on the
 specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
 for the category, problem, and fit.
 
+Intergrax is evolving toward governed autonomous AI systems and persistent
+**Virtual Workers** that own responsibilities and goals across many executions.
+This is **canonical architecture / implementation roadmap** direction — the
+Virtual Worker runtime, control plane, and Virtual Workforce product are
+**not implemented yet**.
+
 <a href="docs/project/assets/public/readme/fullsize/intergrax-why.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-why-dark.png">
@@ -256,7 +262,7 @@ not as a first-contact route.
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-platform-map-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-platform-map-light.png">
-  <img src="docs/project/assets/public/readme/intergrax-platform-map-light.png" alt="Intergrax platform architecture map showing execution core, decision and verification, intelligence and context, knowledge and action, governance, evidence and observability, platform foundation, and connected resources.">
+  <img src="docs/project/assets/public/readme/intergrax-platform-map-light.png" alt="Intergrax platform architecture map showing execution core, decision and verification, intelligence and context, knowledge and action, governance, evidence and observability, autonomous work and virtual workers, platform foundation, and connected resources.">
 </picture>
 </a>
 
@@ -272,6 +278,7 @@ not as a first-contact route.
 | **Tools, Skills & Integrations** | Tools, skills, integrations, LLM adapters, and code-craft surfaces | [Tools](docs/project/architecture/TOOLS.md) · [Skills](docs/project/architecture/SKILLS.md) · [Integrations](docs/project/architecture/INTEGRATIONS.md) · [LLM Adapters](docs/project/architecture/LLM_ADAPTERS.md) · [Code Craft](docs/project/architecture/CODE_CRAFT.md) |
 | **Governance, HITL & Reliability** | Policy and approval enforcement, failure handling, and human-in-the-loop | [Governed Execution](docs/project/architecture/GOVERNED_EXECUTION.md) · [Reliability / Failure / HITL](docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md) |
 | **Observability & Evidence** | Runtime observability, proof receipts, and reviewable execution records | [Observability](docs/project/architecture/OBSERVABILITY.md) · [Proof Receipts](docs/project/architecture/PROOF_RECEIPTS.md) |
+| **Autonomous Work / Virtual Workers** | Persistent governed workers that own responsibilities and goals across many executions — **canonical architecture; runtime not implemented** | [Autonomous Work](docs/project/architecture/AUTONOMOUS_WORK.md) · [Virtual Workforce](docs/project/overview/VIRTUAL_WORKFORCE.md) |
 | **Extensibility & Ecosystem** | Governed plugins, agent distribution, marketplace direction, multiplayer collaboration | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) · [Agent Distribution](docs/project/architecture/AGENT_DISTRIBUTION.md) · [Multiplayer AI](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) · [Agent Marketplace](docs/project/overview/AGENT_MARKETPLACE.md) |
 | **Application Platform** | Tier-3 application environment and application hosting | [Tier-3 Application Environment](docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [Application Hosting](docs/project/architecture/APPLICATION_HOSTING.md) |
 | **Platform Foundations & Scale** | Core platform foundation, elastic capacity, modality, and developer experience | [Platform Foundation](docs/project/architecture/PLATFORM_FOUNDATION.md) · [Elastic Capacity & Scaling](docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [Modality](docs/project/architecture/MODALITY.md) · [Experimentation & DX](docs/project/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
@@ -402,6 +409,7 @@ lack established runtime proof:
 | Direction | What it adds | Current maturity | Explore |
 | --- | --- | --- | --- |
 | **Multiplayer AI** | Governed multi-principal collaboration among humans, agents, services, and external agents | **Architecture / roadmap stage** - runtime proof **not yet established** | [Multiplayer AI architecture](docs/project/capabilities/architecture/MULTIPLAYER_AI.md) |
+| **Autonomous Work / Virtual Workforce** | Persistent Virtual Workers that own business responsibilities and goals across many governed executions | **Canonical architecture frozen** — worker runtime, control plane, reference application, and end-to-end proof **not implemented** | [Virtual Workforce](docs/project/overview/VIRTUAL_WORKFORCE.md) · [Autonomous Work](docs/project/architecture/AUTONOMOUS_WORK.md) |
 | **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** - multiple extension-platform slices implemented; core program closed. Residual Protocol v2 work remains planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
 | **Agent Marketplace** | Future ecosystem layer - discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT - NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
 

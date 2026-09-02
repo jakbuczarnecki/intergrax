@@ -78,14 +78,15 @@ with Try LKW as the repository’s primary product action.
 | Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
 | Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) - candidate proposals, verification, deliberation, authoritative outcomes separate from authorization (**target canon**; **CURRENT:** [Critic Verification](../architecture/CRITIC_VERIFICATION.md)) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
-| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) - see [Strategic directions](#strategic-directions) below |
+| Explore Virtual Workforce / Virtual Workers | [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work](../architecture/AUTONOMOUS_WORK.md) |
+| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) - see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore Scenario Proofs (problem-first) | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Compare Intergrax with modern agent/platform alternatives | [Alternatives and trade-offs](../overview/ALTERNATIVES_AND_TRADEOFFS.md) |
 | Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
 | Understand permission boundaries | [Collaboration](COLLABORATION.md) and [LICENSE](../../../LICENSE) |
-| Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) · [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (24-domain index) |
+| Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) · [Runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (canonical domain index) |
 | Understand why Intergrax exists | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) |
 | See where the product-validation program is heading | [Roadmap](../overview/ROADMAP.md) |
 | Read general first-contact questions | [FAQ](../overview/FAQ.md) |
@@ -176,6 +177,12 @@ Future ecosystem and platform directions - **not** current product proofs and **
 **Future collaborative-AI direction - architecture concept**
 
 [Open the Multiplayer AI architecture concept](../capabilities/architecture/MULTIPLAYER_AI.md)
+
+### Autonomous Work / Virtual Workforce
+
+**Persistent Virtual Workers - canonical architecture; runtime not implemented**
+
+[Open the Virtual Workforce overview](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work architecture](../architecture/AUTONOMOUS_WORK.md)
 
 ### Platform Extensibility / Plugins
 

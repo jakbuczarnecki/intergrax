@@ -4,7 +4,7 @@
 **ADR:** [`ADR-AW-001`](../../technical/adr/entries/2026-09-02/ADR-AW-001.md)  
 **Architecture governance:** [`../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 
-**Status:** Domain registered — **AW-0 canonical architecture accepted; runtime implementation NOT STARTED**
+**Status:** Domain registered — **AW-0 REVIEW GATE** (documentation integration complete; independent audit pending; runtime implementation NOT STARTED)
 
 ---
 
@@ -47,7 +47,7 @@ Delivery rule:
 
 | Wave | Purpose | Current status |
 |---|---|---|
-| AW-0 | Canonical architecture, ADR, documentation registration | **IN PROGRESS / documentation-only** |
+| AW-0 | Canonical architecture, ADR, documentation registration | **REVIEW GATE** — documentation integration complete; AW-0G pending independent audit |
 | AW-1 | Core semantic contracts | NOT STARTED |
 | AW-2 | Durable worker state and lifecycle | NOT STARTED |
 | AW-3 | Principal / authority / workspace composition | NOT STARTED |
@@ -71,9 +71,9 @@ Delivery rule:
 | AW-0B | Independent architecture/gap review | **DONE** |
 | AW-0C | Freeze DOMAIN vs FEATURE classification (`AUTONOMOUS_WORK` = DOMAIN) | **DONE** |
 | AW-0D | Create canonical architecture/plan pair | **DONE** |
-| AW-0E | ADR-AW-001 ownership/classification decision | **PLANNED IN THIS DOC SET** |
-| AW-0F | Register domain in architecture/documentation hubs and public routes | **PLANNED IN THIS DOC SET** |
-| AW-0G | Independent canonical-doc audit before runtime implementation | **OPEN GATE** |
+| AW-0E | ADR-AW-001 ownership/classification decision | **DONE** |
+| AW-0F | Register domain in architecture/documentation hubs and public routes | **DONE** |
+| AW-0G | Independent canonical-doc audit before runtime implementation | **READY FOR INDEPENDENT REVIEW** |
 
 **Exit gate:** canonical docs accepted with no unresolved ownership conflict; no runtime implementation before AW-0G acceptance.
 

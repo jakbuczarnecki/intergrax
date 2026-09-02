@@ -73,7 +73,7 @@ Products can reuse existing governed mechanisms, surface missing shared capabili
   >
   <img
     src="../assets/public/readme/intergrax-platform-map-light.png"
-    alt="Intergrax platform architecture map showing execution core, decision and verification, intelligence and context, knowledge and action, governance, evidence and observability, platform foundation, and connected resources."
+    alt="Intergrax platform architecture map showing execution core, decision and verification, intelligence and context, knowledge and action, governance, evidence and observability, autonomous work and virtual workers, platform foundation, and connected resources."
   >
 </picture>
 </a>
@@ -163,6 +163,30 @@ The application defines what the business rule means. Intergrax provides reusabl
 
 Details belong in the owning [Governed Execution architecture](GOVERNED_EXECUTION.md).
 
+## Persistent autonomous work
+
+Intergrax also defines a **target architecture** for durable autonomous responsibility through **Virtual Workers** — distinct from single-run agent execution.
+
+```text
+task-oriented execution:
+Application → Execution → Agent → Result
+
+persistent autonomous work:
+Organization / Application
+→ Virtual Worker
+→ Responsibilities + Goals
+→ many governed Executions over time
+```
+
+A Virtual Worker:
+
+- uses the **application operating layer** and existing governed execution,
+- does **not** replace Agents or Executions,
+- composes Tools, Skills, Integrations, Governance, Observability, CodeCraft, and recovery mechanisms,
+- remains responsible after each execution completes or fails.
+
+**Maturity:** canonical architecture and implementation plan exist; worker runtime, control plane, reference application, and end-to-end proof are **not implemented**. Details: [Autonomous Work](AUTONOMOUS_WORK.md) · product-facing [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md).
+
 ## Decision System inside Nexus execution
 
 The **Decision System** is the platform capability that leads a decision from candidate proposal through optional deliberation, verification, revision, and resolution to an **authoritative lifecycle outcome** - executed as a **Decision Lifecycle model inside Nexus**, not as a second runtime.
@@ -209,6 +233,8 @@ Intergrax has longer-term architectural directions that may extend the current o
 
 - **Multiplayer AI** - extends governed execution toward collaboration among multiple principals (humans, agents, services, and eventually external agents). Architectural direction; today's runtime does not complete that evolution. The planned layer coordinates identity, authority, shared work, artifacts, decisions, and context views while reusing existing UCL, context, memory, knowledge/RAG, token optimization, HITL, execution, and evidence mechanisms. Details: [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md).
 
+- **Autonomous Work / Virtual Workforce** - persistent Virtual Workers that own business responsibilities and goals across many governed executions. Canonical architecture and implementation plan exist; worker runtime, control plane, reference application, and end-to-end proof are **not implemented**. Details: [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Autonomous Work](AUTONOMOUS_WORK.md).
+
 - **Platform extensibility / Plugins** - coordinates independently packaged extensions at the package boundary. Domain-specific extension mechanisms already exist across integrations, tools, skills, RAG, Vendor Knowledge, security, policy, host composition, and other domains; multiple cross-cutting extension-platform implementation slices exist while residual Protocol v2 breadth and complete external third-party install-to-runtime E2E qualification remain incomplete. Platform Plugin is **not** a universal `PlatformPlugin.execute()` and does **not** replace IntegrationPlugin, ToolPlugin, SkillPlugin, RAG contracts, Vendor Knowledge contracts, security or policy contracts, RuntimePlugin, or other domain-owned surfaces. Details: [Platform Plugins architecture](PLATFORM_PLUGINS.md).
 
 ## Architect review path
@@ -219,6 +245,6 @@ Architecture-specific continuation - not a general documentation index.
 2. **[Platform Map](../../../README.md#explore-the-intergrax-platform)** - choose a platform area and open its canonical domain or feature hub.
 3. **Domain / feature hub** - next level after this overview: definition, why it matters, maturity, visual, how it works, boundaries, evidence, and deeper canon (per the documentation design system).
 4. **[PROOFS](../proofs/PROOFS.md)** and owning proof documents - inspect bounded evidence for the chosen area; exact proof semantics live in the owning proof doc.
-5. **[Technical Documentation Map](../technical/DOCUMENTATION_MAP.md)** and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (complete 24-domain index) - implementation-level due diligence, including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) when helpful.
+5. **[Technical Documentation Map](../technical/DOCUMENTATION_MAP.md)** and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md) (canonical domain index) - implementation-level due diligence, including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) when helpful.
 
 Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) when you need a bounded technical evaluation of one claim. The overview summarizes the architecture; proof documents establish current evidence; the technical map and runtime hub route deep review. None of these routes turns bounded evidence into a production, security, real-user, or commercial validation claim.

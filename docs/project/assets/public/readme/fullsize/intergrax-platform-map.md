@@ -11,7 +11,7 @@
   >
   <img
     src="../intergrax-platform-map-light.png"
-    alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, platform foundation, specialized product surface and connected resources."
+    alt="Intergrax platform architecture map showing execution core, intelligence/context, knowledge/action, governance, evidence/observability, autonomous work/virtual workers, platform foundation, specialized product surface and connected resources."
   >
 </picture>
 

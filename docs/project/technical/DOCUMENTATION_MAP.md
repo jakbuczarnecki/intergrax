@@ -22,6 +22,7 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | **Observability** (HOS, RuntimeEvent, export) | [OBSERVABILITY.md](../architecture/OBSERVABILITY.md) |
 | **Decision System** (target canon - lifecycle, verification, deliberation) | [DECISION_SYSTEM.md](../architecture/DECISION_SYSTEM.md) · [DECISION_VERIFICATION.md](../architecture/DECISION_VERIFICATION.md) · [DECISION_DELIBERATION.md](../architecture/DECISION_DELIBERATION.md) · **CURRENT:** [CRITIC_VERIFICATION.md](../architecture/CRITIC_VERIFICATION.md) |
 | **Token Optimization main guide** | [capabilities/token_optimization/README.md](../capabilities/token_optimization/README.md) |
+| **Autonomous Work / Virtual Worker** | [AUTONOMOUS_WORK.md](../architecture/AUTONOMOUS_WORK.md) · [maintainers/plans/AUTONOMOUS_WORK.md](../maintainers/plans/AUTONOMOUS_WORK.md) |
 | **This map** (roles and workflows) | `docs/project/technical/DOCUMENTATION_MAP.md` |
 | **Extend Intergrax / build plugins** | [EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) → surface matrix → domain guide · design: [PLATFORM_PLUGINS.md](../architecture/PLATFORM_PLUGINS.md) |
 | Architecture hub (primary 24 baseline + additional canonical domain pairs) | [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) |

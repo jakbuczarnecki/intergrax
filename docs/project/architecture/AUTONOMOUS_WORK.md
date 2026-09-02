@@ -1,10 +1,140 @@
 # Autonomous Work
 
-**Status:** Canonical target architecture (domain pair 1:1) — **AW-0 documentation accepted; runtime implementation NOT STARTED**  
-**Plan (1:1):** [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md)  
-**ADR:** [`ADR-AW-001`](../technical/adr/entries/2026-09-02/ADR-AW-001.md)  
-**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)  
-**Audit origin:** [`AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT.md`](../../audit_results/2026-09-02/AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT.md) · [`..._REVIEW.md`](../../audit_results/2026-09-02/AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT_REVIEW.md)
+**Autonomous Work** is the Intergrax domain for persistent governed AI workers that own business responsibilities and goals across many executions.
+
+Its primary abstraction is the **Virtual Worker** — a durable operational entity, not an agent, task, execution, or application.
+
+---
+
+## Why it matters
+
+Most agent platforms optimize for **task-oriented execution**: a human or system sends work, an agent runs, and the run ends.
+
+Autonomous Work targets a different problem: **who remains responsible when the work spans days, events, failures, and many runs?**
+
+```text
+Agent:
+receives work → executes → finishes
+
+Virtual Worker:
+owns responsibility → watches goals → accepts/creates work
+→ launches governed executions → handles obstacles → remains responsible
+```
+
+Intergrax already provides governed execution, agents, tools, policy, evidence, and recovery building blocks. Autonomous Work composes them under one durable worker semantics layer instead of inventing parallel runtimes.
+
+---
+
+## Claim / maturity boundary
+
+> [!IMPORTANT]
+> **Canonical target architecture exists. Runtime implementation has not started.**
+>
+> - Virtual Workforce is **not** a shipped product.
+> - Virtual Worker contracts, persistence, control plane, and recovery controller are **not implemented**.
+> - CodeCraft / Sandbox production hardening remains required before production-style autonomous generated-code recovery.
+>
+> Do not present Virtual Workers as production capability until implementation and proof gates say so.
+
+---
+
+## At a glance
+
+| Concern | Summary |
+| --- | --- |
+| **Responsibility** | Persistent autonomous business responsibility, goals, lifecycle, work intake, and worker-level recovery semantics |
+| **Main abstraction** | **Virtual Worker** (`WorkerDefinition` → `WorkerInstance`) |
+| **Owns** | Responsibilities, goals, worker lifecycle, wake-up semantics, worker→work/execution correlation, obstacle classification hand-off |
+| **Reuses** | Collaborative Principal/authority, WorkItem, Governed Execution, Agents, Tools/Skills/Integrations, CodeCraft, Sandbox, Memory, Observability, Diagnostics, Hosting |
+| **Does not own** | Agent cognition, policy engine, execution lifecycle, memory store, generated-code synthesis, evidence truth, application UX |
+| **Current maturity** | AW-0 — canonical architecture and documentation integration; **runtime not implemented** |
+| **First planned proof** | **Autonomous Order Operations Worker** — planned / not implemented |
+
+---
+
+## Flagship architecture visual
+
+<a href="assets/autonomous-work-flagship-light.svg">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/autonomous-work-flagship-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/autonomous-work-flagship-light.svg">
+  <img src="assets/autonomous-work-flagship-light.svg" alt="Autonomous Work flagship diagram: Business Responsibility and Goals feed a Virtual Worker that is not an Agent or Execution; events, schedules, and goal evaluation create Work; Governed Execution uses Agents, Tools, Skills, and Integrations; obstacles route through Recovery Controller to reuse capabilities or CodeCraft with Sandbox verification before resuming work; Governance and Authority bound actions while Observability and Evidence record facts.">
+</picture>
+</a>
+
+---
+
+## How it works
+
+1. A **Virtual Worker** exists as a durable responsibility holder — usually **IDLE**, not continuously reasoning.
+2. An external **event**, **schedule**, or **goal evaluation** wakes the worker when action is required.
+3. The worker **accepts or creates work** in the collaborative work plane.
+4. The worker dispatches a canonical **Governed Execution** — it does not replace execution semantics.
+5. An **Agent** performs reasoning inside that execution.
+6. **Governance** evaluates authority and policy at configured boundaries.
+7. When progress stalls or fails, **obstacle classification** precedes any recovery strategy.
+8. The worker first tries to **reuse an existing capability**; a true gap may route to **CodeCraft**.
+9. Generated code runs through **Sandbox + verification** before resuming the original work item.
+10. After execution completes, the **worker remains responsible** — ready for the next wake-up.
+
+Persistent availability is **event-driven and bounded**, not an infinite LLM loop.
+
+---
+
+## Ownership boundaries
+
+```text
+Worker != Agent
+Worker != Principal
+Worker != WorkItem
+Worker != Task
+Worker != Execution
+Worker lifetime != process lifetime
+```
+
+| Autonomous Work owns | Autonomous Work does not own |
+| --- | --- |
+| Worker definition/instance semantics, responsibilities, goals, lifecycle, wake-up, recovery decision semantics | Collaborative identity/authority, Task/Run/Execution lifecycle, agent cognition, tools/skills/integrations, memory stores, CodeCraft synthesis, sandbox substrate, HOS/evidence truth, Tier-3 application UX |
+
+Normative rule: **Capability may grow. Authority may not self-expand.**
+
+---
+
+## Relationship to Intergrax
+
+Autonomous Work sits above governed execution and composes existing domains:
+
+| Neighbor | Relationship |
+| --- | --- |
+| [Collaborative Work](COLLABORATIVE_WORK.md) | Principal binding, workspace, delegation, future WorkItem/Assignment |
+| [Governed Execution](GOVERNED_EXECUTION.md) | Authority, policy enforcement, control-plane gates |
+| [Unified Execution Runtime](UNIFIED_EXECUTION_RUNTIME.md) / Nexus | Actual Task/Run/Attempt/Execution lifecycle |
+| [Agents](AGENT_CONTRACTS_AND_ASSEMBLY.md) / [Reasoning](REASONING_AND_COGNITION.md) | Cognition inside worker-triggered executions |
+| [Code Craft](CODE_CRAFT.md) / Sandbox | Canonical missing-code capability path |
+| [Observability](OBSERVABILITY.md) / [Diagnostics](DIAGNOSTICS.md) | Execution truth and obstacle evidence |
+| [Application Hosting](APPLICATION_HOSTING.md) | Host process lifetime; worker identity survives restart |
+| [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) | Future collaboration may compose Multiplayer; neither owns Autonomous Work |
+
+---
+
+## Evidence / proof
+
+**Planned flagship proof:** [Autonomous Order Operations Worker](#reference-enterprise-scenario) — **not implemented**.
+
+No dedicated public Autonomous Work proof route exists at AW-0. Architecture existence does not imply production qualification.
+
+---
+
+## Go deeper
+
+| Depth | Route |
+| --- | --- |
+| Implementation plan | [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md) |
+| ADR | [`ADR-AW-001`](../technical/adr/entries/2026-09-02/ADR-AW-001.md) |
+| Audit origin | [`AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT.md`](../../audit_results/2026-09-02/AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT.md) · [`..._REVIEW.md`](../../audit_results/2026-09-02/AUTONOMOUS_WORK_VIRTUAL_WORKFORCE_ARCHITECTURE_GAP_AUDIT_REVIEW.md) |
+| Product-facing concept | [`../overview/VIRTUAL_WORKFORCE.md`](../overview/VIRTUAL_WORKFORCE.md) |
+| Architecture governance | [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) |
+| Engineering canon | Sections below in this file |
 
 ---
 
@@ -12,7 +142,7 @@
 
 **Do not read this entire file in one session.**
 
-- **Default:** §Purpose, §Ownership boundary, §Core model, §Normative invariants, §Integration boundaries.
+- **Default:** human-facing front through §Go deeper, then §Ownership boundary, §Core model, §Normative invariants, §Integration boundaries.
 - **Implementation:** this read-scope block + the active `AW-*` row in [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md).
 - **CodeCraft recovery work:** §Adaptive obstacle recovery + relevant slice of [`CODE_CRAFT.md`](CODE_CRAFT.md) and [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
 - **Collaborative identity/work:** §Principal and WorkItem integration + relevant slice of [`COLLABORATIVE_WORK.md`](COLLABORATIVE_WORK.md).
