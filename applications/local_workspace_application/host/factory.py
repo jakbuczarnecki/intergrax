@@ -126,13 +126,15 @@ def create_local_workspace_backend_app(
         build_declarative_invoker_from_tool_wiring,
     )
     from intergrax.applications._shared.diagnostic_cursor_secret import resolve_problem_list_cursor_secret
+    from intergrax.integrations._shared.conformance import assert_conditional_document_store
     from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
         functional_evidence_wiring_extra_key,
-        wire_in_memory_functional_evidence_runtime,
+        wire_functional_evidence_runtime,
     )
 
-    functional_evidence_wiring = wire_in_memory_functional_evidence_runtime(
+    functional_evidence_wiring = wire_functional_evidence_runtime(
         cursor_secret=resolve_problem_list_cursor_secret(),
+        document_store=assert_conditional_document_store(lkw_document_store),
     )
     runtime = build_harness_host_runtime(
         manifest,

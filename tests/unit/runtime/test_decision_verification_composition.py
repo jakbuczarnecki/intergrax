@@ -153,6 +153,11 @@ class _TraceReader:
         )
         return PersistedRun(metadata=metadata, events=self._events)
 
+    def list_runs(self, tenant_id: str, *, limit: int = 50) -> list[PersistedRun]:
+        _ = tenant_id
+        _ = limit
+        return []
+
 
 def _candidate(text: str = "answer") -> CandidateDecision[Payload]:
     identity = DecisionIdentity(
@@ -267,6 +272,31 @@ def test_availability_reflects_wiring_context_capabilities() -> None:
     assert compose_tool_wiring_eval_verification(trace_ctx).trajectory_evaluator.is_available() is True
 
 
+def test_semantic_availability_tracks_context_mutation() -> None:
+    ctx = ToolWiringContext()
+    bridge = compose_tool_wiring_eval_verification(ctx)
+    assert bridge.semantic_judge.is_available() is False
+    ctx.extras["llm_adapter"] = FakeLLMAdapter()
+    assert bridge.semantic_judge.is_available() is True
+    del ctx.extras["llm_adapter"]
+    assert bridge.semantic_judge.is_available() is False
+
+
+def test_trajectory_availability_tracks_context_mutation() -> None:
+    ctx = ToolWiringContext()
+    bridge = compose_tool_wiring_eval_verification(ctx)
+    assert bridge.trajectory_evaluator.is_available() is False
+    ctx.trace_reader = _TraceReader([])
+    assert bridge.trajectory_evaluator.is_available() is True
+    ctx.trace_reader = None
+    assert bridge.trajectory_evaluator.is_available() is False
+
+
+def test_adapters_have_no_available_field() -> None:
+    assert "available" not in ToolWiringSemanticJudge.__dataclass_fields__
+    assert "available" not in ToolWiringTrajectoryEvaluator.__dataclass_fields__
+
+
 def test_integration_boundary_through_real_eval_services() -> None:
     llm = FakeLLMAdapter(
         fake_structured_data=_JudgeLLMResult(score=0.9, passed=True, reasons=["good"]),
@@ -367,7 +397,7 @@ async def test_enabled_semantic_missing_capability_raises_unavailable() -> None:
                     producer_profile_id="producer",
                     verifier_profile_id="producer",
                 ),
-                judge=ToolWiringSemanticJudge(ctx=ToolWiringContext(), available=False),
+                judge=ToolWiringSemanticJudge(ctx=ToolWiringContext()),
             ),
         ),
     )
@@ -382,10 +412,7 @@ async def test_enabled_trajectory_missing_capability_raises_unavailable() -> Non
         DecisionVerificationPipelineBuildSpec(
             trajectory=TrajectoryProductionStageSpec(
                 agent_id_provider=FixedAgentIdProvider(TrajectoryAgentId("agent-1")),
-                evaluator=ToolWiringTrajectoryEvaluator(
-                    ctx=ToolWiringContext(),
-                    available=False,
-                ),
+                evaluator=ToolWiringTrajectoryEvaluator(ctx=ToolWiringContext()),
             ),
         ),
     )

@@ -82,12 +82,16 @@ def mint_revised_candidate_decision(
         authorization=authorization,
         candidate=challenged,
     )
+    challenged_ref = candidate_decision_ref(challenged)
+    if not proposal_refs_match(revision_state.proposal_ref, challenged_ref):
+        raise DecisionRevisionAuthorizationMismatchError(
+            "revision_state proposal_ref must match challenged candidate proposal_ref",
+        )
     expected_revision_number = revision_state.revision_count + 1
     if authorization.revision_number != expected_revision_number:
         raise DecisionRevisionAuthorizationMismatchError(
             "revision authorization revision_number must equal revision_count + 1",
         )
-    challenged_ref = candidate_decision_ref(challenged)
     new_version = next_decision_version(challenged.identity.version)
     new_identity = DecisionIdentity(
         decision_id=challenged.identity.decision_id,
@@ -115,6 +119,7 @@ def mint_revised_candidate_decision(
         lineage=new_lineage,
     )
     next_state = DecisionRevisionState(
+        proposal_ref=candidate_decision_ref(revised),
         revision_count=revision_state.revision_count + 1,
     )
     return revised, next_state

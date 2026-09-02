@@ -1,4 +1,4 @@
-﻿# Â© Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """Representative PlatformProofEvidence fixtures for HTML renderer tests (PP-REPORT-3)."""
 

@@ -38,12 +38,25 @@ storage_bootstrap/orchestration
 composition/bootstrap_runtime.py  ← only layer binding PostgreSQL + Qdrant
         ↑
 integrations/catalog_store/postgresql
-integrations/search_store/qdrant  → Intergrax vector index + VectorStore contracts
+integrations/search_store/platform_bootstrap_adapter  → Intergrax vector index + VectorStore contracts
         ↑
 Intergrax integration plugins (Qdrant provider owns vendor SDK)
 ```
 
-VPI production code contains **zero** vendor SDK imports (`qdrant_client`, `psycopg`, embedding SDKs, etc.).
+VPI bootstrap orchestrator
+        ↓
+SearchIndexBootstrapPort
+        ↓
+PlatformSearchIndexBootstrapAdapter
+        ↓
+VectorIndexAdministration + VectorStore
+        ↓
+composition-selected Intergrax plugin
+        ↓
+Qdrant SDK
+
+VPI production code contains **zero** vendor SDK imports (`qdrant_client`, `psycopg`, embedding SDKs, etc.)
+and **zero** concrete vector-provider implementation imports outside `composition/`.
 Provider selection (`qdrant`) is composition configuration; vendor implementation stays in `intergrax/integrations/providers/`.
 
 ## Contracts
@@ -61,9 +74,10 @@ Provider selection (`qdrant`) is composition configuration; vendor implementatio
 - Idempotent upserts; one transaction per ingest batch
 - Indexes: `(identifier_type, lookup_value)`, structured canonical lookup, `global_row_index`
 
-**Qdrant** (`integrations/search_store/qdrant/`)
+**Search index** (`integrations/search_store/platform_bootstrap_adapter.py`)
 
-- Collection: dense (`dense`) + sparse (`sparse`) channels on same point
+- Provider-neutral adapter over `VectorIndexAdministration` + `VectorStore`
+- Reference Qdrant wiring lives only in `composition/bootstrap_runtime.py`
 - Payload carries `SourceRecordRef` + derivation/embedding/dataset identity (no `record_json`)
 - Deterministic logical point id: `vpi:{catalog_id}:{offer_id}:semantic:{derivation_version}`
 
@@ -95,7 +109,7 @@ All must pass:
 
 - **Current-run** Gate 0 embedding probe (including READY fast path — no synthetic PASS)
 - PostgreSQL schema + expected row counts for ingest scope
-- Qdrant collection dimension + sparse channel compatibility + point count
+- Search index dense dimension + sparse lexical channel compatibility + point count
 - Manifest identity match + checkpoint complete for **current** requested target
 
 Partial provider success → `FAILED`, never `READY`.
@@ -116,6 +130,12 @@ Partial provider success → `FAILED`, never `READY`.
 ## Provider swap
 
 Implement `CatalogBootstrapPort` / `SearchIndexBootstrapPort` and wire in `composition/bootstrap_runtime.py` without orchestrator changes.
+
+Future reference compositions may pair the same `PlatformSearchIndexBootstrapAdapter` with other platform plugins:
+
+- Qdrant: `VectorIndexAdministration` + `VectorStore`
+- Weaviate: `VectorIndexAdministration` + `VectorStore`
+- PgVector: `VectorIndexAdministration` + `VectorStore`
 
 ## Configuration
 

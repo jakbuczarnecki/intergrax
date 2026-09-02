@@ -62,10 +62,9 @@ class ToolWiringSemanticJudge:
     """Production ``SemanticJudge`` over canonical ``eval_judge``."""
 
     ctx: ToolWiringContext
-    available: bool
 
     def is_available(self) -> bool:
-        return self.available
+        return _semantic_judge_available(self.ctx)
 
     def judge(self, params: EvalJudgeInput) -> EvalJudgeOutput:
         return eval_judge(self.ctx, params)
@@ -76,10 +75,9 @@ class ToolWiringTrajectoryEvaluator:
     """Production ``TrajectoryEvaluator`` over canonical ``eval_trajectory``."""
 
     ctx: ToolWiringContext
-    available: bool
 
     def is_available(self) -> bool:
-        return self.available
+        return _trajectory_evaluator_available(self.ctx)
 
     def evaluate(self, params: EvalTrajectoryInput) -> EvalTrajectoryOutput:
         return eval_trajectory(self.ctx, params)
@@ -100,15 +98,10 @@ def compose_tool_wiring_eval_verification(
     """Compose neutral eval verification adapters from one wiring context."""
     if type(ctx) is not ToolWiringContext:
         raise TypeError("ctx must be ToolWiringContext")
-    judge_available = _semantic_judge_available(ctx)
-    trajectory_available = _trajectory_evaluator_available(ctx)
     return ToolWiringEvalVerificationBridge(
         ctx=ctx,
-        semantic_judge=ToolWiringSemanticJudge(ctx=ctx, available=judge_available),
-        trajectory_evaluator=ToolWiringTrajectoryEvaluator(
-            ctx=ctx,
-            available=trajectory_available,
-        ),
+        semantic_judge=ToolWiringSemanticJudge(ctx=ctx),
+        trajectory_evaluator=ToolWiringTrajectoryEvaluator(ctx=ctx),
     )
 
 

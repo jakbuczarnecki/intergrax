@@ -41,6 +41,60 @@ def _spec(*, dimension: int = 1024, sparse: bool = True) -> VectorIndexSpec:
     )
 
 
+def test_vector_index_spec_rejects_empty_logical_name() -> None:
+    with pytest.raises(ValueError, match="logical_name"):
+        VectorIndexSpec(
+            identity=VectorIndexIdentity(logical_name="  ", tenant_id="default"),
+            dense=DenseVectorChannelSpec(channel_name="dense", dimension=8, metric="cosine"),
+            required_capabilities=frozenset({VectorSearchCapability.DENSE}),
+        )
+
+
+def test_vector_index_spec_rejects_empty_tenant_id() -> None:
+    with pytest.raises(ValueError, match="tenant_id"):
+        VectorIndexSpec(
+            identity=VectorIndexIdentity(logical_name="catalog", tenant_id=""),
+            dense=DenseVectorChannelSpec(channel_name="dense", dimension=8, metric="cosine"),
+            required_capabilities=frozenset({VectorSearchCapability.DENSE}),
+        )
+
+
+def test_vector_index_spec_rejects_conflicting_channel_names() -> None:
+    with pytest.raises(ValueError, match="channel names must differ"):
+        VectorIndexSpec(
+            identity=_identity(),
+            dense=DenseVectorChannelSpec(channel_name="shared", dimension=8, metric="cosine"),
+            required_capabilities=frozenset(
+                {VectorSearchCapability.DENSE, VectorSearchCapability.SPARSE_LEXICAL}
+            ),
+            sparse_lexical=SparseLexicalChannelSpec(channel_name="shared"),
+        )
+
+
+def test_vector_index_spec_rejects_sparse_spec_without_capability() -> None:
+    with pytest.raises(ValueError, match="must be omitted"):
+        VectorIndexSpec(
+            identity=_identity(),
+            dense=DenseVectorChannelSpec(channel_name="dense", dimension=8, metric="cosine"),
+            required_capabilities=frozenset({VectorSearchCapability.DENSE}),
+            sparse_lexical=SparseLexicalChannelSpec(channel_name="sparse"),
+        )
+
+
+def test_vector_index_description_rejects_negative_point_count() -> None:
+    with pytest.raises(ValueError, match="point_count"):
+        VectorIndexDescription(
+            identity=_identity(),
+            exists=True,
+            reachable=True,
+            point_count=-1,
+            dense_dimension=8,
+            present_capabilities=frozenset({VectorSearchCapability.DENSE}),
+            dense_channel_name="dense",
+            sparse_lexical_channel_name=None,
+        )
+
+
 def test_vector_index_spec_rejects_non_positive_dimension() -> None:
     with pytest.raises(ValueError, match="dimension"):
         VectorIndexSpec(

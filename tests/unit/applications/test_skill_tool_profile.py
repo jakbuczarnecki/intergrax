@@ -91,7 +91,8 @@ def test_wire_application_environment_rejects_unsatisfied_skill_tools() -> None:
 def test_lab_environment_declares_tool_availability_for_skills() -> None:
     settings = LabApplicationSettings(include_echo=True, include_mock_agents=False)
     env = build_lab_environment_profile(settings)
-    assert env.tool_profile.register_all_catalog_bundles is True
+    assert env.tool_profile.register_all_catalog_bundles is False
+    assert env.tool_profile.enabled_bundles
 
     skill_wiring = build_application_skill_wiring(env.skill_profile)
     resolution = assert_skill_tool_requirements_for_profile(

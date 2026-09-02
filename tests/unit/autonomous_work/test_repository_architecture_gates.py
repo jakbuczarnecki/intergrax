@@ -39,6 +39,16 @@ def _module_source_paths(package_name: str) -> list[Path]:
     return paths
 
 
+def _repository_module_source_paths() -> list[Path]:
+    package = importlib.import_module("intergrax.autonomous_work")
+    assert package.__file__ is not None
+    base = Path(package.__file__).parent
+    return [
+        base / "repository.py",
+        base / "in_memory_repository.py",
+    ]
+
+
 @pytest.mark.unit
 def test_repository_ports_do_not_import_runtime_services() -> None:
     forbidden_prefixes = (
@@ -104,7 +114,18 @@ def test_repository_module_has_no_lifecycle_transition_logic() -> None:
         "validate_transition",
         "lifecycle_graph",
     )
-    for path in _module_source_paths("intergrax.autonomous_work"):
+    for path in _repository_module_source_paths():
         source = path.read_text(encoding="utf-8").lower()
         for token in forbidden_tokens:
             assert token not in source, f"{path} contains lifecycle transition logic: {token}"
+
+
+@pytest.mark.unit
+def test_lifecycle_module_may_contain_lifecycle_transition_semantics() -> None:
+    lifecycle_module = importlib.import_module("intergrax.autonomous_work.lifecycle")
+    assert lifecycle_module.__file__ is not None
+    lifecycle_path = Path(lifecycle_module.__file__)
+    repository_paths = _repository_module_source_paths()
+    assert lifecycle_path not in repository_paths
+    source = lifecycle_path.read_text(encoding="utf-8").lower()
+    assert "validate_transition" in source

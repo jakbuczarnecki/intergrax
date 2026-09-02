@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable
+
+if TYPE_CHECKING:
+    from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 
 
 class IntegrationStatus(str, Enum):
@@ -75,6 +78,7 @@ class IntegrationEntry:
     env_prefix: str = ""
     description: str = ""
     requires_local_container: bool = False
+    contract_specs: tuple[IntegrationContractSpec, ...] = ()
 
     @property
     def metadata(self) -> IntegrationMetadata:

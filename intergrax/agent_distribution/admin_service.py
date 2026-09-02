@@ -83,6 +83,7 @@ from intergrax.agent_distribution.effective_roster import (
 from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
     BindingRevisionConflict,
+    EffectiveRosterSnapshotConflict,
     InstallationSlotConflict,
     MaterializationInputConflict,
     RuntimeActivationConflict,
@@ -112,6 +113,7 @@ from intergrax.agent_distribution.roster import (
     EffectiveRoster,
     ManifestDefaultAgentDeclaration,
 )
+from intergrax.agent_distribution.runtime_graph import CandidateApplicationRuntimeGraph
 from intergrax.agent_distribution.runtime_graph_service import (
     CandidateRuntimeGraphBuilder,
     CandidateRuntimeGraphValidator,
@@ -132,6 +134,7 @@ from intergrax.agent_distribution.stores import (
     ApplicationAgentBindingStore,
     ApplicationEnvironmentServingStore,
     DeploymentInstanceStore,
+    EffectiveRosterSnapshotStore,
     MaterializedRuntimeLockStore,
     RuntimeMaterializationStore,
     RuntimeRevisionStore,
@@ -215,6 +218,7 @@ class AgentPlatformAdminService:
         deployment_instance_store: DeploymentInstanceStore,
         lock_store: MaterializedRuntimeLockStore,
         materialization_store: RuntimeMaterializationStore,
+        effective_roster_snapshot_store: EffectiveRosterSnapshotStore,
         artifact_metadata_store: AgentArtifactMetadataStore,
         installation_service: InstallationService,
         binding_service: BindingService,
@@ -241,6 +245,7 @@ class AgentPlatformAdminService:
         self._deployment_instance_store = deployment_instance_store
         self._lock_store = lock_store
         self._materialization_store = materialization_store
+        self._effective_roster_snapshot_store = effective_roster_snapshot_store
         self._artifact_metadata_store = artifact_metadata_store
         self._installation_service = installation_service
         self._binding_service = binding_service
@@ -830,83 +835,53 @@ class AgentPlatformAdminService:
         )
 
         existing = self._revision_store.get_revision(request.runtime_revision_id)
+        if existing is None:
+            return self._build_new_application_revision(
+                application_id=application_id,
+                application_environment_id=application_environment_id,
+                request=request,
+                principal=principal,
+            )
+        return self._replay_application_revision(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            request=request,
+            existing=existing,
+        )
+
+    def _build_new_application_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: BuildApplicationRevisionRequest,
+        principal: RequestIdentity,
+    ) -> BuildRevisionResult:
         roster = self._build_roster(
             application_id=application_id,
             application_environment_id=application_environment_id,
             manifest_release_id=request.application_release_id,
         )
-        requirement_set = self._requirement_set_builder.build(roster)
-        specification = build_candidate_dependency_specification(
-            repository_declaration=request.repository_declaration,
-            installed_agent_requirement_set=requirement_set,
-            platform_version=request.platform_version,
+        canonical_roster = self._effective_roster_snapshot_store.persist(roster)
+        lock, graph = self._build_lock_and_graph_from_roster(
+            canonical_roster=canonical_roster,
+            request=request,
         )
-        resolver_input = DependencyResolverInput(
-            specification=specification,
-            resolver_algorithm_id=request.resolver_algorithm_id,
-            resolver_algorithm_version=request.resolver_algorithm_version,
-        )
-        lock = self._lock_service.produce_lock(resolver_input)
-        metadata_refs = {
-            package.distribution_package_id: package.agent_project_metadata_ref
-            for package in requirement_set.agent_packages
-        }
-        graph = self._graph_builder.build(
-            lock=lock,
-            effective_roster=roster,
-            repository_declaration=request.repository_declaration,
-            agent_metadata_refs=metadata_refs,
-        )
-        graph = self._graph_validator.validate(
-            lock=lock,
-            effective_roster=roster,
-            graph=graph,
-        )
-        if roster.effective_roster_revision_id is None:
+        if canonical_roster.effective_roster_revision_id is None:
             raise AgentDistributionNotFoundError(
                 "effective roster lacks revision identity"
             )
-        build_input_digest_value = build_input_digest(
-            application_release_id=request.application_release_id,
-            platform_version=request.platform_version,
-            python_version=request.python_version,
-            source_context_root=request.source_context_root,
-            application_source_root=request.application_source_root,
-            agent_source_roots=request.agent_source_roots,
-            materialization_topology=request.materialization_topology.value,
-            repository_declaration=request.repository_declaration,
-            resolver_algorithm_id=request.resolver_algorithm_id,
-            resolver_algorithm_version=request.resolver_algorithm_version,
-        )
+        build_input_digest_value = self._compute_build_input_digest(request)
         identity_digest = build_runtime_revision_identity_digest(
             runtime_revision_id=request.runtime_revision_id,
             application_release_id=request.application_release_id,
             platform_version=request.platform_version,
-            effective_roster_revision_id=roster.effective_roster_revision_id,
+            effective_roster_revision_id=canonical_roster.effective_roster_revision_id,
             lock_digest=lock.lock_digest,
             graph_digest=graph.runtime_graph_digest,
             materialization_topology=request.materialization_topology.value,
             build_input_digest=build_input_digest_value,
         )
-
-        if existing is not None:
-            if (
-                existing.application_id != application_id
-                or existing.application_environment_id != application_environment_id
-            ):
-                raise RuntimeRevisionConflict("runtime_revision_id already used")
-            if self._existing_revision_matches_proposed_build(
-                existing,
-                request=request,
-                effective_roster_revision_id=roster.effective_roster_revision_id,
-                lock_digest=lock.lock_digest,
-                graph_digest=graph.runtime_graph_digest,
-                build_input_digest_value=build_input_digest_value,
-            ):
-                return self._replay_existing_build(existing)
-            raise RuntimeRevisionConflict(
-                "runtime_revision_id conflicts with requested build identity"
-            )
 
         authorization = self._authorize_build(
             principal=principal,
@@ -921,7 +896,7 @@ class AgentPlatformAdminService:
         enabled_digests = tuple(
             sorted(
                 entry.package_digest
-                for entry in roster.entries
+                for entry in canonical_roster.entries
                 if entry.effective_enablement
             )
         )
@@ -931,7 +906,7 @@ class AgentPlatformAdminService:
             application_environment_id=application_environment_id,
             application_release_id=request.application_release_id,
             platform_version=request.platform_version,
-            effective_roster_revision_id=roster.effective_roster_revision_id,
+            effective_roster_revision_id=canonical_roster.effective_roster_revision_id,
             installed_agent_package_digests=enabled_digests,
             materialized_runtime_lock_id=persisted_lock.lock_id,
             materialized_runtime_lock_digest=persisted_lock.lock_digest,
@@ -957,7 +932,7 @@ class AgentPlatformAdminService:
                 runtime_revision=persisted.value,
                 materialized_runtime_lock=persisted_lock,
                 candidate_runtime_graph=graph,
-                effective_roster=roster,
+                effective_roster=canonical_roster,
                 application_build_context=build_context,
             )
         )
@@ -1532,14 +1507,89 @@ class AgentPlatformAdminService:
             operation="build_application_revision",
         )
 
+    def _replay_application_revision(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: BuildApplicationRevisionRequest,
+        existing: RuntimeRevision,
+    ) -> BuildRevisionResult:
+        if (
+            existing.application_id != application_id
+            or existing.application_environment_id != application_environment_id
+        ):
+            raise RuntimeRevisionConflict("runtime_revision_id already used")
+        self._require_historical_effective_roster_snapshot(existing)
+        build_input_digest_value = self._compute_build_input_digest(request)
+        if not self._request_matches_existing_build_identity(
+            existing,
+            request=request,
+            build_input_digest_value=build_input_digest_value,
+        ):
+            raise RuntimeRevisionConflict(
+                "runtime_revision_id conflicts with requested build identity"
+            )
+        self._require_canonical_lock_authority(existing)
+        return self._replay_existing_build(existing)
+
+    def _build_lock_and_graph_from_roster(
+        self,
+        *,
+        canonical_roster: EffectiveRoster,
+        request: BuildApplicationRevisionRequest,
+    ) -> tuple[MaterializedRuntimeLock, CandidateApplicationRuntimeGraph]:
+        requirement_set = self._requirement_set_builder.build(canonical_roster)
+        specification = build_candidate_dependency_specification(
+            repository_declaration=request.repository_declaration,
+            installed_agent_requirement_set=requirement_set,
+            platform_version=request.platform_version,
+        )
+        resolver_input = DependencyResolverInput(
+            specification=specification,
+            resolver_algorithm_id=request.resolver_algorithm_id,
+            resolver_algorithm_version=request.resolver_algorithm_version,
+        )
+        lock = self._lock_service.produce_lock(resolver_input)
+        metadata_refs = {
+            package.distribution_package_id: package.agent_project_metadata_ref
+            for package in requirement_set.agent_packages
+        }
+        graph = self._graph_builder.build(
+            lock=lock,
+            effective_roster=canonical_roster,
+            repository_declaration=request.repository_declaration,
+            agent_metadata_refs=metadata_refs,
+        )
+        graph = self._graph_validator.validate(
+            lock=lock,
+            effective_roster=canonical_roster,
+            graph=graph,
+        )
+        return lock, graph
+
     @staticmethod
-    def _existing_revision_matches_proposed_build(
+    def _compute_build_input_digest(
+        request: BuildApplicationRevisionRequest,
+    ) -> str:
+        return build_input_digest(
+            application_release_id=request.application_release_id,
+            platform_version=request.platform_version,
+            python_version=request.python_version,
+            source_context_root=request.source_context_root,
+            application_source_root=request.application_source_root,
+            agent_source_roots=request.agent_source_roots,
+            materialization_topology=request.materialization_topology.value,
+            repository_declaration=request.repository_declaration,
+            resolver_algorithm_id=request.resolver_algorithm_id,
+            resolver_algorithm_version=request.resolver_algorithm_version,
+        )
+
+    @staticmethod
+    def _request_matches_existing_build_identity(
         existing: RuntimeRevision,
         *,
         request: BuildApplicationRevisionRequest,
-        effective_roster_revision_id: str,
-        lock_digest: str,
-        graph_digest: str,
         build_input_digest_value: str,
     ) -> bool:
         if existing.build_input_digest is None:
@@ -1549,11 +1599,83 @@ class AgentPlatformAdminService:
         return (
             existing.application_release_id == request.application_release_id
             and existing.platform_version == request.platform_version
-            and existing.effective_roster_revision_id == effective_roster_revision_id
-            and existing.materialized_runtime_lock_digest == lock_digest
-            and existing.runtime_graph_digest == graph_digest
             and existing.materialization_topology == request.materialization_topology
         )
+
+    def _require_canonical_lock_authority(
+        self,
+        revision: RuntimeRevision,
+    ) -> MaterializedRuntimeLock:
+        lock_id = revision.materialized_runtime_lock_id
+        if lock_id is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_MATERIALIZED_RUNTIME_LOCK_AUTHORITY",
+                "runtime revision lacks canonical materialized runtime lock authority",
+            )
+        lock = self._lock_store.get_lock(lock_id)
+        if lock is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_MATERIALIZED_RUNTIME_LOCK_AUTHORITY",
+                "runtime revision lacks canonical materialized runtime lock authority",
+            )
+        if revision.materialized_runtime_lock_digest != lock.lock_digest:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MATERIALIZED_RUNTIME_LOCK_AUTHORITY",
+                "runtime revision materialized runtime lock digest mismatch",
+            )
+        return lock
+
+    def _require_historical_effective_roster_snapshot(
+        self,
+        revision: RuntimeRevision,
+    ) -> EffectiveRoster:
+        roster_revision_id = revision.effective_roster_revision_id
+        snapshot = self._effective_roster_snapshot_store.get_by_revision(
+            roster_revision_id
+        )
+        if snapshot is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_EFFECTIVE_ROSTER_SNAPSHOT",
+                "runtime revision lacks canonical effective roster snapshot authority",
+            )
+        try:
+            self._validate_effective_roster_snapshot_matches_revision(
+                snapshot,
+                revision,
+            )
+        except EffectiveRosterSnapshotConflict as exc:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_EFFECTIVE_ROSTER_SNAPSHOT_AUTHORITY",
+                str(exc),
+            ) from exc
+        return snapshot
+
+    @staticmethod
+    def _validate_effective_roster_snapshot_matches_revision(
+        snapshot: EffectiveRoster,
+        revision: RuntimeRevision,
+    ) -> None:
+        roster_revision_id = revision.effective_roster_revision_id
+        if snapshot.effective_roster_revision_id != roster_revision_id:
+            raise EffectiveRosterSnapshotConflict(
+                "effective roster snapshot revision id mismatch"
+            )
+        if snapshot.compute_revision_id() != roster_revision_id:
+            raise EffectiveRosterSnapshotConflict(
+                "effective roster snapshot content identity mismatch"
+            )
+        if snapshot.application_id != revision.application_id:
+            raise EffectiveRosterSnapshotConflict(
+                "effective roster snapshot application id mismatch"
+            )
+        if snapshot.application_environment_id != revision.application_environment_id:
+            raise EffectiveRosterSnapshotConflict(
+                "effective roster snapshot application environment id mismatch"
+            )
+        if snapshot.manifest_release_id != revision.application_release_id:
+            raise EffectiveRosterSnapshotConflict(
+                "effective roster snapshot manifest release id mismatch"
+            )
 
     def _replay_existing_build(self, existing: RuntimeRevision) -> BuildRevisionResult:
         materialization = self._materialization_store.get_by_revision(

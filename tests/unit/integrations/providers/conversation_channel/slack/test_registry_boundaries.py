@@ -12,6 +12,36 @@ from intergrax.runtime.integrations.registry_v2 import build_contract_registry, 
 
 pytestmark = pytest.mark.unit
 
+
+@pytest.fixture(autouse=True)
+def _canonical_catalog_bootstrap() -> None:
+    from intergrax.integrations.registry.bootstrap import (
+        register_default_integrations,
+        reset_default_integrations_state,
+    )
+    from intergrax.integrations.registry.catalog import clear_catalog
+
+    clear_catalog()
+    reset_default_integrations_state()
+    register_default_integrations(preset="full")
+    from intergrax.integrations.providers.conversation_channel.google_chat.register import (
+        register_google_chat_integration,
+    )
+    from intergrax.integrations.providers.conversation_channel.mattermost.register import (
+        register_mattermost_integration,
+    )
+    from intergrax.integrations.providers.conversation_channel.rocket_chat.register import (
+        register_rocket_chat_integration,
+    )
+
+    register_mattermost_integration()
+    register_rocket_chat_integration()
+    register_google_chat_integration()
+    yield
+    clear_catalog()
+    reset_default_integrations_state()
+
+
 _SLACK_PROVIDER_ROOT = (
     Path(__file__).resolve().parents[6]
     / "intergrax"

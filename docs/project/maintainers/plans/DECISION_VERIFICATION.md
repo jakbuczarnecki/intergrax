@@ -75,7 +75,7 @@ Enterprise hardening (typed validators, exact rubric-ref integrity, SHARED_PROFI
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-VER-PROD-COMP | P0 | Neutral ToolWiring eval adapters + pipeline factory for semantic/trajectory production composition | **Done** - `intergrax/runtime/decision_verification_composition.py`; `tests/unit/runtime/test_decision_verification_composition.py` |
+| DS-VER-PROD-COMP | P0 | Neutral ToolWiring eval adapters + pipeline factory for semantic/trajectory production composition | **Done / ENTERPRISE CLOSED** - dynamic capability availability (no stale boolean); `intergrax/runtime/decision_verification_composition.py`; `tests/unit/runtime/test_decision_verification_composition.py` |
 
 ---
 

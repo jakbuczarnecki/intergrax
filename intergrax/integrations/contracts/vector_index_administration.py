@@ -66,10 +66,18 @@ class VectorIndexSpec:
     sparse_lexical: SparseLexicalChannelSpec | None = None
 
     def __post_init__(self) -> None:
+        if not self.identity.logical_name.strip():
+            raise ValueError("identity.logical_name must be non-empty")
+        if not self.identity.tenant_id.strip():
+            raise ValueError("identity.tenant_id must be non-empty")
         if self.dense.dimension <= 0:
             raise ValueError("dense.dimension must be positive")
         if not self.dense.channel_name.strip():
             raise ValueError("dense.channel_name must be non-empty")
+        if self.dense.channel_name == (
+            self.sparse_lexical.channel_name if self.sparse_lexical is not None else None
+        ):
+            raise ValueError("dense and sparse_lexical channel names must differ")
         if VectorSearchCapability.SPARSE_LEXICAL in self.required_capabilities:
             if self.sparse_lexical is None:
                 raise ValueError(
@@ -77,6 +85,10 @@ class VectorIndexSpec:
                 )
             if not self.sparse_lexical.channel_name.strip():
                 raise ValueError("sparse_lexical.channel_name must be non-empty")
+        elif self.sparse_lexical is not None:
+            raise ValueError(
+                "sparse_lexical spec must be omitted when SPARSE_LEXICAL capability is not requested"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +103,10 @@ class VectorIndexDescription:
     present_capabilities: frozenset[VectorSearchCapability]
     dense_channel_name: str | None
     sparse_lexical_channel_name: str | None
+
+    def __post_init__(self) -> None:
+        if self.point_count < 0:
+            raise ValueError("point_count must be >= 0")
 
 
 @dataclass(frozen=True, slots=True)

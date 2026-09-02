@@ -171,6 +171,7 @@ def test_production_process_composition_owns_single_runtime_bundle() -> None:
     assert stores.revision_store is not None
     assert stores.lock_store is not None
     assert stores.materialization_store is not None
+    assert stores.effective_roster_snapshot_store is not None
 
 
 def test_production_store_continuity_resolves_active_projection_and_nexus_registry(

@@ -49,22 +49,33 @@ def decision_revision_policy(*, max_revisions: int) -> DecisionRevisionPolicy:
     return DecisionRevisionPolicy(max_revisions=max_revisions)
 
 
+class DecisionRevisionStateMismatchError(ValueError):
+    """Raised when revision state does not match the verification proposal."""
+
+
 @dataclass(frozen=True, slots=True)
 class DecisionRevisionState:
-    """Current semantic revision progress for one decision lineage."""
+    """Current semantic revision progress bound to one exact proposal."""
 
+    proposal_ref: DecisionProposalRef
     revision_count: int
 
     def __post_init__(self) -> None:
+        if type(self.proposal_ref) is not DecisionProposalRef:
+            raise TypeError("DecisionRevisionState.proposal_ref must be DecisionProposalRef")
         if type(self.revision_count) is not int or isinstance(self.revision_count, bool):
             raise TypeError("DecisionRevisionState.revision_count must be int")
         if self.revision_count < 0:
             raise ValueError("DecisionRevisionState.revision_count must be >= 0")
 
 
-def initial_decision_revision_state() -> DecisionRevisionState:
+def initial_decision_revision_state(
+    proposal_ref: DecisionProposalRef,
+) -> DecisionRevisionState:
     """Return revision state for an initial candidate (revision_count = 0)."""
-    return DecisionRevisionState(revision_count=0)
+    if type(proposal_ref) is not DecisionProposalRef:
+        raise TypeError("proposal_ref must be DecisionProposalRef")
+    return DecisionRevisionState(proposal_ref=proposal_ref, revision_count=0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,6 +84,7 @@ class DecisionRevisionDecision:
 
     disposition: DecisionRevisionDisposition
     proposal_ref: DecisionProposalRef
+    policy: DecisionRevisionPolicy
     revision_number: int | None = None
 
     def __post_init__(self) -> None:
@@ -83,6 +95,10 @@ class DecisionRevisionDecision:
         if type(self.proposal_ref) is not DecisionProposalRef:
             raise TypeError(
                 "DecisionRevisionDecision.proposal_ref must be DecisionProposalRef",
+            )
+        if type(self.policy) is not DecisionRevisionPolicy:
+            raise TypeError(
+                "DecisionRevisionDecision.policy must be DecisionRevisionPolicy",
             )
         if self.revision_number is not None:
             if type(self.revision_number) is not int or isinstance(
@@ -130,6 +146,10 @@ class DecisionRevisionAuthorization:
             raise ValueError(
                 "DecisionRevisionAuthorization.revision_number must be >= 1",
             )
+        if self.revision_number > self.policy.max_revisions:
+            raise ValueError(
+                "DecisionRevisionAuthorization.revision_number exceeds policy.max_revisions",
+            )
 
 
 def _proposal_ref_key(ref: DecisionProposalRef) -> tuple[str | int | None, ...]:
@@ -159,6 +179,37 @@ class DecisionRevisionPolicyEvaluator(Protocol):
         ...
 
 
+def validate_revision_decision_against_inputs(
+    *,
+    policy: DecisionRevisionPolicy,
+    state: DecisionRevisionState,
+    verification_result: VerificationResult,
+    revision_decision: DecisionRevisionDecision,
+) -> None:
+    """Reject custom evaluator output that violates canonical revision invariants."""
+    if type(policy) is not DecisionRevisionPolicy:
+        raise TypeError("policy must be DecisionRevisionPolicy")
+    if type(state) is not DecisionRevisionState:
+        raise TypeError("state must be DecisionRevisionState")
+    if type(verification_result) is not VerificationResult:
+        raise TypeError("verification_result must be VerificationResult")
+    if type(revision_decision) is not DecisionRevisionDecision:
+        raise TypeError("revision_decision must be DecisionRevisionDecision")
+    if revision_decision.policy != policy:
+        raise ValueError("revision_decision.policy must match evaluation policy")
+    if not proposal_refs_match(state.proposal_ref, verification_result.proposal_ref):
+        raise DecisionRevisionStateMismatchError(
+            "revision state proposal_ref must match verification_result proposal_ref",
+        )
+    if not proposal_refs_match(
+        revision_decision.proposal_ref,
+        verification_result.proposal_ref,
+    ):
+        raise ValueError(
+            "revision_decision.proposal_ref must match verification_result proposal_ref",
+        )
+
+
 def evaluate_decision_revision(
     *,
     policy: DecisionRevisionPolicy,
@@ -172,11 +223,16 @@ def evaluate_decision_revision(
         raise TypeError("state must be DecisionRevisionState")
     if type(verification_result) is not VerificationResult:
         raise TypeError("verification_result must be VerificationResult")
+    if not proposal_refs_match(state.proposal_ref, verification_result.proposal_ref):
+        raise DecisionRevisionStateMismatchError(
+            "revision state proposal_ref must match verification_result proposal_ref",
+        )
     proposal_ref = verification_result.proposal_ref
     if verification_result.disposition is VerificationDisposition.PASSED:
         return DecisionRevisionDecision(
             disposition=DecisionRevisionDisposition.NOT_REQUIRED,
             proposal_ref=proposal_ref,
+            policy=policy,
         )
     if verification_result.disposition is not VerificationDisposition.CHALLENGED:
         raise ValueError(
@@ -186,24 +242,23 @@ def evaluate_decision_revision(
         return DecisionRevisionDecision(
             disposition=DecisionRevisionDisposition.ALLOWED,
             proposal_ref=proposal_ref,
+            policy=policy,
             revision_number=state.revision_count + 1,
         )
     return DecisionRevisionDecision(
         disposition=DecisionRevisionDisposition.EXHAUSTED,
         proposal_ref=proposal_ref,
+        policy=policy,
     )
 
 
 def decision_revision_authorization(
     *,
     revision_decision: DecisionRevisionDecision,
-    policy: DecisionRevisionPolicy,
 ) -> DecisionRevisionAuthorization:
     """Mint one revision authorization from an ALLOWED revision decision."""
     if type(revision_decision) is not DecisionRevisionDecision:
         raise TypeError("revision_decision must be DecisionRevisionDecision")
-    if type(policy) is not DecisionRevisionPolicy:
-        raise TypeError("policy must be DecisionRevisionPolicy")
     if revision_decision.disposition is not DecisionRevisionDisposition.ALLOWED:
         raise ValueError(
             "revision authorization requires DecisionRevisionDisposition.ALLOWED",
@@ -212,6 +267,6 @@ def decision_revision_authorization(
         raise ValueError("revision authorization requires revision_number")
     return DecisionRevisionAuthorization(
         proposal_ref=revision_decision.proposal_ref,
-        policy=policy,
+        policy=revision_decision.policy,
         revision_number=revision_decision.revision_number,
     )

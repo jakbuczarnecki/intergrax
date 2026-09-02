@@ -1,12 +1,16 @@
 # PROVIDER-QUAL-9 — Real-Vendor-Wide Enterprise Qualification
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `READY_TO_CLOSE` (R1 re-evaluation after `INTEGRATIONS-REGISTRY-CANONICALIZATION-1` environment closure)
 
 **Baseline ancestor:** `4c2e6e962f5dcff78b6fabe16afe68af50220cb0`
 
 **Audit HEAD:** `cf34a48bca6fac1ce343a864caebec624e3bbf1c` (branch `development`, ancestor verified)
 
+**R1 re-evaluation HEAD:** `b575cb6fdaa55231ca59df60350f4cc5696a4051` (canonical registry ancestor `e6ec82d` verified in lineage)
+
 **Audit date:** 2026-09-02
+
+**R1 re-evaluation date:** 2026-09-02 — dual-registry architectural blocker resolved; mandatory PostgreSQL + Mongo qualification proofs re-executed with zero skips at R1 HEAD (see `INTEGRATION_REGISTRY_CANONICAL_AUTHORITY.md` § Environment regression closure).
 
 ---
 
@@ -45,7 +49,7 @@ Enterprise-wide qualification audit of **existing** real vendor integrations in 
 
 ## 2. Provider inventory
 
-**Authority:** `intergrax/integrations/providers/` directory layout + `register.py` / `bundle.py` / `integration.py` + `intergrax/runtime/integrations/registry_v2.py` + tests.
+**Authority:** `intergrax/integrations/registry/catalog.py` + `register_from_manifest` / `register_integration_plugin` + provider `register.py` / `bundle.py` / `integration.py`. Contract inspection projection: `intergrax/runtime/integrations/registry_v2.py` (derived read model, not registration authority).
 
 **Scale:** 37 provider categories, ~200 registered slugs. Standard registration pattern: `register.py` → factory registration, `bundle.py` → runtime factories, `integration.py` → `PlatformIntegrationContract` implementation, `manifest.py` → preset metadata.
 
@@ -134,7 +138,7 @@ Qualification is **capability-scoped**, never vendor-global.
 | Discovery / validity lifecycle | YES | `discovery.py`, `validity*.py` |
 | Observability | YES | `observability.py` (QUAL-7 closed) |
 | Diagnostics | YES | `PlatformProblemSignal` downstream by host |
-| Integration registry v2 | YES | single contract-aware registry |
+| Integration contract projection | YES | derived from canonical catalog `contract_specs`; not independent authority |
 | Plugin registration | YES | `register_integration_plugin` |
 | Second qualification engine | NO | not created |
 | Vendor dispatch in qual core | NO | verified by gate |
@@ -148,7 +152,7 @@ Qualification is **capability-scoped**, never vendor-global.
 
 1. Implement provider under `intergrax/integrations/providers/<category>/<slug>/`
 2. Register via `register.py` → integration catalog
-3. Optionally register registry v2 contract binding
+3. Optionally inspect typed contract metadata via `build_contract_registry_snapshot()` (projection only)
 4. Domain qualification requires `ProviderQualificationDomainBinding` materializer (not automatic)
 
 **Architecture proofs:**
@@ -388,7 +392,7 @@ Session logs: `.tmp/session/provider-qual-9/`
 ## 18. Provider onboarding rules
 
 1. Add provider under `integrations/providers/<category>/<slug>/` with register/bundle/integration.
-2. Register typed contract via existing catalog + registry v2.
+2. Register typed contract metadata on the canonical catalog entry (`contract_specs`).
 3. Keep vendor SDK imports inside provider boundary modules.
 4. Provider config via `IntegrationProfile.options[slug]` — never in qual core.
 5. Capability qualification requires domain `ProviderQualificationDomainBinding` — not automatic on registration.

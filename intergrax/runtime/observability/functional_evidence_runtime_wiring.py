@@ -1,13 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Harness wiring for in-process functional evidence persistence (DIAG-FUNCTIONAL-Q1)."""
+"""Harness wiring for functional evidence persistence (DIAG-DURABILITY-D1)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+    wire_functional_evidence_persistence,
+)
 from intergrax.runtime.diagnostics.functional_evidence_persistence import FunctionalEvidencePersistence
 from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
@@ -26,22 +30,47 @@ class FunctionalEvidenceRuntimeWiring:
     recorder: FunctionalEvidenceRecorder
 
 
-def wire_in_memory_functional_evidence_runtime(
+def wire_functional_evidence_runtime(
     *,
     cursor_secret: str | bytes,
+    document_store: DocumentStore | None = None,
     producer_component: str = "agents.local_search",
 ) -> FunctionalEvidenceRuntimeWiring:
+    """
+    Compose functional evidence recorder over explicit persistence backend.
+
+    ``document_store`` selects durable ConditionalDocumentStore persistence.
+    When omitted, in-memory persistence is used (tests/dev only).
+    """
     secret_bytes = (
         cursor_secret
         if isinstance(cursor_secret, bytes)
         else cursor_secret.encode("utf-8")
     )
-    persistence = InMemoryFunctionalEvidencePersistence(cursor_secret=secret_bytes)
+    if document_store is not None:
+        persistence = wire_functional_evidence_persistence(
+            document_store=document_store,
+            cursor_secret=secret_bytes,
+        )
+    else:
+        persistence = InMemoryFunctionalEvidencePersistence(cursor_secret=secret_bytes)
     recorder = FunctionalEvidenceRecorder(
         persistence,
         producer_component=producer_component,
     )
     return FunctionalEvidenceRuntimeWiring(persistence=persistence, recorder=recorder)
+
+
+def wire_in_memory_functional_evidence_runtime(
+    *,
+    cursor_secret: str | bytes,
+    producer_component: str = "agents.local_search",
+) -> FunctionalEvidenceRuntimeWiring:
+    """Explicit in-memory functional evidence wiring for tests and conformance."""
+    return wire_functional_evidence_runtime(
+        cursor_secret=cursor_secret,
+        producer_component=producer_component,
+    )
 
 
 def functional_evidence_wiring_extra_key() -> str:
@@ -73,5 +102,6 @@ __all__ = [
     "FunctionalEvidenceRuntimeWiring",
     "attach_functional_evidence_recorder_from_runtime_state",
     "functional_evidence_wiring_extra_key",
+    "wire_functional_evidence_runtime",
     "wire_in_memory_functional_evidence_runtime",
 ]
