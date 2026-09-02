@@ -19,6 +19,7 @@ This satellite holds **extended technical architecture** for Autonomous Work. It
 | **Domain contracts (AW-1)** | This file §Detailed domain model only |
 | **Control plane (AW-9)** | This file §Control plane only |
 | **Enterprise scenarios / proof** | This file §Enterprise examples only |
+| **Long-horizon continuity** | This file §Long-Horizon Work Continuity only + [MEMORY.md](../MEMORY.md) front ownership + [CONTEXT_ENGINEERING.md](../CONTEXT_ENGINEERING.md) front ownership + [UNIFIED_CONTEXT_LIFECYCLE.md](../UNIFIED_CONTEXT_LIFECYCLE.md) front ownership |
 
 ---
 
@@ -44,6 +45,7 @@ WorkerGoal (0..N per responsibility)
 WorkerBudgetProfile
 WorkerCapabilityProfile
 WorkerRecoveryContext (per obstacle episode)
+WorkContinuityState (durable orientation snapshot)
       ↓ creates / correlates
 WorkItem / Assignment (Collaborative Work)
       ↓ dispatches
@@ -907,12 +909,149 @@ Identifiers match hub §Normative invariants. This section elaborates meaning; i
 
 ### Recommendations (not adopted)
 
-No new invariants added at AW-0. Potential future candidates for independent audit consideration:
+AW-INV-21 through AW-INV-26 added for Long-Horizon Work Continuity at AW-0 (pending independent audit). Potential future candidates for independent audit consideration:
 
 - explicit **idempotent wake-up** invariant (may be subsumed by AW-4 acceptance criteria),
 - **recovery budget isolation** invariant (partially covered by AW-INV-19 and recovery attempts cap).
 
 ---
+
+
+---
+
+# Long-Horizon Work Continuity
+
+Fundamental Virtual Worker property — not an optional Memory feature.
+
+> A Virtual Worker must preserve effective work continuity across an effectively unbounded work horizon while keeping each active model context bounded, relevant, attributable and reconstructable.
+
+> **The information space may be effectively unbounded. The active context must remain bounded.**
+
+## Problem statement
+
+Workers may operate for days, weeks or months across thousands of WorkItems, executions, millions of records, and many external systems. They may restart, change models, idle, or interleave unrelated work. They must answer orientation questions without reloading full history:
+
+`	ext
+Where am I? What am I responsible for? What am I trying to achieve?
+What is currently open? What has already been done? What failed?
+What did I learn? What information do I need now? What should happen next?
+`
+
+Autonomous Work coordinates Memory, Context Engineering, UCL, RAG and Token Optimization — without WorkerMemoryEngine, WorkerContextEngine, worker-private RAG, or alternate UCL.
+
+## Five-level information model
+
+| Level | Name | Owner | Purpose |
+| --- | --- | --- | --- |
+| 1 | Active Working Context | Context Engineering | Small model-facing context for the current call |
+| 2 | Work Continuity State | Autonomous Work | Durable orientation — open work, blockers, learned refs, next action |
+| 3 | Durable Memory | Memory | Facts, experiences, profiles, important events |
+| 4 | Knowledge / External Information Space | RAG, Tools, Integrations, files, APIs, repos | Retrieved on demand |
+| 5 | Durable Context Lifecycle / Optimization | UCL, CE, Token Optimization | Reuse, compaction, budgeting, degradation |
+
+## Work Continuity State
+
+See [§WorkContinuityState](#workcontinuitystate) conceptual contract. Orientation state — not a competing memory store.
+
+## Restore-orientation flow
+
+`	ext
+Worker wakes
+    ↓
+load durable Worker state
+    ↓
+load Responsibilities + active Goals
+    ↓
+load open / blocked WorkItems
+    ↓
+load latest continuity checkpoint
+    ↓
+identify information needed now
+    ↓
+selectively recall Memory
+    ↓
+retrieve external knowledge only when needed
+    ↓
+Context Engineering assembles bounded context
+    ↓
+Agent reasons / Execution acts
+`
+
+Must work after: host restart, long idle, model replacement, context-window reset, unrelated executions, large work-history growth.
+
+## Selective retrieval
+
+Workers retrieve relevant information when needed instead of accumulating full work history into every active model context (AW-INV-23). Full-history replay is forbidden in normal operation (AW-INV-24).
+
+## Context Engineering integration
+
+CE owns assembly, global input budget, ranking, degradation and provenance. Autonomous Work supplies continuity requirements and anchor references.
+
+## Memory integration
+
+Memory owns stores, lifecycle, consolidation and recall. Workers persist valuable outcomes through canonical Memory write paths — not a worker-private store.
+
+## RAG / external-space traversal
+
+RAG and integrations answer external knowledge needs. Workers retain how to find information again (source refs, scopes, retrieval keys) — not entire corpora in active context.
+
+## UCL / Token Optimization reuse
+
+UCL coordinates durable artifact reuse-before-create and compaction. Token Optimization executes approved transformations. No worker-specific duplicate.
+
+## Context decay / stale information
+
+Continuity state and recalls may become stale. Checkpoints, revision semantics, freshness metadata and re-validation before high-impact actions are required.
+
+## Checkpoint and restart continuity
+
+Every bounded work episode leaves a durable checkpoint: progress, open items, blockers, next-action hint, anchor refs. Restart loads checkpoint + authoritative worker state — never process-local prompt history.
+
+## Cross-WorkItem learning
+
+Lessons may promote to Memory or update continuity anchors. Cross-item recall is profile-governed and must not flood active context.
+
+## Forgetting / retention
+
+Retention applies via Memory and worker profiles. Forgetting unresolved work is a failure mode — open/blocker refs must survive until resolved or escalated.
+
+## Provenance
+
+Restored context must preserve source identity (AW-INV-25): durable fact vs RAG hit vs execution evidence vs inferred summary.
+
+## Context-efficiency observability
+
+**Continuity:** continuation success after restart; continuation success after long idle; duplicate-work rate; lost-open-work rate.
+
+**Context efficiency:** active context tokens per step; context tokens per completed WorkItem; retrieved-data volume; full-history-read count (expected near zero / forbidden in normal operation); artifact reuse rate; context compaction/reuse rate.
+
+**Recall quality:** relevant recall precision; missed-critical-context rate; stale-context usage rate; incorrect-memory usage rate.
+
+**Long-horizon scaling:** logical stress at 100 / 1,000 / 10,000 / 100,000 historical events — active context must remain bounded and continuation correct.
+
+Key question: *With 1000× history growth, does active context stay bounded and can the Worker still continue correctly?*
+
+## Failure modes
+
+| Failure | Architectural safeguard |
+| --- | --- |
+| Full-history replay | AW-INV-24; orientation from continuity state + selective retrieval |
+| Context accumulation | AW-INV-21/23; CE global budget; release transient context |
+| Stale memory | Freshness metadata, re-validation, stale-context metrics |
+| Irrelevant recall | CE ranking/filtering; scoped recall; precision metrics |
+| Duplicate work after restart | Idempotent wake-up; checkpointed open-work refs |
+| Forgetting unresolved work | open_work_refs / locked_work_refs in continuity state |
+| Historical goal treated as active | ctive_goal_refs vs archived goals |
+| Obsolete external data | source refs + re-fetch; RAG scope validation |
+| Summary drift | UCL revision semantics; provenance on compacted artifacts |
+| Lost provenance | AW-INV-25; CE provenance emit |
+| Excessive repeated retrieval | UCL artifact reuse; retrieval volume metrics |
+| Token cost grows with worker age | bounded active context invariant |
+| Model change breaks continuity | durable state independent of prior model context |
+
+## Proof requirements
+
+AW-11 must include long-horizon stress scenarios and metrics above. Future proof gates — no runtime tests at AW-0.
 
 ## Cross-references
 

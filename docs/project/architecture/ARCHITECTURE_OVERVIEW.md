@@ -183,7 +183,8 @@ A Virtual Worker:
 - uses the **application operating layer** and existing governed execution,
 - does **not** replace Agents or Executions,
 - composes Tools, Skills, Integrations, Governance, Observability, CodeCraft, and recovery mechanisms,
-- remains responsible after each execution completes or fails.
+- remains responsible after each execution completes or fails,
+- preserves **long-running responsibility** with **bounded active context** and **selective retrieval** — not full-history replay into every model call.
 
 **Maturity:** canonical architecture and implementation plan exist; worker runtime, control plane, reference application, and end-to-end proof are **not implemented**. Details: [Autonomous Work](AUTONOMOUS_WORK.md) · product-facing [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md).
 

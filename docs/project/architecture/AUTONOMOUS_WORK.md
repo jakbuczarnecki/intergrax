@@ -14,14 +14,20 @@ Autonomous Work targets a different problem: **who remains responsible when the 
 
 ```text
 Agent:
-receives work → executes → finishes
+works inside one bounded execution
 
 Virtual Worker:
-owns responsibility → watches goals → accepts/creates work
-→ launches governed executions → handles obstacles → remains responsible
+must remain effective across many executions,
+large information spaces and long periods of time
 ```
 
-Intergrax already provides governed execution, agents, tools, policy, evidence, and recovery building blocks. Autonomous Work composes them under one durable worker semantics layer instead of inventing parallel runtimes.
+A Virtual Worker must preserve **Long-Horizon Work Continuity**: orientation, memory, and effective context across an effectively unbounded work horizon while keeping each active model context bounded, relevant, attributable and reconstructable.
+
+> **The information space may be effectively unbounded. The active context must remain bounded.**
+
+> **Virtual Worker nie powinien próbować pamiętać wszystkiego naraz. Powinien wiedzieć, co jest ważne teraz i gdzie odnaleźć resztę.**
+
+Intergrax already provides governed execution, agents, tools, policy, evidence, memory, context engineering, and recovery building blocks. Autonomous Work composes them under one durable worker semantics layer instead of inventing parallel runtimes.
 
 ---
 
@@ -43,6 +49,7 @@ Intergrax already provides governed execution, agents, tools, policy, evidence, 
 | Concern | Summary |
 | --- | --- |
 | **Responsibility** | Persistent autonomous business responsibility, goals, lifecycle, work intake, and worker-level recovery semantics |
+| **Long-horizon continuity** | Worker preserves orientation and retrieves only relevant context across an effectively unbounded work horizon |
 | **Main abstraction** | **Virtual Worker** (`WorkerDefinition` → `WorkerInstance`) |
 | **Owns** | Responsibilities, goals, worker lifecycle, wake-up semantics, worker→work/execution correlation, obstacle classification hand-off |
 | **Reuses** | Collaborative Principal/authority, WorkItem, Governed Execution, Agents, Tools/Skills/Integrations, CodeCraft, Sandbox, Memory, Observability, Diagnostics, Hosting |
@@ -62,22 +69,47 @@ Intergrax already provides governed execution, agents, tools, policy, evidence, 
 </picture>
 </a>
 
+<a href="assets/autonomous-work-long-horizon-context-light.svg">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/autonomous-work-long-horizon-context-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/autonomous-work-long-horizon-context-light.svg">
+  <img src="assets/autonomous-work-long-horizon-context-light.svg" alt="Long-Horizon Work Continuity: effectively unbounded information space feeds selective retrieval into Work Continuity State, then Context Engineering assembles bounded active context for Agent execution; results persist to Memory and artifacts while transient context is discarded before worker sleep and later orientation restore.">
+</picture>
+</a>
+
 ---
 
 ## How it works
 
+```text
+wake up
+→ restore current work orientation
+→ determine what information is required
+→ retrieve relevant memory/knowledge/artifacts
+→ Context Engineering builds bounded active context
+→ execute
+→ observe result
+→ update continuity state
+→ persist valuable knowledge
+→ release transient context
+→ sleep / continue
+```
+
 1. A **Virtual Worker** exists as a durable responsibility holder — usually **IDLE**, not continuously reasoning.
-2. An external **event**, **schedule**, or **goal evaluation** wakes the worker when action is required.
-3. The worker **accepts or creates work** in the collaborative work plane.
-4. The worker dispatches a canonical **Governed Execution** — it does not replace execution semantics.
-5. An **Agent** performs reasoning inside that execution.
-6. **Governance** evaluates authority and policy at configured boundaries.
-7. When progress stalls or fails, **obstacle classification** precedes any recovery strategy.
-8. The worker first tries to **reuse an existing capability**; a true gap may route to **CodeCraft**.
-9. Generated code runs through **Sandbox + verification** before resuming the original work item.
-10. After execution completes, the **worker remains responsible** — ready for the next wake-up.
+2. On wake-up the worker **restores orientation** from durable continuity state — not from full history replay.
+3. An external **event**, **schedule**, or **goal evaluation** triggers action when required.
+4. The worker **accepts or creates work** in the collaborative work plane.
+5. The worker dispatches a canonical **Governed Execution** — it does not replace execution semantics.
+6. An **Agent** performs reasoning inside that execution on a **bounded active context** assembled by Context Engineering.
+7. **Governance** evaluates authority and policy at configured boundaries.
+8. When progress stalls or fails, **obstacle classification** precedes any recovery strategy.
+9. The worker first tries to **reuse an existing capability**; a true gap may route to **CodeCraft**.
+10. Generated code runs through **Sandbox + verification** before resuming the original work item.
+11. After execution completes, the worker **updates continuity state**, persists valuable knowledge, releases transient context, and **remains responsible** — ready for the next wake-up.
 
 Persistent availability is **event-driven and bounded**, not an infinite LLM loop.
+
+See [Long-Horizon Work Continuity](satellites/AUTONOMOUS_WORK_extended_depth.md#long-horizon-work-continuity) and the [context diagram](assets/autonomous-work-long-horizon-context-light.svg).
 
 ---
 
@@ -94,7 +126,7 @@ Worker lifetime != process lifetime
 
 | Autonomous Work owns | Autonomous Work does not own |
 | --- | --- |
-| Worker definition/instance semantics, responsibilities, goals, lifecycle, wake-up, recovery decision semantics | Collaborative identity/authority, Task/Run/Execution lifecycle, agent cognition, tools/skills/integrations, memory stores, CodeCraft synthesis, sandbox substrate, HOS/evidence truth, Tier-3 application UX |
+| Worker definition/instance semantics, responsibilities, goals, lifecycle, wake-up, recovery decision semantics, **work-continuity state semantics**, **continuity guarantees**, **responsibility/goal/work/artifact correlation for orientation**, **rules for state that must survive between activations** | Collaborative identity/authority, Task/Run/Execution lifecycle, agent cognition, tools/skills/integrations, **memory storage**, **RAG retrieval engine**, **final context assembly**, **context token budget**, **context compaction engine**, **optimization artifact repository**, CodeCraft synthesis, sandbox substrate, HOS/evidence truth, Tier-3 application UX |
 
 Normative rule: **Capability may grow. Authority may not self-expand.**
 
@@ -111,9 +143,25 @@ Autonomous Work sits above governed execution and composes existing domains:
 | [Unified Execution Runtime](UNIFIED_EXECUTION_RUNTIME.md) / Nexus | Actual Task/Run/Attempt/Execution lifecycle |
 | [Agents](AGENT_CONTRACTS_AND_ASSEMBLY.md) / [Reasoning](REASONING_AND_COGNITION.md) | Cognition inside worker-triggered executions |
 | [Code Craft](CODE_CRAFT.md) / Sandbox | Canonical missing-code capability path |
-| [Observability](OBSERVABILITY.md) / [Diagnostics](DIAGNOSTICS.md) | Execution truth and obstacle evidence |
+| [Memory](MEMORY.md) | Durable facts, experiences, profiles — recalled selectively for continuity |
+| [Context Engineering](CONTEXT_ENGINEERING.md) | Bounded active working context per model call |
+| [Unified Context Lifecycle](UNIFIED_CONTEXT_LIFECYCLE.md) | Durable context artifact reuse, compaction coordination |
+| [RAG](RAG.md) | External knowledge retrieval when worker needs corpus/documents |
+| [Token Optimization](TOKEN_OPTIMIZATION.md) | Approved context transformations under UCL |
+| [Observability](OBSERVABILITY.md) / [Diagnostics](DIAGNOSTICS.md) | Execution truth, obstacle evidence, continuity-efficiency metrics |
 | [Application Hosting](APPLICATION_HOSTING.md) | Host process lifetime; worker identity survives restart |
 | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) | Future collaboration may compose Multiplayer; neither owns Autonomous Work |
+
+**Long-Horizon Work Continuity composition:**
+
+```text
+Memory remembers          → durable facts between activations
+RAG retrieves             → external knowledge on demand
+Context Engineering selects → what the model sees now (bounded)
+UCL coordinates           → durable context optimization/reuse
+Token Optimization executes → approved transformations
+Autonomous Work owns      → persistent work orientation and continuity requirements
+```
 
 ---
 
@@ -146,6 +194,7 @@ No dedicated public Autonomous Work proof route exists at AW-0. Architecture exi
 - **Default:** human-facing front through §Go deeper, then §Ownership boundary, §Core model, §Normative invariants, §Integration boundaries. **Do not load the extended-depth satellite by default.**
 - **Implementation:** this read-scope block + the active `AW-*` row in [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md).
 - **Recovery / adaptive capability work:** §Adaptive obstacle recovery + [`satellites/AUTONOMOUS_WORK_extended_depth.md`](satellites/AUTONOMOUS_WORK_extended_depth.md) §Recovery Controller, §Capability acquisition, §A0–A4, §CodeCraft recovery + relevant slice of [`CODE_CRAFT.md`](CODE_CRAFT.md) and [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md).
+- **Long-horizon continuity work:** hub relevant sections + [`satellites/AUTONOMOUS_WORK_extended_depth.md`](satellites/AUTONOMOUS_WORK_extended_depth.md) §Long-Horizon Work Continuity only + [`MEMORY.md`](MEMORY.md) front ownership section + [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) front ownership section + [`UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) front ownership section.
 - **Lifecycle work:** [`satellites/AUTONOMOUS_WORK_extended_depth.md`](satellites/AUTONOMOUS_WORK_extended_depth.md) §Worker lifecycle only.
 - **Observability work:** [`satellites/AUTONOMOUS_WORK_extended_depth.md`](satellites/AUTONOMOUS_WORK_extended_depth.md) §Observability + relevant slice of [`OBSERVABILITY.md`](OBSERVABILITY.md).
 - **Collaborative identity/work:** §Principal and WorkItem integration + relevant slice of [`COLLABORATIVE_WORK.md`](COLLABORATIVE_WORK.md).
@@ -233,6 +282,10 @@ The key distinction is:
 - worker-level recovery orchestration semantics,
 - obstacle classification hand-off contract,
 - capability-acquisition decision semantics,
+- **semantics of Worker work-continuity state**,
+- **required continuity guarantees**,
+- **correlation of responsibility/goal/work/artifact references for orientation**,
+- **rules determining what state must survive between worker activations**,
 - worker-level composition references to budget, policy, memory, capability, schedule and risk profiles,
 - worker-centric operational state required to project fleet status.
 
@@ -588,9 +641,39 @@ See [extended depth — Durable capability promotion](satellites/AUTONOMOUS_WORK
 
 ---
 
-## Memory and context
+## Memory and context / Long-Horizon Work Continuity
 
-Virtual Workers need continuity, but Autonomous Work does not own another memory store.
+Virtual Workers need continuity across days, weeks, or months — thousands of WorkItems, executions, and millions of records — without loading full history into every model call.
+
+**Long-Horizon Work Continuity** is a fundamental Virtual Worker property, not an optional Memory feature:
+
+> A Virtual Worker must preserve effective work continuity across an effectively unbounded work horizon while keeping each active model context bounded, relevant, attributable and reconstructable.
+
+Canonical loop:
+
+```text
+persist state
+→ sleep / restart / execute other work
+→ restore orientation
+→ determine information need
+→ retrieve only relevant information
+→ perform bounded reasoning
+→ persist important result
+→ release transient context
+→ continue
+```
+
+### Five-level information model
+
+| Level | Name | Owner | Role |
+| --- | --- | --- | --- |
+| 1 | Active Working Context | Context Engineering | Small context for the current model call |
+| 2 | Work Continuity State | **Autonomous Work** | Durable worker orientation — what is open, blocked, learned, next |
+| 3 | Durable Memory | Memory | Facts, experiences, profiles, important events |
+| 4 | Knowledge / External Information Space | RAG, Tools, Integrations, … | Retrieved on demand; worker knows how to find it again |
+| 5 | Durable Context Lifecycle / Optimization | UCL, Context Engineering, Token Optimization | Artifact reuse, compaction, token budgeting |
+
+Autonomous Work does **not** create WorkerMemoryEngine, WorkerContextEngine, worker-private RAG, or an alternate UCL.
 
 A worker may reference a profile describing permitted continuity:
 
@@ -604,7 +687,7 @@ WorkerMemoryProfile
   sensitive_context_policy_ref
 ```
 
-The profile composes Memory, UCL, Context Engineering and Collaborative Work scoping.
+The profile composes Memory, UCL, Context Engineering and Collaborative Work scoping. See [extended depth — Long-Horizon Work Continuity](satellites/AUTONOMOUS_WORK_extended_depth.md#long-horizon-work-continuity).
 
 ---
 
@@ -730,6 +813,12 @@ Extended obstacle and proactive scenarios (unknown attachment, vendor API drift,
 - **AW-INV-18 — Application does not own worker semantics:** Tier-3 Virtual Workforce UI consumes the domain.
 - **AW-INV-19 — Worker budget composes execution budgets:** no competing execution-budget ledger.
 - **AW-INV-20 — Recovery classification precedes capability synthesis:** `on_error → CodeCraft` is forbidden architecture.
+- **AW-INV-21 — Bounded Context, Unbounded Work Horizon:** worker work lifetime and accessible information space may be effectively unbounded, but every model-facing active context remains bounded by canonical Context Engineering budgets.
+- **AW-INV-22 — Durable Orientation:** worker continuation must be reconstructable from durable canonical state after restart, model change, long idle period or execution loss. Continuation must not depend on process memory or a previous model context window.
+- **AW-INV-23 — Retrieve, Do Not Accumulate:** a Worker retrieves relevant information when needed instead of accumulating its full work history into every active model context.
+- **AW-INV-24 — No Full-History Replay Dependency:** continuing worker responsibility must not require replaying the complete historical conversation, execution history or work history.
+- **AW-INV-25 — Provenance-Preserving Recall:** context restored for autonomous work must preserve enough source identity/provenance to distinguish durable facts, retrieved knowledge, execution evidence and inferred summaries.
+- **AW-INV-26 — Context Efficiency Is Observable:** worker context usage must emit sufficient evidence to measure retrieval volume, active-context size, reuse, stale-context failures and continuation quality.
 
 See [extended depth — Invariants](satellites/AUTONOMOUS_WORK_extended_depth.md#invariants---extended-explanation) for elaborated meaning of each invariant.
 

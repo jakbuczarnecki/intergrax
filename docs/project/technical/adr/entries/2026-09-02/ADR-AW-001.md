@@ -103,7 +103,9 @@ docs/project/maintainers/plans/AUTONOMOUS_WORK.md
 - proactive goal-evaluation semantics,
 - worker-level obstacle recovery orchestration,
 - capability acquisition decision semantics,
-- worker-level correlations/profile composition.
+- worker-level correlations/profile composition,
+- **long-horizon work continuity semantics**,
+- **durable work orientation requirements** (including Work Continuity State semantics).
 
 6. Autonomous Work explicitly does not own:
 
@@ -116,7 +118,10 @@ docs/project/maintainers/plans/AUTONOMOUS_WORK.md
 | policy enforcement / HITL | Governed Execution / Reliability-HITL |
 | generated code | CodeCraft |
 | execution isolation | existing Sandbox runtime/substrate |
-| memory/context | Memory / UCL / Context Engineering |
+| memory storage | Memory |
+| context assembly / token budget | Context Engineering |
+| durable context optimization / reuse | UCL / Token Optimization |
+| external knowledge retrieval | RAG |
 | execution evidence | Observability / HOS |
 | problem evidence/diagnostics | Diagnostics |
 | process lifecycle | Application Hosting |
@@ -140,6 +145,8 @@ Worker role, responsibility or goal never grants permission.
 10. Capability may expand within policy; authority may never self-expand.
 
 11. Durable generated capability promotion is a separate governed control-plane lifecycle; ephemeral CraftResult does not silently become a global production tool/integration.
+
+- Virtual Worker cannot depend on full history replay or process-local context for continuity.
 
 ## Consequences
 

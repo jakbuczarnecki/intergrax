@@ -65,7 +65,9 @@ specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.m
 for the category, problem, and fit.
 
 Intergrax is evolving toward governed autonomous AI systems and persistent
-**Virtual Workers** that own responsibilities and goals across many executions.
+**Virtual Workers** that own responsibilities and goals across many executions,
+with **bounded active context** and **selective retrieval** over long-running
+responsibility — not full-history replay into every model call.
 This is **canonical architecture / implementation roadmap** direction — the
 Virtual Worker runtime, control plane, and Virtual Workforce product are
 **not implemented yet**.

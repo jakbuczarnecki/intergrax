@@ -90,8 +90,8 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Freeze minimum Tier-0 Autonomous Work contracts |
 | **Dependencies** | AW-0G accepted |
-| **Exact scope** | `WorkerDefinition`, `WorkerInstance`, `Responsibility`, `WorkerGoal`, worker lifecycle state contract, stable IDs/version/revision semantics |
-| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Detailed domain model |
+| **Exact scope** | `WorkerDefinition`, `WorkerInstance`, `Responsibility`, `WorkerGoal`, worker lifecycle state contract, stable IDs/version/revision semantics, **conceptual `WorkContinuityState` contract and reference fields** |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Detailed domain model, §Long-Horizon Work Continuity §Work Continuity State |
 | **REUSED** | platform ID/value-object conventions; profile references to existing domains |
 | **NEW** | Autonomous Work contract module only |
 | **Explicit out of scope** | repositories, services, HTTP APIs, execution dispatch, CodeCraft, UI, persistence adapters |
@@ -120,7 +120,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Repository ports + in-memory adapter for WorkerDefinition/WorkerInstance/Responsibility/Goal state |
 | **Dependencies** | AW-1 complete |
-| **Exact scope** | optimistic revision semantics, tenant/workspace scoping where applicable, idempotent create, deterministic update conflict |
+| **Exact scope** | optimistic revision semantics, tenant/workspace scoping where applicable, idempotent create, deterministic update conflict, **durable continuity checkpoint/revision semantics for `WorkContinuityState`** |
 | **REUSED** | existing repository/concurrency patterns |
 | **Explicit out of scope** | production DB adapter, dispatch, UI |
 | **Acceptance** | durable semantics are process-independent; no silent last-write-wins |
@@ -134,7 +134,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Authoritative worker lifecycle transition service |
 | **Exact scope** | PROVISIONING/ACTIVE/IDLE/WORKING/WAITING_EXTERNAL/WAITING_FOR_HUMAN/RECOVERING/DEGRADED/PAUSED/QUARANTINED/STOPPED transitions; transition guards; restart-safe rehydration |
-| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Worker lifecycle |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Worker lifecycle, §Long-Horizon Work Continuity §Checkpoint and restart continuity |
 | **Acceptance** | lifecycle independent of execution state; invalid transitions fail deterministically; restart keeps worker identity |
 | **Next step** | AW-2C |
 
@@ -185,8 +185,8 @@ Delivery rule:
 | **Priority** | P0 |
 | **Status** | NOT STARTED |
 | **Purpose** | Event/subscription wake-up model |
-| **Exact scope** | external event, queue/work assignment, schedule, human approval, dependency recovery and operator wake-ups |
-| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Wake-up and scheduling semantics |
+| **Exact scope** | external event, queue/work assignment, schedule, human approval, dependency recovery and operator wake-ups; **restore orientation from durable continuity state before accepting/creating next work** |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Wake-up and scheduling semantics, §Long-Horizon Work Continuity §Restore-orientation flow |
 | **REUSED** | existing background/task intake and hosting/event mechanisms where appropriate |
 | **Acceptance** | worker can remain IDLE with zero LLM activity; duplicate event handling is idempotent |
 | **Next step** | AW-4B |
@@ -223,7 +223,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Canonical worker → Execution dispatch/correlation |
 | **REUSED** | Unified Execution Runtime / Nexus / orchestration |
-| **Acceptance** | worker may create many executions; execution lifecycle never becomes worker lifecycle; all executions correlate to worker/goal/work context |
+| **Acceptance** | worker may create many executions; execution lifecycle never becomes worker lifecycle; all executions correlate to worker/goal/work context; **continuity state updated across execution boundaries** |
 | **Next step** | AW-5B |
 
 | Field | Value |
@@ -320,7 +320,7 @@ Delivery rule:
 | **Status** | NOT STARTED |
 | **Purpose** | Worker/goal/work/recovery correlation into canonical evidence |
 | **REUSED** | HOS / RuntimeEvent / journals / DIAG / Proof Receipts |
-| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Observability |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Observability, §Long-Horizon Work Continuity §Context-efficiency observability |
 | **Acceptance** | no second execution event source; every worker-triggered Execution reconstructable |
 | **Next step** | AW-8B |
 
@@ -383,9 +383,9 @@ Delivery rule:
 | **Priority** | P1 |
 | **Status** | NOT STARTED |
 | **Purpose** | Autonomous Order Operations Worker end-to-end proof |
-| **Chaos corpus** | normal orders; PDF/XLS; unknown/corrupted attachment; prompt injection; missing/contradictory data; duplicate; timeout; rate limit; API drift/410; revoked credential; supplier outage; policy deny; malicious code temptation; sandbox unavailable; human decision; host restart |
-| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Enterprise examples |
-| **Metrics** | goal/autonomous completion, intervention, recovery success/time, zero policy violations/unauthorized egress/isolation downgrade, escalation quality, capability pass/rollback, evidence completeness, cost/work, SLA, side-effect idempotency |
+| **Chaos corpus** | normal orders; PDF/XLS; unknown/corrupted attachment; prompt injection; missing/contradictory data; duplicate; timeout; rate limit; API drift/410; revoked credential; supplier outage; policy deny; malicious code temptation; sandbox unavailable; human decision; host restart; **long-horizon stress (100 / 1k / 10k / 100k historical events with bounded active context)** |
+| **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Enterprise examples, §Long-Horizon Work Continuity §Proof requirements |
+| **Metrics** | goal/autonomous completion, intervention, recovery success/time, zero policy violations/unauthorized egress/isolation downgrade, escalation quality, capability pass/rollback, evidence completeness, cost/work, SLA, side-effect idempotency; **continuation success after restart/idle, duplicate-work rate, lost-open-work rate, active context tokens per step, retrieved-data volume, full-history-read count (near zero), artifact reuse rate, recall precision, stale-context usage rate** |
 | **Acceptance** | demonstrates durable responsibility + safe obstacle recovery, not scripted happy-path demo |
 | **Next step** | AW-12A |
 
@@ -416,7 +416,7 @@ Delivery rule:
 | Observability | canonical execution truth and projections | P0/P1 |
 | CodeCraft | missing-code capability synthesis | P0 for adaptive differentiator |
 | Sandbox | safe generated-code execution | P0 production blocker |
-| Memory/UCL/Context | continuity across work episodes | P1 |
+| Memory/UCL/Context | continuity across work episodes; **long-horizon work continuity semantics** | P0 for worker orientation; P1 for full integration |
 | Application Hosting | durable host/restart composition | P1 |
 | Multiplayer AI | future human-worker-worker collaboration | P2; not core worker blocker |
 

@@ -32,6 +32,14 @@ The worker may use many executions and many agents over its lifetime.
 
 ---
 
+## Long-running responsibility without full history
+
+A Virtual Worker can remain responsible for work over long periods — days, weeks, or months — **without requiring its entire history to be loaded into the model**. It restores its current position, retrieves only the relevant information, performs bounded work, and persists what matters for the future.
+
+Like an experienced employee who does not keep the entire company history in working memory: the worker knows **where to find the right information** and **remembers the state of its responsibility**.
+
+---
+
 ## Why Intergrax is a strong fit
 
 Intergrax already separates many of the mechanisms that enterprise autonomous work requires:
