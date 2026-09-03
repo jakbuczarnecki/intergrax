@@ -9,9 +9,9 @@ import pytest
 
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
-from intergrax.runtime.sandbox.sandbox_runtime import requires_sandbox_tool
-from intergrax.runtime.sandbox.session import SandboxSession
+from intergrax.tools.core.contracts import ToolIsolationRequirement
 from intergrax.tools.providers.codecraft.bundle import register_codecraft_tools
+from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.tools.providers.codecraft.contracts import CodeCraftRunToolInput
 from intergrax.tools.providers.codecraft.service import codecraft_run
 from intergrax.tools.registry.bootstrap import register_default_tools, reset_default_tools_bootstrap
@@ -151,8 +151,11 @@ def test_codecraft_tool_registered_in_catalog() -> None:
     assert "codecraft.start" in bundle.tool_ids
 
 
-def test_requires_sandbox_tool_includes_codecraft_run() -> None:
-    assert requires_sandbox_tool("codecraft.run") is True
+def test_codecraft_run_contract_declares_sandbox_isolation() -> None:
+    registry = ToolRegistry()
+    register_codecraft_tools(registry, ToolWiringContext())
+    contract = registry.get("codecraft.run").contract
+    assert contract.isolation_requirement is ToolIsolationRequirement.SANDBOX
 
 
 def test_build_registry_enables_codecraft_tool(sandbox_session: SandboxSession) -> None:

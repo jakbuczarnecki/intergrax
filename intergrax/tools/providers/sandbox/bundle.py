@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from intergrax.tools.core.contracts import ToolContract, ToolIsolationRequirement, ToolRiskLevel
 from intergrax.tools.providers.sandbox.contracts import (
     BrowserRunInput,
     BrowserRunOutput,
@@ -40,6 +40,8 @@ SANDBOX_TOOL_IDS: tuple[str, ...] = (
     SANDBOX_LIST_OPERATIONS_TOOL_ID,
 )
 
+_SANDBOX_ISOLATION = ToolIsolationRequirement.SANDBOX
+
 
 def sandbox_exec_contract() -> ToolContract:
     return ToolContract(
@@ -57,6 +59,7 @@ def sandbox_exec_contract() -> ToolContract:
         category="sandbox",
         risk_level=ToolRiskLevel.HIGH,
         tags=("sandbox", "execution"),
+        isolation_requirement=_SANDBOX_ISOLATION,
     )
 
 
@@ -75,6 +78,7 @@ def register_sandbox_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="sandbox",
             risk_level=ToolRiskLevel.HIGH,
             tags=("sandbox", "code", "execution"),
+            isolation_requirement=_SANDBOX_ISOLATION,
         ),
         CodeExecHandler(ctx),
     )
@@ -91,6 +95,7 @@ def register_sandbox_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="sandbox",
             risk_level=ToolRiskLevel.HIGH,
             tags=("sandbox", "script", "execution"),
+            isolation_requirement=_SANDBOX_ISOLATION,
         ),
         ScriptRunHandler(ctx),
     )
@@ -107,6 +112,7 @@ def register_sandbox_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="sandbox",
             risk_level=ToolRiskLevel.HIGH,
             tags=("sandbox", "browser", "execution"),
+            isolation_requirement=_SANDBOX_ISOLATION,
         ),
         BrowserRunHandler(ctx),
     )

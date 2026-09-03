@@ -3,18 +3,19 @@
 import pytest
 
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
-from intergrax.runtime.sandbox.sandbox_runtime import (
-    SANDBOX_TOOL_NAME,
-    requires_sandbox_tool,
-)
+from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_TOOL_NAME
 from intergrax.runtime.sandbox.session import SandboxSession
+from intergrax.tools.core.contracts import ToolIsolationRequirement
+from intergrax.tools.providers.sandbox.bundle import sandbox_exec_contract
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-def test_requires_sandbox_tool():
-    assert requires_sandbox_tool(SANDBOX_TOOL_NAME) is True
-    assert requires_sandbox_tool("echo.basic") is False
+def test_requires_sandbox_tool_uses_contract_not_tool_id() -> None:
+    contract = sandbox_exec_contract()
+    assert contract.tool_id == SANDBOX_TOOL_NAME
+    assert contract.isolation_requirement is ToolIsolationRequirement.SANDBOX
+    assert contract.requires_sandbox_isolation is True
 
 
 def test_sandbox_session_echo_and_files(tmp_path):

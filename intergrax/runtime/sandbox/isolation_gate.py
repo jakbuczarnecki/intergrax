@@ -13,8 +13,8 @@ from intergrax.runtime.sandbox.isolation_errors import (
     SandboxIsolationFailureReason,
     SandboxIsolationRequiredError,
 )
-from intergrax.runtime.sandbox.sandbox_runtime import requires_sandbox_tool
 from intergrax.runtime.sandbox.session import SandboxSession
+from intergrax.tools.core.contracts import ToolContract, contract_requires_sandbox_isolation
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -71,25 +71,25 @@ def sandbox_availability_provider(
 
 def require_sandbox_isolation(
     *,
-    tool_id: str,
+    contract: ToolContract,
     availability: SandboxIsolationAvailability,
     run_id: str,
     agent_id: str,
 ) -> None:
     """Fail closed when a catalog tool requires isolation but none is available."""
-    if not requires_sandbox_tool(tool_id):
+    if not contract_requires_sandbox_isolation(contract):
         return
     if not availability.healthy:
         raise SandboxIsolationRequiredError(
             run_id=run_id,
             agent_id=agent_id,
-            tool_id=tool_id,
+            tool_id=contract.tool_id,
             reason=SandboxIsolationFailureReason.UNHEALTHY,
         )
     if not availability.available:
         raise SandboxIsolationRequiredError(
             run_id=run_id,
             agent_id=agent_id,
-            tool_id=tool_id,
+            tool_id=contract.tool_id,
             reason=SandboxIsolationFailureReason.NOT_CONFIGURED,
         )

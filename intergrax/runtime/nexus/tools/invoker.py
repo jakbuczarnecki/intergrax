@@ -40,7 +40,10 @@ from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_po
 from intergrax.runtime.policy.declarative_tool_authorization_gate import (
     require_meaningful_side_effect_authorization,
 )
-from intergrax.runtime.sandbox.isolation_gate import require_sandbox_isolation
+from intergrax.runtime.sandbox.isolation_gate import (
+    SandboxIsolationAvailability,
+    require_sandbox_isolation,
+)
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.contracts.idempotency_store import ClaimOutcome
@@ -264,11 +267,19 @@ class RuntimeToolInvoker:
 
         contract = reg.contract
 
-        if self._sandbox_availability is not None:
+        if contract.requires_sandbox_isolation:
+            if self._sandbox_availability is None:
+                availability = SandboxIsolationAvailability(
+                    session_configured=False,
+                    host_configured=False,
+                    healthy=True,
+                )
+            else:
+                availability = self._sandbox_availability()
             try:
                 require_sandbox_isolation(
-                    tool_id=contract.tool_id,
-                    availability=self._sandbox_availability(),
+                    contract=contract,
+                    availability=availability,
                     run_id=state.run_id,
                     agent_id=agent_id,
                 )

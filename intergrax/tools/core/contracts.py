@@ -20,6 +20,13 @@ class ToolRiskLevel(str, Enum):
     CRITICAL = "critical"
 
 
+class ToolIsolationRequirement(str, Enum):
+    """Declarative sandbox isolation requirement for executable tools (P0-SAFETY-7A)."""
+
+    NONE = "none"
+    SANDBOX = "sandbox"
+
+
 class SideEffectRetrySafety(str, Enum):
     """
     Positive retry authorization for side-effectful tools (TOOLS-05).
@@ -83,6 +90,7 @@ class ToolContract:
     injects_context: bool = False
     category: str = ""
     tags: tuple[str, ...] = ()
+    isolation_requirement: ToolIsolationRequirement = ToolIsolationRequirement.NONE
 
     def __post_init__(self) -> None:
         if self.timeout_ms < 1:
@@ -93,3 +101,13 @@ class ToolContract:
         if compact and self.description_short:
             return self.description_short
         return self.description
+
+    @property
+    def requires_sandbox_isolation(self) -> bool:
+        """True when runtime must enforce sandbox availability before execution."""
+        return self.isolation_requirement is ToolIsolationRequirement.SANDBOX
+
+
+def contract_requires_sandbox_isolation(contract: ToolContract) -> bool:
+    """Contract-driven isolation check (not tool_id authority)."""
+    return contract.requires_sandbox_isolation
