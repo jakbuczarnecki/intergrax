@@ -9,6 +9,10 @@ from intergrax.contracts.autonomous_work.continuity import (
     ProgressCheckpoint,
     WorkContinuityState,
 )
+from intergrax.contracts.autonomous_work.execution_authority import (
+    WorkerExecutionAuthorityContext,
+    WorkerExecutionAuthorityRequest,
+)
 from intergrax.contracts.autonomous_work.goal import WorkerGoal, WorkerGoalStatus
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
@@ -118,6 +122,8 @@ __all__ = (
     "SlaSloRef",
     "SuccessCriteriaRef",
     "WorkContinuityState",
+    "WorkerExecutionAuthorityContext",
+    "WorkerExecutionAuthorityRequest",
     "WorkReference",
     "WorkerDefinition",
     "WorkerDefinitionId",

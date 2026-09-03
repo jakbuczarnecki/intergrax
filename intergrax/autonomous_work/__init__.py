@@ -25,9 +25,18 @@ from intergrax.autonomous_work.in_memory_repository import (
 )
 from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
 from intergrax.autonomous_work.persistence_provider import resolve_autonomous_work_repositories
+from intergrax.autonomous_work.execution_authority_admission import (
+    CollaborativeWorkAuthorityResolverPort,
+    WorkerExecutionAdmissionService,
+    WorkerExecutionAuthorityDenied,
+)
 from intergrax.autonomous_work.principal_binding_resolver import (
     WorkerPrincipalBindingRequired,
     WorkerPrincipalBindingResolver,
+)
+from intergrax.contracts.autonomous_work.execution_authority import (
+    WorkerExecutionAuthorityContext,
+    WorkerExecutionAuthorityRequest,
 )
 from intergrax.contracts.autonomous_work.principal_binding import ResolvedWorkerPrincipal
 from intergrax.autonomous_work.repository import (
@@ -53,6 +62,7 @@ __all__ = (
     "AutonomousWorkRepositoryCapabilities",
     "AutonomousWorkRevisionConflict",
     "AutonomousWorkRepositories",
+    "CollaborativeWorkAuthorityResolverPort",
     "resolve_autonomous_work_repositories",
     "InMemoryResponsibilityRepository",
     "InMemoryWorkContinuityStateRepository",
@@ -67,6 +77,10 @@ __all__ = (
     "WorkerInstanceRepository",
     "WorkerPrincipalBindingRepository",
     "ResolvedWorkerPrincipal",
+    "WorkerExecutionAdmissionService",
+    "WorkerExecutionAuthorityContext",
+    "WorkerExecutionAuthorityDenied",
+    "WorkerExecutionAuthorityRequest",
     "WorkerPrincipalBindingRequired",
     "WorkerPrincipalBindingResolver",
     "WorkerLifecycleService",

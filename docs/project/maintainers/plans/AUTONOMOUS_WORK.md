@@ -52,7 +52,7 @@ Delivery rule:
 | AW-0 | Canonical architecture, ADR, documentation registration | **CLOSED / FROZEN** — AW-0G independently accepted |
 | AW-1 | Core semantic contracts | **DONE** |
 | AW-2 | Durable worker state and lifecycle | **DONE** |
-| AW-3 | Principal / authority / workspace composition | **IN PROGRESS** |
+| AW-3 | Principal / authority / workspace composition | **DONE** |
 | AW-4 | Work intake and proactive goal evaluation | NOT STARTED |
 | AW-5 | Worker → execution composition and budgets | NOT STARTED |
 | AW-6 | Recovery Controller and obstacle taxonomy | NOT STARTED |
@@ -174,7 +174,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-3B |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | DONE |
 | **Purpose** | Worker-level authority snapshot/correlation into canonical Execution intake |
 | **Acceptance** | resulting Execution authority <= bound effective authority; scheduling/recovery/agent changes cannot expand authority |
 | **Next step** | AW-4A |
