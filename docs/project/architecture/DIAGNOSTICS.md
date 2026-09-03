@@ -754,7 +754,7 @@ GENERIC FUNCTIONAL ANALYSIS = QUALIFIED
 OPERATOR FUNCTIONAL PROJECTION = QUALIFIED
 
 H1 TEST-SUITE HEALTH = OPEN
-DURABLE PERSISTENCE = QUALIFIED (D1 process restart)
+DURABLE PERSISTENCE = QUALIFIED (D1-R1 Mongo process restart)
 PRODUCTION SCALE = NOT YET QUALIFIED
 REAL WORKLOAD QUALIFICATION = NOT YET COMPLETE
 ```
@@ -829,8 +829,8 @@ FunctionalEvidencePersistence (contract semantics)
         │     intended use: unit / local / conformance
         │
         └── DocumentStoreFunctionalEvidencePersistence
-              correctness: qualified (D1)
-              durable: YES (process restart against durable DocumentStore)
+              correctness: qualified (D1 contract)
+              durable: YES (D1-R1 Mongo process restart qualified 2026-09-03)
               scale-qualified: NO
               intended use: production composition via wire_functional_evidence_persistence
 ```
@@ -838,10 +838,12 @@ FunctionalEvidencePersistence (contract semantics)
 | Provider | Correctness | Durable | Scale qualified | Intended use |
 | -------- | ----------- | ------- | --------------- | ------------ |
 | `InMemoryFunctionalEvidencePersistence` | YES | NO | NO | unit / local / conformance |
-| `DocumentStoreFunctionalEvidencePersistence` | YES | YES | NO | production durable backend |
-| Mongo / other DocumentStore vendors | via ConditionalDocumentStore | YES | pending S1 | integration composition |
+| `DocumentStoreFunctionalEvidencePersistence` | YES | YES (D1-R1) | NO | production durable backend |
+| Mongo / other DocumentStore vendors | via ConditionalDocumentStore | YES (Mongo D1-R1) | pending S1 | integration composition |
 
-**D1 durable authority (DIAG-DURABILITY-D1):**
+**D1 durable authority (DIAG-DURABILITY-D1 / D1-R1):**
+
+- D1-R1 qualified real Mongo-backed process boundary (writer PID ≠ reader PID, zero memory handoff).
 
 - Canonical record: `record:<evidence_id>` in partition `intergrax.functional_evidence.v1:<tenant_id>`.
 - Execution index: `exec:<task_id>:<run_id>:<evidence_id>` stores evidence reference only.
@@ -858,7 +860,7 @@ FunctionalEvidencePersistence (contract semantics)
 | ----- | ------ |
 | Architecture qualified | YES |
 | Correctness qualified | YES |
-| Production durability qualified (process restart) | YES (D1) |
+| Production durability qualified (process restart) | YES (D1-R1 Mongo) |
 | Production scale qualified | NO |
 
 Functional Diagnostics must **not** be labelled **PRODUCTION SCALE QUALIFIED** until a durable provider exists with a bounded query index strategy and passes real high-cardinality qualification.
