@@ -39,13 +39,31 @@ def _module_source_paths(package_name: str) -> list[Path]:
     return paths
 
 
-def _repository_module_source_paths() -> list[Path]:
+def _repository_port_source_paths() -> list[Path]:
     package = importlib.import_module("intergrax.autonomous_work")
     assert package.__file__ is not None
     base = Path(package.__file__).parent
     return [
         base / "repository.py",
         base / "in_memory_repository.py",
+    ]
+
+
+def _repository_module_source_paths() -> list[Path]:
+    return [
+        *_repository_port_source_paths(),
+        Path(importlib.import_module("intergrax.autonomous_work.lifecycle").__file__),
+    ]
+
+
+def _persistence_adapter_source_paths() -> list[Path]:
+    package = importlib.import_module("intergrax.autonomous_work")
+    assert package.__file__ is not None
+    base = Path(package.__file__).parent
+    return [
+        base / "postgresql_repository.py",
+        base / "persistence.py",
+        base / "serialization.py",
     ]
 
 
@@ -68,8 +86,37 @@ def test_repository_ports_do_not_import_runtime_services() -> None:
 
 
 @pytest.mark.unit
-def test_repository_ports_have_no_provider_dependencies() -> None:
-    for path in _module_source_paths("intergrax.autonomous_work"):
+def test_lifecycle_module_may_contain_lifecycle_transition_semantics() -> None:
+    lifecycle_module = importlib.import_module("intergrax.autonomous_work.lifecycle")
+    assert lifecycle_module.__file__ is not None
+    lifecycle_path = Path(lifecycle_module.__file__)
+    repository_paths = [
+        Path(importlib.import_module("intergrax.autonomous_work").__file__).parent / "repository.py",
+        Path(importlib.import_module("intergrax.autonomous_work").__file__).parent / "in_memory_repository.py",
+    ]
+    assert lifecycle_path not in repository_paths
+    source = lifecycle_path.read_text(encoding="utf-8").lower()
+    assert "validate_transition" in source
+
+
+@pytest.mark.unit
+def test_persistence_adapter_does_not_import_psycopg() -> None:
+    for path in _persistence_adapter_source_paths():
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    root = alias.name.split(".", 1)[0]
+                    assert root != "psycopg", f"{path} imports psycopg"
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                root = node.module.split(".", 1)[0]
+                assert root != "psycopg", f"{path} imports psycopg"
+
+
+@pytest.mark.unit
+def test_lifecycle_and_repository_ports_have_no_provider_dependencies() -> None:
+    for path in _repository_module_source_paths():
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
@@ -114,18 +161,7 @@ def test_repository_module_has_no_lifecycle_transition_logic() -> None:
         "validate_transition",
         "lifecycle_graph",
     )
-    for path in _repository_module_source_paths():
+    for path in _repository_port_source_paths():
         source = path.read_text(encoding="utf-8").lower()
         for token in forbidden_tokens:
             assert token not in source, f"{path} contains lifecycle transition logic: {token}"
-
-
-@pytest.mark.unit
-def test_lifecycle_module_may_contain_lifecycle_transition_semantics() -> None:
-    lifecycle_module = importlib.import_module("intergrax.autonomous_work.lifecycle")
-    assert lifecycle_module.__file__ is not None
-    lifecycle_path = Path(lifecycle_module.__file__)
-    repository_paths = _repository_module_source_paths()
-    assert lifecycle_path not in repository_paths
-    source = lifecycle_path.read_text(encoding="utf-8").lower()
-    assert "validate_transition" in source

@@ -22,6 +22,10 @@ from intergrax.autonomous_work.in_memory_repository import (
     InMemoryWorkerGoalRepository,
     InMemoryWorkerInstanceRepository,
 )
+from intergrax.autonomous_work.persistence import (
+    AutonomousWorkRepositories,
+    open_postgresql_autonomous_work_repositories,
+)
 from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityConflict,
     AutonomousWorkEntityNotFound,
@@ -43,6 +47,7 @@ __all__ = (
     "AutonomousWorkLifecycleStateConflict",
     "AutonomousWorkRepositoryCapabilities",
     "AutonomousWorkRevisionConflict",
+    "AutonomousWorkRepositories",
     "InMemoryResponsibilityRepository",
     "InMemoryWorkContinuityStateRepository",
     "InMemoryWorkerDefinitionRepository",
@@ -57,4 +62,5 @@ __all__ = (
     "WorkerLifecycleTransitionPolicy",
     "WorkerLifecycleTransitionRequest",
     "WorkerLifecycleTransitionResult",
+    "open_postgresql_autonomous_work_repositories",
 )
