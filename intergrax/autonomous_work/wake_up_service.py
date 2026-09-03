@@ -33,7 +33,9 @@ from intergrax.contracts.autonomous_work.wake_up import (
     WorkerWakeUpResult,
     WorkerWakeUpSignal,
     WorkerWakeUpSourceKind,
+    worker_wake_up_signal_from_receipt,
 )
+from intergrax.autonomous_work.repository import WorkerWakeUpReceiptClaimStatus
 from intergrax.contracts.autonomous_work.worker import WorkerInstance
 
 _ORDINARY_WAKE_UP_SOURCES: Final[frozenset[WorkerWakeUpSourceKind]] = frozenset(
@@ -188,10 +190,20 @@ class WorkerWakeUpService:
         continuity_state = self._load_continuity(
             worker_instance_id=worker.worker_instance_id,
         )
-        if claim.duplicate:
+        canonical_signal = worker_wake_up_signal_from_receipt(claim.receipt)
+        if claim.status is WorkerWakeUpReceiptClaimStatus.CONFLICT:
+            return self._result(
+                disposition=WorkerWakeUpDisposition.CONFLICT,
+                signal=canonical_signal,
+                worker=worker,
+                continuity_state=continuity_state,
+                accepted_at=claim.receipt.accepted_at,
+                receipt=claim.receipt,
+            )
+        if claim.status is WorkerWakeUpReceiptClaimStatus.DUPLICATE:
             return self._result(
                 disposition=WorkerWakeUpDisposition.DUPLICATE,
-                signal=signal,
+                signal=canonical_signal,
                 worker=worker,
                 continuity_state=continuity_state,
                 accepted_at=claim.receipt.accepted_at,
@@ -199,7 +211,7 @@ class WorkerWakeUpService:
             )
         return self._result(
             disposition=WorkerWakeUpDisposition.ACCEPTED,
-            signal=signal,
+            signal=canonical_signal,
             worker=worker,
             continuity_state=continuity_state,
             accepted_at=claim.receipt.accepted_at,

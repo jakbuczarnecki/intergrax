@@ -17,7 +17,9 @@ from intergrax.autonomous_work.repository import (
     AutonomousWorkRepositoryCapabilities,
     AutonomousWorkRevisionConflict,
     WorkerWakeUpReceiptClaim,
+    WorkerWakeUpReceiptClaimStatus,
 )
+from intergrax.autonomous_work.wake_up_receipt_claim import resolve_wake_up_receipt_claim
 from intergrax.autonomous_work.serialization import (
     responsibility_from_json,
     responsibility_to_json,
@@ -73,7 +75,10 @@ _CAPABILITIES = AutonomousWorkRepositoryCapabilities(
 _ISOLATION_LEVEL = PostgreSQLIsolationLevel.READ_COMMITTED
 # v2 introduced ``aw_worker_principal_bindings`` before AW-3A qualification closed.
 # v3 introduced ``aw_worker_wake_up_receipts`` for AW-4A durable wake-up idempotency.
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION_V1 = 1
+_SCHEMA_VERSION_V2 = 2
+_SCHEMA_VERSION_V3 = 3
+_SCHEMA_VERSION = _SCHEMA_VERSION_V3
 _SCHEMA_META_TABLE = "autonomous_work_schema_meta"
 _SCHEMA_LOCK_KEY = "autonomous_work_schema_init"
 
@@ -251,15 +256,48 @@ class PostgreSQLAutonomousWorkStore:
         *,
         from_version: int,
     ) -> None:
-        if from_version == 1:
+        if from_version == _SCHEMA_VERSION_V1:
             self._migrate_v1_to_v2(session)
-            from_version = 2
-        if from_version == 2:
+            from_version = _SCHEMA_VERSION_V2
+        if from_version == _SCHEMA_VERSION_V2:
             self._migrate_v2_to_v3(session)
             return
         raise AutonomousWorkSchemaVersionError(
             f"unsupported Autonomous Work schema migration from version {from_version}"
         )
+
+    def _complete_migration_step(
+        self,
+        session: PostgreSQLSession,
+        *,
+        expected_from: int,
+        expected_to: int,
+        updated_rows: int,
+    ) -> None:
+        if updated_rows != 1:
+            raise AutonomousWorkSchemaVersionError(
+                (
+                    "Autonomous Work schema migration "
+                    f"{expected_from}→{expected_to} did not update metadata "
+                    f"(expected source version {expected_from})"
+                )
+            )
+        row = session.execute(
+            f"SELECT schema_version FROM {_SCHEMA_META_TABLE} WHERE id = 1"
+        ).fetchone()
+        if row is None:
+            raise IntegrationConfigurationError(
+                "Autonomous Work schema metadata is missing after migration step"
+            )
+        persisted_version = int(row["schema_version"])
+        if persisted_version != expected_to:
+            raise AutonomousWorkSchemaVersionError(
+                (
+                    "Autonomous Work schema migration "
+                    f"{expected_from}→{expected_to} left metadata at version "
+                    f"{persisted_version}"
+                )
+            )
 
     def _migrate_v1_to_v2(self, session: PostgreSQLSession) -> None:
         session.execute(
@@ -271,13 +309,19 @@ class PostgreSQLAutonomousWorkStore:
             );
             """
         )
-        session.execute(
+        updated = session.execute(
             f"""
             UPDATE {_SCHEMA_META_TABLE}
             SET schema_version = %s
-            WHERE id = 1 AND schema_version = 1
+            WHERE id = 1 AND schema_version = %s
             """,
-            (_SCHEMA_VERSION,),
+            (_SCHEMA_VERSION_V2, _SCHEMA_VERSION_V1),
+        )
+        self._complete_migration_step(
+            session,
+            expected_from=_SCHEMA_VERSION_V1,
+            expected_to=_SCHEMA_VERSION_V2,
+            updated_rows=updated.rowcount,
         )
 
     def _migrate_v2_to_v3(self, session: PostgreSQLSession) -> None:
@@ -292,13 +336,19 @@ class PostgreSQLAutonomousWorkStore:
             );
             """
         )
-        session.execute(
+        updated = session.execute(
             f"""
             UPDATE {_SCHEMA_META_TABLE}
             SET schema_version = %s
-            WHERE id = 1 AND schema_version = 2
+            WHERE id = 1 AND schema_version = %s
             """,
-            (_SCHEMA_VERSION,),
+            (_SCHEMA_VERSION_V3, _SCHEMA_VERSION_V2),
+        )
+        self._complete_migration_step(
+            session,
+            expected_from=_SCHEMA_VERSION_V2,
+            expected_to=_SCHEMA_VERSION_V3,
+            updated_rows=updated.rowcount,
         )
 
 
@@ -891,7 +941,7 @@ class PostgreSQLWorkerWakeUpReceiptRepository:
             ).fetchone()
             if inserted is not None:
                 return WorkerWakeUpReceiptClaim(
-                    duplicate=False,
+                    status=WorkerWakeUpReceiptClaimStatus.CLAIMED,
                     receipt=worker_wake_up_receipt_from_json(inserted["record_json"]),
                 )
             row = conn.execute(
@@ -908,10 +958,8 @@ class PostgreSQLWorkerWakeUpReceiptRepository:
                 raise RuntimeError(
                     "wake-up receipt conflict without stored canonical receipt"
                 )
-            return WorkerWakeUpReceiptClaim(
-                duplicate=True,
-                receipt=worker_wake_up_receipt_from_json(row["record_json"]),
-            )
+            stored = worker_wake_up_receipt_from_json(row["record_json"])
+            return resolve_wake_up_receipt_claim(receipt, stored)
 
     def get(
         self,

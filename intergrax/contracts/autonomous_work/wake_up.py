@@ -53,6 +53,7 @@ class WorkerWakeUpDisposition(StrEnum):
     """Typed admission outcome for one wake-up delivery attempt."""
 
     ACCEPTED = "ACCEPTED"
+    CONFLICT = "CONFLICT"
     DUPLICATE = "DUPLICATE"
     NOT_ELIGIBLE = "NOT_ELIGIBLE"
     REJECTED = "REJECTED"
@@ -147,6 +148,85 @@ class WorkerWakeUpContext:
         if self.receipt is not None:
             if type(self.receipt) is not WorkerWakeUpReceipt:
                 raise TypeError("receipt must be WorkerWakeUpReceipt")
+
+
+@dataclass(frozen=True, slots=True)
+class WakeUpLogicalSignalIdentity:
+    """Canonical immutable identity for one logical wake-up signal.
+
+    ``delivery_identity`` is excluded: it identifies a transport delivery attempt,
+    not the logical wake-up. Idempotency is keyed by
+    ``(worker_instance_id, wake_up_id)``. ``accepted_at`` is excluded because it
+    belongs to admission, not signal identity.
+    """
+
+    worker_instance_id: WorkerInstanceId
+    wake_up_id: WakeUpId
+    source_kind: WorkerWakeUpSourceKind
+    source_ref: WakeUpSourceRef
+    occurred_at: datetime
+    correlation_ref: WakeUpCorrelationRef | None = None
+
+
+def wake_up_logical_identity_from_signal(
+    signal: WorkerWakeUpSignal,
+) -> WakeUpLogicalSignalIdentity:
+    """Project the canonical logical identity from a wake-up signal."""
+    return WakeUpLogicalSignalIdentity(
+        worker_instance_id=signal.worker_instance_id,
+        wake_up_id=signal.wake_up_id,
+        source_kind=signal.source_kind,
+        source_ref=signal.source_ref,
+        occurred_at=signal.occurred_at,
+        correlation_ref=signal.correlation_ref,
+    )
+
+
+def wake_up_logical_identity_from_receipt(
+    receipt: WorkerWakeUpReceipt,
+) -> WakeUpLogicalSignalIdentity:
+    """Project the canonical logical identity from a durable wake-up receipt."""
+    return WakeUpLogicalSignalIdentity(
+        worker_instance_id=receipt.worker_instance_id,
+        wake_up_id=receipt.wake_up_id,
+        source_kind=receipt.source_kind,
+        source_ref=receipt.source_ref,
+        occurred_at=receipt.occurred_at,
+        correlation_ref=receipt.correlation_ref,
+    )
+
+
+def wake_up_signals_logically_equivalent(
+    left: WorkerWakeUpSignal | WorkerWakeUpReceipt,
+    right: WorkerWakeUpSignal | WorkerWakeUpReceipt,
+) -> bool:
+    """Return whether two signal projections represent the same logical wake-up."""
+    left_identity = (
+        wake_up_logical_identity_from_signal(left)
+        if isinstance(left, WorkerWakeUpSignal)
+        else wake_up_logical_identity_from_receipt(left)
+    )
+    right_identity = (
+        wake_up_logical_identity_from_signal(right)
+        if isinstance(right, WorkerWakeUpSignal)
+        else wake_up_logical_identity_from_receipt(right)
+    )
+    return left_identity == right_identity
+
+
+def worker_wake_up_signal_from_receipt(
+    receipt: WorkerWakeUpReceipt,
+) -> WorkerWakeUpSignal:
+    """Reconstruct the canonical wake-up signal representation from a receipt."""
+    return WorkerWakeUpSignal(
+        wake_up_id=receipt.wake_up_id,
+        worker_instance_id=receipt.worker_instance_id,
+        source_kind=receipt.source_kind,
+        source_ref=receipt.source_ref,
+        occurred_at=receipt.occurred_at,
+        delivery_identity=receipt.delivery_identity,
+        correlation_ref=receipt.correlation_ref,
+    )
 
 
 @dataclass(frozen=True, slots=True)

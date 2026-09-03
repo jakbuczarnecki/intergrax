@@ -124,6 +124,70 @@ def test_duplicate_delivery_returns_duplicate_with_same_receipt() -> None:
     assert second.disposition == WorkerWakeUpDisposition.DUPLICATE
     assert second.context is not None
     assert second.context.receipt == first.context.receipt
+    assert second.context.wake_up_signal == first.context.wake_up_signal
+
+
+def test_conflicting_replay_returns_conflict_with_canonical_context() -> None:
+    service, worker_repo, _, _ = _service()
+    worker_id = _seed_worker(worker_repo)
+    wake_id = mint_wake_up_id()
+    first = service.accept(
+        WorkerWakeUpSignal(
+            wake_up_id=wake_id,
+            worker_instance_id=worker_id,
+            source_kind=WorkerWakeUpSourceKind.QUEUE_DELIVERY,
+            source_ref=WakeUpSourceRef("queue/order-123"),
+            occurred_at=datetime(2026, 9, 3, 11, 59, tzinfo=UTC),
+            delivery_identity=mint_wake_up_id(),
+            correlation_ref=None,
+        )
+    )
+    second = service.accept(
+        WorkerWakeUpSignal(
+            wake_up_id=wake_id,
+            worker_instance_id=worker_id,
+            source_kind=WorkerWakeUpSourceKind.OPERATOR,
+            source_ref=WakeUpSourceRef("operator/manual"),
+            occurred_at=datetime(2026, 9, 3, 11, 59, tzinfo=UTC),
+            delivery_identity=mint_wake_up_id(),
+            correlation_ref=None,
+        )
+    )
+    assert first.disposition == WorkerWakeUpDisposition.ACCEPTED
+    assert second.disposition == WorkerWakeUpDisposition.CONFLICT
+    assert second.context is not None
+    assert second.context.receipt == first.context.receipt
+    assert second.context.wake_up_signal == first.context.wake_up_signal
+
+
+def test_transport_redelivery_with_different_delivery_identity_is_duplicate() -> None:
+    service, worker_repo, _, _ = _service()
+    worker_id = _seed_worker(worker_repo)
+    wake_id = mint_wake_up_id()
+    first = service.accept(
+        WorkerWakeUpSignal(
+            wake_up_id=wake_id,
+            worker_instance_id=worker_id,
+            source_kind=WorkerWakeUpSourceKind.QUEUE_DELIVERY,
+            source_ref=WakeUpSourceRef("queue/order-123"),
+            occurred_at=datetime(2026, 9, 3, 11, 59, tzinfo=UTC),
+            delivery_identity=mint_wake_up_id(),
+            correlation_ref=None,
+        )
+    )
+    second = service.accept(
+        WorkerWakeUpSignal(
+            wake_up_id=wake_id,
+            worker_instance_id=worker_id,
+            source_kind=WorkerWakeUpSourceKind.QUEUE_DELIVERY,
+            source_ref=WakeUpSourceRef("queue/order-123"),
+            occurred_at=datetime(2026, 9, 3, 11, 59, tzinfo=UTC),
+            delivery_identity=mint_wake_up_id(),
+            correlation_ref=None,
+        )
+    )
+    assert first.disposition == WorkerWakeUpDisposition.ACCEPTED
+    assert second.disposition == WorkerWakeUpDisposition.DUPLICATE
 
 
 def test_concurrent_duplicate_exactly_one_accepted() -> None:

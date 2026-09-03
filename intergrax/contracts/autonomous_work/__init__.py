@@ -89,12 +89,17 @@ from intergrax.contracts.autonomous_work.revision import (
 )
 from intergrax.contracts.autonomous_work.wake_up import (
     CANONICAL_WORKER_WAKE_UP_SOURCE_KINDS,
+    WakeUpLogicalSignalIdentity,
     WorkerWakeUpContext,
     WorkerWakeUpDisposition,
     WorkerWakeUpReceipt,
     WorkerWakeUpResult,
     WorkerWakeUpSignal,
     WorkerWakeUpSourceKind,
+    wake_up_logical_identity_from_receipt,
+    wake_up_logical_identity_from_signal,
+    wake_up_signals_logically_equivalent,
+    worker_wake_up_signal_from_receipt,
 )
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
 
@@ -136,6 +141,7 @@ __all__ = (
     "ScheduleProfileRef",
     "SlaSloRef",
     "SuccessCriteriaRef",
+    "WakeUpLogicalSignalIdentity",
     "WakeUpCorrelationRef",
     "WakeUpId",
     "WakeUpSourceRef",
@@ -173,4 +179,8 @@ __all__ = (
     "validate_worker_definition_id",
     "validate_worker_goal_id",
     "validate_worker_instance_id",
+    "wake_up_logical_identity_from_receipt",
+    "wake_up_logical_identity_from_signal",
+    "wake_up_signals_logically_equivalent",
+    "worker_wake_up_signal_from_receipt",
 )

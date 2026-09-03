@@ -36,6 +36,7 @@ Create semantics
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
@@ -252,11 +253,19 @@ class WorkContinuityStateRepository(Protocol):
         ...
 
 
+class WorkerWakeUpReceiptClaimStatus(StrEnum):
+    """Outcome of an atomic durable wake-up receipt claim."""
+
+    CLAIMED = "CLAIMED"
+    DUPLICATE = "DUPLICATE"
+    CONFLICT = "CONFLICT"
+
+
 @dataclass(frozen=True, slots=True)
 class WorkerWakeUpReceiptClaim:
     """Outcome of an atomic durable wake-up receipt claim."""
 
-    duplicate: bool
+    status: WorkerWakeUpReceiptClaimStatus
     receipt: WorkerWakeUpReceipt
 
 

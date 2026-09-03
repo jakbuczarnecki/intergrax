@@ -16,7 +16,9 @@ from intergrax.autonomous_work.repository import (
     AutonomousWorkRepositoryCapabilities,
     AutonomousWorkRevisionConflict,
     WorkerWakeUpReceiptClaim,
+    WorkerWakeUpReceiptClaimStatus,
 )
+from intergrax.autonomous_work.wake_up_receipt_claim import resolve_wake_up_receipt_claim
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
 from intergrax.contracts.autonomous_work.ids import (
@@ -494,10 +496,13 @@ class InMemoryWorkerWakeUpReceiptRepository:
         key = (receipt.worker_instance_id, receipt.wake_up_id)
         with self._lock:
             existing = self._records.get(key)
-            if existing is not None:
-                return WorkerWakeUpReceiptClaim(duplicate=True, receipt=existing)
-            self._records[key] = receipt
-            return WorkerWakeUpReceiptClaim(duplicate=False, receipt=receipt)
+            if existing is None:
+                self._records[key] = receipt
+                return WorkerWakeUpReceiptClaim(
+                    status=WorkerWakeUpReceiptClaimStatus.CLAIMED,
+                    receipt=receipt,
+                )
+            return resolve_wake_up_receipt_claim(receipt, existing)
 
     def get(
         self,
