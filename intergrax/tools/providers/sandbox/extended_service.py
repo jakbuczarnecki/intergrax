@@ -50,22 +50,6 @@ def script_run(ctx: ToolWiringContext, params: ScriptRunInput) -> SandboxExecOut
 
 
 def browser_run(ctx: ToolWiringContext, params: BrowserRunInput) -> BrowserRunOutput:
-    automation = ctx.browser_automation
-    if automation is not None:
-        try:
-            page = automation.fetch_page(params.url.strip(), wait_until=params.wait_until)
-            content = page.text or page.html or ""
-            if len(content) > params.max_chars:
-                content = content[: params.max_chars]
-            return BrowserRunOutput(
-                success=True,
-                url=params.url.strip(),
-                title=page.title or "",
-                content=content,
-            )
-        except Exception as exc:  # noqa: BLE001 — tool boundary
-            return BrowserRunOutput(success=False, url=params.url.strip(), error=str(exc))
-
     result = run_sandbox_operation(
         ctx,
         "browser_fetch",

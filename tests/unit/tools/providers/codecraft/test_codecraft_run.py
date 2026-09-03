@@ -107,7 +107,7 @@ def test_codecraft_run_executes_in_sandbox(sandbox_session: SandboxSession) -> N
     assert out.trace_event_count >= 4
 
 
-def test_codecraft_run_cloud_tier_uses_sandbox_resolver_fallback(sandbox_session: SandboxSession) -> None:
+def test_codecraft_run_cloud_tier_requires_hosted_sandbox(sandbox_session: SandboxSession) -> None:
     profile = CodeCraftProfile(
         mode="autonomous",
         isolation_tier="cloud",
@@ -121,8 +121,8 @@ def test_codecraft_run_cloud_tier_uses_sandbox_resolver_fallback(sandbox_session
         ctx,
         CodeCraftRunToolInput(code="print('cloud-fallback')\n", tenant_id="tenant-1", task_id="task-1"),
     )
-    assert out.result.success is True
-    assert "cloud-fallback" in out.result.stdout
+    assert out.result.success is False
+    assert out.result.error == "sandbox_session_not_configured"
 
 
 def test_codecraft_dry_run_skips_exec(sandbox_session: SandboxSession) -> None:

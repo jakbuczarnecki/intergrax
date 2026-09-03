@@ -343,11 +343,14 @@ class RuntimeContext:
                 idempotency_store=config.idempotency_store,
             )
 
+        from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
+
         base_invoker = RuntimeToolInvoker(
             registry=registry,
             executor=executor,
             scope_policy=config.tool_scope_policy,
             pre_effect_coordinator=pre_effect_coordinator,
+            sandbox_availability=sandbox_availability_provider(wiring_ctx),
         )
 
         from intergrax.runtime.nexus.tools.planner_bootstrap import wire_catalog_tool_planner_if_enabled
