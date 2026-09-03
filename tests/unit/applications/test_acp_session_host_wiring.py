@@ -19,13 +19,13 @@ from intergrax.applications.contracts.environment_profile import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-def test_build_acp_session_host_from_harness_attaches_critic_hooks() -> None:
-    critic_hooks = MagicMock()
+def test_build_acp_session_host_from_harness_attaches_decision_gate() -> None:
+    decision_gate = MagicMock()
     runtime = MagicMock()
     runtime.environment = ApplicationEnvironmentProfile.lab_defaults()
-    runtime.critic.graph_hooks = critic_hooks
+    runtime.nexus_loop.peek_decision_flow_gate.return_value = decision_gate
     runtime.env_wiring.tool_wiring = MagicMock()
 
     host_ctx = build_acp_session_host_from_harness(runtime)
-    assert host_ctx.critic_graph_hooks is critic_hooks
+    assert host_ctx.decision_flow_gate is decision_gate
     assert host_ctx.runtime_profile == application_profile_to_runtime_profile(runtime.environment)

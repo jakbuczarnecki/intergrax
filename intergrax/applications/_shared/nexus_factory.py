@@ -7,9 +7,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from intergrax.applications._shared.critic_wiring import (
-    ApplicationCriticWiring,
-    apply_application_critic_wiring,
+from intergrax.applications._shared.decision_wiring import (
+    ApplicationDecisionWiring,
+    apply_application_decision_wiring,
 )
 from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
@@ -94,7 +94,7 @@ def build_nexus_loop_from_environment(
     context_engine: object | None = None,
     security_wiring: ApplicationSecurityWiring | None = None,
     guardrail_wiring: ApplicationGuardrailWiring | None = None,
-    critic_wiring: ApplicationCriticWiring | None = None,
+    decision_wiring: ApplicationDecisionWiring | None = None,
     adaptive_wiring: ApplicationAdaptiveWiring | None = None,
     run_budget: RunBudget | None = None,
     validation_engine: NexusValidationEngine | None = None,
@@ -177,7 +177,7 @@ def build_nexus_loop_from_environment(
         production_mode=env.execution_mode.value == "strict",
         signal_collector=adaptive_wiring.signal_collector if adaptive_wiring else None,
         run_budget=run_budget,
-        critic_graph_hooks=critic_wiring.graph_hooks if critic_wiring else None,
+        decision_flow_gate=decision_wiring.gate if decision_wiring else None,
         emit_coordination_advisory=orch.emit_coordination_advisory,
         allow_dynamic_replan=runtime_settings.allow_dynamic_replan,
         denied_planner_model_ids=tuple(env.reasoning_profile.denied_planner_model_ids),
@@ -191,6 +191,6 @@ def build_nexus_loop_from_environment(
     apply_application_security_wiring(loop, resolved_security, env=env)
     resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
     apply_application_guardrail_wiring(loop, resolved_guardrail, env)
-    if critic_wiring is not None:
-        apply_application_critic_wiring(loop, critic_wiring)
+    if decision_wiring is not None:
+        apply_application_decision_wiring(loop, decision_wiring)
     return loop

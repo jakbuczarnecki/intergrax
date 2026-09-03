@@ -103,9 +103,6 @@ from intergrax.runtime.task.task import Task
 from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
 
 if TYPE_CHECKING:
-    from intergrax.runtime.critic.contracts import CriticVerdict
-    from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
-    from intergrax.runtime.critic.trace import CriticTraceEmitter
     from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
@@ -135,9 +132,7 @@ class _GraphNodeChildRequest:
     plan_criteria: Optional[List[str]]
     on_retry: Optional[RetryCallback]
     on_node_complete: Optional[Callable[[ExecutionNode], None]]
-    critic_trace_emitter: Optional["CriticTraceEmitter"]
     root_execution_authority: ParentExecutionAuthority
-    evaluator_loop_active: bool
     agent: Agent
     node_task: Task
 
@@ -181,7 +176,6 @@ class GraphExecutor:
         max_parallel_nodes: int | None = None,
         max_inflight_nodes: int | None = None,
         max_delegation_depth: int | None = None,
-        critic_graph_hooks: Optional["CriticGraphHooks"] = None,
         decision_flow_gate: Optional["DecisionFlowGate[AgentExecutionResult]"] = None,
         agent_checkpoint_store: AgentCheckpointStore | None = None,
         compensation_queue_store: CompensationQueueStore | None = None,
@@ -215,7 +209,6 @@ class GraphExecutor:
         self._handoff = handoff_coordinator or HandoffCoordinator(registry)
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
-        self._critic_graph_hooks = critic_graph_hooks
         self._decision_flow_gate = decision_flow_gate
         self._child_runner = ChildExecutionRunner[
             _GraphNodeChildRequest,
@@ -282,45 +275,11 @@ class GraphExecutor:
         """Replace the active graph validation engine."""
         self._validation_engine = validation_engine
 
-    def apply_critic_graph_hooks(
-        self,
-        hooks: Optional["CriticGraphHooks"],
-    ) -> None:
-        """Attach or clear critic graph hooks for graph execution."""
-        from intergrax.runtime.decision_flow import validate_decision_critic_authority_config
-
-        critic_config = hooks.config if hooks is not None else None
-        validate_decision_critic_authority_config(
-            decision_gate=self._decision_flow_gate,
-            verify_node_partial=critic_config.verify_node_partial if critic_config else False,
-            verify_graph_final=critic_config.verify_graph_final if critic_config else False,
-            verify_uaep_step=critic_config.verify_uaep_step if critic_config else False,
-        )
-        self._critic_graph_hooks = hooks
-
-    def peek_critic_graph_hooks(self) -> Optional["CriticGraphHooks"]:
-        """Return wired critic graph hooks when application critic wiring is active."""
-        return self._critic_graph_hooks
-
     def apply_decision_flow_gate(
         self,
         gate: Optional["DecisionFlowGate[AgentExecutionResult]"],
     ) -> None:
         """Attach or clear the reusable Decision flow authority gate."""
-        from intergrax.runtime.decision_flow import (
-            DecisionFlowScope,
-            validate_decision_critic_authority_config,
-        )
-
-        critic_config = (
-            self._critic_graph_hooks.config if self._critic_graph_hooks is not None else None
-        )
-        validate_decision_critic_authority_config(
-            decision_gate=gate,
-            verify_node_partial=critic_config.verify_node_partial if critic_config else False,
-            verify_graph_final=critic_config.verify_graph_final if critic_config else False,
-            verify_uaep_step=critic_config.verify_uaep_step if critic_config else False,
-        )
         self._decision_flow_gate = gate
 
     def peek_decision_flow_gate(
@@ -341,7 +300,6 @@ class GraphExecutor:
         on_retry: Optional[RetryCallback] = None,
         on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
-        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
         return await self._execute_graph(
             graph,
@@ -350,7 +308,6 @@ class GraphExecutor:
             on_retry=on_retry,
             on_node_start=on_node_start,
             on_node_complete=on_node_complete,
-            critic_trace_emitter=critic_trace_emitter,
         )
 
     async def _execute_graph(
@@ -362,7 +319,6 @@ class GraphExecutor:
         on_retry: Optional[RetryCallback] = None,
         on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
-        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
         prior_outputs: Dict[str, AgentExecutionResult] = {}
         all_executions: List[AgentExecutionResult] = []
@@ -429,7 +385,6 @@ class GraphExecutor:
             on_retry=on_retry,
             on_node_start=on_node_start,
             on_node_complete=on_node_complete,
-            critic_trace_emitter=critic_trace_emitter,
             root_execution_authority=root_execution_authority,
         )
 
@@ -446,7 +401,6 @@ class GraphExecutor:
         on_retry: Optional[RetryCallback],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
-        critic_trace_emitter: Optional["CriticTraceEmitter"],
         root_execution_authority: ParentExecutionAuthority,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
         for batch in graph.batches():
@@ -466,7 +420,6 @@ class GraphExecutor:
                     on_retry=on_retry,
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
-                    critic_trace_emitter=critic_trace_emitter,
                     root_execution_authority=root_execution_authority,
                 )
                 all_retries.extend(retries)
@@ -504,7 +457,6 @@ class GraphExecutor:
                     on_retry=on_retry,
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
-                    critic_trace_emitter=critic_trace_emitter,
                     root_execution_authority=root_execution_authority,
                 )
                 for execution, retries, failed, cancelled, handoff_extras in results:
@@ -536,7 +488,6 @@ class GraphExecutor:
         on_retry: Optional[RetryCallback],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
-        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
         root_execution_authority: ParentExecutionAuthority,
     ) -> list[
         tuple[
@@ -565,7 +516,6 @@ class GraphExecutor:
                             on_retry=on_retry,
                             on_node_start=on_node_start,
                             on_node_complete=on_node_complete,
-                            critic_trace_emitter=critic_trace_emitter,
                             root_execution_authority=root_execution_authority,
                         )
                         for node in batch
@@ -600,7 +550,6 @@ class GraphExecutor:
                             on_retry=on_retry,
                             on_node_start=on_node_start,
                             on_node_complete=on_node_complete,
-                            critic_trace_emitter=critic_trace_emitter,
                             root_execution_authority=root_execution_authority,
                         )
                 return await self._execute_node(
@@ -613,7 +562,6 @@ class GraphExecutor:
                     on_retry=on_retry,
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
-                    critic_trace_emitter=critic_trace_emitter,
                     root_execution_authority=root_execution_authority,
                 )
 
@@ -631,9 +579,7 @@ class GraphExecutor:
         on_retry: Optional[Callable[[RetryRecord], None]],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
-        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
         root_execution_authority: ParentExecutionAuthority,
-        evaluator_loop_active: bool = False,
     ) -> tuple[AgentExecutionResult, List[RetryRecord], bool, bool, List[HandoffExtra]]:
         if should_skip_graph_node(
             node,
@@ -761,9 +707,7 @@ class GraphExecutor:
             plan_criteria=plan_criteria,
             on_retry=on_retry,
             on_node_complete=on_node_complete,
-            critic_trace_emitter=critic_trace_emitter,
             root_execution_authority=root_execution_authority,
-            evaluator_loop_active=evaluator_loop_active,
             agent=agent,
             node_task=node_task,
         )
@@ -819,9 +763,7 @@ class GraphExecutor:
         plan_criteria = child_request.plan_criteria
         on_retry = child_request.on_retry
         on_node_complete = child_request.on_node_complete
-        critic_trace_emitter = child_request.critic_trace_emitter
         root_execution_authority = child_request.root_execution_authority
-        evaluator_loop_active = child_request.evaluator_loop_active
         agent = child_request.agent
         node_task = child_request.node_task
 
@@ -870,37 +812,12 @@ class GraphExecutor:
                 child_agent_id=agent.get_contract().id,
             )
 
-        last_critic_verdict: Optional["CriticVerdict"] = None
-
         def validate_fn(
             execution: AgentExecutionResult,
             current_agent: Agent,
         ) -> ValidationResult:
-            nonlocal last_critic_verdict
             contract = current_agent.get_contract()
             cap = node.capability or task.context.capability
-            if (
-                not self._decision_authority_active()
-                and self._critic_graph_hooks is not None
-                and self._critic_graph_hooks.verify_node_partial
-            ):
-                from intergrax.runtime.critic.critic_wiring import validate_node_with_critic_detail
-
-                validation, verdict = validate_node_with_critic_detail(
-                    execution,
-                    contract=contract,
-                    hooks=self._critic_graph_hooks,
-                    task_id=task.task_id,
-                    run_id=self._require_run_id(),
-                    tenant_id=task.tenant_id,
-                    capability=cap,
-                    plan_criteria=plan_criteria,
-                    trace_emitter=critic_trace_emitter,
-                    node_id=node.node_id,
-                )
-                last_critic_verdict = verdict
-                return validation
-            last_critic_verdict = None
             return self._validation_engine.validate(
                 execution,
                 contract=contract,
@@ -1038,34 +955,6 @@ class GraphExecutor:
             execute_fn,
             validate_fn=validate_fn,
         )
-        if (
-            not validation.valid
-            and last_critic_verdict is not None
-            and self._critic_graph_hooks is not None
-            and not self._decision_authority_active()
-            and not evaluator_loop_active
-        ):
-            execution, validation, retries = await self._maybe_run_evaluator_loop(
-                graph,
-                task,
-                node,
-                execution,
-                validation,
-                last_critic_verdict,
-                prior_outputs=prior_outputs,
-                runtime_ckpt=runtime_ckpt,
-                plan_criteria=plan_criteria,
-                on_retry=on_retry,
-                on_node_start=None,
-                on_node_complete=on_node_complete,
-                critic_trace_emitter=critic_trace_emitter,
-                agent=agent,
-                node_task=node_task,
-                execute_fn=execute_fn,
-                validate_fn=validate_fn,
-                prior_retries=retries,
-                root_execution_authority=root_execution_authority,
-            )
         if CancellationCoordinator.is_requested(task.metadata):
             node.execution_result = execution
             node.status = ExecutionNodeStatus.SKIPPED
@@ -1111,7 +1000,6 @@ class GraphExecutor:
                 on_retry=on_retry,
                 on_node_start=None,
                 on_node_complete=on_node_complete,
-                critic_trace_emitter=critic_trace_emitter,
                 root_execution_authority=root_execution_authority,
             )
             failed = False
@@ -1140,134 +1028,6 @@ class GraphExecutor:
             handoff_extras=handoff_extras,
         )
 
-    async def _maybe_run_evaluator_loop(
-        self,
-        graph: ExecutionGraph,
-        task: Task,
-        node: ExecutionNode,
-        execution: AgentExecutionResult,
-        validation: ValidationResult,
-        verdict: "CriticVerdict",
-        *,
-        prior_outputs: Dict[str, AgentExecutionResult],
-        runtime_ckpt: Optional[RuntimeCheckpoint],
-        plan_criteria: Optional[List[str]],
-        on_retry: Optional[Callable[[RetryRecord], None]],
-        on_node_start: Optional[Callable[[ExecutionNode], None]],
-        on_node_complete: Optional[Callable[[ExecutionNode], None]],
-        critic_trace_emitter: Optional["CriticTraceEmitter"],
-        agent: Agent,
-        node_task: Task,
-        execute_fn: Callable[[Agent], Awaitable[AgentExecutionResult]],
-        validate_fn: ValidateFn,
-        prior_retries: List[RetryRecord],
-        root_execution_authority: ParentExecutionAuthority,
-    ) -> tuple[AgentExecutionResult, ValidationResult, List[RetryRecord]]:
-        from intergrax.runtime.critic.critic_wiring import validate_node_with_critic_detail
-        from intergrax.runtime.critic.evaluator_loop_executor import (
-            EvaluatorLoopDecision,
-            EvaluatorLoopExecutor,
-            EvaluatorLoopIterationState,
-        )
-        from intergrax.runtime.critic.evaluator_loop_metadata import (
-            current_evaluator_loop_iteration,
-            evaluator_loop_spec_from_node,
-            set_evaluator_loop_iteration,
-        )
-
-        if self._critic_graph_hooks is None:
-            return execution, validation, prior_retries
-
-        spec = evaluator_loop_spec_from_node(node)
-        if spec is None:
-            return execution, validation, prior_retries
-
-        loop_executor = EvaluatorLoopExecutor(
-            spec=spec,
-            trace_emitter=critic_trace_emitter,
-        )
-        state = EvaluatorLoopIterationState(
-            worker_node_id=node.node_id,
-            iteration=current_evaluator_loop_iteration(node),
-        )
-        current_execution = execution
-        current_validation = validation
-        current_verdict = verdict
-        all_retries = list(prior_retries)
-        contract = agent.get_contract()
-        cap = node.capability or task.context.capability
-
-        while not current_validation.valid:
-            outcome = loop_executor.decide_after_verdict(
-                current_verdict,
-                state=state,
-                tenant_id=task.tenant_id,
-                task_id=task.task_id,
-                agent_id=contract.id,
-                node_id=node.node_id,
-            )
-            if outcome.decision is EvaluatorLoopDecision.CONTINUE:
-                break
-            if outcome.decision is EvaluatorLoopDecision.REVISE and outcome.revise_node_id:
-                if current_verdict.failure_reasons:
-                    node.metadata["critic_feedback"] = list(current_verdict.failure_reasons)
-                merged_prior = dict(prior_outputs)
-                merged_prior[node.node_id] = current_execution
-                revise_node_id = outcome.revise_node_id
-                if revise_node_id != node.node_id:
-                    revise_node = graph.node_by_id(revise_node_id)
-                    await self._execute_node(
-                        graph,
-                        task,
-                        revise_node,
-                        merged_prior,
-                        runtime_ckpt=runtime_ckpt,
-                        plan_criteria=plan_criteria,
-                        on_retry=on_retry,
-                        on_node_start=on_node_start,
-                        on_node_complete=on_node_complete,
-                        critic_trace_emitter=critic_trace_emitter,
-                        root_execution_authority=root_execution_authority,
-                        evaluator_loop_active=True,
-                    )
-                state = loop_executor.bump_iteration(state)
-                set_evaluator_loop_iteration(node, state.iteration)
-                current_execution, loop_retries, current_validation = (
-                    await self._retry_engine.execute_with_retry(
-                        node_task,
-                        agent,
-                        execute_fn,
-                        validate_fn=validate_fn,
-                    )
-                )
-                all_retries.extend(loop_retries)
-                if self._critic_graph_hooks.verify_node_partial:
-                    current_validation, current_verdict = validate_node_with_critic_detail(
-                        current_execution,
-                        contract=contract,
-                        hooks=self._critic_graph_hooks,
-                        task_id=task.task_id,
-                        run_id=self._require_run_id(),
-                        tenant_id=task.tenant_id,
-                        capability=cap,
-                        plan_criteria=plan_criteria,
-                        trace_emitter=critic_trace_emitter,
-                        node_id=node.node_id,
-                    )
-                continue
-            if outcome.decision is EvaluatorLoopDecision.ESCALATE_HITL:
-                current_execution = current_execution.model_copy(
-                    update={"status": AgentExecutionStatus.NEEDS_INPUT},
-                )
-                current_validation = ValidationResult(
-                    valid=False,
-                    errors=list(outcome.failure_reasons) or ["critic_escalate_hitl"],
-                )
-                break
-            break
-
-        return current_execution, current_validation, all_retries
-
     async def _maybe_execute_handoff(
         self,
         graph: ExecutionGraph,
@@ -1281,7 +1041,6 @@ class GraphExecutor:
         on_retry: Optional[Callable[[RetryRecord], None]],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
-        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
         root_execution_authority: ParentExecutionAuthority,
     ) -> List[HandoffExtra]:
         handoff = resolve_handoff_from_execution(execution)
@@ -1351,7 +1110,6 @@ class GraphExecutor:
             on_retry=on_retry,
             on_node_start=on_node_start,
             on_node_complete=on_node_complete,
-            critic_trace_emitter=critic_trace_emitter,
             root_execution_authority=root_execution_authority,
         )
         for record in handoff_retries:

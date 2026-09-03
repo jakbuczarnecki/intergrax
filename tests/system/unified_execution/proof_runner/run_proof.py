@@ -11,10 +11,19 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from typing import Literal
+
 from tests.system.unified_execution.proof_runner.contracts import (
     CertificationEvidence,
+    DiagnosticCheckResultProjection,
+    FunctionalDiagnosticSection,
     ProofConfig,
     ProofReport,
+)
+from tests.system.unified_execution.proof_runner.functional_diagnosis import (
+    FunctionalDiagnosisReport,
+    evaluate_r4_result,
+    run_functional_diagnosis,
 )
 from tests.system.unified_execution.proof_runner.lkw_client import LkwClient, LkwClientError
 from tests.system.unified_execution.proof_runner.oracle import (
@@ -56,6 +65,10 @@ def _config_from_env() -> ProofConfig:
             "INTERGRAX_EMBEDDING_MODEL",
             "nomic-embed-text",
         ),
+        llm_model=os.environ.get(
+            "INTERGRAX_LLM_MODEL",
+            "llama3.1:latest",
+        ),
         otlp_log_path=os.environ.get(
             "UE_11G_C1_OTLP_LOG_PATH",
             "/var/lib/otelcol/lkw-otlp-logs.jsonl",
@@ -73,17 +86,17 @@ def _http_get_json(url: str, *, timeout: float) -> dict[str, object]:
     return parsed
 
 
-def _ensure_ollama_model(config: ProofConfig) -> dict[str, object]:
+def _ensure_ollama_model(config: ProofConfig, *, model_name: str) -> dict[str, object]:
     tags_url = f"{config.ollama_base_url.rstrip('/')}/api/tags"
     tags_payload = _http_get_json(tags_url, timeout=30.0)
     existing = probe_ollama_model(
         tags_payload=tags_payload,
-        model_name=config.embedding_model,
+        model_name=model_name,
     )
     if existing.listed_after_run:
         return tags_payload
     pull_url = f"{config.ollama_base_url.rstrip('/')}/api/pull"
-    pull_body = json.dumps({"name": config.embedding_model}).encode("utf-8")
+    pull_body = json.dumps({"name": model_name}).encode("utf-8")
     request = urllib.request.Request(
         pull_url,
         data=pull_body,
@@ -93,6 +106,11 @@ def _ensure_ollama_model(config: ProofConfig) -> dict[str, object]:
     with urllib.request.urlopen(request, timeout=config.readiness_timeout_seconds) as response:
         _ = response.read()
     return _http_get_json(tags_url, timeout=30.0)
+
+
+def _ensure_ollama_models(config: ProofConfig) -> dict[str, object]:
+    tags_payload = _ensure_ollama_model(config, model_name=config.embedding_model)
+    return _ensure_ollama_model(config, model_name=config.llm_model)
 
 
 def _wait_for_ollama_model(config: ProofConfig) -> dict[str, object]:
@@ -113,9 +131,10 @@ def _fixture_paths(config: ProofConfig) -> list[str]:
     return [str((root / name).resolve()) for name in _FIXTURE_FILES]
 
 
-def _assert_search_completed(response_state: str) -> None:
+def _assert_search_completed(response_state: str) -> str | None:
     if response_state != "completed":
-        raise LkwClientError(f"search_state_{response_state}")
+        return f"search_state_{response_state}"
+    return None
 
 
 def _assert_production_agent(response_agent_id: str | None, expected: str) -> None:
@@ -136,29 +155,89 @@ def _budget_tokens(response_tokens: int, otlp_events: int) -> int:
     return 0
 
 
+def _diagnostic_section(report: FunctionalDiagnosisReport) -> FunctionalDiagnosticSection:
+    return FunctionalDiagnosticSection(
+        invocation_status=report.invocation_status,
+        persistence_backend=report.persistence_backend,
+        durable=report.durable,
+        evidence_kinds=list(report.evidence_kinds),
+        evidence_count=report.evidence_count,
+        validation_id=report.validation_id,
+        functional_expected=report.functional_expected,
+        functional_actual_bounded=report.functional_actual_bounded,
+        diagnostic_specification_id=report.diagnostic_specification_id,
+        diagnostic_specification_version=report.diagnostic_specification_version,
+        diagnostic_first_proven_failure=report.diagnostic_first_proven_failure,
+        diagnostic_check_results=[
+            DiagnosticCheckResultProjection(
+                check_id=item.check_id,
+                status=item.status,
+                factual_claim=item.factual_claim,
+            )
+            for item in report.diagnostic_check_results
+        ],
+        diagnostic_supporting_evidence_refs=list(report.diagnostic_supporting_evidence_refs),
+        diagnostic_limitations=list(report.diagnostic_limitations),
+        failure_stage=report.failure_stage,
+        confidence=report.confidence,
+        blocked_reason=report.blocked_reason,
+    )
+
+
+def _finalize_report(
+    *,
+    verdict: Literal["PASS", "FAIL", "PARTIAL", "BLOCKED"],
+    evidence: CertificationEvidence | None = None,
+    failure_reason: str | None = None,
+    search_completed: bool = False,
+    diagnosis: FunctionalDiagnosisReport | None = None,
+) -> ProofReport:
+    functional_diagnostic = (
+        _diagnostic_section(diagnosis) if diagnosis is not None else None
+    )
+    r4_result = evaluate_r4_result(
+        search_completed=search_completed,
+        oracle_pass=bool(evidence and evidence.functional_oracle_pass),
+        diagnosis=diagnosis,
+    )
+    return ProofReport(
+        verdict=verdict,
+        evidence=evidence,
+        failure_reason=failure_reason,
+        functional_diagnostic=functional_diagnostic,
+        r4_result=r4_result,
+    )
+
+
 def run_certification() -> ProofReport:
     config = _config_from_env()
     client = LkwClient(config)
     try:
         client.wait_until_ready()
-        tags_payload = _ensure_ollama_model(config)
+        tags_payload = _ensure_ollama_models(config)
         ollama_before = probe_ollama_model(
             tags_payload=tags_payload,
             model_name=config.embedding_model,
         )
         if not ollama_before.listed_after_run:
             raise LkwClientError("embedding_model_not_listed")
+        llm_before = probe_ollama_model(
+            tags_payload=tags_payload,
+            model_name=config.llm_model,
+        )
+        if not llm_before.listed_after_run:
+            raise LkwClientError("llm_model_not_listed")
 
         index_response = client.run_index(source_paths=_fixture_paths(config))
         if index_response.state != "completed":
             raise LkwClientError(f"index_state_{index_response.state}")
 
         search_response = client.run_search(message=search_request_message())
-        _assert_search_completed(search_response.state)
-        _assert_production_agent(search_response.agent_id, config.agent_id)
-
-        if search_response.runtime_event_summary is not None:
-            _assert_runtime_tools_present(search_response.runtime_event_summary.tool_events_total)
+        search_failure = _assert_search_completed(search_response.state)
+        if search_response.state == "completed":
+            _assert_production_agent(search_response.agent_id, config.agent_id)
+            if search_response.runtime_event_summary is not None:
+                _assert_runtime_tools_present(search_response.runtime_event_summary.tool_events_total)
 
         time.sleep(3.0)
         runtime_identity = read_sqlite_runtime_identity_evidence(
@@ -187,7 +266,11 @@ def run_certification() -> ProofReport:
         if not ollama_after.listed_after_run:
             raise LkwClientError("ollama_model_missing_after_run")
 
-        oracle_pass = functional_oracle_passes(search_response)
+        oracle_pass = (
+            False
+            if search_failure is not None
+            else functional_oracle_passes(search_response)
+        )
         budget = 0
         if search_response.application_run_summary is not None:
             budget = _budget_tokens(
@@ -196,6 +279,21 @@ def run_certification() -> ProofReport:
             )
         if budget <= 0 and search_response.runtime_event_summary is not None:
             budget = search_response.runtime_event_summary.tool_events_total
+
+        lkw_evidence_dict = (
+            search_response.lkw_evidence.model_dump()
+            if search_response.lkw_evidence is not None
+            else None
+        )
+        diagnosis = run_functional_diagnosis(
+            config,
+            tenant_id=config.tenant_id,
+            task_id=search_response.task_id,
+            run_id=search_response.run_id,
+            attempt_id=otlp.attempt_id,
+            answer=search_response.answer,
+            lkw_evidence=lkw_evidence_dict,
+        )
 
         evidence = CertificationEvidence(
             http_status=200,
@@ -211,22 +309,41 @@ def run_certification() -> ProofReport:
             otlp=otlp,
             budget_tokens=budget,
             functional_oracle_pass=oracle_pass,
+            functional_expected=expected_fact(),
+            functional_actual_bounded=(search_response.answer or "")[:200],
         )
+        if search_failure is not None:
+            return _finalize_report(
+                verdict="FAIL",
+                evidence=evidence,
+                failure_reason=search_failure,
+                search_completed=False,
+                diagnosis=diagnosis,
+            )
         if not oracle_pass:
-            return ProofReport(
+            return _finalize_report(
                 verdict="FAIL",
                 evidence=evidence,
                 failure_reason="functional_oracle_failed",
+                search_completed=True,
+                diagnosis=diagnosis,
             )
         if partial_identity_gap is not None:
-            return ProofReport(
+            return _finalize_report(
                 verdict="PARTIAL",
                 evidence=evidence,
                 failure_reason=partial_identity_gap,
+                search_completed=True,
+                diagnosis=diagnosis,
             )
-        return ProofReport(verdict="PASS", evidence=evidence)
+        return _finalize_report(
+            verdict="PASS",
+            evidence=evidence,
+            search_completed=True,
+            diagnosis=diagnosis,
+        )
     except (LkwClientError, EvidenceReadError, SqliteEvidenceReadError, json.JSONDecodeError) as exc:
-        return ProofReport(verdict="FAIL", failure_reason=str(exc))
+        return _finalize_report(verdict="FAIL", failure_reason=str(exc))
 
 
 def write_report(report: ProofReport) -> Path:

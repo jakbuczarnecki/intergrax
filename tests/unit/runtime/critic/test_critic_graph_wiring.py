@@ -97,6 +97,7 @@ def test_validate_node_with_critic_delegates_to_orchestrator() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="GraphExecutor critic authority retired in DS-MIG-02")
 async def test_graph_executor_critic_partial_l0_fail_triggers_retry() -> None:
     registry = AgentRegistry()
     registry.register(

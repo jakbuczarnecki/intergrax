@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Critic & Verification Layer (CVL) — Phase CRIT-V-1."""
+"""Legacy Critic & Verification Layer (CVL) — migration/tests only after DS-MIG-02."""
 
 from intergrax.runtime.critic.contracts import (
     CriticAction,

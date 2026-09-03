@@ -72,11 +72,12 @@ def test_lab_defaults_keep_semantic_critic_disabled() -> None:
     assert env.critic_profile.require_critic_on_completion is False
 
 
-def test_wire_application_critic_builds_graph_hooks_for_graph_final() -> None:
+def test_wire_application_critic_exposes_inert_legacy_fragments() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="critic.wire")
     wiring = wire_application_critic(env)
-    assert wiring.graph_hooks is not None
-    assert wiring.graph_hooks.verify_graph_final is True
+    fragment = wiring.domain_fragments["critic_governance"]
+    assert fragment["runtime_effect"] == "none"
+    assert fragment["verify_graph_final"] is True
     assert "critic_governance" in wiring.domain_fragments
 
 

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 critic wiring (Phase CRIT-V-6.1)."""
+"""Tier-3 critic profile fragments (DS-MIG-02: inert legacy config only)."""
 
 from __future__ import annotations
 
@@ -15,58 +15,33 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     CriticProfile,
 )
-from intergrax.runtime.critic.critic_wiring import (
-    CriticGraphHooks,
-    CriticHookConfig,
-    build_critic_graph_hooks,
-)
-from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 
 
 @dataclass(frozen=True, slots=True)
 class ApplicationCriticWiring:
-    """Resolved critic artifacts for a Tier-3 host."""
+    """Legacy critic profile artifacts retained for config parsing (DS-MIG-05 removal)."""
 
     profile: CriticProfile
     options: CriticWiringOptions
-    hook_config: CriticHookConfig
-    graph_hooks: CriticGraphHooks | None
     domain_fragments: dict[str, Any]
 
 
 def wire_application_critic(
     env: ApplicationEnvironmentProfile,
     *,
-    l1_client: CriticEvalToolClient | None = None,
+    l1_client: object | None = None,
     validation_engine: NexusValidationEngine | None = None,
 ) -> ApplicationCriticWiring:
-    """Materialize critic graph hooks and policy fragments from environment profile."""
+    """Materialize legacy critic governance fragments without runtime authority."""
+    _ = l1_client
+    _ = validation_engine
     profile = env.critic_profile
     options = resolve_critic_wiring_options(profile)
-    hook_config = CriticHookConfig(
-        verify_node_partial=options.verify_node_partial,
-        verify_graph_final=options.verify_graph_final,
-        semantic_judge_enabled=options.semantic_judge_enabled,
-        trajectory_eval_enabled=options.trajectory_eval_enabled,
-        judge_threshold=options.judge_threshold,
-        default_rubric_ref=options.default_rubric_ref,
-        require_critic_on_completion=options.require_critic_on_completion,
-        l2_human_required=options.l2_human_required,
-        l2_borderline_margin=options.l2_borderline_margin,
-        verify_uaep_step=options.verify_uaep_step,
-    )
-    graph_hooks = build_critic_graph_hooks(
-        config=hook_config,
-        validation_engine=validation_engine,
-        l1_client=l1_client,
-    )
     return ApplicationCriticWiring(
         profile=profile,
         options=options,
-        hook_config=hook_config,
-        graph_hooks=graph_hooks,
         domain_fragments={
             "critic_governance": {
                 "semantic_judge_enabled": profile.semantic_judge_enabled,
@@ -81,6 +56,8 @@ def wire_application_critic(
                 "critic_llm_profile_ref": profile.critic_llm_profile_ref,
                 "l2_human_required": profile.l2_human_required,
                 "l2_borderline_margin": profile.l2_borderline_margin,
+                "runtime_effect": "none",
+                "scheduled_removal": "DS-MIG-05",
             },
         },
     )
@@ -90,10 +67,6 @@ def apply_application_critic_wiring(
     nexus: NexusLoop,
     wiring: ApplicationCriticWiring,
 ) -> None:
-    """Attach resolved critic hooks to an existing ``NexusLoop`` instance."""
-    nexus.apply_critic_graph_hooks(wiring.graph_hooks)
-    if wiring.graph_hooks is not None:
-        nexus.apply_critic_uaep_hooks(
-            wiring.graph_hooks,
-            verify_uaep_step=wiring.options.verify_uaep_step,
-        )
+    """No-op: CriticOrchestrator retired from production authority (DS-MIG-02)."""
+    _ = nexus
+    _ = wiring

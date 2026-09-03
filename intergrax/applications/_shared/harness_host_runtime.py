@@ -32,12 +32,13 @@ from intergrax.applications._shared.cost_wiring import (
 from intergrax.applications._shared.critic_assembly_resolver import (
     assert_critic_assembly_valid,
 )
-from intergrax.applications._shared.critic_tool_wiring import (
-    build_critic_eval_tool_client,
-)
 from intergrax.applications._shared.critic_wiring import (
     ApplicationCriticWiring,
     wire_application_critic,
+)
+from intergrax.applications._shared.decision_wiring import (
+    apply_application_decision_wiring,
+    wire_application_decision_from_environment,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
@@ -238,14 +239,9 @@ def build_harness_host_runtime(
     assert_cost_assembly_valid(cost_wiring, environment)
     evaluation_wiring = wire_application_evaluation(environment)
     assert_evaluation_assembly_valid(evaluation_wiring, environment)
-    l1_client = build_critic_eval_tool_client(
-        environment,
-        env_wiring.tool_wiring,
-        evaluation_registry=evaluation_wiring.registry,
-        trace_reader=observability.trace_store,
-    )
-    critic_wiring = wire_application_critic(environment, l1_client=l1_client)
-    assert_critic_assembly_valid(critic_wiring, environment, l1_client=l1_client)
+    critic_wiring = wire_application_critic(environment)
+    assert_critic_assembly_valid(critic_wiring, environment)
+    decision_wiring = wire_application_decision_from_environment(resolved_registry, environment)
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
@@ -274,7 +270,7 @@ def build_harness_host_runtime(
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
-        critic_wiring=critic_wiring,
+        decision_wiring=decision_wiring,
         run_budget=cost_wiring.run_budget,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)

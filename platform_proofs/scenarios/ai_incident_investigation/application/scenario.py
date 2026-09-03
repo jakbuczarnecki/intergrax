@@ -22,7 +22,10 @@ from intergrax.runtime.diagnostics.investigation_contracts import (
 )
 from intergrax.runtime.diagnostics import ProblemId
 from intergrax.runtime.critic.contracts import CriticVerdict
+from intergrax.applications._shared.critic_runtime_bridge import resolve_critic_wiring_options
 from intergrax.runtime.critic.critic_wiring import (
+    CriticHookConfig,
+    build_critic_graph_hooks,
     validate_final_with_critic_detail,
     validate_node_with_critic_detail,
 )
@@ -356,7 +359,21 @@ async def execute_resolved_skeleton(
 
     critic_challenged = failed_critic_verdict is not None and not failed_critic_verdict.passed
 
-    critic_hooks = platform.nexus_loop.critic_graph_hooks
+    critic_options = resolve_critic_wiring_options(composition.environment.critic_profile)
+    critic_hooks = build_critic_graph_hooks(
+        config=CriticHookConfig(
+            verify_node_partial=critic_options.verify_node_partial,
+            verify_graph_final=critic_options.verify_graph_final,
+            semantic_judge_enabled=critic_options.semantic_judge_enabled,
+            trajectory_eval_enabled=critic_options.trajectory_eval_enabled,
+            judge_threshold=critic_options.judge_threshold,
+            default_rubric_ref=critic_options.default_rubric_ref,
+            require_critic_on_completion=critic_options.require_critic_on_completion,
+            l2_human_required=critic_options.l2_human_required,
+            l2_borderline_margin=critic_options.l2_borderline_margin,
+            verify_uaep_step=critic_options.verify_uaep_step,
+        ),
+    )
     if critic_hooks is None:
         raise RuntimeError("critic hooks required for skeleton")
 

@@ -47,7 +47,7 @@ class NexusEvalRunner:
         metrics_engine: Optional[ExecutionMetricsEngine] = None,
         semantic_client: CriticEvalToolClient | None = None,
     ) -> "NexusEvalRunner":
-        resolved_client = semantic_client if semantic_client is not None else nexus_loop.critic_eval_tool_client()
+        resolved_client = semantic_client
         return cls(
             UnifiedTaskRunner(nexus_loop),
             replay_engine=replay_engine,

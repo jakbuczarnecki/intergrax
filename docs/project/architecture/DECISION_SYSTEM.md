@@ -9,7 +9,7 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 >
 > - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
 > - **Implementation:** **NOT YET MIGRATED** - no Decision System runtime classes shipped.
-> - **Production:** **CURRENT** correctness path remains [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) (`CriticOrchestrator`, CVL) until clean-cut migration.
+> - **Production:** Decision Lifecycle / Verification is canonical; `CriticOrchestrator` retained temporarily for migration parity and legacy tests only (DS-MIG-02).
 > - **Evidence:** Decision System E2E not yet qualified - no production-ready claim.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.

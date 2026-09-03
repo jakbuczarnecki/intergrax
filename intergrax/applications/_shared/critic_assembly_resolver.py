@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Critic assembly validation for Tier-3 hosts (Phase CRIT-V-6.2)."""
+"""Critic assembly validation for Tier-3 hosts (DS-MIG-02: legacy config only)."""
 
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ def validate_critic_wiring(
     *,
     l1_client: object | None = None,
 ) -> CriticAssemblyValidationResult:
+    _ = l1_client
     errors: list[str] = []
     profile = env.critic_profile
     options = wiring.options
@@ -44,26 +45,14 @@ def validate_critic_wiring(
     if profile.semantic_judge_enabled and not profile.default_rubric_ref:
         errors.append("semantic_judge_enabled requires default_rubric_ref")
 
-    if profile.semantic_judge_enabled or profile.trajectory_eval_enabled:
-        if l1_client is None:
-            errors.append("semantic or trajectory critic requires configured L1 eval tool client")
-        elif wiring.graph_hooks is not None and not wiring.graph_hooks.orchestrator.l1_client_configured:
-            errors.append("critic graph hooks require configured L1 eval tool client")
-
-    if profile.require_critic_on_completion and not (
-        profile.scopes.node_partial or profile.scopes.graph_final
-    ):
-        errors.append("require_critic_on_completion requires node_partial or graph_final scope")
-
-    if profile.scopes.node_partial or profile.scopes.graph_final:
-        if wiring.graph_hooks is None:
-            errors.append("critic scopes enabled but graph_hooks missing")
-
     if fragment.get("semantic_judge_enabled") != profile.semantic_judge_enabled:
         errors.append("critic_governance fragment must match semantic_judge_enabled")
 
     if fragment.get("require_critic_on_completion") != profile.require_critic_on_completion:
         errors.append("critic_governance fragment must match require_critic_on_completion")
+
+    if fragment.get("runtime_effect") != "none":
+        errors.append("critic_governance fragment must declare runtime_effect=none")
 
     return CriticAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 

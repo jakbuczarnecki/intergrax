@@ -30,7 +30,6 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.decision_flow import (
     CanonicalDecisionFlowGate,
-    DecisionCriticAuthorityConflictError,
     DecisionFlowGateCapabilities,
     DecisionFlowHostAction,
     DecisionFlowScope,
@@ -76,20 +75,6 @@ def _build_gate(*, contract) -> CanonicalDecisionFlowGate:
 def test_uaep_without_decision_keeps_ordinary_behavior() -> None:
     executor = UAEPExecutor()
     assert executor._decision_flow_gate is None  # noqa: SLF001
-
-
-def test_uaep_decision_and_critic_authority_mutually_exclusive() -> None:
-    agent = UaepPipelineStubAgent(agent_id="agent-a", capability="cap.a")
-    contract = agent.get_contract()
-    executor = UAEPExecutor()
-    gate = _build_gate(contract=contract)
-    hooks = MagicMock()
-    hooks.config.verify_node_partial = False
-    hooks.config.verify_graph_final = False
-    hooks.config.verify_uaep_step = True
-    executor.set_decision_flow_gate(gate, verify_uaep_step=True)
-    with pytest.raises(DecisionCriticAuthorityConflictError):
-        executor.set_critic_hooks(hooks, verify_uaep_step=True)
 
 
 def test_same_gate_contract_used_by_graph_and_uaep() -> None:

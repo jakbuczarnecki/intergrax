@@ -146,8 +146,6 @@ class UAEPExecutor:
         sandbox_manager: Optional[SandboxSessionManager] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
         memory_limits: Optional[TaskMemoryLimits] = None,
-        critic_hooks: Any = None,
-        verify_uaep_step: bool = False,
         decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None,
         verify_uaep_step_decision: bool = False,
         context_engine: Any = None,
@@ -164,8 +162,6 @@ class UAEPExecutor:
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
         self._task_memory_store = task_memory_store
         self._memory_limits = memory_limits or TaskMemoryLimits()
-        self._critic_hooks = critic_hooks
-        self._verify_uaep_step = verify_uaep_step
         self._decision_flow_gate = decision_flow_gate
         self._verify_uaep_step_decision = verify_uaep_step_decision
         self._critic_parity_shadow = None
@@ -181,34 +177,12 @@ class UAEPExecutor:
         else:
             self._middleware = MiddlewarePipeline()
 
-    def set_critic_hooks(self, hooks: Any, *, verify_uaep_step: bool = False) -> None:
-        from intergrax.runtime.decision_flow import validate_decision_critic_authority_config
-
-        critic_config = hooks.config if hooks is not None else None
-        validate_decision_critic_authority_config(
-            decision_gate=self._decision_flow_gate,
-            verify_node_partial=critic_config.verify_node_partial if critic_config else False,
-            verify_graph_final=critic_config.verify_graph_final if critic_config else False,
-            verify_uaep_step=verify_uaep_step,
-        )
-        self._critic_hooks = hooks
-        self._verify_uaep_step = verify_uaep_step
-
     def set_decision_flow_gate(
         self,
         gate: DecisionFlowGate[AgentExecutionResult] | None,
         *,
         verify_uaep_step: bool = False,
     ) -> None:
-        from intergrax.runtime.decision_flow import validate_decision_critic_authority_config
-
-        critic_config = self._critic_hooks.config if self._critic_hooks is not None else None
-        validate_decision_critic_authority_config(
-            decision_gate=gate,
-            verify_node_partial=critic_config.verify_node_partial if critic_config else False,
-            verify_graph_final=critic_config.verify_graph_final if critic_config else False,
-            verify_uaep_step=critic_config.verify_uaep_step if critic_config else False,
-        )
         self._decision_flow_gate = gate
         self._verify_uaep_step_decision = verify_uaep_step
 
@@ -730,16 +704,7 @@ class UAEPExecutor:
                     task_options=task_options,
                     exec_ctx=exec_ctx,
                 )
-        return self._verify_uaep_step_critic(
-            contract=contract,
-            step=step,
-            step_result=step_result,
-            request=request,
-            run_id=run_id,
-            task_id=task_id,
-            task_options=task_options,
-            exec_ctx=exec_ctx,
-        )
+        return None
 
     async def _verify_uaep_step_decision_flow(
         self,
@@ -841,73 +806,6 @@ class UAEPExecutor:
                         else "rejected"
                     ),
                 },
-            )
-        return self._interrupt_handler.resolve_decision(
-            decision,
-            task_id=task_id,
-            run_id=run_id,
-            agent_id=contract.id,
-            step_id=step.step_id,
-            decision_policy_context=AgentDecisionPolicyContext(
-                require_human_on_critical=task_options.governance.require_human_on_critical,
-            ),
-        )
-
-    def _verify_uaep_step_critic(
-        self,
-        *,
-        contract: Any,
-        step: AgentStep,
-        step_result: StepExecutionResult,
-        request: RuntimeRequest,
-        run_id: str,
-        task_id: str,
-        task_options: Any,
-        exec_ctx: RuntimeExecutionContext,
-    ) -> GovernanceResolution | None:
-        if not self._verify_uaep_step or self._critic_hooks is None or step_result.output is None:
-            return None
-
-        from intergrax.runtime.critic.contracts import CriticAction
-        from intergrax.runtime.critic.critic_wiring import validate_uaep_step_with_critic_detail
-
-        execution = AgentExecutionResult(
-            agent_id=contract.id,
-            run_id=run_id,
-            status=AgentExecutionStatus.COMPLETED,
-            summary=step_result.output.summary,
-            structured_data=dict(step_result.output.data),
-        )
-        tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
-        critic_context: dict[str, object] = {}
-        guardrail_scan = exec_ctx.metadata.get("guardrail_scan")
-        if isinstance(guardrail_scan, dict):
-            critic_context["guardrail_scan"] = guardrail_scan
-
-        validation, verdict = validate_uaep_step_with_critic_detail(
-            execution,
-            contract=contract,
-            hooks=self._critic_hooks,
-            task_id=exec_ctx.task_id,
-            run_id=run_id,
-            tenant_id=tenant_id,
-            step_id=step.step_id,
-            extra_context=critic_context or None,
-        )
-        if validation.valid:
-            return None
-
-        if verdict.recommended_action is CriticAction.ESCALATE_HITL:
-            decision = AgentDecision(
-                type=AgentDecisionType.REQUEST_HUMAN,
-                reason="critic_uaep_escalate_hitl",
-                payload={"blocking": True, "failure_reasons": verdict.failure_reasons},
-            )
-        else:
-            decision = AgentDecision(
-                type=AgentDecisionType.FAIL,
-                reason="critic_uaep_verification_failed",
-                payload={"failure_reasons": verdict.failure_reasons},
             )
         return self._interrupt_handler.resolve_decision(
             decision,

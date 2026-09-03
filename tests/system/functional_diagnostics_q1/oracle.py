@@ -53,11 +53,10 @@ def independent_date_oracle_passes(
     answer: str | None,
     evidence_texts: list[str],
 ) -> bool:
-    combined = "\n".join([answer or "", *evidence_texts])
-    if EXPECTED_INCIDENT_DATE in combined:
-        return True
-    lowered = combined.lower()
-    return "incident-report" in lowered and "orion" in lowered
+    del evidence_texts
+    if not answer:
+        return False
+    return EXPECTED_INCIDENT_DATE in answer
 
 
 def build_independent_validation_evidence(

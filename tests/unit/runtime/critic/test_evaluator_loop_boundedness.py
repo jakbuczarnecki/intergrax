@@ -10,6 +10,11 @@ from unittest.mock import patch
 
 import pytest
 
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.skip(reason="GraphExecutor critic authority retired in DS-MIG-02"),
+]
+
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType

@@ -43,8 +43,6 @@ from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTr
 from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
-    from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
-    from intergrax.runtime.critic.trace import CriticTraceEmitter
     from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.runtime.migration.critic_shadow_adapter import CriticShadowAdapter
     from intergrax.runtime.migration.decision_critic_parity import DecisionCriticParityObserver
@@ -78,7 +76,6 @@ class NexusGraphRunner:
     finalize_trace: FinalizeFn
     maybe_checkpoint: CheckpointFn
     max_run_retries: int = 0
-    critic_graph_hooks: CriticGraphHooks | None = None
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
     critic_parity_shadow: CriticShadowAdapter | None = None
     parity_observer: DecisionCriticParityObserver | None = None
@@ -93,11 +90,6 @@ class NexusGraphRunner:
         trace_emitter: TaskTraceEmitter,
     ) -> GraphPhaseOutcome:
         callbacks = GraphTraceCallbacks(task=task, trace_emitter=trace_emitter)
-        critic_trace_emitter = _build_critic_trace_emitter(
-            task=task,
-            trace_emitter=trace_emitter,
-            hooks=self.critic_graph_hooks,
-        )
         retry_codes = (
             frozenset({RuntimeErrorCode.VALIDATION_ERROR})
             if self.max_run_retries > 0
@@ -150,7 +142,6 @@ class NexusGraphRunner:
                 on_retry=on_retry,
                 on_node_start=callbacks.on_node_start,
                 on_node_complete=callbacks.on_node_complete,
-                critic_trace_emitter=critic_trace_emitter,
             )
             retry_records.extend(attempt_retries)
             failed_nodes = [
@@ -300,24 +291,6 @@ class NexusGraphRunner:
                         trace_emitter=trace_emitter,
                     )
                 final_validation = decision_flow_result_to_validation_result(flow_result)
-            elif (
-                self.critic_graph_hooks is not None
-                and self.critic_graph_hooks.verify_graph_final
-            ):
-                from intergrax.runtime.critic.critic_wiring import validate_final_with_critic
-
-                active_run_id, _ = require_active_execution_identity()
-                final_validation = validate_final_with_critic(
-                    executions[-1],
-                    contract=final_contract,
-                    hooks=self.critic_graph_hooks,
-                    task_id=task.task_id,
-                    run_id=active_run_id,
-                    tenant_id=task.tenant_id,
-                    capability=task.context.capability,
-                    plan_criteria=plan.validation_criteria,
-                    trace_emitter=critic_trace_emitter,
-                )
             else:
                 final_validation = self.validation_engine.validate(
                     executions[-1],
@@ -488,29 +461,3 @@ class NexusGraphRunner:
             graph_id=graph.graph_id,
         )
         return GraphPhaseOutcome(early_result=early)
-
-
-def _build_critic_trace_emitter(
-    *,
-    task: Task,
-    trace_emitter: TaskTraceEmitter,
-    hooks: CriticGraphHooks | None,
-) -> CriticTraceEmitter | None:
-    if hooks is None:
-        return None
-    if not hooks.verify_node_partial and not hooks.verify_graph_final:
-        return None
-    from intergrax.runtime.critic.trace import build_critic_trace_emitter
-
-    trace_writer = (
-        trace_emitter.trace_store
-        if isinstance(trace_emitter, PersistingTaskTraceEmitter)
-        else None
-    )
-    active_run_id, _ = require_active_execution_identity()
-    return build_critic_trace_emitter(
-        run_id=active_run_id,
-        trace_writer=trace_writer,
-        event_bus=trace_emitter.event_bus,
-        seq_offset=len(trace_emitter.events),
-    )

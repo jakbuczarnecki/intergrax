@@ -103,8 +103,6 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
 if TYPE_CHECKING:
-    from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
-    from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
     from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.contracts.agent_execution_result import AgentExecutionResult
     from intergrax.runtime.migration.critic_shadow_adapter import CriticShadowAdapter
@@ -164,7 +162,6 @@ class NexusLoop:
         signal_collector: SignalCollector | None = None,
         evaluation_registry: OnlineEvaluationRegistry | None = None,
         run_budget: RunBudget | None = None,
-        critic_graph_hooks: Optional["CriticGraphHooks"] = None,
         decision_flow_gate: Optional["DecisionFlowGate[AgentExecutionResult]"] = None,
         emit_coordination_advisory: bool = False,
         allow_dynamic_replan: bool = False,
@@ -268,7 +265,6 @@ class NexusLoop:
             max_parallel_nodes=max_parallel_nodes,
             max_inflight_nodes=max_inflight_nodes,
             max_delegation_depth=max_delegation_depth,
-            critic_graph_hooks=critic_graph_hooks,
             decision_flow_gate=decision_flow_gate,
             agent_checkpoint_store=agent_checkpoint_store,
             compensation_queue_store=compensation_queue_store,
@@ -321,7 +317,6 @@ class NexusLoop:
             finalize_trace=self._finalize_persisting_trace,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             max_run_retries=max_run_retries,
-            critic_graph_hooks=critic_graph_hooks,
             decision_flow_gate=decision_flow_gate,
         )
         self._intake_runner = NexusIntakeRunner(
@@ -360,25 +355,6 @@ class NexusLoop:
         self._graph_executor.apply_validation_engine(validation_engine)
         self._graph_runner.validation_engine = validation_engine
 
-    @property
-    def critic_graph_hooks(self) -> Optional["CriticGraphHooks"]:
-        """Return wired critic graph hooks when application critic wiring is active."""
-        return self._graph_executor.peek_critic_graph_hooks()
-
-    def apply_critic_graph_hooks(self, hooks: Optional["CriticGraphHooks"]) -> None:
-        """Attach or clear critic graph hooks on executor and runner (CRIT-V-6.1)."""
-        self._graph_executor.apply_critic_graph_hooks(hooks)
-        self._graph_runner.critic_graph_hooks = hooks
-
-    def apply_critic_uaep_hooks(
-        self,
-        hooks: Optional["CriticGraphHooks"],
-        *,
-        verify_uaep_step: bool = False,
-    ) -> None:
-        """Attach critic hooks to the UAEP executor for step-level verification."""
-        self._engine.uaep_executor.set_critic_hooks(hooks, verify_uaep_step=verify_uaep_step)
-
     def apply_decision_flow_gate(
         self,
         gate: Optional["DecisionFlowGate[AgentExecutionResult]"],
@@ -409,13 +385,6 @@ class NexusLoop:
     ) -> Optional["DecisionFlowGate[AgentExecutionResult]"]:
         """Return wired Decision flow gate when application decision wiring is active."""
         return self._graph_executor.peek_decision_flow_gate()
-
-    def critic_eval_tool_client(self) -> Optional["CriticEvalToolClient"]:
-        """Return the L1 eval tool client when critic graph hooks are wired."""
-        hooks = self._graph_executor.peek_critic_graph_hooks()
-        if hooks is None:
-            return None
-        return hooks.orchestrator.l1_tool_client
 
     @property
     def trace_emitter(self) -> Optional[TaskTraceEmitter]:
