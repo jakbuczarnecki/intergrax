@@ -27,4 +27,5 @@ def test_from_integration_profile_lab_resolves_notification() -> None:
 
     assert ctx.issue_tracker is None
     assert ctx.search_provider is None
+    assert ctx.managed_retrieval is None
     assert ctx.notification_channel is not None

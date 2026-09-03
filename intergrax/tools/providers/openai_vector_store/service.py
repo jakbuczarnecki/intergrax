@@ -13,9 +13,6 @@ from intergrax.integrations.contracts.managed_retrieval import (
     ManagedRetrievalResourceNotFoundError,
     ManagedRetrievalUploadError,
 )
-from intergrax.integrations.providers.managed_retrieval.materialization import (
-    try_create_managed_retrieval_from_env,
-)
 from intergrax.tools.providers.openai_vector_store.config import (
     OpenAIVectorStoreToolConfig,
     openai_vector_store_config_from_env,
@@ -115,10 +112,11 @@ PROHIBITED ACTIONS (ABSOLUTE)
 def resolve_managed_retrieval(ctx: ToolWiringContext) -> ManagedRetrievalBackend | None:
     if ctx.managed_retrieval is not None:
         return ctx.managed_retrieval
+    # Documented test/DI injection point — not provider discovery.
     extra = ctx.extras.get("managed_retrieval")
     if extra is not None:
         return extra
-    return try_create_managed_retrieval_from_env()
+    return None
 
 
 def resolve_vector_store_id(

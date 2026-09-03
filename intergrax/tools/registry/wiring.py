@@ -189,6 +189,7 @@ class ToolWiringContext:
         return cls(
             issue_tracker=_optional(IntegrationCategory.ISSUE_TRACKER),
             search_provider=_optional(IntegrationCategory.SEARCH_PROVIDER),
+            managed_retrieval=_optional(IntegrationCategory.MANAGED_RETRIEVAL),
             wiki_knowledge=_optional(IntegrationCategory.WIKI_KNOWLEDGE),
             notification_channel=_optional(IntegrationCategory.NOTIFICATION_CHANNEL),
             observability_backend=primary_obs,

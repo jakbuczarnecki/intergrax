@@ -23,6 +23,9 @@ def test_openai_vector_store_tool_service_has_no_openai_sdk_import() -> None:
         ".responses.create",
         "integrations/providers/managed_retrieval/openai",
         "integrations.providers.managed_retrieval.openai",
+        "managed_retrieval.materialization",
+        "try_create_managed_retrieval_from_env",
+        "OPENAI_API_KEY",
     )
     for token in forbidden_tokens:
         assert token not in source, f"forbidden token in tool service: {token}"
