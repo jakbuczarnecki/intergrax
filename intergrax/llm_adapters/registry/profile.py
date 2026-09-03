@@ -16,10 +16,17 @@ from intergrax.llm_adapters.registry.secrets import (
     merge_secrets_into_options,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+
+_RAW_CREDENTIAL_OPTIONS_ERROR = (
+    "raw credentials are not allowed in LLMProfile.options; "
+    "pass credentials via create_adapter(secrets=...) or SecretsStore"
+)
+
+_FORBIDDEN_CREDENTIAL_OPTION_KEYS = frozenset({"api_key"})
 
 
 class LLMProfile(BaseModel):
@@ -43,26 +50,14 @@ class LLMProfile(BaseModel):
     options: dict[str, Any] = Field(default_factory=dict)
     fallback_profiles: tuple[LLMProfile, ...] = Field(default_factory=tuple)
     routing_policy_hint: str | None = None
-    _ephemeral_secrets: dict[str, str] = PrivateAttr(default_factory=dict)
 
-    @model_validator(mode="wrap")
+    @field_validator("options")
     @classmethod
-    def _relocate_inline_api_key(cls, value: object, handler: Any) -> LLMProfile:
-        """Keep durable ``options`` free of raw credential material (P0-SAFETY-6)."""
-        inline_api_key: str | None = None
-        if isinstance(value, dict):
-            payload = dict(value)
-            options = dict(payload.get("options") or {})
-            if "api_key" in options:
-                inline_api_key = str(options.pop("api_key")).strip() or None
-                payload["options"] = options
-            value = payload
-        instance = handler(value)
-        if inline_api_key:
-            secrets = dict(instance._ephemeral_secrets)
-            secrets["api_key"] = inline_api_key
-            object.__setattr__(instance, "_ephemeral_secrets", secrets)
-        return instance
+    def _reject_raw_credentials_in_options(cls, value: dict[str, Any]) -> dict[str, Any]:
+        forbidden = _FORBIDDEN_CREDENTIAL_OPTION_KEYS.intersection(value)
+        if forbidden:
+            raise ValueError(_RAW_CREDENTIAL_OPTIONS_ERROR)
+        return value
 
     @field_validator("fallback_profiles", mode="before")
     @classmethod
@@ -103,16 +98,6 @@ class LLMProfile(BaseModel):
             return provider.value
         return str(provider).strip().lower()
 
-    def _resolved_secrets(
-        self,
-        secrets: Optional[Mapping[str, str]],
-    ) -> Optional[Mapping[str, str]]:
-        if secrets is not None:
-            return secrets
-        if self._ephemeral_secrets:
-            return self._ephemeral_secrets
-        return None
-
     def create_adapter(
         self,
         *,
@@ -124,7 +109,7 @@ class LLMProfile(BaseModel):
         kwargs = merge_secrets_into_options(
             self.provider,
             {**self.options, **overrides},
-            self._resolved_secrets(secrets),
+            secrets,
         )
         if self.model:
             kwargs.setdefault("model", self.model)
@@ -183,19 +168,13 @@ class LLMProfile(BaseModel):
         merged = merge_secrets_into_options(
             self.provider,
             dict(self.options),
-            self._resolved_secrets(secrets),
+            secrets,
         )
         if not merged.get("api_key"):
             slug = self._provider_slug(self.provider)
             if slug not in {"ollama", "vllm", "llama_cpp"}:
                 warnings.append(f"no api_key in profile options or secrets for provider={slug}")
         return warnings
-
-    def with_secrets(self, secrets: Mapping[str, str]) -> LLMProfile:
-        """Return profile carrying ephemeral secrets excluded from serialization."""
-        cloned = self.model_copy(deep=True)
-        object.__setattr__(cloned, "_ephemeral_secrets", dict(secrets))
-        return cloned
 
     def create_adapter_from_secrets_store(
         self,

@@ -58,12 +58,12 @@ def test_profile_passes_api_key_to_openai_client_constructor(
     profile = LLMProfile(
         provider=provider,
         model=_TEST_MODEL,
-        options={"api_key": _TEST_API_KEY, "base_url": _TEST_BASE_URL, "temperature": 0.1},
+        options={"base_url": _TEST_BASE_URL, "temperature": 0.1},
     )
     with patch("intergrax.llm_adapters.providers.openai_compat_factory.OpenAI") as openai_cls:
         client_instance = MagicMock()
         openai_cls.return_value = client_instance
-        adapter = profile.create_adapter()
+        adapter = profile.create_adapter(secrets={"api_key": _TEST_API_KEY})
         openai_cls.assert_called_once_with(
             api_key=_TEST_API_KEY,
             base_url=_TEST_BASE_URL,

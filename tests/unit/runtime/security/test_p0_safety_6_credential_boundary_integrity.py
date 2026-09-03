@@ -9,6 +9,7 @@ from typing import Mapping
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
@@ -50,49 +51,55 @@ def _assert_sentinel_absent(payload: object) -> None:
     assert _SENTINEL not in text
 
 
-def test_sentinel_absent_from_profile_serialization_with_secrets() -> None:
-    profile = LLMProfile(provider=LLMProvider.GROQ, model="m").with_secrets({"api_key": _SENTINEL})
+def test_raw_api_key_option_rejected() -> None:
+    with pytest.raises(ValidationError, match="raw credentials are not allowed in LLMProfile.options"):
+        LLMProfile(
+            provider=LLMProvider.GROQ,
+            model="m",
+            options={"api_key": _SENTINEL},
+        )
+    with pytest.raises(ValidationError, match="raw credentials are not allowed in LLMProfile.options"):
+        LLMProfile(
+            provider=LLMProvider.GROQ,
+            model="m",
+            options={"api_key": _SENTINEL, "max_retries": 1},
+        )
+    try:
+        LLMProfile(
+            provider=LLMProvider.GROQ,
+            model="m",
+            options={"api_key": _SENTINEL},
+        )
+    except ValidationError as exc:
+        _assert_sentinel_absent(str(exc))
+
+
+def test_profile_serialization_never_contains_secret() -> None:
+    profile = LLMProfile(
+        provider=LLMProvider.GROQ,
+        model="m",
+        options={"max_retries": 1, "base_url": "https://example.test/v1"},
+    )
     _assert_sentinel_absent(profile.model_dump())
     _assert_sentinel_absent(profile.model_dump_json())
     _assert_sentinel_absent(repr(profile))
 
 
-def test_sentinel_relocated_from_options_before_serialization() -> None:
-    profile = LLMProfile(
-        provider=LLMProvider.GROQ,
-        model="m",
-        options={"api_key": _SENTINEL, "max_retries": 1},
-    )
-    _assert_sentinel_absent(profile.model_dump())
-    assert "api_key" not in profile.options
-
-
-def test_sentinel_absent_from_validate_runtime_diagnostics() -> None:
-    profile = LLMProfile(provider=LLMProvider.GROQ, model="m").with_secrets({"api_key": _SENTINEL})
-    warnings = profile.validate_runtime()
-    _assert_sentinel_absent(warnings)
-
-
-def test_sentinel_absent_from_secrets_store_loader_errors() -> None:
-    store = _FakeSecretsStore({"llm/groq/api_key": ""})
-    with pytest.raises(RuntimeError, match="Empty secret"):
-        load_api_key_from_secrets_store(store, LLMProvider.GROQ)
-    _assert_sentinel_absent(str(store.lookup_paths))
-
-
-def test_provider_receives_resolved_secret_at_adapter_boundary() -> None:
-    profile = LLMProfile(provider=LLMProvider.GROQ, model="m").with_secrets({"api_key": _SENTINEL})
+def test_explicit_ephemeral_secret_reaches_provider() -> None:
+    profile = LLMProfile(provider=LLMProvider.GROQ, model="m")
     with patch(
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create",
         return_value=MagicMock(),
     ) as create:
-        profile.create_adapter(client=MagicMock())
+        profile.create_adapter(secrets={"api_key": _SENTINEL}, client=MagicMock())
         assert create.call_args.kwargs.get("api_key") == _SENTINEL
+    _assert_sentinel_absent(profile.model_dump())
 
 
 def test_create_adapter_from_secrets_store_passes_secret_without_durable_profile_state() -> None:
     store = _FakeSecretsStore({default_secret_path_for_provider(LLMProvider.GROQ): _SENTINEL})
     profile = LLMProfile(provider=LLMProvider.GROQ, model="m")
+    _assert_sentinel_absent(profile.model_dump())
     with patch(
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create",
         return_value=MagicMock(),
@@ -107,6 +114,39 @@ def test_missing_secret_fails_closed_before_provider_operation() -> None:
     with patch.dict("os.environ", {}, clear=True):
         with pytest.raises(RuntimeError, match="GROQ_API_KEY"):
             profile.create_adapter()
+
+
+def test_failover_does_not_persist_secrets() -> None:
+    primary = LLMProfile(provider=LLMProvider.GROQ, model="primary")
+    fallback = LLMProfile(provider=LLMProvider.GROQ, model="fallback")
+    profile = LLMProfile(
+        provider=LLMProvider.GROQ,
+        model="primary",
+        fallback_profiles=(fallback,),
+    )
+    with patch(
+        "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create",
+        return_value=MagicMock(),
+    ) as create:
+        profile.create_adapter_with_failover(secrets={"api_key": _SENTINEL})
+        for call in create.call_args_list:
+            assert call.kwargs.get("api_key") == _SENTINEL
+    _assert_sentinel_absent(profile.model_dump())
+    _assert_sentinel_absent(primary.model_dump())
+    _assert_sentinel_absent(fallback.model_dump())
+
+
+def test_sentinel_absent_from_validate_runtime_diagnostics() -> None:
+    profile = LLMProfile(provider=LLMProvider.GROQ, model="m")
+    warnings = profile.validate_runtime(secrets={"api_key": _SENTINEL})
+    _assert_sentinel_absent(warnings)
+
+
+def test_sentinel_absent_from_secrets_store_loader_errors() -> None:
+    store = _FakeSecretsStore({"llm/groq/api_key": ""})
+    with pytest.raises(RuntimeError, match="Empty secret"):
+        load_api_key_from_secrets_store(store, LLMProvider.GROQ)
+    _assert_sentinel_absent(str(store.lookup_paths))
 
 
 def test_provider_neutral_secrets_store_without_vault_behavior() -> None:
