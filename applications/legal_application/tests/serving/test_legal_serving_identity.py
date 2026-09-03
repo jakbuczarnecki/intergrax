@@ -20,8 +20,8 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.execution.host_task import build_host_task_execution
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskResult, TaskState
+from testing_support.agent_registry_bootstrap import bootstrap_agent_registry_from_agents
 
 pytestmark = pytest.mark.unit
 
@@ -52,7 +52,7 @@ def _http_ctx(*, tenant: str, user: str) -> RequestContext:
 
 def _service(*, identity_source: str) -> DefaultLegalAgentService:
     agent = _DummyAgent()
-    registry = AgentRegistry.from_agents({"legal-test": agent})
+    registry = bootstrap_agent_registry_from_agents({"legal-test": agent})
     config = LegalAgentServingConfig(
         registry=registry,
         default_agent_id="legal-test",

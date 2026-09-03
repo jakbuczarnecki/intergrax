@@ -56,7 +56,7 @@ class AgentEngine:
     ) -> None:
         if isinstance(agents, AgentRegistry):
             self._registry = agents
-            self._agents = agents.as_dict()
+            self._agents = None
         else:
             self._registry = None
             self._agents = agents

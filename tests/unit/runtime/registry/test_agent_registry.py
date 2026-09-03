@@ -8,6 +8,10 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.config import RuntimeConfig
+from testing_support.agent_registry_bootstrap import (
+    AgentRegistryBootstrapIdentityError,
+    bootstrap_agent_registry_from_agents,
+)
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
@@ -28,6 +32,19 @@ class _StubAgent(Agent):
         )
 
 
+class _MismatchedIdAgent(Agent):
+    def get_contract(self) -> AgentContract:
+        return AgentContract(
+            id="canonical-id",
+            name="Mismatch",
+            description="mismatch",
+            capabilities=["stub.cap"],
+        )
+
+    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        raise RuntimeError("not used")
+
+
 @pytest.mark.unit
 def test_agent_registry_register_and_lookup():
     registry = AgentRegistry()
@@ -39,7 +56,14 @@ def test_agent_registry_register_and_lookup():
 
 
 @pytest.mark.unit
-def test_agent_registry_from_agents_dict():
+def test_bootstrap_agent_registry_from_agents_dict():
     agent = _StubAgent()
-    registry = AgentRegistry.from_agents({"stub": agent})
+    registry = bootstrap_agent_registry_from_agents({"stub": agent})
     assert registry.get("stub") is agent
+
+
+@pytest.mark.unit
+def test_bootstrap_agent_registry_identity_mismatch_fail_closed():
+    agent = _MismatchedIdAgent()
+    with pytest.raises(AgentRegistryBootstrapIdentityError, match="identity mismatch"):
+        bootstrap_agent_registry_from_agents({"dict-key": agent})

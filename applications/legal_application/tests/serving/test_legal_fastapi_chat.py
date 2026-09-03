@@ -15,9 +15,9 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.execution.host_task import build_host_task_execution
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskResult, TaskState
 from legal_application.serving.fastapi_router import mount_legal_agent_routes
+from testing_support.agent_registry_bootstrap import bootstrap_agent_registry_from_agents
 
 pytestmark = pytest.mark.unit
 
@@ -39,7 +39,7 @@ def client() -> TestClient:
             raise RuntimeError("not used when HostTaskExecution.execute is mocked")
 
     agent = _DummyAgent()
-    registry = AgentRegistry.from_agents({"legal-test": agent})
+    registry = bootstrap_agent_registry_from_agents({"legal-test": agent})
     nexus = NexusLoop(registry)
     host_execution = build_host_task_execution(nexus, orchestration_triggers=frozenset())
     mount_legal_agent_routes(
