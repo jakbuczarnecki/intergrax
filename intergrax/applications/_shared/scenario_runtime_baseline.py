@@ -13,8 +13,10 @@ from intergrax.applications._shared.cost_wiring import wire_application_cost
 from intergrax.applications._shared.critic_assembly_resolver import assert_critic_assembly_valid
 from intergrax.applications._shared.critic_wiring import wire_application_critic
 from intergrax.applications._shared.decision_wiring import (
+    DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
     apply_application_decision_wiring,
-    wire_application_decision_from_environment,
+    resolve_application_decision_agent_id,
+    wire_application_decision,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
@@ -239,9 +241,10 @@ def rewire_scenario_critic_wiring(
 ) -> None:
     """Reapply Decision flow wiring and validation engine from the current environment profile."""
     environment = composition.environment
-    decision_wiring = wire_application_decision_from_environment(
-        composition.registry,
-        environment,
+    decision_wiring = wire_application_decision(
+        registry=composition.registry,
+        agent_id=resolve_application_decision_agent_id(composition.registry, environment),
+        spec=DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
     )
     if validation_engine is not None:
         composition.nexus_loop.apply_validation_engine(validation_engine)
@@ -337,7 +340,11 @@ def build_scenario_runtime_from_environment(
         validation_engine=validation_engine,
     )
     assert_critic_assembly_valid(critic_wiring, environment)
-    decision_wiring = wire_application_decision_from_environment(registry, environment)
+    decision_wiring = wire_application_decision(
+        registry=registry,
+        agent_id=resolve_application_decision_agent_id(registry, environment),
+        spec=DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+    )
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
 

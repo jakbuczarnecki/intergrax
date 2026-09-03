@@ -1,6 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Map ApplicationEnvironmentProfile critic fields to runtime config (Phase CRIT-V-1.1)."""
+"""Legacy Critic configuration bridge (Phase CRIT-V-1.1).
+
+Maps ``CriticProfile`` fields to runtime config serialization and legacy metadata.
+Does not configure canonical Decision runtime — use ``ApplicationDecisionWiringSpec``.
+Removal or renaming belongs to DS-MIG-05.
+"""
 
 from __future__ import annotations
 

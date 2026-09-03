@@ -18,13 +18,40 @@ _FORBIDDEN_MODULES = frozenset(
     {
         "intergrax.runtime.critic.critic_orchestrator",
         "intergrax.runtime.critic.critic_wiring",
+        "intergrax.applications._shared.critic_runtime_bridge",
     },
+)
+
+_DECISION_AUTHORITY_PATH_PREFIXES = (
+    "intergrax/applications/_shared/decision_wiring.py",
+    "intergrax/applications/_shared/harness_host_runtime.py",
+    "intergrax/applications/_shared/scenario_runtime_baseline.py",
+    "intergrax/applications/_shared/nexus_factory.py",
+    "intergrax/runtime/decision_flow.py",
+    "intergrax/runtime/decision_flow_host.py",
+)
+
+_LEGACY_CONFIG_PATH_PREFIXES = (
+    "intergrax/applications/_shared/critic_runtime_bridge.py",
+    "intergrax/applications/_shared/critic_wiring.py",
+    "intergrax/applications/_shared/runtime_config_bridge.py",
+    "intergrax/applications/contracts/environment_profile/",
+)
+
+_CRITIC_AUTHORITY_PATTERNS = (
+    "critic_profile.evaluator_loop_max_iterations",
+    "critic_profile.scopes",
+    "resolve_critic_wiring_options",
+    "evaluator_loop_max_iterations - 1",
 )
 
 _ALLOWED_PATHS = (
     "intergrax/runtime/critic/",
     "intergrax/runtime/migration/",
     "intergrax/agents/authoring/critic_gateway.py",
+    "intergrax/applications/_shared/critic_runtime_bridge.py",
+    "intergrax/applications/_shared/critic_wiring.py",
+    "intergrax/applications/_shared/runtime_config_bridge.py",
 )
 
 
@@ -71,5 +98,26 @@ def test_production_modules_do_not_import_critic_orchestrator_wiring() -> None:
     violations = _production_forbidden_import_violations()
     assert violations == [], (
         "Production intergrax modules must not import critic orchestrator wiring: "
+        + ", ".join(violations)
+    )
+
+
+def _decision_authority_critic_pattern_violations() -> list[str]:
+    violations: list[str] = []
+    for rel_prefix in _DECISION_AUTHORITY_PATH_PREFIXES:
+        path = _REPO_ROOT / rel_prefix
+        if not path.is_file():
+            continue
+        source = path.read_text(encoding="utf-8-sig")
+        for pattern in _CRITIC_AUTHORITY_PATTERNS:
+            if pattern in source:
+                violations.append(f"{rel_prefix}: {pattern}")
+    return violations
+
+
+def test_decision_authority_modules_do_not_consume_critic_profile_fields() -> None:
+    violations = _decision_authority_critic_pattern_violations()
+    assert violations == [], (
+        "Decision authority modules must not derive behavior from CriticProfile: "
         + ", ".join(violations)
     )

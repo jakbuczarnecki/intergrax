@@ -37,8 +37,9 @@ from intergrax.applications._shared.critic_wiring import (
     wire_application_critic,
 )
 from intergrax.applications._shared.decision_wiring import (
-    apply_application_decision_wiring,
-    wire_application_decision_from_environment,
+    DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+    resolve_application_decision_agent_id,
+    wire_application_decision,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
@@ -241,7 +242,11 @@ def build_harness_host_runtime(
     assert_evaluation_assembly_valid(evaluation_wiring, environment)
     critic_wiring = wire_application_critic(environment)
     assert_critic_assembly_valid(critic_wiring, environment)
-    decision_wiring = wire_application_decision_from_environment(resolved_registry, environment)
+    decision_wiring = wire_application_decision(
+        registry=resolved_registry,
+        agent_id=resolve_application_decision_agent_id(resolved_registry, environment),
+        spec=DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+    )
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(

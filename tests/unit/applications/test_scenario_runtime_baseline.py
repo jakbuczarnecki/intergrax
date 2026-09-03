@@ -243,7 +243,10 @@ def test_rewire_scenario_critic_wiring_reapplies_validation_engine(tmp_path: Pat
     assert composition.nexus_loop.peek_decision_flow_gate() is not None
 
 
-def test_build_scenario_runtime_wires_decision_from_environment_profile(tmp_path: Path) -> None:
+def test_build_scenario_runtime_wires_decision_from_explicit_spec(
+    tmp_path: Path,
+    _stub_scenario_llm: None,
+) -> None:
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.critic.profile")
     environment.critic_profile = CriticProfile(
         scopes=CriticVerificationScopes(node_partial=True, graph_final=True),
@@ -257,6 +260,7 @@ def test_build_scenario_runtime_wires_decision_from_environment_profile(tmp_path
         runtime_events_db_path=tmp_path / "events.db",
         trace_db_path=tmp_path / "trace.db",
         use_in_memory_trace=True,
+        conformance_check=False,
     )
     gate = composition.nexus_loop.peek_decision_flow_gate()
     assert gate is not None

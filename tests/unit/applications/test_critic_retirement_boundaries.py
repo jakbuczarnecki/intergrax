@@ -11,8 +11,10 @@ from intergrax.applications._shared.critic_wiring import (
     wire_application_critic,
 )
 from intergrax.applications._shared.decision_wiring import (
+    DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
     apply_application_decision_wiring,
-    wire_application_decision_from_environment,
+    resolve_application_decision_agent_id,
+    wire_application_decision,
 )
 from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -36,8 +38,11 @@ def test_harness_nexus_composes_with_decision_not_critic_authority() -> None:
     registry = AgentRegistry()
     registry.register(EchoAgent())
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="retire.decision")
-    decision_wiring = wire_application_decision_from_environment(registry, env)
-    assert decision_wiring is not None
+    decision_wiring = wire_application_decision(
+        registry=registry,
+        agent_id=resolve_application_decision_agent_id(registry, env),
+        spec=DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+    )
     nexus = build_nexus_loop_from_environment(
         registry,
         env=env,
