@@ -58,6 +58,9 @@ from intergrax.applications._shared.registry_projection import (
     InMemoryRuntimeRegistryProjectionStore,
     RuntimeRegistryProjectionStore,
 )
+from intergrax.applications._shared.registry_projection_authority_resolver import (
+    RegistryProjectionAuthorityResolver,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +82,7 @@ class ProductionAgentPlatformRuntime:
     distribution_state: AgentDistributionStoreState
     stores: AgentPlatformRuntimeStores
     effective_roster_authority: EffectiveRosterAuthorityService
+    registry_projection_authority: RegistryProjectionAuthorityResolver
 
 
 def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
@@ -89,18 +93,28 @@ def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
     """
     state = AgentDistributionStoreState()
     effective_roster_snapshot_store = InMemoryEffectiveRosterSnapshotStore(state)
+    revision_store = InMemoryRuntimeRevisionStore(state)
+    lock_store = InMemoryMaterializedRuntimeLockStore(state)
+    materialization_store = InMemoryRuntimeMaterializationStore(state)
+    effective_roster_authority = EffectiveRosterAuthorityService(
+        snapshot_store=effective_roster_snapshot_store,
+    )
     return ProductionAgentPlatformRuntime(
         distribution_state=state,
         stores=AgentPlatformRuntimeStores(
             serving_store=InMemoryApplicationEnvironmentServingStore(state),
             registry_projection_store=InMemoryRuntimeRegistryProjectionStore(),
-            revision_store=InMemoryRuntimeRevisionStore(state),
-            lock_store=InMemoryMaterializedRuntimeLockStore(state),
-            materialization_store=InMemoryRuntimeMaterializationStore(state),
+            revision_store=revision_store,
+            lock_store=lock_store,
+            materialization_store=materialization_store,
             effective_roster_snapshot_store=effective_roster_snapshot_store,
         ),
-        effective_roster_authority=EffectiveRosterAuthorityService(
-            snapshot_store=effective_roster_snapshot_store,
+        effective_roster_authority=effective_roster_authority,
+        registry_projection_authority=RegistryProjectionAuthorityResolver(
+            revision_store=revision_store,
+            effective_roster_authority=effective_roster_authority,
+            lock_store=lock_store,
+            materialization_store=materialization_store,
         ),
     )
 
@@ -111,6 +125,7 @@ __all__ = [
     "AgentPlatformRuntimeStores",
     "EffectiveRosterAuthorityService",
     "ProductionAgentPlatformRuntime",
+    "RegistryProjectionAuthorityResolver",
     "build_production_agent_platform_runtime",
     "create_process_local_agent_platform_runtime",
 ]

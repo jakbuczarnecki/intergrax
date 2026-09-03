@@ -35,7 +35,14 @@ from intergrax.applications._shared.harness_registry_authority import (
     HarnessHostRegistryAuthorityError,
 )
 from intergrax.applications._shared.production_agent_platform_runtime import (
+    AgentPlatformRuntimeStores,
     build_production_agent_platform_runtime,
+)
+from intergrax.applications._shared.registry_projection_authority_resolver import (
+    RegistryProjectionAuthorityResolver,
+)
+from intergrax.agent_distribution.effective_roster_authority import (
+    EffectiveRosterAuthorityService,
 )
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
@@ -217,14 +224,29 @@ def _materialization_record(
     )
 
 
+def _authority(
+    stores: AgentPlatformRuntimeStores,
+) -> RegistryProjectionAuthorityResolver:
+    return RegistryProjectionAuthorityResolver(
+        revision_store=stores.revision_store,
+        effective_roster_authority=EffectiveRosterAuthorityService(
+            snapshot_store=stores.effective_roster_snapshot_store,
+        ),
+        lock_store=stores.lock_store,
+        materialization_store=stores.materialization_store,
+    )
+
+
 def _seed_canonical_authority(
     stores,
     *,
     revision: RuntimeRevision,
+    roster: EffectiveRoster,
     lock: MaterializedRuntimeLock,
     artifact_root: Path,
     digest: str,
 ) -> str:
+    stores.effective_roster_snapshot_store.persist(roster)
     stores.lock_store.persist_lock(lock)
     stores.materialization_store.persist(
         _materialization_record(revision, lock, artifact_root, digest)
@@ -249,20 +271,21 @@ def _canonical_bundle(
     locator = _seed_canonical_authority(
         stores,
         revision=revision,
+        roster=roster,
         lock=lock,
         artifact_root=artifact_root,
         digest=digest,
     )
+    authority = _authority(stores)
     bundle = build_production_registry_projection_input_bundle_for_revision(
         application_id=_APP,
         application_environment_id=_ENV,
         runtime_revision_id=revision_id,
-        effective_roster=roster,
         manifest=manifest,
         build_context=ApplicationBuildContext.for_manifest(manifest),
-        stores=stores,
+        authority=authority,
     )
-    return bundle, locator, artifact_root, digest, lock, stores
+    return bundle, locator, artifact_root, digest, lock, stores, authority
 
 
 def _activation_request(bundle, locator: str) -> ActivateRuntimeRevisionRequest:
@@ -290,15 +313,14 @@ def _activate_bundle(launcher, bundle, locator: str, *, principal) -> str:
 
 
 def test_production_bundle_uses_real_venv_resolver(tmp_path: Path) -> None:
-    bundle, _, _, digest, _, stores = _canonical_bundle(tmp_path)
+    bundle, _, _, digest, _, _, authority = _canonical_bundle(tmp_path)
     projection = build_production_registry_projection_for_revision(
         application_id=_APP,
         application_environment_id=_ENV,
         runtime_revision_id=bundle.runtime_revision.runtime_revision_id,
-        effective_roster=bundle.effective_roster,
         manifest=bundle.manifest,
         build_context=bundle.build_context,
-        stores=stores,
+        authority=authority,
     )
     assert projection.agent_registry.list_agent_ids() == ["search"]
     assert projection.evidence.materialization_artifact_digest == digest
@@ -321,35 +343,46 @@ def test_production_bundle_rejects_reference_locator(tmp_path: Path) -> None:
     stores.lock_store.persist_lock(lock)
     stores.materialization_store.persist(bad_record)
     stores.revision_store.persist_candidate_revision(revision)
+    stores.effective_roster_snapshot_store.persist(roster)
+    authority = _authority(stores)
     with pytest.raises(ProductionRegistryProjectionInputError, match="reference://"):
         build_production_registry_projection_input_bundle_for_revision(
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id=revision.runtime_revision_id,
-            effective_roster=roster,
             manifest=manifest,
             build_context=ApplicationBuildContext.for_manifest(manifest),
-            stores=stores,
+            authority=authority,
         )
 
 
-def test_production_bundle_roster_mismatch_fails_closed(tmp_path: Path) -> None:
-    bundle, _, _, _, _, stores = _canonical_bundle(tmp_path)
-    mismatched = bundle.effective_roster.model_copy(
-        update={"effective_roster_revision_id": "sha256:" + ("9" * 64)},
+def test_production_projection_uses_historical_roster_not_current_desired_state(
+    tmp_path: Path,
+) -> None:
+    bundle, _, _, _, _, stores, authority = _canonical_bundle(tmp_path)
+    historical_roster = bundle.effective_roster
+    mutated = historical_roster.model_copy(
+        update={
+            "entries": (
+                historical_roster.entries[0].model_copy(
+                    update={"logical_agent_id": "mutated-search"},
+                ),
+            ),
+        },
+    ).with_revision_id()
+    stores.effective_roster_snapshot_store.persist(mutated)
+    resolved = build_production_registry_projection_input_bundle_for_revision(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        runtime_revision_id=bundle.runtime_revision.runtime_revision_id,
+        manifest=bundle.manifest,
+        build_context=bundle.build_context,
+        authority=authority,
     )
-    with pytest.raises(
-        ProductionRegistryProjectionInputError, match="effective_roster_revision_id"
-    ):
-        build_production_registry_projection_input_bundle_for_revision(
-            application_id=_APP,
-            application_environment_id=_ENV,
-            runtime_revision_id=bundle.runtime_revision.runtime_revision_id,
-            effective_roster=mismatched,
-            manifest=bundle.manifest,
-            build_context=bundle.build_context,
-            stores=stores,
-        )
+    assert resolved.effective_roster.effective_roster_revision_id == (
+        historical_roster.effective_roster_revision_id
+    )
+    assert resolved.effective_roster.entries[0].logical_agent_id == "search"
 
 
 def test_production_bundle_lock_mismatch_fails_closed(tmp_path: Path) -> None:
@@ -372,15 +405,16 @@ def test_production_bundle_lock_mismatch_fails_closed(tmp_path: Path) -> None:
         )
     )
     stores.revision_store.persist_candidate_revision(revision)
+    stores.effective_roster_snapshot_store.persist(roster)
+    authority = _authority(stores)
     with pytest.raises(ProductionRegistryProjectionInputError, match="lock digest"):
         build_production_registry_projection_input_bundle_for_revision(
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id=revision.runtime_revision_id,
-            effective_roster=roster,
             manifest=manifest,
             build_context=ApplicationBuildContext.for_manifest(manifest),
-            stores=stores,
+            authority=authority,
         )
 
 
@@ -415,6 +449,8 @@ def test_reference_manifest_bundle_cannot_rescue_production_artifact_mismatch(
         _materialization_record(revision, lock, artifact_root, digest)
     )
     stores.revision_store.persist_candidate_revision(tampered_revision)
+    stores.effective_roster_snapshot_store.persist(roster)
+    authority = _authority(stores)
     with pytest.raises(
         ProductionRegistryProjectionInputError, match="artifact digest mismatch"
     ):
@@ -422,10 +458,9 @@ def test_reference_manifest_bundle_cannot_rescue_production_artifact_mismatch(
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id=tampered_revision.runtime_revision_id,
-            effective_roster=roster,
             manifest=manifest,
             build_context=ApplicationBuildContext.for_manifest(manifest),
-            stores=stores,
+            authority=authority,
         )
 
 
@@ -434,7 +469,7 @@ def test_production_e2e_activate_and_serve_real_artifact(tmp_path: Path) -> None
     stores = composition.agent_platform_runtime.stores
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    bundle, locator, _, digest, _, _ = _canonical_bundle(
+    bundle, locator, _, digest, _, _, _ = _canonical_bundle(
         tmp_path,
         revision_id="rev-e2e",
         stores=stores,
@@ -461,7 +496,7 @@ def test_ready_n_plus_one_does_not_switch_serving(tmp_path: Path) -> None:
     stores = composition.agent_platform_runtime.stores
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    bundle_n, locator_n, _, _, _, _ = _canonical_bundle(
+    bundle_n, locator_n, _, _, _, _, _ = _canonical_bundle(
         tmp_path,
         revision_id="rev-n",
         marker="n",
@@ -469,7 +504,7 @@ def test_ready_n_plus_one_does_not_switch_serving(tmp_path: Path) -> None:
     )
     _activate_bundle(launcher, bundle_n, locator_n, principal=governance.principal)
 
-    bundle_n1, locator_n1, _, _, _, _ = _canonical_bundle(
+    bundle_n1, locator_n1, _, _, _, _, _ = _canonical_bundle(
         tmp_path / "n1",
         revision_id="rev-n1",
         marker="n1",
@@ -505,7 +540,7 @@ def test_commit_n_plus_one_switches_serving(tmp_path: Path) -> None:
     stores = composition.agent_platform_runtime.stores
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    bundle_n, locator_n, _, _, _, _ = _canonical_bundle(
+    bundle_n, locator_n, _, _, _, _, _ = _canonical_bundle(
         tmp_path,
         revision_id="rev-n",
         marker="n",
@@ -513,7 +548,7 @@ def test_commit_n_plus_one_switches_serving(tmp_path: Path) -> None:
     )
     _activate_bundle(launcher, bundle_n, locator_n, principal=governance.principal)
 
-    bundle_n1, locator_n1, _, digest_n1, _, _ = _canonical_bundle(
+    bundle_n1, locator_n1, _, digest_n1, _, _, _ = _canonical_bundle(
         tmp_path / "n1",
         revision_id="rev-n1",
         marker="n1",
@@ -560,7 +595,7 @@ def test_same_process_composition_lifecycle_and_serving_share_stores(
     stores = composition.agent_platform_runtime.stores
     env = ApplicationEnvironmentProfile.product_defaults(profile_id=_ENV)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
-    bundle, locator, _, _, _, _ = _canonical_bundle(
+    bundle, locator, _, _, _, _, _ = _canonical_bundle(
         tmp_path,
         revision_id="rev-shared",
         stores=stores,
