@@ -5,7 +5,7 @@
 **Baseline ancestor:** `13092546caaf76a209161f747b7fce6ec6fa9897` (contained in HEAD — verified)  
 **HEAD audited:** `f66137de9bda3b82b8c2653de6a476c1760afe90`  
 **Branch:** `development`  
-**Classification:** **ARCHITECTURAL_DECISION_REQUIRED**
+**Classification:** **IMPLEMENTATION_PENDING** (ADR-PLATFORM-SE-CONVERGENCE decided; P1 open until PLATFORM-SE-FAIL-CLOSED-1)
 
 **Concurrent work note:** Untracked WIP under `tests/system/functional_diagnostics_durability/` (D1-R1 durability gates) was present at audit time and is evaluated as in-progress qualification infrastructure, not production platform code.
 
@@ -391,7 +391,7 @@ Authentication (API key, host identity)
 
 **Precedence:** Explicit in CW (`DENY` < `REQUIRE_HUMAN` < `ALLOW`). Declarative tool rules fail closed on `should_block_execution`.
 
-**Gap:** No single documented precedence when **both** CW boundary and declarative tool policy apply to the same mutation — **ARCHITECTURAL_DECISION_REQUIRED**.
+**Gap (resolved by ADR):** Strategy selection is host/DI-bound per execution context; same mutation must not require both strategies simultaneously. See ADR-PLATFORM-SE-CONVERGENCE §11.
 
 ---
 
@@ -426,7 +426,7 @@ No second generic approval framework found. Domain decision records in External 
 - **Scenario:** Host wires tools without policy bundle; agent invokes workspace/git/issue tools with external mutations.
 - **Reuse:** `MeaningfulSideEffectAuthorizationBoundary` or mandatory declarative enforcer for `side_effects=True`.
 - **Correction:** Architecture decision then narrow gate: fail closed when `contract.side_effects` and no enforcer/boundary.
-- **ADR required:** Yes — convergence model (see §46).
+- **ADR:** **DECIDED** — [`ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md`](../architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md) (implementation pending; P1 remains OPEN).
 
 ---
 
@@ -767,7 +767,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 | **Scenario** | Misconfigured host enables tool bundles with `side_effects=True` |
 | **Reuse** | `MeaningfulSideEffectAuthorizationBoundary` or mandatory enforcer |
 | **Fix** | Fail closed for `side_effects=True` without enforcer; or ADR-unified boundary |
-| **ADR** | **Required** |
+| **ADR** | **DECIDED** — implementation pending ([`ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md`](../architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md)) |
 
 ---
 
@@ -775,7 +775,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 
 | ID | Finding | Files | Recommendation |
 |----|---------|-------|----------------|
-| P2-001 | Dual side-effect models without documented precedence | policy + CW docs | ADR convergence |
+| P2-001 | Dual side-effect models without documented precedence | policy + CW docs | **Closed by ADR** — multi-strategy model documented; Phase 1 fail-closed pending |
 | P2-002 | LLM/embedding outside Integrations catalog | `llm_adapters/`, `rag/embedding/` | ADR or migrate |
 | P2-003 | `contract_capture` reflection at registration | `integrations/registry/contract_capture.py` | Explicit specs for builtins |
 | P2-004 | AW docs say "not implemented" but AW-2B code exists | `autonomous_work/`, `AUTONOMOUS_WORK.md` | Align maturity statement |
@@ -800,18 +800,15 @@ UNTRUSTED: user input, vendor responses, plugin packages
 
 ## 51. ARCHITECTURAL_DECISION_REQUIRED
 
-### ADR-PLATFORM-SE-CONVERGENCE
+### ADR-PLATFORM-SE-CONVERGENCE — **DECIDED** (implementation pending)
 
-**Question:** How do Nexus tool `side_effects`, declarative runtime policy, and `MeaningfulSideEffectAuthorizationBoundary` compose for enterprise hosts?
+**Decision record:** [`docs/project/maintainers/architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md`](../architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md)
 
-**Options:**
-1. **Mandatory declarative enforcer** for all side-effecting tools; CW boundary only for workspace-scoped external work
-2. **Unified boundary** — all `side_effects=True` invoke CW gate when tenant/workspace context present
-3. **Fail-closed default** — no side effect without explicit host policy wiring (minimal code change)
+**Decision summary:** Multi-strategy, fail-closed model. Canonical invariant: **no authorization path ⇒ no meaningful side effect.** Strategy A (declarative tool policy) for generic Nexus tools; Strategy B (Collaborative Work boundary) for workspace/resource-scoped mutations and External Work. Shared coordination contract concept only — no third policy engine. Phase 1: PLATFORM-SE-FAIL-CLOSED-1 closes Nexus gap.
 
-**Tradeoffs:** (1) lowest churn; (2) strongest consistency; (3) fastest safety improvement.
+**Rejected:** (a) CW-only for all effects; (b) declarative-only replacing CW; (c) optional policy behavior; (d) universal policy engine.
 
-**Recommendation:** (3) immediate fail-closed + (1) documented layers toward optional (2) for MP-2.
+**P1 FINDING-PLATFORM-SE-001 remains OPEN** until PLATFORM-SE-FAIL-CLOSED-1 ships.
 
 ### ADR-PLATFORM-LLM-INTEGRATIONS
 
@@ -823,8 +820,8 @@ UNTRUSTED: user input, vendor responses, plugin packages
 
 ## 52. Required roadmap before release
 
-1. **Decide** side-effect convergence (ADR-PLATFORM-SE-CONVERGENCE)
-2. **Implement** fail-closed for `side_effects=True` without policy (narrow, after ADR)
+1. ~~**Decide** side-effect convergence (ADR-PLATFORM-SE-CONVERGENCE)~~ — **DONE** (ADR accepted 2026-09-03)
+2. **Implement** PLATFORM-SE-FAIL-CLOSED-1 — fail-closed for `side_effects=True` without recognized authorization strategy
 3. **Align** AUTONOMOUS_WORK.md with AW-2B code maturity
 4. **Adopt** durable CW in LKW (when MP-2 scheduled)
 5. **Complete** D1-R1 durability qualification commit + Mongo env CI
@@ -913,9 +910,9 @@ uv run pytest tests/integration/core/qualification/test_provider_qualification_e
 
 ## 56. Result classification
 
-**ARCHITECTURAL_DECISION_REQUIRED**
+**IMPLEMENTATION_PENDING**
 
-Primary blockers are structural ownership/convergence decisions (side-effect authorization model, LLM/Integrations boundary), not unbounded duplicate platforms. Bounded P1 requires ADR before safe fix.
+Side-effect authorization convergence is **decided** (ADR-PLATFORM-SE-CONVERGENCE). Primary remaining platform blocker for enterprise side-effect safety is **PLATFORM-SE-FAIL-CLOSED-1** implementation. LLM/Integrations boundary ADR still required separately.
 
 ---
 
