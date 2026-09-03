@@ -846,11 +846,12 @@ FunctionalEvidencePersistence (contract semantics)
 - D1-R1 qualified real Mongo-backed process boundary (writer PID ≠ reader PID, zero memory handoff).
 
 - Canonical record: `record:<evidence_id>` in partition `intergrax.functional_evidence.v1:<tenant_id>`.
-- Execution index: `exec:<task_id>:<run_id>:<evidence_id>` stores evidence reference only.
+- Execution index v1 (legacy projection): `exec:<task_id>:<run_id>:<evidence_id>` — evidence reference only; retained on append for repair compatibility.
+- Execution index v2 (query projection, DIAG-FUNCTIONAL-READ-R1): `execidx:<task_id>:<run_id>:<micros>:<evidence_id>` with metadata (`recorded_at`, `kind`, optional `attempt_id`) for bounded prefix scan and filter-without-canonical-get.
 - Append is idempotent on `evidence_id`; conflicting payload raises `FunctionalEvidencePersistenceConflictError`.
-- Partial write recovery: canonical record present + missing index → retry append repairs index.
+- Partial write recovery: canonical record present + missing index → retry append repairs indexes.
 - Orphan index without canonical record → `FunctionalEvidencePersistenceIntegrityError` (fail closed).
-- Read path: index query (paginated) → canonical record load → scope validation → deterministic `(recorded_at, evidence_id)` order.
+- Read path (R1): lazy v1→v2 projection rebuild when needed → incremental `execidx:` prefix query → canonical load for page candidates only → integrity validation → keyset cursor with lookahead. Ordering invariant: `(recorded_at, evidence_id)` ASC.
 - Production wiring: `wire_functional_evidence_runtime(document_store=..., cursor_secret=...)` — no hidden in-memory fallback.
 - `FunctionalDiagnosticAnalyzer` unchanged; reconstruction reads via `FunctionalEvidencePersistence.query_evidence`.
 

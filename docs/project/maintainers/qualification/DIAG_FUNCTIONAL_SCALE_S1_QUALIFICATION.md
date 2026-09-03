@@ -233,3 +233,9 @@ DR                                    ⏳
 - `.tmp/session/diag-functional-scale-s1/latency-metrics.json`
 - `.tmp/session/diag-functional-scale-s1/resource-metrics.json`
 - `.tmp/session/diag-functional-scale-s1/run.log`
+
+## Post-S1 read-path hardening (DIAG-FUNCTIONAL-READ-R1)
+
+S1 PASS at `98caff3af51b2951b8f0704ac7f96fea526cbfd5` exposed a **production limitation** in the pre-R1 read path: `query_evidence()` materialized the full execution (≈2×O(E) canonical reads per page). S1 historical PASS is **not** invalidated — it documents the qualified envelope at that SHA.
+
+R1 remediation (order-aware `execidx:` v2 derived projection, bounded incremental scan) is qualified separately: [`DIAG_FUNCTIONAL_READ_R1_QUALIFICATION.md`](DIAG_FUNCTIONAL_READ_R1_QUALIFICATION.md).
