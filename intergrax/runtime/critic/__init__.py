@@ -41,9 +41,8 @@ from intergrax.runtime.critic.evaluator_loop_metadata import (
 from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
-from intergrax.runtime.critic.l2_gateway import L2Gateway
 from intergrax.runtime.critic.policy_bridge import (
-    borderline_l1_score,
+    critic_governance_from_fragment,
     resolve_critic_action,
 )
 from intergrax.runtime.critic.tool_registry_client import ToolRegistryCriticEvalClient
@@ -82,9 +81,8 @@ __all__ = [
     "critic_completion_blocked",
     "L0Gateway",
     "L1Gateway",
-    "L2Gateway",
     "ToolRegistryCriticEvalClient",
-    "borderline_l1_score",
+    "critic_governance_from_fragment",
     "resolve_critic_action",
     "LayerVerdict",
     "RubricSpec",

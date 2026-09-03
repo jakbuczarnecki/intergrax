@@ -213,7 +213,7 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 | DS-MIG-01 | P0 | Wire graph/UAEP paths to Decision Lifecycle; Graph/UAEP cutover with governance/lifecycle semantic hardening complete | **Done** |
 | DS-MIG-PARITY | P0 | Dual-run Decision/Critic observational parity qualification (`intergrax/runtime/migration/**`) | **Done** |
 | DS-MIG-02 | P0 | Retire `CriticOrchestrator` from production authority; remove `CriticProfile` Decision config authority (`ApplicationDecisionWiringSpec`) | **Done** |
-| DS-MIG-03 | P1 | Remove L2 from verification model; route HITL via Lifecycle | **Planned** |
+| DS-MIG-03 | P1 | Remove L2 from verification model; route HITL via Lifecycle | **Done** |
 | DS-MIG-04 | P1 | DELETE CRITIC_VERIFICATION docs + retire `intergrax/runtime/critic/**` | **Planned** |
 | DS-MIG-05 | P2 | Remove or rename legacy `CriticProfile` application configuration (no Decision runtime effect after DS-MIG-02) | **Planned** |
 

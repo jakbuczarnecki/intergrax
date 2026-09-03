@@ -3,7 +3,9 @@
 > [!CAUTION]
 > **CURRENT IMPLEMENTATION SNAPSHOT - NOT TARGET CANON**
 >
-> This document describes the **shipped Critic / CVL production path** (`CriticOrchestrator`, L0/L1/L2). It is **superseded for architecture** by the frozen **Decision System** target:
+> **L2 retired (DS-MIG-03):** legacy L2 human verification removed from `runtime/critic`. Human/HITL authority belongs to Decision Lifecycle only. Legacy Critic retained temporarily as L0/L1 migration code until DS-MIG-04.
+>
+> This document describes the **legacy Critic / CVL migration path** (`CriticOrchestrator`, L0/L1). It is **superseded for architecture** by the frozen **Decision System** target:
 >
 > - [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) - lifecycle, authoritative semantics, platform boundaries
 > - [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) - compositional Verification Pipeline
@@ -49,8 +51,7 @@ CVL provides **typed primitives, orchestration, telemetry, and policy gates** so
 | **Verification question** | Is this partial or final output correct? |
 | **L0** | Deterministic - schema, rules, contracts, tests (`NexusValidationEngine`) |
 | **L1** | Probabilistic semantic - `eval.judge`; heuristic process - `eval.trajectory` (profile-controlled) |
-| **L2** | Authoritative - human/compliance gate via `ESCALATE_HITL` (profile-controlled) |
-| **Orchestrator** | `CriticOrchestrator` - L0 → optional L1 → optional L2 with short-circuit |
+| **Orchestrator** | `CriticOrchestrator` - L0 → optional L1 with short-circuit (L2 retired DS-MIG-03) |
 | **Verdict** | `CriticVerdict` - `passed`, per-layer `LayerVerdict`, `recommended_action`, `failure_reasons` |
 | **Producer / critic separation** | Canon requires distinct judge LLM; wired when `critic_llm_profile` is set - not runtime-rejected if unset |
 | **Activation** | `CriticProfile` (per-run) + `EvaluationProfile` (offline/registry/shadow) |

@@ -93,13 +93,6 @@ class EvaluatorLoopExecutor:
             passed=False,
         )
 
-        if verdict.recommended_action is CriticAction.ESCALATE_HITL:
-            return EvaluatorLoopOutcome(
-                decision=EvaluatorLoopDecision.ESCALATE_HITL,
-                iteration=state.iteration,
-                failure_reasons=reasons,
-            )
-
         remaining = self._spec.max_iterations - state.iteration - 1
         revise_node_id = (self._spec.revise_node_id or "").strip() or None
         if (

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Critic orchestrator — L0→L1→L2 pipeline with short-circuit (Phase CRIT-V-3.1)."""
+"""Critic orchestrator — L0→L1 pipeline with short-circuit (Phase CRIT-V-3.1)."""
 
 from __future__ import annotations
 
@@ -16,13 +16,11 @@ from intergrax.runtime.critic.contracts import (
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
-from intergrax.runtime.critic.l2_gateway import L2Gateway
 
 _LAYER_PIPELINE: tuple[CriticLayer, ...] = (
     CriticLayer.L0_DETERMINISTIC,
     CriticLayer.L1_SEMANTIC,
     CriticLayer.L1_TRAJECTORY,
-    CriticLayer.L2_HUMAN,
 )
 
 
@@ -39,11 +37,9 @@ class CriticOrchestrator:
         *,
         l0_gateway: L0Gateway | None = None,
         l1_gateway: L1Gateway | None = None,
-        l2_gateway: L2Gateway | None = None,
     ) -> None:
         self._l0 = l0_gateway or L0Gateway()
         self._l1 = l1_gateway or L1Gateway()
-        self._l2 = l2_gateway or L2Gateway()
 
     @property
     def l1_client_configured(self) -> bool:
@@ -124,7 +120,6 @@ class CriticOrchestrator:
             return self._l1.verify_semantic(request)
         if layer is CriticLayer.L1_TRAJECTORY:
             return self._l1.verify_trajectory(request)
-        return self._l2.verify(request)
 
 
 def _resolve_contract(contract: AgentContract | None, request: CriticRequest) -> AgentContract:
@@ -164,8 +159,6 @@ def _recommended_action(scope: CriticScope, failed_layer: CriticLayer | None) ->
         return CriticAction.RETRY if scope is CriticScope.NODE_PARTIAL else CriticAction.FAIL
     if failed_layer in (CriticLayer.L1_SEMANTIC, CriticLayer.L1_TRAJECTORY):
         return CriticAction.REVISE
-    if failed_layer is CriticLayer.L2_HUMAN:
-        return CriticAction.ESCALATE_HITL
     return CriticAction.FAIL
 
 

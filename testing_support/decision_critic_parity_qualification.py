@@ -717,7 +717,6 @@ async def run_hitl_architectural_mapping_case(
         config=CriticHookConfig(
             verify_graph_final=flow_scope is DecisionFlowScope.GRAPH_FINAL,
             verify_uaep_step=flow_scope is DecisionFlowScope.UAEP_STEP,
-            l2_human_required=True,
         ),
     )
     if hooks is None:
@@ -742,6 +741,9 @@ async def run_hitl_architectural_mapping_case(
             step_id=subject,
         )
     from intergrax.runtime.migration.decision_critic_parity import build_parity_identity
+    from intergrax.runtime.migration.legacy_critic_human_evidence import (
+        proven_retired_l2_human_escalation_evidence,
+    )
 
     identity = build_parity_identity(
         flow_scope=flow_scope,
@@ -757,6 +759,7 @@ async def run_hitl_architectural_mapping_case(
         identity=identity,
         decision_result=flow_result,
         critic_verdict=critic_verdict,
+        retired_legacy_human_evidence=proven_retired_l2_human_escalation_evidence(),
     )
 
 

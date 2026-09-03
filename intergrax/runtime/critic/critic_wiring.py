@@ -54,8 +54,6 @@ class CriticHookConfig:
     judge_threshold: float = 0.75
     default_rubric_ref: str | None = None
     require_critic_on_completion: bool = False
-    l2_human_required: bool = False
-    l2_borderline_margin: float = 0.05
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,18 +94,11 @@ def enabled_layers_for_scope(config: CriticHookConfig, *, partial: bool) -> tupl
         layers.append(CriticLayer.L1_SEMANTIC)
     if config.trajectory_eval_enabled and not partial:
         layers.append(CriticLayer.L1_TRAJECTORY)
-    if config.l2_human_required and not partial:
-        layers.append(CriticLayer.L2_HUMAN)
     return tuple(layers)
 
 
 def _finalize_critic_verdict(verdict: CriticVerdict, hooks: CriticGraphHooks) -> CriticVerdict:
-    action = resolve_critic_action(
-        verdict,
-        judge_threshold=hooks.config.judge_threshold,
-        l2_borderline_margin=hooks.config.l2_borderline_margin,
-        l2_human_required=hooks.config.l2_human_required,
-    )
+    action = resolve_critic_action(verdict)
     if action is verdict.recommended_action:
         return verdict
     return verdict.model_copy(update={"recommended_action": action})

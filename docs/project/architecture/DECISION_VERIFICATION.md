@@ -290,7 +290,7 @@ Until migration, production verification maps approximately:
 | ------------ | ----------- |
 | Structural / deterministic | `L0Gateway` / `NexusValidationEngine` |
 | Semantic / trajectory | `L1Gateway` / `eval.judge` / `eval.trajectory` |
-| Human authority | `L2Gateway` → **moving to HITL** (not verification) |
+| Human authority | legacy L2 removed (DS-MIG-03); Decision Human Review is canonical HITL owner |
 | Orchestrator | `CriticOrchestrator` → **REPLACE** with pipeline |
 
 See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md).

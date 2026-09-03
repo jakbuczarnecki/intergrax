@@ -172,6 +172,42 @@ def test_critic_orchestrator_l0_fail_on_final_recommends_fail() -> None:
     assert verdict.recommended_action is CriticAction.FAIL
 
 
+def test_critic_orchestrator_never_emits_l2_layer() -> None:
+    orchestrator = CriticOrchestrator()
+    request = CriticRequest(
+        scope=CriticScope.GRAPH_FINAL,
+        run_id="run-1",
+        agent_id="worker",
+        execution=_completed_execution(),
+        enabled_layers=(
+            CriticLayer.L0_DETERMINISTIC,
+            CriticLayer.L1_SEMANTIC,
+            CriticLayer.L1_TRAJECTORY,
+        ),
+        rubric=RubricSpec(rubric_id="case.a"),
+        context={"tenant_id": "tenant-1"},
+    )
+    client = _FakeEvalClient()
+    orchestrator = CriticOrchestrator(l1_gateway=L1Gateway(tool_client=client))
+    verdict = orchestrator.verify(request)
+    emitted_layers = {layer.layer for layer in verdict.layers}
+    assert CriticLayer.L0_DETERMINISTIC in emitted_layers or len(verdict.layers) >= 1
+    assert all(
+        layer.layer in (
+            CriticLayer.L0_DETERMINISTIC,
+            CriticLayer.L1_SEMANTIC,
+            CriticLayer.L1_TRAJECTORY,
+        )
+        for layer in verdict.layers
+    )
+    assert verdict.recommended_action in (
+        CriticAction.CONTINUE,
+        CriticAction.RETRY,
+        CriticAction.REVISE,
+        CriticAction.FAIL,
+    )
+
+
 def test_critic_orchestrator_uses_contract_from_context() -> None:
     orchestrator = CriticOrchestrator()
     contract = AgentContract(

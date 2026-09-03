@@ -13,10 +13,8 @@ from intergrax.applications.contracts.environment_profile import (
     CriticVerificationScopes,
 )
 from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.runtime.critic.contracts import CriticLayer, CriticRequest, CriticScope, RubricSpec
 from intergrax.runtime.critic.critic_orchestrator import CriticOrchestrator
 from intergrax.runtime.critic.l1_gateway import L1Gateway
-from intergrax.runtime.critic.policy_bridge import borderline_l1_score, resolve_critic_action
 from intergrax.runtime.critic.tool_registry_client import ToolRegistryCriticEvalClient
 from intergrax.tools.providers.eval.contracts import EvalJudgeInput
 from intergrax.tools.providers.eval.judge import _JudgeLLMResult
@@ -72,37 +70,3 @@ def test_build_critic_eval_tool_client_materializes_when_semantic_enabled() -> N
     assert client is not None
     orchestrator = CriticOrchestrator(l1_gateway=L1Gateway(tool_client=client))
     assert orchestrator.l1_client_configured is True
-
-
-def test_borderline_l1_score_detects_near_threshold() -> None:
-    from intergrax.runtime.critic.contracts import CriticVerdict, LayerVerdict
-
-    verdict = CriticVerdict(
-        scope=CriticScope.GRAPH_FINAL,
-        passed=False,
-        layers=[
-            LayerVerdict(layer=CriticLayer.L1_SEMANTIC, passed=False, score=0.73),
-        ],
-        recommended_action="revise",
-    )
-    assert borderline_l1_score(verdict, threshold=0.75, margin=0.05) is True
-
-
-def test_resolve_critic_action_escalates_borderline_when_l2_required() -> None:
-    from intergrax.runtime.critic.contracts import CriticAction, CriticVerdict, LayerVerdict
-
-    verdict = CriticVerdict(
-        scope=CriticScope.GRAPH_FINAL,
-        passed=False,
-        layers=[
-            LayerVerdict(layer=CriticLayer.L1_SEMANTIC, passed=False, score=0.74),
-        ],
-        recommended_action=CriticAction.REVISE,
-    )
-    action = resolve_critic_action(
-        verdict,
-        judge_threshold=0.75,
-        l2_borderline_margin=0.05,
-        l2_human_required=True,
-    )
-    assert action is CriticAction.ESCALATE_HITL

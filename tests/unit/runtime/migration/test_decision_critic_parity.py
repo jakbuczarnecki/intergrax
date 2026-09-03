@@ -62,6 +62,10 @@ from intergrax.runtime.decision_flow import (
     DecisionFlowScope,
 )
 from intergrax.runtime.decision_human_review import request_decision_human_review
+from intergrax.runtime.migration.legacy_critic_human_evidence import (
+    LegacyCriticHumanEscalationEvidence,
+    proven_retired_l2_human_escalation_evidence,
+)
 from intergrax.runtime.migration.decision_critic_parity import (
     CriticRetirementReadiness,
     DecisionCriticParityClassification,
@@ -89,6 +93,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _MODULE_PATHS = (
     Path("intergrax/runtime/migration/decision_critic_parity.py"),
     Path("intergrax/runtime/migration/critic_shadow_adapter.py"),
+    Path("intergrax/runtime/migration/legacy_critic_human_evidence.py"),
 )
 _FORBIDDEN_FRAGMENTS = (
     "Any",
@@ -212,16 +217,8 @@ def _human_review_pending_for_candidate(
     return request_decision_human_review(request)
 
 
-def _hitl_critic_verdict() -> CriticVerdict:
-    return CriticVerdict(
-        scope=CriticScope.GRAPH_FINAL,
-        passed=False,
-        layers=[
-            LayerVerdict(layer=CriticLayer.L2_HUMAN, passed=False, errors=["human required"]),
-        ],
-        recommended_action=CriticAction.ESCALATE_HITL,
-        failure_reasons=["human required"],
-    )
+def _hitl_historical_evidence() -> LegacyCriticHumanEscalationEvidence:
+    return proven_retired_l2_human_escalation_evidence()
 
 
 def _critic_verdict(
@@ -443,22 +440,14 @@ def test_compare_expected_difference_on_l2_hitl() -> None:
         agent_id="agent-1",
         subject="graph-1",
     )
-    verdict = CriticVerdict(
-        scope=CriticScope.GRAPH_FINAL,
-        passed=False,
-        layers=[
-            LayerVerdict(layer=CriticLayer.L2_HUMAN, passed=False, errors=["human required"]),
-        ],
-        recommended_action=CriticAction.ESCALATE_HITL,
-        failure_reasons=["human required"],
-    )
     parity = compare_decision_critic_parity(
         identity=identity,
         decision_result=_decision_result(
             disposition=VerificationDisposition.CHALLENGED,
             host_action=DecisionFlowHostAction.PENDING_HUMAN,
         ),
-        critic_verdict=verdict,
+        critic_verdict=_critic_verdict(passed=True),
+        retired_legacy_human_evidence=_hitl_historical_evidence(),
     )
     assert parity.classification is DecisionCriticParityClassification.EXPECTED_DIFFERENCE
     assert LEGACY_L2_NOT_DECISION_VERIFICATION in {item.code for item in parity.differences}
@@ -802,7 +791,8 @@ def test_architectural_mapping_hitl_not_qualified_on_critic_l2_only() -> None:
     parity = compare_decision_critic_parity(
         identity=identity,
         decision_result=decision,
-        critic_verdict=_hitl_critic_verdict(),
+        critic_verdict=_critic_verdict(passed=True),
+        retired_legacy_human_evidence=_hitl_historical_evidence(),
     )
     difference_codes = {item.code for item in parity.differences}
     assert LEGACY_L2_NOT_DECISION_VERIFICATION in difference_codes
@@ -827,7 +817,6 @@ def test_architectural_mapping_hitl_qualifies() -> None:
         agent_id="agent-1",
         subject="graph-1",
     )
-    verdict = _hitl_critic_verdict()
     decision = _decision_result(
         disposition=VerificationDisposition.CHALLENGED,
         host_action=DecisionFlowHostAction.PENDING_HUMAN,
@@ -840,7 +829,8 @@ def test_architectural_mapping_hitl_qualifies() -> None:
         compare_decision_critic_parity(
             identity=identity,
             decision_result=decision_with_pending,
-            critic_verdict=verdict,
+            critic_verdict=_critic_verdict(passed=True),
+            retired_legacy_human_evidence=_hitl_historical_evidence(),
         ),
     ]
     difference_codes = {item.code for item in results[0].differences}
@@ -869,7 +859,8 @@ def test_architectural_mapping_l2_difference_non_blocking_without_qualification(
             disposition=VerificationDisposition.CHALLENGED,
             host_action=DecisionFlowHostAction.PENDING_HUMAN,
         ),
-        critic_verdict=_hitl_critic_verdict(),
+        critic_verdict=_critic_verdict(passed=True),
+        retired_legacy_human_evidence=_hitl_historical_evidence(),
     )
     assert parity.classification is DecisionCriticParityClassification.EXPECTED_DIFFERENCE
     assert LEGACY_L2_NOT_DECISION_VERIFICATION in {item.code for item in parity.differences}
@@ -1144,6 +1135,41 @@ def test_aggregate_parity_metrics() -> None:
     metrics = aggregate_parity_metrics(results)
     assert metrics.total_comparisons == 2
     assert metrics.shadow_unavailable == 1
+
+
+def test_ds_mig_03_hitl_qualified_without_live_l2_gateway() -> None:
+    critic_root = Path("intergrax/runtime/critic")
+    assert not (critic_root / "l2_gateway.py").is_file()
+    identity = build_parity_identity(
+        flow_scope=DecisionFlowScope.GRAPH_FINAL,
+        task_id="task-1",
+        run_id="run-1",
+        attempt_id="attempt-1",
+        tenant_id="tenant-1",
+        agent_id="agent-1",
+        subject="graph-1",
+    )
+    decision = _decision_result(
+        disposition=VerificationDisposition.CHALLENGED,
+        host_action=DecisionFlowHostAction.PENDING_HUMAN,
+    )
+    decision_with_pending = replace(
+        decision,
+        human_review_pending=_human_review_pending_for_candidate(decision.candidate),
+    )
+    parity = compare_decision_critic_parity(
+        identity=identity,
+        decision_result=decision_with_pending,
+        critic_verdict=_critic_verdict(passed=True),
+        retired_legacy_human_evidence=_hitl_historical_evidence(),
+    )
+    assert LEGACY_HITL_IS_DECISION_HUMAN_REVIEW in {item.code for item in parity.differences}
+    report = evaluate_critic_retirement_readiness(
+        [parity],
+        required_scopes=frozenset({ParityHostScope.GRAPH_FINAL}),
+        capability_requirements=_hitl_architectural_requirement(),
+    )
+    assert ParityVerificationCapability.HUMAN_HITL in report.architectural_mappings_qualified
 
 
 def test_forbidden_audit_migration_modules() -> None:

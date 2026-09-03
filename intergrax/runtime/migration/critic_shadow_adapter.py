@@ -125,7 +125,6 @@ def _shadow_hook_config(config: CriticShadowConfig) -> CriticHookConfig:
         trajectory_eval_enabled=config.trajectory_eval_enabled,
         judge_threshold=config.judge_threshold,
         default_rubric_ref=config.default_rubric_ref,
-        l2_human_required=False,
         require_critic_on_completion=False,
     )
 

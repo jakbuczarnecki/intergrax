@@ -24,13 +24,11 @@ class CriticScope(str, Enum):
 
 
 class CriticLayer(str, Enum):
-    """Verification layer in the L0 / L1 / L2 stack."""
+    """Verification layer in the legacy L0 / L1 stack."""
 
     L0_DETERMINISTIC = "l0_deterministic"
     L1_SEMANTIC = "l1_semantic"
     L1_TRAJECTORY = "l1_trajectory"
-    L2_HUMAN = "l2_human"
-
 
 class CriticAction(str, Enum):
     """Recommended orchestration action after a critic verdict."""
@@ -38,7 +36,6 @@ class CriticAction(str, Enum):
     CONTINUE = "continue"
     RETRY = "retry"
     REVISE = "revise"
-    ESCALATE_HITL = "escalate_hitl"
     FAIL = "fail"
 
 

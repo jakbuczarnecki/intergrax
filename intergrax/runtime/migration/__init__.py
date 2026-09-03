@@ -8,6 +8,12 @@ from intergrax.runtime.migration.critic_shadow_adapter import (
     CriticShadowConfig,
     build_critic_shadow_adapter,
 )
+from intergrax.runtime.migration.legacy_critic_human_evidence import (
+    LegacyCriticHumanEscalationEvidence,
+    LegacyCriticRetiredAction,
+    LegacyCriticRetiredLayer,
+    proven_retired_l2_human_escalation_evidence,
+)
 from intergrax.runtime.migration.decision_critic_parity import (
     CriticRetirementReadiness,
     DecisionCriticParityClassification,
@@ -31,6 +37,10 @@ from intergrax.runtime.migration.decision_critic_parity import (
 
 __all__ = (
     "CriticRetirementReadiness",
+    "LegacyCriticHumanEscalationEvidence",
+    "LegacyCriticRetiredAction",
+    "LegacyCriticRetiredLayer",
+    "proven_retired_l2_human_escalation_evidence",
     "CriticShadowAdapter",
     "CriticShadowConfig",
     "DEFAULT_CRITIC_RETIREMENT_CAPABILITY_REQUIREMENTS",

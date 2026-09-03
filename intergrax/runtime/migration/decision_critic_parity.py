@@ -34,6 +34,9 @@ from intergrax.runtime.decision_flow import (
     DecisionFlowResult,
     DecisionFlowScope,
 )
+from intergrax.runtime.migration.legacy_critic_human_evidence import (
+    LegacyCriticHumanEscalationEvidence,
+)
 
 T = TypeVar("T")
 
@@ -206,6 +209,7 @@ class CriticParityObservation:
     recommended_action: CriticAction | None
     capabilities: frozenset[ParityVerificationCapability]
     failure_reasons: tuple[str, ...] = ()
+    retired_legacy_human_evidence: LegacyCriticHumanEscalationEvidence | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -370,8 +374,6 @@ def _critic_capabilities_from_verdict(verdict: CriticVerdict) -> frozenset[Parit
             capabilities.add(ParityVerificationCapability.SEMANTIC)
         elif layer.layer is CriticLayer.L1_TRAJECTORY:
             capabilities.add(ParityVerificationCapability.TRAJECTORY)
-        elif layer.layer is CriticLayer.L2_HUMAN:
-            capabilities.add(ParityVerificationCapability.HUMAN_HITL)
     return frozenset(capabilities)
 
 
@@ -380,6 +382,7 @@ def project_critic_observation(
     *,
     shadow_unavailable: bool = False,
     shadow_error: str | None = None,
+    retired_legacy_human_evidence: LegacyCriticHumanEscalationEvidence | None = None,
 ) -> CriticParityObservation:
     """Project one Critic shadow verdict into normalized parity semantics."""
     if shadow_error is not None:
@@ -405,13 +408,19 @@ def project_critic_observation(
         if verdict.passed
         else NormalizedParityOutcome.CHALLENGED
     )
+    capabilities = _critic_capabilities_from_verdict(verdict)
+    if retired_legacy_human_evidence is not None:
+        capabilities = frozenset(
+            set(capabilities) | {ParityVerificationCapability.HUMAN_HITL},
+        )
     return CriticParityObservation(
         outcome=outcome,
         passed=verdict.passed,
         failed_layer=failed_layer,
         recommended_action=verdict.recommended_action,
-        capabilities=_critic_capabilities_from_verdict(verdict),
+        capabilities=capabilities,
         failure_reasons=tuple(verdict.failure_reasons),
+        retired_legacy_human_evidence=retired_legacy_human_evidence,
     )
 
 
@@ -440,7 +449,7 @@ def _expected_difference_codes(
                     detail="legacy revise maps to decision revision lifecycle",
                 ),
             )
-    if critic.failed_layer is CriticLayer.L2_HUMAN or action is CriticAction.ESCALATE_HITL:
+    if critic.retired_legacy_human_evidence is not None:
         differences.append(
             DecisionCriticParityDifference(
                 code=LEGACY_L2_NOT_DECISION_VERIFICATION,
@@ -539,6 +548,7 @@ def compare_decision_critic_parity(
     critic_verdict: CriticVerdict | None = None,
     shadow_unavailable: bool = False,
     shadow_error: str | None = None,
+    retired_legacy_human_evidence: LegacyCriticHumanEscalationEvidence | None = None,
 ) -> DecisionCriticParityResult:
     """Compare normalized Decision and Critic observations for one host input."""
     decision_observation = project_decision_observation(decision_result)
@@ -546,6 +556,7 @@ def compare_decision_critic_parity(
         critic_verdict,
         shadow_unavailable=shadow_unavailable,
         shadow_error=shadow_error,
+        retired_legacy_human_evidence=retired_legacy_human_evidence,
     )
     expected = _expected_difference_codes(
         decision=decision_observation,
