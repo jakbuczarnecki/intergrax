@@ -13,7 +13,7 @@ from intergrax.contracts.orchestration_enums import MultiAgentOrder
 from intergrax.contracts.delegation import DelegationSpec
 from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.task_classifier import TaskClassification
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 
 
@@ -50,7 +50,7 @@ class TaskPlanner:
     def __init__(self, *, multi_agent_order: MultiAgentOrder = MultiAgentOrder.REGISTRY) -> None:
         self._multi_agent_order = multi_agent_order
 
-    def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
+    def plan(self, task: Task, registry: AgentRegistryRead) -> NexusPlan:
         classification = task.classification or TaskClassification.SINGLE_AGENT_DEFAULT.value
 
         if classification == TaskClassification.UNSUPPORTED.value:
@@ -99,7 +99,7 @@ class TaskPlanner:
     def _multi_agent_plan(
         self,
         task: Task,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         classification: str,
     ) -> NexusPlan:
         capability = task.context.capability or ""
@@ -135,7 +135,7 @@ class TaskPlanner:
     def _research_pipeline_plan(
         self,
         task: Task,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         classification: str,
     ) -> NexusPlan:
         research_id = self._agent_for_capability(registry, "research.web_search", "research")
@@ -176,7 +176,7 @@ class TaskPlanner:
 
     @staticmethod
     def _agent_for_capability(
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         capability: str,
         fallback_id: str,
     ) -> str:

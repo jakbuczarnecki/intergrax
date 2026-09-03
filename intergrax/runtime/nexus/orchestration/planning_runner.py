@@ -35,7 +35,7 @@ from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.runtime_policy_context import PreModelPhase, PreModelPolicyContext
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.policy.policy_engine import PolicyEngine
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
@@ -56,7 +56,7 @@ class PlanningPhaseOutcome:
 class NexusPlanningRunner:
     classifier: NexusTaskClassifierProtocol
     planner: NexusTaskPlannerProtocol
-    registry: AgentRegistry
+    registry: AgentRegistryRead
     hitl: NexusHitlRunner
     publish: PublishFn
     finish_task: FinishFn

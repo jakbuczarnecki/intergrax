@@ -7,7 +7,7 @@ from __future__ import annotations
 from intergrax.contracts.intent_route import IntentRoute
 from intergrax.runtime.nexus.intent_routing import apply_intent_routes
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 
 
@@ -20,7 +20,7 @@ class RulesTaskClassifier:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         *,
         intent_routes: list[IntentRoute] | None = None,
         orchestration_trigger_capabilities: frozenset[str] | None = None,

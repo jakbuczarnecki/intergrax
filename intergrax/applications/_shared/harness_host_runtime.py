@@ -118,6 +118,7 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 
 __all__ = [
@@ -134,7 +135,7 @@ class HarnessHostRuntime:
     manifest: ApplicationManifest
     environment: ApplicationEnvironmentProfile
     env_wiring: ApplicationEnvironmentWiring
-    registry: AgentRegistry
+    registry: AgentRegistryRead
     observability: NexusObservabilityStores
     reliability: ApplicationReliabilityWiring
     security: ApplicationSecurityWiring

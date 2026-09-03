@@ -20,6 +20,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 if TYPE_CHECKING:
     pass
@@ -83,7 +84,7 @@ def resolve_harness_host_registry(
     registry_projection: MaterializedRegistryProjection | None = None,
     registry: AgentRegistry | None = None,
     builders: BuilderMap | None = None,
-) -> tuple[AgentRegistry, RegistryProjectionEvidence | None]:
+) -> tuple[AgentRegistryRead, RegistryProjectionEvidence | None]:
     """Resolve harness host registry authority without silent manifest fallback."""
     if assembly_mode is RegistryAssemblyMode.REVISION_BOUND:
         if registry_projection is None:

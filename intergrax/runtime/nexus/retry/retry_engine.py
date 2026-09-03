@@ -12,7 +12,7 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.resilience_policy import FailureClass, FailureResponse, ResiliencePolicy
@@ -33,7 +33,7 @@ class RetryEngine:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         *,
         policy: Optional[RetryPolicy] = None,
         middleware: Optional[MiddlewarePipeline] = None,

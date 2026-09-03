@@ -17,7 +17,7 @@ from intergrax.runtime.decision_flow import (
 )
 from intergrax.runtime.decision_flow_host import build_agent_execution_verification_pipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +62,7 @@ class ApplicationDecisionWiring:
 
 
 def resolve_application_decision_agent_id(
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     env: ApplicationEnvironmentProfile,
 ) -> str:
     """Resolve the primary agent id used for Decision verification pipeline wiring."""
@@ -77,7 +77,7 @@ def resolve_application_decision_agent_id(
 
 def wire_application_decision(
     *,
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     agent_id: str,
     spec: ApplicationDecisionWiringSpec,
     capability: str | None = None,
@@ -109,7 +109,7 @@ def wire_application_decision(
 
 def wire_application_decision_flow(
     *,
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     agent_id: str,
     capability: str | None = None,
     verify_graph_final: bool = True,

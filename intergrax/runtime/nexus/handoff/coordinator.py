@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_handoff import AgentHandoff
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 
 
@@ -32,7 +32,7 @@ class HandoffCoordinator:
     All cross-agent transfers go through this coordinator — agents never call each other.
     """
 
-    def __init__(self, registry: AgentRegistry) -> None:
+    def __init__(self, registry: AgentRegistryRead) -> None:
         self._registry = registry
 
     def validate(

@@ -24,7 +24,7 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
@@ -43,7 +43,7 @@ class AgentEngine:
 
     def __init__(
         self,
-        agents: Union[Dict[str, Agent], AgentRegistry],
+        agents: Union[Dict[str, Agent], AgentRegistryRead],
         *,
         event_bus: Optional[RuntimeEventBus] = None,
         middleware: Optional[MiddlewarePipeline] = None,
@@ -54,12 +54,12 @@ class AgentEngine:
         task_memory_store: Optional[TaskMemoryPersistence] = None,
         production_mode: bool = False,
     ) -> None:
-        if isinstance(agents, AgentRegistry):
-            self._registry = agents
-            self._agents = None
-        else:
+        if isinstance(agents, dict):
             self._registry = None
             self._agents = agents
+        else:
+            self._registry = agents
+            self._agents = None
         self._production_mode = production_mode
         self._uaep = uaep_executor or UAEPExecutor(
             middleware=middleware,
@@ -71,7 +71,7 @@ class AgentEngine:
         )
 
     @property
-    def registry(self) -> AgentRegistry | None:
+    def registry(self) -> AgentRegistryRead | None:
         return self._registry
 
     @property
@@ -162,7 +162,7 @@ class AgentEngine:
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
         event_bus: Optional[RuntimeEventBus] = None,
-        registry: AgentRegistry | None = None,
+        registry: AgentRegistryRead | None = None,
     ) -> RuntimeAnswer:
         executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
         answer, _validation, _governance, _structured = await AgentEngine._execute_agent_impl(
@@ -180,7 +180,7 @@ class AgentEngine:
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
         event_bus: Optional[RuntimeEventBus] = None,
-        registry: AgentRegistry | None = None,
+        registry: AgentRegistryRead | None = None,
     ) -> AgentExecutionResult:
         executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
         contract = agent.get_contract()
@@ -221,7 +221,7 @@ class AgentEngine:
         request: RuntimeRequest,
         uaep_executor: UAEPExecutor,
         *,
-        registry: AgentRegistry | None = None,
+        registry: AgentRegistryRead | None = None,
     ) -> tuple[
         RuntimeAnswer,
         ValidationResult,

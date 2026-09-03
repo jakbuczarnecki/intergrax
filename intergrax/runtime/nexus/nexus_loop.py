@@ -75,7 +75,7 @@ from intergrax.runtime.nexus.orchestration.lifecycle_bridge import (
 from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.nexus.orchestration.task_finisher import build_nexus_task_result
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.store import resolve_runtime_event_persistence
@@ -123,7 +123,7 @@ class NexusLoop:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         *,
         classifier: NexusTaskClassifierProtocol | None = None,
         planner: NexusTaskPlannerProtocol | None = None,
@@ -342,7 +342,7 @@ class NexusLoop:
         )
 
     @property
-    def registry(self) -> AgentRegistry:
+    def registry(self) -> AgentRegistryRead:
         return self._registry
 
     @property

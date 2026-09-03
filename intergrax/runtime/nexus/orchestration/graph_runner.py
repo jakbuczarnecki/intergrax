@@ -36,7 +36,7 @@ from intergrax.runtime.nexus.retry.retry_engine import (
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTraceEmitter
@@ -66,7 +66,7 @@ class GraphPhaseOutcome:
 
 @dataclass
 class NexusGraphRunner:
-    registry: AgentRegistry
+    registry: AgentRegistryRead
     graph_executor: GraphExecutor
     validation_engine: NexusValidationEngine
     composer: FinalResponseComposer

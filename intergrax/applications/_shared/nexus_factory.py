@@ -58,7 +58,7 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
@@ -73,7 +73,7 @@ if TYPE_CHECKING:
 
 
 def build_nexus_loop_from_environment(
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     *,
     env: ApplicationEnvironmentProfile,
     trace_store: RunTraceWriter | None = None,

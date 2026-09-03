@@ -98,7 +98,7 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
 
@@ -163,7 +163,7 @@ class GraphExecutor:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         *,
         engine: Optional[AgentEngine] = None,
         router: Optional[AgentRouter] = None,
