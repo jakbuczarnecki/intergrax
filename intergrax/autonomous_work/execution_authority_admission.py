@@ -4,8 +4,19 @@
 """Worker execution authority admission composition (AW-3B).
 
 Orchestrates AW-3A identity binding with Collaborative Work effective authority
-resolution. Produces immutable admission context for canonical Execution intake
-without dispatching work (AW-5A owns dispatch).
+resolution. Produces immutable collaborative admission context for prospective
+Execution intake without dispatching work (AW-5A owns dispatch).
+
+Trust boundary:
+
+    Collaborative Work — identity/membership/delegation/base authority resolution
+    AW-3B — Worker → collaborative authority admission context
+    Runtime/Governance — full policy evaluation + trusted execution authority
+    AW-5A — Worker → Execution dispatch
+
+Collaborative Work ALLOW is not global runtime ALLOW. AW-3B must not mint
+``ParentExecutionAuthority``; later runtime policy may narrow scopes but never
+widen beyond collaborative-approved requested scopes.
 """
 
 from __future__ import annotations
@@ -94,7 +105,7 @@ class WorkerExecutionAdmissionService:
             membership_resolution_mode=MembershipResolutionMode.CANONICAL_PRINCIPAL,
         )
         decision = self._authority_resolver.resolve(effective_request)
-        if decision.decision.action is PolicyAction.DENY:
+        if decision.decision.action is not PolicyAction.ALLOW:
             raise WorkerExecutionAuthorityDenied(
                 worker_instance_id=request.worker_instance_id,
                 decision=decision,
@@ -103,7 +114,7 @@ class WorkerExecutionAdmissionService:
             worker_instance_id=request.worker_instance_id,
             resolved_principal=resolved_principal,
             requested_authority_scopes=request.requested_authority_scopes,
-            approved_authority_scopes=request.requested_authority_scopes,
+            collaborative_authority_scopes=request.requested_authority_scopes,
             effective_authority_request=effective_request,
             effective_authority_decision=decision,
             evaluated_at=self._clock(),

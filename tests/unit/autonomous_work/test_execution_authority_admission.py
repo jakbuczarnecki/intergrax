@@ -47,11 +47,13 @@ from intergrax.contracts.autonomous_work.profile_reference import CapabilityProf
 from intergrax.contracts.collaborative_work import (
     AuthorityGrantStatus,
     DelegationStatus,
+    EffectiveAuthorityDecision,
     EffectiveAuthorityDenialReason,
+    EffectiveAuthorityRequest,
     MembershipStatus,
     WorkspaceMembershipRole,
 )
-from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from tests.unit.autonomous_work import repository_contracts as contract_suite
 
 pytestmark = pytest.mark.unit
@@ -155,9 +157,8 @@ def test_happy_path_prepares_authority_context() -> None:
     )
     assert context.worker_instance_id == worker_id
     assert context.resolved_principal.principal_id == "principal-collaborative-1"
-    assert context.approved_authority_scopes == (_READ,)
+    assert context.collaborative_authority_scopes == (_READ,)
     assert context.effective_authority_decision.decision.action is PolicyAction.ALLOW
-    assert context.to_parent_execution_authority().permission_scopes == (_READ,)
     assert context.effective_authority_request.acting_principal_id == "principal-collaborative-1"
     assert context.effective_authority_request.tenant_id == _TENANT_A
     assert context.effective_authority_request.workspace_id == _WORKSPACE
@@ -192,7 +193,7 @@ def test_role_does_not_amplify_authority() -> None:
             requested_authority_scopes=(_READ,),
         )
     )
-    assert context.approved_authority_scopes == (_READ,)
+    assert context.collaborative_authority_scopes == (_READ,)
     with pytest.raises(WorkerExecutionAuthorityDenied) as denied:
         service.prepare(
             WorkerExecutionAuthorityRequest(
@@ -402,10 +403,10 @@ def test_reduced_base_authority_reflected_on_new_execution() -> None:
             requested_authority_scopes=(_READ,),
         )
     )
-    assert context.approved_authority_scopes == (_READ,)
+    assert context.collaborative_authority_scopes == (_READ,)
 
 
-def test_least_privilege_approved_scopes_match_request_only() -> None:
+def test_least_privilege_collaborative_scopes_match_request_only() -> None:
     worker_id, binding_repo, membership_repo, authority_repo = _seed_binding_and_authority(
         authority_scopes=(_READ, _WRITE, _DELETE),
     )
@@ -420,8 +421,35 @@ def test_least_privilege_approved_scopes_match_request_only() -> None:
             requested_authority_scopes=(_READ,),
         )
     )
-    assert context.approved_authority_scopes == (_READ,)
-    assert context.to_parent_execution_authority().permission_scopes == (_READ,)
+    assert context.collaborative_authority_scopes == (_READ,)
+
+
+def test_modify_policy_action_fails_closed() -> None:
+    worker_id, binding_repo, membership_repo, authority_repo = _seed_binding_and_authority()
+
+    class _ModifyAuthorityResolver:
+        def resolve(self, request: EffectiveAuthorityRequest) -> EffectiveAuthorityDecision:
+            _ = request
+            return EffectiveAuthorityDecision(
+                decision=PolicyDecision(
+                    action=PolicyAction.MODIFY,
+                    reason="modify not admitted at AW-3B",
+                    policy_rule_id="test.modify",
+                ),
+            )
+
+    service = WorkerExecutionAdmissionService(
+        binding_resolver=WorkerPrincipalBindingResolver(binding_repo),
+        authority_resolver=_ModifyAuthorityResolver(),
+    )
+    with pytest.raises(WorkerExecutionAuthorityDenied) as denied:
+        service.prepare(
+            WorkerExecutionAuthorityRequest(
+                worker_instance_id=worker_id,
+                requested_authority_scopes=(_READ,),
+            )
+        )
+    assert denied.value.decision.decision.action is PolicyAction.MODIFY
 
 
 def test_request_contract_has_no_identity_override_fields() -> None:
@@ -433,6 +461,16 @@ def test_request_contract_has_no_identity_override_fields() -> None:
         "delegator_principal_id",
         "delegation_id",
     }
+
+
+def test_authority_context_uses_collaborative_scope_terminology() -> None:
+    from intergrax.contracts.autonomous_work.execution_authority import (
+        WorkerExecutionAuthorityContext,
+    )
+
+    context_fields = {field.name for field in fields(WorkerExecutionAuthorityContext)}
+    assert "collaborative_authority_scopes" in context_fields
+    assert "approved_authority_scopes" not in context_fields
 
 
 def test_effective_request_identity_comes_from_binding_not_caller() -> None:
@@ -566,3 +604,44 @@ def test_collaborative_work_core_does_not_import_autonomous_work() -> None:
         source = path.read_text(encoding="utf-8")
         assert "intergrax.autonomous_work" not in source
         assert "intergrax.contracts.autonomous_work" not in source
+
+
+def test_aw3b_contract_does_not_import_parent_execution_authority() -> None:
+    contract_module = importlib.import_module(
+        "intergrax.contracts.autonomous_work.execution_authority"
+    )
+    assert contract_module.__file__ is not None
+    tree = ast.parse(Path(contract_module.__file__).read_text(encoding="utf-8"))
+    imported_names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                imported_names.add(alias.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                imported_names.add(alias.name)
+        elif isinstance(node, ast.FunctionDef) and node.name == "to_parent_execution_authority":
+            raise AssertionError("AW-3B contract must not define to_parent_execution_authority")
+    assert "ParentExecutionAuthority" not in imported_names
+
+
+def test_aw3b_admission_does_not_mint_parent_execution_authority() -> None:
+    module = importlib.import_module("intergrax.autonomous_work.execution_authority_admission")
+    assert module.__file__ is not None
+    tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
+    imported_modules: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            imported_modules.add(node.module)
+            for alias in node.names:
+                if alias.name == "ParentExecutionAuthority":
+                    raise AssertionError("AW-3B admission must not import ParentExecutionAuthority")
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if (
+                isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "ParentExecutionAuthority"
+                and node.func.attr == "scoped"
+            ):
+                raise AssertionError("AW-3B admission must not mint ParentExecutionAuthority.scoped")
+    assert "intergrax.runtime.governance.active_execution_authority" not in imported_modules
+    assert "intergrax.contracts.delegation_authority" not in imported_modules

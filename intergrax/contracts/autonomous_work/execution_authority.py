@@ -4,8 +4,18 @@
 """Worker execution authority admission contracts (AW-3B).
 
 Admission correlates Worker identity binding with Collaborative Work effective
-authority for canonical Execution intake. Snapshot semantics apply per admission
+authority for prospective Execution intake. Snapshot semantics apply per admission
 only — not a durable Worker permission cache.
+
+Trust boundary (AW-3B ends before trusted root minting):
+
+    Worker → scoped Principal binding → CollaborativeWorkAuthorityResolver
+    → WorkerExecutionAuthorityContext → canonical runtime/host policy admission
+    → ParentExecutionAuthority → Nexus
+
+Collaborative Work owns identity/membership/delegation/base authority resolution.
+Runtime/Governance owns full policy evaluation and trusted execution authority
+minting (for example ``bind_active_execution_authority``). AW-5A owns dispatch.
 """
 
 from __future__ import annotations
@@ -27,7 +37,6 @@ from intergrax.contracts.collaborative_work import (
     EffectiveAuthorityDecision,
     EffectiveAuthorityRequest,
 )
-from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 
 
 def validate_authority_scopes(value: tuple[str, ...] | list[str]) -> tuple[str, ...]:
@@ -88,12 +97,17 @@ class WorkerExecutionAuthorityRequest:
 
 @dataclass(frozen=True, slots=True)
 class WorkerExecutionAuthorityContext:
-    """Immutable admission authority snapshot for one Worker execution intake."""
+    """Immutable collaborative authority admission snapshot for one Worker intake.
+
+    ``collaborative_authority_scopes`` reflect Collaborative Work slice approval
+    only. They are not globally trusted execution authority until canonical
+    runtime/host policy admission mints ``ParentExecutionAuthority``.
+    """
 
     worker_instance_id: WorkerInstanceId
     resolved_principal: ResolvedWorkerPrincipal
     requested_authority_scopes: tuple[str, ...]
-    approved_authority_scopes: tuple[str, ...]
+    collaborative_authority_scopes: tuple[str, ...]
     effective_authority_request: EffectiveAuthorityRequest
     effective_authority_decision: EffectiveAuthorityDecision
     evaluated_at: datetime
@@ -105,10 +119,12 @@ class WorkerExecutionAuthorityContext:
             "requested_authority_scopes",
             validate_authority_scopes(self.requested_authority_scopes),
         )
-        approved = validate_authority_scopes(self.approved_authority_scopes)
-        object.__setattr__(self, "approved_authority_scopes", approved)
-        if not set(approved).issubset(set(self.requested_authority_scopes)):
-            raise ValueError("approved_authority_scopes must be a subset of requested scopes")
+        collaborative = validate_authority_scopes(self.collaborative_authority_scopes)
+        object.__setattr__(self, "collaborative_authority_scopes", collaborative)
+        if not set(collaborative).issubset(set(self.requested_authority_scopes)):
+            raise ValueError(
+                "collaborative_authority_scopes must be a subset of requested scopes"
+            )
         if type(self.effective_authority_request) is not EffectiveAuthorityRequest:
             raise TypeError("effective_authority_request must be EffectiveAuthorityRequest")
         if type(self.effective_authority_decision) is not EffectiveAuthorityDecision:
@@ -118,7 +134,3 @@ class WorkerExecutionAuthorityContext:
             "evaluated_at",
             require_aware_utc(self.evaluated_at, label="evaluated_at"),
         )
-
-    def to_parent_execution_authority(self) -> ParentExecutionAuthority:
-        """Project approved scopes to canonical runtime execution authority carrier."""
-        return ParentExecutionAuthority.scoped(self.approved_authority_scopes)
