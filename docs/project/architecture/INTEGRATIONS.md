@@ -629,7 +629,7 @@ Derived, contract-aware **read model** over canonical catalog entries. **Does no
 - expose deterministic list/get inspection,
 - build immutable snapshots via `build_contract_registry_snapshot()` (alias: `build_contract_registry()`).
 
-Built-in shipped providers populate `contract_specs` once during `register_from_manifest` via `contract_capture` (registration-time only). External plugins pass explicit `contract_specs` when exposing typed platform contracts.
+Built-in shipped providers must publish provider-owned explicit `IntegrationContractSpec` declarations at `register_from_manifest`. A transitional `contract_capture` fallback remains only for not-yet-migrated built-ins; runtime reflection discovery is prohibited as canonical authority. External plugins pass explicit `contract_specs` when exposing typed platform contracts.
 
 **Deferred from projection completeness:** nine `llm_guardrail` slugs until package normalization (INTEGRATIONS-2F).
 

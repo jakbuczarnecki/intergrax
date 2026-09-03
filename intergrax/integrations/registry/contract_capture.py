@@ -1,10 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Capture typed contract metadata at canonical registration time.
+"""Transitional built-in contract capture — migration-only (P2-003).
 
-Built-in shipped providers use the standard ``providers/<category>/<slug>/`` layout.
-Reflection-based discovery here runs **once** during ``register_from_manifest`` and
+**Not canonical authority.** Typed built-in providers must publish explicit
+:class:`IntegrationContractSpec` rows via provider-owned declarations and
+``register_from_manifest(..., contract_specs=...)``. This module remains only for
+built-ins not yet migrated; it must not be extended for new providers.
+
+Reflection-based discovery runs once during ``register_from_manifest`` fallback and
 stores immutable metadata on the catalog entry. Contract projection reads stored specs
 only — it does not rediscover provider modules.
 
@@ -55,16 +59,6 @@ def capture_builtin_contract_specs(manifest: IntegrationManifest) -> tuple[Integ
     for category in categories_for_provider(slug):
         specs.append(_capture_builtin_category_spec(slug=slug, category=category))
     return tuple(specs)
-
-
-def merge_contract_specs(
-    manifest: IntegrationManifest,
-    explicit: Iterable[IntegrationContractSpec] | None,
-) -> tuple[IntegrationContractSpec, ...]:
-    """Resolve canonical contract specs from explicit rows or built-in capture."""
-    if explicit is not None:
-        return tuple(explicit)
-    return capture_builtin_contract_specs(manifest)
 
 
 def _capture_builtin_category_spec(*, slug: str, category: str) -> IntegrationContractSpec:
@@ -216,5 +210,4 @@ def _capability_values(capabilities: Iterable[Any]) -> tuple[str, ...]:
 
 __all__ = [
     "capture_builtin_contract_specs",
-    "merge_contract_specs",
 ]

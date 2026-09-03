@@ -12,9 +12,45 @@ from intergrax.integrations.contracts.base import IntegrationEntry, IntegrationF
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.core.plugin import IntegrationPlugin, integration_manifest_for_plugin
 from intergrax.integrations.registry.catalog import register_integration
+from intergrax.integrations.registry.contract_spec import (
+    EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS,
+    manifest_category_values,
+    validate_contract_specs_against_manifest,
+)
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
+
+
+def _resolve_contract_specs(
+    manifest: IntegrationManifest,
+    explicit: Iterable[IntegrationContractSpec] | None,
+) -> tuple[IntegrationContractSpec, ...]:
+    """Resolve canonical contract specs from explicit rows or transitional built-in capture."""
+    if explicit is not None:
+        specs = tuple(explicit)
+        validate_contract_specs_against_manifest(manifest, specs)
+        return specs
+
+    slug = manifest.slug.strip().lower()
+    manifest_categories = manifest_category_values(manifest)
+    required_categories = {
+        category
+        for provider_id, category in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+        if provider_id == slug
+    }
+    missing = required_categories & manifest_categories
+    if missing:
+        categories = ", ".join(sorted(missing))
+        msg = (
+            f"Integration {slug!r} requires explicit contract_specs for typed categories: "
+            f"{categories}"
+        )
+        raise ValueError(msg)
+
+    from intergrax.integrations.registry.contract_capture import capture_builtin_contract_specs
+
+    return capture_builtin_contract_specs(manifest)
 
 
 def register_from_manifest(
@@ -25,9 +61,7 @@ def register_from_manifest(
     contract_specs: Iterable[IntegrationContractSpec] | None = None,
 ) -> IntegrationManifest:
     """Register catalog row from manifest + factory; returns manifest for Tier-3 imports."""
-    from intergrax.integrations.registry.contract_capture import merge_contract_specs
-
-    resolved_specs = merge_contract_specs(manifest, contract_specs)
+    resolved_specs = _resolve_contract_specs(manifest, contract_specs)
     register_integration(
         IntegrationEntry(
             slug=manifest.slug,

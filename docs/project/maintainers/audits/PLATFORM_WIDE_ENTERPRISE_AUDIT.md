@@ -774,7 +774,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 |----|---------|-------|----------------|
 | P2-001 | Dual side-effect models without documented precedence | policy + CW docs | **Closed by ADR** — multi-strategy model documented; Phase 1 fail-closed pending |
 | P2-002 | LLM/embedding outside Integrations catalog | `llm_adapters/`, `rag/embedding/` | ADR or migrate |
-| P2-003 | `contract_capture` reflection at registration | `integrations/registry/contract_capture.py` | Explicit specs for builtins |
+| P2-003 | `contract_capture` reflection at registration | `integrations/registry/contract_capture.py` | **MIGRATION_REQUIRED** — explicit declaration infra + 5 representative providers; 186 reflective built-ins remain |
 | P2-004 | AW docs say "not implemented" but AW-2B code exists | `autonomous_work/`, `AUTONOMOUS_WORK.md` | Align maturity statement |
 | P2-005 | LKW lacks durable CW persistence | LKW host | Planned adoption |
 | P2-006 | CW gate missing `side_effect_scope_id` correlation | `enforcement_gate.py` | Contract evolution |
