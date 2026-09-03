@@ -208,40 +208,6 @@ class RuntimeToolInvoker:
         agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolContract | ToolExecutionResult[BaseModel]:
-        # 0) scope authorization check (capability boundary)
-        if self._scope_policy is not None:
-
-            allowed = self._scope_policy.is_allowed(
-                agent_id=agent_id,
-                tool_id=request.tool_id,
-            )
-
-            if not allowed:
-                msg = "Tool execution denied by scope policy."
-
-                state.trace_event(
-                    component=TraceComponent.TOOLS,
-                    step="tool_invocation_denied",
-                    message=msg,
-                    level=TraceLevel.ERROR,
-                    payload=ToolInvocationErrorDiagV1(
-                        tool_id=request.tool_id,
-                        step_id=str(request.step_id),
-                        error_code=RuntimeErrorCode.TOOL_ERROR,
-                        error_message=msg,
-                    ),
-                )
-
-                from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
-                    ToolScopeViolationError,
-                )
-
-                raise ToolScopeViolationError(
-                    run_id=state.run_id,
-                    agent_id=agent_id,
-                    tool_id=request.tool_id,
-                )
-
         # 1) registry check + contract bind
         try:
             reg = self._registry.get(request.tool_id)
@@ -266,6 +232,85 @@ class RuntimeToolInvoker:
             )
 
         contract = reg.contract
+
+        self._require_current_attempt_authorization(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+
+        # 2) input type enforcement
+        if not isinstance(request.input, contract.input_schema):
+            msg = (
+                f"Tool input must be {contract.input_schema.__name__} "
+                f"(got {type(request.input).__name__})."
+            )
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="tool_invocation_error",
+                message="Tool input validation failed.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.VALIDATION_ERROR,
+                    error_message=msg,
+                ),
+            )
+            result = ToolExecutionResult.fail(
+                RuntimeErrorCode.VALIDATION_ERROR,
+                msg,
+                effect_certainty=ToolEffectCertainty.NOT_STARTED,
+            )
+            self._emit_boundary_event(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+                result=result,
+            )
+            return result
+
+        return contract
+
+    def _require_current_attempt_authorization(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> None:
+        """Attempt-scoped authorization before each physical tool execution."""
+        if self._scope_policy is not None:
+            allowed = self._scope_policy.is_allowed(
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+            )
+            if not allowed:
+                msg = "Tool execution denied by scope policy."
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_denied",
+                    message=msg,
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=request.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=RuntimeErrorCode.TOOL_ERROR,
+                        error_message=msg,
+                    ),
+                )
+                from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
+                    ToolScopeViolationError,
+                )
+
+                raise ToolScopeViolationError(
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                    tool_id=request.tool_id,
+                )
 
         if contract.requires_sandbox_isolation:
             if self._sandbox_availability is None:
@@ -329,7 +374,6 @@ class RuntimeToolInvoker:
                     ),
                 )
             except Exception:
-                # Observability-only: authorization denial is authoritative.
                 pass
             raise
 
@@ -380,40 +424,6 @@ class RuntimeToolInvoker:
                     matched_rule_ids=decision.matched_rule_ids,
                     reasons=decision.reasons,
                 )
-
-        # 2) input type enforcement
-        if not isinstance(request.input, contract.input_schema):
-            msg = (
-                f"Tool input must be {contract.input_schema.__name__} "
-                f"(got {type(request.input).__name__})."
-            )
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="tool_invocation_error",
-                message="Tool input validation failed.",
-                level=TraceLevel.ERROR,
-                payload=ToolInvocationErrorDiagV1(
-                    tool_id=request.tool_id,
-                    step_id=str(request.step_id),
-                    error_code=RuntimeErrorCode.VALIDATION_ERROR,
-                    error_message=msg,
-                ),
-            )
-            result = ToolExecutionResult.fail(
-                RuntimeErrorCode.VALIDATION_ERROR,
-                msg,
-                effect_certainty=ToolEffectCertainty.NOT_STARTED,
-            )
-            self._emit_boundary_event(
-                state=state,
-                agent_id=agent_id,
-                contract=contract,
-                request=request,
-                result=result,
-            )
-            return result
-
-        return contract
 
     @staticmethod
     def _requires_idempotency_coordination(
@@ -499,8 +509,15 @@ class RuntimeToolInvoker:
         last_exc: Optional[Exception] = None
 
         for attempt in range(1, attempts + 1):
-            if attempt > 1 and policy.backoff_ms > 0:
-                time.sleep(policy.backoff_ms / 1000.0)
+            if attempt > 1:
+                self._require_current_attempt_authorization(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                )
+                if policy.backoff_ms > 0:
+                    time.sleep(policy.backoff_ms / 1000.0)
 
             start_perf = time.perf_counter()
             try:
