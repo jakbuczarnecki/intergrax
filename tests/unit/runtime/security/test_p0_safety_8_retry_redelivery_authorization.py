@@ -65,6 +65,18 @@ class CountingScopePolicy:
         return self.calls <= self._allow_calls
 
 
+class RevocableScopePolicy:
+    def __init__(self) -> None:
+        self._revoked = False
+
+    def is_allowed(self, *, agent_id: str, tool_id: str) -> bool:
+        del agent_id, tool_id
+        return not self._revoked
+
+    def revoke(self) -> None:
+        self._revoked = True
+
+
 class HealthyOnceSandboxAvailability:
     def __init__(self) -> None:
         self.calls = 0
@@ -84,6 +96,16 @@ class AuthCountingInvoker(RuntimeToolInvoker):
 
     def _require_current_attempt_authorization(self, **kwargs: object) -> None:
         self.attempt_authorization_calls += 1
+        return super()._require_current_attempt_authorization(**kwargs)  # type: ignore[arg-type]
+
+
+class EventTrackingInvoker(AuthCountingInvoker):
+    def __init__(self, events: list[str], *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+        self._events = events
+
+    def _require_current_attempt_authorization(self, **kwargs: object) -> None:
+        self._events.append("authorization")
         return super()._require_current_attempt_authorization(**kwargs)  # type: ignore[arg-type]
 
 
@@ -240,6 +262,51 @@ def test_explicit_retry_safe_side_effect_retries_when_authorized() -> None:
     assert result.success
     assert calls["n"] == 3
     assert invoker.attempt_authorization_calls == 3
+
+
+def test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof() -> None:
+    events: list[str] = []
+    calls = {"n": 0}
+    scope = RevocableScopePolicy()
+
+    class FlakyExecutor:
+        def execute(self, request: ToolExecutionRequest[ValueInput]) -> ValueOutput:
+            del request
+            calls["n"] += 1
+            events.append("executor")
+            raise RuntimeError("transient")
+
+    contract = ToolContract(
+        tool_id="read.backoff_revoke",
+        name="read.backoff_revoke",
+        description="read",
+        input_schema=ValueInput,
+        output_schema=ValueOutput,
+        error_mapping={},
+        side_effects=False,
+        retry_policy=ToolRetryPolicy(max_attempts=3, backoff_ms=50),
+    )
+    invoker = EventTrackingInvoker(
+        events,
+        registry=FakeRegistry(contract),
+        executor=FlakyExecutor(),
+        scope_policy=scope,
+    )
+
+    def _sleep_then_revoke(_seconds: float) -> None:
+        events.append("sleep")
+        scope.revoke()
+
+    with patch("intergrax.runtime.nexus.tools.invoker.time.sleep", side_effect=_sleep_then_revoke):
+        with pytest.raises(ToolScopeViolationError):
+            invoker.invoke(
+                state=DummyState(),
+                agent_id=_AGENT_ID,
+                request=_request(tool_id="read.backoff_revoke"),
+            )
+
+    assert calls["n"] == 1
+    assert events == ["authorization", "executor", "sleep", "authorization"]
 
 
 def test_fresh_scope_authorization_blocks_retry_when_revoked() -> None:

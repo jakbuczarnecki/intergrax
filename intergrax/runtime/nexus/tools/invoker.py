@@ -510,14 +510,14 @@ class RuntimeToolInvoker:
 
         for attempt in range(1, attempts + 1):
             if attempt > 1:
+                if policy.backoff_ms > 0:
+                    time.sleep(policy.backoff_ms / 1000.0)
                 self._require_current_attempt_authorization(
                     state=state,
                     agent_id=agent_id,
                     contract=contract,
                     request=request,
                 )
-                if policy.backoff_ms > 0:
-                    time.sleep(policy.backoff_ms / 1000.0)
 
             start_perf = time.perf_counter()
             try:
