@@ -32,6 +32,8 @@ ContextAnchorReference = NewType("ContextAnchorReference", str)
 ProgressCheckpointRef = NewType("ProgressCheckpointRef", str)
 ExternalDependencyReference = NewType("ExternalDependencyReference", str)
 HumanPendingReference = NewType("HumanPendingReference", str)
+WakeUpSourceRef = NewType("WakeUpSourceRef", str)
+WakeUpCorrelationRef = NewType("WakeUpCorrelationRef", str)
 
 _TRef = TypeVar("_TRef", bound=str)
 
@@ -110,4 +112,9 @@ validate_external_dependency_reference = _make_ref_validator(
 validate_human_pending_reference = _make_ref_validator(
     "HumanPendingReference",
     HumanPendingReference,
+)
+validate_wake_up_source_ref = _make_ref_validator("WakeUpSourceRef", WakeUpSourceRef)
+validate_wake_up_correlation_ref = _make_ref_validator(
+    "WakeUpCorrelationRef",
+    WakeUpCorrelationRef,
 )

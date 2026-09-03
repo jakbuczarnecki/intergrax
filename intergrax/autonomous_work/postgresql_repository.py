@@ -16,6 +16,7 @@ from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityNotFound,
     AutonomousWorkRepositoryCapabilities,
     AutonomousWorkRevisionConflict,
+    WorkerWakeUpReceiptClaim,
 )
 from intergrax.autonomous_work.serialization import (
     responsibility_from_json,
@@ -28,6 +29,8 @@ from intergrax.autonomous_work.serialization import (
     worker_instance_to_json,
     worker_principal_binding_from_json,
     worker_principal_binding_to_json,
+    worker_wake_up_receipt_from_json,
+    worker_wake_up_receipt_to_json,
     work_continuity_state_from_json,
     work_continuity_state_to_json,
 )
@@ -35,6 +38,7 @@ from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
+    WakeUpId,
     WorkerDefinitionId,
     WorkerGoalId,
     WorkerInstanceId,
@@ -47,6 +51,7 @@ from intergrax.contracts.autonomous_work.revision import (
     initial_revision,
 )
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
+from intergrax.contracts.autonomous_work.wake_up import WorkerWakeUpReceipt
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.postgresql.config import (
     validate_schema_identifier,
@@ -67,9 +72,8 @@ _CAPABILITIES = AutonomousWorkRepositoryCapabilities(
 )
 _ISOLATION_LEVEL = PostgreSQLIsolationLevel.READ_COMMITTED
 # v2 introduced ``aw_worker_principal_bindings`` before AW-3A qualification closed.
-# Scoped tenant/workspace/principal binding semantics were corrected in-place (record_json
-# codec only — DDL unchanged). v2 was never production-deployed, so v3 is not required.
-_SCHEMA_VERSION = 2
+# v3 introduced ``aw_worker_wake_up_receipts`` for AW-4A durable wake-up idempotency.
+_SCHEMA_VERSION = 3
 _SCHEMA_META_TABLE = "autonomous_work_schema_meta"
 _SCHEMA_LOCK_KEY = "autonomous_work_schema_init"
 
@@ -195,6 +199,14 @@ class PostgreSQLAutonomousWorkStore:
                     record_json TEXT NOT NULL,
                     revision INTEGER NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS aw_worker_wake_up_receipts (
+                    worker_instance_id TEXT NOT NULL,
+                    wake_up_id TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    accepted_at TIMESTAMPTZ NOT NULL,
+                    PRIMARY KEY (worker_instance_id, wake_up_id)
+                );
                 """
             )
             session.execute(
@@ -241,6 +253,9 @@ class PostgreSQLAutonomousWorkStore:
     ) -> None:
         if from_version == 1:
             self._migrate_v1_to_v2(session)
+            from_version = 2
+        if from_version == 2:
+            self._migrate_v2_to_v3(session)
             return
         raise AutonomousWorkSchemaVersionError(
             f"unsupported Autonomous Work schema migration from version {from_version}"
@@ -261,6 +276,27 @@ class PostgreSQLAutonomousWorkStore:
             UPDATE {_SCHEMA_META_TABLE}
             SET schema_version = %s
             WHERE id = 1 AND schema_version = 1
+            """,
+            (_SCHEMA_VERSION,),
+        )
+
+    def _migrate_v2_to_v3(self, session: PostgreSQLSession) -> None:
+        session.execute(
+            """
+            CREATE TABLE IF NOT EXISTS aw_worker_wake_up_receipts (
+                worker_instance_id TEXT NOT NULL,
+                wake_up_id TEXT NOT NULL,
+                record_json TEXT NOT NULL,
+                accepted_at TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (worker_instance_id, wake_up_id)
+            );
+            """
+        )
+        session.execute(
+            f"""
+            UPDATE {_SCHEMA_META_TABLE}
+            SET schema_version = %s
+            WHERE id = 1 AND schema_version = 2
             """,
             (_SCHEMA_VERSION,),
         )
@@ -823,3 +859,74 @@ class PostgreSQLWorkerPrincipalBindingRepository:
             if row is None:
                 return None
             return worker_principal_binding_from_json(row["record_json"])
+
+
+class PostgreSQLWorkerWakeUpReceiptRepository:
+    """Production repository for durable wake-up admission receipts."""
+
+    def __init__(self, store: PostgreSQLAutonomousWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def claim(self, receipt: WorkerWakeUpReceipt) -> WorkerWakeUpReceiptClaim:
+        record_json = worker_wake_up_receipt_to_json(receipt)
+        with self._store.transaction() as conn:
+            inserted = conn.execute(
+                """
+                INSERT INTO aw_worker_wake_up_receipts (
+                    worker_instance_id, wake_up_id, record_json, accepted_at
+                ) VALUES (%s, %s, %s, %s)
+                ON CONFLICT (worker_instance_id, wake_up_id) DO NOTHING
+                RETURNING record_json
+                """,
+                (
+                    receipt.worker_instance_id.strip(),
+                    receipt.wake_up_id.strip(),
+                    record_json,
+                    receipt.accepted_at,
+                ),
+            ).fetchone()
+            if inserted is not None:
+                return WorkerWakeUpReceiptClaim(
+                    duplicate=False,
+                    receipt=worker_wake_up_receipt_from_json(inserted["record_json"]),
+                )
+            row = conn.execute(
+                """
+                SELECT record_json FROM aw_worker_wake_up_receipts
+                WHERE worker_instance_id = %s AND wake_up_id = %s
+                """,
+                (
+                    receipt.worker_instance_id.strip(),
+                    receipt.wake_up_id.strip(),
+                ),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError(
+                    "wake-up receipt conflict without stored canonical receipt"
+                )
+            return WorkerWakeUpReceiptClaim(
+                duplicate=True,
+                receipt=worker_wake_up_receipt_from_json(row["record_json"]),
+            )
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+        wake_up_id: WakeUpId,
+    ) -> WorkerWakeUpReceipt | None:
+        with self._store.transaction() as conn:
+            row = conn.execute(
+                """
+                SELECT record_json FROM aw_worker_wake_up_receipts
+                WHERE worker_instance_id = %s AND wake_up_id = %s
+                """,
+                (worker_instance_id.strip(), wake_up_id.strip()),
+            ).fetchone()
+            if row is None:
+                return None
+            return worker_wake_up_receipt_from_json(row["record_json"])

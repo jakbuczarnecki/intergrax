@@ -15,11 +15,13 @@ from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityNotFound,
     AutonomousWorkRepositoryCapabilities,
     AutonomousWorkRevisionConflict,
+    WorkerWakeUpReceiptClaim,
 )
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
+    WakeUpId,
     WorkerDefinitionId,
     WorkerGoalId,
     WorkerInstanceId,
@@ -32,6 +34,7 @@ from intergrax.contracts.autonomous_work.revision import (
     initial_revision,
 )
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
+from intergrax.contracts.autonomous_work.wake_up import WorkerWakeUpReceipt
 
 DefinitionVersionKey = tuple[WorkerDefinitionId, DefinitionRevision]
 
@@ -467,3 +470,43 @@ class InMemoryWorkContinuityStateRepository:
             read_revision=_continuity_revision,
             write_revision=_continuity_with_revision,
         )
+
+
+WakeUpReceiptKey = tuple[WorkerInstanceId, WakeUpId]
+
+
+class InMemoryWorkerWakeUpReceiptRepository:
+    """Process-local durable-semantics reference repository for wake-up receipts."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._records: dict[WakeUpReceiptKey, WorkerWakeUpReceipt] = {}
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return AutonomousWorkRepositoryCapabilities(
+            backend_id="autonomous_work.worker_wake_up_receipt.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def claim(self, receipt: WorkerWakeUpReceipt) -> WorkerWakeUpReceiptClaim:
+        key = (receipt.worker_instance_id, receipt.wake_up_id)
+        with self._lock:
+            existing = self._records.get(key)
+            if existing is not None:
+                return WorkerWakeUpReceiptClaim(duplicate=True, receipt=existing)
+            self._records[key] = receipt
+            return WorkerWakeUpReceiptClaim(duplicate=False, receipt=receipt)
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+        wake_up_id: WakeUpId,
+    ) -> WorkerWakeUpReceipt | None:
+        with self._lock:
+            stored = self._records.get((worker_instance_id, wake_up_id))
+            if stored is None:
+                return None
+            return stored

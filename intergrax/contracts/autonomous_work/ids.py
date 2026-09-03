@@ -13,6 +13,7 @@ WorkerDefinitionId = NewType("WorkerDefinitionId", str)
 WorkerInstanceId = NewType("WorkerInstanceId", str)
 ResponsibilityId = NewType("ResponsibilityId", str)
 WorkerGoalId = NewType("WorkerGoalId", str)
+WakeUpId = NewType("WakeUpId", str)
 
 _CANONICAL_SUFFIX = re.compile(r"^[0-9a-f]{32}$")
 
@@ -56,6 +57,12 @@ def validate_worker_goal_id(value: object) -> WorkerGoalId:
     )
 
 
+def validate_wake_up_id(value: object) -> WakeUpId:
+    return WakeUpId(
+        _validate_canonical_id(value, prefix="wkup_", label="WakeUpId"),
+    )
+
+
 def mint_worker_definition_id() -> WorkerDefinitionId:
     return WorkerDefinitionId(f"wdef_{uuid4().hex}")
 
@@ -70,3 +77,7 @@ def mint_responsibility_id() -> ResponsibilityId:
 
 def mint_worker_goal_id() -> WorkerGoalId:
     return WorkerGoalId(f"wgoal_{uuid4().hex}")
+
+
+def mint_wake_up_id() -> WakeUpId:
+    return WakeUpId(f"wkup_{uuid4().hex}")

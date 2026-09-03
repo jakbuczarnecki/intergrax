@@ -53,7 +53,7 @@ Delivery rule:
 | AW-1 | Core semantic contracts | **DONE** |
 | AW-2 | Durable worker state and lifecycle | **DONE** |
 | AW-3 | Principal / authority / workspace composition | **DONE** |
-| AW-4 | Work intake and proactive goal evaluation | NOT STARTED |
+| AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE) |
 | AW-5 | Worker → execution composition and budgets | NOT STARTED |
 | AW-6 | Recovery Controller and obstacle taxonomy | NOT STARTED |
 | AW-7 | Adaptive capability acquisition | NOT STARTED |
@@ -187,7 +187,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-4A |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **DONE** |
 | **Purpose** | Event/subscription wake-up model |
 | **Exact scope** | external event, queue/work assignment, schedule, human approval, dependency recovery and operator wake-ups; **restore orientation from durable continuity state before accepting/creating next work** |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Wake-up and scheduling semantics, §Long-Horizon Work Continuity §Restore-orientation flow |

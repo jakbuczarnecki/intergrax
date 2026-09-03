@@ -22,6 +22,7 @@ from intergrax.autonomous_work.in_memory_repository import (
     InMemoryWorkerGoalRepository,
     InMemoryWorkerInstanceRepository,
     InMemoryWorkerPrincipalBindingRepository,
+    InMemoryWorkerWakeUpReceiptRepository,
 )
 from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
 from intergrax.autonomous_work.persistence_provider import resolve_autonomous_work_repositories
@@ -50,6 +51,12 @@ from intergrax.autonomous_work.repository import (
     WorkerGoalRepository,
     WorkerInstanceRepository,
     WorkerPrincipalBindingRepository,
+    WorkerWakeUpReceiptRepository,
+)
+from intergrax.autonomous_work.wake_up_service import (
+    WorkerWakeUpEligibilityPolicy,
+    WorkerWakeUpPersistenceUnavailable,
+    WorkerWakeUpService,
 )
 
 __all__ = (
@@ -70,12 +77,17 @@ __all__ = (
     "InMemoryWorkerGoalRepository",
     "InMemoryWorkerInstanceRepository",
     "InMemoryWorkerPrincipalBindingRepository",
+    "InMemoryWorkerWakeUpReceiptRepository",
     "ResponsibilityRepository",
     "WorkContinuityStateRepository",
     "WorkerDefinitionRepository",
     "WorkerGoalRepository",
     "WorkerInstanceRepository",
     "WorkerPrincipalBindingRepository",
+    "WorkerWakeUpEligibilityPolicy",
+    "WorkerWakeUpPersistenceUnavailable",
+    "WorkerWakeUpReceiptRepository",
+    "WorkerWakeUpService",
     "ResolvedWorkerPrincipal",
     "WorkerExecutionAdmissionService",
     "WorkerExecutionAuthorityContext",

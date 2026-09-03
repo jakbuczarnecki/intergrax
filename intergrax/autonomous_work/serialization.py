@@ -16,6 +16,7 @@ from intergrax.contracts.autonomous_work.continuity import (
 from intergrax.contracts.autonomous_work.goal import WorkerGoal, WorkerGoalStatus
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
+    WakeUpId,
     WorkerDefinitionId,
     WorkerGoalId,
     WorkerInstanceId,
@@ -53,6 +54,8 @@ from intergrax.contracts.autonomous_work.references import (
     ResponsibilityTemplateRef,
     SlaSloRef,
     SuccessCriteriaRef,
+    WakeUpCorrelationRef,
+    WakeUpSourceRef,
     WorkReference,
     WorkspaceContextRef,
     WorkspaceScopeRef,
@@ -62,6 +65,10 @@ from intergrax.contracts.autonomous_work.responsibility import (
     ResponsibilityStatus,
 )
 from intergrax.contracts.autonomous_work.revision import DefinitionRevision, Revision
+from intergrax.contracts.autonomous_work.wake_up import (
+    WorkerWakeUpReceipt,
+    WorkerWakeUpSourceKind,
+)
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
 from intergrax.contracts.decision_identity import DecisionId
 
@@ -461,3 +468,44 @@ def worker_principal_binding_to_json(binding: WorkerPrincipalBinding) -> str:
 
 def worker_principal_binding_from_json(payload: str) -> WorkerPrincipalBinding:
     return worker_principal_binding_from_payload(json.loads(payload))
+
+
+def worker_wake_up_receipt_to_payload(receipt: WorkerWakeUpReceipt) -> dict[str, Any]:
+    return {
+        "codec_version": CODEC_VERSION,
+        "worker_instance_id": receipt.worker_instance_id,
+        "wake_up_id": receipt.wake_up_id,
+        "source_kind": receipt.source_kind.value,
+        "source_ref": receipt.source_ref,
+        "occurred_at": _encode_datetime(receipt.occurred_at),
+        "accepted_at": _encode_datetime(receipt.accepted_at),
+        "delivery_identity": receipt.delivery_identity,
+        "correlation_ref": receipt.correlation_ref,
+    }
+
+
+def worker_wake_up_receipt_from_payload(payload: dict[str, Any]) -> WorkerWakeUpReceipt:
+    if payload.get("codec_version") != CODEC_VERSION:
+        raise ValueError("unsupported WorkerWakeUpReceipt codec version")
+    return WorkerWakeUpReceipt(
+        worker_instance_id=WorkerInstanceId(payload["worker_instance_id"]),
+        wake_up_id=WakeUpId(payload["wake_up_id"]),
+        source_kind=WorkerWakeUpSourceKind(payload["source_kind"]),
+        source_ref=WakeUpSourceRef(payload["source_ref"]),
+        occurred_at=_decode_datetime(payload["occurred_at"]),
+        accepted_at=_decode_datetime(payload["accepted_at"]),
+        delivery_identity=WakeUpId(payload["delivery_identity"]),
+        correlation_ref=(
+            WakeUpCorrelationRef(payload["correlation_ref"])
+            if payload.get("correlation_ref") is not None
+            else None
+        ),
+    )
+
+
+def worker_wake_up_receipt_to_json(receipt: WorkerWakeUpReceipt) -> str:
+    return stable_record_json(worker_wake_up_receipt_to_payload(receipt))
+
+
+def worker_wake_up_receipt_from_json(payload: str) -> WorkerWakeUpReceipt:
+    return worker_wake_up_receipt_from_payload(json.loads(payload))

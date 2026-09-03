@@ -42,6 +42,7 @@ from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
+    WakeUpId,
     WorkerDefinitionId,
     WorkerGoalId,
     WorkerInstanceId,
@@ -49,6 +50,7 @@ from intergrax.contracts.autonomous_work.ids import (
 from intergrax.contracts.autonomous_work.responsibility import Responsibility
 from intergrax.contracts.autonomous_work.revision import DefinitionRevision, Revision
 from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
+from intergrax.contracts.autonomous_work.wake_up import WorkerWakeUpReceipt
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
 
 
@@ -247,4 +249,35 @@ class WorkContinuityStateRepository(Protocol):
         expected_revision: Revision,
     ) -> WorkContinuityState:
         """Replace continuity state under optimistic concurrency."""
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerWakeUpReceiptClaim:
+    """Outcome of an atomic durable wake-up receipt claim."""
+
+    duplicate: bool
+    receipt: WorkerWakeUpReceipt
+
+
+@runtime_checkable
+class WorkerWakeUpReceiptRepository(Protocol):
+    """Authoritative durable idempotency port for wake-up admission receipts."""
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+        ...
+
+    def claim(self, receipt: WorkerWakeUpReceipt) -> WorkerWakeUpReceiptClaim:
+        """Atomically claim first acceptance or return the canonical stored receipt."""
+        ...
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+        wake_up_id: WakeUpId,
+    ) -> WorkerWakeUpReceipt | None:
+        """Return a stored receipt or ``None``."""
         ...
