@@ -16,6 +16,7 @@ from intergrax.autonomous_work.lifecycle import (
     WorkerLifecycleTransitionResult,
 )
 from intergrax.autonomous_work.in_memory_repository import (
+    InMemoryGoalEvaluationCadenceStateRepository,
     InMemoryResponsibilityRepository,
     InMemoryWorkContinuityStateRepository,
     InMemoryWorkerDefinitionRepository,
@@ -28,9 +29,9 @@ from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
 from intergrax.autonomous_work.persistence_provider import resolve_autonomous_work_repositories
 from intergrax.autonomous_work.goal_evaluation_ports import (
     DeterministicThresholdGoalEvaluator,
+    GoalEvaluationCadenceResolutionError,
     GoalEvaluationCadenceResolver,
-    GoalEvaluationCadenceStateReader,
-    GoalEvaluationCadenceStateRecorder,
+    GoalEvaluationCadenceStateStore,
     GoalProgressProjectionResolver,
     InMemoryGoalEvaluationCadenceStateStore,
     MappingGoalEvaluationCadenceResolver,
@@ -60,6 +61,7 @@ from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityNotFound,
     AutonomousWorkRepositoryCapabilities,
     AutonomousWorkRevisionConflict,
+    GoalEvaluationCadenceStateRepository,
     ResponsibilityRepository,
     WorkContinuityStateRepository,
     WorkerDefinitionRepository,
@@ -85,10 +87,12 @@ __all__ = (
     "AutonomousWorkRevisionConflict",
     "AutonomousWorkRepositories",
     "DeterministicThresholdGoalEvaluator",
+    "GoalEvaluationCadenceResolutionError",
     "GoalEvaluationCadenceResolver",
-    "GoalEvaluationCadenceStateReader",
-    "GoalEvaluationCadenceStateRecorder",
+    "GoalEvaluationCadenceStateRepository",
+    "GoalEvaluationCadenceStateStore",
     "GoalProgressProjectionResolver",
+    "InMemoryGoalEvaluationCadenceStateRepository",
     "InMemoryGoalEvaluationCadenceStateStore",
     "MappingGoalEvaluationCadenceResolver",
     "MappingGoalProgressProjectionResolver",

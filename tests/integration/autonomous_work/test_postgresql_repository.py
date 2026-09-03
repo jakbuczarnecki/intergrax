@@ -616,10 +616,10 @@ def test_postgresql_worker_principal_binding_concurrent_conflicting_create_one_w
     assert loaded in (base, replace(base, principal_id="principal-conflict"))
 
 
-def test_postgresql_schema_v3_includes_wake_up_receipts(
+def test_postgresql_schema_v4_includes_goal_evaluation_cadence_states(
     postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
 ) -> None:
-    """Fresh bootstrap reaches schema v3 with AW-4A wake-up receipt table."""
+    """Fresh bootstrap reaches schema v4 with AW-4B cadence state table."""
     from intergrax.autonomous_work.postgresql_repository import PostgreSQLAutonomousWorkStore
 
     store = postgresql_autonomous_work_bundle.store
@@ -629,7 +629,14 @@ def test_postgresql_schema_v3_includes_wake_up_receipts(
             "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
         ).fetchone()
         assert row is not None
-        assert int(row["schema_version"]) == 3
+        assert int(row["schema_version"]) == 4
+        table_row = conn.execute(
+            """
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'aw_goal_evaluation_cadence_states'
+            """
+        ).fetchone()
+        assert table_row is not None
 
 
 def test_postgresql_under_scoped_binding_json_fails_closed_on_read(
@@ -696,7 +703,7 @@ def test_postgresql_migration_atomicity_schema_version_not_advanced_without_tabl
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 3
+            assert int(row["schema_version"]) == 4
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables
@@ -735,7 +742,7 @@ def test_postgresql_schema_v1_to_v2_migration_preserves_existing_data(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 3
+            assert int(row["schema_version"]) == 4
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables
@@ -752,7 +759,7 @@ def test_postgresql_schema_v1_to_v2_migration_preserves_existing_data(
         migrated_bundle.close()
 
 
-def test_postgresql_fresh_database_bootstraps_schema_v3(
+def test_postgresql_fresh_database_bootstraps_schema_v4(
     postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
 ) -> None:
     with postgresql_autonomous_work_bundle.store.transaction() as conn:
@@ -760,4 +767,4 @@ def test_postgresql_fresh_database_bootstraps_schema_v3(
             "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
         ).fetchone()
         assert row is not None
-        assert int(row["schema_version"]) == 3
+        assert int(row["schema_version"]) == 4

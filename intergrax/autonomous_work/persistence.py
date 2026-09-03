@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from intergrax.autonomous_work.repository import (
+    GoalEvaluationCadenceStateRepository,
     ResponsibilityRepository,
     WorkContinuityStateRepository,
     WorkerDefinitionRepository,
@@ -36,6 +37,7 @@ class AutonomousWorkRepositories:
     responsibility: ResponsibilityRepository
     worker_goal: WorkerGoalRepository
     work_continuity_state: WorkContinuityStateRepository
+    goal_evaluation_cadence_state: GoalEvaluationCadenceStateRepository
     worker_principal_binding: WorkerPrincipalBindingRepository
     worker_wake_up_receipt: WorkerWakeUpReceiptRepository
     store: AutonomousWorkStoreOwner

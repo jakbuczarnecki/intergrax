@@ -8,6 +8,7 @@ from __future__ import annotations
 import threading
 from collections.abc import Callable
 from dataclasses import replace
+from datetime import datetime
 from typing import Generic, TypeVar
 
 from intergrax.autonomous_work.repository import (
@@ -21,6 +22,7 @@ from intergrax.autonomous_work.repository import (
 from intergrax.autonomous_work.wake_up_receipt_claim import resolve_wake_up_receipt_claim
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
+from intergrax.contracts.autonomous_work.goal_evaluation import GoalEvaluationCadenceState
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
     WakeUpId,
@@ -541,3 +543,62 @@ class InMemoryWorkerWakeUpReceiptRepository:
             if stored is None:
                 return None
             return stored
+
+
+class InMemoryGoalEvaluationCadenceStateRepository:
+    """Process-local reference repository for goal evaluation cadence state."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._states: dict[WorkerGoalId, GoalEvaluationCadenceState] = {}
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return AutonomousWorkRepositoryCapabilities(
+            backend_id="autonomous_work.goal_evaluation_cadence_state.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def get(self, *, goal_id: WorkerGoalId) -> GoalEvaluationCadenceState | None:
+        with self._lock:
+            stored = self._states.get(goal_id)
+            if stored is None:
+                return None
+            return stored
+
+    def record_evaluated(
+        self,
+        *,
+        goal_id: WorkerGoalId,
+        evaluated_at: datetime,
+    ) -> GoalEvaluationCadenceState:
+        with self._lock:
+            current = self._states.get(goal_id)
+            if current is None:
+                persisted = GoalEvaluationCadenceState(
+                    goal_id=goal_id,
+                    last_evaluated_at=evaluated_at,
+                    revision=initial_revision(),
+                )
+                self._states[goal_id] = persisted
+                return persisted
+            next_evaluated_at = (
+                evaluated_at
+                if evaluated_at >= current.last_evaluated_at
+                else current.last_evaluated_at
+            )
+            persisted = GoalEvaluationCadenceState(
+                goal_id=goal_id,
+                last_evaluated_at=next_evaluated_at,
+                revision=Revision(current.revision.value + 1),
+            )
+            self._states[goal_id] = persisted
+            return persisted
+
+    def last_evaluated_at(self, *, goal_id: WorkerGoalId) -> datetime | None:
+        with self._lock:
+            stored = self._states.get(goal_id)
+            if stored is None:
+                return None
+            return stored.last_evaluated_at

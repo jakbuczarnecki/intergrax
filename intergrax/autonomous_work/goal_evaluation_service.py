@@ -16,9 +16,9 @@ from datetime import datetime
 from typing import Final
 
 from intergrax.autonomous_work.goal_evaluation_ports import (
+    GoalEvaluationCadenceResolutionError,
     GoalEvaluationCadenceResolver,
-    GoalEvaluationCadenceStateReader,
-    GoalEvaluationCadenceStateRecorder,
+    GoalEvaluationCadenceStateStore,
     GoalProgressProjectionResolver,
     WorkerGoalEvaluator,
     cadence_due_at,
@@ -37,7 +37,7 @@ from intergrax.contracts.autonomous_work.goal_evaluation import (
     WorkerGoalEvaluationRequest,
     goal_evaluation_sort_key,
 )
-from intergrax.contracts.autonomous_work.ids import WakeUpId, WorkerInstanceId
+from intergrax.contracts.autonomous_work.ids import WakeUpId, WorkerGoalId, WorkerInstanceId
 from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.contracts.autonomous_work.wake_up import (
     WorkerWakeUpContext,
@@ -73,8 +73,7 @@ class WorkerGoalEvaluationService:
         cadence_resolver: GoalEvaluationCadenceResolver,
         progress_projection_resolver: GoalProgressProjectionResolver,
         goal_evaluator: WorkerGoalEvaluator,
-        cadence_state: GoalEvaluationCadenceStateReader,
-        cadence_state_recorder: GoalEvaluationCadenceStateRecorder | None = None,
+        cadence_state: GoalEvaluationCadenceStateStore,
     ) -> None:
         self._responsibility_repository = responsibility_repository
         self._worker_goal_repository = worker_goal_repository
@@ -82,7 +81,6 @@ class WorkerGoalEvaluationService:
         self._progress_projection_resolver = progress_projection_resolver
         self._goal_evaluator = goal_evaluator
         self._cadence_state = cadence_state
-        self._cadence_state_recorder = cadence_state_recorder
 
     def evaluate(self, request: WorkerGoalEvaluationRequest) -> GoalEvaluationBatchResult:
         """Evaluate one bounded batch for an accepted wake-up context."""
@@ -154,12 +152,32 @@ class WorkerGoalEvaluationService:
             goals_considered += 1
             if goal.goal_id in evaluated_goal_ids:
                 continue
-            if not cadence_due_at(
-                resolver=self._cadence_resolver,
-                cadence_state=self._cadence_state,
-                goal=goal,
-                evaluated_at=request.evaluated_at,
-            ):
+            try:
+                due = cadence_due_at(
+                    resolver=self._cadence_resolver,
+                    cadence_state=self._cadence_state,
+                    goal=goal,
+                    evaluated_at=request.evaluated_at,
+                )
+            except (GoalEvaluationCadenceResolutionError, KeyError):
+                if goals_evaluated >= request.max_goals:
+                    goals_skipped_batch_limit += 1
+                    continue
+                decision = GoalEvaluationDecision(
+                    goal_id=goal.goal_id,
+                    evaluated_at=request.evaluated_at,
+                    disposition=GoalEvaluationDisposition.NOT_EVALUABLE,
+                    reason_code=GoalEvaluationReasonCode.CADENCE_POLICY_UNAVAILABLE,
+                    reason="evaluation cadence policy could not be resolved",
+                    evidence_refs=(goal.evaluation_cadence_ref,),
+                    wake_up_id=wake_up_id,
+                )
+                decisions.append(decision)
+                evaluated_goal_ids.add(goal.goal_id)
+                goals_evaluated += 1
+                self._record_cadence(goal_id=goal.goal_id, evaluated_at=request.evaluated_at)
+                continue
+            if not due:
                 goals_skipped_not_due += 1
                 decisions.append(
                     GoalEvaluationDecision(
@@ -183,11 +201,7 @@ class WorkerGoalEvaluationService:
             decisions.append(decision)
             evaluated_goal_ids.add(goal.goal_id)
             goals_evaluated += 1
-            if self._cadence_state_recorder is not None:
-                self._cadence_state_recorder.record_evaluated(
-                    goal_id=goal.goal_id,
-                    evaluated_at=request.evaluated_at,
-                )
+            self._record_cadence(goal_id=goal.goal_id, evaluated_at=request.evaluated_at)
 
         return GoalEvaluationBatchResult(
             worker_instance_id=worker_instance_id,
@@ -199,6 +213,17 @@ class WorkerGoalEvaluationService:
             goals_skipped_status=goals_skipped_status,
             goals_skipped_not_due=goals_skipped_not_due,
             goals_skipped_batch_limit=goals_skipped_batch_limit,
+        )
+
+    def _record_cadence(
+        self,
+        *,
+        goal_id: WorkerGoalId,
+        evaluated_at: datetime,
+    ) -> None:
+        self._cadence_state.record_evaluated(
+            goal_id=goal_id,
+            evaluated_at=evaluated_at,
         )
 
     def _evaluate_goal(

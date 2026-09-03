@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import pytest
 
 from intergrax.autonomous_work.in_memory_repository import (
+    InMemoryGoalEvaluationCadenceStateRepository,
     InMemoryResponsibilityRepository,
     InMemoryWorkContinuityStateRepository,
     InMemoryWorkerDefinitionRepository,
@@ -653,3 +654,9 @@ def test_in_memory_worker_principal_binding_contracts() -> None:
     contract_suite.contract_worker_principal_binding_missing_returns_none(repo)
     contract_suite.contract_worker_principal_binding_worker_isolation(repo)
     contract_suite.contract_worker_principal_binding_same_principal_different_scopes(repo)
+
+
+def test_in_memory_goal_evaluation_cadence_state_contracts() -> None:
+    repo = InMemoryGoalEvaluationCadenceStateRepository()
+    contract_suite.contract_goal_evaluation_cadence_state_repository(repo)
+    contract_suite.contract_goal_evaluation_cadence_state_goal_isolation(repo)

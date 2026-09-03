@@ -193,7 +193,7 @@ def test_postgresql_fresh_database_bootstraps_schema_v3(
             "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
         ).fetchone()
         assert row is not None
-        assert int(row["schema_version"]) == 3
+        assert int(row["schema_version"]) == 4
 
 
 def test_postgresql_repeated_v3_bootstrap_is_idempotent(
@@ -208,7 +208,7 @@ def test_postgresql_repeated_v3_bootstrap_is_idempotent(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 3
+            assert int(row["schema_version"]) == 4
     finally:
         reopened.close()
 
@@ -301,7 +301,7 @@ def test_postgresql_schema_v2_to_v3_migration_preserves_existing_data(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 3
+            assert int(row["schema_version"]) == 4
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables
@@ -346,7 +346,7 @@ def test_postgresql_schema_v1_to_latest_preserves_existing_data(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 3
+            assert int(row["schema_version"]) == 4
     finally:
         migrated_bundle.close()
 

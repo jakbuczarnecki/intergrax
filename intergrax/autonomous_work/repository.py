@@ -36,11 +36,13 @@ Create semantics
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
+from intergrax.contracts.autonomous_work.goal_evaluation import GoalEvaluationCadenceState
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
     WakeUpId,
@@ -266,6 +268,29 @@ class WorkContinuityStateRepository(Protocol):
         expected_revision: Revision,
     ) -> WorkContinuityState:
         """Replace continuity state under optimistic concurrency."""
+        ...
+
+
+@runtime_checkable
+class GoalEvaluationCadenceStateRepository(Protocol):
+    """Authoritative persistence port for goal evaluation cadence checkpoints."""
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+        ...
+
+    def get(self, *, goal_id: WorkerGoalId) -> GoalEvaluationCadenceState | None:
+        """Return cadence state for the goal or ``None`` when never evaluated."""
+        ...
+
+    def record_evaluated(
+        self,
+        *,
+        goal_id: WorkerGoalId,
+        evaluated_at: datetime,
+    ) -> GoalEvaluationCadenceState:
+        """Atomically record an evaluation attempt with monotonic timestamps."""
         ...
 
 

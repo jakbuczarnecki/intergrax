@@ -23,6 +23,7 @@ from intergrax.contracts.autonomous_work.ids import (
     validate_worker_goal_id,
     validate_worker_instance_id,
 )
+from intergrax.contracts.autonomous_work.revision import Revision, validate_revision
 from intergrax.contracts.autonomous_work.references import (
     ProgressProjectionRef,
     validate_progress_projection_ref,
@@ -52,6 +53,7 @@ class GoalEvaluationReasonCode(StrEnum):
     THRESHOLD_BREACH = "THRESHOLD_BREACH"
     PROGRESS_PROJECTION_UNAVAILABLE = "PROGRESS_PROJECTION_UNAVAILABLE"
     PROGRESS_PROJECTION_STALE = "PROGRESS_PROJECTION_STALE"
+    CADENCE_POLICY_UNAVAILABLE = "CADENCE_POLICY_UNAVAILABLE"
     OPEN_WORK_ALREADY_PENDING = "OPEN_WORK_ALREADY_PENDING"
     CRITERIA_MET = "CRITERIA_MET"
 
@@ -66,6 +68,24 @@ class GoalEvaluationBatchLimit:
         value = require_non_negative_int(self.max_goals, label="max_goals")
         if value <= 0:
             raise ValueError("max_goals must be positive")
+
+
+@dataclass(frozen=True, slots=True)
+class GoalEvaluationCadenceState:
+    """Durable last-evaluation marker for proactive cadence eligibility."""
+
+    goal_id: WorkerGoalId
+    last_evaluated_at: datetime
+    revision: Revision
+
+    def __post_init__(self) -> None:
+        validate_worker_goal_id(self.goal_id)
+        object.__setattr__(
+            self,
+            "last_evaluated_at",
+            require_aware_utc(self.last_evaluated_at, label="last_evaluated_at"),
+        )
+        validate_revision(self.revision)
 
 
 @dataclass(frozen=True, slots=True)

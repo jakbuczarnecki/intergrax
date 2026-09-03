@@ -115,6 +115,7 @@ def _materialize_postgresql_autonomous_work_repositories(
 ) -> AutonomousWorkRepositories:
     from intergrax.autonomous_work.postgresql_repository import (
         PostgreSQLAutonomousWorkStore,
+        PostgreSQLGoalEvaluationCadenceStateRepository,
         PostgreSQLResponsibilityRepository,
         PostgreSQLWorkContinuityStateRepository,
         PostgreSQLWorkerDefinitionRepository,
@@ -150,6 +151,7 @@ def _materialize_postgresql_autonomous_work_repositories(
         responsibility=PostgreSQLResponsibilityRepository(store),
         worker_goal=PostgreSQLWorkerGoalRepository(store),
         work_continuity_state=PostgreSQLWorkContinuityStateRepository(store),
+        goal_evaluation_cadence_state=PostgreSQLGoalEvaluationCadenceStateRepository(store),
         worker_principal_binding=PostgreSQLWorkerPrincipalBindingRepository(store),
         worker_wake_up_receipt=PostgreSQLWorkerWakeUpReceiptRepository(store),
         store=store,

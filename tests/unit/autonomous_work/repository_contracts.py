@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 import pytest
@@ -14,6 +14,7 @@ from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityConflict,
     AutonomousWorkEntityNotFound,
     AutonomousWorkRevisionConflict,
+    GoalEvaluationCadenceStateRepository,
     ResponsibilityRepository,
     WorkContinuityStateRepository,
     WorkerDefinitionRepository,
@@ -23,6 +24,7 @@ from intergrax.autonomous_work.repository import (
 )
 from intergrax.contracts.autonomous_work import (
     DefinitionRevision,
+    GoalEvaluationCadenceState,
     ProgressCheckpoint,
     ResponsibilityStatus,
     Revision,
@@ -539,3 +541,46 @@ def contract_worker_principal_binding_same_principal_different_scopes(
     assert loaded_a.principal_id == loaded_b.principal_id == shared_principal
     assert loaded_a.tenant_id != loaded_b.tenant_id
     assert loaded_a.workspace_id != loaded_b.workspace_id
+
+
+def contract_goal_evaluation_cadence_state_repository(
+    repo: GoalEvaluationCadenceStateRepository,
+) -> None:
+    goal_id = mint_worker_goal_id()
+    assert repo.get(goal_id=goal_id) is None
+    first_at = datetime(2026, 9, 3, 12, 0, tzinfo=_UTC)
+    first = repo.record_evaluated(goal_id=goal_id, evaluated_at=first_at)
+    assert first == GoalEvaluationCadenceState(
+        goal_id=goal_id,
+        last_evaluated_at=first_at,
+        revision=initial_revision(),
+    )
+    loaded = repo.get(goal_id=goal_id)
+    assert loaded == first
+    earlier = repo.record_evaluated(
+        goal_id=goal_id,
+        evaluated_at=first_at - timedelta(minutes=5),
+    )
+    assert earlier.last_evaluated_at == first_at
+    assert earlier.revision.value == first.revision.value + 1
+    later_at = first_at + timedelta(minutes=5)
+    later = repo.record_evaluated(goal_id=goal_id, evaluated_at=later_at)
+    assert later.last_evaluated_at == later_at
+    assert later.revision.value == earlier.revision.value + 1
+
+
+def contract_goal_evaluation_cadence_state_goal_isolation(
+    repo: GoalEvaluationCadenceStateRepository,
+) -> None:
+    goal_a = mint_worker_goal_id()
+    goal_b = mint_worker_goal_id()
+    at_a = datetime(2026, 9, 3, 12, 0, tzinfo=_UTC)
+    at_b = datetime(2026, 9, 3, 13, 0, tzinfo=_UTC)
+    repo.record_evaluated(goal_id=goal_a, evaluated_at=at_a)
+    repo.record_evaluated(goal_id=goal_b, evaluated_at=at_b)
+    loaded_a = repo.get(goal_id=goal_a)
+    loaded_b = repo.get(goal_id=goal_b)
+    assert loaded_a is not None
+    assert loaded_b is not None
+    assert loaded_a.last_evaluated_at == at_a
+    assert loaded_b.last_evaluated_at == at_b

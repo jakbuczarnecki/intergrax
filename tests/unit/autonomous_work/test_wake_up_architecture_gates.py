@@ -33,6 +33,10 @@ def test_historical_migration_steps_use_fixed_target_versions() -> None:
             body_source = ast.get_source_segment(source, node) or ""
             assert "_SCHEMA_VERSION_V3" in body_source
             assert "_SCHEMA_VERSION," not in body_source.replace("_SCHEMA_VERSION_V", "")
+        if node.name == "_migrate_v3_to_v4":
+            body_source = ast.get_source_segment(source, node) or ""
+            assert "_SCHEMA_VERSION_V4" in body_source
+            assert "_SCHEMA_VERSION," not in body_source.replace("_SCHEMA_VERSION_V", "")
 
 
 def test_claim_status_distinguishes_duplicate_and_conflict() -> None:

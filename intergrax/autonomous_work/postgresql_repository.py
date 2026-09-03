@@ -9,6 +9,7 @@ import threading
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import replace
+from datetime import datetime
 from typing import Any, Generic, TypeVar
 
 from intergrax.autonomous_work.repository import (
@@ -38,6 +39,7 @@ from intergrax.autonomous_work.serialization import (
 )
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
+from intergrax.contracts.autonomous_work.goal_evaluation import GoalEvaluationCadenceState
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
     WakeUpId,
@@ -75,10 +77,12 @@ _CAPABILITIES = AutonomousWorkRepositoryCapabilities(
 _ISOLATION_LEVEL = PostgreSQLIsolationLevel.READ_COMMITTED
 # v2 introduced ``aw_worker_principal_bindings`` before AW-3A qualification closed.
 # v3 introduced ``aw_worker_wake_up_receipts`` for AW-4A durable wake-up idempotency.
+# v4 introduced ``aw_goal_evaluation_cadence_states`` for AW-4B durable cadence checkpoints.
 _SCHEMA_VERSION_V1 = 1
 _SCHEMA_VERSION_V2 = 2
 _SCHEMA_VERSION_V3 = 3
-_SCHEMA_VERSION = _SCHEMA_VERSION_V3
+_SCHEMA_VERSION_V4 = 4
+_SCHEMA_VERSION = _SCHEMA_VERSION_V4
 _SCHEMA_META_TABLE = "autonomous_work_schema_meta"
 _SCHEMA_LOCK_KEY = "autonomous_work_schema_init"
 
@@ -212,6 +216,12 @@ class PostgreSQLAutonomousWorkStore:
                     accepted_at TIMESTAMPTZ NOT NULL,
                     PRIMARY KEY (worker_instance_id, wake_up_id)
                 );
+
+                CREATE TABLE IF NOT EXISTS aw_goal_evaluation_cadence_states (
+                    goal_id TEXT NOT NULL PRIMARY KEY,
+                    last_evaluated_at TIMESTAMPTZ NOT NULL,
+                    revision INTEGER NOT NULL
+                );
                 """
             )
             session.execute(
@@ -261,6 +271,9 @@ class PostgreSQLAutonomousWorkStore:
             from_version = _SCHEMA_VERSION_V2
         if from_version == _SCHEMA_VERSION_V2:
             self._migrate_v2_to_v3(session)
+            from_version = _SCHEMA_VERSION_V3
+        if from_version == _SCHEMA_VERSION_V3:
+            self._migrate_v3_to_v4(session)
             return
         raise AutonomousWorkSchemaVersionError(
             f"unsupported Autonomous Work schema migration from version {from_version}"
@@ -348,6 +361,31 @@ class PostgreSQLAutonomousWorkStore:
             session,
             expected_from=_SCHEMA_VERSION_V2,
             expected_to=_SCHEMA_VERSION_V3,
+            updated_rows=updated.rowcount,
+        )
+
+    def _migrate_v3_to_v4(self, session: PostgreSQLSession) -> None:
+        session.execute(
+            """
+            CREATE TABLE IF NOT EXISTS aw_goal_evaluation_cadence_states (
+                goal_id TEXT NOT NULL PRIMARY KEY,
+                last_evaluated_at TIMESTAMPTZ NOT NULL,
+                revision INTEGER NOT NULL
+            );
+            """
+        )
+        updated = session.execute(
+            f"""
+            UPDATE {_SCHEMA_META_TABLE}
+            SET schema_version = %s
+            WHERE id = 1 AND schema_version = %s
+            """,
+            (_SCHEMA_VERSION_V4, _SCHEMA_VERSION_V3),
+        )
+        self._complete_migration_step(
+            session,
+            expected_from=_SCHEMA_VERSION_V3,
+            expected_to=_SCHEMA_VERSION_V4,
             updated_rows=updated.rowcount,
         )
 
@@ -1014,3 +1052,68 @@ class PostgreSQLWorkerWakeUpReceiptRepository:
             if row is None:
                 return None
             return worker_wake_up_receipt_from_json(row["record_json"])
+
+
+class PostgreSQLGoalEvaluationCadenceStateRepository:
+    """Production repository for durable goal evaluation cadence checkpoints."""
+
+    def __init__(self, store: PostgreSQLAutonomousWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def get(self, *, goal_id: WorkerGoalId) -> GoalEvaluationCadenceState | None:
+        with self._store.transaction() as conn:
+            row = conn.execute(
+                """
+                SELECT last_evaluated_at, revision
+                FROM aw_goal_evaluation_cadence_states
+                WHERE goal_id = %s
+                """,
+                (goal_id.strip(),),
+            ).fetchone()
+            if row is None:
+                return None
+            return GoalEvaluationCadenceState(
+                goal_id=goal_id,
+                last_evaluated_at=row["last_evaluated_at"],
+                revision=Revision(int(row["revision"])),
+            )
+
+    def record_evaluated(
+        self,
+        *,
+        goal_id: WorkerGoalId,
+        evaluated_at: datetime,
+    ) -> GoalEvaluationCadenceState:
+        with self._store.transaction() as conn:
+            row = conn.execute(
+                """
+                INSERT INTO aw_goal_evaluation_cadence_states (
+                    goal_id, last_evaluated_at, revision
+                ) VALUES (%s, %s, %s)
+                ON CONFLICT (goal_id) DO UPDATE SET
+                    last_evaluated_at = GREATEST(
+                        aw_goal_evaluation_cadence_states.last_evaluated_at,
+                        EXCLUDED.last_evaluated_at
+                    ),
+                    revision = aw_goal_evaluation_cadence_states.revision + 1
+                RETURNING goal_id, last_evaluated_at, revision
+                """,
+                (goal_id.strip(), evaluated_at, initial_revision().value),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("cadence state upsert did not return persisted row")
+            return GoalEvaluationCadenceState(
+                goal_id=goal_id,
+                last_evaluated_at=row["last_evaluated_at"],
+                revision=Revision(int(row["revision"])),
+            )
+
+    def last_evaluated_at(self, *, goal_id: WorkerGoalId) -> datetime | None:
+        state = self.get(goal_id=goal_id)
+        if state is None:
+            return None
+        return state.last_evaluated_at

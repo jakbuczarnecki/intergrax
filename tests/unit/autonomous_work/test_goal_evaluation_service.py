@@ -21,13 +21,11 @@ from intergrax.autonomous_work.goal_evaluation_service import (
 from intergrax.autonomous_work.in_memory_repository import (
     InMemoryResponsibilityRepository,
     InMemoryWorkerGoalRepository,
-)
-from intergrax.autonomous_work.wake_up_service import WorkerWakeUpService
-from intergrax.autonomous_work.in_memory_repository import (
     InMemoryWorkContinuityStateRepository,
     InMemoryWorkerInstanceRepository,
     InMemoryWorkerWakeUpReceiptRepository,
 )
+from intergrax.autonomous_work.wake_up_service import WorkerWakeUpService
 from intergrax.contracts.autonomous_work import (
     GoalEvaluationDisposition,
     GoalEvaluationReasonCode,
@@ -55,6 +53,7 @@ pytestmark = pytest.mark.unit
 _UTC = UTC
 _NOW = datetime(2026, 9, 3, 12, 0, tzinfo=_UTC)
 _CADENCE_REF = EvaluationCadenceRef("cadence/goal-eval-5m")
+_CADENCE_INTERVAL_SECONDS = 300
 _PROJECTION_REF = ProgressProjectionRef("projection/sla-30m")
 
 
@@ -88,11 +87,12 @@ def _evaluation_service(
     service = WorkerGoalEvaluationService(
         responsibility_repository=responsibility_repo,
         worker_goal_repository=goal_repo,
-        cadence_resolver=MappingGoalEvaluationCadenceResolver({}),
+        cadence_resolver=MappingGoalEvaluationCadenceResolver(
+            {_CADENCE_REF: _CADENCE_INTERVAL_SECONDS}
+        ),
         progress_projection_resolver=MappingGoalProgressProjectionResolver(projections),
         goal_evaluator=DeterministicThresholdGoalEvaluator(),
         cadence_state=cadence_store,
-        cadence_state_recorder=cadence_store,
     )
     return service, responsibility_repo, goal_repo, cadence_store
 
@@ -134,9 +134,10 @@ def _seed_goal_chain(
 ) -> tuple[str, str]:
     responsibility = contract_suite.responsibility(worker_instance_id=worker_id)
     responsibility_repo.create(responsibility)
+    cadence_ref = goal_overrides.pop("evaluation_cadence_ref", _CADENCE_REF)
     goal = contract_suite.worker_goal(
         responsibility_id=responsibility.responsibility_id,
-        evaluation_cadence_ref=_CADENCE_REF,
+        evaluation_cadence_ref=cadence_ref,
         progress_projection_ref=_PROJECTION_REF,
         **goal_overrides,
     )
@@ -472,7 +473,196 @@ def test_non_accepted_request_rejected_at_contract_boundary() -> None:
         )
 
 
-def test_open_work_continuity_suppresses_duplicate_action() -> None:
+def test_not_evaluable_records_cadence_to_prevent_hot_loop() -> None:
+    service, responsibility_repo, goal_repo, cadence_store = _evaluation_service(projections={})
+    worker_id = contract_suite.worker_instance().worker_instance_id
+    _, goal_id = _seed_goal_chain(
+        responsibility_repo=responsibility_repo,
+        goal_repo=goal_repo,
+        worker_id=worker_id,
+    )
+    service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW,
+            max_goals=10,
+        )
+    )
+    assert cadence_store.last_evaluated_at(goal_id=goal_id) == _NOW
+    result = service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW + timedelta(minutes=1),
+            max_goals=10,
+        )
+    )
+    assert result.decisions[0].disposition == GoalEvaluationDisposition.NOT_DUE
+
+
+def test_five_minute_cadence_boundedness() -> None:
+    service, responsibility_repo, goal_repo, cadence_store = _evaluation_service()
+    worker_id = contract_suite.worker_instance().worker_instance_id
+    _, goal_id = _seed_goal_chain(
+        responsibility_repo=responsibility_repo,
+        goal_repo=goal_repo,
+        worker_id=worker_id,
+    )
+    first = service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW,
+            max_goals=10,
+        )
+    )
+    assert first.decisions[0].disposition == GoalEvaluationDisposition.NO_ACTION
+    second = service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW + timedelta(minutes=1),
+            max_goals=10,
+        )
+    )
+    assert second.decisions[0].disposition == GoalEvaluationDisposition.NOT_DUE
+    third = service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW + timedelta(minutes=5),
+            max_goals=10,
+        )
+    )
+    assert third.decisions[0].disposition == GoalEvaluationDisposition.NO_ACTION
+    assert cadence_store.last_evaluated_at(goal_id=goal_id) == _NOW + timedelta(minutes=5)
+
+
+def test_cadence_survives_restart_with_new_store_instance() -> None:
+    worker_id = contract_suite.worker_instance().worker_instance_id
+    cadence_store = InMemoryGoalEvaluationCadenceStateStore()
+    service, responsibility_repo, goal_repo, _ = _evaluation_service(cadence_store=cadence_store)
+    _, goal_id = _seed_goal_chain(
+        responsibility_repo=responsibility_repo,
+        goal_repo=goal_repo,
+        worker_id=worker_id,
+    )
+    service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW,
+            max_goals=10,
+        )
+    )
+    restarted_service = WorkerGoalEvaluationService(
+        responsibility_repository=responsibility_repo,
+        worker_goal_repository=goal_repo,
+        cadence_resolver=MappingGoalEvaluationCadenceResolver(
+            {_CADENCE_REF: _CADENCE_INTERVAL_SECONDS}
+        ),
+        progress_projection_resolver=MappingGoalProgressProjectionResolver(
+            {
+                _PROJECTION_REF: GoalProgressProjection(
+                    projection_ref=_PROJECTION_REF,
+                    observed_at=_NOW,
+                    current_value=1.0,
+                    target_value=1.0,
+                    status="healthy",
+                    evidence_refs=("evidence/progress/healthy",),
+                )
+            }
+        ),
+        goal_evaluator=DeterministicThresholdGoalEvaluator(),
+        cadence_state=cadence_store,
+    )
+    not_due = restarted_service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW + timedelta(minutes=4),
+            max_goals=10,
+        )
+    )
+    assert not_due.decisions[0].disposition == GoalEvaluationDisposition.NOT_DUE
+    due = restarted_service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW + timedelta(hours=1),
+            max_goals=10,
+        )
+    )
+    assert due.decisions[0].disposition == GoalEvaluationDisposition.NO_ACTION
+    assert cadence_store.last_evaluated_at(goal_id=goal_id) == _NOW + timedelta(hours=1)
+
+
+def test_unknown_cadence_ref_fails_closed_as_not_evaluable() -> None:
+    service, responsibility_repo, goal_repo, cadence_store = _evaluation_service()
+    worker_id = contract_suite.worker_instance().worker_instance_id
+    _, goal_id = _seed_goal_chain(
+        responsibility_repo=responsibility_repo,
+        goal_repo=goal_repo,
+        worker_id=worker_id,
+        evaluation_cadence_ref=EvaluationCadenceRef("cadence/unknown"),
+    )
+    result = service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=_accepted_context(worker_id=worker_id),
+            evaluated_at=_NOW,
+            max_goals=10,
+        )
+    )
+    decision = result.decisions[0]
+    assert decision.disposition == GoalEvaluationDisposition.NOT_EVALUABLE
+    assert decision.reason_code == GoalEvaluationReasonCode.CADENCE_POLICY_UNAVAILABLE
+    assert cadence_store.last_evaluated_at(goal_id=goal_id) == _NOW
+
+
+def test_unrelated_open_work_does_not_suppress_action_required() -> None:
+    worker_id = contract_suite.worker_instance().worker_instance_id
+    responsibility = contract_suite.responsibility(worker_instance_id=worker_id)
+    goal_a = contract_suite.worker_goal(
+        goal_id=mint_worker_goal_id(),
+        responsibility_id=responsibility.responsibility_id,
+        evaluation_cadence_ref=_CADENCE_REF,
+        progress_projection_ref=_PROJECTION_REF,
+    )
+    goal_b = contract_suite.worker_goal(
+        goal_id=mint_worker_goal_id(),
+        responsibility_id=responsibility.responsibility_id,
+        evaluation_cadence_ref=_CADENCE_REF,
+        progress_projection_ref=_PROJECTION_REF,
+    )
+    continuity = contract_suite.continuity_state(
+        worker_instance_ref=worker_id,
+        active_goal_refs=(goal_a.goal_id, goal_b.goal_id),
+        open_work_refs=(WorkReference("work/for-goal-b"),),
+    )
+    projections = {
+        _PROJECTION_REF: GoalProgressProjection(
+            projection_ref=_PROJECTION_REF,
+            observed_at=_NOW,
+            current_value=0.2,
+            target_value=0.99,
+            status="at_risk",
+            evidence_refs=("evidence/sla/at-risk",),
+        )
+    }
+    service, responsibility_repo, goal_repo, _ = _evaluation_service(projections=projections)
+    responsibility_repo.create(responsibility)
+    goal_repo.create(goal_a)
+    goal_repo.create(goal_b)
+    context = replace(_accepted_context(worker_id=worker_id), continuity_state=continuity)
+    result = service.evaluate(
+        WorkerGoalEvaluationRequest(
+            wake_up_context=context,
+            evaluated_at=_NOW,
+            max_goals=10,
+        )
+    )
+    goal_a_decision = next(
+        decision for decision in result.decisions if decision.goal_id == goal_a.goal_id
+    )
+    assert goal_a_decision.disposition == GoalEvaluationDisposition.ACTION_REQUIRED
+    assert goal_a_decision.reason_code == GoalEvaluationReasonCode.SLA_RISK
+
+
+def test_open_work_continuity_does_not_suppress_without_goal_work_correlation() -> None:
+    """AW-4C owns Goal↔Work correlation; AW-4B must not infer it from open_work_refs."""
     worker_id = contract_suite.worker_instance().worker_instance_id
     responsibility = contract_suite.responsibility(worker_instance_id=worker_id)
     goal = contract_suite.worker_goal(
@@ -485,11 +675,20 @@ def test_open_work_continuity_suppresses_duplicate_action() -> None:
         active_goal_refs=(goal.goal_id,),
         open_work_refs=(WorkReference("work/open-1"),),
     )
-    service, responsibility_repo, goal_repo, _ = _evaluation_service()
+    projections = {
+        _PROJECTION_REF: GoalProgressProjection(
+            projection_ref=_PROJECTION_REF,
+            observed_at=_NOW,
+            current_value=0.2,
+            target_value=0.99,
+            status="breached",
+            evidence_refs=("evidence/threshold/breached",),
+        )
+    }
+    service, responsibility_repo, goal_repo, _ = _evaluation_service(projections=projections)
     responsibility_repo.create(responsibility)
     goal_repo.create(goal)
-    context = _accepted_context(worker_id=worker_id)
-    context = replace(context, continuity_state=continuity)
+    context = replace(_accepted_context(worker_id=worker_id), continuity_state=continuity)
     result = service.evaluate(
         WorkerGoalEvaluationRequest(
             wake_up_context=context,
@@ -498,8 +697,8 @@ def test_open_work_continuity_suppresses_duplicate_action() -> None:
         )
     )
     decision = result.decisions[0]
-    assert decision.disposition == GoalEvaluationDisposition.NO_ACTION
-    assert decision.reason_code == GoalEvaluationReasonCode.OPEN_WORK_ALREADY_PENDING
+    assert decision.disposition == GoalEvaluationDisposition.ACTION_REQUIRED
+    assert decision.reason_code == GoalEvaluationReasonCode.THRESHOLD_BREACH
 
 
 def _wake_services() -> tuple[

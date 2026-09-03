@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import re
 import threading
 from collections.abc import Mapping
 from datetime import datetime
@@ -27,20 +26,11 @@ from intergrax.contracts.autonomous_work.references import (
     EvaluationCadenceRef,
     ProgressProjectionRef,
 )
+from intergrax.contracts.autonomous_work.revision import Revision, initial_revision
 
-_CADENCE_SUFFIX_PATTERN = re.compile(r"^(\d+)([smhd])$")
 
-
-def parse_cadence_interval_seconds(ref: EvaluationCadenceRef) -> int | None:
-    """Parse ``cadence/goal-eval-5m`` style refs into interval seconds."""
-    suffix = ref.rsplit("-", 1)[-1]
-    match = _CADENCE_SUFFIX_PATTERN.fullmatch(suffix)
-    if match is None:
-        return None
-    amount = int(match.group(1))
-    unit = match.group(2)
-    multiplier = {"s": 1, "m": 60, "h": 3600, "d": 86400}[unit]
-    return amount * multiplier
+class GoalEvaluationCadenceResolutionError(KeyError):
+    """Raised when an opaque cadence ref cannot be resolved to a policy."""
 
 
 @runtime_checkable
@@ -56,15 +46,10 @@ class GoalEvaluationCadenceResolver(Protocol):
 
 
 @runtime_checkable
-class GoalEvaluationCadenceStateReader(Protocol):
-    """Read-only last-evaluation timestamps for cadence eligibility."""
+class GoalEvaluationCadenceStateStore(Protocol):
+    """Canonical read + atomic record semantics for cadence eligibility."""
 
     def last_evaluated_at(self, *, goal_id: WorkerGoalId) -> datetime | None: ...
-
-
-@runtime_checkable
-class GoalEvaluationCadenceStateRecorder(Protocol):
-    """Record evaluation timestamps after a bounded batch completes."""
 
     def record_evaluated(
         self,
@@ -72,6 +57,10 @@ class GoalEvaluationCadenceStateRecorder(Protocol):
         goal_id: WorkerGoalId,
         evaluated_at: datetime,
     ) -> None: ...
+
+
+GoalEvaluationCadenceStateReader = GoalEvaluationCadenceStateStore
+GoalEvaluationCadenceStateRecorder = GoalEvaluationCadenceStateStore
 
 
 @runtime_checkable
@@ -88,7 +77,7 @@ class GoalProgressProjectionResolver(Protocol):
 
 @runtime_checkable
 class WorkerGoalEvaluator(Protocol):
-    """Semantic evaluator seam — answers whether action is required."""
+    """Reference deterministic evaluator over resolved projection semantics."""
 
     def evaluate(
         self,
@@ -124,20 +113,21 @@ class MappingGoalEvaluationCadenceResolver:
         del goal
         interval = self._intervals.get(cadence_ref)
         if interval is None:
-            interval = parse_cadence_interval_seconds(cadence_ref)
-        if interval is None:
             interval = self._default_interval_seconds
         if interval is None or interval <= 0:
-            raise KeyError(f"no cadence policy for {cadence_ref}")
+            raise GoalEvaluationCadenceResolutionError(
+                f"no cadence policy for {cadence_ref}"
+            )
         return GoalEvaluationCadencePolicy(minimum_interval_seconds=interval)
 
 
 class InMemoryGoalEvaluationCadenceStateStore:
-    """Process-local cadence state for reference deployments and tests."""
+    """Process-local cadence state for reference deployments and tests only."""
 
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._last_evaluated_at: dict[WorkerGoalId, datetime] = {}
+        self._revisions: dict[WorkerGoalId, int] = {}
 
     def last_evaluated_at(self, *, goal_id: WorkerGoalId) -> datetime | None:
         with self._lock:
@@ -150,7 +140,16 @@ class InMemoryGoalEvaluationCadenceStateStore:
         evaluated_at: datetime,
     ) -> None:
         with self._lock:
+            current = self._last_evaluated_at.get(goal_id)
+            if current is not None and evaluated_at < current:
+                evaluated_at = current
             self._last_evaluated_at[goal_id] = evaluated_at
+            self._revisions[goal_id] = self._revisions.get(goal_id, 0) + 1
+
+    def get_revision(self, *, goal_id: WorkerGoalId) -> Revision:
+        with self._lock:
+            value = self._revisions.get(goal_id, 0)
+            return Revision(value if value > 0 else initial_revision().value)
 
 
 class MappingGoalProgressProjectionResolver:
@@ -173,7 +172,7 @@ class MappingGoalProgressProjectionResolver:
 
 
 class DeterministicThresholdGoalEvaluator:
-    """Deterministic evaluator for numeric/status threshold semantics."""
+    """Reference deterministic evaluator over already-resolved projection semantics."""
 
     def evaluate(
         self,
@@ -184,6 +183,7 @@ class DeterministicThresholdGoalEvaluator:
         continuity_state: WorkContinuityState | None,
         wake_up_id: WakeUpId,
     ) -> GoalEvaluationDecision:
+        del continuity_state
         if is_progress_projection_stale(projection=projection, evaluated_at=evaluated_at):
             return GoalEvaluationDecision(
                 goal_id=goal.goal_id,
@@ -195,20 +195,6 @@ class DeterministicThresholdGoalEvaluator:
                 progress_projection_ref=projection.projection_ref,
                 wake_up_id=wake_up_id,
             )
-
-        if continuity_state is not None:
-            if goal.goal_id in continuity_state.active_goal_refs:
-                if continuity_state.open_work_refs:
-                    return GoalEvaluationDecision(
-                        goal_id=goal.goal_id,
-                        evaluated_at=evaluated_at,
-                        disposition=GoalEvaluationDisposition.NO_ACTION,
-                        reason_code=GoalEvaluationReasonCode.OPEN_WORK_ALREADY_PENDING,
-                        reason="open work already pending for active goal",
-                        evidence_refs=continuity_state.open_work_refs,
-                        progress_projection_ref=projection.projection_ref,
-                        wake_up_id=wake_up_id,
-                    )
 
         status = (projection.status or "").strip().lower()
         if status in {"breached", "at_risk"}:
@@ -271,7 +257,7 @@ class DeterministicThresholdGoalEvaluator:
 def cadence_due_at(
     *,
     resolver: GoalEvaluationCadenceResolver,
-    cadence_state: GoalEvaluationCadenceStateReader,
+    cadence_state: GoalEvaluationCadenceStateStore,
     goal: WorkerGoal,
     evaluated_at: datetime,
 ) -> bool:
