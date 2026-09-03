@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 import ast
+import inspect
+from collections.abc import Callable
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -15,6 +18,12 @@ from intergrax.integrations.contracts.base import IntegrationCategory, Integrati
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.providers.conversation_channel.slack.contract_spec import (
     CONTRACT_SPEC as SLACK_CONVERSATION_CONTRACT_SPEC,
+)
+from intergrax.integrations.providers.layout import (
+    SLUG_CATEGORY,
+    categories_for_provider,
+    provider_import_path,
+    provider_package_path,
 )
 from intergrax.integrations.providers.managed_retrieval.openai.contract_spec import (
     CONTRACT_SPEC as OPENAI_MANAGED_RETRIEVAL_CONTRACT_SPEC,
@@ -31,8 +40,10 @@ from intergrax.integrations.providers.relational_store.postgresql.contract_spec 
 from intergrax.integrations.providers.relational_store.postgresql.register import (
     register_postgresql_integration,
 )
+from intergrax.integrations.registry import contract_capture
 from intergrax.integrations.registry.catalog import clear_catalog, get_entry
 from intergrax.integrations.registry.contract_spec import (
+    B1_TYPED_CONTRACT_CATEGORIES,
     EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS,
     IntegrationContractSpec,
     declare_integration_contract,
@@ -46,6 +57,28 @@ from intergrax.runtime.integrations.registry_v2 import build_integration_registr
 pytestmark = pytest.mark.unit
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+
+_FORBIDDEN_CONTRACT_SPEC_NAMES = frozenset(
+    {"import_module", "vars", "getattr", "hasattr", "__dict__"},
+)
+
+
+def b1_provider_category_keys() -> tuple[tuple[str, str], ...]:
+    keys: list[tuple[str, str]] = []
+    for slug in sorted(SLUG_CATEGORY):
+        for category in categories_for_provider(slug):
+            if category in B1_TYPED_CONTRACT_CATEGORIES:
+                keys.append((slug, category))
+    return tuple(keys)
+
+
+def b1_register_function(slug: str, category: str) -> Callable[..., Any]:
+    register_module = import_module(f"{provider_import_path(slug, category)}.register")
+    for name, obj in inspect.getmembers(register_module, inspect.isfunction):
+        if name.startswith("register_") and name.endswith("_integration"):
+            return obj
+    msg = f"Missing register_*_integration in {slug}/{category}"
+    raise AssertionError(msg)
 
 
 @pytest.fixture(autouse=True)
@@ -87,6 +120,19 @@ def _sample_explicit_spec() -> IntegrationContractSpec:
         supports_health_check=True,
         metadata={"source": "test"},
     )
+
+
+def test_b1_inventory_gate_all_typed_keys_explicit() -> None:
+    b1_keys = b1_provider_category_keys()
+    explicit_keys: list[tuple[str, str]] = []
+    for slug, category in b1_keys:
+        contract_path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        assert contract_path.is_file(), f"missing contract_spec for {(slug, category)}"
+        register_path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
+        register_source = register_path.read_text(encoding="utf-8")
+        assert "contract_specs=CONTRACT_SPECS" in register_source
+        explicit_keys.append((slug, category))
+    assert len(explicit_keys) == len(b1_keys)
 
 
 def test_explicit_spec_populates_catalog_entry() -> None:
@@ -169,13 +215,13 @@ def test_integration_class_mismatch_fails_declaration() -> None:
         )
 
 
-def test_migrated_builtin_without_explicit_specs_fails_closed() -> None:
+def test_b1_builtin_without_explicit_specs_fails_closed() -> None:
     manifest = IntegrationManifest(
-        slug="postgresql",
+        slug="sqlite",
         categories=(IntegrationCategory.RELATIONAL_STORE,),
         status=IntegrationStatus.BETA,
-        env_prefix="INTERGRAX_POSTGRESQL",
-        description="postgresql",
+        env_prefix="INTERGRAX_SQLITE",
+        description="sqlite",
     )
     with pytest.raises(ValueError, match="requires explicit contract_specs"):
         register_from_manifest(manifest, lambda **_: {})
@@ -205,9 +251,10 @@ def test_langfuse_observability_uses_explicit_factory_not_name_guess() -> None:
     assert LANGFUSE_CONTRACT_SPEC.integration_kind == "observability_vendor"
 
 
-def test_multi_category_slack_keys_require_explicit_per_category() -> None:
+def test_non_b1_explicit_keys_remain_in_migration_set() -> None:
     assert ("slack", "notification_channel") in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
     assert ("slack", "conversation_channel") in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+    assert ("postgresql", "relational_store") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
 
 
 def test_plugin_register_has_no_provider_module_scanning() -> None:
@@ -221,19 +268,103 @@ def test_plugin_register_has_no_provider_module_scanning() -> None:
                 pytest.fail("plugin_register must not scan provider modules reflectively")
 
 
-def test_contract_capture_not_imported_by_migrated_register_modules() -> None:
-    migrated_registers = [
-        "intergrax/integrations/providers/relational_store/postgresql/register.py",
-        "intergrax/integrations/providers/managed_retrieval/openai/register.py",
-        "intergrax/integrations/providers/conversation_channel/slack/register.py",
-        "intergrax/integrations/providers/notification_channel/slack/register.py",
-        "intergrax/integrations/providers/observability_backend/langfuse/register.py",
-    ]
-    for relative in migrated_registers:
-        source = (REPO_ROOT / relative).read_text(encoding="utf-8")
-        assert "contract_capture" not in source
-        assert "contract_specs=" in source
+def test_b1_contract_spec_modules_have_no_reflection() -> None:
+    for slug, category in b1_provider_category_keys():
+        path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in _FORBIDDEN_CONTRACT_SPEC_NAMES:
+                    pytest.fail(f"{path}: forbidden reflective call {node.func.id}()")
+            if isinstance(node, ast.Attribute) and node.attr == "__dict__":
+                pytest.fail(f"{path}: forbidden __dict__ access")
 
 
-def test_explicit_inventory_counts_gate() -> None:
-    assert len(EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS) == 5
+def test_b1_register_modules_do_not_import_contract_capture() -> None:
+    for slug, category in b1_provider_category_keys():
+        path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
+        source = path.read_text(encoding="utf-8")
+        assert "contract_capture" not in source, path.as_posix()
+        assert "contract_specs=" in source, path.as_posix()
+
+
+@pytest.mark.parametrize("slug,category", b1_provider_category_keys())
+def test_b1_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError(f"capture_builtin_contract_specs must not run for B1 {(slug, category)}")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    b1_register_function(slug, category)()
+    entry = get_entry(slug)
+    assert entry.contract_specs
+    assert entry.contract_specs[0].category == category
+    assert entry.contract_specs[0].metadata.get("source") == "explicit_provider_declaration"
+
+
+@pytest.mark.parametrize("slug,category", b1_provider_category_keys())
+def test_b1_registration_does_not_execute_catalog_factory(
+    slug: str,
+    category: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    register_module = import_module(f"{provider_import_path(slug, category)}.register")
+    register_fn = b1_register_function(slug, category)
+    from intergrax.integrations.registry import plugin_register
+
+    original_rfm = plugin_register.register_from_manifest
+
+    def tracking_rfm(
+        manifest: IntegrationManifest,
+        factory: Callable[..., Any],
+        **kwargs: Any,
+    ) -> IntegrationManifest:
+        factory_mock = MagicMock(wraps=factory)
+        result = original_rfm(manifest, factory_mock, **kwargs)
+        factory_mock.assert_not_called()
+        return result
+
+    monkeypatch.setattr(register_module, "register_from_manifest", tracking_rfm)
+    register_fn()
+
+
+def test_external_fake_b1_provider_explicit_registration() -> None:
+    class _ExternalB1Integration(RelationalStoreIntegrationContract):
+        pass
+
+    def _external_factory(*, enabled: bool = False) -> _ExternalB1Integration:
+        return _ExternalB1Integration.for_provider(
+            provider_id="external_b1_sql",
+            display_name="External B1 SQL",
+            config=CategoryIntegrationConfig(enabled=enabled),
+        )
+
+    spec = declare_integration_contract(
+        category="relational_store",
+        provider_id="external_b1_sql",
+        integration_class=_ExternalB1Integration,
+        contract_class=RelationalStoreIntegrationContract,
+        contract_factory=_external_factory,
+        display_name="External B1 SQL",
+        config_class=CategoryIntegrationConfig,
+        capabilities=(
+            PlatformIntegrationCapability.CONNECT,
+            PlatformIntegrationCapability.READ,
+            PlatformIntegrationCapability.WRITE,
+            PlatformIntegrationCapability.HEALTH_CHECK,
+        ),
+        security_posture=PlatformIntegrationSecurityPosture(),
+        supports_runtime_binding=True,
+        supports_health_check=True,
+        metadata={"source": "external_plugin_test"},
+    )
+    manifest = IntegrationManifest(
+        slug="external_b1_sql",
+        categories=(IntegrationCategory.RELATIONAL_STORE,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_EXTERNAL_B1_SQL",
+        description="external fake B1 provider",
+    )
+    register_from_manifest(manifest, lambda **_: {}, contract_specs=(spec,))
+    registration = build_integration_registration("external_b1_sql")
+    assert registration.category == "relational_store"
+    assert registration.integration_class is _ExternalB1Integration

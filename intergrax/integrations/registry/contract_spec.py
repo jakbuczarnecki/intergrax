@@ -15,11 +15,22 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 
 IntegrationContractFactory = Callable[..., Any]
 
-# Built-in (provider_id, category) rows migrated to explicit provider-owned declarations.
-# Registration without contract_specs for these keys fails closed (P2-003).
+# P2-003-B1: typed built-in data/persistence categories require provider-owned specs.
+B1_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
+    {
+        "relational_store",
+        "document_store",
+        "vector_store",
+        "key_value_cache",
+        "object_storage",
+        "graph_store",
+    }
+)
+
+# Migration-only (provider_id, category) rows outside B1 category gate — removed in P2-003-C.
+# Do not add B1 vendors here; B1 fail-closed derives from ``B1_TYPED_CONTRACT_CATEGORIES``.
 EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS: frozenset[tuple[str, str]] = frozenset(
     {
-        ("postgresql", "relational_store"),
         ("openai", "managed_retrieval"),
         ("slack", "conversation_channel"),
         ("slack", "notification_channel"),
@@ -175,6 +186,7 @@ def validate_contract_spec_identity(
 
 
 __all__ = [
+    "B1_TYPED_CONTRACT_CATEGORIES",
     "EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS",
     "IntegrationContractFactory",
     "IntegrationContractSpec",

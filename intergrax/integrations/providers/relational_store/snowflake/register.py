@@ -8,7 +8,8 @@ from __future__ import annotations
 from intergrax.integrations.providers.relational_store.snowflake.bundle import create_snowflake_relational_store
 from intergrax.integrations.providers.relational_store.snowflake.manifest import MANIFEST
 from intergrax.integrations.registry.plugin_register import register_from_manifest
+from intergrax.integrations.providers.relational_store.snowflake.contract_spec import CONTRACT_SPECS
 
 
 def register_snowflake_integration(*, override: bool = False) -> None:
-    register_from_manifest(MANIFEST, create_snowflake_relational_store, override=override)
+    register_from_manifest(MANIFEST, create_snowflake_relational_store, override=override, contract_specs=CONTRACT_SPECS)

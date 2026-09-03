@@ -9,6 +9,7 @@ from typing import Any
 
 from intergrax.integrations.providers.key_value_cache.redis.manifest import MANIFEST
 from intergrax.integrations.registry.plugin_register import register_from_manifest
+from intergrax.integrations.providers.key_value_cache.redis.contract_spec import CONTRACT_SPECS
 
 
 def _create_redis_key_value_cache(**kwargs: Any) -> Any:
@@ -18,4 +19,4 @@ def _create_redis_key_value_cache(**kwargs: Any) -> Any:
 
 
 def register_redis_integration(*, override: bool = False) -> None:
-    register_from_manifest(MANIFEST, _create_redis_key_value_cache, override=override)
+    register_from_manifest(MANIFEST, _create_redis_key_value_cache, override=override, contract_specs=CONTRACT_SPECS)
