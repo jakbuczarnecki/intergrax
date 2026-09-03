@@ -345,6 +345,19 @@ class InMemoryResponsibilityRepository:
             write_revision=_responsibility_with_revision,
         )
 
+    def list_for_worker_instance(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> tuple[Responsibility, ...]:
+        with self._store._lock:
+            matches = [
+                entity
+                for entity in self._store._records.values()
+                if entity.worker_instance_id == worker_instance_id
+            ]
+        return tuple(sorted(matches, key=lambda item: item.responsibility_id))
+
 
 class InMemoryWorkerGoalRepository:
     """Process-local reference repository for WorkerGoal records."""
@@ -390,6 +403,19 @@ class InMemoryWorkerGoalRepository:
             read_revision=_worker_goal_revision,
             write_revision=_worker_goal_with_revision,
         )
+
+    def list_for_responsibility(
+        self,
+        *,
+        responsibility_id: ResponsibilityId,
+    ) -> tuple[WorkerGoal, ...]:
+        with self._store._lock:
+            matches = [
+                entity
+                for entity in self._store._records.values()
+                if entity.responsibility_id == responsibility_id
+            ]
+        return tuple(sorted(matches, key=lambda item: item.goal_id))
 
 
 class InMemoryWorkerPrincipalBindingRepository:

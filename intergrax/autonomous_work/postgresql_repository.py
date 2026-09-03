@@ -732,6 +732,25 @@ class PostgreSQLResponsibilityRepository:
     ) -> Responsibility:
         return self._delegate.replace(responsibility, expected_revision=expected_revision)
 
+    def list_for_worker_instance(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> tuple[Responsibility, ...]:
+        with self._delegate._store.transaction() as conn:
+            rows = conn.execute(
+                """
+                SELECT record_json
+                FROM aw_responsibilities
+                WHERE record_json::json->>'worker_instance_id' = %s
+                ORDER BY responsibility_id
+                """,
+                (worker_instance_id.strip(),),
+            ).fetchall()
+        return tuple(
+            responsibility_from_json(row["record_json"]) for row in rows
+        )
+
 
 class PostgreSQLWorkerGoalRepository:
     """Production repository for WorkerGoal records."""
@@ -790,6 +809,23 @@ class PostgreSQLWorkerGoalRepository:
         expected_revision: Revision,
     ) -> WorkerGoal:
         return self._delegate.replace(goal, expected_revision=expected_revision)
+
+    def list_for_responsibility(
+        self,
+        *,
+        responsibility_id: ResponsibilityId,
+    ) -> tuple[WorkerGoal, ...]:
+        with self._delegate._store.transaction() as conn:
+            rows = conn.execute(
+                """
+                SELECT record_json
+                FROM aw_worker_goals
+                WHERE record_json::json->>'responsibility_id' = %s
+                ORDER BY goal_id
+                """,
+                (responsibility_id.strip(),),
+            ).fetchall()
+        return tuple(worker_goal_from_json(row["record_json"]) for row in rows)
 
 
 class PostgreSQLWorkContinuityStateRepository:

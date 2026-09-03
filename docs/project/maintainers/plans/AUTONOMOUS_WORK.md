@@ -53,7 +53,7 @@ Delivery rule:
 | AW-1 | Core semantic contracts | **DONE** |
 | AW-2 | Durable worker state and lifecycle | **DONE** |
 | AW-3 | Principal / authority / workspace composition | **DONE** |
-| AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE) |
+| AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE) |
 | AW-5 | Worker → execution composition and budgets | NOT STARTED |
 | AW-6 | Recovery Controller and obstacle taxonomy | NOT STARTED |
 | AW-7 | Adaptive capability acquisition | NOT STARTED |
@@ -199,7 +199,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-4B |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **DONE** |
 | **Purpose** | Bounded proactive goal evaluation |
 | **Exact scope** | scheduled/cadenced goal checks, progress projection input, create/prioritize work when success criteria/SLA require action |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Reactive and proactive work |

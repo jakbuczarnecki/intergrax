@@ -26,6 +26,21 @@ from intergrax.autonomous_work.in_memory_repository import (
 )
 from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
 from intergrax.autonomous_work.persistence_provider import resolve_autonomous_work_repositories
+from intergrax.autonomous_work.goal_evaluation_ports import (
+    DeterministicThresholdGoalEvaluator,
+    GoalEvaluationCadenceResolver,
+    GoalEvaluationCadenceStateReader,
+    GoalEvaluationCadenceStateRecorder,
+    GoalProgressProjectionResolver,
+    InMemoryGoalEvaluationCadenceStateStore,
+    MappingGoalEvaluationCadenceResolver,
+    MappingGoalProgressProjectionResolver,
+    WorkerGoalEvaluator,
+)
+from intergrax.autonomous_work.goal_evaluation_service import (
+    WorkerGoalEvaluationRejected,
+    WorkerGoalEvaluationService,
+)
 from intergrax.autonomous_work.execution_authority_admission import (
     CollaborativeWorkAuthorityResolverPort,
     WorkerExecutionAdmissionService,
@@ -69,6 +84,17 @@ __all__ = (
     "AutonomousWorkRepositoryCapabilities",
     "AutonomousWorkRevisionConflict",
     "AutonomousWorkRepositories",
+    "DeterministicThresholdGoalEvaluator",
+    "GoalEvaluationCadenceResolver",
+    "GoalEvaluationCadenceStateReader",
+    "GoalEvaluationCadenceStateRecorder",
+    "GoalProgressProjectionResolver",
+    "InMemoryGoalEvaluationCadenceStateStore",
+    "MappingGoalEvaluationCadenceResolver",
+    "MappingGoalProgressProjectionResolver",
+    "WorkerGoalEvaluator",
+    "WorkerGoalEvaluationRejected",
+    "WorkerGoalEvaluationService",
     "CollaborativeWorkAuthorityResolverPort",
     "resolve_autonomous_work_repositories",
     "InMemoryResponsibilityRepository",

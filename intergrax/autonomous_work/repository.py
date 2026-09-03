@@ -171,6 +171,14 @@ class ResponsibilityRepository(Protocol):
         """Replace responsibility semantics under optimistic concurrency."""
         ...
 
+    def list_for_worker_instance(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> tuple[Responsibility, ...]:
+        """Return responsibilities owned by the worker in deterministic order."""
+        ...
+
 
 @runtime_checkable
 class WorkerGoalRepository(Protocol):
@@ -196,6 +204,14 @@ class WorkerGoalRepository(Protocol):
         expected_revision: Revision,
     ) -> WorkerGoal:
         """Replace worker goal semantics under optimistic concurrency."""
+        ...
+
+    def list_for_responsibility(
+        self,
+        *,
+        responsibility_id: ResponsibilityId,
+    ) -> tuple[WorkerGoal, ...]:
+        """Return goals for one responsibility in deterministic order."""
         ...
 
 

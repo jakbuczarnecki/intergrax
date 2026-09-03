@@ -14,6 +14,19 @@ from intergrax.contracts.autonomous_work.execution_authority import (
     WorkerExecutionAuthorityRequest,
 )
 from intergrax.contracts.autonomous_work.goal import WorkerGoal, WorkerGoalStatus
+from intergrax.contracts.autonomous_work.goal_evaluation import (
+    GoalEvaluationBatchLimit,
+    GoalEvaluationBatchResult,
+    GoalEvaluationCadencePolicy,
+    GoalEvaluationDecision,
+    GoalEvaluationDisposition,
+    GoalEvaluationReasonCode,
+    GoalProgressProjection,
+    WorkerGoalEvaluationRequest,
+    goal_evaluation_sort_key,
+    is_goal_evaluation_due,
+    is_progress_projection_stale,
+)
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
     WakeUpId,
@@ -151,6 +164,17 @@ __all__ = (
     "WorkReference",
     "WorkerDefinition",
     "WorkerDefinitionId",
+    "GoalEvaluationBatchLimit",
+    "GoalEvaluationBatchResult",
+    "GoalEvaluationCadencePolicy",
+    "GoalEvaluationDecision",
+    "GoalEvaluationDisposition",
+    "GoalEvaluationReasonCode",
+    "GoalProgressProjection",
+    "WorkerGoalEvaluationRequest",
+    "goal_evaluation_sort_key",
+    "is_goal_evaluation_due",
+    "is_progress_projection_stale",
     "WorkerGoal",
     "WorkerGoalId",
     "WorkerGoalStatus",
