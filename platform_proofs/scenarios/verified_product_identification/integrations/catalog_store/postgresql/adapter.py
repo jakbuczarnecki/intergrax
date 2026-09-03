@@ -11,6 +11,7 @@ from intergrax.integrations.providers.relational_store.postgresql.config import 
 from intergrax.integrations.providers.relational_store.postgresql.session import (
     PostgreSQLConnectionProvider,
     PostgreSQLIsolationLevel,
+    is_postgresql_undefined_table,
 )
 
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.errors import (
@@ -233,10 +234,15 @@ class PostgreSQLCatalogBootstrapAdapter:
       return ValidationReport.from_checks(checks)
 
   def read_manifest(self) -> VpiBootstrapManifest | None:
-      with self._provider.connection() as session:
-          row = session.execute(
-              "SELECT * FROM vpi_catalog_manifest WHERE manifest_id = 1"
-          ).fetchone()
+      try:
+          with self._provider.connection() as session:
+              row = session.execute(
+                  "SELECT * FROM vpi_catalog_manifest WHERE manifest_id = 1"
+              ).fetchone()
+      except Exception as exc:
+          if is_postgresql_undefined_table(exc):
+              return None
+          raise VpiBootstrapProviderError("PostgreSQL manifest read failed") from exc
       if row is None:
           return None
       return _manifest_from_row(row)

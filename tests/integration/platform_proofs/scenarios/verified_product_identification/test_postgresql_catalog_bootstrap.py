@@ -33,6 +33,16 @@ def _postgres_available() -> bool:
 
 
 @pytest.mark.skipif(not _postgres_available(), reason="PostgreSQL not configured locally")
+def test_postgresql_read_manifest_before_prepare_returns_none() -> None:
+    schema_name = f"vpi_test_{uuid.uuid4().hex[:8]}"
+    adapter = PostgreSQLCatalogBootstrapAdapter.from_env(
+        schema_name=schema_name,
+        ingestion_batch_label=BOOTSTRAP_IMPLEMENTATION_VERSION,
+    )
+    assert adapter.read_manifest() is None
+
+
+@pytest.mark.skipif(not _postgres_available(), reason="PostgreSQL not configured locally")
 def test_postgresql_catalog_bootstrap_idempotent(tmp_path: Path) -> None:
     schema_name = f"vpi_test_{uuid.uuid4().hex[:8]}"
     adapter = PostgreSQLCatalogBootstrapAdapter.from_env(

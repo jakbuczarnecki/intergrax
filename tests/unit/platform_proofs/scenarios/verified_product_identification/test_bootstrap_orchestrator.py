@@ -488,6 +488,36 @@ def test_deterministic_batching(tmp_path: Path) -> None:
     assert batches[1][1][-1].global_row_index == 3
 
 
+def test_partial_final_batch_when_max_records_not_batch_aligned(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "rows.parquet"
+    _write_tiny_parquet(dataset_path, row_count=10)
+    batches = list(
+        iter_dataset_rows(dataset_path, batch_size=4, start_row_index=0, max_records=5)
+    )
+    assert len(batches) == 2
+    assert len(batches[0][1]) == 4
+    assert len(batches[1][1]) == 1
+    assert batches[1][1][0].global_row_index == 4
+
+
+def test_resume_emits_remaining_rows_when_final_batch_is_partial(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "rows.parquet"
+    _write_tiny_parquet(dataset_path, row_count=10)
+    batches = list(
+        iter_dataset_rows(
+            dataset_path,
+            batch_size=4,
+            start_row_index=4,
+            start_batch_ordinal=1,
+            max_records=3,
+        )
+    )
+    assert len(batches) == 1
+    assert len(batches[0][1]) == 3
+    assert batches[0][1][0].global_row_index == 4
+    assert batches[0][1][-1].global_row_index == 6
+
+
 def test_checkpoint_advances_only_after_successful_batch(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     orchestrator = _orchestrator(tmp_path, catalog=catalog)
