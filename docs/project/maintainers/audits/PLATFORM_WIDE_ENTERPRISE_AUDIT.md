@@ -13,11 +13,11 @@
 
 ## 1. Executive verdict
 
-Intergrax is **one platform with many mature domain slices**, not many unrelated local systems — but it is **not yet a single converged enterprise surface**. Canonical ownership is identifiable for Integrations, execution identity, Collaborative Work, provider qualification, platform plugins, diagnostics contracts, and governed continuation. The dominant residual risk is **parallel authority models for meaningful side effects** (Collaborative Work boundary vs Nexus declarative tool policy) without a documented, fail-closed convergence rule for all production mutation paths. Secondary risks are **intentional but unresolved provider-boundary splits** (LLM/embedding/RAG vs Integrations catalog), **partial Autonomous Work implementation** ahead of product claims, and **host-adoption gaps** (LKW durable CW, diagnostics emission at some adoption boundaries).
+Intergrax is **one platform with many mature domain slices**, not many unrelated local systems — but it is **not yet a single converged enterprise surface**. Canonical ownership is identifiable for Integrations, execution identity, Collaborative Work, provider qualification, platform plugins, diagnostics contracts, and governed continuation. The dominant residual risk is **parallel authority models for meaningful side effects** (Collaborative Work boundary vs Declarative Tool Authorization at the `RuntimeToolInvoker` boundary) without a documented, fail-closed convergence rule for all production mutation paths. Secondary risks are **intentional but unresolved provider-boundary splits** (LLM/embedding/RAG vs Integrations catalog), **partial Autonomous Work implementation** ahead of product claims, and **host-adoption gaps** (LKW durable CW, diagnostics emission at some adoption boundaries).
 
 No P0 security defect was proven in audited production paths. Bounded P1/P2 findings are concrete and actionable. Several items require explicit architecture decisions before safe unification.
 
-**Master question answer:** Intergrax is **one platform** reusing shared contracts and mechanisms, with **domain-local registries where semantics differ** — not a second platform hidden in every domain. Exceptions requiring decision: LLM provider plane, functional qualification runner, vendor_knowledge sync registry, and Nexus tool side-effect governance vs External Work collaborative boundary.
+**Master question answer:** Intergrax is **one platform** reusing shared contracts and mechanisms, with **domain-local registries where semantics differ** — not a second platform hidden in every domain. Exceptions requiring decision: LLM provider plane, functional qualification runner, vendor_knowledge sync registry, and generic tool execution authorization vs External Work collaborative boundary.
 
 ---
 
@@ -144,9 +144,9 @@ Orthogonal validation layers:
 | Execution identity | `contracts/execution_identity.py` + lifecycle | `mint_*`, validators | Nexus, trace, qualification | Helpers minting run_id outside lifecycle |
 | Nexus Task | `runtime/task/task_lifecycle.py` | `Task`, `TaskState` | Harness apps | Conflation with WorkItem |
 | WorkItem (CW) | Planned MP-2+ | `contracts/collaborative_work.py` (future) | Not implemented | Nexus task_id reuse |
-| Human approval | `runtime/human/governed_continuation_*` | `GovernedContinuationRequest` | Boundary, Nexus declarative HITL | Domain approval stores |
+| Human approval | `runtime/human/governed_continuation_*` | `GovernedContinuationRequest` | Boundary, declarative tool HITL | Domain approval stores |
 | Meaningful side effects (CW) | `collaborative_work/enforcement_gate.py` | `CollaborativeWorkEnforcementRequest` | External Work boundary | Second generic approval framework |
-| Meaningful side effects (tools) | `runtime/policy/declarative_enforcer.py` + invoker | Declarative policy rules | Nexus tool path | Silent bypass when unwired |
+| Meaningful side effects (tools) | `runtime/policy/declarative_enforcer.py` + `RuntimeToolInvoker` | Declarative policy rules | Generic tool execution path | Silent bypass when unwired |
 | Collaborative authority | `collaborative_work/authority.py` | Principal, grants, delegation | CW gate | Memory as authority |
 | Diagnostics problems | `runtime/diagnostics/problem_lifecycle.py` | Problem contracts | Host export | Per-domain diagnostics DB |
 | Observability | `runtime/observability/emitter.py` | Span attributes | Wired hosts | Production Recording* silos |
@@ -201,7 +201,7 @@ Domains **reuse** platform mechanics:
 | Agent registry | `runtime/registry/agent_registry.py` | Host projection snapshots | No | Low | Keep |
 | LLM providers | `llm_adapters/llm_provider_registry.py` | Embedding registry in RAG | **Yes (intentional)** | Medium | ADR: Integrations vs LLM |
 | Policy evaluation | `runtime/policy/runtime_policy_engine.py` | `policy_engine.py`, declarative enforcer | No (layers) | Low | Document precedence |
-| Side-effect authorization | CW `enforcement_gate` + `meaningful_side_effect_authorization` | Nexus declarative + idempotency | **Parallel** | **High** | ADR: convergence |
+| Side-effect authorization | CW `enforcement_gate` + `meaningful_side_effect_authorization` | Declarative Tool Authorization + idempotency (`RuntimeToolInvoker`) | **Parallel** | **High** | ADR: convergence |
 | Qualification engines | Provider: `core/qualification/execution.py` | Functional: `functional_qualification_runner.py` | No (semantic) | Low | Guard scope |
 | Task systems | Nexus `TaskLifecycle` | Queue jobs, qualification runs, BG tasks | No (semantic) | Medium | Preserve ID namespaces |
 | Retry | `llm_adapters/_shared/retry.py` | Execution retry, vendor transport | No (layer) | Low | Keep separated |
@@ -414,7 +414,7 @@ No second generic approval framework found. Domain decision records in External 
 | Path | Authorization | Bypass? |
 |------|---------------|---------|
 | External Work adapter | `MeaningfulSideEffectAuthorizationBoundary` | No when wired |
-| Nexus tool invoker (side_effects=True) | Optional scope policy + optional declarative enforcer + idempotency | **Yes when host omits policy wiring** |
+| Generic tool execution (`RuntimeToolInvoker`, side_effects=True) | Optional scope policy + optional declarative enforcer + idempotency | **Yes when host omits policy wiring** |
 | Control plane mutations | `control_plane_mutation_authorization.py` | Gate tested |
 | CW repository writes | Authority via API caller | Domain port |
 
@@ -658,7 +658,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
   → evidence/diagnostics (secret-safe serialization)
 ```
 
-**Weakest link:** Nexus tool path when policy layers omitted (P1).
+**Weakest link:** generic tool execution path (`RuntimeToolInvoker`) when policy layers omitted (P1).
 
 ---
 
@@ -756,7 +756,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 
 ## 48. P1 findings
 
-### P1 — FINDING-PLATFORM-SE-001: Nexus tool side effects without mandatory collaborative/policy gate
+### P1 — FINDING-PLATFORM-SE-001: Generic tool execution side effects without mandatory authorization gate
 
 | Field | Detail |
 |-------|--------|
@@ -804,7 +804,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 
 **Decision record:** [`docs/project/maintainers/architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md`](../architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md)
 
-**Decision summary:** Multi-strategy, fail-closed model. Canonical invariant: **no authorization path ⇒ no meaningful side effect.** Strategy A (declarative tool policy) for generic Nexus tools; Strategy B (Collaborative Work boundary) for workspace/resource-scoped mutations and External Work. Shared coordination contract concept only — no third policy engine. Phase 1: PLATFORM-SE-FAIL-CLOSED-1 closes Nexus gap.
+**Decision summary:** Multi-strategy, fail-closed model. Canonical invariant: **no authorization path ⇒ no meaningful side effect.** Strategy A (`DECLARATIVE_TOOL_AUTHORIZATION`) for generic tool-executing hosts/runtime; Strategy B (`COLLABORATIVE_WORK_AUTHORIZATION`) for workspace/resource-scoped mutations and External Work. Shared coordination contract concept only — no third policy engine. Phase 1: PLATFORM-SE-FAIL-CLOSED-1 closes the generic tool execution authorization gap at `RuntimeToolInvoker`.
 
 **Rejected:** (a) CW-only for all effects; (b) declarative-only replacing CW; (c) optional policy behavior; (d) universal policy engine.
 

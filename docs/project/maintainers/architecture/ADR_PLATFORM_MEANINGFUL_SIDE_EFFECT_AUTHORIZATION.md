@@ -21,13 +21,13 @@
 
 Intergrax hosts multiple legitimate execution surfaces that can mutate externally relevant or authoritative business/system state:
 
-- **Nexus tool invocation** (`RuntimeToolInvoker`) — generic agent/tool operations governed by `ToolContract`, optional `ToolScopePolicy`, optional `DeclarativePolicyEnforcer`, optional declarative HITL, and optional idempotency coordination.
+- **Generic tool execution** (`RuntimeToolInvoker`, currently implemented within Execution Engine/Nexus internals at `intergrax/runtime/nexus/tools/invoker.py`) — generic agent/tool operations governed by `ToolContract`, optional `ToolScopePolicy`, optional `DeclarativePolicyEnforcer`, optional declarative HITL, and optional idempotency coordination. **Nexus is an internal execution-engine mechanism; it is not the owner of platform governance, authorization strategy, or the public authorization domain.** Implementation location does not imply architectural ownership.
 - **Collaborative Work / External Work** — workspace/tenant/principal/resource-scoped mutations governed by `MeaningfulSideEffectAuthorizationBoundary` → `CollaborativeWorkEnforcementGate`.
 - **Control-plane mutations** — bundle-backed policy evaluation via `control_plane_mutation_authorization`.
 - **Provider-backed writes** — mechanics owned by Integrations; authorization must occur above the provider boundary.
 - **Autonomous Work** — lifecycle persistence emerging; real mutations must adopt a canonical strategy when introduced.
 
-Both Nexus declarative policy and Collaborative Work authorization are mature, domain-appropriate mechanisms. The platform gap is not their coexistence but the absence of a **single invariant** guaranteeing that no meaningful side effect executes without an explicit, recognized authorization mechanism.
+Both runtime declarative tool authorization (`DECLARATIVE_TOOL_AUTHORIZATION`, owned by platform/runtime authorization and governance) and Collaborative Work authorization (`COLLABORATIVE_WORK_AUTHORIZATION`) are mature, domain-appropriate mechanisms. The platform gap is not their coexistence but the absence of a **single invariant** guaranteeing that no meaningful side effect executes without an explicit, recognized authorization mechanism.
 
 Prior art: ADR-POLICY-SIDE-EFFECT-001 established that meaningful external side effects require policy before execution for governed external work. This ADR generalizes and converges the **platform-level** rule across all mutation surfaces without merging domain policy semantics.
 
@@ -58,7 +58,15 @@ Enterprise hosts require: **no authorization path ⇒ no meaningful side effect*
 
 ## 4. Existing architectures
 
-### 4.1 Nexus declarative tool authorization (Strategy A)
+### 4.1 Declarative Tool Authorization (Strategy A)
+
+**Canonical strategy name:** `DECLARATIVE_TOOL_AUTHORIZATION`
+
+**Owned by:** platform/runtime authorization and governance (consumed by the generic execution/tool runtime).
+
+**For:** generic tool-executing runtime contexts that do not require Collaborative Work workspace/principal/delegation semantics.
+
+**Execution integration point:** `RuntimeToolInvoker` (currently under `intergrax/runtime/nexus/tools/invoker.py` within Execution Engine/Nexus internals).
 
 | Component | Role |
 |-----------|------|
@@ -81,14 +89,14 @@ Resolution: `resolve_declarative_policy_enforcer(state)` reads `policy_bundle.de
 | `MeaningfulSideEffectAuthorizationBoundary` | Fresh `evaluate()` before execute; HITL via governed continuation |
 | `GovernedContinuationGrantCoordinator` | Grant match/consume; stale grant rejection |
 
-Rich semantics: tenant, workspace, principal, membership, delegation, resource scope, authority profile. **These must not be imposed on every generic Nexus tool.**
+Rich semantics: tenant, workspace, principal, membership, delegation, resource scope, authority profile. **These must not be imposed on every generic tool.**
 
 ### 4.3 Other mutation surfaces (inventory)
 
 | Surface | Typical classification | Current authorization |
 |---------|------------------------|----------------------|
-| Nexus tool (`side_effects=False`) | READ_ONLY or INTERNAL_STATE_MUTATION | Scope policy only; no side-effect authorization required |
-| Nexus tool (`side_effects=True`) | MEANINGFUL_SIDE_EFFECT | Optional declarative enforcer — **gap when absent** |
+| Generic tool (`side_effects=False`) | READ_ONLY or INTERNAL_STATE_MUTATION | Scope policy only; no side-effect authorization required |
+| Generic tool (`side_effects=True`) | MEANINGFUL_SIDE_EFFECT | Optional declarative enforcer — **generic tool execution authorization gap when absent** |
 | External Work adapter | MEANINGFUL_SIDE_EFFECT | `MeaningfulSideEffectAuthorizationBoundary` when wired |
 | CW API / repository writes | MEANINGFUL_SIDE_EFFECT or INTERNAL_STATE_MUTATION | Caller authority + enforcement gate for governed operations |
 | Control-plane mutations | MEANINGFUL_SIDE_EFFECT | `control_plane_mutation_authorization` (bundle-backed) |
@@ -121,9 +129,35 @@ The platform adopts a **multi-strategy, fail-closed** meaningful side-effect aut
 2. **Two legitimate domain strategies** remain separate: Declarative Tool Authorization and Collaborative Work Authorization.
 3. A **minimal shared coordination contract** (`MeaningfulSideEffectAuthorization` — concept only) will coordinate strategy presence and outcomes without becoming a third policy engine.
 4. **Host/composition** selects strategy via typed DI; platform refuses meaningful effects when no strategy is active.
-5. **Phase 1 implementation** closes the Nexus gap: `side_effects=True` without recognized strategy ⇒ DENY.
+5. **Phase 1 implementation** closes the generic tool execution authorization gap (RuntimeToolInvoker fail-open path): `side_effects=True` without recognized strategy ⇒ DENY.
 
-Collaborative Work is **not** mandatory for generic tools. Declarative policy does **not** replace the CW boundary. Neither engine is merged.
+Collaborative Work is **not** mandatory for generic tools. Declarative Tool Authorization does **not** replace the CW boundary. Neither engine is merged.
+
+### Architectural ownership
+
+```text
+Platform Governance / Runtime Authorization
+        │
+        ├── DECLARATIVE_TOOL_AUTHORIZATION
+        │
+        └── COLLABORATIVE_WORK_AUTHORIZATION
+        │
+        ▼
+Authorization decision
+        │
+        ▼
+Generic execution / tool runtime
+        │
+        ▼
+Execution Engine
+        │
+        └── Nexus internal mechanics
+        │
+        ▼
+Tool / domain / provider effect
+```
+
+Collaborative Work strategy may own richer domain authorization before execution; generic tool runtime uses declarative authorization. Collaborative Work is not forced through Nexus internals for authorization. Nexus remains below generic execution/runtime ownership as internal engine implementation.
 
 ---
 
@@ -160,7 +194,7 @@ such that explicit governance is required before execution.
 
 | Signal | Meaning |
 |--------|---------|
-| `ToolContract.side_effects == True` | Nexus tool proposes meaningful side effect |
+| `ToolContract.side_effects == True` | Generic tool execution proposes meaningful side effect |
 | `MeaningfulSideEffectRequest` | CW / runtime-policy evaluation input |
 | `ControlPlaneMutationRequest` | Control-plane meaningful mutation |
 | External Work domain actions | Mapped to `MeaningfulSideEffectRequest` at boundary |
@@ -175,13 +209,19 @@ such that explicit governance is required before execution.
 
 ### Strategy A — `DECLARATIVE_TOOL_AUTHORIZATION`
 
-**For:** generic Nexus tools; non-workspace-scoped agent/tool operations.
+**Owned by:** platform/runtime authorization and governance.
 
-**Uses:** `DeclarativePolicyEnforcer`, `ToolScopePolicy` (capability, supplementary), declarative HITL, idempotency coordinator.
+**For:** generic tool execution; agent/tool runtime contexts; non-workspace-scoped operations.
+
+**Uses:** `DeclarativePolicyEnforcer`, `ToolScopePolicy` (capability, supplementary), canonical `runtime/human` HITL, idempotency coordinator.
+
+**Execution integration:** `RuntimeToolInvoker` (currently implemented within Execution Engine/Nexus internals).
 
 **Does not use:** workspace membership, delegation, CW resource profiles.
 
 ### Strategy B — `COLLABORATIVE_WORK_AUTHORIZATION`
+
+**Owned by:** platform/runtime authorization and governance.
 
 **For:** workspace/tenant/principal/resource-scoped mutations; External Work when collaboration semantics apply.
 
@@ -227,7 +267,7 @@ Protocol MeaningfulSideEffectAuthorizer:
 
 Adapters **wrap** existing mechanisms; they do not duplicate `RuntimePolicyEngine`, `CollaborativePolicyEvaluator`, `DeclarativePolicyEnforcer`, or `CollaborativeWorkAuthorityResolver`.
 
-**Dependency direction:** shared contract lives in neutral `intergrax/contracts` or `intergrax/runtime` layer. CW and Nexus depend toward it; **not on each other**.
+**Dependency direction:** shared contract lives in neutral `intergrax/contracts` or `intergrax/runtime` layer. Collaborative Work Authorization and Declarative Tool Authorization adapters depend on the neutral platform authorization contract; **not on each other**. Generic execution/tool runtime consumes the authorization decision. Nexus remains below generic execution/runtime ownership as internal engine implementation.
 
 ---
 
@@ -237,7 +277,7 @@ Adapters **wrap** existing mechanisms; they do not duplicate `RuntimePolicyEngin
 
 | Execution context | Strategy |
 |-------------------|----------|
-| Generic Nexus host / tool loop | `DECLARATIVE_TOOL_AUTHORIZATION` |
+| Generic tool-executing host/runtime | `DECLARATIVE_TOOL_AUTHORIZATION` |
 | Workspace-aware External Work | `COLLABORATIVE_WORK_AUTHORIZATION` |
 | Future Autonomous Work mutations | One of the canonical strategies — no bespoke engine |
 | Control-plane API mutations | Bundle-backed runtime policy (existing path) |
@@ -334,7 +374,7 @@ Authorization and idempotency are **separate concerns:**
 authorize → acquire/validate idempotency claim → perform effect
 ```
 
-**Current Nexus behavior** (`RuntimeToolInvoker.invoke`):
+**Current RuntimeToolInvoker behavior** (`RuntimeToolInvoker.invoke`, currently within Execution Engine/Nexus internals):
 
 1. `_prepare_invocation` — scope + declarative policy (authorization layer)
 2. `IdempotencyPreEffectCoordinator.before_external_effect` — when `side_effects=True` AND `idempotency_key` present
@@ -424,7 +464,7 @@ Use existing typed `PolicyEnforcementMode` and `ExecutionMode`; do not key off a
 
 External Work **correctly** uses `MeaningfulSideEffectAuthorizationBoundary` today. **Do not replace** with declarative tool policy.
 
-External Work retains CW authorization because business semantics include authority, resource scope, tenant/workspace context, and delegation. Generic Nexus tool path does not inherit full CW semantics.
+External Work retains CW authorization because business semantics include authority, resource scope, tenant/workspace context, and delegation. Generic tool execution does not inherit full CW semantics.
 
 ---
 
@@ -452,7 +492,7 @@ Every meaningful side-effect authorization should eventually emit common observa
 | HITL requirement | If paused |
 | deny reason | If denied |
 
-No secrets. CW and Nexus need not emit identical payload schemas immediately; define canonical projection target (Phase 4 optional).
+No secrets. Collaborative Work Authorization and Declarative Tool Authorization need not emit identical domain payload schemas immediately; define canonical projection target in platform observability (Phase 4 optional).
 
 **Authorization evidence** is distinguishable from execution result, provider qualification, functional qualification, and public proof. No universal "evidence" blob.
 
@@ -465,7 +505,7 @@ Functional qualification and proof execution are **not** authorization mechanism
 ### Phase 1 — SECURITY CLOSURE (PLATFORM-SE-FAIL-CLOSED-1)
 
 - `RuntimeToolInvoker`: when `contract.side_effects=True` and no recognized authorization strategy active ⇒ **fail closed**.
-- Initial recognized Nexus path: `DeclarativePolicyEnforcer` with `ENFORCE` mode.
+- Initial recognized Declarative Tool Authorization path: `DeclarativePolicyEnforcer` with `ENFORCE` mode at `RuntimeToolInvoker`.
 - No CW import into invoker.
 - No implicit allow.
 
@@ -562,6 +602,9 @@ Functional qualification and proof execution are **not** authorization mechanism
 | 16 | Migration has minimal Phase 1 security closure | ✓ §24 |
 | 17 | Next task clearly bounded | ✓ PLATFORM-SE-FAIL-CLOSED-1 |
 | 18 | P1 remains open until implementation | ✓ |
+| 19 | Nexus documented as internal Execution Engine implementation | ✓ R1 |
+| 20 | Nexus is not authorization/governance owner | ✓ R1 |
+| 21 | Strategy names are implementation-neutral | ✓ R1 |
 
 ---
 
