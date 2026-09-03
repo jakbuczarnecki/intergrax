@@ -145,6 +145,8 @@ Scenario: `VPI_BOOTSTRAP_*`, `VPI_EMBEDDING_*`. Platform: `INTERGRAX_POSTGRESQL_
 
 `--mode verify` defaults to 1000 records unless `VPI_BOOTSTRAP_MAX_RECORDS` overrides. Full ingest (`--mode full`) uses unlimited when max not set — deferred to next qualification task.
 
+The synchronous bootstrap path above remains the **qualification/MVP path** until task 5C2 switches ingest to consume pre-materialized embedding artifacts. See [`EMBEDDING_MATERIALIZATION_ARCHITECTURE.md`](EMBEDDING_MATERIALIZATION_ARCHITECTURE.md).
+
 ## Next step
 
-Full 3.77M ingest + reference BGE-M3 live qualification when environment supports Gate 0.
+5C2: storage bootstrap consumes embedding artifact. Full 3.77M ingest + reference BGE-M3 live qualification when environment supports Gate 0.

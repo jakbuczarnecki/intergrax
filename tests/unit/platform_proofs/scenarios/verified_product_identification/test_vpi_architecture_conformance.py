@@ -36,16 +36,20 @@ def test_application_domain_does_not_import_integrations() -> None:
 
 
 def test_orchestration_depends_only_on_ports() -> None:
-    orchestrator_path = _VPI_ROOT / "storage_bootstrap/orchestration/orchestrator.py"
-    imports = _module_imports(orchestrator_path)
-    forbidden = sorted(
-        imported
-        for imported in imports
-        if imported.startswith(
-            "platform_proofs.scenarios.verified_product_identification.integrations"
+    orchestrator_paths = [
+        _VPI_ROOT / "storage_bootstrap/orchestration/orchestrator.py",
+        _VPI_ROOT / "embedding_materialization/orchestration/orchestrator.py",
+    ]
+    for orchestrator_path in orchestrator_paths:
+        imports = _module_imports(orchestrator_path)
+        forbidden = sorted(
+            imported
+            for imported in imports
+            if imported.startswith(
+                "platform_proofs.scenarios.verified_product_identification.integrations"
+            )
         )
-    )
-    assert forbidden == []
+        assert forbidden == [], f"{orchestrator_path.name} imports integrations"
 
 
 def test_storage_bootstrap_contracts_have_no_provider_paths() -> None:
