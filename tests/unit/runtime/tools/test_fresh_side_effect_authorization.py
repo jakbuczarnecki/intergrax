@@ -18,7 +18,7 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
     DeclarativePolicyViolationError,
 )
-from intergrax.runtime.nexus.errors.meaningful_side_effect_authorization_error import (
+from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
     SideEffectAuthorizationFailureReason,
 )

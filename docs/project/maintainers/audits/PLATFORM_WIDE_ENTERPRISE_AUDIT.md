@@ -421,7 +421,7 @@ No second generic approval framework found. Domain decision records in External 
 ### P1 — FINDING-PLATFORM-SE-001 — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**
 
 - **Status:** Phase 1 fail-closed gate implemented in `RuntimeToolInvoker` (PLATFORM-SE-FAIL-CLOSED-1). Awaiting independent SHA security audit.
-- **Files:** `intergrax/runtime/nexus/tools/invoker.py`, `intergrax/runtime/policy/declarative_tool_authorization_gate.py`, `intergrax/runtime/nexus/errors/meaningful_side_effect_authorization_error.py`
+- **Files:** `intergrax/runtime/nexus/tools/invoker.py`, `intergrax/runtime/policy/declarative_tool_authorization_gate.py`, `intergrax/runtime/policy/side_effect_authorization_errors.py`
 - **Behavior (after fix):** `side_effects=True` requires `DeclarativePolicyEnforcer` in `ENFORCE` mode; absent or `AUDIT_ONLY` runtime ⇒ typed denial before executor/idempotency claim.
 - **ADR:** [`ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md`](../architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md)
 

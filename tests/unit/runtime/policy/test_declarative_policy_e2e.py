@@ -19,7 +19,7 @@ from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_te
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyViolationError,
 )
-from intergrax.runtime.nexus.errors.meaningful_side_effect_authorization_error import (
+from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
     SideEffectAuthorizationFailureReason,
 )

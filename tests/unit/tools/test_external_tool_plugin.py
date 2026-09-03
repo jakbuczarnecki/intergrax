@@ -69,7 +69,7 @@ def test_external_side_effect_plugin_requires_enforcing_authorization() -> None:
         ApplicationEnvironmentProfile,
         PolicyRulesProfile,
     )
-    from intergrax.runtime.nexus.errors.meaningful_side_effect_authorization_error import (
+    from intergrax.runtime.policy.side_effect_authorization_errors import (
         MeaningfulSideEffectAuthorizationRequiredError,
     )
     from intergrax.tools.core.contracts import ToolContract

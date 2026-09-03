@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
     from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
         IdempotencyPreEffectCoordinator,
         PreEffectClaimContext,
@@ -21,7 +22,7 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
     DeclarativePolicyViolationError,
 )
-from intergrax.runtime.nexus.errors.meaningful_side_effect_authorization_error import (
+from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
 )
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
@@ -39,6 +40,7 @@ from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_po
 from intergrax.runtime.policy.declarative_tool_authorization_gate import (
     require_meaningful_side_effect_authorization,
 )
+from intergrax.runtime.sandbox.isolation_gate import require_sandbox_isolation
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.contracts.idempotency_store import ClaimOutcome
@@ -96,11 +98,13 @@ class RuntimeToolInvoker:
         executor: ToolExecutor,
         scope_policy: Optional[ToolScopePolicy] = None,
         pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
+        sandbox_availability: Optional["SandboxAvailabilityProvider"] = None,
     ) -> None:
         self._registry = registry
         self._executor = executor
         self._scope_policy = scope_policy
         self._pre_effect_coordinator = pre_effect_coordinator
+        self._sandbox_availability = sandbox_availability
         # Shared pool for timeout-isolated tool execution; default worker count
         # preserves concurrent independent invocations (not max_workers=1).
         self._execution_pool = ThreadPoolExecutor()
@@ -259,6 +263,37 @@ class RuntimeToolInvoker:
             )
 
         contract = reg.contract
+
+        if self._sandbox_availability is not None:
+            try:
+                require_sandbox_isolation(
+                    tool_id=contract.tool_id,
+                    availability=self._sandbox_availability(),
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                )
+            except Exception as exc:
+                from intergrax.runtime.sandbox.isolation_errors import (
+                    SandboxIsolationRequiredError,
+                )
+
+                if isinstance(exc, SandboxIsolationRequiredError):
+                    try:
+                        state.trace_event(
+                            component=TraceComponent.TOOLS,
+                            step="sandbox_isolation_required",
+                            message="Sandbox isolation is required but unavailable.",
+                            level=TraceLevel.ERROR,
+                            payload=ToolInvocationErrorDiagV1(
+                                tool_id=exc.tool_id,
+                                step_id=str(request.step_id),
+                                error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                                error_message=str(exc),
+                            ),
+                        )
+                    except Exception:
+                        pass
+                raise
 
         declarative_enforcer = resolve_declarative_policy_enforcer(state)
         try:
