@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import replace
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import uuid4
 
 from intergrax.agents.agent_contract import Agent
@@ -53,6 +53,10 @@ from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RouteInfo, RuntimeRequest
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
+
+if TYPE_CHECKING:
+    from intergrax.runtime.migration.critic_shadow_adapter import CriticShadowAdapter
+    from intergrax.runtime.migration.decision_critic_parity import DecisionCriticParityObserver
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 from intergrax.runtime.task.task_metadata_bridge import execution_options_for_request
 from intergrax.runtime.human.pause import HumanPauseCoordinator
@@ -164,6 +168,8 @@ class UAEPExecutor:
         self._verify_uaep_step = verify_uaep_step
         self._decision_flow_gate = decision_flow_gate
         self._verify_uaep_step_decision = verify_uaep_step_decision
+        self._critic_parity_shadow = None
+        self._parity_observer = None
         self._context_engine = context_engine
         self._llm_adapter = llm_adapter
         if middleware is not None:
@@ -205,6 +211,16 @@ class UAEPExecutor:
         )
         self._decision_flow_gate = gate
         self._verify_uaep_step_decision = verify_uaep_step
+
+    def set_critic_parity_shadow(
+        self,
+        shadow: CriticShadowAdapter | None,
+        *,
+        observer: DecisionCriticParityObserver | None = None,
+    ) -> None:
+        """Attach observational Critic shadow for Decision parity (migration-only)."""
+        self._critic_parity_shadow = shadow
+        self._parity_observer = observer
 
     @staticmethod
     def _retention_days_from_metadata(metadata: dict[str, Any]) -> int | None:
@@ -779,6 +795,26 @@ class UAEPExecutor:
             gate,
             flow_request,
         )
+        if self._critic_parity_shadow is not None:
+            from intergrax.runtime.migration.critic_shadow_adapter import observe_uaep_step_parity
+
+            critic_context: dict[str, object] = {}
+            guardrail_scan = exec_ctx.metadata.get("guardrail_scan")
+            if isinstance(guardrail_scan, dict):
+                critic_context["guardrail_scan"] = guardrail_scan
+            await observe_uaep_step_parity(
+                shadow=self._critic_parity_shadow,
+                decision_result=flow_result,
+                execution=execution,
+                contract=contract,
+                task_id=task_id,
+                run_id=active_run_id,
+                attempt_id=active_attempt_id,
+                tenant_id=tenant_id,
+                step_id=step.step_id,
+                observer=self._parity_observer,
+                extra_context=critic_context or None,
+            )
         if flow_result.host_action is DecisionFlowHostAction.CONTINUE:
             return None
         if flow_result.host_action is DecisionFlowHostAction.PENDING_HUMAN:

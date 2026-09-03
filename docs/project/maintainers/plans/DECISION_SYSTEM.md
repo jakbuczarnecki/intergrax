@@ -211,7 +211,8 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
 | DS-MIG-01 | P0 | Wire graph/UAEP paths to Decision Lifecycle; Graph/UAEP cutover with governance/lifecycle semantic hardening complete | **Done** |
-| DS-MIG-02 | P0 | Retire `CriticOrchestrator` after pipeline parity | **Planned** |
+| DS-MIG-PARITY | P0 | Dual-run Decision/Critic observational parity qualification (`intergrax/runtime/migration/**`) | **Done** |
+| DS-MIG-02 | P0 | Retire `CriticOrchestrator` after pipeline parity | **BLOCKED — MORE EVIDENCE REQUIRED** |
 | DS-MIG-03 | P1 | Remove L2 from verification model; route HITL via Lifecycle | **Planned** |
 | DS-MIG-04 | P1 | DELETE CRITIC_VERIFICATION docs + retire `intergrax/runtime/critic/**` | **Planned** |
 | DS-MIG-05 | P2 | Update application CriticProfile/CVL references | **Planned** |
@@ -249,6 +250,24 @@ Audited against `intergrax/runtime/critic/**` and [`CRITIC_VERIFICATION.md`](../
 | `ToolRegistryCriticEvalClient` | Verification stage tool client | **REUSE** |
 
 **CRITIC_VERIFICATION docs:** **CURRENT IMPLEMENTATION SNAPSHOT** - physical **DELETE** planned in clean-cut slice ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
+
+---
+
+## Decision/Critic parity table (DS-MIG-PARITY)
+
+Migration-only observational comparison in `intergrax/runtime/migration/decision_critic_parity.py` and `critic_shadow_adapter.py`. Scheduled for deletion with legacy Critic retirement.
+
+| Legacy Critic concept | Target Decision owner | Raw parity expected? | Retirement interpretation |
+| --------------------- | --------------------- | -------------------- | ------------------------- |
+| L0 deterministic | Decision Verification — structural stage | Yes (normalized outcome) | Missing Decision capability blocks retirement |
+| L1 semantic | Decision Verification — semantic stage | Yes (normalized outcome) | Provider-unavailable classified explicitly |
+| L1 trajectory | Decision Verification — trajectory stage | Yes where configured | Architectural layer mapping only |
+| L2 human / `ESCALATE_HITL` | Decision HITL outside Verification | No (expected difference) | Does not block retirement alone |
+| `RETRY` | Execution reliability / RetryEngine | No (expected difference) | Does not block retirement |
+| `REVISE` | Decision Revision lifecycle | No when revision policy maps | Does not block retirement alone |
+| `FAIL` / `CONTINUE` | Decision resolution / host action | Yes (acceptable vs challenged) | Blocking only on capability gap |
+| `policy_bridge` | Not invoked in shadow | N/A | Observational projection only |
+| `EvaluatorLoopExecutor` | Forbidden in shadow | N/A | Revision assessed separately |
 
 ---
 

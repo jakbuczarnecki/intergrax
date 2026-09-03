@@ -107,6 +107,8 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
     from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.contracts.agent_execution_result import AgentExecutionResult
+    from intergrax.runtime.migration.critic_shadow_adapter import CriticShadowAdapter
+    from intergrax.runtime.migration.decision_critic_parity import DecisionCriticParityObserver
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedger,
@@ -390,6 +392,17 @@ class NexusLoop:
             gate,
             verify_uaep_step=verify_uaep_step,
         )
+
+    def apply_decision_critic_parity_shadow(
+        self,
+        shadow: Optional["CriticShadowAdapter"],
+        *,
+        observer: Optional["DecisionCriticParityObserver"] = None,
+    ) -> None:
+        """Attach observational Critic shadow for Decision parity qualification."""
+        self._graph_runner.critic_parity_shadow = shadow
+        self._graph_runner.parity_observer = observer
+        self._engine.uaep_executor.set_critic_parity_shadow(shadow, observer=observer)
 
     def peek_decision_flow_gate(
         self,
