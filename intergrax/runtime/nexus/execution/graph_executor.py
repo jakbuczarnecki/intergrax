@@ -106,6 +106,7 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.contracts import CriticVerdict
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.trace import CriticTraceEmitter
+    from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
     from intergrax.runtime.nexus.config import RuntimeConfig
@@ -181,6 +182,7 @@ class GraphExecutor:
         max_inflight_nodes: int | None = None,
         max_delegation_depth: int | None = None,
         critic_graph_hooks: Optional["CriticGraphHooks"] = None,
+        decision_flow_gate: Optional["DecisionFlowGate[AgentExecutionResult]"] = None,
         agent_checkpoint_store: AgentCheckpointStore | None = None,
         compensation_queue_store: CompensationQueueStore | None = None,
         idempotency_store: IdempotencyStore | None = None,
@@ -214,6 +216,7 @@ class GraphExecutor:
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
         self._critic_graph_hooks = critic_graph_hooks
+        self._decision_flow_gate = decision_flow_gate
         self._child_runner = ChildExecutionRunner[
             _GraphNodeChildRequest,
             _GraphNodeChildResult,
@@ -284,11 +287,50 @@ class GraphExecutor:
         hooks: Optional["CriticGraphHooks"],
     ) -> None:
         """Attach or clear critic graph hooks for graph execution."""
+        from intergrax.runtime.decision_flow import validate_decision_critic_authority_config
+
+        critic_config = hooks.config if hooks is not None else None
+        validate_decision_critic_authority_config(
+            decision_gate=self._decision_flow_gate,
+            verify_node_partial=critic_config.verify_node_partial if critic_config else False,
+            verify_graph_final=critic_config.verify_graph_final if critic_config else False,
+            verify_uaep_step=critic_config.verify_uaep_step if critic_config else False,
+        )
         self._critic_graph_hooks = hooks
 
     def peek_critic_graph_hooks(self) -> Optional["CriticGraphHooks"]:
         """Return wired critic graph hooks when application critic wiring is active."""
         return self._critic_graph_hooks
+
+    def apply_decision_flow_gate(
+        self,
+        gate: Optional["DecisionFlowGate[AgentExecutionResult]"],
+    ) -> None:
+        """Attach or clear the reusable Decision flow authority gate."""
+        from intergrax.runtime.decision_flow import (
+            DecisionFlowScope,
+            validate_decision_critic_authority_config,
+        )
+
+        critic_config = (
+            self._critic_graph_hooks.config if self._critic_graph_hooks is not None else None
+        )
+        validate_decision_critic_authority_config(
+            decision_gate=gate,
+            verify_node_partial=critic_config.verify_node_partial if critic_config else False,
+            verify_graph_final=critic_config.verify_graph_final if critic_config else False,
+            verify_uaep_step=critic_config.verify_uaep_step if critic_config else False,
+        )
+        self._decision_flow_gate = gate
+
+    def peek_decision_flow_gate(
+        self,
+    ) -> Optional["DecisionFlowGate[AgentExecutionResult]"]:
+        """Return wired Decision flow gate when application decision wiring is active."""
+        return self._decision_flow_gate
+
+    def _decision_authority_active(self) -> bool:
+        return self._decision_flow_gate is not None
 
     async def execute(
         self,
@@ -838,7 +880,8 @@ class GraphExecutor:
             contract = current_agent.get_contract()
             cap = node.capability or task.context.capability
             if (
-                self._critic_graph_hooks is not None
+                not self._decision_authority_active()
+                and self._critic_graph_hooks is not None
                 and self._critic_graph_hooks.verify_node_partial
             ):
                 from intergrax.runtime.critic.critic_wiring import validate_node_with_critic_detail
@@ -999,6 +1042,7 @@ class GraphExecutor:
             not validation.valid
             and last_critic_verdict is not None
             and self._critic_graph_hooks is not None
+            and not self._decision_authority_active()
             and not evaluator_loop_active
         ):
             execution, validation, retries = await self._maybe_run_evaluator_loop(

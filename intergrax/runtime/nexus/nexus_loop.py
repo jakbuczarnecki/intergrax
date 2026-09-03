@@ -105,6 +105,8 @@ from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddlewar
 if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
+    from intergrax.runtime.decision_flow import DecisionFlowGate
+    from intergrax.contracts.agent_execution_result import AgentExecutionResult
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedger,
@@ -161,6 +163,7 @@ class NexusLoop:
         evaluation_registry: OnlineEvaluationRegistry | None = None,
         run_budget: RunBudget | None = None,
         critic_graph_hooks: Optional["CriticGraphHooks"] = None,
+        decision_flow_gate: Optional["DecisionFlowGate[AgentExecutionResult]"] = None,
         emit_coordination_advisory: bool = False,
         allow_dynamic_replan: bool = False,
         denied_planner_model_ids: tuple[str, ...] = (),
@@ -264,6 +267,7 @@ class NexusLoop:
             max_inflight_nodes=max_inflight_nodes,
             max_delegation_depth=max_delegation_depth,
             critic_graph_hooks=critic_graph_hooks,
+            decision_flow_gate=decision_flow_gate,
             agent_checkpoint_store=agent_checkpoint_store,
             compensation_queue_store=compensation_queue_store,
             idempotency_store=idempotency_store,
@@ -316,6 +320,7 @@ class NexusLoop:
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             max_run_retries=max_run_retries,
             critic_graph_hooks=critic_graph_hooks,
+            decision_flow_gate=decision_flow_gate,
         )
         self._intake_runner = NexusIntakeRunner(
             hitl=self._hitl,
@@ -371,6 +376,26 @@ class NexusLoop:
     ) -> None:
         """Attach critic hooks to the UAEP executor for step-level verification."""
         self._engine.uaep_executor.set_critic_hooks(hooks, verify_uaep_step=verify_uaep_step)
+
+    def apply_decision_flow_gate(
+        self,
+        gate: Optional["DecisionFlowGate[AgentExecutionResult]"],
+        *,
+        verify_uaep_step: bool = False,
+    ) -> None:
+        """Attach Decision flow authority to graph and UAEP execution surfaces."""
+        self._graph_executor.apply_decision_flow_gate(gate)
+        self._graph_runner.decision_flow_gate = gate
+        self._engine.uaep_executor.set_decision_flow_gate(
+            gate,
+            verify_uaep_step=verify_uaep_step,
+        )
+
+    def peek_decision_flow_gate(
+        self,
+    ) -> Optional["DecisionFlowGate[AgentExecutionResult]"]:
+        """Return wired Decision flow gate when application decision wiring is active."""
+        return self._graph_executor.peek_decision_flow_gate()
 
     def critic_eval_tool_client(self) -> Optional["CriticEvalToolClient"]:
         """Return the L1 eval tool client when critic graph hooks are wired."""

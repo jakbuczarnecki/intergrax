@@ -35,6 +35,7 @@ from intergrax.runtime.nexus.retry.retry_engine import (
     _resilience_policy_from_task,
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -44,6 +45,7 @@ from intergrax.utils.time_provider import SystemTimeProvider
 if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.trace import CriticTraceEmitter
+    from intergrax.runtime.decision_flow import DecisionFlowGate
 
 FinishFn = Callable[..., Awaitable[TaskResult]]
 FinalizeFn = Callable[..., Awaitable[None]]
@@ -75,6 +77,7 @@ class NexusGraphRunner:
     maybe_checkpoint: CheckpointFn
     max_run_retries: int = 0
     critic_graph_hooks: CriticGraphHooks | None = None
+    decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
 
     async def run(
         self,
@@ -227,7 +230,54 @@ class NexusGraphRunner:
         if executions:
             final_agent = self.registry.get(executions[-1].agent_id)
             final_contract = final_agent.get_contract()
+            active_run_id, active_attempt_id = require_active_execution_identity()
             if (
+                self.decision_flow_gate is not None
+                and self.decision_flow_gate.supports_scope(DecisionFlowScope.GRAPH_FINAL)
+            ):
+                from intergrax.runtime.decision_flow_host import (
+                    agent_execution_decision_context,
+                    agent_execution_identity_seed,
+                    build_agent_execution_flow_request,
+                    decision_flow_result_to_validation_result,
+                    evaluate_agent_execution_flow,
+                )
+
+                decision_context = agent_execution_decision_context(
+                    task_id=task.task_id,
+                    run_id=active_run_id,
+                    attempt_id=active_attempt_id,
+                    tenant_id=task.tenant_id,
+                )
+                identity_seed = agent_execution_identity_seed(
+                    context=decision_context,
+                    namespace="graph.final",
+                    subject=graph.graph_id,
+                )
+                flow_request = build_agent_execution_flow_request(
+                    execution=executions[-1],
+                    identity_seed=identity_seed,
+                    flow_scope=DecisionFlowScope.GRAPH_FINAL,
+                )
+                flow_result = await evaluate_agent_execution_flow(
+                    self.decision_flow_gate,
+                    flow_request,
+                )
+                if flow_result.host_action is DecisionFlowHostAction.PENDING_HUMAN:
+                    executions[-1] = executions[-1].model_copy(
+                        update={"status": AgentExecutionStatus.NEEDS_INPUT},
+                    )
+                    return await self._handle_needs_input(
+                        task,
+                        plan=plan,
+                        graph=graph,
+                        executions=executions,
+                        retry_records=retry_records,
+                        lifecycle=lifecycle,
+                        trace_emitter=trace_emitter,
+                    )
+                final_validation = decision_flow_result_to_validation_result(flow_result)
+            elif (
                 self.critic_graph_hooks is not None
                 and self.critic_graph_hooks.verify_graph_final
             ):
