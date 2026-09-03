@@ -161,6 +161,26 @@ def validate_contract_specs_against_manifest(
             raise ValueError(msg)
 
 
+def validate_required_explicit_categories(
+    manifest: IntegrationManifest,
+    specs: Iterable[IntegrationContractSpec],
+    required_categories: frozenset[str],
+) -> None:
+    """Fail when explicit specs omit categories that require provider-owned declarations."""
+    if not required_categories:
+        return
+    slug = manifest.slug.strip().lower()
+    provided_spec_categories = {spec.category for spec in specs}
+    missing_required = required_categories - provided_spec_categories
+    if missing_required:
+        categories = ", ".join(sorted(missing_required))
+        msg = (
+            f"Integration {slug!r} is missing explicit contract_specs for typed categories: "
+            f"{categories}"
+        )
+        raise ValueError(msg)
+
+
 def validate_contract_spec_identity(
     *,
     slug: str,
@@ -194,4 +214,5 @@ __all__ = [
     "manifest_category_values",
     "validate_contract_specs_against_manifest",
     "validate_contract_spec_identity",
+    "validate_required_explicit_categories",
 ]

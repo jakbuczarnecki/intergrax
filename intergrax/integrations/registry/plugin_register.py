@@ -12,12 +12,12 @@ from intergrax.integrations.contracts.base import IntegrationEntry, IntegrationF
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.core.plugin import IntegrationPlugin, integration_manifest_for_plugin
 from intergrax.integrations.registry.catalog import register_integration
-from intergrax.integrations.providers.layout import SLUG_CATEGORY
 from intergrax.integrations.registry.contract_spec import (
     B1_TYPED_CONTRACT_CATEGORIES,
     EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS,
     manifest_category_values,
     validate_contract_specs_against_manifest,
+    validate_required_explicit_categories,
 )
 
 if TYPE_CHECKING:
@@ -28,9 +28,7 @@ def _required_explicit_categories(manifest: IntegrationManifest) -> frozenset[st
     """Categories that must supply provider-owned contract specs (fail-closed)."""
     slug = manifest.slug.strip().lower()
     manifest_categories = manifest_category_values(manifest)
-    required: set[str] = set()
-    if slug in SLUG_CATEGORY:
-        required.update(manifest_categories & B1_TYPED_CONTRACT_CATEGORIES)
+    required = set(manifest_categories & B1_TYPED_CONTRACT_CATEGORIES)
     for provider_id, category in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS:
         if provider_id == slug and category in manifest_categories:
             required.add(category)
@@ -42,13 +40,14 @@ def _resolve_contract_specs(
     explicit: Iterable[IntegrationContractSpec] | None,
 ) -> tuple[IntegrationContractSpec, ...]:
     """Resolve canonical contract specs from explicit rows or transitional built-in capture."""
+    slug = manifest.slug.strip().lower()
+    required_categories = _required_explicit_categories(manifest)
     if explicit is not None:
         specs = tuple(explicit)
         validate_contract_specs_against_manifest(manifest, specs)
+        validate_required_explicit_categories(manifest, specs, required_categories)
         return specs
 
-    slug = manifest.slug.strip().lower()
-    required_categories = _required_explicit_categories(manifest)
     if required_categories:
         categories = ", ".join(sorted(required_categories))
         msg = (

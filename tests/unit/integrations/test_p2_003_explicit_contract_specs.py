@@ -48,8 +48,9 @@ from intergrax.integrations.registry.contract_spec import (
     IntegrationContractSpec,
     declare_integration_contract,
 )
-from intergrax.integrations.registry.plugin_register import register_from_manifest
+from intergrax.integrations.registry.plugin_register import register_from_manifest, register_integration_plugin
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
+from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.contracts import PlatformIntegrationCapability, PlatformIntegrationSecurityPosture
 from intergrax.runtime.integrations.registry_v2 import build_integration_registration
@@ -268,6 +269,19 @@ def test_plugin_register_has_no_provider_module_scanning() -> None:
                 pytest.fail("plugin_register must not scan provider modules reflectively")
 
 
+def test_plugin_register_has_no_builtin_layout_dependency() -> None:
+    source = (
+        REPO_ROOT / "intergrax" / "integrations" / "registry" / "plugin_register.py"
+    ).read_text(encoding="utf-8")
+    assert "intergrax.integrations.providers.layout" not in source
+    assert "SLUG_CATEGORY" not in source
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            if node.module and "providers.layout" in node.module:
+                pytest.fail("plugin_register must not import built-in provider layout")
+
+
 def test_b1_contract_spec_modules_have_no_reflection() -> None:
     for slug, category in b1_provider_category_keys():
         path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
@@ -368,3 +382,193 @@ def test_external_fake_b1_provider_explicit_registration() -> None:
     registration = build_integration_registration("external_b1_sql")
     assert registration.category == "relational_store"
     assert registration.integration_class is _ExternalB1Integration
+
+
+def test_external_fake_b1_provider_without_explicit_specs_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError("capture_builtin_contract_specs must not run for external B1 typed provider")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    manifest = IntegrationManifest(
+        slug="external_b1_sql",
+        categories=(IntegrationCategory.RELATIONAL_STORE,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_EXTERNAL_B1_SQL",
+        description="external fake B1 provider",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def _external_b1_plugin_spec() -> IntegrationContractSpec:
+    class _ExternalB1Integration(RelationalStoreIntegrationContract):
+        pass
+
+    def _external_factory(*, enabled: bool = False) -> _ExternalB1Integration:
+        return _ExternalB1Integration.for_provider(
+            provider_id="external_b1_sql",
+            display_name="External B1 SQL",
+            config=CategoryIntegrationConfig(enabled=enabled),
+        )
+
+    return declare_integration_contract(
+        category="relational_store",
+        provider_id="external_b1_sql",
+        integration_class=_ExternalB1Integration,
+        contract_class=RelationalStoreIntegrationContract,
+        contract_factory=_external_factory,
+        display_name="External B1 SQL",
+        config_class=CategoryIntegrationConfig,
+        capabilities=(
+            PlatformIntegrationCapability.CONNECT,
+            PlatformIntegrationCapability.READ,
+            PlatformIntegrationCapability.WRITE,
+            PlatformIntegrationCapability.HEALTH_CHECK,
+        ),
+        security_posture=PlatformIntegrationSecurityPosture(),
+        supports_runtime_binding=True,
+        supports_health_check=True,
+        metadata={"source": "external_plugin_test"},
+    )
+
+
+class _ExternalB1SqlPlugin:
+    @classmethod
+    def integration_manifest(cls) -> IntegrationManifest:
+        return IntegrationManifest(
+            slug="external_b1_sql",
+            categories=(IntegrationCategory.RELATIONAL_STORE,),
+            status=IntegrationStatus.BETA,
+            env_prefix="INTERGRAX_EXTERNAL_B1_SQL",
+            description="external fake B1 provider",
+        )
+
+    @classmethod
+    def create_integration(cls, **kwargs: Any) -> Any:
+        _ = kwargs
+        return _external_b1_plugin_spec().contract_factory()
+
+
+def test_register_integration_plugin_external_b1_without_specs_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError("capture_builtin_contract_specs must not run for external B1 plugin")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_integration_plugin(_ExternalB1SqlPlugin)
+
+
+def test_register_integration_plugin_external_b1_with_explicit_spec_succeeds() -> None:
+    register_integration_plugin(_ExternalB1SqlPlugin, contract_specs=(_external_b1_plugin_spec(),))
+    registration = build_integration_registration("external_b1_sql")
+    assert registration.category == "relational_store"
+
+
+def test_multi_category_manifest_with_b1_category_without_specs_fails() -> None:
+    manifest = IntegrationManifest(
+        slug="multi_category_b1",
+        categories=(IntegrationCategory.RELATIONAL_STORE, IntegrationCategory.ISSUE_TRACKER),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_MULTI_CATEGORY_B1",
+        description="multi-category manifest",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def test_partial_explicit_specs_missing_required_b1_category_fails() -> None:
+    class _IssueTrackerIntegration(IssueTrackerIntegrationContract):
+        pass
+
+    def _issue_factory(*, enabled: bool = False) -> _IssueTrackerIntegration:
+        return _IssueTrackerIntegration.for_provider(
+            provider_id="multi_category_b1",
+            display_name="Issue Tracker",
+            config=CategoryIntegrationConfig(enabled=enabled),
+        )
+
+    issue_spec = declare_integration_contract(
+        category="issue_tracker",
+        provider_id="multi_category_b1",
+        integration_class=_IssueTrackerIntegration,
+        contract_class=IssueTrackerIntegrationContract,
+        contract_factory=_issue_factory,
+        display_name="Issue Tracker",
+        config_class=CategoryIntegrationConfig,
+        capabilities=(
+            PlatformIntegrationCapability.CONNECT,
+            PlatformIntegrationCapability.READ,
+            PlatformIntegrationCapability.WRITE,
+            PlatformIntegrationCapability.HEALTH_CHECK,
+        ),
+        security_posture=PlatformIntegrationSecurityPosture(),
+    )
+    manifest = IntegrationManifest(
+        slug="multi_category_b1",
+        categories=(IntegrationCategory.RELATIONAL_STORE, IntegrationCategory.ISSUE_TRACKER),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_MULTI_CATEGORY_B1",
+        description="multi-category manifest",
+    )
+    with pytest.raises(ValueError, match="is missing explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {}, contract_specs=(issue_spec,))
+
+
+def test_explicit_spec_covering_required_b1_category_succeeds() -> None:
+    class _MultiCategoryRelationalIntegration(RelationalStoreIntegrationContract):
+        pass
+
+    def _relational_factory(*, enabled: bool = False) -> _MultiCategoryRelationalIntegration:
+        return _MultiCategoryRelationalIntegration.for_provider(
+            provider_id="multi_category_b1",
+            display_name="Multi Category B1",
+            config=CategoryIntegrationConfig(enabled=enabled),
+        )
+
+    relational_spec = declare_integration_contract(
+        category="relational_store",
+        provider_id="multi_category_b1",
+        integration_class=_MultiCategoryRelationalIntegration,
+        contract_class=RelationalStoreIntegrationContract,
+        contract_factory=_relational_factory,
+        display_name="Multi Category B1",
+        config_class=CategoryIntegrationConfig,
+        capabilities=(
+            PlatformIntegrationCapability.CONNECT,
+            PlatformIntegrationCapability.READ,
+            PlatformIntegrationCapability.WRITE,
+            PlatformIntegrationCapability.HEALTH_CHECK,
+        ),
+        security_posture=PlatformIntegrationSecurityPosture(),
+        supports_runtime_binding=True,
+        supports_health_check=True,
+        metadata={"source": "test"},
+    )
+    manifest = IntegrationManifest(
+        slug="multi_category_b1",
+        categories=(IntegrationCategory.RELATIONAL_STORE, IntegrationCategory.ISSUE_TRACKER),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_MULTI_CATEGORY_B1",
+        description="multi-category manifest",
+    )
+    register_from_manifest(
+        manifest,
+        lambda **_: {},
+        contract_specs=(relational_spec,),
+    )
+    entry = get_entry("multi_category_b1")
+    assert any(spec.category == "relational_store" for spec in entry.contract_specs)
+
+
+def test_non_b1_reflective_builtin_registration_remains_unchanged() -> None:
+    from intergrax.integrations.providers.issue_tracker.github.register import register_github_integration
+
+    register_github_integration()
+    entry = get_entry("github")
+    assert entry.contract_specs
+    assert entry.contract_specs[0].category == "issue_tracker"
+    assert entry.contract_specs[0].metadata.get("source") == "builtin_provider_package"
