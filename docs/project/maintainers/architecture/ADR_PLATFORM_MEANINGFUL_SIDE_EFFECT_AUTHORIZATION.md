@@ -2,18 +2,18 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **Accepted (architecture only)** — implementation pending |
+| **Status** | **Phase 1 implemented** — PLATFORM-SE-FAIL-CLOSED-1 (pending independent SHA audit) |
 | **Date** | 2026-09-03 |
 | **Audit** | PLATFORM-ENTERPRISE-AUDIT-1 · FINDING-PLATFORM-SE-001 |
 | **Baseline ancestor** | `b4b79779e1bd25125d93bb6462456337e8cad94c` |
 | **Related ADRs** | ADR-POLICY-SIDE-EFFECT-001 · ADR-PLATFORM-PLUGIN-001 · ADR-GOVERNED-CONTINUATION-001 · ADR-MP-001 |
-| **Next implementation** | PLATFORM-SE-FAIL-CLOSED-1 |
+| **Phase 1 implementation** | **PLATFORM-SE-FAIL-CLOSED-1** (implemented; independent audit pending) |
 
 ---
 
 ## 1. Status
 
-**Accepted (architecture only).** This ADR defines the canonical platform rule for meaningful side-effect authorization convergence. **No production behavior changes** are included in this decision record. **P1 FINDING-PLATFORM-SE-001 remains OPEN** until PLATFORM-SE-FAIL-CLOSED-1 is implemented and verified.
+**Phase 1 implemented (PLATFORM-SE-FAIL-CLOSED-1).** `RuntimeToolInvoker` now fails closed for `ToolContract.side_effects=True` without recognized enforcing declarative authorization (`DeclarativePolicyEnforcer` in `ENFORCE` mode). **P1 FINDING-PLATFORM-SE-001 is IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** until an independent SHA security audit confirms closure.
 
 ---
 
@@ -502,12 +502,13 @@ Functional qualification and proof execution are **not** authorization mechanism
 
 ## 24. Migration plan
 
-### Phase 1 — SECURITY CLOSURE (PLATFORM-SE-FAIL-CLOSED-1)
+### Phase 1 — SECURITY CLOSURE (PLATFORM-SE-FAIL-CLOSED-1) — **IMPLEMENTED**
 
-- `RuntimeToolInvoker`: when `contract.side_effects=True` and no recognized authorization strategy active ⇒ **fail closed**.
+- `RuntimeToolInvoker`: when `contract.side_effects=True` and no recognized authorization strategy active ⇒ **fail closed**. **Shipped.**
 - Initial recognized Declarative Tool Authorization path: `DeclarativePolicyEnforcer` with `ENFORCE` mode at `RuntimeToolInvoker`.
 - No CW import into invoker.
 - No implicit allow.
+- **Independent SHA audit:** pending before P1 formal closure.
 
 ### Phase 2 — EXPLICIT TYPED STRATEGY
 

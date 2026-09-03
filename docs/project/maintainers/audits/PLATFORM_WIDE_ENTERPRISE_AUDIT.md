@@ -418,15 +418,12 @@ No second generic approval framework found. Domain decision records in External 
 | Control plane mutations | `control_plane_mutation_authorization.py` | Gate tested |
 | CW repository writes | Authority via API caller | Domain port |
 
-### P1 — FINDING-PLATFORM-SE-001
+### P1 — FINDING-PLATFORM-SE-001 — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**
 
-- **Files:** `intergrax/runtime/nexus/tools/invoker.py` (`_prepare_invocation`, lines ~196–276)
-- **Behavior:** `declarative_enforcer = resolve_declarative_policy_enforcer(state)` — if `None`, declarative policy skipped. `scope_policy` also optional. Tools with `side_effects=True` can execute without `MeaningfulSideEffectAuthorizationBoundary`.
-- **Why it matters:** Enterprise requires fail-closed meaningful mutation governance for all surfaces.
-- **Scenario:** Host wires tools without policy bundle; agent invokes workspace/git/issue tools with external mutations.
-- **Reuse:** `MeaningfulSideEffectAuthorizationBoundary` or mandatory declarative enforcer for `side_effects=True`.
-- **Correction:** Architecture decision then narrow gate: fail closed when `contract.side_effects` and no enforcer/boundary.
-- **ADR:** **DECIDED** — [`ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md`](../architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md) (implementation pending; P1 remains OPEN).
+- **Status:** Phase 1 fail-closed gate implemented in `RuntimeToolInvoker` (PLATFORM-SE-FAIL-CLOSED-1). Awaiting independent SHA security audit.
+- **Files:** `intergrax/runtime/nexus/tools/invoker.py`, `intergrax/runtime/policy/declarative_tool_authorization_gate.py`, `intergrax/runtime/nexus/errors/meaningful_side_effect_authorization_error.py`
+- **Behavior (after fix):** `side_effects=True` requires `DeclarativePolicyEnforcer` in `ENFORCE` mode; absent or `AUDIT_ONLY` runtime ⇒ typed denial before executor/idempotency claim.
+- **ADR:** [`ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md`](../architecture/ADR_PLATFORM_MEANINGFUL_SIDE_EFFECT_AUTHORIZATION.md)
 
 ---
 
@@ -808,7 +805,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 
 **Rejected:** (a) CW-only for all effects; (b) declarative-only replacing CW; (c) optional policy behavior; (d) universal policy engine.
 
-**P1 FINDING-PLATFORM-SE-001 remains OPEN** until PLATFORM-SE-FAIL-CLOSED-1 ships.
+**P1 FINDING-PLATFORM-SE-001: IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** (PLATFORM-SE-FAIL-CLOSED-1 shipped; independent SHA audit pending).
 
 ### ADR-PLATFORM-LLM-INTEGRATIONS
 

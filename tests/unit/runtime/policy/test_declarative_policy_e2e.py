@@ -19,6 +19,10 @@ from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_te
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyViolationError,
 )
+from intergrax.runtime.nexus.errors.meaningful_side_effect_authorization_error import (
+    MeaningfulSideEffectAuthorizationRequiredError,
+    SideEffectAuthorizationFailureReason,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from testing_support.builder import (
     build_runtime_state_for_tests,
@@ -130,7 +134,7 @@ def _build_state(bundle: object) -> tuple[object, RuntimeToolInvoker, _CountingE
 
 
 def test_invoker_fails_before_handler_without_execution_identity() -> None:
-    """Meaningful policy trace requires canonical execution identity before handler."""
+    """Audit-only declarative runtime does not authorize meaningful side effects."""
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.identity")
     env.policy_rules = _deny_profile(mode="audit_only")
     bundle = wire_policy_bundle(env)
@@ -141,8 +145,9 @@ def test_invoker_fails_before_handler_without_execution_identity() -> None:
         step_id="1",
         input=_Input(value=99),
     )
-    with pytest.raises(RuntimeError, match="active execution identity required"):
+    with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError) as exc:
         invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    assert exc.value.reason is SideEffectAuthorizationFailureReason.NON_ENFORCING_MODE
     assert executor.calls == 0
 
 
@@ -171,7 +176,7 @@ def test_enforce_deny_blocks_tool_invocation() -> None:
     assert payload.enforced is True
 
 
-def test_audit_only_permits_but_records_deny() -> None:
+def test_audit_only_denies_side_effect_tool() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.audit")
     env.policy_rules = _deny_profile(mode="audit_only")
     bundle = wire_policy_bundle(env)
@@ -185,15 +190,11 @@ def test_audit_only_permits_but_records_deny() -> None:
     )
 
     with canonical_execution_identity_scope(state.run_id):
-        result = invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError) as exc:
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
-    assert result.success is True
-    assert executor.calls == 1
-    trace = next(e for e in state.trace_events if e.step == "declarative_policy_evaluation")
-    payload = trace.payload
-    assert payload.would_deny is True
-    assert payload.enforced is False
-    assert "audit_only_bypass" in payload.reasons
+    assert exc.value.reason is SideEffectAuthorizationFailureReason.NON_ENFORCING_MODE
+    assert executor.calls == 0
 
 
 def test_unknown_handler_enforce_denies_without_side_effect() -> None:

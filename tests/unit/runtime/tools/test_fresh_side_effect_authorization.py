@@ -18,6 +18,10 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
     DeclarativePolicyViolationError,
 )
+from intergrax.runtime.nexus.errors.meaningful_side_effect_authorization_error import (
+    MeaningfulSideEffectAuthorizationRequiredError,
+    SideEffectAuthorizationFailureReason,
+)
 from intergrax.runtime.nexus.errors.tool_scope_violation_error import ToolScopeViolationError
 from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     DeclarativeHitlScopeAssignmentState,
@@ -179,6 +183,18 @@ class GovernanceDummyState:
     def trace_event(self, *args: object, **kwargs: object) -> None:
         if self._order is not None and kwargs.get("step") == "declarative_policy_evaluation":
             self._order.record("declarative_policy_authorization")
+        if (
+            self._order is not None
+            and kwargs.get("step") == "meaningful_side_effect_authorization_required"
+        ):
+            self._order.record("meaningful_side_effect_authorization_required")
+
+
+class TraceFailAuthState(GovernanceDummyState):
+    def trace_event(self, *args: object, **kwargs: object) -> None:
+        if kwargs.get("step") == "meaningful_side_effect_authorization_required":
+            raise RuntimeError("trace emission failed")
+        super().trace_event(*args, **kwargs)
 
 
 def _register_side_effect_tool(
@@ -195,6 +211,39 @@ def _register_side_effect_tool(
             output_schema=ValueOutput,
             error_mapping={},
             side_effects=True,
+        ),
+        handler=DummyHandler(),
+    )
+
+
+def _enforce_allow_bundle() -> object:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="p0.allow")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    return wire_policy_bundle(env)
+
+
+def _audit_only_bundle() -> object:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="p0.audit")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="audit_only",
+    )
+    return wire_policy_bundle(env)
+
+
+def _register_read_only_tool(registry: ToolRegistry, *, tool_id: str = "p0.read_only") -> None:
+    registry.register(
+        contract=ToolContract(
+            tool_id=tool_id,
+            name=tool_id,
+            description=tool_id,
+            input_schema=ValueInput,
+            output_schema=ValueOutput,
+            error_mapping={},
+            side_effects=False,
         ),
         handler=DummyHandler(),
     )
@@ -277,6 +326,7 @@ def test_scope_denied_before_replay_blocks_not_replays() -> None:
     coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
     invoker = _invoker(executor, scope_policy=scope, coordinator=coordinator)
     state = GovernanceDummyState()
+    state.context.config.policy_bundle = _enforce_allow_bundle()
     request = _request(key="scope-replay-key")
 
     first = invoker.invoke(state=state, agent_id="agent-a", request=request)
@@ -484,3 +534,218 @@ def test_pre_effect_gate_ordering_is_authorization_before_idempotency_before_han
         "idempotency_before_external_effect",
         "handler_execution",
     ]
+
+
+@pytest.mark.parametrize(
+    ("matrix_id", "test_name"),
+    [
+        ("A", "read_only_without_policy_allowed"),
+        ("B", "side_effect_without_policy_denied"),
+        ("C", "scope_allow_without_declarative_auth_denied"),
+        ("D", "enforce_allow_permitted"),
+        ("E", "enforce_deny_blocked"),
+        ("F", "enforce_hitl_required"),
+        ("G", "valid_hitl_grant_permitted"),
+        ("H", "audit_only_denied"),
+        ("I", "idempotency_key_denied_before_claim"),
+        ("J", "external_plugin_without_auth_denied"),
+        ("K", "external_plugin_with_auth_permitted"),
+        ("L", "trace_failure_still_denied"),
+    ],
+)
+def test_security_matrix_platform_se_fail_closed_1(
+    matrix_id: str,
+    test_name: str,
+) -> None:
+    del test_name
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    recording_coordinator = RecordingPreEffectCoordinator(
+        order=GateOrderLog(),
+        inner=coordinator,
+    )
+
+    if matrix_id == "A":
+        registry = ToolRegistry()
+        _register_read_only_tool(registry)
+        invoker = RuntimeToolInvoker(registry=registry, executor=executor)
+        state = GovernanceDummyState()
+        result = invoker.invoke(
+            state=state,
+            agent_id="agent-a",
+            request=ToolExecutionRequest(
+                run_id=_RUN_ID,
+                step_id="step1",
+                tool_id="p0.read_only",
+                input=ValueInput(value=1),
+            ),
+        )
+        assert result.success
+        assert executor.calls == 1
+        return
+
+    if matrix_id == "B":
+        invoker = _invoker(executor, coordinator=coordinator)
+        state = GovernanceDummyState()
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError) as exc:
+            invoker.invoke(state=state, agent_id="agent-a", request=_request(key="matrix-b"))
+        assert exc.value.reason is SideEffectAuthorizationFailureReason.NOT_CONFIGURED
+        assert executor.calls == 0
+        return
+
+    if matrix_id == "C":
+        scope = MutableScopePolicy(allowed=True)
+        invoker = _invoker(executor, scope_policy=scope, coordinator=coordinator)
+        state = GovernanceDummyState()
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError):
+            invoker.invoke(state=state, agent_id="agent-a", request=_request(key="matrix-c"))
+        assert executor.calls == 0
+        return
+
+    if matrix_id == "D":
+        invoker = _invoker(executor, coordinator=coordinator)
+        state = GovernanceDummyState()
+        state.context.config.policy_bundle = _enforce_allow_bundle()
+        result = invoker.invoke(state=state, agent_id="agent-a", request=_request(key="matrix-d"))
+        assert result.success
+        assert executor.calls == 1
+        return
+
+    if matrix_id == "E":
+        invoker = _invoker(executor, coordinator=coordinator)
+        state = GovernanceDummyState()
+        state.context.config.policy_bundle = _policy_bundle(action="deny")
+        with pytest.raises(DeclarativePolicyViolationError):
+            invoker.invoke(state=state, agent_id="agent-a", request=_request(key="matrix-e"))
+        assert executor.calls == 0
+        return
+
+    if matrix_id == "F":
+        invoker = _invoker(executor, coordinator=coordinator)
+        state = GovernanceDummyState()
+        state.context.config.policy_bundle = _policy_bundle(action="require_hitl")
+        with pytest.raises(DeclarativePolicyHitlRequiredError):
+            invoker.invoke(state=state, agent_id="agent-a", request=_request(key="matrix-f"))
+        assert executor.calls == 0
+        return
+
+    if matrix_id == "G":
+        invoker = _invoker(executor, coordinator=coordinator)
+        state = GovernanceDummyState()
+        hitl_bundle = _policy_bundle(action="require_hitl")
+        state.context.config.policy_bundle = hitl_bundle
+        base_request = _request(key="matrix-g")
+        with pytest.raises(DeclarativePolicyHitlRequiredError):
+            invoker.invoke(state=state, agent_id="agent-a", request=base_request)
+        state.declarative_hitl_grant = _hitl_grant(bundle=hitl_bundle, key="matrix-g")
+        scoped_request = maybe_assign_declarative_hitl_scope(
+            base_request,
+            state=state,
+            assignment_state=DeclarativeHitlScopeAssignmentState(),
+            unique_candidate=UniqueDeclarativeHitlCandidate(candidate_index=0),
+            request_index=0,
+        )
+        result = invoker.invoke(state=state, agent_id="agent-a", request=scoped_request)
+        assert result.success
+        assert executor.calls == 1
+        return
+
+    if matrix_id == "H":
+        invoker = _invoker(executor, coordinator=coordinator)
+        state = GovernanceDummyState()
+        state.context.config.policy_bundle = _audit_only_bundle()
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError) as exc:
+            invoker.invoke(state=state, agent_id="agent-a", request=_request(key="matrix-h"))
+        assert exc.value.reason is SideEffectAuthorizationFailureReason.NON_ENFORCING_MODE
+        assert executor.calls == 0
+        return
+
+    if matrix_id == "I":
+        invoker = _invoker(executor, coordinator=recording_coordinator)
+        state = GovernanceDummyState()
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError):
+            invoker.invoke(state=state, agent_id="agent-a", request=_request(key="matrix-i"))
+        assert executor.calls == 0
+        assert recording_coordinator._order.events == []
+        assert store.get_status("tenant_test", "matrix-i") is None
+        return
+
+    if matrix_id == "J":
+        registry = ToolRegistry()
+        registry.register(
+            contract=ToolContract(
+                tool_id=_PLUGIN_TOOL_ID,
+                name=_PLUGIN_TOOL_ID,
+                description="plugin tool",
+                input_schema=ValueInput,
+                output_schema=ValueOutput,
+                error_mapping={},
+                side_effects=True,
+            ),
+            handler=PluginHandler(),
+        )
+        invoker = RuntimeToolInvoker(
+            registry=registry,
+            executor=executor,
+            pre_effect_coordinator=coordinator,
+        )
+        state = GovernanceDummyState()
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError):
+            invoker.invoke(
+                state=state,
+                agent_id="agent-a",
+                request=_request(tool_id=_PLUGIN_TOOL_ID, key="matrix-j"),
+            )
+        assert executor.calls == 0
+        return
+
+    if matrix_id == "K":
+        registry = ToolRegistry()
+        registry.register(
+            contract=ToolContract(
+                tool_id=_PLUGIN_TOOL_ID,
+                name=_PLUGIN_TOOL_ID,
+                description="plugin tool",
+                input_schema=ValueInput,
+                output_schema=ValueOutput,
+                error_mapping={},
+                side_effects=True,
+            ),
+            handler=PluginHandler(),
+        )
+        invoker = RuntimeToolInvoker(
+            registry=registry,
+            executor=executor,
+            pre_effect_coordinator=coordinator,
+        )
+        state = GovernanceDummyState()
+        state.context.config.policy_bundle = _enforce_allow_bundle()
+        result = invoker.invoke(
+            state=state,
+            agent_id="agent-a",
+            request=_request(tool_id=_PLUGIN_TOOL_ID, key="matrix-k"),
+        )
+        assert result.success
+        assert executor.calls == 1
+        return
+
+    if matrix_id == "L":
+        invoker = _invoker(executor, coordinator=coordinator)
+        state = TraceFailAuthState()
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError):
+            invoker.invoke(state=state, agent_id="agent-a", request=_request(key="matrix-l"))
+        assert executor.calls == 0
+        return
+
+    raise AssertionError(f"Unhandled matrix case: {matrix_id}")
+
+
+def test_runtime_tool_invoker_fail_closed_architecture_gate() -> None:
+    """Durable regression: side_effects=True cannot execute without ENFORCE declarative auth."""
+    executor = CountingExecutor()
+    invoker = _invoker(executor)
+    state = GovernanceDummyState()
+    with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError):
+        invoker.invoke(state=state, agent_id="agent-a", request=_request(key="arch-gate"))
+    assert executor.calls == 0

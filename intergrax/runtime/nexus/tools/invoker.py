@@ -21,6 +21,9 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
     DeclarativePolicyViolationError,
 )
+from intergrax.runtime.nexus.errors.meaningful_side_effect_authorization_error import (
+    MeaningfulSideEffectAuthorizationRequiredError,
+)
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
 from intergrax.runtime.observability.modality_tool_trace import (
@@ -28,8 +31,14 @@ from intergrax.runtime.observability.modality_tool_trace import (
     modality_metrics_dict,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from intergrax.runtime.policy.policy_trace_diagnostics import DeclarativePolicyEvaluationDiagV1
+from intergrax.runtime.policy.policy_trace_diagnostics import (
+    DeclarativePolicyEvaluationDiagV1,
+    MeaningfulSideEffectAuthorizationRequiredDiagV1,
+)
 from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_policy_enforcer
+from intergrax.runtime.policy.declarative_tool_authorization_gate import (
+    require_meaningful_side_effect_authorization,
+)
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.contracts.idempotency_store import ClaimOutcome
@@ -226,7 +235,58 @@ class RuntimeToolInvoker:
                     tool_id=request.tool_id,
                 )
 
+        # 1) registry check + contract bind
+        try:
+            reg = self._registry.get(request.tool_id)
+        except KeyError as exc:
+            msg = str(exc)
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="tool_invocation_error",
+                message="Tool not registered.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.TOOL_ERROR,
+                    error_message=msg,
+                ),
+            )
+            return ToolExecutionResult.fail(
+                RuntimeErrorCode.TOOL_ERROR,
+                msg,
+                effect_certainty=ToolEffectCertainty.NOT_STARTED,
+            )
+
+        contract = reg.contract
+
         declarative_enforcer = resolve_declarative_policy_enforcer(state)
+        try:
+            require_meaningful_side_effect_authorization(
+                contract=contract,
+                enforcer=declarative_enforcer,
+                run_id=state.run_id,
+                agent_id=agent_id,
+            )
+        except MeaningfulSideEffectAuthorizationRequiredError as exc:
+            try:
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="meaningful_side_effect_authorization_required",
+                    message="Meaningful side-effect authorization is required.",
+                    level=TraceLevel.ERROR,
+                    payload=MeaningfulSideEffectAuthorizationRequiredDiagV1(
+                        tool_id=exc.tool_id,
+                        agent_id=exc.agent_id,
+                        run_id=exc.run_id,
+                        reason=exc.reason.value,
+                    ),
+                )
+            except Exception:
+                # Observability-only: authorization denial is authoritative.
+                pass
+            raise
+
         if declarative_enforcer is not None:
             task_id = state.task_id
             policy_context = PolicyEvaluationContext(
@@ -274,31 +334,6 @@ class RuntimeToolInvoker:
                     matched_rule_ids=decision.matched_rule_ids,
                     reasons=decision.reasons,
                 )
-
-        # 1) registry check + contract bind
-        try:
-            reg = self._registry.get(request.tool_id)
-        except KeyError as exc:
-            msg = str(exc)
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="tool_invocation_error",
-                message="Tool not registered.",
-                level=TraceLevel.ERROR,
-                payload=ToolInvocationErrorDiagV1(
-                    tool_id=request.tool_id,
-                    step_id=str(request.step_id),
-                    error_code=RuntimeErrorCode.TOOL_ERROR,
-                    error_message=msg,
-                ),
-            )
-            return ToolExecutionResult.fail(
-                RuntimeErrorCode.TOOL_ERROR,
-                msg,
-                effect_certainty=ToolEffectCertainty.NOT_STARTED,
-            )
-
-        contract = reg.contract
 
         # 2) input type enforcement
         if not isinstance(request.input, contract.input_schema):
