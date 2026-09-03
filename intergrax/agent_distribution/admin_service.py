@@ -80,10 +80,14 @@ from intergrax.agent_distribution.effective_roster import (
     EffectiveRosterBuilder,
     InstalledAgentRequirementSetBuilder,
 )
+from intergrax.agent_distribution.effective_roster_authority import (
+    EffectiveRosterAuthorityService,
+)
 from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
     BindingRevisionConflict,
-    EffectiveRosterSnapshotConflict,
+    EffectiveRosterAuthorityConflict,
+    EffectiveRosterAuthorityNotFound,
     InstallationSlotConflict,
     MaterializationInputConflict,
     RuntimeActivationConflict,
@@ -219,6 +223,7 @@ class AgentPlatformAdminService:
         lock_store: MaterializedRuntimeLockStore,
         materialization_store: RuntimeMaterializationStore,
         effective_roster_snapshot_store: EffectiveRosterSnapshotStore,
+        effective_roster_authority: EffectiveRosterAuthorityService,
         artifact_metadata_store: AgentArtifactMetadataStore,
         installation_service: InstallationService,
         binding_service: BindingService,
@@ -246,6 +251,7 @@ class AgentPlatformAdminService:
         self._lock_store = lock_store
         self._materialization_store = materialization_store
         self._effective_roster_snapshot_store = effective_roster_snapshot_store
+        self._effective_roster_authority = effective_roster_authority
         self._artifact_metadata_store = artifact_metadata_store
         self._installation_service = installation_service
         self._binding_service = binding_service
@@ -1629,53 +1635,18 @@ class AgentPlatformAdminService:
         self,
         revision: RuntimeRevision,
     ) -> EffectiveRoster:
-        roster_revision_id = revision.effective_roster_revision_id
-        snapshot = self._effective_roster_snapshot_store.get_by_revision(
-            roster_revision_id
-        )
-        if snapshot is None:
+        try:
+            return self._effective_roster_authority.require_for_revision(revision)
+        except EffectiveRosterAuthorityNotFound as exc:
             raise AgentPlatformAdminBlockedError(
                 "AP-11_BLOCKED_BY_MISSING_EFFECTIVE_ROSTER_SNAPSHOT",
-                "runtime revision lacks canonical effective roster snapshot authority",
-            )
-        try:
-            self._validate_effective_roster_snapshot_matches_revision(
-                snapshot,
-                revision,
-            )
-        except EffectiveRosterSnapshotConflict as exc:
+                str(exc),
+            ) from exc
+        except EffectiveRosterAuthorityConflict as exc:
             raise AgentPlatformAdminBlockedError(
                 "AP-11_BLOCKED_BY_EFFECTIVE_ROSTER_SNAPSHOT_AUTHORITY",
                 str(exc),
             ) from exc
-        return snapshot
-
-    @staticmethod
-    def _validate_effective_roster_snapshot_matches_revision(
-        snapshot: EffectiveRoster,
-        revision: RuntimeRevision,
-    ) -> None:
-        roster_revision_id = revision.effective_roster_revision_id
-        if snapshot.effective_roster_revision_id != roster_revision_id:
-            raise EffectiveRosterSnapshotConflict(
-                "effective roster snapshot revision id mismatch"
-            )
-        if snapshot.compute_revision_id() != roster_revision_id:
-            raise EffectiveRosterSnapshotConflict(
-                "effective roster snapshot content identity mismatch"
-            )
-        if snapshot.application_id != revision.application_id:
-            raise EffectiveRosterSnapshotConflict(
-                "effective roster snapshot application id mismatch"
-            )
-        if snapshot.application_environment_id != revision.application_environment_id:
-            raise EffectiveRosterSnapshotConflict(
-                "effective roster snapshot application environment id mismatch"
-            )
-        if snapshot.manifest_release_id != revision.application_release_id:
-            raise EffectiveRosterSnapshotConflict(
-                "effective roster snapshot manifest release id mismatch"
-            )
 
     def _replay_existing_build(self, existing: RuntimeRevision) -> BuildRevisionResult:
         materialization = self._materialization_store.get_by_revision(

@@ -169,6 +169,36 @@ def test_production_runtime_effective_roster_snapshot_store_shares_distribution_
         runtime.stores.materialization_store.state  # type: ignore[attr-defined]
         is runtime.distribution_state
     )
+    roster = EffectiveRoster(
+        application_id="app-a",
+        application_environment_id="prod",
+        manifest_release_id="rel-1",
+        entries=(),
+    ).with_revision_id()
+    runtime.stores.effective_roster_snapshot_store.persist(roster)
+    revision_id = roster.effective_roster_revision_id
+    assert revision_id is not None
+    from intergrax.agent_distribution.runtime_revision import (
+        MaterializationTopology,
+        RuntimeRevision,
+        RuntimeRevisionState,
+    )
+
+    revision = RuntimeRevision(
+        runtime_revision_id="rev-phase4c-composition",
+        application_id="app-a",
+        application_environment_id="prod",
+        application_release_id="rel-1",
+        platform_version="0.1.0",
+        effective_roster_revision_id=revision_id,
+        materialized_runtime_lock_id="lock-1",
+        materialized_runtime_lock_digest="lock-digest",
+        runtime_graph_digest="graph-digest",
+        materialization_artifact_digest="artifact-digest",
+        materialization_topology=MaterializationTopology.OCI_IMAGE,
+        revision_state=RuntimeRevisionState.VALIDATED,
+    )
+    assert runtime.effective_roster_authority.require_for_revision(revision) == roster
 
     roster = EffectiveRoster(
         application_id="app-a",

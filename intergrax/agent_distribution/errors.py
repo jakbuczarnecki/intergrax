@@ -74,6 +74,18 @@ class EffectiveRosterSnapshotConflict(AgentDistributionError):
     """Immutable effective roster snapshot authority conflict for one revision."""
 
 
+class EffectiveRosterAuthorityError(AgentDistributionError):
+    """Effective roster historical authority resolution failure."""
+
+
+class EffectiveRosterAuthorityNotFound(EffectiveRosterAuthorityError):
+    """Canonical effective roster snapshot is missing for one runtime revision."""
+
+
+class EffectiveRosterAuthorityConflict(EffectiveRosterAuthorityError):
+    """Effective roster snapshot fails runtime revision authority validation."""
+
+
 class MaterializationError(AgentDistributionError):
     """Materialization failed or returned invalid output."""
 

@@ -27,6 +27,9 @@ from intergrax.agent_distribution.admin_models import (
     UpdateAgentBindingRequest,
 )
 from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
+from intergrax.agent_distribution.effective_roster_authority import (
+    EffectiveRosterAuthorityService,
+)
 from intergrax.agent_distribution.control_plane_governance import (
     StaticApplicationEnvironmentTenantResolver,
 )
@@ -267,6 +270,9 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
     lock_store = InMemoryMaterializedRuntimeLockStore(state)
     materialization_store = InMemoryRuntimeMaterializationStore(state)
     effective_roster_snapshot_store = InMemoryEffectiveRosterSnapshotStore(state)
+    effective_roster_authority = EffectiveRosterAuthorityService(
+        snapshot_store=effective_roster_snapshot_store,
+    )
     artifact_store = InMemoryAgentArtifactMetadataStore(state)
     installation_service = InstallationService(installation_store)
     binding_service = BindingService(binding_store, installation_service)
@@ -301,6 +307,7 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
         lock_store=lock_store,
         materialization_store=materialization_store,
         effective_roster_snapshot_store=effective_roster_snapshot_store,
+        effective_roster_authority=effective_roster_authority,
         artifact_metadata_store=artifact_store,
         installation_service=installation_service,
         binding_service=binding_service,

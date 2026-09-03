@@ -36,6 +36,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.agent_distribution.effective_roster_authority import (
+    EffectiveRosterAuthorityService,
+)
 from intergrax.agent_distribution.in_memory_stores import (
     AgentDistributionStoreState,
     InMemoryApplicationEnvironmentServingStore,
@@ -75,6 +78,7 @@ class ProductionAgentPlatformRuntime:
 
     distribution_state: AgentDistributionStoreState
     stores: AgentPlatformRuntimeStores
+    effective_roster_authority: EffectiveRosterAuthorityService
 
 
 def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
@@ -84,6 +88,7 @@ def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
     Application ``main.py`` and factories MUST NOT be canonical owners.
     """
     state = AgentDistributionStoreState()
+    effective_roster_snapshot_store = InMemoryEffectiveRosterSnapshotStore(state)
     return ProductionAgentPlatformRuntime(
         distribution_state=state,
         stores=AgentPlatformRuntimeStores(
@@ -92,7 +97,10 @@ def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
             revision_store=InMemoryRuntimeRevisionStore(state),
             lock_store=InMemoryMaterializedRuntimeLockStore(state),
             materialization_store=InMemoryRuntimeMaterializationStore(state),
-            effective_roster_snapshot_store=InMemoryEffectiveRosterSnapshotStore(state),
+            effective_roster_snapshot_store=effective_roster_snapshot_store,
+        ),
+        effective_roster_authority=EffectiveRosterAuthorityService(
+            snapshot_store=effective_roster_snapshot_store,
         ),
     )
 
@@ -101,6 +109,7 @@ create_process_local_agent_platform_runtime = build_production_agent_platform_ru
 
 __all__ = [
     "AgentPlatformRuntimeStores",
+    "EffectiveRosterAuthorityService",
     "ProductionAgentPlatformRuntime",
     "build_production_agent_platform_runtime",
     "create_process_local_agent_platform_runtime",
