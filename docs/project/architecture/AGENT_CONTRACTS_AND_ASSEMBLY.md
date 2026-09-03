@@ -71,6 +71,8 @@ ACP solves this through:
 
 **Author owns domain behavior. Platform owns safe execution.**
 
+**Agent ownership is not runtime ownership.** An agent author, application, or scenario may own domain behavior and ship a private agent package. The platform owns lifecycle authority and safe execution. Every production agent — public, organization-shared, application-private, or scenario-private — enters runtime through the canonical Agent Distribution lifecycle ([`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) [Core mental model](AGENT_DISTRIBUTION.md#core-mental-model)); `AgentRegistry` remains a derived projection of the active revision, not an install or activation API.
+
 ## How agents reach safe execution
 
 ```text

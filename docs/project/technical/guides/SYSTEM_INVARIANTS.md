@@ -1,4 +1,4 @@
-# Intergrax - System Invariants
+﻿# Intergrax - System Invariants
 
 **Status:** Canonical index (2026-06-20)  
 **Audience:** Architects, reviewers, implementation agents, external auditors  
@@ -79,8 +79,10 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 - Agents **MUST NOT** bypass ToolRuntime, PolicyEngine, ContextCompiler, MemoryView or RuntimeEventBus.
 - Agents **MUST NOT** directly write to external systems except through approved tools.
 - Agents **MUST** return typed outputs suitable for validation and evaluation, not only raw text.
+- **One canonical agent lifecycle** — every production agent **MUST** enter runtime through Tier-0 Agent Distribution (install → bind → trust → activate → `RuntimeRevision`); applications and scenarios **MAY** own private agent packages but **MUST NOT** fork install/activate/registry lifecycle or bypass Agent Distribution with a local `AgentRegistry` registration path.
+- **`AgentRegistry` is a derived runtime projection** of the active revision — not install state, not lifecycle authority, not a substitute for Agent Distribution.
 
-**Canon:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §21 · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42
+**Canon:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §21 · [`AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md) [Core mental model](../../architecture/AGENT_DISTRIBUTION.md#core-mental-model) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42
 
 ## 4. Tool and integration invariants
 
@@ -282,6 +284,7 @@ Format: **ID · Layer · Rule · Canon · CI (if enforced)**
 | **SYS-INV-04** | Tier-1 | Nexus **never** implements agent business workflows or domain prompts. | [`PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) §5.2 | review |
 | **SYS-INV-05** | Tier-2 | Agents **never** own global orchestration, HTTP host wiring, or `AgentRegistry` lifecycle. | ACP §21.2 **ACP-INV-01** · §21.3 Rejected | `check_acp_ci_conformance_matrix.py` |
 | **SYS-INV-06** | Tier-3 | Applications **compose** profiles and surfaces - **never** implement `on_next_step` cognition. | APP §28.1 **APP-INV-03** · §28.2 Rejected | `check_agent_registry_bypass.py` |
+| **SYS-INV-36** | Tier-0/3 | **One canonical agent lifecycle** — all production agents enter runtime via Agent Distribution; private agents allowed, private lifecycle **not**; `AgentRegistry` is derived projection only. | [`AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md) [Core mental model](../../architecture/AGENT_DISTRIBUTION.md#core-mental-model) | review |
 
 ### 5.2 Execution path (one pipeline)
 
@@ -390,6 +393,7 @@ REJECTED: Tier-3 multi-agent pipelines in factory.py while-loops
 REJECTED: Private while-True agent loops without UAEP step boundaries
 REJECTED: nexus.run() / NexusLoop as agent plan brain
 REJECTED: CapabilityRegistry as parallel catalog (use AgentRegistry + CapabilityGraph)
+REJECTED: Application/scenario-local AgentRegistry install/activate bypass (use Agent Distribution lifecycle)
 REJECTED: Second execution engine or 23rd domain pair for "application contracts"
 REJECTED: Monolithic implementation plan files under plan/phases/
 ```
