@@ -35,14 +35,18 @@ from intergrax.contracts.decision_record import (
 )
 from intergrax.contracts.decision_revision import (
     DecisionRevisionAuthorization,
+    DecisionRevisionDecision,
     DecisionRevisionDisposition,
+    DecisionRevisionPolicy,
     DecisionRevisionState,
     DecisionRevisionStateMismatchError,
     decision_revision_authorization,
     decision_revision_policy,
     evaluate_decision_revision,
+    evaluate_decision_revision_with,
     initial_decision_revision_state,
     proposal_refs_match,
+    validate_revision_decision_against_inputs,
 )
 from intergrax.contracts.decision_verification import (
     VerificationDisposition,
@@ -718,3 +722,310 @@ def test_auth_v1_with_state_other_branch_rejected() -> None:
             revised_payload=Payload(text="revised"),
             revision_state=_initial_state(candidate_b),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class _StaticRevisionEvaluator:
+    """Pure test evaluator returning one fixed decision."""
+
+    decision: DecisionRevisionDecision
+
+    def evaluate(
+        self,
+        *,
+        policy: DecisionRevisionPolicy,
+        state: DecisionRevisionState,
+        verification_result: VerificationResult,
+    ) -> DecisionRevisionDecision:
+        return self.decision
+
+
+class _CountingRevisionEvaluator:
+    """Pure test evaluator that records invocation count."""
+
+    def __init__(self, decision: DecisionRevisionDecision) -> None:
+        self._decision = decision
+        self.call_count = 0
+
+    def evaluate(
+        self,
+        *,
+        policy: DecisionRevisionPolicy,
+        state: DecisionRevisionState,
+        verification_result: VerificationResult,
+    ) -> DecisionRevisionDecision:
+        self.call_count += 1
+        return self._decision
+
+
+def _canonical_allowed_decision(
+    *,
+    candidate: CandidateDecision[Payload],
+    policy: DecisionRevisionPolicy,
+    revision_number: int = 1,
+) -> DecisionRevisionDecision:
+    return DecisionRevisionDecision(
+        disposition=DecisionRevisionDisposition.ALLOWED,
+        proposal_ref=candidate_decision_ref(candidate),
+        policy=policy,
+        revision_number=revision_number,
+    )
+
+
+def test_custom_evaluator_valid_allowed_accepted() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _challenged_result(proposal_ref)
+    state = _initial_state(candidate)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(candidate=candidate, policy=policy),
+    )
+    decision = evaluate_decision_revision_with(
+        evaluator=evaluator,
+        policy=policy,
+        state=state,
+        verification_result=verification,
+    )
+    assert decision.disposition is DecisionRevisionDisposition.ALLOWED
+    assert decision.revision_number == 1
+
+
+def test_custom_evaluator_passed_to_allowed_rejected() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _passed_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(candidate=candidate, policy=policy),
+    )
+    with pytest.raises(ValueError, match="canonical expected disposition"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_initial_state(candidate),
+            verification_result=verification,
+        )
+
+
+def test_custom_evaluator_passed_to_exhausted_rejected() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _passed_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=DecisionRevisionDecision(
+            disposition=DecisionRevisionDisposition.EXHAUSTED,
+            proposal_ref=proposal_ref,
+            policy=policy,
+        ),
+    )
+    with pytest.raises(ValueError, match="canonical expected disposition"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_initial_state(candidate),
+            verification_result=verification,
+        )
+
+
+def test_custom_evaluator_challenged_to_not_required_rejected() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _challenged_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=DecisionRevisionDecision(
+            disposition=DecisionRevisionDisposition.NOT_REQUIRED,
+            proposal_ref=proposal_ref,
+            policy=policy,
+        ),
+    )
+    with pytest.raises(ValueError, match="canonical expected disposition"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_initial_state(candidate),
+            verification_result=verification,
+        )
+
+
+def test_custom_evaluator_challenged_to_exhausted_with_budget_rejected() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _challenged_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=DecisionRevisionDecision(
+            disposition=DecisionRevisionDisposition.EXHAUSTED,
+            proposal_ref=proposal_ref,
+            policy=policy,
+        ),
+    )
+    with pytest.raises(ValueError, match="canonical expected disposition"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_initial_state(candidate),
+            verification_result=verification,
+        )
+
+
+def test_custom_evaluator_budget_exhausted_to_allowed_rejected() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _challenged_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(candidate=candidate, policy=policy),
+    )
+    with pytest.raises(ValueError, match="canonical expected disposition"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_revision_state(candidate, revision_count=2),
+            verification_result=verification,
+        )
+
+
+def test_custom_evaluator_wrong_revision_number_rejected() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=5)
+    verification = _challenged_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(
+            candidate=candidate,
+            policy=policy,
+            revision_number=4,
+        ),
+    )
+    with pytest.raises(ValueError, match="canonical expected revision_number"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_initial_state(candidate),
+            verification_result=verification,
+        )
+
+
+def test_custom_evaluator_wrong_policy_rejected() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    input_policy = decision_revision_policy(max_revisions=2)
+    wrong_policy = decision_revision_policy(max_revisions=5)
+    verification = _challenged_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(candidate=candidate, policy=wrong_policy),
+    )
+    with pytest.raises(ValueError, match="must match evaluation policy"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=input_policy,
+            state=_initial_state(candidate),
+            verification_result=verification,
+        )
+
+
+def test_custom_evaluator_wrong_proposal_ref_rejected() -> None:
+    candidate_a = _candidate()
+    candidate_b = _candidate()
+    proposal_ref_a = candidate_decision_ref(candidate_a)
+    proposal_ref_b = candidate_decision_ref(candidate_b)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _challenged_result(proposal_ref_a)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(candidate=candidate_b, policy=policy),
+    )
+    with pytest.raises(ValueError, match="must match verification_result proposal_ref"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_initial_state(candidate_a),
+            verification_result=verification,
+        )
+    assert not proposal_refs_match(proposal_ref_a, proposal_ref_b)
+
+
+def test_safe_wrapper_calls_evaluator_once_and_returns_valid_output() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _challenged_result(proposal_ref)
+    expected = _canonical_allowed_decision(candidate=candidate, policy=policy)
+    evaluator = _CountingRevisionEvaluator(expected)
+    decision = evaluate_decision_revision_with(
+        evaluator=evaluator,
+        policy=policy,
+        state=_initial_state(candidate),
+        verification_result=verification,
+    )
+    assert evaluator.call_count == 1
+    assert decision == expected
+
+
+def test_safe_wrapper_rejects_invalid_output() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _passed_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(candidate=candidate, policy=policy),
+    )
+    with pytest.raises(ValueError, match="canonical expected disposition"):
+        evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_initial_state(candidate),
+            verification_result=verification,
+        )
+
+
+def test_valid_custom_evaluation_authorizes_and_mints_v2() -> None:
+    challenged = _candidate()
+    proposal_ref = candidate_decision_ref(challenged)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _challenged_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(candidate=challenged, policy=policy),
+    )
+    revision_decision = evaluate_decision_revision_with(
+        evaluator=evaluator,
+        policy=policy,
+        state=_initial_state(challenged),
+        verification_result=verification,
+    )
+    authorization = decision_revision_authorization(revision_decision=revision_decision)
+    revised, next_state = mint_revised_candidate_decision(
+        challenged=challenged,
+        authorization=authorization,
+        artifact_kind="demo.payload",
+        revised_payload=Payload(text="v2"),
+        revision_state=_initial_state(challenged),
+    )
+    assert revised.identity.version.value == challenged.identity.version.value + 1
+    assert next_state.revision_count == 1
+
+
+def test_invalid_custom_result_blocks_authorization_and_lifecycle() -> None:
+    candidate = _candidate()
+    proposal_ref = candidate_decision_ref(candidate)
+    policy = decision_revision_policy(max_revisions=2)
+    verification = _passed_result(proposal_ref)
+    evaluator = _StaticRevisionEvaluator(
+        decision=_canonical_allowed_decision(candidate=candidate, policy=policy),
+    )
+    validated_decision: DecisionRevisionDecision | None = None
+    with pytest.raises(ValueError, match="canonical expected disposition"):
+        validated_decision = evaluate_decision_revision_with(
+            evaluator=evaluator,
+            policy=policy,
+            state=_initial_state(candidate),
+            verification_result=verification,
+        )
+    assert validated_decision is None
+    lifecycle = transition_decision_lifecycle(
+        initial_decision_lifecycle_state(candidate.identity),
+        DecisionLifecycleStage.VERIFICATION,
+    )
+    assert lifecycle.stage is DecisionLifecycleStage.VERIFICATION

@@ -179,6 +179,45 @@ class DecisionRevisionPolicyEvaluator(Protocol):
         ...
 
 
+@dataclass(frozen=True, slots=True)
+class _ExpectedRevisionSemantics:
+    """Canonical disposition and revision_number for one policy evaluation."""
+
+    disposition: DecisionRevisionDisposition
+    revision_number: int | None
+
+
+def _canonical_revision_semantics(
+    *,
+    policy: DecisionRevisionPolicy,
+    state: DecisionRevisionState,
+    verification_result: VerificationResult,
+) -> _ExpectedRevisionSemantics:
+    """Derive the single canonical revision semantics for policy + state + result."""
+    if not proposal_refs_match(state.proposal_ref, verification_result.proposal_ref):
+        raise DecisionRevisionStateMismatchError(
+            "revision state proposal_ref must match verification_result proposal_ref",
+        )
+    if verification_result.disposition is VerificationDisposition.PASSED:
+        return _ExpectedRevisionSemantics(
+            disposition=DecisionRevisionDisposition.NOT_REQUIRED,
+            revision_number=None,
+        )
+    if verification_result.disposition is not VerificationDisposition.CHALLENGED:
+        raise ValueError(
+            "verification_result.disposition must be PASSED or CHALLENGED",
+        )
+    if state.revision_count < policy.max_revisions:
+        return _ExpectedRevisionSemantics(
+            disposition=DecisionRevisionDisposition.ALLOWED,
+            revision_number=state.revision_count + 1,
+        )
+    return _ExpectedRevisionSemantics(
+        disposition=DecisionRevisionDisposition.EXHAUSTED,
+        revision_number=None,
+    )
+
+
 def validate_revision_decision_against_inputs(
     *,
     policy: DecisionRevisionPolicy,
@@ -208,6 +247,19 @@ def validate_revision_decision_against_inputs(
         raise ValueError(
             "revision_decision.proposal_ref must match verification_result proposal_ref",
         )
+    expected = _canonical_revision_semantics(
+        policy=policy,
+        state=state,
+        verification_result=verification_result,
+    )
+    if revision_decision.disposition is not expected.disposition:
+        raise ValueError(
+            "revision_decision.disposition must match canonical expected disposition",
+        )
+    if revision_decision.revision_number != expected.revision_number:
+        raise ValueError(
+            "revision_decision.revision_number must match canonical expected revision_number",
+        )
 
 
 def evaluate_decision_revision(
@@ -223,33 +275,45 @@ def evaluate_decision_revision(
         raise TypeError("state must be DecisionRevisionState")
     if type(verification_result) is not VerificationResult:
         raise TypeError("verification_result must be VerificationResult")
-    if not proposal_refs_match(state.proposal_ref, verification_result.proposal_ref):
-        raise DecisionRevisionStateMismatchError(
-            "revision state proposal_ref must match verification_result proposal_ref",
-        )
-    proposal_ref = verification_result.proposal_ref
-    if verification_result.disposition is VerificationDisposition.PASSED:
-        return DecisionRevisionDecision(
-            disposition=DecisionRevisionDisposition.NOT_REQUIRED,
-            proposal_ref=proposal_ref,
-            policy=policy,
-        )
-    if verification_result.disposition is not VerificationDisposition.CHALLENGED:
-        raise ValueError(
-            "verification_result.disposition must be PASSED or CHALLENGED",
-        )
-    if state.revision_count < policy.max_revisions:
-        return DecisionRevisionDecision(
-            disposition=DecisionRevisionDisposition.ALLOWED,
-            proposal_ref=proposal_ref,
-            policy=policy,
-            revision_number=state.revision_count + 1,
-        )
-    return DecisionRevisionDecision(
-        disposition=DecisionRevisionDisposition.EXHAUSTED,
-        proposal_ref=proposal_ref,
+    expected = _canonical_revision_semantics(
         policy=policy,
+        state=state,
+        verification_result=verification_result,
     )
+    return DecisionRevisionDecision(
+        disposition=expected.disposition,
+        proposal_ref=verification_result.proposal_ref,
+        policy=policy,
+        revision_number=expected.revision_number,
+    )
+
+
+def evaluate_decision_revision_with(
+    *,
+    evaluator: DecisionRevisionPolicyEvaluator,
+    policy: DecisionRevisionPolicy,
+    state: DecisionRevisionState,
+    verification_result: VerificationResult,
+) -> DecisionRevisionDecision:
+    """Evaluate via a custom evaluator and reject semantically invalid output."""
+    if type(policy) is not DecisionRevisionPolicy:
+        raise TypeError("policy must be DecisionRevisionPolicy")
+    if type(state) is not DecisionRevisionState:
+        raise TypeError("state must be DecisionRevisionState")
+    if type(verification_result) is not VerificationResult:
+        raise TypeError("verification_result must be VerificationResult")
+    decision = evaluator.evaluate(
+        policy=policy,
+        state=state,
+        verification_result=verification_result,
+    )
+    validate_revision_decision_against_inputs(
+        policy=policy,
+        state=state,
+        verification_result=verification_result,
+        revision_decision=decision,
+    )
+    return decision
 
 
 def decision_revision_authorization(

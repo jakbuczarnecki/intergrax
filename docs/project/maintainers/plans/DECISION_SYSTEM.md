@@ -69,7 +69,7 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-REV-01 | P0 | Decision revision policy foundation (challenge → bounded authorization → revised candidate minting) | **Done / ENTERPRISE CLOSED** - identity-bound `DecisionRevisionState`, policy provenance in `DecisionRevisionDecision`; `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
+| DS-REV-01 | P0 | Decision revision policy foundation (challenge → bounded authorization → revised candidate minting) | **Done / ENTERPRISE CLOSED** - identity-bound `DecisionRevisionState`, policy provenance in `DecisionRevisionDecision`, custom evaluator semantic outputs validated against canonical policy semantics; `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
 ### Plugin architecture (PLANNED)
 
