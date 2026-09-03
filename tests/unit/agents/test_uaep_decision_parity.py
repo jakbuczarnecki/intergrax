@@ -225,5 +225,5 @@ async def test_uaep_step_qualification_matrix(
         tenant_id="tenant-1",
         step_id="step-1",
     )
-    assert result.classification is DecisionCriticParityClassification.MATCH
+    assert result.classification is DecisionCriticParityClassification.CAPABILITY_GAP
     assert flow_result.host_action is DecisionFlowHostAction.CONTINUE

@@ -45,6 +45,8 @@ from intergrax.runtime.migration.decision_critic_parity import (
     CriticRetirementReadiness,
     DecisionCriticParityClassification,
     DecisionCriticParityResult,
+    ParityCapabilityRequirement,
+    ParityCapabilityRequirementMode,
     ParityHostScope,
     ParityVerificationCapability,
     aggregate_parity_metrics,
@@ -230,7 +232,7 @@ async def test_qualification_matrix_structural_clean_and_failure(
     shadow = build_critic_shadow_adapter(config=CriticShadowConfig())
     task_id, run_id, attempt_id = execution_identity_binding
     cases = (
-        ("clean", "valid summary", DecisionCriticParityClassification.MATCH),
+        ("clean", "valid summary", DecisionCriticParityClassification.CAPABILITY_GAP),
         ("structural_failure", "", DecisionCriticParityClassification.MATCH),
     )
     results: list[DecisionCriticParityResult] = []
@@ -271,7 +273,12 @@ async def test_qualification_matrix_structural_clean_and_failure(
     readiness = evaluate_critic_retirement_readiness(
         results,
         required_scopes=frozenset({ParityHostScope.GRAPH_FINAL}),
-        required_capabilities=frozenset({ParityVerificationCapability.STRUCTURAL}),
+        capability_requirements=(
+            ParityCapabilityRequirement(
+                ParityVerificationCapability.STRUCTURAL,
+                ParityCapabilityRequirementMode.CROSS_SYSTEM,
+            ),
+        ),
     )
     assert readiness.readiness in {
         CriticRetirementReadiness.READY,

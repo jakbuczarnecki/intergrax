@@ -55,6 +55,9 @@ DECISION_CHALLENGE_CRITIC_ACCEPT = parity_difference_code(
     "decision_challenge_critic_accept",
 )
 DECISION_SUPERSET_CAPABILITY = parity_difference_code("decision_superset_capability")
+CRITIC_CAPABILITY_NOT_EXERCISED_BY_DECISION = parity_difference_code(
+    "critic_capability_not_exercised_by_decision",
+)
 LEGACY_L2_NOT_DECISION_VERIFICATION = parity_difference_code(
     "legacy_l2_not_decision_verification",
 )
@@ -93,6 +96,7 @@ class DecisionCriticParityClassification(str, Enum):
     MATCH = "match"
     EXPECTED_DIFFERENCE = "expected_difference"
     MISMATCH = "mismatch"
+    CAPABILITY_GAP = "capability_gap"
     SHADOW_UNAVAILABLE = "shadow_unavailable"
     SHADOW_ERROR = "shadow_error"
 
@@ -107,6 +111,54 @@ class ParityVerificationCapability(str, Enum):
     TRAJECTORY = "trajectory"
     DOMAIN = "domain"
     HUMAN_HITL = "human_hitl"
+
+
+class ParityCapabilityRequirementMode(str, Enum):
+    """How retirement evidence must be proven for one verification capability."""
+
+    CROSS_SYSTEM = "cross_system"
+    DECISION_SUPERSET = "decision_superset"
+    ARCHITECTURAL_MAPPING = "architectural_mapping"
+
+
+@dataclass(frozen=True, slots=True)
+class ParityCapabilityRequirement:
+    """Typed retirement requirement for one verification capability."""
+
+    capability: ParityVerificationCapability
+    mode: ParityCapabilityRequirementMode
+
+
+DEFAULT_CRITIC_RETIREMENT_CAPABILITY_REQUIREMENTS: tuple[ParityCapabilityRequirement, ...] = (
+    ParityCapabilityRequirement(
+        ParityVerificationCapability.STRUCTURAL,
+        ParityCapabilityRequirementMode.CROSS_SYSTEM,
+    ),
+    ParityCapabilityRequirement(
+        ParityVerificationCapability.DETERMINISTIC_GUARDRAIL,
+        ParityCapabilityRequirementMode.CROSS_SYSTEM,
+    ),
+    ParityCapabilityRequirement(
+        ParityVerificationCapability.SEMANTIC,
+        ParityCapabilityRequirementMode.CROSS_SYSTEM,
+    ),
+    ParityCapabilityRequirement(
+        ParityVerificationCapability.TRAJECTORY,
+        ParityCapabilityRequirementMode.CROSS_SYSTEM,
+    ),
+    ParityCapabilityRequirement(
+        ParityVerificationCapability.EVIDENCE,
+        ParityCapabilityRequirementMode.DECISION_SUPERSET,
+    ),
+    ParityCapabilityRequirement(
+        ParityVerificationCapability.DOMAIN,
+        ParityCapabilityRequirementMode.DECISION_SUPERSET,
+    ),
+    ParityCapabilityRequirement(
+        ParityVerificationCapability.HUMAN_HITL,
+        ParityCapabilityRequirementMode.ARCHITECTURAL_MAPPING,
+    ),
+)
 
 
 class CriticRetirementReadiness(str, Enum):
@@ -201,8 +253,13 @@ class CriticRetirementReadinessReport:
     readiness: CriticRetirementReadiness
     blocking_mismatch_count: int
     shadow_error_count: int
+    shadow_unavailable_count: int
     scopes_exercised: frozenset[ParityHostScope]
-    capabilities_exercised: frozenset[ParityVerificationCapability]
+    decision_capabilities_exercised: frozenset[ParityVerificationCapability]
+    critic_capabilities_exercised: frozenset[ParityVerificationCapability]
+    cross_system_capabilities_qualified: frozenset[ParityVerificationCapability]
+    decision_superset_capabilities_qualified: frozenset[ParityVerificationCapability]
+    architectural_mappings_qualified: frozenset[ParityVerificationCapability]
     missing_scopes: frozenset[ParityHostScope]
     missing_capabilities: frozenset[ParityVerificationCapability]
 
@@ -493,6 +550,23 @@ def compare_decision_critic_parity(
         critic=critic_observation,
     )
     if (
+        outcome_match
+        and not capability_match
+        and decision_observation.outcome is NormalizedParityOutcome.ACCEPTABLE
+        and critic_observation.outcome is NormalizedParityOutcome.ACCEPTABLE
+        and classification is DecisionCriticParityClassification.MATCH
+    ):
+        classification = DecisionCriticParityClassification.CAPABILITY_GAP
+        differences = differences + (
+            DecisionCriticParityDifference(
+                code=CRITIC_CAPABILITY_NOT_EXERCISED_BY_DECISION,
+                detail=(
+                    "critic exercised verification capability without decision "
+                    "equivalent on same input"
+                ),
+            ),
+        )
+    if (
         not capability_match
         and critic_observation.outcome is NormalizedParityOutcome.CHALLENGED
         and decision_observation.outcome is NormalizedParityOutcome.ACCEPTABLE
@@ -619,55 +693,173 @@ def aggregate_parity_metrics(
     )
 
 
+def _paired_capabilities(
+    result: DecisionCriticParityResult,
+) -> frozenset[ParityVerificationCapability]:
+    if result.classification in (
+        DecisionCriticParityClassification.SHADOW_UNAVAILABLE,
+        DecisionCriticParityClassification.SHADOW_ERROR,
+    ):
+        return frozenset()
+    return (
+        result.decision_observation.capabilities
+        & result.critic_observation.capabilities
+    )
+
+
+def _cross_system_capability_qualified(
+    parity_results: Sequence[DecisionCriticParityResult],
+    capability: ParityVerificationCapability,
+) -> bool:
+    for result in parity_results:
+        if result.classification in (
+            DecisionCriticParityClassification.SHADOW_UNAVAILABLE,
+            DecisionCriticParityClassification.SHADOW_ERROR,
+        ):
+            continue
+        if capability not in _paired_capabilities(result):
+            continue
+        return True
+    return False
+
+
+def _decision_superset_capability_qualified(
+    parity_results: Sequence[DecisionCriticParityResult],
+    capability: ParityVerificationCapability,
+) -> bool:
+    for result in parity_results:
+        if result.classification in (
+            DecisionCriticParityClassification.SHADOW_UNAVAILABLE,
+            DecisionCriticParityClassification.SHADOW_ERROR,
+        ):
+            continue
+        if capability in result.decision_observation.capabilities:
+            return True
+    return False
+
+
+def _architectural_mapping_qualified(
+    parity_results: Sequence[DecisionCriticParityResult],
+    capability: ParityVerificationCapability,
+) -> bool:
+    if capability is not ParityVerificationCapability.HUMAN_HITL:
+        return False
+    for result in parity_results:
+        if result.classification in (
+            DecisionCriticParityClassification.SHADOW_UNAVAILABLE,
+            DecisionCriticParityClassification.SHADOW_ERROR,
+        ):
+            continue
+        if result.classification is DecisionCriticParityClassification.EXPECTED_DIFFERENCE:
+            codes = {difference.code for difference in result.differences}
+            if (
+                LEGACY_HITL_IS_DECISION_HUMAN_REVIEW in codes
+                or LEGACY_L2_NOT_DECISION_VERIFICATION in codes
+            ):
+                return True
+        if (
+            ParityVerificationCapability.HUMAN_HITL
+            in result.decision_observation.capabilities
+            and ParityVerificationCapability.HUMAN_HITL
+            in result.critic_observation.capabilities
+        ):
+            return True
+    return False
+
+
+def _qualify_capability_requirement(
+    parity_results: Sequence[DecisionCriticParityResult],
+    requirement: ParityCapabilityRequirement,
+) -> bool:
+    if requirement.mode is ParityCapabilityRequirementMode.CROSS_SYSTEM:
+        return _cross_system_capability_qualified(
+            parity_results,
+            requirement.capability,
+        )
+    if requirement.mode is ParityCapabilityRequirementMode.DECISION_SUPERSET:
+        return _decision_superset_capability_qualified(
+            parity_results,
+            requirement.capability,
+        )
+    if requirement.mode is ParityCapabilityRequirementMode.ARCHITECTURAL_MAPPING:
+        return _architectural_mapping_qualified(
+            parity_results,
+            requirement.capability,
+        )
+    raise ValueError(f"unsupported requirement mode: {requirement.mode.value!r}")
+
+
 def evaluate_critic_retirement_readiness(
     parity_results: Sequence[DecisionCriticParityResult],
     *,
     required_scopes: frozenset[ParityHostScope],
-    required_capabilities: frozenset[ParityVerificationCapability],
+    capability_requirements: tuple[ParityCapabilityRequirement, ...],
 ) -> CriticRetirementReadinessReport:
     """Evaluate whether accumulated parity evidence supports Critic retirement."""
     scopes_exercised: set[ParityHostScope] = set()
-    capabilities_exercised: set[ParityVerificationCapability] = set()
+    decision_capabilities_exercised: set[ParityVerificationCapability] = set()
+    critic_capabilities_exercised: set[ParityVerificationCapability] = set()
+    cross_system_qualified: set[ParityVerificationCapability] = set()
+    decision_superset_qualified: set[ParityVerificationCapability] = set()
+    architectural_qualified: set[ParityVerificationCapability] = set()
     blocking_count = 0
     shadow_error_count = 0
+    shadow_unavailable_count = 0
     for result in parity_results:
         scopes_exercised.add(result.identity.host_scope)
-        capabilities_exercised.update(result.decision_observation.capabilities)
-        capabilities_exercised.update(result.critic_observation.capabilities)
+        decision_capabilities_exercised.update(result.decision_observation.capabilities)
+        critic_capabilities_exercised.update(result.critic_observation.capabilities)
         if result.retirement_blocking:
             blocking_count += 1
         if result.classification is DecisionCriticParityClassification.SHADOW_ERROR:
             shadow_error_count += 1
+        if result.classification is DecisionCriticParityClassification.SHADOW_UNAVAILABLE:
+            shadow_unavailable_count += 1
+    for requirement in capability_requirements:
+        if not _qualify_capability_requirement(parity_results, requirement):
+            continue
+        if requirement.mode is ParityCapabilityRequirementMode.CROSS_SYSTEM:
+            cross_system_qualified.add(requirement.capability)
+        elif requirement.mode is ParityCapabilityRequirementMode.DECISION_SUPERSET:
+            decision_superset_qualified.add(requirement.capability)
+        elif requirement.mode is ParityCapabilityRequirementMode.ARCHITECTURAL_MAPPING:
+            architectural_qualified.add(requirement.capability)
+    required_capabilities = frozenset(
+        requirement.capability for requirement in capability_requirements
+    )
+    qualified_capabilities = (
+        frozenset(cross_system_qualified)
+        | frozenset(decision_superset_qualified)
+        | frozenset(architectural_qualified)
+    )
     missing_scopes = required_scopes - frozenset(scopes_exercised)
-    missing_capabilities = required_capabilities - frozenset(capabilities_exercised)
+    missing_capabilities = required_capabilities - qualified_capabilities
+    report_fields = {
+        "blocking_mismatch_count": blocking_count,
+        "shadow_error_count": shadow_error_count,
+        "shadow_unavailable_count": shadow_unavailable_count,
+        "scopes_exercised": frozenset(scopes_exercised),
+        "decision_capabilities_exercised": frozenset(decision_capabilities_exercised),
+        "critic_capabilities_exercised": frozenset(critic_capabilities_exercised),
+        "cross_system_capabilities_qualified": frozenset(cross_system_qualified),
+        "decision_superset_capabilities_qualified": frozenset(decision_superset_qualified),
+        "architectural_mappings_qualified": frozenset(architectural_qualified),
+        "missing_scopes": frozenset(missing_scopes),
+        "missing_capabilities": frozenset(missing_capabilities),
+    }
     if missing_scopes or missing_capabilities:
         return CriticRetirementReadinessReport(
             readiness=CriticRetirementReadiness.INSUFFICIENT_EVIDENCE,
-            blocking_mismatch_count=blocking_count,
-            shadow_error_count=shadow_error_count,
-            scopes_exercised=frozenset(scopes_exercised),
-            capabilities_exercised=frozenset(capabilities_exercised),
-            missing_scopes=frozenset(missing_scopes),
-            missing_capabilities=frozenset(missing_capabilities),
+            **report_fields,
         )
     if blocking_count > 0 or shadow_error_count > 0:
         return CriticRetirementReadinessReport(
             readiness=CriticRetirementReadiness.NOT_READY,
-            blocking_mismatch_count=blocking_count,
-            shadow_error_count=shadow_error_count,
-            scopes_exercised=frozenset(scopes_exercised),
-            capabilities_exercised=frozenset(capabilities_exercised),
-            missing_scopes=frozenset(),
-            missing_capabilities=frozenset(),
+            **report_fields,
         )
     return CriticRetirementReadinessReport(
         readiness=CriticRetirementReadiness.READY,
-        blocking_mismatch_count=0,
-        shadow_error_count=0,
-        scopes_exercised=frozenset(scopes_exercised),
-        capabilities_exercised=frozenset(capabilities_exercised),
-        missing_scopes=frozenset(),
-        missing_capabilities=frozenset(),
+        **report_fields,
     )
 
 
