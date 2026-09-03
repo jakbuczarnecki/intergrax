@@ -10,11 +10,11 @@ from collections.abc import Generator
 
 import pytest
 
-from intergrax.autonomous_work.persistence import (
-    AutonomousWorkRepositories,
-    open_postgresql_autonomous_work_repositories,
-)
+from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.relational_store.postgresql.bundle import (
+    create_postgresql_relational_store,
+)
 from intergrax.integrations.providers.relational_store.postgresql.config import (
     PostgreSQLIntegrationConfig,
 )
@@ -38,30 +38,56 @@ def resolve_postgresql_config() -> PostgreSQLIntegrationConfig | None:
     return PostgreSQLIntegrationConfig(dsn=dsn)
 
 
-def open_bundle(schema_name: str) -> AutonomousWorkRepositories:
+def _materialization_options(schema_name: str) -> dict[str, object]:
     config = resolve_postgresql_config()
     if config is None:
         pytest.skip(
             f"PostgreSQL Autonomous Work tests require {DSN_ENV} "
             "or INTERGRAX_POSTGRESQL_* connection settings"
         )
+    options: dict[str, object] = {"schema_name": schema_name}
+    dsn = config.connection_string()
+    if dsn:
+        options["dsn"] = dsn
+    return options
+
+
+def materialize_bundle(options: dict[str, object]) -> AutonomousWorkRepositories:
+    materializer = create_postgresql_relational_store.bind_autonomous_work_materialization(options)
+    return materializer.materialize_autonomous_work_repositories()
+
+
+def materialization_options_for_schema(schema_name: str) -> dict[str, object]:
+    return _materialization_options(schema_name)
+
+
+def open_bundle(schema_name: str) -> AutonomousWorkRepositories:
+    options = _materialization_options(schema_name)
     try:
-        return open_postgresql_autonomous_work_repositories(
-            config=config,
-            schema_name=schema_name,
-        )
-    except (IntegrationConfigurationError, ConnectionError, TimeoutError, OSError) as exc:
+        return materialize_bundle(options)
+    except IntegrationConfigurationError as exc:
+        if type(exc) is not IntegrationConfigurationError:
+            raise
+        pytest.skip(f"PostgreSQL backend unavailable: {type(exc).__name__}: {exc}")
+    except (ConnectionError, TimeoutError, OSError) as exc:
+        pytest.skip(f"PostgreSQL backend unavailable: {type(exc).__name__}: {exc}")
+
+
+def open_bundle_with_options(options: dict[str, object]) -> AutonomousWorkRepositories:
+    try:
+        return materialize_bundle(options)
+    except IntegrationConfigurationError as exc:
+        if type(exc) is not IntegrationConfigurationError:
+            raise
+        pytest.skip(f"PostgreSQL backend unavailable: {type(exc).__name__}: {exc}")
+    except (ConnectionError, TimeoutError, OSError) as exc:
         pytest.skip(f"PostgreSQL backend unavailable: {type(exc).__name__}: {exc}")
 
 
 def drop_schema(schema_name: str) -> None:
-    config = resolve_postgresql_config()
-    if config is None:
+    if resolve_postgresql_config() is None:
         return
-    bundle = open_postgresql_autonomous_work_repositories(
-        config=config,
-        schema_name="public",
-    )
+    bundle = open_bundle("public")
     try:
         with bundle.store.transaction() as conn:
             conn.execute(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE")

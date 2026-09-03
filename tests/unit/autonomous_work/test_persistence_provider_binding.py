@@ -50,12 +50,33 @@ def test_resolve_autonomous_work_repositories_uses_postgresql_binder() -> None:
         store=MagicMock(),
     )
     with patch(
-        "intergrax.autonomous_work.persistence.open_postgresql_autonomous_work_repositories",
+        "intergrax.integrations.providers.relational_store.postgresql.bundle."
+        "_materialize_postgresql_autonomous_work_repositories",
         return_value=bundle,
-    ) as open_bundle:
+    ) as materialize:
         resolved = resolve_autonomous_work_repositories(profile)
-    open_bundle.assert_called_once()
+    materialize.assert_called_once()
     assert resolved is bundle
+
+
+def test_resolve_autonomous_work_repositories_does_not_call_aw_from_env() -> None:
+    profile = IntegrationProfile(
+        relational_store=POSTGRESQL,
+        options={POSTGRESQL.slug: {"dsn": "postgresql://localhost/test"}},
+    )
+    with (
+        patch(
+            "intergrax.integrations.providers.relational_store.postgresql.bundle."
+            "_materialize_postgresql_autonomous_work_repositories",
+            side_effect=IntegrationConfigurationError("backend unavailable"),
+        ),
+        patch(
+            "intergrax.autonomous_work.persistence_provider.merge_config",
+            return_value={"dsn": "postgresql://localhost/test"},
+        ),
+        pytest.raises(IntegrationConfigurationError, match="backend unavailable"),
+    ):
+        resolve_autonomous_work_repositories(profile)
 
 
 def test_resolve_autonomous_work_repositories_rejects_non_materializing_provider() -> None:

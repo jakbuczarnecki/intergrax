@@ -27,8 +27,12 @@ from intergrax.collaborative_work.materialization_factory import (
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
-from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
+from intergrax.integrations.providers.relational_store.postgresql.config import (
+    PostgreSQLIntegrationConfig,
+    validate_schema_identifier,
+)
 from intergrax.integrations.providers.relational_store.postgresql.opens import open_postgresql_relational_store
+from intergrax.integrations.providers.relational_store.postgresql.session import PostgreSQLConnectionProvider
 
 
 @dataclass(frozen=True)
@@ -103,6 +107,51 @@ class _PostgreSQLCollaborativeWorkMaterializer:
         )
 
 
+def _materialize_postgresql_autonomous_work_repositories(
+    *,
+    config_overrides: dict[str, object],
+    connection_factory: Callable[[], object] | None,
+    schema_name: str | None,
+) -> AutonomousWorkRepositories:
+    from intergrax.autonomous_work.postgresql_repository import (
+        PostgreSQLAutonomousWorkStore,
+        PostgreSQLResponsibilityRepository,
+        PostgreSQLWorkContinuityStateRepository,
+        PostgreSQLWorkerDefinitionRepository,
+        PostgreSQLWorkerGoalRepository,
+        PostgreSQLWorkerInstanceRepository,
+    )
+
+    config = resolve_postgresql_config(**config_overrides)
+    resolved_schema = validate_schema_identifier(
+        (schema_name or config.tenant_schema or "public").strip()
+    )
+    provider = PostgreSQLConnectionProvider(
+        config,
+        connection_factory=connection_factory,
+        tenant_schema=resolved_schema,
+    )
+    try:
+        store = PostgreSQLAutonomousWorkStore(
+            connection_provider=provider,
+            schema_name=resolved_schema,
+        )
+    except IntegrationConfigurationError:
+        raise
+    except Exception as exc:
+        raise IntegrationConfigurationError(
+            "PostgreSQL Autonomous Work repositories could not be opened"
+        ) from exc
+    return AutonomousWorkRepositories(
+        worker_definition=PostgreSQLWorkerDefinitionRepository(store),
+        worker_instance=PostgreSQLWorkerInstanceRepository(store),
+        responsibility=PostgreSQLResponsibilityRepository(store),
+        worker_goal=PostgreSQLWorkerGoalRepository(store),
+        work_continuity_state=PostgreSQLWorkContinuityStateRepository(store),
+        store=store,
+    )
+
+
 @dataclass(frozen=True)
 class _PostgreSQLAutonomousWorkMaterializer:
     _config_overrides: dict[str, object]
@@ -110,13 +159,8 @@ class _PostgreSQLAutonomousWorkMaterializer:
     _schema_name: str | None = None
 
     def materialize_autonomous_work_repositories(self) -> AutonomousWorkRepositories:
-        from intergrax.autonomous_work.persistence import (
-            open_postgresql_autonomous_work_repositories,
-        )
-
-        config = resolve_postgresql_config(**self._config_overrides)
-        return open_postgresql_autonomous_work_repositories(
-            config=config,
+        return _materialize_postgresql_autonomous_work_repositories(
+            config_overrides=self._config_overrides,
             connection_factory=self._connection_factory,
             schema_name=self._schema_name,
         )

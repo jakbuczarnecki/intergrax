@@ -15,10 +15,7 @@ from intergrax.autonomous_work.lifecycle import (
     WorkerLifecycleService,
     WorkerLifecycleTransitionRequest,
 )
-from intergrax.autonomous_work.persistence import (
-    AutonomousWorkRepositories,
-    open_postgresql_autonomous_work_repositories,
-)
+from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
 from intergrax.autonomous_work.postgresql_repository import (
     AutonomousWorkSchemaVersionError,
     PostgreSQLAutonomousWorkStore,
@@ -30,13 +27,15 @@ from intergrax.autonomous_work.repository import (
 from intergrax.contracts.autonomous_work import (
     Revision,
     WorkerLifecycleState,
-    initial_revision,
 )
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.relational_store.postgresql.config import (
-    PostgreSQLIntegrationConfig,
+from tests.integration.autonomous_work.conftest import (
+    materialize_bundle,
+    materialization_options_for_schema,
+    open_bundle,
+    open_bundle_with_options,
+    resolve_postgresql_config,
 )
-from tests.integration.autonomous_work.conftest import open_bundle, resolve_postgresql_config
 from tests.unit.autonomous_work import repository_contracts as contract_suite
 
 pytestmark = [pytest.mark.integration, pytest.mark.network]
@@ -164,10 +163,7 @@ def test_postgresql_concurrent_update_one_wins(
     barrier = threading.Barrier(2)
 
     def attempt() -> None:
-        bundle = open_postgresql_autonomous_work_repositories(
-            config=postgresql_autonomous_work_bundle.store.config,
-            schema_name=postgresql_autonomous_work_bundle.store.schema_name,
-        )
+        bundle = open_bundle(postgresql_autonomous_work_bundle.store.schema_name)
         try:
             barrier.wait(timeout=5)
             bundle.worker_instance.replace(
@@ -201,10 +197,11 @@ def _multiprocess_cas_attempt(
   expected_revision: int,
   result_queue: multiprocessing.Queue[tuple[str, str | None]],
 ) -> None:
-    config = PostgreSQLIntegrationConfig(dsn=dsn)
-    bundle = open_postgresql_autonomous_work_repositories(
-        config=config,
-        schema_name=schema_name,
+    bundle = open_bundle_with_options(
+        {
+            "dsn": dsn,
+            "schema_name": schema_name,
+        }
     )
     try:
         loaded = bundle.worker_instance.get(worker_instance_id=worker_instance_id)
@@ -271,10 +268,7 @@ def test_postgresql_idempotent_create_race(
     barrier = threading.Barrier(2)
 
     def attempt() -> None:
-        bundle = open_postgresql_autonomous_work_repositories(
-            config=postgresql_autonomous_work_bundle.store.config,
-            schema_name=postgresql_autonomous_work_bundle.store.schema_name,
-        )
+        bundle = open_bundle(postgresql_autonomous_work_bundle.store.schema_name)
         try:
             barrier.wait(timeout=5)
             results.append(bundle.worker_instance.create(entity))
@@ -306,10 +300,7 @@ def test_postgresql_conflicting_create_race(
     barrier = threading.Barrier(2)
 
     def attempt(mutator: object) -> None:
-        bundle = open_postgresql_autonomous_work_repositories(
-            config=postgresql_autonomous_work_bundle.store.config,
-            schema_name=postgresql_autonomous_work_bundle.store.schema_name,
-        )
+        bundle = open_bundle(postgresql_autonomous_work_bundle.store.schema_name)
         try:
             barrier.wait(timeout=5)
             bundle.worker_instance.create(mutator)
@@ -341,16 +332,12 @@ def test_postgresql_restart_recovery(
     continuity = contract_suite.continuity_state(
         worker_instance_ref=instance.worker_instance_id
     )
-    config = postgresql_autonomous_work_bundle.store.config
     schema_name = postgresql_autonomous_work_bundle.store.schema_name
     postgresql_autonomous_work_bundle.worker_instance.create(instance)
     postgresql_autonomous_work_bundle.work_continuity_state.create(continuity)
     postgresql_autonomous_work_bundle.close()
 
-    bundle_b = open_postgresql_autonomous_work_repositories(
-        config=config,
-        schema_name=schema_name,
-    )
+    bundle_b = open_bundle(schema_name)
     try:
         loaded_instance = bundle_b.worker_instance.get(
             worker_instance_id=instance.worker_instance_id
@@ -378,10 +365,7 @@ def test_postgresql_restart_recovery(
     finally:
         bundle_b.close()
 
-    bundle_c = open_postgresql_autonomous_work_repositories(
-        config=config,
-        schema_name=schema_name,
-    )
+    bundle_c = open_bundle(schema_name)
     try:
         loaded = bundle_c.worker_instance.get(worker_instance_id=instance.worker_instance_id)
         assert loaded is not None
@@ -394,15 +378,11 @@ def test_postgresql_restart_recovery(
 def test_postgresql_fresh_and_repeated_bootstrap(
     postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
 ) -> None:
-    config = postgresql_autonomous_work_bundle.store.config
     schema_name = postgresql_autonomous_work_bundle.store.schema_name
     entity = contract_suite.worker_instance()
     postgresql_autonomous_work_bundle.worker_instance.create(entity)
 
-    bundle_reopen = open_postgresql_autonomous_work_repositories(
-        config=config,
-        schema_name=schema_name,
-    )
+    bundle_reopen = open_bundle(schema_name)
     try:
         loaded = bundle_reopen.worker_instance.get(
             worker_instance_id=entity.worker_instance_id
@@ -420,13 +400,10 @@ def test_postgresql_unsupported_schema_version_fails_closed(
             "UPDATE autonomous_work_schema_meta SET schema_version = %s WHERE id = 1",
             (999,),
         )
-    config = postgresql_autonomous_work_bundle.store.config
     schema_name = postgresql_autonomous_work_bundle.store.schema_name
+    options = materialization_options_for_schema(schema_name)
     with pytest.raises(AutonomousWorkSchemaVersionError):
-        open_postgresql_autonomous_work_repositories(
-            config=config,
-            schema_name=schema_name,
-        )
+        materialize_bundle(options)
 
 
 def test_postgresql_transaction_rollback_preserves_state(
@@ -454,21 +431,20 @@ def test_postgresql_transaction_rollback_preserves_state(
 
 
 def test_postgresql_unavailable_connection_fails_explicitly() -> None:
-    config = PostgreSQLIntegrationConfig(
-        dsn="postgresql://invalid:invalid@127.0.0.1:1/nonexistent",
-    )
     with pytest.raises(IntegrationConfigurationError):
-        open_postgresql_autonomous_work_repositories(config=config, schema_name="aw_fail_test")
+        materialize_bundle(
+            {
+                "dsn": "postgresql://invalid:invalid@127.0.0.1:1/nonexistent",
+                "schema_name": "aw_fail_test",
+            }
+        )
 
 
 def test_postgresql_multi_bundle_visibility(
     postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
 ) -> None:
     bundle_a = postgresql_autonomous_work_bundle
-    bundle_b = open_postgresql_autonomous_work_repositories(
-        config=bundle_a.store.config,
-        schema_name=bundle_a.store.schema_name,
-    )
+    bundle_b = open_bundle(bundle_a.store.schema_name)
     try:
         created = bundle_a.worker_definition.create(contract_suite.worker_definition())
         loaded = bundle_b.worker_definition.get(

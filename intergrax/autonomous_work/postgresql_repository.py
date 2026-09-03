@@ -46,7 +46,6 @@ from intergrax.contracts.autonomous_work.revision import (
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.postgresql.config import (
-    PostgreSQLIntegrationConfig,
     validate_schema_identifier,
 )
 from intergrax.integrations.providers.relational_store.postgresql.session import (
@@ -94,21 +93,13 @@ class PostgreSQLAutonomousWorkStore:
 
     def __init__(
         self,
-        config: PostgreSQLIntegrationConfig,
+        connection_provider: PostgreSQLConnectionProvider,
         *,
-        connection_factory: Callable[[], Any] | None = None,
-        schema_name: str | None = None,
+        schema_name: str,
     ) -> None:
-        resolved_schema = validate_schema_identifier(
-            (schema_name or config.tenant_schema or "public").strip()
-        )
-        self._config = config
+        resolved_schema = validate_schema_identifier(schema_name.strip())
         self._schema_name = resolved_schema
-        self._provider = PostgreSQLConnectionProvider(
-            config,
-            connection_factory=connection_factory,
-            tenant_schema=resolved_schema,
-        )
+        self._provider = connection_provider
         self._closed = False
         self._init_lock = threading.Lock()
         self._schema_ready = False
@@ -124,10 +115,6 @@ class PostgreSQLAutonomousWorkStore:
             raise IntegrationConfigurationError(
                 "PostgreSQL Autonomous Work store could not be opened"
             ) from exc
-
-    @property
-    def config(self) -> PostgreSQLIntegrationConfig:
-        return self._config
 
     @property
     def schema_name(self) -> str:

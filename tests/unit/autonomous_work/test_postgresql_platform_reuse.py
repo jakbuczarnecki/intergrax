@@ -72,16 +72,10 @@ def _open_store_with_injected_provider(
         connection_factory=lambda: conn,
         tenant_schema=schema_name,
     )
-    with patch(
-        "intergrax.autonomous_work.postgresql_repository.PostgreSQLConnectionProvider",
-        return_value=provider,
-    ) as provider_ctor:
-        store = PostgreSQLAutonomousWorkStore(
-            config,
-            connection_factory=lambda: conn,
-            schema_name=schema_name,
-        )
-    provider_ctor.assert_called_once()
+    store = PostgreSQLAutonomousWorkStore(
+        connection_provider=provider,
+        schema_name=schema_name,
+    )
     return store, provider
 
 
@@ -125,5 +119,6 @@ def test_opens_and_autonomous_work_share_platform_provider() -> None:
 
 def test_invalid_schema_rejected_before_autonomous_work_store_open() -> None:
     config = PostgreSQLIntegrationConfig(dsn="postgresql://localhost/test")
+    provider = PostgreSQLConnectionProvider(config, tenant_schema="public")
     with pytest.raises(ValueError, match="tenant_schema must be a simple SQL identifier"):
-        PostgreSQLAutonomousWorkStore(config, schema_name="bad-schema")
+        PostgreSQLAutonomousWorkStore(connection_provider=provider, schema_name="bad-schema")

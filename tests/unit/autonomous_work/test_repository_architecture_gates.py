@@ -62,9 +62,28 @@ def _persistence_adapter_source_paths() -> list[Path]:
     base = Path(package.__file__).parent
     return [
         base / "postgresql_repository.py",
-        base / "persistence.py",
         base / "serialization.py",
     ]
+
+
+def _provider_neutral_persistence_source_paths() -> list[Path]:
+    package = importlib.import_module("intergrax.autonomous_work")
+    assert package.__file__ is not None
+    base = Path(package.__file__).parent
+    return [
+        base / "persistence.py",
+        base / "persistence_provider.py",
+        base / "materialization_factory.py",
+        base / "__init__.py",
+    ]
+
+
+_FORBIDDEN_PROVIDER_NEUTRAL_TOKENS = (
+    "postgresql.config",
+    "PostgreSQLIntegrationConfig",
+    "from_env",
+    "psycopg",
+)
 
 
 @pytest.mark.unit
@@ -165,3 +184,19 @@ def test_repository_module_has_no_lifecycle_transition_logic() -> None:
         source = path.read_text(encoding="utf-8").lower()
         for token in forbidden_tokens:
             assert token not in source, f"{path} contains lifecycle transition logic: {token}"
+
+
+@pytest.mark.unit
+def test_provider_neutral_persistence_surface_has_no_vendor_config_resolution() -> None:
+    for path in _provider_neutral_persistence_source_paths():
+        source = path.read_text(encoding="utf-8")
+        for token in _FORBIDDEN_PROVIDER_NEUTRAL_TOKENS:
+            assert token not in source, f"{path} contains forbidden provider token: {token}"
+
+
+@pytest.mark.unit
+def test_public_autonomous_work_api_does_not_export_postgresql_open_helper() -> None:
+    import intergrax.autonomous_work as autonomous_work
+
+    assert "open_postgresql_autonomous_work_repositories" not in autonomous_work.__all__
+    assert not hasattr(autonomous_work, "open_postgresql_autonomous_work_repositories")

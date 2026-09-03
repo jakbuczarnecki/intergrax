@@ -51,7 +51,7 @@ Delivery rule:
 |---|---|---|
 | AW-0 | Canonical architecture, ADR, documentation registration | **CLOSED / FROZEN** — AW-0G independently accepted |
 | AW-1 | Core semantic contracts | **DONE** |
-| AW-2 | Durable worker state and lifecycle | NOT STARTED |
+| AW-2 | Durable worker state and lifecycle | **DONE** |
 | AW-3 | Principal / authority / workspace composition | NOT STARTED |
 | AW-4 | Work intake and proactive goal evaluation | NOT STARTED |
 | AW-5 | Worker → execution composition and budgets | NOT STARTED |
@@ -146,7 +146,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-2C |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **DONE** |
 | **Purpose** | First production-qualified persistence adapter |
 | **Dependencies** | AW-2A/B |
 | **Acceptance** | cross-process transaction/concurrency qualification; migration/recovery tests |
