@@ -62,6 +62,10 @@ Delivery rule:
 | AW-10 | Virtual Workforce reference application | NOT STARTED |
 | AW-11 | Flagship proof / arena | NOT STARTED |
 | AW-12 | Production security / reliability qualification | NOT STARTED |
+| AW-13 | Real-vendor end-to-end qualification | NOT STARTED |
+| AW-14 | Final documentation and architecture audit | NOT STARTED |
+
+**Final acceptance sequence:** AW-12 → AW-13 → AW-14 → **AUTONOMOUS WORK FINAL ACCEPTANCE**
 
 ---
 
@@ -401,6 +405,252 @@ Delivery rule:
 | **Purpose** | Security/reliability qualification for production-style autonomous workers |
 | **Required gates** | strong generated-code isolation; egress enforcement; secret brokering; sandbox escape/adversarial corpus; policy bypass attempts; restart/disaster semantics; quarantine/kill; control-plane governance; concurrency/scale; rollback/promotion safety |
 | **Acceptance** | four-axis maturity statement updated from evidence; no production claim without accepted qualification |
+| **Next step** | AW-13A |
+
+---
+
+## AW-13 - Real-vendor end-to-end qualification
+
+| Field | Value |
+|---|---|
+| **ID** | AW-13A |
+| **Priority** | P0 before final enterprise acceptance |
+| **Status** | NOT STARTED |
+| **Purpose** | Full Autonomous Work E2E qualification against real configured vendors/backends |
+| **Dependencies** | AW-12 accepted; flagship/reference flows available |
+| **Next step** | AW-13B |
+
+**Hard invariant — real means real:**
+
+> Mock, fake, stub, monkeypatch or in-memory stand-in cannot satisfy a real-vendor acceptance claim. Mocks/fakes may exist in unit/integration suite; AW-13 acceptance requires a real provider.
+
+Examples:
+
+- PostgreSQL → real PostgreSQL instance
+- LLM → real configured provider/model endpoint
+- external tool → real provider sandbox/test account or canonical vendor test environment
+
+Provider unavailable must not be marked PASS.
+
+**Exact scope — representative production-qualified providers:**
+
+AW-13A tests the full mechanism through real production boundaries. At minimum:
+
+- real production persistence provider,
+- real LLM/model provider where the scenario requires inference,
+- real tool/integration provider for selected flows,
+- real governance/HITL path where configured,
+- real sandbox/code-execution provider where adaptive capability is exercised,
+- real observability/evidence path.
+
+Not every vendor in Intergrax is required. Test representative production-qualified providers for capabilities required by the scenario.
+
+**Vendor configuration:**
+
+Provider selection uses existing Intergrax profiles, provider bindings, integration configuration, and repository abstractions. Do not hardcode specific vendors into Autonomous Work semantics. AW-13 qualifies **capability × selected real provider**, not domain architecture tied to one brand.
+
+**Full E2E flow — at least one complete scenario:**
+
+create/register Worker → activate → goal/work intake → contextual orientation → tool/model execution → governance decision where applicable → persistence → continuity checkpoint → external wait/recovery if exercised → restart/reconstruction → resume → goal completion/escalation → evidence reconstruction.
+
+Must not be repository-only testing.
+
+**Real restart / recovery:**
+
+- host/process restart,
+- persisted Worker identity,
+- lifecycle restoration,
+- `WorkContinuityState` reconstruction,
+- outstanding work preservation,
+- no full-history replay dependency,
+- resume from canonical checkpoint.
+
+**Real failure injection — controlled cases where possible:**
+
+provider timeout; rate limit; temporary outage; invalid/changed provider response; revoked/invalid credential; database connection interruption; restart during active work; duplicate delivery/request; human decision timeout; sandbox unavailable.
+
+Not every provider must support every fault type. Report each case as **SUPPORTED**, **NOT SUPPORTED BY QUALIFICATION ENVIRONMENT**, or **FAILED**. Do not pretend coverage.
+
+**Security / governance E2E:**
+
+AW-13 does not replace AW-12 (security/reliability qualification). AW-13 is real end-to-end composition proof. Verify at minimum:
+
+- policy DENY is not bypassed,
+- revoked authority fails closed,
+- quarantine prevents privileged continuation,
+- generated capability cannot expand authority,
+- no silent storage fallback,
+- no silent provider fallback that changes security semantics.
+
+**Real side-effect safety:**
+
+When the scenario performs real side effects: idempotency, deduplication, retry safety, side-effect correlation, evidence. Use vendor sandbox/test environment where production side effect would be unsafe.
+
+**Provider provenance — every real-vendor qualification run records (no secrets):**
+
+repository commit SHA; qualification suite version; scenario version; provider capability; provider/vendor identifier; backend/model version when deterministically available; schema version; configuration provenance; start/end timestamp; result; known limitations.
+
+Never record: API key, password, raw DSN, bearer token.
+
+**Reproducibility:**
+
+Qualification must be repeatable. Prefer declarative qualification config + runner + machine-readable result + human-readable report. Reuse existing Intergrax provider qualification/evidence patterns. Do not build a second global qualification framework.
+
+**AW-13A acceptance — PASS only if all hold:**
+
+1. real provider persistence executed,
+2. real model/provider executed for model-dependent scenario,
+3. real integration executed where scenario requires it,
+4. Worker lifecycle works through full flow,
+5. continuity survives real restart,
+6. recovery works for at least one representative real failure,
+7. governance/HITL semantics preserved,
+8. no unauthorized authority expansion,
+9. evidence reconstructs full business flow,
+10. zero mock/fake used to support real-vendor claim,
+11. provider provenance recorded,
+12. deterministic PASS/FAIL evidence exists.
+
+| Field | Value |
+|---|---|
+| **ID** | AW-13B |
+| **Priority** | P1/P0 before portability claim |
+| **Status** | NOT STARTED |
+| **Purpose** | Demonstrate provider/configuration portability without changing Autonomous Work domain semantics |
+| **Dependencies** | AW-13A |
+| **Next step** | AW-14A |
+
+**AW-13B scope:**
+
+Run the same semantic qualification flow on at least two provider combinations where the platform has real supported alternatives. Example: same Worker domain, same repository ports, same lifecycle, same goals, same governance → provider set A / provider set B.
+
+Do not require two vendors for a capability where the platform supports only one production-qualified provider.
+
+**AW-13B core claim:**
+
+> Provider swap changes infrastructure/configuration, not Autonomous Work domain semantics.
+
+Must not modify `WorkerLifecycleService`, Worker contracts, Worker goal semantics, authority semantics, or repository ports to pass the second provider.
+
+**AW-13B acceptance — PASS if:**
+
+- provider change occurs through canonical configuration/binding,
+- domain/service code unchanged,
+- semantic qualification suite passes,
+- provider-specific differences remain in adapters/integrations,
+- evidence records both provider runs,
+- no vendor branching appears in Autonomous Work domain.
+
+---
+
+## AW-14 - Final documentation and architecture audit
+
+| Field | Value |
+|---|---|
+| **ID** | AW-14A |
+| **Priority** | P0 final acceptance |
+| **Status** | NOT STARTED |
+| **Purpose** | Full implementation-to-documentation reconciliation audit |
+| **Dependencies** | AW-13 accepted |
+| **Next step** | AW-14B |
+
+**Documentation inventory — audit must cover at minimum:**
+
+- [`../../architecture/AUTONOMOUS_WORK.md`](../../architecture/AUTONOMOUS_WORK.md),
+- architecture satellite(s),
+- this plan,
+- ADR-AW-*,
+- overview/market docs for Virtual Workforce,
+- operator documentation,
+- developer documentation,
+- configuration/persistence docs,
+- qualification/evidence docs,
+- proof/scenario docs,
+- API/control-plane docs created during implementation.
+
+Do not assume specific paths for future documents. Perform inventory first in the final audit.
+
+**Claim → Code → Test → Evidence matrix — central AW-14 artifact:**
+
+| Architectural / production claim | Owning code/component | Automated tests | Real-vendor qualification evidence | Documentation | Verdict |
+|---|---|---|---|---|---|
+
+Minimum verdict statuses: **SUPPORTED**, **PARTIALLY SUPPORTED**, **UNSUPPORTED**, **STALE DOCUMENTATION**, **MISSING EVIDENCE**.
+
+**Invariant audit — all `AW-INV-*`:**
+
+For each invariant verify: still applies; where implemented; how tested; production evidence exists; documentation matches real behavior. Invariant presence in Markdown alone is not sufficient.
+
+**Persistence audit:**
+
+Every durable Autonomous Work state must use abstractions. Hard audit path: durable read/write → domain repository port → configured adapter/provider. Search and classify: direct SQL, psycopg, sqlite, Redis, filesystem writes, JSON persistence, local mutable dictionaries, hidden process caches. Any production bypass requires remediation.
+
+**Authority audit:**
+
+Verify: capability may grow; authority must not. Worker role does not authorize; Worker goals do not authorize; generated capability does not increase authority; Principal binding canonical; revoked authority fails closed; recovery cannot bypass policy; CodeCraft cannot self-authorize A4; governance controls privileged mutations.
+
+**Lifecycle audit:**
+
+Exactly one canonical Worker lifecycle semantics; no duplicated lifecycle engines; STOPPED semantics; QUARANTINED semantics; Worker lifecycle independent from Execution lifecycle; transition paths match docs; persistence/restart preserves lifecycle.
+
+**Continuity audit:**
+
+Bounded active context; no full-history replay dependency; `WorkContinuityState` persisted; provenance-preserving recall; long-horizon tests; restart continuation; no hidden chat transcript dependency. Explicitly verify AW-INV-21 through AW-INV-26.
+
+**Recovery audit:**
+
+Compare documented obstacle taxonomy with actual controller. Verify: retry; wait/reschedule; rate limit; revoked credentials; DENY; human ambiguity; alternate plan; schema/API drift; missing capability; quarantine. No silent semantic collapse (e.g. DENY → retry).
+
+**Adaptive capability audit:**
+
+Verify A0–A4 and promotion pipeline: `CraftResult` → evidence → tests → shadow → canary → governed promotion → durable version → rollback. Every documented capability claim must have evidence.
+
+**Observability audit:**
+
+Worker state/evidence; execution correlations; recovery evidence; policy denials; cost/budgets; interventions; generated capabilities; operator projections. Do not create fictitious Execution records for observability only.
+
+**Control-plane audit:**
+
+Every privileged mutation: authenticate → authorize → policy/governance → mutation → evidence. No hidden admin bypass.
+
+**Dead / stale documentation:**
+
+Find: stale names; abandoned architecture; superseded diagrams; outdated roadmap status; dead links; stale TODO; unsupported production claims; duplicate explanations that disagree; old terminology conflicting with canonical vocabulary. Do not leave documentation "historically almost correct".
+
+**Diagram reconciliation:**
+
+Every important architecture diagram must match real dependency directions. Especially: Application → Autonomous Work → repository/runtime/governance abstractions → configured platform capabilities. Vendor must not appear as domain dependency.
+
+| Field | Value |
+|---|---|
+| **ID** | AW-14B |
+| **Priority** | P0 final acceptance |
+| **Status** | NOT STARTED |
+| **Purpose** | Produce formal Autonomous Work final enterprise audit and remediation verdict |
+| **Dependencies** | AW-14A |
+| **Next step** | FINAL ACCEPTANCE / remediation |
+
+**Expected artifact (canonical location at execution time):**
+
+[`docs/project/maintainers/audits/AUTONOMOUS_WORK_FINAL_ENTERPRISE_AUDIT.md`](../audits/AUTONOMOUS_WORK_FINAL_ENTERPRISE_AUDIT.md)
+
+If repo convention differs at execution time, use canonical audit location.
+
+**Final audit verdict — allowed values only:**
+
+- **ACCEPTED**
+- **ACCEPTED WITH REMEDIATIONS**
+- **NOT ACCEPTED**
+
+No marketing verdict.
+
+**Final acceptance rule:**
+
+Autonomous Work receives final enterprise acceptance only if implementation + automated tests + real-vendor E2E evidence + security/reliability qualification + documentation audit are consistent.
+
+Core rule:
+
+> No undocumented production behavior and no documented production capability without evidence.
 
 ---
 
@@ -438,6 +688,13 @@ This plan does not authorize:
 - autonomous credential acquisition,
 - continuous unconstrained LLM loops,
 - production claims before AW-12 evidence.
+
+AW-12 evidence is required before any production claim. AW-13 real-vendor evidence and AW-14 final audit are additionally required for final Autonomous Work enterprise acceptance.
+
+Gate distinction:
+
+- **AW-12:** production safety qualification gate
+- **AW-13 / AW-14:** final enterprise acceptance gates
 
 ---
 
