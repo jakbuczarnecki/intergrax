@@ -5,9 +5,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from intergrax.integrations.contracts.base import (
     HealthStatus,
@@ -29,54 +28,47 @@ from intergrax.integrations.contracts.vector_index_administration import (
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
 from intergrax.rag.vectorstore.config.vector_config import Metric
 
+if TYPE_CHECKING:
+    from qdrant_client.http.exceptions import UnexpectedResponse
+    from qdrant_client.http.models import (
+        CollectionInfo,
+        CollectionsResponse,
+        Distance,
+        SparseIndexParams,
+        SparseVectorParams,
+        VectorParams,
+    )
 
-@runtime_checkable
-class _UnexpectedResponseView(Protocol):
-    status_code: int
+
+@dataclass(frozen=True, slots=True)
+class _QdrantModelTypes:
+    distance: type[Distance]
+    vector_params: type[VectorParams]
+    sparse_vector_params: type[SparseVectorParams]
+    sparse_index_params: type[SparseIndexParams]
+    unexpected_response: type[UnexpectedResponse]
 
 
 @runtime_checkable
 class QdrantControlPlaneClient(Protocol):
     """Narrow Qdrant client surface used by the control-plane plugin."""
 
-    def get_collections(self) -> object: ...
+    def get_collections(self) -> CollectionsResponse: ...
 
-    def get_collection(self, collection_name: str) -> QdrantCollectionInfo: ...
+    def get_collection(self, collection_name: str) -> CollectionInfo: ...
 
     def create_collection(
         self,
         *,
         collection_name: str,
-        vectors_config: object,
-        sparse_vectors_config: object | None = ...,
+        vectors_config: VectorParams | dict[str, VectorParams],
+        sparse_vectors_config: dict[str, SparseVectorParams] | None = ...,
     ) -> bool: ...
 
     def close(self) -> None: ...
 
 
-@runtime_checkable
-class _VectorParamsView(Protocol):
-    size: int
-
-
-@runtime_checkable
-class _CollectionParamsView(Protocol):
-    vectors: Mapping[str, _VectorParamsView] | _VectorParamsView | None
-    sparse_vectors: Mapping[str, object] | None
-
-
-@runtime_checkable
-class _CollectionConfigView(Protocol):
-    params: _CollectionParamsView
-
-
-@runtime_checkable
-class QdrantCollectionInfo(Protocol):
-    points_count: int
-    config: _CollectionConfigView
-
-
-def _load_qdrant_models() -> tuple[type, type, type, type, type]:
+def _load_qdrant_models() -> _QdrantModelTypes:
     try:
         from qdrant_client.http.exceptions import UnexpectedResponse
         from qdrant_client.http.models import (
@@ -89,7 +81,13 @@ def _load_qdrant_models() -> tuple[type, type, type, type, type]:
         raise IntegrationDependencyError(
             "qdrant-client is not installed; install Intergrax-ai[vector-qdrant]"
         ) from exc
-    return Distance, VectorParams, SparseVectorParams, SparseIndexParams, UnexpectedResponse
+    return _QdrantModelTypes(
+        distance=Distance,
+        vector_params=VectorParams,
+        sparse_vector_params=SparseVectorParams,
+        sparse_index_params=SparseIndexParams,
+        unexpected_response=UnexpectedResponse,
+    )
 
 
 def _physical_index_name(identity: VectorIndexIdentity) -> str:
@@ -99,26 +97,25 @@ def _physical_index_name(identity: VectorIndexIdentity) -> str:
 def _is_index_not_found(
     exc: BaseException,
     *,
-    unexpected_response_type: type[_UnexpectedResponseView],
+    unexpected_response_type: type[UnexpectedResponse],
 ) -> bool:
     current: BaseException | None = exc
     while current is not None:
-        if isinstance(current, unexpected_response_type):
-            if current.status_code == 404:
-                return True
+        if isinstance(current, unexpected_response_type) and current.status_code == 404:
+            return True
         current = current.__cause__
-    return "404" in str(exc)
+    return False
 
 
 def _dense_dimension(
-    collection_info: QdrantCollectionInfo,
+    collection_info: CollectionInfo,
     *,
     dense_channel_name: str,
 ) -> int | None:
     vectors = collection_info.config.params.vectors
     if vectors is None:
         return None
-    if isinstance(vectors, Mapping):
+    if isinstance(vectors, dict):
         dense = vectors.get(dense_channel_name)
         if dense is not None:
             return int(dense.size)
@@ -130,27 +127,25 @@ def _dense_dimension(
 
 
 def _has_sparse_channel(
-    collection_info: QdrantCollectionInfo,
+    collection_info: CollectionInfo,
     *,
     sparse_channel_name: str,
 ) -> bool:
     sparse_vectors = collection_info.config.params.sparse_vectors
     if sparse_vectors is None:
         return False
-    if isinstance(sparse_vectors, Mapping):
-        return sparse_channel_name in sparse_vectors
-    return False
+    return sparse_channel_name in sparse_vectors
 
 
-def _point_count(collection_info: QdrantCollectionInfo) -> int:
+def _point_count(collection_info: CollectionInfo) -> int:
     count = collection_info.points_count
-    if count < 0:
+    if count is None or count < 0:
         return 0
     return int(count)
 
 
 def _present_capabilities(
-    collection_info: QdrantCollectionInfo,
+    collection_info: CollectionInfo,
     *,
     dense_channel_name: str,
     sparse_channel_name: str,
@@ -163,13 +158,16 @@ def _present_capabilities(
     return frozenset(capabilities)
 
 
-def _distance_for_metric(metric: str, distance_type: type) -> object:
-    mapping = {
-        "cosine": distance_type.COSINE,
-        "dot": distance_type.DOT,
-        "euclidean": distance_type.EUCLID,
-    }
-    return mapping.get(metric, distance_type.COSINE)
+def _distance_for_metric(metric: Metric, models: _QdrantModelTypes) -> Distance:
+    match metric:
+        case "cosine":
+            return models.distance.COSINE
+        case "dot":
+            return models.distance.DOT
+        case "euclidean":
+            return models.distance.EUCLID
+        case _:
+            raise IntegrationConfigurationError(f"unsupported dense metric: {metric!r}")
 
 
 def _sanitize_probe_detail(exc: BaseException) -> str:
@@ -178,7 +176,7 @@ def _sanitize_probe_detail(exc: BaseException) -> str:
 
 def _description_from_collection(
     identity: VectorIndexIdentity,
-    collection_info: QdrantCollectionInfo | None,
+    collection_info: CollectionInfo | None,
     *,
     dense_channel_name: str,
     sparse_channel_name: str,
@@ -287,22 +285,22 @@ class QdrantVectorIndexAdministration:
     def close(self) -> None:
         self._client.close()
 
-    def _get_collection_info(self, identity: VectorIndexIdentity) -> QdrantCollectionInfo | None:
+    def _get_collection_info(self, identity: VectorIndexIdentity) -> CollectionInfo | None:
         physical_name = _physical_index_name(identity)
-        _, _, _, _, unexpected_response_type = _load_qdrant_models()
+        models = _load_qdrant_models()
         try:
             return self._client.get_collection(physical_name)
-        except Exception as exc:
-            if _is_index_not_found(exc, unexpected_response_type=unexpected_response_type):
+        except models.unexpected_response as exc:
+            if _is_index_not_found(exc, unexpected_response_type=models.unexpected_response):
                 return None
+            raise IntegrationConfigurationError("qdrant get_collection failed") from exc
+        except Exception as exc:
             raise IntegrationDependencyError("qdrant get_collection failed") from exc
 
     def _create_collection(self, spec: VectorIndexSpec) -> None:
-        distance_type, vector_params_type, sparse_vector_params_type, sparse_index_params_type, _ = (
-            _load_qdrant_models()
-        )
+        models = _load_qdrant_models()
         physical_name = _physical_index_name(spec.identity)
-        dist = _distance_for_metric(spec.dense.metric, distance_type)
+        dist = _distance_for_metric(spec.dense.metric, models)
         sparse_required = VectorSearchCapability.SPARSE_LEXICAL in spec.required_capabilities
         try:
             if sparse_required:
@@ -314,26 +312,28 @@ class QdrantVectorIndexAdministration:
                 self._client.create_collection(
                     collection_name=physical_name,
                     vectors_config={
-                        spec.dense.channel_name: vector_params_type(
+                        spec.dense.channel_name: models.vector_params(
                             size=spec.dense.dimension,
                             distance=dist,
                         ),
                     },
                     sparse_vectors_config={
-                        sparse_channel: sparse_vector_params_type(
-                            index=sparse_index_params_type(),
+                        sparse_channel: models.sparse_vector_params(
+                            index=models.sparse_index_params(),
                         ),
                     },
                 )
             else:
                 self._client.create_collection(
                     collection_name=physical_name,
-                    vectors_config=vector_params_type(
+                    vectors_config=models.vector_params(
                         size=spec.dense.dimension,
                         distance=dist,
                     ),
                 )
         except IntegrationDependencyError:
+            raise
+        except IntegrationConfigurationError:
             raise
         except Exception as exc:
             raise IntegrationConfigurationError("qdrant create_collection failed") from exc
