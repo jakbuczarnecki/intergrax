@@ -30,9 +30,22 @@ from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencySt
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
+from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    PolicyRulesProfile,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
+
+_RUN_SEED = "run1"
+_RUN_ID = canonical_run_id_for_tests(_RUN_SEED)
 
 
 class DummyInput(BaseModel):
@@ -57,20 +70,19 @@ class DummyHandler:
         return DummyOutput(result=request.input.value * 2)
 
 
-class DummyState:
-    def __init__(self) -> None:
-        self._tenant_id = "tenant_test"
+def _enforce_allow_bundle() -> object:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="tools.se.allow")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    return wire_policy_bundle(env)
 
-    @property
-    def tenant_id(self) -> str:
-        return self._tenant_id
 
-    @property
-    def context(self):
-        return type("Ctx", (), {"config": type("Cfg", (), {"policy_bundle": None})()})()
-
-    def trace_event(self, *args, **kwargs) -> None:
-        del args, kwargs
+def _state_with_enforce_allow():
+    state = build_runtime_state_for_tests(run_id=_RUN_SEED)
+    state.context.config.policy_bundle = _enforce_allow_bundle()
+    return state
 
 
 def _build_invoker(store: InMemoryIdempotencyStore, executor: CountingExecutor) -> RuntimeToolInvoker:
@@ -100,7 +112,7 @@ def _build_invoker(store: InMemoryIdempotencyStore, executor: CountingExecutor) 
 
 def _request() -> ToolExecutionRequest[DummyInput]:
     return ToolExecutionRequest(
-        run_id="run1",
+        run_id=_RUN_ID,
         step_id="step1",
         tool_id="double",
         input=DummyInput(value=5),
@@ -135,12 +147,13 @@ def test_a2_active_claim_blocks_second_execution() -> None:
     store = InMemoryIdempotencyStore()
     executor = CountingExecutor()
     invoker = _build_invoker(store, executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request()
 
-    store.claim("tenant_test", "key-123", "owner-a", lease_seconds=30)
-    with pytest.raises(ActiveInvocationClaimError):
-        invoker.invoke(state=state, agent_id="agent-a", request=request)
+    store.claim(state.tenant_id, "key-123", "owner-a", lease_seconds=30)
+    with canonical_execution_identity_scope(_RUN_SEED):
+        with pytest.raises(ActiveInvocationClaimError):
+            invoker.invoke(state=state, agent_id="agent-a", request=request)
     assert executor.calls == 0
 
 
@@ -148,11 +161,12 @@ def test_a3_completed_replays_result() -> None:
     store = InMemoryIdempotencyStore()
     executor = CountingExecutor()
     invoker = _build_invoker(store, executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request()
 
-    r1 = invoker.invoke(state=state, agent_id="agent-a", request=request)
-    r2 = invoker.invoke(state=state, agent_id="agent-a", request=request)
+    with canonical_execution_identity_scope(_RUN_SEED):
+        r1 = invoker.invoke(state=state, agent_id="agent-a", request=request)
+        r2 = invoker.invoke(state=state, agent_id="agent-a", request=request)
     assert r1.success and r2.success
     assert r1.output == r2.output
     assert executor.calls == 1
@@ -162,18 +176,19 @@ def test_a4_crash_after_effect_becomes_uncertain() -> None:
     store = InMemoryIdempotencyStore()
     executor = CountingExecutor()
     invoker = _build_invoker(store, executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request()
 
-    claim = store.claim("tenant_test", "key-123", "owner-crash", lease_seconds=1)
+    claim = store.claim(state.tenant_id, "key-123", "owner-crash", lease_seconds=1)
     assert claim.outcome == ClaimOutcome.ACQUIRED
     executor.execute(request)
     time.sleep(1.2)
 
-    with pytest.raises(InvocationUncertaintyError):
-        invoker.invoke(state=state, agent_id="agent-a", request=request)
+    with canonical_execution_identity_scope(_RUN_SEED):
+        with pytest.raises(InvocationUncertaintyError):
+            invoker.invoke(state=state, agent_id="agent-a", request=request)
     assert executor.calls == 1
-    assert store.get_status("tenant_test", "key-123") == InvocationStatus.UNCERTAIN
+    assert store.get_status(state.tenant_id, "key-123") == InvocationStatus.UNCERTAIN
 
 
 def test_a5_stale_completion_rejected() -> None:
