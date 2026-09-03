@@ -20,7 +20,10 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyViolationError,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+)
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
@@ -126,6 +129,23 @@ def _build_state(bundle: object) -> tuple[object, RuntimeToolInvoker, _CountingE
     return state, invoker, executor
 
 
+def test_invoker_fails_before_handler_without_execution_identity() -> None:
+    """Meaningful policy trace requires canonical execution identity before handler."""
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.identity")
+    env.policy_rules = _deny_profile(mode="audit_only")
+    bundle = wire_policy_bundle(env)
+    state, invoker, executor = _build_state(bundle)
+    request = ToolExecutionRequest(
+        run_id="run-e2e",
+        tool_id=_TOOL_ID,
+        step_id="1",
+        input=_Input(value=99),
+    )
+    with pytest.raises(RuntimeError, match="active execution identity required"):
+        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    assert executor.calls == 0
+
+
 def test_enforce_deny_blocks_tool_invocation() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.enforce")
     env.policy_rules = _deny_profile(mode="enforce")
@@ -139,8 +159,9 @@ def test_enforce_deny_blocks_tool_invocation() -> None:
         input=_Input(value=1),
     )
 
-    with pytest.raises(DeclarativePolicyViolationError) as exc:
-        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(DeclarativePolicyViolationError) as exc:
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert executor.calls == 0
     assert _RULE_ID in exc.value.matched_rule_ids
@@ -163,7 +184,8 @@ def test_audit_only_permits_but_records_deny() -> None:
         input=_Input(value=2),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        result = invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert result.success is True
     assert executor.calls == 1
@@ -197,8 +219,9 @@ def test_unknown_handler_enforce_denies_without_side_effect() -> None:
         input=_Input(value=3),
     )
 
-    with pytest.raises(DeclarativePolicyViolationError):
-        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(DeclarativePolicyViolationError):
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert executor.calls == 0
     trace = next(e for e in state.trace_events if e.step == "declarative_policy_evaluation")
@@ -233,8 +256,9 @@ def test_require_hitl_blocks_tool_before_orchestration_bridge() -> None:
         input=_Input(value=4),
     )
 
-    with pytest.raises(DeclarativePolicyHitlRequiredError) as exc:
-        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(DeclarativePolicyHitlRequiredError) as exc:
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert executor.calls == 0
     assert _RULE_ID in exc.value.matched_rule_ids
@@ -302,8 +326,9 @@ def test_scope_deny_still_wins_over_declarative_allow() -> None:
         input=_Input(value=1),
     )
 
-    with pytest.raises(ToolScopeViolationError):
-        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(ToolScopeViolationError):
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
     assert executor.calls == 0
 
 

@@ -169,17 +169,17 @@ class RuntimeState(RuntimeStateContract):
     def _get_observability_emitter(self) -> ObservabilityEmitter:
         if self._observability_emitter is None:
             from intergrax.contracts.execution_identity import (
-                mint_attempt_id,
-                peek_active_execution_identity,
                 require_active_execution_id,
+                require_active_execution_identity,
+                validate_run_id,
             )
             from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
-            active = peek_active_execution_identity()
-            attempt_id = active[1] if active is not None else mint_attempt_id()
-            execution_id = ""
-            if active is not None:
-                execution_id = str(require_active_execution_id())
+            active_run_id, attempt_id = require_active_execution_identity()
+            execution_id = str(require_active_execution_id())
+            emitter_run_id = validate_run_id(self.run_id)
+            if emitter_run_id != active_run_id:
+                raise RuntimeError("run_id conflicts with active execution identity")
             self._observability_emitter = ObservabilityEmitter(
                 run_id=self.run_id,
                 task_id=self.task_id,
