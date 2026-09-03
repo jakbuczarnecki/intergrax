@@ -179,8 +179,8 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-GOV-01 | P1 | Version-bound authorization handoff to Governed Execution | **Planned** |
-| DS-GOV-02 | P1 | HITL invocation for approver / adjudicator (remove L2 Critic) | **Planned** |
+| DS-GOV-01 | P1 | Version-bound authorization handoff to Governed Execution | **Done** |
+| DS-GOV-02 | P1 | HITL invocation for approver / adjudicator (remove L2 Critic) | **Done** |
 
 ### Observability / Diagnostics
 
