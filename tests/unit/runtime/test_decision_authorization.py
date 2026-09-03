@@ -12,6 +12,9 @@ from intergrax.contracts.decision_authorization import (
     DecisionGovernanceDisposition,
     DecisionGovernanceEvaluationInput,
     DecisionGovernanceMismatchError,
+    DecisionExecutionAction,
+    DecisionExecutionAuthorization,
+    DecisionGovernancePolicyContext,
     authoritative_decision_ref,
     decision_execution_action,
     decision_governance_policy_context,
@@ -124,19 +127,19 @@ class _StaticGovernanceEvaluator:
     def __init__(self, decision: DecisionGovernanceDecision) -> None:
         self._decision = decision
 
-    def evaluate(
+    def evaluate[T](
         self,
         *,
-        evaluation_input: DecisionGovernanceEvaluationInput[Payload],
+        evaluation_input: DecisionGovernanceEvaluationInput[T],
     ) -> DecisionGovernanceDecision:
         return self._decision
 
 
 class _WrongVersionGovernanceEvaluator:
-    def evaluate(
+    def evaluate[T](
         self,
         *,
-        evaluation_input: DecisionGovernanceEvaluationInput[Payload],
+        evaluation_input: DecisionGovernanceEvaluationInput[T],
     ) -> DecisionGovernanceDecision:
         ref = authoritative_decision_ref(evaluation_input.decision)
         wrong_identity = DecisionIdentity(
@@ -199,14 +202,14 @@ def _accepted(candidate: CandidateDecision[Payload]) -> AuthoritativeAcceptedDec
     )
 
 
-def _action() -> object:
+def _action() -> DecisionExecutionAction:
     return decision_execution_action(
         kind=validate_decision_execution_action_kind("tool.side_effect"),
         subject="notify.ops",
     )
 
 
-def _policy() -> object:
+def _policy() -> DecisionGovernancePolicyContext:
     return decision_governance_policy_context(
         policy_provenance_digest="policy-digest-a",
         matched_rule_ids=("rule.allow.notify",),
@@ -259,6 +262,16 @@ def test_forbidden_patterns_absent_in_authorization_modules() -> None:
         source = module_path.read_text(encoding="utf-8")
         for fragment in _FORBIDDEN_FRAGMENTS:
             assert fragment not in source
+
+
+def test_bundle_validator_does_not_self_compare_policy_context() -> None:
+    runtime_source = Path("intergrax/runtime/decision_authorization.py").read_text(
+        encoding="utf-8",
+    )
+    bundle_start = runtime_source.index("def validate_execution_authorization_bundle(")
+    bundle_end = runtime_source.index("\ndef mint_validated_execution_authorization(")
+    bundle_source = runtime_source[bundle_start:bundle_end]
+    assert "policy_context=authorization.policy_context" not in bundle_source
 
 
 def test_three_authority_types_are_structurally_distinct() -> None:
@@ -367,6 +380,7 @@ def test_full_safe_flow_through_governance_authorization() -> None:
         authorization=authorization,
         decision=accepted,
         action=action,
+        current_policy_context=policy,
     )
 
 
@@ -492,4 +506,173 @@ def test_revision_invalidates_execution_authorization_for_v2() -> None:
             authorization=authorization_v1,
             decision=accepted_v2,
             action=action,
+            current_policy_context=policy,
         )
+
+
+def _mint_authorization(
+    accepted: AuthoritativeAcceptedDecision[Payload],
+    *,
+    action: DecisionExecutionAction | None = None,
+    policy: DecisionGovernancePolicyContext | None = None,
+) -> DecisionExecutionAuthorization:
+    resolved_action = action or _action()
+    resolved_policy = policy or _policy()
+    governance = DecisionGovernanceDecision(
+        disposition=DecisionGovernanceDisposition.ALLOW,
+        decision_ref=authoritative_decision_ref(accepted),
+        action=resolved_action,
+        policy_context=resolved_policy,
+        tenant_id=accepted.identity.tenant_id,
+    )
+    return mint_validated_execution_authorization(
+        evaluation_input=DecisionGovernanceEvaluationInput(
+            decision=accepted,
+            action=resolved_action,
+            policy_context=resolved_policy,
+        ),
+        governance_decision=governance,
+    )
+
+
+def test_valid_same_policy_context_passes_bundle_validation() -> None:
+    accepted = _accepted(_candidate())
+    action = _action()
+    policy = _policy()
+    authorization = _mint_authorization(accepted, action=action, policy=policy)
+    validate_execution_authorization_bundle(
+        authorization=authorization,
+        decision=accepted,
+        action=action,
+        current_policy_context=policy,
+    )
+
+
+def test_changed_policy_context_rejected_at_execution_time() -> None:
+    accepted = _accepted(_candidate())
+    action = _action()
+    policy_p1 = _policy()
+    policy_p2 = decision_governance_policy_context(
+        policy_provenance_digest="policy-digest-b",
+        matched_rule_ids=("rule.allow.notify",),
+    )
+    authorization = _mint_authorization(accepted, action=action, policy=policy_p1)
+    with pytest.raises(DecisionGovernanceMismatchError):
+        validate_execution_authorization_bundle(
+            authorization=authorization,
+            decision=accepted,
+            action=action,
+            current_policy_context=policy_p2,
+        )
+
+
+def test_digest_change_rejected_at_execution_time() -> None:
+    accepted = _accepted(_candidate())
+    action = _action()
+    policy_p1 = decision_governance_policy_context(
+        policy_provenance_digest="digest-a",
+        matched_rule_ids=("rule-a",),
+    )
+    policy_p2 = decision_governance_policy_context(
+        policy_provenance_digest="digest-b",
+        matched_rule_ids=("rule-a",),
+    )
+    authorization = _mint_authorization(accepted, action=action, policy=policy_p1)
+    with pytest.raises(DecisionGovernanceMismatchError):
+        validate_execution_authorization_bundle(
+            authorization=authorization,
+            decision=accepted,
+            action=action,
+            current_policy_context=policy_p2,
+        )
+
+
+def test_rule_set_change_rejected_at_execution_time() -> None:
+    accepted = _accepted(_candidate())
+    action = _action()
+    policy_p1 = decision_governance_policy_context(
+        policy_provenance_digest="policy-digest-a",
+        matched_rule_ids=("rule-a",),
+    )
+    policy_p2 = decision_governance_policy_context(
+        policy_provenance_digest="policy-digest-a",
+        matched_rule_ids=("rule-a", "rule-b"),
+    )
+    authorization = _mint_authorization(accepted, action=action, policy=policy_p1)
+    with pytest.raises(DecisionGovernanceMismatchError):
+        validate_execution_authorization_bundle(
+            authorization=authorization,
+            decision=accepted,
+            action=action,
+            current_policy_context=policy_p2,
+        )
+
+
+def test_action_mismatch_rejected_at_execution_time() -> None:
+    accepted = _accepted(_candidate())
+    action_a = _action()
+    action_b = decision_execution_action(
+        kind=validate_decision_execution_action_kind("tool.side_effect"),
+        subject="deploy.prod",
+    )
+    policy = _policy()
+    authorization = _mint_authorization(accepted, action=action_a, policy=policy)
+    with pytest.raises(DecisionGovernanceMismatchError):
+        validate_execution_authorization_bundle(
+            authorization=authorization,
+            decision=accepted,
+            action=action_b,
+            current_policy_context=policy,
+        )
+
+
+def test_combined_mismatch_rejected_at_execution_time() -> None:
+    challenged_v1 = _candidate(text="v1")
+    proposal_ref_v1 = candidate_decision_ref(challenged_v1)
+    accepted_v1 = _accepted(challenged_v1)
+    action_a = _action()
+    action_b = decision_execution_action(
+        kind=validate_decision_execution_action_kind("tool.side_effect"),
+        subject="deploy.prod",
+    )
+    policy_p1 = _policy()
+    policy_p2 = decision_governance_policy_context(
+        policy_provenance_digest="policy-digest-b",
+        matched_rule_ids=("rule.allow.notify",),
+    )
+    authorization_v1 = _mint_authorization(
+        accepted_v1,
+        action=action_a,
+        policy=policy_p1,
+    )
+    revision_decision = evaluate_decision_revision(
+        policy=decision_revision_policy(max_revisions=1),
+        state=initial_decision_revision_state(proposal_ref_v1),
+        verification_result=_challenged_result(proposal_ref_v1),
+    )
+    authorization = decision_revision_authorization(revision_decision=revision_decision)
+    revised_v2, _ = mint_revised_candidate_decision(
+        challenged=challenged_v1,
+        authorization=authorization,
+        artifact_kind="demo.payload",
+        revised_payload=Payload(text="v2"),
+        revision_state=initial_decision_revision_state(proposal_ref_v1),
+    )
+    accepted_v2 = _accepted(revised_v2)
+    with pytest.raises(DecisionGovernanceMismatchError):
+        validate_execution_authorization_bundle(
+            authorization=authorization_v1,
+            decision=accepted_v2,
+            action=action_b,
+            current_policy_context=policy_p2,
+        )
+
+
+def test_mint_validated_execution_authorization_proves_faithful_representation() -> None:
+    accepted = _accepted(_candidate())
+    action = _action()
+    policy = _policy()
+    authorization = _mint_authorization(accepted, action=action, policy=policy)
+    assert authorization.policy_context == policy
+    assert authorization.action == action
+    assert authorization.decision_ref == authoritative_decision_ref(accepted)

@@ -17,6 +17,7 @@ from intergrax.contracts.decision_authorization import (
     DecisionGovernanceDecision,
     DecisionGovernanceDisposition,
     DecisionGovernanceEvaluationInput,
+    DecisionGovernancePolicyContext,
     decision_execution_authorization,
     validate_execution_authorization_for_action,
     validate_execution_authorization_for_decision,
@@ -37,8 +38,14 @@ def validate_execution_authorization_bundle(
     authorization: DecisionExecutionAuthorization,
     decision: AuthoritativeAcceptedDecision[T],
     action: DecisionExecutionAction,
+    current_policy_context: DecisionGovernancePolicyContext,
 ) -> None:
-    """Reject stale or mismatched execution authorization before side effects."""
+    """Reject stale or mismatched execution authorization before side effects.
+
+    Execution-time validation proves authorization remains valid against the
+    caller-supplied current policy context (context equality freshness), not
+    against authorization.policy_context alone.
+    """
     validate_execution_authorization_for_decision(
         authorization=authorization,
         decision=decision,
@@ -49,7 +56,7 @@ def validate_execution_authorization_bundle(
     )
     validate_execution_authorization_for_policy_context(
         authorization=authorization,
-        policy_context=authorization.policy_context,
+        policy_context=current_policy_context,
     )
 
 
@@ -70,10 +77,13 @@ def mint_validated_execution_authorization(
     authorization = decision_execution_authorization(
         governance_decision=governance_decision,
     )
+    # Mint-time validation proves authorization faithfully represents governance
+    # evaluation; execution hosts must re-validate with current policy context.
     validate_execution_authorization_bundle(
         authorization=authorization,
         decision=evaluation_input.decision,
         action=evaluation_input.action,
+        current_policy_context=evaluation_input.policy_context,
     )
     return authorization
 
