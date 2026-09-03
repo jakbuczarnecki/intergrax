@@ -140,7 +140,11 @@ class RedisIdempotencyStore(IdempotencyStore):
 
             local owner_id = redis.call("HGET", KEYS[1], "owner_id")
             local fence = redis.call("HGET", KEYS[1], "fence")
+            local lease_expires_at = redis.call("HGET", KEYS[1], "lease_expires_at")
             if owner_id ~= ARGV[1] or fence ~= ARGV[2] then
+                return 2
+            end
+            if not lease_expires_at or lease_expires_at <= ARGV[5] then
                 return 2
             end
 
@@ -171,7 +175,11 @@ class RedisIdempotencyStore(IdempotencyStore):
 
             local owner_id = redis.call("HGET", KEYS[1], "owner_id")
             local fence = redis.call("HGET", KEYS[1], "fence")
+            local lease_expires_at = redis.call("HGET", KEYS[1], "lease_expires_at")
             if owner_id ~= ARGV[1] or fence ~= ARGV[2] then
+                return 2
+            end
+            if not lease_expires_at or lease_expires_at <= ARGV[3] then
                 return 2
             end
 
@@ -284,9 +292,10 @@ class RedisIdempotencyStore(IdempotencyStore):
         ledger_key = self._ledger_key(tenant_id, key)
         serialized = self._serialize_result(result)
         ttl_arg = str(completed_ttl_seconds) if completed_ttl_seconds is not None else ""
+        now_arg = datetime.now(UTC).isoformat()
         script_result = self._complete_with_claim_script(
             keys=[ledger_key],
-            args=[claim.owner_id, str(claim.fence), serialized, ttl_arg],
+            args=[claim.owner_id, str(claim.fence), serialized, ttl_arg, now_arg],
         )
         if script_result != 1:
             raise StaleClaimError(
@@ -300,9 +309,10 @@ class RedisIdempotencyStore(IdempotencyStore):
         claim: InvocationClaim,
     ) -> None:
         ledger_key = self._ledger_key(tenant_id, key)
+        now_arg = datetime.now(UTC).isoformat()
         script_result = self._mark_uncertain_with_claim_script(
             keys=[ledger_key],
-            args=[claim.owner_id, str(claim.fence)],
+            args=[claim.owner_id, str(claim.fence), now_arg],
         )
         if script_result != 1:
             raise StaleClaimError(

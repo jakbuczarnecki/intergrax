@@ -7,6 +7,8 @@ from __future__ import annotations
 import threading
 import time
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from pydantic import BaseModel
 
@@ -190,6 +192,58 @@ def test_a5_stale_completion_rejected() -> None:
     result = ToolExecutionResult.ok(DummyOutput(result=1))
     with pytest.raises(StaleClaimError):
         store.complete_with_claim("tenant-a", "stale-key", stale_claim, result)
+
+
+def test_a5b_expired_lease_completion_rejected() -> None:
+    store = InMemoryIdempotencyStore()
+    acquired = store.claim("tenant-a", "expired-complete-key", "owner-a", lease_seconds=30)
+    assert acquired.claim is not None
+    expired_claim = acquired.claim
+    entry = store._store[("tenant-a", "expired-complete-key")]  # noqa: SLF001
+    entry.claim = acquired.claim.model_copy(
+        update={"lease_expires_at": datetime.now(UTC) - timedelta(seconds=1)},
+    )
+    result = ToolExecutionResult.ok(DummyOutput(result=1))
+    with pytest.raises(StaleClaimError):
+        store.complete_with_claim("tenant-a", "expired-complete-key", expired_claim, result)
+
+
+def test_a5c_expired_lease_mark_uncertain_rejected() -> None:
+    store = InMemoryIdempotencyStore()
+    acquired = store.claim("tenant-a", "expired-uncertain-key", "owner-a", lease_seconds=30)
+    assert acquired.claim is not None
+    expired_claim = acquired.claim
+    entry = store._store[("tenant-a", "expired-uncertain-key")]  # noqa: SLF001
+    entry.claim = acquired.claim.model_copy(
+        update={"lease_expires_at": datetime.now(UTC) - timedelta(seconds=1)},
+    )
+    with pytest.raises(StaleClaimError):
+        store.mark_uncertain_with_claim("tenant-a", "expired-uncertain-key", expired_claim)
+
+
+def test_a5d_superseded_fence_current_owner_completes() -> None:
+    store = InMemoryIdempotencyStore()
+    acquired_a = store.claim("tenant-a", "fence-handoff-key", "owner-a", lease_seconds=30)
+    assert acquired_a.claim is not None
+    stale_claim = acquired_a.claim
+    entry = store._store[("tenant-a", "fence-handoff-key")]  # noqa: SLF001
+    current_claim = acquired_a.claim.model_copy(update={"fence": 2, "owner_id": "owner-b"})
+    entry.claim = current_claim
+    result = ToolExecutionResult.ok(DummyOutput(result=7))
+    with pytest.raises(StaleClaimError):
+        store.complete_with_claim("tenant-a", "fence-handoff-key", stale_claim, result)
+    store.complete_with_claim("tenant-a", "fence-handoff-key", current_claim, result)
+    assert store.get_status("tenant-a", "fence-handoff-key") == InvocationStatus.COMPLETED
+
+
+def test_a9_tenant_isolation_same_key() -> None:
+    store = InMemoryIdempotencyStore()
+    claim_a = store.claim("tenant-a", "shared-key", "owner-a", lease_seconds=30)
+    claim_b = store.claim("tenant-b", "shared-key", "owner-b", lease_seconds=30)
+    assert claim_a.outcome == ClaimOutcome.ACQUIRED
+    assert claim_b.outcome == ClaimOutcome.ACQUIRED
+    assert claim_a.claim is not None and claim_b.claim is not None
+    assert claim_a.claim.fence == 1 and claim_b.claim.fence == 1
 
 
 def test_a6_current_owner_completes() -> None:
