@@ -18,6 +18,7 @@ from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.agent_run import AgentRunError
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, CognitivePattern, TerminalReason
 from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.contracts.decision_revision import DecisionRevisionDisposition
 from intergrax.runtime.critic.contracts import CriticAction
 from intergrax.runtime.decision_flow import DecisionFlowHostAction
 
@@ -79,6 +80,18 @@ class ReflectionAgent(CognitiveAgent):
                         state_delta=delta,
                     )
                 if decision_outcome.host_action is DecisionFlowHostAction.BLOCK:
+                    if (
+                        decision_outcome.revision_decision is not None
+                        and decision_outcome.revision_decision.disposition
+                        is DecisionRevisionDisposition.ALLOWED
+                    ):
+                        revised = updated.model_copy(update={"phase": "revise"})
+                        return StepOutcome.continue_with(
+                            state_delta=self.session_state_delta(
+                                revised,
+                                exclude={"schema_version", "state_version"},
+                            ),
+                        )
                     return StepOutcome.fail(
                         errors=[
                             AgentRunError(
@@ -89,13 +102,6 @@ class ReflectionAgent(CognitiveAgent):
                         terminal_reason=TerminalReason.VALIDATION_FAILED,
                         state_delta=delta,
                     )
-                revised = updated.model_copy(update={"phase": "revise"})
-                return StepOutcome.continue_with(
-                    state_delta=self.session_state_delta(
-                        revised,
-                        exclude={"schema_version", "state_version"},
-                    ),
-                )
 
             critic_outcome = verify_reflection_draft(
                 step_ctx,

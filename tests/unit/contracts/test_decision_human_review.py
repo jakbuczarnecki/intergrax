@@ -25,6 +25,7 @@ from intergrax.contracts.decision_human_review import (
     adjudication_required_human_review_reason,
     decision_human_review_decision,
     decision_human_review_request,
+    governance_requires_human_review_reason,
     mint_decision_human_review_request_id,
     revision_exhausted_human_review_reason,
     validate_decision_human_review_reason_code,
@@ -143,6 +144,7 @@ def test_request_binds_exact_proposal_ref() -> None:
 def test_reason_codes_validate_and_include_known_values() -> None:
     assert revision_exhausted_human_review_reason().startswith("revision_")
     assert adjudication_required_human_review_reason().startswith("adjudication_")
+    assert governance_requires_human_review_reason().startswith("governance_")
     with pytest.raises(ValueError, match="must match"):
         validate_decision_human_review_reason_code("INVALID")
 

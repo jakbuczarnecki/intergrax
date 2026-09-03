@@ -46,6 +46,8 @@ from intergrax.runtime.policy.agent_decision_enforcement import (
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
+from intergrax.runtime.decision_flow import DecisionFlowGate
+from intergrax.runtime.task.task_contract import TaskExecutionOptions
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -142,7 +144,7 @@ class UAEPExecutor:
         memory_limits: Optional[TaskMemoryLimits] = None,
         critic_hooks: Any = None,
         verify_uaep_step: bool = False,
-        decision_flow_gate: Any = None,
+        decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None,
         verify_uaep_step_decision: bool = False,
         context_engine: Any = None,
         llm_adapter: Any = None,
@@ -186,7 +188,12 @@ class UAEPExecutor:
         self._critic_hooks = hooks
         self._verify_uaep_step = verify_uaep_step
 
-    def set_decision_flow_gate(self, gate: Any, *, verify_uaep_step: bool = False) -> None:
+    def set_decision_flow_gate(
+        self,
+        gate: DecisionFlowGate[AgentExecutionResult] | None,
+        *,
+        verify_uaep_step: bool = False,
+    ) -> None:
         from intergrax.runtime.decision_flow import validate_decision_critic_authority_config
 
         critic_config = self._critic_hooks.config if self._critic_hooks is not None else None
@@ -679,13 +686,13 @@ class UAEPExecutor:
     async def _verify_uaep_step_authority(
         self,
         *,
-        contract: Any,
+        contract: AgentContract,
         step: AgentStep,
         step_result: StepExecutionResult,
         request: RuntimeRequest,
         run_id: str,
         task_id: str,
-        task_options: Any,
+        task_options: TaskExecutionOptions,
         exec_ctx: RuntimeExecutionContext,
     ) -> GovernanceResolution | None:
         if step_result.output is None:
@@ -721,13 +728,13 @@ class UAEPExecutor:
     async def _verify_uaep_step_decision_flow(
         self,
         *,
-        contract: Any,
+        contract: AgentContract,
         step: AgentStep,
         step_result: StepExecutionResult,
         request: RuntimeRequest,
         run_id: str,
         task_id: str,
-        task_options: Any,
+        task_options: TaskExecutionOptions,
         exec_ctx: RuntimeExecutionContext,
     ) -> GovernanceResolution | None:
         from intergrax.contracts.execution_identity import require_active_execution_identity
@@ -738,6 +745,10 @@ class UAEPExecutor:
             build_agent_execution_flow_request,
             evaluate_agent_execution_flow,
         )
+
+        gate = self._decision_flow_gate
+        if gate is None:
+            return None
 
         execution = AgentExecutionResult(
             agent_id=contract.id,
@@ -765,7 +776,7 @@ class UAEPExecutor:
             flow_scope=DecisionFlowScope.UAEP_STEP,
         )
         flow_result = await evaluate_agent_execution_flow(
-            self._decision_flow_gate,
+            gate,
             flow_request,
         )
         if flow_result.host_action is DecisionFlowHostAction.CONTINUE:

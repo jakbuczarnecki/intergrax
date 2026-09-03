@@ -87,6 +87,10 @@ def policy_requires_human_review_reason() -> DecisionHumanReviewReasonCode:
     return validate_decision_human_review_reason_code("policy_requires_human")
 
 
+def governance_requires_human_review_reason() -> DecisionHumanReviewReasonCode:
+    return validate_decision_human_review_reason_code("governance_requires_human")
+
+
 def adjudication_required_human_review_reason() -> DecisionHumanReviewReasonCode:
     return validate_decision_human_review_reason_code("adjudication_required")
 

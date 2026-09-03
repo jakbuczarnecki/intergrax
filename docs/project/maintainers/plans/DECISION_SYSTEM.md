@@ -210,7 +210,7 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-MIG-01 | P0 | Wire graph/UAEP paths to Decision Lifecycle | **Done** |
+| DS-MIG-01 | P0 | Wire graph/UAEP paths to Decision Lifecycle; Graph/UAEP cutover with governance/lifecycle semantic hardening complete | **Done** |
 | DS-MIG-02 | P0 | Retire `CriticOrchestrator` after pipeline parity | **Planned** |
 | DS-MIG-03 | P1 | Remove L2 from verification model; route HITL via Lifecycle | **Planned** |
 | DS-MIG-04 | P1 | DELETE CRITIC_VERIFICATION docs + retire `intergrax/runtime/critic/**` | **Planned** |

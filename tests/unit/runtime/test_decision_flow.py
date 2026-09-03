@@ -15,7 +15,10 @@ from intergrax.contracts.decision_authorization import (
     decision_governance_policy_context,
     validate_decision_execution_action_kind,
 )
-from intergrax.contracts.decision_human_review import DecisionHumanReviewPending
+from intergrax.contracts.decision_human_review import (
+    DecisionHumanReviewPending,
+    governance_requires_human_review_reason,
+)
 from intergrax.contracts.decision_identity import (
     DecisionExecutionLineage,
     DecisionScope,
@@ -166,6 +169,52 @@ class DenyGovernanceEvaluator:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class AllowGovernanceEvaluator:
+    action: object
+    policy_context: object
+
+    def evaluate(self, *, evaluation_input):
+        return DecisionGovernanceDecision(
+            disposition=DecisionGovernanceDisposition.ALLOW,
+            decision_ref=authoritative_decision_ref(evaluation_input.decision),
+            action=self.action,
+            policy_context=self.policy_context,
+            tenant_id=evaluation_input.decision.identity.tenant_id,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class RequireHumanGovernanceEvaluator:
+    action: object
+    policy_context: object
+
+    def evaluate(self, *, evaluation_input):
+        return DecisionGovernanceDecision(
+            disposition=DecisionGovernanceDisposition.REQUIRE_HUMAN,
+            decision_ref=authoritative_decision_ref(evaluation_input.decision),
+            action=self.action,
+            policy_context=self.policy_context,
+            tenant_id=evaluation_input.decision.identity.tenant_id,
+        )
+
+
+@dataclass(slots=True)
+class FailingHumanReviewPort:
+    def request_review(self, request):
+        raise RuntimeError("transport unavailable")
+
+
+def _governance_spec(evaluator) -> DecisionFlowGovernanceSpec[Payload]:
+    action = evaluator.action
+    policy = evaluator.policy_context
+    return DecisionFlowGovernanceSpec(
+        action=action,
+        policy_context=policy,
+        evaluator=evaluator,
+    )
+
+
 def _pipeline(stage: VerificationStage[Payload]) -> VerificationPipeline[Payload]:
     return VerificationPipeline(
         registry=verification_stage_registry(
@@ -245,7 +294,9 @@ async def test_passed_flow_returns_continue(lifecycle_binding) -> None:
 
 
 @pytest.mark.asyncio
-async def test_challenged_with_revision_allowed_is_unresolved(lifecycle_binding) -> None:
+async def test_challenged_with_revision_allowed_blocks_without_terminal_resolution(
+    lifecycle_binding,
+) -> None:
     gate = CanonicalDecisionFlowGate(
         capabilities=DecisionFlowGateCapabilities(
             verification_pipeline=_pipeline(ChallengedStage(kind="test.stage")),
@@ -264,8 +315,9 @@ async def test_challenged_with_revision_allowed_is_unresolved(lifecycle_binding)
     assert result.host_action is DecisionFlowHostAction.BLOCK
     assert result.revision_decision is not None
     assert result.revision_decision.disposition is DecisionRevisionDisposition.ALLOWED
-    assert result.resolution_record is not None
-    assert result.resolution_record.resolution is DecisionResolution.UNRESOLVED
+    assert result.resolution_record is None
+    assert result.lifecycle_state.stage is DecisionLifecycleStage.REVISION
+    assert result.authority_reason == "decision_revision_required"
 
 
 @pytest.mark.asyncio
@@ -289,38 +341,34 @@ async def test_revision_exhausted_requests_human_review(lifecycle_binding) -> No
     )
     assert result.host_action is DecisionFlowHostAction.PENDING_HUMAN
     assert result.human_review_pending is not None
+    assert result.resolution_record is None
     assert port.pending is not None
+    assert result.lifecycle_state.stage is DecisionLifecycleStage.ADJUDICATION
 
 
 @pytest.mark.asyncio
-async def test_governance_deny_blocks_accepted_decision(lifecycle_binding) -> None:
+async def test_governance_deny_blocks_action_without_rejecting_accepted_decision(
+    lifecycle_binding,
+) -> None:
     payload = Payload(text="ok")
-    action = decision_execution_action(
-        kind=validate_decision_execution_action_kind("tool.notify"),
-        subject="ops",
-    )
-    policy = decision_governance_policy_context(
-        policy_provenance_digest="digest-a",
-        matched_rule_ids=("rule.deny",),
+    identity_seed = _identity_seed()
+    evaluator_spec = _governance_spec(
+        DenyGovernanceEvaluator(
+            action=evaluator_spec_action(),
+            policy_context=evaluator_spec_policy(),
+        ),
     )
     gate = CanonicalDecisionFlowGate(
         capabilities=DecisionFlowGateCapabilities(
             verification_pipeline=_pipeline(PassedStage(kind="test.stage")),
             revision_policy=decision_revision_policy(max_revisions=0),
             scopes=frozenset({DecisionFlowScope.GRAPH_FINAL}),
-            governance_spec=DecisionFlowGovernanceSpec(
-                action=action,
-                policy_context=policy,
-                evaluator=DenyGovernanceEvaluator(
-                    action=action,
-                    policy_context=policy,
-                ),
-            ),
+            governance_spec=evaluator_spec,
         ),
     )
     result = await gate.evaluate(
         DecisionFlowRequest(
-            identity_seed=_identity_seed(),
+            identity_seed=identity_seed,
             artifact_kind=validate_decision_artifact_kind("test.payload"),
             payload=payload,
             flow_scope=DecisionFlowScope.GRAPH_FINAL,
@@ -328,3 +376,181 @@ async def test_governance_deny_blocks_accepted_decision(lifecycle_binding) -> No
     )
     assert result.host_action is DecisionFlowHostAction.BLOCK
     assert result.authority_reason == "decision_governance_denied"
+    assert result.accepted_decision is not None
+    assert result.accepted_decision.identity == decision_identity_from_seed(identity_seed)
+    assert result.accepted_decision.artifact == DecisionArtifact(
+        kind=validate_decision_artifact_kind("test.payload"),
+        content=payload,
+    )
+    assert result.authorization is None
+    assert result.resolution_record is None
+    assert result.lifecycle_state.stage is DecisionLifecycleStage.FINALIZATION
+
+
+@pytest.mark.asyncio
+async def test_governance_allow_mints_authorization(lifecycle_binding) -> None:
+    evaluator_spec = _governance_spec(
+        AllowGovernanceEvaluator(
+            action=evaluator_spec_action(),
+            policy_context=evaluator_spec_policy(),
+        ),
+    )
+    gate = CanonicalDecisionFlowGate(
+        capabilities=DecisionFlowGateCapabilities(
+            verification_pipeline=_pipeline(PassedStage(kind="test.stage")),
+            revision_policy=decision_revision_policy(max_revisions=0),
+            scopes=frozenset({DecisionFlowScope.GRAPH_FINAL}),
+            governance_spec=evaluator_spec,
+        ),
+    )
+    result = await gate.evaluate(
+        DecisionFlowRequest(
+            identity_seed=_identity_seed(),
+            artifact_kind=validate_decision_artifact_kind("test.payload"),
+            payload=Payload(text="ok"),
+            flow_scope=DecisionFlowScope.GRAPH_FINAL,
+        ),
+    )
+    assert result.host_action is DecisionFlowHostAction.CONTINUE
+    assert result.accepted_decision is not None
+    assert result.authorization is not None
+
+
+def evaluator_spec_action():
+    return decision_execution_action(
+        kind=validate_decision_execution_action_kind("tool.notify"),
+        subject="ops",
+    )
+
+
+def evaluator_spec_policy():
+    return decision_governance_policy_context(
+        policy_provenance_digest="digest-a",
+        matched_rule_ids=("rule.allow",),
+    )
+
+
+@pytest.mark.asyncio
+async def test_governance_require_human_with_port_pending(lifecycle_binding) -> None:
+    port = RecordingHumanReviewPort()
+    evaluator_spec = _governance_spec(
+        RequireHumanGovernanceEvaluator(
+            action=evaluator_spec_action(),
+            policy_context=evaluator_spec_policy(),
+        ),
+    )
+    identity_seed = _identity_seed()
+    gate = CanonicalDecisionFlowGate(
+        capabilities=DecisionFlowGateCapabilities(
+            verification_pipeline=_pipeline(PassedStage(kind="test.stage")),
+            revision_policy=decision_revision_policy(max_revisions=0),
+            scopes=frozenset({DecisionFlowScope.UAEP_STEP}),
+            governance_spec=evaluator_spec,
+            human_review_port=port,
+        ),
+    )
+    result = await gate.evaluate(
+        DecisionFlowRequest(
+            identity_seed=identity_seed,
+            artifact_kind=validate_decision_artifact_kind("test.payload"),
+            payload=Payload(text="ok"),
+            flow_scope=DecisionFlowScope.UAEP_STEP,
+        ),
+    )
+    assert result.host_action is DecisionFlowHostAction.PENDING_HUMAN
+    assert result.accepted_decision is not None
+    assert result.authorization is None
+    assert result.resolution_record is None
+    assert result.lifecycle_state.stage is DecisionLifecycleStage.FINALIZATION
+    assert port.pending is not None
+    assert port.pending.request.proposal_ref.identity == decision_identity_from_seed(
+        identity_seed,
+    )
+    assert port.pending.request.reason_code == governance_requires_human_review_reason()
+
+
+@pytest.mark.asyncio
+async def test_governance_require_human_without_port_fails_closed(lifecycle_binding) -> None:
+    evaluator_spec = _governance_spec(
+        RequireHumanGovernanceEvaluator(
+            action=evaluator_spec_action(),
+            policy_context=evaluator_spec_policy(),
+        ),
+    )
+    gate = CanonicalDecisionFlowGate(
+        capabilities=DecisionFlowGateCapabilities(
+            verification_pipeline=_pipeline(PassedStage(kind="test.stage")),
+            revision_policy=decision_revision_policy(max_revisions=0),
+            scopes=frozenset({DecisionFlowScope.UAEP_STEP}),
+            governance_spec=evaluator_spec,
+        ),
+    )
+    result = await gate.evaluate(
+        DecisionFlowRequest(
+            identity_seed=_identity_seed(),
+            artifact_kind=validate_decision_artifact_kind("test.payload"),
+            payload=Payload(text="ok"),
+            flow_scope=DecisionFlowScope.UAEP_STEP,
+        ),
+    )
+    assert result.host_action is DecisionFlowHostAction.BLOCK
+    assert result.accepted_decision is not None
+    assert result.authorization is None
+    assert result.authority_reason == "decision_governance_human_review_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_governance_require_human_transport_failure_fails_closed(
+    lifecycle_binding,
+) -> None:
+    evaluator_spec = _governance_spec(
+        RequireHumanGovernanceEvaluator(
+            action=evaluator_spec_action(),
+            policy_context=evaluator_spec_policy(),
+        ),
+    )
+    gate = CanonicalDecisionFlowGate(
+        capabilities=DecisionFlowGateCapabilities(
+            verification_pipeline=_pipeline(PassedStage(kind="test.stage")),
+            revision_policy=decision_revision_policy(max_revisions=0),
+            scopes=frozenset({DecisionFlowScope.UAEP_STEP}),
+            governance_spec=evaluator_spec,
+            human_review_port=FailingHumanReviewPort(),
+        ),
+    )
+    result = await gate.evaluate(
+        DecisionFlowRequest(
+            identity_seed=_identity_seed(),
+            artifact_kind=validate_decision_artifact_kind("test.payload"),
+            payload=Payload(text="ok"),
+            flow_scope=DecisionFlowScope.UAEP_STEP,
+        ),
+    )
+    assert result.host_action is DecisionFlowHostAction.BLOCK
+    assert result.accepted_decision is not None
+    assert result.authorization is None
+    assert result.authority_reason == "decision_governance_human_review_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_revision_exhausted_without_human_terminal_rejected(lifecycle_binding) -> None:
+    gate = CanonicalDecisionFlowGate(
+        capabilities=DecisionFlowGateCapabilities(
+            verification_pipeline=_pipeline(ChallengedStage(kind="test.stage")),
+            revision_policy=decision_revision_policy(max_revisions=0),
+            scopes=frozenset({DecisionFlowScope.GRAPH_FINAL}),
+            request_human_on_revision_exhausted=False,
+        ),
+    )
+    result = await gate.evaluate(
+        DecisionFlowRequest(
+            identity_seed=_identity_seed(),
+            artifact_kind=validate_decision_artifact_kind("test.payload"),
+            payload=Payload(text="bad"),
+            flow_scope=DecisionFlowScope.GRAPH_FINAL,
+        ),
+    )
+    assert result.host_action is DecisionFlowHostAction.BLOCK
+    assert result.resolution_record is not None
+    assert result.resolution_record.resolution is DecisionResolution.REJECTED
+    assert result.lifecycle_state.stage is DecisionLifecycleStage.FINALIZATION

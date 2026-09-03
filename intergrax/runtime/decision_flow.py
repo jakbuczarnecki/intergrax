@@ -25,6 +25,7 @@ from intergrax.contracts.decision_authorization import (
 )
 from intergrax.contracts.decision_finalization import (
     DecisionFinalizeDisposition,
+    DecisionFinalizeGuardResult,
     DecisionFinalizeGuardState,
     DecisionFinalizationKey,
     guard_decision_finalization,
@@ -34,6 +35,7 @@ from intergrax.contracts.decision_human_review import (
     DecisionHumanReviewPending,
     DecisionHumanReviewPort,
     decision_human_review_request,
+    governance_requires_human_review_reason,
     revision_exhausted_human_review_reason,
 )
 from intergrax.contracts.decision_identity import (
@@ -52,6 +54,7 @@ from intergrax.contracts.decision_record import (
     AuthoritativeAcceptedDecision,
     CandidateDecision,
     DecisionArtifactKind,
+    DecisionProposalRef,
     candidate_decision,
     candidate_decision_ref,
 )
@@ -83,16 +86,11 @@ from intergrax.runtime.execution.active_decision_lifecycle_host import (
 from intergrax.runtime.execution.decision_lifecycle_host import DecisionLifecycleHost
 
 T = TypeVar("T")
-HostResultT_contra = TypeVar("HostResultT_contra", contravariant=True)
-ArtifactT_co = TypeVar("ArtifactT_co", covariant=True)
-HostResultT = TypeVar("HostResultT")
-ArtifactT = TypeVar("ArtifactT")
 
 
 class DecisionFlowScope(str, Enum):
     """Host invocation scopes supported by one configured gate."""
 
-    GRAPH_NODE_PARTIAL = "graph_node_partial"
     GRAPH_FINAL = "graph_final"
     UAEP_STEP = "uaep_step"
 
@@ -169,14 +167,6 @@ class DecisionFlowResult(Generic[T]):
     authority_reason: str | None = None
 
 
-class DecisionCandidateAdapter(Protocol[HostResultT_contra, ArtifactT_co]):
-    """Optional host adapter from execution result to typed artifact payload."""
-
-    def to_candidate_payload(self, host_result: HostResultT_contra) -> ArtifactT_co:
-        """Project one host result into the decision artifact payload."""
-        ...
-
-
 class DecisionFlowGate(Protocol[T]):
     """Neutral reusable authority seam for Graph, UAEP, and future hosts."""
 
@@ -239,6 +229,29 @@ def validate_decision_critic_authority_config(
         return
     raise DecisionCriticAuthorityConflictError(
         "Decision flow gate and legacy critic authority cannot both control outcomes",
+    )
+
+
+def _transition_lifecycle_to_terminal_resolution(
+    lifecycle_host: DecisionLifecycleHost,
+    lifecycle_state: DecisionLifecycleState,
+) -> DecisionLifecycleState:
+    lifecycle_state = lifecycle_host.transition(
+        lifecycle_state,
+        DecisionLifecycleStage.RESOLUTION,
+    )
+    return lifecycle_host.transition(
+        lifecycle_state,
+        DecisionLifecycleStage.FINALIZATION,
+    )
+
+
+def _accepted_proposal_ref(
+    accepted: AuthoritativeAcceptedDecision[T],
+) -> DecisionProposalRef:
+    return DecisionProposalRef(
+        identity=accepted.identity,
+        lineage_ref=accepted.lineage.current,
     )
 
 
@@ -314,17 +327,12 @@ class CanonicalDecisionFlowGate(Generic[T]):
                 verification_result=verification_result,
                 revision_decision=revision_decision,
             )
-            unresolved = AuthoritativeResolutionRecord(
-                identity=identity,
-                resolution=DecisionResolution.UNRESOLVED,
-            )
             return DecisionFlowResult(
                 host_action=DecisionFlowHostAction.BLOCK,
                 flow_scope=request.flow_scope,
                 candidate=candidate,
                 verification_result=verification_result,
                 lifecycle_state=lifecycle_state,
-                resolution_record=unresolved,
                 revision_decision=revision_decision,
                 authority_reason="decision_revision_required",
             )
@@ -352,6 +360,10 @@ class CanonicalDecisionFlowGate(Generic[T]):
                 revision_decision=revision_decision,
                 authority_reason="decision_human_review_pending",
             )
+        lifecycle_state = _transition_lifecycle_to_terminal_resolution(
+            lifecycle_host,
+            lifecycle_state,
+        )
         rejected = AuthoritativeResolutionRecord(
             identity=identity,
             resolution=DecisionResolution.REJECTED,
@@ -392,45 +404,113 @@ class CanonicalDecisionFlowGate(Generic[T]):
             DecisionLifecycleStage.FINALIZATION,
         )
         governance_spec = self.capabilities.governance_spec
-        authorization = None
-        if governance_spec is not None:
-            evaluation_input = DecisionGovernanceEvaluationInput(
-                decision=accepted,
-                action=governance_spec.action,
-                policy_context=governance_spec.policy_context,
+        if governance_spec is None:
+            return DecisionFlowResult(
+                host_action=DecisionFlowHostAction.CONTINUE,
+                flow_scope=flow_scope,
+                candidate=candidate,
+                verification_result=verification_result,
+                lifecycle_state=lifecycle_state,
+                accepted_decision=accepted,
+                finalize_disposition=finalize_result.disposition,
             )
-            governance_decision = evaluate_decision_governance_with(
-                evaluator=governance_spec.evaluator,
-                evaluation_input=evaluation_input,
-            )
-            if governance_decision.disposition is DecisionGovernanceDisposition.DENY:
-                denied = AuthoritativeResolutionRecord(
-                    identity=candidate.identity,
-                    resolution=DecisionResolution.REJECTED,
-                )
-                return DecisionFlowResult(
-                    host_action=DecisionFlowHostAction.BLOCK,
-                    flow_scope=flow_scope,
-                    candidate=candidate,
-                    verification_result=verification_result,
-                    lifecycle_state=lifecycle_state,
-                    resolution_record=denied,
-                    accepted_decision=accepted,
-                    finalize_disposition=finalize_result.disposition,
-                    authority_reason="decision_governance_denied",
-                )
+        evaluation_input = DecisionGovernanceEvaluationInput(
+            decision=accepted,
+            action=governance_spec.action,
+            policy_context=governance_spec.policy_context,
+        )
+        governance_decision = evaluate_decision_governance_with(
+            evaluator=governance_spec.evaluator,
+            evaluation_input=evaluation_input,
+        )
+        if governance_decision.disposition is DecisionGovernanceDisposition.ALLOW:
             authorization = mint_validated_execution_authorization(
                 evaluation_input=evaluation_input,
                 governance_decision=governance_decision,
             )
             _ = authoritative_decision_ref(accepted)
+            return DecisionFlowResult(
+                host_action=DecisionFlowHostAction.CONTINUE,
+                flow_scope=flow_scope,
+                candidate=candidate,
+                verification_result=verification_result,
+                lifecycle_state=lifecycle_state,
+                accepted_decision=accepted,
+                authorization=authorization,
+                finalize_disposition=finalize_result.disposition,
+            )
+        if governance_decision.disposition is DecisionGovernanceDisposition.DENY:
+            return DecisionFlowResult(
+                host_action=DecisionFlowHostAction.BLOCK,
+                flow_scope=flow_scope,
+                candidate=candidate,
+                verification_result=verification_result,
+                lifecycle_state=lifecycle_state,
+                accepted_decision=accepted,
+                finalize_disposition=finalize_result.disposition,
+                authority_reason="decision_governance_denied",
+            )
+        if governance_decision.disposition is DecisionGovernanceDisposition.REQUIRE_HUMAN:
+            return self._resolve_governance_require_human(
+                candidate=candidate,
+                accepted=accepted,
+                lifecycle_state=lifecycle_state,
+                verification_result=verification_result,
+                finalize_result=finalize_result,
+                flow_scope=flow_scope,
+            )
+        raise ValueError(
+            f"unsupported governance disposition: {governance_decision.disposition.value!r}",
+        )
+
+    def _resolve_governance_require_human(
+        self,
+        *,
+        candidate: CandidateDecision[T],
+        accepted: AuthoritativeAcceptedDecision[T],
+        lifecycle_state: DecisionLifecycleState,
+        verification_result: VerificationResult,
+        finalize_result: DecisionFinalizeGuardResult[T],
+        flow_scope: DecisionFlowScope,
+    ) -> DecisionFlowResult[T]:
+        human_review_port = self.capabilities.human_review_port
+        if human_review_port is None:
+            return DecisionFlowResult(
+                host_action=DecisionFlowHostAction.BLOCK,
+                flow_scope=flow_scope,
+                candidate=candidate,
+                verification_result=verification_result,
+                lifecycle_state=lifecycle_state,
+                accepted_decision=accepted,
+                finalize_disposition=finalize_result.disposition,
+                authority_reason="decision_governance_human_review_unavailable",
+            )
+        review_request = decision_human_review_request(
+            proposal_ref=_accepted_proposal_ref(accepted),
+            reason_code=governance_requires_human_review_reason(),
+        )
+        pending = request_decision_human_review(review_request)
+        try:
+            human_review_port.request_review(review_request)
+        except Exception:
+            return DecisionFlowResult(
+                host_action=DecisionFlowHostAction.BLOCK,
+                flow_scope=flow_scope,
+                candidate=candidate,
+                verification_result=verification_result,
+                lifecycle_state=lifecycle_state,
+                accepted_decision=accepted,
+                finalize_disposition=finalize_result.disposition,
+                authority_reason="decision_governance_human_review_unavailable",
+            )
         return DecisionFlowResult(
-            host_action=DecisionFlowHostAction.CONTINUE,
+            host_action=DecisionFlowHostAction.PENDING_HUMAN,
             flow_scope=flow_scope,
             candidate=candidate,
             verification_result=verification_result,
             lifecycle_state=lifecycle_state,
             accepted_decision=accepted,
-            authorization=authorization,
+            human_review_pending=pending,
             finalize_disposition=finalize_result.disposition,
+            authority_reason="decision_governance_human_review_pending",
         )

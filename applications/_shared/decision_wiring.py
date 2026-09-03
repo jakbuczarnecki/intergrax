@@ -16,7 +16,6 @@ from intergrax.runtime.decision_flow import (
 )
 from intergrax.runtime.decision_flow_host import build_agent_execution_verification_pipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
@@ -37,7 +36,6 @@ def wire_application_decision_flow(
     verify_graph_final: bool = True,
     verify_uaep_step: bool = False,
     max_revisions: int = 0,
-    validation_engine: NexusValidationEngine | None = None,
 ) -> ApplicationDecisionWiring:
     """Materialize one reusable Decision flow gate for Graph and UAEP hosts."""
     contract = registry.get_contract(agent_id)
@@ -57,7 +55,6 @@ def wire_application_decision_flow(
             scopes=frozenset(scopes),
         ),
     )
-    del validation_engine
     return ApplicationDecisionWiring(
         gate=gate,
         verify_graph_final=verify_graph_final,

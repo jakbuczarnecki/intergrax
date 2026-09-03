@@ -11,6 +11,7 @@ from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_identity import require_active_execution_identity
+from intergrax.contracts.decision_revision import DecisionRevisionDecision
 from intergrax.runtime.decision_flow import (
     CanonicalDecisionFlowGate,
     DecisionFlowGate,
@@ -32,6 +33,8 @@ class ReflectionDecisionOutcome:
     passed: bool
     host_action: DecisionFlowHostAction
     summary: str
+    authority_reason: str | None = None
+    revision_decision: DecisionRevisionDecision | None = None
 
 
 def resolve_decision_flow_gate(
@@ -98,6 +101,8 @@ async def verify_reflection_draft_with_decision(
         passed=flow_result.host_action is DecisionFlowHostAction.CONTINUE,
         host_action=flow_result.host_action,
         summary=summary,
+        authority_reason=flow_result.authority_reason,
+        revision_decision=flow_result.revision_decision,
     )
 
 
