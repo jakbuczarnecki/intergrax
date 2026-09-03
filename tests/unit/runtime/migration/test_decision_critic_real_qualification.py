@@ -22,6 +22,7 @@ from intergrax.runtime.execution.active_decision_lifecycle_host import (
 from intergrax.runtime.execution.decision_lifecycle_host import CanonicalDecisionLifecycleHost
 from intergrax.runtime.migration.decision_critic_parity import (
     CriticRetirementReadiness,
+    DECISION_SUPERSET_CAPABILITY,
     DecisionCriticParityClassification,
     DEFAULT_CRITIC_RETIREMENT_CAPABILITY_REQUIREMENTS,
     LEGACY_HITL_IS_DECISION_HUMAN_REVIEW,
@@ -596,23 +597,41 @@ async def test_full_retirement_qualification_evidence(
     )
     metrics = aggregate_parity_metrics(qualification_results)
     assert metrics.total_comparisons == len(qualification_results)
-    assert report.readiness in {
-        CriticRetirementReadiness.READY,
-        CriticRetirementReadiness.NOT_READY,
-        CriticRetirementReadiness.INSUFFICIENT_EVIDENCE,
-    }
-    assert ParityHostScope.GRAPH_FINAL in report.scopes_exercised
-    assert ParityHostScope.UAEP_STEP in report.scopes_exercised
-    assert ParityVerificationCapability.STRUCTURAL in report.cross_system_capabilities_qualified
-    assert (
-        ParityVerificationCapability.DETERMINISTIC_GUARDRAIL
-        in report.cross_system_capabilities_qualified
+    assert report.readiness is CriticRetirementReadiness.READY
+    assert report.missing_capabilities == frozenset()
+    assert report.missing_scopes == frozenset()
+    assert report.blocking_mismatch_count == 0
+    assert report.shadow_error_count == 0
+    assert report.shadow_unavailable_count == 1
+    assert metrics.retirement_blocking_mismatches == 0
+    assert metrics.shadow_errors == 0
+    assert report.scopes_exercised == frozenset({
+        ParityHostScope.GRAPH_FINAL,
+        ParityHostScope.UAEP_STEP,
+    })
+    assert report.cross_system_capabilities_qualified == frozenset({
+        ParityVerificationCapability.STRUCTURAL,
+        ParityVerificationCapability.DETERMINISTIC_GUARDRAIL,
+        ParityVerificationCapability.SEMANTIC,
+        ParityVerificationCapability.TRAJECTORY,
+    })
+    assert report.decision_superset_capabilities_qualified == frozenset({
+        ParityVerificationCapability.EVIDENCE,
+        ParityVerificationCapability.DOMAIN,
+    })
+    assert report.architectural_mappings_qualified == frozenset({
+        ParityVerificationCapability.HUMAN_HITL,
+    })
+    decision_superset_cases = tuple(
+        result
+        for result in qualification_results
+        if result.identity.subject in {"graph-evidence-fail", "graph-domain-fail"}
     )
-    assert ParityVerificationCapability.SEMANTIC in report.cross_system_capabilities_qualified
-    assert ParityVerificationCapability.TRAJECTORY in report.cross_system_capabilities_qualified
-    assert ParityVerificationCapability.EVIDENCE in report.decision_superset_capabilities_qualified
-    assert ParityVerificationCapability.DOMAIN in report.decision_superset_capabilities_qualified
-    assert ParityVerificationCapability.HUMAN_HITL in report.architectural_mappings_qualified
+    assert len(decision_superset_cases) == 2
+    for result in decision_superset_cases:
+        assert result.classification is DecisionCriticParityClassification.MISMATCH
+        assert result.retirement_blocking is False
+        assert DECISION_SUPERSET_CAPABILITY in {item.code for item in result.differences}
 
 
 def test_forbidden_audit_qualification_support() -> None:
