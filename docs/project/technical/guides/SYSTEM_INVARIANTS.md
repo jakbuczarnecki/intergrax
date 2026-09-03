@@ -1,4 +1,4 @@
-﻿# Intergrax - System Invariants
+# Intergrax - System Invariants
 
 **Status:** Canonical index (2026-06-20)  
 **Audience:** Architects, reviewers, implementation agents, external auditors  
