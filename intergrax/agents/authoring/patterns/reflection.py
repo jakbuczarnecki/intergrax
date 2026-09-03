@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.agents.authoring.critic_gateway import verify_reflection_draft
+from intergrax.agents.authoring.decision_gateway import verify_reflection_draft_with_decision
 from intergrax.agents.authoring.patterns.base import CognitiveAgent
 from intergrax.agents.authoring.patterns.states import ReflectionSessionState
 from intergrax.agents.authoring.patterns.types import (
@@ -18,6 +19,7 @@ from intergrax.contracts.agent_run import AgentRunError
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, CognitivePattern, TerminalReason
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.runtime.critic.contracts import CriticAction
+from intergrax.runtime.decision_flow import DecisionFlowHostAction
 
 
 class ReflectionAgent(CognitiveAgent):
@@ -39,6 +41,62 @@ class ReflectionAgent(CognitiveAgent):
 
         contract = self.get_contract()
         if state.phase == "critique" and state.draft:
+            decision_outcome = await verify_reflection_draft_with_decision(
+                step_ctx,
+                contract=contract,
+                draft=state.draft,
+            )
+            if decision_outcome is not None:
+                rounds = state.reflection_rounds_used + 1
+                updated = state.model_copy(
+                    update={
+                        "reflection_rounds_used": rounds,
+                        "critique": decision_outcome.summary,
+                    }
+                )
+                delta = self.session_state_delta(updated, exclude={"schema_version", "state_version"})
+                output = {"draft": state.draft, "critique": decision_outcome.summary}
+                if decision_outcome.passed:
+                    return StepOutcome.complete(
+                        output=output,
+                        state_delta=delta,
+                        terminal_reason=TerminalReason.GOAL_MET,
+                    )
+                if decision_outcome.host_action is DecisionFlowHostAction.PENDING_HUMAN:
+                    return StepOutcome.pause_hitl(
+                        decision_outcome.summary,
+                        state_delta=delta,
+                    )
+                if rounds >= updated.max_reflection_rounds:
+                    return StepOutcome.fail(
+                        errors=[
+                            AgentRunError(
+                                code=AgentRunErrorCode.MAX_STEPS_EXCEEDED,
+                                message="reflection decision rounds exhausted",
+                            )
+                        ],
+                        terminal_reason=TerminalReason.MAX_STEPS_EXCEEDED,
+                        state_delta=delta,
+                    )
+                if decision_outcome.host_action is DecisionFlowHostAction.BLOCK:
+                    return StepOutcome.fail(
+                        errors=[
+                            AgentRunError(
+                                code=AgentRunErrorCode.VALIDATION_FAILED,
+                                message=decision_outcome.summary,
+                            )
+                        ],
+                        terminal_reason=TerminalReason.VALIDATION_FAILED,
+                        state_delta=delta,
+                    )
+                revised = updated.model_copy(update={"phase": "revise"})
+                return StepOutcome.continue_with(
+                    state_delta=self.session_state_delta(
+                        revised,
+                        exclude={"schema_version", "state_version"},
+                    ),
+                )
+
             critic_outcome = verify_reflection_draft(
                 step_ctx,
                 contract=contract,

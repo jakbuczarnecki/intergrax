@@ -142,6 +142,8 @@ class UAEPExecutor:
         memory_limits: Optional[TaskMemoryLimits] = None,
         critic_hooks: Any = None,
         verify_uaep_step: bool = False,
+        decision_flow_gate: Any = None,
+        verify_uaep_step_decision: bool = False,
         context_engine: Any = None,
         llm_adapter: Any = None,
     ) -> None:
@@ -158,6 +160,8 @@ class UAEPExecutor:
         self._memory_limits = memory_limits or TaskMemoryLimits()
         self._critic_hooks = critic_hooks
         self._verify_uaep_step = verify_uaep_step
+        self._decision_flow_gate = decision_flow_gate
+        self._verify_uaep_step_decision = verify_uaep_step_decision
         self._context_engine = context_engine
         self._llm_adapter = llm_adapter
         if middleware is not None:
@@ -170,8 +174,30 @@ class UAEPExecutor:
             self._middleware = MiddlewarePipeline()
 
     def set_critic_hooks(self, hooks: Any, *, verify_uaep_step: bool = False) -> None:
+        from intergrax.runtime.decision_flow import validate_decision_critic_authority_config
+
+        critic_config = hooks.config if hooks is not None else None
+        validate_decision_critic_authority_config(
+            decision_gate=self._decision_flow_gate,
+            verify_node_partial=critic_config.verify_node_partial if critic_config else False,
+            verify_graph_final=critic_config.verify_graph_final if critic_config else False,
+            verify_uaep_step=verify_uaep_step,
+        )
         self._critic_hooks = hooks
         self._verify_uaep_step = verify_uaep_step
+
+    def set_decision_flow_gate(self, gate: Any, *, verify_uaep_step: bool = False) -> None:
+        from intergrax.runtime.decision_flow import validate_decision_critic_authority_config
+
+        critic_config = self._critic_hooks.config if self._critic_hooks is not None else None
+        validate_decision_critic_authority_config(
+            decision_gate=gate,
+            verify_node_partial=critic_config.verify_node_partial if critic_config else False,
+            verify_graph_final=critic_config.verify_graph_final if critic_config else False,
+            verify_uaep_step=critic_config.verify_uaep_step if critic_config else False,
+        )
+        self._decision_flow_gate = gate
+        self._verify_uaep_step_decision = verify_uaep_step
 
     @staticmethod
     def _retention_days_from_metadata(metadata: dict[str, Any]) -> int | None:
@@ -450,7 +476,7 @@ class UAEPExecutor:
                 if step_result.output is not None:
                     last_output = step_result.output
     
-                critic_resolution = self._verify_uaep_step_critic(
+                critic_resolution = await self._verify_uaep_step_authority(
                     contract=contract,
                     step=step,
                     step_result=step_result,
@@ -649,6 +675,136 @@ class UAEPExecutor:
 
         finally:
             runtime_context.close()
+
+    async def _verify_uaep_step_authority(
+        self,
+        *,
+        contract: Any,
+        step: AgentStep,
+        step_result: StepExecutionResult,
+        request: RuntimeRequest,
+        run_id: str,
+        task_id: str,
+        task_options: Any,
+        exec_ctx: RuntimeExecutionContext,
+    ) -> GovernanceResolution | None:
+        if step_result.output is None:
+            return None
+        if (
+            self._decision_flow_gate is not None
+            and self._verify_uaep_step_decision
+        ):
+            from intergrax.runtime.decision_flow import DecisionFlowScope
+
+            if self._decision_flow_gate.supports_scope(DecisionFlowScope.UAEP_STEP):
+                return await self._verify_uaep_step_decision_flow(
+                    contract=contract,
+                    step=step,
+                    step_result=step_result,
+                    request=request,
+                    run_id=run_id,
+                    task_id=task_id,
+                    task_options=task_options,
+                    exec_ctx=exec_ctx,
+                )
+        return self._verify_uaep_step_critic(
+            contract=contract,
+            step=step,
+            step_result=step_result,
+            request=request,
+            run_id=run_id,
+            task_id=task_id,
+            task_options=task_options,
+            exec_ctx=exec_ctx,
+        )
+
+    async def _verify_uaep_step_decision_flow(
+        self,
+        *,
+        contract: Any,
+        step: AgentStep,
+        step_result: StepExecutionResult,
+        request: RuntimeRequest,
+        run_id: str,
+        task_id: str,
+        task_options: Any,
+        exec_ctx: RuntimeExecutionContext,
+    ) -> GovernanceResolution | None:
+        from intergrax.contracts.execution_identity import require_active_execution_identity
+        from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
+        from intergrax.runtime.decision_flow_host import (
+            agent_execution_decision_context,
+            agent_execution_identity_seed,
+            build_agent_execution_flow_request,
+            evaluate_agent_execution_flow,
+        )
+
+        execution = AgentExecutionResult(
+            agent_id=contract.id,
+            run_id=run_id,
+            status=AgentExecutionStatus.COMPLETED,
+            summary=step_result.output.summary,
+            structured_data=dict(step_result.output.data),
+        )
+        tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        decision_context = agent_execution_decision_context(
+            task_id=task_id,
+            run_id=active_run_id,
+            attempt_id=active_attempt_id,
+            tenant_id=tenant_id,
+        )
+        identity_seed = agent_execution_identity_seed(
+            context=decision_context,
+            namespace="uaep.step",
+            subject=step.step_id,
+        )
+        flow_request = build_agent_execution_flow_request(
+            execution=execution,
+            identity_seed=identity_seed,
+            flow_scope=DecisionFlowScope.UAEP_STEP,
+        )
+        flow_result = await evaluate_agent_execution_flow(
+            self._decision_flow_gate,
+            flow_request,
+        )
+        if flow_result.host_action is DecisionFlowHostAction.CONTINUE:
+            return None
+        if flow_result.host_action is DecisionFlowHostAction.PENDING_HUMAN:
+            decision = AgentDecision(
+                type=AgentDecisionType.REQUEST_HUMAN,
+                reason="decision_uaep_human_review_pending",
+                payload={
+                    "blocking": True,
+                    "human_review_request_id": str(
+                        flow_result.human_review_pending.request.request_id,
+                    )
+                    if flow_result.human_review_pending is not None
+                    else "",
+                },
+            )
+        else:
+            decision = AgentDecision(
+                type=AgentDecisionType.FAIL,
+                reason=flow_result.authority_reason or "decision_uaep_verification_failed",
+                payload={
+                    "resolution": (
+                        flow_result.resolution_record.resolution.value
+                        if flow_result.resolution_record is not None
+                        else "rejected"
+                    ),
+                },
+            )
+        return self._interrupt_handler.resolve_decision(
+            decision,
+            task_id=task_id,
+            run_id=run_id,
+            agent_id=contract.id,
+            step_id=step.step_id,
+            decision_policy_context=AgentDecisionPolicyContext(
+                require_human_on_critical=task_options.governance.require_human_on_critical,
+            ),
+        )
 
     def _verify_uaep_step_critic(
         self,
