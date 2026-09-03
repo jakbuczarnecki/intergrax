@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Configuration helpers for OpenAI vector store tools."""
+"""Tool-level defaults for OpenAI managed vector store catalog tools."""
 
 from __future__ import annotations
 
@@ -11,12 +11,10 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class OpenAIVectorStoreToolConfig:
-    """Resolved defaults for OpenAI hosted vector store operations."""
+    """Application/tool semantics for OpenAI hosted vector store tools."""
 
     vector_store_id: Optional[str]
     default_model: str = "gpt-4o-mini"
-    poll_interval_seconds: float = 5.0
-    max_poll_attempts: int = 120
 
 
 def openai_vector_store_config_from_env() -> OpenAIVectorStoreToolConfig:

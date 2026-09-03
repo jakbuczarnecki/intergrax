@@ -1,15 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""OpenAI managed vector store operations for catalog tools (not Tier-0 ``rag.*``)."""
+"""OpenAI managed vector store catalog tools — neutral managed retrieval boundary."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
-import os
-import time
-from pathlib import Path
-from typing import Any, List, Optional, Sequence
+from typing import Optional
 
+from intergrax.integrations.contracts.managed_retrieval import (
+    ManagedRetrievalBackend,
+    ManagedRetrievalQueryRequest,
+    ManagedRetrievalQueryError,
+    ManagedRetrievalResourceNotFoundError,
+    ManagedRetrievalUploadError,
+)
+from intergrax.integrations.providers.managed_retrieval.openai.bundle import (
+    try_create_openai_managed_retrieval_from_env,
+)
 from intergrax.tools.providers.openai_vector_store.config import (
     OpenAIVectorStoreToolConfig,
     openai_vector_store_config_from_env,
@@ -106,152 +112,13 @@ PROHIBITED ACTIONS (ABSOLUTE)
 """.strip()
 
 
-class OpenAIVectorStoreOps:
-    """Low-level OpenAI vector store + file_search operations."""
-
-    def __init__(
-        self,
-        client: Any,
-        vector_store_id: str,
-        *,
-        config: Optional[OpenAIVectorStoreToolConfig] = None,
-    ) -> None:
-        self._client = client
-        self._vector_store_id = vector_store_id
-        self._config = config or openai_vector_store_config_from_env()
-
-    @property
-    def vector_store_id(self) -> str:
-        return self._vector_store_id
-
-    def ensure_vector_store_exists(self) -> Any:
-        return self._client.vector_stores.retrieve(self._vector_store_id)
-
-    def list_all_file_ids(self) -> List[str]:
-        files_page = self._client.vector_stores.files.list(
-            vector_store_id=self._vector_store_id,
-            limit=100,
-        )
-        file_ids = [f.id for f in files_page.data]
-        next_page = attribute_access.optional(files_page, "has_more", False)
-        cursor = attribute_access.optional(files_page, "last_id", None)
-        while next_page and cursor:
-            page = self._client.vector_stores.files.list(
-                vector_store_id=self._vector_store_id,
-                after=cursor,
-                limit=100,
-            )
-            file_ids.extend([f.id for f in page.data])
-            next_page = attribute_access.optional(page, "has_more", False)
-            cursor = attribute_access.optional(page, "last_id", None)
-        return file_ids
-
-    def clear_vector_store_and_storage(self) -> int:
-        file_ids = self.list_all_file_ids()
-        deleted = 0
-        for fid in file_ids:
-            try:
-                self._client.vector_stores.files.delete(
-                    vector_store_id=self._vector_store_id,
-                    file_id=fid,
-                )
-            except Exception:
-                continue
-            try:
-                self._client.files.delete(file_id=fid)
-                deleted += 1
-            except Exception:
-                continue
-        return deleted
-
-    def upload_folder(
-        self,
-        folder: str | Path,
-        *,
-        patterns: Sequence[str] = ("*.pdf", "*.txt", "*.doc", "*.docx"),
-    ) -> tuple[list[str], list[str]]:
-        folder_path = Path(folder)
-        if not folder_path.exists():
-            raise FileNotFoundError(f"Directory does not exist: {folder_path}")
-
-        paths: List[Path] = []
-        for pattern in patterns:
-            paths.extend(folder_path.glob(pattern))
-        if not paths:
-            return [], []
-
-        uploaded: list[str] = []
-        failed: list[str] = []
-        for path in paths:
-            try:
-                self._upload_single_file(path)
-                uploaded.append(path.name)
-            except Exception:
-                failed.append(path.name)
-        return uploaded, failed
-
-    def _upload_single_file(self, path: Path) -> None:
-        with open(path, "rb") as handle:
-            uploaded = self._client.files.create(file=handle, purpose="user_data")
-
-        attempts = 0
-        while attempts < self._config.max_poll_attempts:
-            f_info = self._client.files.retrieve(uploaded.id)
-            status = attribute_access.optional(f_info, "status", None)
-            if status == "processed":
-                break
-            if status == "error":
-                raise RuntimeError(f"OpenAI file processing failed for {path.name}")
-            time.sleep(self._config.poll_interval_seconds)
-            attempts += 1
-        else:
-            raise TimeoutError(f"Timed out waiting for OpenAI file processing: {path.name}")
-
-        self._client.vector_stores.files.create(
-            vector_store_id=self._vector_store_id,
-            file_id=uploaded.id,
-        )
-
-    def file_search_query(
-        self,
-        question: str,
-        *,
-        model: Optional[str] = None,
-        instructions: Optional[str] = None,
-        max_results: int = 10,
-        score_threshold: float = 0.2,
-    ) -> str:
-        resolved_model = model or self._config.default_model
-        resolved_instructions = instructions or DEFAULT_FILE_SEARCH_INSTRUCTIONS
-        response = self._client.responses.create(
-            model=resolved_model,
-            instructions=resolved_instructions,
-            input=question,
-            tools=[
-                {
-                    "type": "file_search",
-                    "vector_store_ids": [self._vector_store_id],
-                    "max_num_results": max_results,
-                    "ranking_options": {
-                        "ranker": "auto",
-                        "score_threshold": score_threshold,
-                    },
-                }
-            ],
-        )
-        return str(attribute_access.optional(response, "output_text", "") or "")
-
-
-def resolve_openai_client(ctx: ToolWiringContext) -> Any | None:
-    client = ctx.extras.get("openai_client")
-    if client is not None:
-        return client
-    api_key = ctx.extras.get("openai_api_key") or os.getenv("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        return None
-    from openai import OpenAI
-
-    return OpenAI(api_key=api_key)
+def resolve_managed_retrieval(ctx: ToolWiringContext) -> ManagedRetrievalBackend | None:
+    if ctx.managed_retrieval is not None:
+        return ctx.managed_retrieval
+    extra = ctx.extras.get("managed_retrieval")
+    if extra is not None:
+        return extra
+    return try_create_openai_managed_retrieval_from_env()
 
 
 def resolve_vector_store_id(
@@ -289,54 +156,62 @@ def resolve_file_search_instructions(
     return DEFAULT_FILE_SEARCH_INSTRUCTIONS
 
 
-def resolve_ops(
+def resolve_tool_config(ctx: ToolWiringContext) -> OpenAIVectorStoreToolConfig:
+    config = ctx.extras.get("openai_vector_store_config")
+    if isinstance(config, OpenAIVectorStoreToolConfig):
+        return config
+    return openai_vector_store_config_from_env()
+
+
+def resolve_backend_and_store(
     ctx: ToolWiringContext,
     vector_store_id: Optional[str],
-) -> tuple[Optional[OpenAIVectorStoreOps], str]:
-    client = resolve_openai_client(ctx)
-    if client is None:
-        return None, "openai_client_not_configured"
-    vs_id = resolve_vector_store_id(ctx, vector_store_id)
-    if not vs_id:
-        return None, "vector_store_id_not_configured"
-    config = ctx.extras.get("openai_vector_store_config")
-    if config is not None and not isinstance(config, OpenAIVectorStoreToolConfig):
-        config = None
-    return OpenAIVectorStoreOps(client, vs_id, config=config), "ok"
+) -> tuple[ManagedRetrievalBackend | None, str | None, str]:
+    backend = resolve_managed_retrieval(ctx)
+    if backend is None:
+        return None, None, "managed_retrieval_not_configured"
+    store_id = resolve_vector_store_id(ctx, vector_store_id, config=resolve_tool_config(ctx))
+    if not store_id:
+        return None, None, "vector_store_id_not_configured"
+    return backend, store_id, "ok"
 
 
 def perform_openai_file_search_query(
     ctx: ToolWiringContext,
     params: OpenAiFileSearchQueryInput,
 ) -> OpenAiFileSearchQueryOutput:
-    ops, reason = resolve_ops(ctx, params.vector_store_id)
-    if ops is None:
+    backend, store_id, reason = resolve_backend_and_store(ctx, params.vector_store_id)
+    if backend is None or store_id is None:
         return OpenAiFileSearchQueryOutput(used=False, reason=reason)
 
     try:
-        ops.ensure_vector_store_exists()
-    except Exception:
+        backend.ensure_store_exists(store_id)
+    except ManagedRetrievalResourceNotFoundError:
         return OpenAiFileSearchQueryOutput(
             used=False,
             reason="vector_store_not_found",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
         )
 
     instructions = resolve_file_search_instructions(ctx, params.instructions)
-    model = params.model or openai_vector_store_config_from_env().default_model
+    tool_config = resolve_tool_config(ctx)
+    model = params.model or tool_config.default_model
     try:
-        answer = ops.file_search_query(
-            params.query,
-            model=model,
-            instructions=instructions,
-            max_results=params.max_results,
-            score_threshold=params.score_threshold,
+        answer = backend.query(
+            ManagedRetrievalQueryRequest(
+                store_id=store_id,
+                question=params.query,
+                model=model,
+                instructions=instructions,
+                max_results=params.max_results,
+                score_threshold=params.score_threshold,
+            )
         )
-    except Exception:
+    except ManagedRetrievalQueryError:
         return OpenAiFileSearchQueryOutput(
             used=False,
             reason="file_search_failed",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
             model=model,
         )
 
@@ -344,7 +219,7 @@ def perform_openai_file_search_query(
         return OpenAiFileSearchQueryOutput(
             used=False,
             reason="empty_response",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
             model=model,
         )
 
@@ -353,7 +228,7 @@ def perform_openai_file_search_query(
         answer_text=answer,
         context_text=answer,
         reason="ok",
-        vector_store_id=ops.vector_store_id,
+        vector_store_id=store_id,
         model=model,
     )
 
@@ -362,39 +237,45 @@ def perform_openai_vector_store_upload(
     ctx: ToolWiringContext,
     params: OpenAiVectorStoreUploadInput,
 ) -> OpenAiVectorStoreUploadOutput:
-    ops, reason = resolve_ops(ctx, params.vector_store_id)
-    if ops is None:
+    backend, store_id, reason = resolve_backend_and_store(ctx, params.vector_store_id)
+    if backend is None or store_id is None:
         return OpenAiVectorStoreUploadOutput(used=False, reason=reason)
 
     try:
-        ops.ensure_vector_store_exists()
-    except Exception:
+        backend.ensure_store_exists(store_id)
+    except ManagedRetrievalResourceNotFoundError:
         return OpenAiVectorStoreUploadOutput(
             used=False,
             reason="vector_store_not_found",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
         )
 
     try:
-        uploaded, failed = ops.upload_folder(params.folder_path, patterns=params.patterns)
+        upload_result = backend.upload_folder(
+            store_id,
+            params.folder_path,
+            patterns=params.patterns,
+        )
     except FileNotFoundError:
         return OpenAiVectorStoreUploadOutput(
             used=False,
             reason="folder_not_found",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
         )
-    except Exception:
+    except ManagedRetrievalUploadError:
         return OpenAiVectorStoreUploadOutput(
             used=False,
             reason="upload_failed",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
         )
 
+    uploaded = list(upload_result.uploaded_names)
+    failed = list(upload_result.failed_names)
     if not uploaded and not failed:
         return OpenAiVectorStoreUploadOutput(
             used=False,
             reason="no_matching_files",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
         )
 
     return OpenAiVectorStoreUploadOutput(
@@ -403,7 +284,7 @@ def perform_openai_vector_store_upload(
         file_names=uploaded,
         failed_files=failed,
         reason="ok" if uploaded else "all_files_failed",
-        vector_store_id=ops.vector_store_id,
+        vector_store_id=store_id,
     )
 
 
@@ -411,31 +292,31 @@ def perform_openai_vector_store_clear(
     ctx: ToolWiringContext,
     params: OpenAiVectorStoreClearInput,
 ) -> OpenAiVectorStoreClearOutput:
-    ops, reason = resolve_ops(ctx, params.vector_store_id)
-    if ops is None:
+    backend, store_id, reason = resolve_backend_and_store(ctx, params.vector_store_id)
+    if backend is None or store_id is None:
         return OpenAiVectorStoreClearOutput(used=False, reason=reason)
 
     try:
-        ops.ensure_vector_store_exists()
-    except Exception:
+        backend.ensure_store_exists(store_id)
+    except ManagedRetrievalResourceNotFoundError:
         return OpenAiVectorStoreClearOutput(
             used=False,
             reason="vector_store_not_found",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
         )
 
     try:
-        deleted = ops.clear_vector_store_and_storage()
+        deleted = backend.clear_store(store_id)
     except Exception:
         return OpenAiVectorStoreClearOutput(
             used=False,
             reason="clear_failed",
-            vector_store_id=ops.vector_store_id,
+            vector_store_id=store_id,
         )
 
     return OpenAiVectorStoreClearOutput(
         used=True,
         deleted_count=deleted,
         reason="ok" if deleted else "no_files_to_delete",
-        vector_store_id=ops.vector_store_id,
+        vector_store_id=store_id,
     )

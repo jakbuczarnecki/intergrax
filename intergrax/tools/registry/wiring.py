@@ -22,6 +22,7 @@ from intergrax.integrations.contracts.http_client import HttpClientBackend
 from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
+from intergrax.integrations.contracts.managed_retrieval import ManagedRetrievalBackend
 from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.integrations.contracts.object_storage import ObjectStorage
@@ -64,6 +65,7 @@ class ToolWiringContext:
 
     issue_tracker: IssueTracker | None = None
     search_provider: SearchProvider | None = None
+    managed_retrieval: ManagedRetrievalBackend | None = None
     wiki_knowledge: WikiKnowledge | None = None
     notification_channel: NotificationChannel | None = None
     observability_backend: ObservabilityBackend | None = None

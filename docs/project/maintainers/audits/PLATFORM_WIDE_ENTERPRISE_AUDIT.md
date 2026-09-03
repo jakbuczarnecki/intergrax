@@ -778,7 +778,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 | P2-004 | AW docs say "not implemented" but AW-2B code exists | `autonomous_work/`, `AUTONOMOUS_WORK.md` | Align maturity statement |
 | P2-005 | LKW lacks durable CW persistence | LKW host | Planned adoption |
 | P2-006 | CW gate missing `side_effect_scope_id` correlation | `enforcement_gate.py` | Contract evolution |
-| P2-007 | OpenAI SDK in tool service layer | `tools/providers/openai_vector_store/service.py` | Move behind integration |
+| P2-007 | OpenAI SDK in tool service layer | `tools/providers/openai_vector_store/service.py` | **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** — `ManagedRetrievalBackend` + OpenAI adapter |
 | P2-008 | Functional qualification scope creep risk | `functional_qualification_registry.py` | Keep explicit DI |
 | P2-009 | Execution identity tightening broke unit test | `trace_bridge.py`, `test_external_tool_plugin.py` | Update test helper |
 | P2-010 | RAG legacy `legacy/rag_answers/` | `intergrax/legacy/` | Migration plan |
