@@ -200,6 +200,7 @@ def _hitl_grant(*, bundle: object, key: str, run_id: str, task_id: str, tool_id:
         run_id=run_id,
         step_id="step1",
         tool_id=tool_id,
+        agent_id="proof-agent",
         idempotency_key=key,
         matched_rule_ids=(rule_id,),
         human_request_id=f"hr-{key}",

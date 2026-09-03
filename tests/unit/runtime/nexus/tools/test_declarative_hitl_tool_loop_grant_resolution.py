@@ -109,6 +109,7 @@ def _grant(**overrides: object) -> DeclarativeHitlApprovalGrant:
         "run_id": canonical_run_id,
         "step_id": "step-a",
         "tool_id": _TOOL_A,
+        "agent_id": "agent-1",
         "idempotency_key": None,
         "matched_rule_ids": ("rule-1",),
         "human_request_id": "hr-1",

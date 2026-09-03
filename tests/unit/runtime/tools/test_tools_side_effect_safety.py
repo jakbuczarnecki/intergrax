@@ -685,6 +685,7 @@ def _hitl_grant(*, bundle: object, key: str) -> DeclarativeHitlApprovalGrant:
         run_id=_HITL_RUN_ID,
         step_id="step1",
         tool_id=_HITL_TOOL_ID,
+        agent_id="agent",
         idempotency_key=key,
         matched_rule_ids=(_HITL_RULE_ID,),
         human_request_id="hr-governance-first",

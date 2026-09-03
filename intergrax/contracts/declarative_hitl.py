@@ -56,6 +56,7 @@ class DeclarativeHitlApprovalGrant(BaseModel):
     run_id: str
     step_id: str
     tool_id: str
+    agent_id: str
     idempotency_key: str | None
     matched_rule_ids: tuple[str, ...]
     human_request_id: str

@@ -226,6 +226,7 @@ def _hitl_grant(*, bundle: object, key: str, tool_id: str = _TOOL_ID) -> Declara
         run_id=_RUN_ID,
         step_id="step1",
         tool_id=tool_id,
+        agent_id="agent-a",
         idempotency_key=key,
         matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-p0-safety",
@@ -315,6 +316,62 @@ def test_policy_deny_overrides_prior_approval_grant() -> None:
     with pytest.raises(DeclarativePolicyViolationError):
         invoker.invoke(state=state, agent_id="agent-a", request=scoped_request)
     assert executor.calls == 0
+
+
+def test_hitl_grant_rejects_cross_agent_invocation() -> None:
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = _invoker(executor, coordinator=coordinator)
+    state = GovernanceDummyState()
+    hitl_bundle = _policy_bundle(action="require_hitl")
+    state.context.config.policy_bundle = hitl_bundle
+    base_request = _request(key="cross-agent-key")
+
+    with pytest.raises(DeclarativePolicyHitlRequiredError):
+        invoker.invoke(state=state, agent_id="agent-a", request=base_request)
+    assert executor.calls == 0
+
+    state.declarative_hitl_grant = _hitl_grant(bundle=hitl_bundle, key="cross-agent-key")
+    scoped_request = maybe_assign_declarative_hitl_scope(
+        base_request,
+        state=state,
+        assignment_state=DeclarativeHitlScopeAssignmentState(),
+        unique_candidate=UniqueDeclarativeHitlCandidate(candidate_index=0),
+        request_index=0,
+    )
+
+    with pytest.raises(DeclarativePolicyHitlRequiredError):
+        invoker.invoke(state=state, agent_id="agent-b", request=scoped_request)
+    assert executor.calls == 0
+
+
+def test_hitl_grant_satisfies_same_agent_invocation() -> None:
+    executor = CountingExecutor()
+    store = InMemoryIdempotencyStore()
+    coordinator = IdempotencyPreEffectCoordinator(idempotency_store=store)
+    invoker = _invoker(executor, coordinator=coordinator)
+    state = GovernanceDummyState()
+    hitl_bundle = _policy_bundle(action="require_hitl")
+    state.context.config.policy_bundle = hitl_bundle
+    base_request = _request(key="same-agent-key")
+
+    with pytest.raises(DeclarativePolicyHitlRequiredError):
+        invoker.invoke(state=state, agent_id="agent-a", request=base_request)
+    assert executor.calls == 0
+
+    state.declarative_hitl_grant = _hitl_grant(bundle=hitl_bundle, key="same-agent-key")
+    scoped_request = maybe_assign_declarative_hitl_scope(
+        base_request,
+        state=state,
+        assignment_state=DeclarativeHitlScopeAssignmentState(),
+        unique_candidate=UniqueDeclarativeHitlCandidate(candidate_index=0),
+        request_index=0,
+    )
+
+    result = invoker.invoke(state=state, agent_id="agent-a", request=scoped_request)
+    assert result.success
+    assert executor.calls == 1
 
 
 def test_hitl_approval_requires_matching_invocation_scope() -> None:

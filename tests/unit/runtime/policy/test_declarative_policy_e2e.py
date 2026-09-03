@@ -335,6 +335,7 @@ def test_require_hitl_satisfied_by_matching_grant() -> None:
         run_id="run-e2e",
         step_id="1",
         tool_id=_TOOL_ID,
+        agent_id="agent-e2e",
         idempotency_key=None,
         matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
@@ -348,12 +349,64 @@ def test_require_hitl_satisfied_by_matching_grant() -> None:
             task_id="task-1",
             run_id="run-e2e",
             step_id="1",
+            agent_id="agent-e2e",
             invocation_scope_id="dhr_scope",
             approval_grant=grant,
         )
     )
     assert decision.action.value == "allow"
     assert decision.should_block_execution is False
+
+
+def test_grant_agent_mismatch_blocks_require_hitl() -> None:
+    from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+    from intergrax.runtime.policy.declarative_enforcer import DeclarativePolicyEnforcer
+    from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.grant_agent")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[
+            {
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
+                "resource_kind": "tool",
+                "resource_id": _TOOL_ID,
+                "action": "require_hitl",
+            }
+        ],
+        policy_enforcement_mode="enforce",
+    )
+    bundle = wire_policy_bundle(env)
+    assert bundle.declarative_policy_runtime is not None
+    enforcer = DeclarativePolicyEnforcer(runtime=bundle.declarative_policy_runtime)
+    grant = DeclarativeHitlApprovalGrant(
+        grant_id="grant-1",
+        invocation_scope_id="dhr_scope",
+        task_id="task-1",
+        run_id="run-e2e",
+        step_id="1",
+        tool_id=_TOOL_ID,
+        agent_id="agent-a",
+        idempotency_key=None,
+        matched_rule_ids=(_RULE_ID,),
+        human_request_id="hr-1",
+        policy_provenance_digest=bundle.declarative_policy_runtime.provenance.rules_digest_sha256,
+        pause_id="pause-1",
+        approved_at="2026-08-14T00:00:00+00:00",
+    )
+    decision = enforcer.evaluate_tool_invocation(
+        context=PolicyEvaluationContext(
+            tool_id=_TOOL_ID,
+            task_id="task-1",
+            run_id="run-e2e",
+            step_id="1",
+            agent_id="agent-b",
+            invocation_scope_id="dhr_scope",
+            approval_grant=grant,
+        )
+    )
+    assert decision.should_block_execution is True
+    assert decision.action.value == "require_hitl"
 
 
 def test_deny_overrides_matching_grant() -> None:
@@ -384,6 +437,7 @@ def test_deny_overrides_matching_grant() -> None:
         run_id="run-e2e",
         step_id="1",
         tool_id=_TOOL_ID,
+        agent_id="agent-e2e",
         idempotency_key=None,
         matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
@@ -429,6 +483,7 @@ def test_grant_satisfaction_requires_identity_dimensions() -> None:
         run_id="run-e2e",
         step_id="1",
         tool_id=_TOOL_ID,
+        agent_id="agent-e2e",
         idempotency_key=None,
         matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
