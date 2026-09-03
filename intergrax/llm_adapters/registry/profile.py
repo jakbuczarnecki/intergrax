@@ -16,7 +16,7 @@ from intergrax.llm_adapters.registry.secrets import (
     merge_secrets_into_options,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator, model_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
@@ -43,6 +43,26 @@ class LLMProfile(BaseModel):
     options: dict[str, Any] = Field(default_factory=dict)
     fallback_profiles: tuple[LLMProfile, ...] = Field(default_factory=tuple)
     routing_policy_hint: str | None = None
+    _ephemeral_secrets: dict[str, str] = PrivateAttr(default_factory=dict)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _relocate_inline_api_key(cls, value: object, handler: Any) -> LLMProfile:
+        """Keep durable ``options`` free of raw credential material (P0-SAFETY-6)."""
+        inline_api_key: str | None = None
+        if isinstance(value, dict):
+            payload = dict(value)
+            options = dict(payload.get("options") or {})
+            if "api_key" in options:
+                inline_api_key = str(options.pop("api_key")).strip() or None
+                payload["options"] = options
+            value = payload
+        instance = handler(value)
+        if inline_api_key:
+            secrets = dict(instance._ephemeral_secrets)
+            secrets["api_key"] = inline_api_key
+            object.__setattr__(instance, "_ephemeral_secrets", secrets)
+        return instance
 
     @field_validator("fallback_profiles", mode="before")
     @classmethod
@@ -83,6 +103,16 @@ class LLMProfile(BaseModel):
             return provider.value
         return str(provider).strip().lower()
 
+    def _resolved_secrets(
+        self,
+        secrets: Optional[Mapping[str, str]],
+    ) -> Optional[Mapping[str, str]]:
+        if secrets is not None:
+            return secrets
+        if self._ephemeral_secrets:
+            return self._ephemeral_secrets
+        return None
+
     def create_adapter(
         self,
         *,
@@ -91,7 +121,11 @@ class LLMProfile(BaseModel):
     ) -> LLMAdapter:
         from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
-        kwargs = merge_secrets_into_options(self.provider, {**self.options, **overrides}, secrets)
+        kwargs = merge_secrets_into_options(
+            self.provider,
+            {**self.options, **overrides},
+            self._resolved_secrets(secrets),
+        )
         if self.model:
             kwargs.setdefault("model", self.model)
         return LLMAdapterRegistry.create(self.provider, **kwargs)
@@ -146,7 +180,11 @@ class LLMProfile(BaseModel):
             if tokens <= 0:
                 warnings.append(f"context_window_tokens resolved to {tokens} for model={model_id!r}")
 
-        merged = merge_secrets_into_options(self.provider, dict(self.options), secrets)
+        merged = merge_secrets_into_options(
+            self.provider,
+            dict(self.options),
+            self._resolved_secrets(secrets),
+        )
         if not merged.get("api_key"):
             slug = self._provider_slug(self.provider)
             if slug not in {"ollama", "vllm", "llama_cpp"}:
@@ -154,10 +192,10 @@ class LLMProfile(BaseModel):
         return warnings
 
     def with_secrets(self, secrets: Mapping[str, str]) -> LLMProfile:
-        """Return profile with secrets merged into ``options`` (api_key, etc.)."""
-        return self.model_copy(
-            update={"options": merge_secrets_into_options(self.provider, dict(self.options), secrets)}
-        )
+        """Return profile carrying ephemeral secrets excluded from serialization."""
+        cloned = self.model_copy(deep=True)
+        object.__setattr__(cloned, "_ephemeral_secrets", dict(secrets))
+        return cloned
 
     def create_adapter_from_secrets_store(
         self,
@@ -168,7 +206,7 @@ class LLMProfile(BaseModel):
     ) -> LLMAdapter:
         """Resolve API key from Vault/secrets integration, then create adapter."""
         key = load_api_key_from_secrets_store(store, self.provider, path=secret_path)
-        return self.with_secrets({"api_key": key}).create_adapter(**overrides)
+        return self.create_adapter(secrets={"api_key": key}, **overrides)
 
     @classmethod
     def lab(cls) -> LLMProfile:

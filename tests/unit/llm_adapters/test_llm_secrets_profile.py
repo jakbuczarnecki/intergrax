@@ -20,6 +20,7 @@ def test_resolve_api_key_from_secrets_map() -> None:
 
 def test_profile_with_secrets_passes_api_key() -> None:
     profile = LLMProfile(provider=LLMProvider.GROQ, model="m").with_secrets({"api_key": "k"})
+    assert "api_key" not in profile.options
     with patch(
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create"
     ) as create:
