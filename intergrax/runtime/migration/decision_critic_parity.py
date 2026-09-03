@@ -264,6 +264,21 @@ class CriticRetirementReadinessReport:
     missing_capabilities: frozenset[ParityVerificationCapability]
 
 
+@dataclass(frozen=True, slots=True)
+class _CriticRetirementReadinessEvidence:
+    blocking_mismatch_count: int
+    shadow_error_count: int
+    shadow_unavailable_count: int
+    scopes_exercised: frozenset[ParityHostScope]
+    decision_capabilities_exercised: frozenset[ParityVerificationCapability]
+    critic_capabilities_exercised: frozenset[ParityVerificationCapability]
+    cross_system_capabilities_qualified: frozenset[ParityVerificationCapability]
+    decision_superset_capabilities_qualified: frozenset[ParityVerificationCapability]
+    architectural_mappings_qualified: frozenset[ParityVerificationCapability]
+    missing_scopes: frozenset[ParityHostScope]
+    missing_capabilities: frozenset[ParityVerificationCapability]
+
+
 class DecisionCriticParityObserver(Protocol):
     """Replaceable sink for parity observations without host coupling."""
 
@@ -750,19 +765,8 @@ def _architectural_mapping_qualified(
             DecisionCriticParityClassification.SHADOW_ERROR,
         ):
             continue
-        if result.classification is DecisionCriticParityClassification.EXPECTED_DIFFERENCE:
-            codes = {difference.code for difference in result.differences}
-            if (
-                LEGACY_HITL_IS_DECISION_HUMAN_REVIEW in codes
-                or LEGACY_L2_NOT_DECISION_VERIFICATION in codes
-            ):
-                return True
-        if (
-            ParityVerificationCapability.HUMAN_HITL
-            in result.decision_observation.capabilities
-            and ParityVerificationCapability.HUMAN_HITL
-            in result.critic_observation.capabilities
-        ):
+        codes = {difference.code for difference in result.differences}
+        if LEGACY_HITL_IS_DECISION_HUMAN_REVIEW in codes:
             return True
     return False
 
@@ -787,6 +791,27 @@ def _qualify_capability_requirement(
             requirement.capability,
         )
     raise ValueError(f"unsupported requirement mode: {requirement.mode.value!r}")
+
+
+def _critic_retirement_readiness_report(
+    *,
+    readiness: CriticRetirementReadiness,
+    evidence: _CriticRetirementReadinessEvidence,
+) -> CriticRetirementReadinessReport:
+    return CriticRetirementReadinessReport(
+        readiness=readiness,
+        blocking_mismatch_count=evidence.blocking_mismatch_count,
+        shadow_error_count=evidence.shadow_error_count,
+        shadow_unavailable_count=evidence.shadow_unavailable_count,
+        scopes_exercised=evidence.scopes_exercised,
+        decision_capabilities_exercised=evidence.decision_capabilities_exercised,
+        critic_capabilities_exercised=evidence.critic_capabilities_exercised,
+        cross_system_capabilities_qualified=evidence.cross_system_capabilities_qualified,
+        decision_superset_capabilities_qualified=evidence.decision_superset_capabilities_qualified,
+        architectural_mappings_qualified=evidence.architectural_mappings_qualified,
+        missing_scopes=evidence.missing_scopes,
+        missing_capabilities=evidence.missing_capabilities,
+    )
 
 
 def evaluate_critic_retirement_readiness(
@@ -834,32 +859,32 @@ def evaluate_critic_retirement_readiness(
     )
     missing_scopes = required_scopes - frozenset(scopes_exercised)
     missing_capabilities = required_capabilities - qualified_capabilities
-    report_fields = {
-        "blocking_mismatch_count": blocking_count,
-        "shadow_error_count": shadow_error_count,
-        "shadow_unavailable_count": shadow_unavailable_count,
-        "scopes_exercised": frozenset(scopes_exercised),
-        "decision_capabilities_exercised": frozenset(decision_capabilities_exercised),
-        "critic_capabilities_exercised": frozenset(critic_capabilities_exercised),
-        "cross_system_capabilities_qualified": frozenset(cross_system_qualified),
-        "decision_superset_capabilities_qualified": frozenset(decision_superset_qualified),
-        "architectural_mappings_qualified": frozenset(architectural_qualified),
-        "missing_scopes": frozenset(missing_scopes),
-        "missing_capabilities": frozenset(missing_capabilities),
-    }
+    evidence = _CriticRetirementReadinessEvidence(
+        blocking_mismatch_count=blocking_count,
+        shadow_error_count=shadow_error_count,
+        shadow_unavailable_count=shadow_unavailable_count,
+        scopes_exercised=frozenset(scopes_exercised),
+        decision_capabilities_exercised=frozenset(decision_capabilities_exercised),
+        critic_capabilities_exercised=frozenset(critic_capabilities_exercised),
+        cross_system_capabilities_qualified=frozenset(cross_system_qualified),
+        decision_superset_capabilities_qualified=frozenset(decision_superset_qualified),
+        architectural_mappings_qualified=frozenset(architectural_qualified),
+        missing_scopes=frozenset(missing_scopes),
+        missing_capabilities=frozenset(missing_capabilities),
+    )
     if missing_scopes or missing_capabilities:
-        return CriticRetirementReadinessReport(
+        return _critic_retirement_readiness_report(
             readiness=CriticRetirementReadiness.INSUFFICIENT_EVIDENCE,
-            **report_fields,
+            evidence=evidence,
         )
     if blocking_count > 0 or shadow_error_count > 0:
-        return CriticRetirementReadinessReport(
+        return _critic_retirement_readiness_report(
             readiness=CriticRetirementReadiness.NOT_READY,
-            **report_fields,
+            evidence=evidence,
         )
-    return CriticRetirementReadinessReport(
+    return _critic_retirement_readiness_report(
         readiness=CriticRetirementReadiness.READY,
-        **report_fields,
+        evidence=evidence,
     )
 
 

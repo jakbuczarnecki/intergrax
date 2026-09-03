@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
 
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.decision_human_review import (
+    DecisionHumanReviewPending,
+    decision_human_review_request,
+    verification_challenged_human_review_reason,
+)
 from intergrax.contracts.decision_identity import (
     DecisionExecutionLineage,
     DecisionIdentity,
@@ -56,12 +61,14 @@ from intergrax.runtime.decision_flow import (
     DecisionFlowResult,
     DecisionFlowScope,
 )
+from intergrax.runtime.decision_human_review import request_decision_human_review
 from intergrax.runtime.migration.decision_critic_parity import (
     CriticRetirementReadiness,
     DecisionCriticParityClassification,
     DECISION_ACCEPT_CRITIC_CHALLENGE,
     CRITIC_CAPABILITY_NOT_EXERCISED_BY_DECISION,
     DEFAULT_CRITIC_RETIREMENT_CAPABILITY_REQUIREMENTS,
+    LEGACY_HITL_IS_DECISION_HUMAN_REVIEW,
     LEGACY_L2_NOT_DECISION_VERIFICATION,
     LEGACY_RETRY_IS_EXECUTION_RETRY,
     LEGACY_REVISE_IS_DECISION_REVISION,
@@ -129,6 +136,7 @@ def _decision_result(
     host_action: DecisionFlowHostAction,
     revision_disposition: DecisionRevisionDisposition | None = None,
     stage_kinds: tuple[str, ...] = ("structural",),
+    human_review_pending: DecisionHumanReviewPending | None = None,
 ) -> DecisionFlowResult[_Payload]:
     candidate = _build_candidate()
     proposal_ref = candidate_decision_ref(candidate)
@@ -190,6 +198,29 @@ def _decision_result(
         verification_result=verification,
         lifecycle_state=lifecycle_state,
         revision_decision=revision,
+        human_review_pending=human_review_pending,
+    )
+
+
+def _human_review_pending_for_candidate(
+    candidate,
+) -> DecisionHumanReviewPending:
+    request = decision_human_review_request(
+        proposal_ref=candidate_decision_ref(candidate),
+        reason_code=verification_challenged_human_review_reason(),
+    )
+    return request_decision_human_review(request)
+
+
+def _hitl_critic_verdict() -> CriticVerdict:
+    return CriticVerdict(
+        scope=CriticScope.GRAPH_FINAL,
+        passed=False,
+        layers=[
+            LayerVerdict(layer=CriticLayer.L2_HUMAN, passed=False, errors=["human required"]),
+        ],
+        recommended_action=CriticAction.ESCALATE_HITL,
+        failure_reasons=["human required"],
     )
 
 
@@ -754,6 +785,38 @@ def test_decision_superset_missing_evidence_is_insufficient() -> None:
     assert ParityVerificationCapability.EVIDENCE in report.missing_capabilities
 
 
+def test_architectural_mapping_hitl_not_qualified_on_critic_l2_only() -> None:
+    identity = build_parity_identity(
+        flow_scope=DecisionFlowScope.GRAPH_FINAL,
+        task_id="task-1",
+        run_id="run-1",
+        attempt_id="attempt-1",
+        tenant_id="tenant-1",
+        agent_id="agent-1",
+        subject="graph-1",
+    )
+    decision = _decision_result(
+        disposition=VerificationDisposition.CHALLENGED,
+        host_action=DecisionFlowHostAction.CONTINUE,
+    )
+    parity = compare_decision_critic_parity(
+        identity=identity,
+        decision_result=decision,
+        critic_verdict=_hitl_critic_verdict(),
+    )
+    difference_codes = {item.code for item in parity.differences}
+    assert LEGACY_L2_NOT_DECISION_VERIFICATION in difference_codes
+    assert LEGACY_HITL_IS_DECISION_HUMAN_REVIEW not in difference_codes
+    report = evaluate_critic_retirement_readiness(
+        [parity],
+        required_scopes=frozenset({ParityHostScope.GRAPH_FINAL}),
+        capability_requirements=_hitl_architectural_requirement(),
+    )
+    assert report.readiness is CriticRetirementReadiness.INSUFFICIENT_EVIDENCE
+    assert ParityVerificationCapability.HUMAN_HITL not in report.architectural_mappings_qualified
+    assert ParityVerificationCapability.HUMAN_HITL in report.missing_capabilities
+
+
 def test_architectural_mapping_hitl_qualifies() -> None:
     identity = build_parity_identity(
         flow_scope=DecisionFlowScope.GRAPH_FINAL,
@@ -764,23 +827,84 @@ def test_architectural_mapping_hitl_qualifies() -> None:
         agent_id="agent-1",
         subject="graph-1",
     )
-    verdict = CriticVerdict(
-        scope=CriticScope.GRAPH_FINAL,
-        passed=False,
-        layers=[
-            LayerVerdict(layer=CriticLayer.L2_HUMAN, passed=False, errors=["human required"]),
-        ],
-        recommended_action=CriticAction.ESCALATE_HITL,
-        failure_reasons=["human required"],
+    verdict = _hitl_critic_verdict()
+    decision = _decision_result(
+        disposition=VerificationDisposition.CHALLENGED,
+        host_action=DecisionFlowHostAction.PENDING_HUMAN,
+    )
+    decision_with_pending = replace(
+        decision,
+        human_review_pending=_human_review_pending_for_candidate(decision.candidate),
     )
     results = [
         compare_decision_critic_parity(
             identity=identity,
-            decision_result=_decision_result(
-                disposition=VerificationDisposition.CHALLENGED,
-                host_action=DecisionFlowHostAction.PENDING_HUMAN,
-            ),
+            decision_result=decision_with_pending,
             critic_verdict=verdict,
+        ),
+    ]
+    difference_codes = {item.code for item in results[0].differences}
+    assert LEGACY_HITL_IS_DECISION_HUMAN_REVIEW in difference_codes
+    report = evaluate_critic_retirement_readiness(
+        results,
+        required_scopes=frozenset({ParityHostScope.GRAPH_FINAL}),
+        capability_requirements=_hitl_architectural_requirement(),
+    )
+    assert ParityVerificationCapability.HUMAN_HITL in report.architectural_mappings_qualified
+
+
+def test_architectural_mapping_l2_difference_non_blocking_without_qualification() -> None:
+    identity = build_parity_identity(
+        flow_scope=DecisionFlowScope.GRAPH_FINAL,
+        task_id="task-1",
+        run_id="run-1",
+        attempt_id="attempt-1",
+        tenant_id="tenant-1",
+        agent_id="agent-1",
+        subject="graph-1",
+    )
+    parity = compare_decision_critic_parity(
+        identity=identity,
+        decision_result=_decision_result(
+            disposition=VerificationDisposition.CHALLENGED,
+            host_action=DecisionFlowHostAction.PENDING_HUMAN,
+        ),
+        critic_verdict=_hitl_critic_verdict(),
+    )
+    assert parity.classification is DecisionCriticParityClassification.EXPECTED_DIFFERENCE
+    assert LEGACY_L2_NOT_DECISION_VERIFICATION in {item.code for item in parity.differences}
+    assert not parity.retirement_blocking
+    report = evaluate_critic_retirement_readiness(
+        [parity],
+        required_scopes=frozenset({ParityHostScope.GRAPH_FINAL}),
+        capability_requirements=_hitl_architectural_requirement(),
+    )
+    assert ParityVerificationCapability.HUMAN_HITL not in report.architectural_mappings_qualified
+
+
+def test_shadow_unavailable_does_not_qualify_hitl_mapping() -> None:
+    identity = build_parity_identity(
+        flow_scope=DecisionFlowScope.GRAPH_FINAL,
+        task_id="task-1",
+        run_id="run-1",
+        attempt_id="attempt-1",
+        tenant_id="tenant-1",
+        agent_id="agent-1",
+        subject="graph-1",
+    )
+    decision = _decision_result(
+        disposition=VerificationDisposition.CHALLENGED,
+        host_action=DecisionFlowHostAction.PENDING_HUMAN,
+    )
+    decision_with_pending = replace(
+        decision,
+        human_review_pending=_human_review_pending_for_candidate(decision.candidate),
+    )
+    results = [
+        compare_decision_critic_parity(
+            identity=identity,
+            decision_result=decision_with_pending,
+            shadow_unavailable=True,
         ),
     ]
     report = evaluate_critic_retirement_readiness(
@@ -788,7 +912,42 @@ def test_architectural_mapping_hitl_qualifies() -> None:
         required_scopes=frozenset({ParityHostScope.GRAPH_FINAL}),
         capability_requirements=_hitl_architectural_requirement(),
     )
-    assert ParityVerificationCapability.HUMAN_HITL in report.architectural_mappings_qualified
+    assert ParityVerificationCapability.HUMAN_HITL not in report.architectural_mappings_qualified
+    assert report.readiness is CriticRetirementReadiness.INSUFFICIENT_EVIDENCE
+
+
+def test_shadow_error_does_not_qualify_hitl_mapping() -> None:
+    identity = build_parity_identity(
+        flow_scope=DecisionFlowScope.GRAPH_FINAL,
+        task_id="task-1",
+        run_id="run-1",
+        attempt_id="attempt-1",
+        tenant_id="tenant-1",
+        agent_id="agent-1",
+        subject="graph-1",
+    )
+    decision = _decision_result(
+        disposition=VerificationDisposition.CHALLENGED,
+        host_action=DecisionFlowHostAction.PENDING_HUMAN,
+    )
+    decision_with_pending = replace(
+        decision,
+        human_review_pending=_human_review_pending_for_candidate(decision.candidate),
+    )
+    results = [
+        compare_decision_critic_parity(
+            identity=identity,
+            decision_result=decision_with_pending,
+            shadow_error="hitl shadow failed",
+        ),
+    ]
+    report = evaluate_critic_retirement_readiness(
+        results,
+        required_scopes=frozenset({ParityHostScope.GRAPH_FINAL}),
+        capability_requirements=_hitl_architectural_requirement(),
+    )
+    assert ParityVerificationCapability.HUMAN_HITL not in report.architectural_mappings_qualified
+    assert report.readiness is CriticRetirementReadiness.INSUFFICIENT_EVIDENCE
 
 
 def test_shadow_unavailable_semantic_without_alternate_is_insufficient() -> None:
