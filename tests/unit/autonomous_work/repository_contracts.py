@@ -19,6 +19,7 @@ from intergrax.autonomous_work.repository import (
     WorkerDefinitionRepository,
     WorkerGoalRepository,
     WorkerInstanceRepository,
+    WorkerPrincipalBindingRepository,
 )
 from intergrax.contracts.autonomous_work import (
     DefinitionRevision,
@@ -68,6 +69,7 @@ from intergrax.contracts.autonomous_work.references import (
     WorkspaceContextRef,
     WorkspaceScopeRef,
 )
+from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
 from intergrax.contracts.decision_identity import mint_decision_id
 
 _UTC = timezone.utc
@@ -211,6 +213,17 @@ def continuity_state(**overrides: object) -> WorkContinuityState:
     }
     payload.update(overrides)
     return WorkContinuityState(**payload)
+
+
+def worker_principal_binding(**overrides: object) -> WorkerPrincipalBinding:
+    payload = {
+        "worker_instance_id": mint_worker_instance_id(),
+        "principal_id": "principal-collaborative-1",
+        "created_at": datetime(2026, 9, 2, 12, 0, tzinfo=_UTC),
+        "revision": initial_revision(),
+    }
+    payload.update(overrides)
+    return WorkerPrincipalBinding(**payload)
 
 
 def contract_worker_definition_create_get_and_version_history(
@@ -423,3 +436,64 @@ def contract_continuity_stale_revision_conflict(repo: WorkContinuityStateReposit
             replace(first, next_action_hint="stale"),
             expected_revision=created.revision,
         )
+
+
+def contract_worker_principal_binding_create_get(
+    repo: WorkerPrincipalBindingRepository,
+) -> None:
+    binding = worker_principal_binding()
+    created = repo.create(binding)
+    loaded = repo.get(worker_instance_id=binding.worker_instance_id)
+    assert created == binding
+    assert loaded == created
+
+
+def contract_worker_principal_binding_idempotent_identical_create(
+    repo: WorkerPrincipalBindingRepository,
+) -> None:
+    binding = worker_principal_binding()
+    first = repo.create(binding)
+    second = repo.create(binding)
+    assert second == first
+
+
+def contract_worker_principal_binding_same_id_different_content_conflicts(
+    repo: WorkerPrincipalBindingRepository,
+) -> None:
+    binding = worker_principal_binding()
+    repo.create(binding)
+    conflict = replace(binding, principal_id="principal-other")
+    with pytest.raises(AutonomousWorkEntityConflict):
+        repo.create(conflict)
+
+
+def contract_worker_principal_binding_missing_returns_none(
+    repo: WorkerPrincipalBindingRepository,
+) -> None:
+    worker_id = mint_worker_instance_id()
+    assert repo.get(worker_instance_id=worker_id) is None
+
+
+def contract_worker_principal_binding_worker_isolation(
+    repo: WorkerPrincipalBindingRepository,
+) -> None:
+    worker_a = mint_worker_instance_id()
+    worker_b = mint_worker_instance_id()
+    binding_a = worker_principal_binding(
+        worker_instance_id=worker_a,
+        principal_id="principal-a",
+    )
+    binding_b = worker_principal_binding(
+        worker_instance_id=worker_b,
+        principal_id="principal-b",
+    )
+    repo.create(binding_a)
+    repo.create(binding_b)
+    loaded_a = repo.get(worker_instance_id=worker_a)
+    loaded_b = repo.get(worker_instance_id=worker_b)
+    assert loaded_a == binding_a
+    assert loaded_b == binding_b
+    assert loaded_a is not None
+    assert loaded_b is not None
+    assert loaded_a.principal_id == "principal-a"
+    assert loaded_b.principal_id == "principal-b"

@@ -17,6 +17,8 @@ from intergrax.autonomous_work.serialization import (
     worker_instance_to_json,
     work_continuity_state_from_json,
     work_continuity_state_to_json,
+    worker_principal_binding_from_json,
+    worker_principal_binding_to_json,
 )
 from tests.unit.autonomous_work import repository_contracts as contract_suite
 
@@ -46,3 +48,11 @@ def test_worker_goal_json_roundtrip() -> None:
 def test_work_continuity_state_json_roundtrip() -> None:
     entity = contract_suite.continuity_state()
     assert work_continuity_state_from_json(work_continuity_state_to_json(entity)) == entity
+
+
+def test_worker_principal_binding_json_roundtrip() -> None:
+    binding = contract_suite.worker_principal_binding()
+    assert (
+        worker_principal_binding_from_json(worker_principal_binding_to_json(binding))
+        == binding
+    )

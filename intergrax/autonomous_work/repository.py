@@ -48,6 +48,7 @@ from intergrax.contracts.autonomous_work.ids import (
 )
 from intergrax.contracts.autonomous_work.responsibility import Responsibility
 from intergrax.contracts.autonomous_work.revision import DefinitionRevision, Revision
+from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
 
 
@@ -192,6 +193,33 @@ class WorkerGoalRepository(Protocol):
         expected_revision: Revision,
     ) -> WorkerGoal:
         """Replace worker goal semantics under optimistic concurrency."""
+        ...
+
+
+@runtime_checkable
+class WorkerPrincipalBindingRepository(Protocol):
+    """Authoritative persistence port for immutable Worker→Principal bindings.
+
+    Bindings are created once by control-plane configuration. Rebind is not
+    exposed through this port — a conflicting create fails with
+    ``AutonomousWorkEntityConflict``.
+    """
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+        ...
+
+    def create(self, binding: WorkerPrincipalBinding) -> WorkerPrincipalBinding:
+        """Create an immutable binding or return an identical stored binding."""
+        ...
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> WorkerPrincipalBinding | None:
+        """Return the binding for the worker or ``None``."""
         ...
 
 

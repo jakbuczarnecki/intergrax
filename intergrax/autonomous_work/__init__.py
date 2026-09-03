@@ -21,9 +21,14 @@ from intergrax.autonomous_work.in_memory_repository import (
     InMemoryWorkerDefinitionRepository,
     InMemoryWorkerGoalRepository,
     InMemoryWorkerInstanceRepository,
+    InMemoryWorkerPrincipalBindingRepository,
 )
 from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
 from intergrax.autonomous_work.persistence_provider import resolve_autonomous_work_repositories
+from intergrax.autonomous_work.principal_binding_resolver import (
+    WorkerPrincipalBindingRequired,
+    WorkerPrincipalBindingResolver,
+)
 from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityConflict,
     AutonomousWorkEntityNotFound,
@@ -34,6 +39,7 @@ from intergrax.autonomous_work.repository import (
     WorkerDefinitionRepository,
     WorkerGoalRepository,
     WorkerInstanceRepository,
+    WorkerPrincipalBindingRepository,
 )
 
 __all__ = (
@@ -52,11 +58,15 @@ __all__ = (
     "InMemoryWorkerDefinitionRepository",
     "InMemoryWorkerGoalRepository",
     "InMemoryWorkerInstanceRepository",
+    "InMemoryWorkerPrincipalBindingRepository",
     "ResponsibilityRepository",
     "WorkContinuityStateRepository",
     "WorkerDefinitionRepository",
     "WorkerGoalRepository",
     "WorkerInstanceRepository",
+    "WorkerPrincipalBindingRepository",
+    "WorkerPrincipalBindingRequired",
+    "WorkerPrincipalBindingResolver",
     "WorkerLifecycleService",
     "WorkerLifecycleTransitionPolicy",
     "WorkerLifecycleTransitionRequest",

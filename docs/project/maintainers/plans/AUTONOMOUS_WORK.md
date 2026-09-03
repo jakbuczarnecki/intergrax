@@ -52,7 +52,7 @@ Delivery rule:
 | AW-0 | Canonical architecture, ADR, documentation registration | **CLOSED / FROZEN** — AW-0G independently accepted |
 | AW-1 | Core semantic contracts | **DONE** |
 | AW-2 | Durable worker state and lifecycle | **DONE** |
-| AW-3 | Principal / authority / workspace composition | NOT STARTED |
+| AW-3 | Principal / authority / workspace composition | **IN PROGRESS** |
 | AW-4 | Work intake and proactive goal evaluation | NOT STARTED |
 | AW-5 | Worker → execution composition and budgets | NOT STARTED |
 | AW-6 | Recovery Controller and obstacle taxonomy | NOT STARTED |
@@ -160,11 +160,11 @@ Delivery rule:
 |---|---|
 | **ID** | AW-3A |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **DONE** |
 | **Purpose** | Bind WorkerInstance to canonical Collaborative Principal without creating worker-private authority |
 | **Dependencies** | AW-2; Collaborative Work authority contracts |
 | **REUSED** | `CollaborativePrincipal`, Membership, Delegation, effective authority |
-| **NEW** | worker-principal binding contract/repository if required |
+| **NEW** | `WorkerPrincipalBinding` contract/repository; schema v1→v2 migration |
 | **Explicit out of scope** | new Principal type unless Collaborative Work ADR explicitly approves it |
 | **Acceptance** | worker role/goal never authorizes; missing/revoked Principal binding fails closed |
 | **Proof requirements** | authority non-amplification and stale/tampered binding tests |

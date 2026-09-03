@@ -78,6 +78,13 @@ def continuity_repo(
     return postgresql_autonomous_work_bundle.work_continuity_state
 
 
+@pytest.fixture
+def worker_principal_binding_repo(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+):
+    return postgresql_autonomous_work_bundle.worker_principal_binding
+
+
 def test_postgresql_worker_definition_contracts(worker_definition_repo: object) -> None:
     contract_suite.contract_worker_definition_create_get_and_version_history(
         worker_definition_repo
@@ -142,6 +149,26 @@ def test_postgresql_continuity_contracts(continuity_repo: object) -> None:
     contract_suite.contract_continuity_repository_returns_latest_committed_state(continuity_repo)
     contract_suite.contract_continuity_state_worker_isolation(continuity_repo)
     contract_suite.contract_continuity_stale_revision_conflict(continuity_repo)
+
+
+def test_postgresql_worker_principal_binding_contracts(
+    worker_principal_binding_repo: object,
+) -> None:
+    contract_suite.contract_worker_principal_binding_create_get(
+        worker_principal_binding_repo
+    )
+    contract_suite.contract_worker_principal_binding_idempotent_identical_create(
+        worker_principal_binding_repo
+    )
+    contract_suite.contract_worker_principal_binding_same_id_different_content_conflicts(
+        worker_principal_binding_repo
+    )
+    contract_suite.contract_worker_principal_binding_missing_returns_none(
+        worker_principal_binding_repo
+    )
+    contract_suite.contract_worker_principal_binding_worker_isolation(
+        worker_principal_binding_repo
+    )
 
 
 def test_postgresql_capabilities(
@@ -477,3 +504,126 @@ def test_postgresql_factory_has_no_in_memory_fallback(
     assert postgresql_autonomous_work_bundle.worker_instance.capabilities.backend_id.endswith(
         "postgresql"
     )
+    assert (
+        postgresql_autonomous_work_bundle.worker_principal_binding.capabilities.backend_id
+        == "autonomous_work.postgresql"
+    )
+
+
+def test_postgresql_worker_principal_binding_restart_reopen(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    schema_name = postgresql_autonomous_work_bundle.store.schema_name
+    binding = contract_suite.worker_principal_binding()
+    postgresql_autonomous_work_bundle.worker_principal_binding.create(binding)
+
+    bundle_reopen = open_bundle(schema_name)
+    try:
+        loaded = bundle_reopen.worker_principal_binding.get(
+            worker_instance_id=binding.worker_instance_id
+        )
+        assert loaded == binding
+    finally:
+        bundle_reopen.close()
+
+
+def test_postgresql_worker_principal_binding_cross_connection_visibility(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    bundle_a = postgresql_autonomous_work_bundle
+    bundle_b = open_bundle(bundle_a.store.schema_name)
+    try:
+        binding = contract_suite.worker_principal_binding()
+        bundle_a.worker_principal_binding.create(binding)
+        loaded = bundle_b.worker_principal_binding.get(
+            worker_instance_id=binding.worker_instance_id
+        )
+        assert loaded == binding
+    finally:
+        bundle_b.close()
+
+
+def test_postgresql_worker_principal_binding_concurrent_create_one_wins(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    binding = contract_suite.worker_principal_binding()
+    errors: list[BaseException] = []
+    barrier = threading.Barrier(2)
+
+    def attempt() -> None:
+        bundle = open_bundle(postgresql_autonomous_work_bundle.store.schema_name)
+        try:
+            barrier.wait(timeout=5)
+            bundle.worker_principal_binding.create(binding)
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+        finally:
+            bundle.close()
+
+    threads = [threading.Thread(target=attempt), threading.Thread(target=attempt)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(errors) == 1
+    assert isinstance(errors[0], AutonomousWorkEntityConflict)
+    loaded = postgresql_autonomous_work_bundle.worker_principal_binding.get(
+        worker_instance_id=binding.worker_instance_id
+    )
+    assert loaded == binding
+
+
+def test_postgresql_schema_v1_to_v2_migration_preserves_existing_data(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    created = postgresql_autonomous_work_bundle.worker_instance.create(
+        contract_suite.worker_instance()
+    )
+    schema_name = postgresql_autonomous_work_bundle.store.schema_name
+    store = postgresql_autonomous_work_bundle.store
+    assert isinstance(store, PostgreSQLAutonomousWorkStore)
+    with store.transaction() as conn:
+        conn.execute("DROP TABLE IF EXISTS aw_worker_principal_bindings")
+        conn.execute(
+            "UPDATE autonomous_work_schema_meta SET schema_version = %s WHERE id = 1",
+            (1,),
+        )
+
+    migrated_bundle = open_bundle(schema_name)
+    try:
+        loaded = migrated_bundle.worker_instance.get(
+            worker_instance_id=created.worker_instance_id
+        )
+        assert loaded == created
+        with migrated_bundle.store.transaction() as conn:
+            row = conn.execute(
+                "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
+            ).fetchone()
+            assert row is not None
+            assert int(row["schema_version"]) == 2
+            table_row = conn.execute(
+                """
+                SELECT 1 FROM information_schema.tables
+                WHERE table_name = 'aw_worker_principal_bindings'
+                """
+            ).fetchone()
+            assert table_row is not None
+        binding = contract_suite.worker_principal_binding(
+            worker_instance_id=created.worker_instance_id,
+        )
+        persisted = migrated_bundle.worker_principal_binding.create(binding)
+        assert persisted == binding
+    finally:
+        migrated_bundle.close()
+
+
+def test_postgresql_fresh_database_bootstraps_schema_v2(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    with postgresql_autonomous_work_bundle.store.transaction() as conn:
+        row = conn.execute(
+            "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
+        ).fetchone()
+        assert row is not None
+        assert int(row["schema_version"]) == 2

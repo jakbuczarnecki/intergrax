@@ -35,10 +35,13 @@ def _import_names(path: Path) -> set[str]:
 
 
 class _FakeCursor:
-    rowcount = 0
+    rowcount = 1
 
-    def fetchone(self) -> dict[str, int]:
-        return {"schema_version": 1}
+    def __init__(self, connection: _FakeConnection) -> None:
+        self._connection = connection
+
+    def fetchone(self) -> dict[str, int] | None:
+        return {"schema_version": self._connection.schema_version}
 
     def fetchall(self) -> list[Any]:
         return []
@@ -49,10 +52,20 @@ class _FakeConnection:
         self.executed: list[Any] = []
         self.committed = 0
         self.closed = False
+        self.schema_version = 2
 
     def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
-        self.executed.append(sql)
-        return _FakeCursor()
+        self.executed.append((sql, params))
+        sql_text = str(sql).lower()
+        if "insert into autonomous_work_schema_meta" in sql_text and params:
+            self.schema_version = int(params[0])
+        elif (
+            "update autonomous_work_schema_meta" in sql_text
+            and "set schema_version" in sql_text
+            and params
+        ):
+            self.schema_version = int(params[0])
+        return _FakeCursor(self)
 
     def commit(self) -> None:
         self.committed += 1

@@ -120,6 +120,7 @@ def _materialize_postgresql_autonomous_work_repositories(
         PostgreSQLWorkerDefinitionRepository,
         PostgreSQLWorkerGoalRepository,
         PostgreSQLWorkerInstanceRepository,
+        PostgreSQLWorkerPrincipalBindingRepository,
     )
 
     config = resolve_postgresql_config(**config_overrides)
@@ -148,6 +149,7 @@ def _materialize_postgresql_autonomous_work_repositories(
         responsibility=PostgreSQLResponsibilityRepository(store),
         worker_goal=PostgreSQLWorkerGoalRepository(store),
         work_continuity_state=PostgreSQLWorkContinuityStateRepository(store),
+        worker_principal_binding=PostgreSQLWorkerPrincipalBindingRepository(store),
         store=store,
     )
 

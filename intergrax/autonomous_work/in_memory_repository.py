@@ -24,6 +24,7 @@ from intergrax.contracts.autonomous_work.ids import (
     WorkerGoalId,
     WorkerInstanceId,
 )
+from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
 from intergrax.contracts.autonomous_work.responsibility import Responsibility
 from intergrax.contracts.autonomous_work.revision import (
     DefinitionRevision,
@@ -384,6 +385,42 @@ class InMemoryWorkerGoalRepository:
             read_revision=_worker_goal_revision,
             write_revision=_worker_goal_with_revision,
         )
+
+
+class InMemoryWorkerPrincipalBindingRepository:
+    """Process-local reference repository for immutable WorkerPrincipalBinding records."""
+
+    def __init__(self) -> None:
+        self._store: _ImmutableVersionStore[WorkerInstanceId, WorkerPrincipalBinding] = (
+            _ImmutableVersionStore()
+        )
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return AutonomousWorkRepositoryCapabilities(
+            backend_id="autonomous_work.worker_principal_binding.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create(self, binding: WorkerPrincipalBinding) -> WorkerPrincipalBinding:
+        if binding.revision != initial_revision():
+            raise ValueError(
+                f"WorkerPrincipalBinding create requires revision {initial_revision().value}"
+            )
+        return self._store.create_idempotent(
+            binding.worker_instance_id,
+            binding,
+            entity_kind="WorkerPrincipalBinding",
+            entity_id=binding.worker_instance_id,
+        )
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> WorkerPrincipalBinding | None:
+        return self._store.get(worker_instance_id)
 
 
 class InMemoryWorkContinuityStateRepository:

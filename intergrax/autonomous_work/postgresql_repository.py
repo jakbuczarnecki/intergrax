@@ -26,6 +26,8 @@ from intergrax.autonomous_work.serialization import (
     worker_goal_to_json,
     worker_instance_from_json,
     worker_instance_to_json,
+    worker_principal_binding_from_json,
+    worker_principal_binding_to_json,
     work_continuity_state_from_json,
     work_continuity_state_to_json,
 )
@@ -37,6 +39,7 @@ from intergrax.contracts.autonomous_work.ids import (
     WorkerGoalId,
     WorkerInstanceId,
 )
+from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
 from intergrax.contracts.autonomous_work.responsibility import Responsibility
 from intergrax.contracts.autonomous_work.revision import (
     DefinitionRevision,
@@ -63,7 +66,7 @@ _CAPABILITIES = AutonomousWorkRepositoryCapabilities(
     reference_only=False,
 )
 _ISOLATION_LEVEL = PostgreSQLIsolationLevel.READ_COMMITTED
-_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
 _SCHEMA_META_TABLE = "autonomous_work_schema_meta"
 _SCHEMA_LOCK_KEY = "autonomous_work_schema_init"
 
@@ -183,6 +186,12 @@ class PostgreSQLAutonomousWorkStore:
                     record_json TEXT NOT NULL,
                     revision INTEGER NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS aw_worker_principal_bindings (
+                    worker_instance_id TEXT NOT NULL PRIMARY KEY,
+                    record_json TEXT NOT NULL,
+                    revision INTEGER NOT NULL
+                );
                 """
             )
             session.execute(
@@ -206,10 +215,52 @@ class PostgreSQLAutonomousWorkStore:
                     "Autonomous Work schema version is newer than supported adapter"
                 )
             if persisted_version < _SCHEMA_VERSION:
+                self._migrate_schema(session, from_version=persisted_version)
+                row = session.execute(
+                    f"SELECT schema_version FROM {_SCHEMA_META_TABLE} WHERE id = 1"
+                ).fetchone()
+                if row is None:
+                    raise IntegrationConfigurationError(
+                        "Autonomous Work schema metadata is missing after migration"
+                    )
+                persisted_version = int(row["schema_version"])
+            if persisted_version != _SCHEMA_VERSION:
                 raise AutonomousWorkSchemaVersionError(
                     "Autonomous Work schema requires migration to a newer version"
                 )
             self._schema_ready = True
+
+    def _migrate_schema(
+        self,
+        session: PostgreSQLSession,
+        *,
+        from_version: int,
+    ) -> None:
+        if from_version == 1:
+            self._migrate_v1_to_v2(session)
+            return
+        raise AutonomousWorkSchemaVersionError(
+            f"unsupported Autonomous Work schema migration from version {from_version}"
+        )
+
+    def _migrate_v1_to_v2(self, session: PostgreSQLSession) -> None:
+        session.execute(
+            """
+            CREATE TABLE IF NOT EXISTS aw_worker_principal_bindings (
+                worker_instance_id TEXT NOT NULL PRIMARY KEY,
+                record_json TEXT NOT NULL,
+                revision INTEGER NOT NULL
+            );
+            """
+        )
+        session.execute(
+            f"""
+            UPDATE {_SCHEMA_META_TABLE}
+            SET schema_version = %s
+            WHERE id = 1 AND schema_version = 1
+            """,
+            (_SCHEMA_VERSION,),
+        )
 
 
 class _ImmutableCreateRepository(Generic[_EntityT]):
@@ -711,3 +762,61 @@ class PostgreSQLWorkContinuityStateRepository:
         expected_revision: Revision,
     ) -> WorkContinuityState:
         return self._delegate.replace(state, expected_revision=expected_revision)
+
+
+class PostgreSQLWorkerPrincipalBindingRepository:
+    """Production repository for immutable WorkerPrincipalBinding records."""
+
+    def __init__(self, store: PostgreSQLAutonomousWorkStore) -> None:
+        self._store = store
+        self._delegate = _ImmutableCreateRepository(
+            store,
+            table_name="aw_worker_principal_bindings",
+            entity_kind="WorkerPrincipalBinding",
+            to_json=worker_principal_binding_to_json,
+            from_json=worker_principal_binding_from_json,
+            identity_for_conflict=lambda binding: binding.worker_instance_id,
+            insert_sql="""
+                INSERT INTO aw_worker_principal_bindings (
+                    worker_instance_id, record_json, revision
+                ) VALUES (%s, %s, %s)
+            """,
+            select_sql="""
+                SELECT record_json FROM aw_worker_principal_bindings
+                WHERE worker_instance_id = %s
+            """,
+            insert_params=lambda binding, record_json: (
+                binding.worker_instance_id.strip(),
+                record_json,
+                binding.revision.value,
+            ),
+            select_params=lambda binding: (binding.worker_instance_id.strip(),),
+        )
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def create(self, binding: WorkerPrincipalBinding) -> WorkerPrincipalBinding:
+        if binding.revision != initial_revision():
+            raise ValueError(
+                f"WorkerPrincipalBinding create requires revision {initial_revision().value}"
+            )
+        return self._delegate.create(binding)
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> WorkerPrincipalBinding | None:
+        with self._store.transaction() as conn:
+            row = conn.execute(
+                """
+                SELECT record_json FROM aw_worker_principal_bindings
+                WHERE worker_instance_id = %s
+                """,
+                (worker_instance_id.strip(),),
+            ).fetchone()
+            if row is None:
+                return None
+            return worker_principal_binding_from_json(row["record_json"])

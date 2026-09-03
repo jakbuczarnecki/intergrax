@@ -21,6 +21,7 @@ from intergrax.contracts.autonomous_work.ids import (
     WorkerInstanceId,
 )
 from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
+from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
 from intergrax.contracts.autonomous_work.profile_reference import (
     BudgetProfileRef,
     CapabilityProfileRef,
@@ -417,3 +418,32 @@ def work_continuity_state_to_json(state: WorkContinuityState) -> str:
 
 def work_continuity_state_from_json(payload: str) -> WorkContinuityState:
     return work_continuity_state_from_payload(json.loads(payload))
+
+
+def worker_principal_binding_to_payload(binding: WorkerPrincipalBinding) -> dict[str, Any]:
+    return {
+        "codec_version": CODEC_VERSION,
+        "worker_instance_id": binding.worker_instance_id,
+        "principal_id": binding.principal_id,
+        "created_at": _encode_datetime(binding.created_at),
+        "revision": binding.revision.value,
+    }
+
+
+def worker_principal_binding_from_payload(payload: dict[str, Any]) -> WorkerPrincipalBinding:
+    if payload.get("codec_version") != CODEC_VERSION:
+        raise ValueError("unsupported WorkerPrincipalBinding codec version")
+    return WorkerPrincipalBinding(
+        worker_instance_id=WorkerInstanceId(payload["worker_instance_id"]),
+        principal_id=payload["principal_id"],
+        created_at=_decode_datetime(payload["created_at"]),
+        revision=Revision(payload["revision"]),
+    )
+
+
+def worker_principal_binding_to_json(binding: WorkerPrincipalBinding) -> str:
+    return stable_record_json(worker_principal_binding_to_payload(binding))
+
+
+def worker_principal_binding_from_json(payload: str) -> WorkerPrincipalBinding:
+    return worker_principal_binding_from_payload(json.loads(payload))

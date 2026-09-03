@@ -53,6 +53,9 @@ def _repository_module_source_paths() -> list[Path]:
     return [
         *_repository_port_source_paths(),
         Path(importlib.import_module("intergrax.autonomous_work.lifecycle").__file__),
+        Path(
+            importlib.import_module("intergrax.autonomous_work.principal_binding_resolver").__file__
+        ),
     ]
 
 
