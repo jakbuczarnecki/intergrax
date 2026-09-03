@@ -1,10 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Scale qualification gates S1-A … S1-N."""
+"""Scale qualification gates S1-A … S1-O."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
@@ -90,6 +91,7 @@ def run_scale_gates(context: ScaleGateContext) -> tuple[ScaleGateResult, ...]:
         gate_s1_l_index_efficiency(context),
         gate_s1_m_recovery_after_load(context),
         gate_s1_n_backend_pluginability(),
+        gate_s1_o_delivery_decoupling_readiness(),
     )
 
 
@@ -466,6 +468,46 @@ def gate_s1_n_backend_pluginability() -> ScaleGateResult:
     probe.close_document_store(store)
     probe.cleanup()
     return ScaleGateResult("S1-N", True, "synthetic probe composed without runner changes")
+
+
+_DIAGNOSTICS_ROOT = Path(__file__).resolve().parents[3] / "intergrax" / "runtime" / "diagnostics"
+_OBSERVABILITY_ROOT = Path(__file__).resolve().parents[3] / "intergrax" / "runtime" / "observability"
+_DELIVERY_COUPLING_SNIPPETS = (
+    "TaskQueue",
+    "queue_mode",
+    "WorkSubmission",
+    "delivery_mode",
+    "QueuedWorkSubmission",
+    "DirectWorkSubmission",
+)
+
+
+def gate_s1_o_delivery_decoupling_readiness() -> ScaleGateResult:
+    """Audit: functional diagnostics semantics must not depend on delivery mechanism."""
+    violations: list[str] = []
+    for root in (_DIAGNOSTICS_ROOT, _OBSERVABILITY_ROOT):
+        for path in sorted(root.rglob("*.py")):
+            text = path.read_text(encoding="utf-8")
+            for snippet in _DELIVERY_COUPLING_SNIPPETS:
+                if snippet in text:
+                    violations.append(f"{path.name}:{snippet}")
+    if violations:
+        return ScaleGateResult(
+            gate_id="S1-O",
+            passed=False,
+            detail="delivery coupling detected: " + ", ".join(violations[:8]),
+        )
+    return ScaleGateResult(
+        gate_id="S1-O",
+        passed=True,
+        detail=(
+            "Functional Diagnostics semantics are independent of Work Submission / Delivery; "
+            "frozen S2 model: WorkSubmissionStrategy → Direct | Queued; "
+            "Queued → TaskQueue → provider plugins; "
+            "authority: TaskQueue=delivery state, RuntimeEvent=execution truth, "
+            "FunctionalEvidence=functional truth"
+        ),
+    )
 
 
 def latency_summary(context: ScaleGateContext) -> dict[str, LatencyDistribution]:
