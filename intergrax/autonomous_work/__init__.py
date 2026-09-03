@@ -29,6 +29,7 @@ from intergrax.autonomous_work.principal_binding_resolver import (
     WorkerPrincipalBindingRequired,
     WorkerPrincipalBindingResolver,
 )
+from intergrax.contracts.autonomous_work.principal_binding import ResolvedWorkerPrincipal
 from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityConflict,
     AutonomousWorkEntityNotFound,
@@ -65,6 +66,7 @@ __all__ = (
     "WorkerGoalRepository",
     "WorkerInstanceRepository",
     "WorkerPrincipalBindingRepository",
+    "ResolvedWorkerPrincipal",
     "WorkerPrincipalBindingRequired",
     "WorkerPrincipalBindingResolver",
     "WorkerLifecycleService",

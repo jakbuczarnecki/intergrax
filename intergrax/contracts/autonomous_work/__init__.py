@@ -28,7 +28,10 @@ from intergrax.contracts.autonomous_work.lifecycle import (
     CANONICAL_WORKER_LIFECYCLE_STATES,
     WorkerLifecycleState,
 )
-from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
+from intergrax.contracts.autonomous_work.principal_binding import (
+    ResolvedWorkerPrincipal,
+    WorkerPrincipalBinding,
+)
 from intergrax.contracts.autonomous_work.profile_reference import (
     BudgetProfileRef,
     CapabilityProfileRef,
@@ -108,6 +111,7 @@ __all__ = (
     "ResponsibilityScopeRef",
     "ResponsibilityStatus",
     "ResponsibilityTemplateRef",
+    "ResolvedWorkerPrincipal",
     "Revision",
     "RiskProfileRef",
     "ScheduleProfileRef",

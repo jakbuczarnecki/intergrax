@@ -164,7 +164,7 @@ Delivery rule:
 | **Purpose** | Bind WorkerInstance to canonical Collaborative Principal without creating worker-private authority |
 | **Dependencies** | AW-2; Collaborative Work authority contracts |
 | **REUSED** | `CollaborativePrincipal`, Membership, Delegation, effective authority |
-| **NEW** | `WorkerPrincipalBinding` contract/repository; schema v1→v2 migration |
+| **NEW** | `WorkerPrincipalBinding` (tenant/workspace/principal scoped), `ResolvedWorkerPrincipal`, repository; schema v1→v2 migration |
 | **Explicit out of scope** | new Principal type unless Collaborative Work ADR explicitly approves it |
 | **Acceptance** | worker role/goal never authorizes; missing/revoked Principal binding fails closed |
 | **Proof requirements** | authority non-amplification and stale/tampered binding tests |

@@ -66,6 +66,9 @@ _CAPABILITIES = AutonomousWorkRepositoryCapabilities(
     reference_only=False,
 )
 _ISOLATION_LEVEL = PostgreSQLIsolationLevel.READ_COMMITTED
+# v2 introduced ``aw_worker_principal_bindings`` before AW-3A qualification closed.
+# Scoped tenant/workspace/principal binding semantics were corrected in-place (record_json
+# codec only — DDL unchanged). v2 was never production-deployed, so v3 is not required.
 _SCHEMA_VERSION = 2
 _SCHEMA_META_TABLE = "autonomous_work_schema_meta"
 _SCHEMA_LOCK_KEY = "autonomous_work_schema_init"

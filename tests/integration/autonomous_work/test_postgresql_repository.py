@@ -169,6 +169,9 @@ def test_postgresql_worker_principal_binding_contracts(
     contract_suite.contract_worker_principal_binding_worker_isolation(
         worker_principal_binding_repo
     )
+    contract_suite.contract_worker_principal_binding_same_principal_different_scopes(
+        worker_principal_binding_repo
+    )
 
 
 def test_postgresql_capabilities(
@@ -543,10 +546,11 @@ def test_postgresql_worker_principal_binding_cross_connection_visibility(
         bundle_b.close()
 
 
-def test_postgresql_worker_principal_binding_concurrent_create_one_wins(
+def test_postgresql_worker_principal_binding_concurrent_identical_create(
     postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
 ) -> None:
     binding = contract_suite.worker_principal_binding()
+    results: list[object] = []
     errors: list[BaseException] = []
     barrier = threading.Barrier(2)
 
@@ -554,7 +558,7 @@ def test_postgresql_worker_principal_binding_concurrent_create_one_wins(
         bundle = open_bundle(postgresql_autonomous_work_bundle.store.schema_name)
         try:
             barrier.wait(timeout=5)
-            bundle.worker_principal_binding.create(binding)
+            results.append(bundle.worker_principal_binding.create(binding))
         except BaseException as exc:  # noqa: BLE001
             errors.append(exc)
         finally:
@@ -566,12 +570,142 @@ def test_postgresql_worker_principal_binding_concurrent_create_one_wins(
     for thread in threads:
         thread.join()
 
-    assert len(errors) == 1
-    assert isinstance(errors[0], AutonomousWorkEntityConflict)
+    assert not errors
+    assert len(results) == 2
+    assert results[0] == results[1]
     loaded = postgresql_autonomous_work_bundle.worker_principal_binding.get(
         worker_instance_id=binding.worker_instance_id
     )
-    assert loaded == binding
+    assert loaded == results[0]
+
+
+def test_postgresql_worker_principal_binding_concurrent_conflicting_create_one_wins(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    base = contract_suite.worker_principal_binding()
+    errors: list[BaseException] = []
+    barrier = threading.Barrier(2)
+
+    def attempt(binding: object) -> None:
+        bundle = open_bundle(postgresql_autonomous_work_bundle.store.schema_name)
+        try:
+            barrier.wait(timeout=5)
+            bundle.worker_principal_binding.create(binding)
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+        finally:
+            bundle.close()
+
+    threads = [
+        threading.Thread(target=attempt, args=(base,)),
+        threading.Thread(
+            target=attempt,
+            args=(replace(base, principal_id="principal-conflict"),),
+        ),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(errors) == 1
+    assert isinstance(errors[0], AutonomousWorkEntityConflict)
+    loaded = postgresql_autonomous_work_bundle.worker_principal_binding.get(
+        worker_instance_id=base.worker_instance_id
+    )
+    assert loaded in (base, replace(base, principal_id="principal-conflict"))
+
+
+def test_postgresql_schema_v2_strategy_corrects_binding_scope_without_v3(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    """v2 DDL is final; AW-3A corrective updated record_json scope fields only."""
+    from intergrax.autonomous_work.postgresql_repository import PostgreSQLAutonomousWorkStore
+
+    store = postgresql_autonomous_work_bundle.store
+    assert isinstance(store, PostgreSQLAutonomousWorkStore)
+    with store.transaction() as conn:
+        row = conn.execute(
+            "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
+        ).fetchone()
+        assert row is not None
+        assert int(row["schema_version"]) == 2
+
+
+def test_postgresql_under_scoped_binding_json_fails_closed_on_read(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    import json
+
+    binding = contract_suite.worker_principal_binding()
+    payload = json.loads(
+        json.dumps(
+            {
+                "codec_version": 1,
+                "worker_instance_id": binding.worker_instance_id,
+                "principal_id": binding.principal_id,
+                "created_at": "2026-09-02T12:00:00+00:00",
+                "revision": binding.revision.value,
+            }
+        )
+    )
+    store = postgresql_autonomous_work_bundle.store
+    with store.transaction() as conn:
+        conn.execute(
+            """
+            INSERT INTO aw_worker_principal_bindings (
+                worker_instance_id, record_json, revision
+            ) VALUES (%s, %s, %s)
+            """,
+            (
+                binding.worker_instance_id,
+                json.dumps(payload),
+                binding.revision.value,
+            ),
+        )
+    with pytest.raises(ValueError, match="malformed WorkerPrincipalBinding"):
+        postgresql_autonomous_work_bundle.worker_principal_binding.get(
+            worker_instance_id=binding.worker_instance_id
+        )
+
+
+def test_postgresql_migration_atomicity_schema_version_not_advanced_without_table(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    created = postgresql_autonomous_work_bundle.worker_instance.create(
+        contract_suite.worker_instance()
+    )
+    schema_name = postgresql_autonomous_work_bundle.store.schema_name
+    store = postgresql_autonomous_work_bundle.store
+    assert isinstance(store, PostgreSQLAutonomousWorkStore)
+    with store.transaction() as conn:
+        conn.execute("DROP TABLE IF EXISTS aw_worker_principal_bindings")
+        conn.execute(
+            "UPDATE autonomous_work_schema_meta SET schema_version = %s WHERE id = 1",
+            (1,),
+        )
+
+    migrated_bundle = open_bundle(schema_name)
+    try:
+        loaded = migrated_bundle.worker_instance.get(
+            worker_instance_id=created.worker_instance_id
+        )
+        assert loaded == created
+        with migrated_bundle.store.transaction() as conn:
+            row = conn.execute(
+                "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
+            ).fetchone()
+            assert row is not None
+            assert int(row["schema_version"]) == 2
+            table_row = conn.execute(
+                """
+                SELECT 1 FROM information_schema.tables
+                WHERE table_name = 'aw_worker_principal_bindings'
+                """
+            ).fetchone()
+            assert table_row is not None
+    finally:
+        migrated_bundle.close()
 
 
 def test_postgresql_schema_v1_to_v2_migration_preserves_existing_data(

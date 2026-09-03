@@ -44,6 +44,7 @@ from intergrax.contracts.autonomous_work import (
     mint_worker_instance_id,
 )
 from intergrax.contracts.autonomous_work.principal_binding import (
+    ResolvedWorkerPrincipal,
     WorkerPrincipalBinding,
     validate_collaborative_principal_id,
 )
@@ -62,8 +63,10 @@ from tests.unit.autonomous_work import repository_contracts as contract_suite
 pytestmark = pytest.mark.unit
 
 _UTC = timezone.utc
-_TENANT = "tenant-a"
-_WORKSPACE = "workspace-a"
+_TENANT_A = "tenant-a"
+_TENANT_B = "tenant-b"
+_WORKSPACE = "workspace-x"
+_WORKSPACE_B = "workspace-b"
 _NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
 
 
@@ -73,8 +76,20 @@ def _binding_repo() -> InMemoryWorkerPrincipalBindingRepository:
 
 def test_worker_principal_binding_contract_valid() -> None:
     binding = contract_suite.worker_principal_binding()
+    assert binding.tenant_id == "tenant-a"
+    assert binding.workspace_id == "workspace-x"
     assert binding.principal_id == "principal-collaborative-1"
     assert binding.revision == initial_revision()
+
+
+def test_worker_principal_binding_rejects_empty_tenant_id() -> None:
+    with pytest.raises(ValueError, match="tenant_id"):
+        contract_suite.worker_principal_binding(tenant_id="")
+
+
+def test_worker_principal_binding_rejects_empty_workspace_id() -> None:
+    with pytest.raises(ValueError, match="workspace_id"):
+        contract_suite.worker_principal_binding(workspace_id="")
 
 
 def test_worker_principal_binding_rejects_empty_principal_id() -> None:
@@ -115,19 +130,26 @@ def test_worker_principal_binding_resolver_fail_closed_when_missing() -> None:
     resolver = WorkerPrincipalBindingResolver(repo)
     worker_id = mint_worker_instance_id()
     with pytest.raises(WorkerPrincipalBindingRequired, match="no principal binding"):
-        resolver.resolve_principal_id(worker_instance_id=worker_id)
+        resolver.resolve(worker_instance_id=worker_id)
 
 
-def test_worker_principal_binding_resolver_returns_canonical_principal_id() -> None:
+def test_worker_principal_binding_resolver_returns_scoped_identity() -> None:
     repo = _binding_repo()
     worker_id = mint_worker_instance_id()
     binding = contract_suite.worker_principal_binding(
         worker_instance_id=worker_id,
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE,
         principal_id="principal-bound",
     )
     repo.create(binding)
     resolver = WorkerPrincipalBindingResolver(repo)
-    assert resolver.resolve_principal_id(worker_instance_id=worker_id) == "principal-bound"
+    resolved = resolver.resolve(worker_instance_id=worker_id)
+    assert resolved == ResolvedWorkerPrincipal(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE,
+        principal_id="principal-bound",
+    )
 
 
 def test_role_string_does_not_grant_authority_without_binding() -> None:
@@ -139,7 +161,7 @@ def test_role_string_does_not_grant_authority_without_binding() -> None:
     )
     resolver = WorkerPrincipalBindingResolver(repo)
     with pytest.raises(WorkerPrincipalBindingRequired):
-        resolver.resolve_principal_id(worker_instance_id=worker.worker_instance_id)
+        resolver.resolve(worker_instance_id=worker.worker_instance_id)
 
 
 def test_goal_change_does_not_mutate_principal_binding() -> None:
@@ -218,8 +240,100 @@ def test_malformed_binding_json_codec_version_rejected() -> None:
         worker_principal_binding_from_json(json.dumps(payload))
 
 
+def test_malformed_binding_json_missing_scope_fields_rejected() -> None:
+    binding = contract_suite.worker_principal_binding()
+    import json
+
+    payload = json.loads(worker_principal_binding_to_json(binding))
+    del payload["tenant_id"]
+    with pytest.raises(ValueError, match="malformed WorkerPrincipalBinding"):
+        worker_principal_binding_from_json(json.dumps(payload))
+
+
+def test_resolver_returns_scoped_identity_not_authority() -> None:
+    module = importlib.import_module("intergrax.autonomous_work.principal_binding_resolver")
+    assert module.__file__ is not None
+    tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
+    source = Path(module.__file__).read_text(encoding="utf-8")
+    assert "resolve_principal_id" not in source
+    assert "ResolvedWorkerPrincipal" in source
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert "collaborative_work" not in node.module
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                assert "collaborative_work" not in alias.name
+
+
 def test_cross_worker_binding_isolation() -> None:
     contract_suite.contract_worker_principal_binding_worker_isolation(_binding_repo())
+
+
+def test_same_principal_id_across_different_scopes_is_not_confused() -> None:
+    contract_suite.contract_worker_principal_binding_same_principal_different_scopes(
+        _binding_repo()
+    )
+
+
+def test_cross_tenant_binding_isolation() -> None:
+    repo = _binding_repo()
+    worker_id = mint_worker_instance_id()
+    binding = contract_suite.worker_principal_binding(
+        worker_instance_id=worker_id,
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE,
+        principal_id="principal-shared",
+    )
+    repo.create(binding)
+    resolved = WorkerPrincipalBindingResolver(repo).resolve(worker_instance_id=worker_id)
+    assert resolved.tenant_id == _TENANT_A
+    assert resolved.tenant_id != _TENANT_B
+
+
+def test_cross_workspace_binding_isolation() -> None:
+    repo = _binding_repo()
+    worker_id = mint_worker_instance_id()
+    binding = contract_suite.worker_principal_binding(
+        worker_instance_id=worker_id,
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE,
+        principal_id="principal-shared",
+    )
+    repo.create(binding)
+    resolved = WorkerPrincipalBindingResolver(repo).resolve(worker_instance_id=worker_id)
+    assert resolved.workspace_id == _WORKSPACE
+    assert resolved.workspace_id != _WORKSPACE_B
+
+
+def test_resolver_preserves_scope_for_distinct_workers_with_same_principal_id() -> None:
+    repo = _binding_repo()
+    worker_a = mint_worker_instance_id()
+    worker_b = mint_worker_instance_id()
+    shared_principal = "principal-shared"
+    repo.create(
+        contract_suite.worker_principal_binding(
+            worker_instance_id=worker_a,
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE,
+            principal_id=shared_principal,
+        )
+    )
+    repo.create(
+        contract_suite.worker_principal_binding(
+            worker_instance_id=worker_b,
+            tenant_id=_TENANT_B,
+            workspace_id=_WORKSPACE_B,
+            principal_id=shared_principal,
+        )
+    )
+    resolver = WorkerPrincipalBindingResolver(repo)
+    resolved_a = resolver.resolve(worker_instance_id=worker_a)
+    resolved_b = resolver.resolve(worker_instance_id=worker_b)
+    assert resolved_a.principal_id == resolved_b.principal_id == shared_principal
+    assert (resolved_a.tenant_id, resolved_a.workspace_id) != (
+        resolved_b.tenant_id,
+        resolved_b.workspace_id,
+    )
 
 
 def _membership_locator(
@@ -231,7 +345,7 @@ def _membership_locator(
     return WorkspaceMembership.model_validate(
         {
             "membership_id": membership_id,
-            "tenant_id": _TENANT,
+            "tenant_id": _TENANT_A,
             "workspace_id": _WORKSPACE,
             "principal_id": principal_id,
             "role": WorkspaceMembershipRole.MEMBER,
@@ -248,33 +362,32 @@ def test_bound_principal_feeds_collaborative_authority_resolver_allow() -> None:
     binding_repo.create(
         contract_suite.worker_principal_binding(
             worker_instance_id=worker_id,
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE,
             principal_id=principal_id,
         )
     )
     identity_resolver = WorkerPrincipalBindingResolver(binding_repo)
-    resolved_principal = identity_resolver.resolve_principal_id(
-        worker_instance_id=worker_id
-    )
-    assert resolved_principal == principal_id
+    resolved = identity_resolver.resolve(worker_instance_id=worker_id)
 
     membership_repo = InMemoryWorkspaceMembershipRepository()
     authority_repo = InMemoryPrincipalAuthorityRepository()
     membership_repo.create(
         CreateWorkspaceMembershipCommand(
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
+            tenant_id=resolved.tenant_id,
+            workspace_id=resolved.workspace_id,
             membership_id="membership-bound",
-            principal_id=principal_id,
+            principal_id=resolved.principal_id,
             role=WorkspaceMembershipRole.MEMBER,
             status=MembershipStatus.ACTIVE,
         )
     )
     authority_repo.create(
         CreatePrincipalAuthorityGrantCommand(
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
+            tenant_id=resolved.tenant_id,
+            workspace_id=resolved.workspace_id,
             authority_grant_id="authority-grant-bound",
-            principal_id=principal_id,
+            principal_id=resolved.principal_id,
             authority_scopes=("workspace.read", "workspace.write"),
             status=AuthorityGrantStatus.ACTIVE,
         )
@@ -289,11 +402,11 @@ def test_bound_principal_feeds_collaborative_authority_resolver_allow() -> None:
     decision = cw_resolver.resolve(
         EffectiveAuthorityRequest.model_validate(
             {
-                "tenant_id": _TENANT,
-                "workspace_id": _WORKSPACE,
-                "acting_principal_id": resolved_principal,
+                "tenant_id": resolved.tenant_id,
+                "workspace_id": resolved.workspace_id,
+                "acting_principal_id": resolved.principal_id,
                 "requested_authority_scopes": ("workspace.read",),
-                "membership": _membership_locator(principal_id=resolved_principal),
+                "membership": _membership_locator(principal_id=resolved.principal_id),
             }
         )
     )
@@ -307,12 +420,12 @@ def test_bound_principal_missing_membership_denies() -> None:
     binding_repo.create(
         contract_suite.worker_principal_binding(
             worker_instance_id=worker_id,
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE,
             principal_id=principal_id,
         )
     )
-    resolved_principal = WorkerPrincipalBindingResolver(binding_repo).resolve_principal_id(
-        worker_instance_id=worker_id
-    )
+    resolved = WorkerPrincipalBindingResolver(binding_repo).resolve(worker_instance_id=worker_id)
     cw_resolver = CollaborativeWorkAuthorityResolver(
         membership_repository=InMemoryWorkspaceMembershipRepository(),
         delegation_repository=InMemoryAuthorityDelegationRepository(),
@@ -322,15 +435,110 @@ def test_bound_principal_missing_membership_denies() -> None:
     decision = cw_resolver.resolve(
         EffectiveAuthorityRequest.model_validate(
             {
-                "tenant_id": _TENANT,
-                "workspace_id": _WORKSPACE,
-                "acting_principal_id": resolved_principal,
+                "tenant_id": resolved.tenant_id,
+                "workspace_id": resolved.workspace_id,
+                "acting_principal_id": resolved.principal_id,
                 "requested_authority_scopes": ("workspace.read",),
             }
         )
     )
     assert decision.decision.action is PolicyAction.DENY
     assert decision.denial_reason is EffectiveAuthorityDenialReason.MISSING_MEMBERSHIP
+
+
+def test_wrong_tenant_in_authority_request_denies() -> None:
+    worker_id = mint_worker_instance_id()
+    binding_repo = _binding_repo()
+    binding_repo.create(
+        contract_suite.worker_principal_binding(
+            worker_instance_id=worker_id,
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE,
+            principal_id="principal-bound",
+        )
+    )
+    resolved = WorkerPrincipalBindingResolver(binding_repo).resolve(worker_instance_id=worker_id)
+    membership_repo = InMemoryWorkspaceMembershipRepository()
+    authority_repo = InMemoryPrincipalAuthorityRepository()
+    membership_repo.create(
+        CreateWorkspaceMembershipCommand(
+            tenant_id=resolved.tenant_id,
+            workspace_id=resolved.workspace_id,
+            membership_id="membership-bound",
+            principal_id=resolved.principal_id,
+            role=WorkspaceMembershipRole.MEMBER,
+            status=MembershipStatus.ACTIVE,
+        )
+    )
+    authority_repo.create(
+        CreatePrincipalAuthorityGrantCommand(
+            tenant_id=resolved.tenant_id,
+            workspace_id=resolved.workspace_id,
+            authority_grant_id="authority-grant-bound",
+            principal_id=resolved.principal_id,
+            authority_scopes=("workspace.read",),
+            status=AuthorityGrantStatus.ACTIVE,
+        )
+    )
+    cw_resolver = CollaborativeWorkAuthorityResolver(
+        membership_repository=membership_repo,
+        delegation_repository=InMemoryAuthorityDelegationRepository(),
+        principal_authority_repository=authority_repo,
+        clock=lambda: _NOW,
+    )
+    decision = cw_resolver.resolve(
+        EffectiveAuthorityRequest.model_validate(
+            {
+                "tenant_id": _TENANT_B,
+                "workspace_id": resolved.workspace_id,
+                "acting_principal_id": resolved.principal_id,
+                "requested_authority_scopes": ("workspace.read",),
+            }
+        )
+    )
+    assert decision.decision.action is PolicyAction.DENY
+
+
+def test_wrong_workspace_in_authority_request_denies() -> None:
+    worker_id = mint_worker_instance_id()
+    binding_repo = _binding_repo()
+    binding_repo.create(
+        contract_suite.worker_principal_binding(
+            worker_instance_id=worker_id,
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE,
+            principal_id="principal-bound",
+        )
+    )
+    resolved = WorkerPrincipalBindingResolver(binding_repo).resolve(worker_instance_id=worker_id)
+    membership_repo = InMemoryWorkspaceMembershipRepository()
+    membership_repo.create(
+        CreateWorkspaceMembershipCommand(
+            tenant_id=resolved.tenant_id,
+            workspace_id=resolved.workspace_id,
+            membership_id="membership-bound",
+            principal_id=resolved.principal_id,
+            role=WorkspaceMembershipRole.MEMBER,
+            status=MembershipStatus.ACTIVE,
+        )
+    )
+    cw_resolver = CollaborativeWorkAuthorityResolver(
+        membership_repository=membership_repo,
+        delegation_repository=InMemoryAuthorityDelegationRepository(),
+        principal_authority_repository=InMemoryPrincipalAuthorityRepository(),
+        clock=lambda: _NOW,
+    )
+    decision = cw_resolver.resolve(
+        EffectiveAuthorityRequest.model_validate(
+            {
+                "tenant_id": resolved.tenant_id,
+                "workspace_id": _WORKSPACE_B,
+                "acting_principal_id": resolved.principal_id,
+                "requested_authority_scopes": ("workspace.read",),
+            }
+        )
+    )
+    assert decision.decision.action is PolicyAction.DENY
 
 
 def test_revoked_membership_denies_for_bound_principal() -> None:
@@ -340,19 +548,19 @@ def test_revoked_membership_denies_for_bound_principal() -> None:
     binding_repo.create(
         contract_suite.worker_principal_binding(
             worker_instance_id=worker_id,
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE,
             principal_id=principal_id,
         )
     )
-    resolved_principal = WorkerPrincipalBindingResolver(binding_repo).resolve_principal_id(
-        worker_instance_id=worker_id
-    )
+    resolved = WorkerPrincipalBindingResolver(binding_repo).resolve(worker_instance_id=worker_id)
     membership_repo = InMemoryWorkspaceMembershipRepository()
     created = membership_repo.create(
         CreateWorkspaceMembershipCommand(
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
+            tenant_id=resolved.tenant_id,
+            workspace_id=resolved.workspace_id,
             membership_id="membership-revoked",
-            principal_id=principal_id,
+            principal_id=resolved.principal_id,
             role=WorkspaceMembershipRole.MEMBER,
             status=MembershipStatus.ACTIVE,
         )
@@ -360,8 +568,8 @@ def test_revoked_membership_denies_for_bound_principal() -> None:
     membership_repo.update(
         UpdateWorkspaceMembershipCommand(
             scope=WorkspaceMembershipScopeKey(
-                tenant_id=_TENANT,
-                workspace_id=_WORKSPACE,
+                tenant_id=resolved.tenant_id,
+                workspace_id=resolved.workspace_id,
                 membership_id="membership-revoked",
             ),
             expected_revision=created.revision,
@@ -378,12 +586,12 @@ def test_revoked_membership_denies_for_bound_principal() -> None:
     decision = cw_resolver.resolve(
         EffectiveAuthorityRequest.model_validate(
             {
-                "tenant_id": _TENANT,
-                "workspace_id": _WORKSPACE,
-                "acting_principal_id": resolved_principal,
+                "tenant_id": resolved.tenant_id,
+                "workspace_id": resolved.workspace_id,
+                "acting_principal_id": resolved.principal_id,
                 "requested_authority_scopes": ("workspace.read",),
                 "membership": _membership_locator(
-                    principal_id=resolved_principal,
+                    principal_id=resolved.principal_id,
                     membership_id="membership-revoked",
                 ),
             }
@@ -438,10 +646,16 @@ def test_binding_contract_contains_no_authority_payload() -> None:
     fields = {field.name for field in WorkerPrincipalBinding.__dataclass_fields__.values()}
     assert fields == {
         "worker_instance_id",
+        "tenant_id",
+        "workspace_id",
         "principal_id",
         "created_at",
         "revision",
     }
+    resolved_fields = {
+        field.name for field in ResolvedWorkerPrincipal.__dataclass_fields__.values()
+    }
+    assert resolved_fields == {"tenant_id", "workspace_id", "principal_id"}
 
 
 def test_principal_binding_resolver_has_no_concrete_persistence_import() -> None:

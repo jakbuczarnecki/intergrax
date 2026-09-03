@@ -215,9 +215,17 @@ def continuity_state(**overrides: object) -> WorkContinuityState:
     return WorkContinuityState(**payload)
 
 
+_TENANT_A = "tenant-a"
+_TENANT_B = "tenant-b"
+_WORKSPACE_X = "workspace-x"
+_WORKSPACE_Y = "workspace-y"
+
+
 def worker_principal_binding(**overrides: object) -> WorkerPrincipalBinding:
     payload = {
         "worker_instance_id": mint_worker_instance_id(),
+        "tenant_id": _TENANT_A,
+        "workspace_id": _WORKSPACE_X,
         "principal_id": "principal-collaborative-1",
         "created_at": datetime(2026, 9, 2, 12, 0, tzinfo=_UTC),
         "revision": initial_revision(),
@@ -465,6 +473,9 @@ def contract_worker_principal_binding_same_id_different_content_conflicts(
     conflict = replace(binding, principal_id="principal-other")
     with pytest.raises(AutonomousWorkEntityConflict):
         repo.create(conflict)
+    scope_conflict = replace(binding, workspace_id=_WORKSPACE_Y)
+    with pytest.raises(AutonomousWorkEntityConflict):
+        repo.create(scope_conflict)
 
 
 def contract_worker_principal_binding_missing_returns_none(
@@ -497,3 +508,34 @@ def contract_worker_principal_binding_worker_isolation(
     assert loaded_b is not None
     assert loaded_a.principal_id == "principal-a"
     assert loaded_b.principal_id == "principal-b"
+
+
+def contract_worker_principal_binding_same_principal_different_scopes(
+    repo: WorkerPrincipalBindingRepository,
+) -> None:
+    shared_principal = "principal-shared"
+    worker_a = mint_worker_instance_id()
+    worker_b = mint_worker_instance_id()
+    binding_a = worker_principal_binding(
+        worker_instance_id=worker_a,
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_X,
+        principal_id=shared_principal,
+    )
+    binding_b = worker_principal_binding(
+        worker_instance_id=worker_b,
+        tenant_id=_TENANT_B,
+        workspace_id=_WORKSPACE_Y,
+        principal_id=shared_principal,
+    )
+    repo.create(binding_a)
+    repo.create(binding_b)
+    loaded_a = repo.get(worker_instance_id=worker_a)
+    loaded_b = repo.get(worker_instance_id=worker_b)
+    assert loaded_a == binding_a
+    assert loaded_b == binding_b
+    assert loaded_a is not None
+    assert loaded_b is not None
+    assert loaded_a.principal_id == loaded_b.principal_id == shared_principal
+    assert loaded_a.tenant_id != loaded_b.tenant_id
+    assert loaded_a.workspace_id != loaded_b.workspace_id

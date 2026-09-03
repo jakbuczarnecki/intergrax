@@ -424,6 +424,8 @@ def worker_principal_binding_to_payload(binding: WorkerPrincipalBinding) -> dict
     return {
         "codec_version": CODEC_VERSION,
         "worker_instance_id": binding.worker_instance_id,
+        "tenant_id": binding.tenant_id,
+        "workspace_id": binding.workspace_id,
         "principal_id": binding.principal_id,
         "created_at": _encode_datetime(binding.created_at),
         "revision": binding.revision.value,
@@ -433,8 +435,20 @@ def worker_principal_binding_to_payload(binding: WorkerPrincipalBinding) -> dict
 def worker_principal_binding_from_payload(payload: dict[str, Any]) -> WorkerPrincipalBinding:
     if payload.get("codec_version") != CODEC_VERSION:
         raise ValueError("unsupported WorkerPrincipalBinding codec version")
+    missing = [
+        field
+        for field in ("tenant_id", "workspace_id", "principal_id")
+        if field not in payload
+    ]
+    if missing:
+        raise ValueError(
+            "malformed WorkerPrincipalBinding payload: missing scoped identity fields "
+            f"{', '.join(missing)}"
+        )
     return WorkerPrincipalBinding(
         worker_instance_id=WorkerInstanceId(payload["worker_instance_id"]),
+        tenant_id=payload["tenant_id"],
+        workspace_id=payload["workspace_id"],
         principal_id=payload["principal_id"],
         created_at=_decode_datetime(payload["created_at"]),
         revision=Revision(payload["revision"]),

@@ -652,3 +652,4 @@ def test_in_memory_worker_principal_binding_contracts() -> None:
     contract_suite.contract_worker_principal_binding_same_id_different_content_conflicts(repo)
     contract_suite.contract_worker_principal_binding_missing_returns_none(repo)
     contract_suite.contract_worker_principal_binding_worker_isolation(repo)
+    contract_suite.contract_worker_principal_binding_same_principal_different_scopes(repo)
