@@ -13,9 +13,8 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.core.plugin import IntegrationPlugin, integration_manifest_for_plugin
 from intergrax.integrations.registry.catalog import register_integration
 from intergrax.integrations.registry.contract_spec import (
-    EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS,
     manifest_category_values,
-    required_explicit_contract_categories,
+    typed_contract_categories,
     validate_contract_specs_against_manifest,
     validate_required_explicit_categories,
 )
@@ -26,20 +25,15 @@ if TYPE_CHECKING:
 
 def _required_explicit_categories(manifest: IntegrationManifest) -> frozenset[str]:
     """Categories that must supply provider-owned contract specs (fail-closed)."""
-    slug = manifest.slug.strip().lower()
     manifest_categories = manifest_category_values(manifest)
-    required = set(manifest_categories & required_explicit_contract_categories())
-    for provider_id, category in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS:
-        if provider_id == slug and category in manifest_categories:
-            required.add(category)
-    return frozenset(required)
+    return frozenset(manifest_categories & typed_contract_categories())
 
 
 def _resolve_contract_specs(
     manifest: IntegrationManifest,
     explicit: Iterable[IntegrationContractSpec] | None,
 ) -> tuple[IntegrationContractSpec, ...]:
-    """Resolve canonical contract specs from explicit rows or transitional built-in capture."""
+    """Resolve canonical contract specs from explicit provider-owned declarations only."""
     slug = manifest.slug.strip().lower()
     required_categories = _required_explicit_categories(manifest)
     if explicit is not None:
@@ -56,9 +50,7 @@ def _resolve_contract_specs(
         )
         raise ValueError(msg)
 
-    from intergrax.integrations.registry.contract_capture import capture_builtin_contract_specs
-
-    return capture_builtin_contract_specs(manifest)
+    return ()
 
 
 def register_from_manifest(

@@ -176,9 +176,6 @@ def test_registry_v2_authoritative_projection_has_no_reflection_helpers() -> Non
             pytest.fail("registry_v2 authoritative projection must not access __dict__")
 
 
-def test_contract_capture_isolated_as_migration_only_module() -> None:
+def test_contract_capture_module_removed_after_p2_003_c() -> None:
     capture_path = REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_capture.py"
-    assert capture_path.is_file()
-    source = capture_path.read_text(encoding="utf-8")
-    assert "migration-only" in source.lower()
-    assert "_find_integration_class" in source
+    assert not capture_path.is_file()

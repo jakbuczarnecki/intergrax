@@ -40,7 +40,6 @@ from intergrax.integrations.providers.relational_store.postgresql.contract_spec 
 from intergrax.integrations.providers.relational_store.postgresql.register import (
     register_postgresql_integration,
 )
-from intergrax.integrations.registry import contract_capture
 from intergrax.integrations.registry.catalog import clear_catalog, get_entry
 from intergrax.integrations.registry.contract_spec import (
     B1_TYPED_CONTRACT_CATEGORIES,
@@ -48,7 +47,7 @@ from intergrax.integrations.registry.contract_spec import (
     B3_TYPED_CONTRACT_CATEGORIES,
     B4_TYPED_CONTRACT_CATEGORIES,
     B5_TYPED_CONTRACT_CATEGORIES,
-    EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS,
+    typed_contract_categories,
     IntegrationContractSpec,
     declare_integration_contract,
 )
@@ -356,14 +355,11 @@ def test_langfuse_observability_uses_explicit_factory_not_name_guess() -> None:
     assert LANGFUSE_CONTRACT_SPEC.integration_kind == "observability_vendor"
 
 
-def test_staged_non_b1b2b3_explicit_keys_remain_in_migration_set() -> None:
-    assert EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS == frozenset({("openai", "managed_retrieval")})
-    assert ("langfuse", "observability_backend") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    assert ("slack", "notification_channel") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    assert ("slack", "conversation_channel") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    assert ("postgresql", "relational_store") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    assert ("github", "issue_tracker") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    assert ("prometheus", "observability_backend") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+def test_no_staged_provider_specific_explicit_keys_remain() -> None:
+    contract_source = (REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_spec.py").read_text(
+        encoding="utf-8",
+    )
+    assert "EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS" not in contract_source
 
 
 def test_plugin_register_has_no_provider_module_scanning() -> None:
@@ -431,11 +427,7 @@ def test_b2_register_modules_do_not_import_contract_capture() -> None:
 
 
 @pytest.mark.parametrize("slug,category", b1_provider_category_keys())
-def test_b1_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError(f"capture_builtin_contract_specs must not run for B1 {(slug, category)}")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_b1_registration_uses_explicit_specs(slug: str, category: str) -> None:
     b1_register_function(slug, category)()
     entry = get_entry(slug)
     assert entry.contract_specs
@@ -470,11 +462,7 @@ def test_b1_registration_does_not_execute_catalog_factory(
 
 
 @pytest.mark.parametrize("slug,category", b2_provider_category_keys())
-def test_b2_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError(f"capture_builtin_contract_specs must not run for B2 {(slug, category)}")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_b2_registration_uses_explicit_specs(slug: str, category: str) -> None:
     b2_register_function(slug, category)()
     entry = get_entry(slug)
     assert entry.contract_specs
@@ -564,13 +552,7 @@ def test_external_fake_b1_provider_explicit_registration() -> None:
     assert registration.integration_class is _ExternalB1Integration
 
 
-def test_external_fake_b1_provider_without_explicit_specs_fails_closed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError("capture_builtin_contract_specs must not run for external B1 typed provider")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_external_fake_b1_provider_without_explicit_specs_fails_closed() -> None:
     manifest = IntegrationManifest(
         slug="external_b1_sql",
         categories=(IntegrationCategory.RELATIONAL_STORE,),
@@ -634,11 +616,7 @@ class _ExternalB1SqlPlugin:
 def test_register_integration_plugin_external_b1_without_specs_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError("capture_builtin_contract_specs must not run for external B1 plugin")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
-    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
         register_integration_plugin(_ExternalB1SqlPlugin)
 
 
@@ -815,13 +793,7 @@ def test_external_fake_b2_provider_explicit_registration() -> None:
     assert registration.integration_class is _ExternalB2Integration
 
 
-def test_external_fake_b2_provider_without_explicit_specs_fails_closed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError("capture_builtin_contract_specs must not run for external B2 typed provider")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_external_fake_b2_provider_without_explicit_specs_fails_closed() -> None:
     manifest = IntegrationManifest(
         slug="external_b2_bus",
         categories=(IntegrationCategory.MESSAGE_BUS,),
@@ -831,14 +803,6 @@ def test_external_fake_b2_provider_without_explicit_specs_fails_closed(
     )
     with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
         register_from_manifest(manifest, lambda **_: {})
-
-
-def test_contract_capture_has_no_conversation_channel_vendor_switch() -> None:
-    source = (REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_capture.py").read_text(
-        encoding="utf-8",
-    )
-    assert 'slug == "slack"' not in source
-    assert "conversation_channel" not in source
 
 
 def test_b2_factory_backward_compatibility_representatives() -> None:
@@ -864,24 +828,20 @@ def test_b2_registry_v2_derives_from_explicit_specs() -> None:
 
 def test_non_b1b2b3b4b5_ordinary_reflective_keys_are_empty() -> None:
     from intergrax.runtime.integrations.categories import PROVIDER_CATEGORY_CONTRACT_REGISTRY
-    from intergrax.runtime.integrations.registry_v2 import DEFERRED_LLM_GUARDRAIL_SLUGS
-    from intergrax.integrations.registry.contract_spec import required_explicit_contract_categories
 
-    explicit_category_gated = required_explicit_contract_categories()
-    normal_typed_keys: set[tuple[str, str]] = set()
+    typed_keys: set[tuple[str, str]] = set()
     for slug in sorted(SLUG_CATEGORY):
         for category in categories_for_provider(slug):
             if category in PROVIDER_CATEGORY_CONTRACT_REGISTRY:
-                normal_typed_keys.add((slug, category))
+                typed_keys.add((slug, category))
 
-    deferred_typed_keys = {(slug, "llm_guardrail") for slug in DEFERRED_LLM_GUARDRAIL_SLUGS}
-    explicit_normal_keys = {
-        key
-        for key in normal_typed_keys
-        if key[1] in explicit_category_gated or key in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    }
-    reflective_normal_keys = normal_typed_keys - explicit_normal_keys - deferred_typed_keys
-    assert reflective_normal_keys == set()
+    explicit_keys: set[tuple[str, str]] = set()
+    for slug, category in typed_keys:
+        contract_path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        if contract_path.is_file():
+            explicit_keys.add((slug, category))
+
+    assert typed_keys == explicit_keys
 
 
 _B2_BOOTSTRAP_SOURCE_FILES: tuple[str, ...] = (
@@ -939,11 +899,7 @@ def test_b3_register_modules_do_not_import_contract_capture() -> None:
 
 
 @pytest.mark.parametrize("slug,category", b3_provider_category_keys())
-def test_b3_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError(f"capture_builtin_contract_specs must not run for B3 {(slug, category)}")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_b3_registration_uses_explicit_specs(slug: str, category: str) -> None:
     b3_register_function(slug, category)()
     entry = get_entry(slug)
     assert entry.contract_specs
@@ -990,14 +946,6 @@ def test_b3_builtin_without_explicit_specs_fails_closed() -> None:
         register_from_manifest(manifest, lambda **_: {})
 
 
-def test_contract_capture_has_no_observability_backend_factory_name_special_case() -> None:
-    source = (REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_capture.py").read_text(
-        encoding="utf-8",
-    )
-    assert "OBSERVABILITY_BACKEND_CATEGORY" not in source
-    assert "observability_integration" not in source
-
-
 def test_external_fake_b3_provider_explicit_registration() -> None:
     class _ExternalB3Integration(FeatureFlagIntegrationContract):
         pass
@@ -1040,13 +988,7 @@ def test_external_fake_b3_provider_explicit_registration() -> None:
     assert registration.integration_class is _ExternalB3Integration
 
 
-def test_external_fake_b3_provider_without_explicit_specs_fails_closed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError("capture_builtin_contract_specs must not run for external B3 typed provider")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_external_fake_b3_provider_without_explicit_specs_fails_closed() -> None:
     manifest = IntegrationManifest(
         slug="external_b3_flag",
         categories=(IntegrationCategory.FEATURE_FLAG,),
@@ -1183,11 +1125,7 @@ def test_b4_register_modules_do_not_import_contract_capture() -> None:
 
 
 @pytest.mark.parametrize("slug,category", b4_provider_category_keys())
-def test_b4_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError(f"capture_builtin_contract_specs must not run for B4 {(slug, category)}")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_b4_registration_uses_explicit_specs(slug: str, category: str) -> None:
     b4_register_function(slug, category)()
     entry = get_entry(slug)
     assert entry.contract_specs
@@ -1276,13 +1214,7 @@ def test_external_fake_b4_provider_explicit_registration() -> None:
     assert registration.integration_class is _ExternalB4Integration
 
 
-def test_external_fake_b4_provider_without_explicit_specs_fails_closed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError("capture_builtin_contract_specs must not run for external B4 typed provider")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_external_fake_b4_provider_without_explicit_specs_fails_closed() -> None:
     manifest = IntegrationManifest(
         slug="external_b4_browser",
         categories=(IntegrationCategory.BROWSER_AUTOMATION,),
@@ -1321,17 +1253,16 @@ def test_partial_explicit_specs_missing_required_b4_category_fails() -> None:
         register_from_manifest(manifest, lambda **_: {}, contract_specs=())
 
 
-def test_llm_guardrail_remains_deferred_outside_b5_gate() -> None:
-    from intergrax.integrations.providers.llm_guardrail.register_all import register_llm_guardrail_integrations
-    from intergrax.runtime.integrations.registry_v2 import DEFERRED_LLM_GUARDRAIL_SLUGS
+def test_llm_guardrail_is_category_gated_explicit_after_cutover() -> None:
+    from intergrax.integrations.providers.llm_guardrail.register_all import GUARD_SLUGS, register_llm_guardrail_integrations
 
-    assert "llm_guardrail" not in B5_TYPED_CONTRACT_CATEGORIES
-    assert len(DEFERRED_LLM_GUARDRAIL_SLUGS) == 9
+    assert "llm_guardrail" in typed_contract_categories()
     register_llm_guardrail_integrations()
-    for slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
+    for slug in GUARD_SLUGS:
         entry = get_entry(slug)
         assert entry is not None
-        assert entry.contract_specs == ()
+        assert len(entry.contract_specs) == 1
+        assert entry.contract_specs[0].category == "llm_guardrail"
 
 
 def test_browser_automation_registration_does_not_launch_browser(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1428,11 +1359,11 @@ def test_b4_bootstrap_provider_sets_preserved() -> None:
         clear_catalog()
 
 
-def test_staged_non_b1b2b3b4b5_explicit_keys_remain_in_migration_set() -> None:
-    assert EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS == frozenset({("openai", "managed_retrieval")})
-    assert ("playwright", "browser_automation") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    assert ("trivy", "security_scanner") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    assert ("tavily", "search_provider") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+def test_no_b5_staged_provider_specific_explicit_keys_remain() -> None:
+    plugin_source = (REPO_ROOT / "intergrax" / "integrations" / "registry" / "plugin_register.py").read_text(
+        encoding="utf-8",
+    )
+    assert "EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS" not in plugin_source
 
 
 def test_b5_category_set_matches_expected_search_parser_rerank_crm_categories() -> None:
@@ -1510,11 +1441,7 @@ def test_b5_register_modules_do_not_import_contract_capture() -> None:
 
 
 @pytest.mark.parametrize("slug,category", b5_provider_category_keys())
-def test_b5_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError(f"capture_builtin_contract_specs must not run for B5 {(slug, category)}")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_b5_registration_uses_explicit_specs(slug: str, category: str) -> None:
     b5_register_function(slug, category)()
     entry = get_entry(slug)
     assert entry.contract_specs
@@ -1603,13 +1530,7 @@ def test_external_fake_b5_provider_explicit_registration() -> None:
     assert registration.integration_class is _ExternalB5SearchIntegration
 
 
-def test_external_fake_b5_provider_without_explicit_specs_fails_closed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
-        raise AssertionError("capture_builtin_contract_specs must not run for external B5 typed provider")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_external_fake_b5_provider_without_explicit_specs_fails_closed() -> None:
     manifest = IntegrationManifest(
         slug="external_b5_search",
         categories=(IntegrationCategory.SEARCH_PROVIDER,),
@@ -1733,9 +1654,3 @@ def test_b5_bootstrap_provider_sets_preserved() -> None:
         clear_catalog()
 
 
-def test_contract_capture_remaining_surface_is_deferred_guardrails_only() -> None:
-    source = (REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_capture.py").read_text(
-        encoding="utf-8",
-    )
-    assert "DEFERRED_LLM_GUARDRAIL_SLUGS" in source
-    assert "if slug in DEFERRED_LLM_GUARDRAIL_SLUGS" in source

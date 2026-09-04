@@ -30,26 +30,8 @@ pytestmark = pytest.mark.unit
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
-DEFERRED_LLM_GUARDRAIL_SLUGS: frozenset[str] = frozenset(
-    {
-        "llm_guard",
-        "guardrails_ai",
-        "nemo_guardrails",
-        "openguardrails",
-        "presidio",
-        "llama_guard",
-        "lakera",
-        "azure_content_safety",
-        "bedrock_guardrails",
-    }
-)
-
 # Providers fully cut over to single Integration entrypoint (behavior tests must pass).
-CUTOVER_SLUGS: frozenset[str] = frozenset(
-    slug
-    for slug, category in SLUG_CATEGORY.items()
-    if category != "llm_guardrail" and slug not in DEFERRED_LLM_GUARDRAIL_SLUGS
-)
+CUTOVER_SLUGS: frozenset[str] = frozenset(SLUG_CATEGORY.keys())
 
 _CLASS_NAME_OVERRIDES: dict[str, str] = {
     "newrelic": "NewRelic",
@@ -583,9 +565,19 @@ def test_non_vector_legacy_smoke_slugs_are_cutover_representatives() -> None:
     assert SLUG_CATEGORY["tavily"] == "search_provider"
 
 
-def test_cutover_registry_documents_deferred_llm_guardrail() -> None:
-    for slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
-        assert slug not in CUTOVER_SLUGS
+def test_cutover_registry_includes_explicit_llm_guardrail() -> None:
+    for slug in (
+        "llm_guard",
+        "guardrails_ai",
+        "nemo_guardrails",
+        "openguardrails",
+        "presidio",
+        "llama_guard",
+        "lakera",
+        "azure_content_safety",
+        "bedrock_guardrails",
+    ):
+        assert slug in CUTOVER_SLUGS
         assert SLUG_CATEGORY[slug] == "llm_guardrail"
 
 

@@ -408,7 +408,7 @@ Before a typed provider is accepted:
 - [ ] Runtime factory compatibility preserved
 - [ ] Provider qualification status remains independently proven (discovery ≠ qualification)
 
-**Do not use** `contract_capture.py` for new providers — transitional legacy only; removal scheduled in P2-003-C.
+**Do not use** reflective discovery helpers — `contract_capture.py` was removed in P2-003-C. Publish explicit `IntegrationContractSpec` rows only.
 
 ### Minimal implementation (`custom_memory_kv`)
 

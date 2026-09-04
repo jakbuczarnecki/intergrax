@@ -19,10 +19,8 @@ from intergrax.integrations.providers.graph_store.neptune.contract_spec import (
 from intergrax.integrations.providers.graph_store.orientdb.contract_spec import (
     CONTRACT_SPEC as ORIENTDB_CONTRACT_SPEC,
 )
-from intergrax.integrations.registry import contract_capture
 from intergrax.integrations.registry.bootstrap_h_int_graph import register_h_int_graph_integrations
 from intergrax.integrations.registry.catalog import clear_catalog, get_entry
-from intergrax.integrations.registry.contract_spec import EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
 from intergrax.runtime.integrations.registry_v2 import build_integration_registration
 
 pytestmark = pytest.mark.unit
@@ -48,14 +46,7 @@ def test_h_int_graph_bootstrap_registers_all_three_providers() -> None:
 
 
 @pytest.mark.parametrize("slug", H_INT_GRAPH_SLUGS)
-def test_h_int_graph_registration_bypasses_contract_capture(
-    slug: str,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[object, ...]:
-        raise AssertionError(f"capture_builtin_contract_specs must not run for H-INT-GRAPH {slug}")
-
-    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+def test_h_int_graph_registration_uses_explicit_specs(slug: str) -> None:
     register_h_int_graph_integrations()
     entry = get_entry(slug)
     assert entry.contract_specs
@@ -100,9 +91,10 @@ def test_h_int_graph_providers_have_provider_owned_explicit_specs() -> None:
         assert spec.metadata.get("source") == "explicit_provider_declaration"
 
 
-def test_h_int_graph_providers_not_in_central_migration_set() -> None:
-    for slug in H_INT_GRAPH_SLUGS:
-        assert (slug, "graph_store") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+def test_h_int_graph_providers_use_category_gated_explicit_specs() -> None:
+    from intergrax.integrations.registry.contract_spec import typed_contract_categories
+
+    assert "graph_store" in typed_contract_categories()
 
 
 def test_registry_v2_derives_h_int_graph_rows() -> None:

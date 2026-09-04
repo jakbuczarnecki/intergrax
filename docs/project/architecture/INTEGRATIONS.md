@@ -17,7 +17,7 @@ Without an Integration layer:
 Integrations address this through **`PlatformIntegrationContract`**, category-specific contracts, provider/category identity, **`IntegrationProfile`** host selection, typed provider classes, a single public entrypoint per category, and a plugin/catalog model with safe config and security boundaries.
 
 > [!NOTE]
-> **Maturity boundary:** Broad **contract migration** and **runtime cutover** exist across **186** provider/category slugs (gate-tested), with **9** deferred `llm_guardrail` slugs. That is **not** 186 production-qualified vendor deployments. Catalog scale ≠ production qualification. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
+> **Maturity boundary:** Broad **contract migration** and **runtime cutover** exist across **200** provider/category slugs (gate-tested). That is **not** 200 production-qualified vendor deployments. Catalog scale ≠ production qualification. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `IntegrationProfile`, provider packages, or third-party `IntegrationPlugin` paths - after the platform overview in the root README.
 
@@ -44,8 +44,8 @@ Integrations address this through **`PlatformIntegrationContract`**, category-sp
 | **Skills relation** | Skill → `tool_ids` → Tool → Integration - no vendor SDK in Skill |
 | **RAG relation** | RAG owns retrieval semantics; Integrations supply vector/graph/search/parser backends |
 | **Observability relation** | Sanitized export envelope → `ObservabilityVendorIntegrationContract` → OTLP/Langfuse/etc. |
-| **Provider scale** | **195** catalog slugs · **186** runtime cutover slugs · **9** deferred `llm_guardrail` |
-| **Deferred scope** | Nine `llm_guardrail` slugs (shared bundles layout; per-slug packages deferred) |
+| **Provider scale** | **200** catalog provider/category rows · explicit typed discovery for all canonical rows |
+| **Discovery** | Provider-owned `IntegrationContractSpec` → canonical catalog → derived `registry_v2` (no reflection fallback) |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) |
 
 ## Flagship architecture visual
@@ -325,20 +325,12 @@ IntegrationProfile
 
 Any future typed Integration category **MUST** use the same architecture: category contract → provider-owned explicit spec → canonical catalog → derived discovery. No future category **MAY** introduce a custom reflection lifecycle.
 
-#### Transitional `contract_capture` (not an extension point)
+#### Post-P2-003-C explicit discovery (canonical)
 
-`intergrax/integrations/registry/contract_capture.py` is **transitional legacy infrastructure** scheduled for removal by **P2-003-C**. It is **not** an extension point.
+After **P2-003-C**, reflective `contract_capture` is **removed**. All canonical typed provider/category rows **MUST** publish provider-owned explicit `IntegrationContractSpec` metadata at `register_from_manifest(..., contract_specs=...)`. Typed category membership derives from `PROVIDER_CATEGORY_CONTRACT_REGISTRY`; missing explicit specs **fail closed** globally (built-ins, external plugins, future categories).
 
-- **MUST NOT** be used for new providers.
-- **MUST NOT** be extended.
-- **MUST NOT** be documented or relied on as a fallback authoring path.
-
-P2-003 migration may explain why transitional reflection still exists temporarily; the canonical rule above is **not** conditional on migration status.
-
-**Migration-only exceptions (do not define future authoring):**
-
-- `managed_retrieval`: already explicit; any staged enforcement is migration-only.
-- `llm_guardrail`: typed-but-deferred historical exception awaiting P2-003-C resolution.
+- `managed_retrieval` and `llm_guardrail` are normal category-gated typed categories (no staged provider exceptions).
+- `registry_v2` projects all explicit catalog specs — no deferred exclusion lists.
 
 See [`INTEGRATION_REGISTRY_CANONICAL_AUTHORITY.md`](../maintainers/architecture/INTEGRATION_REGISTRY_CANONICAL_AUTHORITY.md).
 

@@ -39,7 +39,6 @@ from intergrax.runtime.integrations.observability_otlp import (
     OtlpObservabilityIntegrationConfig,
 )
 from intergrax.runtime.integrations.registry_v2 import (
-    DEFERRED_LLM_GUARDRAIL_SLUGS,
     DuplicateIntegrationRegistrationError,
     IntegrationCapability,
     IntegrationFactory,
@@ -62,7 +61,6 @@ from intergrax.runtime.integrations.registry_v2 import (
 )
 
 __all__ = [
-    "DEFERRED_LLM_GUARDRAIL_SLUGS",
     "DOCUMENT_STORE_VENDOR_INTEGRATION_CONTRACT_SCHEMA",
     "DocumentStoreVendorIntegrationConfig",
     "DocumentStoreVendorIntegrationContract",

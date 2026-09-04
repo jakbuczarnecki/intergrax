@@ -76,24 +76,16 @@ B5_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
     }
 )
 
-# Migration-only (provider_id, category) rows outside B1–B5 category gates — removed in P2-003-C.
-# Do not add B1/B2/B3 vendors here; category fail-closed derives from typed category sets.
-EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS: frozenset[tuple[str, str]] = frozenset(
-    {
-        ("openai", "managed_retrieval"),
-    }
-)
+def typed_contract_categories() -> frozenset[str]:
+    """Canonical typed categories that require provider-owned explicit contract specs."""
+    from intergrax.runtime.integrations.categories import PROVIDER_CATEGORY_CONTRACT_REGISTRY
+
+    return frozenset(PROVIDER_CATEGORY_CONTRACT_REGISTRY.keys())
 
 
 def required_explicit_contract_categories() -> frozenset[str]:
-    """Union of migration-stage typed categories that require explicit contract specs."""
-    return (
-        B1_TYPED_CONTRACT_CATEGORIES
-        | B2_TYPED_CONTRACT_CATEGORIES
-        | B3_TYPED_CONTRACT_CATEGORIES
-        | B4_TYPED_CONTRACT_CATEGORIES
-        | B5_TYPED_CONTRACT_CATEGORIES
-    )
+    """Backward-compatible alias for :func:`typed_contract_categories`."""
+    return typed_contract_categories()
 
 
 @dataclass(frozen=True, repr=False)
@@ -208,8 +200,15 @@ def validate_contract_specs_against_manifest(
 
     slug = normalize_contract_identity(manifest.slug, "slug")
     allowed_categories = manifest_category_values(manifest)
+    seen_categories: set[str] = set()
     for spec in specs:
         validate_contract_spec_identity(slug=slug, spec=spec, observed_provider_id=spec.provider_id)
+        if spec.category in seen_categories:
+            msg = (
+                f"Integration {slug!r}: duplicate contract spec category {spec.category!r}"
+            )
+            raise ValueError(msg)
+        seen_categories.add(spec.category)
         if spec.category not in allowed_categories:
             msg = (
                 f"Integration {slug!r}: contract spec category {spec.category!r} "
@@ -268,12 +267,12 @@ __all__ = [
     "B3_TYPED_CONTRACT_CATEGORIES",
     "B4_TYPED_CONTRACT_CATEGORIES",
     "B5_TYPED_CONTRACT_CATEGORIES",
-    "EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS",
     "IntegrationContractFactory",
     "IntegrationContractSpec",
     "declare_integration_contract",
     "manifest_category_values",
     "required_explicit_contract_categories",
+    "typed_contract_categories",
     "validate_contract_specs_against_manifest",
     "validate_contract_spec_identity",
     "validate_required_explicit_categories",

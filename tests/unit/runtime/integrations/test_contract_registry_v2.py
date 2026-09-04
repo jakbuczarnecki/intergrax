@@ -24,7 +24,6 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationContract,
 )
 from intergrax.runtime.integrations.registry_v2 import (
-    DEFERRED_LLM_GUARDRAIL_SLUGS,
     DuplicateIntegrationRegistrationError,
     IntegrationRegistration,
     IntegrationRegistry,
@@ -276,10 +275,11 @@ def test_all_non_deferred_cutover_providers_are_registry_v2_compatible() -> None
         assert integration.integration_kind == registration.integration_kind
 
 
-def test_deferred_llm_guardrail_slugs_are_explicitly_excluded() -> None:
-    registry = build_contract_registry()
-    registered_slugs = {registration.slug for registration in registry.list_all()}
+def test_llm_guardrail_slugs_project_to_registry_v2() -> None:
+    from intergrax.integrations.providers.llm_guardrail.register_all import GUARD_SLUGS
 
-    for slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
-        assert slug not in registered_slugs
+    registry = build_contract_registry()
+    registered_slugs = {registration.slug for registration in registry.list_all() if registration.category == "llm_guardrail"}
+    assert registered_slugs == set(GUARD_SLUGS)
+    for slug in GUARD_SLUGS:
         assert SLUG_CATEGORY[slug] == "llm_guardrail"
