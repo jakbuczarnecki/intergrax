@@ -461,21 +461,6 @@ def _checkpoints_identity_match(
     return original_run_id == reloaded_run_id
 
 
-def _resolve_execution_terminal(
-    runner: UnifiedTaskRunner,
-    explicit: ExecutionTerminalService | None,
-) -> ExecutionTerminalService | None:
-    if explicit is not None:
-        return explicit
-    nexus_loop = getattr(runner, "nexus_loop", None)
-    if nexus_loop is None:
-        return None
-    terminal = getattr(nexus_loop, "execution_terminal", None)
-    if isinstance(terminal, ExecutionTerminalService):
-        return terminal
-    return None
-
-
 async def governed_resume_checkpoint_task(
     runner: UnifiedTaskRunner,
     *,
@@ -495,8 +480,6 @@ async def governed_resume_checkpoint_task(
     normalized_mutation_id = mutation_id.strip()
     if not normalized_mutation_id:
         raise TaskControlValidationError("mutation_id_required")
-
-    resolved_terminal = _resolve_execution_terminal(runner, execution_terminal)
 
     checkpoint = checkpoint_store.get_by_token(task_id, tenant_id, resume_token)
     if checkpoint is None:
@@ -542,7 +525,7 @@ async def governed_resume_checkpoint_task(
         )
 
     try:
-        assert_checkpoint_resumable(checkpoint, execution_terminal=resolved_terminal)
+        assert_checkpoint_resumable(checkpoint, execution_terminal=execution_terminal)
     except CheckpointNotResumableError as exc:
         return GovernedResumeResult(
             accepted=False,

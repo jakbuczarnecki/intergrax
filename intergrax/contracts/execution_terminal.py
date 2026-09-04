@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import StrEnum
+from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,6 +39,17 @@ class ExecutionTerminalError(RuntimeError):
 
 class ExecutionTerminalConflictError(ExecutionTerminalError):
     """Raised when a late terminal transition conflicts with an existing terminal record."""
+
+
+@runtime_checkable
+class ExecutionTerminalPersistenceCapability(Protocol):
+    """Checkpoint-side persistence that can store terminal cancellation authority."""
+
+    def get_terminal_record(self, *, tenant_id: str, task_id: str) -> ExecutionTerminalRecord | None:
+        ...
+
+    def put_terminal_record_if_absent(self, record: ExecutionTerminalRecord) -> bool:
+        ...
 
 
 class ExecutionTerminalStore(ABC):

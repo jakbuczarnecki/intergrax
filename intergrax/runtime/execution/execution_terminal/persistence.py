@@ -9,11 +9,11 @@ import threading
 from intergrax.contracts.execution_terminal import (
     ExecutionTerminalError,
     ExecutionTerminalOutcome,
+    ExecutionTerminalPersistenceCapability,
     ExecutionTerminalRecord,
     ExecutionTerminalStore,
 )
 from intergrax.contracts.execution_identity import RunId, validate_run_id
-from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 
 
 class InMemoryExecutionTerminalStore(ExecutionTerminalStore):
@@ -44,7 +44,7 @@ class InMemoryExecutionTerminalStore(ExecutionTerminalStore):
 class CheckpointStoreExecutionTerminalStore(ExecutionTerminalStore):
     """Reuse durable checkpoint storage for terminal cancellation authority."""
 
-    def __init__(self, checkpoint_store: SQLiteTaskCheckpointStore) -> None:
+    def __init__(self, checkpoint_store: ExecutionTerminalPersistenceCapability) -> None:
         self._checkpoint_store = checkpoint_store
 
     @property
@@ -60,9 +60,12 @@ class CheckpointStoreExecutionTerminalStore(ExecutionTerminalStore):
 
 def wire_execution_terminal_store(
     *,
-    checkpoint_store: object | None = None,
+    checkpoint_store: ExecutionTerminalPersistenceCapability | None = None,
 ) -> ExecutionTerminalStore:
-    if isinstance(checkpoint_store, SQLiteTaskCheckpointStore):
+    if checkpoint_store is not None and isinstance(
+        checkpoint_store,
+        ExecutionTerminalPersistenceCapability,
+    ):
         return CheckpointStoreExecutionTerminalStore(checkpoint_store)
     return InMemoryExecutionTerminalStore()
 

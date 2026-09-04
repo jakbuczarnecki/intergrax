@@ -295,10 +295,7 @@ async def test_governed_resume_denies_cancelled_checkpoint() -> None:
             return self.decision
 
     boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=_AllowEvaluator())
-    nexus_loop = MagicMock()
-    nexus_loop.execution_terminal = terminal
-    runner = MagicMock()
-    runner.nexus_loop = nexus_loop
+    runner = AsyncMock()
 
     with patch(
         "intergrax.applications._shared.task_control._resume_task_with_token",
@@ -318,6 +315,7 @@ async def test_governed_resume_denies_cancelled_checkpoint() -> None:
             ),
             mutation_boundary=boundary,
             checkpoint_store=_StaticCheckpointStore(),
+            execution_terminal=terminal,
         )
     assert outcome.accepted is False
     assert outcome.blocked is not None
