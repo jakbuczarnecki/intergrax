@@ -8,7 +8,7 @@ Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry 
 
 | Layer | Entry point group | Protocol | Register function | Status |
 |-------|-------------------|----------|-------------------|--------|
-| Integration | `intergrax.integrations` | `IntegrationPlugin` | `register_integration_plugin()` | **Done** |
+| Integration | `intergrax.integrations` | `IntegrationPlugin` + explicit `CONTRACT_SPECS` | `register_integration_plugin(..., contract_specs=...)` | **Done** |
 | Tool | `intergrax.tools` | `ToolPlugin` | `register_tool_plugin()` | **Done** |
 | Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` | **Done** |
 | Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Public EP** - qualification rollout domain-owned ([CE-2](../../maintainers/plans/CONTEXT_ENGINEERING.md)) |
@@ -105,7 +105,7 @@ Working Tools reference: §16.2 · [`examples/platform_plugins/local_embedded_to
 
 | Local path status | Surfaces |
 |-------------------|----------|
-| **Documented explicit registration** | Integrations (`register_integration_plugin`), Tools (`register_tool_plugin` + scaffold `extensions/`), Skills (`register_skill_plugin`) |
+| **Documented explicit registration** | Integrations (`register_integration_plugin(..., contract_specs=...)`), Tools (`register_tool_plugin` + scaffold `extensions/`), Skills (`register_skill_plugin`) |
 | **Host composition possible; incomplete developer path** | Context (`register_context_plugin` - no scaffold hook yet), Memory stores (host invokes factory callables / `MemoryPlatformWiring`), Vendor Knowledge (host builder + bindings - not Tier-0 catalog registration) |
 | **External-EP-first / advanced host composition only** | RAG chunker, RAG retriever, RAG reranker (registry `register` APIs - see RAG guide §0.2), Security defense, Policy rule handler, Tool invocation pattern |
 
@@ -169,7 +169,7 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 
 | Surface | Use when | Public contract | External EP | Local / host path | Config / DI | Next guide |
 |---------|----------|-----------------|-------------|-------------------|-------------|------------|
-| Integration | New backend / provider category | `IntegrationPlugin` | `intergrax.integrations` | `register_integration_plugin()` | `IntegrationProfile` + `IntegrationManifest.env_prefix` | [§2](#2-external-integration-plugin) · [§16.4–§16.5](#164-external-integration-package-quickstart) · [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) |
+| Integration | New backend / provider category | `IntegrationPlugin` + explicit `CONTRACT_SPECS` | `intergrax.integrations` | `register_integration_plugin(..., contract_specs=...)` | `IntegrationProfile` + `IntegrationManifest.env_prefix` | [§2](#2-external-integration-plugin) · [§16.4–§16.5](#164-external-integration-package-quickstart) · [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) |
 | Tool | New LLM-invokable operation | `ToolPlugin` | `intergrax.tools` | `register_tool_plugin()` + scaffold `extensions/` | `ToolWiringContext` | [§3](#3-external-tool-plugin) · [§16](#16-dual-mode-developer-quickstarts-platform-plugin-8) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 | Skill | Reusable agent capability bundle | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` | `SkillProfile` | [§4](#4-external-skill-plugin) · [§16.6–§16.7](#166-external-skill-package-quickstart) · [`SKILLS.md`](../../architecture/SKILLS.md) |
 | Context | Custom context / prompt material | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` - **no scaffold hook yet** | `ContextProfile` | [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · multi-capability example: [`intergrax_reference_enterprise_plugin`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) |
@@ -248,19 +248,19 @@ Optional env: `INTERGRAX_DISCOVER_PLUGINS=true` enables entry-point discovery wh
 
 | Layer | Shipped registration | External package | Runtime materialization |
 |-------|---------------------|------------------|-------------------------|
-| Integration | `register_from_manifest` (167 slugs) | `IntegrationPlugin` + EP | `IntegrationProfile.resolve(category)` |
+| Integration | `register_from_manifest(..., contract_specs=CONTRACT_SPECS)` (167 slugs) | `IntegrationPlugin` + explicit `CONTRACT_SPECS` + EP | `IntegrationProfile.resolve(category)` |
 | Tool | `ToolPlugin` (13 bundles) | `ToolPlugin` + EP | `build_registry_from_profile(ToolProfile, ctx)` → invoke / MCP |
 | Skill | `SkillPlugin` (3 bundles) | `SkillPlugin` + EP | `build_registry_from_profile(SkillProfile)` → `SkillResolver` |
 
-**Dual model (integrations):** shipped providers use `manifest.py` + `create_*` factory; third-party packages use `IntegrationPlugin`. See `SqliteIntegrationPlugin` in `sqlite/plugin.py` as a reference class (shipped `register.py` still uses manifest path).
+**Dual model (integrations):** shipped providers use `manifest.py` + `create_*` factory + explicit `contract_specs`; third-party packages use `IntegrationPlugin` + provider-owned `CONTRACT_SPECS` at `register_integration_plugin(..., contract_specs=...)`. See `SqliteIntegrationPlugin` in `sqlite/plugin.py` as a reference class (shipped `register.py` still uses manifest path).
 
-**Examples in repo:** `integrations/examples/custom_memory_kv`, `tools/examples/custom_echo`, `skills/examples/custom_pack`.
+**Examples in repo:** `integrations/providers/notification_channel/email_smtp` (typed Integration reference), `tools/examples/custom_echo`, `skills/examples/custom_pack`. Illustrative external-plugin walkthrough: §2 `custom_memory_kv` (docs-only canonical shape).
 
 ---
 
 ## 2. External integration plugin
 
-**Domain architecture:** [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) - third-party developer path · **Reference example:** `intergrax/integrations/examples/custom_memory_kv/`
+**Domain architecture:** [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) - third-party developer path · **Typed reference (first-party):** `intergrax/integrations/providers/notification_channel/email_smtp/` · **External-plugin walkthrough:** §2 `custom_memory_kv` (canonical typed shape in this guide; in-repo `integrations/examples/custom_memory_kv/` is legacy plugin-only — pending migration)
 
 ### Purpose
 
@@ -280,7 +280,8 @@ An **Integration** is an infrastructure/provider backend - database, cache, stor
 | Import | `intergrax.integrations.core.plugin` |
 | Manifest | `IntegrationManifest` - `intergrax.integrations.core.manifest` |
 | Required methods | `integration_manifest() -> IntegrationManifest` · `create_integration(**kwargs) -> <category contract>` |
-| Register | `register_integration_plugin(cls, override=False)` - `intergrax.integrations.registry.plugin_register` |
+| Typed discovery metadata | Provider-owned `CONTRACT_SPECS` in `contract_spec.py` — passed explicitly at registration (not inferred) |
+| Register | `register_integration_plugin(cls, *, override=False, contract_specs=CONTRACT_SPECS)` — `intergrax.integrations.registry.plugin_register` |
 | Entry point group | `intergrax.integrations` |
 | Runtime materialization | `IntegrationProfile.resolve(IntegrationCategory.…)` |
 
@@ -288,8 +289,8 @@ An **Integration** is an infrastructure/provider backend - database, cache, stor
 
 | Path | Who | Mechanism |
 |------|-----|-----------|
-| **Third-party external** | Package authors | `IntegrationPlugin` + setuptools EP `intergrax.integrations` |
-| **First-party shipped** | Intergrax maintainers | `manifest.py` + `create_*` factory + `register_from_manifest` - internal bootstrap at scale; **not** the public third-party compatibility contract |
+| **Third-party external** | Package authors | `IntegrationPlugin` + provider-owned `CONTRACT_SPECS` + `register_integration_plugin(..., contract_specs=...)`; setuptools EP `intergrax.integrations` locates the plugin class only |
+| **First-party shipped** | Intergrax maintainers | `manifest.py` + `create_*` factory + `register_from_manifest(..., contract_specs=CONTRACT_SPECS)` — internal bootstrap at scale; **not** the public third-party compatibility contract |
 
 **Canonical discovery rule (normative owner):** [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-discovery-contract-canonical--p2-003-doc) — typed providers **MUST** register explicit provider-owned `IntegrationContractSpec` metadata; reflection-based discovery is **FORBIDDEN**.
 
@@ -411,14 +412,30 @@ Before a typed provider is accepted:
 
 ### Minimal implementation (`custom_memory_kv`)
 
-Copyable in-repo example - four files:
+Docs-only canonical typed external-plugin shape. Copy the roles below into your package layout (filenames may differ; **explicit `CONTRACT_SPECS` ownership is mandatory**).
+
+> **In-repo note:** `intergrax/integrations/examples/custom_memory_kv/` still ships only `manifest.py` + `adapter.py` + `plugin.py` (legacy plugin-only illustration). Do **not** copy it as a typed Integration template. For a migrated first-party reference, see `notification_channel/email_smtp/` or `key_value_cache/memcached/`.
+
+```text
+custom_memory_kv/
+├── __init__.py
+├── manifest.py
+├── adapter.py          # KeyValueCache implementation
+├── integration.py      # typed KeyValueCacheIntegrationContract (thin wrapper)
+├── contract_spec.py    # CONTRACT_SPECS via declare_integration_contract
+├── plugin.py           # IntegrationPlugin
+└── register.py         # register_integration_plugin(..., contract_specs=...)
+```
 
 | File | Role |
 |------|------|
 | `manifest.py` | `IntegrationManifest(slug, categories, status, env_prefix, description)` |
 | `adapter.py` | Concrete category contract (here `KeyValueCache`) |
-| `plugin.py` | `integration_manifest()` + `create_integration(**kwargs)` returning the adapter |
-| `__init__.py` | Re-exports `CustomMemoryKvPlugin`, `MANIFEST` |
+| `integration.py` | Typed `KeyValueCacheIntegrationContract` delegating to adapter |
+| `contract_spec.py` | Provider-owned `CONTRACT_SPEC` / `CONTRACT_SPECS` |
+| `plugin.py` | `integration_manifest()` + `create_integration(**kwargs)` |
+| `register.py` | `register_integration_plugin(..., contract_specs=CONTRACT_SPECS)` |
+| `__init__.py` | Re-exports plugin, manifest, `register_*` helper |
 
 ```python
 # manifest.py
@@ -435,6 +452,38 @@ MANIFEST = IntegrationManifest(
 ```
 
 ```python
+# contract_spec.py
+from intergrax.integrations.registry.contract_spec import declare_integration_contract
+from intergrax.runtime.integrations.categories.data import KeyValueCacheIntegrationContract
+from intergrax.runtime.integrations.contracts import (
+    PlatformIntegrationCapability,
+    PlatformIntegrationSecurityPosture,
+)
+
+CONTRACT_SPEC = declare_integration_contract(
+    category="key_value_cache",
+    provider_id="custom_memory_kv",
+    integration_class=CustomMemoryKvIntegration,
+    contract_class=KeyValueCacheIntegrationContract,
+    contract_factory=create_custom_memory_kv_integration,
+    display_name="Custom Memory KV",
+    config_class=CustomMemoryKvIntegrationConfig,
+    capabilities=(
+        PlatformIntegrationCapability.CONNECT,
+        PlatformIntegrationCapability.READ,
+        PlatformIntegrationCapability.WRITE,
+        PlatformIntegrationCapability.HEALTH_CHECK,
+    ),
+    security_posture=PlatformIntegrationSecurityPosture(),
+    supports_runtime_binding=True,
+    supports_health_check=True,
+    metadata={"source": "explicit_provider_declaration"},
+)
+
+CONTRACT_SPECS = (CONTRACT_SPEC,)
+```
+
+```python
 # plugin.py
 class CustomMemoryKvPlugin:
     @classmethod
@@ -446,17 +495,41 @@ class CustomMemoryKvPlugin:
         return InProcessKeyValueCache()
 ```
 
+```python
+# register.py
+from intergrax.integrations.registry.plugin_register import register_integration_plugin
+
+def register_custom_memory_kv(*, override: bool = False) -> None:
+    register_integration_plugin(
+        CustomMemoryKvPlugin,
+        override=override,
+        contract_specs=CONTRACT_SPECS,
+    )
+```
+
 ### External package quickstart
 
 See [§16.4](#164-external-integration-package-quickstart). Summary:
 
-1. Own `pyproject.toml` with `[project.entry-points."intergrax.integrations"]`.
-2. `pip install` alone does **not** activate - host must enable discovery (`INTERGRAX_DISCOVER_PLUGINS=true` or `bootstrap_catalogs(discover_entry_points=True)`).
-3. Host selects provider on `IntegrationProfile` and calls `resolve(category)`.
+1. Own `pyproject.toml` with `[project.entry-points."intergrax.integrations"]` (locates `IntegrationPlugin` class — package discovery only).
+2. Provider-owned `contract_spec.py` with `CONTRACT_SPECS` for every typed category membership.
+3. `register.py` (or host composition root) calls `register_integration_plugin(..., contract_specs=CONTRACT_SPECS)`.
+4. `pip install` alone does **not** activate — host must enable discovery (`INTERGRAX_DISCOVER_PLUGINS=true` or `bootstrap_catalogs(discover_entry_points=True)`) **and** complete catalog registration with explicit specs.
+5. Host selects provider on `IntegrationProfile` and calls `resolve(category)` (runtime materialization — separate from discovery).
 
 ```toml
 [project.entry-points."intergrax.integrations"]
-my_kv = "my_pkg.integration_plugin:MyKvIntegrationPlugin"
+my_kv = "my_pkg.plugin:MyKvIntegrationPlugin"
+```
+
+Host composition root (explicit typed registration — required for typed categories):
+
+```python
+from my_pkg.contract_spec import CONTRACT_SPECS
+from my_pkg.plugin import MyKvIntegrationPlugin
+from intergrax.integrations.registry.plugin_register import register_integration_plugin
+
+register_integration_plugin(MyKvIntegrationPlugin, contract_specs=CONTRACT_SPECS)
 ```
 
 ### Local / host-embedded registration
@@ -467,13 +540,18 @@ When the integration belongs to one application and does not need a wheel:
 from intergrax.integrations.registry.plugin_register import register_integration_plugin
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.contracts.base import IntegrationCategory
+from my_app.integrations.my_kv.contract_spec import CONTRACT_SPECS
+from my_app.integrations.my_kv.plugin import MyIntegrationPlugin
 
-register_integration_plugin(MyIntegrationPlugin)  # explicit - no EP required
+register_integration_plugin(
+    MyIntegrationPlugin,
+    contract_specs=CONTRACT_SPECS,
+)  # explicit typed metadata — no EP required
 profile = IntegrationProfile(key_value_cache=MyIntegrationPlugin)
 cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 ```
 
-Same `IntegrationPlugin` contract as external packages; host owns qualification (`PluginDeliverySource.HOST_EMBEDDED_EXTENSION`). See §15.2.
+Same `IntegrationPlugin` contract and explicit `contract_specs` requirement as external packages; host owns qualification (`PluginDeliverySource.HOST_EMBEDDED_EXTENSION`). See §15.2.
 
 ### Configuration and secrets
 
@@ -509,14 +587,19 @@ cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)  # direct backend a
 ### Registration and discovery sequence
 
 ```text
-IntegrationPlugin class
-  → register_integration_plugin() OR EP discovery via bootstrap_catalogs
-  → catalog row (slug → factory)
+IntegrationPlugin / provider package
++ provider-owned IntegrationContractSpec (CONTRACT_SPECS)
+  → register_integration_plugin(..., contract_specs=CONTRACT_SPECS)
+     OR register_from_manifest(..., contract_specs=CONTRACT_SPECS)
+  → Integration Catalog entry (slug + factory + contract_specs)
+  → registry_v2 / discovery projection (derived, read-only)
   → IntegrationProfile selects slug/class per category
-  → profile.resolve(category) → factory(**merged options)
+  → profile.resolve(category) → factory(**merged options)   # runtime materialization
 ```
 
-`installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`. Discovery default **off** - see §1.
+Setuptools entry-point scanning (`intergrax.integrations`) may **locate** an `IntegrationPlugin` class in an installed wheel — that is **package/plugin discovery**. It **MUST NOT** infer typed contract metadata from the plugin implementation. Typed contract discovery is **only** through explicit `IntegrationContractSpec` rows registered into the catalog.
+
+`installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`. For Integrations, **discovered** means registered in the canonical catalog with explicit typed contract metadata — not merely importable via entry point. Discovery default **off** - see §1.
 
 ### Qualification
 
@@ -539,6 +622,7 @@ Pre-built instances passed directly on `IntegrationProfile` are owned entirely b
 | Condition | Behavior |
 |-----------|----------|
 | Duplicate slug (`override=False`) | `ValueError: Integration slug '…' is already registered.` |
+| Typed category without `contract_specs` | `ValueError: Integration '…' requires explicit contract_specs for typed categories: …` (fail-closed) |
 | EP discovery disabled | Plugin not in catalog - `UnknownIntegrationError` at resolve |
 | EP import/load failure | `PluginLoadError` from `intergrax.core.plugins` |
 | Invalid manifest / contract | `TypeError` from `integration_manifest_for_plugin` |
@@ -551,20 +635,35 @@ Catalog slug conflicts during bootstrap: `on_conflict` policy - see §5.
 
 ### Testing
 
-Focused contract test (in-repo):
+Explicit typed discovery gates (positive + fail-closed negative):
 
 ```python
-# tests/unit/integrations/test_external_plugin.py
-register_integration_plugin(CustomMemoryKvPlugin)
-profile = IntegrationProfile(key_value_cache=CustomMemoryKvPlugin)
+# tests/unit/integrations/test_p2_003_explicit_contract_specs.py
+def test_register_integration_plugin_external_b1_without_specs_fails_closed(...) -> None:
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_integration_plugin(_ExternalB1SqlPlugin)
+
+def test_register_integration_plugin_external_b1_with_explicit_spec_succeeds() -> None:
+    register_integration_plugin(_ExternalB1SqlPlugin, contract_specs=(_external_b1_plugin_spec(),))
+    registration = build_integration_registration("external_b1_sql")
+    assert registration.category == "relational_store"
+```
+
+Runtime resolve after explicit registration:
+
+```python
+register_integration_plugin(MyIntegrationPlugin, contract_specs=CONTRACT_SPECS)
+profile = IntegrationProfile(key_value_cache=MyIntegrationPlugin)
 cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 assert_key_value_cache(cache)
 ```
 
-Run: `pytest tests/unit/integrations/test_external_plugin.py -q`
+Run: `pytest tests/unit/integrations/test_p2_003_explicit_contract_specs.py -q`
 
 ### Production checklist
 
+- [ ] Provider-owned `contract_spec.py` with `CONTRACT_SPECS` for every typed category
+- [ ] `register_integration_plugin(..., contract_specs=CONTRACT_SPECS)` or equivalent `register_from_manifest` wiring
 - [ ] `IntegrationManifest.categories` matches the contract your factory returns
 - [ ] `env_prefix` documented if used; secrets never in manifest/EP
 - [ ] Host `IntegrationProfile` slot set for each category you provide
@@ -578,7 +677,8 @@ Run: `pytest tests/unit/integrations/test_external_plugin.py -q`
 |---------|--------------|-----|
 | Package installed, slug missing | Discovery disabled | Enable `INTERGRAX_DISCOVER_PLUGINS` or pass plugin to `bootstrap_catalogs(integration_plugins=…)` |
 | Discovered but not used | Profile slot unset | Set `IntegrationProfile.<category>=<slug or plugin>` |
-| `UnknownIntegrationError` | Slug not registered | Call `register_integration_plugin` or fix EP target |
+| `UnknownIntegrationError` | Slug not registered | Call `register_integration_plugin(..., contract_specs=...)` or fix EP target + explicit registration |
+| Missing `contract_specs` for typed category | Registration without explicit metadata | Add provider-owned `CONTRACT_SPECS`; fail-closed — no inference |
 | `IntegrationCategoryMismatchError` | Wrong category on manifest | Align `categories` with profile slot |
 | `IntegrationConfigurationError` | Missing options/env | Check `options` dict and `env_prefix` vars |
 | Qualification rejected | Host gate | Collect production evidence; compatible ≠ qualified |
@@ -1197,7 +1297,7 @@ Qualification is **evidence that a subject meets domain/program thresholds** - n
 
 ### 15.2 Application developer - host-embedded extension
 
-Local modules (e.g. `applications/my_app/extensions/my_tool.py`) may implement domain contracts (`ToolPlugin`, `IntegrationPlugin`, …) and enter via **explicit host registration** (`register_tool_plugin`, `register_integration_plugin`, …).
+Local modules (e.g. `applications/my_app/extensions/my_tool.py`) may implement domain contracts (`ToolPlugin`, `IntegrationPlugin`, …) and enter via **explicit host registration** (`register_tool_plugin`, `register_integration_plugin(..., contract_specs=...)`, …).
 
 - Packaging as a wheel is **not required** for qualification.
 - Entry-point discovery is **not required** when the host registers the class directly.
@@ -1272,22 +1372,23 @@ Working reference: [`examples/platform_plugins/local_embedded_tool_extension/`](
 
 ### 16.4 External integration package quickstart
 
-Reference example (in-repo, copyable): `intergrax/integrations/examples/custom_memory_kv/`
+Typed reference (first-party, migrated): `intergrax/integrations/providers/notification_channel/email_smtp/`. External-plugin walkthrough: §2 `custom_memory_kv` (canonical typed shape in this guide).
 
-1. **Create package** - own `pyproject.toml`, implement `IntegrationPlugin` (`manifest.py` + `adapter.py` + `plugin.py`).
-2. **Declare entry point** - `[project.entry-points."intergrax.integrations"]` → your plugin class.
-3. **Build and install wheel** - `uv build --wheel` · `uv pip install ./dist/*.whl`.
-4. **Enable discovery** - `bootstrap_catalogs(discover_entry_points=True)` or `INTERGRAX_DISCOVER_PLUGINS=true`.
-5. **Configure host** - set `IntegrationProfile.<category>` to your slug or plugin class; pass `options` if needed.
-6. **Qualification** - host collects semantic production evidence (§15) before activation.
-7. **Resolve** - `profile.resolve(IntegrationCategory.…)` in composition root or `ToolWiringContext.from_integration_profile(profile)`.
+1. **Create package** - own `pyproject.toml`; implement `IntegrationPlugin` + provider-owned `contract_spec.py` (`CONTRACT_SPECS`).
+2. **Declare entry point** - `[project.entry-points."intergrax.integrations"]` → your plugin class (package discovery only).
+3. **Register with explicit specs** - from host composition root: `register_integration_plugin(MyPlugin, contract_specs=CONTRACT_SPECS)` (or package `register.py` helper).
+4. **Build and install wheel** - `uv build --wheel` · `uv pip install ./dist/*.whl`.
+5. **Enable discovery** - `bootstrap_catalogs(discover_entry_points=True)` or `INTERGRAX_DISCOVER_PLUGINS=true` (locates plugin; typed catalog row still requires step 3).
+6. **Configure host** - set `IntegrationProfile.<category>` to your slug or plugin class; pass `options` if needed.
+7. **Qualification** - host collects semantic production evidence (§15) before activation.
+8. **Resolve** - `profile.resolve(IntegrationCategory.…)` in composition root or `ToolWiringContext.from_integration_profile(profile)`.
 
-Full walkthrough: [§2](#2-external-integration-plugin) · [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md).
+Full walkthrough: [§2](#2-external-integration-plugin) · [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-discovery-contract-canonical--p2-003-doc).
 
 ### 16.5 Local integration extension quickstart
 
-1. **Add module** under application tree implementing the same `IntegrationPlugin` contract.
-2. **Explicit registration** - `register_integration_plugin(MyIntegrationPlugin)` from composition root (no wheel/EP).
+1. **Add module** under application tree implementing `IntegrationPlugin` + `contract_spec.py` (`CONTRACT_SPECS`).
+2. **Explicit typed registration** - `register_integration_plugin(MyIntegrationPlugin, contract_specs=CONTRACT_SPECS)` from composition root (no wheel/EP).
 3. **Host qualification** - `build_host_embedded_capability_subject` (§15.2).
 4. **Wire profile** - `IntegrationProfile(key_value_cache=MyIntegrationPlugin)` (or appropriate category slot).
 5. **Resolve** - same `profile.resolve(category)` path as external packages.
