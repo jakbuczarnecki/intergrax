@@ -19,6 +19,16 @@ from intergrax.proof_data import (
     LocalFileDataPackageTransport,
     load_proof_data_package_descriptor,
 )
+from intergrax.proof_data.descriptor import (
+    DataPackageFileDescriptor,
+    ProofDataPackageDescriptor,
+    PublicationStatus,
+)
+from tests.unit.intergrax.proof_data.test_http_transport import (
+    _full_response,
+    _install_stream_mock,
+    _range_response,
+)
 
 
 def _fixture_root() -> Path:
@@ -148,3 +158,66 @@ def test_http_range_resume(tmp_path: Path) -> None:
     digest = hashlib.sha256(partial.read_bytes()).hexdigest()
     assert digest == target.sha256
     server.shutdown()
+
+
+def test_installer_bytes_downloaded_excludes_discarded_partial_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    file_a = b"a" * 3_000
+    file_b = b"b" * 4_000
+    sha_a = hashlib.sha256(file_a).hexdigest()
+    sha_b = hashlib.sha256(file_b).hexdigest()
+    descriptor = ProofDataPackageDescriptor(
+        package_id="test-metrics",
+        package_version="1",
+        description="metrics aggregation fixture",
+        files=(
+            DataPackageFileDescriptor(
+                relative_path="a.bin",
+                size_bytes=len(file_a),
+                sha256=sha_a,
+                role="DATA",
+            ),
+            DataPackageFileDescriptor(
+                relative_path="b.bin",
+                size_bytes=len(file_b),
+                sha256=sha_b,
+                role="DATA",
+            ),
+        ),
+        redistribution_status=PublicationStatus.INTERNAL_BUILD,
+    )
+    cache = DataPackageCache(tmp_path / "cache")
+    partial_a = cache.partial_path(sha_a)
+    partial_a.parent.mkdir(parents=True, exist_ok=True)
+    partial_a.write_bytes(file_a[:1_000])
+
+    _install_stream_mock(
+        monkeypatch,
+        [
+            lambda headers: _range_response(file_a, headers),
+            lambda headers: _full_response(
+                file_b,
+                write_bytes=500,
+                fail_after_chunk=True,
+            ),
+            lambda headers: _full_response(file_b),
+        ],
+    )
+    transport = HttpDataPackageTransport(max_retries=3, retry_backoff_seconds=0)
+    installer = DataPackageInstaller()
+    report = installer.install(
+        DataPackageInstallRequest(
+            descriptor=descriptor,
+            install_root=tmp_path / "install",
+            cache=cache,
+            transport=transport,
+            base_uri="http://example.test/",
+        )
+    )
+
+    assert report.files_downloaded == 2
+    assert report.bytes_downloaded == 2_000 + 4_000
+    assert (tmp_path / "install" / "a.bin").read_bytes() == file_a
+    assert (tmp_path / "install" / "b.bin").read_bytes() == file_b

@@ -276,6 +276,129 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def test_clean_download_bytes_written_equals_payload_size(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = b"z" * 5_000
+    partial = tmp_path / "object.part"
+    _install_stream_mock(monkeypatch, [lambda headers: _full_response(payload)])
+    transport = HttpDataPackageTransport(max_retries=1, retry_backoff_seconds=0)
+
+    result = transport.download_file("http://example.test/file", partial, resume_from_byte=0)
+
+    assert partial.read_bytes() == payload
+    assert result.bytes_written == 5_000
+
+
+def test_normal_resume_bytes_written_excludes_existing_partial(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = b"w" * 5_000
+    partial = tmp_path / "object.part"
+    partial.write_bytes(payload[:2_000])
+    _install_stream_mock(monkeypatch, [lambda headers: _range_response(payload, headers)])
+    transport = HttpDataPackageTransport(max_retries=1, retry_backoff_seconds=0)
+
+    result = transport.download_file("http://example.test/file", partial, resume_from_byte=2_000)
+
+    assert partial.read_bytes() == payload
+    assert result.bytes_written == 3_000
+
+
+def test_range_ignored_after_mid_stream_failure_counts_only_surviving_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = b"x" * 5_000
+    partial = tmp_path / "object.part"
+    requested_headers = _install_stream_mock(
+        monkeypatch,
+        [
+            lambda headers: _full_response(
+                payload,
+                write_bytes=1_000,
+                fail_after_chunk=True,
+            ),
+            lambda headers: _full_response(payload),
+        ],
+    )
+    transport = HttpDataPackageTransport(max_retries=3, retry_backoff_seconds=0)
+
+    result = transport.download_file("http://example.test/file", partial, resume_from_byte=0)
+
+    assert partial.read_bytes() == payload
+    assert [headers.get("Range") for headers in requested_headers] == [
+        None,
+        "bytes=1000-",
+    ]
+    assert result.bytes_written == 5_000
+
+
+def test_pre_existing_partial_reset_counts_only_post_reset_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = b"y" * 5_000
+    partial = tmp_path / "object.part"
+    partial.write_bytes(payload[:2_000])
+    requested_headers = _install_stream_mock(
+        monkeypatch,
+        [
+            lambda headers: _range_response(
+                payload,
+                headers,
+                write_bytes=1_000,
+                fail_after_chunk=True,
+            ),
+            lambda headers: _full_response(payload),
+        ],
+    )
+    transport = HttpDataPackageTransport(max_retries=3, retry_backoff_seconds=0)
+
+    result = transport.download_file("http://example.test/file", partial, resume_from_byte=2_000)
+
+    assert partial.read_bytes() == payload
+    assert [headers.get("Range") for headers in requested_headers] == [
+        "bytes=2000-",
+        "bytes=3000-",
+    ]
+    assert result.bytes_written == 5_000
+
+
+def test_416_reset_discards_prior_invocation_bytes_from_metric(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = b"m" * 5_000
+    partial = tmp_path / "object.part"
+    requested_headers = _install_stream_mock(
+        monkeypatch,
+        [
+            lambda headers: _range_response(
+                payload,
+                headers,
+                write_bytes=1_000,
+                fail_after_chunk=True,
+            ),
+            lambda headers: _MockResponse(416, chunks=()),
+            lambda headers: _full_response(payload),
+        ],
+    )
+    transport = HttpDataPackageTransport(max_retries=4, retry_backoff_seconds=0)
+
+    result = transport.download_file("http://example.test/file", partial, resume_from_byte=0)
+
+    assert partial.read_bytes() == payload
+    assert [headers.get("Range") for headers in requested_headers] == [
+        None,
+        "bytes=1000-",
+        None,
+    ]
+    assert result.bytes_written == 5_000
+
+
 def test_single_mid_stream_failure_resumes_from_current_partial(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

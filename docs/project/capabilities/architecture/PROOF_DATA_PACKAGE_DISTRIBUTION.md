@@ -56,7 +56,7 @@ VPI-specific semantics live under `platform_proofs/scenarios/verified_product_id
 | Retries | `max_retries` is the total HTTP attempt budget per `download_file` call |
 | Diagnostics | Error messages sanitize URIs (query strings omitted) |
 
-`TransportDownloadResult.bytes_written` reports useful bytes persisted during the invocation (excluding bytes discarded when a partial is reset). `DataPackageInstallReport.bytes_downloaded` aggregates those per-file persisted byte counts across the install.
+`TransportDownloadResult.bytes_written` reports useful bytes persisted during the invocation: bytes that remain part of the resulting partial/final file after the call completes. Bytes transferred in an earlier attempt but later discarded because the partial was reset (HTTP 200 after `Range`, bounded HTTP 416 restart) are excluded. Bytes that survive a failed attempt and remain in the resumed partial are included. Pre-existing partial bytes from before the invocation are not counted. `DataPackageInstallReport.bytes_downloaded` aggregates those per-file persisted byte counts across the install.
 
 ## Related documents
 

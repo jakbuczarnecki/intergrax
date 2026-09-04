@@ -36,6 +36,25 @@ class _AttemptPlan:
     resumed: bool
 
 
+@dataclass(slots=True)
+class _PersistedByteAccounting:
+    """Useful bytes persisted by the current ``download_file()`` invocation."""
+
+    useful_bytes: int = 0
+
+    def record_persisted_segment(self, size_before: int, size_after: int) -> None:
+        self.useful_bytes += max(0, size_after - size_before)
+
+    def discard_invocation_contribution(self) -> None:
+        self.useful_bytes = 0
+
+    def record_successful_attempt(self, attempt_bytes: int, *, partial_reset: bool) -> None:
+        if partial_reset:
+            self.useful_bytes = attempt_bytes
+            return
+        self.useful_bytes += attempt_bytes
+
+
 class HttpDataPackageTransport:
     """Reference transport using streaming HTTP(S) with optional Range resume.
 
@@ -83,7 +102,7 @@ class HttpDataPackageTransport:
 
         destination_partial.parent.mkdir(parents=True, exist_ok=True)
 
-        total_bytes_written = 0
+        accounting = _PersistedByteAccounting()
         resumed = False
         supports_range = False
         final_uri = source_uri
@@ -95,22 +114,23 @@ class HttpDataPackageTransport:
             size_before_attempt = _current_partial_size(destination_partial)
 
             try:
-                attempt_bytes, attempt_resumed, attempt_supports_range, attempt_final_uri = (
-                    self._stream_attempt(
-                        source_uri,
-                        destination_partial,
-                        plan=plan,
-                        reset_on_416_used=reset_on_416_used,
-                    )
+                (
+                    attempt_bytes,
+                    attempt_resumed,
+                    attempt_supports_range,
+                    attempt_final_uri,
+                    partial_reset,
+                ) = self._stream_attempt(
+                    source_uri,
+                    destination_partial,
+                    plan=plan,
+                    reset_on_416_used=reset_on_416_used,
                 )
             except _PermanentTransportFailure as exc:
                 raise DataPackageTransportError(str(exc)) from exc
             except httpx.TransportError as exc:
-                persisted_bytes = max(
-                    0,
-                    _current_partial_size(destination_partial) - size_before_attempt,
-                )
-                total_bytes_written += persisted_bytes
+                size_after_attempt = _current_partial_size(destination_partial)
+                accounting.record_persisted_segment(size_before_attempt, size_after_attempt)
                 last_error = exc
                 if attempt >= self._max_retries:
                     break
@@ -120,6 +140,7 @@ class HttpDataPackageTransport:
                 raise
 
             if attempt_bytes is None:
+                accounting.discard_invocation_contribution()
                 reset_on_416_used = True
                 if attempt >= self._max_retries:
                     last_error = DataPackageTransportError(
@@ -129,14 +150,17 @@ class HttpDataPackageTransport:
                 time.sleep(self._retry_backoff_seconds * attempt)
                 continue
 
-            total_bytes_written += attempt_bytes
+            accounting.record_successful_attempt(
+                attempt_bytes,
+                partial_reset=partial_reset,
+            )
             if attempt_resumed:
                 resumed = True
             if attempt_supports_range:
                 supports_range = True
             final_uri = attempt_final_uri
             return TransportDownloadResult(
-                bytes_written=total_bytes_written,
+                bytes_written=accounting.useful_bytes,
                 resumed=resumed,
                 supports_range=supports_range,
                 final_uri=final_uri,
@@ -155,14 +179,15 @@ class HttpDataPackageTransport:
         *,
         plan: _AttemptPlan,
         reset_on_416_used: bool,
-    ) -> tuple[int | None, bool, bool, str]:
+    ) -> tuple[int | None, bool, bool, str, bool]:
         """Execute one HTTP attempt.
 
-        Returns ``(None, False, False, uri)`` when a bounded 416 restart is required.
+        Returns ``(None, False, False, uri, False)`` when a bounded 416 restart is required.
         """
         headers = _build_range_headers(plan.offset)
         supports_range = False
         attempt_resumed = plan.resumed
+        partial_reset = False
 
         with httpx.Client(
             timeout=self._timeout_seconds,
@@ -181,7 +206,7 @@ class HttpDataPackageTransport:
                                     f"HTTP 416 for {sanitized} after partial reset"
                                 )
                             destination_partial.unlink(missing_ok=True)
-                            return None, False, False, final_uri
+                            return None, False, False, final_uri, False
                         raise _PermanentTransportFailure(
                             f"HTTP 416 for {sanitized}"
                         )
@@ -210,6 +235,7 @@ class HttpDataPackageTransport:
                         destination_partial.unlink(missing_ok=True)
                         write_mode = "wb"
                         attempt_resumed = False
+                        partial_reset = True
 
                     if response.status_code >= 400:
                         if response.status_code in NON_RETRYABLE_HTTP_STATUSES:
@@ -231,7 +257,13 @@ class HttpDataPackageTransport:
                         finally:
                             handle.flush()
 
-                    return bytes_written, attempt_resumed, supports_range, final_uri
+                    return (
+                        bytes_written,
+                        attempt_resumed,
+                        supports_range,
+                        final_uri,
+                        partial_reset,
+                    )
             except httpx.TransportError:
                 raise
             except _PermanentTransportFailure:
