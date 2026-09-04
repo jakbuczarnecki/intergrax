@@ -42,6 +42,22 @@ from intergrax.agent_distribution.admin_models import (
     UpdateAgentBindingRequest,
 )
 from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
+from intergrax.agent_distribution.agent_discovery import (
+    AgentDiscoveryCandidate,
+    AgentDiscoveryContractError,
+    AgentDiscoveryError,
+    AgentDiscoveryIdentityConflict,
+    AgentDiscoveryRequest,
+    AgentDiscoveryResult,
+    AgentDiscoveryScope,
+    AgentDiscoveryStrategy,
+    AgentDiscoveryStrategyId,
+    StaticAgentDiscoveryStrategy,
+    build_agent_discovery_result,
+    normalize_discovery_candidates,
+    project_package_contract_capabilities,
+    project_to_capability_candidate,
+)
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.capability_matching import (
     AgentCapabilityCandidate,
@@ -59,6 +75,7 @@ from intergrax.agent_distribution.capability_matching import (
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
     AgentCatalogVersionChannelRef,
+    AgentDiscoveryCandidateIdentity,
     CatalogEntryFilters,
     CatalogPackageResolution,
     CatalogProviderKind,
@@ -245,6 +262,17 @@ __all__ = [
     "AgentArtifactMetadataStore",
     "AgentBindingFactoryReference",
     "AgentBindingPolicyOverrides",
+    "AgentDiscoveryCandidate",
+    "AgentDiscoveryCandidateIdentity",
+    "AgentDiscoveryContractError",
+    "AgentDiscoveryError",
+    "AgentDiscoveryIdentityConflict",
+    "AgentDiscoveryRequest",
+    "AgentDiscoveryResult",
+    "AgentDiscoveryScope",
+    "AgentDiscoveryStrategy",
+    "AgentDiscoveryStrategyId",
+    "StaticAgentDiscoveryStrategy",
     "AgentCapabilityCandidate",
     "AgentCapabilityDeclaration",
     "AgentCapabilityDescriptor",
@@ -400,6 +428,10 @@ __all__ = [
     "assert_installation_trust_record_acceptable",
     "build_agent_capability_candidate",
     "build_agent_capability_requirement",
+    "build_agent_discovery_result",
     "build_candidate_dependency_specification",
+    "normalize_discovery_candidates",
+    "project_package_contract_capabilities",
+    "project_to_capability_candidate",
     "installation_state_is_installed",
 ]

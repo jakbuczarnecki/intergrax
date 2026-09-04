@@ -10,6 +10,7 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.agent_distribution.catalog import AgentDiscoveryCandidateIdentity
 from intergrax.agent_distribution.errors import AgentDistributionError
 
 _NON_EMPTY = Field(min_length=1)
@@ -111,21 +112,13 @@ class AgentCapabilityRequirement(BaseModel):
 
 
 class AgentCapabilityCandidate(BaseModel):
-    """Capability-bearing match input — source-agnostic, pre-installation."""
+    """Capability-bearing match input — source-qualified, pre-installation."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     schema_version: str = SCHEMA_AGENT_CAPABILITY_CANDIDATE_V1
-    candidate_id: str = _NON_EMPTY
+    identity: AgentDiscoveryCandidateIdentity
     capabilities: tuple[AgentCapabilityDeclaration, ...] = ()
-    source_ref: str | None = None
-
-    @field_validator("candidate_id", "source_ref")
-    @classmethod
-    def _strip_optional(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        return _strip_required(value)
 
     @model_validator(mode="after")
     def _validate_capabilities(self) -> AgentCapabilityCandidate:
@@ -150,17 +143,12 @@ class CapabilityMatchResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     schema_version: str = SCHEMA_CAPABILITY_MATCH_RESULT_V1
-    candidate_id: str = _NON_EMPTY
+    identity: AgentDiscoveryCandidateIdentity
     eligible: bool
     matched_required: tuple[CapabilityId, ...]
     missing_required: tuple[CapabilityId, ...]
     matched_optional: tuple[CapabilityId, ...]
     unsupported_constraints: tuple[str, ...] = ()
-
-    @field_validator("candidate_id")
-    @classmethod
-    def _strip_candidate_id(cls, value: str) -> str:
-        return _strip_required(value)
 
 
 def _sorted_capability_ids(values: frozenset[CapabilityId]) -> tuple[CapabilityId, ...]:
@@ -186,7 +174,7 @@ class CapabilityMatcher:
         eligible = not missing_required
 
         return CapabilityMatchResult(
-            candidate_id=candidate.candidate_id,
+            identity=candidate.identity,
             eligible=eligible,
             matched_required=_sorted_capability_ids(matched_required),
             missing_required=_sorted_capability_ids(missing_required),
@@ -203,7 +191,7 @@ class CapabilityMatcher:
             self.match(requirement=requirement, candidate=candidate)
             for candidate in candidates
         )
-        return tuple(sorted(results, key=lambda item: item.candidate_id))
+        return tuple(sorted(results, key=lambda item: item.identity.sort_key))
 
     def find_eligible(
         self,
@@ -239,16 +227,14 @@ def build_agent_capability_requirement(
 
 def build_agent_capability_candidate(
     *,
-    candidate_id: str,
+    identity: AgentDiscoveryCandidateIdentity,
     capability_ids: Sequence[str] = (),
-    source_ref: str | None = None,
 ) -> AgentCapabilityCandidate:
     """Construct a validated candidate from normalized capability id strings."""
     return AgentCapabilityCandidate(
-        candidate_id=candidate_id,
+        identity=identity,
         capabilities=tuple(
             AgentCapabilityDeclaration(capability_id=CapabilityId(value=item))
             for item in capability_ids
         ),
-        source_ref=source_ref,
     )
