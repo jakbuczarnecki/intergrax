@@ -51,8 +51,15 @@ from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopedAgentService,
     TaskScopeId,
 )
+from intergrax.contracts.active_execution_task_scope import (
+    ActiveExecutionTaskScopePort,
+    ActiveExecutionTaskScopeUnavailable,
+)
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.execution_identity import require_active_execution_id
+from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
+    require_active_execution_identity,
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -87,6 +94,14 @@ class DelegatedSubtaskError(AgentDistributionError):
 
 class DelegatedSubtaskContractError(DelegatedSubtaskError):
     """Malformed delegated subtask request or result."""
+
+
+class DelegatedSubtaskTaskScopeError(DelegatedSubtaskError):
+    """Task scope authority validation failed."""
+
+
+class DelegatedSubtaskTaskScopeMismatch(DelegatedSubtaskTaskScopeError):
+    """Caller task_scope_id does not match canonical active execution task scope."""
 
 
 class DelegatedSubtaskResolutionError(DelegatedSubtaskError):
@@ -124,14 +139,14 @@ class DelegatedSubtaskExecutionAndReleaseError(DelegatedSubtaskError):
         self.release_cause = release_cause
 
 
-class DelegatedSubtaskCleanupError(DelegatedSubtaskError):
+class DelegatedSubtaskCleanupError(DelegatedSubtaskError, Generic[ResultT]):
     """Child execution succeeded but lease cleanup failed."""
 
     def __init__(
         self,
         message: str,
         *,
-        result: object,
+        result: ResultT,
         release_cause: BaseException,
     ) -> None:
         super().__init__(message)
@@ -290,18 +305,82 @@ class SpecialistInvocationPort(Protocol[RequestT, ResultT]):
 
 def _eligible_matches(
     *,
-    requirement: AgentCapabilityRequirement,
-    discovery_candidates: tuple[object, ...],
-    matcher: CapabilityMatcher,
+    match_results: tuple[CapabilityMatchResult, ...],
 ) -> tuple[CapabilityMatchResult, ...]:
-    capability_candidates = tuple(
-        project_to_capability_candidate(candidate) for candidate in discovery_candidates
-    )
-    matches = matcher.find_matches(
-        requirement=requirement,
-        candidates=capability_candidates,
-    )
-    return tuple(match for match in matches if match.eligible)
+    return tuple(match for match in match_results if match.eligible)
+
+
+def _resolve_canonical_task_scope(
+    task_scope_authority: ActiveExecutionTaskScopePort,
+) -> TaskScopeId:
+    run_id, attempt_id = require_active_execution_identity()
+    execution_id = require_active_execution_id()
+    try:
+        return task_scope_authority.resolve_current_task_scope(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+        )
+    except ActiveExecutionTaskScopeUnavailable as exc:
+        raise DelegatedSubtaskTaskScopeError(
+            "canonical task scope unavailable for active execution",
+        ) from exc
+
+
+def _validate_acquisition_plan(
+    *,
+    request: DelegatedSubtaskRequest,
+    canonical_task_scope: TaskScopeId,
+    selected_identity: AgentDiscoveryCandidateIdentity,
+    lifecycle_plan: DelegatedSubtaskLifecyclePlan,
+) -> None:
+    acquisition_request = lifecycle_plan.acquisition_request
+    dynamic_request = acquisition_request.acquisition_request
+    if acquisition_request.task_scope_id != canonical_task_scope:
+        raise DelegatedSubtaskContractError(
+            "acquisition plan task_scope_id does not match canonical task scope",
+        )
+    if acquisition_request.lease_id != request.lease_id:
+        raise DelegatedSubtaskContractError(
+            "acquisition plan lease_id does not match delegated request",
+        )
+    if dynamic_request.application_id != request.application_id:
+        raise DelegatedSubtaskContractError(
+            "acquisition plan application_id does not match delegated request",
+        )
+    if dynamic_request.application_environment_id != request.application_environment_id:
+        raise DelegatedSubtaskContractError(
+            "acquisition plan application_environment_id does not match delegated request",
+        )
+    if dynamic_request.selected_identity != selected_identity:
+        raise DelegatedSubtaskContractError(
+            "acquisition plan selected_identity does not match selection decision",
+        )
+
+
+def _validate_release_request(
+    *,
+    request: DelegatedSubtaskRequest,
+    canonical_task_scope: TaskScopeId,
+    lease: TaskScopedAgentLease,
+    release_request: TaskScopedAgentReleaseRequest,
+) -> None:
+    if release_request.lease_id != lease.lease_id:
+        raise DelegatedSubtaskContractError(
+            "release plan lease_id does not match acquired lease",
+        )
+    if release_request.task_scope_id != canonical_task_scope:
+        raise DelegatedSubtaskContractError(
+            "release plan task_scope_id does not match canonical task scope",
+        )
+    if release_request.application_id != request.application_id:
+        raise DelegatedSubtaskContractError(
+            "release plan application_id does not match delegated request",
+        )
+    if release_request.application_environment_id != request.application_environment_id:
+        raise DelegatedSubtaskContractError(
+            "release plan application_environment_id does not match delegated request",
+        )
 
 
 class DelegatedSubtaskService(Generic[RequestT, ResultT]):
@@ -315,6 +394,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         matcher: CapabilityMatcher,
         selector: AgentSelectionStrategy,
         task_scoped_agents: TaskScopedAgentService,
+        task_scope_authority: ActiveExecutionTaskScopePort,
         acquisition_plan_factory: DelegatedSubtaskAcquisitionPlanFactory,
         release_plan_factory: DelegatedSubtaskReleasePlanFactory,
         specialist_invocation: SpecialistInvocationPort[RequestT, ResultT],
@@ -325,6 +405,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         self._matcher = matcher
         self._selector = selector
         self._task_scoped_agents = task_scoped_agents
+        self._task_scope_authority = task_scope_authority
         self._acquisition_plan_factory = acquisition_plan_factory
         self._release_plan_factory = release_plan_factory
         self._specialist_invocation = specialist_invocation
@@ -337,7 +418,11 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         invocation: DelegatedSubtaskInvocation[RequestT],
         principal: RequestIdentity,
     ) -> DelegatedSubtaskResult[ResultT]:
-        require_active_execution_id()
+        canonical_task_scope = _resolve_canonical_task_scope(self._task_scope_authority)
+        if request.task_scope_id != canonical_task_scope:
+            raise DelegatedSubtaskTaskScopeMismatch(
+                "delegated subtask task_scope_id does not match canonical active task scope",
+            )
 
         try:
             capability_resolution = self._capability_resolver.resolve(
@@ -365,11 +450,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
                 for candidate in discovery_result.candidates
             ),
         )
-        eligible_matches = _eligible_matches(
-            requirement=requirement,
-            discovery_candidates=discovery_result.candidates,
-            matcher=self._matcher,
-        )
+        eligible_matches = _eligible_matches(match_results=match_results)
         selection_decision = self._selector.select(
             build_agent_selection_request(
                 requirement=requirement,
@@ -384,11 +465,17 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
 
         lifecycle_plan = self._acquisition_plan_factory.build_acquisition_plan(
             delegation_id=request.delegation_id,
-            task_scope_id=request.task_scope_id,
+            task_scope_id=canonical_task_scope,
             application_id=request.application_id,
             application_environment_id=request.application_environment_id,
             lease_id=request.lease_id,
             selected_identity=selected_identity,
+        )
+        _validate_acquisition_plan(
+            request=request,
+            canonical_task_scope=canonical_task_scope,
+            selected_identity=selected_identity,
+            lifecycle_plan=lifecycle_plan,
         )
         try:
             acquisition = self._task_scoped_agents.acquire(
@@ -422,6 +509,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         except BaseException as execution_exc:
             release_exc = self._attempt_release(
                 request=request,
+                canonical_task_scope=canonical_task_scope,
                 lease=acquisition.lease,
                 selected_identity=selected_identity,
                 principal=principal,
@@ -441,6 +529,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         try:
             release_result = self._release(
                 request=request,
+                canonical_task_scope=canonical_task_scope,
                 lease=acquisition.lease,
                 selected_identity=selected_identity,
                 principal=principal,
@@ -470,6 +559,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         self,
         *,
         request: DelegatedSubtaskRequest,
+        canonical_task_scope: TaskScopeId,
         lease: TaskScopedAgentLease,
         selected_identity: AgentDiscoveryCandidateIdentity,
         principal: RequestIdentity,
@@ -477,6 +567,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         try:
             self._release(
                 request=request,
+                canonical_task_scope=canonical_task_scope,
                 lease=lease,
                 selected_identity=selected_identity,
                 principal=principal,
@@ -489,6 +580,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         self,
         *,
         request: DelegatedSubtaskRequest,
+        canonical_task_scope: TaskScopeId,
         lease: TaskScopedAgentLease,
         selected_identity: AgentDiscoveryCandidateIdentity,
         principal: RequestIdentity,
@@ -496,11 +588,17 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         release_request = self._release_plan_factory.build_release_request(
             context=DelegatedSubtaskReleaseContext(
                 lease=lease,
-                task_scope_id=request.task_scope_id,
+                task_scope_id=canonical_task_scope,
                 application_id=request.application_id,
                 application_environment_id=request.application_environment_id,
                 selected_identity=selected_identity,
             ),
+        )
+        _validate_release_request(
+            request=request,
+            canonical_task_scope=canonical_task_scope,
+            lease=lease,
+            release_request=release_request,
         )
         try:
             return self._task_scoped_agents.release(
@@ -532,7 +630,8 @@ __all__ = [
     "DelegatedSubtaskReleaseError",
     "DelegatedSubtaskReleasePlanFactory",
     "DelegatedSubtaskRequest",
-    "DelegatedSubtaskResolutionError",
+    "DelegatedSubtaskTaskScopeError",
+    "DelegatedSubtaskTaskScopeMismatch",
     "DelegatedSubtaskResult",
     "DelegatedSubtaskService",
     "DelegationId",

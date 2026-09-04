@@ -487,6 +487,7 @@ __all__ = [
     "CapabilityModelError",
     "CapabilityRequirement",
     "CapabilityRequirementError",
+    "CapabilityRequirementKind",
     "ChildExecutionPort",
     "AcquisitionMode",
     "AgentPlatformLifecyclePort",

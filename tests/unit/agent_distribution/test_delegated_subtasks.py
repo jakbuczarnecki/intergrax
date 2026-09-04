@@ -37,6 +37,7 @@ from intergrax.agent_distribution.catalog import (
 from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskAcquisitionError,
     DelegatedSubtaskCleanupError,
+    DelegatedSubtaskContractError,
     DelegatedSubtaskDelegate,
     DelegatedSubtaskExecutionAndReleaseError,
     DelegatedSubtaskInvocation,
@@ -47,6 +48,7 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskRequest,
     DelegatedSubtaskResolutionError,
     DelegatedSubtaskService,
+    DelegatedSubtaskTaskScopeMismatch,
     DelegationId,
     SpecialistInvocationPort,
 )
@@ -72,9 +74,10 @@ from intergrax.agent_distribution.task_scoped_agents import (
 )
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
+    AttemptId,
     ExecutionId,
     RunId,
-    AttemptId,
+    TaskId,
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
@@ -121,6 +124,47 @@ _CATALOG_ENTRY_ID = "cat-researcher"
 _OCR_PACKAGE = _PACKAGE_ID
 _LEGAL_PACKAGE = "legal-agent"
 _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
+
+
+@dataclass
+class _FixedTaskScopeAuthority:
+    task_scope_id: TaskId
+    resolve_count: int = 0
+
+    def resolve_current_task_scope(
+        self,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id: ExecutionId,
+    ) -> TaskId:
+        del run_id, attempt_id, execution_id
+        self.resolve_count += 1
+        return self.task_scope_id
+
+
+class _CountingDiscovery(AgentDiscoveryStrategy):
+    def __init__(self, inner: AgentDiscoveryStrategy) -> None:
+        self._inner = inner
+        self.call_count = 0
+
+    @property
+    def strategy_id(self) -> AgentDiscoveryStrategyId:
+        return self._inner.strategy_id
+
+    def discover(self, request: AgentDiscoveryRequest) -> AgentDiscoveryResult:
+        self.call_count += 1
+        return self._inner.discover(request)
+
+
+class _CountingMatcher:
+    def __init__(self, inner: CapabilityMatcher) -> None:
+        self._inner = inner
+        self.call_count = 0
+
+    def find_matches(self, **kwargs):
+        self.call_count += 1
+        return self._inner.find_matches(**kwargs)
 
 
 @dataclass(frozen=True)
@@ -291,6 +335,7 @@ class DelegatedHarness:
     service: DelegatedSubtaskService[OcrRequest, OcrResult]
     stack: object
     lease_store: object
+    task_scope_authority: _FixedTaskScopeAuthority
 
 
 def build_delegated_harness(
@@ -299,9 +344,13 @@ def build_delegated_harness(
     revision_id: str = "rev-delegate-1",
     specialist_delegate: DelegatedSubtaskDelegate[OcrRequest, OcrResult] | None = None,
     acquisition_kwargs: dict | None = None,
+    task_scope: TaskId | None = None,
+    task_scope_authority: _FixedTaskScopeAuthority | None = None,
 ) -> DelegatedHarness:
     harness = build_task_scoped_harness()
     delegate = specialist_delegate or _EchoOcrDelegate()
+    resolved_task_scope = task_scope or mint_task_id()
+    authority = task_scope_authority or _FixedTaskScopeAuthority(resolved_task_scope)
     acquisition_factory = _TestAcquisitionPlanFactory(
         revision_id=revision_id,
         **(acquisition_kwargs or {}),
@@ -312,6 +361,7 @@ def build_delegated_harness(
         matcher=CapabilityMatcher(),
         selector=DeterministicIdentitySelectionStrategy(),
         task_scoped_agents=harness.service,
+        task_scope_authority=authority,
         acquisition_plan_factory=acquisition_factory,
         release_plan_factory=_TestReleasePlanFactory(harness),
         specialist_invocation=_StaticSpecialistInvocation(delegate=delegate),
@@ -324,6 +374,7 @@ def build_delegated_harness(
         service=service,
         stack=harness.stack,
         lease_store=harness.lease_store,
+        task_scope_authority=authority,
     )
     acquisition_factory.bind_harness(delegated)
     return delegated
@@ -364,13 +415,14 @@ def _root_identity() -> ExecutionIdentityBinding:
 async def _run_delegation(
     harness: DelegatedHarness,
     *,
-    task_scope,
+    task_scope: TaskId,
     delegate: DelegatedSubtaskDelegate[OcrRequest, OcrResult] | None = None,
     document_ref: str = "doc-1",
     authority: ParentExecutionAuthority | None = None,
     delegation_id: str = "delegation-1",
     lease_id: str = "lease-delegate-1",
 ):
+    harness.task_scope_authority.task_scope_id = task_scope
     if delegate is not None:
         harness.service._specialist_invocation = _StaticSpecialistInvocation(
             delegate=delegate,
@@ -456,11 +508,13 @@ async def test_delegated_subtask_execution_lineage() -> None:
     parent_execution_id = root.execution_id
     parent_run_id = root.run_id
     parent_attempt_id = root.attempt_id
+    task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             result = await harness.service.execute(
-                _delegated_request(task_scope=mint_task_id()),
+                _delegated_request(task_scope=task_scope),
                 invocation=DelegatedSubtaskInvocation(payload=request),
                 principal=admin_test_principal(),
             )
@@ -491,12 +545,14 @@ async def test_delegated_subtask_no_eligible_agent() -> None:
         ),
     )
     root = _root_identity()
+    task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             with pytest.raises(DelegatedSubtaskNoEligibleAgent):
                 await harness.service.execute(
-                    _delegated_request(task_scope=mint_task_id()),
+                    _delegated_request(task_scope=task_scope),
                     invocation=DelegatedSubtaskInvocation(payload=request),
                     principal=admin_test_principal(),
                 )
@@ -529,12 +585,14 @@ async def test_delegated_subtask_discovery_failure() -> None:
     )
     harness.service._discovery = _FailingDiscovery()
     root = _root_identity()
+    task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             with pytest.raises(DelegatedSubtaskResolutionError, match="discovery"):
                 await harness.service.execute(
-                    _delegated_request(task_scope=mint_task_id()),
+                    _delegated_request(task_scope=task_scope),
                     invocation=DelegatedSubtaskInvocation(payload=request),
                     principal=admin_test_principal(),
                 )
@@ -566,12 +624,14 @@ async def test_delegated_subtask_acquisition_failure() -> None:
         _FailingAcquisitionPort()
     )
     root = _root_identity()
+    task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             with pytest.raises(DelegatedSubtaskAcquisitionError):
                 await harness.service.execute(
-                    _delegated_request(task_scope=mint_task_id()),
+                    _delegated_request(task_scope=task_scope),
                     invocation=DelegatedSubtaskInvocation(payload=request),
                     principal=admin_test_principal(),
                 )
@@ -599,6 +659,7 @@ async def test_delegated_subtask_child_execution_failure_releases_lease() -> Non
         specialist_delegate=_FailingSpecialistDelegate(),
     )
     task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
     root = _root_identity()
 
     class RootDelegate:
@@ -632,12 +693,14 @@ async def test_delegated_subtask_release_failure_after_success() -> None:
     coordinator.fail_prepare("rev-release-lease-delegate-1")
     harness.stack.service._activation_service._projection_coordinator = coordinator
     root = _root_identity()
+    task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             with pytest.raises(DelegatedSubtaskCleanupError) as exc_info:
                 await harness.service.execute(
-                    _delegated_request(task_scope=mint_task_id()),
+                    _delegated_request(task_scope=task_scope),
                     invocation=DelegatedSubtaskInvocation(payload=request),
                     principal=admin_test_principal(),
                 )
@@ -663,12 +726,14 @@ async def test_delegated_subtask_child_and_release_failure() -> None:
     coordinator.fail_prepare("rev-release-lease-delegate-1")
     harness.stack.service._activation_service._projection_coordinator = coordinator
     root = _root_identity()
+    task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             with pytest.raises(DelegatedSubtaskExecutionAndReleaseError) as exc_info:
                 await harness.service.execute(
-                    _delegated_request(task_scope=mint_task_id()),
+                    _delegated_request(task_scope=task_scope),
                     invocation=DelegatedSubtaskInvocation(payload=request),
                     principal=admin_test_principal(),
                 )
@@ -772,18 +837,20 @@ async def test_delegated_subtask_shared_specialist_two_leases() -> None:
 
 @pytest.mark.asyncio
 async def test_delegated_subtask_recursive_delegation() -> None:
+    shared_authority = _FixedTaskScopeAuthority(mint_task_id())
     inner_harness = build_delegated_harness(
         candidates=(
             _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
         ),
         revision_id="rev-inner",
+        task_scope_authority=shared_authority,
     )
 
     class OuterDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             inner = await inner_harness.service.execute(
                 _delegated_request(
-                    task_scope=mint_task_id(),
+                    task_scope=shared_authority.task_scope_id,
                     delegation_id="delegation-inner",
                     lease_id="lease-inner",
                 ),
@@ -798,9 +865,12 @@ async def test_delegated_subtask_recursive_delegation() -> None:
         ),
         revision_id="rev-outer",
         specialist_delegate=OuterDelegate(),
+        task_scope_authority=shared_authority,
     )
     result = await _run_delegation(
-        harness, task_scope=mint_task_id(), document_ref="recursive"
+        harness,
+        task_scope=shared_authority.task_scope_id,
+        document_ref="recursive",
     )
     assert result.result.text == "outer:ocr:recursive"
 
@@ -813,12 +883,14 @@ async def test_delegated_subtask_authority_escalation_rejected() -> None:
         ),
     )
     root = _root_identity()
+    task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             with pytest.raises(DelegatedSubtaskInvocationError) as exc_info:
                 await harness.service.execute(
-                    _delegated_request(task_scope=mint_task_id()),
+                    _delegated_request(task_scope=task_scope),
                     invocation=DelegatedSubtaskInvocation(
                         payload=request,
                         requested_permission_scopes=("read", "delete"),
@@ -855,6 +927,8 @@ async def test_delegated_subtask_budget_escalation_rejected() -> None:
         ChildExecutionRunner[OcrRequest, OcrResult](ledger=ledger),
     )
     root = _root_identity()
+    task_scope = mint_task_id()
+    harness.task_scope_authority.task_scope_id = task_scope
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
@@ -865,7 +939,7 @@ async def test_delegated_subtask_budget_escalation_rejected() -> None:
             try:
                 with pytest.raises(DelegatedSubtaskInvocationError) as exc_info:
                     await harness.service.execute(
-                        _delegated_request(task_scope=mint_task_id()),
+                        _delegated_request(task_scope=task_scope),
                         invocation=DelegatedSubtaskInvocation(
                             payload=request,
                             requested_budget=RunBudget(max_tool_calls=70),
@@ -885,6 +959,257 @@ async def test_delegated_subtask_budget_escalation_rejected() -> None:
         identity=root,
         authority=ParentExecutionAuthority.unrestricted_root(),
     ).execute(OcrRequest(document_ref="budget"))
+
+
+def test_delegated_subtask_public_api_exports_capability_requirement_kind() -> None:
+    from intergrax.agent_distribution import (
+        CapabilityRequirementKind,
+        ChildExecutionPort,
+    )
+
+    assert CapabilityRequirementKind.REQUIRED.value == "required"
+    assert ChildExecutionPort is not None
+
+
+@pytest.mark.asyncio
+async def test_delegated_subtask_matching_task_scope_succeeds() -> None:
+    task_scope = mint_task_id()
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        task_scope=task_scope,
+    )
+    result = await _run_delegation(harness, task_scope=task_scope)
+    assert result.task_scope_id == task_scope
+    assert harness.task_scope_authority.resolve_count >= 1
+
+
+@pytest.mark.asyncio
+async def test_delegated_subtask_cross_task_scope_mismatch_rejected() -> None:
+    canonical_task = mint_task_id()
+    caller_task = mint_task_id()
+    inner_discovery = _federated_discovery(
+        _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+    )
+    counting_discovery = _CountingDiscovery(inner_discovery)
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        task_scope=canonical_task,
+    )
+    harness.service._discovery = counting_discovery
+    root = _root_identity()
+    harness.task_scope_authority.task_scope_id = canonical_task
+
+    class RootDelegate:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            with pytest.raises(DelegatedSubtaskTaskScopeMismatch):
+                await harness.service.execute(
+                    _delegated_request(task_scope=caller_task),
+                    invocation=DelegatedSubtaskInvocation(payload=request),
+                    principal=admin_test_principal(),
+                )
+            return OcrResult(text="blocked")
+
+    await ExecutionBoundary[OcrRequest, OcrResult](
+        RootDelegate(),
+        identity=root,
+        authority=ParentExecutionAuthority.unrestricted_root(),
+    ).execute(OcrRequest(document_ref="cross-task"))
+    assert counting_discovery.call_count == 0
+    assert harness.lease_store.list_active_by_binding(_BINDING_ID) == ()
+
+
+class _TamperedAcquisitionPlanFactory(_TestAcquisitionPlanFactory):
+    def __init__(
+        self,
+        *,
+        tampered_task_scope: TaskId,
+        revision_id: str,
+        **kwargs: object,
+    ) -> None:
+        super().__init__(revision_id=revision_id, **kwargs)
+        self._tampered_task_scope = tampered_task_scope
+
+    def build_acquisition_plan(
+        self,
+        *,
+        delegation_id: DelegationId,
+        task_scope_id,
+        application_id: str,
+        application_environment_id: str,
+        lease_id: TaskScopedAgentLeaseId,
+        selected_identity: AgentDiscoveryCandidateIdentity,
+    ) -> DelegatedSubtaskLifecyclePlan:
+        plan = super().build_acquisition_plan(
+            delegation_id=delegation_id,
+            task_scope_id=self._tampered_task_scope,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            lease_id=lease_id,
+            selected_identity=selected_identity,
+        )
+        return plan
+
+
+class _TamperedAppAcquisitionPlanFactory(_TestAcquisitionPlanFactory):
+    def build_acquisition_plan(
+        self,
+        *,
+        delegation_id: DelegationId,
+        task_scope_id,
+        application_id: str,
+        application_environment_id: str,
+        lease_id: TaskScopedAgentLeaseId,
+        selected_identity: AgentDiscoveryCandidateIdentity,
+    ) -> DelegatedSubtaskLifecyclePlan:
+        plan = super().build_acquisition_plan(
+            delegation_id=delegation_id,
+            task_scope_id=task_scope_id,
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            lease_id=lease_id,
+            selected_identity=selected_identity,
+        )
+        dynamic_request = plan.acquisition_request.acquisition_request.model_copy(
+            update={"application_environment_id": "tampered-env"},
+        )
+        acquisition_request = plan.acquisition_request.model_copy(
+            update={"acquisition_request": dynamic_request},
+        )
+        return DelegatedSubtaskLifecyclePlan(acquisition_request=acquisition_request)
+
+
+class _TamperedReleasePlanFactory(_TestReleasePlanFactory):
+    def build_release_request(
+        self,
+        *,
+        context: DelegatedSubtaskReleaseContext,
+    ) -> TaskScopedAgentReleaseRequest:
+        request = super().build_release_request(context=context)
+        return request.model_copy(
+            update={"lease_id": TaskScopedAgentLeaseId("lease-tampered")},
+        )
+
+
+@pytest.mark.asyncio
+async def test_delegated_subtask_acquisition_plan_task_scope_tampering_rejected() -> (
+    None
+):
+    task_scope = mint_task_id()
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        task_scope=task_scope,
+    )
+    tampered = _TamperedAcquisitionPlanFactory(
+        revision_id="rev-delegate-1",
+        tampered_task_scope=mint_task_id(),
+    )
+    tampered.bind_harness(harness)
+    harness.service._acquisition_plan_factory = tampered
+    root = _root_identity()
+
+    class RootDelegate:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            with pytest.raises(DelegatedSubtaskContractError, match="task_scope_id"):
+                await harness.service.execute(
+                    _delegated_request(task_scope=task_scope),
+                    invocation=DelegatedSubtaskInvocation(payload=request),
+                    principal=admin_test_principal(),
+                )
+            return OcrResult(text="blocked")
+
+    await ExecutionBoundary[OcrRequest, OcrResult](
+        RootDelegate(),
+        identity=root,
+        authority=ParentExecutionAuthority.unrestricted_root(),
+    ).execute(OcrRequest(document_ref="tamper-scope"))
+    assert harness.lease_store.list_active_by_binding(_BINDING_ID) == ()
+
+
+@pytest.mark.asyncio
+async def test_delegated_subtask_acquisition_plan_app_env_tampering_rejected() -> None:
+    task_scope = mint_task_id()
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        task_scope=task_scope,
+    )
+    tampered = _TamperedAppAcquisitionPlanFactory(revision_id="rev-delegate-1")
+    tampered.bind_harness(harness)
+    harness.service._acquisition_plan_factory = tampered
+    root = _root_identity()
+
+    class RootDelegate:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            with pytest.raises(
+                DelegatedSubtaskContractError,
+                match="application_environment_id",
+            ):
+                await harness.service.execute(
+                    _delegated_request(task_scope=task_scope),
+                    invocation=DelegatedSubtaskInvocation(payload=request),
+                    principal=admin_test_principal(),
+                )
+            return OcrResult(text="blocked")
+
+    await ExecutionBoundary[OcrRequest, OcrResult](
+        RootDelegate(),
+        identity=root,
+        authority=ParentExecutionAuthority.unrestricted_root(),
+    ).execute(OcrRequest(document_ref="tamper-app"))
+
+
+@pytest.mark.asyncio
+async def test_delegated_subtask_release_plan_tampering_rejected() -> None:
+    task_scope = mint_task_id()
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        task_scope=task_scope,
+    )
+    harness.service._release_plan_factory = _TamperedReleasePlanFactory(harness)
+    root = _root_identity()
+
+    class RootDelegate:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            with pytest.raises(DelegatedSubtaskContractError, match="lease_id"):
+                await harness.service.execute(
+                    _delegated_request(task_scope=task_scope),
+                    invocation=DelegatedSubtaskInvocation(payload=request),
+                    principal=admin_test_principal(),
+                )
+            return OcrResult(text="blocked")
+
+    await ExecutionBoundary[OcrRequest, OcrResult](
+        RootDelegate(),
+        identity=root,
+        authority=ParentExecutionAuthority.unrestricted_root(),
+    ).execute(OcrRequest(document_ref="tamper-release"))
+    lease = harness.lease_store.get(TaskScopedAgentLeaseId("lease-delegate-1"))
+    assert lease is not None
+    assert lease.lease_state is TaskScopedAgentLeaseState.ACTIVE
+
+
+@pytest.mark.asyncio
+async def test_delegated_subtask_matcher_called_once() -> None:
+    task_scope = mint_task_id()
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        task_scope=task_scope,
+    )
+    counting_matcher = _CountingMatcher(CapabilityMatcher())
+    harness.service._matcher = counting_matcher
+    await _run_delegation(harness, task_scope=task_scope)
+    assert counting_matcher.call_count == 1
 
 
 def test_delegated_subtask_module_has_no_forbidden_imports() -> None:
