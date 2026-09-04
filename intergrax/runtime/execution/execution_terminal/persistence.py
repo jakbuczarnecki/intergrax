@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 import threading
 from dataclasses import dataclass
 
@@ -16,7 +17,17 @@ from intergrax.contracts.execution_terminal import (
     ExecutionTerminalStore,
 )
 from intergrax.contracts.execution_identity import RunId, validate_run_id
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentRecord,
+    DocumentStore,
+)
 from intergrax.runtime.task.task_state import TaskState
+
+_KV_KEY_PREFIX = "execution_terminal"
+_DOCUMENT_STORE_PARTITION_PREFIX = "intergrax.execution_terminal.v1"
+_TERMINAL_SCHEMA_VERSION = 1
 
 _SUPPORTED_TERMINAL_OUTCOMES = frozenset(ExecutionTerminalOutcome)
 
@@ -95,6 +106,72 @@ class TerminalCommitResolution:
     should_publish_terminal_event: bool
 
 
+def _kv_storage_key(task_id: str) -> str:
+    return f"{_KV_KEY_PREFIX}:{task_id}"
+
+
+def _document_partition(tenant_id: str) -> str:
+    return f"{_DOCUMENT_STORE_PARTITION_PREFIX}:{tenant_id}"
+
+
+def encode_terminal_record(record: ExecutionTerminalRecord) -> bytes:
+    payload = {
+        "schema_version": _TERMINAL_SCHEMA_VERSION,
+        "tenant_id": record.tenant_id,
+        "task_id": record.task_id,
+        "run_id": str(record.run_id) if record.run_id is not None else None,
+        "outcome": record.outcome.value,
+        "reason": record.reason,
+        "recorded_at_utc": record.recorded_at_utc,
+    }
+    return json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+
+
+def decode_terminal_record(raw: bytes) -> ExecutionTerminalRecord:
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ExecutionTerminalError("invalid execution terminal record encoding") from exc
+    if not isinstance(payload, dict):
+        raise ExecutionTerminalError("invalid execution terminal record payload")
+    if payload.get("schema_version") != _TERMINAL_SCHEMA_VERSION:
+        raise ExecutionTerminalError("unsupported execution terminal schema version")
+    outcome_raw = payload.get("outcome")
+    if not isinstance(outcome_raw, str):
+        raise ExecutionTerminalError("invalid execution terminal outcome")
+    try:
+        outcome = ExecutionTerminalOutcome(outcome_raw)
+    except ValueError as exc:
+        raise ExecutionTerminalError("invalid execution terminal outcome") from exc
+    run_id: RunId | None = None
+    run_raw = payload.get("run_id")
+    if run_raw is not None:
+        if not isinstance(run_raw, str):
+            raise ExecutionTerminalError("invalid execution terminal run_id")
+        run_id = validate_run_id(run_raw)
+    tenant_id = payload.get("tenant_id")
+    task_id = payload.get("task_id")
+    reason = payload.get("reason")
+    recorded_at_utc = payload.get("recorded_at_utc")
+    if (
+        not isinstance(tenant_id, str)
+        or not isinstance(task_id, str)
+        or not isinstance(reason, str)
+        or not isinstance(recorded_at_utc, str)
+    ):
+        raise ExecutionTerminalError("invalid execution terminal record fields")
+    return normalize_terminal_record(
+        ExecutionTerminalRecord(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            outcome=outcome,
+            reason=reason,
+            recorded_at_utc=recorded_at_utc,
+        ),
+    )
+
+
 class InMemoryExecutionTerminalStore(ExecutionTerminalStore):
     """Process-local terminal store for tests and single-process hosts."""
 
@@ -120,6 +197,69 @@ class InMemoryExecutionTerminalStore(ExecutionTerminalStore):
             return True
 
 
+class KvExecutionTerminalStore(ExecutionTerminalStore):
+    """DistributedKVStore-backed terminal execution authority."""
+
+    def __init__(self, kv_store: DistributedKVStore) -> None:
+        self._kv_store = kv_store
+
+    @property
+    def is_durable(self) -> bool:
+        return True
+
+    def load_record(self, *, tenant_id: str, task_id: str) -> ExecutionTerminalRecord | None:
+        raw = self._kv_store.get(tenant_id=tenant_id, key=_kv_storage_key(task_id))
+        if raw is None:
+            return None
+        return decode_terminal_record(raw)
+
+    def put_if_absent(self, record: ExecutionTerminalRecord) -> bool:
+        normalized = normalize_terminal_record(record)
+        return self._kv_store.compare_and_set(
+            tenant_id=normalized.tenant_id,
+            key=_kv_storage_key(normalized.task_id),
+            expected=None,
+            new_value=encode_terminal_record(normalized),
+        )
+
+
+class DocumentStoreExecutionTerminalStore(ExecutionTerminalStore):
+    """ConditionalDocumentStore-backed terminal execution authority."""
+
+    def __init__(self, document_store: ConditionalDocumentStore) -> None:
+        if not isinstance(document_store, ConditionalDocumentStore):
+            raise TypeError(
+                "execution terminal persistence requires ConditionalDocumentStore",
+            )
+        self._document_store = document_store
+
+    @property
+    def is_durable(self) -> bool:
+        return True
+
+    def load_record(self, *, tenant_id: str, task_id: str) -> ExecutionTerminalRecord | None:
+        record = self._document_store.get(_document_partition(tenant_id), task_id)
+        if record is None:
+            return None
+        return _document_record_to_terminal(record)
+
+    def put_if_absent(self, record: ExecutionTerminalRecord) -> bool:
+        normalized = normalize_terminal_record(record)
+        document = DocumentRecord(
+            partition_key=_document_partition(normalized.tenant_id),
+            row_key=normalized.task_id,
+            data={"terminal": encode_terminal_record(normalized).decode("utf-8")},
+        )
+        return self._document_store.put_if_absent(document)
+
+
+def _document_record_to_terminal(record: DocumentRecord) -> ExecutionTerminalRecord:
+    terminal = record.data.get("terminal")
+    if not isinstance(terminal, str):
+        raise ExecutionTerminalError("invalid execution terminal document record")
+    return decode_terminal_record(terminal.encode("utf-8"))
+
+
 class CheckpointStoreExecutionTerminalStore(ExecutionTerminalStore):
     """Reuse durable checkpoint storage for terminal cancellation authority."""
 
@@ -139,8 +279,28 @@ class CheckpointStoreExecutionTerminalStore(ExecutionTerminalStore):
 
 def wire_execution_terminal_store(
     *,
+    kv_store: DistributedKVStore | None = None,
+    document_store: DocumentStore | None = None,
     checkpoint_store: ExecutionTerminalPersistenceCapability | None = None,
 ) -> ExecutionTerminalStore:
+    """Platform composition boundary: storage capability → terminal store."""
+    provided = sum(
+        capability is not None
+        for capability in (kv_store, document_store, checkpoint_store)
+    )
+    if provided > 1:
+        raise ValueError(
+            "wire_execution_terminal_store accepts kv_store, document_store, or "
+            "checkpoint_store, not multiple",
+        )
+    if kv_store is not None:
+        return KvExecutionTerminalStore(kv_store)
+    if document_store is not None:
+        if not isinstance(document_store, ConditionalDocumentStore):
+            raise TypeError(
+                "execution terminal persistence requires ConditionalDocumentStore",
+            )
+        return DocumentStoreExecutionTerminalStore(document_store)
     if checkpoint_store is not None and isinstance(
         checkpoint_store,
         ExecutionTerminalPersistenceCapability,

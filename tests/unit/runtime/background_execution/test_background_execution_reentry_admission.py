@@ -126,6 +126,41 @@ def test_redelivery_after_a2_does_not_mint_a3() -> None:
         ExecutionTerminalOutcome.CANCELLED,
     ],
 )
+def test_durable_terminal_redelivery_survives_process_restart(outcome: ExecutionTerminalOutcome) -> None:
+    kv = InMemoryKVStore()
+    deps_a = make_kv_admission_dependencies(kv)
+    transport = _transport(task_id=f"durable-restart-{outcome.value}")
+    first = admit_background_execution_reentry(
+        transport_ref=transport,
+        identity_persistence=deps_a.identity_persistence,
+        attempt_lifecycle=deps_a.attempt_lifecycle,
+        execution_terminal=deps_a.execution_terminal,
+    )
+    deps_a.execution_terminal.commit_terminal_outcome(
+        tenant_id=first.identity.tenant_id,
+        task_id=str(first.identity.task_id),
+        run_id=first.identity.run_id,
+        outcome=outcome,
+    )
+    deps_b = make_kv_admission_dependencies(kv)
+    redelivery = admit_background_execution_reentry(
+        transport_ref=transport,
+        identity_persistence=deps_b.identity_persistence,
+        attempt_lifecycle=deps_b.attempt_lifecycle,
+        execution_terminal=deps_b.execution_terminal,
+    )
+    assert redelivery.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED
+    assert deps_b.execution_terminal.store.is_durable is True
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        ExecutionTerminalOutcome.COMPLETED,
+        ExecutionTerminalOutcome.FAILED,
+        ExecutionTerminalOutcome.CANCELLED,
+    ],
+)
 def test_terminal_redelivery_denies_handler_execution(outcome: ExecutionTerminalOutcome) -> None:
     deps = make_inmemory_admission_dependencies()
     transport = _transport(task_id=f"terminal-{outcome.value}")
@@ -247,7 +282,6 @@ def test_broker_worker_admission_before_started_and_terminal_skip() -> None:
     import json
 
     from intergrax.background_tasks.events import TaskEventName
-    from intergrax.contracts.execution_terminal import ExecutionTerminalRecord
     from intergrax.queueing.providers.broker_worker_base import BrokerWorkerBase
     from intergrax.queueing.worker.registry import TaskExecutionRegistry
     from intergrax.runtime.observability.memory_causal_evidence_persistence import (
@@ -313,17 +347,24 @@ def test_broker_worker_admission_before_started_and_terminal_skip() -> None:
         attempt_lifecycle=deps.attempt_lifecycle,
         execution_terminal=deps.execution_terminal,
     )
-    deps.execution_terminal.store._records[  # type: ignore[attr-defined]
-        (first.identity.tenant_id, str(first.identity.task_id))
-    ] = ExecutionTerminalRecord(
+    deps.execution_terminal.commit_terminal_outcome(
         tenant_id=first.identity.tenant_id,
         task_id=str(first.identity.task_id),
         run_id=first.identity.run_id,
         outcome=ExecutionTerminalOutcome.COMPLETED,
-        recorded_at_utc="2026-01-01T00:00:00Z",
+    )
+    restarted_deps = make_kv_admission_dependencies(kv)
+    restarted_worker = _Worker(
+        registry=registry,
+        kv_store=kv,
+        identity_persistence=restarted_deps.identity_persistence,
+        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        attempt_lifecycle=restarted_deps.attempt_lifecycle,
+        execution_terminal=restarted_deps.execution_terminal,
     )
     handler_called.clear()
     emit_mock.reset_mock()
-    worker.process_message(raw_payload=message)
+    with patch.object(restarted_worker, "_emit_event", wraps=restarted_worker._emit_event) as emit_mock:
+        restarted_worker.process_message(raw_payload=message)
     assert handler_called == []
     assert TaskEventName.STARTED not in [call.args[0] for call in emit_mock.call_args_list]

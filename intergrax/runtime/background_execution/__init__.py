@@ -2,6 +2,7 @@
 
 from intergrax.runtime.background_execution.admission_wiring import (
     BackgroundExecutionAdmissionDependencies,
+    validate_background_execution_admission_durability,
     wire_background_execution_admission_dependencies,
 )
 from intergrax.runtime.background_execution.bootstrap import (
@@ -62,6 +63,7 @@ __all__ = [
     "bootstrap_background_execution",
     "resolve_background_execution",
     "wire_background_execution_admission_dependencies",
+    "validate_background_execution_admission_durability",
     "EvidenceDurabilityClass",
     "REQUIRED_BACKGROUND_CAUSAL_RELATIONS",
     "RequiredAuditEvidencePersistenceError",
