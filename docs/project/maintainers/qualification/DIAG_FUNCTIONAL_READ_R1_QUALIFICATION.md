@@ -122,3 +122,9 @@ DIAGNOSTIC STORAGE ACCELERATION
 - `tests/system/functional_diagnostics_read_r1/mongo_qualification.py`
 - `docs/project/architecture/DIAGNOSTICS.md`
 - `docs/project/maintainers/qualification/DIAG_FUNCTIONAL_SCALE_S1_QUALIFICATION.md` (post-S1 note)
+
+## Independent audit finding (R1-R1)
+
+Pre-R1-R1 `ensure_v2_projection()` treated **any** v2 row as proof of complete projection (`query v2 limit=1 → skip rebuild`). Crash mid-rebuild left partial v2 navigable → silent evidence loss.
+
+**R1-R1 closure:** see [`DIAG_FUNCTIONAL_READ_R1_R1_QUALIFICATION.md`](DIAG_FUNCTIONAL_READ_R1_R1_QUALIFICATION.md). R1 PASS above remains valid for bounded-read architecture; crash-safe projection completeness is qualified only after R1-R1 final SHA.

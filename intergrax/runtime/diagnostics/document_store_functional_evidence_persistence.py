@@ -33,6 +33,9 @@ from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
 from intergrax.runtime.diagnostics.functional_evidence_index_rebuilder import (
     FunctionalEvidenceIndexRebuilder,
 )
+from intergrax.runtime.diagnostics.functional_evidence_projection_state import (
+    FunctionalEvidenceProjectionStateStore,
+)
 from intergrax.runtime.diagnostics.functional_evidence_persistence import (
     FunctionalEvidencePersistence,
     FunctionalEvidencePersistenceConflictError,
@@ -103,6 +106,8 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             document_store,
             query_page_limit=query_page_limit,
         )
+        self._projection_state = FunctionalEvidenceProjectionStateStore(document_store)
+        self._append_projection_complete: set[tuple[str, str, str]] = set()
 
     @staticmethod
     def _resolve_document_query_cursor_codec(
@@ -403,11 +408,23 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
         partition_key: str,
     ) -> None:
         for index_document in (
-            self._execution_index_v1_document(evidence=evidence, partition_key=partition_key),
             self._execution_index_v2_document(evidence=evidence, partition_key=partition_key),
+            self._execution_index_v1_document(evidence=evidence, partition_key=partition_key),
         ):
             if not self._document_store.put_if_absent(index_document):
                 self._verify_index_document(index_document, evidence)
+        projection_key = (
+            partition_key,
+            str(evidence.scope.task_id),
+            str(evidence.scope.run_id),
+        )
+        if projection_key not in self._append_projection_complete:
+            self._projection_state.ensure_append_projection_complete(
+                partition_key=partition_key,
+                task_id=evidence.scope.task_id,
+                run_id=evidence.scope.run_id,
+            )
+            self._append_projection_complete.add(projection_key)
 
     def _document_to_evidence(self, document: DocumentRecord) -> PlatformFunctionalEvidence:
         try:

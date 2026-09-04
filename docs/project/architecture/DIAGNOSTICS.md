@@ -848,10 +848,11 @@ FunctionalEvidencePersistence (contract semantics)
 - Canonical record: `record:<evidence_id>` in partition `intergrax.functional_evidence.v1:<tenant_id>`.
 - Execution index v1 (legacy projection): `exec:<task_id>:<run_id>:<evidence_id>` — evidence reference only; retained on append for repair compatibility.
 - Execution index v2 (query projection, DIAG-FUNCTIONAL-READ-R1): `execidx:<task_id>:<run_id>:<micros>:<evidence_id>` with metadata (`recorded_at`, `kind`, optional `attempt_id`) for bounded prefix scan and filter-without-canonical-get.
+- Projection completeness metadata (DIAG-FUNCTIONAL-READ-R1-R1): `execidxmeta:<task_id>:<run_id>` — derived migration/control state (`building` → `complete`); not functional evidence truth. Query uses v2 only when manifest state is `complete`. Partial v2 without `complete` manifest always triggers bounded v1→v2 reconciliation. Completion marker is written last after full reconcile + orphan verification.
 - Append is idempotent on `evidence_id`; conflicting payload raises `FunctionalEvidencePersistenceConflictError`.
-- Partial write recovery: canonical record present + missing index → retry append repairs indexes.
+- Partial write recovery: canonical record present + missing index → retry append repairs indexes (v2 written before v1 on append path).
 - Orphan index without canonical record → `FunctionalEvidencePersistenceIntegrityError` (fail closed).
-- Read path (R1): lazy v1→v2 projection rebuild when needed → incremental `execidx:` prefix query → canonical load for page candidates only → integrity validation → keyset cursor with lookahead. Ordering invariant: `(recorded_at, evidence_id)` ASC.
+- Read path (R1 / R1-R1): ensure projection completeness (O(1) when manifest `complete`) → incremental `execidx:` prefix query → canonical load for page candidates only → integrity validation → keyset cursor with lookahead. Ordering invariant: `(recorded_at, evidence_id)` ASC.
 - Production wiring: `wire_functional_evidence_runtime(document_store=..., cursor_secret=...)` — no hidden in-memory fallback.
 - `FunctionalDiagnosticAnalyzer` unchanged; reconstruction reads via `FunctionalEvidencePersistence.query_evidence`.
 
