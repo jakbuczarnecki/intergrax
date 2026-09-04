@@ -76,20 +76,23 @@ def resolve_rag_profile_for_environment(
             if integration_profile is not None
             else None
         )
-        prod = production_graph_rag_profile()
-        profile = replace(
-            profile,
-            graph_rag_enabled=prod.graph_rag_enabled,
-            graph_rag_hops=prod.graph_rag_hops,
-            graph_indexer_mode=prod.graph_indexer_mode,
-            graph_store_backend=prod.graph_store_backend,
-        )
-        wiring_error = validate_graph_rag_production_wiring(
-            profile,
-            graph_store_slug=graph_slug,
-        )
-        if wiring_error is not None and graph_slug is not None:
-            raise ValueError(wiring_error)
+        if graph_slug is not None:
+            prod = production_graph_rag_profile()
+            profile = replace(
+                profile,
+                graph_rag_enabled=prod.graph_rag_enabled,
+                graph_rag_hops=prod.graph_rag_hops,
+                graph_indexer_mode=prod.graph_indexer_mode,
+                graph_store_backend=prod.graph_store_backend,
+            )
+            wiring_error = validate_graph_rag_production_wiring(
+                profile,
+                graph_store_slug=graph_slug,
+            )
+            if wiring_error is not None:
+                raise ValueError(wiring_error)
+        else:
+            profile = replace(profile, graph_rag_enabled=False)
     return profile
 
 

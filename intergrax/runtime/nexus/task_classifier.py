@@ -10,7 +10,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 
 
@@ -109,7 +109,7 @@ class ClassifyingTaskClassifier(TaskClassifier):
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         *,
         orchestration_trigger_capabilities: frozenset[str] | None = None,
         pipeline_capability_suffix: str = ".pipeline",

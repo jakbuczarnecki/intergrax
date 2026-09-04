@@ -35,8 +35,8 @@ from local_workspace_application.workspaces.sync_service import ManagedWorkspace
 from local_workspace_application.workspaces.sync_worker import (
     register_managed_workspace_sync_worker_handler,
 )
-from intergrax.runtime.background_execution.identity_persistence import (
-    wire_background_execution_identity_persistence,
+from intergrax.runtime.background_execution.admission_wiring import (
+    wire_background_execution_admission_dependencies,
 )
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
     wire_causal_evidence_persistence,
@@ -148,6 +148,9 @@ def build_managed_workspace_sync_runtime(
         sync_service,
         main_loop_provider=_main_loop_provider,
     )
+    admission = wire_background_execution_admission_dependencies(
+        document_store=document_store,
+    )
 
     def _on_interrupted(_handle: TaskHandle, request: TaskRequest) -> None:
         if request.task_name != LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME:
@@ -196,9 +199,9 @@ def build_managed_workspace_sync_runtime(
             placeholder,
             registry,
             on_interrupted=_on_interrupted,
-            identity_persistence=wire_background_execution_identity_persistence(
-                document_store=document_store,
-            ),
+            identity_persistence=admission.identity_persistence,
+            attempt_lifecycle=admission.attempt_lifecycle,
+            execution_terminal=admission.execution_terminal,
             causal_evidence_persistence=wire_causal_evidence_persistence(
                 document_store=document_store,
             ),
@@ -230,9 +233,9 @@ def build_managed_workspace_sync_runtime(
         durable_queue,
         registry,
         on_interrupted=_on_interrupted,
-        identity_persistence=wire_background_execution_identity_persistence(
-            document_store=document_store,
-        ),
+        identity_persistence=admission.identity_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
         causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,
         ),

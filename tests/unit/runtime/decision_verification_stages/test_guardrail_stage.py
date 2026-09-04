@@ -30,8 +30,6 @@ from intergrax.contracts.decision_verification_stage import (
 )
 from intergrax.contracts.guardrail_verification import assess_guardrail_scan
 from intergrax.integrations.contracts.llm_guardrail import GuardrailScanResult
-from intergrax.runtime.critic.guardrail_l0 import merge_guardrail_l0
-from intergrax.runtime.critic.contracts import CriticLayer, LayerVerdict
 from intergrax.runtime.decision_verification import VerificationPipeline
 from intergrax.runtime.decision_verification_stages.guardrail import (
     GUARDRAIL_VERIFICATION_STAGE_KIND,
@@ -209,13 +207,7 @@ def test_execution_class_deterministic() -> None:
 def test_migration_parity_blocked_guardrail_scan() -> None:
     scan = GuardrailScanResult(allowed=False, detail="output blocked")
     assessment = assess_guardrail_scan(scan)
-    verdict = LayerVerdict(layer=CriticLayer.L0_DETERMINISTIC, passed=True, score=1.0)
-    merged = merge_guardrail_l0(
-        verdict,
-        context={"guardrail_scan": {"allowed": False, "detail": "output blocked"}},
-    )
     assert assessment.passed is False
-    assert merged.passed is False
 
 
 @pytest.mark.unit

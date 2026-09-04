@@ -9,6 +9,8 @@ from intergrax.queueing.providers.broker_worker_base import BrokerWorkerBase
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
 )
+from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -38,6 +40,8 @@ class RabbitMQWorker(BrokerWorkerBase):
         idempotency_store=None,
         identity_persistence: BackgroundExecutionIdentityPersistence,
         causal_evidence_persistence: CausalEvidencePersistence,
+        attempt_lifecycle: AttemptLifecycleService,
+        execution_terminal: ExecutionTerminalService,
         poll_timeout_seconds: float = 1.0,
     ) -> None:
         super().__init__(
@@ -46,6 +50,8 @@ class RabbitMQWorker(BrokerWorkerBase):
             idempotency_store=idempotency_store,
             identity_persistence=identity_persistence,
             causal_evidence_persistence=causal_evidence_persistence,
+            attempt_lifecycle=attempt_lifecycle,
+            execution_terminal=execution_terminal,
         )
         self._consumer: MessageConsumer = consumer
         self._poll_timeout_seconds = poll_timeout_seconds

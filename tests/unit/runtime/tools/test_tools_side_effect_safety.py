@@ -88,24 +88,55 @@ class DummyHandler:
         return ValueOutput(result=request.input.value * 2)
 
 
+def _enforce_allow_bundle() -> object:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="tools.se.allow")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    return wire_policy_bundle(env)
+
+
 class DummyState:
-    def __init__(self, tenant_id: str = "tenant_test") -> None:
+    def __init__(
+        self,
+        tenant_id: str = "tenant_test",
+        *,
+        policy_bundle: object | None = None,
+    ) -> None:
         self._tenant_id = tenant_id
         self.run_id = "run1"
+        self.declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
+        self._context = type(
+            "Ctx",
+            (),
+            {"config": type("Cfg", (), {"policy_bundle": policy_bundle})()},
+        )()
 
     @property
     def tenant_id(self) -> str:
         return self._tenant_id
 
     @property
+    def task_id(self) -> str | None:
+        return None
+
+    @property
     def context(self):
-        return type("Ctx", (), {"config": type("Cfg", (), {"policy_bundle": None})()})()
+        return self._context
 
     def trace_event(self, *args, **kwargs) -> None:
         del args, kwargs
 
 
+def _state_with_enforce_allow() -> DummyState:
+    return DummyState(policy_bundle=_enforce_allow_bundle())
+
+
 class TraceFailBeforeExecutorState(DummyState):
+    def __init__(self) -> None:
+        super().__init__(policy_bundle=_enforce_allow_bundle())
+
     def trace_event(self, *args, **kwargs) -> None:
         if kwargs.get("step") == "tool_invocation_start":
             raise RuntimeError("trace failed before executor")
@@ -113,6 +144,9 @@ class TraceFailBeforeExecutorState(DummyState):
 
 
 class TraceFailAfterExecutorState(DummyState):
+    def __init__(self) -> None:
+        super().__init__(policy_bundle=_enforce_allow_bundle())
+
     def trace_event(self, *args, **kwargs) -> None:
         if kwargs.get("step") == "tool_invocation_end":
             raise RuntimeError("trace failed after effect")
@@ -177,19 +211,10 @@ class GovernanceDummyState(DummyState):
         run_id: str = _HITL_RUN_ID,
         task_id: str = _HITL_TASK_ID,
     ) -> None:
-        DummyState.__init__(self, tenant_id=tenant_id)
+        DummyState.__init__(self, tenant_id=tenant_id, policy_bundle=None)
         self.run_id = run_id
         self.request = type("Req", (), {"task_id": task_id})()
         self.declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
-        self._governance_context = type(
-            "Ctx",
-            (),
-            {"config": type("Cfg", (), {"policy_bundle": None})()},
-        )()
-
-    @property
-    def context(self):
-        return self._governance_context
 
     @property
     def task_id(self) -> str:
@@ -265,7 +290,7 @@ def _request(
 def test_cross_tool_same_key_fails_closed() -> None:
     executor = CountingExecutor()
     invoker, _ = _idempotent_invoker(executor, tools=("tool_a", "tool_b"))
-    state = DummyState()
+    state = _state_with_enforce_allow()
 
     invoker.invoke(state=state, agent_id="agent", request=_request(tool_id="tool_a"))
     with pytest.raises(IdempotencyOperationConflictError):
@@ -276,7 +301,7 @@ def test_cross_tool_same_key_fails_closed() -> None:
 def test_cross_input_same_tool_key_fails_closed() -> None:
     executor = CountingExecutor()
     invoker, _ = _idempotent_invoker(executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
 
     invoker.invoke(state=state, agent_id="agent", request=_request(value=5))
     with pytest.raises(IdempotencyOperationConflictError):
@@ -287,7 +312,7 @@ def test_cross_input_same_tool_key_fails_closed() -> None:
 def test_same_canonical_input_replays() -> None:
     executor = CountingExecutor()
     invoker, _ = _idempotent_invoker(executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(value=5)
 
     r1 = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -357,7 +382,7 @@ def test_side_effect_tool_without_retry_proof_executes_once() -> None:
         executor=FlakyExecutor(),
         scope_policy=AllowAllScopePolicy(),
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = ToolExecutionRequest(
         run_id="run_mutate",
         tool_id="mutate_tool",
@@ -395,7 +420,7 @@ def test_side_effect_tool_explicit_retry_safe_retries() -> None:
         executor=FlakyExecutor(),
         scope_policy=AllowAllScopePolicy(),
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = ToolExecutionRequest(
         run_id="run_safe_retry",
         tool_id="retry_safe_tool",
@@ -433,7 +458,7 @@ def test_side_effect_timeout_marks_uncertain_and_blocks_replay() -> None:
         executor=SlowExecutor(),
         pre_effect_coordinator=coordinator,
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(tool_id="slow_tool", key="timeout-key")
 
     result = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -457,7 +482,7 @@ def test_validation_failure_before_claim_has_no_ledger_state() -> None:
         executor=executor,
         pre_effect_coordinator=coordinator,
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     bad_request = ToolExecutionRequest(
         run_id="run1",
         step_id="step1",
@@ -516,7 +541,7 @@ def test_output_validation_failure_after_executor_marks_uncertain() -> None:
         executor=BadOutputExecutor(),
         pre_effect_coordinator=coordinator,
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="bad-output-key")
 
     result = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -557,7 +582,7 @@ def test_mapped_validation_error_after_executor_marks_uncertain() -> None:
         executor=MutatingFailExecutor(),
         pre_effect_coordinator=coordinator,
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="mapped-validation-key")
 
     result = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -589,7 +614,7 @@ def test_unknown_executor_failure_marks_uncertain() -> None:
         executor=FailExecutor(),
         pre_effect_coordinator=coordinator,
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="fail-key")
 
     result = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -628,7 +653,7 @@ def test_active_claim_blocks_concurrent_owner() -> None:
     store = InMemoryIdempotencyStore()
     executor = CountingExecutor()
     invoker, _ = _idempotent_invoker(executor, store=store)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request()
 
     store.claim("tenant_test", "key-x", "owner-a", lease_seconds=30)
@@ -641,7 +666,7 @@ def test_completed_replays_with_matching_operation_identity() -> None:
     store = InMemoryIdempotencyStore()
     executor = CountingExecutor()
     invoker, ledger = _idempotent_invoker(executor, store=store)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request()
     operation_identity = compute_invocation_operation_identity(
         request.tool_id,
@@ -685,6 +710,7 @@ def _hitl_grant(*, bundle: object, key: str) -> DeclarativeHitlApprovalGrant:
         run_id=_HITL_RUN_ID,
         step_id="step1",
         tool_id=_HITL_TOOL_ID,
+        agent_id="agent",
         idempotency_key=key,
         matched_rule_ids=(_HITL_RULE_ID,),
         human_request_id="hr-governance-first",
@@ -714,7 +740,7 @@ def _governance_idempotent_invoker(
 def test_concurrent_governance_allow_executes_once() -> None:
     executor = CountingExecutor()
     invoker, _ = _governance_idempotent_invoker(executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = ToolExecutionRequest(
         run_id="run1",
         step_id="step1",
@@ -951,7 +977,7 @@ def test_submit_boundary_set_only_after_successful_submit() -> None:
         executor=executor,
         pre_effect_coordinator=coordinator,
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="r6-submit-boundary")
 
     result = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -971,7 +997,7 @@ def test_defensive_pre_submit_failure_finalizes_not_started() -> None:
         executor=executor,
         pre_effect_coordinator=coordinator,
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="r6-defensive-pre-submit")
 
     with pytest.raises(RuntimeError, match="unexpected pre-submit failure"):
@@ -988,7 +1014,7 @@ def test_defensive_pre_submit_failure_finalizes_not_started() -> None:
 def test_independent_keys_execute_concurrently() -> None:
     executor = SlowCountingExecutor()
     invoker, store = _idempotent_invoker(executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request_a = _request(key="r6-concurrent-a", value=2)
     request_b = _request(key="r6-concurrent-b", value=3)
     results: list[ToolExecutionResult[ValueOutput]] = []
@@ -1081,7 +1107,7 @@ def test_post_claim_escape_after_effect_boundary_marks_uncertain() -> None:
         executor=executor,
         pre_effect_coordinator=coordinator,
     )
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="r5-escape-after-boundary")
 
     with pytest.raises(RuntimeError, match="unexpected escape after effect boundary"):
@@ -1132,7 +1158,7 @@ def test_on_post_claim_exception_after_effect_marks_uncertain() -> None:
 def test_post_claim_success_finalizes_completed_once() -> None:
     executor = CountingExecutor()
     invoker, store = _idempotent_invoker(executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="r5-success-once")
 
     result = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -1148,7 +1174,7 @@ def test_post_claim_success_finalizes_completed_once() -> None:
 def test_close_shuts_down_execution_pool() -> None:
     executor = CountingExecutor()
     invoker, _ = _idempotent_invoker(executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="r6a-close-pool")
 
     result = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -1170,7 +1196,7 @@ def test_close_shuts_down_execution_pool() -> None:
 def test_active_call_completes_during_close() -> None:
     executor = SlowCountingExecutor(delay_s=0.25)
     invoker, store = _idempotent_invoker(executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="r6a-active-close")
     result_holder: dict[str, ToolExecutionResult[ValueOutput]] = {}
     errors: list[Exception] = []
@@ -1207,7 +1233,7 @@ def test_close_is_idempotent() -> None:
 def test_replay_before_close_preserves_exactly_once() -> None:
     executor = CountingExecutor()
     invoker, store = _idempotent_invoker(executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request(key="r6a-replay-before-close", value=7)
 
     first = invoker.invoke(state=state, agent_id="agent", request=request)

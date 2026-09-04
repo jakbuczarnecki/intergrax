@@ -21,6 +21,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
+_RAW_CREDENTIAL_OPTIONS_ERROR = (
+    "raw credentials are not allowed in LLMProfile.options; "
+    "pass credentials via create_adapter(secrets=...) or SecretsStore"
+)
+
+_FORBIDDEN_CREDENTIAL_OPTION_KEYS = frozenset({"api_key"})
+
 
 class LLMProfile(BaseModel):
     """
@@ -43,6 +50,14 @@ class LLMProfile(BaseModel):
     options: dict[str, Any] = Field(default_factory=dict)
     fallback_profiles: tuple[LLMProfile, ...] = Field(default_factory=tuple)
     routing_policy_hint: str | None = None
+
+    @field_validator("options")
+    @classmethod
+    def _reject_raw_credentials_in_options(cls, value: dict[str, Any]) -> dict[str, Any]:
+        forbidden = _FORBIDDEN_CREDENTIAL_OPTION_KEYS.intersection(value)
+        if forbidden:
+            raise ValueError(_RAW_CREDENTIAL_OPTIONS_ERROR)
+        return value
 
     @field_validator("fallback_profiles", mode="before")
     @classmethod
@@ -91,7 +106,11 @@ class LLMProfile(BaseModel):
     ) -> LLMAdapter:
         from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
-        kwargs = merge_secrets_into_options(self.provider, {**self.options, **overrides}, secrets)
+        kwargs = merge_secrets_into_options(
+            self.provider,
+            {**self.options, **overrides},
+            secrets,
+        )
         if self.model:
             kwargs.setdefault("model", self.model)
         return LLMAdapterRegistry.create(self.provider, **kwargs)
@@ -146,18 +165,16 @@ class LLMProfile(BaseModel):
             if tokens <= 0:
                 warnings.append(f"context_window_tokens resolved to {tokens} for model={model_id!r}")
 
-        merged = merge_secrets_into_options(self.provider, dict(self.options), secrets)
+        merged = merge_secrets_into_options(
+            self.provider,
+            dict(self.options),
+            secrets,
+        )
         if not merged.get("api_key"):
             slug = self._provider_slug(self.provider)
             if slug not in {"ollama", "vllm", "llama_cpp"}:
                 warnings.append(f"no api_key in profile options or secrets for provider={slug}")
         return warnings
-
-    def with_secrets(self, secrets: Mapping[str, str]) -> LLMProfile:
-        """Return profile with secrets merged into ``options`` (api_key, etc.)."""
-        return self.model_copy(
-            update={"options": merge_secrets_into_options(self.provider, dict(self.options), secrets)}
-        )
 
     def create_adapter_from_secrets_store(
         self,
@@ -168,7 +185,7 @@ class LLMProfile(BaseModel):
     ) -> LLMAdapter:
         """Resolve API key from Vault/secrets integration, then create adapter."""
         key = load_api_key_from_secrets_store(store, self.provider, path=secret_path)
-        return self.with_secrets({"api_key": key}).create_adapter(**overrides)
+        return self.create_adapter(secrets={"api_key": key}, **overrides)
 
     @classmethod
     def lab(cls) -> LLMProfile:

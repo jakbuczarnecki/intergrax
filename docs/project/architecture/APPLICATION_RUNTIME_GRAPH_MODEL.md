@@ -49,6 +49,14 @@ application + direct agents + transitive agents + platform
 - and nothing outside that graph. Unresolved local workspace packages fail closed
 (`RUNTIME_GRAPH_UNRESOLVED`).
 
+### Reusable vs private agents (lifecycle boundary)
+
+Reusable Tier-2 agents under `agents/*` remain **independent components** — they are not owned by applications (see §2). That rule is unchanged.
+
+An **application-private** or **scenario-private** agent may have restricted ownership and reuse scope when its logic is specialized to one product or proof. Private ownership of the capability does **not** grant the application or scenario a private runtime, a private `AgentRegistry` lifecycle, or an alternate install/activate path. Every such agent still **MUST** enter production runtime through the canonical Agent Distribution lifecycle; `AgentRegistry` remains a derived projection after `RuntimeRevision` activation.
+
+Canonical lifecycle semantics: [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) [Core mental model](AGENT_DISTRIBUTION.md#core-mental-model). This document does not prescribe final on-disk layout for private agent packages — that remains an implementation decision.
+
 ---
 
 ## 2. Declaration source of truth

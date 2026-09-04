@@ -10,6 +10,7 @@ from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.harness.application_host import ApplicationHost
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -41,7 +42,7 @@ def test_build_harness_host_runtime_mounts_application_host() -> None:
         use_in_memory_trace=True,
         application_host=_BlockSelectionHost(),
     )
-    pipeline = runtime.nexus_loop.middleware
+    pipeline = resolve_harness_host_nexus_loop_legacy(runtime).middleware
     assert isinstance(pipeline, MiddlewarePipeline)
     names = [mw.name for mw in pipeline._middleware]  # noqa: SLF001
     assert "application_host" in names
@@ -70,5 +71,5 @@ async def test_application_host_blocks_agent_selection() -> None:
         message="hello",
         context=TaskContext(capability="echo.basic"),
     )
-    result = await runtime.nexus_loop.handle_task(task)
+    result = await resolve_harness_host_nexus_loop_legacy(runtime).handle_task(task)
     assert result.state.value == "failed"

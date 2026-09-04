@@ -8,6 +8,8 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import FrozenSet
 
+from intergrax.tools.core.contracts import ToolContract, contract_requires_sandbox_isolation
+
 SANDBOX_TOOL_NAME = "sandbox.exec"
 
 
@@ -49,8 +51,9 @@ SANDBOX_REQUIRED_TOOLS: FrozenSet[str] = frozenset(
         "codecraft.promote",
     }
 )
+"""Derived documentation set of core isolated tool ids — not runtime security authority."""
 
 
-def requires_sandbox_tool(tool_name: str) -> bool:
-    """True when a tool MUST route through sandbox policy (§42.12.2 rule 5)."""
-    return tool_name in SANDBOX_REQUIRED_TOOLS
+def requires_sandbox_tool(contract: ToolContract) -> bool:
+    """True when contract declares sandbox isolation (contract-driven, not tool_id lookup)."""
+    return contract_requires_sandbox_isolation(contract)

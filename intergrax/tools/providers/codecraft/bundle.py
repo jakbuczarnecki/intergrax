@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from intergrax.tools.core.contracts import ToolContract, ToolIsolationRequirement, ToolRiskLevel
 from intergrax.tools.providers.codecraft.contracts import (
     CodeCraftDisposeToolInput,
     CodeCraftDisposeToolOutput,
@@ -44,6 +44,8 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 
 CODECRAFT_BUNDLE_ID = "codecraft"
 
+_SANDBOX_ISOLATION = ToolIsolationRequirement.SANDBOX
+
 
 def register_codecraft_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(
@@ -59,6 +61,7 @@ def register_codecraft_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="codecraft",
             risk_level=ToolRiskLevel.HIGH,
             tags=("codecraft", "sandbox", "execution"),
+            isolation_requirement=_SANDBOX_ISOLATION,
         ),
         CodeCraftRunHandler(ctx),
     )
@@ -75,6 +78,7 @@ def register_codecraft_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="codecraft",
             risk_level=ToolRiskLevel.HIGH,
             tags=("codecraft", "session"),
+            isolation_requirement=_SANDBOX_ISOLATION,
         ),
         CodeCraftStartHandler(ctx),
     )
@@ -91,6 +95,7 @@ def register_codecraft_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="codecraft",
             risk_level=ToolRiskLevel.HIGH,
             tags=("codecraft", "iteration"),
+            isolation_requirement=_SANDBOX_ISOLATION,
         ),
         CodeCraftIterateHandler(ctx),
     )
@@ -123,6 +128,7 @@ def register_codecraft_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="codecraft",
             risk_level=ToolRiskLevel.MEDIUM,
             tags=("codecraft", "cleanup"),
+            isolation_requirement=_SANDBOX_ISOLATION,
         ),
         CodeCraftDisposeHandler(ctx),
     )
@@ -139,6 +145,7 @@ def register_codecraft_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="codecraft",
             risk_level=ToolRiskLevel.MEDIUM,
             tags=("codecraft", "promotion"),
+            isolation_requirement=_SANDBOX_ISOLATION,
         ),
         CodeCraftPromoteHandler(ctx),
     )

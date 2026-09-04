@@ -8,8 +8,9 @@ Deliberation answers **„jakie kandydackie propozycje i niezgodności powstały
 > **Maturity boundary:**
 >
 > - **Architecture:** **TARGET CANON - FROZEN**.
-> - **Implementation:** Council runtime **NOT STARTED** - no separate engine shipped.
-> - **Production:** Single-model / graph agent paths are **CURRENT**; Council is target strategy only.
+> - **Implementation:** Decision Strategy foundation **implemented** (Single Model · Rule-Based · Hybrid · participant/disagreement contracts · **CouncilStrategy**).
+> - **CouncilStrategy:** **implemented** as canonical `DecisionStrategy` hosted through Execution deliberation (`intergrax/contracts/council_strategy.py`, `intergrax/runtime/execution/council_deliberation.py`). Separate Council Runtime **forbidden**.
+> - **Production:** Single-model / rule-based / hybrid / council contract paths available; real multi-provider Council qualification remains **DS-E2E-02**.
 
 **Primary audience:** Principal / Staff engineers designing multi-model deliberation, participant roles, disagreement artifacts, and strategy registration.
 
@@ -359,8 +360,8 @@ No separate Council Runtime.
 | Axis | Level |
 | ---- | ----- |
 | **Architecture** | **A4** frozen target |
-| **Implementation** | **I0** - no Council strategy shipped |
-| **Production** | **P0** for Council - agent/graph paths only |
+| **Implementation** | **I1** - Council strategy contracts + Execution deliberation host shipped |
+| **Production** | **P0** for real multi-provider Council - agent/graph paths; **DS-E2E-02** open |
 
 ---
 

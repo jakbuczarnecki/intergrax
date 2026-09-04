@@ -102,6 +102,44 @@ class EmbeddingProviderRegistry:
             return next(iter(self._providers.keys()))
 
 
+def import_embedding_provider_class(
+    *,
+    provider_id: str,
+    module_name: str,
+    class_name: str,
+    dependency_name: str,
+    extra_name: str | None = None,
+) -> type[EmbeddingProvider]:
+    try:
+        module = import_module(module_name)
+    except ModuleNotFoundError as exc:
+        expected_module = dependency_name.replace("-", "_")
+        missing_module = exc.name or ""
+        if not (
+            missing_module == expected_module
+            or missing_module.startswith(expected_module + ".")
+        ):
+            raise
+        extra = extra_name or dependency_name
+        raise EmbeddingProviderDependencyError(
+            f"Embedding provider '{provider_id}' requires dependency "
+            f"'{dependency_name}'. Install it with "
+            f"'Intergrax-ai[{extra}]' before selecting this provider."
+        ) from exc
+    except ImportError:
+        raise
+
+    try:
+        provider_type = attribute_access.optional(module, class_name)
+    except AttributeError as exc:
+        raise EmbeddingProviderRegistrationError(
+            f"Embedding provider '{provider_id}' module '{module_name}' "
+            f"does not define expected class '{class_name}'."
+        ) from exc
+
+    return provider_type
+
+
 def lazy_import_provider_factory(
     *,
     provider_id: str,
@@ -116,33 +154,13 @@ def lazy_import_provider_factory(
     factory_kwargs = dict(init_kwargs or {})
 
     def create_provider() -> EmbeddingProvider:
-        try:
-            module = import_module(module_name)
-        except ModuleNotFoundError as exc:
-            expected_module = dependency_name.replace("-", "_")
-            missing_module = exc.name or ""
-            if not (
-                missing_module == expected_module
-                or missing_module.startswith(expected_module + ".")
-            ):
-                raise
-            extra = extra_name or dependency_name
-            raise EmbeddingProviderDependencyError(
-                f"Embedding provider '{provider_id}' requires dependency "
-                f"'{dependency_name}'. Install it with "
-                f"'Intergrax-ai[{extra}]' before selecting this provider."
-            ) from exc
-        except ImportError:
-            raise
-
-        try:
-            provider_type = attribute_access.optional(module, class_name)
-        except AttributeError as exc:
-            raise EmbeddingProviderRegistrationError(
-                f"Embedding provider '{provider_id}' module '{module_name}' "
-                f"does not define expected class '{class_name}'."
-            ) from exc
-
+        provider_type = import_embedding_provider_class(
+            provider_id=provider_id,
+            module_name=module_name,
+            class_name=class_name,
+            dependency_name=dependency_name,
+            extra_name=extra_name,
+        )
         return provider_type(**factory_kwargs)
 
     return create_provider

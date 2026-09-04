@@ -125,6 +125,24 @@ class InMemoryIdempotencyStore(IdempotencyStore):
             )
             return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
 
+    def _reject_stale_or_expired_claim(
+        self,
+        *,
+        key: str,
+        claim: InvocationClaim,
+        current: InvocationClaim,
+        now: datetime,
+        operation: str,
+    ) -> None:
+        if current.owner_id != claim.owner_id or current.fence != claim.fence:
+            raise StaleClaimError(
+                f"Stale {operation} rejected for key={key} fence={claim.fence}.",
+            )
+        if current.lease_expires_at <= now:
+            raise StaleClaimError(
+                f"Expired claim rejected for key={key} fence={claim.fence}.",
+            )
+
     def complete_with_claim(
         self,
         tenant_id: str,
@@ -135,6 +153,7 @@ class InMemoryIdempotencyStore(IdempotencyStore):
     ) -> None:
         del completed_ttl_seconds
         composite_key = (tenant_id, key)
+        now = datetime.now(UTC)
         with self._lock:
             entry = self._store.get(composite_key)
             if entry is None or entry.status != InvocationStatus.STARTED or entry.claim is None:
@@ -142,10 +161,13 @@ class InMemoryIdempotencyStore(IdempotencyStore):
                     f"Cannot complete key={key}: missing or invalid active claim.",
                 )
             current = entry.claim
-            if current.owner_id != claim.owner_id or current.fence != claim.fence:
-                raise StaleClaimError(
-                    f"Stale completion rejected for key={key} fence={claim.fence}.",
-                )
+            self._reject_stale_or_expired_claim(
+                key=key,
+                claim=claim,
+                current=current,
+                now=now,
+                operation="completion",
+            )
             self._store[composite_key] = _LedgerEntry(
                 InvocationStatus.COMPLETED,
                 result,
@@ -167,10 +189,13 @@ class InMemoryIdempotencyStore(IdempotencyStore):
                     f"Cannot mark uncertain key={key}: missing or invalid active claim.",
                 )
             current = entry.claim
-            if current.owner_id != claim.owner_id or current.fence != claim.fence:
-                raise StaleClaimError(
-                    f"Stale uncertain transition rejected for key={key} fence={claim.fence}.",
-                )
+            self._reject_stale_or_expired_claim(
+                key=key,
+                claim=claim,
+                current=current,
+                now=datetime.now(UTC),
+                operation="uncertain transition",
+            )
             self._store[composite_key] = _LedgerEntry(
                 InvocationStatus.UNCERTAIN,
                 None,

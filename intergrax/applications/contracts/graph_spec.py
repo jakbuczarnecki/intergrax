@@ -8,7 +8,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
 
 class GraphEdgeKind(str, Enum):
     DEPENDS_ON = "depends_on"

@@ -8,9 +8,9 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 > **Maturity boundary (frozen target vs current production):**
 >
 > - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
-> - **Implementation:** **NOT YET MIGRATED** - no Decision System runtime classes shipped.
-> - **Production:** **CURRENT** correctness path remains [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) (`CriticOrchestrator`, CVL) until clean-cut migration.
-> - **Evidence:** Decision System E2E not yet qualified - no production-ready claim.
+> - **Implementation:** Canonical Decision System runtime **implemented and active**.
+> - **CURRENT decision authority = Decision System.** Critic runtime **retired**.
+> - **Production qualification of full Decision System still pending DS-E2E** — no whole-system production-qualified claim.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
@@ -686,10 +686,16 @@ If the hosting Execution uses ORCHESTRATION, Nexus may participate in orchestrat
 
 | Requirement | Rule |
 | ----------- | ---- |
-| Durability | Lifecycle state, version lineage, finalize guard state persisted through canonical hosting Execution checkpoint/persistence boundary |
+| Durability | Lifecycle state, version lineage, finalize guard state, and revision budget snapshot persisted through canonical hosting Execution checkpoint/persistence boundary |
+| Atomic finalization | `DecisionFinalizationPersistence.commit_authoritative_outcome` performs check+commit in one backend transaction — no load/save race |
 | Resume | Continue from persisted stage - not full deliberation restart without cause |
-| Crash safety | Cannot mint duplicate authoritative decision |
-| Budget | Resume cannot expand prior granted budget |
+| Crash safety | Durable authoritative outcome lookup converges terminal state even when checkpoint lags finalization commit |
+| Budget | `DecisionRevisionCheckpointState` is authoritative on resume; runtime policy mismatch fails closed |
+| Qualification | Local SQLite/subprocess proof ≠ DS-E2E-06/07 distributed production qualification |
+
+**Durable wire security (DS-REC-INV-01..05):** Decision checkpoint and authoritative outcome records use explicit versioned UTF-8 JSON wire codecs (`intergrax/runtime/execution/decision_durable_wire_codec.py`) with `schema_version` + `record_type` envelopes. Runtime executable object deserialization (e.g. `pickle.loads`) is **forbidden** at the Decision authority boundary; legacy pickle blobs fail closed. Artifact payload reconstruction requires an explicit typed `DecisionArtifactPayloadCodec`; unknown kinds fail closed. SQLite adapters remain storage-only and invoke the shared codec seam.
+
+Proof gates: DS-REC-01 (`tests/unit/runtime/execution/test_decision_finalization_persistence.py`) · DS-REC-02/03 (`tests/unit/runtime/execution/test_decision_durable_recovery.py`) · wire codec (`tests/unit/runtime/execution/test_decision_durable_wire_codec.py`).
 
 ---
 
@@ -712,6 +718,17 @@ Do **not** merge these into one generic retry loop.
 - **Decision Artifact kinds** - typed registration - not reflection over loose dicts.
 
 Platform plugin architecture applies at extension boundaries ([`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md)).
+
+Third-party packages contribute through setuptools entry-point groups
+``intergrax.decision_strategies``, ``intergrax.decision_verification_stages``, and
+``intergrax.decision_artifact_kinds``. Platform discovery and admission run first;
+Decision domain composition (`intergrax/runtime/decision_plugin_composition.py`) validates
+targets and composes immutable registries. Installation alone does not activate plugins —
+explicit ``discover_entry_points=True`` composition is required.
+
+When ``require_manifest_capability_binding=True``, absence of positive Platform Plugin
+manifest capability evidence is an admission failure (fail-closed). Plugins without
+verifiable manifest binding are not loaded, instantiated, or registered.
 
 ---
 
@@ -778,7 +795,7 @@ stateDiagram-v2
 | [**Governed Execution**](GOVERNED_EXECUTION.md) | Execution authorization - separate from decision correctness |
 | [**Reliability / HITL**](RELIABILITY_FAILURE_AND_HITL.md) | Technical retry; canonical HITL invocation |
 | [**Observability**](OBSERVABILITY.md) | Decision audit evidence |
-| [**CRITIC_VERIFICATION**](CRITIC_VERIFICATION.md) | **CURRENT IMPLEMENTATION SNAPSHOT** - pending clean-cut DELETE |
+| [**CRITIC_VERIFICATION**](CRITIC_VERIFICATION.md) | **HISTORICAL** migration snapshot — Critic runtime retired (DS-MIG-04) |
 
 ---
 
@@ -789,8 +806,8 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | Axis | Level | Rationale |
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Frozen target canon established; boundaries to Execution, Policy, HITL, Diagnostics explicit |
-| **Implementation (I)** | **I0** | No Decision System runtime migration shipped |
-| **Production (P)** | **P0** | Production path remains CVL / Critic until clean cut |
+| **Implementation (I)** | **I3** | Core lifecycle · revision · verification · governance · execution integration implemented |
+| **Production (P)** | **P1** | Decision System is production decision authority; whole-system qualification pending DS-E2E |
 | **Evidence (E)** | **E0** | No Decision System Docker E2E qualification completed |
 
 ---
@@ -801,7 +818,7 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | ----- | --------- |
 | **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
-| **CURRENT production** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| **Historical Critic snapshot** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | **Public proof** | Not claimed - pending DS-E2E Docker qualification phase |
 
 ### Production qualification boundary
@@ -824,7 +841,7 @@ The Decision System is **not** production-qualified after:
 | Verification pipeline | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | Deliberation / Council | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
-| CURRENT Critic snapshot | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| Historical Critic snapshot | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | Governance | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
 | Reliability / HITL | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
 | Maturity taxonomy | [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) |
@@ -841,4 +858,4 @@ The Decision System is **not** production-qualified after:
 - **Architecture satellite:** [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) on demand - one per session unless RESUME cites more.
 - **Verification slice:** add [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) + [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md).
 - **Deliberation slice:** add [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) + [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md).
-- **Skip** full [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) unless auditing CURRENT implementation or migration disposition.
+- **Skip** full [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) unless auditing historical migration disposition.

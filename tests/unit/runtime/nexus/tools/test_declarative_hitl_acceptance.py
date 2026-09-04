@@ -36,7 +36,10 @@ from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.tools.execution_models import ToolExecutionRequest
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+)
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -73,6 +76,7 @@ def _grant(**overrides: object) -> DeclarativeHitlApprovalGrant:
         "run_id": _ACCEPT_RUN_ID,
         "step_id": "step-1",
         "tool_id": _TOOL_ID,
+        "agent_id": "agent-1",
         "idempotency_key": "idem-1",
         "matched_rule_ids": (_RULE_ID,),
         "human_request_id": "hr-1",
@@ -385,7 +389,8 @@ def test_j_approved_target_executes_once_via_invoker() -> None:
         unique_candidate=UniqueDeclarativeHitlCandidate(candidate_index=0),
         request_index=0,
     )
-    invoker.invoke(state=state, agent_id="agent-1", request=req)
+    with canonical_execution_identity_scope(state.run_id):
+        invoker.invoke(state=state, agent_id="agent-1", request=req)
     assert executor.calls == 1
 
 
@@ -531,15 +536,16 @@ def test_invoker_blocks_without_scope_when_hitl_required() -> None:
     state = build_runtime_state_for_tests(run_id=_ACCEPT_RUN_ID)
     state.request.task_id = _ACCEPT_TASK_ID
     state.context.config.policy_bundle = bundle
-    with pytest.raises(DeclarativePolicyHitlRequiredError):
-        invoker.invoke(
-            state=state,
-            agent_id="agent-1",
-            request=ToolExecutionRequest(
-                run_id=_ACCEPT_RUN_ID,
-                step_id="step-1",
-                tool_id=_TOOL_ID,
-                input=_Input(),
-            ),
-        )
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(DeclarativePolicyHitlRequiredError):
+            invoker.invoke(
+                state=state,
+                agent_id="agent-1",
+                request=ToolExecutionRequest(
+                    run_id=_ACCEPT_RUN_ID,
+                    step_id="step-1",
+                    tool_id=_TOOL_ID,
+                    input=_Input(),
+                ),
+            )
     assert executor.calls == 0

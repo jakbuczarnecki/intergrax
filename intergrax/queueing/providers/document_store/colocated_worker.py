@@ -15,7 +15,10 @@ from intergrax.queueing.providers.document_store.document_store_task_queue impor
 )
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
-from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.reentry_admission import (
+    BackgroundExecutionReentryDisposition,
+    admit_background_execution_reentry,
+)
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
 )
@@ -25,6 +28,8 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
+from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -47,6 +52,8 @@ class DocumentStoreTaskWorker:
         on_interrupted: InterruptedHandler | None = None,
         identity_persistence: BackgroundExecutionIdentityPersistence,
         causal_evidence_persistence: CausalEvidencePersistence,
+        attempt_lifecycle: AttemptLifecycleService,
+        execution_terminal: ExecutionTerminalService,
     ) -> None:
         self._queue = queue
         self._registry = registry
@@ -55,6 +62,8 @@ class DocumentStoreTaskWorker:
         self._on_interrupted = on_interrupted
         self._identity_persistence = identity_persistence
         self._causal_evidence_persistence = causal_evidence_persistence
+        self._attempt_lifecycle = attempt_lifecycle
+        self._execution_terminal = execution_terminal
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -94,10 +103,16 @@ class DocumentStoreTaskWorker:
                     provider=handle.provider,
                     transport_task_id=handle.task_id,
                 )
-                execution_identity = bootstrap_background_execution(
+                reentry = admit_background_execution_reentry(
                     transport_ref=transport_ref,
                     identity_persistence=self._identity_persistence,
+                    attempt_lifecycle=self._attempt_lifecycle,
+                    execution_terminal=self._execution_terminal,
                 )
+                if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
+                    self._queue.mark_succeeded(handle, output=None)
+                    continue
+                execution_identity = reentry.identity
                 result = admit_background_execution_handler(
                     transport_ref=transport_ref,
                     execution_identity=execution_identity,

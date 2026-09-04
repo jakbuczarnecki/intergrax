@@ -75,7 +75,7 @@ from intergrax.runtime.nexus.orchestration.lifecycle_bridge import (
 from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.nexus.orchestration.task_finisher import build_nexus_task_result
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.store import resolve_runtime_event_persistence
@@ -96,6 +96,31 @@ from intergrax.runtime.execution.active_execution_budget import (
     require_active_execution_budget,
 )
 from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    InMemoryAttemptLifecycleStore,
+)
+from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
+    validate_durable_attempt_lifecycle_for_composition,
+)
+from intergrax.runtime.execution.execution_terminal import (
+    ExecutionTerminalService,
+    wire_execution_terminal_store,
+)
+from intergrax.runtime.execution.execution_terminal.durability_policy import (
+    validate_durable_execution_terminal_for_composition,
+)
+from intergrax.contracts.execution_terminal import (
+    ExecutionTerminalConflictError,
+    ExecutionTerminalError,
+)
+from intergrax.runtime.execution.execution_terminal.persistence import (
+    TerminalCommitResolution,
+    reconcile_task_state_with_terminal_outcome,
+    terminal_outcome_from_task_state,
+    terminal_reason_for_task_state,
+    validate_terminal_run_id_consistency,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -103,8 +128,8 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
 if TYPE_CHECKING:
-    from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
-    from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
+    from intergrax.runtime.decision_flow import DecisionFlowGate
+    from intergrax.contracts.agent_execution_result import AgentExecutionResult
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedger,
@@ -121,7 +146,7 @@ class NexusLoop:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         *,
         classifier: NexusTaskClassifierProtocol | None = None,
         planner: NexusTaskPlannerProtocol | None = None,
@@ -160,7 +185,7 @@ class NexusLoop:
         signal_collector: SignalCollector | None = None,
         evaluation_registry: OnlineEvaluationRegistry | None = None,
         run_budget: RunBudget | None = None,
-        critic_graph_hooks: Optional["CriticGraphHooks"] = None,
+        decision_flow_gate: Optional["DecisionFlowGate[AgentExecutionResult]"] = None,
         emit_coordination_advisory: bool = False,
         allow_dynamic_replan: bool = False,
         denied_planner_model_ids: tuple[str, ...] = (),
@@ -170,6 +195,8 @@ class NexusLoop:
         authority_policy: "ExecutionAuthorityPolicy | None" = None,
         budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
         execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
+        attempt_lifecycle: AttemptLifecycleService | None = None,
+        execution_terminal: ExecutionTerminalService | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -240,9 +267,10 @@ class NexusLoop:
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
         self._planner = planner or TaskPlanner()
         self._validation_engine = validation_engine or NexusValidationEngine()
+        resolved_retry_policy = retry_policy or RetryPolicy()
         self._retry_engine = retry_engine or RetryEngine(
             registry,
-            policy=retry_policy or RetryPolicy(),
+            policy=resolved_retry_policy,
             middleware=self._middleware,
         )
         self._router = AgentRouter(
@@ -263,7 +291,7 @@ class NexusLoop:
             max_parallel_nodes=max_parallel_nodes,
             max_inflight_nodes=max_inflight_nodes,
             max_delegation_depth=max_delegation_depth,
-            critic_graph_hooks=critic_graph_hooks,
+            decision_flow_gate=decision_flow_gate,
             agent_checkpoint_store=agent_checkpoint_store,
             compensation_queue_store=compensation_queue_store,
             idempotency_store=idempotency_store,
@@ -284,6 +312,24 @@ class NexusLoop:
             execution_budget_ledger_factory
             or create_execution_budget_ledger_factory(run_budget)
         )
+        self._attempt_lifecycle = attempt_lifecycle or AttemptLifecycleService(
+            InMemoryAttemptLifecycleStore(),
+        )
+        self._execution_terminal = execution_terminal or ExecutionTerminalService(
+            wire_execution_terminal_store(checkpoint_store=self._checkpoint_store),
+        )
+        validate_durable_attempt_lifecycle_for_composition(
+            production_mode=production_mode,
+            store=self._attempt_lifecycle.store,
+            agent_retry_max=resolved_retry_policy.max_retries,
+            run_retry_max=max_run_retries,
+        )
+        validate_durable_execution_terminal_for_composition(
+            production_mode=production_mode,
+            checkpoint_store=self._checkpoint_store,
+            store=self._execution_terminal.store,
+        )
+        self._production_mode = production_mode
         trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
@@ -314,8 +360,11 @@ class NexusLoop:
             finish_task=self._finish_task,
             finalize_trace=self._finalize_persisting_trace,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
+            attempt_lifecycle=self._attempt_lifecycle,
+            execution_terminal=self._execution_terminal,
             max_run_retries=max_run_retries,
-            critic_graph_hooks=critic_graph_hooks,
+            production_mode=production_mode,
+            decision_flow_gate=decision_flow_gate,
         )
         self._intake_runner = NexusIntakeRunner(
             hitl=self._hitl,
@@ -340,7 +389,7 @@ class NexusLoop:
         )
 
     @property
-    def registry(self) -> AgentRegistry:
+    def registry(self) -> AgentRegistryRead:
         return self._registry
 
     @property
@@ -353,31 +402,25 @@ class NexusLoop:
         self._graph_executor.apply_validation_engine(validation_engine)
         self._graph_runner.validation_engine = validation_engine
 
-    @property
-    def critic_graph_hooks(self) -> Optional["CriticGraphHooks"]:
-        """Return wired critic graph hooks when application critic wiring is active."""
-        return self._graph_executor.peek_critic_graph_hooks()
-
-    def apply_critic_graph_hooks(self, hooks: Optional["CriticGraphHooks"]) -> None:
-        """Attach or clear critic graph hooks on executor and runner (CRIT-V-6.1)."""
-        self._graph_executor.apply_critic_graph_hooks(hooks)
-        self._graph_runner.critic_graph_hooks = hooks
-
-    def apply_critic_uaep_hooks(
+    def apply_decision_flow_gate(
         self,
-        hooks: Optional["CriticGraphHooks"],
+        gate: Optional["DecisionFlowGate[AgentExecutionResult]"],
         *,
         verify_uaep_step: bool = False,
     ) -> None:
-        """Attach critic hooks to the UAEP executor for step-level verification."""
-        self._engine.uaep_executor.set_critic_hooks(hooks, verify_uaep_step=verify_uaep_step)
+        """Attach Decision flow authority to graph and UAEP execution surfaces."""
+        self._graph_executor.apply_decision_flow_gate(gate)
+        self._graph_runner.decision_flow_gate = gate
+        self._engine.uaep_executor.set_decision_flow_gate(
+            gate,
+            verify_uaep_step=verify_uaep_step,
+        )
 
-    def critic_eval_tool_client(self) -> Optional["CriticEvalToolClient"]:
-        """Return the L1 eval tool client when critic graph hooks are wired."""
-        hooks = self._graph_executor.peek_critic_graph_hooks()
-        if hooks is None:
-            return None
-        return hooks.orchestrator.l1_tool_client
+    def peek_decision_flow_gate(
+        self,
+    ) -> Optional["DecisionFlowGate[AgentExecutionResult]"]:
+        """Return wired Decision flow gate when application decision wiring is active."""
+        return self._graph_executor.peek_decision_flow_gate()
 
     @property
     def trace_emitter(self) -> Optional[TaskTraceEmitter]:
@@ -426,6 +469,10 @@ class NexusLoop:
     @property
     def execution_budget_ledger_factory(self) -> "ExecutionBudgetLedgerFactory":
         return self._execution_budget_ledger_factory
+
+    @property
+    def execution_terminal(self) -> ExecutionTerminalService:
+        return self._execution_terminal
 
     async def handle_task(
         self,
@@ -542,7 +589,9 @@ class NexusLoop:
                 phase=ExecutionPhase.COMPLETION,
                 error=exc,
             )
-            await self._publish_terminal_runtime_event(task)
+            resolution = self._commit_durable_terminal_authority(task)
+            if resolution.should_publish_terminal_event:
+                await self._publish_terminal_runtime_event(task)
             return self._build_result(
                 task,
                 trace_emitter,
@@ -560,7 +609,9 @@ class NexusLoop:
             self._policy_engine, task, answer=answer
         )
 
-        await self._publish_terminal_runtime_event(task)
+        resolution = self._commit_durable_terminal_authority(task)
+        if resolution.should_publish_terminal_event:
+            await self._publish_terminal_runtime_event(task)
         result = self._build_result(
             task,
             trace_emitter,
@@ -671,6 +722,7 @@ class NexusLoop:
             publish=self._publish_runtime_event,
             notification_adapter=self._notification_adapter,
             run_id=active_run_id,
+            execution_terminal=self._execution_terminal,
         )
 
     async def _maybe_checkpoint_long_running(
@@ -713,6 +765,47 @@ class NexusLoop:
     ) -> None:
         """Attach platform terminal diagnostic trigger after host composition."""
         self._terminal_diagnostic_trigger = trigger
+
+    def _commit_durable_terminal_authority(self, task: Task) -> TerminalCommitResolution:
+        """Persist terminal outcome and return canonical durable authority."""
+        outcome = terminal_outcome_from_task_state(task.state)
+        if outcome is None:
+            return TerminalCommitResolution(
+                canonical_record=None,
+                should_publish_terminal_event=True,
+            )
+        run_id, _ = require_active_execution_identity()
+        try:
+            record = self._execution_terminal.commit_terminal_outcome(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=run_id,
+                outcome=outcome,
+                reason=terminal_reason_for_task_state(task.state),
+                production_mode=self._production_mode,
+            )
+            return TerminalCommitResolution(
+                canonical_record=record,
+                should_publish_terminal_event=True,
+            )
+        except ExecutionTerminalConflictError:
+            canonical = self._execution_terminal.get_terminal_record(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+            )
+            if canonical is None:
+                raise ExecutionTerminalError(
+                    "execution terminal conflict without canonical record",
+                ) from None
+            validate_terminal_run_id_consistency(canonical, run_id)
+            task.state = reconcile_task_state_with_terminal_outcome(
+                task.state,
+                canonical.outcome,
+            )
+            return TerminalCommitResolution(
+                canonical_record=canonical,
+                should_publish_terminal_event=False,
+            )
 
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
         terminal_event = await self._events.publish_terminal(task)

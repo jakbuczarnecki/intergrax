@@ -7,8 +7,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from intergrax.applications._shared.capability_graph_catalog import (
-    resolve_binding_agent_contract_id,
+from intergrax.applications.contracts.application_capability_projection import (
+    resolve_binding_contract_id,
 )
 from intergrax.applications._shared.capability_graph_wiring import EnvironmentCapabilityGraphView
 from intergrax.applications._shared.environment_snapshot_wiring import stable_digest_hex
@@ -199,7 +199,7 @@ def validate_application_package_closure(
         violations.append("package.dependencies drift from manifest/environment materialization")
 
     roster_contract_ids = {
-        resolve_binding_agent_contract_id(binding) for binding in manifest.enabled_agents()
+        resolve_binding_contract_id(binding) for binding in manifest.enabled_agents()
     }
     for dep in package.dependencies:
         if dep.kind is ApplicationDependencyKind.AGENT and dep.ref not in roster_contract_ids:

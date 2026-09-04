@@ -10,8 +10,8 @@ from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
 from intergrax.queueing.providers.document_store.colocated_worker import DocumentStoreTaskWorker
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
-from intergrax.runtime.background_execution.identity_persistence import (
-    wire_background_execution_identity_persistence,
+from intergrax.runtime.background_execution.admission_wiring import (
+    wire_background_execution_admission_dependencies,
 )
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
     wire_causal_evidence_persistence,
@@ -110,12 +110,13 @@ def test_worker_executes_registered_handler() -> None:
             payload=b"{}",
         )
     )
+    admission = wire_background_execution_admission_dependencies(document_store=store)
     worker = DocumentStoreTaskWorker(
         queue,
         registry,
-        identity_persistence=wire_background_execution_identity_persistence(
-            document_store=store,
-        ),
+        identity_persistence=admission.identity_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
         causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=store,
         ),

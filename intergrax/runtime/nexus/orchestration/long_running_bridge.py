@@ -14,6 +14,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import (
@@ -38,10 +39,15 @@ async def maybe_restore_long_running(
     publish: RuntimeEventPublisher,
     notification_adapter: Optional[NotificationAdapter],
     run_id: str,
+    execution_terminal: ExecutionTerminalService | None = None,
 ) -> None:
     if checkpoint_store is None:
         return
-    restored = LongRunningCoordinator.restore_if_resuming(task, checkpoint_store)
+    restored = LongRunningCoordinator.restore_if_resuming(
+        task,
+        checkpoint_store,
+        execution_terminal=execution_terminal,
+    )
     if restored is None:
         return
     if restored.runtime is not None:

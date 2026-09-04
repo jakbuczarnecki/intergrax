@@ -15,20 +15,22 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeBuildError,
     build_scenario_runtime_from_environment,
     execute_scenario_task,
-    rewire_scenario_critic_wiring,
+    rewire_scenario_decision_wiring,
     validate_scenario_tenant_id,
 )
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ApplicationSecurityProfile,
-    CriticProfile,
-    CriticVerificationScopes,
+    DecisionFlowProfile,
+    DecisionProfile,
+    DecisionVerificationProfile,
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.decision_flow import DecisionFlowScope
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.task.task import TaskState
@@ -172,6 +174,7 @@ def test_build_scenario_runtime_strict_with_explicit_manifest(tmp_path: Path) ->
         manifest=_scenario_manifest("scenario_strict_manifest"),
         runtime_events_db_path=tmp_path / "events.db",
         trace_db_path=tmp_path / "trace.db",
+        document_store=InMemoryDocumentStore(),
         use_in_memory_trace=True,
     )
     assert composition.nexus_loop is not None
@@ -231,37 +234,39 @@ def test_build_scenario_runtime_accepts_custom_validation_engine(tmp_path: Path)
         use_in_memory_trace=True,
         validation_engine=engine,
     )
-    assert composition.nexus_loop.critic_graph_hooks is not None
+    assert composition.nexus_loop.peek_decision_flow_gate() is not None
     assert _RecordingValidationEngine.calls == 0
 
 
-def test_rewire_scenario_critic_wiring_reapplies_validation_engine(tmp_path: Path) -> None:
+def test_rewire_scenario_decision_wiring_reapplies_validation_engine(tmp_path: Path) -> None:
     composition = _build_composition(tmp_path)
     replacement = _RecordingValidationEngine()
-    rewire_scenario_critic_wiring(composition, validation_engine=replacement)
-    assert composition.nexus_loop.critic_graph_hooks is not None
+    rewire_scenario_decision_wiring(composition, validation_engine=replacement)
+    assert composition.nexus_loop.peek_decision_flow_gate() is not None
 
 
-def test_build_scenario_runtime_wires_critic_from_environment_profile(tmp_path: Path) -> None:
-    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.critic.profile")
-    environment.critic_profile = CriticProfile(
-        scopes=CriticVerificationScopes(node_partial=True, graph_final=True),
-        require_critic_on_completion=True,
+def test_build_scenario_runtime_wires_decision_from_explicit_spec(
+    tmp_path: Path,
+    _stub_scenario_llm: None,
+) -> None:
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.decision.profile")
+    environment.decision_profile = DecisionProfile(
+        verification=DecisionVerificationProfile(semantic_enabled=True),
+        flow=DecisionFlowProfile(verify_graph_final=True, verify_uaep_step=True),
     )
     composition = build_scenario_runtime_from_environment(
         environment=environment,
         registry=_echo_registry(),
         tenant_id=_TENANT,
-        manifest=_scenario_manifest("scenario_critic_profile"),
+        manifest=_scenario_manifest("scenario_decision_profile"),
         runtime_events_db_path=tmp_path / "events.db",
         trace_db_path=tmp_path / "trace.db",
         use_in_memory_trace=True,
+        conformance_check=False,
     )
-    hooks = composition.nexus_loop.critic_graph_hooks
-    assert hooks is not None
-    assert hooks.verify_node_partial is True
-    assert hooks.verify_graph_final is True
-    assert hooks.config.require_critic_on_completion is True
+    gate = composition.nexus_loop.peek_decision_flow_gate()
+    assert gate is not None
+    assert gate.supports_scope(DecisionFlowScope.GRAPH_FINAL)
 
 
 def test_validate_scenario_tenant_id_rejects_whitespace_and_empty() -> None:

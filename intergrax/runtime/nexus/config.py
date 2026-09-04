@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from intergrax.contracts.host_profile_slices import (
         AdaptiveProfile,
         ApplicationSecurityProfile,
-        CriticProfile,
         EvaluationProfile,
     )
     from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
@@ -367,7 +366,6 @@ class RuntimeConfig:
     security_profile: Optional["ApplicationSecurityProfile"] = None
     evaluation_profile: Optional["EvaluationProfile"] = None
     evaluation_registry: Optional["OnlineEvaluationRegistry"] = None
-    critic_profile: Optional["CriticProfile"] = None
     signal_collector: Optional["SignalCollector"] = None
     adaptive_profile: Optional["AdaptiveProfile"] = None
     resolved_profile_versions: Optional["ResolvedProfileVersions"] = None

@@ -78,6 +78,11 @@ def lkw_skill_profile() -> SkillProfile:
     return SkillProfile(enabled_bundles=["rag", "workspace", "memory", "knowledge"])
 
 
+def local_workspace_product_skill_profile() -> SkillProfile:
+    """LKW production host: index, search, and synthesize product skills only."""
+    return SkillProfile(enabled_bundles=["local"])
+
+
 def dispute_skill_profile() -> SkillProfile:
     """Dispute simulation: legal research, memory scratchpad, citation synthesis."""
     return SkillProfile(enabled_bundles=["legal", "rag", "memory", "research"])

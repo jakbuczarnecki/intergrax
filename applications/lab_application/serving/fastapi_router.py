@@ -11,6 +11,7 @@ from intergrax.applications._shared.harness_auth import require_harness_api_key
 from pydantic import BaseModel, Field
 
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.applications._shared.task_intake import (
     apply_long_running_enabled,
@@ -90,10 +91,10 @@ def mount_lab_routes(
     app: FastAPI,
     *,
     host_execution: HostTaskExecutionPort,
+    registry: AgentRegistryRead,
     prefix: str = "/v1/lab",
     task_enricher: Callable[[Task], Task] | None = None,
 ) -> LabRunService:
-    nexus_loop = host_execution.nexus_loop
     service = LabRunService.from_host_execution(
         host_execution,
         task_enricher=task_enricher,
@@ -134,8 +135,8 @@ def mount_lab_routes(
     @router.get("/agents")
     async def lab_agents() -> dict[str, list[dict[str, object]]]:
         agents: list[dict[str, object]] = []
-        for agent_id in nexus_loop.registry.list_agent_ids():
-            agent = nexus_loop.registry.get(agent_id)
+        for agent_id in registry.list_agent_ids():
+            agent = registry.get(agent_id)
             contract = agent.get_contract()
             agents.append(
                 {

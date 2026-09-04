@@ -12,7 +12,7 @@ from intergrax.applications.contracts.graph_spec import (
     GraphNode,
 )
 from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
-from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
 
 
 def evaluator_loop_graph_template(

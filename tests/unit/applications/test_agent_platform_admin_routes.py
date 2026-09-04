@@ -117,6 +117,7 @@ def _bind_payload() -> dict[str, object]:
 
 def _build_payload(revision_id: str) -> dict[str, object]:
     return {
+        "mutation_id": f"mut-build-{revision_id}",
         "runtime_revision_id": revision_id,
         "application_release_id": "rel-1",
         "platform_version": "0.1.0",

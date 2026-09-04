@@ -15,9 +15,11 @@ from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.meaningful_side_effect_policy import MeaningfulSideEffectPolicyRule
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_execution_policy_admission import (
+    RootExecutionAdmissionPolicyRule,
+)
 from intergrax.contracts.runtime_policy_context import (
     AgentDecisionPolicyContext,
-    CriticPolicyContext,
     PreModelPhase,
     PreModelPolicyContext,
 )
@@ -47,6 +49,42 @@ def _normalize_meaningful_side_effect_rule_action(
     if rule.decision is PolicyAction.MODIFY:
         return PolicyAction.DENY
     return rule.decision
+
+
+def _root_execution_admission_rule_specificity(rule: RootExecutionAdmissionPolicyRule) -> int:
+    return 0 if rule.execution_operation is not None else 1
+
+
+def _normalize_root_execution_admission_rule_action(
+    rule: RootExecutionAdmissionPolicyRule,
+) -> PolicyAction:
+    if rule.decision is PolicyAction.MODIFY:
+        return PolicyAction.DENY
+    return rule.decision
+
+
+def _root_execution_admission_controlling_rule(
+    candidates: list[tuple[RootExecutionAdmissionPolicyRule, PolicyAction]],
+) -> tuple[RootExecutionAdmissionPolicyRule, PolicyAction]:
+    best_rank = min(_meaningful_side_effect_action_rank(action) for _, action in candidates)
+    rank_candidates = [
+        pair for pair in candidates if _meaningful_side_effect_action_rank(pair[1]) == best_rank
+    ]
+    best_specificity = min(
+        _root_execution_admission_rule_specificity(rule) for rule, _ in rank_candidates
+    )
+    specific_candidates = [
+        pair
+        for pair in rank_candidates
+        if _root_execution_admission_rule_specificity(pair[0]) == best_specificity
+    ]
+    return min(
+        specific_candidates,
+        key=lambda pair: (
+            1 if pair[0].decision is PolicyAction.MODIFY else 0,
+            pair[0].rule_id,
+        ),
+    )
 
 
 def _meaningful_side_effect_controlling_rule(
@@ -80,8 +118,104 @@ class RuntimePolicyEngine:
         self,
         *,
         meaningful_side_effect_rules: tuple[MeaningfulSideEffectPolicyRule, ...] = (),
+        root_execution_admission_rules: tuple[RootExecutionAdmissionPolicyRule, ...] = (),
     ) -> None:
         self._meaningful_side_effect_rules = meaningful_side_effect_rules
+        self._root_execution_admission_rules = root_execution_admission_rules
+
+    def has_root_execution_admission_rules(self) -> bool:
+        return bool(self._root_execution_admission_rules)
+
+    def evaluate_root_execution_admission(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        principal_id: str,
+        collaborative_authority_scopes: tuple[str, ...],
+        execution_operation: str,
+        resource_scope: str | None = None,
+    ) -> tuple[PolicyDecision, tuple[str, ...] | None]:
+        """Authorize worker root execution admission — fail closed when unconfigured."""
+        if not self._root_execution_admission_rules:
+            return (
+                PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="root_execution_admission_unconfigured",
+                    enforcement_level=EnforcementLevel.MANDATORY,
+                    policy_rule_id="default.root_execution_admission.unconfigured",
+                ),
+                None,
+            )
+        if not principal_id.strip():
+            return (
+                PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="root_execution_admission_principal_missing",
+                    enforcement_level=EnforcementLevel.MANDATORY,
+                    policy_rule_id="default.root_execution_admission.principal",
+                ),
+                None,
+            )
+
+        applicable: list[tuple[RootExecutionAdmissionPolicyRule, PolicyAction]] = []
+        for rule in self._root_execution_admission_rules:
+            if (
+                rule.execution_operation is not None
+                and rule.execution_operation != execution_operation
+            ):
+                continue
+            applicable.append(
+                (rule, _normalize_root_execution_admission_rule_action(rule)),
+            )
+
+        if not applicable:
+            return (
+                PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="root_execution_admission_indeterminate",
+                    enforcement_level=EnforcementLevel.MANDATORY,
+                    policy_rule_id="default.root_execution_admission.indeterminate",
+                    audit_payload={"execution_operation": execution_operation},
+                ),
+                None,
+            )
+
+        controlling_rule, controlling_action = _root_execution_admission_controlling_rule(
+            applicable,
+        )
+        if (
+            controlling_action is PolicyAction.DENY
+            and controlling_rule.decision is PolicyAction.MODIFY
+        ):
+            reason = "root_execution_admission_unsupported_decision"
+        else:
+            reason = (
+                controlling_rule.reason
+                or f"root_execution_admission:{controlling_action.value}"
+            )
+
+        approved_scopes: tuple[str, ...] | None = None
+        if controlling_action is PolicyAction.ALLOW:
+            approved_scopes = controlling_rule.approved_scopes
+
+        return (
+            PolicyDecision(
+                action=controlling_action,
+                reason=reason,
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id=controlling_rule.rule_id,
+                audit_payload={
+                    "tenant_id": tenant_id,
+                    "workspace_id": workspace_id,
+                    "principal_id": principal_id,
+                    "execution_operation": execution_operation,
+                    "resource_scope": resource_scope,
+                    "collaborative_authority_scopes": list(collaborative_authority_scopes),
+                },
+            ),
+            approved_scopes,
+        )
 
     def evaluate_meaningful_side_effect(
         self,
@@ -269,32 +403,4 @@ class RuntimePolicyEngine:
             action=PolicyAction.ALLOW,
             reason="non_blocking_interrupt",
             policy_rule_id="default.non_blocking_interrupt",
-        )
-
-    def evaluate_critic_verdict(
-        self,
-        *,
-        passed: bool,
-        recommended_action: str,
-        context: CriticPolicyContext | None = None,
-    ) -> PolicyDecision:
-        ctx = context or CriticPolicyContext()
-        if recommended_action == "escalate_hitl":
-            return PolicyDecision(
-                action=PolicyAction.REQUIRE_HUMAN,
-                reason="critic_escalate_hitl",
-                enforcement_level=EnforcementLevel.MANDATORY,
-                policy_rule_id="critic.l2_escalation",
-            )
-        if ctx.require_critic_on_completion and not passed:
-            return PolicyDecision(
-                action=PolicyAction.DENY,
-                reason="critic_completion_required",
-                enforcement_level=EnforcementLevel.MANDATORY,
-                policy_rule_id="critic.require_on_completion",
-            )
-        return PolicyDecision(
-            action=PolicyAction.ALLOW,
-            reason="critic_default_allow",
-            policy_rule_id="critic.allow",
         )

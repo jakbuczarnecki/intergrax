@@ -17,7 +17,7 @@ Without an Integration layer:
 Integrations address this through **`PlatformIntegrationContract`**, category-specific contracts, provider/category identity, **`IntegrationProfile`** host selection, typed provider classes, a single public entrypoint per category, and a plugin/catalog model with safe config and security boundaries.
 
 > [!NOTE]
-> **Maturity boundary:** Broad **contract migration** and **runtime cutover** exist across **186** provider/category slugs (gate-tested), with **9** deferred `llm_guardrail` slugs. That is **not** 186 production-qualified vendor deployments. Catalog scale ≠ production qualification. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
+> **Maturity boundary:** Broad **contract migration** and **runtime cutover** exist across **200** provider/category slugs (gate-tested). That is **not** 200 production-qualified vendor deployments. Catalog scale ≠ production qualification. See [Current maturity](#current-maturity) and [Evidence / proof](#evidence--proof).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring `IntegrationProfile`, provider packages, or third-party `IntegrationPlugin` paths - after the platform overview in the root README.
 
@@ -44,8 +44,8 @@ Integrations address this through **`PlatformIntegrationContract`**, category-sp
 | **Skills relation** | Skill → `tool_ids` → Tool → Integration - no vendor SDK in Skill |
 | **RAG relation** | RAG owns retrieval semantics; Integrations supply vector/graph/search/parser backends |
 | **Observability relation** | Sanitized export envelope → `ObservabilityVendorIntegrationContract` → OTLP/Langfuse/etc. |
-| **Provider scale** | **195** catalog slugs · **186** runtime cutover slugs · **9** deferred `llm_guardrail` |
-| **Deferred scope** | Nine `llm_guardrail` slugs (shared bundles layout; per-slug packages deferred) |
+| **Provider scale** | **200** catalog provider/category rows · explicit typed discovery for all canonical rows |
+| **Discovery** | Provider-owned `IntegrationContractSpec` → canonical catalog → derived `registry_v2` (no reflection fallback) |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) |
 
 ## Flagship architecture visual
@@ -160,9 +160,148 @@ flowchart TB
     TL --> INT
 ```
 
-### Contract registry projection (INTEGRATIONS-3A · canonicalized)
+### Provider discovery contract (canonical · P2-003-DOC)
 
-**`IntegrationRegistry` projection** (`intergrax/runtime/integrations/registry_v2.py`) is a **derived read model** over the canonical catalog. It exposes typed **`(provider_id, category)`** metadata — contract class, integration class, factory reference, capabilities, security posture — for validation and inspection.
+**Canonical rule:** Every typed Integration provider **MUST** be discoverable exclusively through explicit, provider-owned contract metadata registered into the canonical Integration Catalog (`intergrax/integrations/registry/catalog.py`).
+
+Runtime/provider discovery through reflection, module scanning, class scanning, factory-name inference, sample instantiation, or vendor-specific generic-registry logic is **FORBIDDEN**.
+
+The canonical Integration Catalog is the **single authoritative discovery source**. Any downstream discovery surface — including `registry_v2` — is a **derived projection**, never a second authority.
+
+**Author guide:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §2 · Integration provider authoring · **Category contracts:** [`PROVIDER_CATEGORY_CONTRACTS.md`](../maintainers/plans/PROVIDER_CATEGORY_CONTRACTS.md)
+
+#### What discovery means (and does not mean)
+
+In Intergrax, **discovery does not mean Python/package introspection**.
+
+Canonical discovery means:
+
+```text
+provider-owned explicit declaration
+  → canonical registration
+  → canonical Integration Catalog
+  → derived discovery/read models
+```
+
+Discovery answers catalog questions **without executing provider runtime**:
+
+- which providers exist,
+- which categories they implement,
+- which typed contract they implement,
+- capabilities, config type, security posture,
+- runtime binding support, health support,
+- provider/category identity (`provider_id`, `category`).
+
+**Discovery is not:**
+
+- qualification (production proof for a concrete provider/version/backend/environment),
+- runtime materialization (constructing vendor clients or performing I/O),
+- marketplace distribution, installation, or publishing,
+- ownership of domain/runtime business logic (that remains in provider adapters/bundles).
+
+#### Canonical registration flow
+
+```text
+Provider package
+├── manifest.py
+├── integration.py
+├── contract_spec.py
+├── bundle.py
+└── register.py
+        │
+        ▼
+register_from_manifest(
+    MANIFEST,
+    runtime_factory,
+    contract_specs=CONTRACT_SPECS,
+)
+        │
+        ▼
+Canonical Integration Catalog
+        │
+        ├── runtime resolution (IntegrationProfile → catalog factory)
+        └── registry_v2 / discovery projections (read-only)
+```
+
+- **Provider package** = owner of provider-specific contract truth.
+- **Catalog** = canonical registration and discovery authority.
+- **`registry_v2`** = derived read model; **never** authority.
+
+External plugins follow the same contract path via `register_integration_plugin(..., contract_specs=...)` (or equivalent `register_from_manifest` wiring).
+
+#### Provider-owned contract truth
+
+Provider-specific discovery metadata **MUST** live in the provider package — typically `contract_spec.py`.
+
+A typed provider **MUST** explicitly declare its `IntegrationContractSpec` via `declare_integration_contract(...)`. At minimum the declaration owns:
+
+- `provider_id`, `category`, `integration_class`, `contract_class`, `contract_factory`,
+- `config_class`, `display_name`, `capabilities`, `security_posture`,
+- `supports_runtime_binding`, `supports_health_check`,
+- provider-specific `metadata` where needed.
+
+Not every field must differ per provider; the invariant is **explicit ownership**, not duplication.
+
+`register.py` **MUST** pass `contract_specs=CONTRACT_SPECS` to `register_from_manifest(...)`.
+
+**Static provider-owned imports** inside `contract_spec.py` / `register.py` (for example `from ...integration import FooIntegration`) are explicit wiring — **not** reflection-based discovery.
+
+#### Multi-category providers
+
+The unit of contract discovery is **`(provider_id, category)`**, not provider slug alone.
+
+A provider implementing multiple categories **MUST** publish one explicit contract spec per category. Example: `slack` as `notification_channel` and `conversation_channel` — two packages, two `CONTRACT_SPECS`, two catalog rows; do **not** merge semantically distinct categories into one generic vendor declaration.
+
+#### Fail-closed rule
+
+If a provider declares membership in a typed Integration category but does **not** provide a corresponding explicit `IntegrationContractSpec`, registration **MUST fail closed**. No fallback discovery, no inferred metadata, no vendor exception. This applies to built-ins, future categories, and external plugins equally.
+
+#### External plugins
+
+External/plugin providers **MUST NOT** receive a weaker discovery path than built-ins. Adding an external provider to a typed category **MUST NOT** require editing generic registry code, central vendor maps, vendor `if` branches, or new reflection logic. The provider/plugin supplies explicit typed contract metadata and registers through the same catalog path.
+
+#### No central vendor map
+
+Generic Integration infrastructure **MAY** know categories and category contracts. It **MUST NOT** know vendor-specific provider identities for discovery semantics.
+
+**FORBIDDEN** in generic registration/discovery code:
+
+- `if provider_id == "postgresql"` / `if slug == "slack"` / `if provider == "datadog"`,
+- `PROVIDER_CONTRACTS = {"slack": ...}` or equivalent central vendor metadata maps,
+- manual `registry_v2` vendor registration.
+
+Provider-specific truth belongs in provider packages.
+
+#### Forbidden legacy discovery patterns
+
+| Pattern | Why forbidden |
+| ------- | ------------- |
+| `import_module(...)` to discover provider contracts | Hidden contracts; import side effects |
+| `vars(module)`, `__dict__` inspection | Non-local, brittle metadata |
+| `getattr` / `hasattr` for semantic contract discovery | Inferred contracts; vendor coupling |
+| `inspect.getmembers(...)` / scanning `*Integration` subclasses | Reflection authority; poor pluginability |
+| Constructing factory names from strings (`create_{slug}_{category}_integration`) | Factory guessing; breaks external plugins |
+| Sample instantiation (`factory(enabled=False)`) to infer metadata | Runtime side effects during discovery |
+| Vendor-specific branches in generic registry | Registry authority ambiguity |
+| Central provider metadata maps | Duplicated truth; blocks pluginability |
+| A second provider/discovery registry | Split authority; metadata drift |
+
+#### Discovery vs runtime materialization
+
+Provider discovery metadata lifecycle **≠** provider runtime materialization lifecycle.
+
+Discovery **MUST** be side-effect free. Listing or inspecting available providers **MUST NOT** require connecting to databases, authenticating APIs, loading remote credentials, launching browsers, allocating sandboxes, loading models, starting workers, sending messages, or reading remote vendor state. Contract registration describes the provider; runtime materialization uses the provider later via `IntegrationProfile` resolution.
+
+#### Catalog authority and `registry_v2`
+
+**Canonical Integration Catalog** is the single authoritative provider registration and discovery source.
+
+`IntegrationRegistry` (`intergrax/runtime/integrations/registry_v2.py`) is:
+
+- an immutable/read-oriented projection derived from `IntegrationEntry.contract_specs`,
+- **not** independently populated,
+- **not** a second registry,
+- **not** a rediscovery engine.
 
 > **Contract projection is not runtime binding authority.**
 
@@ -175,9 +314,23 @@ IntegrationProfile
   → Integration instance
 ```
 
-Canonical registration stores optional `IntegrationContractSpec` rows on each `IntegrationEntry`. Built-in providers capture specs once at `register_from_manifest`; external plugins may pass explicit `contract_specs` to `register_integration_plugin()`.
-
 **INTEGRATIONS-3B** (explicit registry-backed runtime binding) is **planned** — not shipped. Do not assume `registry_v2` replaces `IntegrationProfile` + catalog factories until 3B lands.
+
+#### Architectural litmus tests
+
+- **Pluginability:** Adding Vendor X **MUST** require zero vendor-specific changes to generic Integration registration/discovery code.
+- **Reusability:** A future provider implementing the same category **MUST** use the exact same registry/discovery path without modifying platform core.
+
+#### Future typed categories
+
+Any future typed Integration category **MUST** use the same architecture: category contract → provider-owned explicit spec → canonical catalog → derived discovery. No future category **MAY** introduce a custom reflection lifecycle.
+
+#### Post-P2-003-C explicit discovery (canonical)
+
+After **P2-003-C**, reflective `contract_capture` is **removed**. All canonical typed provider/category rows **MUST** publish provider-owned explicit `IntegrationContractSpec` metadata at `register_from_manifest(..., contract_specs=...)`. Typed category membership derives from `PROVIDER_CATEGORY_CONTRACT_REGISTRY`; missing explicit specs **fail closed** globally (built-ins, external plugins, future categories).
+
+- `managed_retrieval` and `llm_guardrail` are normal category-gated typed categories (no staged provider exceptions).
+- `registry_v2` projects all explicit catalog specs — no deferred exclusion lists.
 
 See [`INTEGRATION_REGISTRY_CANONICAL_AUTHORITY.md`](../maintainers/architecture/INTEGRATION_REGISTRY_CANONICAL_AUTHORITY.md).
 
@@ -249,7 +402,7 @@ Canonical package layout under `intergrax/integrations/providers/<category>/<slu
 | Manifest | `IntegrationManifest` |
 | Register | `register_integration_plugin()` · EP group `intergrax.integrations` |
 | Enablement | Host `IntegrationProfile` slot + secrets - import/discovery ≠ automatic runtime enablement |
-| Registry v2 | Metadata built from first-party package conventions today; third-party drop-in registry binding **not** automatic |
+| Registry v2 | **Derived** read model from catalog `contract_specs` — not a registration authority; third-party drop-in registry binding **not** automatic |
 
 ```text
 external IntegrationPlugin
@@ -629,7 +782,7 @@ Derived, contract-aware **read model** over canonical catalog entries. **Does no
 - expose deterministic list/get inspection,
 - build immutable snapshots via `build_contract_registry_snapshot()` (alias: `build_contract_registry()`).
 
-Built-in shipped providers populate `contract_specs` once during `register_from_manifest` via `contract_capture` (registration-time only). External plugins pass explicit `contract_specs` when exposing typed platform contracts.
+Normative discovery rules: [Provider discovery contract (canonical)](#provider-discovery-contract-canonical--p2-003-doc). Built-in shipped providers **MUST** publish provider-owned explicit `IntegrationContractSpec` declarations at `register_from_manifest(..., contract_specs=...)`. Transitional `contract_capture` remains only until **P2-003-C** removes it — **not** an extension point. External plugins **MUST** pass explicit `contract_specs` when exposing typed platform contracts.
 
 **Deferred from projection completeness:** nine `llm_guardrail` slugs until package normalization (INTEGRATIONS-2F).
 

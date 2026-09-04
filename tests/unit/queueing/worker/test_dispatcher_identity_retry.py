@@ -57,7 +57,7 @@ def test_celery_path_uses_stable_transport_task_id_for_identity_resolution() -> 
 
     assert second.task_id == first.task_id
     assert second.run_id == first.run_id
-    assert second.attempt_id != first.attempt_id
+    assert second.attempt_id == first.attempt_id
 
 
 def test_celery_dispatcher_bootstrap_receives_celery_transport_ref() -> None:

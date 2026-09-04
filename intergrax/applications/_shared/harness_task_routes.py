@@ -33,6 +33,7 @@ from intergrax.applications._shared.task_control_governance import (
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.task.task import Task, TaskContext
@@ -122,6 +123,7 @@ def mount_harness_task_routes(
     task_runner: UnifiedTaskRunner,
     prefix: str = "/v1/tasks",
     checkpoint_store: TaskCheckpointPersistence | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
     task_enricher: Callable[[Task], Task] | None = None,
     async_index: AsyncTaskIndexProtocol | None = None,
     mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
@@ -317,6 +319,7 @@ def mount_harness_task_routes(
                 operator_input=body.operator_input,
                 approver=approver,
                 approval_evidence_ref=body.approval_evidence_ref,
+                execution_terminal=execution_terminal,
             )
         except TaskControlGovernanceBlockedError as exc:
             _raise_task_control_http(exc)
@@ -339,6 +342,7 @@ def mount_harness_task_routes(
                 "stale_checkpoint",
                 "task_id_mismatch",
                 "checkpoint_not_resumable",
+                "execution_terminally_cancelled",
             }:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,

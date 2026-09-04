@@ -10,11 +10,11 @@ from typing import Any
 
 from intergrax.applications._shared.cost_assembly_resolver import assert_cost_assembly_valid
 from intergrax.applications._shared.cost_wiring import wire_application_cost
-from intergrax.applications._shared.critic_assembly_resolver import assert_critic_assembly_valid
-from intergrax.applications._shared.critic_tool_wiring import build_critic_eval_tool_client
-from intergrax.applications._shared.critic_wiring import (
-    apply_application_critic_wiring,
-    wire_application_critic,
+from intergrax.applications._shared.decision_wiring import (
+    application_decision_wiring_spec_from_environment,
+    apply_application_decision_wiring,
+    resolve_application_decision_agent_id,
+    wire_application_decision,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
@@ -97,7 +97,7 @@ __all__ = [
     "build_scenario_runtime_from_environment",
     "execute_scenario_task",
     "rebuild_scenario_runtime_from_composition",
-    "rewire_scenario_critic_wiring",
+    "rewire_scenario_decision_wiring",
     "validate_scenario_tenant_id",
 ]
 
@@ -232,28 +232,22 @@ def _resolve_observability_stores(
     return wiring.stores
 
 
-def rewire_scenario_critic_wiring(
+def rewire_scenario_decision_wiring(
     composition: ScenarioRuntimeComposition,
     *,
     validation_engine: NexusValidationEngine | None = None,
 ) -> None:
-    """Reapply critic hooks and validation engine from the current environment profile."""
+    """Reapply Decision flow wiring and validation engine from the current environment profile."""
     environment = composition.environment
-    evaluation_wiring = wire_application_evaluation(environment)
-    l1_client = build_critic_eval_tool_client(
-        environment,
-        composition.env_wiring.tool_wiring,
-        evaluation_registry=evaluation_wiring.registry,
-        trace_reader=composition.observability.trace_store,
-    )
-    critic_wiring = wire_application_critic(
-        environment,
-        l1_client=l1_client,
-        validation_engine=validation_engine,
+    decision_spec = application_decision_wiring_spec_from_environment(environment)
+    decision_wiring = wire_application_decision(
+        registry=composition.registry,
+        agent_id=resolve_application_decision_agent_id(composition.registry, environment),
+        spec=decision_spec,
     )
     if validation_engine is not None:
         composition.nexus_loop.apply_validation_engine(validation_engine)
-    apply_application_critic_wiring(composition.nexus_loop, critic_wiring)
+    apply_application_decision_wiring(composition.nexus_loop, decision_wiring)
 
 
 def rebuild_scenario_runtime_from_composition(
@@ -339,18 +333,12 @@ def build_scenario_runtime_from_environment(
     guardrail_wiring = wire_application_guardrail(environment)
     evaluation_wiring = wire_application_evaluation(environment)
     assert_evaluation_assembly_valid(evaluation_wiring, environment)
-    l1_client = build_critic_eval_tool_client(
-        environment,
-        env_wiring.tool_wiring,
-        evaluation_registry=evaluation_wiring.registry,
-        trace_reader=observability.trace_store,
+    decision_spec = application_decision_wiring_spec_from_environment(environment)
+    decision_wiring = wire_application_decision(
+        registry=registry,
+        agent_id=resolve_application_decision_agent_id(registry, environment),
+        spec=decision_spec,
     )
-    critic_wiring = wire_application_critic(
-        environment,
-        l1_client=l1_client,
-        validation_engine=validation_engine,
-    )
-    assert_critic_assembly_valid(critic_wiring, environment, l1_client=l1_client)
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
 
@@ -369,9 +357,10 @@ def build_scenario_runtime_from_environment(
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
-        critic_wiring=critic_wiring,
+        decision_wiring=decision_wiring,
         run_budget=cost_wiring.run_budget,
         validation_engine=validation_engine,
+        document_store=document_store,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)

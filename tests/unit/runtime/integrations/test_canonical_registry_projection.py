@@ -24,7 +24,6 @@ from intergrax.runtime.integrations.categories.data import RelationalStoreIntegr
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.contracts import PlatformIntegrationCapability
 from intergrax.runtime.integrations.registry_v2 import (
-    IntegrationContractProjectionError,
     build_contract_registry_snapshot,
     build_integration_registration,
 )
@@ -122,23 +121,21 @@ def test_projection_snapshot_rebuilds_after_catalog_clear() -> None:
     assert len(build_contract_registry_snapshot(slugs=("external_sqlite_like",))) == 0
 
 
-def test_identity_mismatch_fails_projection() -> None:
-    register_integration_plugin(
-        ExternalRelationalPlugin,
-        contract_specs=(
-            IntegrationContractSpec(
-                category="relational_store",
-                provider_id="wrong_provider_id",
-                integration_kind="relational_store",
-                contract_class=RelationalStoreIntegrationContract,
-                integration_class=_ExternalRelationalIntegration,
-                contract_factory=_external_contract_factory,
+def test_identity_mismatch_fails_registration() -> None:
+    with pytest.raises(ValueError, match="identity mismatch"):
+        register_integration_plugin(
+            ExternalRelationalPlugin,
+            contract_specs=(
+                IntegrationContractSpec(
+                    category="relational_store",
+                    provider_id="wrong_provider_id",
+                    integration_kind="relational_store",
+                    contract_class=RelationalStoreIntegrationContract,
+                    integration_class=_ExternalRelationalIntegration,
+                    contract_factory=_external_contract_factory,
+                ),
             ),
-        ),
-    )
-
-    with pytest.raises(IntegrationContractProjectionError, match="identity mismatch"):
-        build_integration_registration("external_sqlite_like")
+        )
 
 
 def test_builtin_sqlite_qdrant_projection_from_canonical_catalog() -> None:
@@ -179,9 +176,6 @@ def test_registry_v2_authoritative_projection_has_no_reflection_helpers() -> Non
             pytest.fail("registry_v2 authoritative projection must not access __dict__")
 
 
-def test_contract_capture_isolated_as_registration_time_compatibility() -> None:
+def test_contract_capture_module_removed_after_p2_003_c() -> None:
     capture_path = REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_capture.py"
-    assert capture_path.is_file()
-    source = capture_path.read_text(encoding="utf-8")
-    assert "P2" not in source  # documented in ADR instead
-    assert "_find_integration_class" in source
+    assert not capture_path.is_file()

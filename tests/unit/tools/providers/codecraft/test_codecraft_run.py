@@ -9,9 +9,9 @@ import pytest
 
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
-from intergrax.runtime.sandbox.sandbox_runtime import requires_sandbox_tool
-from intergrax.runtime.sandbox.session import SandboxSession
+from intergrax.tools.core.contracts import ToolIsolationRequirement
 from intergrax.tools.providers.codecraft.bundle import register_codecraft_tools
+from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.tools.providers.codecraft.contracts import CodeCraftRunToolInput
 from intergrax.tools.providers.codecraft.service import codecraft_run
 from intergrax.tools.registry.bootstrap import register_default_tools, reset_default_tools_bootstrap
@@ -107,7 +107,7 @@ def test_codecraft_run_executes_in_sandbox(sandbox_session: SandboxSession) -> N
     assert out.trace_event_count >= 4
 
 
-def test_codecraft_run_cloud_tier_uses_sandbox_resolver_fallback(sandbox_session: SandboxSession) -> None:
+def test_codecraft_run_cloud_tier_requires_hosted_sandbox(sandbox_session: SandboxSession) -> None:
     profile = CodeCraftProfile(
         mode="autonomous",
         isolation_tier="cloud",
@@ -121,8 +121,8 @@ def test_codecraft_run_cloud_tier_uses_sandbox_resolver_fallback(sandbox_session
         ctx,
         CodeCraftRunToolInput(code="print('cloud-fallback')\n", tenant_id="tenant-1", task_id="task-1"),
     )
-    assert out.result.success is True
-    assert "cloud-fallback" in out.result.stdout
+    assert out.result.success is False
+    assert out.result.error == "sandbox_session_not_configured"
 
 
 def test_codecraft_dry_run_skips_exec(sandbox_session: SandboxSession) -> None:
@@ -151,8 +151,11 @@ def test_codecraft_tool_registered_in_catalog() -> None:
     assert "codecraft.start" in bundle.tool_ids
 
 
-def test_requires_sandbox_tool_includes_codecraft_run() -> None:
-    assert requires_sandbox_tool("codecraft.run") is True
+def test_codecraft_run_contract_declares_sandbox_isolation() -> None:
+    registry = ToolRegistry()
+    register_codecraft_tools(registry, ToolWiringContext())
+    contract = registry.get("codecraft.run").contract
+    assert contract.isolation_requirement is ToolIsolationRequirement.SANDBOX
 
 
 def test_build_registry_enables_codecraft_tool(sandbox_session: SandboxSession) -> None:

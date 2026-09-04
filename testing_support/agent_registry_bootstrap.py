@@ -6,10 +6,54 @@
 from __future__ import annotations
 
 import importlib
+from collections.abc import Iterable, Mapping
 from typing import Any
 
+from intergrax.agents.agent_contract import Agent
+from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.skills.registry.runtime import SkillRegistry
+from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.utils import attribute_access
+
+
+class AgentRegistryBootstrapIdentityError(ValueError):
+    """Dictionary key does not match the agent contract's canonical id."""
+
+
+def bootstrap_agent_registry_from_agents(
+    agents: Mapping[str, Agent] | Iterable[Agent],
+    *,
+    skill_registry: SkillRegistry | None = None,
+    tool_registry: ToolRegistry | None = None,
+    event_bus: RuntimeEventBus | None = None,
+) -> AgentRegistry:
+    """Explicit non-production registry construction for lab, fixtures, and unit tests."""
+    registry = AgentRegistry()
+    if isinstance(agents, Mapping):
+        for agent_id, agent in agents.items():
+            contract = agent.get_contract()
+            if contract.id != agent_id:
+                raise AgentRegistryBootstrapIdentityError(
+                    "agent registry bootstrap identity mismatch: "
+                    f"dict key {agent_id!r} != contract.id {contract.id!r}"
+                )
+            registry.register(
+                agent,
+                contract=contract,
+                skill_registry=skill_registry,
+                tool_registry=tool_registry,
+                event_bus=event_bus,
+            )
+        return registry
+    for agent in agents:
+        registry.register(
+            agent,
+            skill_registry=skill_registry,
+            tool_registry=tool_registry,
+            event_bus=event_bus,
+        )
+    return registry
 
 
 def _load_agent_class(module_name: str, class_name: str) -> Any:

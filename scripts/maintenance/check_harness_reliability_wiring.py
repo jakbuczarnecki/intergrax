@@ -19,6 +19,7 @@ from intergrax.applications._shared.reliability_assembly_resolver import (
     assert_reliability_assembly_valid,
 )
 from intergrax.applications._shared.reliability_wiring import wire_application_reliability
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.wiring import bootstrap_lab_integration_wiring
@@ -57,7 +58,7 @@ def main() -> int:
             return 1
 
     if env.reliability_profile.long_running_scheduler_enabled:
-        if runtime.nexus_loop._checkpoint_store is None:  # noqa: SLF001
+        if resolve_harness_host_nexus_loop_legacy(runtime)._checkpoint_store is None:  # noqa: SLF001
             print("lab host must wire checkpoint store when long_running_scheduler_enabled")
             return 1
 

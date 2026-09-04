@@ -46,6 +46,8 @@ def iter_dataset_rows(
                 global_index += 1
                 continue
             if max_records is not None and rows_emitted >= max_records:
+                if buffer:
+                    yield batch_ordinal, tuple(buffer)
                 return
             value = column[index].as_py()
             if not isinstance(value, str):

@@ -28,6 +28,12 @@ from intergrax.contracts.control_plane_mutation import (
 from intergrax.contracts.execution_identity import RunId, validate_run_id
 from intergrax.contracts.human_approver import HumanApproverEvidence, local_development_approver_evidence
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.runtime.cancellation.resume_admission import (
+    TERMINALLY_CANCELLED_RESUME_MSG,
+    CheckpointNotResumableError,
+    assert_checkpoint_resumable,
+    is_checkpoint_resumable,
+)
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
@@ -37,10 +43,12 @@ from intergrax.runtime.long_running.resume_planner import (
     build_checkpoint_resume_task,
     execution_identity_from_checkpoint,
 )
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.task.active_task_registry import ActiveTaskBinding, ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
 
 
 class HitlResumeValidationError(ValueError):
@@ -49,15 +57,6 @@ class HitlResumeValidationError(ValueError):
 
 class TaskControlValidationError(ValueError):
     """Fail-closed validation for governed task-control surfaces."""
-
-
-_RESUMABLE_CHECKPOINT_STATES = frozenset(
-    {
-        TaskState.WAITING_FOR_HUMAN,
-        TaskState.WAITING_FOR_RESOURCES,
-        TaskState.NEEDS_MORE_INFORMATION,
-    }
-)
 
 
 @dataclass(frozen=True, slots=True)
@@ -400,8 +399,18 @@ async def _revalidate_autonomy_binding(
     return binding
 
 
-def _is_checkpoint_resumable(checkpoint: TaskCheckpoint) -> bool:
-    return checkpoint.task_state in _RESUMABLE_CHECKPOINT_STATES
+def _is_checkpoint_resumable(
+    checkpoint: TaskCheckpoint,
+    *,
+    execution_terminal: ExecutionTerminalService | None,
+) -> bool:
+    return is_checkpoint_resumable(checkpoint, execution_terminal=execution_terminal)
+
+
+def _resume_denial_detail(exc: CheckpointNotResumableError) -> str:
+    if str(exc) == TERMINALLY_CANCELLED_RESUME_MSG:
+        return "execution_terminally_cancelled"
+    return "checkpoint_not_resumable"
 
 
 def _validate_operator_hitl_input(
@@ -465,6 +474,7 @@ async def governed_resume_checkpoint_task(
     operator_input: dict[str, Any] | None = None,
     approver: HumanApproverEvidence | None = None,
     approval_evidence_ref: str | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
 ) -> GovernedResumeResult:
     """Governed operator resume for one exact persisted checkpoint."""
     normalized_mutation_id = mutation_id.strip()
@@ -514,14 +524,16 @@ async def governed_resume_checkpoint_task(
             ),
         )
 
-    if not _is_checkpoint_resumable(checkpoint):
+    try:
+        assert_checkpoint_resumable(checkpoint, execution_terminal=execution_terminal)
+    except CheckpointNotResumableError as exc:
         return GovernedResumeResult(
             accepted=False,
             blocked=TaskControlResult(
                 task_id=task_id,
                 action="resume",
                 accepted=False,
-                detail="checkpoint_not_resumable",
+                detail=_resume_denial_detail(exc),
                 state=checkpoint.task_state.value,
             ),
         )

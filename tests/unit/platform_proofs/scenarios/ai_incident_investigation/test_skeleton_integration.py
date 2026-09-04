@@ -20,17 +20,12 @@ from intergrax.contracts.evidence_claims import (
     EvidenceClaimSet,
 )
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
-from intergrax.runtime.critic.contracts import (
-    CriticAction,
-    CriticLayer,
-    CriticScope,
-    CriticVerdict,
-    LayerVerdict,
-)
-from intergrax.runtime.critic.critic_wiring import (
-    CriticHookConfig,
-    build_critic_graph_hooks,
-    validate_final_with_critic_detail,
+from intergrax.runtime.migration.legacy_critic_contracts import (
+    LegacyCriticAction as CriticAction,
+    LegacyCriticLayer as CriticLayer,
+    LegacyCriticScope as CriticScope,
+    LegacyCriticVerdict as CriticVerdict,
+    LegacyLayerVerdict as LayerVerdict,
 )
 from intergrax.runtime.nexus.tools.tool_runtime import ToolRuntime, ToolInvocationPlan
 from scripts.proof.intergrax_platform_proof_evidence import (
@@ -423,51 +418,6 @@ async def test_ground_truth_not_in_model_visible_blob() -> None:
 
 
 @pytest.mark.asyncio
-async def test_critic_completion_gate_blocks_when_l1_required_synthetic() -> None:
-    fixture_bundle = build_fixture_runtime_bundle()
-    bundle = fixture_bundle.bundle
-    hooks = build_critic_graph_hooks(
-        config=CriticHookConfig(
-            verify_node_partial=True,
-            verify_graph_final=True,
-            require_critic_on_completion=True,
-            semantic_judge_enabled=True,
-        ),
-        validation_engine=IncidentInvestigationValidationEngine(),
-    )
-    assert hooks is not None
-    execution = AgentExecutionResult(
-        agent_id=bundle.investigator.get_contract().id,
-        run_id=mint_run_id(),
-        status=AgentExecutionStatus.COMPLETED,
-        summary="revised: bounded equipment-process degradation diagnosis supported by telemetry",
-        structured_data={
-            "domain_summary": {
-                "claim_set": {
-                    "schema_version": "evidence_claim_set.v1",
-                    "claims": [],
-                    "challenges": [],
-                }
-            }
-        },
-    )
-    task_id = mint_task_id()
-    run_id = mint_run_id()
-    validation, verdict = validate_final_with_critic_detail(
-        execution,
-        contract=bundle.investigator.get_contract(),
-        hooks=hooks,
-        task_id=task_id,
-        run_id=run_id,
-        tenant_id="scenario-tenant",
-        capability=INVESTIGATOR_CAPABILITY,
-    )
-    assert not validation.valid
-    assert "critic_completion_blocked" in validation.errors
-    assert not verdict.passed or "critic_completion_blocked" in validation.errors
-
-
-@pytest.mark.asyncio
 async def test_platform_proof_evidence_verifier_and_renderer() -> None:
     fixture_bundle = build_fixture_runtime_bundle()
     bundle = fixture_bundle.bundle
@@ -580,15 +530,6 @@ def test_static_audit_child_run_proof_has_no_self_verification() -> None:
         assert token not in source
 
 
-@pytest.mark.asyncio
-async def test_critic_hooks_wired_for_investigator() -> None:
-    hooks = build_critic_graph_hooks(
-        config=CriticHookConfig(verify_node_partial=True, verify_graph_final=True),
-        validation_engine=IncidentInvestigationValidationEngine(),
-    )
-    assert hooks is not None
-
-
 def test_static_bypass_audit_no_substitute_runtimes() -> None:
     package = (
         Path(__file__).resolve().parents[5]
@@ -611,6 +552,6 @@ def test_static_bypass_audit_no_substitute_runtimes() -> None:
     combined = "\n".join(sources)
     for name in forbidden_names:
         assert f"class {name}" not in combined
-    assert "CriticVerdict(" not in combined or "first_failed_node_partial_verdict_from_trace" in combined
+    assert "LegacyCriticVerdict(" not in combined or "first_failed_node_partial_verdict_from_persisted_trace" in combined
     assert 'summary.startswith("revised:")' not in combined
     assert 'summary.startswith("draft:")' not in combined

@@ -63,7 +63,7 @@ class BootstrapRunReport:
     final_state: BootstrapState
     manifest: VpiBootstrapManifest | None
     validation: ValidationReport | None
-    embedding_probe: EmbeddingProbeResult | None
+    artifact_input_validation: ValidationReport | None
     batches_completed: int
     rows_processed: int
     failure_stage: str | None

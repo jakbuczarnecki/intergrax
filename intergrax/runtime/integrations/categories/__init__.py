@@ -55,6 +55,10 @@ from intergrax.runtime.integrations.categories.devops import (
     SecurityScannerIntegrationContract,
     WorkflowOrchestratorIntegrationContract,
 )
+from intergrax.runtime.integrations.categories.managed_retrieval import (
+    MANAGED_RETRIEVAL_INTEGRATION_CONTRACT_SCHEMA,
+    ManagedRetrievalIntegrationContract,
+)
 from intergrax.runtime.integrations.categories.messaging import (
     CONVERSATION_CHANNEL_INTEGRATION_CONTRACT_SCHEMA,
     MESSAGE_BUS_INTEGRATION_CONTRACT_SCHEMA,
@@ -129,6 +133,7 @@ PROVIDER_CATEGORY_CONTRACT_REGISTRY: dict[str, type[PlatformIntegrationContract]
     "ml_inference_host": MlInferenceHostIntegrationContract,
     "model_serving_runtime": ModelServingRuntimeIntegrationContract,
     "llm_guardrail": LlmGuardrailIntegrationContract,
+    "managed_retrieval": ManagedRetrievalIntegrationContract,
 }
 
 __all__ = [
@@ -146,6 +151,7 @@ __all__ = [
     "ISSUE_TRACKER_INTEGRATION_CONTRACT_SCHEMA",
     "KEY_VALUE_CACHE_INTEGRATION_CONTRACT_SCHEMA",
     "LLM_GUARDRAIL_INTEGRATION_CONTRACT_SCHEMA",
+    "MANAGED_RETRIEVAL_INTEGRATION_CONTRACT_SCHEMA",
     "MESSAGE_BUS_INTEGRATION_CONTRACT_SCHEMA",
     "ML_INFERENCE_HOST_INTEGRATION_CONTRACT_SCHEMA",
     "MODEL_SERVING_RUNTIME_INTEGRATION_CONTRACT_SCHEMA",
@@ -179,6 +185,7 @@ __all__ = [
     "IssueTrackerIntegrationContract",
     "KeyValueCacheIntegrationContract",
     "LlmGuardrailIntegrationContract",
+    "ManagedRetrievalIntegrationContract",
     "MessageBusIntegrationContract",
     "MlInferenceHostIntegrationContract",
     "ModelServingRuntimeIntegrationContract",

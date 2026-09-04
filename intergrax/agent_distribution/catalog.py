@@ -17,6 +17,9 @@ _NON_EMPTY = Field(min_length=1)
 
 SCHEMA_AGENT_CATALOG_ENTRY_V1: Final = "agent_catalog_entry.v1"
 SCHEMA_CATALOG_SOURCE_IDENTITY_V1: Final = "catalog_source_identity.v1"
+SCHEMA_AGENT_DISCOVERY_CANDIDATE_IDENTITY_V1: Final = (
+    "agent_discovery_candidate_identity.v1"
+)
 
 
 def _strip_required(value: str) -> str:
@@ -49,6 +52,26 @@ class CatalogSourceIdentity(BaseModel):
     @classmethod
     def _validate_source_id(cls, value: str) -> str:
         return _strip_required(value)
+
+
+class AgentDiscoveryCandidateIdentity(BaseModel):
+    """Source-qualified federated candidate authority for discovery through acquisition."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = SCHEMA_AGENT_DISCOVERY_CANDIDATE_IDENTITY_V1
+    source: CatalogSourceIdentity
+    package: AgentPackageCandidate
+
+    @property
+    def sort_key(self) -> tuple[str, str, str, str, str]:
+        return (
+            self.source.catalog_source_id,
+            self.source.provider_kind.value,
+            self.package.distribution_package_id,
+            self.package.package_version,
+            self.package.package_digest or "",
+        )
 
 
 class AgentCatalogVersionChannelRef(BaseModel):

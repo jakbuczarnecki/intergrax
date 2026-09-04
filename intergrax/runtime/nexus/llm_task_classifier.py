@@ -15,7 +15,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.planning.nexus_classifier_prompts import nexus_task_classifier_prompt
 from intergrax.runtime.nexus.rules_task_classifier import RulesTaskClassifier
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 
 
@@ -36,7 +36,7 @@ class LlmTaskClassifier:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         llm_adapter: LLMAdapter,
         *,
         intent_routes: list[IntentRoute] | None = None,

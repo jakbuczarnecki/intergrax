@@ -25,7 +25,10 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     signal_from_error,
 )
 from intergrax.tools.execution_models import ToolExecutionRequest
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -77,20 +80,27 @@ def test_signal_and_pending_scope_created_once() -> None:
 
 def test_raise_hitl_pause_maps_request_human() -> None:
     state = build_runtime_state_for_tests(run_id="run-1")
-    state.request.task_id = "task-1"
     request = ToolExecutionRequest(
-        run_id="run-1",
+        run_id=state.run_id,
         step_id="step-1",
         tool_id="tool.a",
         input=_Input(),
     )
-    with pytest.raises(DeclarativePolicyHitlPauseRequired) as exc_info:
-        raise_hitl_pause_from_tool_invocation(
-            _error(),
-            state=state,
-            request=request,
-            agent_id="agent-1",
-        )
+    error = DeclarativePolicyHitlRequiredError(
+        run_id=state.run_id,
+        agent_id="agent-1",
+        tool_id="tool.a",
+        matched_rule_ids=("rule-1",),
+        reasons=("needs approval",),
+    )
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(DeclarativePolicyHitlPauseRequired) as exc_info:
+            raise_hitl_pause_from_tool_invocation(
+                error,
+                state=state,
+                request=request,
+                agent_id="agent-1",
+            )
     pause = exc_info.value
     assert pause.governance.should_pause is True
     assert pause.governance.interrupt is None
@@ -107,6 +117,7 @@ def test_scope_assignment_one_shot() -> None:
         run_id="run-1",
         step_id="step-1",
         tool_id="tool.a",
+        agent_id="agent-1",
         idempotency_key="idem-1",
         matched_rule_ids=("rule-1",),
         human_request_id="hr-1",
@@ -156,6 +167,7 @@ def test_candidate_resolution_zero_and_multi_fail_closed() -> None:
         run_id="run-1",
         step_id="step-1",
         tool_id="tool.a",
+        agent_id="agent-1",
         idempotency_key=None,
         matched_rule_ids=("rule-1",),
         human_request_id="hr-1",
@@ -198,6 +210,7 @@ def test_scope_assignment_rejects_unknown_candidate() -> None:
         run_id="run-1",
         step_id="step-1",
         tool_id="tool.a",
+        agent_id="agent-1",
         idempotency_key=None,
         matched_rule_ids=("rule-1",),
         human_request_id="hr-1",

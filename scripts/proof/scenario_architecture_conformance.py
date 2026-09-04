@@ -11,6 +11,9 @@ from pathlib import Path
 
 from scripts.proof.create_scenario_proof import CANONICAL_SCENARIOS_ROOT, scenario_package_root
 from scripts.proof.create_scenario_proof import ScenarioSlug, validate_scenario_slug
+from intergrax.runtime.architecture.agent_lifecycle_bypass_ast import (
+    collect_agent_registry_lifecycle_violations,
+)
 from scripts.proof.scenario_lifecycle import (
     ScenarioImplementationStatus,
     ScenarioLifecycle,
@@ -31,6 +34,7 @@ class ScenarioArchitectureRuleId(StrEnum):
     PRIVATE_NEXUS_ATTRIBUTE = "SCENARIO_ARCH_PRIVATE_NEXUS"
     BASELINE_RUNTIME_MISSING = "SCENARIO_ARCH_BASELINE_MISSING"
     CONFORMANCE_BYPASS = "SCENARIO_ARCH_CONFORMANCE_BYPASS"
+    AGENT_LIFECYCLE_BYPASS = "SCENARIO_ARCH_AGENT_LIFECYCLE_BYPASS"
 
 
 _FORBIDDEN_EXECUTION_SYMBOLS = frozenset(
@@ -237,6 +241,32 @@ def _violation(
     )
 
 
+def _collect_agent_lifecycle_violations(
+    *,
+    tree: ast.AST,
+    scenario_slug: str,
+    relative_path: str,
+) -> list[ScenarioArchitectureViolation]:
+    bindings = collect_agent_registry_import_bindings(tree)
+    return [
+        _violation(
+            rule_id=ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS,
+            scenario_slug=scenario_slug,
+            relative_path=relative_path,
+            line=ast_violation.line,
+            symbol=ast_violation.symbol,
+            message=(
+                "scenario application must not construct or mutate AgentRegistry; "
+                "use canonical scenario/platform agent lifecycle"
+            ),
+        )
+        for ast_violation in collect_agent_registry_lifecycle_violations(
+            tree,
+            bindings=bindings,
+        )
+    ]
+
+
 def _collect_application_violations(
     *,
     repo_root: Path,
@@ -250,6 +280,13 @@ def _collect_application_violations(
     for path in sorted(application_dir.rglob("*.py")):
         rel = _relative_path(path, repo_root)
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        violations.extend(
+            _collect_agent_lifecycle_violations(
+                tree=tree,
+                scenario_slug=scenario_slug,
+                relative_path=rel,
+            )
+        )
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):

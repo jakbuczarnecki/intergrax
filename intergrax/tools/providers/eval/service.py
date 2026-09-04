@@ -36,7 +36,7 @@ def _require_eval_registry(ctx: ToolWiringContext) -> OnlineEvaluationRegistryBi
     return registry
 
 
-def _append_critic_observation(
+def _append_eval_observation(
     ctx: ToolWiringContext,
     *,
     record: bool,
@@ -49,11 +49,11 @@ def _append_critic_observation(
     score: float,
     candidate_profile_version_id: str | None,
 ) -> bool:
-    """Append critic tool result to evaluation registry when requested (CRIT-V-2.3)."""
+    """Append eval tool result to evaluation registry when requested."""
     if not record:
         return False
     if not run_id or not agent_id:
-        raise RuntimeError("critic_observation_requires_run_id_and_agent_id")
+        raise RuntimeError("eval_observation_requires_run_id_and_agent_id")
     observation = OnlineEvaluationObservation(
         observation_id=observation_id.strip(),
         run_id=run_id.strip(),

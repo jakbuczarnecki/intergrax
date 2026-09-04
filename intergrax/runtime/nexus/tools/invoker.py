@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
     from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
         IdempotencyPreEffectCoordinator,
         PreEffectClaimContext,
@@ -21,6 +22,9 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
     DeclarativePolicyViolationError,
 )
+from intergrax.runtime.policy.side_effect_authorization_errors import (
+    MeaningfulSideEffectAuthorizationRequiredError,
+)
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
 from intergrax.runtime.observability.modality_tool_trace import (
@@ -28,8 +32,18 @@ from intergrax.runtime.observability.modality_tool_trace import (
     modality_metrics_dict,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from intergrax.runtime.policy.policy_trace_diagnostics import DeclarativePolicyEvaluationDiagV1
+from intergrax.runtime.policy.policy_trace_diagnostics import (
+    DeclarativePolicyEvaluationDiagV1,
+    MeaningfulSideEffectAuthorizationRequiredDiagV1,
+)
 from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_policy_enforcer
+from intergrax.runtime.policy.declarative_tool_authorization_gate import (
+    require_meaningful_side_effect_authorization,
+)
+from intergrax.runtime.sandbox.isolation_gate import (
+    SandboxIsolationAvailability,
+    require_sandbox_isolation,
+)
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.contracts.idempotency_store import ClaimOutcome
@@ -87,11 +101,13 @@ class RuntimeToolInvoker:
         executor: ToolExecutor,
         scope_policy: Optional[ToolScopePolicy] = None,
         pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
+        sandbox_availability: Optional["SandboxAvailabilityProvider"] = None,
     ) -> None:
         self._registry = registry
         self._executor = executor
         self._scope_policy = scope_policy
         self._pre_effect_coordinator = pre_effect_coordinator
+        self._sandbox_availability = sandbox_availability
         # Shared pool for timeout-isolated tool execution; default worker count
         # preserves concurrent independent invocations (not max_workers=1).
         self._execution_pool = ThreadPoolExecutor()
@@ -192,17 +208,88 @@ class RuntimeToolInvoker:
         agent_id: str,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolContract | ToolExecutionResult[BaseModel]:
-        # 0) scope authorization check (capability boundary)
-        if self._scope_policy is not None:
+        # 1) registry check + contract bind
+        try:
+            reg = self._registry.get(request.tool_id)
+        except KeyError as exc:
+            msg = str(exc)
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="tool_invocation_error",
+                message="Tool not registered.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.TOOL_ERROR,
+                    error_message=msg,
+                ),
+            )
+            return ToolExecutionResult.fail(
+                RuntimeErrorCode.TOOL_ERROR,
+                msg,
+                effect_certainty=ToolEffectCertainty.NOT_STARTED,
+            )
 
+        contract = reg.contract
+
+        self._require_current_attempt_authorization(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+
+        # 2) input type enforcement
+        if not isinstance(request.input, contract.input_schema):
+            msg = (
+                f"Tool input must be {contract.input_schema.__name__} "
+                f"(got {type(request.input).__name__})."
+            )
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="tool_invocation_error",
+                message="Tool input validation failed.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.VALIDATION_ERROR,
+                    error_message=msg,
+                ),
+            )
+            result = ToolExecutionResult.fail(
+                RuntimeErrorCode.VALIDATION_ERROR,
+                msg,
+                effect_certainty=ToolEffectCertainty.NOT_STARTED,
+            )
+            self._emit_boundary_event(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+                result=result,
+            )
+            return result
+
+        return contract
+
+    def _require_current_attempt_authorization(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> None:
+        """Attempt-scoped authorization before each physical tool execution."""
+        if self._scope_policy is not None:
             allowed = self._scope_policy.is_allowed(
                 agent_id=agent_id,
                 tool_id=request.tool_id,
             )
-
             if not allowed:
                 msg = "Tool execution denied by scope policy."
-
                 state.trace_event(
                     component=TraceComponent.TOOLS,
                     step="tool_invocation_denied",
@@ -215,7 +302,6 @@ class RuntimeToolInvoker:
                         error_message=msg,
                     ),
                 )
-
                 from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
                     ToolScopeViolationError,
                 )
@@ -226,7 +312,71 @@ class RuntimeToolInvoker:
                     tool_id=request.tool_id,
                 )
 
+        if contract.requires_sandbox_isolation:
+            if self._sandbox_availability is None:
+                availability = SandboxIsolationAvailability(
+                    session_configured=False,
+                    host_configured=False,
+                    healthy=True,
+                )
+            else:
+                availability = self._sandbox_availability()
+            try:
+                require_sandbox_isolation(
+                    contract=contract,
+                    availability=availability,
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                )
+            except Exception as exc:
+                from intergrax.runtime.sandbox.isolation_errors import (
+                    SandboxIsolationRequiredError,
+                )
+
+                if isinstance(exc, SandboxIsolationRequiredError):
+                    try:
+                        state.trace_event(
+                            component=TraceComponent.TOOLS,
+                            step="sandbox_isolation_required",
+                            message="Sandbox isolation is required but unavailable.",
+                            level=TraceLevel.ERROR,
+                            payload=ToolInvocationErrorDiagV1(
+                                tool_id=exc.tool_id,
+                                step_id=str(request.step_id),
+                                error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                                error_message=str(exc),
+                            ),
+                        )
+                    except Exception:
+                        pass
+                raise
+
         declarative_enforcer = resolve_declarative_policy_enforcer(state)
+        try:
+            require_meaningful_side_effect_authorization(
+                contract=contract,
+                enforcer=declarative_enforcer,
+                run_id=state.run_id,
+                agent_id=agent_id,
+            )
+        except MeaningfulSideEffectAuthorizationRequiredError as exc:
+            try:
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="meaningful_side_effect_authorization_required",
+                    message="Meaningful side-effect authorization is required.",
+                    level=TraceLevel.ERROR,
+                    payload=MeaningfulSideEffectAuthorizationRequiredDiagV1(
+                        tool_id=exc.tool_id,
+                        agent_id=exc.agent_id,
+                        run_id=exc.run_id,
+                        reason=exc.reason.value,
+                    ),
+                )
+            except Exception:
+                pass
+            raise
+
         if declarative_enforcer is not None:
             task_id = state.task_id
             policy_context = PolicyEvaluationContext(
@@ -274,65 +424,6 @@ class RuntimeToolInvoker:
                     matched_rule_ids=decision.matched_rule_ids,
                     reasons=decision.reasons,
                 )
-
-        # 1) registry check + contract bind
-        try:
-            reg = self._registry.get(request.tool_id)
-        except KeyError as exc:
-            msg = str(exc)
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="tool_invocation_error",
-                message="Tool not registered.",
-                level=TraceLevel.ERROR,
-                payload=ToolInvocationErrorDiagV1(
-                    tool_id=request.tool_id,
-                    step_id=str(request.step_id),
-                    error_code=RuntimeErrorCode.TOOL_ERROR,
-                    error_message=msg,
-                ),
-            )
-            return ToolExecutionResult.fail(
-                RuntimeErrorCode.TOOL_ERROR,
-                msg,
-                effect_certainty=ToolEffectCertainty.NOT_STARTED,
-            )
-
-        contract = reg.contract
-
-        # 2) input type enforcement
-        if not isinstance(request.input, contract.input_schema):
-            msg = (
-                f"Tool input must be {contract.input_schema.__name__} "
-                f"(got {type(request.input).__name__})."
-            )
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="tool_invocation_error",
-                message="Tool input validation failed.",
-                level=TraceLevel.ERROR,
-                payload=ToolInvocationErrorDiagV1(
-                    tool_id=request.tool_id,
-                    step_id=str(request.step_id),
-                    error_code=RuntimeErrorCode.VALIDATION_ERROR,
-                    error_message=msg,
-                ),
-            )
-            result = ToolExecutionResult.fail(
-                RuntimeErrorCode.VALIDATION_ERROR,
-                msg,
-                effect_certainty=ToolEffectCertainty.NOT_STARTED,
-            )
-            self._emit_boundary_event(
-                state=state,
-                agent_id=agent_id,
-                contract=contract,
-                request=request,
-                result=result,
-            )
-            return result
-
-        return contract
 
     @staticmethod
     def _requires_idempotency_coordination(
@@ -418,8 +509,15 @@ class RuntimeToolInvoker:
         last_exc: Optional[Exception] = None
 
         for attempt in range(1, attempts + 1):
-            if attempt > 1 and policy.backoff_ms > 0:
-                time.sleep(policy.backoff_ms / 1000.0)
+            if attempt > 1:
+                if policy.backoff_ms > 0:
+                    time.sleep(policy.backoff_ms / 1000.0)
+                self._require_current_attempt_authorization(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                )
 
             start_perf = time.perf_counter()
             try:

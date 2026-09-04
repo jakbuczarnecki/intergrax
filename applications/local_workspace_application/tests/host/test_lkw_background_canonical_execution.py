@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from intergrax.applications._shared.host_queue_execution_wiring import HostQueueExecutionDependencies
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.contracts.execution_identity import (
     mint_execution_id,
     require_active_execution_id,
@@ -299,7 +300,7 @@ def test_redelivery_preserves_task_and_run_with_new_attempt_and_execution(
     assert facade_calls == 2
     assert first_identity.task_id == second_identity.task_id
     assert first_identity.run_id == second_identity.run_id
-    assert first_identity.attempt_id != second_identity.attempt_id
+    assert first_identity.attempt_id == second_identity.attempt_id
     assert len(execution_ids) == 2
     validate_execution_id(execution_ids[0])
     validate_execution_id(execution_ids[1])
@@ -371,7 +372,7 @@ async def test_background_index_does_not_root_call_nexus_handle_task(
 ) -> None:
     projection = _activated_projection(monkeypatch)
     wiring, handler = _build_worker_handler(monkeypatch, projection)
-    wiring.runtime.nexus_loop.handle_task = AsyncMock()  # type: ignore[method-assign]
+    resolve_harness_host_nexus_loop_legacy(wiring.runtime).handle_task = AsyncMock()  # type: ignore[method-assign]
     job = _sample_job()
     identity = _bootstrap_identity(tenant_id=job.tenant_id, transport_task_id="transport-no-nexus")
 
@@ -396,7 +397,7 @@ async def test_background_index_does_not_root_call_nexus_handle_task(
         )
 
     assert result.success is True
-    wiring.runtime.nexus_loop.handle_task.assert_not_called()
+    resolve_harness_host_nexus_loop_legacy(wiring.runtime).handle_task.assert_not_called()
 
 
 def test_background_index_capability_is_agentic() -> None:

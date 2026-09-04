@@ -81,7 +81,10 @@ def test_scaffold_creates_application_tree(tmp_path):
 
     manifest = (target / "manifest.py").read_text(encoding="utf-8")
     assert "AgentBinding.mount(EchoAgent" in manifest
-    assert "build_application_registry" in (target / "host" / "wiring.py").read_text(encoding="utf-8")
+    wiring_src = (target / "host" / "wiring.py").read_text(encoding="utf-8")
+    assert "build_manifest_development_registry" in wiring_src
+    assert "build_application_registry" not in wiring_src
+    assert "build_concept_lab_development_registry" in wiring_src
     env_example = (target / ".env.example").read_text(encoding="utf-8")
     assert "CONCEPT_LAB_BACKEND_PORT=8092" in env_example
     assert "app_id=\"concept_lab\"" in (target / "manifest.py").read_text(encoding="utf-8")

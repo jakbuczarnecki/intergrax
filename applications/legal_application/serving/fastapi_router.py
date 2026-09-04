@@ -6,16 +6,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Literal, Mapping, Optional, Protocol, Union
+from typing import Literal, Optional, Protocol
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 
 LegalIdentitySource = Literal["body_or_context", "context_only"]
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity, task_from_runtime_request
 
 from legal.legal_agent import LegalAgent
@@ -42,9 +41,9 @@ class LegalAgentService(Protocol):
 
 @dataclass(frozen=True)
 class LegalAgentServingConfig:
-    """Registry of Tier-2 agents exposed through this HTTP surface."""
+    """Read-only registry projection consumed by the Legal HTTP surface."""
 
-    registry: AgentRegistry
+    registry: AgentRegistryRead
     default_agent_id: str
     host_execution: HostTaskExecutionPort = field(repr=False)
     identity_source: LegalIdentitySource = "body_or_context"
@@ -56,25 +55,6 @@ class LegalAgentServingConfig:
                 f"default_agent_id {self.default_agent_id!r} not in registry: "
                 f"{self.registry.list_agent_ids()!r}"
             )
-
-    @classmethod
-    def from_agents(
-        cls,
-        agents: Mapping[str, Agent],
-        *,
-        default_agent_id: str,
-        identity_source: LegalIdentitySource = "body_or_context",
-        trace_store: Optional[RunTraceWriter] = None,
-        host_execution: HostTaskExecutionPort,
-    ) -> "LegalAgentServingConfig":
-        registry = AgentRegistry.from_agents(dict(agents))
-        return cls(
-            registry=registry,
-            default_agent_id=default_agent_id,
-            identity_source=identity_source,
-            trace_store=trace_store,
-            host_execution=host_execution,
-        )
 
 
 @dataclass
@@ -228,8 +208,7 @@ def create_legal_agent_router(
 def mount_legal_agent_routes(
     app: FastAPI,
     *,
-    registry: Optional[AgentRegistry] = None,
-    agents: Optional[Dict[str, Agent]] = None,
+    registry: AgentRegistryRead,
     default_agent_id: str,
     prefix: str = "/v1/legal",
     mapper: LegalApiV1RuntimeMapper | None = None,
@@ -237,29 +216,18 @@ def mount_legal_agent_routes(
     trace_store: Optional[RunTraceWriter] = None,
     host_execution: HostTaskExecutionPort,
 ) -> DefaultLegalAgentService:
-    """
-    Register legal routes on ``app`` via ``dependency_overrides``.
+    """Register legal routes on ``app`` via ``dependency_overrides``.
 
-    Pass ``registry`` (preferred) or legacy ``agents`` dict.
+  Production hosts must pass the active ``MaterializedRegistryProjection.agent_registry``
+  (or equivalent canonical projection read surface); local registry assembly is forbidden.
     """
-    if registry is None:
-        if agents is None:
-            raise ValueError("Either registry or agents must be provided.")
-        config = LegalAgentServingConfig.from_agents(
-            agents,
-            default_agent_id=default_agent_id,
-            identity_source=identity_source,
-            trace_store=trace_store,
-            host_execution=host_execution,
-        )
-    else:
-        config = LegalAgentServingConfig(
-            registry=registry,
-            default_agent_id=default_agent_id,
-            identity_source=identity_source,
-            trace_store=trace_store,
-            host_execution=host_execution,
-        )
+    config = LegalAgentServingConfig(
+        registry=registry,
+        default_agent_id=default_agent_id,
+        identity_source=identity_source,
+        trace_store=trace_store,
+        host_execution=host_execution,
+    )
 
     svc = DefaultLegalAgentService(
         config=config,

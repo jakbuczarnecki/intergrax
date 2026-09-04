@@ -7,9 +7,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from intergrax.applications._shared.critic_wiring import (
-    ApplicationCriticWiring,
-    apply_application_critic_wiring,
+from intergrax.applications._shared.decision_wiring import (
+    ApplicationDecisionWiring,
+    apply_application_decision_wiring,
 )
 from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
@@ -43,6 +43,7 @@ from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
+from intergrax.contracts.attempt_lifecycle import AttemptLifecycleStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.runtime.execution.authority import (
@@ -53,12 +54,16 @@ from intergrax.runtime.execution.budget import (
     fixed_execution_budget_ledger_factory,
     resolve_execution_budget_allocation_policy_from_runtime_config,
 )
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    wire_attempt_lifecycle_store,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
@@ -73,7 +78,7 @@ if TYPE_CHECKING:
 
 
 def build_nexus_loop_from_environment(
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     *,
     env: ApplicationEnvironmentProfile,
     trace_store: RunTraceWriter | None = None,
@@ -94,7 +99,7 @@ def build_nexus_loop_from_environment(
     context_engine: object | None = None,
     security_wiring: ApplicationSecurityWiring | None = None,
     guardrail_wiring: ApplicationGuardrailWiring | None = None,
-    critic_wiring: ApplicationCriticWiring | None = None,
+    decision_wiring: ApplicationDecisionWiring | None = None,
     adaptive_wiring: ApplicationAdaptiveWiring | None = None,
     run_budget: RunBudget | None = None,
     validation_engine: NexusValidationEngine | None = None,
@@ -103,6 +108,9 @@ def build_nexus_loop_from_environment(
     budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
     execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     execution_budget_ledger: ExecutionBudgetLedger | None = None,
+    attempt_lifecycle_store: AttemptLifecycleStore | None = None,
+    key_value_cache: Any | None = None,
+    document_store: Any | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -141,6 +149,25 @@ def build_nexus_loop_from_environment(
             )
         else:
             resolved_budget_ledger_factory = create_execution_budget_ledger_factory(run_budget)
+    resolved_attempt_lifecycle_store = attempt_lifecycle_store
+    if resolved_attempt_lifecycle_store is None and (
+        key_value_cache is not None or document_store is not None
+    ):
+        from intergrax.distributed.contracts.kv_store import DistributedKVStore
+        from intergrax.integrations.contracts.document_store import DocumentStore
+
+        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+        doc_store = document_store if isinstance(document_store, DocumentStore) else None
+        if kv_store is not None or doc_store is not None:
+            resolved_attempt_lifecycle_store = wire_attempt_lifecycle_store(
+                kv_store=kv_store,
+                document_store=doc_store,
+            )
+    resolved_attempt_lifecycle = (
+        AttemptLifecycleService(resolved_attempt_lifecycle_store)
+        if resolved_attempt_lifecycle_store is not None
+        else None
+    )
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
@@ -177,7 +204,7 @@ def build_nexus_loop_from_environment(
         production_mode=env.execution_mode.value == "strict",
         signal_collector=adaptive_wiring.signal_collector if adaptive_wiring else None,
         run_budget=run_budget,
-        critic_graph_hooks=critic_wiring.graph_hooks if critic_wiring else None,
+        decision_flow_gate=decision_wiring.gate if decision_wiring else None,
         emit_coordination_advisory=orch.emit_coordination_advisory,
         allow_dynamic_replan=runtime_settings.allow_dynamic_replan,
         denied_planner_model_ids=tuple(env.reasoning_profile.denied_planner_model_ids),
@@ -186,11 +213,12 @@ def build_nexus_loop_from_environment(
         authority_policy=resolved_authority_policy,
         budget_allocation_policy=resolved_budget_policy,
         execution_budget_ledger_factory=resolved_budget_ledger_factory,
+        attempt_lifecycle=resolved_attempt_lifecycle,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)
     resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
     apply_application_guardrail_wiring(loop, resolved_guardrail, env)
-    if critic_wiring is not None:
-        apply_application_critic_wiring(loop, critic_wiring)
+    if decision_wiring is not None:
+        apply_application_decision_wiring(loop, decision_wiring)
     return loop

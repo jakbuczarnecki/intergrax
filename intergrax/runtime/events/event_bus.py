@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable, DefaultDict, List, Optional, Set, Union
 from uuid import uuid4
 
-from intergrax.runtime.events.event_catalog import should_persist_event
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.events.persistence_contract import (
     RuntimeEventPersistence,
@@ -173,17 +172,20 @@ class RuntimeEventBus:
     def _store_event(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
         if self._record_history:
             self._history.append(event)
-        if self._persistence is not None and should_persist_event(event):
-            try:
-                self._persistence.append(
-                    event,
-                    tenant_id=resolve_event_tenant_id(event, tenant_id),
-                )
-            except Exception:
-                logger.exception(
-                    "RuntimeEvent persistence failed for %s",
-                    event.event_type.value,
-                )
+        if self._persistence is not None:
+            from intergrax.runtime.events.event_catalog import should_persist_event
+
+            if should_persist_event(event):
+                try:
+                    self._persistence.append(
+                        event,
+                        tenant_id=resolve_event_tenant_id(event, tenant_id),
+                    )
+                except Exception:
+                    logger.exception(
+                        "RuntimeEvent persistence failed for %s",
+                        event.event_type.value,
+                    )
 
     async def _dispatch_handlers_async(self, event: RuntimeEvent) -> None:
         for sid, _prio, handler in self._collect_handlers(event):

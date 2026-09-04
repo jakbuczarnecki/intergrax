@@ -5,9 +5,9 @@
 **Parent:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-DOC-CLEAN (2026-08-30):** Target Verification Pipeline architecture **FROZEN**. Runtime still uses `CriticOrchestrator` until migration.
+> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Target Verification Pipeline architecture **FROZEN**. Verification Pipeline implementation **migrated and active**. Legacy Critic verification runtime **retired**. Remaining trust hardening and production qualification tracked in plan.
 
-**Last updated:** 2026-08-30 - DS-DOC-CLEAN plan consolidation.
+**Last updated:** 2026-09-04 - DS-ROADMAP-REALITY-SYNC.
 
 ---
 
@@ -18,17 +18,18 @@
 - **Architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) read-scope block.
 - **Extended depth:** [`architecture/satellites/DECISION_VERIFICATION_extended_depth.md`](../../architecture/satellites/DECISION_VERIFICATION_extended_depth.md) on demand.
 - **Lifecycle context:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) - version binding on demand.
-- **CURRENT code:** `intergrax/runtime/critic/**` - migration audit only; one module per session.
+- **CURRENT code:** Decision Verification runtime under `intergrax/runtime/decision_verification*` — one module per session.
 
 ---
 
-## Architecture frozen vs implementation planned
+## Architecture frozen vs implementation reality
 
 | Layer | Status |
 | ----- | ------ |
 | **Target architecture** | **FROZEN** |
-| **Verification Pipeline runtime** | **PLANNED** |
-| **CURRENT production** | `CriticOrchestrator` + L0/L1/L2 gateways |
+| **Verification Pipeline runtime** | **DONE** |
+| **Verification production composition** | **DONE / ENTERPRISE CLOSED** |
+| **Production qualification** | **PLANNED** - DS-E2E |
 
 ---
 
@@ -83,10 +84,10 @@ Enterprise hardening (typed validators, exact rubric-ref integrity, SHARED_PROFI
 
 | ID | Priority | Status |
 |----|----------|--------|
-| DS-VER-RUBRIC-PROVENANCE-INTEGRITY | P0/P1 | ACCEPTED / PLANNED |
-| DS-VER-PRODUCER-INDEPENDENCE | P0/P1 | ACCEPTED / PLANNED |
-| DS-VER-ADVERSARIAL-SEMANTIC | P1 | ACCEPTED / PLANNED |
-| DS-VER-RESULT-COHERENCE | P1/P2 | ACCEPTED / PLANNED |
+| DS-VER-RUBRIC-PROVENANCE-INTEGRITY | P0/P1 | **DONE** |
+| DS-VER-PRODUCER-INDEPENDENCE | P0/P1 | **IMPLEMENTED / QUALIFICATION OPEN** |
+| DS-VER-ADVERSARIAL-SEMANTIC | P1 | **DONE / ENTERPRISE CLOSED** - typed trust contracts · canonical candidate JSON envelope · `build_eval_judge_messages()` · adversarial unit tests |
+| DS-VER-RESULT-COHERENCE | P1/P2 | **DONE** |
 
 ---
 

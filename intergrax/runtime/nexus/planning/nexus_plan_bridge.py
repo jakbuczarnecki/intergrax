@@ -16,7 +16,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep, TaskPlanner
 from intergrax.runtime.nexus.task_classifier import TaskClassification
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 
 
@@ -89,7 +89,7 @@ def _attempt_llm_plan_parse(
 
 def build_nexus_plan_unified(
     task: Task,
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     llm_adapter: LLMAdapter,
     *,
     fallback: TaskPlanner,

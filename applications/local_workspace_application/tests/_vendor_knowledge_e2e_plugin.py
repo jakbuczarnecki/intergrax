@@ -42,6 +42,7 @@ from local_workspace_application.workspaces.repository import ManagedWorkspaceRe
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
@@ -129,8 +130,10 @@ def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         compensation_queue_store=harness_runtime.compensation_queue_store,
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(harness_runtime)
     task_executor = LocalWorkspaceTaskExecutor(
-        build_lkw_host_task_execution(harness_runtime.nexus_loop, env),
+        build_lkw_host_task_execution(nexus_loop, env),
+        nexus_loop=nexus_loop,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

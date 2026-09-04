@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable, List, Optional
+from typing import Awaitable, Callable, List, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
@@ -12,7 +12,7 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.resilience_policy import FailureClass, FailureResponse, ResiliencePolicy
@@ -20,6 +20,10 @@ from intergrax.runtime.nexus.retry.retry_types import RetryDecision, RetryRecord
 from intergrax.runtime.resilience.policy_resolver import resolve_failure_action
 
 ExecuteFn = Callable[[Agent], Awaitable[AgentExecutionResult]]
+RetryNotifyFn = Union[
+    Callable[[RetryRecord], None],
+    Callable[[RetryRecord], Awaitable[None]],
+]
 
 
 @dataclass(frozen=True)
@@ -33,7 +37,7 @@ class RetryEngine:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         *,
         policy: Optional[RetryPolicy] = None,
         middleware: Optional[MiddlewarePipeline] = None,
@@ -82,7 +86,7 @@ class RetryEngine:
         execute_fn: ExecuteFn,
         *,
         validate_fn: Callable[[AgentExecutionResult, Agent], ValidationResult],
-        on_retry: Optional[Callable[[RetryRecord], None]] = None,
+        on_retry: RetryNotifyFn | None = None,
     ) -> tuple[AgentExecutionResult, List[RetryRecord], ValidationResult]:
         agent = initial_agent
         records: List[RetryRecord] = []
@@ -133,7 +137,7 @@ class RetryEngine:
             )
             records.append(record)
             if on_retry is not None:
-                on_retry(record)
+                await _notify_retry(on_retry, record)
 
             agent = self._registry.get(decision.alternate_agent_id)
 
@@ -176,6 +180,12 @@ def _retry_decision_from_resilience_policy(
     if resolution.response is FailureResponse.RETRY:
         return RetryDecision(should_retry=True, reason=resolution.reason)
     return RetryDecision(should_retry=False, reason=resolution.reason)
+
+
+async def _notify_retry(on_retry: RetryNotifyFn, record: RetryRecord) -> None:
+    result = on_retry(record)
+    if isinstance(result, Awaitable):
+        await result
 
 
 def _resilience_policy_from_task(task: Task) -> ResiliencePolicy | None:

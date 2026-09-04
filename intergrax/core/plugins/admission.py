@@ -32,6 +32,10 @@ class PluginAdmissionReasonCode(StrEnum):
     )
     CONFIGURATION_CONTRACT_BUILTIN_RESERVED = "configuration_contract_builtin_reserved"
     UNRESOLVED_PACKAGE_IDENTITY = "unresolved_package_identity"
+    MANIFEST_BINDING_UNAVAILABLE = "manifest_binding_unavailable"
+    MANIFEST_INVALID = "manifest_invalid"
+    MANIFEST_CAPABILITY_BINDING_MISSING = "manifest_capability_binding_missing"
+    CAPABILITY_ID_MISMATCH = "capability_id_mismatch"
 
 
 @dataclass(frozen=True, slots=True)

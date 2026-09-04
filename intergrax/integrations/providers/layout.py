@@ -208,6 +208,7 @@ SLUG_CATEGORY: dict[str, str] = {
     "lakera": "llm_guardrail",
     "azure_content_safety": "llm_guardrail",
     "bedrock_guardrails": "llm_guardrail",
+    "openai": "managed_retrieval",
 }
 
 # Extra (provider_id, category) memberships beyond the primary SLUG_CATEGORY entry.

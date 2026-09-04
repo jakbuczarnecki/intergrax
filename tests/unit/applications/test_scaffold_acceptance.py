@@ -18,17 +18,22 @@ from tests.unit.applications.scaffold_runtime_helper import (
 pytestmark = [pytest.mark.unit, pytest.mark.agent_os, pytest.mark.gate]
 
 
-def _assert_tool_wiring_in_host(target, pkg: str, short: str) -> None:
-    wiring = (target / "host" / "wiring.py").read_text(encoding="utf-8")
-    env_profile_path = target / "host" / "environment_profile.py"
-    env_profile = env_profile_path.read_text(encoding="utf-8") if env_profile_path.is_file() else ""
-    assert "wire_application_environment" in wiring
-    assert f"build_{short}_environment_profile" in wiring
-    assert "env_wiring.build_context" in wiring
+def _assert_tool_wiring_in_host(target, pkg: str, short: str, *, profile: str) -> None:
     factory = (target / "host" / "factory.py").read_text(encoding="utf-8")
     assert "build_harness_host_runtime" in factory
-    if "ApplicationEnvironmentProfile" in env_profile:
-        assert "ApplicationEnvironmentProfile" in env_profile
+    env_profile_path = target / "host" / "environment_profile.py"
+    env_profile = env_profile_path.read_text(encoding="utf-8") if env_profile_path.is_file() else ""
+    if profile == "lab":
+        wiring = (target / "host" / "wiring.py").read_text(encoding="utf-8")
+        assert "wire_application_environment" in wiring
+        assert f"build_{short}_environment_profile" in wiring
+        assert "env_wiring.build_context" in wiring
+        assert "build_manifest_development_registry" in wiring
+        if "ApplicationEnvironmentProfile" in env_profile:
+            assert "ApplicationEnvironmentProfile" in env_profile
+    else:
+        assert "registry_projection" in factory
+        assert not (target / "host" / "wiring.py").exists()
     tool_wiring_path = target / "host" / "tool_wiring.py"
     if tool_wiring_path.is_file():
         tool_wiring = tool_wiring_path.read_text(encoding="utf-8")
@@ -69,7 +74,7 @@ def test_scaffold_lab_profile_generated_artifacts(tmp_path) -> None:
     assert "runtime-context" in sh
     readme = (target / "README.md").read_text(encoding="utf-8")
     assert "build-docker.sh" in readme
-    _assert_tool_wiring_in_host(target, pkg, short)
+    _assert_tool_wiring_in_host(target, pkg, short, profile="lab")
 
 
 @pytest.mark.no_ci
@@ -98,8 +103,7 @@ def test_scaffold_product_profile_generated_artifacts(tmp_path) -> None:
 
     bat = (target / "docker" / "build-docker.bat").read_text(encoding="utf-8")
     assert pkg in bat
-    assert "../../.." in (target / "docker" / "build-docker.sh").read_text(encoding="utf-8")
-    _assert_tool_wiring_in_host(target, pkg, short)
+    _assert_tool_wiring_in_host(target, pkg, short, profile="product")
 
     settings_src = settings_mod.__dict__
     assert any(name.endswith("BackendSettings") for name in settings_src)
@@ -147,7 +151,7 @@ def test_scaffold_generated_smoke_tests_are_importable(tmp_path) -> None:
     )
     smoke2_text = smoke2.read_text(encoding="utf-8")
     assert f"create_{short2}_backend_app" in smoke2_text
-    assert f"test_{short2}_backend_health" in smoke2_text
+    assert f"test_{short2}_backend_requires_registry_projection_parameter" in smoke2_text
 
 
 @pytest.mark.no_ci
@@ -178,6 +182,7 @@ def test_new_stack_cli_creates_agent_and_application(tmp_path) -> None:
         root / "applications" / "stack_demo_application",
         "stack_demo_application",
         "stack_demo",
+        profile="lab",
     )
 
 

@@ -35,6 +35,9 @@ from intergrax.applications._shared.task_control_wiring import (
     build_task_runner_with_enricher,
     wire_harness_task_control,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     wire_harness_product_observability_dashboard,
 )
@@ -72,8 +75,8 @@ def create_governed_contractor_backend_app(
         registry_projection=registry_projection,
         document_store=document_store,
     )
-    nexus_loop = runtime.nexus_loop
-    host_execution = build_governed_contractor_host_task_execution(nexus_loop, env)
+    host_execution = runtime.execution
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     registry = runtime.registry
     platform = bootstrap_nexus_platform(
         nexus_loop,
@@ -133,6 +136,7 @@ def create_governed_contractor_backend_app(
     mount_governed_contractor_routes(
         app,
         host_execution=host_execution,
+        registry=runtime.registry,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
     )
@@ -171,6 +175,7 @@ def create_governed_contractor_backend_app(
 
         mcp = build_governed_contractor_mcp_server(
             host_execution=host_execution,
+            registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

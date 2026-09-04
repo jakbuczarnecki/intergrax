@@ -12,6 +12,8 @@ from typing import Optional, Protocol, runtime_checkable
 from uuid import uuid4
 
 from intergrax.contracts.agent_decision import AgentDecisionType
+from intergrax.runtime.cancellation.resume_admission import is_checkpoint_resumable
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
@@ -70,12 +72,14 @@ class LongRunningScheduler:
         poll_interval_seconds: float = DEFAULT_SCHEDULER_POLL_SECONDS,
         lease_seconds: float = DEFAULT_SCHEDULER_LEASE_SECONDS,
         owner_id: Optional[str] = None,
+        execution_terminal: ExecutionTerminalService | None = None,
     ) -> None:
         self._checkpoint_store = checkpoint_store
         self._resume_executor = resume_executor
         self._schedule_store = schedule_store
         self._ledger = ledger
         self._notification_adapter = notification_adapter
+        self._execution_terminal = execution_terminal
         self._poll_interval_seconds = poll_interval_seconds
         self._lease_seconds = int(lease_seconds)
         self._owner_id = owner_id or f"scheduler-{uuid4().hex[:12]}"
@@ -162,6 +166,9 @@ class LongRunningScheduler:
             if checkpoint is None:
                 self._schedule_store.complete_claim(claim)
                 continue
+            if not self._can_resume_checkpoint(checkpoint):
+                self._schedule_store.complete_claim(claim)
+                continue
 
             task = build_scheduled_resume_task(checkpoint, entry)
             await self._execute_resume(
@@ -210,6 +217,9 @@ class LongRunningScheduler:
                 verdict=verdict,
                 action=action,
             )
+            if not self._can_resume_checkpoint(checkpoint):
+                self._ledger.complete_action(action_claim)
+                continue
             await self._execute_resume(
                 resume_task,
                 checkpoint,
@@ -223,6 +233,15 @@ class LongRunningScheduler:
             )
             processed += 1
         return processed
+
+    def _can_resume_checkpoint(self, checkpoint: TaskCheckpoint) -> bool:
+        if not is_checkpoint_resumable(checkpoint, execution_terminal=self._execution_terminal):
+            logger.info(
+                "Skipping scheduler resume for task %s: checkpoint is not resumable",
+                checkpoint.task_id,
+            )
+            return False
+        return True
 
     async def _execute_resume(
         self,

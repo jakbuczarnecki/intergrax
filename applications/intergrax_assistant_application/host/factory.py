@@ -27,8 +27,9 @@ from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax_assistant_application.host.agent_builders import INTERGRAX_ASSISTANT_AGENT_BUILDERS
 from intergrax_assistant_application.host.settings import IntergraxAssistantApplicationSettings
 from intergrax_assistant_application.host.environment_profile import build_intergrax_assistant_environment_profile
 from intergrax_assistant_application.manifest import build_intergrax_assistant_manifest
@@ -42,7 +43,6 @@ def create_intergrax_assistant_application(
     experiments_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
-    registry: Optional[AgentRegistry] = None,
 ) -> FastAPI:
     settings = settings or IntergraxAssistantApplicationSettings.from_env()
     manifest = build_intergrax_assistant_manifest(settings)
@@ -54,10 +54,11 @@ def create_intergrax_assistant_application(
         trace_db_path=db_path,
         runtime_events_db_path=runtime_events_db_path,
         use_in_memory_trace=db_path is None,
+        builders=INTERGRAX_ASSISTANT_AGENT_BUILDERS,
     )
-    nexus_loop = runtime.nexus_loop
-    host_execution = build_environment_host_task_execution(nexus_loop, env)
-    resolved_registry = registry or runtime.registry
+    host_execution = runtime.execution
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
+    resolved_registry = runtime.registry
     platform = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
@@ -103,6 +104,7 @@ def create_intergrax_assistant_application(
     mount_intergrax_assistant_routes(
         app,
         host_execution=host_execution,
+        registry=runtime.registry,
         prefix=settings.route_prefix,
     )
     if settings.include_task_control:
@@ -134,6 +136,7 @@ def create_intergrax_assistant_application(
         tool_registry = runtime.env_wiring.tool_wiring.registry
         mcp = build_intergrax_assistant_mcp_server(
             host_execution=host_execution,
+            registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=tool_registry,
         )

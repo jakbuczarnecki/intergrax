@@ -754,7 +754,7 @@ GENERIC FUNCTIONAL ANALYSIS = QUALIFIED
 OPERATOR FUNCTIONAL PROJECTION = QUALIFIED
 
 H1 TEST-SUITE HEALTH = OPEN
-DURABLE PERSISTENCE = QUALIFIED (D1 process restart)
+DURABLE PERSISTENCE = QUALIFIED (D1-R1 Mongo process restart)
 PRODUCTION SCALE = NOT YET QUALIFIED
 REAL WORKLOAD QUALIFICATION = NOT YET COMPLETE
 ```
@@ -829,8 +829,8 @@ FunctionalEvidencePersistence (contract semantics)
         │     intended use: unit / local / conformance
         │
         └── DocumentStoreFunctionalEvidencePersistence
-              correctness: qualified (D1)
-              durable: YES (process restart against durable DocumentStore)
+              correctness: qualified (D1 contract)
+              durable: YES (D1-R1 Mongo process restart qualified 2026-09-03)
               scale-qualified: NO
               intended use: production composition via wire_functional_evidence_persistence
 ```
@@ -838,17 +838,23 @@ FunctionalEvidencePersistence (contract semantics)
 | Provider | Correctness | Durable | Scale qualified | Intended use |
 | -------- | ----------- | ------- | --------------- | ------------ |
 | `InMemoryFunctionalEvidencePersistence` | YES | NO | NO | unit / local / conformance |
-| `DocumentStoreFunctionalEvidencePersistence` | YES | YES | NO | production durable backend |
-| Mongo / other DocumentStore vendors | via ConditionalDocumentStore | YES | pending S1 | integration composition |
+| `DocumentStoreFunctionalEvidencePersistence` | YES | YES (D1-R1) | NO | production durable backend |
+| Mongo / other DocumentStore vendors | via ConditionalDocumentStore | YES (Mongo D1-R1) | pending S1 | integration composition |
 
-**D1 durable authority (DIAG-DURABILITY-D1):**
+**D1 durable authority (DIAG-DURABILITY-D1 / D1-R1):**
+
+- D1-R1 qualified real Mongo-backed process boundary (writer PID ≠ reader PID, zero memory handoff).
 
 - Canonical record: `record:<evidence_id>` in partition `intergrax.functional_evidence.v1:<tenant_id>`.
-- Execution index: `exec:<task_id>:<run_id>:<evidence_id>` stores evidence reference only.
+- Execution index v1 (legacy projection): `exec:<task_id>:<run_id>:<evidence_id>` — evidence reference only; retained on append for repair compatibility.
+- Execution index v2 (query projection, DIAG-FUNCTIONAL-READ-R1): `execidx:<task_id>:<run_id>:<micros>:<evidence_id>` with metadata (`recorded_at`, `kind`, optional `attempt_id`) for bounded prefix scan and filter-without-canonical-get.
+- Append pending intent (DIAG-FUNCTIONAL-READ-R1-R2): `appendpending:<task_id>:<run_id>:<evidence_id>` — derived crash-recovery metadata; not functional evidence truth. Query fast path requires manifest `complete` **and** zero unresolved append intents (bounded `limit=1` prefix probe).
+- Projection completeness metadata (DIAG-FUNCTIONAL-READ-R1-R1): `execidxmeta:<task_id>:<run_id>` — derived migration/control state (`building` → `complete`); not functional evidence truth. Proves legacy v1→v2 migration completeness only — not per-append projection completeness.
+- Append protocol (R1-R2): `appendpending` → `record` (canonical) → `execidx` (v2) → `exec` (v1) → clear `appendpending`. Crash at any step is detectable and repairable on next query (bounded O(pending) repair, typically O(1) per interrupted append).
 - Append is idempotent on `evidence_id`; conflicting payload raises `FunctionalEvidencePersistenceConflictError`.
-- Partial write recovery: canonical record present + missing index → retry append repairs index.
+- Partial write recovery: unresolved `appendpending` + canonical present → query repairs v2/v1 from canonical before read. Unresolved `appendpending` + canonical missing → consistency pending / fail closed — never automatically deleted (`canonical missing != writer abandoned`, DIAG-FUNCTIONAL-READ-R1-R3).
 - Orphan index without canonical record → `FunctionalEvidencePersistenceIntegrityError` (fail closed).
-- Read path: index query (paginated) → canonical record load → scope validation → deterministic `(recorded_at, evidence_id)` order.
+- Read path (R1 / R1-R1 / R1-R2): repair pending appends → ensure projection completeness (O(1) when manifest `complete` and no pending intents) → incremental `execidx:` prefix query → canonical load for page candidates only → integrity validation → keyset cursor with lookahead. Ordering invariant: `(recorded_at, evidence_id)` ASC.
 - Production wiring: `wire_functional_evidence_runtime(document_store=..., cursor_secret=...)` — no hidden in-memory fallback.
 - `FunctionalDiagnosticAnalyzer` unchanged; reconstruction reads via `FunctionalEvidencePersistence.query_evidence`.
 
@@ -858,7 +864,7 @@ FunctionalEvidencePersistence (contract semantics)
 | ----- | ------ |
 | Architecture qualified | YES |
 | Correctness qualified | YES |
-| Production durability qualified (process restart) | YES (D1) |
+| Production durability qualified (process restart) | YES (D1-R1 Mongo) |
 | Production scale qualified | NO |
 
 Functional Diagnostics must **not** be labelled **PRODUCTION SCALE QUALIFIED** until a durable provider exists with a bounded query index strategy and passes real high-cardinality qualification.

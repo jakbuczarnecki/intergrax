@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
-from unittest.mock import MagicMock
 
 import pytest
 
+from intergrax.integrations.contracts.managed_retrieval import (
+    ManagedRetrievalBackend,
+    ManagedRetrievalQueryRequest,
+    ManagedRetrievalUploadResult,
+)
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.providers.openai_vector_store.contracts import (
     OpenAiFileSearchQueryInput,
@@ -38,6 +41,60 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 pytestmark = pytest.mark.unit
 
 
+class FakeManagedRetrievalBackend:
+    """Second-provider stand-in proving tool layer is vendor-agnostic."""
+
+    def __init__(
+        self,
+        *,
+        answer: str = "Grounded answer.",
+        file_ids: list[str] | None = None,
+        upload_names: list[str] | None = None,
+    ) -> None:
+        self.answer = answer
+        self.file_ids = list(file_ids or [])
+        self.upload_names = list(upload_names or [])
+        self.ensure_calls: list[str] = []
+        self.clear_calls: list[str] = []
+        self.query_requests: list[ManagedRetrievalQueryRequest] = []
+
+    def ensure_store_exists(self, store_id: str) -> None:
+        self.ensure_calls.append(store_id)
+
+    def list_attached_file_ids(self, store_id: str) -> list[str]:
+        return list(self.file_ids)
+
+    def upload_folder(
+        self,
+        store_id: str,
+        folder: str | Path,
+        *,
+        patterns: tuple[str, ...] | list[str],
+    ) -> ManagedRetrievalUploadResult:
+        folder_path = Path(folder)
+        if not folder_path.exists():
+            raise FileNotFoundError(f"Directory does not exist: {folder_path}")
+        _ = store_id, patterns
+        if self.upload_names:
+            return ManagedRetrievalUploadResult(
+                uploaded_names=tuple(self.upload_names),
+                failed_names=(),
+            )
+        folder_path = Path(folder)
+        names = tuple(p.name for p in folder_path.glob("*.txt"))
+        return ManagedRetrievalUploadResult(uploaded_names=names, failed_names=())
+
+    def clear_store(self, store_id: str) -> int:
+        self.clear_calls.append(store_id)
+        count = len(self.file_ids)
+        self.file_ids.clear()
+        return count
+
+    def query(self, request: ManagedRetrievalQueryRequest) -> str:
+        self.query_requests.append(request)
+        return self.answer
+
+
 @pytest.fixture(autouse=True)
 def _clean_catalog() -> None:
     clear_tool_catalog()
@@ -45,29 +102,6 @@ def _clean_catalog() -> None:
     yield
     clear_tool_catalog()
     reset_default_tools_bootstrap()
-
-
-def _fake_client(
-    *,
-    answer: str = "Grounded answer.",
-    file_ids: list[str] | None = None,
-) -> MagicMock:
-    client = MagicMock()
-    client.vector_stores.retrieve.return_value = SimpleNamespace(id="vs_test")
-    page = SimpleNamespace(data=[SimpleNamespace(id=fid) for fid in (file_ids or [])], has_more=False)
-    client.vector_stores.files.list.return_value = page
-    client.responses.create.return_value = SimpleNamespace(output_text=answer)
-
-    def _files_create(*, file, purpose):  # noqa: ANN001
-        _ = file, purpose
-        return SimpleNamespace(id="file-new")
-
-    def _files_retrieve(file_id: str):  # noqa: ARG001
-        return SimpleNamespace(status="processed")
-
-    client.files.create.side_effect = _files_create
-    client.files.retrieve.side_effect = _files_retrieve
-    return client
 
 
 def test_bundle_registers_three_tools() -> None:
@@ -82,11 +116,10 @@ def test_bundle_registers_three_tools() -> None:
 
 
 def test_file_search_query_success() -> None:
+    backend = FakeManagedRetrievalBackend(answer="Answer from docs.")
     ctx = ToolWiringContext(
-        extras={
-            "openai_client": _fake_client(answer="Answer from docs."),
-            "openai_vector_store_id": "vs_abc",
-        }
+        managed_retrieval=backend,
+        extras={"openai_vector_store_id": "vs_abc"},
     )
     out = perform_openai_file_search_query(
         ctx,
@@ -97,33 +130,35 @@ def test_file_search_query_success() -> None:
     assert out.context_text == "Answer from docs."
     assert out.vector_store_id == "vs_abc"
     assert out.reason == "ok"
+    assert backend.query_requests[0].question == "What is Intergrax?"
 
 
-def test_file_search_query_missing_client() -> None:
+def test_file_search_query_missing_provider() -> None:
     ctx = ToolWiringContext(extras={"openai_vector_store_id": "vs_abc"})
     out = perform_openai_file_search_query(ctx, OpenAiFileSearchQueryInput(query="test"))
     assert out.used is False
-    assert out.reason == "openai_client_not_configured"
+    assert out.reason == "managed_retrieval_not_configured"
 
 
 def test_vector_store_clear_deletes_files() -> None:
-    client = _fake_client(file_ids=["f1", "f2"])
+    backend = FakeManagedRetrievalBackend(file_ids=["f1", "f2"])
     ctx = ToolWiringContext(
-        extras={"openai_client": client, "openai_vector_store_id": "vs_clear"},
+        managed_retrieval=backend,
+        extras={"openai_vector_store_id": "vs_clear"},
     )
     out = perform_openai_vector_store_clear(ctx, OpenAiVectorStoreClearInput())
     assert out.used is True
     assert out.deleted_count == 2
-    assert client.vector_stores.files.delete.call_count == 2
-    assert client.files.delete.call_count == 2
+    assert backend.clear_calls == ["vs_clear"]
 
 
 def test_vector_store_upload_from_folder(tmp_path: Path) -> None:
     doc = tmp_path / "note.txt"
     doc.write_text("hello", encoding="utf-8")
-    client = _fake_client()
+    backend = FakeManagedRetrievalBackend()
     ctx = ToolWiringContext(
-        extras={"openai_client": client, "openai_vector_store_id": "vs_up"},
+        managed_retrieval=backend,
+        extras={"openai_vector_store_id": "vs_up"},
     )
     out = perform_openai_vector_store_upload(
         ctx,
@@ -132,14 +167,13 @@ def test_vector_store_upload_from_folder(tmp_path: Path) -> None:
     assert out.used is True
     assert out.uploaded_count == 1
     assert out.file_names == ["note.txt"]
-    client.files.create.assert_called_once()
-    client.vector_stores.files.create.assert_called_once()
 
 
 def test_handlers_delegate_to_service() -> None:
-    client = _fake_client(answer="via handler")
+    backend = FakeManagedRetrievalBackend(answer="via handler")
     ctx = ToolWiringContext(
-        extras={"openai_client": client, "openai_vector_store_id": "vs_h"},
+        managed_retrieval=backend,
+        extras={"openai_vector_store_id": "vs_h"},
     )
     registry = ToolRegistry()
     register_openai_vector_store_tools(registry, ctx)
@@ -177,3 +211,14 @@ def test_handlers_delegate_to_service() -> None:
     )
     assert upload_out.used is False
     assert upload_out.reason == "folder_not_found"
+
+
+def test_provider_substitution_without_tool_changes() -> None:
+    vendor_b = FakeManagedRetrievalBackend(answer="vendor-b answer")
+    ctx = ToolWiringContext(
+        managed_retrieval=vendor_b,
+        extras={"openai_vector_store_id": "store-b"},
+    )
+    out = perform_openai_file_search_query(ctx, OpenAiFileSearchQueryInput(query="hello"))
+    assert out.answer_text == "vendor-b answer"
+    assert isinstance(vendor_b, ManagedRetrievalBackend)

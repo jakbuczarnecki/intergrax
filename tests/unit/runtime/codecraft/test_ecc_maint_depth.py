@@ -68,7 +68,7 @@ def test_resolve_codegen_adapter_from_wiring_extras() -> None:
     assert resolve_codegen_adapter(ctx) is dedicated
 
 
-def test_container_tier_falls_back_to_local_sandbox(tmp_path) -> None:
+def test_container_tier_requires_hosted_backend(tmp_path) -> None:
     session = SandboxSession.create(
         tmp_path,
         tenant_id="t",
@@ -78,7 +78,7 @@ def test_container_tier_falls_back_to_local_sandbox(tmp_path) -> None:
     profile = CodeCraftProfile(mode="autonomous", isolation_tier="container")
     ctx = ToolWiringContext(sandbox_session=session)
     resolved = resolve_craft_sandbox_session(ctx, profile, tenant_id="t", task_id="task")
-    assert resolved is session
+    assert resolved is None
 
 
 def test_metrics_snapshot_emitted_on_dispose() -> None:

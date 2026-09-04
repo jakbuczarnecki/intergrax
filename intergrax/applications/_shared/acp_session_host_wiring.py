@@ -11,6 +11,9 @@ from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
 )
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.applications._shared.runtime_boundary_adapters import (
     agent_binding_to_run_binding,
@@ -23,13 +26,13 @@ def build_acp_session_host_context(
     app_profile: Any,
     binding: AgentBinding | None = None,
     declarative_tool_invoker: Any = None,
-    critic_graph_hooks: Any = None,
+    decision_flow_gate: Any = None,
 ) -> ACPSessionHostContext:
     return ACPSessionHostContext(
         runtime_profile=application_profile_to_runtime_profile(app_profile),
         binding=agent_binding_to_run_binding(binding),
         declarative_tool_invoker=declarative_tool_invoker,
-        critic_graph_hooks=critic_graph_hooks,
+        decision_flow_gate=decision_flow_gate,
     )
 
 
@@ -38,11 +41,11 @@ def build_acp_session_host_from_harness(
     *,
     binding: AgentBinding | None = None,
 ) -> ACPSessionHostContext:
-    """Attach critic CVL hooks and declarative tool invoker from a harness host."""
+    """Attach Decision flow gate and declarative tool invoker from a harness host."""
     invoker = build_declarative_invoker_from_tool_wiring(runtime.env_wiring.tool_wiring)
     return build_acp_session_host_context(
         app_profile=runtime.environment,
         binding=binding,
         declarative_tool_invoker=invoker,
-        critic_graph_hooks=runtime.critic.graph_hooks,
+        decision_flow_gate=resolve_harness_host_nexus_loop_legacy(runtime).peek_decision_flow_gate(),
     )

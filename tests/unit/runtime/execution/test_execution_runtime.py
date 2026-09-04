@@ -468,7 +468,6 @@ async def test_resume_root_execution_id_matches_identity_through_lifecycle(
     run_id = mint_run_id()
     attempt_a1 = mint_attempt_id()
     historical_root_id = mint_execution_id()
-    attempt_a2 = mint_attempt_id()
     registry = AgentRegistry()
     loop = NexusLoop(registry)
     captured: dict[str, ExecutionId] = {}
@@ -500,7 +499,7 @@ async def test_resume_root_execution_id_matches_identity_through_lifecycle(
     )
     identity = resolve_root_task_identity(
         run_id=run_id,
-        attempt_id=attempt_a2,
+        attempt_id=attempt_a1,
         resume_checkpoint=checkpoint,
     )
 

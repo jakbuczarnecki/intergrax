@@ -53,6 +53,98 @@ class DecisionRevisionStateMismatchError(ValueError):
     """Raised when revision state does not match the verification proposal."""
 
 
+class DecisionRevisionPolicyMismatchError(ValueError):
+    """Raised when resume policy disagrees with checkpointed revision budget."""
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionRevisionCheckpointState:
+    """Immutable durable snapshot of revision budget bound to one exact proposal."""
+
+    proposal_ref: DecisionProposalRef
+    revision_count: int
+    max_revisions: int
+
+    def __post_init__(self) -> None:
+        if type(self.proposal_ref) is not DecisionProposalRef:
+            raise TypeError(
+                "DecisionRevisionCheckpointState.proposal_ref must be DecisionProposalRef",
+            )
+        if type(self.revision_count) is not int or isinstance(self.revision_count, bool):
+            raise TypeError(
+                "DecisionRevisionCheckpointState.revision_count must be int",
+            )
+        if type(self.max_revisions) is not int or isinstance(self.max_revisions, bool):
+            raise TypeError(
+                "DecisionRevisionCheckpointState.max_revisions must be int",
+            )
+        if self.revision_count < 0:
+            raise ValueError(
+                "DecisionRevisionCheckpointState.revision_count must be >= 0",
+            )
+        if self.max_revisions < 0:
+            raise ValueError(
+                "DecisionRevisionCheckpointState.max_revisions must be >= 0",
+            )
+        if self.revision_count > self.max_revisions:
+            raise ValueError(
+                "DecisionRevisionCheckpointState.revision_count must be <= max_revisions",
+            )
+
+
+def decision_revision_checkpoint_state(
+    *,
+    proposal_ref: DecisionProposalRef,
+    revision_count: int,
+    max_revisions: int,
+) -> DecisionRevisionCheckpointState:
+    """Capture one validated revision checkpoint snapshot."""
+    if type(proposal_ref) is not DecisionProposalRef:
+        raise TypeError("proposal_ref must be DecisionProposalRef")
+    return DecisionRevisionCheckpointState(
+        proposal_ref=proposal_ref,
+        revision_count=revision_count,
+        max_revisions=max_revisions,
+    )
+
+
+def revision_state_from_checkpoint(
+    checkpoint: DecisionRevisionCheckpointState,
+) -> DecisionRevisionState:
+    """Restore runtime revision state from one durable checkpoint snapshot."""
+    if type(checkpoint) is not DecisionRevisionCheckpointState:
+        raise TypeError("checkpoint must be DecisionRevisionCheckpointState")
+    return DecisionRevisionState(
+        proposal_ref=checkpoint.proposal_ref,
+        revision_count=checkpoint.revision_count,
+    )
+
+
+def revision_policy_from_checkpoint(
+    checkpoint: DecisionRevisionCheckpointState,
+) -> DecisionRevisionPolicy:
+    """Restore authoritative revision policy from one durable checkpoint snapshot."""
+    if type(checkpoint) is not DecisionRevisionCheckpointState:
+        raise TypeError("checkpoint must be DecisionRevisionCheckpointState")
+    return decision_revision_policy(max_revisions=checkpoint.max_revisions)
+
+
+def validate_resume_revision_policy(
+    *,
+    checkpoint_revision: DecisionRevisionCheckpointState,
+    runtime_policy: DecisionRevisionPolicy,
+) -> None:
+    """Fail closed when runtime policy would reset a checkpointed revision ceiling."""
+    if type(checkpoint_revision) is not DecisionRevisionCheckpointState:
+        raise TypeError("checkpoint_revision must be DecisionRevisionCheckpointState")
+    if type(runtime_policy) is not DecisionRevisionPolicy:
+        raise TypeError("runtime_policy must be DecisionRevisionPolicy")
+    if runtime_policy.max_revisions != checkpoint_revision.max_revisions:
+        raise DecisionRevisionPolicyMismatchError(
+            "resume revision policy max_revisions must match checkpoint policy",
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class DecisionRevisionState:
     """Current semantic revision progress bound to one exact proposal."""
@@ -179,6 +271,45 @@ class DecisionRevisionPolicyEvaluator(Protocol):
         ...
 
 
+@dataclass(frozen=True, slots=True)
+class _ExpectedRevisionSemantics:
+    """Canonical disposition and revision_number for one policy evaluation."""
+
+    disposition: DecisionRevisionDisposition
+    revision_number: int | None
+
+
+def _canonical_revision_semantics(
+    *,
+    policy: DecisionRevisionPolicy,
+    state: DecisionRevisionState,
+    verification_result: VerificationResult,
+) -> _ExpectedRevisionSemantics:
+    """Derive the single canonical revision semantics for policy + state + result."""
+    if not proposal_refs_match(state.proposal_ref, verification_result.proposal_ref):
+        raise DecisionRevisionStateMismatchError(
+            "revision state proposal_ref must match verification_result proposal_ref",
+        )
+    if verification_result.disposition is VerificationDisposition.PASSED:
+        return _ExpectedRevisionSemantics(
+            disposition=DecisionRevisionDisposition.NOT_REQUIRED,
+            revision_number=None,
+        )
+    if verification_result.disposition is not VerificationDisposition.CHALLENGED:
+        raise ValueError(
+            "verification_result.disposition must be PASSED or CHALLENGED",
+        )
+    if state.revision_count < policy.max_revisions:
+        return _ExpectedRevisionSemantics(
+            disposition=DecisionRevisionDisposition.ALLOWED,
+            revision_number=state.revision_count + 1,
+        )
+    return _ExpectedRevisionSemantics(
+        disposition=DecisionRevisionDisposition.EXHAUSTED,
+        revision_number=None,
+    )
+
+
 def validate_revision_decision_against_inputs(
     *,
     policy: DecisionRevisionPolicy,
@@ -208,6 +339,19 @@ def validate_revision_decision_against_inputs(
         raise ValueError(
             "revision_decision.proposal_ref must match verification_result proposal_ref",
         )
+    expected = _canonical_revision_semantics(
+        policy=policy,
+        state=state,
+        verification_result=verification_result,
+    )
+    if revision_decision.disposition is not expected.disposition:
+        raise ValueError(
+            "revision_decision.disposition must match canonical expected disposition",
+        )
+    if revision_decision.revision_number != expected.revision_number:
+        raise ValueError(
+            "revision_decision.revision_number must match canonical expected revision_number",
+        )
 
 
 def evaluate_decision_revision(
@@ -223,33 +367,45 @@ def evaluate_decision_revision(
         raise TypeError("state must be DecisionRevisionState")
     if type(verification_result) is not VerificationResult:
         raise TypeError("verification_result must be VerificationResult")
-    if not proposal_refs_match(state.proposal_ref, verification_result.proposal_ref):
-        raise DecisionRevisionStateMismatchError(
-            "revision state proposal_ref must match verification_result proposal_ref",
-        )
-    proposal_ref = verification_result.proposal_ref
-    if verification_result.disposition is VerificationDisposition.PASSED:
-        return DecisionRevisionDecision(
-            disposition=DecisionRevisionDisposition.NOT_REQUIRED,
-            proposal_ref=proposal_ref,
-            policy=policy,
-        )
-    if verification_result.disposition is not VerificationDisposition.CHALLENGED:
-        raise ValueError(
-            "verification_result.disposition must be PASSED or CHALLENGED",
-        )
-    if state.revision_count < policy.max_revisions:
-        return DecisionRevisionDecision(
-            disposition=DecisionRevisionDisposition.ALLOWED,
-            proposal_ref=proposal_ref,
-            policy=policy,
-            revision_number=state.revision_count + 1,
-        )
-    return DecisionRevisionDecision(
-        disposition=DecisionRevisionDisposition.EXHAUSTED,
-        proposal_ref=proposal_ref,
+    expected = _canonical_revision_semantics(
         policy=policy,
+        state=state,
+        verification_result=verification_result,
     )
+    return DecisionRevisionDecision(
+        disposition=expected.disposition,
+        proposal_ref=verification_result.proposal_ref,
+        policy=policy,
+        revision_number=expected.revision_number,
+    )
+
+
+def evaluate_decision_revision_with(
+    *,
+    evaluator: DecisionRevisionPolicyEvaluator,
+    policy: DecisionRevisionPolicy,
+    state: DecisionRevisionState,
+    verification_result: VerificationResult,
+) -> DecisionRevisionDecision:
+    """Evaluate via a custom evaluator and reject semantically invalid output."""
+    if type(policy) is not DecisionRevisionPolicy:
+        raise TypeError("policy must be DecisionRevisionPolicy")
+    if type(state) is not DecisionRevisionState:
+        raise TypeError("state must be DecisionRevisionState")
+    if type(verification_result) is not VerificationResult:
+        raise TypeError("verification_result must be VerificationResult")
+    decision = evaluator.evaluate(
+        policy=policy,
+        state=state,
+        verification_result=verification_result,
+    )
+    validate_revision_decision_against_inputs(
+        policy=policy,
+        state=state,
+        verification_result=verification_result,
+        revision_decision=decision,
+    )
+    return decision
 
 
 def decision_revision_authorization(

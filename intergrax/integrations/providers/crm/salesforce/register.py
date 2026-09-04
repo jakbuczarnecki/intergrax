@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from intergrax.integrations.providers.crm.salesforce.bundle import create_salesforce_crm
 from intergrax.integrations.providers.crm.salesforce.manifest import MANIFEST
+from intergrax.integrations.providers.crm.salesforce.contract_spec import CONTRACT_SPECS
 from intergrax.integrations.registry.plugin_register import register_from_manifest
 
 
 def register_salesforce_integration(*, override: bool = False) -> None:
-    register_from_manifest(MANIFEST, create_salesforce_crm, override=override)
+    register_from_manifest(MANIFEST, create_salesforce_crm, override=override, contract_specs=CONTRACT_SPECS)

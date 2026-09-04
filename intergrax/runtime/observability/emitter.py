@@ -18,10 +18,6 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import RuntimeEventPayload, runtime_event_with_payload
 from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.events.trace_bridge import (
-    trace_bridge_subject_from_tags,
-    trace_event_to_runtime_event,
-)
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.nexus.tracing.trace_models import (
     DEFAULT_REDACTED_TEXT,
@@ -196,6 +192,11 @@ class ObservabilityEmitter:
         *,
         scope: Optional[TraceScopeState],
     ) -> RuntimeEvent:
+        from intergrax.runtime.events.trace_bridge import (
+            trace_bridge_subject_from_tags,
+            trace_event_to_runtime_event,
+        )
+
         subject = trace_bridge_subject_from_tags(
             tenant_id=self.tenant_id,
             task_id=self.task_id,

@@ -90,6 +90,18 @@ def test_validate_graph_rag_production_wiring_rejects_unapproved_integration_slu
     assert reason.startswith("integration_graph_store_not_approved:")
 
 
+def test_product_environment_without_graph_store_keeps_vector_only_rag() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults().model_copy(
+        update={"context_profile": ContextProfile(enable_rag=True)},
+    )
+    profile = resolve_rag_profile_for_environment(
+        env,
+        integration_profile=IntegrationProfile(),
+    )
+    assert profile is not None
+    assert profile.graph_rag_enabled is False
+
+
 def test_product_environment_resolves_falkordb_graph_rag_profile() -> None:
     env = ApplicationEnvironmentProfile.product_defaults().model_copy(
         update={"context_profile": ContextProfile(enable_rag=True)},

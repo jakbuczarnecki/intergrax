@@ -8,7 +8,8 @@ from __future__ import annotations
 from intergrax.integrations.providers.relational_store.mssql.bundle import create_mssql_relational_store
 from intergrax.integrations.providers.relational_store.mssql.manifest import MANIFEST
 from intergrax.integrations.registry.plugin_register import register_from_manifest
+from intergrax.integrations.providers.relational_store.mssql.contract_spec import CONTRACT_SPECS
 
 
 def register_mssql_integration(*, override: bool = False) -> None:
-    register_from_manifest(MANIFEST, create_mssql_relational_store, override=override)
+    register_from_manifest(MANIFEST, create_mssql_relational_store, override=override, contract_specs=CONTRACT_SPECS)

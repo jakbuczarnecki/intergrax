@@ -24,6 +24,9 @@ from intergrax.applications._shared.harness_host_runtime import build_harness_ho
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     _build_diagnostic_operations_pane,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -711,7 +714,7 @@ def test_harness_host_runtime_wires_terminal_diagnostic_trigger(
         runtime_events_db_path=tmp_path / "events.db",  # type: ignore[operator]
     )
 
-    assert runtime.nexus_loop._terminal_diagnostic_trigger is not None  # noqa: SLF001
+    assert resolve_harness_host_nexus_loop_legacy(runtime)._terminal_diagnostic_trigger is not None  # noqa: SLF001
 
 
 def test_dashboard_sees_problem_on_shared_persistence_after_runtime_trigger(

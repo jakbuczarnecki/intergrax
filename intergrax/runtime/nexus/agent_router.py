@@ -19,7 +19,7 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads import AgentSelectionPayloadV1
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.registry.capability_routing import (
     select_best_capability_match,
     validate_task_for_capability_routing,
@@ -44,7 +44,7 @@ class AgentRouter:
 
     def __init__(
         self,
-        registry: AgentRegistry,
+        registry: AgentRegistryRead,
         *,
         production_mode: bool = False,
         event_bus: Optional[RuntimeEventBus] = None,

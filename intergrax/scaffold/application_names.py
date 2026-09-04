@@ -99,6 +99,6 @@ class ScaffoldApplicationNames:
             docker_image=docker_image_tag(short),
             factory_fn=f"create_{short}_application",
             manifest_fn=f"build_{short}_manifest",
-            registry_fn=f"build_{short}_registry",
+            registry_fn=f"build_{short}_development_registry",
             settings_class=f"{pascal}ApplicationSettings",
         )

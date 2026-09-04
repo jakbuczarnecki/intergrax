@@ -8,6 +8,7 @@ from __future__ import annotations
 import threading
 from collections.abc import Callable
 from dataclasses import replace
+from datetime import datetime
 from typing import Generic, TypeVar
 
 from intergrax.autonomous_work.repository import (
@@ -15,15 +16,21 @@ from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityNotFound,
     AutonomousWorkRepositoryCapabilities,
     AutonomousWorkRevisionConflict,
+    WorkerWakeUpReceiptClaim,
+    WorkerWakeUpReceiptClaimStatus,
 )
+from intergrax.autonomous_work.wake_up_receipt_claim import resolve_wake_up_receipt_claim
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
+from intergrax.contracts.autonomous_work.goal_evaluation import GoalEvaluationCadenceState
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
+    WakeUpId,
     WorkerDefinitionId,
     WorkerGoalId,
     WorkerInstanceId,
 )
+from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
 from intergrax.contracts.autonomous_work.responsibility import Responsibility
 from intergrax.contracts.autonomous_work.revision import (
     DefinitionRevision,
@@ -31,6 +38,7 @@ from intergrax.contracts.autonomous_work.revision import (
     initial_revision,
 )
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
+from intergrax.contracts.autonomous_work.wake_up import WorkerWakeUpReceipt
 
 DefinitionVersionKey = tuple[WorkerDefinitionId, DefinitionRevision]
 
@@ -339,6 +347,19 @@ class InMemoryResponsibilityRepository:
             write_revision=_responsibility_with_revision,
         )
 
+    def list_for_worker_instance(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> tuple[Responsibility, ...]:
+        with self._store._lock:
+            matches = [
+                entity
+                for entity in self._store._records.values()
+                if entity.worker_instance_id == worker_instance_id
+            ]
+        return tuple(sorted(matches, key=lambda item: item.responsibility_id))
+
 
 class InMemoryWorkerGoalRepository:
     """Process-local reference repository for WorkerGoal records."""
@@ -385,6 +406,55 @@ class InMemoryWorkerGoalRepository:
             write_revision=_worker_goal_with_revision,
         )
 
+    def list_for_responsibility(
+        self,
+        *,
+        responsibility_id: ResponsibilityId,
+    ) -> tuple[WorkerGoal, ...]:
+        with self._store._lock:
+            matches = [
+                entity
+                for entity in self._store._records.values()
+                if entity.responsibility_id == responsibility_id
+            ]
+        return tuple(sorted(matches, key=lambda item: item.goal_id))
+
+
+class InMemoryWorkerPrincipalBindingRepository:
+    """Process-local reference repository for immutable WorkerPrincipalBinding records."""
+
+    def __init__(self) -> None:
+        self._store: _ImmutableVersionStore[WorkerInstanceId, WorkerPrincipalBinding] = (
+            _ImmutableVersionStore()
+        )
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return AutonomousWorkRepositoryCapabilities(
+            backend_id="autonomous_work.worker_principal_binding.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create(self, binding: WorkerPrincipalBinding) -> WorkerPrincipalBinding:
+        if binding.revision != initial_revision():
+            raise ValueError(
+                f"WorkerPrincipalBinding create requires revision {initial_revision().value}"
+            )
+        return self._store.create_idempotent(
+            binding.worker_instance_id,
+            binding,
+            entity_kind="WorkerPrincipalBinding",
+            entity_id=binding.worker_instance_id,
+        )
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> WorkerPrincipalBinding | None:
+        return self._store.get(worker_instance_id)
+
 
 class InMemoryWorkContinuityStateRepository:
     """Process-local reference repository for WorkContinuityState checkpoints."""
@@ -430,3 +500,105 @@ class InMemoryWorkContinuityStateRepository:
             read_revision=_continuity_revision,
             write_revision=_continuity_with_revision,
         )
+
+
+WakeUpReceiptKey = tuple[WorkerInstanceId, WakeUpId]
+
+
+class InMemoryWorkerWakeUpReceiptRepository:
+    """Process-local durable-semantics reference repository for wake-up receipts."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._records: dict[WakeUpReceiptKey, WorkerWakeUpReceipt] = {}
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return AutonomousWorkRepositoryCapabilities(
+            backend_id="autonomous_work.worker_wake_up_receipt.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def claim(self, receipt: WorkerWakeUpReceipt) -> WorkerWakeUpReceiptClaim:
+        key = (receipt.worker_instance_id, receipt.wake_up_id)
+        with self._lock:
+            existing = self._records.get(key)
+            if existing is None:
+                self._records[key] = receipt
+                return WorkerWakeUpReceiptClaim(
+                    status=WorkerWakeUpReceiptClaimStatus.CLAIMED,
+                    receipt=receipt,
+                )
+            return resolve_wake_up_receipt_claim(receipt, existing)
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+        wake_up_id: WakeUpId,
+    ) -> WorkerWakeUpReceipt | None:
+        with self._lock:
+            stored = self._records.get((worker_instance_id, wake_up_id))
+            if stored is None:
+                return None
+            return stored
+
+
+class InMemoryGoalEvaluationCadenceStateRepository:
+    """Process-local reference repository for goal evaluation cadence state."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._states: dict[WorkerGoalId, GoalEvaluationCadenceState] = {}
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        return AutonomousWorkRepositoryCapabilities(
+            backend_id="autonomous_work.goal_evaluation_cadence_state.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def get(self, *, goal_id: WorkerGoalId) -> GoalEvaluationCadenceState | None:
+        with self._lock:
+            stored = self._states.get(goal_id)
+            if stored is None:
+                return None
+            return stored
+
+    def record_evaluated(
+        self,
+        *,
+        goal_id: WorkerGoalId,
+        evaluated_at: datetime,
+    ) -> GoalEvaluationCadenceState:
+        with self._lock:
+            current = self._states.get(goal_id)
+            if current is None:
+                persisted = GoalEvaluationCadenceState(
+                    goal_id=goal_id,
+                    last_evaluated_at=evaluated_at,
+                    revision=initial_revision(),
+                )
+                self._states[goal_id] = persisted
+                return persisted
+            next_evaluated_at = (
+                evaluated_at
+                if evaluated_at >= current.last_evaluated_at
+                else current.last_evaluated_at
+            )
+            persisted = GoalEvaluationCadenceState(
+                goal_id=goal_id,
+                last_evaluated_at=next_evaluated_at,
+                revision=Revision(current.revision.value + 1),
+            )
+            self._states[goal_id] = persisted
+            return persisted
+
+    def last_evaluated_at(self, *, goal_id: WorkerGoalId) -> datetime | None:
+        with self._lock:
+            stored = self._states.get(goal_id)
+            if stored is None:
+                return None
+            return stored.last_evaluated_at

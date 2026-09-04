@@ -310,7 +310,7 @@ def test_first_execution_mints_run_attempt_and_root_execution() -> None:
     assert str(obs.execution_id).startswith("exec_")
 
 
-def test_redelivery_preserves_run_and_task_but_mints_new_attempt_and_execution() -> None:
+def test_redelivery_preserves_run_task_and_attempt_but_mints_new_execution() -> None:
     persistence = _persistence()
     transport = _transport()
     observations: list[_AttemptObservation] = []
@@ -330,7 +330,7 @@ def test_redelivery_preserves_run_and_task_but_mints_new_attempt_and_execution()
     first, second = observations
     assert second.task_id == first.task_id == first_identity.task_id == second_identity.task_id
     assert second.run_id == first.run_id == first_identity.run_id == second_identity.run_id
-    assert second.attempt_id != first.attempt_id
+    assert second.attempt_id == first.attempt_id == first_identity.attempt_id == second_identity.attempt_id
     assert second.execution_id != first.execution_id
 
 
@@ -488,7 +488,7 @@ async def test_child_execution_does_not_mint_new_attempt() -> None:
         reset_active_execution_identity(token)
 
 
-def test_three_consecutive_redeliveries_keep_run_with_distinct_attempts() -> None:
+def test_three_consecutive_redeliveries_keep_run_and_attempt() -> None:
     persistence = _persistence()
     transport = _transport(transport_task_id="transport-redelivery-chain")
     attempts: list[AttemptId] = []
@@ -500,13 +500,14 @@ def test_three_consecutive_redeliveries_keep_run_with_distinct_attempts() -> Non
         )
         attempts.append(identity.attempt_id)
 
-    assert len({attempts[0], attempts[1], attempts[2]}) == 3
+    assert attempts[0] == attempts[1] == attempts[2]
     second = bootstrap_background_execution(
         transport_ref=transport,
         identity_persistence=persistence,
     )
     first_run = persistence.resolve_or_create(transport)
-    assert second.run_id == first_run[1]
+    assert second.run_id == first_run.run_id
+    assert second.attempt_id == first_run.attempt_id
 
 
 def test_parallel_executions_in_same_attempt_share_attempt_id() -> None:
@@ -653,7 +654,7 @@ def test_contextvar_identity_does_not_leak_between_attempts() -> None:
     )
     assert peek_active_execution_identity() is None
     assert peek_active_execution_id() is None
-    assert observations[1].attempt_id != observations[0].attempt_id
+    assert observations[1].attempt_id == observations[0].attempt_id
 
 
 def test_queue_correlation_run_id_is_not_treated_as_canonical_conflict() -> None:

@@ -199,6 +199,46 @@ Platform proof envelope mapping:
 
 `NO_MATCH` is not retrieval failure - it is a conclusive identity judgment after evidence review.
 
+## Quick Start (data + bootstrap)
+
+Normal operators should **not** rebuild the 26.5M → 3.77M corpus or compute BGE-M3 embeddings locally.
+
+```text
+1. install VPI Data Pack     → setup_data.py
+2. start PostgreSQL + Qdrant → provider configuration
+3. bootstrap storage         → bootstrap.py
+4. run scenario              → (after proof initialization)
+```
+
+### 1. Install data package
+
+```bash
+# Local trusted mirror (dev/test) or HTTPS base when publication is approved:
+uv run python platform_proofs/scenarios/verified_product_identification/setup_data.py \
+  --local-mirror platform_proofs/scenarios/verified_product_identification/data_package/fixtures/tiny_v1
+
+# Production (when VPI_DATA_PACKAGE_BASE_URL is configured):
+uv run python platform_proofs/scenarios/verified_product_identification/setup_data.py
+```
+
+Installed layout defaults to `data_package/installed/` with dataset + embedding artifact paths consumed by bootstrap.
+
+Environment overrides: `VPI_DATA_PACKAGE_INSTALL_DIR`, `VPI_DATA_PACKAGE_CACHE_DIR`, `VPI_DATA_PACKAGE_BASE_URL`.
+
+**Public publication is blocked** until redistribution review completes — see [DATASET_DISTRIBUTION_REVIEW.md](DATASET_DISTRIBUTION_REVIEW.md).
+
+### 2. Bootstrap storage
+
+```bash
+uv run python platform_proofs/scenarios/verified_product_identification/bootstrap.py --mode verify --max-records 64
+```
+
+Bootstrap reads installed package paths automatically when present. It does **not** download data over the network.
+
+### Reproducible-from-source path
+
+Advanced operators may rebuild from WDC using [`dataset/build_wdc_dataset.py`](dataset/build_wdc_dataset.py) and [`materialize_embeddings.py`](materialize_embeddings.py). Full pipeline documentation: [DATASET_REPRODUCIBILITY.md](DATASET_REPRODUCIBILITY.md).
+
 ## Dataset / reproducibility
 
 **Provenance:** [Web Data Commons Large Scale Product Corpus V2](https://webdatacommons.org/largecorpus/productcorpus/v2/index.html) - `offers_corpus_all_v2_non_norm` (26,507,210 source offers).

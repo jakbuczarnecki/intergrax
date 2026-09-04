@@ -155,19 +155,35 @@ def require_active_execution_id() -> ExecutionId:
 
 
 def transition_active_execution_identity() -> AttemptId:
+    """Low-level in-process rebinding; not durable attempt lifecycle authority."""
+    return rebind_active_attempt_for_retry(
+        run_id=require_active_execution_identity()[0],
+        attempt_id=mint_attempt_id(),
+    )
+
+
+def rebind_active_attempt_for_retry(
+    *,
+    run_id: RunId,
+    attempt_id: AttemptId,
+) -> AttemptId:
+    """Bind a canonical Attempt chosen by durable lifecycle authority."""
     state = _active_execution_identity.get()
     if state is None:
         raise RuntimeError("active execution identity required")
-    new_attempt_id = mint_attempt_id()
+    validated_run_id = validate_run_id(run_id)
+    validated_attempt_id = validate_attempt_id(attempt_id)
+    if state.run_id != validated_run_id:
+        raise RuntimeError("active execution identity run_id mismatch during attempt rebind")
     _active_execution_identity.set(
         ActiveExecutionIdentityState(
-            run_id=state.run_id,
-            attempt_id=new_attempt_id,
+            run_id=validated_run_id,
+            attempt_id=validated_attempt_id,
             execution_id=None,
             parent_execution_id=None,
         ),
     )
-    return new_attempt_id
+    return validated_attempt_id
 
 
 class ActiveExecutionIdentity:
@@ -218,7 +234,9 @@ class ActiveExecutionIdentity:
         return require_active_execution_id()
 
     def transition_retry(self) -> AttemptId:
-        return transition_active_execution_identity()
+        raise RuntimeError(
+            "transition_retry is not authoritative; use AttemptLifecycleService.transition_to_next_attempt",
+        )
 
     def clear(self) -> None:
         raise RuntimeError(

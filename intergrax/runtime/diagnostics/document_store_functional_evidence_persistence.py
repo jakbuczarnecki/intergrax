@@ -5,19 +5,44 @@
 
 from __future__ import annotations
 
-import bisect
-from dataclasses import dataclass
-from datetime import datetime
+from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId, validate_run_id, validate_task_id
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
+    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
 )
 from intergrax.runtime.diagnostics.functional_evidence import (
     PipelineEvidenceKind,
     PlatformFunctionalEvidence,
+)
+from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
+    DecodedExecutionIndexV2,
+    decode_execution_index_v1,
+    decode_execution_index_v2,
+    encode_execution_index_v1,
+    encode_execution_index_v2,
+    execution_index_v1_row_key,
+    execution_index_v2_row_key,
+    execution_index_v2_row_key_from_evidence,
+    execution_index_v2_row_key_prefix,
+    index_v2_matches_filters,
+)
+from intergrax.runtime.diagnostics.functional_evidence_append_intent import (
+    FunctionalEvidenceAppendFaultBoundary,
+    FunctionalEvidenceAppendFaultInjector,
+    FunctionalEvidenceAppendIntentStore,
+)
+from intergrax.runtime.diagnostics.functional_evidence_index_rebuilder import (
+    FunctionalEvidenceIndexRebuilder,
+)
+from intergrax.runtime.diagnostics.functional_evidence_projection_repairer import (
+    FunctionalEvidenceProjectionRepairer,
+)
+from intergrax.runtime.diagnostics.functional_evidence_projection_state import (
+    FunctionalEvidenceProjectionStateStore,
 )
 from intergrax.runtime.diagnostics.functional_evidence_persistence import (
     FunctionalEvidencePersistence,
@@ -38,10 +63,15 @@ from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
 
 _DOCUMENT_STORE_PARTITION_PREFIX = "intergrax.functional_evidence.v1"
 _RECORD_ROW_PREFIX = "record:"
-_EXEC_ROW_PREFIX = "exec:"
 _QUERY_PAGE_LIMIT = 5000
-_INDEX_SCHEMA = "intergrax.functional_evidence.index.v1"
-_EVIDENCE_ID_FIELD = "evidence_id"
+_QUERY_OVERFETCH_FACTOR = 4
+
+
+@runtime_checkable
+class DocumentStoreQueryCursorProvider(Protocol):
+    @property
+    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
+        """Authenticated codec for document-store query continuation cursors."""
 
 
 def _document_partition(tenant_id: str) -> str:
@@ -50,45 +80,6 @@ def _document_partition(tenant_id: str) -> str:
 
 def _record_row_key(evidence_id: str) -> str:
     return f"{_RECORD_ROW_PREFIX}{evidence_id}"
-
-
-def _execution_row_key(*, task_id: TaskId, run_id: RunId, evidence_id: str) -> str:
-    return f"{_EXEC_ROW_PREFIX}{task_id}:{run_id}:{evidence_id}"
-
-
-def _execution_row_prefix(*, task_id: TaskId, run_id: RunId) -> str:
-    return f"{_EXEC_ROW_PREFIX}{task_id}:{run_id}:"
-
-
-def _encode_index_ref(evidence_id: str) -> dict[str, str]:
-    return {
-        "schema_version": _INDEX_SCHEMA,
-        _EVIDENCE_ID_FIELD: evidence_id,
-    }
-
-
-def _decode_index_ref(data: object) -> str:
-    if not isinstance(data, dict):
-        raise FunctionalEvidencePersistenceIntegrityError(
-            "invalid functional evidence index",
-        )
-    schema_version = data.get("schema_version")
-    if schema_version != _INDEX_SCHEMA:
-        raise FunctionalEvidencePersistenceIntegrityError(
-            "unsupported functional evidence index schema",
-        )
-    evidence_id = data.get(_EVIDENCE_ID_FIELD)
-    if not isinstance(evidence_id, str) or not evidence_id:
-        raise FunctionalEvidencePersistenceIntegrityError(
-            "invalid functional evidence index reference",
-        )
-    return evidence_id
-
-
-@dataclass(frozen=True, order=True, slots=True)
-class _SortedEntry:
-    order_key: tuple[datetime, str]
-    evidence_id: str
 
 
 class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
@@ -100,6 +91,8 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
         *,
         cursor_secret: bytes,
         query_page_limit: int = _QUERY_PAGE_LIMIT,
+        document_query_cursor_codec: DocumentQueryCursorCodec | None = None,
+        append_fault_injector: FunctionalEvidenceAppendFaultInjector | None = None,
     ) -> None:
         if not isinstance(document_store, ConditionalDocumentStore):
             raise TypeError(
@@ -109,11 +102,40 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             raise ValueError("functional_evidence_cursor_secret_invalid")
         self._document_store = document_store
         self._cursor_codec = FunctionalEvidenceQueryCursorCodec(secret=cursor_secret)
+        self._document_query_cursor_codec = self._resolve_document_query_cursor_codec(
+            document_store,
+            document_query_cursor_codec,
+        )
         if type(query_page_limit) is not int or isinstance(query_page_limit, bool):
             raise ValueError("functional_evidence_query_page_limit_invalid")
         if query_page_limit < 1:
             raise ValueError("functional_evidence_query_page_limit_invalid")
         self._query_page_limit = query_page_limit
+        self._index_rebuilder = FunctionalEvidenceIndexRebuilder(
+            document_store,
+            query_page_limit=query_page_limit,
+        )
+        self._projection_state = FunctionalEvidenceProjectionStateStore(document_store)
+        self._append_intent_store = FunctionalEvidenceAppendIntentStore(document_store)
+        self._projection_repairer = FunctionalEvidenceProjectionRepairer(
+            document_store,
+            query_page_limit=query_page_limit,
+        )
+        self._append_fault_injector = append_fault_injector
+        self._append_projection_complete: set[tuple[str, str, str]] = set()
+
+    @staticmethod
+    def _resolve_document_query_cursor_codec(
+        document_store: ConditionalDocumentStore,
+        document_query_cursor_codec: DocumentQueryCursorCodec | None,
+    ) -> DocumentQueryCursorCodec:
+        if document_query_cursor_codec is not None:
+            return document_query_cursor_codec
+        if isinstance(document_store, DocumentStoreQueryCursorProvider):
+            return document_store.query_cursor_codec
+        raise TypeError(
+            "functional evidence persistence requires document store query cursor codec",
+        )
 
     @property
     def query_cursor_codec(self) -> FunctionalEvidenceQueryCursorCodec:
@@ -121,7 +143,15 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
 
     def append(self, evidence: PlatformFunctionalEvidence) -> PlatformFunctionalEvidence:
         partition_key = _document_partition(evidence.scope.tenant_id)
-        record_row_key = _record_row_key(str(evidence.evidence_id))
+        evidence_id = str(evidence.evidence_id)
+        record_row_key = _record_row_key(evidence_id)
+        self._append_intent_store.create_pending(
+            partition_key=partition_key,
+            task_id=evidence.scope.task_id,
+            run_id=evidence.scope.run_id,
+            evidence_id=evidence_id,
+        )
+        self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.AFTER_INTENT)
         encoded = encode_functional_evidence_record(evidence)
         canonical_document = DocumentRecord(
             partition_key=partition_key,
@@ -130,7 +160,8 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
         )
 
         if self._document_store.put_if_absent(canonical_document):
-            self._ensure_execution_index(evidence=evidence, partition_key=partition_key)
+            self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.AFTER_CANONICAL)
+            self._complete_append_projections(evidence=evidence, partition_key=partition_key)
             return evidence
 
         existing_record = self._document_store.get(partition_key, record_row_key)
@@ -151,40 +182,43 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
         run_id = validate_run_id(request.run_id)
         attempt_id = _validate_attempt_filter(request.attempt_id)
         page_size = _validate_page_size(request.page_size)
-        sorted_entries = self._sorted_entries_for_execution(
+        partition_key = _document_partition(tenant_id)
+        self._projection_repairer.repair_execution_pending_appends(
             tenant_id=tenant_id,
             task_id=task_id,
             run_id=run_id,
+            partition_key=partition_key,
         )
-        records_by_id = self._records_for_execution(
+        self._index_rebuilder.ensure_v2_projection(
             tenant_id=tenant_id,
             task_id=task_id,
             run_id=run_id,
-            sorted_entries=sorted_entries,
+            partition_key=partition_key,
         )
-        start_pos = _resolve_start_position(
-            sorted_entries=sorted_entries,
+        store_cursor = _resolve_store_cursor(
             cursor=request.cursor,
             cursor_codec=self._cursor_codec,
+            document_query_cursor_codec=self._document_query_cursor_codec,
             tenant_id=tenant_id,
             task_id=task_id,
             run_id=run_id,
             attempt_id=attempt_id,
             kind=request.kind,
+            partition_key=partition_key,
         )
-        items, scan_pos = _collect_page(
-            sorted_entries=sorted_entries,
-            records_by_id=records_by_id,
-            start_pos=start_pos,
-            page_size=page_size,
+        items, has_more = self._collect_bounded_query_page(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            partition_key=partition_key,
             attempt_id=attempt_id,
             kind=request.kind,
+            page_size=page_size,
+            store_cursor=store_cursor,
         )
         next_cursor = _resolve_next_cursor(
-            sorted_entries=sorted_entries,
-            records_by_id=records_by_id,
             items=items,
-            scan_pos=scan_pos,
+            has_more=has_more,
             cursor_codec=self._cursor_codec,
             tenant_id=tenant_id,
             task_id=task_id,
@@ -200,90 +234,176 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             next_cursor=next_cursor,
         )
 
-    def _sorted_entries_for_execution(
+    def _collect_bounded_query_page(
         self,
         *,
         tenant_id: str,
         task_id: TaskId,
         run_id: RunId,
-    ) -> list[_SortedEntry]:
-        partition_key = _document_partition(tenant_id)
-        prefix = _execution_row_prefix(task_id=task_id, run_id=run_id)
-        documents: list[DocumentRecord] = []
-        cursor: str | None = None
+        partition_key: str,
+        attempt_id: AttemptId | None,
+        kind: PipelineEvidenceKind | None,
+        page_size: int,
+        store_cursor: str | None,
+    ) -> tuple[tuple[PlatformFunctionalEvidence, ...], bool]:
+        row_key_prefix = execution_index_v2_row_key_prefix(task_id=task_id, run_id=run_id)
+        collected: list[PlatformFunctionalEvidence] = []
+        last_consumed_row_key: str | None = None
+        continuation = store_cursor
+
+        while len(collected) < page_size:
+            fetch_limit = min(
+                max(page_size, (page_size - len(collected)) * _QUERY_OVERFETCH_FACTOR),
+                self._query_page_limit,
+            )
+            page = self._document_store.query(
+                partition_key,
+                limit=fetch_limit,
+                row_key_prefix=row_key_prefix,
+                cursor=continuation,
+            )
+            if not page.documents:
+                return tuple(collected), False
+
+            for index_document in page.documents:
+                last_consumed_row_key = index_document.row_key
+                indexed = self._decode_v2_index_document(index_document)
+                if not index_v2_matches_filters(
+                    indexed,
+                    attempt_id=attempt_id,
+                    kind=kind,
+                ):
+                    continue
+                evidence = self._resolve_v2_index_document(
+                    index_document,
+                    indexed=indexed,
+                    tenant_id=tenant_id,
+                    task_id=task_id,
+                    run_id=run_id,
+                    partition_key=partition_key,
+                )
+                collected.append(evidence)
+                if len(collected) >= page_size:
+                    break
+
+            if len(collected) >= page_size:
+                has_more = self._index_has_more_matching_after(
+                    partition_key=partition_key,
+                    row_key_prefix=row_key_prefix,
+                    after_row_key=last_consumed_row_key,
+                    attempt_id=attempt_id,
+                    kind=kind,
+                )
+                return tuple(collected), has_more
+
+            if page.next_cursor is None:
+                return tuple(collected), False
+
+            continuation = page.next_cursor
+
+        return tuple(collected), False
+
+    def _index_has_more_matching_after(
+        self,
+        *,
+        partition_key: str,
+        row_key_prefix: str,
+        after_row_key: str | None,
+        attempt_id: AttemptId | None,
+        kind: PipelineEvidenceKind | None,
+    ) -> bool:
+        if after_row_key is None:
+            return False
+        store_cursor = self._document_query_cursor_codec.encode(
+            partition_key=partition_key,
+            row_key_prefix=row_key_prefix,
+            last_row_key=after_row_key,
+        )
+        continuation = store_cursor
         while True:
             page = self._document_store.query(
                 partition_key,
                 limit=self._query_page_limit,
-                row_key_prefix=prefix,
-                cursor=cursor,
+                row_key_prefix=row_key_prefix,
+                cursor=continuation,
             )
-            documents.extend(page.documents)
+            if not page.documents:
+                return False
+            for index_document in page.documents:
+                indexed = self._decode_v2_index_document(index_document)
+                if index_v2_matches_filters(
+                    indexed,
+                    attempt_id=attempt_id,
+                    kind=kind,
+                ):
+                    return True
             if page.next_cursor is None:
-                break
-            cursor = page.next_cursor
+                return False
+            continuation = page.next_cursor
 
-        entries: list[_SortedEntry] = []
-        for document in documents:
-            evidence_id = _decode_index_ref(dict(document.data))
-            record = self._document_store.get(
-                partition_key,
-                _record_row_key(evidence_id),
-            )
-            if record is None:
-                raise FunctionalEvidencePersistenceIntegrityError(
-                    "canonical functional evidence record missing for index",
-                )
-            evidence = self._document_to_evidence(record)
-            if str(evidence.evidence_id) != evidence_id:
-                raise FunctionalEvidencePersistenceIntegrityError(
-                    "canonical functional evidence id does not match index reference",
-                )
-            _validate_execution_scope(
-                evidence,
-                tenant_id=tenant_id,
-                task_id=task_id,
-                run_id=run_id,
-            )
-            entries.append(
-                _SortedEntry(
-                    order_key=functional_evidence_query_order_key(evidence),
-                    evidence_id=str(evidence.evidence_id),
-                )
-            )
-        entries.sort()
-        return entries
+    def _decode_v2_index_document(self, index_document: DocumentRecord) -> DecodedExecutionIndexV2:
+        try:
+            return decode_execution_index_v2(dict(index_document.data))
+        except ValueError as exc:
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "invalid functional evidence execution index",
+            ) from exc
 
-    def _records_for_execution(
+    def _resolve_v2_index_document(
         self,
+        index_document: DocumentRecord,
         *,
+        indexed: DecodedExecutionIndexV2,
         tenant_id: str,
         task_id: TaskId,
         run_id: RunId,
-        sorted_entries: list[_SortedEntry],
-    ) -> dict[str, PlatformFunctionalEvidence]:
-        partition_key = _document_partition(tenant_id)
-        records: dict[str, PlatformFunctionalEvidence] = {}
-        for entry in sorted_entries:
-            record = self._document_store.get(
-                partition_key,
-                _record_row_key(entry.evidence_id),
+        partition_key: str,
+    ) -> PlatformFunctionalEvidence:
+        record = self._document_store.get(
+            partition_key,
+            _record_row_key(indexed.evidence_id),
+        )
+        if record is None:
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "canonical functional evidence record missing for index",
             )
-            if record is None:
-                raise FunctionalEvidencePersistenceIntegrityError(
-                    "canonical functional evidence record missing for index",
-                )
-            evidence = self._document_to_evidence(record)
-            _validate_execution_scope(
-                evidence,
-                tenant_id=tenant_id,
-                task_id=task_id,
-                run_id=run_id,
+        evidence = self._document_to_evidence(record)
+        if str(evidence.evidence_id) != indexed.evidence_id:
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "canonical functional evidence id does not match index reference",
             )
-            records[entry.evidence_id] = evidence
-        return records
+        _validate_execution_scope(
+            evidence,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+        )
+        order_key = functional_evidence_query_order_key(evidence)
+        if order_key != (indexed.recorded_at, indexed.evidence_id):
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "functional evidence index metadata inconsistent with canonical record",
+            )
+        if evidence.kind is not indexed.kind:
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "functional evidence index metadata inconsistent with canonical record",
+            )
+        if evidence.scope.attempt_id != indexed.attempt_id:
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "functional evidence index metadata inconsistent with canonical record",
+            )
+        expected_row_key = execution_index_v2_row_key(
+            task_id=task_id,
+            run_id=run_id,
+            recorded_at=indexed.recorded_at,
+            evidence_id=indexed.evidence_id,
+        )
+        if index_document.row_key != expected_row_key:
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "functional evidence execution index row key inconsistent with metadata",
+            )
+        return evidence
 
-    def _execution_index_document(
+    def _execution_index_v1_document(
         self,
         *,
         evidence: PlatformFunctionalEvidence,
@@ -291,26 +411,78 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
     ) -> DocumentRecord:
         return DocumentRecord(
             partition_key=partition_key,
-            row_key=_execution_row_key(
+            row_key=execution_index_v1_row_key(
                 task_id=evidence.scope.task_id,
                 run_id=evidence.scope.run_id,
                 evidence_id=str(evidence.evidence_id),
             ),
-            data=_encode_index_ref(str(evidence.evidence_id)),
+            data=encode_execution_index_v1(str(evidence.evidence_id)),
         )
 
-    def _ensure_execution_index(
+    def _execution_index_v2_document(
+        self,
+        *,
+        evidence: PlatformFunctionalEvidence,
+        partition_key: str,
+    ) -> DocumentRecord:
+        return DocumentRecord(
+            partition_key=partition_key,
+            row_key=execution_index_v2_row_key_from_evidence(evidence),
+            data=encode_execution_index_v2(evidence),
+        )
+
+    def _complete_append_projections(
         self,
         *,
         evidence: PlatformFunctionalEvidence,
         partition_key: str,
     ) -> None:
-        exec_document = self._execution_index_document(
+        v2_document = self._execution_index_v2_document(
             evidence=evidence,
             partition_key=partition_key,
         )
-        if not self._document_store.put_if_absent(exec_document):
-            self._verify_index_document(exec_document, evidence)
+        if not self._document_store.put_if_absent(v2_document):
+            self._verify_index_document(v2_document, evidence)
+        self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.AFTER_V2)
+        v1_document = self._execution_index_v1_document(
+            evidence=evidence,
+            partition_key=partition_key,
+        )
+        if not self._document_store.put_if_absent(v1_document):
+            self._verify_index_document(v1_document, evidence)
+        self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.AFTER_V1)
+        self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.BEFORE_INTENT_CLEAR)
+        cleared = self._append_intent_store.clear_pending(
+            partition_key=partition_key,
+            task_id=evidence.scope.task_id,
+            run_id=evidence.scope.run_id,
+            evidence_id=str(evidence.evidence_id),
+        )
+        if not cleared:
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "functional evidence append intent completion failed",
+            )
+        projection_key = (
+            partition_key,
+            str(evidence.scope.task_id),
+            str(evidence.scope.run_id),
+        )
+        if projection_key not in self._append_projection_complete:
+            self._projection_state.ensure_append_projection_complete(
+                partition_key=partition_key,
+                task_id=evidence.scope.task_id,
+                run_id=evidence.scope.run_id,
+            )
+            self._append_projection_complete.add(projection_key)
+
+    def _maybe_fault_after(self, boundary: FunctionalEvidenceAppendFaultBoundary) -> None:
+        if (
+            self._append_fault_injector is not None
+            and self._append_fault_injector.should_fault_after(boundary)
+        ):
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "functional evidence append projection interrupted",
+            )
 
     def _document_to_evidence(self, document: DocumentRecord) -> PlatformFunctionalEvidence:
         try:
@@ -332,7 +504,7 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             raise FunctionalEvidencePersistenceConflictError(
                 "conflicting functional evidence for evidence_id",
             )
-        self._ensure_execution_index(evidence=stored, partition_key=partition_key)
+        self._complete_append_projections(evidence=stored, partition_key=partition_key)
         return stored
 
     def _verify_index_document(
@@ -345,7 +517,14 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             raise FunctionalEvidencePersistenceIntegrityError(
                 "functional evidence index verification failed",
             )
-        indexed_id = _decode_index_ref(dict(existing.data))
+        if document.row_key.startswith("execidx:"):
+            indexed = decode_execution_index_v2(dict(existing.data))
+            if indexed.evidence_id != str(incoming.evidence_id):
+                raise FunctionalEvidencePersistenceIntegrityError(
+                    "functional evidence index conflicts with expected evidence_id",
+                )
+            return
+        indexed_id = decode_execution_index_v1(dict(existing.data)).evidence_id
         if indexed_id != str(incoming.evidence_id):
             raise FunctionalEvidencePersistenceIntegrityError(
                 "functional evidence index conflicts with expected evidence_id",
@@ -372,6 +551,70 @@ def wire_functional_evidence_persistence(
     )
 
 
+def _resolve_store_cursor(
+    *,
+    cursor: str | None,
+    cursor_codec: FunctionalEvidenceQueryCursorCodec,
+    document_query_cursor_codec: DocumentQueryCursorCodec,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    attempt_id: AttemptId | None,
+    kind: PipelineEvidenceKind | None,
+    partition_key: str,
+) -> str | None:
+    if cursor is None:
+        return None
+    try:
+        payload = cursor_codec.decode(
+            cursor,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            kind=kind,
+        )
+    except FunctionalEvidenceQueryCursorError as exc:
+        raise FunctionalEvidencePersistenceIntegrityError(str(exc)) from exc
+    row_key_prefix = execution_index_v2_row_key_prefix(task_id=task_id, run_id=run_id)
+    last_row_key = execution_index_v2_row_key(
+        task_id=task_id,
+        run_id=run_id,
+        recorded_at=payload.last_recorded_at,
+        evidence_id=payload.last_evidence_id,
+    )
+    return document_query_cursor_codec.encode(
+        partition_key=partition_key,
+        row_key_prefix=row_key_prefix,
+        last_row_key=last_row_key,
+    )
+
+
+def _resolve_next_cursor(
+    *,
+    items: tuple[PlatformFunctionalEvidence, ...],
+    has_more: bool,
+    cursor_codec: FunctionalEvidenceQueryCursorCodec,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    attempt_id: AttemptId | None,
+    kind: PipelineEvidenceKind | None,
+) -> str | None:
+    if not items or not has_more:
+        return None
+    last_item = items[-1]
+    return cursor_codec.encode(
+        tenant_id=tenant_id,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        kind=kind,
+        last_recorded_at=last_item.provenance.recorded_at,
+        last_evidence_id=last_item.evidence_id,
+    )
+
+
 def _validate_execution_scope(
     evidence: PlatformFunctionalEvidence,
     *,
@@ -387,124 +630,6 @@ def _validate_execution_scope(
         raise FunctionalEvidencePersistenceIntegrityError(
             "canonical functional evidence does not match execution index scope",
         )
-
-
-def _resolve_start_position(
-    *,
-    sorted_entries: list[_SortedEntry],
-    cursor: str | None,
-    cursor_codec: FunctionalEvidenceQueryCursorCodec,
-    tenant_id: str,
-    task_id: TaskId,
-    run_id: RunId,
-    attempt_id: AttemptId | None,
-    kind: PipelineEvidenceKind | None,
-) -> int:
-    if cursor is None:
-        return 0
-    try:
-        payload = cursor_codec.decode(
-            cursor,
-            tenant_id=tenant_id,
-            task_id=task_id,
-            run_id=run_id,
-            attempt_id=attempt_id,
-            kind=kind,
-        )
-    except FunctionalEvidenceQueryCursorError as exc:
-        raise FunctionalEvidencePersistenceIntegrityError(str(exc)) from exc
-    cursor_key = (payload.last_recorded_at, payload.last_evidence_id)
-    return bisect.bisect_right(
-        sorted_entries,
-        _SortedEntry(order_key=cursor_key, evidence_id=payload.last_evidence_id),
-    )
-
-
-def _matches_filters(
-    record: PlatformFunctionalEvidence,
-    *,
-    attempt_id: AttemptId | None,
-    kind: PipelineEvidenceKind | None,
-) -> bool:
-    if kind is not None and record.kind is not kind:
-        return False
-    if attempt_id is not None and record.scope.attempt_id != attempt_id:
-        return False
-    return True
-
-
-def _collect_page(
-    *,
-    sorted_entries: list[_SortedEntry],
-    records_by_id: dict[str, PlatformFunctionalEvidence],
-    start_pos: int,
-    page_size: int,
-    attempt_id: AttemptId | None,
-    kind: PipelineEvidenceKind | None,
-) -> tuple[tuple[PlatformFunctionalEvidence, ...], int]:
-    items: list[PlatformFunctionalEvidence] = []
-    scan_pos = start_pos
-    while scan_pos < len(sorted_entries) and len(items) < page_size:
-        entry = sorted_entries[scan_pos]
-        scan_pos += 1
-        record = records_by_id[entry.evidence_id]
-        if not _matches_filters(record, attempt_id=attempt_id, kind=kind):
-            continue
-        items.append(record)
-    return tuple(items), scan_pos
-
-
-def _resolve_next_cursor(
-    *,
-    sorted_entries: list[_SortedEntry],
-    records_by_id: dict[str, PlatformFunctionalEvidence],
-    items: tuple[PlatformFunctionalEvidence, ...],
-    scan_pos: int,
-    cursor_codec: FunctionalEvidenceQueryCursorCodec,
-    tenant_id: str,
-    task_id: TaskId,
-    run_id: RunId,
-    attempt_id: AttemptId | None,
-    kind: PipelineEvidenceKind | None,
-) -> str | None:
-    if not items:
-        return None
-    if _has_more_matching(
-        sorted_entries=sorted_entries,
-        records_by_id=records_by_id,
-        start_pos=scan_pos,
-        attempt_id=attempt_id,
-        kind=kind,
-    ):
-        last_item = items[-1]
-        return cursor_codec.encode(
-            tenant_id=tenant_id,
-            task_id=task_id,
-            run_id=run_id,
-            attempt_id=attempt_id,
-            kind=kind,
-            last_recorded_at=last_item.provenance.recorded_at,
-            last_evidence_id=last_item.evidence_id,
-        )
-    return None
-
-
-def _has_more_matching(
-    *,
-    sorted_entries: list[_SortedEntry],
-    records_by_id: dict[str, PlatformFunctionalEvidence],
-    start_pos: int,
-    attempt_id: AttemptId | None,
-    kind: PipelineEvidenceKind | None,
-) -> bool:
-    scan_pos = start_pos
-    while scan_pos < len(sorted_entries):
-        entry = sorted_entries[scan_pos]
-        scan_pos += 1
-        record = records_by_id[entry.evidence_id]
-        if _matches_filters(record, attempt_id=attempt_id, kind=kind):
-            return True
-    return False
 
 
 def _require_tenant_id(tenant_id: str) -> str:
@@ -540,5 +665,6 @@ def _validate_page_size(page_size: int) -> int:
 
 __all__ = [
     "DocumentStoreFunctionalEvidencePersistence",
+    "DocumentStoreQueryCursorProvider",
     "wire_functional_evidence_persistence",
 ]

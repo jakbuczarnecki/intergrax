@@ -52,6 +52,12 @@ def is_postgresql_unique_violation(exc: BaseException) -> bool:
     return isinstance(exc, errors.UniqueViolation)
 
 
+def is_postgresql_undefined_table(exc: BaseException) -> bool:
+    """Detect missing-relation errors without leaking driver types to callers."""
+    _, errors, _, _ = import_psycopg()
+    return isinstance(exc, errors.UndefinedTable)
+
+
 class PostgreSQLExecutionResult:
     """Typed execution result for domain SQL repositories."""
 

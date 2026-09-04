@@ -18,6 +18,11 @@ _PRODUCTION_AUTHORITY_SOURCES = (
     / "applications"
     / "_shared"
     / "production_registry_projection_input_bundle.py",
+    REPO
+    / "intergrax"
+    / "applications"
+    / "_shared"
+    / "registry_projection_authority_resolver.py",
     REPO / "intergrax" / "applications" / "_shared" / "production_host_composition.py",
     REPO / "intergrax" / "applications" / "_shared" / "active_registry_projection.py",
     REPO
@@ -82,9 +87,11 @@ def test_production_registry_input_public_api_has_no_caller_authority_params() -
     forbidden = frozenset(
         {
             "runtime_revision",
+            "effective_roster",
             "materialized_runtime_lock",
             "artifact_locator",
             "materialization_artifact_digest",
+            "stores",
         }
     )
     for name in module.__all__:

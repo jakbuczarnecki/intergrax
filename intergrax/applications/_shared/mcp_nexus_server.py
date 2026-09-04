@@ -11,6 +11,7 @@ from fastmcp import FastMCP
 
 from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools_on_mcp
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -52,6 +53,7 @@ def build_nexus_mcp_server(
     *,
     name: str,
     host_execution: HostTaskExecutionPort,
+    registry: AgentRegistryRead,
     default_capability: str,
     default_tenant_id: str = "mcp",
     default_user_id: str = "mcp-user",
@@ -63,14 +65,13 @@ def build_nexus_mcp_server(
     Tools use the same registry and canonical host task execution as the Tier-3 FastAPI host.
     """
     mcp = FastMCP(name)
-    nexus_loop = host_execution.nexus_loop
 
     @mcp.tool
     async def list_agents() -> list[dict[str, Any]]:
         """List registered agents and capabilities (same roster as the HTTP agents endpoint)."""
         agents: list[dict[str, Any]] = []
-        for agent_id in nexus_loop.registry.list_agent_ids():
-            contract = nexus_loop.registry.get(agent_id).get_contract()
+        for agent_id in registry.list_agent_ids():
+            contract = registry.get(agent_id).get_contract()
             agents.append(
                 {
                     "agent_id": contract.id,

@@ -40,6 +40,9 @@ from intergrax.applications._shared.reference_production_governance_wiring impor
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
 from research_application.host.main import create_research_process_app
 from research_application.host.settings import ResearchBackendSettings
@@ -209,7 +212,7 @@ def test_production_store_continuity_resolves_active_projection_and_nexus_regist
         use_in_memory_trace=True,
     )
     assert runtime.registry_projection_evidence.runtime_revision_id == revision_id
-    assert runtime.nexus_loop.registry.list_agent_ids() == ["research"]
+    assert resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids() == ["research"]
     assert app is not None
 
 

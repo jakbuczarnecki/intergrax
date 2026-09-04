@@ -46,11 +46,14 @@ from intergrax.runtime.policy.agent_decision_enforcement import (
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
+from intergrax.runtime.decision_flow import DecisionFlowGate
+from intergrax.runtime.task.task_contract import TaskExecutionOptions
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RouteInfo, RuntimeRequest
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
+
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 from intergrax.runtime.task.task_metadata_bridge import execution_options_for_request
 from intergrax.runtime.human.pause import HumanPauseCoordinator
@@ -140,8 +143,8 @@ class UAEPExecutor:
         sandbox_manager: Optional[SandboxSessionManager] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
         memory_limits: Optional[TaskMemoryLimits] = None,
-        critic_hooks: Any = None,
-        verify_uaep_step: bool = False,
+        decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None,
+        verify_uaep_step_decision: bool = False,
         context_engine: Any = None,
         llm_adapter: Any = None,
     ) -> None:
@@ -156,8 +159,8 @@ class UAEPExecutor:
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
         self._task_memory_store = task_memory_store
         self._memory_limits = memory_limits or TaskMemoryLimits()
-        self._critic_hooks = critic_hooks
-        self._verify_uaep_step = verify_uaep_step
+        self._decision_flow_gate = decision_flow_gate
+        self._verify_uaep_step_decision = verify_uaep_step_decision
         self._context_engine = context_engine
         self._llm_adapter = llm_adapter
         if middleware is not None:
@@ -169,9 +172,14 @@ class UAEPExecutor:
         else:
             self._middleware = MiddlewarePipeline()
 
-    def set_critic_hooks(self, hooks: Any, *, verify_uaep_step: bool = False) -> None:
-        self._critic_hooks = hooks
-        self._verify_uaep_step = verify_uaep_step
+    def set_decision_flow_gate(
+        self,
+        gate: DecisionFlowGate[AgentExecutionResult] | None,
+        *,
+        verify_uaep_step: bool = False,
+    ) -> None:
+        self._decision_flow_gate = gate
+        self._verify_uaep_step_decision = verify_uaep_step
 
     @staticmethod
     def _retention_days_from_metadata(metadata: dict[str, Any]) -> int | None:
@@ -450,7 +458,7 @@ class UAEPExecutor:
                 if step_result.output is not None:
                     last_output = step_result.output
     
-                critic_resolution = self._verify_uaep_step_critic(
+                critic_resolution = await self._verify_uaep_step_authority(
                     contract=contract,
                     step=step,
                     step_result=step_result,
@@ -650,23 +658,63 @@ class UAEPExecutor:
         finally:
             runtime_context.close()
 
-    def _verify_uaep_step_critic(
+    async def _verify_uaep_step_authority(
         self,
         *,
-        contract: Any,
+        contract: AgentContract,
         step: AgentStep,
         step_result: StepExecutionResult,
         request: RuntimeRequest,
         run_id: str,
         task_id: str,
-        task_options: Any,
+        task_options: TaskExecutionOptions,
         exec_ctx: RuntimeExecutionContext,
     ) -> GovernanceResolution | None:
-        if not self._verify_uaep_step or self._critic_hooks is None or step_result.output is None:
+        if step_result.output is None:
             return None
+        if (
+            self._decision_flow_gate is not None
+            and self._verify_uaep_step_decision
+        ):
+            from intergrax.runtime.decision_flow import DecisionFlowScope
 
-        from intergrax.runtime.critic.contracts import CriticAction
-        from intergrax.runtime.critic.critic_wiring import validate_uaep_step_with_critic_detail
+            if self._decision_flow_gate.supports_scope(DecisionFlowScope.UAEP_STEP):
+                return await self._verify_uaep_step_decision_flow(
+                    contract=contract,
+                    step=step,
+                    step_result=step_result,
+                    request=request,
+                    run_id=run_id,
+                    task_id=task_id,
+                    task_options=task_options,
+                    exec_ctx=exec_ctx,
+                )
+        return None
+
+    async def _verify_uaep_step_decision_flow(
+        self,
+        *,
+        contract: AgentContract,
+        step: AgentStep,
+        step_result: StepExecutionResult,
+        request: RuntimeRequest,
+        run_id: str,
+        task_id: str,
+        task_options: TaskExecutionOptions,
+        exec_ctx: RuntimeExecutionContext,
+    ) -> GovernanceResolution | None:
+        from intergrax.contracts.execution_identity import require_active_execution_identity
+        from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
+        from intergrax.runtime.decision_flow_host import (
+            agent_execution_decision_context,
+            agent_execution_identity_seed,
+            build_agent_execution_flow_request,
+            evaluate_agent_execution_flow,
+        )
+
+        gate = self._decision_flow_gate
+        if gate is None:
+            return None
 
         execution = AgentExecutionResult(
             agent_id=contract.id,
@@ -676,35 +724,53 @@ class UAEPExecutor:
             structured_data=dict(step_result.output.data),
         )
         tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
-        critic_context: dict[str, object] = {}
-        guardrail_scan = exec_ctx.metadata.get("guardrail_scan")
-        if isinstance(guardrail_scan, dict):
-            critic_context["guardrail_scan"] = guardrail_scan
-
-        validation, verdict = validate_uaep_step_with_critic_detail(
-            execution,
-            contract=contract,
-            hooks=self._critic_hooks,
-            task_id=exec_ctx.task_id,
-            run_id=run_id,
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        decision_context = agent_execution_decision_context(
+            task_id=task_id,
+            run_id=active_run_id,
+            attempt_id=active_attempt_id,
             tenant_id=tenant_id,
-            step_id=step.step_id,
-            extra_context=critic_context or None,
         )
-        if validation.valid:
+        identity_seed = agent_execution_identity_seed(
+            context=decision_context,
+            namespace="uaep.step",
+            subject=step.step_id,
+        )
+        flow_request = build_agent_execution_flow_request(
+            execution=execution,
+            identity_seed=identity_seed,
+            flow_scope=DecisionFlowScope.UAEP_STEP,
+        )
+        flow_result = await evaluate_agent_execution_flow(
+            gate,
+            flow_request,
+        )
+        if flow_result.host_action is DecisionFlowHostAction.CONTINUE:
             return None
-
-        if verdict.recommended_action is CriticAction.ESCALATE_HITL:
+        if flow_result.host_action is DecisionFlowHostAction.PENDING_HUMAN:
             decision = AgentDecision(
                 type=AgentDecisionType.REQUEST_HUMAN,
-                reason="critic_uaep_escalate_hitl",
-                payload={"blocking": True, "failure_reasons": verdict.failure_reasons},
+                reason="decision_uaep_human_review_pending",
+                payload={
+                    "blocking": True,
+                    "human_review_request_id": str(
+                        flow_result.human_review_pending.request.request_id,
+                    )
+                    if flow_result.human_review_pending is not None
+                    else "",
+                },
             )
         else:
             decision = AgentDecision(
                 type=AgentDecisionType.FAIL,
-                reason="critic_uaep_verification_failed",
-                payload={"failure_reasons": verdict.failure_reasons},
+                reason=flow_result.authority_reason or "decision_uaep_verification_failed",
+                payload={
+                    "resolution": (
+                        flow_result.resolution_record.resolution.value
+                        if flow_result.resolution_record is not None
+                        else "rejected"
+                    ),
+                },
             )
         return self._interrupt_handler.resolve_decision(
             decision,

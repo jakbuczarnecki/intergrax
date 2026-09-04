@@ -15,6 +15,7 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_index_administration import VectorIndexAdministration
 from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.providers.vector_store.qdrant.index_administration import (
+    QdrantControlPlaneClient,
     QdrantVectorIndexAdministration,
 )
 from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
@@ -60,7 +61,7 @@ def _open_rag_store(
     return QdrantVectorStore(_build_rag_config(config))
 
 
-def _build_qdrant_client(config: QdrantIntegrationConfig) -> object:
+def _build_qdrant_client(config: QdrantIntegrationConfig) -> QdrantControlPlaneClient:
     QdrantClient = _import_qdrant_client()
     if config.resolved_url():
         return QdrantClient(url=config.resolved_url(), api_key=config.api_key or None)

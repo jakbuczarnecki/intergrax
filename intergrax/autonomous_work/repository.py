@@ -36,18 +36,24 @@ Create semantics
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
+from intergrax.contracts.autonomous_work.goal_evaluation import GoalEvaluationCadenceState
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
+    WakeUpId,
     WorkerDefinitionId,
     WorkerGoalId,
     WorkerInstanceId,
 )
 from intergrax.contracts.autonomous_work.responsibility import Responsibility
 from intergrax.contracts.autonomous_work.revision import DefinitionRevision, Revision
+from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
+from intergrax.contracts.autonomous_work.wake_up import WorkerWakeUpReceipt
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
 
 
@@ -167,6 +173,14 @@ class ResponsibilityRepository(Protocol):
         """Replace responsibility semantics under optimistic concurrency."""
         ...
 
+    def list_for_worker_instance(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> tuple[Responsibility, ...]:
+        """Return responsibilities owned by the worker in deterministic order."""
+        ...
+
 
 @runtime_checkable
 class WorkerGoalRepository(Protocol):
@@ -194,6 +208,41 @@ class WorkerGoalRepository(Protocol):
         """Replace worker goal semantics under optimistic concurrency."""
         ...
 
+    def list_for_responsibility(
+        self,
+        *,
+        responsibility_id: ResponsibilityId,
+    ) -> tuple[WorkerGoal, ...]:
+        """Return goals for one responsibility in deterministic order."""
+        ...
+
+
+@runtime_checkable
+class WorkerPrincipalBindingRepository(Protocol):
+    """Authoritative persistence port for immutable Worker→Principal bindings.
+
+    Bindings are created once by control-plane configuration. Rebind is not
+    exposed through this port — a conflicting create fails with
+    ``AutonomousWorkEntityConflict``.
+    """
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+        ...
+
+    def create(self, binding: WorkerPrincipalBinding) -> WorkerPrincipalBinding:
+        """Create an immutable binding or return an identical stored binding."""
+        ...
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+    ) -> WorkerPrincipalBinding | None:
+        """Return the binding for the worker or ``None``."""
+        ...
+
 
 @runtime_checkable
 class WorkContinuityStateRepository(Protocol):
@@ -219,4 +268,66 @@ class WorkContinuityStateRepository(Protocol):
         expected_revision: Revision,
     ) -> WorkContinuityState:
         """Replace continuity state under optimistic concurrency."""
+        ...
+
+
+@runtime_checkable
+class GoalEvaluationCadenceStateRepository(Protocol):
+    """Authoritative persistence port for goal evaluation cadence checkpoints."""
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+        ...
+
+    def get(self, *, goal_id: WorkerGoalId) -> GoalEvaluationCadenceState | None:
+        """Return cadence state for the goal or ``None`` when never evaluated."""
+        ...
+
+    def record_evaluated(
+        self,
+        *,
+        goal_id: WorkerGoalId,
+        evaluated_at: datetime,
+    ) -> GoalEvaluationCadenceState:
+        """Atomically record an evaluation attempt with monotonic timestamps."""
+        ...
+
+
+class WorkerWakeUpReceiptClaimStatus(StrEnum):
+    """Outcome of an atomic durable wake-up receipt claim."""
+
+    CLAIMED = "CLAIMED"
+    DUPLICATE = "DUPLICATE"
+    CONFLICT = "CONFLICT"
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerWakeUpReceiptClaim:
+    """Outcome of an atomic durable wake-up receipt claim."""
+
+    status: WorkerWakeUpReceiptClaimStatus
+    receipt: WorkerWakeUpReceipt
+
+
+@runtime_checkable
+class WorkerWakeUpReceiptRepository(Protocol):
+    """Authoritative durable idempotency port for wake-up admission receipts."""
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+        ...
+
+    def claim(self, receipt: WorkerWakeUpReceipt) -> WorkerWakeUpReceiptClaim:
+        """Atomically claim first acceptance or return the canonical stored receipt."""
+        ...
+
+    def get(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+        wake_up_id: WakeUpId,
+    ) -> WorkerWakeUpReceipt | None:
+        """Return a stored receipt or ``None``."""
         ...

@@ -32,6 +32,8 @@ from intergrax.applications.contracts.build_context import ApplicationBuildConte
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
+from intergrax.runtime.registry.agent_registry_read_view import freeze_agent_registry
 from intergrax.runtime.registry.harness_snapshot import HarnessRegistrySnapshot
 
 _NON_EMPTY = Field(min_length=1)
@@ -106,7 +108,7 @@ class MaterializedRegistryProjection:
     """Immutable registry projection bound to one runtime revision."""
 
     evidence: RegistryProjectionEvidence
-    agent_registry: AgentRegistry
+    agent_registry: AgentRegistryRead
     harness_snapshot: HarnessRegistrySnapshot
 
 
@@ -486,7 +488,7 @@ def build_registry_projection(
     )
     return MaterializedRegistryProjection(
         evidence=evidence,
-        agent_registry=registry,
+        agent_registry=freeze_agent_registry(registry),
         harness_snapshot=harness_snapshot,
     )
 

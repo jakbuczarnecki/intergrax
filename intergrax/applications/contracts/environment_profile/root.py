@@ -38,6 +38,7 @@ from intergrax.applications.contracts.environment_profile.normalization import (
     PROFILE_SPEC_V2,
     flatten_profile_dict,
     lift_flat_profile_dict,
+    migrate_environment_profile_wire,
     uses_nested_profile_wire,
 )
 from intergrax.applications.contracts.environment_profile.sub_profiles import (
@@ -46,8 +47,9 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     ComplianceProfile,
     ContextProfile,
     CostProfile,
-    CriticProfile,
-    CriticVerificationScopes,
+    DecisionProfile,
+    DecisionFlowProfile,
+    DecisionVerificationProfile,
     DiagnosticProfile,
     EvaluationProfile,
     ExecutionBoundaryExportProfile,
@@ -91,7 +93,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     @classmethod
     def _lift_flat_or_nested(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            return lift_flat_profile_dict(data)
+            return migrate_environment_profile_wire(lift_flat_profile_dict(data))
         return data
 
     # Flat wire accessors (APP-EVOL-8.2)
@@ -420,15 +422,15 @@ class ApplicationEnvironmentProfile(BaseModel):
         )
 
     @property
-    def critic_profile(self) -> CriticProfile:
-        return self.cognition.critic
+    def decision_profile(self) -> DecisionProfile:
+        return self.cognition.decision
 
-    @critic_profile.setter
-    def critic_profile(self, value: CriticProfile) -> None:
+    @decision_profile.setter
+    def decision_profile(self, value: DecisionProfile) -> None:
         object.__setattr__(
             self,
             "cognition",
-            self.cognition.model_copy(update={"critic": value}),
+            self.cognition.model_copy(update={"decision": value}),
         )
 
     @property
@@ -821,7 +823,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                             max_parallel_nodes=8,
                             max_run_retries=1,
                         ),
-                        "critic": regulated.critic,
+                        "decision": regulated.decision,
                         "evaluation": regulated.evaluation,
                     },
                 ),
@@ -858,14 +860,7 @@ class ApplicationEnvironmentProfile(BaseModel):
             )
             updates["cognition"] = self.cognition.model_copy(
                 update={
-                    "critic": strict.critic_profile.model_copy(
-                        update={
-                            "require_critic_on_completion": True,
-                            "semantic_judge_enabled": bool(
-                                strict.critic_profile.default_rubric_ref,
-                            ),
-                        },
-                    ),
+                    "decision": strict.decision_profile,
                     "evaluation": strict.evaluation_profile,
                     "orchestration": orchestration.model_copy(
                         update={

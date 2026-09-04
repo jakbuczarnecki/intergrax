@@ -14,7 +14,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 WIRING_FILES = (
     REPO_ROOT / "intergrax/applications/_shared/nexus_factory.py",
     REPO_ROOT / "intergrax/applications/_shared/environment_wiring.py",
-    REPO_ROOT / "intergrax/applications/_shared/critic_tool_wiring.py",
     REPO_ROOT / "intergrax/applications/_shared/harness_host_runtime.py",
 )
 

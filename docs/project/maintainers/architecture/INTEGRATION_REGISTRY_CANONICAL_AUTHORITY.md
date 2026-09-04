@@ -64,7 +64,7 @@ No `SLUG_CATEGORY` edit, no `registry_v2.register()` call, and no central vendor
 
 **Authoritative projection path (`registry_v2.py`):** no `vars()`, `getattr`, `hasattr`, `__dict__`, class-name scanning, factory-name string dispatch, or `TypeError` probing.
 
-**P2 transitional debt (registration-time only):** `contract_capture.py` still uses built-in package-layout reflection once during `register_from_manifest` for shipped providers. External plugins must supply explicit `IntegrationContractSpec` rows.
+**P2 transitional debt (registration-time only):** `contract_capture.py` remains a migration-only fallback for built-ins not yet publishing explicit `IntegrationContractSpec` rows. New providers and migrated built-ins must use provider-owned explicit declarations via `register_from_manifest(..., contract_specs=...)`. Runtime reflection discovery is prohibited as canonical authority.
 
 ## Identity validation
 

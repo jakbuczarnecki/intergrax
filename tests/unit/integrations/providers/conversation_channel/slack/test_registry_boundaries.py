@@ -78,7 +78,7 @@ def test_other_conversation_providers_remain_unbound(slug: str) -> None:
 
 
 def test_slack_notification_registration_remains_separate() -> None:
-    registry = build_contract_registry(slugs=("slack",), exclude_deferred=False)
+    registry = build_contract_registry(slugs=("slack",))
     notification = registry.get(provider_id="slack", category="notification_channel")
     conversation = registry.get(provider_id="slack", category="conversation_channel")
     assert notification.integration_class is not conversation.integration_class

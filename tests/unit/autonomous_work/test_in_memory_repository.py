@@ -12,11 +12,13 @@ from datetime import datetime, timezone
 import pytest
 
 from intergrax.autonomous_work.in_memory_repository import (
+    InMemoryGoalEvaluationCadenceStateRepository,
     InMemoryResponsibilityRepository,
     InMemoryWorkContinuityStateRepository,
     InMemoryWorkerDefinitionRepository,
     InMemoryWorkerGoalRepository,
     InMemoryWorkerInstanceRepository,
+    InMemoryWorkerPrincipalBindingRepository,
 )
 from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityConflict,
@@ -77,6 +79,7 @@ from intergrax.contracts.autonomous_work.references import (
     WorkspaceScopeRef,
 )
 from intergrax.contracts.decision_identity import mint_decision_id
+from tests.unit.autonomous_work import repository_contracts as contract_suite
 
 pytestmark = pytest.mark.unit
 
@@ -641,3 +644,19 @@ def test_continuity_stale_revision_conflict() -> None:
             replace(first, next_action_hint="stale"),
             expected_revision=created.revision,
         )
+
+
+def test_in_memory_worker_principal_binding_contracts() -> None:
+    repo = InMemoryWorkerPrincipalBindingRepository()
+    contract_suite.contract_worker_principal_binding_create_get(repo)
+    contract_suite.contract_worker_principal_binding_idempotent_identical_create(repo)
+    contract_suite.contract_worker_principal_binding_same_id_different_content_conflicts(repo)
+    contract_suite.contract_worker_principal_binding_missing_returns_none(repo)
+    contract_suite.contract_worker_principal_binding_worker_isolation(repo)
+    contract_suite.contract_worker_principal_binding_same_principal_different_scopes(repo)
+
+
+def test_in_memory_goal_evaluation_cadence_state_contracts() -> None:
+    repo = InMemoryGoalEvaluationCadenceStateRepository()
+    contract_suite.contract_goal_evaluation_cadence_state_repository(repo)
+    contract_suite.contract_goal_evaluation_cadence_state_goal_isolation(repo)

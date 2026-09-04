@@ -3,6 +3,7 @@
 """Restarted Jira and Confluence application Search/Ask proof."""
 
 from __future__ import annotations
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 
 import json
 from dataclasses import replace
@@ -312,8 +313,10 @@ def _restart_application(
         compensation_queue_store=harness_runtime.compensation_queue_store,
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(harness_runtime)
     task_executor = LocalWorkspaceTaskExecutor(
-        build_lkw_host_task_execution(harness_runtime.nexus_loop, environment),
+        build_lkw_host_task_execution(nexus_loop, environment),
+        nexus_loop=nexus_loop,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

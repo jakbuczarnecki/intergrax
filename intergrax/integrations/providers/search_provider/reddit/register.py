@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from intergrax.integrations.providers.search_provider.reddit.bundle import create_reddit_search_provider
 from intergrax.integrations.providers.search_provider.reddit.manifest import MANIFEST
+from intergrax.integrations.providers.search_provider.reddit.contract_spec import CONTRACT_SPECS
 from intergrax.integrations.registry.plugin_register import register_from_manifest
 
 
 def register_reddit_integration(*, override: bool = False) -> None:
-    register_from_manifest(MANIFEST, create_reddit_search_provider, override=override)
+    register_from_manifest(MANIFEST, create_reddit_search_provider, override=override, contract_specs=CONTRACT_SPECS)

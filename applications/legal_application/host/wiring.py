@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from legal.legal_agent import LegalAgent
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
@@ -87,7 +87,7 @@ def build_legal_registry(settings: LegalBackendSettings) -> AgentRegistry:
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(manifest, env, settings=settings)
-    return build_application_registry(manifest, env_wiring.build_context)
+    return build_manifest_development_registry(manifest, env_wiring.build_context)
 
 
 def build_legal_agent(

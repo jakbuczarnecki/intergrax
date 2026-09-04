@@ -33,10 +33,3 @@ class PreModelPolicyContext:
     denied_planner_model_ids: tuple[str, ...] = ()
     model_id: str = ""
     denied_model_ids: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CriticPolicyContext:
-    """Context for ``evaluate_critic_verdict`` live policy evaluation."""
-
-    require_critic_on_completion: bool = False

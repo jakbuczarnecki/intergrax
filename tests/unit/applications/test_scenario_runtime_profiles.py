@@ -246,7 +246,12 @@ def test_production_fail_closed_without_tenant(tmp_path: Path) -> None:
 
 def test_production_fail_closed_when_diagnostics_required_without_document_store(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(
+        "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_trigger",
+        lambda **_kwargs: None,
+    )
     environment = _production_attached_environment("scenario.production.no_diag")
     with pytest.raises(ScenarioRuntimeBuildError, match="central diagnostics are required"):
         build_scenario_production_runtime(
@@ -256,7 +261,7 @@ def test_production_fail_closed_when_diagnostics_required_without_document_store
             tenant_id=_PRODUCTION_TENANT,
             runtime_events_db_path=tmp_path / "events.db",
             trace_db_path=tmp_path / "trace.db",
-            document_store=None,
+            document_store=InMemoryDocumentStore(),
         )
 
 

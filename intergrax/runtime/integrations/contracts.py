@@ -81,6 +81,7 @@ class PlatformIntegrationKind(StrEnum):
     ML_INFERENCE_HOST = "ml_inference_host"
     MODEL_SERVING_RUNTIME = "model_serving_runtime"
     LLM_GUARDRAIL = "llm_guardrail"
+    MANAGED_RETRIEVAL = "managed_retrieval"
     EXTERNAL_WORK = "external_work"
 
 

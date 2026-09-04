@@ -4,11 +4,11 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-DOC-CLEAN (2026-08-30):** Canonical target architecture **FROZEN**. Implementation **NOT STARTED**. Production remains CVL / Critic until clean-cut migration.
+> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Canonical target architecture **FROZEN**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. Remaining work: Platform Plugins integration · lifecycle observability/diagnostics · real Docker E2E production qualification (**DS-E2E-02** Council multi-provider) · final exact-commit audit. **Not** whole-system production-qualified until DS-E2E + DS-FINAL-AUDIT.
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub**.
 
-**Last updated:** 2026-08-30 - DS-DOC-CLEAN plan consolidation.
+**Last updated:** 2026-09-04 - DS-ROADMAP-REALITY-SYNC.
 
 ---
 
@@ -21,21 +21,50 @@
 - **Skip** **Done** / closed unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) read-scope block only.
 - **Paired architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) - one per session max.
-- **CURRENT implementation:** [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) - migration audit only.
+- **CURRENT implementation:** Decision System runtime — see [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md).
 - **Extended depth:** [`architecture/satellites/DECISION_SYSTEM_extended_depth.md`](../../architecture/satellites/DECISION_SYSTEM_extended_depth.md) on demand.
 
 ---
 
-## Architecture frozen vs implementation planned
+## Architecture frozen vs implementation reality
 
 | Layer | Status |
 | ----- | ------ |
 | **Target architecture** | **FROZEN** - [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) canon |
 | **Verification architecture** | **FROZEN** - [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) |
 | **Deliberation architecture** | **FROZEN** - [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) |
-| **Runtime implementation** | **PLANNED** - no Decision System classes shipped |
-| **Production path** | **CURRENT** - `intergrax/runtime/critic/**` until clean cut |
-| **Evidence** | **PLANNED** - DS-E2E Docker qualification phase after migration |
+| **Core Decision runtime** | **DONE** |
+| **Decision Revision** | **ENTERPRISE CLOSED** |
+| **Decision Verification Pipeline** | **DONE** |
+| **Verification production composition** | **ENTERPRISE CLOSED** |
+| **Decision Strategy foundation** | **DONE** |
+| **Decision Governance** | **DONE** |
+| **Decision Human Review** | **DONE** |
+| **Execution/Nexus integration** | **DONE** |
+| **Critic migration** | **COMPLETE** |
+| **Council Strategy** | **DONE** (DS-COUNCIL enterprise closed; DS-E2E-02 open) |
+| **Platform plugin integration** | **PARTIAL** |
+| **Durable authority/recovery** | **PARTIAL** |
+| **Lifecycle observability** | **PARTIAL** |
+| **Production qualification** | **PLANNED** - DS-E2E Docker evidence |
+| **Final Decision System audit** | **PLANNED** |
+
+---
+
+## Path to complete
+
+Ordered sequencing labels (existing **DS-\*** IDs remain authoritative):
+
+| # | Group | Outcome |
+| - | ----- | ------- |
+| 0 | **DS-ROADMAP-REALITY-SYNC** | Roadmap reflects implemented system; no stale Critic/current-runtime claims. |
+| 1 | **DS-VER-TRUST-HARDENING** | The verifier cannot be manipulated by the answer it is evaluating. |
+| 2 | **DS-DURABLE-AUTHORITY** | Crash or concurrent workers cannot create two final authoritative decisions or reset revision limits. |
+| 3 | **DS-COUNCIL** | Multiple models can independently propose, disagree, and synthesize one candidate. |
+| 4 | **DS-PLUGIN** | New strategies/verifiers/artifact kinds can be supplied through Platform Plugins without modifying Decision core. |
+| 5 | **DS-OBS-DIAG** | Operators can reconstruct why a decision became authoritative. |
+| 6 | **DS-E2E** | The architecture is proven with real providers/processes/containers. |
+| 7 | **DS-FINAL-AUDIT** | One exact commit is independently certified against architecture and evidence. |
 
 ---
 
@@ -43,16 +72,16 @@
 
 | Phase | Status | Detail section |
 | ----- | ------ | -------------- |
-| **DS-CORE** | PLANNED | [below](#phase-ds-core--decision-lifecycle-foundation) |
+| **DS-CORE** | **DONE** | [below](#phase-ds-core--decision-lifecycle-foundation) |
 | **DS-REV** | **DONE** | [below](#phase-ds-rev--revision-policy-foundation) |
-| **DS-VER-PIPE / DS-VER-STAGES** | PLANNED | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
-| **DS-DELIB / DS-COUNCIL** | PLANNED | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
-| **DS-MIG** (Critic clean cut) | PLANNED | [below](#phase-ds-mig--critic-clean-cut-migration) |
-| **DS-E2E** (Docker qualification) | PLANNED | [below](#phase-ds-e2e--docker-production-qualification) |
+| **DS-VER-PIPE / DS-VER-STAGES** | **DONE** | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
+| **DS-DELIB / DS-COUNCIL** | **DONE** | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) - DS-DELIB + DS-COUNCIL **DONE** |
+| **DS-MIG** (Critic clean cut) | **COMPLETE** | [below](#phase-ds-mig--critic-clean-cut-migration) |
+| **DS-E2E** (Docker qualification) | **PLANNED** | [below](#phase-ds-e2e--docker-production-qualification) |
 
 ---
 
-## Phase DS-CORE - Decision Lifecycle foundation (PLANNED)
+## Phase DS-CORE - Decision Lifecycle foundation (DONE)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
@@ -69,19 +98,27 @@
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-REV-01 | P0 | Decision revision policy foundation (challenge → bounded authorization → revised candidate minting) | **Done / ENTERPRISE CLOSED** - identity-bound `DecisionRevisionState`, policy provenance in `DecisionRevisionDecision`; `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
+| DS-REV-01 | P0 | Decision revision policy foundation (challenge → bounded authorization → revised candidate minting) | **Done / ENTERPRISE CLOSED** - identity-bound `DecisionRevisionState`, policy provenance in `DecisionRevisionDecision`, custom evaluator semantic outputs validated against canonical policy semantics; `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
-### Plugin architecture (PLANNED)
+### Plugin architecture (ENTERPRISE CLOSED)
+
+Platform Plugin System owns discovery, admission, and load isolation. Decision domain
+composition adapter (`intergrax/runtime/decision_plugin_composition.py`) validates
+semantics and composes immutable registries. Explicit ``discover_entry_points=True``
+is required for activation. When ``require_manifest_capability_binding=True``, missing
+positive manifest capability proof is a structured admission rejection (fail-closed).
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-PLUGIN-01 | P1 | Platform Plugins discovery/config integration for `DecisionStrategy` (same canonical registry as DS-DELIB-01) | **Planned** |
-| DS-PLUGIN-02 | P1 | Verification stage registration surface | **Planned** |
-| DS-PLUGIN-03 | P2 | Plugin/config integration for Decision Artifact kind registration | **Planned** |
+| DS-PLUGIN-01 | P1 | Platform Plugins discovery/config integration for `DecisionStrategy` | **Done / ENTERPRISE CLOSED** |
+| DS-PLUGIN-02 | P1 | Verification stage registration surface via Platform Plugins | **Done / ENTERPRISE CLOSED** |
+| DS-PLUGIN-03 | P2 | Plugin/config integration for Decision Artifact kind registration | **Done / ENTERPRISE CLOSED** |
+
+**Architecture:** Platform Plugin System → discovery/admission/config/trust → Decision domain composition adapter → domain-owned immutable registry. Decision contracts do **not** import discovery (source gate on decision contracts).
 
 ---
 
-## Phase DS-INTEGRATION - Execution host · orchestration · governance · observability · recovery (PLANNED)
+## Phase DS-INTEGRATION - Execution host · orchestration · governance · observability · recovery (IMPLEMENTED / PARTIAL)
 
 ### Execution-host integration
 
@@ -179,50 +216,55 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-GOV-01 | P1 | Version-bound authorization handoff to Governed Execution | **Planned** |
-| DS-GOV-02 | P1 | HITL invocation for approver / adjudicator (remove L2 Critic) | **Planned** |
+| DS-GOV-01 | P1 | Version-bound authorization handoff to Governed Execution; execution-time current-policy-context validation | **Done** |
+| DS-GOV-02 | P1 | HITL invocation for approver / adjudicator (remove L2 Critic) | **Done** |
 
 ### Observability / Diagnostics
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-OBS-01 | P1 | Decision lifecycle audit events on observability spine | **Planned** |
-| DS-OBS-02 | P2 | Diagnostics feed boundaries (no lifecycle ownership) | **Planned** |
+| DS-OBS-01 | P1 | Decision lifecycle audit events on observability spine | **PARTIAL** - canonical Verification RuntimeEvent integration exists (`decision.verification.started` · `stage_completed` · `stage_unavailable` · `probabilistic_skipped` · `completed`); full Decision Lifecycle transition coverage not yet implemented/proven |
+| DS-OBS-02 | P2 | Diagnostics feed boundaries (no lifecycle ownership) | **PLANNED** - diagnostics must consume/project Decision evidence; must not own Decision Lifecycle |
 
 ### Persistence / recovery / concurrency
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-REC-01 | P0 | Finalize idempotency + conflict detection | **Planned** |
-| DS-REC-02 | P1 | Crash resume without duplicate authoritative outcome | **Planned** |
-| DS-REC-03 | P1 | Budget ceiling preserved on resume | **Planned** |
+| DS-REC-01 | P0 | Finalize idempotency + conflict detection | **DONE / ENTERPRISE CLOSED** - pure guard (`intergrax/contracts/decision_finalization.py`) + atomic `DecisionFinalizationPersistence.commit_authoritative_outcome` (`intergrax/runtime/execution/decision_finalization_persistence.py`) + in-memory/SQLite adapters + conformance/race proof (`tests/unit/runtime/execution/test_decision_finalization_persistence.py`) |
+| DS-REC-02 | P1 | Crash resume without duplicate authoritative outcome | **IMPLEMENTED / QUALIFICATION OPEN** - checkpoint v2 + durable finalization lookup + `decision_recovery` convergence + subprocess SQLite proof (`tests/unit/runtime/execution/test_decision_durable_recovery.py`); DS-E2E-06 Docker/process qualification remains open |
+| DS-REC-03 | P1 | Budget ceiling preserved on resume | **DONE / ENTERPRISE CLOSED** - `DecisionRevisionCheckpointState` in `DecisionCheckpointState` + resume policy fail-closed + exhausted preservation proof (`tests/unit/runtime/execution/test_decision_durable_recovery.py`) |
+
+**DS-REC durable wire hardening (2026-09-04):** pickle removed from Decision durable persistence; explicit versioned JSON wire codec + typed artifact payload codec seam (`decision_durable_wire_codec.py`, `decision_artifact_payload_codec.py`). Legacy pickle blobs are not auto-loaded at runtime. Proof: `tests/unit/runtime/execution/test_decision_durable_wire_codec.py`.
 
 ### Failure / security hardening
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-SEC-01 | P0 | Execution identity binding on all decision records | **Planned** |
-| DS-SEC-02 | P1 | Stale approval protection across revisions | **Planned** |
+| DS-SEC-01 | P0 | Execution identity binding on all decision records | **IMPLEMENTED / CLOSURE GATE OPEN** - `DecisionIdentity` → `DecisionExecutionLineage` → `TaskId` / `RunId` / `AttemptId` / `ExecutionId` propagated through candidate, proposal refs, verification, revision, human review, authorization; dedicated architecture closure gate not yet recorded |
+| DS-SEC-02 | P1 | Stale approval protection across revisions | **DONE** - `validate_human_review_decision_for_proposal()` · `proposal_refs_match()` · `validate_execution_authorization_for_decision()` fail closed on exact-version mismatch; v1 approval cannot authorize v2 |
 
 ---
 
-## Phase DS-MIG - Critic clean-cut migration (PLANNED)
+## Phase DS-MIG - Critic clean-cut migration (COMPLETE)
+
+Legacy Critic exists only in historical migration evidence / legacy input normalization where explicitly retained (`intergrax/runtime/migration/**`).
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-MIG-01 | P0 | Wire graph/UAEP paths to Decision Lifecycle | **Planned** |
-| DS-MIG-02 | P0 | Retire `CriticOrchestrator` after pipeline parity | **Planned** |
-| DS-MIG-03 | P1 | Remove L2 from verification model; route HITL via Lifecycle | **Planned** |
-| DS-MIG-04 | P1 | DELETE CRITIC_VERIFICATION docs + retire `intergrax/runtime/critic/**` | **Planned** |
-| DS-MIG-05 | P2 | Update application CriticProfile/CVL references | **Planned** |
+| DS-MIG-01 | P0 | Wire graph/UAEP paths to Decision Lifecycle; Graph/UAEP cutover with governance/lifecycle semantic hardening complete | **Done** |
+| DS-MIG-PARITY | P0 | Dual-run Decision/Critic observational parity qualification (`intergrax/runtime/migration/**`) | **Done / READY** |
+| DS-MIG-02 | P0 | Retire `CriticOrchestrator` from production authority; remove `CriticProfile` Decision config authority (`ApplicationDecisionWiringSpec`) | **Done** |
+| DS-MIG-03 | P1 | Remove L2 from verification model; route HITL via Lifecycle | **Done** |
+| DS-MIG-04 | P1 | DELETE CRITIC_VERIFICATION docs + retire `intergrax/runtime/critic/**` | **ENTERPRISE CLOSED** |
+| DS-MIG-05 | P2 | Remove legacy `CriticProfile` application configuration; canonical `DecisionProfile` host wire | **ENTERPRISE CLOSED** |
 
 ---
 
-## Critic → Decision disposition matrix
+## Critic → Decision disposition matrix (historical migration reference)
 
-Audited against `intergrax/runtime/critic/**` and [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md). **Target owner** is post-migration; **Disposition** guides clean-cut slice.
+Audited against legacy Critic and [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md). **Target owner** is post-migration; **Disposition** guided clean-cut slice. **Migration complete** — matrix retained for provenance only.
 
-| Current Critic capability | Target owner | Disposition |
+| Legacy Critic capability | Target owner | Disposition |
 | ------------------------- | ------------ | ----------- |
 | L0 deterministic (`L0Gateway`, `NexusValidationEngine`) | Decision Verification - structural/deterministic stages | **MOVE/REUSE** |
 | L1 semantic (`L1Gateway`, `eval.judge`) | Decision Verification - semantic stage | **MOVE/REUSE** |
@@ -248,7 +290,25 @@ Audited against `intergrax/runtime/critic/**` and [`CRITIC_VERIFICATION.md`](../
 | `borderline_l1_score` L2 escalation heuristic | HITL policy trigger via Lifecycle | **MOVE** |
 | `ToolRegistryCriticEvalClient` | Verification stage tool client | **REUSE** |
 
-**CRITIC_VERIFICATION docs:** **CURRENT IMPLEMENTATION SNAPSHOT** - physical **DELETE** planned in clean-cut slice ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
+**CRITIC_VERIFICATION docs:** **HISTORICAL IMPLEMENTATION SNAPSHOT** — physical DELETE completed in DS-MIG-04 ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
+
+---
+
+## Decision/Critic parity table (DS-MIG-PARITY)
+
+Migration-only observational comparison in `intergrax/runtime/migration/decision_critic_parity.py` and `critic_shadow_adapter.py`. Scheduled for deletion with legacy Critic retirement.
+
+| Legacy Critic concept | Target Decision owner | Raw parity expected? | Retirement interpretation |
+| --------------------- | --------------------- | -------------------- | ------------------------- |
+| L0 deterministic | Decision Verification — structural stage | Yes (normalized outcome) | Missing Decision capability blocks retirement |
+| L1 semantic | Decision Verification — semantic stage | Yes (normalized outcome) | Provider-unavailable classified explicitly |
+| L1 trajectory | Decision Verification — trajectory stage | Yes where configured | Architectural layer mapping only |
+| L2 human / `ESCALATE_HITL` | Decision HITL outside Verification | No (expected difference) | Does not block retirement alone |
+| `RETRY` | Execution reliability / RetryEngine | No (expected difference) | Does not block retirement |
+| `REVISE` | Decision Revision lifecycle | No when revision policy maps | Does not block retirement alone |
+| `FAIL` / `CONTINUE` | Decision resolution / host action | Yes (acceptable vs challenged) | Blocking only on capability gap |
+| `policy_bridge` | Not invoked in shadow | N/A | Observational projection only |
+| `EvaluatorLoopExecutor` | Forbidden in shadow | N/A | Revision assessed separately |
 
 ---
 
@@ -258,11 +318,11 @@ Re-owned from [`CRITIC_VERIFICATION` plan](CRITIC_VERIFICATION.md) Protocol v2 f
 
 | ID | Owner | Status |
 | -- | ----- | ------ |
-| DS-VER-RUBRIC-PROVENANCE-INTEGRITY | Verification | ACCEPTED / PLANNED |
-| DS-VER-PRODUCER-INDEPENDENCE | Verification · Deliberation | ACCEPTED / PLANNED |
-| DS-VER-ADVERSARIAL-SEMANTIC | Verification | ACCEPTED / PLANNED |
-| DS-DEC-EXECUTION-IDENTITY-BINDING | Decision System | ACCEPTED / PLANNED |
-| DS-VER-RESULT-COHERENCE | Verification | ACCEPTED / PLANNED |
+| DS-VER-RUBRIC-PROVENANCE-INTEGRITY | Verification | **DONE** - `SemanticRubricRef` · `ResolvedSemanticRubric` · `criteria` · `min_score` · `provenance_ref` · resolver exact-ref check · fail-closed unresolved rubric (`intergrax/contracts/semantic_verification.py`) |
+| DS-VER-PRODUCER-INDEPENDENCE | Verification · Deliberation | **IMPLEMENTED / QUALIFICATION OPEN** - `SemanticVerificationIndependenceConfig` · `VerifierIndependenceMode` · `producer_profile_id` · `verifier_profile_id`; contract and runtime enforcement exist; real independent-provider/model production E2E remains **DS-E2E-03** |
+| DS-VER-ADVERSARIAL-SEMANTIC | Verification | **DONE / ENTERPRISE CLOSED** - `EvalTrustedRubricContext` · `EvalUntrustedCandidateContent` · `build_eval_judge_messages()` · canonical `intergrax.eval.candidate.v1` serialization · adversarial unit tests (`tests/unit/tools/providers/eval/test_judge_trust_boundary.py`) |
+| DS-DEC-EXECUTION-IDENTITY-BINDING | Decision System | **IMPLEMENTED / CLOSURE GATE OPEN** - identity chain through authoritative records; dedicated architecture closure gate not yet recorded |
+| DS-VER-RESULT-COHERENCE | Verification | **DONE** - `VerificationResult` · `_validate_result_coherence()` · `VerificationStageRecord` coherence · exact `DecisionProposalRef` binding (`intergrax/contracts/decision_verification.py`) |
 | DS-DEC-REVISION-LOOP-BOUNDEDNESS | Decision System | **Done** - `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
 ---
@@ -300,7 +360,7 @@ The Decision System is **not** production-qualified after unit tests, integratio
 2. **Phase DS-E2E** rows executed as **real Docker E2E** - not mocks.
 3. **DS-FINAL-AUDIT** passed at an exact commit pin.
 
-Until then, production correctness remains **CVL / Critic** ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)).
+Until then, canonical Decision System runtime is **implemented and active**; **production qualification** of the full system remains **PLANNED** (Phase DS-E2E + DS-FINAL-AUDIT). Do **not** claim **DECISION SYSTEM COMPLETE** or whole-system **PRODUCTION QUALIFIED** yet.
 
 ---
 
@@ -312,7 +372,7 @@ Until then, production correctness remains **CVL / Critic** ([`CRITIC_VERIFICATI
 | Council / strategies | [`DECISION_DELIBERATION.md` plan](DECISION_DELIBERATION.md) |
 | HITL | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
 | Policy | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
-| CURRENT Critic | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| Historical Critic snapshot | [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) |
 
 ---
 

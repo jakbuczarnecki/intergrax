@@ -22,6 +22,10 @@ from intergrax.runtime.background_execution.identity_persistence import (
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
+from tests.unit.runtime.background_execution.reentry_admission_doubles import (
+    admission_kwargs,
+    make_kv_admission_dependencies,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
@@ -119,8 +123,8 @@ def test_broker_worker_base_transitions_to_succeeded() -> None:
         registry=registry,
         kv_store=kv,
         idempotency_store=None,
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        **admission_kwargs(make_kv_admission_dependencies(kv)),
     )
 
     worker.process_message(raw_payload=_build_message())
@@ -168,8 +172,8 @@ def test_broker_worker_base_transitions_to_failed_on_controlled_result() -> None
         kv_store=kv,
         idempotency_store=None,
         event_emitter=collector,
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        **admission_kwargs(make_kv_admission_dependencies(kv)),
     )
 
     worker.process_message(raw_payload=_build_message(task_id="t-fail"))
@@ -215,8 +219,8 @@ def test_broker_worker_base_transitions_to_failed_on_exception() -> None:
         registry=registry,
         kv_store=kv,
         idempotency_store=None,
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        **admission_kwargs(make_kv_admission_dependencies(kv)),
     )
 
     with pytest.raises(RuntimeError, match="unexpected worker crash"):

@@ -19,6 +19,9 @@ from platform_proofs.scenarios.verified_product_identification.application.confi
 from platform_proofs.scenarios.verified_product_identification.application.domain.search_representation import (
     SEARCH_REPRESENTATION_DERIVATION_VERSION,
 )
+from platform_proofs.scenarios.verified_product_identification.embedding_materialization.manifest.model import (
+    EmbeddingArtifactState,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.config import (
     DatasetVerificationMode,
     VpiBootstrapConfig,
@@ -55,6 +58,11 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.orchestration.orchestrator import (
     VpiBootstrapDependencies,
     VpiBootstrapOrchestrator,
+)
+from tests.unit.platform_proofs.scenarios.verified_product_identification.bootstrap_artifact_test_support import (
+    FakeArtifactReader,
+    artifact_record_for_wdc_row,
+    reader_from_records,
 )
 from platform_proofs.scenarios.verified_product_identification.integrations.search_store.platform_bootstrap_adapter import (
     PlatformSearchIndexBootstrapAdapter,
@@ -310,10 +318,30 @@ def _bootstrap_config(
         bootstrap_implementation_version=BOOTSTRAP_IMPLEMENTATION_VERSION,
         postgresql_schema="vpi",
         qdrant_collection_name="vpi_offers",
+        artifact_root_dir=tmp_path / "artifacts",
         embedding_configuration=VpiEmbeddingConfiguration(
             profile=EmbeddingProfile(provider="hf", model="fake-model"),
             expected_dimension=8,
         ),
+    )
+
+
+def _artifact_reader_for_dataset(
+    *,
+    row_count: int,
+    max_records: int | None,
+    shard_size: int | None = None,
+    **manifest_overrides: object,
+) -> FakeArtifactReader:
+    target_rows = max_records if max_records is not None else row_count
+    records = tuple(
+        artifact_record_for_wdc_row(index) for index in range(target_rows)
+    )
+    return reader_from_records(
+        records,
+        dataset_record_count=row_count,
+        shard_size=shard_size,
+        **manifest_overrides,
     )
 
 
@@ -322,16 +350,22 @@ def _orchestrator(
     *,
     catalog: FakeCatalogPort | None = None,
     search: FakeSearchPort | None = None,
-    embedding: FakeEmbeddingPort | None = None,
+    embedding_artifact: FakeArtifactReader | None = None,
     max_records: int | None = 2,
     row_count: int = 5,
+    shard_size: int | None = None,
 ) -> VpiBootstrapOrchestrator:
     return VpiBootstrapOrchestrator(
         config=_bootstrap_config(tmp_path, max_records=max_records, row_count=row_count),
         dependencies=VpiBootstrapDependencies(
             catalog=catalog or FakeCatalogPort(),
             search=search or FakeSearchPort(),
-            embedding=embedding or FakeEmbeddingPort(),
+            embedding_artifact=embedding_artifact
+            or _artifact_reader_for_dataset(
+                row_count=row_count,
+                max_records=max_records,
+                shard_size=shard_size,
+            ),
         ),
     )
 
@@ -353,8 +387,7 @@ def _write_tiny_parquet(path: Path, *, row_count: int) -> None:
 def test_stage_ordering_and_ready(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort()
-    embedding = FakeEmbeddingPort()
-    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search, embedding=embedding)
+    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search)
 
     report = orchestrator.run()
 
@@ -364,20 +397,64 @@ def test_stage_ordering_and_ready(tmp_path: Path) -> None:
     assert len(search.batches) == 1
     assert catalog.manifest is not None
     assert catalog.manifest.checkpoint_rows_processed == 2
-    assert report.embedding_probe is not None
-    assert report.embedding_probe.status is ValidationStatus.PASS
-    assert embedding.probe_calls >= 1
-    assert embedding.embed_calls == 1
+    assert report.artifact_input_validation is not None
+    assert report.artifact_input_validation.status is ValidationStatus.PASS
 
 
-def test_embedding_gate_blocks_before_ingest(tmp_path: Path) -> None:
+def test_artifact_not_ready_blocks_before_ingest(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort()
+    reader = _artifact_reader_for_dataset(row_count=5, max_records=2)
+    reader.manifest = reader.manifest.with_state(EmbeddingArtifactState.MATERIALIZING)
     orchestrator = _orchestrator(
         tmp_path,
         catalog=catalog,
         search=search,
-        embedding=FakeEmbeddingPort(should_pass=False),
+        embedding_artifact=reader,
+    )
+
+    report = orchestrator.run()
+
+    assert report.final_state is BootstrapState.FAILED
+    assert catalog.batches == []
+    assert search.batches == []
+    assert catalog.prepare_calls == 0
+
+
+def test_artifact_identity_failure_blocks_before_ingest(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    search = FakeSearchPort()
+    reader = _artifact_reader_for_dataset(row_count=5, max_records=2)
+    reader.identity_should_pass = False
+    orchestrator = _orchestrator(
+        tmp_path,
+        catalog=catalog,
+        search=search,
+        embedding_artifact=reader,
+    )
+
+    report = orchestrator.run()
+
+    assert report.final_state is BootstrapState.FAILED
+    assert catalog.batches == []
+    assert search.batches == []
+
+
+def test_insufficient_artifact_coverage_blocks_before_ingest(tmp_path: Path) -> None:
+    catalog = FakeCatalogPort()
+    search = FakeSearchPort()
+    reader = _artifact_reader_for_dataset(row_count=5, max_records=2)
+    reader.manifest = reader.manifest.with_checkpoint(
+        shard_ordinal=0,
+        rows_materialized=1,
+        committed_shards=reader.manifest.committed_shards,
+    )
+    orchestrator = _orchestrator(
+        tmp_path,
+        catalog=catalog,
+        search=search,
+        embedding_artifact=reader,
+        max_records=2,
     )
 
     report = orchestrator.run()
@@ -488,6 +565,36 @@ def test_deterministic_batching(tmp_path: Path) -> None:
     assert batches[1][1][-1].global_row_index == 3
 
 
+def test_partial_final_batch_when_max_records_not_batch_aligned(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "rows.parquet"
+    _write_tiny_parquet(dataset_path, row_count=10)
+    batches = list(
+        iter_dataset_rows(dataset_path, batch_size=4, start_row_index=0, max_records=5)
+    )
+    assert len(batches) == 2
+    assert len(batches[0][1]) == 4
+    assert len(batches[1][1]) == 1
+    assert batches[1][1][0].global_row_index == 4
+
+
+def test_resume_emits_remaining_rows_when_final_batch_is_partial(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "rows.parquet"
+    _write_tiny_parquet(dataset_path, row_count=10)
+    batches = list(
+        iter_dataset_rows(
+            dataset_path,
+            batch_size=4,
+            start_row_index=4,
+            start_batch_ordinal=1,
+            max_records=3,
+        )
+    )
+    assert len(batches) == 1
+    assert len(batches[0][1]) == 3
+    assert batches[0][1][0].global_row_index == 4
+    assert batches[0][1][-1].global_row_index == 6
+
+
 def test_checkpoint_advances_only_after_successful_batch(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     orchestrator = _orchestrator(tmp_path, catalog=catalog)
@@ -528,8 +635,8 @@ def test_ready_gate_requires_all_checks() -> None:
     )
     report = evaluate_ready_gate(
         manifest=manifest,
-        embedding_report=ValidationReport.from_checks(
-            (ValidationCheck("embedding_gate0", ValidationStatus.PASS, "ok"),)
+        artifact_input_report=ValidationReport.from_checks(
+            (ValidationCheck("embedding_artifact_ready", ValidationStatus.PASS, "ok"),)
         ),
         catalog_report=ValidationReport.from_checks(
             (ValidationCheck("source_offer_count", ValidationStatus.PASS, "ok"),)
@@ -564,44 +671,27 @@ def test_orchestrator_has_no_concrete_embedding_provider_import() -> None:
     assert "EmbeddingProviderRegistry" not in source
 
 
-def test_alternate_embedding_execution_port(tmp_path: Path) -> None:
-    class AltEmbedding(FakeEmbeddingPort):
-        def probe(self) -> EmbeddingProbeResult:
-            result = super().probe()
-            return EmbeddingProbeResult(
-                status=result.status,
-                provider="alt",
-                model="alt-model",
-                resolved_dimension=result.resolved_dimension,
-                probe_vector_count=result.probe_vector_count,
-                detail="alt-probe",
-            )
-
-    embedding = AltEmbedding()
-    orchestrator = _orchestrator(tmp_path, embedding=embedding)
-    report = orchestrator.run()
-    assert report.final_state is BootstrapState.READY
-    assert report.embedding_probe is not None
-    assert report.embedding_probe.provider == "alt"
+def test_orchestrator_has_no_embedding_execution_port_import() -> None:
+    source = ORCHESTRATOR_PATH.read_text(encoding="utf-8")
+    assert "EmbeddingExecutionPort" not in source
+    assert "embed_batch" not in source
 
 
-def test_same_embedding_instance_for_gate0_and_batches(tmp_path: Path) -> None:
-    embedding = FakeEmbeddingPort()
-    orchestrator = _orchestrator(tmp_path, embedding=embedding)
-    orchestrator.run()
-    assert embedding.probe_calls >= 1
-    assert embedding.embed_calls == 1
+def test_orchestrator_dependencies_have_no_embedding_parameter() -> None:
+    source = ORCHESTRATOR_PATH.read_text(encoding="utf-8")
+    assert "embedding: EmbeddingExecutionPort" not in source
+    assert "embedding_artifact:" in source
 
 
 def test_verify_ready_then_full_continues(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort()
-    embedding = FakeEmbeddingPort()
+    reader = _artifact_reader_for_dataset(row_count=5, max_records=5)
     verify = _orchestrator(
         tmp_path,
         catalog=catalog,
         search=search,
-        embedding=embedding,
+        embedding_artifact=reader,
         max_records=2,
         row_count=5,
     )
@@ -614,7 +704,7 @@ def test_verify_ready_then_full_continues(tmp_path: Path) -> None:
         tmp_path,
         catalog=catalog,
         search=search,
-        embedding=embedding,
+        embedding_artifact=reader,
         max_records=None,
         row_count=5,
     )
@@ -627,12 +717,10 @@ def test_verify_ready_then_full_continues(tmp_path: Path) -> None:
 def test_verify_ready_then_verify_no_reingest(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort()
-    embedding = FakeEmbeddingPort()
     orchestrator = _orchestrator(
         tmp_path,
         catalog=catalog,
         search=search,
-        embedding=embedding,
         max_records=2,
         row_count=5,
     )
@@ -646,7 +734,7 @@ def test_verify_ready_then_verify_no_reingest(tmp_path: Path) -> None:
 def test_partial_resume_to_target(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort(point_count=2)
-    embedding = FakeEmbeddingPort()
+    reader = _artifact_reader_for_dataset(row_count=5, max_records=5)
     catalog.manifest = _sample_manifest(
         state=BootstrapState.INGESTING,
         dataset_record_count=5,
@@ -667,7 +755,7 @@ def test_partial_resume_to_target(tmp_path: Path) -> None:
         tmp_path,
         catalog=catalog,
         search=search,
-        embedding=embedding,
+        embedding_artifact=reader,
         max_records=4,
         row_count=5,
     )
@@ -680,8 +768,7 @@ def test_partial_resume_to_target(tmp_path: Path) -> None:
 def test_pg_success_qdrant_fail_retry_does_not_overcount(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort(fail_on_batch=0)
-    embedding = FakeEmbeddingPort()
-    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search, embedding=embedding)
+    orchestrator = _orchestrator(tmp_path, catalog=catalog, search=search)
     first = orchestrator.run()
     assert first.final_state is BootstrapState.FAILED
     assert catalog.source_offer_count == 2
@@ -694,10 +781,9 @@ def test_pg_success_qdrant_fail_retry_does_not_overcount(tmp_path: Path) -> None
     assert catalog.manifest.search_point_count == 2
 
 
-def test_ready_fast_path_executes_real_gate0(tmp_path: Path) -> None:
+def test_ready_fast_path_validates_artifact_without_model(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
     search = FakeSearchPort(point_count=2)
-    embedding = FakeEmbeddingPort()
     catalog.manifest = _sample_manifest(
         state=BootstrapState.READY,
         dataset_record_count=5,
@@ -714,16 +800,16 @@ def test_ready_fast_path_executes_real_gate0(tmp_path: Path) -> None:
         tmp_path,
         catalog=catalog,
         search=search,
-        embedding=embedding,
         max_records=2,
         row_count=5,
     )
     report = orchestrator.run()
     assert report.final_state is BootstrapState.READY
-    assert embedding.probe_calls == 1
-    assert embedding.embed_calls == 0
     assert report.validation is not None
-    assert any(check.name == "embedding.embedding_gate0" for check in report.validation.checks)
+    assert any(
+        check.name == "artifact_input.embedding_artifact_ready"
+        for check in report.validation.checks
+    )
 
 
 class _RestartIndexAdmin:
@@ -759,7 +845,6 @@ class _RestartVectorStore:
 
 def test_ready_fast_path_validates_persisted_qdrant_without_prepare(tmp_path: Path) -> None:
     catalog = FakeCatalogPort()
-    embedding = FakeEmbeddingPort()
     identity = VectorIndexIdentity(logical_name="vpi_offers", tenant_id="default")
     description = VectorIndexDescription(
         identity=identity,
@@ -798,14 +883,11 @@ def test_ready_fast_path_validates_persisted_qdrant_without_prepare(tmp_path: Pa
         tmp_path,
         catalog=catalog,
         search=search,
-        embedding=embedding,
         max_records=2,
         row_count=5,
     )
     report = orchestrator.run()
     assert report.final_state is BootstrapState.READY
-    assert embedding.probe_calls == 1
-    assert embedding.embed_calls == 0
     assert search._dimension is None
     assert report.validation is not None
     assert any(

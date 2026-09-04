@@ -51,6 +51,7 @@ class DeclarativeHitlGrantCoordinator:
             run_id=pending.run_id,
             step_id=pending.step_id,
             tool_id=pending.tool_id,
+            agent_id=pending.agent_id,
             idempotency_key=pending.idempotency_key,
             matched_rule_ids=pending.matched_rule_ids,
             human_request_id=pending.human_request_id,

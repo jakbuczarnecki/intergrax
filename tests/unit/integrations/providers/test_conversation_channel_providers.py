@@ -307,7 +307,6 @@ def test_multi_category_registry_identities_are_distinct(
 def test_conversation_only_providers_resolve() -> None:
     registry = build_contract_registry(
         slugs=("mattermost", "rocket_chat", "google_chat"),
-        exclude_deferred=False,
     )
     for slug in ("mattermost", "rocket_chat", "google_chat"):
         registration = registry.get(provider_id=slug, category="conversation_channel")

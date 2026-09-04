@@ -6,9 +6,15 @@
 from __future__ import annotations
 
 from intergrax.integrations.providers.browser_automation.playwright.bundle import create_playwright_browser_automation
+from intergrax.integrations.providers.browser_automation.playwright.contract_spec import CONTRACT_SPECS
 from intergrax.integrations.providers.browser_automation.playwright.manifest import MANIFEST
 from intergrax.integrations.registry.plugin_register import register_from_manifest
 
 
 def register_playwright_integration(*, override: bool = False) -> None:
-    register_from_manifest(MANIFEST, create_playwright_browser_automation, override=override)
+    register_from_manifest(
+        MANIFEST,
+        create_playwright_browser_automation,
+        override=override,
+        contract_specs=CONTRACT_SPECS,
+    )

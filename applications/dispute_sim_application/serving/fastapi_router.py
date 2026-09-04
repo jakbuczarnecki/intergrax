@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from fastapi import APIRouter, FastAPI, HTTPException, status
 
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from dispute_sim_application.serving.schemas import DisputeSimRunRequestV1, DisputeSimRunResponseV1
@@ -55,10 +56,10 @@ def mount_dispute_sim_routes(
     app: FastAPI,
     *,
     host_execution: HostTaskExecutionPort,
+    registry: AgentRegistryRead,
     prefix: str = "/v1/dispute_sim",
     default_agent_id: str = "echo",
 ) -> DisputeSimRunService:
-    nexus_loop = host_execution.nexus_loop
     service = DisputeSimRunService.from_host_execution(
         host_execution,
         default_agent_id=default_agent_id,
@@ -78,8 +79,8 @@ def mount_dispute_sim_routes(
     @router.get("/agents")
     async def list_agents() -> dict[str, list[dict[str, object]]]:
         agents: list[dict[str, object]] = []
-        for agent_id in nexus_loop.registry.list_agent_ids():
-            contract = nexus_loop.registry.get(agent_id).get_contract()
+        for agent_id in registry.list_agent_ids():
+            contract = registry.get(agent_id).get_contract()
             agents.append(
                 {
                     "agent_id": contract.id,

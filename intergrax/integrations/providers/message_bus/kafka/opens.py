@@ -104,8 +104,8 @@ def open_kafka_worker(
     causal_evidence_persistence: CausalEvidencePersistence,
 ) -> object:
     from intergrax.queueing.providers.kafka.kafka_worker import KafkaWorker
-    from intergrax.runtime.background_execution.identity_persistence import (
-        wire_background_execution_identity_persistence,
+    from intergrax.runtime.background_execution.admission_wiring import (
+        wire_background_execution_admission_dependencies,
     )
 
     resolved_consumer = open_kafka_consumer(
@@ -116,6 +116,7 @@ def open_kafka_worker(
     )
     resolved_producer = open_kafka_producer(config)
     lifecycle_emitter = _open_kafka_lifecycle_emitter(config, producer=resolved_producer)
+    admission = wire_background_execution_admission_dependencies(kv_store=kv_store)
     return KafkaWorker(
         consumer=resolved_consumer,
         registry=registry,
@@ -123,9 +124,9 @@ def open_kafka_worker(
         config=config,
         lifecycle_emitter=lifecycle_emitter,
         idempotency_store=idempotency_store,
-        identity_persistence=wire_background_execution_identity_persistence(
-            kv_store=kv_store,
-        ),
+        identity_persistence=admission.identity_persistence,
         causal_evidence_persistence=causal_evidence_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
         poll_timeout_seconds=poll_timeout_seconds,
     )

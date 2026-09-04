@@ -21,7 +21,9 @@ class ProofConfig(BaseModel):
     agent_id: str = "local_search"
     strategy: Literal["AGENTIC"] = "AGENTIC"
     llm_provider: str = "ollama"
+    embedding_provider: str = "ollama"
     embedding_model: str = "nomic-embed-text"
+    llm_model: str = "llama3.1:latest"
     fixture_root: str = "/cert-fixtures/workspace"
     request_timeout_seconds: float = 240.0
     readiness_timeout_seconds: float = 900.0
@@ -140,6 +142,66 @@ class CertificationEvidence(BaseModel):
     budget_tokens: int = 0
     authority_evidence: str = "sqlite_runtime_events_attempt_id"
     functional_oracle_pass: bool = False
+    functional_expected: str | None = None
+    functional_actual_bounded: str | None = None
+
+
+class DiagnosticCheckResultProjection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    check_id: str
+    status: str
+    factual_claim: str
+
+
+class FunctionalDiagnosticSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    invocation_status: Literal["PASS", "FAIL", "BLOCKED"]
+    persistence_backend: str
+    durable: bool
+    evidence_kinds: list[str] = Field(default_factory=list)
+    evidence_count: int = 0
+    validation_id: str | None = None
+    functional_expected: str
+    functional_actual_bounded: str
+    diagnostic_specification_id: str | None = None
+    diagnostic_specification_version: int | None = None
+    diagnostic_first_proven_failure: str | None = None
+    diagnostic_check_results: list[DiagnosticCheckResultProjection] = Field(default_factory=list)
+    diagnostic_supporting_evidence_refs: list[str] = Field(default_factory=list)
+    diagnostic_limitations: list[str] = Field(default_factory=list)
+    failure_stage: str | None = None
+    confidence: Literal["PROVEN", "INSUFFICIENT"]
+    blocked_reason: str | None = None
+
+
+class ModelRequirementProjection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str
+    model_id: str
+    capability: str
+
+
+class ModelReadinessResultProjection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    model_id: str
+    provider: str
+    capability: str
+    present: bool
+    ready: bool
+    attempts: int
+    elapsed_seconds: float
+    last_error_code: str | None = None
+
+
+class ModelReadinessSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    requirements: list[ModelRequirementProjection] = Field(default_factory=list)
+    results: list[ModelReadinessResultProjection] = Field(default_factory=list)
 
 
 class ProofReport(BaseModel):
@@ -149,3 +211,6 @@ class ProofReport(BaseModel):
     verdict: Literal["PASS", "FAIL", "PARTIAL", "BLOCKED"]
     evidence: CertificationEvidence | None = None
     failure_reason: str | None = None
+    functional_diagnostic: FunctionalDiagnosticSection | None = None
+    model_readiness: ModelReadinessSection | None = None
+    r4_result: Literal["PASS", "PARTIAL", "FAIL", "BLOCKED"] | None = None

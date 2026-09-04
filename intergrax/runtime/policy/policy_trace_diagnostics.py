@@ -44,6 +44,29 @@ class DeclarativePolicyEvaluationDiagV1(DiagnosticPayload):
 
 
 @dataclass(frozen=True)
+class MeaningfulSideEffectAuthorizationRequiredDiagV1(DiagnosticPayload):
+    tool_id: str
+    agent_id: str
+    run_id: str
+    reason: str
+
+    def redact(self) -> MeaningfulSideEffectAuthorizationRequiredDiagV1:
+        return self
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.policy.meaningful_side_effect_authorization_required"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "tool_id": self.tool_id,
+            "agent_id": self.agent_id,
+            "run_id": self.run_id,
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
 class DeclarativePolicyHitlRequiredDiagV1(DiagnosticPayload):
     invocation_scope_id: str
     task_id: str

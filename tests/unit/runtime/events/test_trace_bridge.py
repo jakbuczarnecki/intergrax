@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEventType
@@ -383,3 +390,81 @@ def test_trace_bridge_subject_requires_tenant_id() -> None:
             tenant_id="",
             task_id=mint_task_id(),
         )
+
+
+def test_trace_bridge_preserves_full_active_identity() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    task = Task(
+        task_id=task_id,
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="active-identity",
+        run_id=run_id,
+        seq=14,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="diag",
+        message="active identity",
+        tags={"task_id": task_id},
+    )
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        event = trace_event_to_runtime_event(trace, task)
+    finally:
+        reset_active_execution_identity(token)
+    assert event.task_id == task_id
+    assert event.run_id == run_id
+    assert event.attempt_id == attempt_id
+    assert event.execution_id == execution_id
+
+
+def test_trace_bridge_rejects_explicit_execution_id_conflicting_with_active() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    other_execution_id = mint_execution_id()
+    task = Task(
+        task_id=task_id,
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="conflict-execution",
+        run_id=run_id,
+        seq=15,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="diag",
+        message="conflict",
+        tags={"task_id": task_id},
+    )
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        with pytest.raises(RuntimeError, match="execution_id conflicts with active execution identity"):
+            trace_event_to_runtime_event(
+                trace,
+                task,
+                execution_id=other_execution_id,
+            )
+    finally:
+        reset_active_execution_identity(token)

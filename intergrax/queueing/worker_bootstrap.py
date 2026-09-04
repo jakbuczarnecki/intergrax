@@ -16,8 +16,8 @@ from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
 from intergrax.queueing.worker.retry_policy import RetryPolicy
-from intergrax.runtime.background_execution.identity_persistence import (
-    wire_background_execution_identity_persistence,
+from intergrax.runtime.background_execution.admission_wiring import (
+    wire_background_execution_admission_dependencies,
 )
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
@@ -68,6 +68,8 @@ def create_celery_worker_app(
             "create_celery_worker_app requires kv_store for BG-EXEC-2 identity persistence",
         )
 
+    admission = wire_background_execution_admission_dependencies(kv_store=kv_store)
+
     register_dispatcher_task(
         app=app,
         registry=registry,
@@ -79,10 +81,10 @@ def create_celery_worker_app(
         rate_limit_config=rate_limit_config,
         on_rate_limited=on_rate_limited,
         on_retry_scheduled=on_retry_scheduled,
-        identity_persistence=wire_background_execution_identity_persistence(
-            kv_store=kv_store,
-        ),
+        identity_persistence=admission.identity_persistence,
         causal_evidence_persistence=causal_evidence_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
     )
 
     return app

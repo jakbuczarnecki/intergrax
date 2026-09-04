@@ -17,6 +17,7 @@ from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.background_tasks.definition import TaskDefinition
 from intergrax.background_tasks.registry import TaskRegistry
 from intergrax.contracts.execution_identity import AttemptId, RunId
@@ -96,7 +97,7 @@ def build_local_workspace_background_worker_wiring(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
-    host_execution = build_lkw_host_task_execution(runtime.nexus_loop, environment)
+    host_execution = runtime.execution
     runner = _BackgroundIngestHostExecutionRunner(
         _host_execution=host_execution,
         _task_enricher=task_enricher,

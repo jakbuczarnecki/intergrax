@@ -27,8 +27,8 @@ from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from attestation_demo.host.agent_builders import ATTESTATION_DEMO_AGENT_BUILDERS
 from attestation_demo.host.integration_wiring import wire_attestation_demo_integrations
 from attestation_demo.host.settings import AttestationDemoSettings
@@ -42,7 +42,6 @@ def create_attestation_demo_application(
     db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
-    registry: Optional[AgentRegistry] = None,
     document_store: InMemoryDocumentStore | None = None,
     boundary_event_buffer: BoundaryEventBuffer | None = None,
 ) -> FastAPI:
@@ -64,12 +63,11 @@ def create_attestation_demo_application(
         use_in_memory_trace=db_path is None,
         checkpoints_db_path=checkpoints_db_path,
         builders=ATTESTATION_DEMO_AGENT_BUILDERS,
-        registry=registry,
         document_store=resolved_document_store,
         boundary_event_buffer=resolved_buffer,
     )
-    nexus_loop = runtime.nexus_loop
-    host_execution = build_environment_host_task_execution(nexus_loop, env)
+    host_execution = runtime.execution
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     resolved_registry = runtime.registry
     platform = bootstrap_nexus_platform(
         nexus_loop,

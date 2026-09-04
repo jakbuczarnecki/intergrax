@@ -66,6 +66,14 @@ from intergrax.runtime.observability.export_policy import ObservabilityExportPol
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_occurrence_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+    lifecycle_engine_for_tests,
+    query_all_occurrences_for_problem,
+    query_all_problems_for_tenant,
+    read_service_for_tests,
+)
 from intergrax.runtime.observability.problem_signal import (
     PROBLEM_KIND_PLATFORM_APPLICATION_FAILURE,
 )
@@ -140,28 +148,13 @@ def _build_orchestrator_stack() -> tuple[
     DiagnosticOrchestrator,
     InMemoryProblemPersistence,
     DiagnosticReadService,
+    object,
 ]:
-    persistence = InMemoryProblemPersistence()
-    registry = ProblemGroupingStrategyRegistry()
-    registry.register(DeterministicProblemGroupingStrategy())
-    orchestrator = DiagnosticOrchestrator(
-        execution_reconstructor=ExecutionReconstructor(
-            runtime_events=InMemoryRuntimeEventStore(),
-            causal_evidence=InMemoryCausalEvidencePersistence(),
-        ),
-        lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
-        assessment_builder=DiagnosticAssessmentBuilder(),
-        grouping_engine=ProblemGroupingEngine(registry),
-        problem_lifecycle_engine=ProblemLifecycleEngine(persistence),
+    from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+        build_diagnostic_orchestrator_stack_for_tests,
     )
-    read_service = DiagnosticReadService(
-        problem_persistence=persistence,
-        execution_reconstructor=ExecutionReconstructor(
-            runtime_events=InMemoryRuntimeEventStore(),
-            causal_evidence=InMemoryCausalEvidencePersistence(),
-        ),
-    )
-    return orchestrator, persistence, read_service
+
+    return build_diagnostic_orchestrator_stack_for_tests()
 
 
 @dataclass
@@ -273,7 +266,7 @@ def test_projector_maps_bounded_failure_facts() -> None:
 
 @pytest.mark.asyncio
 async def test_application_failure_creates_problem(tmp_path: Path) -> None:
-    orchestrator, persistence, read_service = _build_orchestrator_stack()
+    orchestrator, persistence, read_service, occurrence_persistence = _build_orchestrator_stack()
     harness = _HostedHarness(
         orchestrator=orchestrator,
         persistence=persistence,
@@ -312,7 +305,12 @@ async def test_application_failure_creates_problem(tmp_path: Path) -> None:
     problem = problems.problems[0]
     assert problem.occurrence_count == 1
     stored = query_all_problems_for_tenant(persistence, _TENANT_A)[0]
-    app_ref = stored.current_subject_refs[0].application_instance()
+    occurrences = query_all_occurrences_for_problem(
+        occurrence_persistence,
+        tenant_id=_TENANT_A,
+        problem_id=stored.problem_id,
+    )
+    app_ref = occurrences[0].subject_ref.application_instance()
     assert app_ref is not None
     assert app_ref.application_id == _APP_ID
     assert app_ref.instance_id == "instance-i1"
@@ -323,7 +321,7 @@ async def test_application_failure_creates_problem(tmp_path: Path) -> None:
 async def test_observability_export_before_diagnostics(tmp_path: Path) -> None:
     exporter = InMemoryObservabilityExporter()
     observability_count_at_diagnostic: list[int] = []
-    orchestrator, persistence, read_service = _build_orchestrator_stack()
+    orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
 
     class _RecordingDiagnosticPublisher(HostedApplicationDiagnosticEventPublisher):
         async def publish(self, event: HostedApplicationEvent) -> None:
@@ -381,7 +379,7 @@ async def test_observability_export_before_diagnostics(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_recurrence_across_instances_and_replay(tmp_path: Path) -> None:
-    orchestrator, persistence, read_service = _build_orchestrator_stack()
+    orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
     harness = _HostedHarness(
         orchestrator=orchestrator,
         persistence=persistence,
@@ -445,7 +443,7 @@ async def test_recurrence_across_instances_and_replay(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_clean_lifecycle_creates_no_problems(tmp_path: Path) -> None:
-    orchestrator, persistence, read_service = _build_orchestrator_stack()
+    orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
     harness = _HostedHarness(
         orchestrator=orchestrator,
         persistence=persistence,
@@ -470,7 +468,7 @@ def _raise_factory_error() -> HostedApplicationRuntime:
 
 @pytest.mark.asyncio
 async def test_different_failure_signature_isolation(tmp_path: Path) -> None:
-    orchestrator, persistence, read_service = _build_orchestrator_stack()
+    orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
     harness = _HostedHarness(
         orchestrator=orchestrator,
         persistence=persistence,
@@ -498,27 +496,33 @@ async def test_different_failure_signature_isolation(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_tenant_isolation(tmp_path: Path) -> None:
     persistence = InMemoryProblemPersistence()
+    occurrence_store = in_memory_document_store_for_problem_tests()
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(occurrence_store)
     registry = ProblemGroupingStrategyRegistry()
     registry.register(DeterministicProblemGroupingStrategy())
+    reconstructor = ExecutionReconstructor(
+        runtime_events=InMemoryRuntimeEventStore(),
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    )
 
     def _orchestrator() -> DiagnosticOrchestrator:
         return DiagnosticOrchestrator(
-            execution_reconstructor=ExecutionReconstructor(
-                runtime_events=InMemoryRuntimeEventStore(),
-                causal_evidence=InMemoryCausalEvidencePersistence(),
-            ),
+            execution_reconstructor=reconstructor,
             lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
             assessment_builder=DiagnosticAssessmentBuilder(),
             grouping_engine=ProblemGroupingEngine(registry),
-            problem_lifecycle_engine=ProblemLifecycleEngine(persistence),
+            problem_lifecycle_engine=lifecycle_engine_for_tests(
+                persistence,
+                occurrence_persistence,
+                document_store=occurrence_store,
+            ),
         )
 
-    read_service = DiagnosticReadService(
-        problem_persistence=persistence,
-        execution_reconstructor=ExecutionReconstructor(
-            runtime_events=InMemoryRuntimeEventStore(),
-            causal_evidence=InMemoryCausalEvidencePersistence(),
-        ),
+    read_service = read_service_for_tests(
+        persistence,
+        reconstructor,
+        occurrence_persistence=occurrence_persistence,
+        document_store=occurrence_store,
     )
 
     harness_a = _HostedHarness(
@@ -546,7 +550,7 @@ async def test_tenant_isolation(tmp_path: Path) -> None:
 
 
 def test_build_hosted_application_diagnostic_event_publisher_factory() -> None:
-    orchestrator, persistence, _ = _build_orchestrator_stack()
+    orchestrator, persistence, _, _ = _build_orchestrator_stack()
     publisher = build_hosted_application_diagnostic_event_publisher(
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
         orchestrator=orchestrator,

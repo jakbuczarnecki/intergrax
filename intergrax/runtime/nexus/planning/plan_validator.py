@@ -5,10 +5,10 @@
 from __future__ import annotations
 
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 
-def validate_nexus_plan(plan: NexusPlan, registry: AgentRegistry) -> list[str]:
+def validate_nexus_plan(plan: NexusPlan, registry: AgentRegistryRead) -> list[str]:
     """
     Return human-readable validation errors for ``plan``.
 

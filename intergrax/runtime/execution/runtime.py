@@ -21,6 +21,10 @@ from intergrax.runtime.execution.active_decision_checkpoint_persistence import (
     bind_active_decision_checkpoint_persistence,
     reset_active_decision_checkpoint_persistence,
 )
+from intergrax.runtime.execution.active_decision_finalization_persistence import (
+    bind_active_decision_finalization_persistence,
+    reset_active_decision_finalization_persistence,
+)
 from intergrax.runtime.execution.active_decision_lifecycle_host import (
     bind_active_decision_lifecycle_host,
     reset_active_decision_lifecycle_host,
@@ -32,6 +36,9 @@ from intergrax.runtime.execution.active_execution_work_port import (
 )
 from intergrax.runtime.execution.decision_checkpoint_persistence import (
     DecisionCheckpointPersistence,
+)
+from intergrax.runtime.execution.decision_finalization_persistence import (
+    DecisionFinalizationPersistence,
 )
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
@@ -131,6 +138,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_admission_hooks",
         "_decision_lifecycle_host",
         "_decision_checkpoint_persistence",
+        "_decision_finalization_persistence",
         "_execution_work_port_binding",
     )
 
@@ -144,6 +152,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         decision_lifecycle_host: DecisionLifecycleHost | None = None,
         decision_checkpoint_persistence: (
             DecisionCheckpointPersistence[CheckpointPayloadT] | None
+        ) = None,
+        decision_finalization_persistence: (
+            DecisionFinalizationPersistence[CheckpointPayloadT] | None
         ) = None,
         execution_work_port_binding: (
             ActiveExecutionWorkPortBinding[WorkInputT, WorkOutputT, WorkResultT] | None
@@ -159,6 +170,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._admission_hooks = admission_hooks
         self._decision_lifecycle_host = decision_lifecycle_host
         self._decision_checkpoint_persistence = decision_checkpoint_persistence
+        self._decision_finalization_persistence = decision_finalization_persistence
         self._execution_work_port_binding = execution_work_port_binding
 
     async def execute(
@@ -190,6 +202,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         )
         host_token = None
         persistence_token = None
+        finalization_token = None
         work_port_token = None
         try:
             if self._decision_lifecycle_host is not None:
@@ -199,6 +212,10 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             if self._decision_checkpoint_persistence is not None:
                 persistence_token = bind_active_decision_checkpoint_persistence(
                     self._decision_checkpoint_persistence,
+                )
+            if self._decision_finalization_persistence is not None:
+                finalization_token = bind_active_decision_finalization_persistence(
+                    self._decision_finalization_persistence,
                 )
             if self._execution_work_port_binding is not None:
                 work_port_token = bind_active_execution_work_port(
@@ -210,6 +227,8 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 reset_active_execution_work_port(work_port_token)
             if persistence_token is not None:
                 reset_active_decision_checkpoint_persistence(persistence_token)
+            if finalization_token is not None:
+                reset_active_decision_finalization_persistence(finalization_token)
             if host_token is not None:
                 reset_active_decision_lifecycle_host(host_token)
             reset_active_execution_budget(budget_token)

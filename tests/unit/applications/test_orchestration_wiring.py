@@ -101,7 +101,7 @@ def test_graph_spec_planner_reads_live_environment_graph_spec() -> None:
     planner = resolve_nexus_task_planner(env)
     assert isinstance(planner, GraphSpecSeedingPlanner)
     from intergrax.applications.contracts.graph_spec import EvaluatorLoopGraphBinding
-    from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+    from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
 
     env.graph_spec = ApplicationGraphSpec(
         nodes=[GraphNode(agent_id="EchoAgent")],

@@ -40,7 +40,7 @@ def build_registry_from_profile(
 
 def _prune_disabled_tools(registry: ToolRegistry, profile: ToolProfile) -> None:
     """Remove tools registered by a bundle but not listed in ``profile.enabled``."""
-    if profile.enabled_bundles and not profile.enabled:
+    if profile.enabled_bundles:
         return
 
     enabled = set(profile.enabled)
@@ -58,6 +58,6 @@ def enabled_tool_ids_for_profile(profile: ToolProfile) -> list[str]:
     for entry in iter_bundles():
         if profile.should_register_bundle(entry.bundle_id, tool_ids=entry.tool_ids):
             ids.update(entry.tool_ids)
-    if profile.enabled:
+    if profile.enabled and not profile.enabled_bundles:
         ids &= set(profile.enabled)
     return sorted(ids)

@@ -18,11 +18,11 @@ def test_resolve_api_key_from_secrets_map() -> None:
     assert key == "secret-key"
 
 
-def test_profile_with_secrets_passes_api_key() -> None:
-    profile = LLMProfile(provider=LLMProvider.GROQ, model="m").with_secrets({"api_key": "k"})
+def test_profile_create_adapter_passes_ephemeral_api_key() -> None:
+    profile = LLMProfile(provider=LLMProvider.GROQ, model="m")
     with patch(
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create"
     ) as create:
         create.return_value = MagicMock()
-        profile.create_adapter(client=MagicMock())
+        profile.create_adapter(secrets={"api_key": "k"}, client=MagicMock())
         assert create.call_args.kwargs.get("api_key") == "k"

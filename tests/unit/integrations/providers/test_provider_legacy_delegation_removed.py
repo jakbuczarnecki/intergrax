@@ -19,20 +19,6 @@ pytestmark = pytest.mark.unit
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
 _PROVIDERS_ROOT = _PROJECT_ROOT / "intergrax" / "integrations" / "providers"
 
-DEFERRED_LLM_GUARDRAIL_SLUGS: frozenset[str] = frozenset(
-    {
-        "llm_guard",
-        "guardrails_ai",
-        "nemo_guardrails",
-        "openguardrails",
-        "presidio",
-        "llama_guard",
-        "lakera",
-        "azure_content_safety",
-        "bedrock_guardrails",
-    }
-)
-
 # Vector stores with intentional typed RAG inner-store bridge (category rule).
 VECTOR_STORE_BRIDGE_SLUGS: frozenset[str] = frozenset(
     {
@@ -53,8 +39,7 @@ INLINE_WAVE_SLUGS: tuple[str, ...] = tuple(
     sorted(
         slug
         for slug, category in SLUG_CATEGORY.items()
-        if category not in {"observability_backend", "llm_guardrail"}
-        and slug not in DEFERRED_LLM_GUARDRAIL_SLUGS
+        if category not in {"observability_backend"}
         and slug not in VECTOR_STORE_BRIDGE_SLUGS
         and (_PROVIDERS_ROOT / category / slug / "integration.py").is_file()
     )

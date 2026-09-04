@@ -901,7 +901,7 @@ def _assert_checkpoint_separation(
     runtime_checkpoint: RuntimeCheckpoint,
 ) -> None:
     decision_fields = {field.name for field in dataclasses.fields(DecisionCheckpointState)}
-    assert decision_fields == {"lifecycle", "finalization"}
+    assert decision_fields == {"lifecycle", "finalization", "revision"}
     assert type(decision_checkpoint.lifecycle) is DecisionLifecycleState
     assert type(decision_checkpoint.finalization) is DecisionFinalizeGuardState
     assert type(decision_checkpoint) is DecisionCheckpointState

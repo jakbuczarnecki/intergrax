@@ -10,7 +10,11 @@ from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.core.contracts import ToolContract, ToolRetryPolicy, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -55,15 +59,17 @@ def test_runtime_tool_invoker_trace_includes_contract_metadata():
         executor=OkExecutor(),
         scope_policy=AllowAllScopePolicy(),
     )
-    state = build_runtime_state_for_tests(run_id="run_meta")
+    run_id = canonical_run_id_for_tests("run_meta")
+    state = build_runtime_state_for_tests(run_id=run_id)
     request = ToolExecutionRequest(
-        run_id="run_meta",
+        run_id=run_id,
         tool_id="meta_tool",
         step_id="1",
         input=InputModel(value=3),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    with canonical_execution_identity_scope(run_id):
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
 
     assert result.success is True
     start = next(e for e in state.trace_events if e.step == "tool_invocation_start")
@@ -95,15 +101,17 @@ def test_runtime_tool_invoker_timeout():
         executor=SlowExecutor(),
         scope_policy=AllowAllScopePolicy(),
     )
-    state = build_runtime_state_for_tests(run_id="run_timeout")
+    run_id = canonical_run_id_for_tests("run_timeout")
+    state = build_runtime_state_for_tests(run_id=run_id)
     request = ToolExecutionRequest(
-        run_id="run_timeout",
+        run_id=run_id,
         tool_id="slow_tool",
         step_id="1",
         input=InputModel(value=1),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    with canonical_execution_identity_scope(run_id):
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
 
     assert result.success is False
     assert result.error is not None
@@ -136,15 +144,17 @@ def test_runtime_tool_invoker_retries_then_succeeds():
         executor=FlakyExecutor(),
         scope_policy=AllowAllScopePolicy(),
     )
-    state = build_runtime_state_for_tests(run_id="run_retry")
+    run_id = canonical_run_id_for_tests("run_retry")
+    state = build_runtime_state_for_tests(run_id=run_id)
     request = ToolExecutionRequest(
-        run_id="run_retry",
+        run_id=run_id,
         tool_id="flaky_tool",
         step_id="1",
         input=InputModel(value=1),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    with canonical_execution_identity_scope(run_id):
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
 
     assert isinstance(result, ToolExecutionResult)
     assert result.success is True

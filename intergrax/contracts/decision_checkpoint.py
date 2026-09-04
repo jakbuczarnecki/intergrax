@@ -17,10 +17,13 @@ from intergrax.contracts.decision_finalization import (
     DecisionFinalizeGuardState,
     decision_finalization_key,
 )
+from intergrax.contracts.decision_identity import DecisionIdentity
 from intergrax.contracts.decision_lifecycle import (
     DecisionLifecycleStage,
     DecisionLifecycleState,
 )
+from intergrax.contracts.decision_record import DecisionProposalRef
+from intergrax.contracts.decision_revision import DecisionRevisionCheckpointState
 
 T = TypeVar("T")
 
@@ -38,6 +41,7 @@ class DecisionCheckpointState(Generic[T]):
 
     lifecycle: DecisionLifecycleState
     finalization: DecisionFinalizeGuardState[T]
+    revision: DecisionRevisionCheckpointState | None = None
 
     def __post_init__(self) -> None:
         if type(self.lifecycle) is not DecisionLifecycleState:
@@ -45,6 +49,10 @@ class DecisionCheckpointState(Generic[T]):
         if type(self.finalization) is not DecisionFinalizeGuardState:
             raise TypeError(
                 "DecisionCheckpointState.finalization must be DecisionFinalizeGuardState",
+            )
+        if self.revision is not None and type(self.revision) is not DecisionRevisionCheckpointState:
+            raise TypeError(
+                "DecisionCheckpointState.revision must be DecisionRevisionCheckpointState or None",
             )
         validate_decision_checkpoint_state(self)
 
@@ -82,20 +90,54 @@ def validate_decision_checkpoint_state(
             "decision checkpoint terminal stage requires authoritative outcome",
         )
 
+    revision = checkpoint.revision
+    if revision is not None:
+        _validate_revision_checkpoint_coherence(lifecycle.identity, revision)
+
     return checkpoint
+
+
+def _validate_revision_checkpoint_coherence(
+    lifecycle_identity: DecisionIdentity,
+    revision: DecisionRevisionCheckpointState,
+) -> None:
+    proposal_identity = revision.proposal_ref.identity
+    if proposal_identity.decision_id != lifecycle_identity.decision_id:
+        raise ValueError(
+            "decision checkpoint revision proposal decision_id does not match lifecycle",
+        )
+    if proposal_identity.tenant_id != lifecycle_identity.tenant_id:
+        raise ValueError(
+            "decision checkpoint revision proposal tenant_id does not match lifecycle",
+        )
+    if proposal_identity.scope != lifecycle_identity.scope:
+        raise ValueError(
+            "decision checkpoint revision proposal scope does not match lifecycle",
+        )
+    if proposal_identity.version != lifecycle_identity.version:
+        raise ValueError(
+            "decision checkpoint revision proposal version does not match lifecycle",
+        )
 
 
 def decision_checkpoint_state(
     *,
     lifecycle: DecisionLifecycleState,
     finalization: DecisionFinalizeGuardState[T],
+    revision: DecisionRevisionCheckpointState | None = None,
 ) -> DecisionCheckpointState[T]:
     """Capture one validated immutable checkpoint from current semantic state."""
     if type(lifecycle) is not DecisionLifecycleState:
         raise TypeError("lifecycle must be DecisionLifecycleState")
     if type(finalization) is not DecisionFinalizeGuardState:
         raise TypeError("finalization must be DecisionFinalizeGuardState")
-    return DecisionCheckpointState(lifecycle=lifecycle, finalization=finalization)
+    if revision is not None and type(revision) is not DecisionRevisionCheckpointState:
+        raise TypeError("revision must be DecisionRevisionCheckpointState or None")
+    return DecisionCheckpointState(
+        lifecycle=lifecycle,
+        finalization=finalization,
+        revision=revision,
+    )
 
 
 def restore_decision_checkpoint_state(

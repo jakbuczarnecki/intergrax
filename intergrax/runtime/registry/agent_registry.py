@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, List, Optional
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import assert_uaep_reference_agent
@@ -133,38 +133,3 @@ class AgentRegistry:
                 best = (result.score, agent)
         return best[1] if best else None
 
-    def as_dict(self) -> Dict[str, Agent]:
-        """Snapshot for AgentEngine backward-compatible wiring."""
-        return dict(self._agents)
-
-    @classmethod
-    def from_agents(
-        cls,
-        agents: Union[Dict[str, Agent], Iterable[Agent]],
-        *,
-        skill_registry: Optional[SkillRegistry] = None,
-        tool_registry: Optional[ToolRegistry] = None,
-        event_bus: Optional[RuntimeEventBus] = None,
-    ) -> "AgentRegistry":
-        registry = cls()
-        if isinstance(agents, dict):
-            for agent_id, agent in agents.items():
-                contract = agent.get_contract()
-                if contract.id != agent_id:
-                    contract = contract.model_copy(update={"id": agent_id})
-                registry.register(
-                    agent,
-                    contract=contract,
-                    skill_registry=skill_registry,
-                    tool_registry=tool_registry,
-                    event_bus=event_bus,
-                )
-            return registry
-        for agent in agents:
-            registry.register(
-                agent,
-                skill_registry=skill_registry,
-                tool_registry=tool_registry,
-                event_bus=event_bus,
-            )
-        return registry

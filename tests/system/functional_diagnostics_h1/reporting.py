@@ -1,0 +1,384 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Machine and human report serialization for DIAG-FUNCTIONAL-H1."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import asdict
+from datetime import UTC, datetime
+from pathlib import Path
+
+from tests.system.functional_diagnostics_h1.models import (
+    DiagnosticHealthReport,
+    GateResult,
+    HealthGateId,
+    HealthVerdict,
+    H1_QUALIFICATION_ID,
+    H1_SCHEMA_VERSION,
+    H1_SEMANTICS,
+)
+from tests.system.functional_diagnostics_h1.qualification_spec import (
+    DiagnosticHealthQualificationSpec,
+    resolve_qualification_spec,
+)
+
+MANDATORY_HEALTH_GATES: frozenset[HealthGateId] = frozenset(
+    {
+        HealthGateId.H1_A_COLLECTION,
+        HealthGateId.H1_B_CORE_HEALTH,
+        HealthGateId.H1_C_REPEATABILITY,
+        HealthGateId.H1_D_INVARIANT_COVERAGE,
+        HealthGateId.H1_E_SKIP_XFAIL_HONESTY,
+        HealthGateId.H1_F_EXTERNAL_DEPENDENCY,
+        HealthGateId.H1_G_RUNNER_INTEGRITY,
+        HealthGateId.H1_H_STALE_DEAD,
+        HealthGateId.H1_I_SUPERSESSION,
+        HealthGateId.H1_J_REPORT_INTEGRITY,
+        HealthGateId.H1_K_LOCAL_INTEGRATION,
+    }
+)
+
+
+def _gate_to_json(gate: GateResult) -> dict[str, str | tuple[str, ...]]:
+    return {
+        "gate_id": gate.gate_id.value,
+        "verdict": gate.verdict.value,
+        "summary": gate.summary,
+        "details": gate.details,
+    }
+
+
+def health_report_to_json(report: DiagnosticHealthReport) -> dict[str, object]:
+    return {
+        "schema_version": report.schema_version,
+        "qualification_id": report.qualification_id,
+        "tested_sha": report.tested_sha,
+        "start_head": report.start_head,
+        "final_head": report.final_head,
+        "origin_development_sha": report.origin_development_sha,
+        "origin_development_at_end": report.origin_development_at_end,
+        "working_tree_clean_at_start": report.working_tree_clean_at_start,
+        "working_tree_clean_at_end": report.working_tree_clean_at_end,
+        "repository_precondition": report.repository_precondition.value,
+        "repository_postcondition": report.repository_postcondition.value,
+        "timestamp": report.timestamp,
+        "h1_semantics": report.h1_semantics,
+        "inventory_counts": report.inventory_counts,
+        "collection_result": _gate_to_json(report.collection_result),
+        "static_results": _gate_to_json(report.static_results),
+        "unit_results": _gate_to_json(report.unit_results),
+        "repeatability_results": [asdict(item) for item in report.repeatability_results],
+        "local_system_results": _gate_to_json(report.local_system_results),
+        "external_preflight_results": [asdict(item) for item in report.external_preflight_results],
+        "skip_xfail_inventory": [asdict(item) for item in report.skip_xfail_inventory],
+        "invariant_coverage": [asdict(item) for item in report.invariant_coverage],
+        "dead_stale_findings": report.dead_stale_findings,
+        "gate_results": [_gate_to_json(item) for item in report.gate_results],
+        "core_test_health": report.core_test_health.value,
+        "real_service_qualification_availability": report.real_service_qualification_availability.value,
+        "overall_h1": report.overall_h1.value,
+        "blocking_findings": report.blocking_findings,
+        "warnings": report.warnings,
+    }
+
+
+def write_health_report(path: Path, report: DiagnosticHealthReport) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = health_report_to_json(report)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def write_test_inventory(path: Path, inventory: tuple[object, ...]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = [asdict(item) for item in inventory]
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False), encoding="utf-8")
+
+
+def calculate_health_verdict(
+    mandatory_gates: tuple[GateResult, ...],
+    *,
+    real_service_blocked: bool,
+) -> tuple[HealthVerdict, HealthVerdict, HealthVerdict]:
+    relevant = tuple(
+        gate for gate in mandatory_gates if gate.gate_id in MANDATORY_HEALTH_GATES
+    )
+    if any(gate.verdict is HealthVerdict.FAILED for gate in relevant):
+        core_verdict = HealthVerdict.FAILED
+    elif any(gate.verdict is HealthVerdict.BLOCKED for gate in relevant):
+        core_verdict = HealthVerdict.BLOCKED
+    else:
+        core_verdict = HealthVerdict.PASS
+    real_service = HealthVerdict.BLOCKED if real_service_blocked else HealthVerdict.PASS
+    overall = core_verdict
+    return core_verdict, real_service, overall
+
+
+def aggregate_overall_verdict(
+    gate_results: tuple[GateResult, ...],
+    *,
+    real_service_blocked: bool,
+) -> tuple[HealthVerdict, HealthVerdict, HealthVerdict]:
+    return calculate_health_verdict(gate_results, real_service_blocked=real_service_blocked)
+
+
+def gate_h1_j_report_integrity(
+    *,
+    gate_results: tuple[GateResult, ...],
+    calculated_overall: HealthVerdict,
+    blocking_findings: tuple[str, ...],
+    start_head: str,
+    final_head: str,
+    working_tree_clean_at_end: bool,
+    repository_postcondition: HealthVerdict,
+) -> GateResult:
+    violations: list[str] = []
+    mandatory_failed = tuple(
+        gate.gate_id.value
+        for gate in gate_results
+        if gate.gate_id in MANDATORY_HEALTH_GATES and gate.verdict is HealthVerdict.FAILED
+    )
+    if mandatory_failed and calculated_overall is HealthVerdict.PASS:
+        violations.append(
+            f"failed_mandatory_gates_coexist_with_overall_pass:{','.join(mandatory_failed)}"
+        )
+    if blocking_findings and calculated_overall is HealthVerdict.PASS:
+        violations.append("blocking_findings_coexist_with_overall_pass")
+    if start_head != final_head:
+        violations.append(f"head_changed_during_qualification:{start_head}->{final_head}")
+    if not working_tree_clean_at_end:
+        violations.append("working_tree_not_clean_at_end")
+    if repository_postcondition is not HealthVerdict.PASS:
+        violations.append(f"repository_postcondition:{repository_postcondition.value}")
+    verdict = HealthVerdict.PASS if not violations else HealthVerdict.FAILED
+    summary = (
+        f"report integrity: overall={calculated_overall.value} violations={len(violations)}"
+        if violations
+        else f"report integrity: overall={calculated_overall.value} consistent"
+    )
+    return GateResult(
+        gate_id=HealthGateId.H1_J_REPORT_INTEGRITY,
+        verdict=verdict,
+        summary=summary,
+        details=tuple(violations),
+    )
+
+
+def _find_gate(report: DiagnosticHealthReport, gate_id: HealthGateId) -> GateResult | None:
+    for gate in report.gate_results:
+        if gate.gate_id is gate_id:
+            return gate
+    return None
+
+
+def build_human_report(
+    report: DiagnosticHealthReport,
+    spec: DiagnosticHealthQualificationSpec | None = None,
+) -> str:
+    resolved_spec = spec or resolve_qualification_spec(report.qualification_id)
+    local_gate = _find_gate(report, HealthGateId.H1_K_LOCAL_INTEGRATION) or report.local_system_results
+    lines = [
+        f"# {report.qualification_id} TEST-SUITE HEALTH QUALIFICATION",
+        "",
+        "## Qualification id",
+        report.qualification_id,
+        "",
+        "## Verdict",
+        report.overall_h1.value,
+        "",
+        "## Start HEAD",
+        report.start_head,
+        "",
+        "## Final HEAD",
+        report.final_head,
+        "",
+        "## Qualified SHA",
+        report.tested_sha,
+        "",
+        "## Origin development SHA (start)",
+        report.origin_development_sha,
+        "",
+        "## Origin development SHA (end)",
+        report.origin_development_at_end,
+        "",
+        "## Working tree clean at canonical start",
+        "YES" if report.working_tree_clean_at_start else "NO",
+        "",
+        "## Working tree clean at canonical end",
+        "YES" if report.working_tree_clean_at_end else "NO",
+        "",
+        "## Repository precondition",
+        report.repository_precondition.value,
+        "",
+        "## Repository postcondition",
+        report.repository_postcondition.value,
+        "",
+        "## Scope",
+        "Diagnostic Engine test-suite health (inventory, gates, repeatability, invariant ownership).",
+        "",
+        "## H1 semantics",
+        report.h1_semantics,
+        "",
+        "## Test inventory",
+        "",
+    ]
+    for layer, count in sorted(report.inventory_counts.items()):
+        lines.append(f"- {layer}: {count}")
+    lines.extend(
+        [
+            "",
+            "## H1-A collection",
+            f"{report.collection_result.verdict.value} — {report.collection_result.summary}",
+            "",
+            "## H1-B core health",
+            f"{report.unit_results.verdict.value} — {report.unit_results.summary}",
+            "",
+            "## H1-C repeatability",
+        ]
+    )
+    for run in report.repeatability_results:
+        collected_display = "unknown" if run.collected is None else str(run.collected)
+        lines.append(
+            f"- {run.scope}: collected={collected_display} passed={run.passed} "
+            f"failed={run.failed} verdict={run.verdict.value}"
+        )
+    lines.extend(
+        [
+            "",
+            "## H1-D architecture invariant coverage",
+            (
+                _find_gate(report, HealthGateId.H1_D_INVARIANT_COVERAGE).verdict.value
+                if _find_gate(report, HealthGateId.H1_D_INVARIANT_COVERAGE) is not None
+                else "N/A"
+            ),
+            "",
+            "## H1-E skip/xfail audit",
+            f"findings={len(report.skip_xfail_inventory)}",
+            "",
+            "## H1-F external dependency classification",
+        ]
+    )
+    for item in report.external_preflight_results:
+        lines.append(f"- {item.family.value}: {item.state.value} ({item.note})")
+    lines.extend(
+        [
+            "",
+            "## H1-G qualification runner integrity",
+            (
+                _find_gate(report, HealthGateId.H1_G_RUNNER_INTEGRITY).summary
+                if _find_gate(report, HealthGateId.H1_G_RUNNER_INTEGRITY) is not None
+                else "N/A"
+            ),
+            "",
+            "## H1-H stale/dead tests",
+            "NONE" if not report.dead_stale_findings else "\n".join(report.dead_stale_findings),
+            "",
+            "## H1-I supersession consistency",
+            (
+                _find_gate(report, HealthGateId.H1_I_SUPERSESSION).summary
+                if _find_gate(report, HealthGateId.H1_I_SUPERSESSION) is not None
+                else "N/A"
+            ),
+            "",
+            "## H1-J machine report integrity",
+            (
+                _find_gate(report, HealthGateId.H1_J_REPORT_INTEGRITY).summary
+                if _find_gate(report, HealthGateId.H1_J_REPORT_INTEGRITY) is not None
+                else "N/A"
+            ),
+            "",
+            "## H1-K local integration",
+            f"{local_gate.verdict.value} — {local_gate.summary}",
+        ]
+    )
+    if local_gate.details:
+        lines.extend(["", "### H1-K suite details"])
+        for detail in local_gate.details:
+            lines.append(f"- {detail}")
+    lines.extend(
+        [
+            "",
+            "## Core vs real-service",
+            f"CORE_TEST_HEALTH={report.core_test_health.value}",
+            f"REAL_SERVICE_QUALIFICATION_AVAILABILITY={report.real_service_qualification_availability.value}",
+            "",
+            "## Blocking findings",
+            "NONE" if not report.blocking_findings else "\n".join(f"- {item}" for item in report.blocking_findings),
+            "",
+            "## Machine artifact",
+            str(resolved_spec.artifact_report_json).replace("\\", "/"),
+            "",
+            "## Documentation closure path",
+            str(resolved_spec.closure_doc_path).replace("\\", "/"),
+            "",
+            "## Final architecture statement",
+        ]
+    )
+    if report.core_test_health is HealthVerdict.PASS and report.overall_h1 is HealthVerdict.PASS:
+        lines.extend(
+            [
+                "DIAGNOSTIC TEST-SUITE HEALTH = QUALIFIED",
+                "CRITICAL DIAGNOSTIC INVARIANTS = OWNED BY EXECUTABLE TEST GATES",
+                "DETERMINISTIC CORE DIAGNOSTIC TESTS = REPEATABLE",
+                "EXTERNAL SERVICE ABSENCE = EXPLICITLY BLOCKED, NEVER FALSE PASS",
+                "HISTORICAL QUALIFICATION != CURRENT LIVE REVALIDATION",
+            ]
+        )
+    return "\n".join(lines) + "\n"
+
+
+def utc_now_iso() -> str:
+    return datetime.now(tz=UTC).isoformat()
+
+
+def new_report_shell(
+    *,
+    qualification_id: str = H1_QUALIFICATION_ID,
+    start_head: str,
+    tested_sha: str,
+    origin_development_sha: str,
+    origin_development_at_end: str,
+    working_tree_clean_at_start: bool,
+    working_tree_clean_at_end: bool,
+    repository_precondition: HealthVerdict,
+    repository_postcondition: HealthVerdict,
+) -> DiagnosticHealthReport:
+    placeholder = GateResult(
+        gate_id=HealthGateId.H1_J_REPORT_INTEGRITY,
+        verdict=HealthVerdict.FAILED,
+        summary="pending",
+    )
+    return DiagnosticHealthReport(
+        schema_version=H1_SCHEMA_VERSION,
+        qualification_id=qualification_id,
+        tested_sha=tested_sha,
+        start_head=start_head,
+        final_head=start_head,
+        origin_development_sha=origin_development_sha,
+        origin_development_at_end=origin_development_at_end,
+        working_tree_clean_at_start=working_tree_clean_at_start,
+        working_tree_clean_at_end=working_tree_clean_at_end,
+        repository_precondition=repository_precondition,
+        repository_postcondition=repository_postcondition,
+        timestamp=utc_now_iso(),
+        h1_semantics=H1_SEMANTICS,
+        inventory_counts={},
+        collection_result=placeholder,
+        static_results=placeholder,
+        unit_results=placeholder,
+        repeatability_results=(),
+        local_system_results=placeholder,
+        external_preflight_results=(),
+        skip_xfail_inventory=(),
+        invariant_coverage=(),
+        dead_stale_findings=(),
+        gate_results=(),
+        core_test_health=HealthVerdict.FAILED,
+        real_service_qualification_availability=HealthVerdict.BLOCKED,
+        overall_h1=HealthVerdict.FAILED,
+        blocking_findings=(),
+        warnings=(),
+    )

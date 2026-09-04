@@ -56,6 +56,66 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 
 ## Core mental model
 
+### One canonical agent lifecycle (normative)
+
+There is **exactly one** canonical agent lifecycle in Intergrax.
+
+All Intergrax agents — regardless of origin, visibility, ownership, or reuse scope — **MUST** enter production runtime through the canonical Agent Distribution lifecycle. Registration, installation, binding, configuration, trust validation, enablement, activation, runtime projection, and routing semantics **MUST NOT** fork by application or scenario.
+
+**Ownership is not lifecycle authority.** These dimensions are orthogonal and MUST NOT be conflated:
+
+| Dimension | May vary by agent? | Authority |
+|-----------|-------------------|-----------|
+| **Ownership** | Yes | Who authors, ships, or curates the agent package |
+| **Visibility** | Yes | Who may discover or list the agent |
+| **Reuse scope** | Yes | Where the agent may be installed or bound again |
+| **Lifecycle authority** | **No** | Always Tier-0 Agent Distribution |
+
+Applications and scenarios **MAY** own or ship private agents. Applications and scenarios **MUST NOT** own an alternative agent lifecycle.
+
+### Agent sources → single distribution plane
+
+Agents may originate from different catalogs and ownership scopes, but every production path converges on one distribution authority and one lifecycle:
+
+```text
+                         AGENT SOURCES
+
+        Public            Organization          Application / Scenario
+      Marketplace        Private Catalog          Private / Bundled
+           │                   │                        │
+           └───────────────────┼────────────────────────┘
+                               ▼
+                    ┌─────────────────────┐
+                    │ AGENT DISTRIBUTION  │
+                    │ canonical authority │
+                    └─────────────────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              ▼                ▼                ▼
+          INSTALL           BINDING           TRUST
+         UNINSTALL         CONFIGURE         VERSION
+                               │
+                               ▼
+                         ENABLE / DISABLE
+                               │
+                               ▼
+                           ACTIVATION
+                               │
+                               ▼
+                       RUNTIME REVISION
+                               │
+                               ▼
+                        AGENT REGISTRY
+                    derived runtime projection
+                               │
+                               ▼
+                             NEXUS
+                     capability resolution
+                               │
+                               ▼
+                  APPLICATIONS / SCENARIOS
+```
+
 **Frozen chain.** Each step has a single platform authority; later steps must not succeed when earlier required steps failed.
 
 ```text
@@ -75,6 +135,74 @@ AgentRegistry projection (MaterializedRegistryProjection)
   ↓
 Nexus capability routing (ROUTABLE agents)
 ```
+
+### Agent ownership classes (conceptual)
+
+The platform supports multiple ownership and visibility patterns. All four classes below share the **same** lifecycle authority — only ownership, visibility, and reuse scope differ. This is a documentation model only; it does not prescribe concrete schema fields such as `visibility`, `scope`, or `owner` until contracts define them.
+
+| Class | Ownership / visibility | Reuse | Lifecycle |
+|-------|------------------------|-------|-----------|
+| **Public / marketplace agent** | Public or governed catalog listing | Reusable across applications and organizations | Canonical Agent Distribution |
+| **Organization-private shared agent** | Owned or curated within one organization; not public | Reusable inside the organization | Canonical Agent Distribution |
+| **Application-private agent** | Owned by one application; specialized product logic | Not intended as a shared catalog entry | Canonical Agent Distribution |
+| **Scenario-private agent** | Owned by one scenario or proof; highly specialized | Not intended for reuse outside the scenario | Canonical Agent Distribution |
+
+A private agent is represented as a normal agent package / canonical agent artifact. Local ownership of the package is allowed; a local or alternate lifecycle is not.
+
+### AgentRegistry is not lifecycle authority
+
+`AgentRegistry` is a **derived runtime projection** of the active `RuntimeRevision`. It is not installation state, not catalog state, and not lifecycle authority.
+
+```text
+AgentRegistry != Agent Store
+AgentRegistry != Installation Manager
+AgentRegistry != Marketplace
+AgentRegistry != Lifecycle Manager
+```
+
+`AgentRegistry` answers: *which agent instances exist for the traffic-serving revision and are available for capability resolution?* It is **not** the canonical API for install, uninstall, enable, disable, activate, or deactivate. Those operations belong to Agent Distribution (§11–§12, §20).
+
+### Forbidden lifecycle bypass
+
+Applications and scenarios **MUST NOT** construct an alternate registration or activation path that bypasses Agent Distribution when introducing agents into production runtime:
+
+```text
+Scenario/Application          ← FORBIDDEN as production lifecycle bypass
+        ↓
+new AgentRegistry()
+        ↓
+register(MyAgent)
+        ↓
+runtime
+```
+
+Manifest-only bootstrap compatibility paths (e.g. lab `AgentRegistry.from_agents(dict)`) are not production lifecycle authority — see §21 and [Current reality](#current-reality--maturity-boundary).
+
+**Allowed** — private agent with canonical lifecycle:
+
+```text
+Application/Scenario
+        ↓
+private agent package
+        ↓
+Agent Distribution
+        ↓
+canonical activation
+        ↓
+RuntimeRevision
+        ↓
+AgentRegistry
+        ↓
+Nexus
+```
+
+### Marketplace ≠ Agent Distribution
+
+[Agent Marketplace](../overview/AGENT_MARKETPLACE.md) and Agent Manager surfaces (future / planned) are **product and discovery layers** — convenient panels for discovering, installing, uninstalling, activating, deactivating, assigning, and configuring agents. Architecturally they are **not** runtime, **not** `AgentRegistry`, **not** Nexus, and **not** lifecycle authority.
+
+Marketplace / Agent Manager **MAY** call Tier-0 Agent Distribution services. They **MUST NOT** replace Agent Distribution, fork activation semantics, or become a second path into production runtime.
+
+**Agent Manager / Marketplace** is a control-plane and discovery surface. It **MUST NOT** own installation, binding, revision, activation, or serving authority.
 
 **Authority separation (do not merge):**
 
@@ -276,9 +404,18 @@ Tier-2 package metadata (`[[tool.intergrax.agent.contracts]]` in agent pyproject
   → Capability Graph
 ```
 
-Agent Distribution MUST NOT centrally mirror first-party agent contracts. The platform parses and projects package-owned declarations only.
+Application composition authority chain:
 
-`AgentCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent inventory and no default package discovery root - callers pass a package-metadata provider, otherwise agent nodes are omitted.
+```text
+ApplicationManifest (`app_id`, enabled roster bindings)
+  → ApplicationCapabilityDescriptor
+  → ApplicationCapabilityMetadataProvider
+  → Capability Graph
+```
+
+Capability Map is a **derived architecture/discovery projection**. It MUST NOT become lifecycle or runtime authority (installation, binding, activation, `RuntimeRevision`, serving state, registry materialization, or Nexus routing).
+
+`AgentCapabilityMetadataProvider` and `ApplicationCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent or application inventory and no default discovery root — callers pass metadata providers, otherwise inventory nodes for that plane are omitted.
 
 Runtime execution remains a separate chain:
 
@@ -1220,6 +1357,17 @@ T6  revision 17 DeploymentInstanceState = stopped after drain
 ## 21. AgentRegistry projection
 
 [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §15 defines execution registry semantics. Distribution architecture adds:
+
+**Hard responsibility split (normative):**
+
+```text
+AgentRegistry != Agent Store
+AgentRegistry != Installation Manager
+AgentRegistry != Marketplace
+AgentRegistry != Lifecycle Manager
+```
+
+`AgentRegistry` is the runtime projection of the active revision — the view of agent instances that were correctly materialized and activated. Install, uninstall, enable, disable, activate, and deactivate are **not** registry responsibilities.
 
 | Rule | Detail |
 |------|--------|

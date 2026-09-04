@@ -243,6 +243,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         blob = base64.b64encode(
             pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL),
         ).decode("ascii")
+        now = datetime.now(UTC)
         with self._connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             updated = conn.execute(
@@ -253,6 +254,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                   AND status = ?
                   AND owner_id = ?
                   AND fence = ?
+                  AND lease_expires_at > ?
                 """,
                 (
                     InvocationStatus.COMPLETED.value,
@@ -262,6 +264,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     InvocationStatus.STARTED.value,
                     claim.owner_id,
                     claim.fence,
+                    now.isoformat(),
                 ),
             )
             if updated.rowcount != 1:
@@ -277,6 +280,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         key: str,
         claim: InvocationClaim,
     ) -> None:
+        now = datetime.now(UTC)
         with self._connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             updated = conn.execute(
@@ -287,6 +291,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                   AND status = ?
                   AND owner_id = ?
                   AND fence = ?
+                  AND lease_expires_at > ?
                 """,
                 (
                     InvocationStatus.UNCERTAIN.value,
@@ -295,6 +300,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     InvocationStatus.STARTED.value,
                     claim.owner_id,
                     claim.fence,
+                    now.isoformat(),
                 ),
             )
             if updated.rowcount != 1:

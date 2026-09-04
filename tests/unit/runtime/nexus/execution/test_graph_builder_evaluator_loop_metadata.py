@@ -11,8 +11,8 @@ from intergrax.applications.contracts.graph_spec import (
     EvaluatorLoopGraphBinding,
     GraphNode,
 )
-from intergrax.runtime.critic.evaluator_loop_metadata import evaluator_loop_spec_from_node
-from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+from intergrax.runtime.nexus.execution.evaluator_loop_metadata import evaluator_loop_spec_from_node
+from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.nexus.execution.execution_graph import (
     EvaluatorLoopMetadataError,
     EvaluatorLoopProducerNotFoundError,

@@ -17,7 +17,9 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
     short = names.short
     route_prefix = names.route_prefix
     env_prefix_value = names.env_prefix
-    imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
+    agent_imports = "\n".join(
+        f"from {s.module} import {s.class_name}" for s in specs
+    )
     factory_imports = "\n".join(
         f"from {pkg}.host.agent_factories import build_{short}_{s.slug}_from_context"
         for s in specs
@@ -35,7 +37,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
         )
     mounts_block = "\n".join(mounts)
     first_cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
-    return dedent(
+    body = dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
@@ -45,9 +47,8 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
 
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
         from intergrax.integrations.registry.profile import IntegrationProfile
-        {imports}
-        {factory_imports}
-
+        # __AGENT_IMPORTS__
+        # __FACTORY_IMPORTS__
 
         def _resolve_integration_profile() -> IntegrationProfile:
             import json
@@ -76,6 +77,10 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
 
         APPLICATION_MANIFEST = build_{short}_manifest()
         '''
+    )
+    return (
+        body.replace("# __AGENT_IMPORTS__", agent_imports)
+        .replace("# __FACTORY_IMPORTS__", factory_imports)
     )
 
 
@@ -243,7 +248,9 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
 def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
     short = names.short
-    imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
+    agent_imports = "\n".join(
+        f"from {s.module} import {s.class_name}" for s in specs
+    )
     builders_const = names.builders_const
     factories = []
     for s in specs:
@@ -263,78 +270,27 @@ def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
             ).strip()
         )
     factories_block = "\n\n\n".join(factories)
-    return (
-        dedent(
-            f"""
-            # © Artur Czarnecki. All rights reserved.
+    header = dedent(
+        f"""
+        # © Artur Czarnecki. All rights reserved.
 
-            from __future__ import annotations
+        from __future__ import annotations
 
-            from intergrax.applications.contracts.build_context import ApplicationBuildContext
-            from intergrax.applications.contracts.manifest import AgentBinding
-            {imports}
-            from {pkg}.host.agent_builders import {builders_const}
+        from intergrax.applications.contracts.build_context import ApplicationBuildContext
+        from intergrax.applications.contracts.manifest import AgentBinding
+        # __AGENT_IMPORTS__
+        from {pkg}.host.agent_builders import {builders_const}
 
 
-            """
-        ).strip()
-        + "\n\n\n"
-        + factories_block
-        + "\n"
-    )
+        """
+    ).strip().replace("# __AGENT_IMPORTS__", agent_imports)
+    return header + "\n\n\n" + factories_block + "\n"
 
 
 def agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     from intergrax.scaffold.new_application import _agent_builders_py
 
     return _agent_builders_py(names, specs)
-
-
-def wiring_py(names: ScaffoldApplicationNames) -> str:
-    pkg = names.pkg
-    short = names.short
-    pascal = names.pascal
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
-
-        from __future__ import annotations
-
-        from intergrax.applications._shared.environment_wiring import wire_application_environment
-        from intergrax.applications._shared.wiring import build_application_registry
-        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-        from intergrax.applications.contracts.manifest import ApplicationManifest
-        from intergrax.runtime.registry.agent_registry import AgentRegistry
-        from {pkg}.host.agent_builders import {names.builders_const}
-        from {pkg}.host.environment_profile import build_{short}_environment_profile
-        from {pkg}.host.settings import {pascal}BackendSettings
-        from {pkg}.manifest import APPLICATION_MANIFEST
-
-
-        def build_{short}_manifest(settings: {pascal}BackendSettings) -> ApplicationManifest:
-            binding = APPLICATION_MANIFEST.agents[0].model_copy(
-                update={{"contract_id": settings.default_agent_id}}
-            )
-            agents = [binding, *APPLICATION_MANIFEST.agents[1:]]
-            return APPLICATION_MANIFEST.model_copy(update={{"agents": agents}})
-
-
-        def build_{short}_registry(
-            settings: {pascal}BackendSettings | None = None,
-        ) -> AgentRegistry:
-            settings = settings or {pascal}BackendSettings.from_env()
-            manifest = build_{short}_manifest(settings)
-            env = manifest.environment or build_{short}_environment_profile(settings)
-            if manifest.environment is None:
-                manifest = manifest.model_copy(update={{"environment": env}})
-            env_wiring = wire_application_environment(manifest, env, settings=settings)
-            return build_application_registry(
-                manifest,
-                env_wiring.build_context,
-                builders={names.builders_const},
-            )
-        '''
-    )
 
 
 def environment_profile_py(names: ScaffoldApplicationNames) -> str:
@@ -493,19 +449,20 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             apply_factory_lifespans,
             build_factory_lifespans,
         )
-        from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
+        from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+            bootstrap_harness_host_platform,
+            build_harness_host_task_runner,
+            wire_harness_host_interaction_intake,
+        )
         from intergrax.fastapi_core.app_factory import create_app
         from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
         from intergrax.fastapi_core.config import ApiConfig
         from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
         from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-        from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
-        from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from intergrax.runtime.interactions.router import create_interaction_intake_router
         from intergrax.applications._shared.task_control_wiring import (
             build_reliability_task_enricher,
-            build_task_runner_with_enricher,
             wire_harness_task_control,
         )
         from intergrax.applications._shared.product_observability_dashboard_wiring import (
@@ -542,16 +499,12 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 use_in_memory_trace=trace_db_path is None,
                 registry_projection=registry_projection,
             )
-            nexus_loop = runtime.nexus_loop
-            host_execution = build_environment_host_task_execution(nexus_loop, env)
+            host_execution = runtime.execution
             registry = runtime.registry
-            platform = bootstrap_nexus_platform(
-                nexus_loop,
-                trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-            )
+            platform = bootstrap_harness_host_platform(runtime)
             checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
             task_enricher = build_reliability_task_enricher(env)
-            task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
+            task_runner = build_harness_host_task_runner(runtime, enricher=task_enricher)
             scheduler_wiring = wire_long_running_scheduler(
                 checkpoint_store=checkpoint_store,
                 task_runner=task_runner,
@@ -559,8 +512,9 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 poll_interval_seconds=settings.scheduler_poll_seconds,
                 enabled=settings.include_scheduler,
             )
-            interaction_service = wire_interaction_intake_service(
-                nexus_loop,
+            interaction_service = wire_harness_host_interaction_intake(
+                runtime,
+                host_execution=host_execution,
                 interaction_surface=settings.interaction_surface,
                 task_enricher=task_enricher,
             )
@@ -594,7 +548,8 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
 
             mount_{short}_routes(
                 app,
-                nexus_loop=nexus_loop,
+                host_execution=host_execution,
+                registry=registry,
                 prefix=settings.route_prefix,
                 default_agent_id=settings.default_agent_id,
             )
@@ -633,6 +588,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
 
                 mcp = build_{short}_mcp_server(
                     host_execution=host_execution,
+                    registry=registry,
                     route_prefix=settings.route_prefix,
                     tool_registry=runtime.env_wiring.tool_wiring.registry,
                 )
@@ -762,114 +718,15 @@ def schemas_py(names: ScaffoldApplicationNames) -> str:
 
 
 def serving_router_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
-    short = names.short
-    pascal = names.pascal
-    pkg = names.pkg
-    route_prefix = names.route_prefix
-    default_cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
+    from intergrax.scaffold.canonical_host_templates import render_canonical_product_serving_router_py
 
-        from __future__ import annotations
-
-        from dataclasses import dataclass
-
-        from fastapi import APIRouter, FastAPI, HTTPException, status
-
-        from intergrax.runtime.nexus.nexus_loop import NexusLoop
-        from intergrax.runtime.task.task import Task, TaskContext
-        from intergrax.runtime.task.task_run_bridge import new_run_id
-        from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-        from {pkg}.serving.schemas import {pascal}RunRequestV1, {pascal}RunResponseV1
-
-
-        @dataclass
-        class {pascal}RunService:
-            task_runner: UnifiedTaskRunner
-            default_agent_id: str
-
-            @classmethod
-            def from_nexus_loop(
-                cls,
-                nexus_loop: NexusLoop,
-                *,
-                default_agent_id: str,
-            ) -> {pascal}RunService:
-                return cls(
-                    task_runner=UnifiedTaskRunner(nexus_loop),
-                    default_agent_id=default_agent_id,
-                )
-
-            async def run_task(self, body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
-                run_id = new_run_id()
-                task = Task(
-                    task_id=run_id,
-                    tenant_id=body.tenant_id,
-                    user_id=body.user_id,
-                    session_id=body.session_id,
-                    agent_id=self.default_agent_id,
-                    message=body.message,
-                    context=TaskContext(capability=body.capability or "{default_cap}"),
-                )
-                result = await self.task_runner.run_task(task)
-                return {pascal}RunResponseV1(
-                    task_id=result.task_id,
-                    run_id=result.run_id,
-                    state=result.state.value,
-                    answer=result.answer,
-                    agent_id=result.agent_id,
-                    metadata=dict(result.metadata),
-                )
-
-
-        def mount_{short}_routes(
-            app: FastAPI,
-            *,
-            nexus_loop: NexusLoop,
-            prefix: str = "{route_prefix}",
-            default_agent_id: str = "echo",
-        ) -> {pascal}RunService:
-            service = {pascal}RunService.from_nexus_loop(
-                nexus_loop,
-                default_agent_id=default_agent_id,
-            )
-            router = APIRouter(prefix=prefix, tags=["{short}"])
-
-            @router.post("/run", response_model={pascal}RunResponseV1)
-            async def run_agent(body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
-                try:
-                    return await service.run_task(body)
-                except Exception as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail=f"run_error: {{exc.__class__.__name__}}",
-                    ) from exc
-
-            @router.get("/agents")
-            async def list_agents() -> dict[str, list[dict[str, object]]]:
-                agents: list[dict[str, object]] = []
-                for agent_id in nexus_loop.registry.list_agent_ids():
-                    contract = nexus_loop.registry.get(agent_id).get_contract()
-                    agents.append(
-                        {{
-                            "agent_id": contract.id,
-                            "name": contract.name,
-                            "capabilities": list(contract.capabilities),
-                        }}
-                    )
-                return {{"agents": agents}}
-
-            app.include_router(router)
-            return service
-        '''
-    )
+    return render_canonical_product_serving_router_py(names, specs)
 
 
 def mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
-    from intergrax.scaffold.new_application import _mcp_server_py
+    from intergrax.scaffold.canonical_host_templates import render_canonical_mcp_server_py
 
-    return _mcp_server_py(names, specs)
+    return render_canonical_mcp_server_py(names, specs)
 
 
 def env_example(
@@ -953,44 +810,29 @@ def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> s
 def smoke_test(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
     short = names.short
-    route_prefix = names.route_prefix
-    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
         from __future__ import annotations
 
+        import inspect
+
         import pytest
-        from fastapi.testclient import TestClient
 
         from {pkg}.host.factory import create_{short}_backend_app
 
         pytestmark = [pytest.mark.unit]
 
-        _PREFIX = "{route_prefix}"
+
+        def test_{short}_backend_requires_registry_projection_parameter():
+            signature = inspect.signature(create_{short}_backend_app)
+            param = signature.parameters["registry_projection"]
+            assert param.default is inspect.Parameter.empty
 
 
-        def test_{short}_backend_health():
-            client = TestClient(create_{short}_backend_app())
-            response = client.get("/health")
-            assert response.status_code == 200
-
-
-        def test_{short}_backend_lists_agents():
-            client = TestClient(create_{short}_backend_app())
-            response = client.get(f"{{_PREFIX}}/agents")
-            assert response.status_code == 200
-            assert "agents" in response.json()
-
-
-        def test_{short}_backend_run():
-            client = TestClient(create_{short}_backend_app())
-            response = client.post(
-                f"{{_PREFIX}}/run",
-                json={{"message": "hello", "capability": "{cap}"}},
-            )
-            assert response.status_code == 200
-            assert response.json().get("state") == "completed"
+        def test_{short}_backend_fails_without_registry_projection():
+            with pytest.raises(TypeError):
+                create_{short}_backend_app()  # type: ignore[call-arg]
         '''
     )

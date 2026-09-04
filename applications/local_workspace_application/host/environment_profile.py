@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 
+from intergrax.applications._shared.skill_wiring import local_workspace_product_skill_profile
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ContextProfile,
@@ -28,7 +29,11 @@ from local_workspace_application.host.message_bus_wiring import (
     local_workspace_message_bus_enabled,
     materialize_local_workspace_message_bus_profile,
 )
+from local_workspace_application.host.policy_profile import (
+    build_local_workspace_policy_rules_profile,
+)
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.host.tool_wiring import build_local_workspace_tool_profile
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -120,14 +125,25 @@ def build_local_workspace_integration_profile(
 def build_local_workspace_environment_profile(
     settings: LocalWorkspaceBackendSettings | None = None,
 ) -> ApplicationEnvironmentProfile:
+    resolved_settings = settings
+    if resolved_settings is None:
+        candidate_settings = LocalWorkspaceBackendSettings.from_env()
+        if not isinstance(candidate_settings, LocalWorkspaceBackendSettings):
+            raise TypeError("local workspace settings factory returned an invalid type")
+        resolved_settings = candidate_settings
+    integration_profile = build_local_workspace_integration_profile(resolved_settings)
     profile = (
         ApplicationEnvironmentProfile.product_defaults(
             profile_id="local_workspace.product",
-            skill_bundles=["harness", "local"],
         )
         .model_copy(
             update={
-                "integration_profile": build_local_workspace_integration_profile(settings),
+                "integration_profile": integration_profile,
+                "tool_profile": build_local_workspace_tool_profile(
+                    settings=resolved_settings,
+                    integration_profile=integration_profile,
+                ),
+                "skill_profile": local_workspace_product_skill_profile(),
                 "context_profile": ContextProfile(
                     enable_rag=True if settings is None else settings.enable_rag,
                     enable_websearch=False,
@@ -152,4 +168,5 @@ def build_local_workspace_environment_profile(
         },
     )
     profile.graph_spec = build_local_workspace_pipeline_graph_spec()
+    profile.policy_rules = build_local_workspace_policy_rules_profile()
     return profile

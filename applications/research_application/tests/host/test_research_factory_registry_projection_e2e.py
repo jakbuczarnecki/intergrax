@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from research_application.host.factory import create_research_backend_app
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
@@ -50,8 +51,8 @@ def test_research_factory_uses_projected_registry_not_manifest_extra_agents() ->
     )
     assert runtime.registry_projection_evidence is not None
     assert runtime.registry_projection_evidence.runtime_revision_id == "rev-research-e2e"
-    assert runtime.nexus_loop.registry.list_agent_ids() == ["research"]
-    assert "summary" not in runtime.nexus_loop.registry.list_agent_ids()
+    assert resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids() == ["research"]
+    assert "summary" not in resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids()
 
 
 def _binding_stem(binding) -> str:

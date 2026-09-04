@@ -8,7 +8,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.runtime.notifications.models import NotificationMessage
 
 if TYPE_CHECKING:

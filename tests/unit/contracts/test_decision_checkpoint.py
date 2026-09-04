@@ -27,6 +27,9 @@ from intergrax.contracts.decision_identity import (
     mint_decision_id,
     next_decision_version,
 )
+from intergrax.contracts.decision_revision import (
+    decision_revision_checkpoint_state,
+)
 from intergrax.contracts.decision_lifecycle import (
     DecisionLifecycleStage,
     DecisionLifecycleState,
@@ -36,6 +39,7 @@ from intergrax.contracts.decision_lifecycle import (
 from intergrax.contracts.decision_record import (
     AuthoritativeAcceptedDecision,
     DecisionArtifact,
+    DecisionProposalRef,
     DecisionVersionLineage,
     decision_lineage_ref,
     decision_version_lineage,
@@ -587,3 +591,71 @@ def test_branched_synthesis_lineage_preserved_through_restore() -> None:
     assert outcome.lineage == synthesis_lineage
     assert outcome.lineage.parents == (v2a, v2b)
     assert restore_decision_checkpoint_state(restored).finalization.authoritative_outcome == outcome
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_revision_checkpoint_preserved_through_restore() -> None:
+    identity = _identity()
+    proposal_ref = DecisionProposalRef(
+        identity=identity,
+        lineage_ref=decision_lineage_ref(identity.version),
+    )
+    revision = decision_revision_checkpoint_state(
+        proposal_ref=proposal_ref,
+        revision_count=2,
+        max_revisions=3,
+    )
+    lifecycle = _lifecycle(identity, stage=DecisionLifecycleStage.REVISION, transition_index=3)
+    checkpoint = decision_checkpoint_state(
+        lifecycle=lifecycle,
+        finalization=_guard_for_identity(identity),
+        revision=revision,
+    )
+    persistence = _FakeDecisionCheckpointPersistence()
+    save_decision_checkpoint(persistence, checkpoint=checkpoint)
+    restored = load_decision_checkpoint(
+        persistence,
+        key=decision_finalization_key(identity),
+    )
+    assert restored is not None
+    assert restored.revision is not None
+    assert restored.revision.revision_count == 2
+    assert restored.revision.max_revisions == 3
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_revision_proposal_identity_mismatch_rejected() -> None:
+    identity_a = _identity()
+    identity_b = _identity(decision_id=mint_decision_id())
+    revision = decision_revision_checkpoint_state(
+        proposal_ref=DecisionProposalRef(
+            identity=identity_b,
+            lineage_ref=decision_lineage_ref(identity_b.version),
+        ),
+        revision_count=1,
+        max_revisions=3,
+    )
+    lifecycle = _lifecycle(identity_a, stage=DecisionLifecycleStage.REVISION)
+    with pytest.raises(ValueError, match="revision proposal decision_id"):
+        decision_checkpoint_state(
+            lifecycle=lifecycle,
+            finalization=_guard_for_identity(identity_a),
+            revision=revision,
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_revision_count_exceeds_max_revisions_rejected() -> None:
+    identity = _identity()
+    with pytest.raises(ValueError, match="revision_count must be <= max_revisions"):
+        decision_revision_checkpoint_state(
+            proposal_ref=DecisionProposalRef(
+                identity=identity,
+                lineage_ref=decision_lineage_ref(identity.version),
+            ),
+            revision_count=4,
+            max_revisions=3,
+        )

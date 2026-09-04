@@ -16,13 +16,13 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 def evaluate_ready_gate(
     *,
     manifest: VpiBootstrapManifest,
-    embedding_report: ValidationReport,
+    artifact_input_report: ValidationReport,
     catalog_report: ValidationReport,
     search_report: ValidationReport,
     checkpoint_complete: bool,
 ) -> ValidationReport:
     checks: list[ValidationCheck] = [
-        *_report_checks("embedding", embedding_report),
+        *_report_checks("artifact_input", artifact_input_report),
         *_report_checks("catalog", catalog_report),
         *_report_checks("search", search_report),
         ValidationCheck(

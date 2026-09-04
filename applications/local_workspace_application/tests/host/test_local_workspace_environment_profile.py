@@ -7,6 +7,11 @@ from pathlib import Path
 import pytest
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
+from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.applications._shared.skill_tool_profile import (
+    assert_skill_tool_requirements_for_profile,
+)
 from intergrax.applications._shared.graph_spec_to_plan import (
     application_graph_spec_to_nexus_plan,
     should_seed_plan_from_graph_spec,
@@ -22,7 +27,17 @@ from intergrax.runtime.nexus.orchestration_capabilities import (
     orchestration_capabilities_from_triggers,
 )
 from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.applications._shared.integration_tool_profile import (
+    extend_tool_profile_for_integration,
+)
+from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox
+from intergrax.applications._shared.codecraft_wiring import tool_profile_with_codecraft
 from intergrax.skills.integration.contract_resolution import resolve_contract_tools
+from intergrax.skills.providers.local.plugin import LocalSkillPlugin
+from intergrax.skills.registry.tool_requirements import (
+    SkillToolRequirementError,
+    available_tool_ids_for_profile,
+)
 from intergrax.skills.registry.bootstrap import register_default_skills, reset_default_skills_for_tests
 from intergrax.skills.resolver import SkillResolver
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
@@ -47,10 +62,91 @@ def _reset_skills() -> None:
     reset_default_skills_for_tests()
 
 
-def test_lkw_environment_profile_enables_harness_and_local_bundles() -> None:
+def test_lkw_environment_profile_enables_local_product_bundle_only() -> None:
     env = build_local_workspace_environment_profile()
-    assert "harness" in env.skill_profile.enabled_bundles
-    assert "local" in env.skill_profile.enabled_bundles
+    assert env.skill_profile.enabled_bundles == ["local"]
+    assert "harness" not in env.skill_profile.enabled_bundles
+
+
+def test_lkw_integration_profile_has_no_graph_store_selection() -> None:
+    profile = build_local_workspace_integration_profile()
+    assert profile.slug_for_category(IntegrationCategory.GRAPH_STORE) is None
+
+
+def test_lkw_product_rag_profile_stays_vector_only_without_graph_store() -> None:
+    env = build_local_workspace_environment_profile()
+    rag_profile = resolve_rag_profile_for_environment(
+        env,
+        integration_profile=env.integration_profile,
+    )
+    assert rag_profile is not None
+    assert rag_profile.graph_rag_enabled is False
+
+
+def test_lkw_skill_bundle_resolves_exact_product_skill_ids() -> None:
+    manifest = LocalSkillPlugin.skill_bundle_manifest()
+    env = build_local_workspace_environment_profile()
+    wiring = build_application_skill_wiring(env.skill_profile)
+    assert tuple(sorted(wiring.registry.skill_ids())) == tuple(sorted(manifest.skill_ids))
+
+
+def test_lkw_skill_tool_requirements_satisfied_by_product_tool_profile() -> None:
+    env = build_local_workspace_environment_profile()
+    skill_wiring = build_application_skill_wiring(env.skill_profile)
+    tool_profile = tool_profile_with_sandbox(env)
+    env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
+    tool_profile = tool_profile_with_codecraft(env_for_codecraft)
+    tool_profile = extend_tool_profile_for_integration(
+        tool_profile,
+        env.integration_profile,
+    )
+    resolution = assert_skill_tool_requirements_for_profile(
+        tool_profile,
+        env.skill_profile,
+        skill_registry=skill_wiring.registry,
+    )
+    assert resolution.is_satisfied
+    assert resolution.missing_tool_ids == ()
+
+
+def test_lkw_skill_tool_requirements_fail_closed_when_required_tool_removed() -> None:
+    env = build_local_workspace_environment_profile()
+    skill_wiring = build_application_skill_wiring(env.skill_profile)
+    tool_profile = tool_profile_with_sandbox(env)
+    env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
+    tool_profile = tool_profile_with_codecraft(env_for_codecraft)
+    tool_profile = extend_tool_profile_for_integration(
+        tool_profile,
+        env.integration_profile,
+    )
+    stripped = tool_profile.model_copy(
+        update={"enabled": [tool_id for tool_id in tool_profile.enabled if tool_id != "workspace.write_file"]},
+    )
+    with pytest.raises(SkillToolRequirementError) as exc_info:
+        assert_skill_tool_requirements_for_profile(
+            stripped,
+            env.skill_profile,
+            skill_registry=skill_wiring.registry,
+        )
+    assert exc_info.value.resolution.violations[0].tool_id == "workspace.write_file"
+
+
+def test_lkw_product_profile_excludes_websearch_tools() -> None:
+    env = build_local_workspace_environment_profile()
+    assert env.context_profile.enable_websearch is False
+    available = available_tool_ids_for_profile(env.tool_profile)
+    assert not any(tool_id.startswith("websearch.") for tool_id in available)
+
+
+def test_lkw_product_tool_profile_is_deterministic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+    monkeypatch.delenv("LOCAL_WORKSPACE_ENABLE_REDIS", raising=False)
+    first = build_local_workspace_environment_profile()
+    second = build_local_workspace_environment_profile()
+    assert first.tool_profile == second.tool_profile
+    assert first.skill_profile == second.skill_profile
 
 
 def test_lkw_environment_profile_registers_local_workspace_skills() -> None:

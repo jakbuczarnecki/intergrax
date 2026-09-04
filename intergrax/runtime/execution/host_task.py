@@ -30,7 +30,6 @@ from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration_capabilities import is_orchestration_capability
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -111,9 +110,9 @@ class TaskBoundAgenticDelegate:
 def build_host_task_strategy_router(
     task: Task,
     *,
-    nexus_loop: NexusLoop,
     agent_engine: AgentEnginePort,
     agent_router: AgentRouter,
+    orchestration_executor: OrchestrationExecutor,
 ) -> StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult]:
     return StrategyExecutionRouter[
         TaskExecutionInput,
@@ -127,15 +126,12 @@ def build_host_task_strategy_router(
         ),
         orchestration_executor=TaskBoundOrchestrationDelegate(
             task,
-            OrchestrationExecutor(nexus_loop),
+            orchestration_executor,
         ),
     )
 
 
 class HostTaskExecutionPort(Protocol):
-    @property
-    def nexus_loop(self) -> NexusLoop: ...
-
     async def execute(
         self,
         task: Task,
@@ -149,16 +145,13 @@ class HostTaskExecutionPort(Protocol):
 class HostTaskExecution:
     """Composition-root host task execution through canonical :class:`Execution`."""
 
-    _nexus_loop: NexusLoop
+    _agent_engine: AgentEnginePort
     _agent_router: AgentRouter
+    _orchestration_executor: OrchestrationExecutor
     _orchestration_triggers: frozenset[str]
     _pipeline_capability_suffix: str
     _ledger_factory: ExecutionBudgetLedgerFactory | None
     _run_budget: RunBudget | None
-
-    @property
-    def nexus_loop(self) -> NexusLoop:
-        return self._nexus_loop
 
     def _execution_runtime_for_task(
         self,
@@ -169,9 +162,9 @@ class HostTaskExecution:
     ]:
         router = build_host_task_strategy_router(
             task,
-            nexus_loop=self._nexus_loop,
-            agent_engine=self._nexus_loop.agent_engine,
+            agent_engine=self._agent_engine,
             agent_router=self._agent_router,
+            orchestration_executor=self._orchestration_executor,
         )
         return ExecutionRuntime[
             ExecutionRequest[TaskExecutionInput, TaskResult],
@@ -213,22 +206,3 @@ class HostTaskExecution:
             return await execution.execute(request, options=options)
         finally:
             await ActiveTaskRegistry.unregister(task.task_id, resolved_run_id)
-
-
-def build_host_task_execution(
-    nexus_loop: NexusLoop,
-    *,
-    orchestration_triggers: frozenset[str],
-    pipeline_capability_suffix: str = ".pipeline",
-) -> HostTaskExecution:
-    return HostTaskExecution(
-        _nexus_loop=nexus_loop,
-        _agent_router=AgentRouter(
-            nexus_loop.registry,
-            event_bus=nexus_loop.event_bus,
-        ),
-        _orchestration_triggers=orchestration_triggers,
-        _pipeline_capability_suffix=pipeline_capability_suffix,
-        _ledger_factory=nexus_loop.execution_budget_ledger_factory,
-        _run_budget=nexus_loop.run_budget,
-    )

@@ -40,6 +40,12 @@ from intergrax.applications._shared.production_agent_platform_runtime import (
     AgentPlatformRuntimeStores,
     build_production_agent_platform_runtime,
 )
+from intergrax.applications._shared.registry_projection_authority_resolver import (
+    RegistryProjectionAuthorityResolver,
+)
+from intergrax.agent_distribution.effective_roster_authority import (
+    EffectiveRosterAuthorityService,
+)
 from intergrax.applications._shared.production_registry_projection_input_bundle import (
     ProductionRegistryProjectionInputError,
     build_production_registry_projection_for_revision,
@@ -66,9 +72,11 @@ _FACTORY_REF = AgentBindingFactoryReference(
 _FORBIDDEN_PUBLIC_PARAMS = frozenset(
     {
         "runtime_revision",
+        "effective_roster",
         "materialized_runtime_lock",
         "artifact_locator",
         "materialization_artifact_digest",
+        "stores",
     }
 )
 
@@ -216,14 +224,29 @@ def _materialization_record(
     )
 
 
+def _authority(
+    stores: AgentPlatformRuntimeStores,
+) -> RegistryProjectionAuthorityResolver:
+    return RegistryProjectionAuthorityResolver(
+        revision_store=stores.revision_store,
+        effective_roster_authority=EffectiveRosterAuthorityService(
+            snapshot_store=stores.effective_roster_snapshot_store,
+        ),
+        lock_store=stores.lock_store,
+        materialization_store=stores.materialization_store,
+    )
+
+
 def _seed_canonical_authority(
     stores: AgentPlatformRuntimeStores,
     *,
     revision: RuntimeRevision,
+    roster: EffectiveRoster,
     lock: MaterializedRuntimeLock,
     artifact_root: Path,
     digest: str,
 ) -> RuntimeMaterializationRecord:
+    stores.effective_roster_snapshot_store.persist(roster)
     record = _materialization_record(revision, lock, artifact_root, digest)
     stores.lock_store.persist_lock(lock)
     stores.materialization_store.persist(record)
@@ -247,12 +270,14 @@ def _canonical_fixture(
     record = _seed_canonical_authority(
         stores,
         revision=revision,
+        roster=roster,
         lock=lock,
         artifact_root=artifact_root,
         digest=digest,
     )
     return {
         "stores": stores,
+        "authority": _authority(stores),
         "manifest": manifest,
         "roster": roster,
         "revision": revision,
@@ -268,10 +293,9 @@ def _build_bundle(fixture: dict) -> object:
         application_id=_APP,
         application_environment_id=_ENV,
         runtime_revision_id=fixture["revision"].runtime_revision_id,
-        effective_roster=fixture["roster"],
         manifest=fixture["manifest"],
         build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-        stores=fixture["stores"],
+        authority=fixture["authority"],
     )
 
 
@@ -329,10 +353,9 @@ def test_wrong_application_scope_fails_closed(tmp_path: Path) -> None:
             application_id="app-b",
             application_environment_id=_ENV,
             runtime_revision_id=fixture["revision"].runtime_revision_id,
-            effective_roster=fixture["roster"],
             manifest=fixture["manifest"],
             build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-            stores=fixture["stores"],
+            authority=fixture["authority"],
         )
 
 
@@ -345,10 +368,9 @@ def test_wrong_environment_scope_fails_closed(tmp_path: Path) -> None:
             application_id=_APP,
             application_environment_id="env-staging",
             runtime_revision_id=fixture["revision"].runtime_revision_id,
-            effective_roster=fixture["roster"],
             manifest=fixture["manifest"],
             build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-            stores=fixture["stores"],
+            authority=fixture["authority"],
         )
 
 
@@ -361,10 +383,9 @@ def test_missing_revision_fails_closed(tmp_path: Path) -> None:
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id="rev-missing",
-            effective_roster=fixture["roster"],
             manifest=fixture["manifest"],
             build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-            stores=fixture["stores"],
+            authority=fixture["authority"],
         )
 
 
@@ -383,7 +404,9 @@ def test_missing_materialization_record_fails_closed(tmp_path: Path) -> None:
         lock=lock,
     )
     stores.lock_store.persist_lock(lock)
+    stores.effective_roster_snapshot_store.persist(roster)
     stores.revision_store.persist_candidate_revision(revision)
+    authority = _authority(stores)
     with pytest.raises(
         ProductionRegistryProjectionInputError,
         match="missing canonical materialization record",
@@ -392,10 +415,9 @@ def test_missing_materialization_record_fails_closed(tmp_path: Path) -> None:
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id=revision.runtime_revision_id,
-            effective_roster=roster,
             manifest=manifest,
             build_context=ApplicationBuildContext.for_manifest(manifest),
-            stores=stores,
+            authority=authority,
         )
 
 
@@ -417,8 +439,10 @@ def _seed_mismatch_fixture(
     stores.lock_store.persist_lock(lock)
     stores.materialization_store.persist(record)
     stores.revision_store.persist_candidate_revision(revision)
+    stores.effective_roster_snapshot_store.persist(roster)
     return {
         "stores": stores,
+        "authority": _authority(stores),
         "manifest": manifest,
         "roster": roster,
         "revision": revision,
@@ -468,10 +492,9 @@ def test_materialization_record_mismatch_fails_closed(
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id=fixture["revision"].runtime_revision_id,
-            effective_roster=fixture["roster"],
             manifest=fixture["manifest"],
             build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-            stores=fixture["stores"],
+            authority=fixture["authority"],
         )
 
 
@@ -488,6 +511,8 @@ def test_missing_lock_fails_closed(tmp_path: Path) -> None:
         _materialization_record(revision, lock, artifact_root, digest)
     )
     stores.revision_store.persist_candidate_revision(revision)
+    stores.effective_roster_snapshot_store.persist(roster)
+    authority = _authority(stores)
     with pytest.raises(
         ProductionRegistryProjectionInputError,
         match="canonical materialized runtime lock not found",
@@ -496,10 +521,9 @@ def test_missing_lock_fails_closed(tmp_path: Path) -> None:
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id=revision.runtime_revision_id,
-            effective_roster=roster,
             manifest=manifest,
             build_context=ApplicationBuildContext.for_manifest(manifest),
-            stores=stores,
+            authority=authority,
         )
 
 
@@ -525,6 +549,8 @@ def test_lock_digest_mismatch_fails_closed(tmp_path: Path) -> None:
         )
     )
     stores.revision_store.persist_candidate_revision(revision)
+    stores.effective_roster_snapshot_store.persist(roster)
+    authority = _authority(stores)
     with pytest.raises(
         ProductionRegistryProjectionInputError, match="lock digest mismatch"
     ):
@@ -532,10 +558,9 @@ def test_lock_digest_mismatch_fails_closed(tmp_path: Path) -> None:
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id=revision.runtime_revision_id,
-            effective_roster=roster,
             manifest=manifest,
             build_context=ApplicationBuildContext.for_manifest(manifest),
-            stores=stores,
+            authority=authority,
         )
 
 
@@ -545,10 +570,9 @@ def test_locator_from_materialization_store_resolves_real_venv(tmp_path: Path) -
         application_id=_APP,
         application_environment_id=_ENV,
         runtime_revision_id=fixture["revision"].runtime_revision_id,
-        effective_roster=fixture["roster"],
         manifest=fixture["manifest"],
         build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-        stores=fixture["stores"],
+        authority=fixture["authority"],
     )
     assert projection.agent_registry.list_agent_ids() == ["search"]
     assert projection.evidence.materialization_artifact_digest == fixture["digest"]
@@ -566,10 +590,9 @@ def test_artifact_digest_from_canonical_state_fails_on_tamper(tmp_path: Path) ->
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id=fixture["revision"].runtime_revision_id,
-            effective_roster=fixture["roster"],
             manifest=fixture["manifest"],
             build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-            stores=fixture["stores"],
+            authority=fixture["authority"],
         )
 
 
@@ -582,22 +605,32 @@ def test_matching_roster_revision_allowed(tmp_path: Path) -> None:
     )
 
 
-def test_wrong_roster_revision_fails_closed(tmp_path: Path) -> None:
-    fixture = _canonical_fixture(tmp_path, revision_id="rev-roster-bad")
-    roster = fixture["roster"].model_copy(
-        update={"effective_roster_revision_id": "sha256:" + ("9" * 64)},
+def test_missing_roster_snapshot_fails_closed(tmp_path: Path) -> None:
+    runtime = build_production_agent_platform_runtime()
+    stores = runtime.stores
+    artifact_root, digest, lock = _build_echo_artifact(tmp_path, marker="rev-no-roster")
+    manifest = _manifest()
+    roster = _roster()
+    revision = _revision(
+        "rev-no-roster", roster=roster, artifact_digest=digest, lock=lock
     )
+    stores.lock_store.persist_lock(lock)
+    stores.materialization_store.persist(
+        _materialization_record(revision, lock, artifact_root, digest)
+    )
+    stores.revision_store.persist_candidate_revision(revision)
+    authority = _authority(stores)
     with pytest.raises(
-        ProductionRegistryProjectionInputError, match="effective_roster_revision_id"
+        ProductionRegistryProjectionInputError,
+        match="canonical effective roster snapshot authority",
     ):
         build_production_registry_projection_input_bundle_for_revision(
             application_id=_APP,
             application_environment_id=_ENV,
-            runtime_revision_id=fixture["revision"].runtime_revision_id,
-            effective_roster=roster,
-            manifest=fixture["manifest"],
-            build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-            stores=fixture["stores"],
+            runtime_revision_id=revision.runtime_revision_id,
+            manifest=manifest,
+            build_context=ApplicationBuildContext.for_manifest(manifest),
+            authority=authority,
         )
 
 
@@ -614,8 +647,7 @@ def test_projection_store_not_used_as_revision_authority(tmp_path: Path) -> None
             application_id=_APP,
             application_environment_id=_ENV,
             runtime_revision_id="rev-only-in-projection-store",
-            effective_roster=fixture["roster"],
             manifest=fixture["manifest"],
             build_context=ApplicationBuildContext.for_manifest(fixture["manifest"]),
-            stores=stores,
+            authority=fixture["authority"],
         )

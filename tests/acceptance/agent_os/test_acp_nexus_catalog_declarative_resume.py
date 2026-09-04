@@ -22,6 +22,7 @@ from intergrax.agents.persistence.catalog_declarative_invoker import (
 from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpointStore
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.acp_state import AcpSessionState
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel as ContractRiskLevel
@@ -176,8 +177,8 @@ async def test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume(
             use_in_memory_trace=True,
         )
 
-    nexus = runtime.nexus_loop
-    assert runtime.nexus_loop._declarative_tool_invoker is catalog_invoker  # noqa: SLF001
+    nexus = resolve_harness_host_nexus_loop_legacy(runtime)
+    assert resolve_harness_host_nexus_loop_legacy(runtime)._declarative_tool_invoker is catalog_invoker  # noqa: SLF001
 
     await nexus.handle_task(_nexus_task(run_id=run_id, max_steps=1))
     checkpoint = agent_store.get_latest(run_id, "t-agent-os")

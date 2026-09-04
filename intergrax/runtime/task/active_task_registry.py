@@ -9,7 +9,17 @@ import asyncio
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from intergrax.contracts.execution_identity import RunId, TaskId, validate_run_id, validate_task_id
+from intergrax.contracts.active_execution_task_scope import (
+    ActiveExecutionTaskScopeUnavailable,
+)
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.runtime.task.task import Task
 
 _ACTIVE: Dict[TaskId, ActiveTaskBinding] = {}
@@ -87,5 +97,41 @@ class ActiveTaskRegistry:
             return [str(task_id) for task_id in _ACTIVE]
 
     @staticmethod
+    def peek_task_id_for_run(run_id: RunId) -> TaskId | None:
+        """Process-local lookup of the active task owning ``run_id``."""
+        validated_run_id = validate_run_id(run_id)
+        for binding in _ACTIVE.values():
+            if binding.run_id == validated_run_id:
+                return binding.task_id
+        return None
+
+    @staticmethod
     def clear_for_tests() -> None:
         _ACTIVE.clear()
+
+
+class ActiveTaskRegistryTaskScopeResolver:
+    """Reference Production V1 resolver backed by in-flight task registration."""
+
+    def resolve_current_task_scope(
+        self,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id: ExecutionId,
+    ) -> TaskId:
+        del attempt_id, execution_id
+        task_id = ActiveTaskRegistry.peek_task_id_for_run(run_id)
+        if task_id is None:
+            raise ActiveExecutionTaskScopeUnavailable(
+                f"no active task scope for run {run_id!r}",
+            )
+        return task_id
+
+
+__all__ = [
+    "ActiveTaskBinding",
+    "ActiveTaskOwnershipConflict",
+    "ActiveTaskRegistry",
+    "ActiveTaskRegistryTaskScopeResolver",
+]

@@ -19,8 +19,15 @@ from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_te
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyViolationError,
 )
+from intergrax.runtime.policy.side_effect_authorization_errors import (
+    MeaningfulSideEffectAuthorizationRequiredError,
+    SideEffectAuthorizationFailureReason,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+)
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
@@ -126,6 +133,24 @@ def _build_state(bundle: object) -> tuple[object, RuntimeToolInvoker, _CountingE
     return state, invoker, executor
 
 
+def test_invoker_fails_before_handler_without_execution_identity() -> None:
+    """Audit-only declarative runtime does not authorize meaningful side effects."""
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.identity")
+    env.policy_rules = _deny_profile(mode="audit_only")
+    bundle = wire_policy_bundle(env)
+    state, invoker, executor = _build_state(bundle)
+    request = ToolExecutionRequest(
+        run_id="run-e2e",
+        tool_id=_TOOL_ID,
+        step_id="1",
+        input=_Input(value=99),
+    )
+    with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError) as exc:
+        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    assert exc.value.reason is SideEffectAuthorizationFailureReason.NON_ENFORCING_MODE
+    assert executor.calls == 0
+
+
 def test_enforce_deny_blocks_tool_invocation() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.enforce")
     env.policy_rules = _deny_profile(mode="enforce")
@@ -139,8 +164,9 @@ def test_enforce_deny_blocks_tool_invocation() -> None:
         input=_Input(value=1),
     )
 
-    with pytest.raises(DeclarativePolicyViolationError) as exc:
-        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(DeclarativePolicyViolationError) as exc:
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert executor.calls == 0
     assert _RULE_ID in exc.value.matched_rule_ids
@@ -150,7 +176,7 @@ def test_enforce_deny_blocks_tool_invocation() -> None:
     assert payload.enforced is True
 
 
-def test_audit_only_permits_but_records_deny() -> None:
+def test_audit_only_denies_side_effect_tool() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.audit")
     env.policy_rules = _deny_profile(mode="audit_only")
     bundle = wire_policy_bundle(env)
@@ -163,15 +189,12 @@ def test_audit_only_permits_but_records_deny() -> None:
         input=_Input(value=2),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(MeaningfulSideEffectAuthorizationRequiredError) as exc:
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
-    assert result.success is True
-    assert executor.calls == 1
-    trace = next(e for e in state.trace_events if e.step == "declarative_policy_evaluation")
-    payload = trace.payload
-    assert payload.would_deny is True
-    assert payload.enforced is False
-    assert "audit_only_bypass" in payload.reasons
+    assert exc.value.reason is SideEffectAuthorizationFailureReason.NON_ENFORCING_MODE
+    assert executor.calls == 0
 
 
 def test_unknown_handler_enforce_denies_without_side_effect() -> None:
@@ -197,8 +220,9 @@ def test_unknown_handler_enforce_denies_without_side_effect() -> None:
         input=_Input(value=3),
     )
 
-    with pytest.raises(DeclarativePolicyViolationError):
-        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(DeclarativePolicyViolationError):
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert executor.calls == 0
     trace = next(e for e in state.trace_events if e.step == "declarative_policy_evaluation")
@@ -233,8 +257,9 @@ def test_require_hitl_blocks_tool_before_orchestration_bridge() -> None:
         input=_Input(value=4),
     )
 
-    with pytest.raises(DeclarativePolicyHitlRequiredError) as exc:
-        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(DeclarativePolicyHitlRequiredError) as exc:
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
 
     assert executor.calls == 0
     assert _RULE_ID in exc.value.matched_rule_ids
@@ -302,8 +327,9 @@ def test_scope_deny_still_wins_over_declarative_allow() -> None:
         input=_Input(value=1),
     )
 
-    with pytest.raises(ToolScopeViolationError):
-        invoker.invoke(state=state, agent_id="agent-e2e", request=request)
+    with canonical_execution_identity_scope(state.run_id):
+        with pytest.raises(ToolScopeViolationError):
+            invoker.invoke(state=state, agent_id="agent-e2e", request=request)
     assert executor.calls == 0
 
 
@@ -335,6 +361,7 @@ def test_require_hitl_satisfied_by_matching_grant() -> None:
         run_id="run-e2e",
         step_id="1",
         tool_id=_TOOL_ID,
+        agent_id="agent-e2e",
         idempotency_key=None,
         matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
@@ -348,12 +375,64 @@ def test_require_hitl_satisfied_by_matching_grant() -> None:
             task_id="task-1",
             run_id="run-e2e",
             step_id="1",
+            agent_id="agent-e2e",
             invocation_scope_id="dhr_scope",
             approval_grant=grant,
         )
     )
     assert decision.action.value == "allow"
     assert decision.should_block_execution is False
+
+
+def test_grant_agent_mismatch_blocks_require_hitl() -> None:
+    from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+    from intergrax.runtime.policy.declarative_enforcer import DeclarativePolicyEnforcer
+    from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.e2e.grant_agent")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[
+            {
+                "rule_id": _RULE_ID,
+                "handler_id": "deny_tool",
+                "resource_kind": "tool",
+                "resource_id": _TOOL_ID,
+                "action": "require_hitl",
+            }
+        ],
+        policy_enforcement_mode="enforce",
+    )
+    bundle = wire_policy_bundle(env)
+    assert bundle.declarative_policy_runtime is not None
+    enforcer = DeclarativePolicyEnforcer(runtime=bundle.declarative_policy_runtime)
+    grant = DeclarativeHitlApprovalGrant(
+        grant_id="grant-1",
+        invocation_scope_id="dhr_scope",
+        task_id="task-1",
+        run_id="run-e2e",
+        step_id="1",
+        tool_id=_TOOL_ID,
+        agent_id="agent-a",
+        idempotency_key=None,
+        matched_rule_ids=(_RULE_ID,),
+        human_request_id="hr-1",
+        policy_provenance_digest=bundle.declarative_policy_runtime.provenance.rules_digest_sha256,
+        pause_id="pause-1",
+        approved_at="2026-08-14T00:00:00+00:00",
+    )
+    decision = enforcer.evaluate_tool_invocation(
+        context=PolicyEvaluationContext(
+            tool_id=_TOOL_ID,
+            task_id="task-1",
+            run_id="run-e2e",
+            step_id="1",
+            agent_id="agent-b",
+            invocation_scope_id="dhr_scope",
+            approval_grant=grant,
+        )
+    )
+    assert decision.should_block_execution is True
+    assert decision.action.value == "require_hitl"
 
 
 def test_deny_overrides_matching_grant() -> None:
@@ -384,6 +463,7 @@ def test_deny_overrides_matching_grant() -> None:
         run_id="run-e2e",
         step_id="1",
         tool_id=_TOOL_ID,
+        agent_id="agent-e2e",
         idempotency_key=None,
         matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",
@@ -429,6 +509,7 @@ def test_grant_satisfaction_requires_identity_dimensions() -> None:
         run_id="run-e2e",
         step_id="1",
         tool_id=_TOOL_ID,
+        agent_id="agent-e2e",
         idempotency_key=None,
         matched_rule_ids=(_RULE_ID,),
         human_request_id="hr-1",

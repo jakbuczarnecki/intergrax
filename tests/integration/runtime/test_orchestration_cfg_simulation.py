@@ -369,7 +369,8 @@ async def test_cfg20_strict_multi_agent_pipeline() -> None:
     """CFG-20: strict_multi_agent_defaults completes structured two-agent graph."""
     env = _strict_multi_agent_environment()
     assert env.execution_mode is ExecutionMode.STRICT
-    assert env.critic_profile.require_critic_on_completion is True
+    assert env.decision_profile.verification.semantic_enabled is True
+    assert env.decision_profile.flow.verify_graph_final is True
     loop = build_nexus_loop_from_environment(_simulation_registry(), env=env)
     result = await loop.handle_task(
         Task(

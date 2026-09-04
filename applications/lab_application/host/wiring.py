@@ -6,7 +6,7 @@ from pathlib import Path
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
-from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from lab_application.host.agent_builders import LAB_AGENT_BUILDERS
@@ -65,7 +65,7 @@ def build_lab_registry(
         strict_harness=settings.strict_harness,
         trace_db_path=trace_db_path,
     )
-    return build_application_registry(
+    return build_manifest_development_registry(
         manifest,
         env_wiring.build_context,
         builders=LAB_AGENT_BUILDERS,

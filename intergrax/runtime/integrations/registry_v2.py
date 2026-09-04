@@ -41,20 +41,6 @@ IntegrationSecurityPosture: TypeAlias = PlatformIntegrationSecurityPosture
 IntegrationFactory: TypeAlias = Callable[..., PlatformIntegrationContract]
 RegistrationKey: TypeAlias = tuple[str, str]
 
-DEFERRED_LLM_GUARDRAIL_SLUGS: frozenset[str] = frozenset(
-    {
-        "llm_guard",
-        "guardrails_ai",
-        "nemo_guardrails",
-        "openguardrails",
-        "presidio",
-        "llama_guard",
-        "lakera",
-        "azure_content_safety",
-        "bedrock_guardrails",
-    }
-)
-
 
 class IntegrationRegistryError(ValueError):
     """Base error for contract projection validation failures."""
@@ -369,8 +355,6 @@ def build_integration_registration(
 
 def build_contract_registry_snapshot(
     slugs: Iterable[str] | None = None,
-    *,
-    exclude_deferred: bool = True,
 ) -> IntegrationRegistry:
     """Build an immutable contract projection snapshot from the canonical catalog."""
     snapshot = catalog_snapshot()
@@ -383,8 +367,6 @@ def build_contract_registry_snapshot(
 
     registry = IntegrationRegistry()
     for slug in sorted(snapshot):
-        if exclude_deferred and slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
-            continue
         entry = snapshot[slug]
         for spec in entry.contract_specs:
             registry.register(registration_from_contract_spec(slug=slug, spec=spec))
@@ -393,26 +375,23 @@ def build_contract_registry_snapshot(
 
 def build_contract_registry(
     slugs: Iterable[str] | None = None,
-    *,
-    exclude_deferred: bool = True,
 ) -> IntegrationRegistry:
     """Backward-compatible alias for :func:`build_contract_registry_snapshot`."""
-    return build_contract_registry_snapshot(slugs=slugs, exclude_deferred=exclude_deferred)
+    return build_contract_registry_snapshot(slugs=slugs)
 
 
 def non_deferred_provider_slugs() -> tuple[str, ...]:
-    """Provider slugs with canonical contract projection coverage (non-deferred)."""
+    """Provider slugs with canonical contract projection coverage."""
     return tuple(
         sorted(
             slug
             for slug, entry in catalog_snapshot().items()
-            if slug not in DEFERRED_LLM_GUARDRAIL_SLUGS and entry.contract_specs
+            if entry.contract_specs
         )
     )
 
 
 __all__ = [
-    "DEFERRED_LLM_GUARDRAIL_SLUGS",
     "DuplicateIntegrationRegistrationError",
     "IntegrationCapability",
     "IntegrationContractProjectionError",

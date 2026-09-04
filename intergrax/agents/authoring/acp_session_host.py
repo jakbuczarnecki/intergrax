@@ -23,6 +23,6 @@ class ACPSessionHostContext(BaseModel):
     runtime_profile: RuntimeEnvironmentProfile | None = None
     binding: AgentRunBinding | None = Field(default=None, exclude=True)
     declarative_tool_invoker: Any = Field(default=None, exclude=True)
-    critic_graph_hooks: Any = Field(default=None, exclude=True)
+    decision_flow_gate: Any = Field(default=None, exclude=True)
     notification_adapter: Any = Field(default=None, exclude=True)
     budget_reaction_hook: Any = Field(default=None, exclude=True)

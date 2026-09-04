@@ -29,15 +29,10 @@ from intergrax.applications._shared.cost_wiring import (
     ApplicationCostWiring,
     wire_application_cost,
 )
-from intergrax.applications._shared.critic_assembly_resolver import (
-    assert_critic_assembly_valid,
-)
-from intergrax.applications._shared.critic_tool_wiring import (
-    build_critic_eval_tool_client,
-)
-from intergrax.applications._shared.critic_wiring import (
-    ApplicationCriticWiring,
-    wire_application_critic,
+from intergrax.applications._shared.decision_wiring import (
+    application_decision_wiring_spec_from_environment,
+    resolve_application_decision_agent_id,
+    wire_application_decision,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
@@ -109,13 +104,20 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    HarnessHostLegacyComposition,
+)
+from intergrax.applications._shared.host_task_execution_wiring import (
+    build_environment_host_task_execution,
+)
+from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 
 __all__ = [
@@ -127,21 +129,26 @@ __all__ = [
 
 @dataclass(frozen=True)
 class HarnessHostRuntime:
-    """Resolved Tier-3 runtime artifacts for HTTP/MCP hosts."""
+    """Resolved Tier-3 runtime artifacts for HTTP/MCP hosts.
+
+    Public execution path: ``execution`` → canonical :class:`HostTaskExecution`
+    (strategy-neutral root lifecycle). Nexus orchestration remains an internal
+    backend reached through ORCHESTRATION strategy dispatch.
+    """
 
     manifest: ApplicationManifest
     environment: ApplicationEnvironmentProfile
     env_wiring: ApplicationEnvironmentWiring
-    registry: AgentRegistry
+    registry: AgentRegistryRead
     observability: NexusObservabilityStores
     reliability: ApplicationReliabilityWiring
     security: ApplicationSecurityWiring
     guardrail: ApplicationGuardrailWiring
     cost: ApplicationCostWiring
     evaluation: ApplicationEvaluationWiring
-    critic: ApplicationCriticWiring
     diagnostic_wiring: DiagnosticWiring
-    nexus_loop: NexusLoop
+    execution: HostTaskExecution
+    _legacy_composition: HarnessHostLegacyComposition
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
     compensation_queue_store: CompensationQueueStore
@@ -175,9 +182,10 @@ def build_harness_host_runtime(
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> HarnessHostRuntime:
     """
-    Single H-APP path: environment wiring → registry → observability → NexusLoop.
+    Single H-APP path: environment → platform composition → canonical execution.
 
     Replaces per-host duplicate ``NexusLoop(...)`` construction in scaffold factories.
+    Nexus is composed internally as the ORCHESTRATION strategy backend only.
     """
     resolved_manifest = manifest
     if manifest.environment is None:
@@ -238,14 +246,12 @@ def build_harness_host_runtime(
     assert_cost_assembly_valid(cost_wiring, environment)
     evaluation_wiring = wire_application_evaluation(environment)
     assert_evaluation_assembly_valid(evaluation_wiring, environment)
-    l1_client = build_critic_eval_tool_client(
-        environment,
-        env_wiring.tool_wiring,
-        evaluation_registry=evaluation_wiring.registry,
-        trace_reader=observability.trace_store,
+    decision_spec = application_decision_wiring_spec_from_environment(environment)
+    decision_wiring = wire_application_decision(
+        registry=resolved_registry,
+        agent_id=resolve_application_decision_agent_id(resolved_registry, environment),
+        spec=decision_spec,
     )
-    critic_wiring = wire_application_critic(environment, l1_client=l1_client)
-    assert_critic_assembly_valid(critic_wiring, environment, l1_client=l1_client)
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
@@ -274,8 +280,10 @@ def build_harness_host_runtime(
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
-        critic_wiring=critic_wiring,
+        decision_wiring=decision_wiring,
         run_budget=cost_wiring.run_budget,
+        key_value_cache=key_value_cache,
+        document_store=document_store,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
@@ -334,6 +342,7 @@ def build_harness_host_runtime(
         environment,
         mutation_authorization_boundary=mutation_authorization_boundary,
     )
+    execution = build_environment_host_task_execution(nexus_loop, environment)
     return HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=environment,
@@ -346,9 +355,9 @@ def build_harness_host_runtime(
         guardrail=guardrail_wiring,
         cost=cost_wiring,
         evaluation=evaluation_wiring,
-        critic=critic_wiring,
         diagnostic_wiring=diagnostic_wiring,
-        nexus_loop=nexus_loop,
+        execution=execution,
+        _legacy_composition=HarnessHostLegacyComposition(nexus_loop=nexus_loop),
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,

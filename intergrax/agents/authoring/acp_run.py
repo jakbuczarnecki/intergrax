@@ -443,8 +443,8 @@ async def _run_acp_session_bound(
             else None
         ),
         **(
-            {AcpRunContextKey.CRITIC_HOOKS: host.critic_graph_hooks}
-            if host is not None and host.critic_graph_hooks is not None
+            {AcpRunContextKey.DECISION_FLOW_GATE: host.decision_flow_gate}
+            if host is not None and host.decision_flow_gate is not None
             else {}
         ),
     }

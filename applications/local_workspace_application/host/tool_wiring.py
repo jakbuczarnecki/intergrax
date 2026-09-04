@@ -80,11 +80,12 @@ def resolve_local_workspace_read_allowlist_roots(
     return read_allowlist_roots_from_env()
 
 
-def wire_local_workspace_tools(
+def build_local_workspace_tool_profile(
     *,
     settings: LocalWorkspaceBackendSettings | None = None,
     integration_profile: IntegrationProfile | None = None,
-) -> ApplicationToolWiring:
+) -> ToolProfile:
+    """Explicit LKW host tool availability (least privilege, profile source of truth)."""
     settings = settings or LocalWorkspaceBackendSettings.from_env()
     enabled = list(_LKW_BASE_TOOL_IDS)
     enabled.extend(settings.enabled_tool_ids)
@@ -101,10 +102,28 @@ def wire_local_workspace_tools(
         ctx = replace(ctx, read_allowlist_roots=allowed_roots)
 
     profile = ToolProfile(enabled=enabled)
-    profile = apply_resolved_integration_tool_guardrails(
+    return apply_resolved_integration_tool_guardrails(
         profile,
         ctx,
         categories=(IntegrationCategory.MESSAGE_BUS,),
+    )
+
+
+def wire_local_workspace_tools(
+    *,
+    settings: LocalWorkspaceBackendSettings | None = None,
+    integration_profile: IntegrationProfile | None = None,
+) -> ApplicationToolWiring:
+    settings = settings or LocalWorkspaceBackendSettings.from_env()
+    resolved_profile = integration_profile or IntegrationProfile.legal_product()
+    allowed_roots = resolve_local_workspace_read_allowlist_roots(settings)
+    ctx = ToolWiringContext.from_integration_profile(resolved_profile)
+    if allowed_roots:
+        ctx = replace(ctx, read_allowlist_roots=allowed_roots)
+
+    profile = build_local_workspace_tool_profile(
+        settings=settings,
+        integration_profile=resolved_profile,
     )
     return build_application_tool_wiring(
         profile,

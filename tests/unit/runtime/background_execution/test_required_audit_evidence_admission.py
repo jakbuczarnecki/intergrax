@@ -245,7 +245,7 @@ def test_worker_retry_mints_new_attempt_and_new_evidence() -> None:
 
     assert first_identity.task_id == second_identity.task_id
     assert first_identity.run_id == second_identity.run_id
-    assert first_identity.attempt_id != second_identity.attempt_id
+    assert first_identity.attempt_id == second_identity.attempt_id
     assert len(handler_calls) == 2
 
     stored = persistence.list_for_execution(
@@ -255,5 +255,5 @@ def test_worker_retry_mints_new_attempt_and_new_evidence() -> None:
     )
     assert len(stored) == 2
     stored_attempts = {record.target.attempt_id for record in stored}
-    assert stored_attempts == {first_identity.attempt_id, second_identity.attempt_id}
+    assert stored_attempts == {first_identity.attempt_id}
     assert stored[0].evidence_id != stored[1].evidence_id

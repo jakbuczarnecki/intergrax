@@ -68,6 +68,8 @@ def _grant_satisfies_hitl(
         return False
     if context.tool_id != grant.tool_id:
         return False
+    if context.agent_id != grant.agent_id:
+        return False
     if grant.idempotency_key is not None:
         if context.idempotency_key != grant.idempotency_key:
             return False

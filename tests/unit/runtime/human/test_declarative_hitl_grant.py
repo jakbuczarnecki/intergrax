@@ -62,6 +62,7 @@ def test_create_grant_from_pending_copies_scope() -> None:
     grant = DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
     assert grant is not None
     assert grant.invocation_scope_id == "dhr_scope"
+    assert grant.agent_id == "agent-1"
     assert task.runtime.governance.declarative_hitl_pending is None
     assert task.runtime.governance.declarative_hitl_grant is grant
 

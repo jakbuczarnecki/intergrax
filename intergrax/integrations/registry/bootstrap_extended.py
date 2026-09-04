@@ -105,6 +105,9 @@ def register_extended_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.notification_channel.opsgenie.register import register_opsgenie_integration
     from intergrax.integrations.providers.issue_tracker.gitlab.register import register_gitlab_integration
     from intergrax.integrations.providers.vector_store.vespa.register import register_vespa_integration
+    from intergrax.integrations.providers.managed_retrieval.openai.register import (
+        register_openai_managed_retrieval_integration,
+    )
 
     register_kafka_integration(override=override)
     register_celery_integration(override=override)
@@ -192,6 +195,7 @@ def register_extended_integrations(*, override: bool = False) -> None:
     register_opsgenie_integration(override=override)
     register_gitlab_integration(override=override)
     register_vespa_integration(override=override)
+    register_openai_managed_retrieval_integration(override=override)
     from intergrax.integrations.registry.bootstrap_m6_p4 import register_m6_p4_integrations
 
     register_m6_p4_integrations(override=override)

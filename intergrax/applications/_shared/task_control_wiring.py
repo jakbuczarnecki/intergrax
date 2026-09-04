@@ -14,6 +14,9 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
 )
 from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
@@ -33,10 +36,24 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 TaskEnricher = Callable[[Task], Task]
+
+
+def resolve_harness_task_control_execution_terminal(
+    *,
+    runtime: HarnessHostRuntime | None,
+    execution_terminal: ExecutionTerminalService | None = None,
+) -> ExecutionTerminalService | None:
+    """Resolve canonical terminal authority at host composition time."""
+    if execution_terminal is not None:
+        return execution_terminal
+    if runtime is None:
+        return None
+    return resolve_harness_host_nexus_loop_legacy(runtime).execution_terminal
 
 
 def build_reliability_task_enricher(
@@ -77,6 +94,7 @@ def wire_harness_task_control(
     task_route_prefix: str = "/v1/tasks",
     extra_enricher: TaskEnricher | None = None,
     mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
     runtime: HarnessHostRuntime | None = None,
     task_enricher: TaskEnricher | None = None,
 ) -> TaskEnricher:
@@ -93,10 +111,15 @@ def wire_harness_task_control(
         )
     if enabled:
         async_index = resolve_async_task_index(env)
+        resolved_terminal = resolve_harness_task_control_execution_terminal(
+            runtime=runtime,
+            execution_terminal=execution_terminal,
+        )
         mount_harness_task_routes(
             app,
             task_runner=task_runner,
             checkpoint_store=checkpoint_store,
+            execution_terminal=resolved_terminal,
             prefix=task_route_prefix,
             task_enricher=enricher,
             async_index=async_index,

@@ -14,13 +14,13 @@ from intergrax.runtime.nexus.planning.nexus_plan_bridge import (
 )
 from intergrax.runtime.nexus.planning.nexus_planner_prompts import nexus_task_planner_prompt
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 
 
 def build_nexus_plan_from_llm(
     task: Task,
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     llm_adapter: LLMAdapter,
     *,
     fallback: TaskPlanner,

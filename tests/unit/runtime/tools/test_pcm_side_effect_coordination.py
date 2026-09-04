@@ -7,6 +7,8 @@ from __future__ import annotations
 import threading
 import time
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from pydantic import BaseModel
 
@@ -28,9 +30,22 @@ from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencySt
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
+from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    PolicyRulesProfile,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
+
+_RUN_SEED = "run1"
+_RUN_ID = canonical_run_id_for_tests(_RUN_SEED)
 
 
 class DummyInput(BaseModel):
@@ -55,20 +70,19 @@ class DummyHandler:
         return DummyOutput(result=request.input.value * 2)
 
 
-class DummyState:
-    def __init__(self) -> None:
-        self._tenant_id = "tenant_test"
+def _enforce_allow_bundle() -> object:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="tools.se.allow")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[],
+        policy_enforcement_mode="enforce",
+    )
+    return wire_policy_bundle(env)
 
-    @property
-    def tenant_id(self) -> str:
-        return self._tenant_id
 
-    @property
-    def context(self):
-        return type("Ctx", (), {"config": type("Cfg", (), {"policy_bundle": None})()})()
-
-    def trace_event(self, *args, **kwargs) -> None:
-        del args, kwargs
+def _state_with_enforce_allow():
+    state = build_runtime_state_for_tests(run_id=_RUN_SEED)
+    state.context.config.policy_bundle = _enforce_allow_bundle()
+    return state
 
 
 def _build_invoker(store: InMemoryIdempotencyStore, executor: CountingExecutor) -> RuntimeToolInvoker:
@@ -98,7 +112,7 @@ def _build_invoker(store: InMemoryIdempotencyStore, executor: CountingExecutor) 
 
 def _request() -> ToolExecutionRequest[DummyInput]:
     return ToolExecutionRequest(
-        run_id="run1",
+        run_id=_RUN_ID,
         step_id="step1",
         tool_id="double",
         input=DummyInput(value=5),
@@ -133,12 +147,13 @@ def test_a2_active_claim_blocks_second_execution() -> None:
     store = InMemoryIdempotencyStore()
     executor = CountingExecutor()
     invoker = _build_invoker(store, executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request()
 
-    store.claim("tenant_test", "key-123", "owner-a", lease_seconds=30)
-    with pytest.raises(ActiveInvocationClaimError):
-        invoker.invoke(state=state, agent_id="agent-a", request=request)
+    store.claim(state.tenant_id, "key-123", "owner-a", lease_seconds=30)
+    with canonical_execution_identity_scope(_RUN_SEED):
+        with pytest.raises(ActiveInvocationClaimError):
+            invoker.invoke(state=state, agent_id="agent-a", request=request)
     assert executor.calls == 0
 
 
@@ -146,11 +161,12 @@ def test_a3_completed_replays_result() -> None:
     store = InMemoryIdempotencyStore()
     executor = CountingExecutor()
     invoker = _build_invoker(store, executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request()
 
-    r1 = invoker.invoke(state=state, agent_id="agent-a", request=request)
-    r2 = invoker.invoke(state=state, agent_id="agent-a", request=request)
+    with canonical_execution_identity_scope(_RUN_SEED):
+        r1 = invoker.invoke(state=state, agent_id="agent-a", request=request)
+        r2 = invoker.invoke(state=state, agent_id="agent-a", request=request)
     assert r1.success and r2.success
     assert r1.output == r2.output
     assert executor.calls == 1
@@ -160,18 +176,19 @@ def test_a4_crash_after_effect_becomes_uncertain() -> None:
     store = InMemoryIdempotencyStore()
     executor = CountingExecutor()
     invoker = _build_invoker(store, executor)
-    state = DummyState()
+    state = _state_with_enforce_allow()
     request = _request()
 
-    claim = store.claim("tenant_test", "key-123", "owner-crash", lease_seconds=1)
+    claim = store.claim(state.tenant_id, "key-123", "owner-crash", lease_seconds=1)
     assert claim.outcome == ClaimOutcome.ACQUIRED
     executor.execute(request)
     time.sleep(1.2)
 
-    with pytest.raises(InvocationUncertaintyError):
-        invoker.invoke(state=state, agent_id="agent-a", request=request)
+    with canonical_execution_identity_scope(_RUN_SEED):
+        with pytest.raises(InvocationUncertaintyError):
+            invoker.invoke(state=state, agent_id="agent-a", request=request)
     assert executor.calls == 1
-    assert store.get_status("tenant_test", "key-123") == InvocationStatus.UNCERTAIN
+    assert store.get_status(state.tenant_id, "key-123") == InvocationStatus.UNCERTAIN
 
 
 def test_a5_stale_completion_rejected() -> None:
@@ -190,6 +207,58 @@ def test_a5_stale_completion_rejected() -> None:
     result = ToolExecutionResult.ok(DummyOutput(result=1))
     with pytest.raises(StaleClaimError):
         store.complete_with_claim("tenant-a", "stale-key", stale_claim, result)
+
+
+def test_a5b_expired_lease_completion_rejected() -> None:
+    store = InMemoryIdempotencyStore()
+    acquired = store.claim("tenant-a", "expired-complete-key", "owner-a", lease_seconds=30)
+    assert acquired.claim is not None
+    expired_claim = acquired.claim
+    entry = store._store[("tenant-a", "expired-complete-key")]  # noqa: SLF001
+    entry.claim = acquired.claim.model_copy(
+        update={"lease_expires_at": datetime.now(UTC) - timedelta(seconds=1)},
+    )
+    result = ToolExecutionResult.ok(DummyOutput(result=1))
+    with pytest.raises(StaleClaimError):
+        store.complete_with_claim("tenant-a", "expired-complete-key", expired_claim, result)
+
+
+def test_a5c_expired_lease_mark_uncertain_rejected() -> None:
+    store = InMemoryIdempotencyStore()
+    acquired = store.claim("tenant-a", "expired-uncertain-key", "owner-a", lease_seconds=30)
+    assert acquired.claim is not None
+    expired_claim = acquired.claim
+    entry = store._store[("tenant-a", "expired-uncertain-key")]  # noqa: SLF001
+    entry.claim = acquired.claim.model_copy(
+        update={"lease_expires_at": datetime.now(UTC) - timedelta(seconds=1)},
+    )
+    with pytest.raises(StaleClaimError):
+        store.mark_uncertain_with_claim("tenant-a", "expired-uncertain-key", expired_claim)
+
+
+def test_a5d_superseded_fence_current_owner_completes() -> None:
+    store = InMemoryIdempotencyStore()
+    acquired_a = store.claim("tenant-a", "fence-handoff-key", "owner-a", lease_seconds=30)
+    assert acquired_a.claim is not None
+    stale_claim = acquired_a.claim
+    entry = store._store[("tenant-a", "fence-handoff-key")]  # noqa: SLF001
+    current_claim = acquired_a.claim.model_copy(update={"fence": 2, "owner_id": "owner-b"})
+    entry.claim = current_claim
+    result = ToolExecutionResult.ok(DummyOutput(result=7))
+    with pytest.raises(StaleClaimError):
+        store.complete_with_claim("tenant-a", "fence-handoff-key", stale_claim, result)
+    store.complete_with_claim("tenant-a", "fence-handoff-key", current_claim, result)
+    assert store.get_status("tenant-a", "fence-handoff-key") == InvocationStatus.COMPLETED
+
+
+def test_a9_tenant_isolation_same_key() -> None:
+    store = InMemoryIdempotencyStore()
+    claim_a = store.claim("tenant-a", "shared-key", "owner-a", lease_seconds=30)
+    claim_b = store.claim("tenant-b", "shared-key", "owner-b", lease_seconds=30)
+    assert claim_a.outcome == ClaimOutcome.ACQUIRED
+    assert claim_b.outcome == ClaimOutcome.ACQUIRED
+    assert claim_a.claim is not None and claim_b.claim is not None
+    assert claim_a.claim.fence == 1 and claim_b.claim.fence == 1
 
 
 def test_a6_current_owner_completes() -> None:

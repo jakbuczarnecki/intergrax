@@ -1,0 +1,44 @@
+{
+  "description": "Tiny deterministic VPI data package fixture for distribution tests",
+  "files": [
+    {
+      "relative_path": "provenance.json",
+      "role": "PROVENANCE",
+      "sha256": "b3cc0ca3342bc713624e3efbb5fa5f13a808b9aa357b13eb9540119b900d2ac2",
+      "size_bytes": 116
+    },
+    {
+      "relative_path": "dataset/manifest.json",
+      "role": "DATASET_MANIFEST",
+      "sha256": "176638541cf7d7047aef1da2282e09be95f5fa6c246cf3c51a8ee1eb5f20b9cd",
+      "size_bytes": 241
+    },
+    {
+      "relative_path": "dataset/selected_offers.parquet",
+      "role": "DATASET",
+      "sha256": "9a100b7882044d3525e1c27e36042b814487983effacd922fbfa4234c9a1dfac",
+      "size_bytes": 19
+    },
+    {
+      "relative_path": "embeddings/manifest.json",
+      "role": "EMBEDDING_MANIFEST",
+      "sha256": "277b6e98949224c56d7d41fef44ad6df2b257cc49b8f982b606f1858a95edb9a",
+      "size_bytes": 1103
+    },
+    {
+      "relative_path": "embeddings/part-000000.parquet",
+      "role": "EMBEDDING_SHARD",
+      "sha256": "324e8a129f1ba562627f97f5b9dd0e0e91bfbb2b18f8daefbd66733bd8f5f537",
+      "size_bytes": 27
+    }
+  ],
+  "metadata": [
+    "test-fixture"
+  ],
+  "package_id": "verified-product-identification",
+  "package_version": "tiny-1",
+  "provenance_ref": "provenance.json",
+  "redistribution_status": "INTERNAL_BUILD",
+  "schema_version": "intergrax.proof_data_package.v1",
+  "total_size_bytes": 1506
+}

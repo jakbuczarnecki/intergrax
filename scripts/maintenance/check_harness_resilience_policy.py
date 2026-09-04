@@ -17,6 +17,7 @@ for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.resilience_policy import ResiliencePolicy
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
@@ -54,7 +55,7 @@ def main() -> int:
         print("reliability_profile.resilience_policy must be ResiliencePolicy")
         return 1
 
-    middleware = runtime.nexus_loop._middleware  # noqa: SLF001
+    middleware = resolve_harness_host_nexus_loop_legacy(runtime)._middleware  # noqa: SLF001
     if not isinstance(middleware, MiddlewarePipeline):
         print("expected MiddlewarePipeline on nexus loop")
         return 1

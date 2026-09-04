@@ -6,7 +6,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from intergrax.applications.contracts.environment_profile.decision_profile_legacy import (
+    migrate_environment_profile_wire,
+    migrate_legacy_critic_payload_to_decision,
+)
+
 PROFILE_SPEC_V2: str = "2.0.0"
+LEGACY_FLAT_PROFILE_KEYS: frozenset[str] = frozenset({"critic_profile"})
 
 
 def uses_nested_profile_wire(spec_version: str) -> bool:
@@ -55,7 +61,7 @@ FLAT_PROFILE_KEYS: frozenset[str] = frozenset(
         "max_parallel_tool_calls",
         "reasoning_profile",
         "orchestration_profile",
-        "critic_profile",
+        "decision_profile",
         "adaptive_profile",
         "evaluation_profile",
         "codecraft_profile",
@@ -92,7 +98,7 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
     """Convert legacy flat profile JSON into nested bundle fields."""
     if not isinstance(data, dict):
         return data
-    if not any(key in data for key in FLAT_PROFILE_KEYS):
+    if not any(key in data for key in FLAT_PROFILE_KEYS | LEGACY_FLAT_PROFILE_KEYS):
         return data
 
     meta = _as_dict(data.get("meta"))
@@ -160,13 +166,15 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
     for flat_key, nested_key in (
         ("reasoning_profile", "reasoning"),
         ("orchestration_profile", "orchestration"),
-        ("critic_profile", "critic"),
+        ("decision_profile", "decision"),
         ("adaptive_profile", "adaptive"),
         ("evaluation_profile", "evaluation"),
         ("codecraft_profile", "codecraft"),
     ):
         if flat_key in data:
             cognition[nested_key] = data[flat_key]
+    if "critic_profile" in data:
+        cognition["decision"] = migrate_legacy_critic_payload_to_decision(data["critic_profile"])
 
     for flat_key, nested_key in (
         ("reliability_profile", "reliability"),
@@ -196,7 +204,9 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
     lifted = {
         key: value
         for key, value in data.items()
-        if key not in FLAT_PROFILE_KEYS and key not in BUNDLE_ROOT_KEYS
+        if key not in FLAT_PROFILE_KEYS
+        and key not in LEGACY_FLAT_PROFILE_KEYS
+        and key not in BUNDLE_ROOT_KEYS
     }
     lifted["meta"] = meta
     lifted["security"] = security
@@ -206,7 +216,7 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
     lifted["topology"] = topology
     lifted["isolation"] = isolation
     lifted["extensions"] = extensions
-    return lifted
+    return migrate_environment_profile_wire(lifted)
 
 
 def flatten_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
@@ -260,7 +270,7 @@ def flatten_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
             "max_parallel_tool_calls": tool_invocation.get("max_parallel", 8),
             "reasoning_profile": cognition.get("reasoning"),
             "orchestration_profile": cognition.get("orchestration"),
-            "critic_profile": cognition.get("critic"),
+            "decision_profile": cognition.get("decision"),
             "adaptive_profile": cognition.get("adaptive"),
             "evaluation_profile": cognition.get("evaluation"),
             "codecraft_profile": cognition.get("codecraft"),

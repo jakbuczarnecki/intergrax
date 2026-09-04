@@ -41,8 +41,16 @@ from intergrax.runtime.background_execution.identity_persistence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
+from intergrax.runtime.background_execution.reentry_admission import (
+    BackgroundExecutionReentry,
+    BackgroundExecutionReentryDisposition,
+)
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
+)
+from tests.unit.runtime.background_execution.reentry_admission_doubles import (
+    admission_kwargs,
+    make_kv_admission_dependencies,
 )
 from intergrax.tools.execution_models import ToolExecutionResult
 
@@ -183,8 +191,8 @@ def test_broker_worker_path_uses_central_bootstrap() -> None:
         registry=registry,
         kv_store=kv,
         idempotency_store=None,
-        identity_persistence=_persistence(kv),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        **admission_kwargs(make_kv_admission_dependencies(kv)),
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
@@ -194,13 +202,16 @@ def test_broker_worker_path_uses_central_bootstrap() -> None:
     )
 
     with patch(
-        "intergrax.queueing.providers.broker_worker_base.bootstrap_background_execution",
-        return_value=fixed,
-    ) as bootstrap_mock:
+        "intergrax.queueing.providers.broker_worker_base.admit_background_execution_reentry",
+        return_value=BackgroundExecutionReentry(
+            identity=fixed,
+            disposition=BackgroundExecutionReentryDisposition.EXECUTE,
+        ),
+    ) as admission_mock:
         worker.process_message(raw_payload=_build_message())
 
-    bootstrap_mock.assert_called_once()
-    broker_call = bootstrap_mock.call_args.kwargs
+    admission_mock.assert_called_once()
+    broker_call = admission_mock.call_args.kwargs
     assert broker_call["transport_ref"] == BackgroundTransportExecutionRef(
         tenant_id="tenant-a",
         provider="broker",
@@ -240,8 +251,8 @@ def test_worker_runtime_path_uses_central_bootstrap() -> None:
         result_store=TaskResultStore(kv_store=kv),
         execution_registry=execution_registry,
         provider="kafka",
-        identity_persistence=_persistence(kv),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        **admission_kwargs(make_kv_admission_dependencies(kv)),
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
@@ -257,13 +268,16 @@ def test_worker_runtime_path_uses_central_bootstrap() -> None:
     )
 
     with patch(
-        "intergrax.background_tasks.worker_runtime.bootstrap_background_execution",
-        return_value=fixed,
-    ) as bootstrap_mock:
+        "intergrax.background_tasks.worker_runtime.admit_background_execution_reentry",
+        return_value=BackgroundExecutionReentry(
+            identity=fixed,
+            disposition=BackgroundExecutionReentryDisposition.EXECUTE,
+        ),
+    ) as admission_mock:
         runtime.process_request(request, task_id="queue-handle-1")
 
-    bootstrap_mock.assert_called_once()
-    runtime_call = bootstrap_mock.call_args.kwargs
+    admission_mock.assert_called_once()
+    runtime_call = admission_mock.call_args.kwargs
     assert runtime_call["transport_ref"] == BackgroundTransportExecutionRef(
         tenant_id="tenant-a",
         provider="kafka",
@@ -290,12 +304,13 @@ def test_identity_propagated_without_re_minting_at_handler() -> None:
         return ToolExecutionResult.ok(_Output())
 
     registry.register("demo.task.v1", handler)
+    kv = _KV()
     worker = _TestWorker(
         registry=registry,
-        kv_store=_KV(),
+        kv_store=kv,
         idempotency_store=None,
-        identity_persistence=_persistence(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        **admission_kwargs(make_kv_admission_dependencies(kv)),
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
@@ -305,8 +320,11 @@ def test_identity_propagated_without_re_minting_at_handler() -> None:
     )
 
     with patch(
-        "intergrax.queueing.providers.broker_worker_base.bootstrap_background_execution",
-        return_value=fixed,
+        "intergrax.queueing.providers.broker_worker_base.admit_background_execution_reentry",
+        return_value=BackgroundExecutionReentry(
+            identity=fixed,
+            disposition=BackgroundExecutionReentryDisposition.EXECUTE,
+        ),
     ):
         worker.process_message(raw_payload=_build_message())
 

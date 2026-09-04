@@ -39,11 +39,20 @@ def product_requires_sandbox(env: ApplicationEnvironmentProfile) -> bool:
 
 def tool_profile_with_sandbox(env: ApplicationEnvironmentProfile) -> ToolProfile:
     """Return tool profile including ``sandbox.exec`` when sandbox is enabled."""
+    from intergrax.tools.providers.sandbox.bundle import SANDBOX_BUNDLE_ID, SANDBOX_EXEC_TOOL_ID
+
     profile = env.tool_profile
     sandbox_profile = env.sandbox
     if sandbox_profile is None or not sandbox_profile.enable_exec_tool:
         return profile
-    if "sandbox.exec" in profile.enabled:
+    if SANDBOX_EXEC_TOOL_ID in profile.enabled:
         return profile
-    enabled = list(profile.enabled) + ["sandbox.exec"]
+    if SANDBOX_BUNDLE_ID in profile.enabled_bundles:
+        return profile
+    if profile.enabled_bundles and not profile.enabled:
+        bundles = list(profile.enabled_bundles)
+        if SANDBOX_BUNDLE_ID not in bundles:
+            bundles.append(SANDBOX_BUNDLE_ID)
+        return profile.model_copy(update={"enabled_bundles": bundles})
+    enabled = list(profile.enabled) + [SANDBOX_EXEC_TOOL_ID]
     return profile.model_copy(update={"enabled": enabled})

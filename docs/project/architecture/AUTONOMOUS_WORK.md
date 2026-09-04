@@ -505,6 +505,22 @@ Nexus Task / Execution
 
 Where Collaborative Work MP-2+ semantics are not implemented yet, Autonomous Work implementation must not create a permanently competing business WorkItem model merely to unblock a proof. Temporary bounded bridges must be explicit and migratable.
 
+**AW-4C bridge (implemented):**
+
+```text
+GoalEvaluationDecision.ACTION_REQUIRED
+        ↓
+WorkerCollaborativeWorkBridge
+        ↓
+CollaborativeWorkRequest (typed, reference-based provenance)
+        ↓
+CollaborativeWorkIntakePort
+        ↓
+future Collaborative Work MP-2 canonical WorkItem / Assignment
+```
+
+Autonomous Work **does not own** business `WorkItem` or `Assignment`. When MP-2 intake is unavailable, `UnavailableCollaborativeWorkIntake` returns `UNAVAILABLE` — no AW-local fallback WorkItem is created.
+
 ---
 
 ## Governance and authority composition

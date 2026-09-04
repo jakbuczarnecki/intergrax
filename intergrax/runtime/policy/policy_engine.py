@@ -18,7 +18,6 @@ from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectReque
 from intergrax.contracts.runtime_policy import PolicyDecision as RuntimePolicyDecision
 from intergrax.contracts.runtime_policy_context import (
     AgentDecisionPolicyContext,
-    CriticPolicyContext,
     PreModelPolicyContext,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
@@ -96,19 +95,6 @@ class PolicyEngine:
             tenant_id=tenant_id,
             agent_id=agent_id,
             output_chars=output_chars,
-        )
-
-    def evaluate_critic_verdict(
-        self,
-        *,
-        passed: bool,
-        recommended_action: str,
-        context: CriticPolicyContext | None = None,
-    ) -> RuntimePolicyDecision:
-        return self.runtime.evaluate_critic_verdict(
-            passed=passed,
-            recommended_action=recommended_action,
-            context=context,
         )
 
     def evaluate_replay(

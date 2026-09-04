@@ -49,8 +49,8 @@ from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
 from intergrax.runtime.vendor_knowledge.sync_worker import (
     register_vendor_knowledge_sync_worker_handler,
 )
-from intergrax.runtime.background_execution.identity_persistence import (
-    wire_background_execution_identity_persistence,
+from intergrax.runtime.background_execution.admission_wiring import (
+    wire_background_execution_admission_dependencies,
 )
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
     wire_causal_evidence_persistence,
@@ -282,15 +282,18 @@ def build_vendor_knowledge_sync_runtime(
         except Exception:
             return
 
+    admission = wire_background_execution_admission_dependencies(
+        document_store=document_store,
+    )
     worker = DocumentStoreTaskWorker(
         task_queue,
         registry,
         poll_interval_seconds=poll_interval_seconds,
         claim_limit=claim_limit,
         on_interrupted=_on_interrupted,
-        identity_persistence=wire_background_execution_identity_persistence(
-            document_store=document_store,
-        ),
+        identity_persistence=admission.identity_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
         causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,
         ),

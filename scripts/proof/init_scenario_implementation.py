@@ -70,10 +70,6 @@ class ScenarioImplementationPackage:
     created_paths: tuple[Path, ...]
 
 
-def _slug_to_class_prefix(slug: str) -> str:
-    return "".join(part.capitalize() for part in slug.split("_"))
-
-
 def _slug_to_proof_id(slug: str) -> str:
     return f"SCENARIO-{slug.replace('_', '-').upper()}"
 
@@ -113,9 +109,7 @@ def _module_path(slug: str, suffix: str) -> str:
     return f"platform_proofs.scenarios.{slug}.{suffix}"
 
 
-def _build_runtime_composition_py(slug: str, agent_class: str) -> str:
-    module = _module_path(slug, "application.runtime_composition")
-    agent_module = _module_path(slug, "application.agent")
+def _build_runtime_composition_py(slug: str) -> str:
     return (
         '"""Scenario runtime composition via platform scenario runtime baseline."""\n\n'
         "from __future__ import annotations\n\n"
@@ -125,19 +119,14 @@ def _build_runtime_composition_py(slug: str, agent_class: str) -> str:
         ")\n"
         "from intergrax.applications._shared.scenario_runtime_profiles import (\n"
         "    build_scenario_lab_runtime,\n"
-        ")\n"
-        "from intergrax.runtime.registry.agent_registry import AgentRegistry\n\n"
-        f"from {agent_module} import {agent_class}\n\n"
+        ")\n\n"
         f"SYNTHETIC_SCENARIO_TENANT_ID = \"synthetic-scenario-{slug}\"\n\n\n"
         "def build_scenario_runtime(\n"
         "    *,\n"
         "    tenant_id: str = SYNTHETIC_SCENARIO_TENANT_ID,\n"
         "    workspace_root: Path | None = None,\n"
         ") -> ScenarioRuntimeComposition:\n"
-        "    registry = AgentRegistry()\n"
-        f"    registry.register({agent_class}())\n"
         "    return build_scenario_lab_runtime(\n"
-        "        registry=registry,\n"
         "        tenant_id=tenant_id,\n"
         f"        scenario_slug=\"{slug}\",\n"
         "        workspace_root=workspace_root,\n"
@@ -169,58 +158,6 @@ def _build_scenario_py(slug: str) -> str:
         "        runtime,\n"
         "        ScenarioExecutionRequest(tenant_id=tenant_id, message=message),\n"
         "    )\n"
-    )
-
-
-def _build_agent_py(slug: str, agent_class: str) -> str:
-    capability = f"{slug}.run"
-    return (
-        '"""Minimal scenario agent skeleton — implement domain behavior."""\n\n'
-        "from __future__ import annotations\n\n"
-        "from intergrax.agents.authoring.patterns.reflex import ReflexAgent\n"
-        "from intergrax.agents.authoring.patterns.types import (\n"
-        "    AgentEvaluation,\n"
-        "    CognitiveEvaluation,\n"
-        "    Observation,\n"
-        "    ReasoningResult,\n"
-        ")\n"
-        "from intergrax.contracts.agent_step_context import AgentStepContext\n"
-        "from intergrax.contracts.capability import CapabilityMatchResult\n"
-        "from intergrax.runtime.task.task import TaskContext\n\n\n"
-        f"class {agent_class}(ReflexAgent):\n"
-        '    """TODO: implement scenario agent contract."""\n\n'
-        f'    contract_id = "{slug}"\n'
-        f'    capabilities = ("{capability}",)\n\n'
-        "    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:\n"
-        f'        if task_context.capability in (None, "{capability}"):\n'
-        "            return CapabilityMatchResult(\n"
-        "                matched=True,\n"
-        f'                agent_id="{slug}",\n'
-        f'                matched_capabilities=["{capability}"],\n'
-        "                score=1.0,\n"
-        '                rationale="scenario skeleton agent",\n'
-        "            )\n"
-        '        return CapabilityMatchResult(matched=False, rationale="capability not supported")\n\n'
-        "    async def perceive(self, step_ctx: AgentStepContext) -> Observation:\n"
-        '        raise NotImplementedError("Implement scenario perception.")\n\n'
-        "    async def reason(\n"
-        "        self,\n"
-        "        step_ctx: AgentStepContext,\n"
-        "        observation: Observation,\n"
-        "    ) -> ReasoningResult:\n"
-        '        raise NotImplementedError("Implement scenario reasoning.")\n\n'
-        "    async def act(\n"
-        "        self,\n"
-        "        step_ctx: AgentStepContext,\n"
-        "        reasoning: ReasoningResult,\n"
-        "    ) -> dict[str, object]:\n"
-        '        raise NotImplementedError("Implement scenario action.")\n\n'
-        "    def evaluate(\n"
-        "        self,\n"
-        "        step_ctx: AgentStepContext,\n"
-        "        output: dict[str, object],\n"
-        "    ) -> AgentEvaluation:\n"
-        '        raise NotImplementedError("Implement scenario evaluation.")\n'
     )
 
 
@@ -365,15 +302,12 @@ def _planned_files(
     slug: str,
     title: str,
 ) -> dict[Path, str]:
-    agent_class = f"{_slug_to_class_prefix(slug)}Agent"
     return {
         package_root / "application" / "__init__.py": "",
         package_root / "application" / "runtime_composition.py": _build_runtime_composition_py(
             slug,
-            agent_class,
         ),
         package_root / "application" / "scenario.py": _build_scenario_py(slug),
-        package_root / "application" / "agent.py": _build_agent_py(slug, agent_class),
         package_root / "application" / "observability.py": _build_observability_py(),
         package_root / "application" / "tools.py": _build_tools_py(),
         package_root / "proof" / "__init__.py": "",

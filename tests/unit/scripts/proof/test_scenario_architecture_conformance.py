@@ -335,4 +335,233 @@ def test_ai_incident_investigation_passes_universal_rules() -> None:
         repo_root=REPO_ROOT,
         scenario_slug="ai_incident_investigation",
     )
-    assert report.ok, "\n\n".join(violation.format() for violation in report.violations)
+    legacy_violations = tuple(
+        violation
+        for violation in report.violations
+        if violation.rule_id is not ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+    )
+    assert not legacy_violations, "\n\n".join(
+        violation.format() for violation in legacy_violations
+    )
+
+
+def test_agent_registry_construction_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + "from intergrax.runtime.registry.agent_registry import AgentRegistry\n"
+        "registry = AgentRegistry()\n",
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert any(
+        violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+        for violation in report.violations
+    )
+
+
+def test_agent_registry_aliased_class_import_construction_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "from intergrax.runtime.registry.agent_registry import AgentRegistry as AR\n"
+            "registry = AR()\n"
+        ),
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert any(
+        violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+        for violation in report.violations
+    )
+
+
+def test_agent_registry_module_alias_construction_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "import intergrax.runtime.registry.agent_registry as registry_module\n"
+            "registry = registry_module.AgentRegistry()\n"
+        ),
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert any(
+        violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+        for violation in report.violations
+    )
+
+
+def test_agent_registry_module_alias_from_agents_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "import intergrax.runtime.registry.agent_registry as registry_module\n"
+            "registry = registry_module.AgentRegistry.from_agents({})\n"
+        ),
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert any(
+        violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+        and violation.symbol == "AgentRegistry.from_agents"
+        for violation in report.violations
+    )
+
+
+def test_agent_registry_qualified_module_import_construction_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "import intergrax.runtime.registry.agent_registry\n"
+            "registry = intergrax.runtime.registry.agent_registry.AgentRegistry()\n"
+        ),
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert any(
+        violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+        for violation in report.violations
+    )
+
+
+def test_unrelated_agent_registry_attribute_access_passes(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "import some_other_package as other\n"
+            "registry = other.AgentRegistry()\n"
+        ),
+    )
+    report = assert_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert report.ok
+
+
+def test_local_agent_registry_register_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "from intergrax.runtime.registry.agent_registry import AgentRegistry\n"
+            "from some_agent_package import SomeAgent\n\n"
+            "registry = AgentRegistry()\n"
+            "registry.register(SomeAgent())\n"
+        ),
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    violations = [
+        violation
+        for violation in report.violations
+        if violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+    ]
+    assert len(violations) >= 2
+    assert any(violation.symbol == "register" for violation in violations)
+
+
+def test_agent_registry_from_agents_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "from intergrax.runtime.registry.agent_registry import AgentRegistry\n"
+            "registry = AgentRegistry.from_agents({})\n"
+        ),
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert any(
+        violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+        and violation.symbol == "AgentRegistry.from_agents"
+        for violation in report.violations
+    )
+
+
+def test_reusable_agent_import_without_local_registry_passes(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source() + "from some_agent_package import SomeAgent\n",
+    )
+    report = assert_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert report.ok
+
+
+def test_manifest_agent_binding_without_local_registry_passes(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "from intergrax.applications.contracts.manifest import AgentBinding\n"
+            "BINDING = AgentBinding.reference(contract_id='demo.agent', capabilities=['demo.run'])\n"
+        ),
+    )
+    report = assert_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert report.ok

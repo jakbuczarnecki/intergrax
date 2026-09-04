@@ -68,7 +68,6 @@ def resolve_health_dashboard_wiring(
     contract = build_harness_health_dashboard_contract(
         host_id=env.profile_id,
         auditability=project_auditability_health_snapshot(facts),
-        critic_pass_rate=1.0 if env.critic_profile.semantic_judge_enabled else 0.95,
         shadow_eval_coverage_ratio=1.0 if env.evaluation_profile.shadow_eval_enabled else 0.0,
         policy_denial_rate=0.0,
         prompt_approval_pending_count=1 if env.prompt_profile.approval_required else 0,
