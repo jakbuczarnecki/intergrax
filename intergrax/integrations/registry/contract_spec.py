@@ -52,6 +52,20 @@ B3_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
     }
 )
 
+# P2-003-B4: typed security/specialized-runtime/media categories require provider-owned specs.
+B4_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
+    {
+        "browser_automation",
+        "security_scanner",
+        "sandbox_host",
+        "identity_provider",
+        "model_serving_runtime",
+        "speech_provider",
+        "vision_serving",
+        "ml_inference_host",
+    }
+)
+
 # Migration-only (provider_id, category) rows outside B1/B2/B3 category gates — removed in P2-003-C.
 # Do not add B1/B2/B3 vendors here; category fail-closed derives from typed category sets.
 EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS: frozenset[tuple[str, str]] = frozenset(
@@ -63,7 +77,12 @@ EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS: frozenset[tuple[str, str]] = frozenset(
 
 def required_explicit_contract_categories() -> frozenset[str]:
     """Union of migration-stage typed categories that require explicit contract specs."""
-    return B1_TYPED_CONTRACT_CATEGORIES | B2_TYPED_CONTRACT_CATEGORIES | B3_TYPED_CONTRACT_CATEGORIES
+    return (
+        B1_TYPED_CONTRACT_CATEGORIES
+        | B2_TYPED_CONTRACT_CATEGORIES
+        | B3_TYPED_CONTRACT_CATEGORIES
+        | B4_TYPED_CONTRACT_CATEGORIES
+    )
 
 
 @dataclass(frozen=True, repr=False)
@@ -236,6 +255,7 @@ __all__ = [
     "B1_TYPED_CONTRACT_CATEGORIES",
     "B2_TYPED_CONTRACT_CATEGORIES",
     "B3_TYPED_CONTRACT_CATEGORIES",
+    "B4_TYPED_CONTRACT_CATEGORIES",
     "EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS",
     "IntegrationContractFactory",
     "IntegrationContractSpec",

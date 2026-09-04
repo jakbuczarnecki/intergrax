@@ -46,6 +46,7 @@ from intergrax.integrations.registry.contract_spec import (
     B1_TYPED_CONTRACT_CATEGORIES,
     B2_TYPED_CONTRACT_CATEGORIES,
     B3_TYPED_CONTRACT_CATEGORIES,
+    B4_TYPED_CONTRACT_CATEGORIES,
     EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS,
     IntegrationContractSpec,
     declare_integration_contract,
@@ -54,6 +55,7 @@ from intergrax.integrations.registry.plugin_register import register_from_manife
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
 from intergrax.runtime.integrations.categories.messaging import MessageBusIntegrationContract
+from intergrax.runtime.integrations.categories.automation import BrowserAutomationIntegrationContract
 from intergrax.runtime.integrations.categories.security import FeatureFlagIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.contracts import PlatformIntegrationCapability, PlatformIntegrationSecurityPosture
@@ -95,6 +97,15 @@ def b3_provider_category_keys() -> tuple[tuple[str, str], ...]:
     return tuple(keys)
 
 
+def b4_provider_category_keys() -> tuple[tuple[str, str], ...]:
+    keys: list[tuple[str, str]] = []
+    for slug in sorted(SLUG_CATEGORY):
+        for category in categories_for_provider(slug):
+            if category in B4_TYPED_CONTRACT_CATEGORIES:
+                keys.append((slug, category))
+    return tuple(keys)
+
+
 def typed_register_function(slug: str, category: str) -> Callable[..., Any]:
     register_module = import_module(f"{provider_import_path(slug, category)}.register")
     for name, obj in inspect.getmembers(register_module, inspect.isfunction):
@@ -113,6 +124,10 @@ def b2_register_function(slug: str, category: str) -> Callable[..., Any]:
 
 
 def b3_register_function(slug: str, category: str) -> Callable[..., Any]:
+    return typed_register_function(slug, category)
+
+
+def b4_register_function(slug: str, category: str) -> Callable[..., Any]:
     return typed_register_function(slug, category)
 
 
@@ -803,7 +818,7 @@ def test_b2_registry_v2_derives_from_explicit_specs() -> None:
     assert registration.category == "issue_tracker"
 
 
-def test_non_b1b2b3_reflective_builtin_registration_remains_unchanged() -> None:
+def test_non_b1b2b3b4_reflective_builtin_registration_remains_unchanged() -> None:
     from intergrax.integrations.providers.search_provider.tavily.register import register_tavily_integration
 
     register_tavily_integration()
@@ -1034,3 +1049,330 @@ def test_b3_bootstrap_provider_sets_preserved() -> None:
         assert entry is not None, (slug, category)
         assert any(spec.category == category for spec in entry.contract_specs), (slug, category)
         clear_catalog()
+
+
+def test_b4_category_set_matches_expected_security_runtime_media_categories() -> None:
+    assert B4_TYPED_CONTRACT_CATEGORIES == frozenset(
+        {
+            "browser_automation",
+            "security_scanner",
+            "sandbox_host",
+            "identity_provider",
+            "model_serving_runtime",
+            "speech_provider",
+            "vision_serving",
+            "ml_inference_host",
+        }
+    )
+
+
+def test_b4_inventory_gate_all_typed_keys_explicit() -> None:
+    b4_keys = b4_provider_category_keys()
+    explicit_keys: list[tuple[str, str]] = []
+    for slug, category in b4_keys:
+        contract_path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        assert contract_path.is_file(), f"missing contract_spec for {(slug, category)}"
+        register_path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
+        register_source = register_path.read_text(encoding="utf-8")
+        assert "contract_specs=CONTRACT_SPECS" in register_source
+        explicit_keys.append((slug, category))
+    assert len(explicit_keys) == len(b4_keys) == 21
+
+
+def test_b4_typed_keys_exact_inventory() -> None:
+    b4_keys = b4_provider_category_keys()
+    assert b4_keys == (
+        ("apify", "browser_automation"),
+        ("auth0", "identity_provider"),
+        ("browserbase", "browser_automation"),
+        ("clerk", "identity_provider"),
+        ("daytona", "sandbox_host"),
+        ("deepgram", "speech_provider"),
+        ("e2b", "sandbox_host"),
+        ("elevenlabs", "speech_provider"),
+        ("firecrawl", "browser_automation"),
+        ("keycloak", "identity_provider"),
+        ("modal", "sandbox_host"),
+        ("okta", "identity_provider"),
+        ("ollama", "model_serving_runtime"),
+        ("playwright", "browser_automation"),
+        ("replicate", "ml_inference_host"),
+        ("selenium", "browser_automation"),
+        ("semgrep", "security_scanner"),
+        ("snyk", "security_scanner"),
+        ("triton", "vision_serving"),
+        ("trivy", "security_scanner"),
+        ("workos", "identity_provider"),
+    )
+
+
+def test_b4_contract_spec_modules_have_no_reflection() -> None:
+    for slug, category in b4_provider_category_keys():
+        path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in _FORBIDDEN_CONTRACT_SPEC_NAMES:
+                    pytest.fail(f"{path}: forbidden reflective call {node.func.id}()")
+            if isinstance(node, ast.Attribute) and node.attr == "__dict__":
+                pytest.fail(f"{path}: forbidden __dict__ access")
+
+
+def test_b4_register_modules_do_not_import_contract_capture() -> None:
+    for slug, category in b4_provider_category_keys():
+        path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
+        source = path.read_text(encoding="utf-8")
+        assert "contract_capture" not in source, path.as_posix()
+        assert "contract_specs=" in source, path.as_posix()
+
+
+@pytest.mark.parametrize("slug,category", b4_provider_category_keys())
+def test_b4_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError(f"capture_builtin_contract_specs must not run for B4 {(slug, category)}")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    b4_register_function(slug, category)()
+    entry = get_entry(slug)
+    assert entry.contract_specs
+    matching = [spec for spec in entry.contract_specs if spec.category == category]
+    assert matching
+    assert matching[0].metadata.get("source") == "explicit_provider_declaration"
+
+
+@pytest.mark.parametrize("slug,category", b4_provider_category_keys())
+def test_b4_registration_does_not_execute_catalog_factory(
+    slug: str,
+    category: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    register_module = import_module(f"{provider_import_path(slug, category)}.register")
+    register_fn = b4_register_function(slug, category)
+    from intergrax.integrations.registry import plugin_register
+
+    original_rfm = plugin_register.register_from_manifest
+
+    def tracking_rfm(
+        manifest: IntegrationManifest,
+        factory: Callable[..., Any],
+        **kwargs: Any,
+    ) -> IntegrationManifest:
+        factory_mock = MagicMock(wraps=factory)
+        result = original_rfm(manifest, factory_mock, **kwargs)
+        factory_mock.assert_not_called()
+        return result
+
+    monkeypatch.setattr(register_module, "register_from_manifest", tracking_rfm)
+    register_fn()
+
+
+def test_b4_builtin_without_explicit_specs_fails_closed() -> None:
+    manifest = IntegrationManifest(
+        slug="playwright",
+        categories=(IntegrationCategory.BROWSER_AUTOMATION,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_PLAYWRIGHT",
+        description="playwright",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def test_external_fake_b4_provider_explicit_registration() -> None:
+    class _ExternalB4Integration(BrowserAutomationIntegrationContract):
+        pass
+
+    def _external_factory(*, enabled: bool = False) -> _ExternalB4Integration:
+        return _ExternalB4Integration.for_provider(
+            provider_id="external_b4_browser",
+            display_name="External B4 Browser",
+            config=CategoryIntegrationConfig(enabled=enabled),
+        )
+
+    spec = declare_integration_contract(
+        category="browser_automation",
+        provider_id="external_b4_browser",
+        integration_class=_ExternalB4Integration,
+        contract_class=BrowserAutomationIntegrationContract,
+        contract_factory=_external_factory,
+        display_name="External B4 Browser",
+        config_class=CategoryIntegrationConfig,
+        capabilities=(
+            PlatformIntegrationCapability.CONNECT,
+            PlatformIntegrationCapability.WRITE,
+            PlatformIntegrationCapability.HEALTH_CHECK,
+        ),
+        security_posture=PlatformIntegrationSecurityPosture(),
+        supports_runtime_binding=True,
+        supports_health_check=True,
+        metadata={"source": "external_plugin_test"},
+    )
+    manifest = IntegrationManifest(
+        slug="external_b4_browser",
+        categories=(IntegrationCategory.BROWSER_AUTOMATION,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_EXTERNAL_B4_BROWSER",
+        description="external fake B4 provider",
+    )
+    register_from_manifest(manifest, lambda **_: {}, contract_specs=(spec,))
+    registration = build_integration_registration("external_b4_browser")
+    assert registration.category == "browser_automation"
+    assert registration.integration_class is _ExternalB4Integration
+
+
+def test_external_fake_b4_provider_without_explicit_specs_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError("capture_builtin_contract_specs must not run for external B4 typed provider")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    manifest = IntegrationManifest(
+        slug="external_b4_browser",
+        categories=(IntegrationCategory.BROWSER_AUTOMATION,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_EXTERNAL_B4_BROWSER",
+        description="external fake B4 provider",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def test_multi_category_manifest_with_b4_category_without_specs_fails() -> None:
+    manifest = IntegrationManifest(
+        slug="multi_category_b4",
+        categories=(IntegrationCategory.BROWSER_AUTOMATION, IntegrationCategory.SEARCH_PROVIDER),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_MULTI_CATEGORY_B4",
+        description="multi-category manifest",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def test_partial_explicit_specs_missing_required_b4_category_fails() -> None:
+    class _SearchIntegration:
+        pass
+
+    manifest = IntegrationManifest(
+        slug="multi_category_b4",
+        categories=(IntegrationCategory.BROWSER_AUTOMATION, IntegrationCategory.SEARCH_PROVIDER),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_MULTI_CATEGORY_B4",
+        description="multi-category manifest",
+    )
+    with pytest.raises(ValueError, match="is missing explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {}, contract_specs=())
+
+
+def test_llm_guardrail_remains_deferred_outside_b4_gate() -> None:
+    from intergrax.integrations.providers.llm_guardrail.register_all import register_llm_guardrail_integrations
+    from intergrax.runtime.integrations.registry_v2 import DEFERRED_LLM_GUARDRAIL_SLUGS
+
+    assert "llm_guardrail" not in B4_TYPED_CONTRACT_CATEGORIES
+    assert len(DEFERRED_LLM_GUARDRAIL_SLUGS) == 9
+    register_llm_guardrail_integrations()
+    for slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
+        entry = get_entry(slug)
+        assert entry is not None
+        assert entry.contract_specs == ()
+
+
+def test_browser_automation_registration_does_not_launch_browser(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.browser_automation import playwright as playwright_pkg
+
+    def _must_not_launch(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("browser must not launch during registration")
+
+    monkeypatch.setattr(playwright_pkg.bundle, "create_playwright_browser_automation", _must_not_launch)
+    monkeypatch.setattr(playwright_pkg.bundle, "create_playwright_browser_automation_integration", _must_not_launch)
+    playwright_pkg.register.register_playwright_integration()
+    entry = get_entry("playwright")
+    assert any(spec.category == "browser_automation" for spec in entry.contract_specs)
+
+
+def test_sandbox_registration_does_not_allocate_sandbox(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.sandbox_host import e2b as e2b_pkg
+
+    def _must_not_allocate(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("sandbox must not allocate during registration")
+
+    monkeypatch.setattr(e2b_pkg.bundle, "create_e2b_sandbox_host", _must_not_allocate)
+    monkeypatch.setattr(e2b_pkg.bundle, "create_e2b_sandbox_host_integration", _must_not_allocate)
+    e2b_pkg.register.register_e2b_integration()
+    entry = get_entry("e2b")
+    assert any(spec.category == "sandbox_host" for spec in entry.contract_specs)
+
+
+def test_identity_registration_does_not_create_remote_auth_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.identity_provider import auth0 as auth0_pkg
+
+    def _must_not_create_client(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("identity client must not be created during registration")
+
+    monkeypatch.setattr(auth0_pkg.bundle, "create_auth0_identity_provider", _must_not_create_client)
+    monkeypatch.setattr(auth0_pkg.bundle, "create_auth0_identity_provider_integration", _must_not_create_client)
+    auth0_pkg.register.register_auth0_integration()
+    entry = get_entry("auth0")
+    assert any(spec.category == "identity_provider" for spec in entry.contract_specs)
+
+
+def test_model_media_registration_does_not_start_models(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.model_serving_runtime import ollama as ollama_pkg
+    from intergrax.integrations.providers.vision_serving import triton as triton_pkg
+
+    def _must_not_start(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("model runtime must not start during registration")
+
+    monkeypatch.setattr(ollama_pkg.bundle, "create_ollama_model_serving_runtime", _must_not_start)
+    monkeypatch.setattr(ollama_pkg.bundle, "create_ollama_model_serving_runtime_integration", _must_not_start)
+    ollama_pkg.register.register_ollama_integration()
+    assert any(spec.category == "model_serving_runtime" for spec in get_entry("ollama").contract_specs)
+    clear_catalog()
+
+    monkeypatch.setattr(triton_pkg.bundle, "create_triton_vision_serving", _must_not_start)
+    monkeypatch.setattr(triton_pkg.bundle, "create_triton_vision_serving_integration", _must_not_start)
+    triton_pkg.register.register_triton_integration()
+    assert any(spec.category == "vision_serving" for spec in get_entry("triton").contract_specs)
+
+
+def test_b4_registry_v2_derives_from_explicit_specs() -> None:
+    from intergrax.integrations.providers.browser_automation.playwright.register import register_playwright_integration
+
+    register_playwright_integration()
+    registration = build_integration_registration("playwright")
+    assert registration.provider_id == "playwright"
+    assert registration.category == "browser_automation"
+
+
+_B4_BOOTSTRAP_SOURCE_FILES: tuple[str, ...] = _B3_BOOTSTRAP_SOURCE_FILES
+
+
+def _b4_keys_from_bootstrap_sources() -> frozenset[tuple[str, str]]:
+    import re
+
+    pattern = re.compile(
+        r"intergrax\.integrations\.providers\.(browser_automation|security_scanner|sandbox_host|identity_provider|model_serving_runtime|speech_provider|vision_serving|ml_inference_host)\.([a-z0-9_]+)\.register",
+    )
+    keys: set[tuple[str, str]] = set()
+    for relative_path in _B4_BOOTSTRAP_SOURCE_FILES:
+        source = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+        keys.update((slug, category) for category, slug in pattern.findall(source))
+    return frozenset(keys)
+
+
+def test_b4_bootstrap_provider_sets_preserved() -> None:
+    expected = _b4_keys_from_bootstrap_sources()
+    assert expected
+    for slug, category in sorted(expected):
+        b4_register_function(slug, category)()
+        entry = get_entry(slug)
+        assert entry is not None, (slug, category)
+        assert any(spec.category == category for spec in entry.contract_specs), (slug, category)
+        clear_catalog()
+
+
+def test_staged_non_b1b2b3b4_explicit_keys_remain_in_migration_set() -> None:
+    assert EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS == frozenset({("openai", "managed_retrieval")})
+    assert ("playwright", "browser_automation") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+    assert ("trivy", "security_scanner") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
