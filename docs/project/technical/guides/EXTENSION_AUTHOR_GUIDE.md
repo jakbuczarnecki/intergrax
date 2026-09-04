@@ -291,6 +291,124 @@ An **Integration** is an infrastructure/provider backend - database, cache, stor
 | **Third-party external** | Package authors | `IntegrationPlugin` + setuptools EP `intergrax.integrations` |
 | **First-party shipped** | Intergrax maintainers | `manifest.py` + `create_*` factory + `register_from_manifest` - internal bootstrap at scale; **not** the public third-party compatibility contract |
 
+**Canonical discovery rule (normative owner):** [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-discovery-contract-canonical--p2-003-doc) — typed providers **MUST** register explicit provider-owned `IntegrationContractSpec` metadata; reflection-based discovery is **FORBIDDEN**.
+
+### Integration provider authoring (typed contract discovery)
+
+**Category contracts:** [`PROVIDER_CATEGORY_CONTRACTS.md`](../../maintainers/plans/PROVIDER_CATEGORY_CONTRACTS.md)
+
+#### Minimum canonical package shape (first-party shipped)
+
+Under `intergrax/integrations/providers/<category>/<provider>/` — minimum canonical roles (additional files allowed when needed):
+
+```text
+providers/<category>/<provider>/
+├── __init__.py
+├── manifest.py
+├── integration.py
+├── contract_spec.py
+├── bundle.py
+└── register.py
+```
+
+| File | Role |
+|------|------|
+| `manifest.py` | `IntegrationManifest` — slug, categories, status, env_prefix |
+| `integration.py` | Typed `*Integration` class implementing the category contract |
+| `contract_spec.py` | Provider-owned `CONTRACT_SPEC` / `CONTRACT_SPECS` via `declare_integration_contract` |
+| `bundle.py` | Runtime factory / compatibility shim delegating to `integration.py` |
+| `register.py` | Calls `register_from_manifest(..., contract_specs=CONTRACT_SPECS)` |
+
+`contract_spec.py` **MUST** own `CONTRACT_SPECS`. `register.py` **MUST** pass `contract_specs=CONTRACT_SPECS` — never rely on generic reflection or central vendor maps.
+
+#### Canonical registration example
+
+```python
+# contract_spec.py
+from intergrax.integrations.registry.contract_spec import declare_integration_contract
+from intergrax.runtime.integrations.contracts import (
+    PlatformIntegrationCapability,
+    PlatformIntegrationSecurityPosture,
+)
+
+CONTRACT_SPEC = declare_integration_contract(
+    category="notification_channel",
+    provider_id="email_smtp",
+    integration_class=EmailSmtpNotificationChannelIntegration,
+    contract_class=NotificationChannelIntegrationContract,
+    contract_factory=create_email_smtp_notification_channel_integration,
+    display_name="Email Smtp",
+    config_class=EmailSmtpNotificationChannelIntegrationConfig,
+    capabilities=(
+        PlatformIntegrationCapability.CONNECT,
+        PlatformIntegrationCapability.WRITE,
+        PlatformIntegrationCapability.HEALTH_CHECK,
+    ),
+    security_posture=PlatformIntegrationSecurityPosture(),
+    supports_runtime_binding=True,
+    supports_health_check=True,
+    metadata={"source": "explicit_provider_declaration"},
+)
+
+CONTRACT_SPECS = (CONTRACT_SPEC,)
+```
+
+```python
+# register.py
+from intergrax.integrations.registry.plugin_register import register_from_manifest
+
+def register_email_smtp_integration(*, override: bool = False) -> None:
+    register_from_manifest(
+        MANIFEST,
+        create_email_smtp_notification_channel,
+        override=override,
+        contract_specs=CONTRACT_SPECS,
+    )
+```
+
+Reference implementation: `intergrax/integrations/providers/notification_channel/email_smtp/`.
+
+External `IntegrationPlugin` packages **MUST** pass the same explicit `contract_specs` to `register_integration_plugin(...)` when registering typed categories.
+
+#### Multi-category providers
+
+Discovery identity is **`(provider_id, category)`**. One explicit `IntegrationContractSpec` per category membership — for example `slack` publishes separate specs under `notification_channel/slack/` and `conversation_channel/slack/`.
+
+#### How to add a new typed provider
+
+1. Choose or reuse a canonical Integration category (architecture review if none fits — do **not** fake-fit or add vendor exceptions).
+2. Implement the typed Integration boundary in `integration.py`.
+3. Keep vendor runtime logic in provider adapter/bundle — not in registry or generic infrastructure.
+4. Create provider-owned `contract_spec.py` with `CONTRACT_SPECS` covering every typed category membership.
+5. Register manifest + runtime factory + `contract_specs` in `register.py`.
+6. Add bootstrap/plugin wiring using existing lifecycle hooks.
+7. Prove side-effect-free registration (no network, secrets, or vendor clients during catalog build).
+8. Prove catalog discovery lists the provider/category/contract metadata.
+9. Prove `registry_v2` projection when relevant (`test_contract_registry_v2.py`).
+10. Run provider/category tests.
+
+**Litmus tests:** generic registration code gains zero `if VendorX` branches; the next provider in the same category uses the same path without platform-core edits.
+
+#### New typed provider checklist (hard gate)
+
+Before a typed provider is accepted:
+
+- [ ] Manifest declares correct category
+- [ ] Typed Integration class implements canonical category contract
+- [ ] Provider-owned `contract_spec.py` exists
+- [ ] `CONTRACT_SPECS` covers every typed provider/category membership
+- [ ] `register.py` passes `contract_specs` explicitly
+- [ ] Registration is side-effect free (discovery ≠ runtime materialization)
+- [ ] No reflection/introspection for contract metadata
+- [ ] No generic registry vendor edit
+- [ ] No central vendor map
+- [ ] `registry_v2` derives entry from catalog — no manual vendor registration
+- [ ] Missing explicit spec fails closed at registration
+- [ ] Runtime factory compatibility preserved
+- [ ] Provider qualification status remains independently proven (discovery ≠ qualification)
+
+**Do not use** `contract_capture.py` for new providers — transitional legacy only; removal scheduled in P2-003-C.
+
 ### Minimal implementation (`custom_memory_kv`)
 
 Copyable in-repo example - four files:

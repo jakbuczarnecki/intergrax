@@ -1,6 +1,8 @@
 # Provider Category Contracts - Implementation Plan
 
-**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md)
+**Discovery (P2-003-DOC):** Canonical explicit provider discovery rules are frozen in [`INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-discovery-contract-canonical--p2-003-doc) before P2-003-C removes `contract_capture`. P2-003-C **not** started.
+
+**Category contracts:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) · explicit `IntegrationContractSpec` per `(provider_id, category)` — see architecture doc § Provider discovery contract.
 **Taxonomy source:** `intergrax/integrations/providers/layout.py` (`SLUG_CATEGORY`)  
 **Code:** `intergrax/runtime/integrations/categories`
 **Current follow-up:** INTEGRATIONS-3A-CONTRACT-REGISTRY-V2
