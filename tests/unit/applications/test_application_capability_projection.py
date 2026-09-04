@@ -81,10 +81,37 @@ def test_unresolved_enabled_binding_identity_fails_closed() -> None:
         application_capability_descriptor_from_manifest(manifest)
 
 
+def test_resolve_binding_contract_id_returns_declarative_contract_id() -> None:
+    binding = AgentBinding.reference("agent.foo")
+    assert resolve_binding_contract_id(binding) == "agent.foo"
+
+
 def test_resolve_binding_contract_id_requires_declarative_identity() -> None:
     binding = AgentBinding(import_path="echo.echo_agent.EchoAgent")
     with pytest.raises(ApplicationCapabilityProjectionConflict):
         resolve_binding_contract_id(binding)
+
+
+def test_resolve_binding_contract_id_does_not_instantiate_agent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    called: list[bool] = []
+    original = AgentBinding.resolved_agent_type
+
+    def _track_resolved_agent_type(self: AgentBinding) -> type[object]:
+        called.append(True)
+        return original(self)
+
+    monkeypatch.setattr(AgentBinding, "resolved_agent_type", _track_resolved_agent_type)
+
+    binding = AgentBinding(import_path="echo.echo_agent.EchoAgent", contract_id="agent.foo")
+    assert resolve_binding_contract_id(binding) == "agent.foo"
+    assert called == []
+
+    binding_without_id = AgentBinding(import_path="echo.echo_agent.EchoAgent")
+    with pytest.raises(ApplicationCapabilityProjectionConflict):
+        resolve_binding_contract_id(binding_without_id)
+    assert called == []
 
 
 def test_merge_application_capability_descriptors_dedupes_identical_rows() -> None:

@@ -17,7 +17,9 @@ from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
-from intergrax.applications._shared.capability_graph_catalog import resolve_binding_agent_contract_id
+from intergrax.applications.contracts.application_capability_projection import (
+    resolve_binding_contract_id,
+)
 from intergrax.runtime.architecture.capability_graph_lineage import (
     CapabilityImpactReport,
     CapabilityLineageReport,
@@ -79,7 +81,7 @@ def validate_strict_capability_graph_deploy(
     impact_by_node = {record.node_id: record for record in deploy_report.impact.impacts}
 
     for binding in manifest.enabled_agents():
-        contract_id = resolve_binding_agent_contract_id(binding)
+        contract_id = resolve_binding_contract_id(binding)
         node_id = f"agent:{contract_id}"
         if not view.contains_node(node_id):
             errors.append(f"roster agent {contract_id!r} missing from environment capability graph")
@@ -91,7 +93,7 @@ def validate_strict_capability_graph_deploy(
         and env.application_profile is ApplicationProfile.PRODUCT
     ):
         for binding in manifest.enabled_agents():
-            contract_id = resolve_binding_agent_contract_id(binding)
+            contract_id = resolve_binding_contract_id(binding)
             node_id = f"agent:{contract_id}"
             contract = binding.resolved_agent_type()().get_contract()
             if contract.lifecycle_state in STRICT_DEPLOY_BLOCKED_AGENT_LIFECYCLES:

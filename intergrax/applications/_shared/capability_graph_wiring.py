@@ -17,7 +17,9 @@ from intergrax.runtime.architecture.capability_graph import (
     CapabilityNode,
     CapabilityNodeType,
 )
-from intergrax.applications._shared.capability_graph_catalog import resolve_binding_agent_contract_id
+from intergrax.applications.contracts.application_capability_projection import (
+    resolve_binding_contract_id,
+)
 from intergrax.runtime.architecture.capability_graph_applications import application_capability_node_id
 
 
@@ -46,7 +48,7 @@ def _seed_node_ids(
     for prompt_id in snapshot.prompt_ids():
         seeds.add(f"prompt:{prompt_id}")
     for binding in manifest.enabled_agents():
-        contract_id = resolve_binding_agent_contract_id(binding)
+        contract_id = resolve_binding_contract_id(binding)
         seeds.add(f"agent:{contract_id}")
     return frozenset(seeds)
 
@@ -103,7 +105,7 @@ def build_environment_seed_capability_graph(
     )
 
     for binding in manifest.enabled_agents():
-        contract_id = resolve_binding_agent_contract_id(binding)
+        contract_id = resolve_binding_contract_id(binding)
         agent_node = f"agent:{contract_id}"
         node_by_id.setdefault(agent_node, CapabilityNode(node_id=agent_node, node_type=CapabilityNodeType.AGENT))
         edges.append(
@@ -235,7 +237,7 @@ def build_environment_capability_graph_from_wiring(
             contract_versions[contract.id] = contract.version
 
     for binding in manifest.enabled_agents():
-        contract_id = resolve_binding_agent_contract_id(binding)
+        contract_id = resolve_binding_contract_id(binding)
         agent_node = f"agent:{contract_id}"
         ensure_node(agent_node, CapabilityNodeType.AGENT, version=contract_versions.get(contract_id))
         add_edge(application_node, agent_node, CapabilityEdgeType.DEPENDS_ON)

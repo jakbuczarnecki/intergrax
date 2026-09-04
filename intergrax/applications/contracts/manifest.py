@@ -295,6 +295,12 @@ class AgentBinding(BaseModel):
             object.__setattr__(self, "import_path", qualname_for_agent(self.agent_type))
         if self.factory is not None and self.factory_path is None:
             object.__setattr__(self, "factory_path", qualname_for_callable(self.factory))
+        if self.contract_id is None and self.agent_type is not None:
+            class_contract_id = getattr(self.agent_type, "contract_id", None)
+            if isinstance(class_contract_id, str):
+                stripped = class_contract_id.strip()
+                if stripped:
+                    object.__setattr__(self, "contract_id", stripped)
 
         if self.agent_type is None and self.import_path is None and not self.contract_id:
             raise ValueError(
