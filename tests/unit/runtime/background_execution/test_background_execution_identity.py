@@ -30,6 +30,10 @@ from intergrax.runtime.background_execution.transport_ref import (
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
+from tests.unit.runtime.background_execution.reentry_admission_doubles import (
+    admission_kwargs,
+    make_kv_admission_dependencies,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from tests.unit.runtime.vendor_knowledge._fakes import InMemoryDocumentStore as PlainDocumentStore
 
@@ -276,8 +280,8 @@ def test_broker_redelivery_preserves_full_canonical_identity() -> None:
         registry=registry,
         kv_store=kv,
         provider_name="rabbitmq",
-        identity_persistence=KvBackgroundExecutionIdentityPersistence(kv),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        **admission_kwargs(make_kv_admission_dependencies(kv)),
     )
     message = {
         "task_id": "broker-transport-1",
@@ -396,6 +400,8 @@ _EXECUTION_MODULES = (
 
 @pytest.mark.parametrize("module_name", _EXECUTION_MODULES)
 def test_execution_entry_points_depend_on_abstraction_only(module_name: str) -> None:
+    if module_name.endswith("dispatcher"):
+        pytest.importorskip("celery")
     module = importlib.import_module(module_name)
     source = Path(inspect.getfile(module)).read_text(encoding="utf-8")
     assert "KvBackgroundExecutionIdentityPersistence" not in source

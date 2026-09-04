@@ -16,7 +16,10 @@ from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.queueing.task_index import record_task_index
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.execution import execute_logical_task
-from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.reentry_admission import (
+    BackgroundExecutionReentryDisposition,
+    admit_background_execution_reentry,
+)
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
 )
@@ -26,6 +29,8 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
+from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -58,6 +63,8 @@ class BrokerWorkerBase(ABC):
         provider_name: str = "broker",
         identity_persistence: BackgroundExecutionIdentityPersistence,
         causal_evidence_persistence: CausalEvidencePersistence,
+        attempt_lifecycle: AttemptLifecycleService,
+        execution_terminal: ExecutionTerminalService,
     ) -> None:
         self._registry: TaskExecutionRegistry = registry
         self._kv_store: DistributedKVStore = kv_store
@@ -66,6 +73,8 @@ class BrokerWorkerBase(ABC):
         self._provider_name = provider_name
         self._identity_persistence = identity_persistence
         self._causal_evidence_persistence = causal_evidence_persistence
+        self._attempt_lifecycle = attempt_lifecycle
+        self._execution_terminal = execution_terminal
 
     # ------------------------------------------------------------------
     # Storage keys (aligned with BrokerBackedTaskQueueBase)
@@ -145,6 +154,21 @@ class BrokerWorkerBase(ABC):
             metadata={"intergrax.worker_runtime.received": True},
         )
 
+        transport_ref = BackgroundTransportExecutionRef(
+            tenant_id=tenant_id,
+            provider=provider_name,
+            transport_task_id=task_id,
+        )
+        reentry = admit_background_execution_reentry(
+            transport_ref=transport_ref,
+            identity_persistence=self._identity_persistence,
+            attempt_lifecycle=self._attempt_lifecycle,
+            execution_terminal=self._execution_terminal,
+        )
+        execution_identity = reentry.identity
+        if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
+            return
+
         # Transition -> RUNNING
         self._kv_store.set(
             tenant_id=tenant_id,
@@ -171,15 +195,6 @@ class BrokerWorkerBase(ABC):
         )
 
         try:
-            transport_ref = BackgroundTransportExecutionRef(
-                tenant_id=tenant_id,
-                provider=provider_name,
-                transport_task_id=task_id,
-            )
-            execution_identity = bootstrap_background_execution(
-                transport_ref=transport_ref,
-                identity_persistence=self._identity_persistence,
-            )
             result = admit_background_execution_handler(
                 transport_ref=transport_ref,
                 execution_identity=execution_identity,

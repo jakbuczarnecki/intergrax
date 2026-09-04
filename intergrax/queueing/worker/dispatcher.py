@@ -20,7 +20,10 @@ from intergrax.queueing.worker.execution import (
     IdempotencyLockConflictError,
 )
 from intergrax.queueing.worker.result_codec import encode_logical_task_result
-from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.reentry_admission import (
+    BackgroundExecutionReentryDisposition,
+    admit_background_execution_reentry,
+)
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
 )
@@ -30,6 +33,8 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
+from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -54,6 +59,8 @@ def register_dispatcher_task(
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
     identity_persistence: BackgroundExecutionIdentityPersistence,
     causal_evidence_persistence: CausalEvidencePersistence,
+    attempt_lifecycle: AttemptLifecycleService,
+    execution_terminal: ExecutionTerminalService,
 ) -> None:
     """
     Registers the generic execution task into Celery app.
@@ -162,10 +169,23 @@ def register_dispatcher_task(
                 provider="celery",
                 transport_task_id=str(self.request.id),
             )
-            execution_identity = bootstrap_background_execution(
+            reentry = admit_background_execution_reentry(
                 transport_ref=transport_ref,
                 identity_persistence=resolved_identity_persistence,
+                attempt_lifecycle=attempt_lifecycle,
+                execution_terminal=execution_terminal,
             )
+            if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
+                from intergrax.tools.execution_models import ToolExecutionResult
+                from pydantic import BaseModel
+
+                class _TerminalAck(BaseModel):
+                    terminal_duplicate: bool = True
+
+                return encode_logical_task_result(
+                    ToolExecutionResult.ok(_TerminalAck()),
+                )
+            execution_identity = reentry.identity
             return encode_logical_task_result(
                 admit_background_execution_handler(
                     transport_ref=transport_ref,

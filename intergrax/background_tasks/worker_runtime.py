@@ -17,7 +17,10 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskResult, TaskStatus
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
-from intergrax.runtime.background_execution.bootstrap import bootstrap_background_execution
+from intergrax.runtime.background_execution.reentry_admission import (
+    BackgroundExecutionReentryDisposition,
+    admit_background_execution_reentry,
+)
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
 )
@@ -27,6 +30,8 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
+from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -53,6 +58,8 @@ class WorkerRuntime:
         event_emitter: TaskEventEmitter | None = None,
         identity_persistence: BackgroundExecutionIdentityPersistence,
         causal_evidence_persistence: CausalEvidencePersistence,
+        attempt_lifecycle: AttemptLifecycleService,
+        execution_terminal: ExecutionTerminalService,
     ) -> None:
         self._registry = registry
         self._state_store = state_store
@@ -63,6 +70,8 @@ class WorkerRuntime:
         self._event_emitter = event_emitter
         self._identity_persistence = identity_persistence
         self._causal_evidence_persistence = causal_evidence_persistence
+        self._attempt_lifecycle = attempt_lifecycle
+        self._execution_terminal = execution_terminal
 
     def _emit(
         self,
@@ -108,6 +117,22 @@ class WorkerRuntime:
             task_id=task_id,
             metadata={"intergrax.worker_runtime.received": True},
         )
+
+        transport_ref = BackgroundTransportExecutionRef(
+            tenant_id=request.tenant_id,
+            provider=self._provider,
+            transport_task_id=task_id,
+        )
+        reentry = admit_background_execution_reentry(
+            transport_ref=transport_ref,
+            identity_persistence=self._identity_persistence,
+            attempt_lifecycle=self._attempt_lifecycle,
+            execution_terminal=self._execution_terminal,
+        )
+        execution_identity = reentry.identity
+        if reentry.disposition is BackgroundExecutionReentryDisposition.TERMINAL_ALREADY_RECORDED:
+            return TaskResult(status=TaskStatus.SUCCEEDED, attempts=1)
+
         self._state_store.set_status(
             tenant_id=request.tenant_id,
             task_id=task_id,
@@ -122,15 +147,6 @@ class WorkerRuntime:
         )
 
         try:
-            transport_ref = BackgroundTransportExecutionRef(
-                tenant_id=request.tenant_id,
-                provider=self._provider,
-                transport_task_id=task_id,
-            )
-            execution_identity = bootstrap_background_execution(
-                transport_ref=transport_ref,
-                identity_persistence=self._identity_persistence,
-            )
             tool_result: ToolExecutionResult[BaseModel] = admit_background_execution_handler(
                 transport_ref=transport_ref,
                 execution_identity=execution_identity,

@@ -28,6 +28,9 @@ from intergrax.runtime.background_execution.bootstrap import (
     BackgroundExecutionIdentity,
     bootstrap_background_execution,
 )
+from intergrax.runtime.background_execution.admission_wiring import (
+    wire_background_execution_admission_dependencies,
+)
 from intergrax.runtime.background_execution.identity_persistence import (
     KvBackgroundExecutionIdentityPersistence,
     wire_background_execution_identity_persistence,
@@ -48,6 +51,9 @@ from tests.unit.runtime.background_execution.causal_admission_doubles import (
     failing_causal_persistence,
     make_causal_persistence,
     make_kv_store,
+)
+from tests.unit.runtime.background_execution.reentry_admission_doubles import (
+    admission_kwargs,
 )
 
 pytestmark = pytest.mark.unit
@@ -126,8 +132,8 @@ def test_broker_worker_path_persists_required_causal_evidence() -> None:
         registry=registry,
         kv_store=kv,
         provider_name="rabbitmq",
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
         causal_evidence_persistence=persistence,
+        **admission_kwargs(wire_background_execution_admission_dependencies(kv_store=kv)),
     )
     worker.process_message(raw_payload=_build_broker_message(provider="rabbitmq"))
     records = persistence.list_for_transport_task(
@@ -170,8 +176,8 @@ def test_worker_runtime_path_persists_required_causal_evidence() -> None:
         result_store=TaskResultStore(kv_store=kv),
         execution_registry=execution_registry,
         provider="kafka",
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
         causal_evidence_persistence=persistence,
+        **admission_kwargs(wire_background_execution_admission_dependencies(kv_store=kv)),
     )
     request = TaskRequest(
         tenant_id="tenant-a",
@@ -210,11 +216,14 @@ def test_celery_dispatcher_path_persists_required_causal_evidence() -> None:
     app.conf.task_eager_propagates = True
     registry = TaskExecutionRegistry()
     registry.register("demo.task.v1", _handler)
+    admission = wire_background_execution_admission_dependencies(kv_store=kv)
     register_dispatcher_task(
         app=app,
         registry=registry,
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
+        identity_persistence=admission.identity_persistence,
         causal_evidence_persistence=persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
     )
     app.tasks["intergrax.execute"].apply(
         kwargs={
@@ -250,12 +259,13 @@ def test_document_store_worker_path_persists_required_causal_evidence() -> None:
             payload=b"{}",
         )
     )
+    admission = wire_background_execution_admission_dependencies(document_store=store)
     worker = DocumentStoreTaskWorker(
         queue,
         registry,
-        identity_persistence=wire_background_execution_identity_persistence(
-            document_store=store,
-        ),
+        identity_persistence=admission.identity_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
         causal_evidence_persistence=persistence,
     )
     assert worker.drain_once() == 1
@@ -355,8 +365,8 @@ def _broker_failure_case() -> None:
     worker = _BrokerWorker(
         registry=registry,
         kv_store=kv,
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
         causal_evidence_persistence=failing_causal_persistence(),
+        **admission_kwargs(wire_background_execution_admission_dependencies(kv_store=kv)),
     )
     with pytest.raises(RequiredAuditEvidencePersistenceError):
         worker.process_message(raw_payload=_build_broker_message())
@@ -383,8 +393,8 @@ def _worker_runtime_failure_case() -> None:
         result_store=TaskResultStore(kv_store=kv),
         execution_registry=execution_registry,
         provider="kafka",
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
         causal_evidence_persistence=failing_causal_persistence(),
+        **admission_kwargs(wire_background_execution_admission_dependencies(kv_store=kv)),
     )
     with pytest.raises(RequiredAuditEvidencePersistenceError):
         runtime.process_request(
@@ -407,11 +417,14 @@ def _celery_failure_case() -> None:
     registry = TaskExecutionRegistry()
     handler = Mock()
     registry.register("demo.task.v1", handler)
+    admission = wire_background_execution_admission_dependencies(kv_store=kv)
     register_dispatcher_task(
         app=app,
         registry=registry,
-        identity_persistence=wire_background_execution_identity_persistence(kv_store=kv),
+        identity_persistence=admission.identity_persistence,
         causal_evidence_persistence=failing_causal_persistence(),
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
     )
     with pytest.raises(RequiredAuditEvidencePersistenceError):
         app.tasks["intergrax.execute"].apply(
@@ -440,12 +453,13 @@ def _document_store_failure_case() -> None:
             payload=b"{}",
         )
     )
+    admission = wire_background_execution_admission_dependencies(document_store=store)
     worker = DocumentStoreTaskWorker(
         queue,
         registry,
-        identity_persistence=wire_background_execution_identity_persistence(
-            document_store=store,
-        ),
+        identity_persistence=admission.identity_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
         causal_evidence_persistence=failing_causal_persistence(),
     )
     worker.drain_once()

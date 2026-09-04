@@ -17,8 +17,8 @@ from intergrax.integrations.providers.message_bus.rabbitmq.config import RabbitM
 from intergrax.queueing.contracts.message_consumer import MessageConsumer
 from intergrax.queueing.contracts.message_producer import MessageProducer
 from intergrax.queueing.contracts.task_queue import TaskQueue
-from intergrax.runtime.background_execution.identity_persistence import (
-    wire_background_execution_identity_persistence,
+from intergrax.runtime.background_execution.admission_wiring import (
+    wire_background_execution_admission_dependencies,
 )
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
@@ -102,14 +102,15 @@ def open_rabbitmq_worker(
         queue=queue,
         consumer=consumer,
     )
+    admission = wire_background_execution_admission_dependencies(kv_store=kv_store)
     return RabbitMQWorker(
         consumer=resolved_consumer,
         registry=registry,
         kv_store=kv_store,
         idempotency_store=idempotency_store,
-        identity_persistence=wire_background_execution_identity_persistence(
-            kv_store=kv_store,
-        ),
+        identity_persistence=admission.identity_persistence,
         causal_evidence_persistence=causal_evidence_persistence,
+        attempt_lifecycle=admission.attempt_lifecycle,
+        execution_terminal=admission.execution_terminal,
         poll_timeout_seconds=poll_timeout_seconds,
     )
