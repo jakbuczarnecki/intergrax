@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 from uuid import uuid4
 
@@ -42,6 +43,13 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
+
+
+@dataclass(frozen=True, slots=True)
+class _GraphNodeRecoveryState:
+    status: ExecutionNodeStatus
+    prior_output: AgentExecutionResult | None
+    skip_legacy: bool
 
 
 def resolve_task_runtime_checkpoint(task: Task) -> RuntimeCheckpoint | None:
@@ -136,20 +144,18 @@ def build_runtime_checkpoint(
         "plan_id": plan_id,
         "graph_id": graph_id,
         "graph_node_id": graph_node_id,
-        "node_states": node_states,
-        "prior_node_outputs": prior_outputs,
-        "plan_snapshot": plan_snapshot,
-        "graph_snapshot": graph_snapshot,
         "pending_decisions": pending_decisions,
         "agent_id": last_execution.agent_id if last_execution else task.agent_id,
-        "uaep_step_index": 0,
-        "paused_phase": ExecutionPhase.HUMAN_APPROVAL.value,
-        "pending_human_request": (
-            last_execution.human_request.model_dump()
-            if last_execution and last_execution.human_request
-            else None
-        ),
     }
+    if graph is not None:
+        base_fields["node_states"] = node_states
+        base_fields["prior_node_outputs"] = prior_outputs
+        base_fields["graph_snapshot"] = graph_snapshot
+    if plan is not None:
+        base_fields["plan_snapshot"] = plan_snapshot
+    if last_execution is not None and last_execution.human_request is not None:
+        base_fields["paused_phase"] = ExecutionPhase.HUMAN_APPROVAL.value
+        base_fields["pending_human_request"] = last_execution.human_request.model_dump()
     if from_task is not None:
         merged = from_task.model_dump(mode="json")
         merged.update(base_fields)
@@ -172,6 +178,105 @@ def apply_runtime_checkpoint_to_task(task: Task, runtime: RuntimeCheckpoint) -> 
     task.sync_metadata()
 
 
+def _execution_result_from_tree_prior(
+    prior: ExecutionPriorOutput,
+    *,
+    run_id: RunId,
+    node: ExecutionNode,
+) -> AgentExecutionResult:
+    return AgentExecutionResult(
+        agent_id=prior.agent_id,
+        run_id=run_id,
+        status=_status_from_summary(prior.status),
+        summary=prior.summary,
+    )
+
+
+def _execution_result_from_legacy_prior(
+    prior: Dict[str, str],
+    *,
+    run_id: RunId,
+    node: ExecutionNode,
+) -> AgentExecutionResult:
+    return AgentExecutionResult(
+        agent_id=str(prior.get("agent_id") or node.agent_id or ""),
+        run_id=run_id,
+        status=_status_from_summary(prior.get("status")),
+        summary=str(prior.get("summary") or ""),
+    )
+
+
+def _tree_status_to_node_status(
+    tree_status: ExecutionCheckpointStatus,
+) -> ExecutionNodeStatus:
+    if tree_status is ExecutionCheckpointStatus.COMPLETED:
+        return ExecutionNodeStatus.COMPLETED
+    if tree_status is ExecutionCheckpointStatus.FAILED:
+        return ExecutionNodeStatus.FAILED
+    return ExecutionNodeStatus.PENDING
+
+
+def resolve_graph_node_recovery_state(
+    node: ExecutionNode,
+    runtime: RuntimeCheckpoint,
+    *,
+    run_id: RunId,
+) -> _GraphNodeRecoveryState:
+    tree_entry = runtime.execution_tree.entry_by_graph_node_id(node.node_id)
+    if tree_entry is not None:
+        if tree_entry.status is ExecutionCheckpointStatus.COMPLETED:
+            if tree_entry.prior_output is None:
+                raise ValueError(
+                    "execution tree COMPLETED entry missing canonical prior_output "
+                    f"for graph node {node.node_id!r}"
+                )
+            return _GraphNodeRecoveryState(
+                status=ExecutionNodeStatus.COMPLETED,
+                prior_output=_execution_result_from_tree_prior(
+                    tree_entry.prior_output,
+                    run_id=run_id,
+                    node=node,
+                ),
+                skip_legacy=True,
+            )
+        restored_output = (
+            _execution_result_from_tree_prior(
+                tree_entry.prior_output,
+                run_id=run_id,
+                node=node,
+            )
+            if tree_entry.prior_output is not None
+            else None
+        )
+        return _GraphNodeRecoveryState(
+            status=_tree_status_to_node_status(tree_entry.status),
+            prior_output=restored_output,
+            skip_legacy=True,
+        )
+
+    status = node.status
+    status_raw = runtime.node_states.get(node.node_id)
+    if status_raw:
+        try:
+            status = ExecutionNodeStatus(status_raw)
+        except ValueError:
+            pass
+
+    prior_output = None
+    prior = runtime.prior_node_outputs.get(node.node_id)
+    if prior:
+        prior_output = _execution_result_from_legacy_prior(
+            prior,
+            run_id=run_id,
+            node=node,
+        )
+    return _GraphNodeRecoveryState(
+        status=status,
+        prior_output=prior_output,
+        skip_legacy=False,
+    )
+
+
 def apply_runtime_checkpoint_to_graph(
     graph: ExecutionGraph,
     runtime: RuntimeCheckpoint,
@@ -187,45 +292,28 @@ def apply_runtime_checkpoint_to_graph(
     if runtime.graph_snapshot and not runtime.node_states:
         restored = ExecutionGraph.model_validate(runtime.graph_snapshot)
         for node in graph.nodes:
+            if runtime.execution_tree.entry_by_graph_node_id(node.node_id) is not None:
+                continue
             source = restored.node_by_id(node.node_id)
             node.status = source.status
             if source.execution_result is not None:
                 node.execution_result = source.execution_result
+                prior_outputs[node.node_id] = source.execution_result
 
     for node in graph.nodes:
-        status_raw = runtime.node_states.get(node.node_id)
-        if status_raw:
-            try:
-                node.status = ExecutionNodeStatus(status_raw)
-            except ValueError:
-                pass
-        tree_entry = runtime.execution_tree.entry_by_graph_node_id(node.node_id)
-        if tree_entry is not None and tree_entry.prior_output is not None:
-            restored = AgentExecutionResult(
-                agent_id=tree_entry.prior_output.agent_id,
-                run_id=run_id,
-                status=_status_from_summary(tree_entry.prior_output.status),
-                summary=tree_entry.prior_output.summary,
-            )
-            prior_outputs[node.node_id] = restored
-            if tree_entry.status is ExecutionCheckpointStatus.COMPLETED:
-                node.execution_result = restored
-                node.status = ExecutionNodeStatus.COMPLETED
-            continue
-        prior = runtime.prior_node_outputs.get(node.node_id)
-        if prior and node.node_id not in prior_outputs:
-            restored = AgentExecutionResult(
-                agent_id=str(prior.get("agent_id") or node.agent_id or ""),
-                run_id=run_id,
-                status=_status_from_summary(prior.get("status")),
-                summary=str(prior.get("summary") or ""),
-            )
-            prior_outputs[node.node_id] = restored
-            if node.status in (
+        recovery = resolve_graph_node_recovery_state(node, runtime, run_id=run_id)
+        node.status = recovery.status
+        if recovery.prior_output is not None:
+            prior_outputs[node.node_id] = recovery.prior_output
+            if recovery.status in (
                 ExecutionNodeStatus.COMPLETED,
                 ExecutionNodeStatus.SKIPPED,
             ):
-                node.execution_result = restored
+                node.execution_result = recovery.prior_output
+            elif recovery.skip_legacy:
+                node.execution_result = None
+        elif recovery.skip_legacy:
+            node.execution_result = None
 
 
 def should_skip_graph_node(
@@ -243,7 +331,10 @@ def should_skip_graph_node(
         if tree_entry.prior_output is None:
             return False
         return node.node_id in prior_outputs
-    if node.status not in (ExecutionNodeStatus.COMPLETED, ExecutionNodeStatus.SKIPPED):
+    if node.status not in (
+        ExecutionNodeStatus.COMPLETED,
+        ExecutionNodeStatus.SKIPPED,
+    ):
         return False
     return node.node_id in prior_outputs
 
