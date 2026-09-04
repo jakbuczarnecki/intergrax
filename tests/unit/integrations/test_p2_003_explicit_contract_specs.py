@@ -616,7 +616,7 @@ class _ExternalB1SqlPlugin:
 def test_register_integration_plugin_external_b1_without_specs_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
         register_integration_plugin(_ExternalB1SqlPlugin)
 
 
