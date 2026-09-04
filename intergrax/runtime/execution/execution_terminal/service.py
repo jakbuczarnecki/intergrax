@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Execution terminal domain service (P0C-5)."""
+"""Execution terminal domain service (P0C-5 / P0C-6)."""
 
 from __future__ import annotations
 
@@ -17,6 +17,18 @@ from intergrax.runtime.execution.execution_terminal.durability_policy import (
 )
 from intergrax.runtime.execution.execution_terminal.persistence import normalize_terminal_record
 from intergrax.runtime.task.task_trace import utc_now_iso
+
+
+def _validate_run_id_consistency(
+    existing: ExecutionTerminalRecord,
+    incoming_run_id: RunId | None,
+) -> None:
+    if existing.run_id is not None and incoming_run_id is not None:
+        if existing.run_id != incoming_run_id:
+            raise ExecutionTerminalConflictError(
+                "execution terminal conflict: run_id mismatch",
+                existing_outcome=existing.outcome,
+            )
 
 
 class ExecutionTerminalService:
@@ -48,11 +60,12 @@ class ExecutionTerminalService:
             return False
         return record is None
 
-    def record_cancellation(
+    def commit_terminal_outcome(
         self,
         *,
         tenant_id: str,
         task_id: str,
+        outcome: ExecutionTerminalOutcome,
         run_id: RunId | None = None,
         reason: str = "",
         production_mode: bool = False,
@@ -63,16 +76,18 @@ class ExecutionTerminalService:
         bounded_reason = reason.strip()[:512]
         existing = self.get_terminal_record(tenant_id=tenant_id, task_id=task_id)
         if existing is not None:
-            if existing.outcome is ExecutionTerminalOutcome.CANCELLED:
+            _validate_run_id_consistency(existing, validated_run_id)
+            if existing.outcome is outcome:
                 return existing
             raise ExecutionTerminalConflictError(
                 "execution terminal conflict: task already has a different terminal outcome",
+                existing_outcome=existing.outcome,
             )
         record = ExecutionTerminalRecord(
             tenant_id=tenant_id,
             task_id=task_id,
             run_id=validated_run_id,
-            outcome=ExecutionTerminalOutcome.CANCELLED,
+            outcome=outcome,
             reason=bounded_reason,
             recorded_at_utc=utc_now_iso(),
         )
@@ -80,10 +95,30 @@ class ExecutionTerminalService:
         if not self._store.put_if_absent(normalized):
             raced = self.get_terminal_record(tenant_id=tenant_id, task_id=task_id)
             if raced is None:
-                raise ExecutionTerminalError("execution terminal cancellation race lost")
-            if raced.outcome is ExecutionTerminalOutcome.CANCELLED:
+                raise ExecutionTerminalError("execution terminal outcome race lost")
+            _validate_run_id_consistency(raced, validated_run_id)
+            if raced.outcome is outcome:
                 return raced
             raise ExecutionTerminalConflictError(
                 "execution terminal conflict: task already has a different terminal outcome",
+                existing_outcome=raced.outcome,
             )
         return normalized
+
+    def record_cancellation(
+        self,
+        *,
+        tenant_id: str,
+        task_id: str,
+        run_id: RunId | None = None,
+        reason: str = "",
+        production_mode: bool = False,
+    ) -> ExecutionTerminalRecord:
+        return self.commit_terminal_outcome(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            outcome=ExecutionTerminalOutcome.CANCELLED,
+            reason=reason,
+            production_mode=production_mode,
+        )

@@ -14,6 +14,33 @@ from intergrax.contracts.execution_terminal import (
     ExecutionTerminalStore,
 )
 from intergrax.contracts.execution_identity import RunId, validate_run_id
+from intergrax.runtime.task.task_state import TaskState
+
+_SUPPORTED_TERMINAL_OUTCOMES = frozenset(ExecutionTerminalOutcome)
+
+_TASK_STATE_TERMINAL_OUTCOMES: dict[TaskState, ExecutionTerminalOutcome] = {
+    TaskState.COMPLETED: ExecutionTerminalOutcome.COMPLETED,
+    TaskState.PARTIALLY_COMPLETED: ExecutionTerminalOutcome.COMPLETED,
+    TaskState.FAILED: ExecutionTerminalOutcome.FAILED,
+    TaskState.CANCELLED: ExecutionTerminalOutcome.CANCELLED,
+}
+
+_TASK_STATE_TERMINAL_REASONS: dict[TaskState, str] = {
+    TaskState.COMPLETED: "completed",
+    TaskState.PARTIALLY_COMPLETED: "partially_completed",
+    TaskState.FAILED: "failed",
+    TaskState.CANCELLED: "cancelled",
+}
+
+
+def terminal_outcome_from_task_state(state: TaskState) -> ExecutionTerminalOutcome | None:
+    """Map runtime terminal ``TaskState`` values to durable terminal outcomes."""
+    return _TASK_STATE_TERMINAL_OUTCOMES.get(state)
+
+
+def terminal_reason_for_task_state(state: TaskState) -> str:
+    """Bounded reason token for a terminal ``TaskState`` projection."""
+    return _TASK_STATE_TERMINAL_REASONS.get(state, "terminal")
 
 
 class InMemoryExecutionTerminalStore(ExecutionTerminalStore):
@@ -78,7 +105,7 @@ def normalize_terminal_record(record: ExecutionTerminalRecord) -> ExecutionTermi
         raise ExecutionTerminalError("invalid execution terminal record identity")
     if not record.recorded_at_utc.strip():
         raise ExecutionTerminalError("invalid execution terminal recorded_at_utc")
-    if record.outcome is not ExecutionTerminalOutcome.CANCELLED:
+    if record.outcome not in _SUPPORTED_TERMINAL_OUTCOMES:
         raise ExecutionTerminalError("unsupported execution terminal outcome")
     run_id: RunId | None = None
     if record.run_id is not None:

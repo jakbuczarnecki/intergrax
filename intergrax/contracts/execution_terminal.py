@@ -17,6 +17,8 @@ from intergrax.contracts.execution_identity import RunId
 class ExecutionTerminalOutcome(StrEnum):
     """Terminal execution outcomes that block future resume."""
 
+    COMPLETED = "completed"
+    FAILED = "failed"
     CANCELLED = "cancelled"
 
 
@@ -39,6 +41,17 @@ class ExecutionTerminalError(RuntimeError):
 
 class ExecutionTerminalConflictError(ExecutionTerminalError):
     """Raised when a late terminal transition conflicts with an existing terminal record."""
+
+    __slots__ = ("existing_outcome",)
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        existing_outcome: ExecutionTerminalOutcome | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.existing_outcome = existing_outcome
 
 
 @runtime_checkable

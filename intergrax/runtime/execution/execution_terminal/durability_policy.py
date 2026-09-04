@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Production durability requirements for terminal cancellation (P0C-5)."""
+"""Production durability requirements for terminal execution authority (P0C-5 / P0C-6)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from intergrax.contracts.execution_terminal import ExecutionTerminalError, Execu
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 
 DURABLE_EXECUTION_TERMINAL_REQUIRED_MSG = (
-    "durable execution terminal store required for terminal cancellation continuity"
+    "durable execution terminal store required for terminal execution continuity"
 )
 
 

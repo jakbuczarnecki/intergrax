@@ -110,6 +110,11 @@ from intergrax.runtime.execution.execution_terminal import (
 from intergrax.runtime.execution.execution_terminal.durability_policy import (
     validate_durable_execution_terminal_for_composition,
 )
+from intergrax.contracts.execution_terminal import ExecutionTerminalConflictError
+from intergrax.runtime.execution.execution_terminal.persistence import (
+    terminal_outcome_from_task_state,
+    terminal_reason_for_task_state,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -578,7 +583,8 @@ class NexusLoop:
                 phase=ExecutionPhase.COMPLETION,
                 error=exc,
             )
-            await self._publish_terminal_runtime_event(task)
+            if self._commit_durable_terminal_authority(task):
+                await self._publish_terminal_runtime_event(task)
             return self._build_result(
                 task,
                 trace_emitter,
@@ -596,7 +602,8 @@ class NexusLoop:
             self._policy_engine, task, answer=answer
         )
 
-        await self._publish_terminal_runtime_event(task)
+        if self._commit_durable_terminal_authority(task):
+            await self._publish_terminal_runtime_event(task)
         result = self._build_result(
             task,
             trace_emitter,
@@ -750,6 +757,25 @@ class NexusLoop:
     ) -> None:
         """Attach platform terminal diagnostic trigger after host composition."""
         self._terminal_diagnostic_trigger = trigger
+
+    def _commit_durable_terminal_authority(self, task: Task) -> bool:
+        """Persist terminal outcome before projection events. Returns False on durable conflict."""
+        outcome = terminal_outcome_from_task_state(task.state)
+        if outcome is None:
+            return True
+        run_id, _ = require_active_execution_identity()
+        try:
+            self._execution_terminal.commit_terminal_outcome(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=run_id,
+                outcome=outcome,
+                reason=terminal_reason_for_task_state(task.state),
+                production_mode=self._production_mode,
+            )
+        except ExecutionTerminalConflictError:
+            return False
+        return True
 
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
         terminal_event = await self._events.publish_terminal(task)
