@@ -31,8 +31,17 @@ Report fields: Python, platform, torch build, CUDA availability, GPU name/count/
 ### Execution tuning (not artifact identity)
 
 - `VPI_EMBEDDING_DEVICE` — explicit `cuda` fails closed when unavailable
-- `VPI_EMBEDDING_PROVIDER_BATCH_SIZE` — inner `HFEmbeddingProvider.batch_size`
-- `VPI_EMBEDDING_MAX_LENGTH` — optional provider max sequence length
+- `VPI_EMBEDDING_PROVIDER_BATCH_SIZE` — provider-neutral inner batch size preference
+
+Execution config is provider-neutral. Provider-specific constructor mapping lives in Intergrax embedding factory registration. `device` and `batch_size` are execution tuning only and are not part of artifact semantic identity.
+
+`max_length` is not configurable in 5C4A1 because truncation changes semantic embedding output and must be versioned separately before operator tuning is exposed.
+
+Device and batch size may produce non-bit-identical floating-point output across hardware while preserving compatible semantic behavior. Artifact checksum identity belongs to the built artifact itself.
+
+### Diagnostics
+
+Provider execution diagnostics use a typed provider-neutral capability (`execution_snapshot`). Qualification requests diagnostics through the VPI adapter without importing concrete provider classes.
 
 ### Materialization batching (outer orchestrator)
 

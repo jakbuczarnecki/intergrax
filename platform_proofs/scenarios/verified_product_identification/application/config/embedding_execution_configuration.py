@@ -28,10 +28,6 @@ class VpiEmbeddingProviderExecutionConfiguration:
     def provider_batch_size(self) -> int | None:
         return self.execution.batch_size
 
-    @property
-    def max_length(self) -> int | None:
-        return self.execution.max_length
-
 
 def _parse_optional_positive_int(raw_value: str | None) -> int | None:
     if raw_value is None or not raw_value.strip():
@@ -57,11 +53,9 @@ def load_vpi_embedding_provider_execution_configuration(
     provider_batch_size = _parse_optional_positive_int(
         os.getenv(f"{prefix}_PROVIDER_BATCH_SIZE")
     )
-    max_length = _parse_optional_positive_int(os.getenv(f"{prefix}_MAX_LENGTH"))
     execution = EmbeddingProviderExecutionConfig(
         device=device,
         batch_size=provider_batch_size,
-        max_length=max_length,
     )
     return VpiEmbeddingProviderExecutionConfiguration(execution=execution)
 

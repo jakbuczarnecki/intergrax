@@ -140,6 +140,33 @@ def test_qualification_contracts_have_no_torch_imports() -> None:
     assert violations == []
 
 
+def test_qualification_core_has_no_torch_imports() -> None:
+    core_modules = (
+        _VPI_ROOT / "qualification/batch_selection.py",
+        _VPI_ROOT / "qualification/bottleneck.py",
+        _VPI_ROOT / "qualification/duration_estimate.py",
+        _VPI_ROOT / "qualification/reporting.py",
+        _VPI_ROOT / "qualification/runner.py",
+        _VPI_ROOT / "qualification/text_length_profile.py",
+    )
+    violations: list[str] = []
+    for module_path in core_modules:
+        for imported in _module_imports(module_path):
+            if imported in {"torch", "sentence_transformers"}:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_production_code_has_no_concrete_hf_embedding_provider_imports() -> None:
+    forbidden = "intergrax.rag.embedding.providers.hf_embedding_provider"
+    violations: list[str] = []
+    for path in _iter_production_python_files(_VPI_ROOT):
+        for imported in _module_imports(path):
+            if imported == forbidden:
+                violations.append(str(path.relative_to(_REPO_ROOT)))
+    assert violations == []
+
+
 def test_no_weak_contracts_in_embedding_materialization_production_code() -> None:
     forbidden_fragments = (
         "dict[str, Any]",

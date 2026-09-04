@@ -12,6 +12,11 @@ from intergrax.rag.embedding.registry.embedding_provider_registry import (
     EmbeddingProviderDependencyError,
     EmbeddingProviderRegistry,
 )
+from intergrax.rag.embedding.registry.execution_diagnostics import (
+    EmbeddingProviderExecutionDiagnostics,
+    EmbeddingProviderExecutionSnapshotResult,
+    EmbeddingProviderExecutionSnapshotStatus,
+)
 
 from platform_proofs.scenarios.verified_product_identification.application.config.embedding_configuration import (
     VpiEmbeddingConfiguration,
@@ -121,10 +126,16 @@ class IntergraxEmbeddingBootstrapAdapter:
     def close(self) -> None:
         return None
 
-    def provider_device_snapshot(self) -> tuple[str | None, str]:
-        from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
-
-        if isinstance(self._provider, HFEmbeddingProvider):
+    def execution_snapshot(self) -> EmbeddingProviderExecutionSnapshotResult:
+        if isinstance(self._provider, EmbeddingProviderExecutionDiagnostics):
             self._provider.dimension()
-            return self._provider.resolved_device(), "HFEmbeddingProvider.resolved_device()"
-        return None, "provider_device_unavailable"
+            return EmbeddingProviderExecutionSnapshotResult(
+                status=EmbeddingProviderExecutionSnapshotStatus.AVAILABLE,
+                snapshot=self._provider.execution_snapshot(),
+                reason=None,
+            )
+        return EmbeddingProviderExecutionSnapshotResult(
+            status=EmbeddingProviderExecutionSnapshotStatus.UNAVAILABLE,
+            snapshot=None,
+            reason="provider_does_not_expose_execution_diagnostics",
+        )

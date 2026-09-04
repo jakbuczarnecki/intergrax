@@ -7,6 +7,9 @@ import time
 from collections.abc import Sequence
 
 from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderExecutionConfig
+from intergrax.rag.embedding.registry.execution_diagnostics import (
+    EmbeddingProviderExecutionSnapshotResult,
+)
 
 from platform_proofs.scenarios.verified_product_identification.application.config.embedding_configuration import (
     VpiEmbeddingConfiguration,
@@ -73,7 +76,6 @@ def build_embedding_execution_port(
     *,
     provider_batch_size: int,
     device: str | None,
-    max_length: int | None,
 ) -> IntergraxEmbeddingBootstrapAdapter:
     from platform_proofs.scenarios.verified_product_identification.application.config.embedding_execution_configuration import (
         VpiEmbeddingProviderExecutionConfiguration,
@@ -83,7 +85,6 @@ def build_embedding_execution_port(
         execution=EmbeddingProviderExecutionConfig(
             device=device,
             batch_size=provider_batch_size,
-            max_length=max_length,
         )
     )
     return IntergraxEmbeddingBootstrapAdapter(
@@ -127,7 +128,6 @@ def run_provider_batch_candidate(
     *,
     provider_batch_size: int,
     device: str | None,
-    max_length: int | None,
     expected_dimension: int,
 ) -> MicrobenchmarkCandidateResult:
     record_count = len(texts)
@@ -135,7 +135,6 @@ def run_provider_batch_candidate(
         configuration,
         provider_batch_size=provider_batch_size,
         device=device,
-        max_length=max_length,
     )
     _reset_peak_vram()
     try:
@@ -195,21 +194,19 @@ def run_provider_batch_candidate(
         _release_cuda_cache()
 
 
-def resolve_provider_device_proof(
+def resolve_provider_execution_proof(
     configuration: VpiEmbeddingConfiguration,
     *,
     provider_batch_size: int,
     device: str | None,
-    max_length: int | None,
-) -> tuple[str | None, str]:
+) -> EmbeddingProviderExecutionSnapshotResult:
     embedding = build_embedding_execution_port(
         configuration,
         provider_batch_size=provider_batch_size,
         device=device,
-        max_length=max_length,
     )
     try:
         embedding.probe()
-        return embedding.provider_device_snapshot()
+        return embedding.execution_snapshot()
     finally:
         embedding.close()

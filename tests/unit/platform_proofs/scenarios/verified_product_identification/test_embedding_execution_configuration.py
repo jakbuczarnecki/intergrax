@@ -24,7 +24,6 @@ def test_defaults_without_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert configuration.device is None
     assert configuration.provider_batch_size is None
-    assert configuration.max_length is None
 
 
 def test_execution_env_loading(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -36,7 +35,6 @@ def test_execution_env_loading(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert configuration.device == "cuda"
     assert configuration.provider_batch_size == 64
-    assert configuration.max_length == 512
 
 
 def test_explicit_cuda_unavailable_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:

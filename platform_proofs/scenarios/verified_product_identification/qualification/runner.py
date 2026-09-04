@@ -58,7 +58,7 @@ from platform_proofs.scenarios.verified_product_identification.qualification.int
 from platform_proofs.scenarios.verified_product_identification.qualification.integration.microbenchmark import (
     build_embedding_execution_port,
     measure_warmup_timing,
-    resolve_provider_device_proof,
+    resolve_provider_execution_proof,
     run_provider_batch_candidate,
 )
 from platform_proofs.scenarios.verified_product_identification.qualification.integration.semantic_text_sampler import (
@@ -167,7 +167,7 @@ def run_vpi_embedding_qualification(
                 device=execution_configuration.device,
                 outer_materialization_batch_size=materialization_config.embedding_batch_size,
                 inner_provider_batch_size=execution_configuration.provider_batch_size,
-                max_length=execution_configuration.max_length,
+                max_length=None,
                 precision="provider_default",
             ),
             text_length_profile=profile_text_lengths(("blocked",)),
@@ -233,7 +233,6 @@ def run_vpi_embedding_qualification(
                 semantic_texts,
                 provider_batch_size=candidate_batch_size,
                 device=execution_configuration.device,
-                max_length=execution_configuration.max_length,
                 expected_dimension=embedding_configuration.expected_dimension,
             )
         )
@@ -253,11 +252,25 @@ def run_vpi_embedding_qualification(
     os.environ["VPI_EMBEDDING_PROVIDER_BATCH_SIZE"] = str(selected_batch_size)
     execution_configuration = load_vpi_embedding_provider_execution_configuration()
 
-    resolved_device, device_proof = resolve_provider_device_proof(
+    execution_proof = resolve_provider_execution_proof(
         embedding_configuration,
         provider_batch_size=selected_batch_size,
         device=execution_configuration.device,
-        max_length=execution_configuration.max_length,
+    )
+    resolved_device = (
+        execution_proof.snapshot.resolved_device
+        if execution_proof.snapshot is not None
+        else None
+    )
+    device_proof = (
+        execution_proof.snapshot.evidence_source
+        if execution_proof.snapshot is not None
+        else execution_proof.reason or "unavailable"
+    )
+    reported_max_length = (
+        execution_proof.snapshot.max_length
+        if execution_proof.snapshot is not None
+        else None
     )
     hardware = probe_hardware_runtime_capability(
         configured_device=execution_configuration.device,
@@ -275,7 +288,6 @@ def run_vpi_embedding_qualification(
         embedding_configuration,
         provider_batch_size=selected_batch_size,
         device=execution_configuration.device,
-        max_length=execution_configuration.max_length,
     )
     try:
         warmup_timing = measure_warmup_timing(warmup_embedding, semantic_texts)
@@ -553,7 +565,7 @@ def run_vpi_embedding_qualification(
             device=execution_configuration.device,
             outer_materialization_batch_size=materialization_config.embedding_batch_size,
             inner_provider_batch_size=selected_batch_size,
-            max_length=execution_configuration.max_length,
+            max_length=reported_max_length,
             precision="provider_default",
         ),
         text_length_profile=text_length_profile,

@@ -15,14 +15,3 @@ class EmbeddingProviderExecutionConfig:
 
     device: str | None = None
     batch_size: int | None = None
-    max_length: int | None = None
-
-    def hf_init_kwargs(self) -> dict[str, object]:
-        kwargs: dict[str, object] = {}
-        if self.device is not None:
-            kwargs["device"] = self.device
-        if self.batch_size is not None:
-            kwargs["batch_size"] = self.batch_size
-        if self.max_length is not None:
-            kwargs["max_length"] = self.max_length
-        return kwargs

@@ -12,6 +12,9 @@ from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
 
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
+from intergrax.rag.embedding.registry.execution_diagnostics import (
+    EmbeddingProviderExecutionSnapshot,
+)
 
 
 class HFEmbeddingProvider(EmbeddingProvider):
@@ -52,6 +55,21 @@ class HFEmbeddingProvider(EmbeddingProvider):
         if self._model is None:
             return self._device
         return str(self._model.device)
+
+    def provider_batch_size(self) -> int:
+        return self._batch_size
+
+    def configured_max_length(self) -> int | None:
+        return self._max_length
+
+    def execution_snapshot(self) -> EmbeddingProviderExecutionSnapshot:
+        return EmbeddingProviderExecutionSnapshot(
+            configured_device=self.configured_device(),
+            resolved_device=self.resolved_device(),
+            provider_batch_size=self._batch_size,
+            max_length=self._max_length,
+            evidence_source="HFEmbeddingProvider.execution_snapshot",
+        )
 
     def _ensure_model(self) -> None:
 
