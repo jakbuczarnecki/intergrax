@@ -29,6 +29,9 @@ from local_workspace_application.host.message_bus_wiring import (
     local_workspace_message_bus_enabled,
     materialize_local_workspace_message_bus_profile,
 )
+from local_workspace_application.host.policy_profile import (
+    build_local_workspace_policy_rules_profile,
+)
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.tool_wiring import build_local_workspace_tool_profile
 
@@ -165,4 +168,5 @@ def build_local_workspace_environment_profile(
         },
     )
     profile.graph_spec = build_local_workspace_pipeline_graph_spec()
+    profile.policy_rules = build_local_workspace_policy_rules_profile()
     return profile

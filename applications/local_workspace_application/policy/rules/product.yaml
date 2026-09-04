@@ -1,0 +1,6 @@
+# Local Knowledge Workspace product declarative policy (UE-11G-C1-R4-F-D1)
+- rule_id: lkw.product.rag.ingest_document.allow
+  handler_id: deny_tool
+  resource_kind: tool
+  resource_id: rag.ingest_document
+  action: allow
