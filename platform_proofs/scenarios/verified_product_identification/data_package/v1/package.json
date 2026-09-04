@@ -1,0 +1,34 @@
+{
+  "description": "Verified Product Identification canonical portable data pack (dataset side; embedding shards added at package build time)",
+  "files": [
+    {
+      "relative_path": "provenance.json",
+      "role": "PROVENANCE",
+      "sha256": "13bed7b5ff089755b2a3eb92fafa785fd4e8325223993073aea11b9762243134",
+      "size_bytes": 1441
+    },
+    {
+      "relative_path": "dataset/manifest.json",
+      "role": "DATASET_MANIFEST",
+      "sha256": "ee1b6f81ca38e170857a29410a68f258b1ce034dbec2b26017b38a7de792a807",
+      "size_bytes": 1574
+    },
+    {
+      "relative_path": "dataset/selected_offers.parquet",
+      "role": "DATASET",
+      "sha256": "fc1268a9c4b3e37325919cd127912a67db0a0b6d1943229a2026d9fedff1d998",
+      "size_bytes": 1838502691
+    }
+  ],
+  "metadata": [
+    "vpi",
+    "wdc-selected-corpus",
+    "dataset-only-template-until-embedding-publish"
+  ],
+  "package_id": "verified-product-identification",
+  "package_version": "1.0.0",
+  "provenance_ref": "provenance.json",
+  "redistribution_status": "REDISTRIBUTION_REVIEW_REQUIRED",
+  "schema_version": "intergrax.proof_data_package.v1",
+  "total_size_bytes": 1838505706
+}

@@ -1,0 +1,33 @@
+{
+  "artifact_schema_version": "v1",
+  "catalog_id": "wdc-v2-selected",
+  "checkpoint_rows_materialized": 3770377,
+  "checkpoint_shard_ordinal": 0,
+  "committed_shards": [
+    {
+      "file_name": "part-000000.parquet",
+      "first_global_row_index": 0,
+      "last_global_row_index": 3770376,
+      "record_count": 3770377,
+      "sha256_checksum": "324e8a129f1ba562627f97f5b9dd0e0e91bfbb2b18f8daefbd66733bd8f5f537",
+      "shard_ordinal": 0
+    }
+  ],
+  "created_at_utc": null,
+  "dataset_checksum": "fc1268a9c4b3e37325919cd127912a67db0a0b6d1943229a2026d9fedff1d998",
+  "dataset_path": "dataset/selected_offers.parquet",
+  "dataset_record_count": 3770377,
+  "embedding_configuration_version": "v1",
+  "embedding_dimension": 1024,
+  "embedding_model": "BAAI/bge-m3",
+  "embedding_provider": "hf",
+  "failure_detail": null,
+  "failure_stage": null,
+  "finalized_at_utc": null,
+  "search_representation_derivation_version": "v2",
+  "shard_count": 1,
+  "source_revision": null,
+  "state": "READY",
+  "target_max_records": null,
+  "total_artifact_record_count": 3770377
+}

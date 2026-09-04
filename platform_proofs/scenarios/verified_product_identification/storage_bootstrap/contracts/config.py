@@ -19,6 +19,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 
 VPI_BOOTSTRAP_ENV_PREFIX = "VPI_BOOTSTRAP"
 VPI_EMBEDDING_ARTIFACT_ENV_PREFIX = "VPI_EMBEDDING_ARTIFACT"
+VPI_DATA_PACKAGE_ENV_PREFIX = "VPI_DATA_PACKAGE"
 DEFAULT_CATALOG_ID = "wdc-v2-selected"
 DEFAULT_SOURCE_BATCH_SIZE = 256
 DEFAULT_VECTOR_BATCH_SIZE = 64
@@ -80,23 +81,66 @@ def _parse_optional_positive_int(raw_value: str | None) -> int | None:
     return parsed
 
 
+def _resolve_data_paths_from_installed_package(
+    scenario_root: Path,
+) -> tuple[Path, Path | None, Path] | None:
+    from platform_proofs.scenarios.verified_product_identification.data_package.errors import (
+        VpiDataPackageNotInstalledError,
+    )
+    from platform_proofs.scenarios.verified_product_identification.data_package.paths import (
+        assert_installed_data_present,
+        resolve_installed_data_paths,
+    )
+
+    explicit_install_raw = os.getenv(f"{VPI_DATA_PACKAGE_ENV_PREFIX}_INSTALL_DIR", "").strip()
+    if explicit_install_raw:
+        paths = resolve_installed_data_paths(Path(explicit_install_raw))
+        assert_installed_data_present(paths)
+        return paths.dataset_path, paths.dataset_manifest_path, paths.embedding_artifact_root
+
+    from platform_proofs.scenarios.verified_product_identification.data_package.config import (
+        default_install_dir,
+    )
+
+    install_root = default_install_dir()
+    if not install_root.is_dir():
+        return None
+
+    paths = resolve_installed_data_paths(install_root)
+    try:
+        assert_installed_data_present(paths)
+    except VpiDataPackageNotInstalledError:
+        return None
+    return paths.dataset_path, paths.dataset_manifest_path, paths.embedding_artifact_root
+
+
 def load_vpi_bootstrap_config(
     *,
     mode: BootstrapRunMode,
     max_records_override: int | None = None,
 ) -> VpiBootstrapConfig:
     scenario_root = _scenario_root()
-    dataset_path = Path(
-        os.getenv(
-            f"{VPI_BOOTSTRAP_ENV_PREFIX}_DATASET_PATH",
-            str(scenario_root / "dataset" / "processed" / "selected_offers.parquet"),
+    installed_paths = _resolve_data_paths_from_installed_package(scenario_root)
+    if installed_paths is not None:
+        dataset_path, dataset_manifest_path, artifact_root_dir = installed_paths
+    else:
+        dataset_path = Path(
+            os.getenv(
+                f"{VPI_BOOTSTRAP_ENV_PREFIX}_DATASET_PATH",
+                str(scenario_root / "dataset" / "processed" / "selected_offers.parquet"),
+            )
         )
-    )
-    manifest_env = os.getenv(f"{VPI_BOOTSTRAP_ENV_PREFIX}_DATASET_MANIFEST_PATH", "").strip()
-    default_manifest = scenario_root / "dataset" / "processed" / "selected_offers_manifest.json"
-    dataset_manifest_path = Path(manifest_env) if manifest_env else default_manifest
-    if not dataset_manifest_path.is_file():
-        dataset_manifest_path = None
+        manifest_env = os.getenv(f"{VPI_BOOTSTRAP_ENV_PREFIX}_DATASET_MANIFEST_PATH", "").strip()
+        default_manifest = scenario_root / "dataset" / "processed" / "selected_offers_manifest.json"
+        dataset_manifest_path = Path(manifest_env) if manifest_env else default_manifest
+        if not dataset_manifest_path.is_file():
+            dataset_manifest_path = None
+        artifact_root_dir = Path(
+            os.getenv(
+                f"{VPI_EMBEDDING_ARTIFACT_ENV_PREFIX}_PATH",
+                str(scenario_root / "dataset" / "processed" / "embedding_artifacts"),
+            )
+        )
 
     verification_raw = os.getenv(
         f"{VPI_BOOTSTRAP_ENV_PREFIX}_DATASET_VERIFICATION",
@@ -123,13 +167,6 @@ def load_vpi_bootstrap_config(
             str(DEFAULT_VECTOR_BATCH_SIZE),
         )
     )
-    artifact_root_dir = Path(
-        os.getenv(
-            f"{VPI_EMBEDDING_ARTIFACT_ENV_PREFIX}_PATH",
-            str(scenario_root / "dataset" / "processed" / "embedding_artifacts"),
-        )
-    )
-
     return VpiBootstrapConfig(
         dataset_path=dataset_path,
         dataset_manifest_path=dataset_manifest_path,

@@ -1,0 +1,3 @@
+# Installed VPI data package contents (downloaded artifacts)
+installed/*
+!installed/.gitkeep
