@@ -43,6 +43,19 @@ from intergrax.agent_distribution.admin_models import (
 )
 from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
 from intergrax.agent_distribution.binding_service import BindingService
+from intergrax.agent_distribution.capability_matching import (
+    AgentCapabilityCandidate,
+    AgentCapabilityDeclaration,
+    AgentCapabilityRequirement,
+    CapabilityId,
+    CapabilityMatcher,
+    CapabilityMatchResult,
+    CapabilityModelError,
+    CapabilityRequirement,
+    CapabilityRequirementError,
+    build_agent_capability_candidate,
+    build_agent_capability_requirement,
+)
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
     AgentCatalogVersionChannelRef,
@@ -152,7 +165,9 @@ from intergrax.agent_distribution.materialization_adapters import (
     UnsupportedVenvBundleMaterializationAdapter,
     default_materialization_adapters,
 )
-from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
+from intergrax.agent_distribution.materialization_service import (
+    RuntimeMaterializationService,
+)
 from intergrax.agent_distribution.roster import (
     EffectiveRoster,
     EffectiveRosterEntry,
@@ -230,8 +245,11 @@ __all__ = [
     "AgentArtifactMetadataStore",
     "AgentBindingFactoryReference",
     "AgentBindingPolicyOverrides",
+    "AgentCapabilityCandidate",
+    "AgentCapabilityDeclaration",
     "AgentCapabilityDescriptor",
     "AgentCapabilityDescriptorConflictError",
+    "AgentCapabilityRequirement",
     "AgentCapabilityMetadataProvider",
     "AgentCatalogEntry",
     "AgentCatalogVersionChannelRef",
@@ -279,6 +297,12 @@ __all__ = [
     "CandidateRuntimeGraphError",
     "CandidateRuntimeGraphValidator",
     "CandidateDependencySpecification",
+    "CapabilityId",
+    "CapabilityMatchResult",
+    "CapabilityMatcher",
+    "CapabilityModelError",
+    "CapabilityRequirement",
+    "CapabilityRequirementError",
     "CatalogEntryFilters",
     "CatalogPackageResolution",
     "CatalogProviderKind",
@@ -374,6 +398,8 @@ __all__ = [
     "TransitionResult",
     "UpdateAgentBindingRequest",
     "assert_installation_trust_record_acceptable",
+    "build_agent_capability_candidate",
+    "build_agent_capability_requirement",
     "build_candidate_dependency_specification",
     "installation_state_is_installed",
 ]
