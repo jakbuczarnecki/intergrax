@@ -202,6 +202,8 @@ Nexus
 
 Marketplace / Agent Manager **MAY** call Tier-0 Agent Distribution services. They **MUST NOT** replace Agent Distribution, fork activation semantics, or become a second path into production runtime.
 
+**Agent Manager / Marketplace** is a control-plane and discovery surface. It **MUST NOT** own installation, binding, revision, activation, or serving authority.
+
 **Authority separation (do not merge):**
 
 | Surface | Question answered | Role |
