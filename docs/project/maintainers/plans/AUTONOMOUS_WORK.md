@@ -54,8 +54,8 @@ Delivery rule:
 | AW-2 | Durable worker state and lifecycle | **DONE** |
 | AW-3 | Principal / authority / workspace composition | **DONE** |
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
-| AW-5 | Worker → execution composition and budgets | **IN PROGRESS** (AW-5A DONE, AW-5B IN PROGRESS) |
-| AW-6 | Recovery Controller and obstacle taxonomy | NOT STARTED |
+| AW-5 | Worker → execution composition and budgets | **DONE** (AW-5A DONE, AW-5B DONE) |
+| AW-6 | Recovery Controller and obstacle taxonomy | **IN PROGRESS** (AW-6A IN PROGRESS, AW-6B NOT STARTED) |
 | AW-7 | Adaptive capability acquisition | NOT STARTED |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
 | AW-9 | Worker control plane | NOT STARTED |
@@ -239,7 +239,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-5B |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** |
+| **Status** | **DONE** |
 | **Purpose** | Worker accounting windows over existing durable execution budgets |
 | **Exact scope** | daily/monthly cost cap, concurrency cap, recovery/codecraft caps, proactive cadence budget |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Budgets |
@@ -256,12 +256,13 @@ Delivery rule:
 |---|---|
 | **ID** | AW-6A |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **IN PROGRESS** |
 | **Purpose** | Freeze canonical obstacle taxonomy and recovery decision contract |
 | **REUSED** | DIAG problem evidence, reliability retry, HITL, policy decisions |
 | **NEW** | worker-level obstacle→strategy contract/controller |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Recovery Controller |
 | **Acceptance** | deterministic classification precedes strategy; DENY never becomes retry/recovery; credential/authority obstacles escalate |
+| **Canonical rules** | `PolicyAction.DENY` → `RecoveryStrategy.STOP`; credential failure → `ESCALATE` (never authority acquisition); `UNKNOWN` → `ESCALATE` (never default retry); recovery cannot widen authority; recovery decision ≠ recovery execution |
 | **Next step** | AW-6B |
 
 | Field | Value |

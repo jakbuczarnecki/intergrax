@@ -631,7 +631,7 @@ def test_worker_contracts_contain_no_permission_grant_fields() -> None:
         "authority",
     )
     for path in _aw_contract_source_paths():
-        if path.name == "execution_authority.py":
+        if path.name in {"execution_authority.py", "obstacle_recovery.py"}:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):

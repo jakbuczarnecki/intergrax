@@ -83,6 +83,9 @@ from intergrax.autonomous_work.repository import (
     WorkerPrincipalBindingRepository,
     WorkerWakeUpReceiptRepository,
 )
+from intergrax.autonomous_work.worker_recovery_decision_service import (
+    WorkerRecoveryDecisionService,
+)
 from intergrax.autonomous_work.wake_up_service import (
     WorkerWakeUpEligibilityPolicy,
     WorkerWakeUpPersistenceUnavailable,
@@ -134,6 +137,7 @@ __all__ = (
     "WorkerGoalRepository",
     "WorkerInstanceRepository",
     "WorkerPrincipalBindingRepository",
+    "WorkerRecoveryDecisionService",
     "WorkerWakeUpEligibilityPolicy",
     "WorkerWakeUpPersistenceUnavailable",
     "WorkerWakeUpReceiptRepository",
