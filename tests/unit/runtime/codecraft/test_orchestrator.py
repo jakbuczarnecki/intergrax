@@ -157,7 +157,7 @@ def test_wire_application_codecraft_enables_tools() -> None:
     wiring = wire_application_codecraft(env)
     assert "codecraft_governance" in wiring.domain_fragments
     updated = tool_profile_with_codecraft(env)
-    assert "codecraft.start" in updated.enabled
+    assert updated.is_tool_enabled("codecraft.start")
 
 
 def test_adaptive_trigger_catalog_miss() -> None:

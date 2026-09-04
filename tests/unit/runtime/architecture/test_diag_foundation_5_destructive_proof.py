@@ -28,10 +28,6 @@ from intergrax.applications._shared.health_dashboard_wiring import (
 )
 from intergrax.applications._shared.observability_assembly_resolver import ObservabilityAssemblyError
 from intergrax.applications._shared.scenario_runtime_baseline import ScenarioRuntimeBuildError
-from intergrax.applications._shared.scenario_runtime_profiles import (
-    ScenarioRuntimeMode,
-    build_scenario_production_runtime,
-)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     DiagnosticPosture,
@@ -58,6 +54,11 @@ from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from tests.unit.applications.scenario_runtime_test_support import (
+    MinimalProductionScenarioTestConfig,
+    build_valid_minimal_production_scenario_fixture,
+    echo_agent_registry,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -66,9 +67,7 @@ _OBSERVED_AT = datetime(2026, 8, 29, 12, 0, 0, tzinfo=UTC)
 
 
 def _echo_registry() -> AgentRegistry:
-    registry = AgentRegistry()
-    registry.register(EchoAgent())
-    return registry
+    return echo_agent_registry()
 
 
 def _product_manifest(profile_id: str = "df5.product.host") -> ApplicationManifest:
@@ -85,22 +84,6 @@ def _product_manifest(profile_id: str = "df5.product.host") -> ApplicationManife
         agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
         environment=environment,
     )
-
-
-def _scenario_manifest(app_id: str = "df5_scenario") -> ApplicationManifest:
-    return ApplicationManifest.lab(
-        app_id=app_id,
-        name="DF5 Scenario",
-        route_prefix="/v1/df5_scenario",
-        env_prefix="DF5_SCENARIO_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
-    )
-
-
-def _production_attached_environment(profile_id: str) -> ApplicationEnvironmentProfile:
-    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
-    environment.execution_mode = ExecutionMode.STRICT
-    return environment
 
 
 @pytest.fixture
@@ -202,32 +185,35 @@ def test_df5_case_c_product_without_attached_diagnostics_fails_closed(
 
 def test_df5_case_d_production_scenario_without_diagnostics_fails(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    environment = _production_attached_environment("df5.case.d")
+    monkeypatch.setattr(
+        "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_trigger",
+        lambda **_kwargs: None,
+    )
     with pytest.raises(ScenarioRuntimeBuildError, match="central diagnostics are required"):
-        build_scenario_production_runtime(
-            environment=environment,
-            manifest=_scenario_manifest("df5_prod_no_diag"),
-            registry=_echo_registry(),
-            tenant_id=_TENANT,
-            runtime_events_db_path=tmp_path / "events.db",
-            trace_db_path=tmp_path / "trace.db",
-            document_store=None,
+        build_valid_minimal_production_scenario_fixture(
+            tmp_path,
+            MinimalProductionScenarioTestConfig(
+                tenant_id=_TENANT,
+                profile_id="df5.case.d",
+                app_id="df5_prod_no_diag",
+                document_store=InMemoryDocumentStore(),
+            ),
         )
 
 
 def test_df5_case_d_production_scenario_with_diagnostics_attaches(
     tmp_path: Path,
 ) -> None:
-    environment = _production_attached_environment("df5.case.d.ok")
-    composition = build_scenario_production_runtime(
-        environment=environment,
-        manifest=_scenario_manifest("df5_prod_ok"),
-        registry=_echo_registry(),
-        tenant_id=_TENANT,
-        runtime_events_db_path=tmp_path / "events.db",
-        trace_db_path=tmp_path / "trace.db",
-        document_store=InMemoryDocumentStore(),
+    composition = build_valid_minimal_production_scenario_fixture(
+        tmp_path,
+        MinimalProductionScenarioTestConfig(
+            tenant_id=_TENANT,
+            profile_id="df5.case.d.ok",
+            app_id="df5_prod_ok",
+            document_store=InMemoryDocumentStore(),
+        ),
     )
     assert composition.diagnostic_wiring.required is True
     assert composition.diagnostic_wiring.readiness is DiagnosticReadiness.ATTACHED

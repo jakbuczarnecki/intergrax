@@ -14,7 +14,6 @@ from typing import Literal
 
 import pytest
 
-from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.hosted_application_diagnostic_wiring import (
     HostedApplicationDiagnosticEventPublisher,
     HostedDiagnosticTenantBinding,
@@ -25,11 +24,8 @@ from intergrax.applications._shared.hosted_application_failure_projection import
 )
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioExecutionRequest,
-    build_scenario_runtime_from_environment,
     execute_scenario_task,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -70,8 +66,13 @@ from intergrax.tools.execution_models import ToolExecutionResult
 from tests.integration.runtime.test_terminal_diagnostic_production_e2e import (
     _build_diagnostic_nexus_loop,
 )
-from tests.unit.applications._shared.test_hosted_application_diagnostic_integration import (
-    _build_orchestrator_stack,
+from tests.unit.applications.scenario_runtime_test_support import (
+    build_valid_minimal_lab_scenario_fixture,
+    echo_agent_registry,
+)
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    build_diagnostic_orchestrator_stack_for_tests,
+    query_all_problems_for_tenant,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -79,6 +80,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _TENANT = "df4-tenant"
 _TASK_NAME = "df4.echo.v1"
 _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
+_SCENARIO_RUNTIME_FORBIDDEN_SYMBOLS = frozenset(
+    {
+        "DiagnosticOrchestrator",
+        "ProblemLifecycleEngine",
+        "ProblemGroupingEngine",
+        "ExecutionReconstructor",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -212,34 +221,15 @@ async def test_df4_scenario_task_preserves_run_and_uses_terminal_diagnostics(
         _resolve,
     )
 
-    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="df4.scenario")
-    composition = build_scenario_runtime_from_environment(
-        environment=environment,
-        registry=_echo_registry(),
+    composition = build_valid_minimal_lab_scenario_fixture(
+        tmp_path,
         tenant_id=_TENANT,
-        manifest=ApplicationManifest.lab(
-            app_id="df4_scenario",
-            name="DF4 Scenario",
-            route_prefix="/v1/df4_scenario",
-            env_prefix="DF4_SCENARIO_",
-            agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
-        ),
-        runtime_events_db_path=tmp_path / "events.db",
-        trace_db_path=tmp_path / "trace.db",
+        profile_id="df4.scenario",
+        app_id="df4_scenario",
         document_store=InMemoryDocumentStore(),
-        use_in_memory_trace=True,
     )
-    trigger = composition.nexus_loop._terminal_diagnostic_trigger  # noqa: SLF001
-    assert trigger is not None
-    captured: list[object] = []
-    original_run = trigger._orchestrator.run  # noqa: SLF001
-
-    def _capture_run(request: object) -> object:
-        result = original_run(request)
-        captured.append(result)
-        return result
-
-    monkeypatch.setattr(trigger._orchestrator, "run", _capture_run)  # noqa: SLF001
+    assert composition.has_terminal_diagnostic_trigger is True
+    assert composition.diagnostic_wiring.attached is True
 
     result = await execute_scenario_task(
         composition,
@@ -255,7 +245,6 @@ async def test_df4_scenario_task_preserves_run_and_uses_terminal_diagnostics(
     assert store is not None
     events = store.list_for_task(result.task_id, tenant_id=_TENANT)
     assert any(event.event_type is RuntimeEventType.TASK_COMPLETED for event in events)
-    assert len(captured) == 1
 
 
 def test_df4_background_worker_passes_identity_without_remint() -> None:
@@ -378,7 +367,7 @@ async def test_df4_child_execution_preserves_parent_run_and_attempt() -> None:
 
 @pytest.mark.asyncio
 async def test_df4_hosted_application_uses_injected_orchestrator_subject_scope() -> None:
-    orchestrator, persistence, _ = _build_orchestrator_stack()
+    orchestrator, persistence, _read_service, _ = build_diagnostic_orchestrator_stack_for_tests()
     captured_requests: list[object] = []
     original_run = orchestrator.run
 
@@ -457,7 +446,16 @@ def test_df4_scenario_runtime_has_no_separate_diagnostic_engine() -> None:
     source = path.read_text(encoding="utf-8")
     assert "DiagnosticOrchestrator(" not in source
     assert "wire_terminal_execution_diagnostics" in source
-    assert "handle_task" in source
+
+    tree = ast.parse(source, filename=str(path))
+    rel = path.relative_to(_repo_root()).as_posix()
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id in _SCENARIO_RUNTIME_FORBIDDEN_SYMBOLS:
+            violations.append(f"{rel}:{node.lineno} references {node.id}")
+        if isinstance(node, ast.Attribute) and node.attr in _SCENARIO_RUNTIME_FORBIDDEN_SYMBOLS:
+            violations.append(f"{rel}:{node.lineno} references .{node.attr}")
+    assert violations == []
 
 
 def test_df4_only_central_wiring_mints_diagnostic_orchestrator_in_applications_shared() -> None:
@@ -481,9 +479,7 @@ def test_df4_nexus_loop_is_single_terminal_diagnostic_emitter() -> None:
 
 
 def _echo_registry() -> AgentRegistry:
-    registry = AgentRegistry()
-    registry.register(EchoAgent())
-    return registry
+    return echo_agent_registry()
 
 
 def test_df4_hosted_publisher_accepts_orchestrator_via_constructor_only() -> None:

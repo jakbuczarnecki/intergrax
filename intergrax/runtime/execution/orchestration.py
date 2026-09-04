@@ -29,6 +29,10 @@ from intergrax.runtime.execution.runtime import (
     RootTaskIdentity,
     mint_root_execution_identity,
 )
+from intergrax.runtime.execution.decision_lifecycle_host import (
+    CanonicalDecisionLifecycleHost,
+    DecisionLifecycleHost,
+)
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.long_running.checkpoint_builder import (
@@ -43,6 +47,11 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult
 
 _ORCHESTRATION_CAPABILITIES = frozenset({ExecutionCapability.ORCHESTRATION})
+
+
+def _default_root_decision_lifecycle_host() -> DecisionLifecycleHost:
+    return CanonicalDecisionLifecycleHost()
+
 
 OutputT = TypeVar("OutputT")
 
@@ -191,6 +200,7 @@ async def execute_root_task(
         router,
         ledger_factory=ledger_factory,
         run_budget=run_budget,
+        decision_lifecycle_host=_default_root_decision_lifecycle_host(),
     )
     root_context = RootExecutionContext(
         run_id=identity.run_id,

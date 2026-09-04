@@ -87,6 +87,24 @@ def test_harness_tools_true_includes_harness_optional_capabilities(
     assert SPEECH_BUNDLE_ID in profile.enabled_bundles
 
 
+def test_bundle_profile_survives_sandbox_and_codecraft_side_effect_extensions() -> None:
+    from intergrax.applications._shared.codecraft_wiring import tool_profile_with_codecraft
+    from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+    from intergrax.tools.registry.factory import build_registry_from_profile, enabled_tool_ids_for_profile
+    from intergrax.tools.registry.bootstrap import register_default_tools
+
+    register_default_tools()
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="bundle.extension.guard")
+    profile = tool_profile_with_codecraft(
+        env.model_copy(update={"tool_profile": tool_profile_with_sandbox(env)}),
+    )
+    registry = build_registry_from_profile(profile)
+    enabled = enabled_tool_ids_for_profile(profile)
+    assert enabled
+    assert set(registry.tool_ids()) >= set(enabled)
+
+
 def test_unrelated_catalog_plugin_is_not_auto_granted(
     _isolated_tool_catalog: None,
 ) -> None:

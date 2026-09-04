@@ -42,6 +42,8 @@ from tests.system.functional_diagnostics_h1.models import (
     GateResult,
     HealthGateId,
     HealthVerdict,
+    H1_QUALIFICATION_ID,
+    H1_R1_QUALIFICATION_ID,
     H1_SCHEMA_VERSION,
     H1_SEMANTICS,
 )
@@ -58,6 +60,13 @@ _ARTIFACT_DIR = Path(".tmp/session/diag-functional-h1")
 _REPORT_PATH = _ARTIFACT_DIR / "qualification-report.json"
 _INVENTORY_PATH = _ARTIFACT_DIR / "test-inventory.json"
 _HUMAN_DOC_PATH = Path("docs/project/maintainers/qualification/DIAG_FUNCTIONAL_H1_TEST_SUITE_HEALTH_QUALIFICATION.md")
+
+_H1_R1_ARTIFACT_DIR = Path(".tmp/session/diag-functional-h1-r1")
+_H1_R1_REPORT_PATH = _H1_R1_ARTIFACT_DIR / "qualification-report.json"
+_H1_R1_INVENTORY_PATH = _H1_R1_ARTIFACT_DIR / "test-inventory.json"
+_H1_R1_HUMAN_DOC_PATH = Path(
+    "docs/project/maintainers/qualification/DIAG_FUNCTIONAL_H1_R1_TEST_SUITE_HEALTH_QUALIFICATION.md"
+)
 
 
 def _git_head() -> str:
@@ -79,10 +88,24 @@ def _gate_j_report_integrity(report_verdict: HealthVerdict) -> GateResult:
     )
 
 
-def run_h1_qualification() -> int:
+def run_h1_qualification(
+    *,
+    qualification_id: str = H1_QUALIFICATION_ID,
+    artifact_dir: Path | None = None,
+    human_doc_path: Path | None = None,
+) -> int:
+    resolved_artifact_dir = artifact_dir or (
+        _H1_R1_ARTIFACT_DIR if qualification_id == H1_R1_QUALIFICATION_ID else _ARTIFACT_DIR
+    )
+    report_path = resolved_artifact_dir / "qualification-report.json"
+    inventory_path = resolved_artifact_dir / "test-inventory.json"
+    resolved_human_doc_path = human_doc_path or (
+        _H1_R1_HUMAN_DOC_PATH if qualification_id == H1_R1_QUALIFICATION_ID else _HUMAN_DOC_PATH
+    )
+
     start_head = _git_head()
     inventory = build_diagnostic_test_inventory()
-    write_test_inventory(_INVENTORY_PATH, inventory)
+    write_test_inventory(inventory_path, inventory)
     inventory_counts = inventory_counts_by_layer(inventory)
 
     collection_gate, discovered = gate_h1_a_collection(len(inventory))
@@ -142,6 +165,7 @@ def run_h1_qualification() -> int:
     final_head = _git_head()
     health_report = DiagnosticHealthReport(
         schema_version=H1_SCHEMA_VERSION,
+        qualification_id=qualification_id,
         tested_sha=final_head,
         start_head=start_head,
         final_head=final_head,
@@ -164,16 +188,17 @@ def run_h1_qualification() -> int:
         blocking_findings=tuple(blocking),
         warnings=tuple(warnings),
     )
-    write_health_report(_REPORT_PATH, health_report)
-    _HUMAN_DOC_PATH.write_text(build_human_report(health_report), encoding="utf-8")
+    write_health_report(report_path, health_report)
+    resolved_human_doc_path.write_text(build_human_report(health_report), encoding="utf-8")
 
     summary = {
+        "qualification_id": qualification_id,
         "verdict": overall.value,
         "core_test_health": core_verdict.value,
         "real_service_qualification_availability": real_service_verdict.value,
         "inventory": inventory_counts,
         "families": [item.family.value for item in build_h1_qualification_families()],
-        "artifact": str(_REPORT_PATH),
+        "artifact": str(report_path),
     }
     print(json.dumps(summary, indent=2))
     if overall is HealthVerdict.PASS:
@@ -184,6 +209,12 @@ def run_h1_qualification() -> int:
 
 
 def main() -> int:
+    import sys
+
+    if "--qualification-id" in sys.argv:
+        index = sys.argv.index("--qualification-id")
+        qualification_id = sys.argv[index + 1]
+        return run_h1_qualification(qualification_id=qualification_id)
     return run_h1_qualification()
 
 

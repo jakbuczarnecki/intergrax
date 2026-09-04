@@ -141,6 +141,60 @@ def read_service_for_tests(
     )
 
 
+def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
+    "DiagnosticOrchestrator",
+    InMemoryProblemPersistence,
+    "DiagnosticReadService",
+    ProblemOccurrencePersistence,
+]:
+    """Canonical in-memory diagnostic orchestrator stack for hosted/scenario architecture gates."""
+    from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
+        DeterministicProblemGroupingStrategy,
+    )
+    from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
+    from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
+    from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+    from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
+    from intergrax.runtime.diagnostics.problem_grouping import (
+        ProblemGroupingEngine,
+        ProblemGroupingStrategyRegistry,
+    )
+    from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+    from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+        InMemoryCausalEvidencePersistence,
+    )
+
+    persistence = InMemoryProblemPersistence()
+    occurrence_store = in_memory_document_store_for_problem_tests()
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(occurrence_store)
+    runtime_store = InMemoryRuntimeEventStore()
+    causal_store = InMemoryCausalEvidencePersistence()
+    reconstructor = ExecutionReconstructor(
+        runtime_events=runtime_store,
+        causal_evidence=causal_store,
+    )
+    registry = ProblemGroupingStrategyRegistry()
+    registry.register(DeterministicProblemGroupingStrategy())
+    orchestrator = DiagnosticOrchestrator(
+        execution_reconstructor=reconstructor,
+        lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
+        assessment_builder=DiagnosticAssessmentBuilder(),
+        grouping_engine=ProblemGroupingEngine(registry),
+        problem_lifecycle_engine=lifecycle_engine_for_tests(
+            persistence,
+            occurrence_persistence,
+            document_store=occurrence_store,
+        ),
+    )
+    read_service = read_service_for_tests(
+        persistence,
+        reconstructor,
+        occurrence_persistence=occurrence_persistence,
+        document_store=occurrence_store,
+    )
+    return orchestrator, persistence, read_service, occurrence_persistence
+
+
 def query_all_problems_for_tenant(
     persistence: ProblemPersistence,
     tenant_id: str,

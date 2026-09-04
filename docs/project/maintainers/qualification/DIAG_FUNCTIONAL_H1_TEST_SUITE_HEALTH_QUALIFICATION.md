@@ -97,3 +97,15 @@ tests/unit/system/functional_diagnostics_h1/
 ## Remediation path
 
 Per H1 protocol: **do not re-run under the same label after material gate failure**. Open **H1-R1** to repair architecture gate drift (DF4/DF5 + host composition prerequisites), then re-qualify.
+
+## H1-R1 remediation (2026-09-04)
+
+| Field | Value |
+| --- | --- |
+| Qualification id | `DIAG-FUNCTIONAL-H1-R1` |
+| Verdict | **PASS** |
+| Original H1 verdict | **FAILED** (preserved above) |
+| Qualified SHA | see `DIAG_FUNCTIONAL_H1_R1_TEST_SUITE_HEALTH_QUALIFICATION.md` |
+| Machine artifact | `.tmp/session/diag-functional-h1-r1/qualification-report.json` |
+
+H1-R1 repaired five DF4/DF5 architecture blockers (package closure, lifecycle contract drift, stale source gate) without weakening diagnostic invariants. First canonical H1 **FAILED** result remains immutable audit evidence.

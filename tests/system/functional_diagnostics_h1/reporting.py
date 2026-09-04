@@ -14,6 +14,7 @@ from tests.system.functional_diagnostics_h1.models import (
     GateResult,
     HealthGateId,
     HealthVerdict,
+    H1_QUALIFICATION_ID,
     H1_SCHEMA_VERSION,
     H1_SEMANTICS,
 )
@@ -31,6 +32,7 @@ def _gate_to_json(gate: GateResult) -> dict[str, str | tuple[str, ...]]:
 def health_report_to_json(report: DiagnosticHealthReport) -> dict[str, object]:
     return {
         "schema_version": report.schema_version,
+        "qualification_id": report.qualification_id,
         "tested_sha": report.tested_sha,
         "start_head": report.start_head,
         "final_head": report.final_head,
@@ -98,7 +100,10 @@ def aggregate_overall_verdict(
 
 def build_human_report(report: DiagnosticHealthReport) -> str:
     lines = [
-        "# DIAG-FUNCTIONAL-H1 TEST-SUITE HEALTH QUALIFICATION",
+        f"# {report.qualification_id} TEST-SUITE HEALTH QUALIFICATION",
+        "",
+        "## Qualification id",
+        report.qualification_id,
         "",
         "## Verdict",
         report.overall_h1.value,
@@ -206,6 +211,7 @@ def new_report_shell(*, start_head: str, tested_sha: str) -> DiagnosticHealthRep
     )
     return DiagnosticHealthReport(
         schema_version=H1_SCHEMA_VERSION,
+        qualification_id=H1_QUALIFICATION_ID,
         tested_sha=tested_sha,
         start_head=start_head,
         final_head=start_head,

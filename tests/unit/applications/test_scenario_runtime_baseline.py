@@ -174,6 +174,7 @@ def test_build_scenario_runtime_strict_with_explicit_manifest(tmp_path: Path) ->
         manifest=_scenario_manifest("scenario_strict_manifest"),
         runtime_events_db_path=tmp_path / "events.db",
         trace_db_path=tmp_path / "trace.db",
+        document_store=InMemoryDocumentStore(),
         use_in_memory_trace=True,
     )
     assert composition.nexus_loop is not None

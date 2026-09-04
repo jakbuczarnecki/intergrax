@@ -188,6 +188,7 @@ class DiagnosticTestSuiteResult:
 @dataclass(frozen=True, slots=True)
 class DiagnosticHealthReport:
     schema_version: str
+    qualification_id: str
     tested_sha: str
     start_head: str
     final_head: str
@@ -212,6 +213,8 @@ class DiagnosticHealthReport:
 
 
 H1_SCHEMA_VERSION = "diag_functional_h1_v1"
+H1_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1"
+H1_R1_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R1"
 H1_SEMANTICS = (
     "H1 measures diagnostic TEST-SUITE HEALTH, not live requalification of all "
     "historical real-world qualifications. External service absence yields "

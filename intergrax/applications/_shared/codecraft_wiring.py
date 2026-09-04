@@ -27,10 +27,19 @@ def resolve_codecraft_profile(env: ApplicationEnvironmentProfile) -> CodeCraftPr
 
 
 def tool_profile_with_codecraft(env: ApplicationEnvironmentProfile) -> ToolProfile:
+    from intergrax.tools.providers.codecraft.bundle import CODECRAFT_BUNDLE_ID
+
     profile = env.tool_profile
     cc = env.codecraft_profile
     if cc is None or not cc.generation_allowed():
         return profile
+    if all(profile.is_tool_enabled(tool_id) for tool_id in CODECRAFT_TOOL_IDS):
+        return profile
+    if profile.enabled_bundles and not profile.enabled:
+        bundles = list(profile.enabled_bundles)
+        if CODECRAFT_BUNDLE_ID not in bundles:
+            bundles.append(CODECRAFT_BUNDLE_ID)
+        return profile.model_copy(update={"enabled_bundles": bundles})
     enabled = list(profile.enabled)
     for tool_id in CODECRAFT_TOOL_IDS:
         if tool_id not in enabled:

@@ -360,6 +360,7 @@ def build_scenario_runtime_from_environment(
         decision_wiring=decision_wiring,
         run_budget=cost_wiring.run_budget,
         validation_engine=validation_engine,
+        document_store=document_store,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
