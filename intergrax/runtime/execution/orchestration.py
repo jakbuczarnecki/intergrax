@@ -73,8 +73,13 @@ def resolve_root_task_identity(
                 "explicit run_id conflicts with resume checkpoint identity: "
                 f"{run_id!r} != {checkpoint_run_id!r}"
             )
+        if attempt_id is not None and attempt_id != checkpoint_attempt_id:
+            raise ValueError(
+                "explicit attempt_id conflicts with resume checkpoint identity: "
+                f"{attempt_id!r} != {checkpoint_attempt_id!r}"
+            )
         resolved_run_id = checkpoint_run_id
-        resolved_attempt_id = attempt_id or checkpoint_attempt_id
+        resolved_attempt_id = checkpoint_attempt_id
     else:
         resolved_run_id = run_id or mint_run_id()
         resolved_attempt_id = attempt_id or mint_attempt_id()

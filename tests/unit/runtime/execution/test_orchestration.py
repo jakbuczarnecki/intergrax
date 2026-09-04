@@ -379,3 +379,103 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
     assert seen_execution_ids[0] != seen_execution_ids[1]
     assert validate_execution_id(seen_execution_ids[0])
     assert validate_execution_id(seen_execution_ids[1])
+
+
+def _checkpoint(
+    *,
+    task_id: str,
+    run_id: RunId,
+    attempt_id: AttemptId,
+) -> TaskCheckpoint:
+    from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+    from intergrax.runtime.long_running.models import TaskCheckpoint
+
+    return TaskCheckpoint(
+        task_id=task_id,
+        tenant_id="t1",
+        resume_token="rt_identity",
+        task_state=TaskState.WAITING_FOR_HUMAN,
+        runtime=minimal_runtime_checkpoint(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            root_execution_id=mint_execution_id(),
+        ),
+    )
+
+
+def test_resolve_root_task_identity_mints_new_ids_without_checkpoint() -> None:
+    identity_a = resolve_root_task_identity()
+    identity_b = resolve_root_task_identity()
+
+    assert identity_a.run_id != identity_b.run_id
+    assert identity_a.attempt_id != identity_b.attempt_id
+
+
+def test_resolve_root_task_identity_restores_checkpoint_identity() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    task_id = mint_task_id()
+    checkpoint = _checkpoint(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
+
+    identity = resolve_root_task_identity(resume_checkpoint=checkpoint)
+
+    assert identity.run_id == run_id
+    assert identity.attempt_id == attempt_id
+
+
+def test_resolve_root_task_identity_allows_matching_explicit_checkpoint_identity() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    task_id = mint_task_id()
+    checkpoint = _checkpoint(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
+
+    identity = resolve_root_task_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        resume_checkpoint=checkpoint,
+    )
+
+    assert identity.run_id == run_id
+    assert identity.attempt_id == attempt_id
+
+
+def test_resolve_root_task_identity_rejects_conflicting_run_id() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    task_id = mint_task_id()
+    checkpoint = _checkpoint(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
+
+    with pytest.raises(ValueError, match="explicit run_id conflicts"):
+        resolve_root_task_identity(
+            run_id=mint_run_id(),
+            resume_checkpoint=checkpoint,
+        )
+
+
+def test_resolve_root_task_identity_rejects_conflicting_attempt_id() -> None:
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    task_id = mint_task_id()
+    checkpoint = _checkpoint(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
+
+    with pytest.raises(ValueError, match="explicit attempt_id conflicts"):
+        resolve_root_task_identity(
+            attempt_id=mint_attempt_id(),
+            resume_checkpoint=checkpoint,
+        )
+
+
+def test_execution_identity_from_checkpoint_rejects_missing_runtime() -> None:
+    from intergrax.runtime.long_running.models import TaskCheckpoint
+    from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
+
+    checkpoint = TaskCheckpoint(
+        task_id=mint_task_id(),
+        tenant_id="t1",
+        resume_token="rt_missing_runtime",
+        task_state=TaskState.WAITING_FOR_HUMAN,
+    )
+
+    with pytest.raises(ValueError, match="missing canonical execution identity"):
+        execution_identity_from_checkpoint(checkpoint)

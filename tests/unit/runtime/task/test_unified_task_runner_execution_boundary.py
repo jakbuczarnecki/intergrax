@@ -158,7 +158,7 @@ async def test_run_task_checkpoint_run_id_conflict_unchanged() -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_task_checkpoint_redelivery_allows_new_attempt() -> None:
+async def test_run_task_checkpoint_rejects_conflicting_attempt_id() -> None:
     task = _task()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -177,14 +177,14 @@ async def test_run_task_checkpoint_redelivery_allows_new_attempt() -> None:
         ),
     )
 
-    await runner.run_task(
-        task,
-        attempt_id=other_attempt_id,
-        resume_checkpoint=checkpoint,
-    )
+    with pytest.raises(ValueError, match="explicit attempt_id conflicts"):
+        await runner.run_task(
+            task,
+            attempt_id=other_attempt_id,
+            resume_checkpoint=checkpoint,
+        )
 
-    handle_task.assert_awaited_once()
-    assert handle_task.await_args.kwargs["attempt_id"] == other_attempt_id
+    handle_task.assert_not_awaited()
 
 
 @pytest.mark.asyncio
