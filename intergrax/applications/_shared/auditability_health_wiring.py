@@ -21,6 +21,10 @@ from intergrax.runtime.observability.auditability_health import (
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class HostAuditabilityHealthFacts:
@@ -62,7 +66,7 @@ def project_host_auditability_health_facts_from_runtime(
     """Resolve auditability facts from ``HarnessHostRuntime.diagnostic_wiring``."""
     runtime_events = runtime.observability.runtime_event_store
     if runtime_events is None:
-        runtime_events = runtime.nexus_loop.runtime_event_store
+        runtime_events = resolve_harness_host_nexus_loop_legacy(runtime).runtime_event_store
     return project_host_auditability_health_facts(
         env=runtime.environment,
         diagnostic_wiring=runtime.diagnostic_wiring,

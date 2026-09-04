@@ -45,6 +45,7 @@ from intergrax.applications._shared.task_control_governance import (
 from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
@@ -522,7 +523,7 @@ async def test_taskcpm_b9_supported_cancel_route_does_not_invoke_taskqueue_cance
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(runtime.nexus_loop),  # type: ignore[arg-type]
+        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
         env=runtime.environment,
         runtime=runtime,
     )
@@ -548,7 +549,7 @@ def test_taskcpm_b10_product_scaffold_wiring_uses_shared_governed_task_control(
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(runtime.nexus_loop),  # type: ignore[arg-type]
+        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
         env=runtime.environment,
         runtime=runtime,
     )

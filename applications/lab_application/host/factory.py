@@ -49,6 +49,7 @@ from intergrax.applications._shared.task_control_wiring import (
 from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
 from intergrax.applications._shared.replay_routes import create_replay_router
 from intergrax.applications._shared.scaling_wiring import wire_application_scaling
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 
 
 def create_lab_application(
@@ -110,8 +111,8 @@ def create_lab_application(
         agent_checkpoint_store=integrations.agent_checkpoint_store,
         notification_adapter=integrations.notification_adapter,
     )
-    nexus_loop = runtime.nexus_loop
-    host_execution = build_environment_host_task_execution(nexus_loop, lab_env)
+    host_execution = runtime.execution
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     plugin_bootstrap = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=integrations.trace_store,  # type: ignore[arg-type]
@@ -200,7 +201,7 @@ def create_lab_application(
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     scaling_wiring = wire_application_scaling(
         lab_env,
-        event_bus=runtime.nexus_loop.event_bus,
+        event_bus=resolve_harness_host_nexus_loop_legacy(runtime).event_bus,
     )
     factory_schedulers = [s for s in (scheduler, scaling_wiring.scheduler) if s is not None]
     if settings.include_mcp:

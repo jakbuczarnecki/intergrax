@@ -11,6 +11,7 @@ import pytest
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.orchestration_wiring import EngineBackedNexusPlanner
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 from testing_support.builder import FakeLLMAdapter
@@ -43,7 +44,7 @@ def test_build_harness_host_runtime_passes_llm_adapter_for_engine_planner() -> N
         )
 
     resolve_mock.assert_called_once_with(env)
-    planner = runtime.nexus_loop._planner  # noqa: SLF001 — wiring verification
+    planner = resolve_harness_host_nexus_loop_legacy(runtime)._planner  # noqa: SLF001 — wiring verification
     assert isinstance(planner, EngineBackedNexusPlanner)
 
 
@@ -59,5 +60,6 @@ def test_build_harness_host_runtime_default_planner_without_engine_kind() -> Non
         use_in_memory_trace=True,
     )
 
-    assert runtime.nexus_loop is not None
+    assert resolve_harness_host_nexus_loop_legacy(runtime) is not None
+    assert runtime.execution is not None
     assert runtime.env_wiring.build_context.tool_profile is not None

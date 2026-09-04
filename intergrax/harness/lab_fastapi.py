@@ -13,6 +13,7 @@ from intergrax.applications._shared.harness_host_runtime import HarnessHostRunti
 from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
@@ -100,11 +101,11 @@ def create_lab_fastapi_from_runtime(
 ) -> FastAPI:
     app = FastAPI(title=runtime.manifest.name)
     platform = bootstrap_nexus_platform(
-        runtime.nexus_loop,
+        resolve_harness_host_nexus_loop_legacy(runtime),
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
     if mount_routes:
-        mount_harness_routes(app, nexus_loop=runtime.nexus_loop, prefix=route_prefix)
+        mount_harness_routes(app, nexus_loop=resolve_harness_host_nexus_loop_legacy(runtime), prefix=route_prefix)
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
     wire_application_identity(
         app,

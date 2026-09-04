@@ -24,6 +24,7 @@ from intergrax.applications.contracts.environment_state import (
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -162,7 +163,7 @@ async def test_environment_state_middleware_syncs_isolation_refs(tmp_path) -> No
         message="hello",
         context=TaskContext(capability="echo.basic"),
     )
-    coordinator = runtime.nexus_loop._lifecycle_hooks  # noqa: SLF001
+    coordinator = resolve_harness_host_nexus_loop_legacy(runtime)._lifecycle_hooks  # noqa: SLF001
     await coordinator.before(
         HookPoint.BEFORE_AGENT_SELECTION,
         task,

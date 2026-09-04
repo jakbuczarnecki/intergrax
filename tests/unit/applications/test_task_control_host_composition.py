@@ -39,6 +39,7 @@ from intergrax.applications._shared.task_control_governance import (
 )
 from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
@@ -180,7 +181,7 @@ async def test_taskcpm_h2_allow_through_host_composition_reaches_cooperative_can
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(runtime.nexus_loop),  # type: ignore[arg-type]
+        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
         env=runtime.environment,
         runtime=runtime,
     )
@@ -230,7 +231,7 @@ async def test_taskcpm_h3_deny_through_host_composed_boundary_zero_cancel_effect
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(runtime.nexus_loop),  # type: ignore[arg-type]
+        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
         env=runtime.environment,
         runtime=runtime,
     )

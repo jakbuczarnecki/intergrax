@@ -36,6 +36,7 @@ from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
 )
 from intergrax.applications._shared.task_control_wiring import (
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
     build_reliability_task_enricher,
     build_task_runner_with_enricher,
     wire_harness_task_control,
@@ -149,7 +150,7 @@ def create_local_workspace_backend_app(
     runtime.env_wiring.tool_wiring.wiring_context.extras[
         functional_evidence_wiring_extra_key()
     ] = functional_evidence_wiring
-    nexus_loop = runtime.nexus_loop
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     platform = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
@@ -183,7 +184,7 @@ def create_local_workspace_backend_app(
             idempotency_store=runtime.reliability.idempotency_store,
         ),
     )
-    lkw_host_execution = build_lkw_host_task_execution(nexus_loop, env)
+    lkw_host_execution = runtime.execution
     lkw_task_executor = LocalWorkspaceTaskExecutor(
         lkw_host_execution,
         task_enricher=lkw_task_enricher,

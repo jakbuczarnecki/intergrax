@@ -28,6 +28,7 @@ from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
@@ -59,8 +60,8 @@ def create_research_backend_app(
         runtime_events_db_path=runtime_events_db_path,
         registry_projection=registry_projection,
     )
-    nexus = runtime.nexus_loop
-    host_execution = build_environment_host_task_execution(nexus, env)
+    host_execution = runtime.execution
+    nexus = resolve_harness_host_nexus_loop_legacy(runtime)
     platform = bootstrap_nexus_platform(
         nexus,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]

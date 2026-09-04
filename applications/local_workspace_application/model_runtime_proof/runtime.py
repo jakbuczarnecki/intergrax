@@ -15,6 +15,7 @@ from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
@@ -152,7 +153,7 @@ def build_proof_runtime_session(
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
     task_executor = LocalWorkspaceTaskExecutor(
-        build_lkw_host_task_execution(harness_runtime.nexus_loop, environment_profile),
+        build_lkw_host_task_execution(resolve_harness_host_nexus_loop_legacy(harness_runtime), environment_profile),
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

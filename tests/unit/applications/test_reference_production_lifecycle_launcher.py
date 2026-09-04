@@ -28,6 +28,9 @@ from intergrax.applications._shared.reference_production_governance_wiring impor
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
 from research_application.host.main import create_research_process_app
 from research_application.host.reference_lifecycle_input import build_research_reference_lifecycle_input
@@ -179,7 +182,7 @@ def test_reference_lifecycle_research_e2e_without_seed_helper(
         use_in_memory_trace=True,
     )
     assert runtime.registry_projection_evidence.runtime_revision_id == "rev-lifecycle-e2e"
-    assert runtime.nexus_loop.registry.list_agent_ids() == ["research"]
+    assert resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids() == ["research"]
     assert app is not None
     assert launcher.process_composition is composition
 

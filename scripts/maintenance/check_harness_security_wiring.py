@@ -19,6 +19,7 @@ from intergrax.applications._shared.security_assembly_resolver import (
     assert_security_assembly_valid,
 )
 from intergrax.applications._shared.security_wiring import wire_application_security
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.wiring import bootstrap_lab_integration_wiring
@@ -50,9 +51,9 @@ def main() -> int:
         checkpoint_store=integrations.checkpoint_store,
         notification_adapter=integrations.notification_adapter,
     )
-    assert_security_assembly_valid(wiring, env, nexus=runtime.nexus_loop)
+    assert_security_assembly_valid(wiring, env, nexus=resolve_harness_host_nexus_loop_legacy(runtime))
 
-    pipeline = runtime.nexus_loop._middleware  # noqa: SLF001
+    pipeline = resolve_harness_host_nexus_loop_legacy(runtime)._middleware  # noqa: SLF001
     if not isinstance(pipeline, MiddlewarePipeline):
         print("lab host NexusLoop must expose MiddlewarePipeline")
         return 1

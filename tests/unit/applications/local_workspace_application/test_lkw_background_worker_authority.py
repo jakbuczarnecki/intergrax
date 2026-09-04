@@ -24,6 +24,9 @@ from intergrax.applications._shared.registry_projection import MaterializedRegis
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from local_workspace_application.background_ingest.contracts import LKW_BACKGROUND_INGEST_TASK_NAME
 from local_workspace_application.host.background_worker_factory import (
     build_local_workspace_background_worker_wiring,
@@ -100,7 +103,7 @@ def test_worker_wiring_receives_materialized_registry_projection(
         wiring.runtime.registry_projection_evidence.runtime_revision_id
         == projection.evidence.runtime_revision_id
     )
-    assert "local_indexer" in wiring.runtime.nexus_loop.registry.list_agent_ids()
+    assert "local_indexer" in resolve_harness_host_nexus_loop_legacy(wiring.runtime).registry.list_agent_ids()
 
 
 def test_worker_wiring_without_projection_fails_closed(

@@ -104,10 +104,13 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
+from intergrax.applications._shared.host_task_execution_wiring import (
+    build_environment_host_task_execution,
+)
+from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -123,7 +126,12 @@ __all__ = [
 
 @dataclass(frozen=True)
 class HarnessHostRuntime:
-    """Resolved Tier-3 runtime artifacts for HTTP/MCP hosts."""
+    """Resolved Tier-3 runtime artifacts for HTTP/MCP hosts.
+
+    Public execution path: ``execution`` → canonical :class:`HostTaskExecution`
+    (strategy-neutral root lifecycle). Nexus orchestration remains an internal
+    backend reached through ORCHESTRATION strategy dispatch.
+    """
 
     manifest: ApplicationManifest
     environment: ApplicationEnvironmentProfile
@@ -136,7 +144,7 @@ class HarnessHostRuntime:
     cost: ApplicationCostWiring
     evaluation: ApplicationEvaluationWiring
     diagnostic_wiring: DiagnosticWiring
-    nexus_loop: NexusLoop
+    execution: HostTaskExecution
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
     compensation_queue_store: CompensationQueueStore
@@ -170,9 +178,10 @@ def build_harness_host_runtime(
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> HarnessHostRuntime:
     """
-    Single H-APP path: environment wiring → registry → observability → NexusLoop.
+    Single H-APP path: environment → platform composition → canonical execution.
 
     Replaces per-host duplicate ``NexusLoop(...)`` construction in scaffold factories.
+    Nexus is composed internally as the ORCHESTRATION strategy backend only.
     """
     resolved_manifest = manifest
     if manifest.environment is None:
@@ -329,6 +338,7 @@ def build_harness_host_runtime(
         environment,
         mutation_authorization_boundary=mutation_authorization_boundary,
     )
+    execution = build_environment_host_task_execution(nexus_loop, environment)
     return HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=environment,
@@ -342,7 +352,7 @@ def build_harness_host_runtime(
         cost=cost_wiring,
         evaluation=evaluation_wiring,
         diagnostic_wiring=diagnostic_wiring,
-        nexus_loop=nexus_loop,
+        execution=execution,
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,

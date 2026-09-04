@@ -30,6 +30,7 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
 )
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.plugin_bootstrap import bootstrap_application_plugins
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.diagnostics.problem_lifecycle import (
@@ -482,7 +483,7 @@ def attach_retry_violation_injector(
             tenant_id=event.tenant_id,
         )
 
-    runtime.nexus_loop.event_bus.subscribe(
+    resolve_harness_host_nexus_loop_legacy(runtime).event_bus.subscribe(
         _handler,
         event_types={RuntimeEventType.TASK_COMPLETED},
         priority=10,
@@ -518,7 +519,7 @@ def build_diag_final_product_host(
         if export_plugin is not None:
             bootstrap_application_plugins(
                 [export_plugin],
-                nexus_loop=runtime.nexus_loop,
+                nexus_loop=resolve_harness_host_nexus_loop_legacy(runtime),
             )
     if inject_violation:
         attach_retry_violation_injector(runtime, tenant_id=tenant_id)

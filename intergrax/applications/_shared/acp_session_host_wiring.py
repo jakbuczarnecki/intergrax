@@ -11,6 +11,9 @@ from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
 )
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.applications._shared.runtime_boundary_adapters import (
     agent_binding_to_run_binding,
@@ -44,5 +47,5 @@ def build_acp_session_host_from_harness(
         app_profile=runtime.environment,
         binding=binding,
         declarative_tool_invoker=invoker,
-        decision_flow_gate=runtime.nexus_loop.peek_decision_flow_gate(),
+        decision_flow_gate=resolve_harness_host_nexus_loop_legacy(runtime).peek_decision_flow_gate(),
     )

@@ -36,6 +36,7 @@ from intergrax.applications._shared.task_control_wiring import (
     wire_harness_task_control,
 )
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
     wire_harness_product_observability_dashboard,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
@@ -72,8 +73,8 @@ def create_governed_contractor_backend_app(
         registry_projection=registry_projection,
         document_store=document_store,
     )
-    nexus_loop = runtime.nexus_loop
-    host_execution = build_governed_contractor_host_task_execution(nexus_loop, env)
+    host_execution = runtime.execution
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     registry = runtime.registry
     platform = bootstrap_nexus_platform(
         nexus_loop,

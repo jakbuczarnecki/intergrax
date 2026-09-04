@@ -15,6 +15,7 @@ from intergrax.applications._shared.context_wiring import (
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
 from intergrax.applications.contracts.environment_profile import ContextProfile
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.contracts.context_assembly import ContextSummaryTier, TaskContextAssemblyOptions
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.context.context_manager import ContextManager
@@ -107,6 +108,6 @@ def test_build_harness_host_runtime_wires_context_manager_from_environment() -> 
         use_in_memory_trace=True,
     )
 
-    manager = runtime.nexus_loop._context_manager  # noqa: SLF001
+    manager = resolve_harness_host_nexus_loop_legacy(runtime)._context_manager  # noqa: SLF001
     assert manager._budget_policy.max_tokens_estimate == 2_100  # noqa: SLF001
     assert manager._default_policy.max_prior_chars == 700  # noqa: SLF001

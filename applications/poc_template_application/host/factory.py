@@ -29,6 +29,7 @@ from intergrax.runtime.interactions.router import create_interaction_intake_rout
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 from poc_template_application.host.wiring import build_poc_template_registry
 from poc_template_application.manifest import build_poc_template_manifest
@@ -58,8 +59,8 @@ def create_poc_template_application(
         use_in_memory_trace=db_path is None,
         checkpoints_db_path=checkpoints_db_path,
     )
-    nexus_loop = runtime.nexus_loop
-    host_execution = build_environment_host_task_execution(nexus_loop, env)
+    host_execution = runtime.execution
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     resolved_registry = registry
     platform = bootstrap_nexus_platform(
         nexus_loop,

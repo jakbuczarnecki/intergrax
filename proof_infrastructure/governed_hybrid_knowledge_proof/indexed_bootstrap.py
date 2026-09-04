@@ -16,6 +16,7 @@ from typing import Protocol
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.registry_projection import build_registry_projection
 from intergrax.applications._shared.registry_projection_input_bundle import (
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
     build_reference_registry_projection_input_bundle,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -223,7 +224,7 @@ async def bootstrap_indexed_proof_stack(
     idempotency_store=harness_runtime.reliability.idempotency_store,
   )
   inner_executor = LocalWorkspaceTaskExecutor(
-    build_lkw_host_task_execution(harness_runtime.nexus_loop, env),
+    build_lkw_host_task_execution(resolve_harness_host_nexus_loop_legacy(harness_runtime), env),
     task_enricher=task_enricher,
     readiness=lifecycle,
   )
