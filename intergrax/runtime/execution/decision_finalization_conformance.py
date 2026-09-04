@@ -41,6 +41,13 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
 )
+from intergrax.contracts.decision_record import validate_decision_artifact_kind
+from intergrax.knowledge.contracts.validation import JsonValue
+from intergrax.runtime.execution.decision_artifact_payload_codec import (
+    DecisionArtifactPayloadCodec,
+    DecisionArtifactPayloadCodecRegistry,
+    decision_artifact_payload_codec_registry,
+)
 from intergrax.runtime.execution.decision_finalization_persistence import (
     DecisionDurableFinalizationDisposition,
     DecisionFinalizationPersistence,
@@ -52,6 +59,31 @@ T = TypeVar("T")
 @dataclass(frozen=True, slots=True)
 class IncidentDecisionPayload:
     recommendation: str
+
+
+@dataclass(frozen=True, slots=True)
+class IncidentDecisionPayloadCodec:
+    """Explicit durable codec for conformance incident-resolution payloads."""
+
+    def encode(self, payload: object) -> JsonValue:
+        if type(payload) is not IncidentDecisionPayload:
+            raise TypeError("incident_resolution codec expects IncidentDecisionPayload")
+        return {"recommendation": payload.recommendation}
+
+    def decode(self, payload: JsonValue) -> IncidentDecisionPayload:
+        if type(payload) is not dict:
+            raise TypeError("incident_resolution payload must be a JSON object")
+        recommendation = payload.get("recommendation")
+        if type(recommendation) is not str:
+            raise TypeError("incident_resolution payload recommendation must be str")
+        return IncidentDecisionPayload(recommendation=recommendation)
+
+
+def conformance_artifact_payload_codec_registry() -> DecisionArtifactPayloadCodecRegistry:
+    """Registry for Decision durable conformance and SQLite proof scenarios."""
+    kind = validate_decision_artifact_kind("incident_resolution")
+    codec: DecisionArtifactPayloadCodec[object] = IncidentDecisionPayloadCodec()
+    return decision_artifact_payload_codec_registry(codecs={kind: codec})
 
 
 def _execution_lineage() -> DecisionExecutionLineage:

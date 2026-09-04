@@ -18,6 +18,9 @@ from intergrax.contracts.decision_finalization import (
 )
 from intergrax.contracts.decision_record import AuthoritativeAcceptedDecision
 from intergrax.contracts.decision_resolution import AuthoritativeResolutionRecord
+from intergrax.runtime.execution.decision_artifact_payload_codec import (
+    DecisionArtifactPayloadCodecRegistry,
+)
 from intergrax.runtime.execution.decision_durable_wire_codec import (
     decode_outcome_blob,
     encode_outcome_blob,
@@ -41,10 +44,16 @@ def _finalization_key_row(key: DecisionFinalizationKey) -> tuple[str, str, str, 
 class SQLiteDecisionFinalizationPersistence:
     """Durable single-host finalization store with atomic commit semantics."""
 
-    __slots__ = ("_db_path",)
+    __slots__ = ("_db_path", "_payload_codecs")
 
-    def __init__(self, *, db_path: Path) -> None:
+    def __init__(
+        self,
+        *,
+        db_path: Path,
+        payload_codecs: DecisionArtifactPayloadCodecRegistry,
+    ) -> None:
         self._db_path = db_path
+        self._payload_codecs = payload_codecs
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_schema()
 
@@ -91,7 +100,10 @@ class SQLiteDecisionFinalizationPersistence:
         ).fetchone()
         if row is None:
             return None
-        outcome = decode_outcome_blob(row["outcome_blob"])
+        outcome = decode_outcome_blob(
+            row["outcome_blob"],
+            payload_codecs=self._payload_codecs,
+        )
         return DecisionFinalizeGuardState(key=key, authoritative_outcome=outcome)
 
     def load_guard_state(
@@ -133,7 +145,10 @@ class SQLiteDecisionFinalizationPersistence:
                     """,
                     (
                         *_finalization_key_row(key),
-                        encode_outcome_blob(outcome),
+                        encode_outcome_blob(
+                            outcome,
+                            payload_codecs=self._payload_codecs,
+                        ),
                     ),
                 )
             conn.commit()

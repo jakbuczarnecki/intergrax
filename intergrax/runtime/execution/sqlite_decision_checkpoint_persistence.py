@@ -13,6 +13,9 @@ from intergrax.contracts.decision_checkpoint import (
     restore_decision_checkpoint_state,
 )
 from intergrax.contracts.decision_finalization import DecisionFinalizationKey
+from intergrax.runtime.execution.decision_artifact_payload_codec import (
+    DecisionArtifactPayloadCodecRegistry,
+)
 from intergrax.runtime.execution.decision_durable_wire_codec import (
     decode_checkpoint_blob,
     encode_checkpoint_blob,
@@ -31,10 +34,16 @@ def _checkpoint_key_row(key: DecisionFinalizationKey) -> tuple[str, str, str, st
 class SQLiteDecisionCheckpointPersistence:
     """Durable single-host checkpoint store keyed by finalization scope."""
 
-    __slots__ = ("_db_path",)
+    __slots__ = ("_db_path", "_payload_codecs")
 
-    def __init__(self, *, db_path: Path) -> None:
+    def __init__(
+        self,
+        *,
+        db_path: Path,
+        payload_codecs: DecisionArtifactPayloadCodecRegistry,
+    ) -> None:
         self._db_path = db_path
+        self._payload_codecs = payload_codecs
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_schema()
 
@@ -82,7 +91,10 @@ class SQLiteDecisionCheckpointPersistence:
             ).fetchone()
         if row is None:
             return None
-        checkpoint = decode_checkpoint_blob(row["checkpoint_blob"])
+        checkpoint = decode_checkpoint_blob(
+            row["checkpoint_blob"],
+            payload_codecs=self._payload_codecs,
+        )
         return restore_decision_checkpoint_state(checkpoint)
 
     def save(
@@ -92,7 +104,10 @@ class SQLiteDecisionCheckpointPersistence:
     ) -> None:
         validated = restore_decision_checkpoint_state(checkpoint)
         key = validated.finalization.key
-        blob = encode_checkpoint_blob(validated)
+        blob = encode_checkpoint_blob(
+            validated,
+            payload_codecs=self._payload_codecs,
+        )
         with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             conn.execute(
