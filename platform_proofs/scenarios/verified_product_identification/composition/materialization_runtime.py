@@ -27,6 +27,10 @@ from platform_proofs.scenarios.verified_product_identification.embedding_materia
 from platform_proofs.scenarios.verified_product_identification.embedding_materialization.stores.parquet.writer import (
     ParquetFilesystemArtifactWriter,
 )
+from platform_proofs.scenarios.verified_product_identification.application.config.embedding_execution_configuration import (
+    assert_execution_device_available,
+    load_vpi_embedding_provider_execution_configuration,
+)
 from platform_proofs.scenarios.verified_product_identification.integrations.embedding.intergrax_adapter import (
     IntergraxEmbeddingBootstrapAdapter,
 )
@@ -75,7 +79,12 @@ def build_vpi_embedding_materialization_runtime(
 ) -> EmbeddingMaterializationOrchestrator:
     resolved_artifact_dir = resolve_artifact_directory(config, artifact_dir_override=artifact_dir)
     artifact_writer = ParquetFilesystemArtifactWriter(resolved_artifact_dir)
-    embedding = IntergraxEmbeddingBootstrapAdapter(config.embedding_configuration)
+    execution_configuration = load_vpi_embedding_provider_execution_configuration()
+    assert_execution_device_available(execution_configuration)
+    embedding = IntergraxEmbeddingBootstrapAdapter(
+        config.embedding_configuration,
+        execution_configuration=execution_configuration,
+    )
     dependencies = VpiEmbeddingMaterializationDependencies(
         artifact_writer=artifact_writer,
         embedding=embedding,

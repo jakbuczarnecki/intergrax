@@ -17,6 +17,9 @@ from platform_proofs.scenarios.verified_product_identification.application.confi
     VpiEmbeddingConfiguration,
     validate_resolved_provider_dimension,
 )
+from platform_proofs.scenarios.verified_product_identification.application.config.embedding_execution_configuration import (
+    VpiEmbeddingProviderExecutionConfiguration,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.errors import (
     VpiBootstrapProviderError,
 )
@@ -39,13 +42,22 @@ class IntergraxEmbeddingBootstrapAdapter:
         *,
         registry: EmbeddingProviderRegistry | None = None,
         probe_texts: tuple[str, ...] = GATE0_PROBE_TEXTS,
+        execution_configuration: VpiEmbeddingProviderExecutionConfiguration | None = None,
     ) -> None:
         self._configuration = configuration
         self._probe_texts = probe_texts
         model = configuration.model
         if model is None:
             raise VpiBootstrapProviderError("embedding model is required")
-        resolved_registry = registry or create_default_registry(embedding_model=model)
+        execution_config = (
+            execution_configuration.execution
+            if execution_configuration is not None
+            else None
+        )
+        resolved_registry = registry or create_default_registry(
+            embedding_model=model,
+            execution_config=execution_config,
+        )
         try:
             self._provider: EmbeddingProvider = resolved_registry.get(configuration.provider)
         except (RuntimeError, EmbeddingProviderDependencyError) as exc:
@@ -108,3 +120,11 @@ class IntergraxEmbeddingBootstrapAdapter:
 
     def close(self) -> None:
         return None
+
+    def provider_device_snapshot(self) -> tuple[str | None, str]:
+        from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
+
+        if isinstance(self._provider, HFEmbeddingProvider):
+            self._provider.dimension()
+            return self._provider.resolved_device(), "HFEmbeddingProvider.resolved_device()"
+        return None, "provider_device_unavailable"

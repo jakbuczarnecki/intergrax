@@ -37,3 +37,9 @@ class MaterializationRunReport:
         if self.elapsed_total_seconds <= 0:
             return 0.0
         return self.rows_materialized / self.elapsed_total_seconds
+
+    @property
+    def embedding_records_per_second(self) -> float:
+        if self.elapsed_embedding_seconds <= 0:
+            return 0.0
+        return self.rows_materialized / self.elapsed_embedding_seconds

@@ -119,6 +119,27 @@ def test_no_reflection_in_embedding_materialization_production_code() -> None:
         assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
 
 
+def test_no_torch_in_embedding_materialization_orchestrator() -> None:
+    orchestrator_path = _EMBEDDING_MATERIALIZATION_ROOT / "orchestration/orchestrator.py"
+    imports = _module_imports(orchestrator_path)
+    forbidden = sorted(
+        imported
+        for imported in imports
+        if imported in {"torch", "sentence_transformers"}
+    )
+    assert forbidden == []
+
+
+def test_qualification_contracts_have_no_torch_imports() -> None:
+    contracts_root = _VPI_ROOT / "qualification/contracts"
+    violations: list[str] = []
+    for module_path in sorted(contracts_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if imported in {"torch", "sentence_transformers", "qdrant_client", "psycopg"}:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
 def test_no_weak_contracts_in_embedding_materialization_production_code() -> None:
     forbidden_fragments = (
         "dict[str, Any]",

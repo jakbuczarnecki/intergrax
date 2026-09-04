@@ -14,6 +14,7 @@ from intergrax.rag.embedding.registry.embedding_provider_registry import (
     EmbeddingProviderRegistry,
     lazy_import_provider_factory,
 )
+from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderExecutionConfig
 from intergrax.rag.embedding.registry.profile import embedding_profile_from_env
 
 
@@ -25,8 +26,11 @@ def _model_init_kwargs(embedding_model: Optional[str]) -> dict[str, str]:
 
 def create_default_registry(
     embedding_model: Optional[str] = None,
+    execution_config: EmbeddingProviderExecutionConfig | None = None,
 ) -> EmbeddingProviderRegistry:
     model_kwargs = _model_init_kwargs(embedding_model)
+    if execution_config is not None:
+        model_kwargs.update(execution_config.hf_init_kwargs())
     registry = EmbeddingProviderRegistry()
     registry.register_factory(
         "hf",

@@ -45,6 +45,14 @@ class HFEmbeddingProvider(EmbeddingProvider):
     def provider_name(self) -> str:
         return "hf"
 
+    def configured_device(self) -> str | None:
+        return self._device
+
+    def resolved_device(self) -> str | None:
+        if self._model is None:
+            return self._device
+        return str(self._model.device)
+
     def _ensure_model(self) -> None:
 
         if self._model is None:
@@ -55,10 +63,7 @@ class HFEmbeddingProvider(EmbeddingProvider):
             )
 
             if self._max_length is not None:
-                try:
-                    self._model.max_seq_length = int(self._max_length)
-                except Exception:
-                    pass
+                self._model.max_seq_length = int(self._max_length)
 
     def _resolve_dim(self) -> None:
 
