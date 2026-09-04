@@ -23,11 +23,11 @@ from intergrax.contracts.decision_verification import (
     VerificationDisposition,
     VerificationResult,
 )
-from intergrax.runtime.critic.contracts import (
-    CriticAction,
-    CriticLayer,
-    CriticScope,
-    CriticVerdict,
+from intergrax.runtime.migration.legacy_critic_contracts import (
+    LegacyCriticAction as CriticAction,
+    LegacyCriticLayer as CriticLayer,
+    LegacyCriticScope as CriticScope,
+    LegacyCriticVerdict as CriticVerdict,
 )
 from intergrax.runtime.decision_flow import (
     DecisionFlowHostAction,

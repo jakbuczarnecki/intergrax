@@ -1,18 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Evaluator-loop graph metadata keys (Phase CRIT-V-4.2)."""
+"""Evaluator-loop graph metadata keys."""
 
 from __future__ import annotations
 
-from typing import Any
-
 from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
-from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 
 COORDINATION_PATTERN_KEY = "coordination_pattern"
 EVALUATOR_LOOP_SPEC_KEY = "evaluator_loop_spec"
 EVALUATOR_LOOP_ITERATION_KEY = "evaluator_loop_iteration"
+LEGACY_CRITIC_EVALUATOR_LOOP_STEP = "critic.evaluator_loop"
 
 
 def evaluator_loop_spec_from_node(node: ExecutionNode) -> EvaluatorLoopSpec | None:
@@ -43,6 +42,6 @@ def set_evaluator_loop_iteration(node: ExecutionNode, iteration: int) -> None:
     node.metadata[EVALUATOR_LOOP_ITERATION_KEY] = iteration
 
 
-def critic_feedback_context(verdict_errors: list[str]) -> dict[str, Any]:
+def revision_feedback_context(validation_errors: list[str]) -> dict[str, list[str]]:
     """Context payload passed to revise-node execution."""
-    return {"critic_feedback": list(verdict_errors)}
+    return {"revision_feedback": list(validation_errors)}

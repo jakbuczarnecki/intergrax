@@ -6,7 +6,7 @@ from __future__ import annotations
 from pydantic import ValidationError
 
 from intergrax.applications.contracts.graph_spec import EvaluatorLoopGraphBinding
-from intergrax.runtime.critic.evaluator_loop_metadata import tag_node_evaluator_loop
+from intergrax.runtime.nexus.execution.evaluator_loop_metadata import tag_node_evaluator_loop
 from intergrax.runtime.nexus.execution.execution_graph import (
     EvaluatorLoopMetadataError,
     EvaluatorLoopProducerNotFoundError,

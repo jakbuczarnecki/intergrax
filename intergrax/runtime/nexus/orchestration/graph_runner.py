@@ -44,8 +44,6 @@ from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
     from intergrax.runtime.decision_flow import DecisionFlowGate
-    from intergrax.runtime.migration.critic_shadow_adapter import CriticShadowAdapter
-    from intergrax.runtime.migration.decision_critic_parity import DecisionCriticParityObserver
 
 FinishFn = Callable[..., Awaitable[TaskResult]]
 FinalizeFn = Callable[..., Awaitable[None]]
@@ -77,8 +75,6 @@ class NexusGraphRunner:
     maybe_checkpoint: CheckpointFn
     max_run_retries: int = 0
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
-    critic_parity_shadow: CriticShadowAdapter | None = None
-    parity_observer: DecisionCriticParityObserver | None = None
 
     async def run(
         self,
@@ -258,25 +254,6 @@ class NexusGraphRunner:
                     self.decision_flow_gate,
                     flow_request,
                 )
-                if self.critic_parity_shadow is not None:
-                    from intergrax.runtime.migration.critic_shadow_adapter import (
-                        observe_graph_final_parity,
-                    )
-
-                    await observe_graph_final_parity(
-                        shadow=self.critic_parity_shadow,
-                        decision_result=flow_result,
-                        execution=executions[-1],
-                        contract=final_contract,
-                        task_id=task.task_id,
-                        run_id=active_run_id,
-                        attempt_id=active_attempt_id,
-                        tenant_id=task.tenant_id,
-                        graph_id=graph.graph_id,
-                        capability=task.context.capability,
-                        plan_criteria=tuple(plan.validation_criteria or ()),
-                        observer=self.parity_observer,
-                    )
                 if flow_result.host_action is DecisionFlowHostAction.PENDING_HUMAN:
                     executions[-1] = executions[-1].model_copy(
                         update={"status": AgentExecutionStatus.NEEDS_INPUT},

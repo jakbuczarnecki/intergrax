@@ -41,7 +41,7 @@ from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.integrations.registry.catalog_manifests import LOG
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader

@@ -12,11 +12,9 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.replay.metrics import ExecutionMetricsEngine
 from intergrax.runtime.replay.models import ReconstructedRun
 from intergrax.runtime.replay.replay_engine import ReplayEngine
-from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
-from intergrax.runtime.task.task import TaskState
-from intergrax.runtime.task.task_run_bridge import task_from_runtime_request
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.tools.providers.eval.contracts import EvalJudgeInput
+from intergrax.runtime.task.task import TaskState
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class NexusEvalRunner:
@@ -31,7 +29,7 @@ class NexusEvalRunner:
         task_runner: UnifiedTaskRunner,
         replay_engine: Optional[ReplayEngine] = None,
         metrics_engine: Optional[ExecutionMetricsEngine] = None,
-        semantic_client: CriticEvalToolClient | None = None,
+        semantic_client: object | None = None,
     ) -> None:
         self._task_runner = task_runner
         self._replay_engine = replay_engine
@@ -45,7 +43,7 @@ class NexusEvalRunner:
         *,
         replay_engine: Optional[ReplayEngine] = None,
         metrics_engine: Optional[ExecutionMetricsEngine] = None,
-        semantic_client: CriticEvalToolClient | None = None,
+        semantic_client: object | None = None,
     ) -> "NexusEvalRunner":
         resolved_client = semantic_client
         return cls(

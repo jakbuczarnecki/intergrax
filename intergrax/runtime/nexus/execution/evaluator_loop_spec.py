@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Evaluator-loop configuration for critique-revise cycles (Phase CRIT-V-1.3)."""
+"""Evaluator-loop configuration for critique-revise graph coordination."""
 
 from __future__ import annotations
 

@@ -21,14 +21,15 @@ from intergrax.runtime.diagnostics.investigation_contracts import (
     validate_investigation_conclusion,
 )
 from intergrax.runtime.diagnostics import ProblemId
-from intergrax.runtime.critic.contracts import CriticVerdict
-from intergrax.applications._shared.critic_runtime_bridge import resolve_critic_wiring_options
-from intergrax.runtime.critic.critic_wiring import (
-    CriticHookConfig,
-    build_critic_graph_hooks,
-    validate_final_with_critic_detail,
-    validate_node_with_critic_detail,
+from intergrax.contracts.execution_identity import require_active_execution_identity
+from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
+from intergrax.runtime.decision_flow_host import (
+    agent_execution_decision_context,
+    agent_execution_identity_seed,
+    build_agent_execution_flow_request,
+    evaluate_agent_execution_flow,
 )
+from intergrax.runtime.migration.legacy_critic_contracts import LegacyCriticVerdict
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
@@ -36,6 +37,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.critic_adap
     apply_challenge_lifecycle,
     count_evaluator_loop_iterations_from_persisted_trace,
     first_failed_node_partial_verdict_from_persisted_trace,
+    legacy_verdict_from_validation_errors,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
     IncidentOperationalData,
@@ -77,6 +79,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.execution_p
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     IncidentInvestigationValidationEngine,
+    UNSUPPORTED_INFERENCE_ERROR,
     apply_critic_claim_resolutions,
 )
 
@@ -150,7 +153,7 @@ class ScenarioExecutionResult:
     revision_pass: bool
     critic_verdict_passed: bool
     leak_scan_blob: str
-    failed_critic_verdict: CriticVerdict | None
+    failed_critic_verdict: LegacyCriticVerdict | None
     evidence_challenge: EvidenceChallenge | None
     claim_hypothesis_bindings: tuple[dict[str, Any], ...] = ()
     challenged_claim_id: str | None = None
@@ -283,7 +286,7 @@ async def execute_resolved_skeleton(
     evaluator_loop_max_iterations: int = EVALUATOR_LOOP_MAX_ITERATIONS,
 ) -> ScenarioExecutionResult:
     composition = bundle.runtime_composition
-    prepare_incident_execution_runtime(
+    validation_engine = prepare_incident_execution_runtime(
         composition,
         validation_engine=validation_engine,
         require_critic_on_completion=require_critic_on_completion,
@@ -321,16 +324,21 @@ async def execute_resolved_skeleton(
         raise RuntimeError("no agent executions produced")
 
     trace_events = _persisted_trace_events(composition, run_id, execution_tenant_id)
-    failed_critic_verdict = first_failed_node_partial_verdict_from_persisted_trace(
-        trace_events,
-        node_id=INVESTIGATOR_NODE_ID,
-    )
+    domain_payload = domain_payload_from_execution(final_execution)
     evaluator_loop_iterations = count_evaluator_loop_iterations_from_persisted_trace(
         trace_events,
         node_id=INVESTIGATOR_NODE_ID,
     )
-
-    domain_payload = domain_payload_from_execution(final_execution)
+    failed_critic_verdict = first_failed_node_partial_verdict_from_persisted_trace(
+        trace_events,
+        node_id=INVESTIGATOR_NODE_ID,
+    )
+    revision_pass = bool(domain_payload.get("revision_pass", False))
+    if failed_critic_verdict is None and revision_pass:
+        failed_critic_verdict = legacy_verdict_from_validation_errors(
+            [UNSUPPORTED_INFERENCE_ERROR],
+            node_id=INVESTIGATOR_NODE_ID,
+        )
     bindings = parse_claim_hypothesis_bindings(domain_payload.get("claim_hypothesis_bindings"))
     resolved_claim_set = apply_critic_claim_resolutions(
         EvidenceClaimSet.model_validate(dict(domain_payload.get("claim_set", {}))),
@@ -348,7 +356,6 @@ async def execute_resolved_skeleton(
     else:
         initial_evidence_nodes = evidence_nodes
     tool_invocations = int(domain_payload.get("tool_invocations", 0))
-    revision_pass = bool(domain_payload.get("revision_pass", False))
     planner_decisions_raw = domain_payload.get("planner_decisions", [])
     planner_decisions = tuple(
         dict(item) for item in planner_decisions_raw if isinstance(item, dict)
@@ -359,45 +366,34 @@ async def execute_resolved_skeleton(
 
     critic_challenged = failed_critic_verdict is not None and not failed_critic_verdict.passed
 
-    critic_options = resolve_critic_wiring_options(composition.environment.critic_profile)
-    critic_hooks = build_critic_graph_hooks(
-        config=CriticHookConfig(
-            verify_node_partial=critic_options.verify_node_partial,
-            verify_graph_final=critic_options.verify_graph_final,
-            semantic_judge_enabled=critic_options.semantic_judge_enabled,
-            trajectory_eval_enabled=critic_options.trajectory_eval_enabled,
-            judge_threshold=critic_options.judge_threshold,
-            default_rubric_ref=critic_options.default_rubric_ref,
-            require_critic_on_completion=critic_options.require_critic_on_completion,
-            l2_human_required=critic_options.l2_human_required,
-            l2_borderline_margin=critic_options.l2_borderline_margin,
-            verify_uaep_step=critic_options.verify_uaep_step,
-        ),
-    )
-    if critic_hooks is None:
-        raise RuntimeError("critic hooks required for skeleton")
-
-    final_validation, final_verdict = validate_node_with_critic_detail(
-        final_execution,
-        contract=bundle.investigator.get_contract(),
-        hooks=critic_hooks,
-        task_id=task_result.task_id,
-        run_id=platform_result.run_id,
-        tenant_id=execution_tenant_id,
-        capability=INVESTIGATOR_CAPABILITY,
-        node_id=INVESTIGATOR_NODE_ID,
-    )
-    if critic_hooks.verify_graph_final:
-        final_validation, final_verdict = validate_final_with_critic_detail(
+    decision_gate = composition.platform.nexus_loop.peek_decision_flow_gate()
+    if decision_gate is not None and decision_gate.supports_scope(DecisionFlowScope.GRAPH_FINAL):
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        decision_context = agent_execution_decision_context(
+            task_id=task_result.task_id,
+            run_id=active_run_id,
+            attempt_id=active_attempt_id,
+            tenant_id=execution_tenant_id,
+        )
+        identity_seed = agent_execution_identity_seed(
+            context=decision_context,
+            namespace="graph.final",
+            subject=INVESTIGATOR_NODE_ID,
+        )
+        flow_request = build_agent_execution_flow_request(
+            execution=final_execution,
+            identity_seed=identity_seed,
+            flow_scope=DecisionFlowScope.GRAPH_FINAL,
+        )
+        flow_result = await evaluate_agent_execution_flow(decision_gate, flow_request)
+        critic_verdict_passed = flow_result.host_action is DecisionFlowHostAction.CONTINUE
+    else:
+        final_validation = validation_engine.validate(
             final_execution,
             contract=bundle.investigator.get_contract(),
-            hooks=critic_hooks,
-            task_id=task_result.task_id,
-            run_id=platform_result.run_id,
-            tenant_id=execution_tenant_id,
             capability=INVESTIGATOR_CAPABILITY,
         )
-    critic_verdict_passed = final_verdict.passed and final_validation.valid
+        critic_verdict_passed = final_validation.valid
 
     evidence_challenge: EvidenceChallenge | None = None
     claim_set_model = resolved_claim_set

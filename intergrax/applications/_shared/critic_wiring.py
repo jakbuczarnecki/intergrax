@@ -67,6 +67,6 @@ def apply_application_critic_wiring(
     nexus: NexusLoop,
     wiring: ApplicationCriticWiring,
 ) -> None:
-    """No-op: CriticOrchestrator retired from production authority (DS-MIG-02)."""
+    """No-op: legacy critic orchestration retired from production authority (DS-MIG-04)."""
     _ = nexus
     _ = wiring
