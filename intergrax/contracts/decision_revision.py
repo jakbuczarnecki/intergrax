@@ -53,6 +53,98 @@ class DecisionRevisionStateMismatchError(ValueError):
     """Raised when revision state does not match the verification proposal."""
 
 
+class DecisionRevisionPolicyMismatchError(ValueError):
+    """Raised when resume policy disagrees with checkpointed revision budget."""
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionRevisionCheckpointState:
+    """Immutable durable snapshot of revision budget bound to one exact proposal."""
+
+    proposal_ref: DecisionProposalRef
+    revision_count: int
+    max_revisions: int
+
+    def __post_init__(self) -> None:
+        if type(self.proposal_ref) is not DecisionProposalRef:
+            raise TypeError(
+                "DecisionRevisionCheckpointState.proposal_ref must be DecisionProposalRef",
+            )
+        if type(self.revision_count) is not int or isinstance(self.revision_count, bool):
+            raise TypeError(
+                "DecisionRevisionCheckpointState.revision_count must be int",
+            )
+        if type(self.max_revisions) is not int or isinstance(self.max_revisions, bool):
+            raise TypeError(
+                "DecisionRevisionCheckpointState.max_revisions must be int",
+            )
+        if self.revision_count < 0:
+            raise ValueError(
+                "DecisionRevisionCheckpointState.revision_count must be >= 0",
+            )
+        if self.max_revisions < 0:
+            raise ValueError(
+                "DecisionRevisionCheckpointState.max_revisions must be >= 0",
+            )
+        if self.revision_count > self.max_revisions:
+            raise ValueError(
+                "DecisionRevisionCheckpointState.revision_count must be <= max_revisions",
+            )
+
+
+def decision_revision_checkpoint_state(
+    *,
+    proposal_ref: DecisionProposalRef,
+    revision_count: int,
+    max_revisions: int,
+) -> DecisionRevisionCheckpointState:
+    """Capture one validated revision checkpoint snapshot."""
+    if type(proposal_ref) is not DecisionProposalRef:
+        raise TypeError("proposal_ref must be DecisionProposalRef")
+    return DecisionRevisionCheckpointState(
+        proposal_ref=proposal_ref,
+        revision_count=revision_count,
+        max_revisions=max_revisions,
+    )
+
+
+def revision_state_from_checkpoint(
+    checkpoint: DecisionRevisionCheckpointState,
+) -> DecisionRevisionState:
+    """Restore runtime revision state from one durable checkpoint snapshot."""
+    if type(checkpoint) is not DecisionRevisionCheckpointState:
+        raise TypeError("checkpoint must be DecisionRevisionCheckpointState")
+    return DecisionRevisionState(
+        proposal_ref=checkpoint.proposal_ref,
+        revision_count=checkpoint.revision_count,
+    )
+
+
+def revision_policy_from_checkpoint(
+    checkpoint: DecisionRevisionCheckpointState,
+) -> DecisionRevisionPolicy:
+    """Restore authoritative revision policy from one durable checkpoint snapshot."""
+    if type(checkpoint) is not DecisionRevisionCheckpointState:
+        raise TypeError("checkpoint must be DecisionRevisionCheckpointState")
+    return decision_revision_policy(max_revisions=checkpoint.max_revisions)
+
+
+def validate_resume_revision_policy(
+    *,
+    checkpoint_revision: DecisionRevisionCheckpointState,
+    runtime_policy: DecisionRevisionPolicy,
+) -> None:
+    """Fail closed when runtime policy would reset a checkpointed revision ceiling."""
+    if type(checkpoint_revision) is not DecisionRevisionCheckpointState:
+        raise TypeError("checkpoint_revision must be DecisionRevisionCheckpointState")
+    if type(runtime_policy) is not DecisionRevisionPolicy:
+        raise TypeError("runtime_policy must be DecisionRevisionPolicy")
+    if runtime_policy.max_revisions != checkpoint_revision.max_revisions:
+        raise DecisionRevisionPolicyMismatchError(
+            "resume revision policy max_revisions must match checkpoint policy",
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class DecisionRevisionState:
     """Current semantic revision progress bound to one exact proposal."""
