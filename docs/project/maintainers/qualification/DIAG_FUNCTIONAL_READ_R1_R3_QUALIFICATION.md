@@ -10,7 +10,7 @@
 
 **R1-R2 qualified SHA:** `46159f15b8f82642e09ae67a04478e31003cdac2`
 
-**R1-R3 qualified SHA:** _(commit SHA below)_
+**R1-R3 qualified SHA:** `b961709e3a9c9b8bd2510274c7315d853f6f5be0`
 
 ## Defect closed
 
