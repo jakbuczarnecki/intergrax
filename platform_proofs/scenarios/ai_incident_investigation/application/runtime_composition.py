@@ -15,7 +15,7 @@ from intergrax.applications._shared.runtime_config_bridge import (
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeComposition as PlatformScenarioRuntimeComposition,
     build_scenario_runtime_from_environment,
-    rewire_scenario_critic_wiring,
+    rewire_scenario_decision_wiring,
 )
 from intergrax.applications._shared.scenario_runtime_profiles import (
     ScenarioRuntimeMode,
@@ -24,8 +24,9 @@ from intergrax.applications._shared.scenario_runtime_profiles import (
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ContextProfile,
-    CriticProfile,
-    CriticVerificationScopes,
+    DecisionFlowProfile,
+    DecisionProfile,
+    DecisionVerificationProfile,
     MemoryProfile,
 )
 from intergrax.applications.contracts.graph_spec import (
@@ -107,8 +108,8 @@ class ScenarioRuntimeComposition:
 def build_scenario_environment_profile(
     *,
     evaluator_loop_max_iterations: int = DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS,
-    require_critic_on_completion: bool = True,
-    semantic_judge_enabled: bool = False,
+    semantic_verification_enabled: bool = False,
+    max_decision_revisions: int = 0,
 ) -> ApplicationEnvironmentProfile:
     """Provider-neutral LAB environment with fixed investigator topology."""
     env = ApplicationEnvironmentProfile.lab_defaults(
@@ -122,11 +123,14 @@ def build_scenario_environment_profile(
     env.graph_spec = _incident_graph_spec(
         evaluator_loop_max_iterations=evaluator_loop_max_iterations,
     )
-    env.critic_profile = CriticProfile(
-        scopes=CriticVerificationScopes(node_partial=True, graph_final=True),
-        semantic_judge_enabled=semantic_judge_enabled,
-        require_critic_on_completion=require_critic_on_completion,
-        evaluator_loop_max_iterations=evaluator_loop_max_iterations,
+    env.decision_profile = DecisionProfile(
+        verification=DecisionVerificationProfile(
+            semantic_enabled=semantic_verification_enabled,
+        ),
+        flow=DecisionFlowProfile(
+            verify_graph_final=True,
+            max_revisions=max_decision_revisions,
+        ),
     )
     return env
 
@@ -154,19 +158,22 @@ def _incident_graph_spec(
 def _apply_execution_environment_overrides(
     environment: ApplicationEnvironmentProfile,
     *,
-    require_critic_on_completion: bool,
-    semantic_judge_enabled: bool,
+    semantic_verification_enabled: bool,
     evaluator_loop_max_iterations: int,
+    max_decision_revisions: int,
 ) -> None:
     environment.graph_spec = _incident_graph_spec(
         evaluator_loop_max_iterations=evaluator_loop_max_iterations,
     )
-    environment.critic_profile = environment.critic_profile.model_copy(
+    environment.decision_profile = environment.decision_profile.model_copy(
         update={
-            "require_critic_on_completion": require_critic_on_completion,
-            "semantic_judge_enabled": semantic_judge_enabled,
-            "evaluator_loop_max_iterations": evaluator_loop_max_iterations,
-        }
+            "verification": environment.decision_profile.verification.model_copy(
+                update={"semantic_enabled": semantic_verification_enabled},
+            ),
+            "flow": environment.decision_profile.flow.model_copy(
+                update={"max_revisions": max_decision_revisions},
+            ),
+        },
     )
 
 
@@ -254,19 +261,19 @@ def prepare_incident_execution_runtime(
     composition: ScenarioRuntimeComposition,
     *,
     validation_engine: IncidentInvestigationValidationEngine | None = None,
-    require_critic_on_completion: bool = True,
-    semantic_judge_enabled: bool = False,
+    semantic_verification_enabled: bool = False,
     evaluator_loop_max_iterations: int = DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS,
+    max_decision_revisions: int = 0,
 ) -> IncidentInvestigationValidationEngine:
-    """Apply per-execution critic/loop overrides before ``execute_scenario_task``."""
+    """Apply per-execution Decision/graph overrides before ``execute_scenario_task``."""
     resolved_engine = validation_engine or IncidentInvestigationValidationEngine()
     _apply_execution_environment_overrides(
         composition.environment,
-        require_critic_on_completion=require_critic_on_completion,
-        semantic_judge_enabled=semantic_judge_enabled,
+        semantic_verification_enabled=semantic_verification_enabled,
         evaluator_loop_max_iterations=evaluator_loop_max_iterations,
+        max_decision_revisions=max_decision_revisions,
     )
-    rewire_scenario_critic_wiring(
+    rewire_scenario_decision_wiring(
         composition.platform,
         validation_engine=resolved_engine,
     )

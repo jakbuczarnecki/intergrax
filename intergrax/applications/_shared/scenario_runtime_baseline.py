@@ -10,10 +10,8 @@ from typing import Any
 
 from intergrax.applications._shared.cost_assembly_resolver import assert_cost_assembly_valid
 from intergrax.applications._shared.cost_wiring import wire_application_cost
-from intergrax.applications._shared.critic_assembly_resolver import assert_critic_assembly_valid
-from intergrax.applications._shared.critic_wiring import wire_application_critic
 from intergrax.applications._shared.decision_wiring import (
-    DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+    application_decision_wiring_spec_from_environment,
     apply_application_decision_wiring,
     resolve_application_decision_agent_id,
     wire_application_decision,
@@ -99,7 +97,7 @@ __all__ = [
     "build_scenario_runtime_from_environment",
     "execute_scenario_task",
     "rebuild_scenario_runtime_from_composition",
-    "rewire_scenario_critic_wiring",
+    "rewire_scenario_decision_wiring",
     "validate_scenario_tenant_id",
 ]
 
@@ -234,22 +232,22 @@ def _resolve_observability_stores(
     return wiring.stores
 
 
-def rewire_scenario_critic_wiring(
+def rewire_scenario_decision_wiring(
     composition: ScenarioRuntimeComposition,
     *,
     validation_engine: NexusValidationEngine | None = None,
 ) -> None:
     """Reapply Decision flow wiring and validation engine from the current environment profile."""
     environment = composition.environment
+    decision_spec = application_decision_wiring_spec_from_environment(environment)
     decision_wiring = wire_application_decision(
         registry=composition.registry,
         agent_id=resolve_application_decision_agent_id(composition.registry, environment),
-        spec=DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+        spec=decision_spec,
     )
     if validation_engine is not None:
         composition.nexus_loop.apply_validation_engine(validation_engine)
-    if decision_wiring is not None:
-        apply_application_decision_wiring(composition.nexus_loop, decision_wiring)
+    apply_application_decision_wiring(composition.nexus_loop, decision_wiring)
 
 
 def rebuild_scenario_runtime_from_composition(
@@ -335,15 +333,11 @@ def build_scenario_runtime_from_environment(
     guardrail_wiring = wire_application_guardrail(environment)
     evaluation_wiring = wire_application_evaluation(environment)
     assert_evaluation_assembly_valid(evaluation_wiring, environment)
-    critic_wiring = wire_application_critic(
-        environment,
-        validation_engine=validation_engine,
-    )
-    assert_critic_assembly_valid(critic_wiring, environment)
+    decision_spec = application_decision_wiring_spec_from_environment(environment)
     decision_wiring = wire_application_decision(
         registry=registry,
         agent_id=resolve_application_decision_agent_id(registry, environment),
-        spec=DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+        spec=decision_spec,
     )
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)

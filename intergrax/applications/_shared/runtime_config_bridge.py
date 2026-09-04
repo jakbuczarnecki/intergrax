@@ -40,9 +40,6 @@ from intergrax.applications._shared.cost_runtime_bridge import (
 )
 from intergrax.applications._shared.adaptive_runtime_bridge import apply_adaptive_profiles_from_environment
 from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring, wire_adaptive_profile
-from intergrax.applications._shared.critic_runtime_bridge import (
-    apply_critic_profiles_from_environment,
-)
 from intergrax.applications._shared.evaluation_runtime_bridge import (
     apply_evaluation_profiles_from_environment,
 )
@@ -178,7 +175,6 @@ def materialize_runtime_config(
         env,
         registry=evaluation_wiring.registry,
     )
-    apply_critic_profiles_from_environment(config, env)
     apply_adaptive_profiles_from_environment(
         config,
         env,

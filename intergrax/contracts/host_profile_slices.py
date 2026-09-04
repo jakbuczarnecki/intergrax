@@ -181,31 +181,6 @@ class EvaluationProfile(BaseModel):
     evaluation_assets_ref: str | None = None
 
 
-class CriticVerificationScopes(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    node_partial: bool = False
-    graph_final: bool = True
-
-
-class CriticProfile(BaseModel):
-    """Critic & Verification Layer posture."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    semantic_judge_enabled: bool = False
-    trajectory_eval_enabled: bool = False
-    judge_threshold: float = Field(default=0.75, ge=0.0, le=1.0)
-    require_critic_on_completion: bool = False
-    evaluator_loop_max_iterations: int = Field(default=2, ge=1, le=16)
-    critic_llm_profile_ref: str | None = None
-    critic_llm_profile: LLMProfile | None = None
-    default_rubric_ref: str | None = None
-    l2_human_required: bool = False
-    l2_borderline_margin: float = Field(default=0.05, ge=0.0, le=0.5)
-    scopes: CriticVerificationScopes = Field(default_factory=CriticVerificationScopes)
-
-
 class AdaptiveProfile(BaseModel):
     """Adaptive harness intelligence configuration."""
 

@@ -135,7 +135,6 @@ SCRIPT_PATHS: dict[str, str] = {
     "check_harness_adr.py": "maintenance/check_harness_adr.py",
     "check_harness_capability_graph_wiring.py": "maintenance/check_harness_capability_graph_wiring.py",
     "check_harness_cost_wiring.py": "maintenance/check_harness_cost_wiring.py",
-    "check_harness_critic_wiring.py": "maintenance/check_harness_critic_wiring.py",
     "check_harness_encryption_policy.py": "maintenance/check_harness_encryption_policy.py",
     "check_harness_evaluation_wiring.py": "maintenance/check_harness_evaluation_wiring.py",
     "check_harness_guardrail_wiring.py": "maintenance/check_harness_guardrail_wiring.py",

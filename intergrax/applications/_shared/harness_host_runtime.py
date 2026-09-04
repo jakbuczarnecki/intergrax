@@ -29,15 +29,8 @@ from intergrax.applications._shared.cost_wiring import (
     ApplicationCostWiring,
     wire_application_cost,
 )
-from intergrax.applications._shared.critic_assembly_resolver import (
-    assert_critic_assembly_valid,
-)
-from intergrax.applications._shared.critic_wiring import (
-    ApplicationCriticWiring,
-    wire_application_critic,
-)
 from intergrax.applications._shared.decision_wiring import (
-    DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+    application_decision_wiring_spec_from_environment,
     resolve_application_decision_agent_id,
     wire_application_decision,
 )
@@ -142,7 +135,6 @@ class HarnessHostRuntime:
     guardrail: ApplicationGuardrailWiring
     cost: ApplicationCostWiring
     evaluation: ApplicationEvaluationWiring
-    critic: ApplicationCriticWiring
     diagnostic_wiring: DiagnosticWiring
     nexus_loop: NexusLoop
     application_host: ApplicationHost | None
@@ -241,12 +233,11 @@ def build_harness_host_runtime(
     assert_cost_assembly_valid(cost_wiring, environment)
     evaluation_wiring = wire_application_evaluation(environment)
     assert_evaluation_assembly_valid(evaluation_wiring, environment)
-    critic_wiring = wire_application_critic(environment)
-    assert_critic_assembly_valid(critic_wiring, environment)
+    decision_spec = application_decision_wiring_spec_from_environment(environment)
     decision_wiring = wire_application_decision(
         registry=resolved_registry,
         agent_id=resolve_application_decision_agent_id(resolved_registry, environment),
-        spec=DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+        spec=decision_spec,
     )
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
@@ -348,7 +339,6 @@ def build_harness_host_runtime(
         guardrail=guardrail_wiring,
         cost=cost_wiring,
         evaluation=evaluation_wiring,
-        critic=critic_wiring,
         diagnostic_wiring=diagnostic_wiring,
         nexus_loop=nexus_loop,
         application_host=application_host,

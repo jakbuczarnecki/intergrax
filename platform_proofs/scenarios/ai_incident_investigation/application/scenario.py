@@ -280,18 +280,18 @@ def _persisted_trace_events(
 async def execute_resolved_skeleton(
     bundle: ScenarioRuntimeBundle,
     *,
-    require_critic_on_completion: bool = True,
-    semantic_judge_enabled: bool = False,
+    semantic_verification_enabled: bool = False,
     validation_engine: IncidentInvestigationValidationEngine | None = None,
     evaluator_loop_max_iterations: int = EVALUATOR_LOOP_MAX_ITERATIONS,
+    max_decision_revisions: int = 0,
 ) -> ScenarioExecutionResult:
     composition = bundle.runtime_composition
     validation_engine = prepare_incident_execution_runtime(
         composition,
         validation_engine=validation_engine,
-        require_critic_on_completion=require_critic_on_completion,
-        semantic_judge_enabled=semantic_judge_enabled,
+        semantic_verification_enabled=semantic_verification_enabled,
         evaluator_loop_max_iterations=evaluator_loop_max_iterations,
+        max_decision_revisions=max_decision_revisions,
     )
     platform = composition.platform
 
@@ -467,9 +467,10 @@ async def execute_resolved_skeleton(
 
 
 async def execute_with_completion_gate_blocked(bundle: ScenarioRuntimeBundle) -> ScenarioExecutionResult:
-    """Real Nexus path where critic failure cannot recover within platform loop budget."""
+    """Real Nexus path where Decision revision budget is exhausted within platform loop."""
     return await execute_resolved_skeleton(
         bundle,
-        require_critic_on_completion=True,
+        semantic_verification_enabled=True,
         evaluator_loop_max_iterations=1,
+        max_decision_revisions=0,
     )

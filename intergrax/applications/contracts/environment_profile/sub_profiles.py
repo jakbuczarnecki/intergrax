@@ -328,32 +328,37 @@ class EvaluationProfile(BaseModel):
     evaluation_assets_ref: str | None = None
 
 
-class CriticVerificationScopes(BaseModel):
-    """Which execution scopes run CVL checks when semantic/trajectory critics are enabled."""
+class DecisionVerificationProfile(BaseModel):
+    """Host-level Decision Verification posture for a Tier-3 application."""
 
     model_config = ConfigDict(extra="forbid")
 
-    node_partial: bool = False
-    graph_final: bool = True
-    uaep_step: bool = False
+    semantic_enabled: bool = False
+    trajectory_enabled: bool = False
+    verifier_llm_profile_ref: str | None = None
+    verifier_llm_profile: LLMProfile | None = None
+    semantic_rubric_ref: str | None = None
 
 
-class CriticProfile(BaseModel):
-    """Critic & Verification Layer posture for a Tier-3 host (Phase CRIT-V-1.1)."""
+class DecisionFlowProfile(BaseModel):
+    """Host-level Decision flow scopes and revision budget."""
 
     model_config = ConfigDict(extra="forbid")
 
-    semantic_judge_enabled: bool = False
-    trajectory_eval_enabled: bool = False
-    judge_threshold: float = Field(default=0.75, ge=0.0, le=1.0)
-    require_critic_on_completion: bool = False
-    evaluator_loop_max_iterations: int = Field(default=2, ge=1, le=16)
-    critic_llm_profile_ref: str | None = None
-    critic_llm_profile: LLMProfile | None = None
-    default_rubric_ref: str | None = None
-    l2_human_required: bool = False
-    l2_borderline_margin: float = Field(default=0.05, ge=0.0, le=0.5)
-    scopes: CriticVerificationScopes = Field(default_factory=CriticVerificationScopes)
+    verify_graph_final: bool = True
+    verify_uaep_step: bool = False
+    max_revisions: int = Field(default=0, ge=0, le=16)
+
+
+class DecisionProfile(BaseModel):
+    """Canonical Tier-3 Decision application profile (DS-MIG-05)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    verification: DecisionVerificationProfile = Field(
+        default_factory=DecisionVerificationProfile,
+    )
+    flow: DecisionFlowProfile = Field(default_factory=DecisionFlowProfile)
 
 
 AdaptiveMode = Literal["observe", "recommend", "shadow", "canary", "apply"]

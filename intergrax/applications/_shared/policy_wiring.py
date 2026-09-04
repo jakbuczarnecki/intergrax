@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from intergrax.applications._shared.cost_wiring import wire_application_cost
-from intergrax.applications._shared.critic_wiring import wire_application_critic
 from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -152,7 +151,6 @@ def wire_policy_bundle(
     """Merge policy rules, domain fragments, execution mode, cost, and evaluation governance."""
     cost_wiring = wire_application_cost(env)
     evaluation_wiring = wire_application_evaluation(env)
-    critic_wiring = wire_application_critic(env)
     qualification_lookup = (
         package_qualifications.lookup_for_entry_point
         if package_qualifications is not None
@@ -163,7 +161,6 @@ def wire_policy_bundle(
             **env.domain_policy_fragments,
             **cost_wiring.domain_fragments,
             **evaluation_wiring.domain_fragments,
-            **critic_wiring.domain_fragments,
         },
         execution_mode=env.execution_mode,
         policy_rules=env.policy_rules,

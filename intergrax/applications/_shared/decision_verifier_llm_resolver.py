@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Resolve separate LLM adapter for critic judges (Phase CRIT-V-FOLLOWUP)."""
+"""Resolve independent verifier LLM adapter for Decision semantic verification (DS-MIG-05)."""
 
 from __future__ import annotations
 
@@ -10,21 +10,21 @@ from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.nexus.config import RuntimeConfig
 
 
-def resolve_critic_llm_adapter(
+def resolve_decision_verifier_llm_adapter(
     env: ApplicationEnvironmentProfile,
     *,
     producer_adapter: LLMAdapter,
     runtime_config: RuntimeConfig | None = None,
 ) -> LLMAdapter:
     """
-    Resolve judge LLM with producer/critic separation.
+    Resolve semantic verifier LLM with producer/verifier separation.
 
     Precedence:
-    1. ``CriticProfile.critic_llm_profile`` when set
-    2. Producer adapter (when semantic judge disabled or no separate profile)
+    1. ``DecisionVerificationProfile.verifier_llm_profile`` when set
+    2. Producer adapter when no explicit verifier profile is declared
     """
-    critic_profile = env.critic_profile
-    separate: LLMProfile | None = critic_profile.critic_llm_profile
+    verification = env.decision_profile.verification
+    separate: LLMProfile | None = verification.verifier_llm_profile
     if separate is not None:
         adapter = separate.create_adapter()
     else:

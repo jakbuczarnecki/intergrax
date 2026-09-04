@@ -34,8 +34,9 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     ComplianceProfile,
     ContextProfile,
     CostProfile,
-    CriticProfile,
-    CriticVerificationScopes,
+    DecisionProfile,
+    DecisionFlowProfile,
+    DecisionVerificationProfile,
     EvaluationProfile,
     ExecutionBoundaryExportProfile,
     GovernanceProfile,
@@ -241,13 +242,13 @@ class CapabilityBundle(BaseModel):
 
 
 class CognitionBundle(BaseModel):
-    """Reasoning, orchestration, critic, and adaptive loops."""
+    """Reasoning, orchestration, decision, and adaptive loops."""
 
     model_config = ConfigDict(extra="forbid")
 
     reasoning: ReasoningProfile = Field(default_factory=ReasoningProfile)
     orchestration: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
-    critic: CriticProfile = Field(default_factory=CriticProfile)
+    decision: DecisionProfile = Field(default_factory=DecisionProfile)
     adaptive: AdaptiveProfile = Field(default_factory=AdaptiveProfile)
     evaluation: EvaluationProfile = Field(default_factory=EvaluationProfile)
     codecraft: CodeCraftProfile | None = None
@@ -269,10 +270,9 @@ class CognitionBundle(BaseModel):
     @classmethod
     def regulated(cls) -> CognitionBundle:
         return cls(
-            critic=CriticProfile(
-                semantic_judge_enabled=True,
-                require_critic_on_completion=True,
-                scopes=CriticVerificationScopes(graph_final=True),
+            decision=DecisionProfile(
+                verification=DecisionVerificationProfile(semantic_enabled=True),
+                flow=DecisionFlowProfile(verify_graph_final=True),
             ),
             evaluation=EvaluationProfile(require_baseline_for_release=True),
         )

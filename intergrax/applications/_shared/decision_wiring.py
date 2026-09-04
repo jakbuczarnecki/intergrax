@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile.sub_profiles import DecisionProfile
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.decision_revision import decision_revision_policy
 from intergrax.runtime.decision_flow import (
@@ -50,6 +51,24 @@ def application_decision_wiring_spec(
 
 
 DEFAULT_APPLICATION_DECISION_WIRING_SPEC = application_decision_wiring_spec()
+
+
+def application_decision_wiring_spec_from_profile(
+    profile: DecisionProfile,
+) -> ApplicationDecisionWiringSpec:
+    """Translate host ``DecisionProfile`` into immutable Decision wiring spec."""
+    return application_decision_wiring_spec(
+        verify_graph_final=profile.flow.verify_graph_final,
+        verify_uaep_step=profile.flow.verify_uaep_step,
+        max_revisions=profile.flow.max_revisions,
+    )
+
+
+def application_decision_wiring_spec_from_environment(
+    env: ApplicationEnvironmentProfile,
+) -> ApplicationDecisionWiringSpec:
+    """Resolve Decision wiring spec from the host environment profile."""
+    return application_decision_wiring_spec_from_profile(env.decision_profile)
 
 
 @dataclass(frozen=True, slots=True)
