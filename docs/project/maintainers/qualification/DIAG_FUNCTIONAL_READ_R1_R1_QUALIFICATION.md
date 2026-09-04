@@ -44,7 +44,7 @@ Crash mid-rebuild (e.g. 137/5000 v2 rows written) left partial v2 navigable on r
 
 | Failure point | Persisted state | Pre-R1-R1 | Post-R1-R1 |
 | ------------- | --------------- | --------- | ------------ |
-| canonical before v1/v2 | canonical only | silent omission on query | silent omission until append retry (canonical scan not used on query path) |
+| canonical before v1/v2 | canonical only | silent omission on query | **R1-R2:** pending intent + query repair from canonical |
 | v2 before v1 (append crash) | canonical + v2 | N/A (v1 first) | query OK via v2; v1 repaired on append retry |
 | v1 before v2 (legacy partial rebuild) | partial v2, no complete manifest | **silent subset** | reconcile on ensure |
 | rebuild before COMPLETE marker | BUILDING + partial v2 | treated complete if any v2 | reconcile resumes |

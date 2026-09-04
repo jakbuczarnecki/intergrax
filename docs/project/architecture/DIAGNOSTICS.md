@@ -848,11 +848,13 @@ FunctionalEvidencePersistence (contract semantics)
 - Canonical record: `record:<evidence_id>` in partition `intergrax.functional_evidence.v1:<tenant_id>`.
 - Execution index v1 (legacy projection): `exec:<task_id>:<run_id>:<evidence_id>` — evidence reference only; retained on append for repair compatibility.
 - Execution index v2 (query projection, DIAG-FUNCTIONAL-READ-R1): `execidx:<task_id>:<run_id>:<micros>:<evidence_id>` with metadata (`recorded_at`, `kind`, optional `attempt_id`) for bounded prefix scan and filter-without-canonical-get.
-- Projection completeness metadata (DIAG-FUNCTIONAL-READ-R1-R1): `execidxmeta:<task_id>:<run_id>` — derived migration/control state (`building` → `complete`); not functional evidence truth. Query uses v2 only when manifest state is `complete`. Partial v2 without `complete` manifest always triggers bounded v1→v2 reconciliation. Completion marker is written last after full reconcile + orphan verification.
+- Append pending intent (DIAG-FUNCTIONAL-READ-R1-R2): `appendpending:<task_id>:<run_id>:<evidence_id>` — derived crash-recovery metadata; not functional evidence truth. Query fast path requires manifest `complete` **and** zero unresolved append intents (bounded `limit=1` prefix probe).
+- Projection completeness metadata (DIAG-FUNCTIONAL-READ-R1-R1): `execidxmeta:<task_id>:<run_id>` — derived migration/control state (`building` → `complete`); not functional evidence truth. Proves legacy v1→v2 migration completeness only — not per-append projection completeness.
+- Append protocol (R1-R2): `appendpending` → `record` (canonical) → `execidx` (v2) → `exec` (v1) → clear `appendpending`. Crash at any step is detectable and repairable on next query (bounded O(pending) repair, typically O(1) per interrupted append).
 - Append is idempotent on `evidence_id`; conflicting payload raises `FunctionalEvidencePersistenceConflictError`.
-- Partial write recovery: canonical record present + missing index → retry append repairs indexes (v2 written before v1 on append path).
+- Partial write recovery: unresolved `appendpending` + canonical present → query repairs v2/v1 from canonical before read. Orphan `appendpending` without canonical → safe intent cleanup (no canonical fact manufactured).
 - Orphan index without canonical record → `FunctionalEvidencePersistenceIntegrityError` (fail closed).
-- Read path (R1 / R1-R1): ensure projection completeness (O(1) when manifest `complete`) → incremental `execidx:` prefix query → canonical load for page candidates only → integrity validation → keyset cursor with lookahead. Ordering invariant: `(recorded_at, evidence_id)` ASC.
+- Read path (R1 / R1-R1 / R1-R2): repair pending appends → ensure projection completeness (O(1) when manifest `complete` and no pending intents) → incremental `execidx:` prefix query → canonical load for page candidates only → integrity validation → keyset cursor with lookahead. Ordering invariant: `(recorded_at, evidence_id)` ASC.
 - Production wiring: `wire_functional_evidence_runtime(document_store=..., cursor_secret=...)` — no hidden in-memory fallback.
 - `FunctionalDiagnosticAnalyzer` unchanged; reconstruction reads via `FunctionalEvidencePersistence.query_evidence`.
 

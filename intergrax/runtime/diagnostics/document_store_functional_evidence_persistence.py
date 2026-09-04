@@ -30,8 +30,16 @@ from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
     execution_index_v2_row_key_prefix,
     index_v2_matches_filters,
 )
+from intergrax.runtime.diagnostics.functional_evidence_append_intent import (
+    FunctionalEvidenceAppendFaultBoundary,
+    FunctionalEvidenceAppendFaultInjector,
+    FunctionalEvidenceAppendIntentStore,
+)
 from intergrax.runtime.diagnostics.functional_evidence_index_rebuilder import (
     FunctionalEvidenceIndexRebuilder,
+)
+from intergrax.runtime.diagnostics.functional_evidence_projection_repairer import (
+    FunctionalEvidenceProjectionRepairer,
 )
 from intergrax.runtime.diagnostics.functional_evidence_projection_state import (
     FunctionalEvidenceProjectionStateStore,
@@ -84,6 +92,7 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
         cursor_secret: bytes,
         query_page_limit: int = _QUERY_PAGE_LIMIT,
         document_query_cursor_codec: DocumentQueryCursorCodec | None = None,
+        append_fault_injector: FunctionalEvidenceAppendFaultInjector | None = None,
     ) -> None:
         if not isinstance(document_store, ConditionalDocumentStore):
             raise TypeError(
@@ -107,6 +116,12 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             query_page_limit=query_page_limit,
         )
         self._projection_state = FunctionalEvidenceProjectionStateStore(document_store)
+        self._append_intent_store = FunctionalEvidenceAppendIntentStore(document_store)
+        self._projection_repairer = FunctionalEvidenceProjectionRepairer(
+            document_store,
+            query_page_limit=query_page_limit,
+        )
+        self._append_fault_injector = append_fault_injector
         self._append_projection_complete: set[tuple[str, str, str]] = set()
 
     @staticmethod
@@ -128,7 +143,15 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
 
     def append(self, evidence: PlatformFunctionalEvidence) -> PlatformFunctionalEvidence:
         partition_key = _document_partition(evidence.scope.tenant_id)
-        record_row_key = _record_row_key(str(evidence.evidence_id))
+        evidence_id = str(evidence.evidence_id)
+        record_row_key = _record_row_key(evidence_id)
+        self._append_intent_store.create_pending(
+            partition_key=partition_key,
+            task_id=evidence.scope.task_id,
+            run_id=evidence.scope.run_id,
+            evidence_id=evidence_id,
+        )
+        self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.AFTER_INTENT)
         encoded = encode_functional_evidence_record(evidence)
         canonical_document = DocumentRecord(
             partition_key=partition_key,
@@ -137,7 +160,8 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
         )
 
         if self._document_store.put_if_absent(canonical_document):
-            self._ensure_execution_indexes(evidence=evidence, partition_key=partition_key)
+            self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.AFTER_CANONICAL)
+            self._complete_append_projections(evidence=evidence, partition_key=partition_key)
             return evidence
 
         existing_record = self._document_store.get(partition_key, record_row_key)
@@ -159,6 +183,12 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
         attempt_id = _validate_attempt_filter(request.attempt_id)
         page_size = _validate_page_size(request.page_size)
         partition_key = _document_partition(tenant_id)
+        self._projection_repairer.repair_execution_pending_appends(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            partition_key=partition_key,
+        )
         self._index_rebuilder.ensure_v2_projection(
             tenant_id=tenant_id,
             task_id=task_id,
@@ -401,18 +431,37 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             data=encode_execution_index_v2(evidence),
         )
 
-    def _ensure_execution_indexes(
+    def _complete_append_projections(
         self,
         *,
         evidence: PlatformFunctionalEvidence,
         partition_key: str,
     ) -> None:
-        for index_document in (
-            self._execution_index_v2_document(evidence=evidence, partition_key=partition_key),
-            self._execution_index_v1_document(evidence=evidence, partition_key=partition_key),
-        ):
-            if not self._document_store.put_if_absent(index_document):
-                self._verify_index_document(index_document, evidence)
+        v2_document = self._execution_index_v2_document(
+            evidence=evidence,
+            partition_key=partition_key,
+        )
+        if not self._document_store.put_if_absent(v2_document):
+            self._verify_index_document(v2_document, evidence)
+        self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.AFTER_V2)
+        v1_document = self._execution_index_v1_document(
+            evidence=evidence,
+            partition_key=partition_key,
+        )
+        if not self._document_store.put_if_absent(v1_document):
+            self._verify_index_document(v1_document, evidence)
+        self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.AFTER_V1)
+        self._maybe_fault_after(FunctionalEvidenceAppendFaultBoundary.BEFORE_INTENT_CLEAR)
+        cleared = self._append_intent_store.clear_pending(
+            partition_key=partition_key,
+            task_id=evidence.scope.task_id,
+            run_id=evidence.scope.run_id,
+            evidence_id=str(evidence.evidence_id),
+        )
+        if not cleared:
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "functional evidence append intent completion failed",
+            )
         projection_key = (
             partition_key,
             str(evidence.scope.task_id),
@@ -425,6 +474,15 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
                 run_id=evidence.scope.run_id,
             )
             self._append_projection_complete.add(projection_key)
+
+    def _maybe_fault_after(self, boundary: FunctionalEvidenceAppendFaultBoundary) -> None:
+        if (
+            self._append_fault_injector is not None
+            and self._append_fault_injector.should_fault_after(boundary)
+        ):
+            raise FunctionalEvidencePersistenceIntegrityError(
+                "functional evidence append projection interrupted",
+            )
 
     def _document_to_evidence(self, document: DocumentRecord) -> PlatformFunctionalEvidence:
         try:
@@ -446,7 +504,7 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             raise FunctionalEvidencePersistenceConflictError(
                 "conflicting functional evidence for evidence_id",
             )
-        self._ensure_execution_indexes(evidence=stored, partition_key=partition_key)
+        self._complete_append_projections(evidence=stored, partition_key=partition_key)
         return stored
 
     def _verify_index_document(
