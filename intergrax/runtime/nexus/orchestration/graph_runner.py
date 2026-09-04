@@ -9,7 +9,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.contracts.attempt_lifecycle import AttemptTransitionReason
+from intergrax.contracts.attempt_lifecycle import AttemptLifecycleError, AttemptTransitionReason
+from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
+    DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
@@ -82,6 +85,7 @@ class NexusGraphRunner:
     maybe_checkpoint: CheckpointFn
     attempt_lifecycle: AttemptLifecycleService
     max_run_retries: int = 0
+    production_mode: bool = False
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
 
     def _transition_attempt_for_retry(
@@ -91,6 +95,8 @@ class NexusGraphRunner:
         run_id: RunId,
         expected_attempt_id: AttemptId,
     ) -> AttemptId | None:
+        if self.production_mode:
+            self.attempt_lifecycle.require_durable()
         try:
             result = self.attempt_lifecycle.transition_to_next_attempt(
                 tenant_id=task.tenant_id,
@@ -98,6 +104,10 @@ class NexusGraphRunner:
                 expected_attempt_id=expected_attempt_id,
                 reason=AttemptTransitionReason.RETRY,
             )
+        except AttemptLifecycleError as exc:
+            if str(exc) == DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG:
+                raise
+            return None
         except Exception:
             return None
         return rebind_active_attempt_for_retry(

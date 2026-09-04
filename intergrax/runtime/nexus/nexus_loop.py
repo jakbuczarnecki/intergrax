@@ -100,6 +100,9 @@ from intergrax.runtime.execution.attempt_lifecycle import (
     AttemptLifecycleService,
     InMemoryAttemptLifecycleStore,
 )
+from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
+    validate_durable_attempt_lifecycle_for_composition,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -245,9 +248,10 @@ class NexusLoop:
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
         self._planner = planner or TaskPlanner()
         self._validation_engine = validation_engine or NexusValidationEngine()
+        resolved_retry_policy = retry_policy or RetryPolicy()
         self._retry_engine = retry_engine or RetryEngine(
             registry,
-            policy=retry_policy or RetryPolicy(),
+            policy=resolved_retry_policy,
             middleware=self._middleware,
         )
         self._router = AgentRouter(
@@ -292,6 +296,13 @@ class NexusLoop:
         self._attempt_lifecycle = attempt_lifecycle or AttemptLifecycleService(
             InMemoryAttemptLifecycleStore(),
         )
+        validate_durable_attempt_lifecycle_for_composition(
+            production_mode=production_mode,
+            store=self._attempt_lifecycle.store,
+            agent_retry_max=resolved_retry_policy.max_retries,
+            run_retry_max=max_run_retries,
+        )
+        self._production_mode = production_mode
         trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
@@ -324,6 +335,7 @@ class NexusLoop:
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             attempt_lifecycle=self._attempt_lifecycle,
             max_run_retries=max_run_retries,
+            production_mode=production_mode,
             decision_flow_gate=decision_flow_gate,
         )
         self._intake_runner = NexusIntakeRunner(

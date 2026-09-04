@@ -19,6 +19,9 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
+from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
+    DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG,
+)
 from intergrax.runtime.execution.attempt_lifecycle.persistence import (
     decode_attempt_lifecycle_state,
     encode_attempt_lifecycle_state,
@@ -41,6 +44,11 @@ class AttemptLifecycleService:
     @property
     def store(self) -> AttemptLifecycleStore:
         return self._store
+
+    def require_durable(self) -> None:
+        """Raise when retry transition requires durable lifecycle authority."""
+        if not self._store.is_durable:
+            raise AttemptLifecycleError(DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG)
 
     def record_initial_attempt(
         self,
