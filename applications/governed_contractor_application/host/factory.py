@@ -35,8 +35,10 @@ from intergrax.applications._shared.task_control_wiring import (
     build_task_runner_with_enricher,
     wire_harness_task_control,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
     wire_harness_product_observability_dashboard,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence

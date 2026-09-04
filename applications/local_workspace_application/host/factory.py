@@ -35,8 +35,10 @@ from intergrax.applications._shared.plugin_bootstrap import (
 from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    resolve_harness_host_nexus_loop_legacy,
+)
 from intergrax.applications._shared.task_control_wiring import (
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
     build_reliability_task_enricher,
     build_task_runner_with_enricher,
     wire_harness_task_control,
