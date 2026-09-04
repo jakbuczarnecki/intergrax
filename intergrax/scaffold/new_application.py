@@ -67,14 +67,16 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
     short = names.short
     route_prefix = names.route_prefix
     env_prefix_value = names.env_prefix
-    imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
+    agent_imports = "\n".join(
+        f"from {s.module} import {s.class_name}" for s in specs
+    )
     mounts = []
     for s in specs:
         caps = ", ".join(repr(c) for c in s.capabilities)
         cap_arg = f", capabilities=[{caps}]" if s.capabilities else ""
         mounts.append(f"        AgentBinding.mount({s.class_name}{cap_arg}),")
     mounts_block = "\n".join(mounts)
-    return dedent(
+    body = dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
@@ -85,8 +87,7 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
         from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
         from intergrax.integrations.registry.profile import IntegrationProfile
-        {imports}
-
+        # __AGENT_IMPORTS__
 
         def build_{short}_manifest() -> ApplicationManifest:
             environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="{short}.scaffold")
@@ -107,15 +108,18 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
         APPLICATION_MANIFEST = build_{short}_manifest()
         '''
     )
+    return body.replace("# __AGENT_IMPORTS__", agent_imports)
 
 
 def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     builders_const = names.builders_const
-    imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
-    entries = "\n".join(
-        f"    {s.class_name}: _zero_arg_factory({s.class_name})," for s in specs
+    agent_imports = "\n".join(
+        f"from {s.module} import {s.class_name}" for s in specs
     )
-    return dedent(
+    entries = "\n".join(
+        f"        {s.class_name}: _zero_arg_factory({s.class_name})," for s in specs
+    )
+    body = dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
@@ -125,8 +129,7 @@ def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
         from intergrax.applications.contracts.build_context import ApplicationBuildContext
         from intergrax.applications.contracts.factory import AgentFactory
         from intergrax.applications.contracts.manifest import AgentBinding
-        {imports}
-
+        # __AGENT_IMPORTS__
 
         def _zero_arg_factory(agent_cls: type[Agent]) -> AgentFactory:
             def _build(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
@@ -136,9 +139,13 @@ def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
 
 
         {builders_const}: dict[type[Agent], AgentFactory] = {{
-        {entries}
+        # __BUILDER_ENTRIES__
         }}
         '''
+    )
+    return (
+        body.replace("# __AGENT_IMPORTS__", agent_imports)
+        .replace("# __BUILDER_ENTRIES__", entries)
     )
 
 
@@ -188,11 +195,12 @@ def _wiring_py(names: ScaffoldApplicationNames) -> str:
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
+        """Development registry bootstrap for {pkg} (explicit non-production path)."""
+
         from __future__ import annotations
 
         from intergrax.applications._shared.environment_wiring import wire_application_environment
-        from intergrax.applications._shared.wiring import build_application_registry
-        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+        from intergrax.applications._shared.wiring import build_manifest_development_registry
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from {pkg}.host.agent_builders import {builders_const}
         from {pkg}.host.environment_profile import build_{short}_environment_profile
@@ -200,17 +208,22 @@ def _wiring_py(names: ScaffoldApplicationNames) -> str:
         from {pkg}.manifest import build_{short}_manifest
 
 
-        def build_{short}_registry(
+        def build_{short}_development_registry(
             *,
             settings: {pascal}ApplicationSettings | None = None,
         ) -> AgentRegistry:
+            """Assemble a mutable development registry from manifest bindings.
+
+            This is the explicit lab/development bootstrap only. Production hosts must
+            consume ``MaterializedRegistryProjection`` via ``build_harness_host_runtime``.
+            """
             settings = settings or {pascal}ApplicationSettings.from_env()
             manifest = build_{short}_manifest()
             env = manifest.environment or build_{short}_environment_profile(settings)
             if manifest.environment is None:
                 manifest = manifest.model_copy(update={{"environment": env}})
             env_wiring = wire_application_environment(manifest, env, settings=settings)
-            return build_application_registry(
+            return build_manifest_development_registry(
                 manifest,
                 env_wiring.build_context,
                 builders={builders_const},
@@ -1178,10 +1191,12 @@ def _create_product_application(
     )
 
     _write(target / "host" / "__init__.py", "", force=force)
+    product_wiring = target / "host" / "wiring.py"
+    if product_wiring.is_file():
+        product_wiring.unlink()
     _write(target / "host" / "settings.py", product_tpl.settings_py(names), force=force)
     _write(target / "host" / "agent_builders.py", product_tpl.agent_builders_py(names, specs), force=force)
     _write(target / "host" / "agent_factories.py", product_tpl.agent_factories_py(names, specs), force=force)
-    _write(target / "host" / "wiring.py", product_tpl.wiring_py(names), force=force)
     _write(target / "host" / "environment_profile.py", product_tpl.environment_profile_py(names), force=force)
     _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
     _write(target / "extensions" / "__init__.py", "", force=force)

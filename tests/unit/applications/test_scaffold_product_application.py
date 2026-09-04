@@ -55,8 +55,16 @@ def test_scaffold_product_profile_creates_fastapi_core_tree(tmp_path):
     smoke = (
         target / "tests" / "host" / "test_demo_product_host_smoke.py"
     ).read_text(encoding="utf-8")
-    assert "test_demo_product_backend_health" in smoke
-    assert 'create_demo_product_backend_app' in smoke
+    assert "test_demo_product_backend_requires_registry_projection_parameter" in smoke
+    assert "create_demo_product_backend_app" in smoke
+    assert "TestClient" not in smoke
+
+    assert not (target / "host" / "wiring.py").exists()
+    for path in (target / "host").rglob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        assert "build_application_registry(" not in source
+        assert "AgentRegistry(" not in source
+        assert 'model_copy(update={"contract_id": settings.default_agent_id})' not in source
 
     env_example = (target / ".env.example").read_text(encoding="utf-8")
     assert "DEMO_PRODUCT_BACKEND_ENV=dev" in env_example

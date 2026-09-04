@@ -17,7 +17,9 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
     short = names.short
     route_prefix = names.route_prefix
     env_prefix_value = names.env_prefix
-    imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
+    agent_imports = "\n".join(
+        f"from {s.module} import {s.class_name}" for s in specs
+    )
     factory_imports = "\n".join(
         f"from {pkg}.host.agent_factories import build_{short}_{s.slug}_from_context"
         for s in specs
@@ -35,7 +37,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
         )
     mounts_block = "\n".join(mounts)
     first_cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
-    return dedent(
+    body = dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
@@ -45,9 +47,8 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
 
         from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
         from intergrax.integrations.registry.profile import IntegrationProfile
-        {imports}
-        {factory_imports}
-
+        # __AGENT_IMPORTS__
+        # __FACTORY_IMPORTS__
 
         def _resolve_integration_profile() -> IntegrationProfile:
             import json
@@ -76,6 +77,10 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
 
         APPLICATION_MANIFEST = build_{short}_manifest()
         '''
+    )
+    return (
+        body.replace("# __AGENT_IMPORTS__", agent_imports)
+        .replace("# __FACTORY_IMPORTS__", factory_imports)
     )
 
 
@@ -243,7 +248,9 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
 def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
     short = names.short
-    imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
+    agent_imports = "\n".join(
+        f"from {s.module} import {s.class_name}" for s in specs
+    )
     builders_const = names.builders_const
     factories = []
     for s in specs:
@@ -263,78 +270,27 @@ def agent_factories_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
             ).strip()
         )
     factories_block = "\n\n\n".join(factories)
-    return (
-        dedent(
-            f"""
-            # © Artur Czarnecki. All rights reserved.
+    header = dedent(
+        f"""
+        # © Artur Czarnecki. All rights reserved.
 
-            from __future__ import annotations
+        from __future__ import annotations
 
-            from intergrax.applications.contracts.build_context import ApplicationBuildContext
-            from intergrax.applications.contracts.manifest import AgentBinding
-            {imports}
-            from {pkg}.host.agent_builders import {builders_const}
+        from intergrax.applications.contracts.build_context import ApplicationBuildContext
+        from intergrax.applications.contracts.manifest import AgentBinding
+        # __AGENT_IMPORTS__
+        from {pkg}.host.agent_builders import {builders_const}
 
 
-            """
-        ).strip()
-        + "\n\n\n"
-        + factories_block
-        + "\n"
-    )
+        """
+    ).strip().replace("# __AGENT_IMPORTS__", agent_imports)
+    return header + "\n\n\n" + factories_block + "\n"
 
 
 def agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     from intergrax.scaffold.new_application import _agent_builders_py
 
     return _agent_builders_py(names, specs)
-
-
-def wiring_py(names: ScaffoldApplicationNames) -> str:
-    pkg = names.pkg
-    short = names.short
-    pascal = names.pascal
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
-
-        from __future__ import annotations
-
-        from intergrax.applications._shared.environment_wiring import wire_application_environment
-        from intergrax.applications._shared.wiring import build_application_registry
-        from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-        from intergrax.applications.contracts.manifest import ApplicationManifest
-        from intergrax.runtime.registry.agent_registry import AgentRegistry
-        from {pkg}.host.agent_builders import {names.builders_const}
-        from {pkg}.host.environment_profile import build_{short}_environment_profile
-        from {pkg}.host.settings import {pascal}BackendSettings
-        from {pkg}.manifest import APPLICATION_MANIFEST
-
-
-        def build_{short}_manifest(settings: {pascal}BackendSettings) -> ApplicationManifest:
-            binding = APPLICATION_MANIFEST.agents[0].model_copy(
-                update={{"contract_id": settings.default_agent_id}}
-            )
-            agents = [binding, *APPLICATION_MANIFEST.agents[1:]]
-            return APPLICATION_MANIFEST.model_copy(update={{"agents": agents}})
-
-
-        def build_{short}_registry(
-            settings: {pascal}BackendSettings | None = None,
-        ) -> AgentRegistry:
-            settings = settings or {pascal}BackendSettings.from_env()
-            manifest = build_{short}_manifest(settings)
-            env = manifest.environment or build_{short}_environment_profile(settings)
-            if manifest.environment is None:
-                manifest = manifest.model_copy(update={{"environment": env}})
-            env_wiring = wire_application_environment(manifest, env, settings=settings)
-            return build_application_registry(
-                manifest,
-                env_wiring.build_context,
-                builders={names.builders_const},
-            )
-        '''
-    )
 
 
 def environment_profile_py(names: ScaffoldApplicationNames) -> str:
@@ -953,44 +909,29 @@ def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> s
 def smoke_test(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
     pkg = names.pkg
     short = names.short
-    route_prefix = names.route_prefix
-    cap = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
         from __future__ import annotations
 
+        import inspect
+
         import pytest
-        from fastapi.testclient import TestClient
 
         from {pkg}.host.factory import create_{short}_backend_app
 
         pytestmark = [pytest.mark.unit]
 
-        _PREFIX = "{route_prefix}"
+
+        def test_{short}_backend_requires_registry_projection_parameter():
+            signature = inspect.signature(create_{short}_backend_app)
+            param = signature.parameters["registry_projection"]
+            assert param.default is inspect.Parameter.empty
 
 
-        def test_{short}_backend_health():
-            client = TestClient(create_{short}_backend_app())
-            response = client.get("/health")
-            assert response.status_code == 200
-
-
-        def test_{short}_backend_lists_agents():
-            client = TestClient(create_{short}_backend_app())
-            response = client.get(f"{{_PREFIX}}/agents")
-            assert response.status_code == 200
-            assert "agents" in response.json()
-
-
-        def test_{short}_backend_run():
-            client = TestClient(create_{short}_backend_app())
-            response = client.post(
-                f"{{_PREFIX}}/run",
-                json={{"message": "hello", "capability": "{cap}"}},
-            )
-            assert response.status_code == 200
-            assert response.json().get("state") == "completed"
+        def test_{short}_backend_fails_without_registry_projection():
+            with pytest.raises(TypeError):
+                create_{short}_backend_app()  # type: ignore[call-arg]
         '''
     )
