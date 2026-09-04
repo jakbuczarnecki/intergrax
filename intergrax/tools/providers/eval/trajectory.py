@@ -8,7 +8,7 @@ from collections import Counter
 from uuid import uuid4
 
 from intergrax.tools.providers.eval.contracts import EvalTrajectoryInput, EvalTrajectoryOutput
-from intergrax.tools.providers.eval.service import _append_critic_observation
+from intergrax.tools.providers.eval.service import _append_eval_observation
 from intergrax.tools.registry.runtime_bindings import RunTraceReaderBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -99,13 +99,13 @@ def eval_trajectory(ctx: ToolWiringContext, params: EvalTrajectoryInput) -> Eval
         min_score=params.min_score,
     )
 
-    observation_recorded = _append_critic_observation(
+    observation_recorded = _append_eval_observation(
         ctx,
         record=params.record_observation,
         observation_id=params.observation_id or f"traj-{uuid4().hex[:12]}",
         run_id=params.run_id,
         agent_id=params.agent_id,
-        scenario_id=params.scenario_id or f"critic.trajectory:{params.run_id}",
+        scenario_id=params.scenario_id or f"eval.trajectory:{params.run_id}",
         mode=params.mode,
         passed=passed,
         score=score,
