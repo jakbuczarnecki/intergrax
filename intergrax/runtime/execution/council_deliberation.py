@@ -55,7 +55,9 @@ from intergrax.contracts.council_strategy import (
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
 from intergrax.runtime.execution.concurrent_execution_work import (
+    ConcurrentExecutionWorkDisposition,
     execute_concurrent_execution_work,
+    execute_concurrent_execution_work_resilient,
 )
 from intergrax.runtime.execution.execution_work_port import ExecutionWorkPort
 from intergrax.runtime.execution.request import ExecutionRequest
@@ -316,12 +318,16 @@ async def execute_parallel_participant_proposals_resilient(
                 binding=binding,
             ),
         )
+    outcomes = await execute_concurrent_execution_work_resilient(
+        work_port,
+        tuple(requests),
+    )
     proposals: list[CouncilParticipantProposal[T]] = []
-    for binding, request in zip(bindings, requests, strict=True):
-        try:
-            payload = await work_port.execute(request)
-        except Exception:
+    for binding, outcome in zip(bindings, outcomes, strict=True):
+        if outcome.disposition is not ConcurrentExecutionWorkDisposition.SUCCEEDED:
             continue
+        payload = outcome.result
+        assert payload is not None
         proposals.append(
             _build_participant_proposal(
                 deliberation_input=deliberation_input,
