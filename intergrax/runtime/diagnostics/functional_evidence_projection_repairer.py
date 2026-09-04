@@ -28,6 +28,7 @@ from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
 )
 from intergrax.runtime.diagnostics.functional_evidence_persistence import (
     FunctionalEvidencePersistenceIntegrityError,
+    FunctionalEvidenceProjectionConsistencyPendingError,
 )
 from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
     decode_functional_evidence_record,
@@ -41,7 +42,6 @@ _RECORD_ROW_PREFIX = "record:"
 class FunctionalEvidenceAppendRepairOutcome:
     evidence_id: str
     repaired: bool
-    orphan_intent_removed: bool
 
 
 class FunctionalEvidenceProjectionRepairer:
@@ -127,20 +127,10 @@ class FunctionalEvidenceProjectionRepairer:
             f"{_RECORD_ROW_PREFIX}{intent.evidence_id}",
         )
         if canonical is None:
-            cleared = self._append_intent_store.clear_pending(
-                partition_key=partition_key,
-                task_id=task_id,
-                run_id=run_id,
-                evidence_id=intent.evidence_id,
-            )
-            if not cleared:
-                raise FunctionalEvidencePersistenceIntegrityError(
-                    "functional evidence append intent orphan cleanup failed",
-                )
-            return FunctionalEvidenceAppendRepairOutcome(
-                evidence_id=intent.evidence_id,
-                repaired=False,
-                orphan_intent_removed=True,
+            # canonical missing != writer abandoned — never reclaim an intent that
+            # may still belong to an active writer (DIAG-FUNCTIONAL-READ-R1-R3).
+            raise FunctionalEvidenceProjectionConsistencyPendingError(
+                "functional evidence append intent unresolved without canonical record",
             )
         evidence = self._document_to_evidence(canonical)
         self._validate_execution_scope(
@@ -166,7 +156,6 @@ class FunctionalEvidenceProjectionRepairer:
         return FunctionalEvidenceAppendRepairOutcome(
             evidence_id=intent.evidence_id,
             repaired=True,
-            orphan_intent_removed=False,
         )
 
     def _repair_indexes_from_canonical(

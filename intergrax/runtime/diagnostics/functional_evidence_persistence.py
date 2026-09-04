@@ -35,6 +35,15 @@ class FunctionalEvidencePersistenceIntegrityError(FunctionalEvidencePersistenceE
     """Raised when stored evidence is outside the requested query scope."""
 
 
+class FunctionalEvidenceProjectionConsistencyPendingError(FunctionalEvidencePersistenceError):
+    """
+    Raised when query cannot prove execution projection complete.
+
+    Unresolved append intent without canonical record means an append may still
+    be in flight — canonical missing does not prove the writer abandoned.
+    """
+
+
 @dataclass(frozen=True, slots=True)
 class FunctionalEvidenceQueryRequest:
     """Bounded, tenant-scoped functional evidence query."""
@@ -93,6 +102,7 @@ __all__ = [
     "FunctionalEvidencePersistenceConflictError",
     "FunctionalEvidencePersistenceError",
     "FunctionalEvidencePersistenceIntegrityError",
+    "FunctionalEvidenceProjectionConsistencyPendingError",
     "FunctionalEvidenceQueryPage",
     "FunctionalEvidenceQueryRequest",
     "functional_evidence_query_order_key",

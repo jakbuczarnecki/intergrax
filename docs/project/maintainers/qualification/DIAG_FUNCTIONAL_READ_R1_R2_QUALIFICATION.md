@@ -43,7 +43,7 @@
 
 | Crash point | Persisted state | Recovery |
 | ----------- | --------------- | -------- |
-| after intent | pending only | orphan intent cleanup on query; no canonical manufactured |
+| after intent | pending only | fail closed on query (consistency pending); intent never reclaimed by reader; writer retry completes append |
 | after canonical | pending + canonical | repair v2 + v1 from canonical; clear intent |
 | after v2 | pending + canonical + v2 | repair v1; clear intent |
 | after v1 | pending + canonical + v2 + v1 | verify; clear intent |
@@ -125,3 +125,9 @@ DERIVED PROJECTION = CRASH-REPAIRABLE FROM CANONICAL
 QUERY FAST PATH = MANIFEST COMPLETE AND ZERO UNRESOLVED APPEND INTENTS
 SILENT CANONICAL EVIDENCE OMISSION = IMPOSSIBLE WITHIN QUALIFIED FAILURE MODEL
 ```
+
+## Independent audit finding (R1-R3 supersession)
+
+R1-R2 allowed reader to classify `pending + canonical missing` as orphan and delete the intent. Under concurrent writer/reader timing this could delete an **active** writer intent, then allow canonical write after reader — yielding `canonical` without repaired projections and without pending guard → **silent canonical omission** risk.
+
+**R1-R3 closure:** see [`DIAG_FUNCTIONAL_READ_R1_R3_QUALIFICATION.md`](DIAG_FUNCTIONAL_READ_R1_R3_QUALIFICATION.md).

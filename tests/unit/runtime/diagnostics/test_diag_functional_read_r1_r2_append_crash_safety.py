@@ -27,6 +27,7 @@ from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
 from intergrax.runtime.diagnostics.functional_evidence_persistence import (
     FunctionalEvidencePersistenceConflictError,
     FunctionalEvidencePersistenceIntegrityError,
+    FunctionalEvidenceProjectionConsistencyPendingError,
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
 )
@@ -117,7 +118,7 @@ def _seed_healthy_execution(
     return fixtures
 
 
-def test_crash_after_intent_orphan_cleanup_on_query() -> None:
+def test_crash_after_intent_fails_closed_on_query() -> None:
     store = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
     scope = sample_functional_evidence_scope(tenant_id="r1r2-after-intent")
     evidence = sample_functional_evidence(scope=scope, recorded_at=_BASE_TIME)
@@ -126,14 +127,17 @@ def test_crash_after_intent_orphan_cleanup_on_query() -> None:
     with pytest.raises(FunctionalEvidencePersistenceIntegrityError, match="interrupted"):
         persistence.append(evidence)
     reader = _persistence(store)
-    collected = collect_all_evidence(
-        reader,
-        tenant_id=scope.tenant_id,
-        task_id=scope.task_id,
-        run_id=scope.run_id,
-    )
-    assert collected == ()
-    assert not FunctionalEvidenceAppendIntentStore(store).has_pending_for_execution(
+    with pytest.raises(
+        FunctionalEvidenceProjectionConsistencyPendingError,
+        match="unresolved",
+    ):
+        collect_all_evidence(
+            reader,
+            tenant_id=scope.tenant_id,
+            task_id=scope.task_id,
+            run_id=scope.run_id,
+        )
+    assert FunctionalEvidenceAppendIntentStore(store).has_pending_for_execution(
         partition_key=_partition_key(scope.tenant_id),
         task_id=scope.task_id,
         run_id=scope.run_id,
