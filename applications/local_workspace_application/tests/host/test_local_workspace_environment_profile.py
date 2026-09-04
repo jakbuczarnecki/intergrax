@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
+from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.applications._shared.skill_tool_profile import (
     assert_skill_tool_requirements_for_profile,
 )
@@ -64,6 +66,21 @@ def test_lkw_environment_profile_enables_local_product_bundle_only() -> None:
     env = build_local_workspace_environment_profile()
     assert env.skill_profile.enabled_bundles == ["local"]
     assert "harness" not in env.skill_profile.enabled_bundles
+
+
+def test_lkw_integration_profile_has_no_graph_store_selection() -> None:
+    profile = build_local_workspace_integration_profile()
+    assert profile.slug_for_category(IntegrationCategory.GRAPH_STORE) is None
+
+
+def test_lkw_product_rag_profile_stays_vector_only_without_graph_store() -> None:
+    env = build_local_workspace_environment_profile()
+    rag_profile = resolve_rag_profile_for_environment(
+        env,
+        integration_profile=env.integration_profile,
+    )
+    assert rag_profile is not None
+    assert rag_profile.graph_rag_enabled is False
 
 
 def test_lkw_skill_bundle_resolves_exact_product_skill_ids() -> None:
