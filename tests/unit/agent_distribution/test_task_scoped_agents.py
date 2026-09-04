@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass
 from pathlib import Path
+from threading import Event, Thread
 from typing import Protocol, runtime_checkable
 
 import pytest
@@ -47,6 +48,7 @@ from intergrax.agent_distribution.dynamic_acquisition import (
     DynamicAgentAcquisitionInstallIntent,
     DynamicAgentAcquisitionOutcome,
     DynamicAgentAcquisitionRequest,
+    DynamicAgentAcquisitionResult,
     DynamicAgentAcquisitionService,
 )
 from intergrax.agent_distribution.federated_discovery import (
@@ -60,9 +62,13 @@ from intergrax.agent_distribution.task_capability_resolution import (
     build_task_capability_rule,
 )
 from intergrax.agent_distribution.task_scoped_agents import (
+    BindingTaskOrigin,
+    BindingTaskOriginObservation,
     InMemoryTaskScopedAgentLeaseStore,
     TaskScopedAgentAcquisitionOutcome,
     TaskScopedAgentAcquisitionRequest,
+    TaskScopedAgentAcquisitionService,
+    TaskScopedAgentLease,
     TaskScopedAgentLeaseId,
     TaskScopedAgentLeaseNotFound,
     TaskScopedAgentLeaseConflict,
@@ -72,6 +78,9 @@ from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopedAgentReleaseOutcome,
     TaskScopedAgentReleaseRequest,
     TaskScopedAgentService,
+    TaskScopedOwnershipMode,
+    binding_requires_runtime_release,
+    finalize_binding_task_origin_authority,
 )
 from intergrax.contracts.execution_identity import TaskId, mint_task_id
 from intergrax.core.qualification import QualificationStatus
@@ -359,6 +368,14 @@ class _LeaseStoreProtocol(Protocol):
 
     def get_binding_task_origin(self, application_binding_id: str) -> object | None: ...
 
+    def reconcile_binding_task_origin(self, observation: object) -> object: ...
+
+    def list_leases_by_binding(
+        self, application_binding_id: str
+    ) -> tuple[object, ...]: ...
+
+    def finalize_binding_task_origin(self, application_binding_id: str) -> object: ...
+
 
 def test_lease_store_protocol_is_structural() -> None:
     store = InMemoryTaskScopedAgentLeaseStore()
@@ -528,6 +545,282 @@ def test_released_specialist_no_longer_routable() -> None:
             prior_revision_id="rev-active",
         ),
         principal=admin_test_principal(),
+    )
+    assert not _agent_routable(harness.stack)
+
+
+def _origin_observation(
+    *,
+    binding_id: str = _BINDING_ID,
+    binding_created_by_task: bool,
+) -> BindingTaskOriginObservation:
+    return BindingTaskOriginObservation(
+        application_binding_id=binding_id,
+        binding_created_by_task=binding_created_by_task,
+    )
+
+
+def _lease_record(
+    lease_id: str,
+    task_scope_id: TaskId,
+    *,
+    binding_created_by_task: bool,
+    binding_id: str = _BINDING_ID,
+) -> TaskScopedAgentLease:
+    return TaskScopedAgentLease(
+        lease_id=TaskScopedAgentLeaseId(lease_id),
+        task_scope_id=task_scope_id,
+        application_id=_APP,
+        application_environment_id=_ENV,
+        ownership_mode=TaskScopedOwnershipMode.TASK_SCOPED,
+        selected_identity=_identity(),
+        installation_id=_INSTALL_ID,
+        application_binding_id=binding_id,
+        acquisition_runtime_revision_id="rev-1",
+        binding_created_by_task=binding_created_by_task,
+        lease_state=TaskScopedAgentLeaseState.ACTIVE,
+    )
+
+
+def test_reconcile_reused_before_created_resolves_task_created() -> None:
+    store = InMemoryTaskScopedAgentLeaseStore()
+    assert (
+        store.reconcile_binding_task_origin(
+            _origin_observation(binding_created_by_task=False),
+        )
+        is BindingTaskOrigin.UNRESOLVED
+    )
+    assert (
+        store.reconcile_binding_task_origin(
+            _origin_observation(binding_created_by_task=True),
+        )
+        is BindingTaskOrigin.TASK_CREATED
+    )
+    assert store.get_binding_task_origin(_BINDING_ID) is BindingTaskOrigin.TASK_CREATED
+
+
+def test_reconcile_created_before_reused_resolves_task_created() -> None:
+    store = InMemoryTaskScopedAgentLeaseStore()
+    assert (
+        store.reconcile_binding_task_origin(
+            _origin_observation(binding_created_by_task=True),
+        )
+        is BindingTaskOrigin.TASK_CREATED
+    )
+    assert (
+        store.reconcile_binding_task_origin(
+            _origin_observation(binding_created_by_task=False),
+        )
+        is BindingTaskOrigin.TASK_CREATED
+    )
+
+
+def test_lease_insert_order_independence_for_binding_origin() -> None:
+    task_a = mint_task_id()
+    task_b = mint_task_id()
+    lease_a = _lease_record("lease-a", task_a, binding_created_by_task=True)
+    lease_b = _lease_record("lease-b", task_b, binding_created_by_task=False)
+
+    store_ab = InMemoryTaskScopedAgentLeaseStore()
+    store_ab.reconcile_binding_task_origin(
+        _origin_observation(binding_created_by_task=False),
+    )
+    store_ab.reconcile_binding_task_origin(
+        _origin_observation(binding_created_by_task=True),
+    )
+    store_ab.put_new(lease_a)
+    store_ab.put_new(lease_b)
+
+    store_ba = InMemoryTaskScopedAgentLeaseStore()
+    store_ba.reconcile_binding_task_origin(
+        _origin_observation(binding_created_by_task=False),
+    )
+    store_ba.reconcile_binding_task_origin(
+        _origin_observation(binding_created_by_task=True),
+    )
+    store_ba.put_new(lease_b)
+    store_ba.put_new(lease_a)
+
+    for store in (store_ab, store_ba):
+        assert (
+            finalize_binding_task_origin_authority(
+                lease_store=store,
+                application_binding_id=_BINDING_ID,
+            )
+            is BindingTaskOrigin.TASK_CREATED
+        )
+        assert not binding_requires_runtime_release(
+            lease_store=store,
+            application_binding_id=_BINDING_ID,
+            excluding_lease_id=TaskScopedAgentLeaseId("lease-a"),
+        )
+        assert (
+            binding_requires_runtime_release(
+                lease_store=store,
+                application_binding_id=_BINDING_ID,
+                excluding_lease_id=TaskScopedAgentLeaseId("lease-b"),
+            )
+            is False
+        )
+        store.compare_and_set(
+            TaskScopedAgentLeaseId("lease-b"),
+            expected_state=TaskScopedAgentLeaseState.ACTIVE,
+            new_lease=lease_b.model_copy(
+                update={"lease_state": TaskScopedAgentLeaseState.RELEASED},
+            ),
+        )
+        assert binding_requires_runtime_release(
+            lease_store=store,
+            application_binding_id=_BINDING_ID,
+            excluding_lease_id=TaskScopedAgentLeaseId("lease-a"),
+        )
+
+
+def test_true_pre_existing_binding_origin_finalizes_pre_existing() -> None:
+    store = InMemoryTaskScopedAgentLeaseStore()
+    task_scope = mint_task_id()
+    store.reconcile_binding_task_origin(
+        _origin_observation(binding_created_by_task=False),
+    )
+    store.put_new(
+        _lease_record("lease-persistent", task_scope, binding_created_by_task=False),
+    )
+    assert (
+        finalize_binding_task_origin_authority(
+            lease_store=store,
+            application_binding_id=_BINDING_ID,
+        )
+        is BindingTaskOrigin.PRE_EXISTING
+    )
+    assert not binding_requires_runtime_release(
+        lease_store=store,
+        application_binding_id=_BINDING_ID,
+        excluding_lease_id=TaskScopedAgentLeaseId("lease-persistent"),
+    )
+
+
+def test_contradictory_pre_existing_and_created_observations_fail_closed() -> None:
+    store = InMemoryTaskScopedAgentLeaseStore()
+    store._binding_origins[_BINDING_ID] = BindingTaskOrigin.PRE_EXISTING
+    with pytest.raises(TaskScopedAgentOwnershipError, match="contradictory"):
+        store.reconcile_binding_task_origin(
+            _origin_observation(binding_created_by_task=True),
+        )
+
+
+def test_unresolved_origin_without_lease_evidence_fails_closed() -> None:
+    store = InMemoryTaskScopedAgentLeaseStore()
+    store._binding_origins[_BINDING_ID] = BindingTaskOrigin.UNRESOLVED
+    with pytest.raises(TaskScopedAgentOwnershipError, match="unresolved"):
+        store.finalize_binding_task_origin(_BINDING_ID)
+
+
+class _InterleavingAcquisition:
+    """Deterministic first-call pause between Phase 6 and origin reconciliation."""
+
+    def __init__(self, inner: DynamicAgentAcquisitionService) -> None:
+        self._inner = inner
+        self._call_count = 0
+        self._first_paused = Event()
+        self._first_resume = Event()
+
+    def acquire(
+        self,
+        request: DynamicAgentAcquisitionRequest,
+        *,
+        principal: object,
+    ) -> DynamicAgentAcquisitionResult:
+        self._call_count += 1
+        call_index = self._call_count
+        result = self._inner.acquire(request, principal=principal)
+        if call_index == 1:
+            self._first_paused.set()
+            assert self._first_resume.wait(timeout=5)
+            return result.model_copy(update={"binding_reused": False})
+        return result.model_copy(update={"binding_reused": True})
+
+
+def test_concurrent_acquisition_reused_before_created_disables_on_final_release() -> (
+    None
+):
+    harness = build_task_scoped_harness()
+    task_a = mint_task_id()
+    task_b = mint_task_id()
+    interleaving = _InterleavingAcquisition(
+        DynamicAgentAcquisitionService(
+            catalog_registry=CatalogSourceProviderRegistry(
+                {_SOURCE_ID: _ExactCatalog()},
+            ),
+            lifecycle=harness.stack.service,
+        ),
+    )
+    acquisition_service = TaskScopedAgentAcquisitionService(
+        acquisition=interleaving,
+        lease_store=harness.lease_store,
+    )
+
+    errors: list[BaseException] = []
+
+    def acquire_a() -> None:
+        try:
+            acquisition_service.acquire(
+                _task_acquire_request("lease-a", task_a, "rev-race-1"),
+                principal=admin_test_principal(),
+            )
+        except BaseException as exc:  # pragma: no cover - surfaced below
+            errors.append(exc)
+
+    thread_a = Thread(target=acquire_a)
+    thread_a.start()
+    assert interleaving._first_paused.wait(timeout=5)
+
+    acquisition_service.acquire(
+        _task_acquire_request(
+            "lease-b",
+            task_b,
+            "rev-race-1",
+            install_mutation_id="mut-install-b",
+            bind_mutation_id="mut-bind-b",
+        ),
+        principal=admin_test_principal(),
+    )
+    interleaving._first_resume.set()
+    thread_a.join(timeout=5)
+    assert not errors
+    assert thread_a.is_alive() is False
+
+    assert (
+        harness.lease_store.get_binding_task_origin(_BINDING_ID)
+        is BindingTaskOrigin.TASK_CREATED
+    )
+
+    first = harness.service.release(
+        _release_request(
+            "lease-a",
+            task_a,
+            "rev-race-release-a",
+            prior_revision_id="rev-race-1",
+        ),
+        principal=admin_test_principal(),
+    )
+    assert (
+        first.outcome is TaskScopedAgentReleaseOutcome.LEASE_RELEASED_RETAINED_BINDING
+    )
+    assert _agent_routable(harness.stack)
+
+    second = harness.service.release(
+        _release_request(
+            "lease-b",
+            task_b,
+            "rev-race-release-b",
+            disable_revision=_binding_revision(harness.stack),
+            prior_revision_id="rev-race-1",
+            pointer_revision=1,
+        ),
+        principal=admin_test_principal(),
+    )
+    assert (
+        second.outcome is TaskScopedAgentReleaseOutcome.LEASE_RELEASED_RUNTIME_UPDATED
     )
     assert not _agent_routable(harness.stack)
 

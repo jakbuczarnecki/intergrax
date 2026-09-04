@@ -22,6 +22,7 @@ from intergrax.agent_distribution.admin_models import (
     InstallationMutationResult,
     RuntimeRevisionView,
     ServingStateView,
+    SetAgentEnablementRequest,
 )
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
@@ -293,7 +294,7 @@ class AgentPlatformLifecyclePort(Protocol):
         application_id: str,
         application_environment_id: str,
         application_binding_id: str,
-        request: object,
+        request: SetAgentEnablementRequest,
         principal: RequestIdentity,
     ) -> BindingMutationResult: ...
 

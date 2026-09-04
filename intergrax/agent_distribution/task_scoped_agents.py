@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.agent_distribution.admin_models import (
     ActivateRuntimeRevisionRequest,
+    BindingMutationResult,
     BuildApplicationRevisionRequest,
     SetAgentEnablementRequest,
 )
@@ -38,6 +39,7 @@ SCHEMA_TASK_SCOPED_ACQUISITION_RESULT_V1: Final = (
 )
 SCHEMA_TASK_SCOPED_RELEASE_REQUEST_V1: Final = "task_scoped_agent_release_request.v1"
 SCHEMA_TASK_SCOPED_RELEASE_RESULT_V1: Final = "task_scoped_agent_release_result.v1"
+SCHEMA_BINDING_TASK_ORIGIN_OBSERVATION_V1: Final = "binding_task_origin_observation.v1"
 
 TaskScopeId = TaskId
 TaskScopedAgentLeaseId = NewType("TaskScopedAgentLeaseId", str)
@@ -100,10 +102,26 @@ class TaskScopedAgentLeaseState(StrEnum):
 
 
 class BindingTaskOrigin(StrEnum):
-    """Whether the binding pre-existed the first task-scoped lease."""
+    """Authoritative binding origin reconciled across concurrent task acquisitions."""
 
+    UNRESOLVED = "unresolved"
     PRE_EXISTING = "pre_existing"
     TASK_CREATED = "task_created"
+
+
+class BindingTaskOriginObservation(BaseModel):
+    """Atomic binding-origin evidence from one Phase 6 acquisition observation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = SCHEMA_BINDING_TASK_ORIGIN_OBSERVATION_V1
+    application_binding_id: str = _NON_EMPTY
+    binding_created_by_task: bool
+
+    @field_validator("application_binding_id")
+    @classmethod
+    def _strip_binding_id(cls, value: str) -> str:
+        return _strip_required(value)
 
 
 class TaskScopedAgentAcquisitionOutcome(StrEnum):
@@ -284,6 +302,21 @@ class TaskScopedAgentLeaseStore(Protocol):
         application_binding_id: str,
     ) -> BindingTaskOrigin | None: ...
 
+    def reconcile_binding_task_origin(
+        self,
+        observation: BindingTaskOriginObservation,
+    ) -> BindingTaskOrigin: ...
+
+    def list_leases_by_binding(
+        self,
+        application_binding_id: str,
+    ) -> tuple[TaskScopedAgentLease, ...]: ...
+
+    def finalize_binding_task_origin(
+        self,
+        application_binding_id: str,
+    ) -> BindingTaskOrigin: ...
+
 
 class DynamicAgentAcquisitionPort(Protocol):
     """Phase 6 acquisition facade — composition boundary only."""
@@ -307,7 +340,7 @@ class TaskScopedAgentLifecyclePort(AgentPlatformLifecyclePort, Protocol):
         application_binding_id: str,
         request: SetAgentEnablementRequest,
         principal: RequestIdentity,
-    ) -> object: ...
+    ) -> BindingMutationResult: ...
 
 
 def _lease_matches_idempotent_reacquire(
@@ -348,6 +381,15 @@ def _assert_lease_scope(
         )
 
 
+def finalize_binding_task_origin_authority(
+    *,
+    lease_store: TaskScopedAgentLeaseStore,
+    application_binding_id: str,
+) -> BindingTaskOrigin:
+    """Resolve binding origin authority for release; fail closed when unresolved."""
+    return lease_store.finalize_binding_task_origin(application_binding_id)
+
+
 def binding_requires_runtime_release(
     *,
     lease_store: TaskScopedAgentLeaseStore,
@@ -362,10 +404,17 @@ def binding_requires_runtime_release(
     )
     if remaining:
         return False
-    origin = lease_store.get_binding_task_origin(application_binding_id)
+    origin = finalize_binding_task_origin_authority(
+        lease_store=lease_store,
+        application_binding_id=application_binding_id,
+    )
     if origin is BindingTaskOrigin.PRE_EXISTING:
         return False
-    return True
+    if origin is BindingTaskOrigin.TASK_CREATED:
+        return True
+    raise TaskScopedAgentOwnershipError(
+        "binding task origin authority is unresolved for release",
+    )
 
 
 class InMemoryTaskScopedAgentLeaseStore:
@@ -390,12 +439,6 @@ class InMemoryTaskScopedAgentLeaseStore:
                     "lease_id already exists with conflicting authority",
                 )
             self._leases[lease.lease_id] = lease
-            if lease.application_binding_id not in self._binding_origins:
-                self._binding_origins[lease.application_binding_id] = (
-                    BindingTaskOrigin.TASK_CREATED
-                    if lease.binding_created_by_task
-                    else BindingTaskOrigin.PRE_EXISTING
-                )
 
     def compare_and_set(
         self,
@@ -454,6 +497,77 @@ class InMemoryTaskScopedAgentLeaseStore:
         with self._lock:
             return self._binding_origins.get(application_binding_id)
 
+    def reconcile_binding_task_origin(
+        self,
+        observation: BindingTaskOriginObservation,
+    ) -> BindingTaskOrigin:
+        with self._lock:
+            binding_id = observation.application_binding_id
+            current = self._binding_origins.get(binding_id)
+            if observation.binding_created_by_task:
+                if current is BindingTaskOrigin.PRE_EXISTING:
+                    raise TaskScopedAgentOwnershipError(
+                        "contradictory binding origin: task-created evidence "
+                        "conflicts with pre-existing authority",
+                    )
+                self._binding_origins[binding_id] = BindingTaskOrigin.TASK_CREATED
+                return BindingTaskOrigin.TASK_CREATED
+            if current is None:
+                self._binding_origins[binding_id] = BindingTaskOrigin.UNRESOLVED
+                return BindingTaskOrigin.UNRESOLVED
+            return current
+
+    def list_leases_by_binding(
+        self,
+        application_binding_id: str,
+    ) -> tuple[TaskScopedAgentLease, ...]:
+        with self._lock:
+            return tuple(
+                sorted(
+                    (
+                        lease
+                        for lease in self._leases.values()
+                        if lease.application_binding_id == application_binding_id
+                    ),
+                    key=lambda item: str(item.lease_id),
+                ),
+            )
+
+    def finalize_binding_task_origin(
+        self,
+        application_binding_id: str,
+    ) -> BindingTaskOrigin:
+        with self._lock:
+            current = self._binding_origins.get(application_binding_id)
+            if current is BindingTaskOrigin.TASK_CREATED:
+                return BindingTaskOrigin.TASK_CREATED
+            if current is BindingTaskOrigin.PRE_EXISTING:
+                return BindingTaskOrigin.PRE_EXISTING
+            if current is BindingTaskOrigin.UNRESOLVED:
+                leases = tuple(
+                    lease
+                    for lease in self._leases.values()
+                    if lease.application_binding_id == application_binding_id
+                )
+                if any(lease.binding_created_by_task for lease in leases):
+                    self._binding_origins[application_binding_id] = (
+                        BindingTaskOrigin.TASK_CREATED
+                    )
+                    return BindingTaskOrigin.TASK_CREATED
+                if leases and all(
+                    not lease.binding_created_by_task for lease in leases
+                ):
+                    self._binding_origins[application_binding_id] = (
+                        BindingTaskOrigin.PRE_EXISTING
+                    )
+                    return BindingTaskOrigin.PRE_EXISTING
+                raise TaskScopedAgentOwnershipError(
+                    "binding task origin remains unresolved for release",
+                )
+            raise TaskScopedAgentOwnershipError(
+                "binding task origin authority is missing",
+            )
+
 
 class TaskScopedAgentAcquisitionService:
     """Acquire task-scoped leases via Phase 6 without duplicating lifecycle."""
@@ -494,6 +608,13 @@ class TaskScopedAgentAcquisitionService:
                 "canonical acquisition did not reach active serving state",
             )
 
+        binding_created_by_task = not acquisition_result.binding_reused
+        self._lease_store.reconcile_binding_task_origin(
+            BindingTaskOriginObservation(
+                application_binding_id=acquisition_result.application_binding_id,
+                binding_created_by_task=binding_created_by_task,
+            ),
+        )
         lease = TaskScopedAgentLease(
             lease_id=request.lease_id,
             task_scope_id=request.task_scope_id,
@@ -504,7 +625,7 @@ class TaskScopedAgentAcquisitionService:
             installation_id=acquisition_result.installation_id,
             application_binding_id=acquisition_result.application_binding_id,
             acquisition_runtime_revision_id=acquisition_result.runtime_revision_id,
-            binding_created_by_task=not acquisition_result.binding_reused,
+            binding_created_by_task=binding_created_by_task,
             lease_state=TaskScopedAgentLeaseState.ACTIVE,
         )
         self._lease_store.put_new(lease)
@@ -532,6 +653,12 @@ class TaskScopedAgentAcquisitionService:
         acquisition_result = self._acquisition.acquire(
             request.acquisition_request,
             principal=principal,
+        )
+        self._lease_store.reconcile_binding_task_origin(
+            BindingTaskOriginObservation(
+                application_binding_id=acquisition_result.application_binding_id,
+                binding_created_by_task=not acquisition_result.binding_reused,
+            ),
         )
         return TaskScopedAgentAcquisitionResult(
             outcome=TaskScopedAgentAcquisitionOutcome.LEASE_REUSED,
@@ -743,7 +870,9 @@ class TaskScopedAgentService:
 
 __all__ = [
     "BindingTaskOrigin",
+    "BindingTaskOriginObservation",
     "DynamicAgentAcquisitionPort",
+    "finalize_binding_task_origin_authority",
     "InMemoryTaskScopedAgentLeaseStore",
     "TaskScopeId",
     "TaskScopedAgentAcquisitionOutcome",
