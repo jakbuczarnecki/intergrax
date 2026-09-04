@@ -15,14 +15,15 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeBuildError,
     build_scenario_runtime_from_environment,
     execute_scenario_task,
-    rewire_scenario_critic_wiring,
+    rewire_scenario_decision_wiring,
     validate_scenario_tenant_id,
 )
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ApplicationSecurityProfile,
-    CriticProfile,
-    CriticVerificationScopes,
+    DecisionFlowProfile,
+    DecisionProfile,
+    DecisionVerificationProfile,
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
@@ -236,10 +237,10 @@ def test_build_scenario_runtime_accepts_custom_validation_engine(tmp_path: Path)
     assert _RecordingValidationEngine.calls == 0
 
 
-def test_rewire_scenario_critic_wiring_reapplies_validation_engine(tmp_path: Path) -> None:
+def test_rewire_scenario_decision_wiring_reapplies_validation_engine(tmp_path: Path) -> None:
     composition = _build_composition(tmp_path)
     replacement = _RecordingValidationEngine()
-    rewire_scenario_critic_wiring(composition, validation_engine=replacement)
+    rewire_scenario_decision_wiring(composition, validation_engine=replacement)
     assert composition.nexus_loop.peek_decision_flow_gate() is not None
 
 
@@ -247,16 +248,16 @@ def test_build_scenario_runtime_wires_decision_from_explicit_spec(
     tmp_path: Path,
     _stub_scenario_llm: None,
 ) -> None:
-    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.critic.profile")
-    environment.critic_profile = CriticProfile(
-        scopes=CriticVerificationScopes(node_partial=True, graph_final=True),
-        require_critic_on_completion=True,
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.decision.profile")
+    environment.decision_profile = DecisionProfile(
+        verification=DecisionVerificationProfile(semantic_enabled=True),
+        flow=DecisionFlowProfile(verify_graph_final=True, verify_uaep_step=True),
     )
     composition = build_scenario_runtime_from_environment(
         environment=environment,
         registry=_echo_registry(),
         tenant_id=_TENANT,
-        manifest=_scenario_manifest("scenario_critic_profile"),
+        manifest=_scenario_manifest("scenario_decision_profile"),
         runtime_events_db_path=tmp_path / "events.db",
         trace_db_path=tmp_path / "trace.db",
         use_in_memory_trace=True,

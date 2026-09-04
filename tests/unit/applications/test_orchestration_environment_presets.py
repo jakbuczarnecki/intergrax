@@ -32,8 +32,8 @@ def test_strict_multi_agent_defaults_preset() -> None:
     env = ApplicationEnvironmentProfile.strict_multi_agent_defaults()
     assert env.execution_mode is ExecutionMode.STRICT
     assert env.orchestration_profile.merge_strategy == "structured_json"
-    assert env.critic_profile.require_critic_on_completion is True
-    assert env.critic_profile.semantic_judge_enabled is True
+    assert env.decision_profile.verification.semantic_enabled is True
+    assert env.decision_profile.flow.verify_graph_final is True
 
 
 def test_reference_host_platform_defaults_engine_and_rules_classifier() -> None:
@@ -49,8 +49,8 @@ def test_reference_host_platform_defaults_multi_agent_critic() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(
         profile_id="ref.multi",
     ).with_reference_host_platform_defaults(multi_agent_critic=True)
-    assert env.critic_profile.require_critic_on_completion is True
-    assert env.critic_profile.semantic_judge_enabled is False
+    assert env.decision_profile.verification.semantic_enabled is True
+    assert env.decision_profile.flow.verify_graph_final is True
     assert env.orchestration_profile.merge_strategy == "structured_json"
     assert env.orchestration_profile.long_running_enabled is True
 

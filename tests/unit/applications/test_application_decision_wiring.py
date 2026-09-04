@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Application Decision wiring unit tests (DS-MIG-02 final hardening)."""
+"""Application Decision wiring unit tests (DS-MIG-02 / DS-MIG-05)."""
 
 from __future__ import annotations
 
@@ -14,14 +14,15 @@ from intergrax.applications._shared.decision_wiring import (
     DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
     ApplicationDecisionWiringSpec,
     application_decision_wiring_spec,
+    application_decision_wiring_spec_from_environment,
     resolve_application_decision_agent_id,
     wire_application_decision,
     wire_application_decision_flow,
 )
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
-    CriticProfile,
-    CriticVerificationScopes,
+    DecisionFlowProfile,
+    DecisionProfile,
 )
 from intergrax.runtime.decision_flow import CanonicalDecisionFlowGate, DecisionFlowScope
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -37,6 +38,7 @@ _FORBIDDEN_DECISION_WIRING_TOKENS = frozenset(
         "resolve_critic_wiring_options",
         "evaluator_loop_max_iterations",
         "critic_runtime_bridge",
+        "critic_wiring",
     },
 )
 
@@ -94,55 +96,30 @@ def test_application_decision_wiring_spec_requires_supported_scope() -> None:
         )
 
 
-def test_critic_profile_does_not_change_decision_wiring() -> None:
+def test_environment_decision_profile_drives_wiring_spec() -> None:
     registry = _echo_registry()
-    base_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="decision.inert.base")
-    variant_env = base_env.model_copy(
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="decision.profile").model_copy(
         update={
-            "critic_profile": CriticProfile(
-                scopes=CriticVerificationScopes(
-                    node_partial=True,
-                    graph_final=False,
-                    uaep_step=True,
+            "decision_profile": DecisionProfile(
+                flow=DecisionFlowProfile(
+                    verify_graph_final=False,
+                    verify_uaep_step=True,
+                    max_revisions=3,
                 ),
-                evaluator_loop_max_iterations=16,
-                l2_human_required=True,
             ),
         },
     )
-    spec = DEFAULT_APPLICATION_DECISION_WIRING_SPEC
-    base_wiring = wire_application_decision(
-        registry=registry,
-        agent_id=resolve_application_decision_agent_id(registry, base_env),
-        spec=spec,
-    )
-    variant_wiring = wire_application_decision(
-        registry=registry,
-        agent_id=resolve_application_decision_agent_id(registry, variant_env),
-        spec=spec,
-    )
-    assert base_wiring.verify_graph_final == variant_wiring.verify_graph_final
-    assert base_wiring.verify_uaep_step == variant_wiring.verify_uaep_step
-    base_gate = base_wiring.gate
-    variant_gate = variant_wiring.gate
-    assert isinstance(base_gate, CanonicalDecisionFlowGate)
-    assert isinstance(variant_gate, CanonicalDecisionFlowGate)
-    assert base_gate.capabilities.revision_policy.max_revisions == (
-        variant_gate.capabilities.revision_policy.max_revisions
-    )
-    assert base_gate.capabilities.scopes == variant_gate.capabilities.scopes
-
-
-def test_decision_wiring_without_critic_profile_fields() -> None:
-    registry = _echo_registry()
+    spec = application_decision_wiring_spec_from_environment(env)
     wiring = wire_application_decision(
         registry=registry,
-        agent_id="echo",
-        spec=DEFAULT_APPLICATION_DECISION_WIRING_SPEC,
+        agent_id=resolve_application_decision_agent_id(registry, env),
+        spec=spec,
     )
     gate = wiring.gate
     assert isinstance(gate, CanonicalDecisionFlowGate)
-    assert gate.supports_scope(DecisionFlowScope.GRAPH_FINAL)
+    assert gate.supports_scope(DecisionFlowScope.UAEP_STEP)
+    assert not gate.supports_scope(DecisionFlowScope.GRAPH_FINAL)
+    assert gate.capabilities.revision_policy.max_revisions == 3
 
 
 def test_decision_wiring_source_has_no_critic_authority_tokens() -> None:
@@ -155,6 +132,5 @@ def test_decision_wiring_source_has_no_critic_authority_tokens() -> None:
                 imported_modules.add(alias.name)
         elif isinstance(node, ast.ImportFrom) and node.module is not None:
             imported_modules.add(node.module)
-    assert "intergrax.applications._shared.critic_runtime_bridge" not in imported_modules
     for token in _FORBIDDEN_DECISION_WIRING_TOKENS:
         assert token not in source

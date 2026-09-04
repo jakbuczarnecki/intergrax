@@ -18,7 +18,6 @@ _FORBIDDEN_MODULES = frozenset(
     {
         "intergrax.runtime.critic.critic_orchestrator",
         "intergrax.runtime.critic.critic_wiring",
-        "intergrax.applications._shared.critic_runtime_bridge",
     },
 )
 
@@ -32,8 +31,6 @@ _DECISION_AUTHORITY_PATH_PREFIXES = (
 )
 
 _LEGACY_CONFIG_PATH_PREFIXES = (
-    "intergrax/applications/_shared/critic_runtime_bridge.py",
-    "intergrax/applications/_shared/critic_wiring.py",
     "intergrax/applications/_shared/runtime_config_bridge.py",
     "intergrax/applications/contracts/environment_profile/",
 )
@@ -43,13 +40,14 @@ _CRITIC_AUTHORITY_PATTERNS = (
     "critic_profile.scopes",
     "resolve_critic_wiring_options",
     "evaluator_loop_max_iterations - 1",
+    "wire_application_critic",
+    "critic_runtime_bridge",
+    "critic_wiring",
 )
 
 _ALLOWED_PATHS = (
     "intergrax/runtime/migration/",
-    "intergrax/applications/_shared/critic_runtime_bridge.py",
-    "intergrax/applications/_shared/critic_wiring.py",
-    "intergrax/applications/_shared/runtime_config_bridge.py",
+    "intergrax/applications/contracts/environment_profile/decision_profile_legacy.py",
 )
 
 
