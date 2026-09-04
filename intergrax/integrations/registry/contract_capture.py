@@ -99,10 +99,7 @@ def _capture_builtin_category_spec(*, slug: str, category: str) -> IntegrationCo
         observed_provider_id=sample.provider_id,
     )
     capabilities = _capability_values(sample.capabilities)
-    if category == "conversation_channel":
-        runtime_bound = slug == "slack"
-    else:
-        runtime_bound = True
+    runtime_bound = True
     health_supported = (
         PlatformIntegrationCapability.HEALTH_CHECK.value in capabilities and runtime_bound
     )
@@ -119,10 +116,6 @@ def _capture_builtin_category_spec(*, slug: str, category: str) -> IntegrationCo
         "integration_class_name": integration_class.__name__,
         "runtime_binding_supported": runtime_bound,
     }
-    if category == "conversation_channel":
-        metadata["conversation_features"] = ("text", "single_choice")
-        metadata["feature_declaration"] = "contract_intent"
-        metadata["runtime_implemented"] = runtime_bound
 
     return IntegrationContractSpec(
         category=category,

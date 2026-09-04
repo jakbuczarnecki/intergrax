@@ -44,6 +44,7 @@ from intergrax.integrations.registry import contract_capture
 from intergrax.integrations.registry.catalog import clear_catalog, get_entry
 from intergrax.integrations.registry.contract_spec import (
     B1_TYPED_CONTRACT_CATEGORIES,
+    B2_TYPED_CONTRACT_CATEGORIES,
     EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS,
     IntegrationContractSpec,
     declare_integration_contract,
@@ -51,6 +52,7 @@ from intergrax.integrations.registry.contract_spec import (
 from intergrax.integrations.registry.plugin_register import register_from_manifest, register_integration_plugin
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
+from intergrax.runtime.integrations.categories.messaging import MessageBusIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.contracts import PlatformIntegrationCapability, PlatformIntegrationSecurityPosture
 from intergrax.runtime.integrations.registry_v2 import build_integration_registration
@@ -73,13 +75,30 @@ def b1_provider_category_keys() -> tuple[tuple[str, str], ...]:
     return tuple(keys)
 
 
-def b1_register_function(slug: str, category: str) -> Callable[..., Any]:
+def b2_provider_category_keys() -> tuple[tuple[str, str], ...]:
+    keys: list[tuple[str, str]] = []
+    for slug in sorted(SLUG_CATEGORY):
+        for category in categories_for_provider(slug):
+            if category in B2_TYPED_CONTRACT_CATEGORIES:
+                keys.append((slug, category))
+    return tuple(keys)
+
+
+def typed_register_function(slug: str, category: str) -> Callable[..., Any]:
     register_module = import_module(f"{provider_import_path(slug, category)}.register")
     for name, obj in inspect.getmembers(register_module, inspect.isfunction):
         if name.startswith("register_") and name.endswith("_integration"):
             return obj
     msg = f"Missing register_*_integration in {slug}/{category}"
     raise AssertionError(msg)
+
+
+def b1_register_function(slug: str, category: str) -> Callable[..., Any]:
+    return typed_register_function(slug, category)
+
+
+def b2_register_function(slug: str, category: str) -> Callable[..., Any]:
+    return typed_register_function(slug, category)
 
 
 @pytest.fixture(autouse=True)
@@ -134,6 +153,19 @@ def test_b1_inventory_gate_all_typed_keys_explicit() -> None:
         assert "contract_specs=CONTRACT_SPECS" in register_source
         explicit_keys.append((slug, category))
     assert len(explicit_keys) == len(b1_keys)
+
+
+def test_b2_inventory_gate_all_typed_keys_explicit() -> None:
+    b2_keys = b2_provider_category_keys()
+    explicit_keys: list[tuple[str, str]] = []
+    for slug, category in b2_keys:
+        contract_path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        assert contract_path.is_file(), f"missing contract_spec for {(slug, category)}"
+        register_path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
+        register_source = register_path.read_text(encoding="utf-8")
+        assert "contract_specs=CONTRACT_SPECS" in register_source
+        explicit_keys.append((slug, category))
+    assert len(explicit_keys) == len(b2_keys)
 
 
 def test_explicit_spec_populates_catalog_entry() -> None:
@@ -252,10 +284,13 @@ def test_langfuse_observability_uses_explicit_factory_not_name_guess() -> None:
     assert LANGFUSE_CONTRACT_SPEC.integration_kind == "observability_vendor"
 
 
-def test_non_b1_explicit_keys_remain_in_migration_set() -> None:
-    assert ("slack", "notification_channel") in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
-    assert ("slack", "conversation_channel") in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+def test_staged_non_b1b2_explicit_keys_remain_in_migration_set() -> None:
+    assert ("openai", "managed_retrieval") in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+    assert ("langfuse", "observability_backend") in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+    assert ("slack", "notification_channel") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+    assert ("slack", "conversation_channel") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
     assert ("postgresql", "relational_store") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+    assert ("github", "issue_tracker") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
 
 
 def test_plugin_register_has_no_provider_module_scanning() -> None:
@@ -294,8 +329,28 @@ def test_b1_contract_spec_modules_have_no_reflection() -> None:
                 pytest.fail(f"{path}: forbidden __dict__ access")
 
 
+def test_b2_contract_spec_modules_have_no_reflection() -> None:
+    for slug, category in b2_provider_category_keys():
+        path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in _FORBIDDEN_CONTRACT_SPEC_NAMES:
+                    pytest.fail(f"{path}: forbidden reflective call {node.func.id}()")
+            if isinstance(node, ast.Attribute) and node.attr == "__dict__":
+                pytest.fail(f"{path}: forbidden __dict__ access")
+
+
 def test_b1_register_modules_do_not_import_contract_capture() -> None:
     for slug, category in b1_provider_category_keys():
+        path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
+        source = path.read_text(encoding="utf-8")
+        assert "contract_capture" not in source, path.as_posix()
+        assert "contract_specs=" in source, path.as_posix()
+
+
+def test_b2_register_modules_do_not_import_contract_capture() -> None:
+    for slug, category in b2_provider_category_keys():
         path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
         source = path.read_text(encoding="utf-8")
         assert "contract_capture" not in source, path.as_posix()
@@ -339,6 +394,58 @@ def test_b1_registration_does_not_execute_catalog_factory(
 
     monkeypatch.setattr(register_module, "register_from_manifest", tracking_rfm)
     register_fn()
+
+
+@pytest.mark.parametrize("slug,category", b2_provider_category_keys())
+def test_b2_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError(f"capture_builtin_contract_specs must not run for B2 {(slug, category)}")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    b2_register_function(slug, category)()
+    entry = get_entry(slug)
+    assert entry.contract_specs
+    matching = [spec for spec in entry.contract_specs if spec.category == category]
+    assert matching
+    assert matching[0].metadata.get("source") == "explicit_provider_declaration"
+
+
+@pytest.mark.parametrize("slug,category", b2_provider_category_keys())
+def test_b2_registration_does_not_execute_catalog_factory(
+    slug: str,
+    category: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    register_module = import_module(f"{provider_import_path(slug, category)}.register")
+    register_fn = b2_register_function(slug, category)
+    from intergrax.integrations.registry import plugin_register
+
+    original_rfm = plugin_register.register_from_manifest
+
+    def tracking_rfm(
+        manifest: IntegrationManifest,
+        factory: Callable[..., Any],
+        **kwargs: Any,
+    ) -> IntegrationManifest:
+        factory_mock = MagicMock(wraps=factory)
+        result = original_rfm(manifest, factory_mock, **kwargs)
+        factory_mock.assert_not_called()
+        return result
+
+    monkeypatch.setattr(register_module, "register_from_manifest", tracking_rfm)
+    register_fn()
+
+
+def test_b2_builtin_without_explicit_specs_fails_closed() -> None:
+    manifest = IntegrationManifest(
+        slug="kafka",
+        categories=(IntegrationCategory.MESSAGE_BUS,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_KAFKA",
+        description="kafka",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs"):
+        register_from_manifest(manifest, lambda **_: {})
 
 
 def test_external_fake_b1_provider_explicit_registration() -> None:
@@ -550,7 +657,7 @@ def test_explicit_spec_covering_required_b1_category_succeeds() -> None:
     )
     manifest = IntegrationManifest(
         slug="multi_category_b1",
-        categories=(IntegrationCategory.RELATIONAL_STORE, IntegrationCategory.ISSUE_TRACKER),
+        categories=(IntegrationCategory.RELATIONAL_STORE, IntegrationCategory.SEARCH_PROVIDER),
         status=IntegrationStatus.BETA,
         env_prefix="INTERGRAX_MULTI_CATEGORY_B1",
         description="multi-category manifest",
@@ -564,11 +671,134 @@ def test_explicit_spec_covering_required_b1_category_succeeds() -> None:
     assert any(spec.category == "relational_store" for spec in entry.contract_specs)
 
 
-def test_non_b1_reflective_builtin_registration_remains_unchanged() -> None:
+def test_external_fake_b2_provider_explicit_registration() -> None:
+    class _ExternalB2Integration(MessageBusIntegrationContract):
+        pass
+
+    def _external_factory(*, enabled: bool = False) -> _ExternalB2Integration:
+        return _ExternalB2Integration.for_provider(
+            provider_id="external_b2_bus",
+            display_name="External B2 Bus",
+            config=CategoryIntegrationConfig(enabled=enabled),
+        )
+
+    spec = declare_integration_contract(
+        category="message_bus",
+        provider_id="external_b2_bus",
+        integration_class=_ExternalB2Integration,
+        contract_class=MessageBusIntegrationContract,
+        contract_factory=_external_factory,
+        display_name="External B2 Bus",
+        config_class=CategoryIntegrationConfig,
+        capabilities=(
+            PlatformIntegrationCapability.CONNECT,
+            PlatformIntegrationCapability.WRITE,
+            PlatformIntegrationCapability.HEALTH_CHECK,
+        ),
+        security_posture=PlatformIntegrationSecurityPosture(),
+        supports_runtime_binding=True,
+        supports_health_check=True,
+        metadata={"source": "external_plugin_test"},
+    )
+    manifest = IntegrationManifest(
+        slug="external_b2_bus",
+        categories=(IntegrationCategory.MESSAGE_BUS,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_EXTERNAL_B2_BUS",
+        description="external fake B2 provider",
+    )
+    register_from_manifest(manifest, lambda **_: {}, contract_specs=(spec,))
+    registration = build_integration_registration("external_b2_bus")
+    assert registration.category == "message_bus"
+    assert registration.integration_class is _ExternalB2Integration
+
+
+def test_external_fake_b2_provider_without_explicit_specs_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError("capture_builtin_contract_specs must not run for external B2 typed provider")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    manifest = IntegrationManifest(
+        slug="external_b2_bus",
+        categories=(IntegrationCategory.MESSAGE_BUS,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_EXTERNAL_B2_BUS",
+        description="external fake B2 provider",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def test_contract_capture_has_no_conversation_channel_vendor_switch() -> None:
+    source = (REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_capture.py").read_text(
+        encoding="utf-8",
+    )
+    assert 'slug == "slack"' not in source
+    assert "conversation_channel" not in source
+
+
+def test_b2_factory_backward_compatibility_representatives() -> None:
+    from intergrax.integrations.providers.issue_tracker.github.bundle import create_github_issue_tracker
+    from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_message_bus
+    from intergrax.integrations.providers.notification_channel.slack.bundle import create_slack_notification_channel
+    from intergrax.integrations.providers.wiki_knowledge.confluence.bundle import create_confluence_wiki_knowledge
+
+    assert callable(create_github_issue_tracker)
+    assert callable(create_kafka_message_bus)
+    assert callable(create_slack_notification_channel)
+    assert callable(create_confluence_wiki_knowledge)
+
+
+def test_b2_registry_v2_derives_from_explicit_specs() -> None:
     from intergrax.integrations.providers.issue_tracker.github.register import register_github_integration
 
     register_github_integration()
-    entry = get_entry("github")
+    registration = build_integration_registration("github")
+    assert registration.provider_id == "github"
+    assert registration.category == "issue_tracker"
+
+
+def test_non_b1b2_reflective_builtin_registration_remains_unchanged() -> None:
+    from intergrax.integrations.providers.search_provider.tavily.register import register_tavily_integration
+
+    register_tavily_integration()
+    entry = get_entry("tavily")
     assert entry.contract_specs
-    assert entry.contract_specs[0].category == "issue_tracker"
+    assert entry.contract_specs[0].category == "search_provider"
     assert entry.contract_specs[0].metadata.get("source") == "builtin_provider_package"
+
+
+_B2_BOOTSTRAP_SOURCE_FILES: tuple[str, ...] = (
+    "intergrax/integrations/registry/bootstrap_core.py",
+    "intergrax/integrations/registry/bootstrap_extended.py",
+    "intergrax/integrations/registry/bootstrap_m6_p4.py",
+    "intergrax/integrations/registry/bootstrap_m6_p5.py",
+    "intergrax/integrations/registry/bootstrap_m6_p6.py",
+    "intergrax/integrations/registry/bootstrap_m7_p7.py",
+)
+
+
+def _b2_keys_from_bootstrap_sources() -> frozenset[tuple[str, str]]:
+    import re
+
+    pattern = re.compile(
+        r"intergrax\.integrations\.providers\.(message_bus|notification_channel|conversation_channel|issue_tracker|wiki_knowledge|collaboration_suite)\.([a-z0-9_]+)\.register",
+    )
+    keys: set[tuple[str, str]] = set()
+    for relative_path in _B2_BOOTSTRAP_SOURCE_FILES:
+        source = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+        keys.update(pattern.findall(source))
+    return frozenset((slug, category) for category, slug in keys)
+
+
+def test_b2_bootstrap_provider_sets_preserved() -> None:
+    expected = _b2_keys_from_bootstrap_sources()
+    assert expected
+    for slug, category in sorted(expected):
+        b2_register_function(slug, category)()
+        entry = get_entry(slug)
+        assert entry is not None, (slug, category)
+        assert any(spec.category == category for spec in entry.contract_specs), (slug, category)
+        clear_catalog()
