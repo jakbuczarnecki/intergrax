@@ -24,6 +24,15 @@ from intergrax.contracts.autonomous_work.execution_authority import (
     WorkerExecutionAuthorityContext,
     WorkerExecutionAuthorityRequest,
 )
+from intergrax.contracts.autonomous_work.execution_dispatch import (
+    WorkerExecutionCorrelation,
+    WorkerExecutionDispatchDisposition,
+    WorkerExecutionDispatchRejectionReason,
+    WorkerExecutionDispatchRequest,
+    WorkerExecutionDispatchResult,
+    WorkerExecutionSource,
+    WorkerExecutionSourceKind,
+)
 from intergrax.contracts.autonomous_work.goal import WorkerGoal, WorkerGoalStatus
 from intergrax.contracts.autonomous_work.goal_evaluation import (
     GoalEvaluationBatchLimit,
@@ -182,6 +191,13 @@ __all__ = (
     "WorkContinuityState",
     "WorkerExecutionAuthorityContext",
     "WorkerExecutionAuthorityRequest",
+    "WorkerExecutionCorrelation",
+    "WorkerExecutionDispatchDisposition",
+    "WorkerExecutionDispatchRejectionReason",
+    "WorkerExecutionDispatchRequest",
+    "WorkerExecutionDispatchResult",
+    "WorkerExecutionSource",
+    "WorkerExecutionSourceKind",
     "WorkReference",
     "WorkerDefinition",
     "WorkerDefinitionId",

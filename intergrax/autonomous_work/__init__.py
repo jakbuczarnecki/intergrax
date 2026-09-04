@@ -57,6 +57,9 @@ from intergrax.autonomous_work.worker_collaborative_work_bridge import (
     WorkerCollaborativeWorkBridge,
     WorkerCollaborativeWorkBridgeRejected,
 )
+from intergrax.autonomous_work.worker_execution_dispatch import (
+    WorkerExecutionDispatchService,
+)
 from intergrax.autonomous_work.principal_binding_resolver import (
     WorkerPrincipalBindingRequired,
     WorkerPrincipalBindingResolver,
@@ -116,6 +119,7 @@ __all__ = (
     "UnavailableCollaborativeWorkIntake",
     "WorkerCollaborativeWorkBridge",
     "WorkerCollaborativeWorkBridgeRejected",
+    "WorkerExecutionDispatchService",
     "resolve_autonomous_work_repositories",
     "InMemoryResponsibilityRepository",
     "InMemoryWorkContinuityStateRepository",
