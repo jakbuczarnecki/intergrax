@@ -140,7 +140,7 @@ def test_product_scaffold_fail_closed_without_projection(tmp_path) -> None:
 
 
 def _assert_no_lab_lifecycle_bypass(repo_root: Path) -> None:
-    report = validate_application_lifecycle_conformance(repo_root, apply_legacy_baseline=False)
+    report = validate_application_lifecycle_conformance(repo_root)
     forbidden = tuple(
         violation
         for violation in report.violations

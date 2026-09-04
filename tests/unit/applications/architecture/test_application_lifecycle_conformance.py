@@ -53,7 +53,6 @@ def test_direct_agent_registry_construction_fails(tmp_path: Path) -> None:
     violations = collect_application_lifecycle_violations_for_file(
         path=path,
         repo_root=tmp_path,
-        apply_legacy_baseline=False,
     )
     assert any(
         violation.rule_id is ApplicationLifecycleRuleId.AGENT_LIFECYCLE_BYPASS
@@ -71,7 +70,6 @@ def test_alias_agent_registry_construction_fails(tmp_path: Path) -> None:
     violations = collect_application_lifecycle_violations_for_file(
         path=path,
         repo_root=tmp_path,
-        apply_legacy_baseline=False,
     )
     assert violations
 
@@ -86,7 +84,6 @@ def test_module_alias_agent_registry_construction_fails(tmp_path: Path) -> None:
     violations = collect_application_lifecycle_violations_for_file(
         path=path,
         repo_root=tmp_path,
-        apply_legacy_baseline=False,
     )
     assert violations
 
@@ -101,7 +98,6 @@ def test_from_agents_fails(tmp_path: Path) -> None:
     violations = collect_application_lifecycle_violations_for_file(
         path=path,
         repo_root=tmp_path,
-        apply_legacy_baseline=False,
     )
     assert any(violation.symbol == "AgentRegistry.from_agents" for violation in violations)
 
@@ -117,7 +113,6 @@ def test_local_register_fails(tmp_path: Path) -> None:
     violations = collect_application_lifecycle_violations_for_file(
         path=path,
         repo_root=tmp_path,
-        apply_legacy_baseline=False,
     )
     assert any(violation.symbol == "register" for violation in violations)
 
@@ -132,7 +127,6 @@ def test_build_application_registry_in_host_fails(tmp_path: Path) -> None:
     violations = collect_application_lifecycle_violations_for_file(
         path=path,
         repo_root=tmp_path,
-        apply_legacy_baseline=False,
     )
     assert any(
         violation.rule_id is ApplicationLifecycleRuleId.BUILD_APPLICATION_REGISTRY_BYPASS
@@ -151,7 +145,6 @@ def test_alias_build_application_registry_fails(tmp_path: Path) -> None:
     violations = collect_application_lifecycle_violations_for_file(
         path=path,
         repo_root=tmp_path,
-        apply_legacy_baseline=False,
     )
     assert violations
 
@@ -185,20 +178,12 @@ def test_unrelated_agent_registry_symbol_passes(tmp_path: Path) -> None:
     assert report.ok
 
 
-def test_repository_application_host_surface_passes_with_legacy_baseline() -> None:
+def test_repository_application_host_surface_passes_conformance() -> None:
     report = validate_application_lifecycle_conformance(REPO_ROOT)
     assert report.ok
 
 
-def test_repository_application_lifecycle_conformance_without_legacy_baseline() -> None:
-    report = validate_application_lifecycle_conformance(
-        REPO_ROOT,
-        apply_legacy_baseline=False,
-    )
-    assert report.ok
-
-
-def test_new_violation_in_legacy_file_fails(tmp_path: Path) -> None:
+def test_new_violation_in_existing_host_wiring_fails(tmp_path: Path) -> None:
     legacy_path = REPO_ROOT / "applications/lab_application/host/wiring.py"
     source = legacy_path.read_text(encoding="utf-8") + "\nregistry = AgentRegistry()\n"
     path = _write_host_file(tmp_path, "lab_application", "host/wiring.py", source)
@@ -206,7 +191,6 @@ def test_new_violation_in_legacy_file_fails(tmp_path: Path) -> None:
         path=path,
         repo_root=tmp_path,
         source=source,
-        apply_legacy_baseline=True,
     )
     assert any(
         violation.rule_id is ApplicationLifecycleRuleId.AGENT_LIFECYCLE_BYPASS

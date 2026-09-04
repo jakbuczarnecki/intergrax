@@ -334,7 +334,6 @@ def collect_application_lifecycle_violations_for_file(
     path: Path,
     repo_root: Path,
     source: str | None = None,
-    apply_legacy_baseline: bool = True,
 ) -> tuple[ApplicationLifecycleViolation, ...]:
     relative_path = _relative_path(path, repo_root)
     try:
@@ -370,7 +369,6 @@ def collect_application_lifecycle_violations_for_file(
         )
     )
 
-    _ = apply_legacy_baseline
     return _finalize_violations(violations)
 
 
@@ -378,7 +376,6 @@ def validate_application_lifecycle_conformance(
     repo_root: Path,
     *,
     applications_root: Path | None = None,
-    apply_legacy_baseline: bool = True,
     extra_paths: tuple[Path, ...] = (),
 ) -> ApplicationLifecycleConformanceReport:
     scanned_paths: list[str] = []
@@ -389,7 +386,6 @@ def validate_application_lifecycle_conformance(
             collect_application_lifecycle_violations_for_file(
                 path=path,
                 repo_root=repo_root,
-                apply_legacy_baseline=apply_legacy_baseline,
             )
         )
     return ApplicationLifecycleConformanceReport(
@@ -407,13 +403,11 @@ def assert_application_lifecycle_conformance(
     repo_root: Path,
     *,
     applications_root: Path | None = None,
-    apply_legacy_baseline: bool = True,
     extra_paths: tuple[Path, ...] = (),
 ) -> ApplicationLifecycleConformanceReport:
     report = validate_application_lifecycle_conformance(
         repo_root,
         applications_root=applications_root,
-        apply_legacy_baseline=apply_legacy_baseline,
         extra_paths=extra_paths,
     )
     if not report.ok:
