@@ -37,7 +37,7 @@ from intergrax.contracts.autonomous_work.references import (
     ProblemReference,
 )
 from intergrax.contracts.policy_action import PolicyAction
-from intergrax.contracts.resilience_policy import FailureClass, ResiliencePolicy
+from intergrax.contracts.resilience_policy import FailureClass, FailureResponse, ResiliencePolicy
 from intergrax.contracts.runtime_policy import PolicyDecision
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from tests.unit.autonomous_work import repository_contracts as contract_suite
@@ -417,8 +417,6 @@ def test_reuses_resilience_policy_max_attempts() -> None:
 
 
 def test_resilience_policy_non_retry_response_escalates() -> None:
-    from intergrax.contracts.resilience_policy import FailureResponse
-
     policy = ResiliencePolicy(
         on_runtime_error=FailureResponse.FAIL,
         max_attempts=5,
@@ -433,6 +431,70 @@ def test_resilience_policy_non_retry_response_escalates() -> None:
     )
     assert result.decision is not None
     assert result.decision.strategy is RecoveryStrategy.ESCALATE
+
+
+def _transient_evidence():
+    return _evidence(
+        runtime_error_code=RuntimeErrorCode.TIMEOUT.value,
+        failure_class=FailureClass.RUNTIME_ERROR,
+    )
+
+
+def test_resilience_policy_fail_overrides_context_retry_limit() -> None:
+    policy = ResiliencePolicy(
+        on_runtime_error=FailureResponse.FAIL,
+        max_attempts=5,
+    )
+    service = _service(resilience_policy=policy)
+    result = service.decide(
+        _transient_evidence(),
+        context=WorkerRecoveryDecisionContext(max_retry_attempts=2),
+        decided_at=_NOW,
+    )
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.ESCALATE
+    assert result.decision.strategy is not RecoveryStrategy.RETRY
+
+
+def test_resilience_policy_escalate_overrides_context_retry_limit() -> None:
+    policy = ResiliencePolicy(
+        on_runtime_error=FailureResponse.ESCALATE,
+        max_attempts=5,
+    )
+    service = _service(resilience_policy=policy)
+    result = service.decide(
+        _transient_evidence(),
+        context=WorkerRecoveryDecisionContext(max_retry_attempts=2),
+        decided_at=_NOW,
+    )
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.ESCALATE
+
+
+def test_resilience_policy_retry_narrowed_by_context_limit() -> None:
+    policy = ResiliencePolicy(max_attempts=5)
+    service = _service(resilience_policy=policy)
+    result = service.decide(
+        _transient_evidence(),
+        context=WorkerRecoveryDecisionContext(max_retry_attempts=2),
+        decided_at=_NOW,
+    )
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.RETRY
+    assert result.decision.max_attempts == 2
+
+
+def test_resilience_policy_retry_tighter_than_context_limit() -> None:
+    policy = ResiliencePolicy(max_attempts=2)
+    service = _service(resilience_policy=policy)
+    result = service.decide(
+        _transient_evidence(),
+        context=WorkerRecoveryDecisionContext(max_retry_attempts=5),
+        decided_at=_NOW,
+    )
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.RETRY
+    assert result.decision.max_attempts == 2
 
 
 def test_canonical_classifier_is_deterministic_first() -> None:

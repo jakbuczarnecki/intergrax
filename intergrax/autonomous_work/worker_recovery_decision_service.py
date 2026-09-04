@@ -417,19 +417,25 @@ def _resolve_transient_max_attempts(
     context: WorkerRecoveryDecisionContext,
     resilience_policy: ResiliencePolicy | None,
 ) -> int | None:
+    if resilience_policy is not None:
+        failure_class = _failure_class_for_transient_retry(evidence)
+        response = resilience_policy.action_for(failure_class)
+        if response not in _RETRY_FAILURE_RESPONSES:
+            return None
+        if resilience_policy.max_attempts <= 0:
+            return None
+        policy_max = resilience_policy.max_attempts
+        if context.max_retry_attempts is not None:
+            if context.max_retry_attempts <= 0:
+                return None
+            return min(policy_max, context.max_retry_attempts)
+        return policy_max
+
     if context.max_retry_attempts is not None:
         if context.max_retry_attempts <= 0:
             return None
         return context.max_retry_attempts
-    if resilience_policy is None:
-        return None
-    failure_class = _failure_class_for_transient_retry(evidence)
-    response = resilience_policy.action_for(failure_class)
-    if response not in _RETRY_FAILURE_RESPONSES:
-        return None
-    if resilience_policy.max_attempts <= 0:
-        return None
-    return resilience_policy.max_attempts
+    return None
 
 
 def _failure_class_for_transient_retry(evidence: WorkerObstacleEvidence) -> FailureClass:
