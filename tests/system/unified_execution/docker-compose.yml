@@ -139,6 +139,7 @@ services:
     environment:
       LKW_BASE_URL: http://local_workspace:8020
       LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_API_KEY: ue-11g-c1-certification-secret
+      INTERGRAX_EMBEDDING_PROVIDER: ollama
       INTERGRAX_EMBEDDING_MODEL: nomic-embed-text
       INTERGRAX_LLM_MODEL: llama3.1:latest
       UE_11G_C1_OTLP_LOG_PATH: /var/lib/otelcol/lkw-otlp-logs.jsonl

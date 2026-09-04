@@ -21,6 +21,7 @@ class ProofConfig(BaseModel):
     agent_id: str = "local_search"
     strategy: Literal["AGENTIC"] = "AGENTIC"
     llm_provider: str = "ollama"
+    embedding_provider: str = "ollama"
     embedding_model: str = "nomic-embed-text"
     llm_model: str = "llama3.1:latest"
     fixture_root: str = "/cert-fixtures/workspace"
@@ -175,6 +176,34 @@ class FunctionalDiagnosticSection(BaseModel):
     blocked_reason: str | None = None
 
 
+class ModelRequirementProjection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str
+    model_id: str
+    capability: str
+
+
+class ModelReadinessResultProjection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    model_id: str
+    provider: str
+    capability: str
+    present: bool
+    ready: bool
+    attempts: int
+    elapsed_seconds: float
+    last_error_code: str | None = None
+
+
+class ModelReadinessSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    requirements: list[ModelRequirementProjection] = Field(default_factory=list)
+    results: list[ModelReadinessResultProjection] = Field(default_factory=list)
+
+
 class ProofReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -183,4 +212,5 @@ class ProofReport(BaseModel):
     evidence: CertificationEvidence | None = None
     failure_reason: str | None = None
     functional_diagnostic: FunctionalDiagnosticSection | None = None
+    model_readiness: ModelReadinessSection | None = None
     r4_result: Literal["PASS", "PARTIAL", "FAIL", "BLOCKED"] | None = None

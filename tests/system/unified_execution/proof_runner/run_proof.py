@@ -7,8 +7,6 @@ from __future__ import annotations
 import json
 import os
 import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 from typing import Literal
@@ -17,6 +15,9 @@ from tests.system.unified_execution.proof_runner.contracts import (
     CertificationEvidence,
     DiagnosticCheckResultProjection,
     FunctionalDiagnosticSection,
+    ModelReadinessResultProjection,
+    ModelReadinessSection,
+    ModelRequirementProjection,
     ProofConfig,
     ProofReport,
 )
@@ -26,6 +27,13 @@ from tests.system.unified_execution.proof_runner.functional_diagnosis import (
     run_functional_diagnosis,
 )
 from tests.system.unified_execution.proof_runner.lkw_client import LkwClient, LkwClientError
+from tests.system.unified_execution.proof_runner.model_readiness import (
+    ModelReadinessError,
+    ModelReadinessReport,
+    OllamaHttpClient,
+    c1_model_requirements,
+    ensure_model_readiness,
+)
 from tests.system.unified_execution.proof_runner.oracle import (
     expected_fact,
     functional_oracle_passes,
@@ -65,6 +73,10 @@ def _config_from_env() -> ProofConfig:
             "INTERGRAX_EMBEDDING_MODEL",
             "nomic-embed-text",
         ),
+        embedding_provider=os.environ.get(
+            "INTERGRAX_EMBEDDING_PROVIDER",
+            "ollama",
+        ),
         llm_model=os.environ.get(
             "INTERGRAX_LLM_MODEL",
             "llama3.1:latest",
@@ -76,54 +88,30 @@ def _config_from_env() -> ProofConfig:
     )
 
 
-def _http_get_json(url: str, *, timeout: float) -> dict[str, object]:
-    request = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        raw = response.read().decode("utf-8")
-    parsed = json.loads(raw)
-    if not isinstance(parsed, dict):
-        raise LkwClientError("ollama_response_not_object")
-    return parsed
-
-
-def _ensure_ollama_model(config: ProofConfig, *, model_name: str) -> dict[str, object]:
-    tags_url = f"{config.ollama_base_url.rstrip('/')}/api/tags"
-    tags_payload = _http_get_json(tags_url, timeout=30.0)
-    existing = probe_ollama_model(
-        tags_payload=tags_payload,
-        model_name=model_name,
+def _model_readiness_section(report: ModelReadinessReport) -> ModelReadinessSection:
+    return ModelReadinessSection(
+        requirements=[
+            ModelRequirementProjection(
+                provider=item.provider,
+                model_id=item.model_id,
+                capability=item.capability,
+            )
+            for item in report.requirements
+        ],
+        results=[
+            ModelReadinessResultProjection(
+                model_id=item.model_id,
+                provider=item.provider,
+                capability=item.capability,
+                present=item.present,
+                ready=item.ready,
+                attempts=item.attempts,
+                elapsed_seconds=item.elapsed_seconds,
+                last_error_code=item.last_error_code,
+            )
+            for item in report.results
+        ],
     )
-    if existing.listed_after_run:
-        return tags_payload
-    pull_url = f"{config.ollama_base_url.rstrip('/')}/api/pull"
-    pull_body = json.dumps({"name": model_name}).encode("utf-8")
-    request = urllib.request.Request(
-        pull_url,
-        data=pull_body,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(request, timeout=config.readiness_timeout_seconds) as response:
-        _ = response.read()
-    return _http_get_json(tags_url, timeout=30.0)
-
-
-def _ensure_ollama_models(config: ProofConfig) -> dict[str, object]:
-    tags_payload = _ensure_ollama_model(config, model_name=config.embedding_model)
-    return _ensure_ollama_model(config, model_name=config.llm_model)
-
-
-def _wait_for_ollama_model(config: ProofConfig) -> dict[str, object]:
-    deadline = time.monotonic() + config.readiness_timeout_seconds
-    tags_url = f"{config.ollama_base_url.rstrip('/')}/api/tags"
-    last_error = "ollama_unreachable"
-    while time.monotonic() < deadline:
-        try:
-            return _http_get_json(tags_url, timeout=10.0)
-        except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
-            last_error = str(exc)
-            time.sleep(3.0)
-    raise LkwClientError(last_error)
 
 
 def _fixture_paths(config: ProofConfig) -> list[str]:
@@ -191,6 +179,7 @@ def _finalize_report(
     failure_reason: str | None = None,
     search_completed: bool = False,
     diagnosis: FunctionalDiagnosisReport | None = None,
+    model_readiness: ModelReadinessSection | None = None,
 ) -> ProofReport:
     functional_diagnostic = (
         _diagnostic_section(diagnosis) if diagnosis is not None else None
@@ -205,6 +194,7 @@ def _finalize_report(
         evidence=evidence,
         failure_reason=failure_reason,
         functional_diagnostic=functional_diagnostic,
+        model_readiness=model_readiness,
         r4_result=r4_result,
     )
 
@@ -212,21 +202,14 @@ def _finalize_report(
 def run_certification() -> ProofReport:
     config = _config_from_env()
     client = LkwClient(config)
+    model_readiness_section: ModelReadinessSection | None = None
     try:
         client.wait_until_ready()
-        tags_payload = _ensure_ollama_models(config)
-        ollama_before = probe_ollama_model(
-            tags_payload=tags_payload,
-            model_name=config.embedding_model,
+        readiness_report = ensure_model_readiness(
+            config,
+            c1_model_requirements(config),
         )
-        if not ollama_before.listed_after_run:
-            raise LkwClientError("embedding_model_not_listed")
-        llm_before = probe_ollama_model(
-            tags_payload=tags_payload,
-            model_name=config.llm_model,
-        )
-        if not llm_before.listed_after_run:
-            raise LkwClientError("llm_model_not_listed")
+        model_readiness_section = _model_readiness_section(readiness_report)
 
         index_response = client.run_index(source_paths=_fixture_paths(config))
         if index_response.state != "completed":
@@ -258,13 +241,15 @@ def run_certification() -> ProofReport:
         else:
             partial_identity_gap = None
 
-        tags_after = _wait_for_ollama_model(config)
+        ollama_client = OllamaHttpClient(
+            base_url=config.ollama_base_url,
+            timeout_seconds=30.0,
+        )
+        tags_payload = ollama_client.get_json("/api/tags")
         ollama_after = probe_ollama_model(
-            tags_payload=tags_after,
+            tags_payload=tags_payload,
             model_name=config.embedding_model,
         )
-        if not ollama_after.listed_after_run:
-            raise LkwClientError("ollama_model_missing_after_run")
 
         oracle_pass = (
             False
@@ -319,6 +304,7 @@ def run_certification() -> ProofReport:
                 failure_reason=search_failure,
                 search_completed=False,
                 diagnosis=diagnosis,
+                model_readiness=model_readiness_section,
             )
         if not oracle_pass:
             return _finalize_report(
@@ -327,6 +313,7 @@ def run_certification() -> ProofReport:
                 failure_reason="functional_oracle_failed",
                 search_completed=True,
                 diagnosis=diagnosis,
+                model_readiness=model_readiness_section,
             )
         if partial_identity_gap is not None:
             return _finalize_report(
@@ -335,15 +322,27 @@ def run_certification() -> ProofReport:
                 failure_reason=partial_identity_gap,
                 search_completed=True,
                 diagnosis=diagnosis,
+                model_readiness=model_readiness_section,
             )
         return _finalize_report(
             verdict="PASS",
             evidence=evidence,
             search_completed=True,
             diagnosis=diagnosis,
+            model_readiness=model_readiness_section,
         )
-    except (LkwClientError, EvidenceReadError, SqliteEvidenceReadError, json.JSONDecodeError) as exc:
-        return _finalize_report(verdict="FAIL", failure_reason=str(exc))
+    except (
+        LkwClientError,
+        ModelReadinessError,
+        EvidenceReadError,
+        SqliteEvidenceReadError,
+        json.JSONDecodeError,
+    ) as exc:
+        return _finalize_report(
+            verdict="FAIL",
+            failure_reason=str(exc),
+            model_readiness=model_readiness_section,
+        )
 
 
 def write_report(report: ProofReport) -> Path:
