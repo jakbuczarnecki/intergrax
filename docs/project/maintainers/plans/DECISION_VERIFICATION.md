@@ -86,7 +86,7 @@ Enterprise hardening (typed validators, exact rubric-ref integrity, SHARED_PROFI
 |----|----------|--------|
 | DS-VER-RUBRIC-PROVENANCE-INTEGRITY | P0/P1 | **DONE** |
 | DS-VER-PRODUCER-INDEPENDENCE | P0/P1 | **IMPLEMENTED / QUALIFICATION OPEN** |
-| DS-VER-ADVERSARIAL-SEMANTIC | P1 | **PLANNED / OPEN** |
+| DS-VER-ADVERSARIAL-SEMANTIC | P1 | **DONE / ENTERPRISE CLOSED** - typed trust contracts · canonical candidate JSON envelope · `build_eval_judge_messages()` · adversarial unit tests |
 | DS-VER-RESULT-COHERENCE | P1/P2 | **DONE** |
 
 ---

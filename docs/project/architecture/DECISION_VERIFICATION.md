@@ -9,7 +9,7 @@ Verification answers **„czy ta wersja decyzji spełnia wymagania poprawności?
 >
 > - **Architecture:** **TARGET CANON - FROZEN** (paired with [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)).
 > - **Implementation:** Verification Pipeline implementation migrated and active. Legacy Critic verification runtime retired (DS-MIG-04).
-> - **Remaining:** trust hardening and production qualification tracked in [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md).
+> - **Remaining:** production qualification tracked in [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md). Semantic verification trust hardening **ENTERPRISE CLOSED** (DS-VER-ADVERSARIAL-SEMANTIC).
 
 **Primary audience:** Principal / Staff engineers configuring verification stages, rubric provenance, producer/verifier independence, and challenge → revision handoff.
 
@@ -136,10 +136,22 @@ Semantic stages:
 
 - use **independent** model/provider profile when assurance requires it,
 - resolve rubric refs to versioned criteria with provenance **before** judging,
-- structurally isolate trusted rubric/instructions from untrusted candidate content,
+- structurally isolate trusted rubric/instructions from untrusted candidate content via typed trust contracts (`EvalTrustedRubricContext`, `EvalUntrustedCandidateContent`) and canonical JSON candidate serialization (`intergrax.eval.candidate.v1`),
 - support adversarial verification tests for high-assurance profiles.
 
 Unresolvable configured rubric → **fail closed** (challenge / UNRESOLVED path) - no silent skip.
+
+### Semantic verification trust invariants
+
+| ID | Invariant |
+| -- | --------- |
+| **VER-TRUST-INV-01** | Candidate-controlled content never becomes verifier instruction/configuration. |
+| **VER-TRUST-INV-02** | Resolved rubric fields are immutable authority for one semantic verification. |
+| **VER-TRUST-INV-03** | Untrusted candidate content is canonically serialized before judge invocation. |
+| **VER-TRUST-INV-04** | LLM-returned `passed` cannot bypass deterministic `min_score` enforcement. |
+| **VER-TRUST-INV-05** | Trust hardening is provider-neutral and preserves `SemanticJudge` plugin seam. |
+
+**Reference context provenance:** in Decision Verification semantic stages, `reference_context` is supplied exclusively from `ResolvedSemanticRubric` (resolver-controlled, trusted). Generic `eval.judge` callers may supply their own `reference_context` on the wire contract; that value is treated as trusted verifier input for that invocation only.
 
 ---
 
@@ -219,8 +231,9 @@ Verification stages extend through **typed stage registration** aligned with [`P
 ## Rubric / provenance security
 
 - Named rubric refs must resolve to actual versioned criteria with provenance evidence before semantic stages run.
-- Judge construction must isolate trusted instructions from untrusted candidate payload.
-- Adversarial semantic verification tests required for high-assurance profiles.
+- Judge construction isolates trusted instructions from untrusted candidate payload via `build_eval_judge_messages()` (`intergrax/tools/providers/eval/judge_messages.py`).
+- Deterministic adversarial trust-boundary tests lock message composition (`tests/unit/tools/providers/eval/test_judge_trust_boundary.py`).
+- Real external-model prompt-injection resistance remains **DS-E2E** qualification — not claimed by unit tests alone.
 - Reuse existing prompt/rubric registry authority - **no** second domain rule engine.
 
 ---
