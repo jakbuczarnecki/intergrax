@@ -16,6 +16,7 @@ from intergrax.contracts.autonomous_work.collaborative_work_bridge import (
     CollaborativeWorkRequestIdentity,
     CollaborativeWorkSubmissionDisposition,
     CollaborativeWorkSubmissionResult,
+    resolve_collaborative_work_submission_replay,
 )
 from intergrax.contracts.autonomous_work.references import WorkReference
 
@@ -66,19 +67,29 @@ class RecordingCollaborativeWorkIntake:
     ) -> CollaborativeWorkSubmissionResult:
         key = request.request_identity.identity_key
         existing = self._submissions.get(key)
-        if existing is not None:
+        disposition = resolve_collaborative_work_submission_replay(
+            existing=existing,
+            incoming=request,
+        )
+        if disposition is CollaborativeWorkSubmissionDisposition.ACCEPTED:
+            self._submissions[key] = request
+            work_ref = WorkReference(f"work/test/{key}")
+            self._refs[key] = work_ref
+            return CollaborativeWorkSubmissionResult(
+                disposition=CollaborativeWorkSubmissionDisposition.ACCEPTED,
+                request_identity=request.request_identity,
+                collaborative_work_ref=work_ref,
+            )
+        if disposition is CollaborativeWorkSubmissionDisposition.ALREADY_EXISTS:
             return CollaborativeWorkSubmissionResult(
                 disposition=CollaborativeWorkSubmissionDisposition.ALREADY_EXISTS,
                 request_identity=request.request_identity,
                 collaborative_work_ref=self._refs.get(key),
             )
-        self._submissions[key] = request
-        work_ref = WorkReference(f"work/test/{key}")
-        self._refs[key] = work_ref
         return CollaborativeWorkSubmissionResult(
-            disposition=CollaborativeWorkSubmissionDisposition.ACCEPTED,
+            disposition=CollaborativeWorkSubmissionDisposition.CONFLICT,
             request_identity=request.request_identity,
-            collaborative_work_ref=work_ref,
+            collaborative_work_ref=self._refs.get(key),
         )
 
     def submission_for(

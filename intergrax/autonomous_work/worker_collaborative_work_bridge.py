@@ -104,6 +104,10 @@ class WorkerCollaborativeWorkBridge:
                 f"collaborative work bridge requires ACTION_REQUIRED, "
                 f"got {decision.disposition.value}"
             )
+        if decision.reason_code is None:
+            raise WorkerCollaborativeWorkBridgeRejected(
+                "collaborative work bridge requires reason_code on ACTION_REQUIRED decisions"
+            )
 
         worker = self._worker_instance_repository.get(
             worker_instance_id=worker_instance_id,
@@ -129,6 +133,18 @@ class WorkerCollaborativeWorkBridge:
                 reason=CollaborativeWorkBridgeRejectionReason.OWNERSHIP_MISMATCH,
             )
         if goal.status is not WorkerGoalStatus.ACTIVE:
+            return self._rejected(
+                worker_instance_id=worker_instance_id,
+                decision=decision,
+                reason=CollaborativeWorkBridgeRejectionReason.STALE_OR_NOT_ELIGIBLE,
+            )
+        if goal.goal_id != decision.goal_id:
+            return self._rejected(
+                worker_instance_id=worker_instance_id,
+                decision=decision,
+                reason=CollaborativeWorkBridgeRejectionReason.STALE_OR_NOT_ELIGIBLE,
+            )
+        if goal.revision != decision.goal_revision:
             return self._rejected(
                 worker_instance_id=worker_instance_id,
                 decision=decision,
@@ -183,7 +199,7 @@ class WorkerCollaborativeWorkBridge:
             worker_instance_id=worker_instance_id,
             responsibility_id=responsibility.responsibility_id,
             goal_id=goal.goal_id,
-            goal_revision=goal.revision,
+            goal_revision=decision.goal_revision,
             wake_up_id=decision.wake_up_id,
             decision_disposition=GoalEvaluationDisposition.ACTION_REQUIRED,
             reason=decision.reason,

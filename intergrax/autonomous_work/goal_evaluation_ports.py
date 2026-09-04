@@ -187,6 +187,7 @@ class DeterministicThresholdGoalEvaluator:
         if is_progress_projection_stale(projection=projection, evaluated_at=evaluated_at):
             return GoalEvaluationDecision(
                 goal_id=goal.goal_id,
+                goal_revision=goal.revision,
                 evaluated_at=evaluated_at,
                 disposition=GoalEvaluationDisposition.NOT_EVALUABLE,
                 reason_code=GoalEvaluationReasonCode.PROGRESS_PROJECTION_STALE,
@@ -205,6 +206,7 @@ class DeterministicThresholdGoalEvaluator:
             )
             return GoalEvaluationDecision(
                 goal_id=goal.goal_id,
+                goal_revision=goal.revision,
                 evaluated_at=evaluated_at,
                 disposition=GoalEvaluationDisposition.ACTION_REQUIRED,
                 reason_code=reason_code,
@@ -217,6 +219,7 @@ class DeterministicThresholdGoalEvaluator:
         if status == "stalled":
             return GoalEvaluationDecision(
                 goal_id=goal.goal_id,
+                goal_revision=goal.revision,
                 evaluated_at=evaluated_at,
                 disposition=GoalEvaluationDisposition.ACTION_REQUIRED,
                 reason_code=GoalEvaluationReasonCode.PROGRESS_STALLED,
@@ -233,6 +236,7 @@ class DeterministicThresholdGoalEvaluator:
         ):
             return GoalEvaluationDecision(
                 goal_id=goal.goal_id,
+                goal_revision=goal.revision,
                 evaluated_at=evaluated_at,
                 disposition=GoalEvaluationDisposition.ACTION_REQUIRED,
                 reason_code=GoalEvaluationReasonCode.SUCCESS_CRITERIA_NOT_MET,
@@ -244,6 +248,7 @@ class DeterministicThresholdGoalEvaluator:
 
         return GoalEvaluationDecision(
             goal_id=goal.goal_id,
+            goal_revision=goal.revision,
             evaluated_at=evaluated_at,
             disposition=GoalEvaluationDisposition.NO_ACTION,
             reason_code=GoalEvaluationReasonCode.CRITERIA_MET,

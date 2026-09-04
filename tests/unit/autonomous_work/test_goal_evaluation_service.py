@@ -163,6 +163,9 @@ def test_not_due_skips_evaluator() -> None:
     )
     assert len(result.decisions) == 1
     decision = result.decisions[0]
+    stored_goal = goal_repo.get(goal_id=goal_id)
+    assert stored_goal is not None
+    assert decision.goal_revision == stored_goal.revision
     assert decision.disposition == GoalEvaluationDisposition.NOT_DUE
     assert result.goals_skipped_not_due == 1
     assert result.goals_evaluated == 0
@@ -171,7 +174,7 @@ def test_not_due_skips_evaluator() -> None:
 def test_due_healthy_goal_returns_no_action_with_evidence() -> None:
     service, responsibility_repo, goal_repo, _ = _evaluation_service()
     worker_id = contract_suite.worker_instance().worker_instance_id
-    _seed_goal_chain(
+    _, goal_id = _seed_goal_chain(
         responsibility_repo=responsibility_repo,
         goal_repo=goal_repo,
         worker_id=worker_id,
@@ -184,6 +187,9 @@ def test_due_healthy_goal_returns_no_action_with_evidence() -> None:
         )
     )
     decision = result.decisions[0]
+    stored_goal = goal_repo.get(goal_id=goal_id)
+    assert stored_goal is not None
+    assert decision.goal_revision == stored_goal.revision
     assert decision.disposition == GoalEvaluationDisposition.NO_ACTION
     assert decision.reason_code == GoalEvaluationReasonCode.CRITERIA_MET
     assert decision.evidence_refs

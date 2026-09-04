@@ -6,11 +6,34 @@ from __future__ import annotations
 
 import ast
 import importlib
+from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
+from intergrax.autonomous_work.collaborative_work_intake import RecordingCollaborativeWorkIntake
+from intergrax.contracts.autonomous_work import (
+    GoalEvaluationDisposition,
+    GoalEvaluationReasonCode,
+    Revision,
+    initial_revision,
+    mint_wake_up_id,
+)
+from intergrax.contracts.autonomous_work.collaborative_work_bridge import (
+    CollaborativeWorkRequest,
+    CollaborativeWorkSubmissionDisposition,
+    are_collaborative_work_requests_equivalent,
+    derive_collaborative_work_request_identity,
+    resolve_collaborative_work_submission_replay,
+)
+from intergrax.contracts.autonomous_work.references import ProgressProjectionRef
+from tests.unit.autonomous_work import repository_contracts as contract_suite
+
 pytestmark = pytest.mark.unit
+
+_UTC = UTC
+_NOW = datetime(2026, 9, 4, 12, 0, tzinfo=_UTC)
 
 _FORBIDDEN_TOKENS = (
     "class WorkItem",
@@ -132,3 +155,71 @@ def test_bridge_service_does_not_import_collaborative_work_domain() -> None:
     assert module.__file__ is not None
     joined = "\n".join(_imported_modules(Path(module.__file__)))
     assert "intergrax.collaborative_work" not in joined
+
+
+def _sample_request(
+    *,
+    wake_up_id: str | None = None,
+    goal_revision: Revision | None = None,
+    reason: str = "SLA risk requires collaborative work",
+    evidence_refs: tuple[str, ...] = ("evidence/sla/at-risk",),
+) -> CollaborativeWorkRequest:
+    worker_id = contract_suite.worker_instance().worker_instance_id
+    goal_id = contract_suite.worker_goal().goal_id
+    resolved_wake_up_id = wake_up_id or mint_wake_up_id()
+    request_identity = derive_collaborative_work_request_identity(
+        worker_instance_id=worker_id,
+        goal_id=goal_id,
+        wake_up_id=resolved_wake_up_id,
+    )
+    return CollaborativeWorkRequest(
+        request_identity=request_identity,
+        worker_instance_id=worker_id,
+        responsibility_id=contract_suite.responsibility().responsibility_id,
+        goal_id=goal_id,
+        goal_revision=goal_revision or initial_revision(),
+        wake_up_id=resolved_wake_up_id,
+        decision_disposition=GoalEvaluationDisposition.ACTION_REQUIRED,
+        reason=reason,
+        reason_code=GoalEvaluationReasonCode.SLA_RISK,
+        evidence_refs=evidence_refs,
+        progress_projection_ref=ProgressProjectionRef("projection/sla-30m"),
+        requested_priority=contract_suite.worker_goal().priority,
+        evaluated_at=_NOW,
+        requested_at=_NOW,
+        title=contract_suite.worker_goal().objective,
+    )
+
+
+def test_replay_helper_classifies_accept_already_exists_and_conflict() -> None:
+    first = _sample_request()
+    second = replace(first, reason="different reason")
+    assert (
+        resolve_collaborative_work_submission_replay(existing=None, incoming=first)
+        is CollaborativeWorkSubmissionDisposition.ACCEPTED
+    )
+    assert (
+        resolve_collaborative_work_submission_replay(existing=first, incoming=first)
+        is CollaborativeWorkSubmissionDisposition.ALREADY_EXISTS
+    )
+    assert (
+        resolve_collaborative_work_submission_replay(existing=first, incoming=second)
+        is CollaborativeWorkSubmissionDisposition.CONFLICT
+    )
+
+
+def test_requested_at_is_excluded_from_logical_equivalence() -> None:
+    wake_up_id = mint_wake_up_id()
+    first = _sample_request(wake_up_id=wake_up_id)
+    second = replace(first, requested_at=_NOW.replace(minute=5))
+    assert are_collaborative_work_requests_equivalent(first, second)
+
+
+def test_recording_adapter_never_overwrites_on_conflict() -> None:
+    intake = RecordingCollaborativeWorkIntake()
+    first = _sample_request()
+    second = replace(first, reason="conflicting reason")
+    intake.submit(first)
+    result = intake.submit(second)
+    assert result.disposition is CollaborativeWorkSubmissionDisposition.CONFLICT
+    assert intake.submissions[0].reason == first.reason

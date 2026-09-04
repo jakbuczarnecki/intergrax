@@ -48,6 +48,7 @@ class CollaborativeWorkSubmissionDisposition(StrEnum):
 
     ACCEPTED = "ACCEPTED"
     ALREADY_EXISTS = "ALREADY_EXISTS"
+    CONFLICT = "CONFLICT"
     UNAVAILABLE = "UNAVAILABLE"
     REJECTED = "REJECTED"
 
@@ -80,6 +81,68 @@ class CollaborativeWorkRequestIdentity:
         return (
             f"{self.worker_instance_id}:{self.goal_id}:{self.wake_up_id}"
         )
+
+
+def collaborative_work_logical_request_fields(
+    request: CollaborativeWorkRequest,
+) -> tuple[
+    WorkerInstanceId,
+    ResponsibilityId,
+    WorkerGoalId,
+    Revision,
+    WakeUpId,
+    GoalEvaluationDisposition,
+    str,
+    GoalEvaluationReasonCode | None,
+    tuple[str, ...],
+    ProgressProjectionRef | None,
+    int,
+    str,
+    datetime,
+]:
+    """Canonical logical payload compared for idempotent replay vs conflict."""
+    return (
+        request.worker_instance_id,
+        request.responsibility_id,
+        request.goal_id,
+        request.goal_revision,
+        request.wake_up_id,
+        request.decision_disposition,
+        request.reason,
+        request.reason_code,
+        request.evidence_refs,
+        request.progress_projection_ref,
+        request.requested_priority,
+        request.title,
+        request.evaluated_at,
+    )
+
+
+def are_collaborative_work_requests_equivalent(
+    left: CollaborativeWorkRequest,
+    right: CollaborativeWorkRequest,
+) -> bool:
+    """Return whether two requests share the same canonical logical payload.
+
+    ``requested_at`` is per-attempt submission metadata and is intentionally
+    excluded so identical retries with a later timestamp remain idempotent.
+    """
+    return collaborative_work_logical_request_fields(
+        left,
+    ) == collaborative_work_logical_request_fields(right)
+
+
+def resolve_collaborative_work_submission_replay(
+    *,
+    existing: CollaborativeWorkRequest | None,
+    incoming: CollaborativeWorkRequest,
+) -> CollaborativeWorkSubmissionDisposition:
+    """Classify intake replay semantics for one stable request identity."""
+    if existing is None:
+        return CollaborativeWorkSubmissionDisposition.ACCEPTED
+    if are_collaborative_work_requests_equivalent(existing, incoming):
+        return CollaborativeWorkSubmissionDisposition.ALREADY_EXISTS
+    return CollaborativeWorkSubmissionDisposition.CONFLICT
 
 
 def derive_collaborative_work_request_identity(
@@ -119,6 +182,14 @@ class CollaborativeWorkRequest:
     def __post_init__(self) -> None:
         if type(self.request_identity) is not CollaborativeWorkRequestIdentity:
             raise TypeError("request_identity must be CollaborativeWorkRequestIdentity")
+        if self.request_identity.worker_instance_id != self.worker_instance_id:
+            raise ValueError(
+                "request_identity.worker_instance_id must match worker_instance_id"
+            )
+        if self.request_identity.goal_id != self.goal_id:
+            raise ValueError("request_identity.goal_id must match goal_id")
+        if self.request_identity.wake_up_id != self.wake_up_id:
+            raise ValueError("request_identity.wake_up_id must match wake_up_id")
         validate_worker_instance_id(self.worker_instance_id)
         validate_responsibility_id(self.responsibility_id)
         validate_worker_goal_id(self.goal_id)
@@ -128,6 +199,12 @@ class CollaborativeWorkRequest:
             raise ValueError(
                 "decision_disposition must be ACTION_REQUIRED for collaborative work requests"
             )
+        if self.reason_code is None:
+            raise ValueError(
+                "reason_code is required for ACTION_REQUIRED collaborative work requests"
+            )
+        if type(self.reason_code) is not GoalEvaluationReasonCode:
+            raise TypeError("reason_code must be GoalEvaluationReasonCode")
         object.__setattr__(
             self,
             "reason",
@@ -149,9 +226,6 @@ class CollaborativeWorkRequest:
             "title",
             require_non_empty_text(self.title, label="title"),
         )
-        if self.reason_code is not None:
-            if type(self.reason_code) is not GoalEvaluationReasonCode:
-                raise TypeError("reason_code must be GoalEvaluationReasonCode")
         object.__setattr__(
             self,
             "evidence_refs",
@@ -182,3 +256,26 @@ class CollaborativeWorkSubmissionResult:
                 raise TypeError(
                     "rejection_reason must be CollaborativeWorkBridgeRejectionReason"
                 )
+        if self.disposition is CollaborativeWorkSubmissionDisposition.ACCEPTED:
+            if self.rejection_reason is not None:
+                raise ValueError("ACCEPTED disposition must not include rejection_reason")
+        elif self.disposition is CollaborativeWorkSubmissionDisposition.ALREADY_EXISTS:
+            if self.rejection_reason is not None:
+                raise ValueError(
+                    "ALREADY_EXISTS disposition must not include rejection_reason"
+                )
+        elif self.disposition is CollaborativeWorkSubmissionDisposition.CONFLICT:
+            if self.rejection_reason is not None:
+                raise ValueError("CONFLICT disposition must not include rejection_reason")
+        elif self.disposition is CollaborativeWorkSubmissionDisposition.UNAVAILABLE:
+            if self.collaborative_work_ref is not None:
+                raise ValueError(
+                    "UNAVAILABLE disposition must not include collaborative_work_ref"
+                )
+            if self.rejection_reason is not None:
+                raise ValueError(
+                    "UNAVAILABLE disposition must not include rejection_reason"
+                )
+        elif self.disposition is CollaborativeWorkSubmissionDisposition.REJECTED:
+            if self.rejection_reason is None:
+                raise ValueError("REJECTED disposition requires rejection_reason")

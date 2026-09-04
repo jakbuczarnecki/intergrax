@@ -165,6 +165,7 @@ class WorkerGoalEvaluationService:
                     continue
                 decision = GoalEvaluationDecision(
                     goal_id=goal.goal_id,
+                    goal_revision=goal.revision,
                     evaluated_at=request.evaluated_at,
                     disposition=GoalEvaluationDisposition.NOT_EVALUABLE,
                     reason_code=GoalEvaluationReasonCode.CADENCE_POLICY_UNAVAILABLE,
@@ -182,6 +183,7 @@ class WorkerGoalEvaluationService:
                 decisions.append(
                     GoalEvaluationDecision(
                         goal_id=goal.goal_id,
+                        goal_revision=goal.revision,
                         evaluated_at=request.evaluated_at,
                         disposition=GoalEvaluationDisposition.NOT_DUE,
                         reason="goal evaluation cadence not yet eligible",
@@ -241,6 +243,7 @@ class WorkerGoalEvaluationService:
         if projection is None:
             return GoalEvaluationDecision(
                 goal_id=goal.goal_id,
+                goal_revision=goal.revision,
                 evaluated_at=evaluated_at,
                 disposition=GoalEvaluationDisposition.NOT_EVALUABLE,
                 reason_code=GoalEvaluationReasonCode.PROGRESS_PROJECTION_UNAVAILABLE,

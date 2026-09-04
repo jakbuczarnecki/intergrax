@@ -11,7 +11,10 @@ from intergrax.contracts.autonomous_work.collaborative_work_bridge import (
     CollaborativeWorkRequestIdentity,
     CollaborativeWorkSubmissionDisposition,
     CollaborativeWorkSubmissionResult,
+    are_collaborative_work_requests_equivalent,
+    collaborative_work_logical_request_fields,
     derive_collaborative_work_request_identity,
+    resolve_collaborative_work_submission_replay,
 )
 from intergrax.contracts.autonomous_work.continuity import (
     ProgressCheckpoint,
@@ -138,9 +141,12 @@ __all__ = (
     "CollaborativeWorkRequestIdentity",
     "CollaborativeWorkSubmissionDisposition",
     "CollaborativeWorkSubmissionResult",
+    "are_collaborative_work_requests_equivalent",
+    "collaborative_work_logical_request_fields",
     "ContextAnchorReference",
     "DeadlineOrCadenceRef",
     "DefaultGoalPolicyRef",
+    "resolve_collaborative_work_submission_replay",
     "derive_collaborative_work_request_identity",
     "DefinitionRevision",
     "EscalationPolicyRef",

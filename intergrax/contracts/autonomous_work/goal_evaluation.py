@@ -142,6 +142,7 @@ class GoalEvaluationDecision:
     """Immutable evaluation outcome for one goal."""
 
     goal_id: WorkerGoalId
+    goal_revision: Revision
     evaluated_at: datetime
     disposition: GoalEvaluationDisposition
     reason: str
@@ -152,6 +153,7 @@ class GoalEvaluationDecision:
 
     def __post_init__(self) -> None:
         validate_worker_goal_id(self.goal_id)
+        validate_revision(self.goal_revision)
         object.__setattr__(
             self,
             "evaluated_at",
