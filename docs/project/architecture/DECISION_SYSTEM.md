@@ -686,10 +686,14 @@ If the hosting Execution uses ORCHESTRATION, Nexus may participate in orchestrat
 
 | Requirement | Rule |
 | ----------- | ---- |
-| Durability | Lifecycle state, version lineage, finalize guard state persisted through canonical hosting Execution checkpoint/persistence boundary |
+| Durability | Lifecycle state, version lineage, finalize guard state, and revision budget snapshot persisted through canonical hosting Execution checkpoint/persistence boundary |
+| Atomic finalization | `DecisionFinalizationPersistence.commit_authoritative_outcome` performs check+commit in one backend transaction — no load/save race |
 | Resume | Continue from persisted stage - not full deliberation restart without cause |
-| Crash safety | Cannot mint duplicate authoritative decision |
-| Budget | Resume cannot expand prior granted budget |
+| Crash safety | Durable authoritative outcome lookup converges terminal state even when checkpoint lags finalization commit |
+| Budget | `DecisionRevisionCheckpointState` is authoritative on resume; runtime policy mismatch fails closed |
+| Qualification | Local SQLite/subprocess proof ≠ DS-E2E-06/07 distributed production qualification |
+
+Proof gates: DS-REC-01 (`tests/unit/runtime/execution/test_decision_finalization_persistence.py`) · DS-REC-02/03 (`tests/unit/runtime/execution/test_decision_durable_recovery.py`).
 
 ---
 

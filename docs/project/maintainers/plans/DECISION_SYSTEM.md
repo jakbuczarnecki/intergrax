@@ -226,9 +226,9 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-REC-01 | P0 | Finalize idempotency + conflict detection | **PARTIAL** - semantic idempotency/conflict guard **DONE** (`intergrax/contracts/decision_finalization.py`); durable atomic CAS at persistence boundary and cross-process race proof **OPEN** |
-| DS-REC-02 | P1 | Crash resume without duplicate authoritative outcome | **PARTIAL** - `DecisionCheckpointState` · `DecisionCheckpointPersistence` · execution-scoped binding · orchestration recovery participation **DONE**; real process/container crash/restart proof and durable duplicate-authority prevention proof **OPEN** |
-| DS-REC-03 | P1 | Budget ceiling preserved on resume | **PLANNED** - checkpoint currently carries lifecycle/finalization only; revision/deliberation budget state not durably restored. **Invariant:** resume must never reset semantic revision/deliberation budget ceilings. |
+| DS-REC-01 | P0 | Finalize idempotency + conflict detection | **DONE / ENTERPRISE CLOSED** - pure guard (`intergrax/contracts/decision_finalization.py`) + atomic `DecisionFinalizationPersistence.commit_authoritative_outcome` (`intergrax/runtime/execution/decision_finalization_persistence.py`) + in-memory/SQLite adapters + conformance/race proof (`tests/unit/runtime/execution/test_decision_finalization_persistence.py`) |
+| DS-REC-02 | P1 | Crash resume without duplicate authoritative outcome | **IMPLEMENTED / QUALIFICATION OPEN** - checkpoint v2 + durable finalization lookup + `decision_recovery` convergence + subprocess SQLite proof (`tests/unit/runtime/execution/test_decision_durable_recovery.py`); DS-E2E-06 Docker/process qualification remains open |
+| DS-REC-03 | P1 | Budget ceiling preserved on resume | **DONE / ENTERPRISE CLOSED** - `DecisionRevisionCheckpointState` in `DecisionCheckpointState` + resume policy fail-closed + exhausted preservation proof (`tests/unit/runtime/execution/test_decision_durable_recovery.py`) |
 
 ### Failure / security hardening
 
