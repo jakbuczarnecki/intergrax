@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 import multiprocessing as mp
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -99,9 +98,10 @@ from intergrax.runtime.execution.sqlite_decision_finalization_persistence import
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-@dataclass(frozen=True, slots=True)
-class IncidentDecisionPayload:
-    recommendation: str
+from intergrax.runtime.execution.decision_finalization_conformance import (
+    IncidentDecisionPayload,
+    conformance_artifact_payload_codec_registry,
+)
 
 
 def _execution_lineage() -> DecisionExecutionLineage:
@@ -423,6 +423,7 @@ def _subprocess_write_state(db_dir: str) -> None:
     db_path = Path(db_dir)
     checkpoint_store = SQLiteDecisionCheckpointPersistence(
         db_path=db_path / "checkpoint.db",
+        payload_codecs=conformance_artifact_payload_codec_registry(),
     )
     save_decision_checkpoint(checkpoint_store, checkpoint=checkpoint)
     sidecar = {
@@ -447,11 +448,13 @@ def _subprocess_read_state(db_dir: str) -> tuple[int, int]:
     )
     checkpoint_store = SQLiteDecisionCheckpointPersistence(
         db_path=db_path / "checkpoint.db",
+        payload_codecs=conformance_artifact_payload_codec_registry(),
     )
     loaded = resume_decision_from_durable_state(
         checkpoint_persistence=checkpoint_store,
         finalization_persistence=SQLiteDecisionFinalizationPersistence(
             db_path=db_path / "finalization.db",
+            payload_codecs=conformance_artifact_payload_codec_registry(),
         ),
         key=key,
         runtime_revision_policy=decision_revision_policy(max_revisions=3),

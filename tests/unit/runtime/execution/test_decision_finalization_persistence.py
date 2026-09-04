@@ -12,6 +12,7 @@ from intergrax.runtime.execution.decision_finalization_conformance import (
     assert_concurrent_finalization_race,
     assert_concurrent_idempotent_replay,
     assert_decision_finalization_persistence_conformance,
+    conformance_artifact_payload_codec_registry,
 )
 from intergrax.runtime.execution.in_memory_decision_finalization_persistence import (
     InMemoryDecisionFinalizationPersistence,
@@ -34,7 +35,10 @@ def test_sqlite_finalization_conformance(tmp_path: Path) -> None:
     db_path = tmp_path / "finalization.db"
 
     def _factory() -> SQLiteDecisionFinalizationPersistence:
-        return SQLiteDecisionFinalizationPersistence(db_path=db_path)
+        return SQLiteDecisionFinalizationPersistence(
+            db_path=db_path,
+            payload_codecs=conformance_artifact_payload_codec_registry(),
+        )
 
     assert_decision_finalization_persistence_conformance(_factory, label="sqlite")
 
@@ -46,7 +50,10 @@ def test_in_memory_concurrent_race() -> None:
 
 def test_sqlite_concurrent_race(tmp_path: Path) -> None:
     db_path = tmp_path / "finalization-race.db"
-    store = SQLiteDecisionFinalizationPersistence(db_path=db_path)
+    store = SQLiteDecisionFinalizationPersistence(
+        db_path=db_path,
+        payload_codecs=conformance_artifact_payload_codec_registry(),
+    )
     assert_concurrent_finalization_race(lambda: store, label="sqlite")
 
 
@@ -57,7 +64,10 @@ def test_in_memory_concurrent_idempotent_replay() -> None:
 
 def test_sqlite_concurrent_idempotent_replay(tmp_path: Path) -> None:
     db_path = tmp_path / "finalization-idempotent.db"
-    store = SQLiteDecisionFinalizationPersistence(db_path=db_path)
+    store = SQLiteDecisionFinalizationPersistence(
+        db_path=db_path,
+        payload_codecs=conformance_artifact_payload_codec_registry(),
+    )
     assert_concurrent_idempotent_replay(lambda: store, label="sqlite")
 
 
