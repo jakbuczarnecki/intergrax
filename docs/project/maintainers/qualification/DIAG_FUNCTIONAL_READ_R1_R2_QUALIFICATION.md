@@ -8,7 +8,7 @@
 
 **S1 baseline qualified SHA:** `98caff3af51b2951b8f0704ac7f96fea526cbfd5`
 
-**R1-R2 final qualified SHA:** record at `git rev-parse HEAD` on `development` after R1-R2 merge
+**R1-R2 final qualified SHA:** `46159f15b8f82642e09ae67a04478e31003cdac2`
 
 ## Scope split
 
