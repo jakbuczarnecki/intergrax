@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Canonical target architecture **FROZEN**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. Remaining work: trust hardening · durable authority/recovery · CouncilStrategy · Platform Plugins integration · lifecycle observability/diagnostics · real Docker E2E production qualification · final exact-commit audit. **Not** whole-system production-qualified until DS-E2E + DS-FINAL-AUDIT.
+> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Canonical target architecture **FROZEN**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. Remaining work: Platform Plugins integration · lifecycle observability/diagnostics · real Docker E2E production qualification (**DS-E2E-02** Council multi-provider) · final exact-commit audit. **Not** whole-system production-qualified until DS-E2E + DS-FINAL-AUDIT.
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub**.
 
@@ -42,7 +42,7 @@
 | **Decision Human Review** | **DONE** |
 | **Execution/Nexus integration** | **DONE** |
 | **Critic migration** | **COMPLETE** |
-| **Council Strategy** | **PLANNED** |
+| **Council Strategy** | **DONE** (DS-COUNCIL enterprise closed; DS-E2E-02 open) |
 | **Platform plugin integration** | **PARTIAL** |
 | **Durable authority/recovery** | **PARTIAL** |
 | **Lifecycle observability** | **PARTIAL** |
@@ -75,7 +75,7 @@ Ordered sequencing labels (existing **DS-\*** IDs remain authoritative):
 | **DS-CORE** | **DONE** | [below](#phase-ds-core--decision-lifecycle-foundation) |
 | **DS-REV** | **DONE** | [below](#phase-ds-rev--revision-policy-foundation) |
 | **DS-VER-PIPE / DS-VER-STAGES** | **DONE** | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
-| **DS-DELIB / DS-COUNCIL** | **DONE / PLANNED** | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) - DS-DELIB **DONE**; DS-COUNCIL **PLANNED** |
+| **DS-DELIB / DS-COUNCIL** | **DONE** | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) - DS-DELIB + DS-COUNCIL **DONE** |
 | **DS-MIG** (Critic clean cut) | **COMPLETE** | [below](#phase-ds-mig--critic-clean-cut-migration) |
 | **DS-E2E** (Docker qualification) | **PLANNED** | [below](#phase-ds-e2e--docker-production-qualification) |
 

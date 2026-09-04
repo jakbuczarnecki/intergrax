@@ -5,9 +5,9 @@
 **Parent:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Deliberation / Council strategy architecture **FROZEN**. **Decision Strategy foundation implemented.** **CouncilStrategy not yet implemented** (separate Council Runtime forbidden).
+> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Deliberation / Council strategy architecture **FROZEN**. **CouncilStrategy implemented** (DS-COUNCIL enterprise closed). Separate Council Runtime **forbidden**. Real multi-provider qualification remains **DS-E2E-02**.
 
-**Last updated:** 2026-09-04 - DS-ROADMAP-REALITY-SYNC.
+**Last updated:** 2026-09-04 - DS-COUNCIL enterprise closeout.
 
 ---
 
@@ -27,8 +27,8 @@
 | ----- | ------ |
 | **Target architecture** | **FROZEN** |
 | **DecisionStrategy contract + foundation strategies** | **DONE** - DS-DELIB |
-| **CouncilStrategy** | **PLANNED** - `CouncilStrategy implements DecisionStrategy`; not started |
-| **Production paths** | Single-model / rule-based / hybrid strategies available; Council not yet implemented |
+| **CouncilStrategy** | **DONE** - `CouncilStrategy implements DecisionStrategy`; `intergrax/contracts/council_strategy.py` + `intergrax/runtime/execution/council_deliberation.py`; `tests/unit/contracts/test_council_strategy.py` + `tests/unit/runtime/execution/test_council_deliberation.py` |
+| **Production paths** | Single-model / rule-based / hybrid / council contract paths available; real multi-provider Council **DS-E2E-02** open |
 
 ---
 
@@ -37,7 +37,7 @@
 | Phase | Status | Section |
 | ----- | ------ | ------- |
 | DS-DELIB | Done | [below](#phase-ds-delib--strategy-foundation) |
-| DS-COUNCIL | PLANNED | [below](#phase-ds-council--council-strategy) |
+| DS-COUNCIL | Done | [below](#phase-ds-council--council-strategy) |
 
 ---
 
@@ -55,15 +55,15 @@
 
 ---
 
-## Phase DS-COUNCIL - Council strategy (PLANNED)
+## Phase DS-COUNCIL - Council strategy (Done)
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-COUNCIL-01 | P1 | Council strategy - parallel proposals | **Planned** |
-| DS-COUNCIL-02 | P1 | Structured disagreement capture | **Planned** |
-| DS-COUNCIL-03 | P1 | Synthesis candidate emission | **Planned** |
-| DS-COUNCIL-04 | P1 | Bounded rounds under hosting Execution budget | **Planned** |
-| DS-COUNCIL-05 | P2 | Deadlock → Adjudication / UNRESOLVED routing | **Planned** |
+| DS-COUNCIL-01 | P1 | Council strategy - parallel proposals | **Done** |
+| DS-COUNCIL-02 | P1 | Structured disagreement capture | **Done** |
+| DS-COUNCIL-03 | P1 | Synthesis candidate emission | **Done** |
+| DS-COUNCIL-04 | P1 | Bounded rounds under hosting Execution budget | **Done** |
+| DS-COUNCIL-05 | P2 | Deadlock → Adjudication / UNRESOLVED routing | **Done** |
 
 ---
 
