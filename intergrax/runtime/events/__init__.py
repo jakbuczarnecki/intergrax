@@ -3,6 +3,10 @@
 
 """Runtime event package (architecture §42.1–§42.2)."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from intergrax.runtime.events.event_catalog import (
     EVENT_CATALOG,
     EventCatalogEntry,
@@ -53,10 +57,6 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.signals import emit_domain_signal, emit_platform_event
 from intergrax.runtime.events.journal_query import query_journal
-from intergrax.runtime.events.trace_bridge import (
-    runtime_event_from_task_state,
-    trace_event_to_runtime_event,
-)
 from intergrax.runtime.events.asof_projection import (
     AttemptAsOfSummary,
     HistoricalEventReference,
@@ -79,6 +79,12 @@ from intergrax.runtime.events.unified_run_journal import (
     build_unified_run_journal,
     load_positioned_run_journal_through,
 )
+
+if TYPE_CHECKING:
+    from intergrax.runtime.events.trace_bridge import (
+        runtime_event_from_task_state,
+        trace_event_to_runtime_event,
+    )
 
 __all__ = [
     "AsOfBoundary",
@@ -141,3 +147,15 @@ __all__ = [
     "runtime_event_from_task_state",
     "trace_event_to_runtime_event",
 ]
+
+
+def __getattr__(name: str):
+    if name == "runtime_event_from_task_state":
+        from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+
+        return runtime_event_from_task_state
+    if name == "trace_event_to_runtime_event":
+        from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
+
+        return trace_event_to_runtime_event
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

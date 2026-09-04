@@ -5,10 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
 
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
-from intergrax.runtime.task.task import Task
+
+if TYPE_CHECKING:
+    from intergrax.runtime.task.task import Task
 
 
 class ChainedInteractionAdapter(InteractionAdapter):

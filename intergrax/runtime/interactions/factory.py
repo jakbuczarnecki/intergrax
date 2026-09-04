@@ -8,13 +8,15 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, Optional
+from typing import TYPE_CHECKING, Callable, Dict, Optional
 
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
 from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
 from intergrax.runtime.interactions.adapters.slash_command_adapter import SlashCommandInteractionAdapter
-from intergrax.runtime.task.task import Task
+
+if TYPE_CHECKING:
+    from intergrax.runtime.task.task import Task
 
 ENV_INTERACTION_SURFACE = "INTERGRAX_INTERACTION_SURFACE"
 
