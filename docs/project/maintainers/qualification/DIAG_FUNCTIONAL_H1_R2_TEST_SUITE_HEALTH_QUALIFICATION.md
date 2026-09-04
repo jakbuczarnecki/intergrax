@@ -1,5 +1,7 @@
 # DIAG-FUNCTIONAL-H1-R2 TEST-SUITE HEALTH QUALIFICATION
 
+> **Supersession:** H1-R3 (`DIAG-FUNCTIONAL-H1-R3`) is the active clean canonical requalification attempt. This document preserves the H1-R2 FAILED audit trail.
+
 ## Verdict
 
 **FAILED**

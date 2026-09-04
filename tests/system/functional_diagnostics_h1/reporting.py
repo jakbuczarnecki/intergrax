@@ -18,6 +18,10 @@ from tests.system.functional_diagnostics_h1.models import (
     H1_SCHEMA_VERSION,
     H1_SEMANTICS,
 )
+from tests.system.functional_diagnostics_h1.qualification_spec import (
+    DiagnosticHealthQualificationSpec,
+    resolve_qualification_spec,
+)
 
 MANDATORY_HEALTH_GATES: frozenset[HealthGateId] = frozenset(
     {
@@ -53,8 +57,11 @@ def health_report_to_json(report: DiagnosticHealthReport) -> dict[str, object]:
         "start_head": report.start_head,
         "final_head": report.final_head,
         "origin_development_sha": report.origin_development_sha,
+        "origin_development_at_end": report.origin_development_at_end,
         "working_tree_clean_at_start": report.working_tree_clean_at_start,
+        "working_tree_clean_at_end": report.working_tree_clean_at_end,
         "repository_precondition": report.repository_precondition.value,
+        "repository_postcondition": report.repository_postcondition.value,
         "timestamp": report.timestamp,
         "h1_semantics": report.h1_semantics,
         "inventory_counts": report.inventory_counts,
@@ -125,6 +132,8 @@ def gate_h1_j_report_integrity(
     blocking_findings: tuple[str, ...],
     start_head: str,
     final_head: str,
+    working_tree_clean_at_end: bool,
+    repository_postcondition: HealthVerdict,
 ) -> GateResult:
     violations: list[str] = []
     mandatory_failed = tuple(
@@ -140,6 +149,10 @@ def gate_h1_j_report_integrity(
         violations.append("blocking_findings_coexist_with_overall_pass")
     if start_head != final_head:
         violations.append(f"head_changed_during_qualification:{start_head}->{final_head}")
+    if not working_tree_clean_at_end:
+        violations.append("working_tree_not_clean_at_end")
+    if repository_postcondition is not HealthVerdict.PASS:
+        violations.append(f"repository_postcondition:{repository_postcondition.value}")
     verdict = HealthVerdict.PASS if not violations else HealthVerdict.FAILED
     summary = (
         f"report integrity: overall={calculated_overall.value} violations={len(violations)}"
@@ -161,7 +174,11 @@ def _find_gate(report: DiagnosticHealthReport, gate_id: HealthGateId) -> GateRes
     return None
 
 
-def build_human_report(report: DiagnosticHealthReport) -> str:
+def build_human_report(
+    report: DiagnosticHealthReport,
+    spec: DiagnosticHealthQualificationSpec | None = None,
+) -> str:
+    resolved_spec = spec or resolve_qualification_spec(report.qualification_id)
     local_gate = _find_gate(report, HealthGateId.H1_K_LOCAL_INTEGRATION) or report.local_system_results
     lines = [
         f"# {report.qualification_id} TEST-SUITE HEALTH QUALIFICATION",
@@ -181,14 +198,23 @@ def build_human_report(report: DiagnosticHealthReport) -> str:
         "## Qualified SHA",
         report.tested_sha,
         "",
-        "## Origin development SHA",
+        "## Origin development SHA (start)",
         report.origin_development_sha,
         "",
-        "## Working tree clean at canonical run",
+        "## Origin development SHA (end)",
+        report.origin_development_at_end,
+        "",
+        "## Working tree clean at canonical start",
         "YES" if report.working_tree_clean_at_start else "NO",
+        "",
+        "## Working tree clean at canonical end",
+        "YES" if report.working_tree_clean_at_end else "NO",
         "",
         "## Repository precondition",
         report.repository_precondition.value,
+        "",
+        "## Repository postcondition",
+        report.repository_postcondition.value,
         "",
         "## Scope",
         "Diagnostic Engine test-suite health (inventory, gates, repeatability, invariant ownership).",
@@ -283,7 +309,10 @@ def build_human_report(report: DiagnosticHealthReport) -> str:
             "NONE" if not report.blocking_findings else "\n".join(f"- {item}" for item in report.blocking_findings),
             "",
             "## Machine artifact",
-            ".tmp/session/diag-functional-h1/qualification-report.json",
+            str(resolved_spec.artifact_report_json).replace("\\", "/"),
+            "",
+            "## Documentation closure path",
+            str(resolved_spec.closure_doc_path).replace("\\", "/"),
             "",
             "## Final architecture statement",
         ]
@@ -307,11 +336,15 @@ def utc_now_iso() -> str:
 
 def new_report_shell(
     *,
+    qualification_id: str = H1_QUALIFICATION_ID,
     start_head: str,
     tested_sha: str,
     origin_development_sha: str,
+    origin_development_at_end: str,
     working_tree_clean_at_start: bool,
+    working_tree_clean_at_end: bool,
     repository_precondition: HealthVerdict,
+    repository_postcondition: HealthVerdict,
 ) -> DiagnosticHealthReport:
     placeholder = GateResult(
         gate_id=HealthGateId.H1_J_REPORT_INTEGRITY,
@@ -320,13 +353,16 @@ def new_report_shell(
     )
     return DiagnosticHealthReport(
         schema_version=H1_SCHEMA_VERSION,
-        qualification_id=H1_QUALIFICATION_ID,
+        qualification_id=qualification_id,
         tested_sha=tested_sha,
         start_head=start_head,
         final_head=start_head,
         origin_development_sha=origin_development_sha,
+        origin_development_at_end=origin_development_at_end,
         working_tree_clean_at_start=working_tree_clean_at_start,
+        working_tree_clean_at_end=working_tree_clean_at_end,
         repository_precondition=repository_precondition,
+        repository_postcondition=repository_postcondition,
         timestamp=utc_now_iso(),
         h1_semantics=H1_SEMANTICS,
         inventory_counts={},

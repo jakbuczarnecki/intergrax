@@ -28,6 +28,10 @@ from tests.system.functional_diagnostics_h1.models import (
     SkipXfailFinding,
 )
 from tests.system.functional_diagnostics_h1.preflight import classify_external_dependencies
+from tests.system.functional_diagnostics_h1.qualification_spec import (
+    QUALIFICATION_SPECS,
+    health_qualification_runner_path,
+)
 from tests.system.functional_diagnostics_h1.subprocess_pytest import (
     classify_pytest_exit,
     run_pytest_subprocess,
@@ -281,6 +285,13 @@ def gate_h1_g_runner_integrity() -> GateResult:
             missing.append(f"missing_doc:{runner.family.value}:{runner.doc_path}")
         if runner.powershell_path is not None and not (_REPO_ROOT / runner.powershell_path).exists():
             missing.append(f"missing_ps1:{runner.family.value}:{runner.powershell_path}")
+    if not health_qualification_runner_path().exists():
+        missing.append("missing_runner:H1:tests/system/functional_diagnostics_h1/runner.py")
+    for spec in QUALIFICATION_SPECS:
+        if spec.requires_closure_doc_at_run and not (_REPO_ROOT / spec.closure_doc_path).exists():
+            missing.append(
+                f"missing_health_closure_doc:{spec.qualification_id}:{spec.closure_doc_path}"
+            )
     verdict = HealthVerdict.PASS if not missing else HealthVerdict.FAILED
     return GateResult(
         gate_id=HealthGateId.H1_G_RUNNER_INTEGRITY,

@@ -11,7 +11,6 @@ from dataclasses import replace
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_H1_PACKAGE_DIR = Path(__file__).resolve().parent
 for _path in (_REPO_ROOT,):
     _path_str = str(_path)
     if _path_str not in sys.path:
@@ -43,12 +42,15 @@ from tests.system.functional_diagnostics_h1.models import (
     HealthGateId,
     HealthVerdict,
     H1_QUALIFICATION_ID,
-    H1_R1_QUALIFICATION_ID,
-    H1_R2_QUALIFICATION_ID,
     H1_SCHEMA_VERSION,
     H1_SEMANTICS,
+    QualificationRepositoryTransition,
 )
 from tests.system.functional_diagnostics_h1.preflight import classify_external_dependencies
+from tests.system.functional_diagnostics_h1.qualification_spec import (
+    DiagnosticHealthQualificationSpec,
+    resolve_qualification_spec,
+)
 from tests.system.functional_diagnostics_h1.reporting import (
     aggregate_overall_verdict,
     build_human_report,
@@ -58,58 +60,15 @@ from tests.system.functional_diagnostics_h1.reporting import (
     write_test_inventory,
 )
 from tests.system.functional_diagnostics_h1.repository_state import (
+    assert_qualification_repository_postconditions,
     assert_qualification_repository_state,
     capture_qualification_repository_state,
-)
-
-_ARTIFACT_DIR = Path(".tmp/session/diag-functional-h1")
-_HUMAN_DOC_PATH = Path("docs/project/maintainers/qualification/DIAG_FUNCTIONAL_H1_TEST_SUITE_HEALTH_QUALIFICATION.md")
-
-_H1_R1_ARTIFACT_DIR = Path(".tmp/session/diag-functional-h1-r1")
-_H1_R1_HUMAN_DOC_PATH = Path(
-    "docs/project/maintainers/qualification/DIAG_FUNCTIONAL_H1_R1_TEST_SUITE_HEALTH_QUALIFICATION.md"
-)
-
-_H1_R2_ARTIFACT_DIR = Path(".tmp/session/diag-functional-h1-r2")
-_H1_R2_HUMAN_DOC_PATH = Path(
-    "docs/project/maintainers/qualification/DIAG_FUNCTIONAL_H1_R2_TEST_SUITE_HEALTH_QUALIFICATION.md"
 )
 
 _EXIT_PASS = 0
 _EXIT_FAILED = 1
 _EXIT_BLOCKED = 2
 _EXIT_FAILED_PRECONDITION = 3
-
-
-def _resolve_paths(
-    qualification_id: str,
-    artifact_dir: Path | None,
-    human_doc_path: Path | None,
-) -> tuple[Path, Path, Path, Path]:
-    if artifact_dir is not None:
-        resolved_artifact_dir = artifact_dir
-    elif qualification_id == H1_R2_QUALIFICATION_ID:
-        resolved_artifact_dir = _H1_R2_ARTIFACT_DIR
-    elif qualification_id == H1_R1_QUALIFICATION_ID:
-        resolved_artifact_dir = _H1_R1_ARTIFACT_DIR
-    else:
-        resolved_artifact_dir = _ARTIFACT_DIR
-
-    if human_doc_path is not None:
-        resolved_human_doc_path = human_doc_path
-    elif qualification_id == H1_R2_QUALIFICATION_ID:
-        resolved_human_doc_path = _H1_R2_HUMAN_DOC_PATH
-    elif qualification_id == H1_R1_QUALIFICATION_ID:
-        resolved_human_doc_path = _H1_R1_HUMAN_DOC_PATH
-    else:
-        resolved_human_doc_path = _HUMAN_DOC_PATH
-
-    return (
-        resolved_artifact_dir,
-        resolved_artifact_dir / "qualification-report.json",
-        resolved_artifact_dir / "test-inventory.json",
-        resolved_human_doc_path,
-    )
 
 
 def _git_head() -> str:
@@ -131,13 +90,19 @@ def _collect_blocking_findings(gate_results: tuple[GateResult, ...]) -> tuple[st
     return tuple(blocking)
 
 
+def _write_artifact_human_report(
+    spec: DiagnosticHealthQualificationSpec,
+    report: DiagnosticHealthReport,
+) -> None:
+    human_path = spec.artifact_human_report_md
+    human_path.parent.mkdir(parents=True, exist_ok=True)
+    human_path.write_text(build_human_report(report, spec), encoding="utf-8")
+
+
 def _write_precondition_failure_report(
     *,
-    qualification_id: str,
-    report_path: Path,
-    inventory_path: Path,
-    human_doc_path: Path,
-    repo_state,
+    spec: DiagnosticHealthQualificationSpec,
+    repo_transition: QualificationRepositoryTransition,
     precondition: HealthVerdict,
     violations: tuple[str, ...],
 ) -> DiagnosticHealthReport:
@@ -147,15 +112,19 @@ def _write_precondition_failure_report(
         summary="qualification aborted: repository precondition failed",
         details=violations,
     )
+    start_state = repo_transition.start
     health_report = DiagnosticHealthReport(
         schema_version=H1_SCHEMA_VERSION,
-        qualification_id=qualification_id,
-        tested_sha=repo_state.head_sha,
-        start_head=repo_state.head_sha,
-        final_head=repo_state.head_sha,
-        origin_development_sha=repo_state.origin_development_sha,
-        working_tree_clean_at_start=repo_state.working_tree_clean,
+        qualification_id=spec.qualification_id,
+        tested_sha=start_state.head_sha,
+        start_head=start_state.head_sha,
+        final_head=repo_transition.end.head_sha,
+        origin_development_sha=start_state.origin_development_sha,
+        origin_development_at_end=repo_transition.end.origin_development_sha,
+        working_tree_clean_at_start=start_state.working_tree_clean,
+        working_tree_clean_at_end=repo_transition.end.working_tree_clean,
         repository_precondition=precondition,
+        repository_postcondition=HealthVerdict.FAILED,
         timestamp=utc_now_iso(),
         h1_semantics=H1_SEMANTICS,
         inventory_counts={},
@@ -175,10 +144,9 @@ def _write_precondition_failure_report(
         blocking_findings=violations,
         warnings=(),
     )
-    write_health_report(report_path, health_report)
-    write_test_inventory(inventory_path, ())
-    human_doc_path.parent.mkdir(parents=True, exist_ok=True)
-    human_doc_path.write_text(build_human_report(health_report), encoding="utf-8")
+    write_health_report(spec.artifact_report_json, health_report)
+    write_test_inventory(spec.artifact_inventory_json, ())
+    _write_artifact_human_report(spec, health_report)
     return health_report
 
 
@@ -189,40 +157,51 @@ def run_h1_qualification(
     human_doc_path: Path | None = None,
     skip_repository_preconditions: bool = False,
 ) -> int:
-    resolved_artifact_dir, report_path, inventory_path, resolved_human_doc_path = _resolve_paths(
-        qualification_id,
-        artifact_dir,
-        human_doc_path,
-    )
+    spec = resolve_qualification_spec(qualification_id)
+    if artifact_dir is not None:
+        spec = DiagnosticHealthQualificationSpec(
+            qualification_id=spec.qualification_id,
+            artifact_directory=artifact_dir,
+            closure_doc_path=spec.closure_doc_path,
+            requires_clean_repository=spec.requires_clean_repository,
+            requires_origin_development_match=spec.requires_origin_development_match,
+            requires_stable_head=spec.requires_stable_head,
+            historical=spec.historical,
+            requires_closure_doc_at_run=spec.requires_closure_doc_at_run,
+        )
+    if human_doc_path is not None:
+        _ = human_doc_path
 
-    repo_state = capture_qualification_repository_state(_REPO_ROOT)
-    precondition, precondition_violations = assert_qualification_repository_state(repo_state)
+    start_state = capture_qualification_repository_state(_REPO_ROOT)
+    precondition, precondition_violations = assert_qualification_repository_state(
+        start_state,
+        requires_clean_repository=spec.requires_clean_repository,
+        requires_origin_development_match=spec.requires_origin_development_match,
+    )
     if (
         not skip_repository_preconditions
-        and qualification_id == H1_R2_QUALIFICATION_ID
+        and spec.requires_repository_preconditions()
         and precondition is not HealthVerdict.PASS
     ):
+        end_state = capture_qualification_repository_state(_REPO_ROOT)
         _write_precondition_failure_report(
-            qualification_id=qualification_id,
-            report_path=report_path,
-            inventory_path=inventory_path,
-            human_doc_path=resolved_human_doc_path,
-            repo_state=repo_state,
+            spec=spec,
+            repo_transition=QualificationRepositoryTransition(start=start_state, end=end_state),
             precondition=precondition,
             violations=precondition_violations,
         )
         summary = {
-            "qualification_id": qualification_id,
+            "qualification_id": spec.qualification_id,
             "verdict": HealthVerdict.FAILED_PRECONDITION.value,
             "violations": precondition_violations,
-            "artifact": str(report_path),
+            "artifact": str(spec.artifact_report_json),
         }
         print(json.dumps(summary, indent=2))
         return _EXIT_FAILED_PRECONDITION
 
-    start_head = repo_state.head_sha
+    start_head = start_state.head_sha
     inventory = build_diagnostic_test_inventory()
-    write_test_inventory(inventory_path, inventory)
+    write_test_inventory(spec.artifact_inventory_json, inventory)
     inventory_counts = inventory_counts_by_layer(inventory)
 
     collection_gate, discovered = gate_h1_a_collection(len(inventory))
@@ -265,39 +244,52 @@ def run_h1_qualification(
         real_service_blocked=real_service_blocked,
     )
     blocking = _collect_blocking_findings(gate_results_before_j)
-    final_head = _git_head()
+
+    end_state = capture_qualification_repository_state(_REPO_ROOT)
+    final_head = end_state.head_sha
+    repo_transition = QualificationRepositoryTransition(start=start_state, end=end_state)
+    postcondition, postcondition_violations = assert_qualification_repository_postconditions(
+        repo_transition,
+        spec,
+    )
+    if postcondition is not HealthVerdict.PASS:
+        blocking = blocking + postcondition_violations
+        overall = HealthVerdict.FAILED
+        core_verdict = HealthVerdict.FAILED
+
     report_integrity_gate = gate_h1_j_report_integrity(
         gate_results=gate_results_before_j,
         calculated_overall=overall,
         blocking_findings=blocking,
         start_head=start_head,
         final_head=final_head,
+        working_tree_clean_at_end=end_state.working_tree_clean,
+        repository_postcondition=postcondition,
     )
     all_gates = gate_results_before_j + (report_integrity_gate,)
 
     if report_integrity_gate.verdict is HealthVerdict.FAILED:
         overall = HealthVerdict.FAILED
         core_verdict = HealthVerdict.FAILED
-        blocking = _collect_blocking_findings(all_gates)
+        blocking = _collect_blocking_findings(all_gates) + postcondition_violations
 
     warnings: list[str] = []
     sleep_findings = scan_sleep_synchronization()
     if sleep_findings:
         warnings.extend(sleep_findings[:20])
 
-    if final_head != start_head:
-        overall = HealthVerdict.FAILED
-        blocking = blocking + (f"head_changed_during_qualification:{start_head}->{final_head}",)
-
     health_report = DiagnosticHealthReport(
         schema_version=H1_SCHEMA_VERSION,
-        qualification_id=qualification_id,
+        qualification_id=spec.qualification_id,
         tested_sha=start_head,
         start_head=start_head,
         final_head=final_head,
-        origin_development_sha=repo_state.origin_development_sha,
-        working_tree_clean_at_start=repo_state.working_tree_clean,
+        origin_development_sha=start_state.origin_development_sha,
+        origin_development_at_end=end_state.origin_development_sha,
+        working_tree_clean_at_start=start_state.working_tree_clean,
+        working_tree_clean_at_end=end_state.working_tree_clean,
         repository_precondition=precondition,
+        repository_postcondition=postcondition,
         timestamp=utc_now_iso(),
         h1_semantics=H1_SEMANTICS,
         inventory_counts=inventory_counts,
@@ -317,23 +309,26 @@ def run_h1_qualification(
         blocking_findings=blocking,
         warnings=tuple(warnings),
     )
-    write_health_report(report_path, health_report)
-    resolved_human_doc_path.parent.mkdir(parents=True, exist_ok=True)
-    resolved_human_doc_path.write_text(build_human_report(health_report), encoding="utf-8")
+    write_health_report(spec.artifact_report_json, health_report)
+    _write_artifact_human_report(spec, health_report)
 
     summary = {
-        "qualification_id": qualification_id,
+        "qualification_id": spec.qualification_id,
         "verdict": overall.value,
         "core_test_health": core_verdict.value,
         "real_service_qualification_availability": real_service_verdict.value,
         "tested_sha": start_head,
         "start_head": start_head,
         "final_head": final_head,
-        "origin_development_sha": repo_state.origin_development_sha,
-        "working_tree_clean_at_start": repo_state.working_tree_clean,
+        "origin_development_at_start": start_state.origin_development_sha,
+        "origin_development_at_end": end_state.origin_development_sha,
+        "working_tree_clean_at_start": start_state.working_tree_clean,
+        "working_tree_clean_at_end": end_state.working_tree_clean,
+        "repository_precondition": precondition.value,
+        "repository_postcondition": postcondition.value,
         "inventory": inventory_counts,
         "families": [item.family.value for item in build_h1_qualification_families()],
-        "artifact": str(report_path),
+        "artifact": str(spec.artifact_report_json),
     }
     print(json.dumps(summary, indent=2))
     if overall is HealthVerdict.PASS:
@@ -346,11 +341,25 @@ def run_h1_qualification(
 
 
 def main() -> int:
-    if "--qualification-id" in sys.argv:
-        index = sys.argv.index("--qualification-id")
-        qualification_id = sys.argv[index + 1]
-        return run_h1_qualification(qualification_id=qualification_id)
-    return run_h1_qualification()
+    qualification_id = H1_QUALIFICATION_ID
+    skip_repository_preconditions = False
+    args = sys.argv[1:]
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg == "--qualification-id" and index + 1 < len(args):
+            qualification_id = args[index + 1]
+            index += 2
+            continue
+        if arg == "--skip-repository-preconditions":
+            skip_repository_preconditions = True
+            index += 1
+            continue
+        index += 1
+    return run_h1_qualification(
+        qualification_id=qualification_id,
+        skip_repository_preconditions=skip_repository_preconditions,
+    )
 
 
 if __name__ == "__main__":

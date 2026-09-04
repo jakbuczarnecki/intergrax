@@ -22,15 +22,26 @@ from tests.system.functional_diagnostics_h1.models import (
     GateResult,
     HealthGateId,
     HealthVerdict,
+    H1_R2_QUALIFICATION_ID,
+    H1_R3_QUALIFICATION_ID,
     PytestSubprocessResult,
     QualificationRepositoryState,
+    QualificationRepositoryTransition,
+)
+from tests.system.functional_diagnostics_h1.qualification_spec import (
+    QUALIFICATION_SPECS,
+    compose_qualification_spec,
+    resolve_qualification_spec,
 )
 from tests.system.functional_diagnostics_h1.reporting import (
     aggregate_overall_verdict,
     calculate_health_verdict,
     gate_h1_j_report_integrity,
 )
-from tests.system.functional_diagnostics_h1.repository_state import assert_qualification_repository_state
+from tests.system.functional_diagnostics_h1.repository_state import (
+    assert_qualification_repository_postconditions,
+    assert_qualification_repository_state,
+)
 from tests.system.functional_diagnostics_h1.subprocess_pytest import classify_pytest_exit
 
 pytestmark = pytest.mark.unit
@@ -115,6 +126,8 @@ def test_report_integrity_rejects_failed_gate_with_pass_overall() -> None:
         blocking_findings=("local failed",),
         start_head="abc",
         final_head="abc",
+        working_tree_clean_at_end=True,
+        repository_postcondition=HealthVerdict.PASS,
     )
     assert integrity.verdict is HealthVerdict.FAILED
 
@@ -127,6 +140,8 @@ def test_report_integrity_rejects_blocking_findings_with_pass_overall() -> None:
         blocking_findings=("stale finding",),
         start_head="abc",
         final_head="abc",
+        working_tree_clean_at_end=True,
+        repository_postcondition=HealthVerdict.PASS,
     )
     assert integrity.verdict is HealthVerdict.FAILED
 
@@ -169,6 +184,8 @@ def test_head_change_during_qualification_fails_integrity() -> None:
         blocking_findings=(),
         start_head="abc",
         final_head="def",
+        working_tree_clean_at_end=True,
+        repository_postcondition=HealthVerdict.FAILED,
     )
     assert integrity.verdict is HealthVerdict.FAILED
 
@@ -235,12 +252,10 @@ def test_external_dependency_state_enum_values() -> None:
 
 
 def test_h1_r2_runner_refuses_dirty_tree() -> None:
-    from tests.system.functional_diagnostics_h1.models import H1_R2_QUALIFICATION_ID
     from tests.system.functional_diagnostics_h1.runner import run_h1_qualification
 
     artifact_dir = _REPO_ROOT / ".tmp" / "session" / "diag-functional-h1-r2" / "unit-test-artifacts"
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    human_doc = artifact_dir / "report.md"
     with patch(
         "tests.system.functional_diagnostics_h1.runner.capture_qualification_repository_state",
         return_value=QualificationRepositoryState(
@@ -252,6 +267,101 @@ def test_h1_r2_runner_refuses_dirty_tree() -> None:
         exit_code = run_h1_qualification(
             qualification_id=H1_R2_QUALIFICATION_ID,
             artifact_dir=artifact_dir,
-            human_doc_path=human_doc,
         )
     assert exit_code == 3
+
+
+def test_h1_r3_runner_refuses_dirty_tree() -> None:
+    from tests.system.functional_diagnostics_h1.runner import run_h1_qualification
+
+    artifact_dir = _REPO_ROOT / ".tmp" / "session" / "diag-functional-h1-r3" / "unit-test-artifacts"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    with patch(
+        "tests.system.functional_diagnostics_h1.runner.capture_qualification_repository_state",
+        return_value=QualificationRepositoryState(
+            head_sha="abc",
+            origin_development_sha="abc",
+            working_tree_clean=False,
+        ),
+    ):
+        exit_code = run_h1_qualification(
+            qualification_id=H1_R3_QUALIFICATION_ID,
+            artifact_dir=artifact_dir,
+        )
+    assert exit_code == 3
+
+
+def test_r3_uses_own_artifact_paths() -> None:
+    spec = resolve_qualification_spec(H1_R3_QUALIFICATION_ID)
+    assert spec.artifact_directory.as_posix() == ".tmp/session/diag-functional-h1-r3"
+    assert spec.artifact_report_json.as_posix().endswith("diag-functional-h1-r3/qualification-report.json")
+
+
+def test_r3_does_not_share_artifact_paths_with_prior_remediations() -> None:
+    r2 = resolve_qualification_spec(H1_R2_QUALIFICATION_ID)
+    r3 = resolve_qualification_spec(H1_R3_QUALIFICATION_ID)
+    assert r2.artifact_directory != r3.artifact_directory
+    assert r2.artifact_report_json != r3.artifact_report_json
+
+
+def test_dirty_end_tree_fails_postcondition() -> None:
+    spec = resolve_qualification_spec(H1_R3_QUALIFICATION_ID)
+    transition = QualificationRepositoryTransition(
+        start=QualificationRepositoryState("abc", "abc", True),
+        end=QualificationRepositoryState("abc", "abc", False),
+    )
+    verdict, violations = assert_qualification_repository_postconditions(transition, spec)
+    assert verdict is HealthVerdict.FAILED
+    assert "working_tree_not_clean_at_end" in violations
+
+
+def test_origin_moves_during_run_fails_postcondition() -> None:
+    spec = resolve_qualification_spec(H1_R3_QUALIFICATION_ID)
+    transition = QualificationRepositoryTransition(
+        start=QualificationRepositoryState("abc", "abc", True),
+        end=QualificationRepositoryState("abc", "def", True),
+    )
+    verdict, violations = assert_qualification_repository_postconditions(transition, spec)
+    assert verdict is HealthVerdict.FAILED
+    assert any("origin_development_changed" in item for item in violations)
+
+
+def test_head_change_during_qualification_fails_postcondition() -> None:
+    spec = resolve_qualification_spec(H1_R3_QUALIFICATION_ID)
+    transition = QualificationRepositoryTransition(
+        start=QualificationRepositoryState("abc", "abc", True),
+        end=QualificationRepositoryState("def", "def", True),
+    )
+    verdict, violations = assert_qualification_repository_postconditions(transition, spec)
+    assert verdict is HealthVerdict.FAILED
+    assert any("head_changed_during_qualification" in item for item in violations)
+
+
+def test_dirty_end_tree_fails_report_integrity() -> None:
+    gates = _pass_gates()
+    integrity = gate_h1_j_report_integrity(
+        gate_results=gates,
+        calculated_overall=HealthVerdict.PASS,
+        blocking_findings=(),
+        start_head="abc",
+        final_head="abc",
+        working_tree_clean_at_end=False,
+        repository_postcondition=HealthVerdict.FAILED,
+    )
+    assert integrity.verdict is HealthVerdict.FAILED
+
+
+def test_qualification_spec_extensibility_without_runner_branching() -> None:
+    synthetic = compose_qualification_spec(
+        "DIAG-FUNCTIONAL-H1-R99",
+        "-r99",
+        "DIAG_FUNCTIONAL_H1_R99_TEST_SUITE_HEALTH_QUALIFICATION.md",
+        historical=False,
+        requires_preconditions=True,
+        requires_closure_doc_at_run=False,
+    )
+    assert synthetic.qualification_id == "DIAG-FUNCTIONAL-H1-R99"
+    assert synthetic.requires_repository_preconditions() is True
+    assert synthetic.artifact_directory.as_posix() == ".tmp/session/diag-functional-h1-r99"
+    registered_ids = {item.qualification_id for item in QUALIFICATION_SPECS}
+    assert "DIAG-FUNCTIONAL-H1-R99" not in registered_ids

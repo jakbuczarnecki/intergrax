@@ -127,6 +127,12 @@ class QualificationRepositoryState:
 
 
 @dataclass(frozen=True, slots=True)
+class QualificationRepositoryTransition:
+    start: QualificationRepositoryState
+    end: QualificationRepositoryState
+
+
+@dataclass(frozen=True, slots=True)
 class PytestSubprocessResult:
     exit_code: int
     collected_count: int | None
@@ -202,8 +208,11 @@ class DiagnosticHealthReport:
     start_head: str
     final_head: str
     origin_development_sha: str
+    origin_development_at_end: str
     working_tree_clean_at_start: bool
+    working_tree_clean_at_end: bool
     repository_precondition: HealthVerdict
+    repository_postcondition: HealthVerdict
     timestamp: str
     h1_semantics: str
     inventory_counts: dict[str, int]
@@ -228,6 +237,7 @@ H1_SCHEMA_VERSION = "diag_functional_h1_v1"
 H1_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1"
 H1_R1_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R1"
 H1_R2_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R2"
+H1_R3_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R3"
 H1_SEMANTICS = (
     "H1 measures diagnostic TEST-SUITE HEALTH, not live requalification of all "
     "historical real-world qualifications. External service absence yields "
