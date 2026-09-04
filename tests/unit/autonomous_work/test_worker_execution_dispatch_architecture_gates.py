@@ -33,6 +33,10 @@ _FORBIDDEN_AW_TOKENS = (
 
 _AW_MODULE_PATHS = (
     "worker_execution_dispatch.py",
+    "worker_budget_admission.py",
+    "worker_execution_accounting.py",
+    "in_memory_worker_accounting_repository.py",
+    "postgresql_worker_accounting_repository.py",
 )
 
 

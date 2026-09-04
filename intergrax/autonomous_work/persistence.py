@@ -18,6 +18,7 @@ from intergrax.autonomous_work.repository import (
     WorkerPrincipalBindingRepository,
     WorkerWakeUpReceiptRepository,
 )
+from intergrax.autonomous_work.worker_budget_ports import WorkerAccountingRepository
 
 
 @runtime_checkable
@@ -40,6 +41,7 @@ class AutonomousWorkRepositories:
     goal_evaluation_cadence_state: GoalEvaluationCadenceStateRepository
     worker_principal_binding: WorkerPrincipalBindingRepository
     worker_wake_up_receipt: WorkerWakeUpReceiptRepository
+    worker_accounting: WorkerAccountingRepository
     store: AutonomousWorkStoreOwner
 
     def close(self) -> None:

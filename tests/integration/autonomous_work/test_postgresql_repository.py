@@ -619,7 +619,7 @@ def test_postgresql_worker_principal_binding_concurrent_conflicting_create_one_w
 def test_postgresql_schema_v4_includes_goal_evaluation_cadence_states(
     postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
 ) -> None:
-    """Fresh bootstrap reaches schema v4 with AW-4B cadence state table."""
+    """Fresh bootstrap reaches schema v5 with AW-5B worker accounting table."""
     from intergrax.autonomous_work.postgresql_repository import PostgreSQLAutonomousWorkStore
 
     store = postgresql_autonomous_work_bundle.store
@@ -629,11 +629,11 @@ def test_postgresql_schema_v4_includes_goal_evaluation_cadence_states(
             "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
         ).fetchone()
         assert row is not None
-        assert int(row["schema_version"]) == 4
+        assert int(row["schema_version"]) == 5
         table_row = conn.execute(
             """
             SELECT 1 FROM information_schema.tables
-            WHERE table_name = 'aw_goal_evaluation_cadence_states'
+            WHERE table_name = 'aw_worker_accounting_snapshots'
             """
         ).fetchone()
         assert table_row is not None
@@ -703,7 +703,7 @@ def test_postgresql_migration_atomicity_schema_version_not_advanced_without_tabl
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 4
+            assert int(row["schema_version"]) == 5
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables
@@ -742,7 +742,7 @@ def test_postgresql_schema_v1_to_v2_migration_preserves_existing_data(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 4
+            assert int(row["schema_version"]) == 5
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables
@@ -767,4 +767,4 @@ def test_postgresql_fresh_database_bootstraps_schema_v4(
             "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
         ).fetchone()
         assert row is not None
-        assert int(row["schema_version"]) == 4
+        assert int(row["schema_version"]) == 5

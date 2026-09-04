@@ -54,7 +54,7 @@ Delivery rule:
 | AW-2 | Durable worker state and lifecycle | **DONE** |
 | AW-3 | Principal / authority / workspace composition | **DONE** |
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
-| AW-5 | Worker → execution composition and budgets | **IN PROGRESS** (AW-5A IN PROGRESS, AW-5B NOT STARTED) |
+| AW-5 | Worker → execution composition and budgets | **IN PROGRESS** (AW-5A DONE, AW-5B IN PROGRESS) |
 | AW-6 | Recovery Controller and obstacle taxonomy | NOT STARTED |
 | AW-7 | Adaptive capability acquisition | NOT STARTED |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
@@ -226,7 +226,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-5A |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** |
+| **Status** | **DONE** |
 | **Purpose** | Canonical worker → Execution dispatch/correlation |
 | **REUSED** | `ExecutionRuntime`, `ExecutionBoundary`, `resolve_root_execution_context`, AW-3B `WorkerExecutionAdmissionService`, Collaborative Principal binding, `RuntimePolicyEngine` |
 | **NEW** | `WorkerExecutionDispatchService`, `WorkerExecutionDispatchRequest/Result`, `WorkerExecutionSource`, `WorkerExecutionCorrelation`, `RootExecutionAuthorityAdmissionPort`, `RuntimeExecutionPolicyAdmissionPort`, `CanonicalExecutionIntakePort`, `CanonicalExecutionRuntimeAdapter` |
@@ -239,7 +239,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-5B |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **IN PROGRESS** |
 | **Purpose** | Worker accounting windows over existing durable execution budgets |
 | **Exact scope** | daily/monthly cost cap, concurrency cap, recovery/codecraft caps, proactive cadence budget |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Budgets |

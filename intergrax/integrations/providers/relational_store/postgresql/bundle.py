@@ -124,6 +124,9 @@ def _materialize_postgresql_autonomous_work_repositories(
         PostgreSQLWorkerPrincipalBindingRepository,
         PostgreSQLWorkerWakeUpReceiptRepository,
     )
+    from intergrax.autonomous_work.postgresql_worker_accounting_repository import (
+        PostgreSQLWorkerAccountingRepository,
+    )
 
     config = resolve_postgresql_config(**config_overrides)
     resolved_schema = validate_schema_identifier(
@@ -154,6 +157,7 @@ def _materialize_postgresql_autonomous_work_repositories(
         goal_evaluation_cadence_state=PostgreSQLGoalEvaluationCadenceStateRepository(store),
         worker_principal_binding=PostgreSQLWorkerPrincipalBindingRepository(store),
         worker_wake_up_receipt=PostgreSQLWorkerWakeUpReceiptRepository(store),
+        worker_accounting=PostgreSQLWorkerAccountingRepository(store),
         store=store,
     )
 

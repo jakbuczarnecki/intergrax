@@ -24,6 +24,11 @@ from intergrax.autonomous_work.execution_authority_admission import (
     WorkerExecutionAdmissionService,
     WorkerExecutionAuthorityDenied,
 )
+from intergrax.autonomous_work.worker_budget_admission import WorkerBudgetAdmissionService
+from intergrax.autonomous_work.worker_budget_ports import WorkerBudgetProfileResolutionError
+from intergrax.autonomous_work.worker_execution_accounting import (
+    WorkerExecutionAccountingService,
+)
 from intergrax.autonomous_work.repository import (
     ResponsibilityRepository,
     WorkerGoalRepository,
@@ -39,6 +44,10 @@ from intergrax.contracts.autonomous_work.execution_dispatch import (
     WorkerExecutionDispatchRequest,
     WorkerExecutionDispatchResult,
 )
+from intergrax.contracts.autonomous_work.worker_budget_accounting import (
+    WorkerBudgetAdmissionDisposition,
+)
+from intergrax.contracts.execution_identity import ExecutionId
 from intergrax.contracts.autonomous_work.goal import WorkerGoalStatus
 from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.contracts.autonomous_work.responsibility import ResponsibilityStatus
@@ -82,6 +91,8 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
         admission_service: WorkerExecutionAdmissionService,
         root_authority_admission: RootExecutionAuthorityAdmissionPort,
         execution_intake: CanonicalExecutionIntakePort[InputT, OutputT],
+        budget_admission_service: WorkerBudgetAdmissionService | None = None,
+        execution_accounting_service: WorkerExecutionAccountingService | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self._worker_instance_repository = worker_instance_repository
@@ -90,6 +101,8 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
         self._admission_service = admission_service
         self._root_authority_admission = root_authority_admission
         self._execution_intake = execution_intake
+        self._budget_admission_service = budget_admission_service
+        self._execution_accounting_service = execution_accounting_service
         self._clock = clock or _utc_now
 
     async def dispatch(
@@ -139,6 +152,35 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
                     reason=rejection,
                 )
 
+        budget_reserved = False
+        if self._budget_admission_service is not None:
+            try:
+                budget_result = self._budget_admission_service.admit_dispatch(
+                    worker=worker,
+                    request=request,
+                )
+            except WorkerBudgetProfileResolutionError:
+                return self._rejected(
+                    correlation=base_correlation,
+                    reason=WorkerExecutionDispatchRejectionReason.BUDGET_DENIED,
+                )
+            if budget_result.disposition is WorkerBudgetAdmissionDisposition.UNAVAILABLE:
+                return self._unavailable(
+                    correlation=base_correlation,
+                    rejection_reason=WorkerExecutionDispatchRejectionReason.BUDGET_UNAVAILABLE,
+                )
+            if budget_result.disposition is WorkerBudgetAdmissionDisposition.CONFLICT:
+                return self._rejected(
+                    correlation=base_correlation,
+                    reason=WorkerExecutionDispatchRejectionReason.BUDGET_CONFLICT,
+                )
+            if budget_result.disposition is WorkerBudgetAdmissionDisposition.DENIED:
+                return self._rejected(
+                    correlation=base_correlation,
+                    reason=WorkerExecutionDispatchRejectionReason.BUDGET_DENIED,
+                )
+            budget_reserved = True
+
         try:
             authority_context = self._admission_service.prepare(
                 WorkerExecutionAuthorityRequest(
@@ -147,6 +189,8 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
                 )
             )
         except WorkerExecutionAuthorityDenied:
+            if budget_reserved:
+                self._release_budget_reservation(request)
             return self._rejected(
                 correlation=base_correlation,
                 reason=WorkerExecutionDispatchRejectionReason.COLLABORATIVE_AUTHORITY_DENIED,
@@ -163,6 +207,8 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
             )
         )
         if root_admission.disposition is not RootExecutionAuthorityAdmissionDisposition.ALLOWED:
+            if budget_reserved:
+                self._release_budget_reservation(request)
             if root_admission.disposition is RootExecutionAuthorityAdmissionDisposition.UNAVAILABLE:
                 return self._unavailable(correlation=base_correlation)
             return self._rejected(
@@ -182,6 +228,10 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
                 )
             )
         except CanonicalExecutionInvocationFailed as exc:
+            if exc.execution_id is not None:
+                self._bind_budget_execution(request, execution_id=exc.execution_id)
+            elif budget_reserved:
+                self._release_budget_reservation(request)
             return WorkerExecutionDispatchResult(
                 disposition=WorkerExecutionDispatchDisposition.FAILED,
                 correlation=WorkerExecutionCorrelation(
@@ -198,6 +248,11 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
                 ),
                 failure_reason=str(exc.cause or exc),
             )
+
+        self._bind_budget_execution(
+            request,
+            execution_id=intake_result.execution_id,
+        )
 
         return WorkerExecutionDispatchResult(
             disposition=WorkerExecutionDispatchDisposition.DISPATCHED,
@@ -244,6 +299,27 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
                 return WorkerExecutionDispatchRejectionReason.OWNERSHIP_MISMATCH
         return None
 
+    def _release_budget_reservation(
+        self,
+        request: WorkerExecutionDispatchRequest[InputT, OutputT],
+    ) -> None:
+        if self._execution_accounting_service is None:
+            return
+        self._execution_accounting_service.release_reservation(request=request)
+
+    def _bind_budget_execution(
+        self,
+        request: WorkerExecutionDispatchRequest[InputT, OutputT],
+        *,
+        execution_id: ExecutionId,
+    ) -> None:
+        if self._execution_accounting_service is None:
+            return
+        self._execution_accounting_service.bind_execution(
+            request=request,
+            execution_id=execution_id,
+        )
+
     @staticmethod
     def _rejected(
         *,
@@ -260,9 +336,12 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
     def _unavailable(
         *,
         correlation: WorkerExecutionCorrelation,
+        rejection_reason: WorkerExecutionDispatchRejectionReason = (
+            WorkerExecutionDispatchRejectionReason.RUNTIME_UNAVAILABLE
+        ),
     ) -> WorkerExecutionDispatchResult[OutputT]:
         return WorkerExecutionDispatchResult(
             disposition=WorkerExecutionDispatchDisposition.UNAVAILABLE,
             correlation=correlation,
-            rejection_reason=WorkerExecutionDispatchRejectionReason.RUNTIME_UNAVAILABLE,
+            rejection_reason=rejection_reason,
         )

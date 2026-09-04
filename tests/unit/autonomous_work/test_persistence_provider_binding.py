@@ -50,6 +50,7 @@ def test_resolve_autonomous_work_repositories_uses_postgresql_binder() -> None:
         goal_evaluation_cadence_state=MagicMock(),
         worker_principal_binding=MagicMock(),
         worker_wake_up_receipt=MagicMock(),
+        worker_accounting=MagicMock(),
         store=MagicMock(),
     )
     with patch(
