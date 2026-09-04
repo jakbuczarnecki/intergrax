@@ -19,6 +19,9 @@ from intergrax.autonomous_work.worker_budget_ports import (
     WorkerAccountingNotFound,
 )
 from intergrax.contracts.autonomous_work.worker_budget_accounting import (
+    BudgetUsageTotals,
+    WorkerAccountingState,
+    WorkerAccountingWindow,
     WorkerBudgetAdmissionResult,
     WorkerBudgetReserveRequest,
     WorkerExecutionReservation,
@@ -26,7 +29,9 @@ from intergrax.contracts.autonomous_work.worker_budget_accounting import (
     WorkerProactiveEvaluationAccountingRequest,
 )
 from intergrax.contracts.execution_identity import ExecutionId
-from intergrax.contracts.autonomous_work.worker_budget_accounting import BudgetUsageTotals
+from intergrax.integrations.providers.relational_store.postgresql.session import (
+    PostgreSQLSession,
+)
 
 if TYPE_CHECKING:
     from intergrax.autonomous_work.postgresql_repository import PostgreSQLAutonomousWorkStore
@@ -53,8 +58,12 @@ class PostgreSQLWorkerAccountingRepository:
     def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
         return _CAPABILITIES
 
-    def get_window_state(self, *, window: object) -> object | None:
-        worker_id = getattr(window, "worker_instance_id")
+    def get_window_state(
+        self,
+        *,
+        window: WorkerAccountingWindow,
+    ) -> WorkerAccountingState | None:
+        worker_id = window.worker_instance_id
         with self._store.transaction() as conn:
             repo = self._load_worker_repo(conn, worker_id.strip())
             return repo.get_window_state(window=window)
@@ -181,7 +190,7 @@ class PostgreSQLWorkerAccountingRepository:
 
     def _load_worker_repo(
         self,
-        conn: object,
+        conn: PostgreSQLSession,
         worker_instance_id: str,
     ) -> InMemoryWorkerAccountingRepository:
         _revision, repo = self._load_worker_repo_with_revision(conn, worker_instance_id)
@@ -189,10 +198,10 @@ class PostgreSQLWorkerAccountingRepository:
 
     def _load_worker_repo_with_revision(
         self,
-        conn: object,
+        conn: PostgreSQLSession,
         worker_instance_id: str,
     ) -> tuple[int | None, InMemoryWorkerAccountingRepository]:
-        row = conn.execute(  # type: ignore[attr-defined]
+        row = conn.execute(
             f"""
             SELECT snapshot_json, revision
             FROM {self._SNAPSHOT_TABLE}

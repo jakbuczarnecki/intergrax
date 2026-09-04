@@ -10,13 +10,15 @@ from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.autonomous_work.profile_reference import BudgetProfileRef
 from intergrax.contracts.autonomous_work.worker_budget_accounting import (
+    BudgetUsageTotals,
     WorkerAccountingState,
+    WorkerAccountingWindow,
     WorkerBudgetAdmissionResult,
     WorkerBudgetPolicy,
     WorkerBudgetReserveRequest,
     WorkerExecutionReservation,
+    WorkerLogicalDispatchRef,
     WorkerProactiveEvaluationAccountingRequest,
-    BudgetUsageTotals,
 )
 from intergrax.contracts.execution_identity import ExecutionId
 
@@ -59,7 +61,7 @@ class WorkerAccountingRepository(Protocol):
     def bind_execution(
         self,
         *,
-        logical_dispatch: object,
+        logical_dispatch: WorkerLogicalDispatchRef,
         execution_id: ExecutionId,
         bound_at: datetime,
     ) -> WorkerExecutionReservation:
@@ -68,7 +70,7 @@ class WorkerAccountingRepository(Protocol):
     def release_reservation(
         self,
         *,
-        logical_dispatch: object,
+        logical_dispatch: WorkerLogicalDispatchRef,
         released_at: datetime,
     ) -> WorkerExecutionReservation:
         """Release an unbound reservation without counting as started execution."""
@@ -101,6 +103,6 @@ class WorkerAccountingRepository(Protocol):
     def get_window_state(
         self,
         *,
-        window: object,
+        window: WorkerAccountingWindow,
     ) -> WorkerAccountingState | None:
         """Return persisted state for one immutable window identity."""

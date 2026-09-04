@@ -87,6 +87,33 @@ def test_aw5a_dispatch_does_not_import_concrete_strategy() -> None:
         assert token not in joined
 
 
+def test_aw5b_public_boundary_has_no_reflection() -> None:
+    package = importlib.import_module("intergrax.autonomous_work")
+    assert package.__file__ is not None
+    base = Path(package.__file__).parent
+    boundary_paths = [
+        base / "worker_budget_ports.py",
+        base / "postgresql_worker_accounting_repository.py",
+        base / "in_memory_worker_accounting_repository.py",
+        base / "worker_execution_accounting.py",
+    ]
+    forbidden = ("getattr(", "setattr(", "hasattr(")
+    for path in boundary_paths:
+        source = path.read_text(encoding="utf-8")
+        for token in forbidden:
+            assert token not in source, f"{path.name} contains {token}"
+
+
+def test_aw5b_postgresql_adapter_has_no_direct_service_dependency() -> None:
+    module = importlib.import_module(
+        "intergrax.autonomous_work.postgresql_worker_accounting_repository"
+    )
+    assert module.__file__ is not None
+    source = Path(module.__file__).read_text(encoding="utf-8")
+    assert "PostgreSQLConnectionProvider" not in source
+    assert "create_postgresql_relational_store" not in source
+
+
 def test_aw5a_contract_module_has_no_runtime_task_duplication() -> None:
     module = importlib.import_module("intergrax.contracts.autonomous_work.execution_dispatch")
     assert module.__file__ is not None

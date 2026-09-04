@@ -224,6 +224,12 @@ class PostgreSQLAutonomousWorkStore:
                     last_evaluated_at TIMESTAMPTZ NOT NULL,
                     revision INTEGER NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS aw_worker_accounting_snapshots (
+                    worker_instance_id TEXT NOT NULL PRIMARY KEY,
+                    snapshot_json TEXT NOT NULL,
+                    revision INTEGER NOT NULL
+                );
                 """
             )
             session.execute(

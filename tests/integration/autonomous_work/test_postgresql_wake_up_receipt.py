@@ -417,7 +417,7 @@ def test_postgresql_newer_schema_version_fails_closed(
     with store.transaction() as conn:
         conn.execute(
             "UPDATE autonomous_work_schema_meta SET schema_version = %s WHERE id = 1",
-            (5,),
+            (6,),
         )
     schema_name = store.schema_name
     postgresql_autonomous_work_bundle.close()
