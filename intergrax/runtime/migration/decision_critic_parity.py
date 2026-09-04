@@ -1,13 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Decision/Critic dual-run parity — migration-only observational comparison (DS-MIG parity).
+"""Decision/Critic dual-run parity — migration qualification contracts and evaluator.
 
-This module exists solely to compare canonical Decision authority outcomes with
-legacy Critic shadow observations during CriticOrchestrator retirement qualification.
-It must not be imported by Decision core contracts or runtime decision modules.
-
-Scheduled for deletion together with ``intergrax/runtime/critic/**``.
+Historical migration qualification contracts and evaluator retained to validate
+Critic retirement evidence after runtime deletion. Must not be imported by
+Decision core contracts or runtime decision modules.
 """
 
 from __future__ import annotations
@@ -269,7 +267,9 @@ class CriticRetirementReadinessReport:
 
 
 @dataclass(frozen=True, slots=True)
-class _CriticRetirementReadinessEvidence:
+class CriticRetirementReadinessEvidence:
+    """Immutable historical facts supporting Critic retirement readiness evaluation."""
+
     blocking_mismatch_count: int
     shadow_error_count: int
     shadow_unavailable_count: int
@@ -279,8 +279,6 @@ class _CriticRetirementReadinessEvidence:
     cross_system_capabilities_qualified: frozenset[ParityVerificationCapability]
     decision_superset_capabilities_qualified: frozenset[ParityVerificationCapability]
     architectural_mappings_qualified: frozenset[ParityVerificationCapability]
-    missing_scopes: frozenset[ParityHostScope]
-    missing_capabilities: frozenset[ParityVerificationCapability]
 
 
 class DecisionCriticParityObserver(Protocol):
@@ -807,7 +805,9 @@ def _qualify_capability_requirement(
 def _critic_retirement_readiness_report(
     *,
     readiness: CriticRetirementReadiness,
-    evidence: _CriticRetirementReadinessEvidence,
+    evidence: CriticRetirementReadinessEvidence,
+    missing_scopes: frozenset[ParityHostScope],
+    missing_capabilities: frozenset[ParityVerificationCapability],
 ) -> CriticRetirementReadinessReport:
     return CriticRetirementReadinessReport(
         readiness=readiness,
@@ -820,18 +820,17 @@ def _critic_retirement_readiness_report(
         cross_system_capabilities_qualified=evidence.cross_system_capabilities_qualified,
         decision_superset_capabilities_qualified=evidence.decision_superset_capabilities_qualified,
         architectural_mappings_qualified=evidence.architectural_mappings_qualified,
-        missing_scopes=evidence.missing_scopes,
-        missing_capabilities=evidence.missing_capabilities,
+        missing_scopes=missing_scopes,
+        missing_capabilities=missing_capabilities,
     )
 
 
-def evaluate_critic_retirement_readiness(
+def project_critic_retirement_readiness_evidence(
     parity_results: Sequence[DecisionCriticParityResult],
     *,
-    required_scopes: frozenset[ParityHostScope],
     capability_requirements: tuple[ParityCapabilityRequirement, ...],
-) -> CriticRetirementReadinessReport:
-    """Evaluate whether accumulated parity evidence supports Critic retirement."""
+) -> CriticRetirementReadinessEvidence:
+    """Project live parity results into retirement readiness evidence facts."""
     scopes_exercised: set[ParityHostScope] = set()
     decision_capabilities_exercised: set[ParityVerificationCapability] = set()
     critic_capabilities_exercised: set[ParityVerificationCapability] = set()
@@ -860,17 +859,7 @@ def evaluate_critic_retirement_readiness(
             decision_superset_qualified.add(requirement.capability)
         elif requirement.mode is ParityCapabilityRequirementMode.ARCHITECTURAL_MAPPING:
             architectural_qualified.add(requirement.capability)
-    required_capabilities = frozenset(
-        requirement.capability for requirement in capability_requirements
-    )
-    qualified_capabilities = (
-        frozenset(cross_system_qualified)
-        | frozenset(decision_superset_qualified)
-        | frozenset(architectural_qualified)
-    )
-    missing_scopes = required_scopes - frozenset(scopes_exercised)
-    missing_capabilities = required_capabilities - qualified_capabilities
-    evidence = _CriticRetirementReadinessEvidence(
+    return CriticRetirementReadinessEvidence(
         blocking_mismatch_count=blocking_count,
         shadow_error_count=shadow_error_count,
         shadow_unavailable_count=shadow_unavailable_count,
@@ -880,22 +869,72 @@ def evaluate_critic_retirement_readiness(
         cross_system_capabilities_qualified=frozenset(cross_system_qualified),
         decision_superset_capabilities_qualified=frozenset(decision_superset_qualified),
         architectural_mappings_qualified=frozenset(architectural_qualified),
-        missing_scopes=frozenset(missing_scopes),
-        missing_capabilities=frozenset(missing_capabilities),
+    )
+
+
+def _capability_qualified_for_requirement(
+    evidence: CriticRetirementReadinessEvidence,
+    requirement: ParityCapabilityRequirement,
+) -> bool:
+    if requirement.mode is ParityCapabilityRequirementMode.CROSS_SYSTEM:
+        return requirement.capability in evidence.cross_system_capabilities_qualified
+    if requirement.mode is ParityCapabilityRequirementMode.DECISION_SUPERSET:
+        return requirement.capability in evidence.decision_superset_capabilities_qualified
+    if requirement.mode is ParityCapabilityRequirementMode.ARCHITECTURAL_MAPPING:
+        return requirement.capability in evidence.architectural_mappings_qualified
+    raise ValueError(f"unsupported requirement mode: {requirement.mode.value!r}")
+
+
+def evaluate_critic_retirement_readiness_evidence(
+    evidence: CriticRetirementReadinessEvidence,
+    *,
+    required_scopes: frozenset[ParityHostScope],
+    capability_requirements: tuple[ParityCapabilityRequirement, ...],
+) -> CriticRetirementReadinessReport:
+    """Evaluate frozen or projected retirement evidence using canonical rules."""
+    missing_scopes = required_scopes - evidence.scopes_exercised
+    missing_capabilities = frozenset(
+        requirement.capability
+        for requirement in capability_requirements
+        if not _capability_qualified_for_requirement(evidence, requirement)
     )
     if missing_scopes or missing_capabilities:
         return _critic_retirement_readiness_report(
             readiness=CriticRetirementReadiness.INSUFFICIENT_EVIDENCE,
             evidence=evidence,
+            missing_scopes=missing_scopes,
+            missing_capabilities=missing_capabilities,
         )
-    if blocking_count > 0 or shadow_error_count > 0:
+    if evidence.blocking_mismatch_count > 0 or evidence.shadow_error_count > 0:
         return _critic_retirement_readiness_report(
             readiness=CriticRetirementReadiness.NOT_READY,
             evidence=evidence,
+            missing_scopes=missing_scopes,
+            missing_capabilities=missing_capabilities,
         )
     return _critic_retirement_readiness_report(
         readiness=CriticRetirementReadiness.READY,
         evidence=evidence,
+        missing_scopes=missing_scopes,
+        missing_capabilities=missing_capabilities,
+    )
+
+
+def evaluate_critic_retirement_readiness(
+    parity_results: Sequence[DecisionCriticParityResult],
+    *,
+    required_scopes: frozenset[ParityHostScope],
+    capability_requirements: tuple[ParityCapabilityRequirement, ...],
+) -> CriticRetirementReadinessReport:
+    """Evaluate whether accumulated parity evidence supports Critic retirement."""
+    evidence = project_critic_retirement_readiness_evidence(
+        parity_results,
+        capability_requirements=capability_requirements,
+    )
+    return evaluate_critic_retirement_readiness_evidence(
+        evidence,
+        required_scopes=required_scopes,
+        capability_requirements=capability_requirements,
     )
 
 
