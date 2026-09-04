@@ -50,11 +50,17 @@ from intergrax.contracts.autonomous_work.ids import (
     WorkerGoalId,
     WorkerInstanceId,
 )
+from intergrax.contracts.autonomous_work.recovery_orchestration import (
+    RecoveryEpisodeStatus,
+    WorkerRecoveryEpisode,
+)
+from intergrax.contracts.autonomous_work.references import ExternalDependencyReference
 from intergrax.contracts.autonomous_work.responsibility import Responsibility
 from intergrax.contracts.autonomous_work.revision import DefinitionRevision, Revision
 from intergrax.contracts.autonomous_work.principal_binding import WorkerPrincipalBinding
 from intergrax.contracts.autonomous_work.wake_up import WorkerWakeUpReceipt
 from intergrax.contracts.autonomous_work.worker import WorkerDefinition, WorkerInstance
+from intergrax.contracts.execution_identity import ExecutionId
 
 
 class AutonomousWorkEntityNotFound(Exception):
@@ -330,4 +336,175 @@ class WorkerWakeUpReceiptRepository(Protocol):
         wake_up_id: WakeUpId,
     ) -> WorkerWakeUpReceipt | None:
         """Return a stored receipt or ``None``."""
+        ...
+
+
+class WorkerRecoveryEpisodeCreateStatus(StrEnum):
+    """Outcome of idempotent recovery episode creation."""
+
+    CREATED = "CREATED"
+    EXISTING = "EXISTING"
+    CONFLICT = "CONFLICT"
+
+
+class WorkerRecoveryEpisodeClaimStatus(StrEnum):
+    """Outcome of an atomic recovery attempt claim."""
+
+    CLAIMED = "CLAIMED"
+    ALREADY_CLAIMED = "ALREADY_CLAIMED"
+    REVISION_CONFLICT = "REVISION_CONFLICT"
+    NOT_FOUND = "NOT_FOUND"
+    TERMINAL = "TERMINAL"
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerRecoveryEpisodeCreateResult:
+    """Outcome of create-or-get for a recovery episode."""
+
+    status: WorkerRecoveryEpisodeCreateStatus
+    episode: WorkerRecoveryEpisode
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerRecoveryEpisodeClaim:
+    """Outcome of an atomic recovery attempt claim."""
+
+    status: WorkerRecoveryEpisodeClaimStatus
+    episode: WorkerRecoveryEpisode
+
+
+@runtime_checkable
+class WorkerRecoveryEpisodeRepository(Protocol):
+    """Authoritative durable port for worker recovery episodes (AW-6B)."""
+
+    @property
+    def capabilities(self) -> AutonomousWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+        ...
+
+    def get(self, *, recovery_episode_id: str) -> WorkerRecoveryEpisode | None:
+        """Return the recovery episode or ``None``."""
+        ...
+
+    def create_or_get(
+        self,
+        episode: WorkerRecoveryEpisode,
+    ) -> WorkerRecoveryEpisodeCreateResult:
+        """Create episode or return existing/conflicting canonical episode."""
+        ...
+
+    def claim_attempt(
+        self,
+        *,
+        recovery_episode_id: str,
+        attempt_number: int,
+        expected_revision: Revision,
+        claimed_at: datetime,
+    ) -> WorkerRecoveryEpisodeClaim:
+        """Atomically claim one recovery attempt under optimistic concurrency."""
+        ...
+
+    def record_execution(
+        self,
+        *,
+        recovery_episode_id: str,
+        attempt_number: int,
+        expected_revision: Revision,
+        execution_id: ExecutionId,
+        recorded_at: datetime,
+    ) -> WorkerRecoveryEpisode:
+        """Bind canonical execution correlation to a claimed attempt."""
+        ...
+
+    def mark_waiting(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        next_retry_at: datetime | None,
+        dependency_ref: ExternalDependencyReference | None,
+        updated_at: datetime,
+    ) -> WorkerRecoveryEpisode:
+        """Persist durable waiting state for WAIT/THROTTLE strategies."""
+        ...
+
+    def mark_waiting_for_human(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        human_decision_ref: str,
+        updated_at: datetime,
+    ) -> WorkerRecoveryEpisode:
+        """Persist durable human-wait state."""
+        ...
+
+    def mark_succeeded(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        completed_at: datetime,
+        terminal_reason: str | None = None,
+    ) -> WorkerRecoveryEpisode:
+        """Mark episode succeeded — terminal."""
+        ...
+
+    def mark_failed(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        completed_at: datetime,
+        terminal_reason: str,
+        last_failure_ref: str | None = None,
+    ) -> WorkerRecoveryEpisode:
+        """Mark episode failed — terminal."""
+        ...
+
+    def mark_escalated(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        completed_at: datetime,
+        terminal_reason: str,
+    ) -> WorkerRecoveryEpisode:
+        """Mark episode escalated — terminal."""
+        ...
+
+    def mark_quarantined(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        completed_at: datetime,
+        terminal_reason: str,
+    ) -> WorkerRecoveryEpisode:
+        """Mark episode quarantined — terminal."""
+        ...
+
+    def mark_stopped(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        completed_at: datetime,
+        terminal_reason: str,
+    ) -> WorkerRecoveryEpisode:
+        """Mark episode stopped — terminal."""
+        ...
+
+    def record_attempt_outcome(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        attempt_number: int,
+        finished_at: datetime,
+        last_failure_ref: str | None,
+        next_retry_at: datetime | None,
+        status: RecoveryEpisodeStatus,
+    ) -> WorkerRecoveryEpisode:
+        """Record non-terminal attempt completion and release claim."""
         ...

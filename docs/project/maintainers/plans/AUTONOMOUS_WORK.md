@@ -55,7 +55,7 @@ Delivery rule:
 | AW-3 | Principal / authority / workspace composition | **DONE** |
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
 | AW-5 | Worker → execution composition and budgets | **DONE** (AW-5A DONE, AW-5B DONE) |
-| AW-6 | Recovery Controller and obstacle taxonomy | **IN PROGRESS** (AW-6A IN PROGRESS, AW-6B NOT STARTED) |
+| AW-6 | Recovery Controller and obstacle taxonomy | **IN PROGRESS** (AW-6A DONE, AW-6B IN PROGRESS) |
 | AW-7 | Adaptive capability acquisition | NOT STARTED |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
 | AW-9 | Worker control plane | NOT STARTED |
@@ -256,7 +256,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-6A |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** |
+| **Status** | **DONE** |
 | **Purpose** | Freeze canonical obstacle taxonomy and recovery decision contract |
 | **REUSED** | DIAG problem evidence, reliability retry, HITL, policy decisions |
 | **NEW** | worker-level obstacle→strategy contract/controller |
@@ -269,7 +269,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-6B |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **IN PROGRESS** |
 | **Purpose** | Recovery orchestration with resume-original-work semantics |
 | **Acceptance** | recovery has bounded attempts/time/cost; successful recovery returns to original WorkItem/goal with evidence chain |
 | **Next step** | AW-7A |

@@ -71,7 +71,7 @@ def test_postgresql_fresh_database_bootstraps_schema_v4(
             "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
         ).fetchone()
         assert row is not None
-        assert int(row["schema_version"]) == 5
+        assert int(row["schema_version"]) == 6
         table_row = conn.execute(
             """
             SELECT 1 FROM information_schema.tables
@@ -138,7 +138,7 @@ def test_postgresql_v3_to_v4_migration_preserves_existing_data(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 5
+            assert int(row["schema_version"]) == 6
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables
@@ -254,7 +254,7 @@ def test_postgresql_migration_v3_to_v4_atomicity_on_failure(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 5
+            assert int(row["schema_version"]) == 6
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables

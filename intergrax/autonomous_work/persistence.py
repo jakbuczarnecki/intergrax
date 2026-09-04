@@ -16,6 +16,7 @@ from intergrax.autonomous_work.repository import (
     WorkerGoalRepository,
     WorkerInstanceRepository,
     WorkerPrincipalBindingRepository,
+    WorkerRecoveryEpisodeRepository,
     WorkerWakeUpReceiptRepository,
 )
 from intergrax.autonomous_work.worker_budget_ports import WorkerAccountingRepository
@@ -42,6 +43,7 @@ class AutonomousWorkRepositories:
     worker_principal_binding: WorkerPrincipalBindingRepository
     worker_wake_up_receipt: WorkerWakeUpReceiptRepository
     worker_accounting: WorkerAccountingRepository
+    worker_recovery_episode: WorkerRecoveryEpisodeRepository
     store: AutonomousWorkStoreOwner
 
     def close(self) -> None:
