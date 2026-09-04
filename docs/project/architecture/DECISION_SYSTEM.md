@@ -719,6 +719,13 @@ Do **not** merge these into one generic retry loop.
 
 Platform plugin architecture applies at extension boundaries ([`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md)).
 
+Third-party packages contribute through setuptools entry-point groups
+``intergrax.decision_strategies``, ``intergrax.decision_verification_stages``, and
+``intergrax.decision_artifact_kinds``. Platform discovery and admission run first;
+Decision domain composition (`intergrax/runtime/decision_plugin_composition.py`) validates
+targets and composes immutable registries. Installation alone does not activate plugins —
+explicit ``discover_entry_points=True`` composition is required.
+
 ---
 
 ## Cross-scenario validation

@@ -100,17 +100,20 @@ Ordered sequencing labels (existing **DS-\*** IDs remain authoritative):
 |----|----------|------|--------|
 | DS-REV-01 | P0 | Decision revision policy foundation (challenge → bounded authorization → revised candidate minting) | **Done / ENTERPRISE CLOSED** - identity-bound `DecisionRevisionState`, policy provenance in `DecisionRevisionDecision`, custom evaluator semantic outputs validated against canonical policy semantics; `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
-### Plugin architecture (PARTIAL)
+### Plugin architecture (ENTERPRISE CLOSED)
 
-Domain-owned immutable registries exist. Shared Platform Plugins discovery/admission/config/trust integration remains open.
+Platform Plugin System owns discovery, admission, and load isolation. Decision domain
+composition adapter (`intergrax/runtime/decision_plugin_composition.py`) validates
+semantics and composes immutable registries. Explicit ``discover_entry_points=True``
+is required for activation.
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-PLUGIN-01 | P1 | Platform Plugins discovery/config integration for `DecisionStrategy` (`DecisionStrategyRegistry` **DONE**; Platform Plugins integration **OPEN**) | **PARTIAL** |
-| DS-PLUGIN-02 | P1 | Verification stage registration surface (`VerificationStageRegistry` **DONE**; Platform Plugins integration **OPEN**) | **PARTIAL** |
-| DS-PLUGIN-03 | P2 | Plugin/config integration for Decision Artifact kind registration (`DecisionArtifactKindRegistry` **DONE**; plugin/config integration **OPEN**) | **PARTIAL** |
+| DS-PLUGIN-01 | P1 | Platform Plugins discovery/config integration for `DecisionStrategy` | **Done / ENTERPRISE CLOSED** |
+| DS-PLUGIN-02 | P1 | Verification stage registration surface via Platform Plugins | **Done / ENTERPRISE CLOSED** |
+| DS-PLUGIN-03 | P2 | Plugin/config integration for Decision Artifact kind registration | **Done / ENTERPRISE CLOSED** |
 
-**Architecture:** Platform Plugin System → discovery/admission/config/trust → Decision domain composition adapter → domain-owned immutable registry. Decision contracts do **not** import discovery (source gate on `decision_strategy.py`).
+**Architecture:** Platform Plugin System → discovery/admission/config/trust → Decision domain composition adapter → domain-owned immutable registry. Decision contracts do **not** import discovery (source gate on decision contracts).
 
 ---
 

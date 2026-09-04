@@ -1,6 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
 
 from intergrax.core.plugins.discovery import (
+    EP_DECISION_ARTIFACT_KINDS,
+    EP_DECISION_STRATEGIES,
+    EP_DECISION_VERIFICATION_STAGES,
     EP_INTEGRATIONS,
     EP_POLICY_RULES,
     EP_SECURITY_DEFENSES,
@@ -69,6 +72,9 @@ __all__ = [
     "ConflictPolicy",
     "EntryPointLoadResult",
     "EntryPointSpec",
+    "EP_DECISION_ARTIFACT_KINDS",
+    "EP_DECISION_STRATEGIES",
+    "EP_DECISION_VERIFICATION_STAGES",
     "EP_INTEGRATIONS",
     "EP_POLICY_RULES",
     "EP_SECURITY_DEFENSES",

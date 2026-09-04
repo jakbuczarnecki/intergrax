@@ -34,6 +34,9 @@ EP_TOOL_INVOCATION_PATTERNS = "intergrax.tool_invocation_patterns"
 EP_TOOL_SELECTION_STRATEGIES = "intergrax.tool_selection_strategies"
 EP_EXECUTION_BUDGET_ALLOCATION_POLICIES = "intergrax.execution_budget_allocation_policies"
 EP_EXECUTION_AUTHORITY_POLICIES = "intergrax.execution_authority_policies"
+EP_DECISION_STRATEGIES = "intergrax.decision_strategies"
+EP_DECISION_VERIFICATION_STAGES = "intergrax.decision_verification_stages"
+EP_DECISION_ARTIFACT_KINDS = "intergrax.decision_artifact_kinds"
 
 T = TypeVar("T")
 

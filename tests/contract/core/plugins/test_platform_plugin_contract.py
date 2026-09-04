@@ -16,6 +16,9 @@ from intergrax.utils import attribute_access
 from intergrax.core import plugins as core_plugins
 from intergrax.core.plugins import (
     EP_INTEGRATIONS,
+    EP_DECISION_ARTIFACT_KINDS,
+    EP_DECISION_STRATEGIES,
+    EP_DECISION_VERIFICATION_STAGES,
     EP_POLICY_RULES,
     EP_SECURITY_DEFENSES,
     EP_SKILLS,
@@ -100,6 +103,9 @@ _CANONICAL_EP_GROUPS = (
     EP_POLICY_RULES,
     EP_TOOL_INVOCATION_PATTERNS,
     "intergrax.vendor_knowledge.providers",
+    EP_DECISION_STRATEGIES,
+    EP_DECISION_VERIFICATION_STAGES,
+    EP_DECISION_ARTIFACT_KINDS,
 )
 
 
