@@ -15,6 +15,11 @@ from intergrax.agent_distribution.agent_capability_metadata import (
     AgentCapabilityMetadataProvider,
     merge_agent_capability_descriptors,
 )
+from intergrax.contracts.application_capability_metadata import (
+    ApplicationCapabilityDescriptor,
+    ApplicationCapabilityMetadataProvider,
+    merge_application_capability_descriptors,
+)
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.catalog import list_slugs
 from intergrax.skills.registry.bootstrap import register_default_skills
@@ -264,14 +269,11 @@ def _agent_nodes_and_edges(
     return nodes, edges
 
 
-def _system_nodes() -> list[CapabilityNode]:
+def _platform_static_nodes() -> list[CapabilityNode]:
+    """Platform concepts that are not derived from injected inventory providers."""
     return [
         CapabilityNode(node_id="policy:runtime_policy_bundle", node_type=CapabilityNodeType.POLICY),
         CapabilityNode(node_id="evaluation:runtime_quality", node_type=CapabilityNodeType.EVALUATION),
-        CapabilityNode(node_id="application:lab_application", node_type=CapabilityNodeType.APPLICATION),
-        CapabilityNode(node_id="application:legal_application", node_type=CapabilityNodeType.APPLICATION),
-        CapabilityNode(node_id="application:research_application", node_type=CapabilityNodeType.APPLICATION),
-        CapabilityNode(node_id="application:poc_template_application", node_type=CapabilityNodeType.APPLICATION),
         CapabilityNode(node_id="product:intergrax_harness", node_type=CapabilityNodeType.PRODUCT),
     ]
 
@@ -307,61 +309,38 @@ def _modality_compatibility_edges() -> list[CapabilityEdge]:
     return edges
 
 
-def _system_edges(agent_nodes: Sequence[CapabilityNode]) -> list[CapabilityEdge]:
+def _platform_and_inventory_edges(
+    *,
+    agent_nodes: Sequence[CapabilityNode],
+    application_descriptors: Sequence[ApplicationCapabilityDescriptor],
+) -> list[CapabilityEdge]:
     from intergrax.runtime.architecture.capability_graph_applications import (
+        application_capability_node_id,
         build_application_agent_edges,
-    )
-    from intergrax.runtime.architecture.harness_capability_catalog import (
-        HARNESS_CAPABILITY_CATALOG,
     )
 
     agent_node_ids = frozenset(node.node_id for node in agent_nodes)
-    edges: list[CapabilityEdge] = [
-        CapabilityEdge(
-            source_node_id="application:lab_application",
-            target_node_id="policy:runtime_policy_bundle",
-            edge_type=CapabilityEdgeType.CONSTRAINED_BY,
-        ),
-        CapabilityEdge(
-            source_node_id="application:legal_application",
-            target_node_id="policy:runtime_policy_bundle",
-            edge_type=CapabilityEdgeType.CONSTRAINED_BY,
-        ),
-        CapabilityEdge(
-            source_node_id="application:research_application",
-            target_node_id="policy:runtime_policy_bundle",
-            edge_type=CapabilityEdgeType.CONSTRAINED_BY,
-        ),
-        CapabilityEdge(
-            source_node_id="application:poc_template_application",
-            target_node_id="policy:runtime_policy_bundle",
-            edge_type=CapabilityEdgeType.CONSTRAINED_BY,
-        ),
-        CapabilityEdge(
-            source_node_id="product:intergrax_harness",
-            target_node_id="application:lab_application",
-            edge_type=CapabilityEdgeType.DEPENDS_ON,
-        ),
-        CapabilityEdge(
-            source_node_id="product:intergrax_harness",
-            target_node_id="application:legal_application",
-            edge_type=CapabilityEdgeType.DEPENDS_ON,
-        ),
-        CapabilityEdge(
-            source_node_id="product:intergrax_harness",
-            target_node_id="application:research_application",
-            edge_type=CapabilityEdgeType.DEPENDS_ON,
-        ),
-        CapabilityEdge(
-            source_node_id="product:intergrax_harness",
-            target_node_id="application:poc_template_application",
-            edge_type=CapabilityEdgeType.DEPENDS_ON,
-        ),
-    ]
+    edges: list[CapabilityEdge] = []
+    for descriptor in application_descriptors:
+        application_node = application_capability_node_id(descriptor.application_id)
+        edges.append(
+            CapabilityEdge(
+                source_node_id=application_node,
+                target_node_id="policy:runtime_policy_bundle",
+                edge_type=CapabilityEdgeType.CONSTRAINED_BY,
+            )
+        )
+        edges.append(
+            CapabilityEdge(
+                source_node_id="product:intergrax_harness",
+                target_node_id=application_node,
+                edge_type=CapabilityEdgeType.DEPENDS_ON,
+            )
+        )
     edges.extend(
         build_application_agent_edges(
             agent_node_ids=agent_node_ids,
-            catalog=HARNESS_CAPABILITY_CATALOG,
+            descriptors=application_descriptors,
         ),
     )
     for node in agent_nodes:
@@ -386,12 +365,15 @@ def _merge_nodes(groups: Iterable[Sequence[CapabilityNode]]) -> list[CapabilityN
 def build_catalog_capability_graph(
     *,
     agent_metadata_provider: AgentCapabilityMetadataProvider | None = None,
+    application_metadata_provider: ApplicationCapabilityMetadataProvider | None = None,
 ) -> CapabilityGraph:
     """Build a typed baseline capability graph from current catalogs.
 
     Agent nodes and agent→skill/tool edges are projected from ``agent_metadata_provider``
-    (non-executable declared package metadata). When omitted, no agent inventory is
-    assumed — there is no platform hardcoded agent list and no default discovery root.
+    (non-executable declared package metadata). Application nodes and application→agent
+    edges are projected from ``application_metadata_provider`` (manifest-derived metadata).
+    When a provider is omitted, no inventory is assumed for that plane — there is no
+    platform hardcoded agent or application list and no default discovery root.
     """
     if agent_metadata_provider is None:
         agent_descriptors: tuple[AgentCapabilityDescriptor, ...] = ()
@@ -399,17 +381,33 @@ def build_catalog_capability_graph(
         agent_descriptors = merge_agent_capability_descriptors(
             agent_metadata_provider.list_agent_capability_descriptors(),
         )
+    if application_metadata_provider is None:
+        application_descriptors: tuple[ApplicationCapabilityDescriptor, ...] = ()
+    else:
+        application_descriptors = merge_application_capability_descriptors(
+            application_metadata_provider.list_application_capability_descriptors(),
+        )
     integration_nodes = _integration_nodes()
     tool_nodes = _tool_nodes()
     skill_nodes, skill_edges = _skill_nodes_and_edges()
     agent_nodes, agent_edges = _agent_nodes_and_edges(agent_descriptors)
-    system_nodes = _system_nodes()
+    from intergrax.runtime.architecture.capability_graph_applications import (
+        application_nodes_from_descriptors,
+    )
 
-    nodes = _merge_nodes([integration_nodes, tool_nodes, skill_nodes, agent_nodes, system_nodes])
+    application_nodes = application_nodes_from_descriptors(application_descriptors)
+    platform_nodes = _platform_static_nodes()
+
+    nodes = _merge_nodes(
+        [integration_nodes, tool_nodes, skill_nodes, agent_nodes, application_nodes, platform_nodes]
+    )
     edges = [
         *skill_edges,
         *agent_edges,
         *_modality_compatibility_edges(),
-        *_system_edges(agent_nodes),
+        *_platform_and_inventory_edges(
+            agent_nodes=agent_nodes,
+            application_descriptors=application_descriptors,
+        ),
     ]
     return CapabilityGraph(nodes=nodes, edges=edges)

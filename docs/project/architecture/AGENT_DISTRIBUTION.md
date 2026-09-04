@@ -402,9 +402,18 @@ Tier-2 package metadata (`[[tool.intergrax.agent.contracts]]` in agent pyproject
   → Capability Graph
 ```
 
-Agent Distribution MUST NOT centrally mirror first-party agent contracts. The platform parses and projects package-owned declarations only.
+Application composition authority chain:
 
-`AgentCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent inventory and no default package discovery root - callers pass a package-metadata provider, otherwise agent nodes are omitted.
+```text
+ApplicationManifest (`app_id`, enabled roster bindings)
+  → ApplicationCapabilityDescriptor
+  → ApplicationCapabilityMetadataProvider
+  → Capability Graph
+```
+
+Capability Map is a **derived architecture/discovery projection**. It MUST NOT become lifecycle or runtime authority (installation, binding, activation, `RuntimeRevision`, serving state, registry materialization, or Nexus routing).
+
+`AgentCapabilityMetadataProvider` and `ApplicationCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent or application inventory and no default discovery root — callers pass metadata providers, otherwise inventory nodes for that plane are omitted.
 
 Runtime execution remains a separate chain:
 

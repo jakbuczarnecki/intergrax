@@ -84,9 +84,5 @@ def test_capability_graph_module_has_no_runtime_agent_discovery_debt() -> None:
 
 def test_capability_graph_module_does_not_seed_agents_from_harness_catalog() -> None:
     text = CAPABILITY_GRAPH_MODULE.read_text(encoding="utf-8")
-    assert "HARNESS_CAPABILITY_CATALOG" not in text.split("_agent_nodes_and_edges", maxsplit=1)[0]
-    agent_section = text.split("def _agent_nodes_and_edges", maxsplit=1)[1].split(
-        "def _system_nodes",
-        maxsplit=1,
-    )[0]
-    assert "HARNESS_CAPABILITY_CATALOG" not in agent_section
+    assert "HARNESS_CAPABILITY_CATALOG" not in text
+    assert "harness_capability_catalog" not in text
