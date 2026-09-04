@@ -61,5 +61,6 @@ def wire_long_running_scheduler(
         ledger=checkpoint_store,
         notification_adapter=notification_adapter,
         poll_interval_seconds=_poll_interval_seconds(poll_interval_seconds),
+        execution_terminal=task_runner.nexus_loop.execution_terminal,
     )
     return LongRunningSchedulerWiring(scheduler=scheduler)

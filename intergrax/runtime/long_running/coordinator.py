@@ -8,6 +8,8 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.runtime.human.models import EscalationOutcome
+from intergrax.runtime.cancellation.resume_admission import assert_checkpoint_resumable
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_runtime_checkpoint,
@@ -56,6 +58,8 @@ class LongRunningCoordinator:
     def restore_if_resuming(
         task: Task,
         store: TaskCheckpointReader,
+        *,
+        execution_terminal: ExecutionTerminalService | None = None,
     ) -> Optional[TaskCheckpoint]:
         if not LongRunningCoordinator.is_long_running(task):
             if not _wants_human_resume(task):
@@ -77,6 +81,8 @@ class LongRunningCoordinator:
 
         if checkpoint is None:
             return None
+
+        assert_checkpoint_resumable(checkpoint, execution_terminal=execution_terminal)
 
         token = checkpoint.resume_token
 

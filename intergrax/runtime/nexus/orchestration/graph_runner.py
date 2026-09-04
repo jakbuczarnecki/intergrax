@@ -21,7 +21,10 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.validation import ValidationResult
-from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
+from intergrax.runtime.cancellation.coordinator import (
+    CANCELLATION_REASON_KEY,
+    CancellationCoordinator,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.request_contract import human_request_event_payload
@@ -46,6 +49,7 @@ from intergrax.runtime.nexus.retry.retry_engine import (
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
 from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
+from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -84,6 +88,7 @@ class NexusGraphRunner:
     finalize_trace: FinalizeFn
     maybe_checkpoint: CheckpointFn
     attempt_lifecycle: AttemptLifecycleService
+    execution_terminal: ExecutionTerminalService
     max_run_retries: int = 0
     production_mode: bool = False
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
@@ -364,15 +369,25 @@ class NexusGraphRunner:
         lifecycle: TaskLifecycle,
         trace_emitter: TaskTraceEmitter,
     ) -> GraphPhaseOutcome:
+        run_id, _ = require_active_execution_identity()
+        reason = str(task.metadata.get(CANCELLATION_REASON_KEY, ""))
+        self.execution_terminal.record_cancellation(
+            tenant_id=task.tenant_id,
+            task_id=task.task_id,
+            run_id=run_id,
+            reason=reason,
+            production_mode=self.production_mode,
+        )
         await self.events.publish_from_task_state(
             task,
             message="task cancellation propagated",
             event_type=RuntimeEventType.CANCELLED,
             phase=ExecutionPhase.COMPLETION,
-            payload={"reason": task.metadata.get("cancellation_reason", "")},
+            payload={"reason": reason},
         )
         lifecycle.transition(task, TaskState.VALIDATING)
         lifecycle.transition(task, TaskState.CANCELLED)
+        # Runtime cleanup only — durable terminal authority blocks future resume.
         CancellationCoordinator.clear_checkpoint_state(task)
         CancellationCoordinator.clear(task)
         if isinstance(trace_emitter, PersistingTaskTraceEmitter):

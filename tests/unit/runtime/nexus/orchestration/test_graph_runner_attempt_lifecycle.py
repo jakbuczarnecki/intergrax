@@ -24,6 +24,7 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
 )
 from intergrax.runtime.execution.attempt_lifecycle import AttemptLifecycleService, InMemoryAttemptLifecycleStore
+from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService, InMemoryExecutionTerminalStore
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
 from intergrax.runtime.task.task import Task
@@ -60,6 +61,7 @@ def _build_runner(lifecycle_service: AttemptLifecycleService) -> NexusGraphRunne
         finalize_trace=AsyncMock(),
         maybe_checkpoint=AsyncMock(),
         attempt_lifecycle=lifecycle_service,
+        execution_terminal=ExecutionTerminalService(InMemoryExecutionTerminalStore()),
     )
 
 

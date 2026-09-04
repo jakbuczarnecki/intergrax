@@ -29,6 +29,10 @@ from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
     DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG,
     validate_durable_attempt_lifecycle_for_composition,
 )
+from intergrax.runtime.execution.execution_terminal import (
+    ExecutionTerminalService,
+    InMemoryExecutionTerminalStore,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
@@ -92,6 +96,7 @@ def _build_runner(
         finalize_trace=AsyncMock(),
         maybe_checkpoint=AsyncMock(),
         attempt_lifecycle=lifecycle_service,
+        execution_terminal=ExecutionTerminalService(InMemoryExecutionTerminalStore()),
         production_mode=production_mode,
     )
 
@@ -267,6 +272,7 @@ async def test_dynamic_graph_retry_denied_before_executor_rerun() -> None:
         finalize_trace=AsyncMock(),
         maybe_checkpoint=AsyncMock(),
         attempt_lifecycle=lifecycle_service,
+        execution_terminal=ExecutionTerminalService(InMemoryExecutionTerminalStore()),
         production_mode=True,
     )
     runner.events.publish = AsyncMock()

@@ -339,6 +339,7 @@ def mount_harness_task_routes(
                 "stale_checkpoint",
                 "task_id_mismatch",
                 "checkpoint_not_resumable",
+                "execution_terminally_cancelled",
             }:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,

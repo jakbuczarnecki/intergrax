@@ -28,6 +28,7 @@ from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumeStatus,
 )
+from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome, ExecutionTerminalRecord
 from intergrax.runtime.task.task_state import TaskState
 
 __all__ = [
@@ -168,6 +169,56 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 conn.execute(
                     "ALTER TABLE scheduler_ledger ADD COLUMN fence INTEGER NOT NULL DEFAULT 0",
                 )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS task_execution_terminal (
+                    tenant_id TEXT NOT NULL,
+                    task_id TEXT NOT NULL,
+                    run_id TEXT,
+                    outcome TEXT NOT NULL,
+                    reason TEXT NOT NULL DEFAULT '',
+                    recorded_at_utc TEXT NOT NULL,
+                    PRIMARY KEY (tenant_id, task_id)
+                );
+                """
+            )
+
+    def get_terminal_record(self, *, tenant_id: str, task_id: str) -> ExecutionTerminalRecord | None:
+        with self._connection() as conn:
+            row = conn.execute(
+                """
+                SELECT tenant_id, task_id, run_id, outcome, reason, recorded_at_utc
+                FROM task_execution_terminal
+                WHERE tenant_id = ? AND task_id = ?
+                """,
+                (tenant_id, task_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return self._row_to_terminal_record(row)
+
+    def put_terminal_record_if_absent(self, record: ExecutionTerminalRecord) -> bool:
+        with self._connection() as conn:
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO task_execution_terminal (
+                        tenant_id, task_id, run_id, outcome, reason, recorded_at_utc
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        record.tenant_id,
+                        record.task_id,
+                        str(record.run_id) if record.run_id is not None else None,
+                        record.outcome.value,
+                        record.reason,
+                        record.recorded_at_utc,
+                    ),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                return False
+        return True
 
     def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
         with self._connection() as conn:
@@ -607,4 +658,16 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             notify_channel=row["notify_channel"],
             created_at_utc=row["created_at_utc"],
             runtime=runtime,
+        )
+
+    @staticmethod
+    def _row_to_terminal_record(row: sqlite3.Row) -> ExecutionTerminalRecord:
+        run_id = row["run_id"]
+        return ExecutionTerminalRecord(
+            tenant_id=row["tenant_id"],
+            task_id=row["task_id"],
+            run_id=run_id,
+            outcome=ExecutionTerminalOutcome(row["outcome"]),
+            reason=row["reason"],
+            recorded_at_utc=row["recorded_at_utc"],
         )

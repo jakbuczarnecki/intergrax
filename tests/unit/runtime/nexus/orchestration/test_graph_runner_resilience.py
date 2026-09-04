@@ -21,6 +21,7 @@ from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
 from intergrax.runtime.execution.attempt_lifecycle import AttemptLifecycleService, InMemoryAttemptLifecycleStore
+from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService, InMemoryExecutionTerminalStore
 from intergrax.runtime.nexus.retry.retry_engine import _resilience_policy_from_task
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -84,6 +85,7 @@ def _build_runner(
         finalize_trace=AsyncMock(),
         maybe_checkpoint=AsyncMock(),
         attempt_lifecycle=AttemptLifecycleService(InMemoryAttemptLifecycleStore()),
+        execution_terminal=ExecutionTerminalService(InMemoryExecutionTerminalStore()),
     )
 
 

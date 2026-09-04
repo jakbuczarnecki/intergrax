@@ -103,6 +103,13 @@ from intergrax.runtime.execution.attempt_lifecycle import (
 from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
     validate_durable_attempt_lifecycle_for_composition,
 )
+from intergrax.runtime.execution.execution_terminal import (
+    ExecutionTerminalService,
+    wire_execution_terminal_store,
+)
+from intergrax.runtime.execution.execution_terminal.durability_policy import (
+    validate_durable_execution_terminal_for_composition,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -178,6 +185,7 @@ class NexusLoop:
         budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
         execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
         attempt_lifecycle: AttemptLifecycleService | None = None,
+        execution_terminal: ExecutionTerminalService | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -296,11 +304,19 @@ class NexusLoop:
         self._attempt_lifecycle = attempt_lifecycle or AttemptLifecycleService(
             InMemoryAttemptLifecycleStore(),
         )
+        self._execution_terminal = execution_terminal or ExecutionTerminalService(
+            wire_execution_terminal_store(checkpoint_store=self._checkpoint_store),
+        )
         validate_durable_attempt_lifecycle_for_composition(
             production_mode=production_mode,
             store=self._attempt_lifecycle.store,
             agent_retry_max=resolved_retry_policy.max_retries,
             run_retry_max=max_run_retries,
+        )
+        validate_durable_execution_terminal_for_composition(
+            production_mode=production_mode,
+            checkpoint_store=self._checkpoint_store,
+            store=self._execution_terminal.store,
         )
         self._production_mode = production_mode
         trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
@@ -334,6 +350,7 @@ class NexusLoop:
             finalize_trace=self._finalize_persisting_trace,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             attempt_lifecycle=self._attempt_lifecycle,
+            execution_terminal=self._execution_terminal,
             max_run_retries=max_run_retries,
             production_mode=production_mode,
             decision_flow_gate=decision_flow_gate,
@@ -441,6 +458,10 @@ class NexusLoop:
     @property
     def execution_budget_ledger_factory(self) -> "ExecutionBudgetLedgerFactory":
         return self._execution_budget_ledger_factory
+
+    @property
+    def execution_terminal(self) -> ExecutionTerminalService:
+        return self._execution_terminal
 
     async def handle_task(
         self,
@@ -686,6 +707,7 @@ class NexusLoop:
             publish=self._publish_runtime_event,
             notification_adapter=self._notification_adapter,
             run_id=active_run_id,
+            execution_terminal=self._execution_terminal,
         )
 
     async def _maybe_checkpoint_long_running(
