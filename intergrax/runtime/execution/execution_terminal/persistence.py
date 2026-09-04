@@ -5,8 +5,10 @@
 from __future__ import annotations
 
 import threading
+from dataclasses import dataclass
 
 from intergrax.contracts.execution_terminal import (
+    ExecutionTerminalConflictError,
     ExecutionTerminalError,
     ExecutionTerminalOutcome,
     ExecutionTerminalPersistenceCapability,
@@ -41,6 +43,56 @@ def terminal_outcome_from_task_state(state: TaskState) -> ExecutionTerminalOutco
 def terminal_reason_for_task_state(state: TaskState) -> str:
     """Bounded reason token for a terminal ``TaskState`` projection."""
     return _TASK_STATE_TERMINAL_REASONS.get(state, "terminal")
+
+
+_TERMINAL_OUTCOME_TASK_STATES: dict[ExecutionTerminalOutcome, TaskState] = {
+    ExecutionTerminalOutcome.COMPLETED: TaskState.COMPLETED,
+    ExecutionTerminalOutcome.FAILED: TaskState.FAILED,
+    ExecutionTerminalOutcome.CANCELLED: TaskState.CANCELLED,
+}
+
+
+def task_state_from_terminal_outcome(outcome: ExecutionTerminalOutcome) -> TaskState:
+    """Map durable terminal outcome to canonical ``TaskState`` projection."""
+    return _TERMINAL_OUTCOME_TASK_STATES[outcome]
+
+
+def reconcile_task_state_with_terminal_outcome(
+    current_state: TaskState,
+    canonical_outcome: ExecutionTerminalOutcome,
+) -> TaskState:
+    """Align local terminal projection with durable canonical outcome.
+
+    When ``current_state`` maps to the same durable outcome, preserve it
+    (e.g. ``PARTIALLY_COMPLETED`` when canonical is ``COMPLETED``). When the
+    durable outcome differs, project the canonical ``TaskState`` — this is
+    reconciliation against durable authority, not a lifecycle transition.
+    """
+    current_outcome = terminal_outcome_from_task_state(current_state)
+    if current_outcome is canonical_outcome:
+        return current_state
+    return task_state_from_terminal_outcome(canonical_outcome)
+
+
+def validate_terminal_run_id_consistency(
+    existing: ExecutionTerminalRecord,
+    incoming_run_id: RunId | None,
+) -> None:
+    """Fail closed when durable and active run identities disagree."""
+    if existing.run_id is not None and incoming_run_id is not None:
+        if existing.run_id != incoming_run_id:
+            raise ExecutionTerminalConflictError(
+                "execution terminal conflict: run_id mismatch",
+                existing_outcome=existing.outcome,
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class TerminalCommitResolution:
+    """Canonical durable terminal authority resolved during Nexus finalization."""
+
+    canonical_record: ExecutionTerminalRecord | None
+    should_publish_terminal_event: bool
 
 
 class InMemoryExecutionTerminalStore(ExecutionTerminalStore):

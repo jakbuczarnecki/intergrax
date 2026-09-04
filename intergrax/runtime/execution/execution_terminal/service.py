@@ -15,20 +15,11 @@ from intergrax.contracts.execution_identity import RunId, validate_run_id
 from intergrax.runtime.execution.execution_terminal.durability_policy import (
     DURABLE_EXECUTION_TERMINAL_REQUIRED_MSG,
 )
-from intergrax.runtime.execution.execution_terminal.persistence import normalize_terminal_record
+from intergrax.runtime.execution.execution_terminal.persistence import (
+    normalize_terminal_record,
+    validate_terminal_run_id_consistency,
+)
 from intergrax.runtime.task.task_trace import utc_now_iso
-
-
-def _validate_run_id_consistency(
-    existing: ExecutionTerminalRecord,
-    incoming_run_id: RunId | None,
-) -> None:
-    if existing.run_id is not None and incoming_run_id is not None:
-        if existing.run_id != incoming_run_id:
-            raise ExecutionTerminalConflictError(
-                "execution terminal conflict: run_id mismatch",
-                existing_outcome=existing.outcome,
-            )
 
 
 class ExecutionTerminalService:
@@ -76,7 +67,7 @@ class ExecutionTerminalService:
         bounded_reason = reason.strip()[:512]
         existing = self.get_terminal_record(tenant_id=tenant_id, task_id=task_id)
         if existing is not None:
-            _validate_run_id_consistency(existing, validated_run_id)
+            validate_terminal_run_id_consistency(existing, validated_run_id)
             if existing.outcome is outcome:
                 return existing
             raise ExecutionTerminalConflictError(
@@ -96,7 +87,7 @@ class ExecutionTerminalService:
             raced = self.get_terminal_record(tenant_id=tenant_id, task_id=task_id)
             if raced is None:
                 raise ExecutionTerminalError("execution terminal outcome race lost")
-            _validate_run_id_consistency(raced, validated_run_id)
+            validate_terminal_run_id_consistency(raced, validated_run_id)
             if raced.outcome is outcome:
                 return raced
             raise ExecutionTerminalConflictError(

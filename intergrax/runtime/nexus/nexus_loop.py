@@ -110,10 +110,16 @@ from intergrax.runtime.execution.execution_terminal import (
 from intergrax.runtime.execution.execution_terminal.durability_policy import (
     validate_durable_execution_terminal_for_composition,
 )
-from intergrax.contracts.execution_terminal import ExecutionTerminalConflictError
+from intergrax.contracts.execution_terminal import (
+    ExecutionTerminalConflictError,
+    ExecutionTerminalError,
+)
 from intergrax.runtime.execution.execution_terminal.persistence import (
+    TerminalCommitResolution,
+    reconcile_task_state_with_terminal_outcome,
     terminal_outcome_from_task_state,
     terminal_reason_for_task_state,
+    validate_terminal_run_id_consistency,
 )
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
@@ -583,7 +589,8 @@ class NexusLoop:
                 phase=ExecutionPhase.COMPLETION,
                 error=exc,
             )
-            if self._commit_durable_terminal_authority(task):
+            resolution = self._commit_durable_terminal_authority(task)
+            if resolution.should_publish_terminal_event:
                 await self._publish_terminal_runtime_event(task)
             return self._build_result(
                 task,
@@ -602,7 +609,8 @@ class NexusLoop:
             self._policy_engine, task, answer=answer
         )
 
-        if self._commit_durable_terminal_authority(task):
+        resolution = self._commit_durable_terminal_authority(task)
+        if resolution.should_publish_terminal_event:
             await self._publish_terminal_runtime_event(task)
         result = self._build_result(
             task,
@@ -758,14 +766,17 @@ class NexusLoop:
         """Attach platform terminal diagnostic trigger after host composition."""
         self._terminal_diagnostic_trigger = trigger
 
-    def _commit_durable_terminal_authority(self, task: Task) -> bool:
-        """Persist terminal outcome before projection events. Returns False on durable conflict."""
+    def _commit_durable_terminal_authority(self, task: Task) -> TerminalCommitResolution:
+        """Persist terminal outcome and return canonical durable authority."""
         outcome = terminal_outcome_from_task_state(task.state)
         if outcome is None:
-            return True
+            return TerminalCommitResolution(
+                canonical_record=None,
+                should_publish_terminal_event=True,
+            )
         run_id, _ = require_active_execution_identity()
         try:
-            self._execution_terminal.commit_terminal_outcome(
+            record = self._execution_terminal.commit_terminal_outcome(
                 tenant_id=task.tenant_id,
                 task_id=task.task_id,
                 run_id=run_id,
@@ -773,9 +784,28 @@ class NexusLoop:
                 reason=terminal_reason_for_task_state(task.state),
                 production_mode=self._production_mode,
             )
+            return TerminalCommitResolution(
+                canonical_record=record,
+                should_publish_terminal_event=True,
+            )
         except ExecutionTerminalConflictError:
-            return False
-        return True
+            canonical = self._execution_terminal.get_terminal_record(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+            )
+            if canonical is None:
+                raise ExecutionTerminalError(
+                    "execution terminal conflict without canonical record",
+                ) from None
+            validate_terminal_run_id_consistency(canonical, run_id)
+            task.state = reconcile_task_state_with_terminal_outcome(
+                task.state,
+                canonical.outcome,
+            )
+            return TerminalCommitResolution(
+                canonical_record=canonical,
+                should_publish_terminal_event=False,
+            )
 
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
         terminal_event = await self._events.publish_terminal(task)
