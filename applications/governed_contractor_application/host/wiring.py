@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -30,7 +30,7 @@ def build_governed_contractor_registry(
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(manifest, env, settings=settings)
-    return build_application_registry(
+    return build_manifest_development_registry(
         manifest,
         env_wiring.build_context,
         builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,

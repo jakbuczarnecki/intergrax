@@ -16,15 +16,15 @@ from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
+from lab_application.host.agent_builders import LAB_AGENT_BUILDERS
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
-from lab_application.host.wiring import bootstrap_lab_integration_wiring, build_lab_registry
+from lab_application.host.wiring import bootstrap_lab_integration_wiring
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.acp_checkpoint_task_enricher import make_acp_checkpoint_task_enricher
@@ -59,7 +59,6 @@ def create_lab_application(
     experiments_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
-    registry: Optional[AgentRegistry] = None,
 ) -> FastAPI:
     """
     Universal Tier-3 lab environment.
@@ -94,11 +93,6 @@ def create_lab_application(
     lab_env = manifest.environment or build_lab_environment_profile(settings)
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": lab_env})
-    resolved_registry = registry or build_lab_registry(
-        settings=settings,
-        integration_profile=integrations.profile,
-        trace_db_path=integrations.trace_db_path,
-    )
     runtime = build_harness_host_runtime(
         manifest,
         lab_env,
@@ -106,13 +100,14 @@ def create_lab_application(
         trace_db_path=integrations.trace_db_path,
         runtime_events_db_path=integrations.runtime_events_db_path,
         checkpoints_db_path=integrations.checkpoints_db_path,
-        registry=resolved_registry,
+        builders=LAB_AGENT_BUILDERS,
         checkpoint_store=integrations.checkpoint_store,
         agent_checkpoint_store=integrations.agent_checkpoint_store,
         notification_adapter=integrations.notification_adapter,
     )
     host_execution = runtime.execution
     nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
+    resolved_registry = runtime.registry
     plugin_bootstrap = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=integrations.trace_store,  # type: ignore[arg-type]

@@ -190,6 +190,14 @@ def test_repository_application_host_surface_passes_with_legacy_baseline() -> No
     assert report.ok
 
 
+def test_repository_application_lifecycle_conformance_without_legacy_baseline() -> None:
+    report = validate_application_lifecycle_conformance(
+        REPO_ROOT,
+        apply_legacy_baseline=False,
+    )
+    assert report.ok
+
+
 def test_new_violation_in_legacy_file_fails(tmp_path: Path) -> None:
     legacy_path = REPO_ROOT / "applications/lab_application/host/wiring.py"
     source = legacy_path.read_text(encoding="utf-8") + "\nregistry = AgentRegistry()\n"

@@ -8,10 +8,10 @@ from intergrax.applications._shared.environment_wiring import wire_application_e
 from intergrax.applications.contracts.platform_plugin_evidence import (
     ApplicationPlatformPluginEvidence,
 )
-from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from local_workspace_application.host.agent_builders import LOCAL_WORKSPACE_AGENT_BUILDERS
 from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
@@ -34,7 +34,7 @@ def build_local_workspace_manifest(settings: LocalWorkspaceBackendSettings) -> A
 class LocalWorkspaceHostComposition:
     """LKW host registry build with canonical Tier-3 platform plugin evidence."""
 
-    registry: AgentRegistry
+    registry: AgentRegistryRead
     platform_plugin_evidence: ApplicationPlatformPluginEvidence
 
 
@@ -48,7 +48,7 @@ def build_local_workspace_host_composition(
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(manifest, env, settings=settings)
     return LocalWorkspaceHostComposition(
-        registry=build_application_registry(
+        registry=build_manifest_development_registry(
             manifest,
             env_wiring.build_context,
             builders=LOCAL_WORKSPACE_AGENT_BUILDERS,
@@ -59,5 +59,5 @@ def build_local_workspace_host_composition(
 
 def build_local_workspace_registry(
     settings: LocalWorkspaceBackendSettings | None = None,
-) -> AgentRegistry:
+) -> AgentRegistryRead:
     return build_local_workspace_host_composition(settings).registry

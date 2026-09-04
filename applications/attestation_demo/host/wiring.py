@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from attestation_demo.host.agent_builders import ATTESTATION_DEMO_AGENT_BUILDERS
@@ -24,7 +24,7 @@ def build_attestation_demo_registry(
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(manifest, env)
-    return build_application_registry(
+    return build_manifest_development_registry(
         manifest,
         env_wiring.build_context,
         builders=ATTESTATION_DEMO_AGENT_BUILDERS,

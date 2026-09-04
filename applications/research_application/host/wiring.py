@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
@@ -45,7 +45,7 @@ def build_research_registry(
         settings=settings,
         websearch_executor=settings.websearch_executor,
     )
-    return build_application_registry(
+    return build_manifest_development_registry(
         manifest,
         env_wiring.build_context,
         builders=RESEARCH_AGENT_BUILDERS,

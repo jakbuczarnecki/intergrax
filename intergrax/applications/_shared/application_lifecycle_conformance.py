@@ -6,12 +6,9 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
-from intergrax.applications._shared.application_lifecycle_legacy_baseline import (
-    ApplicationLifecycleRuleId,
-    is_legacy_application_lifecycle_violation_allowed,
-)
 from intergrax.runtime.architecture.agent_lifecycle_bypass_ast import (
     CANONICAL_AGENT_REGISTRY_MODULE,
     CANONICAL_AGENT_REGISTRY_SYMBOL,
@@ -25,6 +22,12 @@ CANONICAL_BUILD_APPLICATION_REGISTRY_MODULE = "intergrax.applications._shared.wi
 CANONICAL_BUILD_APPLICATION_REGISTRY_SYMBOL = "build_application_registry"
 
 _APPLICATION_RUNTIME_SEGMENTS = ("host", "serving")
+
+
+class ApplicationLifecycleRuleId(StrEnum):
+    AGENT_LIFECYCLE_BYPASS = "APPLICATION_ARCH_AGENT_LIFECYCLE_BYPASS"
+    BUILD_APPLICATION_REGISTRY_BYPASS = "APPLICATION_ARCH_BUILD_APPLICATION_REGISTRY_BYPASS"
+    MUTABLE_REGISTRY_TYPE_EXPOSURE = "APPLICATION_ARCH_MUTABLE_REGISTRY_TYPE_EXPOSURE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -315,21 +318,12 @@ def _map_lifecycle_ast_violation(
     )
 
 
-def _apply_legacy_baseline(
+def _finalize_violations(
     violations: list[ApplicationLifecycleViolation],
 ) -> tuple[ApplicationLifecycleViolation, ...]:
-    filtered: list[ApplicationLifecycleViolation] = []
-    for violation in violations:
-        if is_legacy_application_lifecycle_violation_allowed(
-            relative_path=violation.relative_path,
-            rule_id=violation.rule_id,
-            symbol=violation.symbol,
-        ):
-            continue
-        filtered.append(violation)
     return tuple(
         sorted(
-            filtered,
+            violations,
             key=lambda item: (item.relative_path, item.rule_id.value, item.line, item.symbol),
         )
     )
@@ -376,14 +370,8 @@ def collect_application_lifecycle_violations_for_file(
         )
     )
 
-    if apply_legacy_baseline:
-        return _apply_legacy_baseline(violations)
-    return tuple(
-        sorted(
-            violations,
-            key=lambda item: (item.relative_path, item.rule_id.value, item.line, item.symbol),
-        )
-    )
+    _ = apply_legacy_baseline
+    return _finalize_violations(violations)
 
 
 def validate_application_lifecycle_conformance(

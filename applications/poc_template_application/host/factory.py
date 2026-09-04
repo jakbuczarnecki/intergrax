@@ -27,11 +27,10 @@ from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from poc_template_application.host.agent_builders import POC_TEMPLATE_AGENT_BUILDERS
 from poc_template_application.host.settings import PocTemplateApplicationSettings
-from poc_template_application.host.wiring import build_poc_template_registry
 from poc_template_application.manifest import build_poc_template_manifest
 from poc_template_application.serving.fastapi_router import mount_poc_template_routes
 
@@ -43,11 +42,8 @@ def create_poc_template_application(
     experiments_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
-    registry: Optional[AgentRegistry] = None,
 ) -> FastAPI:
     settings = settings or PocTemplateApplicationSettings.from_env()
-    if registry is None:
-        registry = build_poc_template_registry(settings=settings)
     manifest = build_poc_template_manifest()
     env = manifest.resolved_environment()
     runtime = build_harness_host_runtime(
@@ -58,10 +54,11 @@ def create_poc_template_application(
         runtime_events_db_path=runtime_events_db_path,
         use_in_memory_trace=db_path is None,
         checkpoints_db_path=checkpoints_db_path,
+        builders=POC_TEMPLATE_AGENT_BUILDERS,
     )
     host_execution = runtime.execution
     nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
-    resolved_registry = registry
+    resolved_registry = runtime.registry
     platform = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
