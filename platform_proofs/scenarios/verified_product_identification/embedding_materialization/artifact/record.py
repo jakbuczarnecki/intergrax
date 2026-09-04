@@ -4,6 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from platform_proofs.scenarios.verified_product_identification.application.domain.identifiers import (
+    ProductOfferId,
+)
+from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
+    SourceRecordRef,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class EmbeddingArtifactRecord:
@@ -32,3 +39,11 @@ class EmbeddingArtifactRecord:
                 f"!= embedding_dimension {self.embedding_dimension}"
             )
             raise ValueError(msg)
+
+    def source_ref(self) -> SourceRecordRef:
+        """Canonical source reference carried by the materialized artifact row."""
+        return SourceRecordRef(
+            offer_id=ProductOfferId(self.offer_id),
+            catalog_id=self.catalog_id,
+            source_revision=self.source_revision,
+        )

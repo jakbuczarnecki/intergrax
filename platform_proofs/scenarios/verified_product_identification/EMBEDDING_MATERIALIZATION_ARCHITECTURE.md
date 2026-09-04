@@ -2,31 +2,25 @@
 
 ## Decision
 
-VPI embedding computation is separated from storage bootstrap via a **scenario-owned**, **restartable**, **provider-neutral** embedding artifact materialization plane. Expensive embedding work produces a versioned, sharded Parquet artifact that a later task (5C2) will load into PostgreSQL + Qdrant.
+VPI embedding computation is separated from storage bootstrap via a **scenario-owned**, **restartable**, **provider-neutral** embedding artifact materialization plane. Expensive embedding work produces a versioned, sharded Parquet artifact consumed by storage bootstrap (5C2).
 
-## Current vs target
-
-**Current (qualification / MVP path):**
-
-```text
-dataset → derive → PostgreSQL → synchronous embed → Qdrant → checkpoint
-```
-
-**Target (this task creates artifact stage; 5C2 consumes it):**
+## Architecture (materialization + storage load)
 
 ```text
 WDC dataset
-    ↓
-DerivedOfferSearchRepresentation
-    ↓
-EmbeddingMaterializationOrchestrator
-    ↓
-EmbeddingExecutionPort
-    ↓
-versioned/sharded embedding artifact (Parquet)
-    ↓
-[5C2] storage bootstrap → PostgreSQL + VectorStore
+│
+├── materialization → EmbeddingExecutionPort → READY embedding artifact
+│
+└── catalog source truth
+        ↓
+storage bootstrap
+   ├── PostgreSQL (WDC derivation)
+   └── Qdrant (artifact vectors + lexical text)
 ```
+
+**Removed from canonical storage bootstrap:** synchronous live embedding (`embed_batch` during ingest).
+
+**Materialization-only path:**
 
 ## Why the artifact exists
 

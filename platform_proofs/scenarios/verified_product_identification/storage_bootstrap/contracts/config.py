@@ -18,6 +18,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 
 VPI_BOOTSTRAP_ENV_PREFIX = "VPI_BOOTSTRAP"
+VPI_EMBEDDING_ARTIFACT_ENV_PREFIX = "VPI_EMBEDDING_ARTIFACT"
 DEFAULT_CATALOG_ID = "wdc-v2-selected"
 DEFAULT_SOURCE_BATCH_SIZE = 256
 DEFAULT_VECTOR_BATCH_SIZE = 64
@@ -50,6 +51,7 @@ class VpiBootstrapConfig:
     bootstrap_implementation_version: str
     postgresql_schema: str
     qdrant_collection_name: str
+    artifact_root_dir: Path
     embedding_configuration: VpiEmbeddingConfiguration
 
     def __post_init__(self) -> None:
@@ -121,6 +123,12 @@ def load_vpi_bootstrap_config(
             str(DEFAULT_VECTOR_BATCH_SIZE),
         )
     )
+    artifact_root_dir = Path(
+        os.getenv(
+            f"{VPI_EMBEDDING_ARTIFACT_ENV_PREFIX}_PATH",
+            str(scenario_root / "dataset" / "processed" / "embedding_artifacts"),
+        )
+    )
 
     return VpiBootstrapConfig(
         dataset_path=dataset_path,
@@ -142,5 +150,6 @@ def load_vpi_bootstrap_config(
             f"{VPI_BOOTSTRAP_ENV_PREFIX}_QDRANT_COLLECTION",
             DEFAULT_QDRANT_COLLECTION,
         ),
+        artifact_root_dir=artifact_root_dir,
         embedding_configuration=load_vpi_embedding_configuration(),
     )

@@ -70,6 +70,43 @@ def _iter_production_python_files(root: Path):
         yield path
 
 
+def test_storage_orchestrator_has_no_embedding_execution_dependency() -> None:
+    orchestrator_path = _VPI_ROOT / "storage_bootstrap/orchestration/orchestrator.py"
+    source = orchestrator_path.read_text(encoding="utf-8")
+    assert "EmbeddingExecutionPort" not in source
+    assert "embed_batch" not in source
+    assert "IntergraxEmbeddingBootstrapAdapter" not in source
+
+
+def test_storage_composition_has_no_embedding_provider() -> None:
+    composition_path = _VPI_ROOT / "composition/bootstrap_runtime.py"
+    source = composition_path.read_text(encoding="utf-8")
+    assert "IntergraxEmbeddingBootstrapAdapter" not in source
+    assert "ParquetFilesystemArtifactReader" in source
+
+
+def test_storage_orchestrator_has_no_parquet_or_vendor_imports() -> None:
+    orchestrator_path = _VPI_ROOT / "storage_bootstrap/orchestration/orchestrator.py"
+    imports = _module_imports(orchestrator_path)
+    forbidden = sorted(
+        imported
+        for imported in imports
+        if any(
+            fragment in imported
+            for fragment in (
+                "pyarrow",
+                "qdrant",
+                "psycopg",
+                "sentence_transformers",
+                "torch",
+                "integrations.embedding",
+                "stores.parquet",
+            )
+        )
+    )
+    assert forbidden == []
+
+
 def test_no_reflection_in_embedding_materialization_production_code() -> None:
     forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
     for path in _iter_production_python_files(_EMBEDDING_MATERIALIZATION_ROOT):

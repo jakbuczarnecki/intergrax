@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         orchestrator.dependencies.catalog.close()
         orchestrator.dependencies.search.close()
+        orchestrator.dependencies.embedding_artifact.close()
 
     print(f"state={report.final_state.value}")
     if report.manifest is not None:
