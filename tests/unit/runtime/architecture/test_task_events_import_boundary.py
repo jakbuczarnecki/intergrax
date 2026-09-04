@@ -24,16 +24,78 @@ _IMPORT_ISOLATION_CASES = (
     "import intergrax.integrations",
 )
 
+_IMPORT_ORDER_MATRIX = (
+    ("A task then events", "import intergrax.runtime.task; import intergrax.runtime.events"),
+    ("B events then task", "import intergrax.runtime.events; import intergrax.runtime.task"),
+    ("C trace_bridge first", "from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event"),
+    ("D integrations first", "import intergrax.integrations; import intergrax.runtime.task; import intergrax.runtime.events"),
+    (
+        "E observability emitter first",
+        "from intergrax.runtime.observability.emitter import ObservabilityEmitter; import intergrax.runtime.task; import intergrax.runtime.events",
+    ),
+)
 
-@pytest.mark.parametrize("statement", _IMPORT_ISOLATION_CASES)
-def test_task_events_import_boundary_subprocess(statement: str) -> None:
-    completed = subprocess.run(
+_PUBLIC_API_MATRIX = (
+    "from intergrax.runtime.task import Task, TaskTraceEmitter, PersistingTaskTraceEmitter, new_run_id",
+    "from intergrax.runtime.events import RuntimeEvent, RuntimeEventBus, runtime_event_from_task_state, trace_event_to_runtime_event",
+)
+
+_EVENTS_FACADE_LAZY_BRIDGE = """
+import sys
+import intergrax.runtime.events as events
+assert 'intergrax.runtime.events.trace_bridge' not in sys.modules
+_ = events.RuntimeEvent
+assert 'intergrax.runtime.events.trace_bridge' not in sys.modules
+_ = events.trace_event_to_runtime_event
+assert 'intergrax.runtime.events.trace_bridge' in sys.modules
+"""
+
+
+def _run_import_subprocess(statement: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         [sys.executable, "-c", statement],
         cwd=_REPO_ROOT,
         check=False,
         capture_output=True,
         text=True,
     )
+
+
+@pytest.mark.parametrize("statement", _IMPORT_ISOLATION_CASES)
+def test_task_events_import_boundary_subprocess(statement: str) -> None:
+    completed = _run_import_subprocess(statement)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+@pytest.mark.skip(
+    reason=(
+        "observability.__init__ has a separate diagnostics↔causal_evidence cycle "
+        "outside P2-003-D2 task/events facade scope"
+    ),
+)
+@pytest.mark.parametrize("label,statement", (("E observability emitter first", _IMPORT_ORDER_MATRIX[4][1]),))
+def test_task_events_import_order_matrix_observability_emitter_first(
+    label: str,
+    statement: str,
+) -> None:
+    completed = _run_import_subprocess(statement)
+    assert completed.returncode == 0, f"{label}: {completed.stdout}{completed.stderr}"
+
+
+@pytest.mark.parametrize("label,statement", _IMPORT_ORDER_MATRIX[:4] + _IMPORT_ORDER_MATRIX[5:])
+def test_task_events_import_order_matrix(label: str, statement: str) -> None:
+    completed = _run_import_subprocess(statement)
+    assert completed.returncode == 0, f"{label}: {completed.stdout}{completed.stderr}"
+
+
+@pytest.mark.parametrize("statement", _PUBLIC_API_MATRIX)
+def test_task_events_public_api_import_matrix(statement: str) -> None:
+    completed = _run_import_subprocess(statement)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_events_package_facade_defers_trace_bridge_until_accessed() -> None:
+    completed = _run_import_subprocess(_EVENTS_FACADE_LAZY_BRIDGE)
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
