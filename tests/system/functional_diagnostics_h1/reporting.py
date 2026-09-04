@@ -19,6 +19,22 @@ from tests.system.functional_diagnostics_h1.models import (
     H1_SEMANTICS,
 )
 
+MANDATORY_HEALTH_GATES: frozenset[HealthGateId] = frozenset(
+    {
+        HealthGateId.H1_A_COLLECTION,
+        HealthGateId.H1_B_CORE_HEALTH,
+        HealthGateId.H1_C_REPEATABILITY,
+        HealthGateId.H1_D_INVARIANT_COVERAGE,
+        HealthGateId.H1_E_SKIP_XFAIL_HONESTY,
+        HealthGateId.H1_F_EXTERNAL_DEPENDENCY,
+        HealthGateId.H1_G_RUNNER_INTEGRITY,
+        HealthGateId.H1_H_STALE_DEAD,
+        HealthGateId.H1_I_SUPERSESSION,
+        HealthGateId.H1_J_REPORT_INTEGRITY,
+        HealthGateId.H1_K_LOCAL_INTEGRATION,
+    }
+)
+
 
 def _gate_to_json(gate: GateResult) -> dict[str, str | tuple[str, ...]]:
     return {
@@ -36,6 +52,9 @@ def health_report_to_json(report: DiagnosticHealthReport) -> dict[str, object]:
         "tested_sha": report.tested_sha,
         "start_head": report.start_head,
         "final_head": report.final_head,
+        "origin_development_sha": report.origin_development_sha,
+        "working_tree_clean_at_start": report.working_tree_clean_at_start,
+        "repository_precondition": report.repository_precondition.value,
         "timestamp": report.timestamp,
         "h1_semantics": report.h1_semantics,
         "inventory_counts": report.inventory_counts,
@@ -72,33 +91,78 @@ def write_test_inventory(path: Path, inventory: tuple[object, ...]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False), encoding="utf-8")
 
 
-def aggregate_overall_verdict(
-    gate_results: tuple[GateResult, ...],
+def calculate_health_verdict(
+    mandatory_gates: tuple[GateResult, ...],
     *,
     real_service_blocked: bool,
 ) -> tuple[HealthVerdict, HealthVerdict, HealthVerdict]:
-    core_gates = {
-        HealthGateId.H1_A_COLLECTION,
-        HealthGateId.H1_B_CORE_HEALTH,
-        HealthGateId.H1_C_REPEATABILITY,
-        HealthGateId.H1_D_INVARIANT_COVERAGE,
-        HealthGateId.H1_E_SKIP_XFAIL_HONESTY,
-        HealthGateId.H1_F_EXTERNAL_DEPENDENCY,
-        HealthGateId.H1_G_RUNNER_INTEGRITY,
-        HealthGateId.H1_H_STALE_DEAD,
-        HealthGateId.H1_I_SUPERSESSION,
-        HealthGateId.H1_J_REPORT_INTEGRITY,
-    }
-    core_failed = any(
-        gate.verdict is HealthVerdict.FAILED for gate in gate_results if gate.gate_id in core_gates
+    relevant = tuple(
+        gate for gate in mandatory_gates if gate.gate_id in MANDATORY_HEALTH_GATES
     )
-    core_verdict = HealthVerdict.FAILED if core_failed else HealthVerdict.PASS
+    if any(gate.verdict is HealthVerdict.FAILED for gate in relevant):
+        core_verdict = HealthVerdict.FAILED
+    elif any(gate.verdict is HealthVerdict.BLOCKED for gate in relevant):
+        core_verdict = HealthVerdict.BLOCKED
+    else:
+        core_verdict = HealthVerdict.PASS
     real_service = HealthVerdict.BLOCKED if real_service_blocked else HealthVerdict.PASS
     overall = core_verdict
     return core_verdict, real_service, overall
 
 
+def aggregate_overall_verdict(
+    gate_results: tuple[GateResult, ...],
+    *,
+    real_service_blocked: bool,
+) -> tuple[HealthVerdict, HealthVerdict, HealthVerdict]:
+    return calculate_health_verdict(gate_results, real_service_blocked=real_service_blocked)
+
+
+def gate_h1_j_report_integrity(
+    *,
+    gate_results: tuple[GateResult, ...],
+    calculated_overall: HealthVerdict,
+    blocking_findings: tuple[str, ...],
+    start_head: str,
+    final_head: str,
+) -> GateResult:
+    violations: list[str] = []
+    mandatory_failed = tuple(
+        gate.gate_id.value
+        for gate in gate_results
+        if gate.gate_id in MANDATORY_HEALTH_GATES and gate.verdict is HealthVerdict.FAILED
+    )
+    if mandatory_failed and calculated_overall is HealthVerdict.PASS:
+        violations.append(
+            f"failed_mandatory_gates_coexist_with_overall_pass:{','.join(mandatory_failed)}"
+        )
+    if blocking_findings and calculated_overall is HealthVerdict.PASS:
+        violations.append("blocking_findings_coexist_with_overall_pass")
+    if start_head != final_head:
+        violations.append(f"head_changed_during_qualification:{start_head}->{final_head}")
+    verdict = HealthVerdict.PASS if not violations else HealthVerdict.FAILED
+    summary = (
+        f"report integrity: overall={calculated_overall.value} violations={len(violations)}"
+        if violations
+        else f"report integrity: overall={calculated_overall.value} consistent"
+    )
+    return GateResult(
+        gate_id=HealthGateId.H1_J_REPORT_INTEGRITY,
+        verdict=verdict,
+        summary=summary,
+        details=tuple(violations),
+    )
+
+
+def _find_gate(report: DiagnosticHealthReport, gate_id: HealthGateId) -> GateResult | None:
+    for gate in report.gate_results:
+        if gate.gate_id is gate_id:
+            return gate
+    return None
+
+
 def build_human_report(report: DiagnosticHealthReport) -> str:
+    local_gate = _find_gate(report, HealthGateId.H1_K_LOCAL_INTEGRATION) or report.local_system_results
     lines = [
         f"# {report.qualification_id} TEST-SUITE HEALTH QUALIFICATION",
         "",
@@ -116,6 +180,15 @@ def build_human_report(report: DiagnosticHealthReport) -> str:
         "",
         "## Qualified SHA",
         report.tested_sha,
+        "",
+        "## Origin development SHA",
+        report.origin_development_sha,
+        "",
+        "## Working tree clean at canonical run",
+        "YES" if report.working_tree_clean_at_start else "NO",
+        "",
+        "## Repository precondition",
+        report.repository_precondition.value,
         "",
         "## Scope",
         "Diagnostic Engine test-suite health (inventory, gates, repeatability, invariant ownership).",
@@ -141,14 +214,20 @@ def build_human_report(report: DiagnosticHealthReport) -> str:
         ]
     )
     for run in report.repeatability_results:
+        collected_display = "unknown" if run.collected is None else str(run.collected)
         lines.append(
-            f"- {run.scope}: collected={run.collected} passed={run.passed} failed={run.failed} verdict={run.verdict.value}"
+            f"- {run.scope}: collected={collected_display} passed={run.passed} "
+            f"failed={run.failed} verdict={run.verdict.value}"
         )
     lines.extend(
         [
             "",
             "## H1-D architecture invariant coverage",
-            f"{next(g for g in report.gate_results if g.gate_id.value == 'H1-D').verdict.value}",
+            (
+                _find_gate(report, HealthGateId.H1_D_INVARIANT_COVERAGE).verdict.value
+                if _find_gate(report, HealthGateId.H1_D_INVARIANT_COVERAGE) is not None
+                else "N/A"
+            ),
             "",
             "## H1-E skip/xfail audit",
             f"findings={len(report.skip_xfail_inventory)}",
@@ -162,16 +241,39 @@ def build_human_report(report: DiagnosticHealthReport) -> str:
         [
             "",
             "## H1-G qualification runner integrity",
-            next(g for g in report.gate_results if g.gate_id.value == "H1-G").summary,
+            (
+                _find_gate(report, HealthGateId.H1_G_RUNNER_INTEGRITY).summary
+                if _find_gate(report, HealthGateId.H1_G_RUNNER_INTEGRITY) is not None
+                else "N/A"
+            ),
             "",
             "## H1-H stale/dead tests",
             "NONE" if not report.dead_stale_findings else "\n".join(report.dead_stale_findings),
             "",
             "## H1-I supersession consistency",
-            next(g for g in report.gate_results if g.gate_id.value == "H1-I").summary,
+            (
+                _find_gate(report, HealthGateId.H1_I_SUPERSESSION).summary
+                if _find_gate(report, HealthGateId.H1_I_SUPERSESSION) is not None
+                else "N/A"
+            ),
             "",
             "## H1-J machine report integrity",
-            next(g for g in report.gate_results if g.gate_id.value == "H1-J").summary,
+            (
+                _find_gate(report, HealthGateId.H1_J_REPORT_INTEGRITY).summary
+                if _find_gate(report, HealthGateId.H1_J_REPORT_INTEGRITY) is not None
+                else "N/A"
+            ),
+            "",
+            "## H1-K local integration",
+            f"{local_gate.verdict.value} — {local_gate.summary}",
+        ]
+    )
+    if local_gate.details:
+        lines.extend(["", "### H1-K suite details"])
+        for detail in local_gate.details:
+            lines.append(f"- {detail}")
+    lines.extend(
+        [
             "",
             "## Core vs real-service",
             f"CORE_TEST_HEALTH={report.core_test_health.value}",
@@ -186,7 +288,7 @@ def build_human_report(report: DiagnosticHealthReport) -> str:
             "## Final architecture statement",
         ]
     )
-    if report.core_test_health is HealthVerdict.PASS:
+    if report.core_test_health is HealthVerdict.PASS and report.overall_h1 is HealthVerdict.PASS:
         lines.extend(
             [
                 "DIAGNOSTIC TEST-SUITE HEALTH = QUALIFIED",
@@ -203,7 +305,14 @@ def utc_now_iso() -> str:
     return datetime.now(tz=UTC).isoformat()
 
 
-def new_report_shell(*, start_head: str, tested_sha: str) -> DiagnosticHealthReport:
+def new_report_shell(
+    *,
+    start_head: str,
+    tested_sha: str,
+    origin_development_sha: str,
+    working_tree_clean_at_start: bool,
+    repository_precondition: HealthVerdict,
+) -> DiagnosticHealthReport:
     placeholder = GateResult(
         gate_id=HealthGateId.H1_J_REPORT_INTEGRITY,
         verdict=HealthVerdict.FAILED,
@@ -215,6 +324,9 @@ def new_report_shell(*, start_head: str, tested_sha: str) -> DiagnosticHealthRep
         tested_sha=tested_sha,
         start_head=start_head,
         final_head=start_head,
+        origin_development_sha=origin_development_sha,
+        working_tree_clean_at_start=working_tree_clean_at_start,
+        repository_precondition=repository_precondition,
         timestamp=utc_now_iso(),
         h1_semantics=H1_SEMANTICS,
         inventory_counts={},

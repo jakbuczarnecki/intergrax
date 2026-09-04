@@ -14,7 +14,6 @@ from tests.system.functional_diagnostics_h1.inventory import (
     QUALIFICATION_RUNNERS,
     REPEATABILITY_PYTEST_TARGETS,
     SLOW_ARCHITECTURE_PYTEST_TARGETS,
-    REPEATABILITY_PYTEST_TARGETS,
     build_diagnostic_test_inventory,
     verify_invariant_owners,
 )
@@ -58,7 +57,7 @@ def gate_h1_a_collection(inventory_count: int) -> tuple[GateResult, int]:
     if inventory_count <= 0:
         verdict = HealthVerdict.FAILED
         details.append("inventory_empty")
-    if result.collected_count <= 0:
+    if result.collected_count is None or result.collected_count <= 0:
         verdict = HealthVerdict.FAILED
         details.append("zero_tests_discovered")
     return (
@@ -76,7 +75,7 @@ def _merge_pytest_results(*results: PytestSubprocessResult) -> PytestSubprocessR
     if not results:
         return PytestSubprocessResult(
             exit_code=0,
-            collected_count=0,
+            collected_count=None,
             passed=0,
             failed=0,
             skipped=0,
@@ -93,9 +92,11 @@ def _merge_pytest_results(*results: PytestSubprocessResult) -> PytestSubprocessR
         if item.exit_code not in {0, 5}:
             exit_code = item.exit_code
             break
+    collected_values = [item.collected_count for item in results if item.collected_count is not None]
+    merged_collected: int | None = sum(collected_values) if collected_values else None
     return PytestSubprocessResult(
         exit_code=exit_code,
-        collected_count=sum(item.collected_count for item in results),
+        collected_count=merged_collected,
         passed=sum(item.passed for item in results),
         failed=sum(item.failed for item in results),
         skipped=sum(item.skipped for item in results),
@@ -134,12 +135,27 @@ def gate_h1_b_core_health() -> tuple[GateResult, PytestSubprocessResult]:
     )
 
 
+def _validate_repeatability_metrics(result: PytestSubprocessResult) -> tuple[bool, str | None]:
+    executed = result.passed + result.failed + result.skipped + result.xfailed + result.xpassed
+    if result.passed > 0 and result.collected_count == 0:
+        return False, "passed_gt_zero_but_collected_zero"
+    if result.passed > 0 and result.collected_count is None:
+        return False, "passed_gt_zero_but_collected_unknown"
+    if result.collected_count is not None and executed > 0 and result.collected_count < executed:
+        return False, "collected_lt_executed"
+    return True, None
+
+
 def gate_h1_c_repeatability() -> tuple[GateResult, tuple[DiagnosticTestSuiteResult, ...]]:
     runs: list[DiagnosticTestSuiteResult] = []
+    metric_violations: list[str] = []
     for index in range(3):
         result = run_pytest_subprocess(REPEATABILITY_PYTEST_TARGETS, timeout_seconds=1200.0)
         outcome = classify_pytest_exit(result)
-        verdict = HealthVerdict.PASS if outcome == "PASS" else HealthVerdict.FAILED
+        metrics_ok, metric_note = _validate_repeatability_metrics(result)
+        if not metrics_ok and metric_note is not None:
+            metric_violations.append(f"run_{index + 1}:{metric_note}")
+        verdict = HealthVerdict.PASS if outcome == "PASS" and metrics_ok else HealthVerdict.FAILED
         runs.append(
             DiagnosticTestSuiteResult(
                 scope=f"repeatability_run_{index + 1}",
@@ -161,6 +177,9 @@ def gate_h1_c_repeatability() -> tuple[GateResult, tuple[DiagnosticTestSuiteResu
     if verdicts != {HealthVerdict.PASS}:
         gate_verdict = HealthVerdict.FAILED
         details.append("outcome_variance")
+    if metric_violations:
+        gate_verdict = HealthVerdict.FAILED
+        details.extend(metric_violations)
     return (
         GateResult(
             gate_id=HealthGateId.H1_C_REPEATABILITY,
@@ -311,32 +330,40 @@ def gate_h1_i_supersession() -> GateResult:
     )
 
 
-def gate_local_integration() -> GateResult:
-    result = run_pytest_subprocess(
-        LOCAL_INTEGRATION_TARGETS,
-        timeout_seconds=900.0,
-        env_overrides={
-            "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET": (
-                "h1-local-integration-diagnostic-cursor-secret"
-            ),
-        },
-    )
-    combined = result.stdout_tail + result.stderr_tail
-    if "SkillToolRequirementError" in combined or "ApplicationPackageClosureError" in combined:
-        return GateResult(
-            gate_id=HealthGateId.H1_B_CORE_HEALTH,
-            verdict=HealthVerdict.BLOCKED,
-            summary="local integration diagnostics blocked by host composition prerequisites",
-            details=("host_composition_prerequisites_unsatisfied",),
+def gate_h1_k_local_integration() -> GateResult:
+    """H1-K: local diagnostic integration — deterministic, must PASS."""
+    env_overrides = {
+        "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET": (
+            "h1-local-integration-diagnostic-cursor-secret"
+        ),
+    }
+    suite_details: list[str] = []
+    any_failed = False
+    for target in LOCAL_INTEGRATION_TARGETS:
+        result = run_pytest_subprocess(
+            (target,),
+            timeout_seconds=900.0,
+            env_overrides=env_overrides,
         )
-    outcome = classify_pytest_exit(result)
-    verdict = HealthVerdict.PASS if outcome == "PASS" else HealthVerdict.FAILED
+        outcome = classify_pytest_exit(result)
+        suite_details.append(
+            f"{target}:outcome={outcome}:passed={result.passed}:failed={result.failed}:"
+            f"errors={result.errors}:dependency_class=LOCAL_DETERMINISTIC"
+        )
+        if outcome != "PASS":
+            any_failed = True
+    verdict = HealthVerdict.FAILED if any_failed else HealthVerdict.PASS
     return GateResult(
-        gate_id=HealthGateId.H1_B_CORE_HEALTH,
+        gate_id=HealthGateId.H1_K_LOCAL_INTEGRATION,
         verdict=verdict,
-        summary=f"local integration diagnostics: {outcome}",
-        details=(f"passed={result.passed}", f"failed={result.failed}"),
+        summary=f"local diagnostic integration (H1-K): {verdict.value}",
+        details=tuple(suite_details),
     )
+
+
+def gate_local_integration() -> GateResult:
+    """Backward-compatible alias for H1-K local integration gate."""
+    return gate_h1_k_local_integration()
 
 
 def scan_sleep_synchronization() -> tuple[str, ...]:

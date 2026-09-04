@@ -1,10 +1,24 @@
 # DIAG-FUNCTIONAL-H1-R1 TEST-SUITE HEALTH QUALIFICATION
 
+> **Independent audit status (H1-R2): INVALID / NOT QUALIFIED**
+>
+> Historical recorded verdict below was **PASS**, but independent audit invalidated it:
+>
+> - local integration **FAILED** was excluded from `overall_h1` aggregation (false PASS)
+> - Qualified SHA (`19341589…`) did not identify the committed remediation tree (`a80710f…` was the actual fix commit)
+>
+> Superseded by DIAG-FUNCTIONAL-H1-R2 qualification process. Original artifact data preserved below.
+
 ## Qualification id
 DIAG-FUNCTIONAL-H1-R1
 
 ## Verdict
-PASS
+PASS *(historical — INVALID per independent audit)*
+
+## Audit invalidation
+- **False-PASS defect:** `gate_local_integration()` result omitted from `aggregate_overall_verdict()` input; blocking finding present while `overall_h1=PASS`
+- **Qualified-SHA defect:** qualification ran on pre-commit / dirty tree SHA, not the committed remediation
+- **Repeatability metric defect:** `collected=0` with `passed=111` (parser returned fake zero)
 
 ## Start HEAD
 19341589a96c99174662776108072c7031988a9f

@@ -66,6 +66,7 @@ class HealthVerdict(StrEnum):
     PASS = "PASS"
     FAILED = "FAILED"
     BLOCKED = "BLOCKED"
+    FAILED_PRECONDITION = "FAILED_PRECONDITION"
 
 
 class HealthGateId(StrEnum):
@@ -79,6 +80,7 @@ class HealthGateId(StrEnum):
     H1_H_STALE_DEAD = "H1-H"
     H1_I_SUPERSESSION = "H1-I"
     H1_J_REPORT_INTEGRITY = "H1-J"
+    H1_K_LOCAL_INTEGRATION = "H1-K"
 
 
 class HealthDimension(StrEnum):
@@ -118,9 +120,16 @@ class InvariantOwner:
 
 
 @dataclass(frozen=True, slots=True)
+class QualificationRepositoryState:
+    head_sha: str
+    origin_development_sha: str
+    working_tree_clean: bool
+
+
+@dataclass(frozen=True, slots=True)
 class PytestSubprocessResult:
     exit_code: int
-    collected_count: int
+    collected_count: int | None
     passed: int
     failed: int
     skipped: int
@@ -177,7 +186,7 @@ class DiagnosticTestHealthStatus:
 @dataclass(frozen=True, slots=True)
 class DiagnosticTestSuiteResult:
     scope: str
-    collected: int
+    collected: int | None
     passed: int
     failed: int
     skipped: int
@@ -192,6 +201,9 @@ class DiagnosticHealthReport:
     tested_sha: str
     start_head: str
     final_head: str
+    origin_development_sha: str
+    working_tree_clean_at_start: bool
+    repository_precondition: HealthVerdict
     timestamp: str
     h1_semantics: str
     inventory_counts: dict[str, int]
@@ -215,6 +227,7 @@ class DiagnosticHealthReport:
 H1_SCHEMA_VERSION = "diag_functional_h1_v1"
 H1_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1"
 H1_R1_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R1"
+H1_R2_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R2"
 H1_SEMANTICS = (
     "H1 measures diagnostic TEST-SUITE HEALTH, not live requalification of all "
     "historical real-world qualifications. External service absence yields "

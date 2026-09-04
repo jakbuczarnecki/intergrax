@@ -28,14 +28,14 @@ def _tail(text: str, max_chars: int = 4000) -> str:
     return text[-max_chars:]
 
 
-def _parse_count(pattern: re.Pattern[str], text: str) -> int:
+def _parse_count(pattern: re.Pattern[str], text: str) -> int | None:
     match = pattern.search(text)
     if match is None:
-        return 0
+        return None
     for group in match.groups():
         if group is not None:
             return int(group)
-    return 0
+    return None
 
 
 def run_pytest_subprocess(
@@ -84,7 +84,7 @@ def run_pytest_subprocess(
             stderr_text = _tail(exc.stderr or "")
         return PytestSubprocessResult(
             exit_code=124,
-            collected_count=0,
+            collected_count=None,
             passed=0,
             failed=0,
             skipped=0,
@@ -101,15 +101,26 @@ def run_pytest_subprocess(
     collection_errors = combined.lower().count("error collecting")
     if "errors during collection" in combined.lower():
         collection_errors = max(collection_errors, 1)
+    collected_count = _parse_count(_COLLECTED_RE, combined)
+    passed = _parse_count(_PASSED_RE, combined) or 0
+    failed = _parse_count(_FAILED_RE, combined) or 0
+    skipped = _parse_count(_SKIPPED_RE, combined) or 0
+    xfailed = _parse_count(_XFAILED_RE, combined) or 0
+    xpassed = _parse_count(_XPASSED_RE, combined) or 0
+    errors = _parse_count(_ERROR_RE, combined) or 0
+    if collected_count is None and not collect_only:
+        executed = passed + failed + skipped + xfailed + xpassed
+        if executed > 0:
+            collected_count = executed
     return PytestSubprocessResult(
         exit_code=completed.returncode,
-        collected_count=_parse_count(_COLLECTED_RE, combined),
-        passed=_parse_count(_PASSED_RE, combined),
-        failed=_parse_count(_FAILED_RE, combined),
-        skipped=_parse_count(_SKIPPED_RE, combined),
-        xfailed=_parse_count(_XFAILED_RE, combined),
-        xpassed=_parse_count(_XPASSED_RE, combined),
-        errors=_parse_count(_ERROR_RE, combined),
+        collected_count=collected_count,
+        passed=passed,
+        failed=failed,
+        skipped=skipped,
+        xfailed=xfailed,
+        xpassed=xpassed,
+        errors=errors,
         collection_errors=collection_errors,
         stdout_tail=_tail(completed.stdout),
         stderr_tail=_tail(completed.stderr),
