@@ -12,7 +12,14 @@ import pytest
 from intergrax.autonomous_work.goal_evaluation_ports import MappingGoalEvaluationCadenceResolver
 from intergrax.autonomous_work.goal_evaluation_service import WorkerGoalEvaluationService
 from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
-from intergrax.autonomous_work.postgresql_repository import PostgreSQLAutonomousWorkStore
+from intergrax.autonomous_work.postgresql_repository import (
+    AutonomousWorkSchemaVersionError,
+    PostgreSQLAutonomousWorkStore,
+)
+from intergrax.autonomous_work.repository import WorkerWakeUpReceiptClaimStatus
+from intergrax.integrations.providers.relational_store.postgresql.session import (
+    PostgreSQLConnectionProvider,
+)
 from intergrax.contracts.autonomous_work import (
     GoalEvaluationDisposition,
     GoalProgressProjection,
@@ -31,8 +38,9 @@ from intergrax.contracts.autonomous_work.wake_up import (
     WorkerWakeUpSourceKind,
     WorkerWakeUpSignal,
 )
-from tests.integration.autonomous_work.conftest import open_bundle
+from tests.integration.autonomous_work.conftest import open_bundle, resolve_postgresql_config
 from tests.unit.autonomous_work import repository_contracts as contract_suite
+from tests.unit.autonomous_work.wake_up_receipt_repository_contracts import wake_up_receipt
 
 pytestmark = [pytest.mark.integration, pytest.mark.network]
 
@@ -79,6 +87,22 @@ def test_postgresql_v3_to_v4_migration_preserves_existing_data(
     created = postgresql_autonomous_work_bundle.worker_instance.create(
         contract_suite.worker_instance()
     )
+    binding = postgresql_autonomous_work_bundle.worker_principal_binding.create(
+        contract_suite.worker_principal_binding(
+            worker_instance_id=created.worker_instance_id,
+        )
+    )
+    receipt = wake_up_receipt(worker_instance_id=created.worker_instance_id)
+    claim = postgresql_autonomous_work_bundle.worker_wake_up_receipt.claim(receipt)
+    assert claim.status is WorkerWakeUpReceiptClaimStatus.CLAIMED
+    responsibility = contract_suite.responsibility(
+        worker_instance_id=created.worker_instance_id,
+    )
+    postgresql_autonomous_work_bundle.responsibility.create(responsibility)
+    goal = contract_suite.worker_goal(
+        responsibility_id=responsibility.responsibility_id,
+    )
+    postgresql_autonomous_work_bundle.worker_goal.create(goal)
     schema_name = postgresql_autonomous_work_bundle.store.schema_name
     store = postgresql_autonomous_work_bundle.store
     assert isinstance(store, PostgreSQLAutonomousWorkStore)
@@ -94,12 +118,150 @@ def test_postgresql_v3_to_v4_migration_preserves_existing_data(
             worker_instance_id=created.worker_instance_id
         )
         assert loaded == created
+        loaded_binding = migrated_bundle.worker_principal_binding.get(
+            worker_instance_id=created.worker_instance_id
+        )
+        assert loaded_binding == binding
+        loaded_receipt = migrated_bundle.worker_wake_up_receipt.get(
+            worker_instance_id=created.worker_instance_id,
+            wake_up_id=receipt.wake_up_id,
+        )
+        assert loaded_receipt == receipt
+        loaded_responsibility = migrated_bundle.responsibility.get(
+            responsibility_id=responsibility.responsibility_id
+        )
+        assert loaded_responsibility == responsibility
+        loaded_goal = migrated_bundle.worker_goal.get(goal_id=goal.goal_id)
+        assert loaded_goal == goal
         with migrated_bundle.store.transaction() as conn:
             row = conn.execute(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
             assert int(row["schema_version"]) == 4
+            table_row = conn.execute(
+                """
+                SELECT 1 FROM information_schema.tables
+                WHERE table_name = 'aw_goal_evaluation_cadence_states'
+                """
+            ).fetchone()
+            assert table_row is not None
+    finally:
+        migrated_bundle.close()
+
+
+def test_postgresql_migration_v3_to_v4_atomicity_on_failure(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    created = postgresql_autonomous_work_bundle.worker_instance.create(
+        contract_suite.worker_instance()
+    )
+    binding = postgresql_autonomous_work_bundle.worker_principal_binding.create(
+        contract_suite.worker_principal_binding(
+            worker_instance_id=created.worker_instance_id,
+        )
+    )
+    receipt = wake_up_receipt(worker_instance_id=created.worker_instance_id)
+    claim = postgresql_autonomous_work_bundle.worker_wake_up_receipt.claim(receipt)
+    assert claim.status is WorkerWakeUpReceiptClaimStatus.CLAIMED
+    schema_name = postgresql_autonomous_work_bundle.store.schema_name
+    store = postgresql_autonomous_work_bundle.store
+    assert isinstance(store, PostgreSQLAutonomousWorkStore)
+    with store.transaction() as conn:
+        conn.execute("DROP TABLE IF EXISTS aw_goal_evaluation_cadence_states")
+        conn.execute(
+            "UPDATE autonomous_work_schema_meta SET schema_version = %s WHERE id = 1",
+            (3,),
+        )
+
+    def failing_migration(self, session):  # type: ignore[no-untyped-def]
+        session.execute(
+            """
+            CREATE TABLE IF NOT EXISTS aw_goal_evaluation_cadence_states (
+                goal_id TEXT NOT NULL PRIMARY KEY,
+                last_evaluated_at TIMESTAMPTZ NOT NULL,
+                revision INTEGER NOT NULL
+            );
+            """
+        )
+        raise AutonomousWorkSchemaVersionError("controlled migration failure")
+
+    monkeypatch.setattr(PostgreSQLAutonomousWorkStore, "_migrate_v3_to_v4", failing_migration)
+    with pytest.raises(AutonomousWorkSchemaVersionError, match="controlled migration failure"):
+        open_bundle(schema_name)
+
+    config = resolve_postgresql_config()
+    assert config is not None
+    provider = PostgreSQLConnectionProvider(config)
+    with provider.connection() as conn:
+        row = conn.execute(
+            f"SELECT schema_version FROM {schema_name}.autonomous_work_schema_meta WHERE id = 1"
+        ).fetchone()
+        assert row is not None
+        assert int(row["schema_version"]) == 3
+        table_row = conn.execute(
+            """
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = %s AND table_name = 'aw_goal_evaluation_cadence_states'
+            """,
+            (schema_name,),
+        ).fetchone()
+        assert table_row is None
+        worker_row = conn.execute(
+            f"""
+            SELECT record_json FROM {schema_name}.aw_worker_instances
+            WHERE worker_instance_id = %s
+            """,
+            (created.worker_instance_id.strip(),),
+        ).fetchone()
+        assert worker_row is not None
+        binding_row = conn.execute(
+            f"""
+            SELECT record_json FROM {schema_name}.aw_worker_principal_bindings
+            WHERE worker_instance_id = %s
+            """,
+            (created.worker_instance_id.strip(),),
+        ).fetchone()
+        assert binding_row is not None
+        receipt_row = conn.execute(
+            f"""
+            SELECT record_json FROM {schema_name}.aw_worker_wake_up_receipts
+            WHERE worker_instance_id = %s AND wake_up_id = %s
+            """,
+            (created.worker_instance_id.strip(), receipt.wake_up_id.strip()),
+        ).fetchone()
+        assert receipt_row is not None
+
+    monkeypatch.undo()
+    migrated_bundle = open_bundle(schema_name)
+    try:
+        loaded = migrated_bundle.worker_instance.get(
+            worker_instance_id=created.worker_instance_id
+        )
+        assert loaded == created
+        loaded_binding = migrated_bundle.worker_principal_binding.get(
+            worker_instance_id=created.worker_instance_id
+        )
+        assert loaded_binding == binding
+        loaded_receipt = migrated_bundle.worker_wake_up_receipt.get(
+            worker_instance_id=created.worker_instance_id,
+            wake_up_id=receipt.wake_up_id,
+        )
+        assert loaded_receipt == receipt
+        with migrated_bundle.store.transaction() as conn:
+            row = conn.execute(
+                "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
+            ).fetchone()
+            assert row is not None
+            assert int(row["schema_version"]) == 4
+            table_row = conn.execute(
+                """
+                SELECT 1 FROM information_schema.tables
+                WHERE table_name = 'aw_goal_evaluation_cadence_states'
+                """
+            ).fetchone()
+            assert table_row is not None
     finally:
         migrated_bundle.close()
 
