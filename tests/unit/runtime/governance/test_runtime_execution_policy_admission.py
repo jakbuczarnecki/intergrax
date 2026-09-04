@@ -11,13 +11,12 @@ from intergrax.contracts.runtime_execution_policy_admission import (
     RuntimeExecutionPolicyAdmissionRequest,
     WORKER_ROOT_EXECUTION_OPERATION,
 )
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
     DenyingRuntimeExecutionPolicyAdmission,
     RuntimeExecutionPolicyAdmissionEvaluator,
     UnavailableRuntimeExecutionPolicyAdmission,
-    default_worker_root_execution_policy_engine,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
@@ -76,9 +75,18 @@ def test_evaluator_allow_with_scope_narrowing() -> None:
     assert result.approved_scopes == ("workspace.read",)
 
 
-def test_default_worker_root_execution_policy_engine_allows() -> None:
+def test_evaluator_no_matching_rule_indeterminate() -> None:
     evaluator = RuntimeExecutionPolicyAdmissionEvaluator(
-        policy_engine=default_worker_root_execution_policy_engine(),
+        policy_engine=RuntimePolicyEngine(
+            root_execution_admission_rules=(
+                RootExecutionAdmissionPolicyRule(
+                    rule_id="runtime.other_operation",
+                    decision=PolicyAction.ALLOW,
+                    execution_operation="other.operation",
+                ),
+            ),
+        ),
     )
     result = evaluator.evaluate(_request())
-    assert result.policy_decision.action is PolicyAction.ALLOW
+    assert result.policy_decision.action is PolicyAction.DENY
+    assert result.policy_decision.reason == "root_execution_admission_indeterminate"

@@ -9,7 +9,6 @@ from intergrax.contracts.runtime_execution_policy_admission import (
     RuntimeExecutionPolicyAdmissionPort,
     RuntimeExecutionPolicyAdmissionRequest,
     RuntimeExecutionPolicyAdmissionResult,
-    WORKER_ROOT_EXECUTION_OPERATION,
 )
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
@@ -123,21 +122,3 @@ class UnavailableRuntimeExecutionPolicyAdmission(RuntimeExecutionPolicyAdmission
                 policy_rule_id="runtime.execution_policy.unavailable",
             ),
         )
-
-
-def default_worker_root_execution_policy_engine() -> RuntimePolicyEngine:
-    """Production-default runtime policy — allow worker root execution dispatch."""
-    from intergrax.contracts.runtime_execution_policy_admission import (
-        RootExecutionAdmissionPolicyRule,
-    )
-
-    return RuntimePolicyEngine(
-        root_execution_admission_rules=(
-            RootExecutionAdmissionPolicyRule(
-                rule_id="default.worker.root_execution.allow",
-                decision=PolicyAction.ALLOW,
-                execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
-                reason="default_worker_root_execution_allow",
-            ),
-        ),
-    )

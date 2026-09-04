@@ -15,6 +15,10 @@ from intergrax.contracts.runtime_execution_admission import (
     RootExecutionAuthorityAdmissionDisposition,
     RootExecutionAuthorityAdmissionRequest,
 )
+from intergrax.contracts.runtime_execution_policy_admission import (
+    RootExecutionAdmissionPolicyRule,
+    WORKER_ROOT_EXECUTION_OPERATION,
+)
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.governance.root_execution_authority_admission import (
     DenyingRootExecutionAuthorityAdmission,
@@ -25,7 +29,9 @@ from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
     DenyingRuntimeExecutionPolicyAdmission,
     RequireHumanRuntimeExecutionPolicyAdmission,
+    RuntimeExecutionPolicyAdmissionEvaluator,
 )
+from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 pytestmark = pytest.mark.unit
 
@@ -40,6 +46,92 @@ def _request(*, action: PolicyAction) -> RootExecutionAuthorityAdmissionRequest:
             decision=PolicyDecision(action=action, reason="test"),
         ),
     )
+
+
+def test_default_service_fails_closed_on_collaborative_allow() -> None:
+    service = RootExecutionAuthorityAdmissionService()
+    result = service.authorize(_request(action=PolicyAction.ALLOW))
+    assert result.disposition in {
+        RootExecutionAuthorityAdmissionDisposition.UNAVAILABLE,
+        RootExecutionAuthorityAdmissionDisposition.DENIED,
+    }
+    assert result.trusted_parent_execution_authority is None
+    assert result.policy_decision.reason == "root_execution_admission_unconfigured"
+
+
+def test_explicit_allow_policy_mints_trusted_authority() -> None:
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
+            policy_engine=RuntimePolicyEngine(
+                root_execution_admission_rules=(
+                    RootExecutionAdmissionPolicyRule(
+                        rule_id="configured.worker.root_execution.allow",
+                        decision=PolicyAction.ALLOW,
+                        execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
+                    ),
+                ),
+            ),
+        ),
+    )
+    result = service.authorize(_request(action=PolicyAction.ALLOW))
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ALLOWED
+    assert result.trusted_parent_execution_authority is not None
+    assert result.policy_decision.policy_rule_id == "configured.worker.root_execution.allow"
+
+
+def test_explicit_deny_policy_does_not_mint_authority() -> None:
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
+            policy_engine=RuntimePolicyEngine(
+                root_execution_admission_rules=(
+                    RootExecutionAdmissionPolicyRule(
+                        rule_id="configured.worker.root_execution.deny",
+                        decision=PolicyAction.DENY,
+                        execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
+                    ),
+                ),
+            ),
+        ),
+    )
+    result = service.authorize(_request(action=PolicyAction.ALLOW))
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.DENIED
+    assert result.trusted_parent_execution_authority is None
+    assert result.policy_decision.policy_rule_id == "configured.worker.root_execution.deny"
+
+
+def test_no_matching_rule_fails_closed() -> None:
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
+            policy_engine=RuntimePolicyEngine(
+                root_execution_admission_rules=(
+                    RootExecutionAdmissionPolicyRule(
+                        rule_id="configured.other.operation.allow",
+                        decision=PolicyAction.ALLOW,
+                        execution_operation="other.operation",
+                    ),
+                ),
+            ),
+        ),
+    )
+    result = service.authorize(_request(action=PolicyAction.ALLOW))
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.DENIED
+    assert result.trusted_parent_execution_authority is None
+    assert result.policy_decision.reason == "root_execution_admission_indeterminate"
+
+
+def test_empty_rule_set_fails_closed() -> None:
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
+            policy_engine=RuntimePolicyEngine(),
+        ),
+    )
+    result = service.authorize(_request(action=PolicyAction.ALLOW))
+    assert result.disposition in {
+        RootExecutionAuthorityAdmissionDisposition.UNAVAILABLE,
+        RootExecutionAuthorityAdmissionDisposition.DENIED,
+    }
+    assert result.trusted_parent_execution_authority is None
+    assert result.policy_decision.reason == "root_execution_admission_unconfigured"
 
 
 def test_allow_mints_scoped_trusted_authority() -> None:

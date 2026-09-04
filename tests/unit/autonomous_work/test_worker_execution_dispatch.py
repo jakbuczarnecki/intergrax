@@ -73,7 +73,10 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
 )
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_execution_policy_admission import (
+    RootExecutionAdmissionPolicyRule,
+    WORKER_ROOT_EXECUTION_OPERATION,
+)
 from intergrax.runtime.execution.canonical_intake_adapter import CanonicalExecutionRuntimeAdapter
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.runtime import ExecutionRuntime
@@ -86,7 +89,10 @@ from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
     DenyingRuntimeExecutionPolicyAdmission,
     RequireHumanRuntimeExecutionPolicyAdmission,
+    RuntimeExecutionPolicyAdmissionEvaluator,
 )
+from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from tests.unit.autonomous_work import repository_contracts as contract_suite
 
 pytestmark = pytest.mark.unit
@@ -188,6 +194,22 @@ def _seed_binding_and_authority(
     return worker_id, binding_repo, membership_repo, authority_repo, delegation_repo
 
 
+def _explicit_allow_root_admission() -> RootExecutionAuthorityAdmissionService:
+    return RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
+            policy_engine=RuntimePolicyEngine(
+                root_execution_admission_rules=(
+                    RootExecutionAdmissionPolicyRule(
+                        rule_id="test.worker.root_execution.allow",
+                        decision=PolicyAction.ALLOW,
+                        execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
 def _dispatch_service(
     *,
     worker_repo: InMemoryWorkerInstanceRepository,
@@ -214,7 +236,7 @@ def _dispatch_service(
                 clock=lambda: _UTC,
             ),
         ),
-        root_authority_admission=root_admission or RootExecutionAuthorityAdmissionService(),
+        root_authority_admission=root_admission or _explicit_allow_root_admission(),
         execution_intake=recording,
     )
     return service, recording
@@ -576,7 +598,7 @@ async def test_execution_runtime_invoked_exactly_once_per_dispatch() -> None:
                 clock=lambda: _UTC,
             ),
         ),
-        root_authority_admission=RootExecutionAuthorityAdmissionService(),
+        root_authority_admission=_explicit_allow_root_admission(),
         execution_intake=adapter,
     )
 
@@ -671,7 +693,33 @@ def test_admission_service_prepare_still_usable_for_aw3b() -> None:
     assert context.collaborative_authority_scopes == (_READ,)
 
 
-def test_root_admission_mints_trusted_authority_in_governance_layer() -> None:
+def test_root_admission_requires_explicit_runtime_policy_allow() -> None:
+    from intergrax.contracts.collaborative_work import EffectiveAuthorityDecision
+    from intergrax.contracts.runtime_execution_admission import (
+        RootExecutionAuthorityAdmissionDisposition,
+        RootExecutionAuthorityAdmissionRequest,
+    )
+
+    service = RootExecutionAuthorityAdmissionService()
+    result = service.authorize(
+        RootExecutionAuthorityAdmissionRequest(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            principal_id="principal-1",
+            collaborative_authority_scopes=(_READ,),
+            effective_authority_decision=EffectiveAuthorityDecision(
+                decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok"),
+            ),
+        )
+    )
+    assert result.disposition in {
+        RootExecutionAuthorityAdmissionDisposition.UNAVAILABLE,
+        RootExecutionAuthorityAdmissionDisposition.DENIED,
+    }
+    assert result.trusted_parent_execution_authority is None
+
+
+def test_root_admission_mints_trusted_authority_with_explicit_policy() -> None:
     from intergrax.contracts.collaborative_work import EffectiveAuthorityDecision
     from intergrax.contracts.delegation_authority import ParentExecutionAuthority
     from intergrax.contracts.runtime_execution_admission import (
@@ -679,7 +727,7 @@ def test_root_admission_mints_trusted_authority_in_governance_layer() -> None:
         RootExecutionAuthorityAdmissionRequest,
     )
 
-    service = RootExecutionAuthorityAdmissionService()
+    service = _explicit_allow_root_admission()
     result = service.authorize(
         RootExecutionAuthorityAdmissionRequest(
             tenant_id=_TENANT,

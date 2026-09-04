@@ -23,8 +23,8 @@ from intergrax.contracts.runtime_execution_policy_admission import (
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     RuntimeExecutionPolicyAdmissionEvaluator,
-    default_worker_root_execution_policy_engine,
 )
+from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 
 def _map_runtime_policy_action(
@@ -69,7 +69,7 @@ class RootExecutionAuthorityAdmissionService:
     ) -> None:
         if runtime_policy_admission is None:
             runtime_policy_admission = RuntimeExecutionPolicyAdmissionEvaluator(
-                policy_engine=default_worker_root_execution_policy_engine(),
+                policy_engine=RuntimePolicyEngine(),
             )
         self._runtime_policy_admission = runtime_policy_admission
 
