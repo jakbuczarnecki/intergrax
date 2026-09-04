@@ -8,8 +8,9 @@ Deliberation answers **„jakie kandydackie propozycje i niezgodności powstały
 > **Maturity boundary:**
 >
 > - **Architecture:** **TARGET CANON - FROZEN**.
-> - **Implementation:** Council runtime **NOT STARTED** - no separate engine shipped.
-> - **Production:** Single-model / graph agent paths are **CURRENT**; Council is target strategy only.
+> - **Implementation:** Decision Strategy foundation **implemented** (Single Model · Rule-Based · Hybrid · participant/disagreement contracts).
+> - **CouncilStrategy:** not yet implemented (separate Council Runtime **forbidden**).
+> - **Production:** Single-model / rule-based / hybrid paths available; Council remains target strategy only.
 
 **Primary audience:** Principal / Staff engineers designing multi-model deliberation, participant roles, disagreement artifacts, and strategy registration.
 

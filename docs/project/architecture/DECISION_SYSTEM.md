@@ -8,9 +8,9 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 > **Maturity boundary (frozen target vs current production):**
 >
 > - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
-> - **Implementation:** **NOT YET MIGRATED** - no Decision System runtime classes shipped.
-> - **Production:** Decision Lifecycle / Verification is canonical; `CriticOrchestrator` retained temporarily for migration parity and legacy tests only (DS-MIG-02).
-> - **Evidence:** Decision System E2E not yet qualified - no production-ready claim.
+> - **Implementation:** Canonical Decision System runtime **implemented and active**.
+> - **CURRENT decision authority = Decision System.** Critic runtime **retired**.
+> - **Production qualification of full Decision System still pending DS-E2E** — no whole-system production-qualified claim.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
@@ -778,7 +778,7 @@ stateDiagram-v2
 | [**Governed Execution**](GOVERNED_EXECUTION.md) | Execution authorization - separate from decision correctness |
 | [**Reliability / HITL**](RELIABILITY_FAILURE_AND_HITL.md) | Technical retry; canonical HITL invocation |
 | [**Observability**](OBSERVABILITY.md) | Decision audit evidence |
-| [**CRITIC_VERIFICATION**](CRITIC_VERIFICATION.md) | **CURRENT IMPLEMENTATION SNAPSHOT** - pending clean-cut DELETE |
+| [**CRITIC_VERIFICATION**](CRITIC_VERIFICATION.md) | **HISTORICAL** migration snapshot — Critic runtime retired (DS-MIG-04) |
 
 ---
 
@@ -789,8 +789,8 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | Axis | Level | Rationale |
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Frozen target canon established; boundaries to Execution, Policy, HITL, Diagnostics explicit |
-| **Implementation (I)** | **I0** | No Decision System runtime migration shipped |
-| **Production (P)** | **P0** | Production path remains CVL / Critic until clean cut |
+| **Implementation (I)** | **I3** | Core lifecycle · revision · verification · governance · execution integration implemented |
+| **Production (P)** | **P1** | Decision System is production decision authority; whole-system qualification pending DS-E2E |
 | **Evidence (E)** | **E0** | No Decision System Docker E2E qualification completed |
 
 ---
@@ -801,7 +801,7 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | ----- | --------- |
 | **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
-| **CURRENT production** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| **Historical Critic snapshot** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | **Public proof** | Not claimed - pending DS-E2E Docker qualification phase |
 
 ### Production qualification boundary
@@ -824,7 +824,7 @@ The Decision System is **not** production-qualified after:
 | Verification pipeline | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | Deliberation / Council | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
-| CURRENT Critic snapshot | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| Historical Critic snapshot | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | Governance | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) |
 | Reliability / HITL | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
 | Maturity taxonomy | [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md) |
@@ -841,4 +841,4 @@ The Decision System is **not** production-qualified after:
 - **Architecture satellite:** [`satellites/DECISION_SYSTEM_extended_depth.md`](satellites/DECISION_SYSTEM_extended_depth.md) on demand - one per session unless RESUME cites more.
 - **Verification slice:** add [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) + [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md).
 - **Deliberation slice:** add [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) + [`maintainers/plans/DECISION_DELIBERATION.md`](../maintainers/plans/DECISION_DELIBERATION.md).
-- **Skip** full [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) unless auditing CURRENT implementation or migration disposition.
+- **Skip** full [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) unless auditing historical migration disposition.

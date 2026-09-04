@@ -5,9 +5,9 @@
 **Parent:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-DOC-CLEAN (2026-08-30):** Deliberation / Council strategy architecture **FROZEN**. **Council runtime NOT STARTED.**
+> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Deliberation / Council strategy architecture **FROZEN**. **Decision Strategy foundation implemented.** **CouncilStrategy not yet implemented** (separate Council Runtime forbidden).
 
-**Last updated:** 2026-08-31 - DS-DELIB-04 participant role configuration.
+**Last updated:** 2026-09-04 - DS-ROADMAP-REALITY-SYNC.
 
 ---
 
@@ -21,14 +21,14 @@
 
 ---
 
-## Architecture frozen vs implementation planned
+## Architecture frozen vs implementation reality
 
 | Layer | Status |
 | ----- | ------ |
 | **Target architecture** | **FROZEN** |
-| **DecisionStrategy contract** | **Done** - DS-DELIB-01 |
-| **Council strategy** | **PLANNED** - not started |
-| **CURRENT production** | Single-model agent/graph paths only |
+| **DecisionStrategy contract + foundation strategies** | **DONE** - DS-DELIB |
+| **CouncilStrategy** | **PLANNED** - `CouncilStrategy implements DecisionStrategy`; not started |
+| **Production paths** | Single-model / rule-based / hybrid strategies available; Council not yet implemented |
 
 ---
 

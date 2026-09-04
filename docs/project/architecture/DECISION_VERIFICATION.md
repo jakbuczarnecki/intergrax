@@ -8,8 +8,8 @@ Verification answers **„czy ta wersja decyzji spełnia wymagania poprawności?
 > **Maturity boundary:**
 >
 > - **Architecture:** **TARGET CANON - FROZEN** (paired with [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)).
-> - **Implementation:** migrated to Decision Verification — legacy Critic runtime deleted (DS-MIG-04).
-> - **Production:** `CriticOrchestrator` L0/L1/L2 stack is **CURRENT** until clean cut.
+> - **Implementation:** Verification Pipeline implementation migrated and active. Legacy Critic verification runtime retired (DS-MIG-04).
+> - **Remaining:** trust hardening and production qualification tracked in [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md).
 
 **Primary audience:** Principal / Staff engineers configuring verification stages, rubric provenance, producer/verifier independence, and challenge → revision handoff.
 
@@ -282,16 +282,16 @@ Producer / verifier independence is proven or explicitly waived.
 
 ---
 
-## Current implementation snapshot (CVL)
+## Migration disposition (historical reference)
 
-Until migration, production verification maps approximately:
+Legacy Critic concepts mapped to Decision Verification during DS-MIG. **Critic runtime deleted** — table retained for provenance.
 
-| TARGET stage | CURRENT CVL |
-| ------------ | ----------- |
+| TARGET stage | Legacy CVL source (retired) |
+| ------------ | --------------------------- |
 | Structural / deterministic | `L0Gateway` / `NexusValidationEngine` |
 | Semantic / trajectory | `L1Gateway` / `eval.judge` / `eval.trajectory` |
 | Human authority | legacy L2 removed (DS-MIG-03); Decision Human Review is canonical HITL owner |
-| Orchestrator | `CriticOrchestrator` → **REPLACE** with pipeline |
+| Orchestrator | `CriticOrchestrator` → Decision Verification Pipeline |
 
 See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md).
 
@@ -305,7 +305,7 @@ See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainer
 | Decision Lifecycle | [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
 | Deliberation | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
 | Implementation plan | [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md) |
-| CURRENT CVL | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| Historical CVL snapshot | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | Tools | [`TOOLS.md`](TOOLS.md) |
 
 ---
@@ -316,4 +316,4 @@ See disposition matrix in [`maintainers/plans/DECISION_SYSTEM.md`](../maintainer
 
 - **Implement verification:** this file + [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md) hub.
 - **Architecture satellite:** [`satellites/DECISION_VERIFICATION_extended_depth.md`](satellites/DECISION_VERIFICATION_extended_depth.md) on demand.
-- **Audit CURRENT code:** add [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) snapshot sections only.
+- **Audit historical migration:** add [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) snapshot sections only.
