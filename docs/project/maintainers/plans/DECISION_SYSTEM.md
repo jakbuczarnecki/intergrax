@@ -230,6 +230,8 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 | DS-REC-02 | P1 | Crash resume without duplicate authoritative outcome | **IMPLEMENTED / QUALIFICATION OPEN** - checkpoint v2 + durable finalization lookup + `decision_recovery` convergence + subprocess SQLite proof (`tests/unit/runtime/execution/test_decision_durable_recovery.py`); DS-E2E-06 Docker/process qualification remains open |
 | DS-REC-03 | P1 | Budget ceiling preserved on resume | **DONE / ENTERPRISE CLOSED** - `DecisionRevisionCheckpointState` in `DecisionCheckpointState` + resume policy fail-closed + exhausted preservation proof (`tests/unit/runtime/execution/test_decision_durable_recovery.py`) |
 
+**DS-REC durable wire hardening (2026-09-04):** pickle removed from Decision durable persistence; explicit versioned JSON wire codec + typed artifact payload codec seam (`decision_durable_wire_codec.py`, `decision_artifact_payload_codec.py`). Legacy pickle blobs are not auto-loaded at runtime. Proof: `tests/unit/runtime/execution/test_decision_durable_wire_codec.py`.
+
 ### Failure / security hardening
 
 | ID | Priority | Item | Status |

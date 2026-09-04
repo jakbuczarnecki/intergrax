@@ -693,7 +693,9 @@ If the hosting Execution uses ORCHESTRATION, Nexus may participate in orchestrat
 | Budget | `DecisionRevisionCheckpointState` is authoritative on resume; runtime policy mismatch fails closed |
 | Qualification | Local SQLite/subprocess proof ≠ DS-E2E-06/07 distributed production qualification |
 
-Proof gates: DS-REC-01 (`tests/unit/runtime/execution/test_decision_finalization_persistence.py`) · DS-REC-02/03 (`tests/unit/runtime/execution/test_decision_durable_recovery.py`).
+**Durable wire security (DS-REC-INV-01..05):** Decision checkpoint and authoritative outcome records use explicit versioned UTF-8 JSON wire codecs (`intergrax/runtime/execution/decision_durable_wire_codec.py`) with `schema_version` + `record_type` envelopes. Runtime executable object deserialization (e.g. `pickle.loads`) is **forbidden** at the Decision authority boundary; legacy pickle blobs fail closed. Artifact payload reconstruction requires an explicit typed `DecisionArtifactPayloadCodec`; unknown kinds fail closed. SQLite adapters remain storage-only and invoke the shared codec seam.
+
+Proof gates: DS-REC-01 (`tests/unit/runtime/execution/test_decision_finalization_persistence.py`) · DS-REC-02/03 (`tests/unit/runtime/execution/test_decision_durable_recovery.py`) · wire codec (`tests/unit/runtime/execution/test_decision_durable_wire_codec.py`).
 
 ---
 
