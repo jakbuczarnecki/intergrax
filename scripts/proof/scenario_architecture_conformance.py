@@ -31,6 +31,7 @@ class ScenarioArchitectureRuleId(StrEnum):
     PRIVATE_NEXUS_ATTRIBUTE = "SCENARIO_ARCH_PRIVATE_NEXUS"
     BASELINE_RUNTIME_MISSING = "SCENARIO_ARCH_BASELINE_MISSING"
     CONFORMANCE_BYPASS = "SCENARIO_ARCH_CONFORMANCE_BYPASS"
+    AGENT_LIFECYCLE_BYPASS = "SCENARIO_ARCH_AGENT_LIFECYCLE_BYPASS"
 
 
 _FORBIDDEN_EXECUTION_SYMBOLS = frozenset(
@@ -80,6 +81,9 @@ _BASELINE_RUNTIME_SYMBOLS = frozenset(
         "build_scenario_runtime_from_environment",
     }
 )
+
+_AGENT_REGISTRY_MODULE = "intergrax.runtime.registry.agent_registry"
+_AGENT_REGISTRY_SYMBOL = "AgentRegistry"
 
 _IMPLEMENTATION_LIFECYCLES = frozenset(
     {
@@ -237,6 +241,99 @@ def _violation(
     )
 
 
+def _agent_registry_import_aliases(tree: ast.AST) -> frozenset[str]:
+    aliases: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == _AGENT_REGISTRY_MODULE:
+            for alias in node.names:
+                aliases.add(alias.asname or alias.name)
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == _AGENT_REGISTRY_MODULE:
+                    aliases.add(alias.asname or _AGENT_REGISTRY_SYMBOL)
+                elif alias.name.endswith(f".{_AGENT_REGISTRY_SYMBOL}"):
+                    aliases.add(alias.asname or _AGENT_REGISTRY_SYMBOL)
+    return frozenset(aliases)
+
+
+def _is_agent_registry_call(func: ast.expr, aliases: frozenset[str]) -> bool:
+    if isinstance(func, ast.Name) and func.id in aliases | {_AGENT_REGISTRY_SYMBOL}:
+        return True
+    return (
+        isinstance(func, ast.Attribute)
+        and isinstance(func.value, ast.Name)
+        and func.value.id in aliases | {_AGENT_REGISTRY_SYMBOL}
+        and func.attr == "from_agents"
+    )
+
+
+def _agent_registry_call_symbol(func: ast.expr, aliases: frozenset[str]) -> str:
+    if isinstance(func, ast.Attribute) and func.attr == "from_agents":
+        return "AgentRegistry.from_agents"
+    return _AGENT_REGISTRY_SYMBOL
+
+
+def _collect_agent_lifecycle_violations(
+    *,
+    tree: ast.AST,
+    aliases: frozenset[str],
+    scenario_slug: str,
+    relative_path: str,
+) -> list[ScenarioArchitectureViolation]:
+    violations: list[ScenarioArchitectureViolation] = []
+    local_registry_names: set[str] = set()
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if isinstance(node.value, ast.Call) and _is_agent_registry_call(node.value.func, aliases):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    local_registry_names.add(target.id)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+
+        if _is_agent_registry_call(node.func, aliases):
+            violations.append(
+                _violation(
+                    rule_id=ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS,
+                    scenario_slug=scenario_slug,
+                    relative_path=relative_path,
+                    line=node.lineno,
+                    symbol=_agent_registry_call_symbol(node.func, aliases),
+                    message=(
+                        "scenario application must not construct or mutate AgentRegistry; "
+                        "use canonical scenario/platform agent lifecycle"
+                    ),
+                )
+            )
+            continue
+
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "register"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id in local_registry_names
+        ):
+            violations.append(
+                _violation(
+                    rule_id=ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS,
+                    scenario_slug=scenario_slug,
+                    relative_path=relative_path,
+                    line=node.lineno,
+                    symbol="register",
+                    message=(
+                        "scenario application must not construct or mutate AgentRegistry; "
+                        "use canonical scenario/platform agent lifecycle"
+                    ),
+                )
+            )
+
+    return violations
+
+
 def _collect_application_violations(
     *,
     repo_root: Path,
@@ -250,6 +347,15 @@ def _collect_application_violations(
     for path in sorted(application_dir.rglob("*.py")):
         rel = _relative_path(path, repo_root)
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        agent_registry_aliases = _agent_registry_import_aliases(tree)
+        violations.extend(
+            _collect_agent_lifecycle_violations(
+                tree=tree,
+                aliases=agent_registry_aliases,
+                scenario_slug=scenario_slug,
+                relative_path=rel,
+            )
+        )
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):

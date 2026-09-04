@@ -214,6 +214,7 @@ def test_init_happy_path_generates_skeleton_and_updates_lifecycle(tmp_path: Path
     )
     assert package.package_root == package_root
     assert (package_root / "application" / "runtime_composition.py").is_file()
+    assert not (package_root / "application" / "agent.py").exists()
     assert (package_root / "proof" / "evaluator.py").is_file()
     assert (package_root / "run_proof.py").is_file()
     assert (package_root / "proof.json").is_file()
@@ -231,6 +232,9 @@ def test_init_happy_path_generates_skeleton_and_updates_lifecycle(tmp_path: Path
     assert "scenario_runtime_profiles" in runtime_source
     assert "SYNTHETIC_SCENARIO_TENANT_ID" in runtime_source
     assert "runtime_events_db_path" not in runtime_source
+    assert "AgentRegistry" not in runtime_source
+    assert ".register(" not in runtime_source
+    assert "from_agents" not in runtime_source
 
     scenario_source = (package_root / "application" / "scenario.py").read_text(encoding="utf-8")
     assert "ScenarioExecutionRequest" in scenario_source
@@ -386,7 +390,7 @@ def test_init_fails_when_generated_architecture_violates_rules(
     package_root = _write_accepted_design_package(tmp_path, slug=slug)
     spec_path = package_root / "SCENARIO_SPEC.md"
 
-    def _bad_runtime_composition(slug: str, agent_class: str) -> str:
+    def _bad_runtime_composition(slug: str) -> str:
         return (
             "from intergrax.runtime.nexus.engine.graph_executor import GraphExecutor\n"
             "GraphExecutor\n"
@@ -424,7 +428,7 @@ def test_init_failure_does_not_delete_preexisting_user_content(
 
     monkeypatch.setattr(
         "scripts.proof.init_scenario_implementation._build_runtime_composition_py",
-        lambda slug, agent_class: "GraphExecutor\n",
+        lambda slug: "GraphExecutor\n",
     )
 
     with pytest.raises(ScenarioImplementationInitError):

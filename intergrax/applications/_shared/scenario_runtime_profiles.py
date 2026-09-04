@@ -65,7 +65,7 @@ def cleanup_scenario_runtime_workspace(workspace: ScenarioRuntimeWorkspace) -> N
 
 def build_scenario_lab_runtime(
     *,
-    registry: AgentRegistry,
+    registry: AgentRegistry | None = None,
     tenant_id: str,
     profile_id: str = "scenario.lab",
     scenario_slug: str | None = None,
@@ -92,9 +92,10 @@ def build_scenario_lab_runtime(
     resolved_document_store = (
         document_store if document_store is not None else InMemoryDocumentStore()
     )
+    resolved_registry = registry if registry is not None else AgentRegistry()
     return build_scenario_runtime_from_environment(
         environment=environment,
-        registry=registry,
+        registry=resolved_registry,
         tenant_id=tenant_id,
         manifest=manifest,
         runtime_events_db_path=workspace.runtime_events_db_path,
