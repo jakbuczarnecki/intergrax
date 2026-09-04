@@ -96,6 +96,10 @@ from intergrax.runtime.execution.active_execution_budget import (
     require_active_execution_budget,
 )
 from intergrax.runtime.execution.budget import create_execution_budget_ledger_factory
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    InMemoryAttemptLifecycleStore,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTriggerProtocol,
 )
@@ -170,6 +174,7 @@ class NexusLoop:
         authority_policy: "ExecutionAuthorityPolicy | None" = None,
         budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
         execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
+        attempt_lifecycle: AttemptLifecycleService | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -284,6 +289,9 @@ class NexusLoop:
             execution_budget_ledger_factory
             or create_execution_budget_ledger_factory(run_budget)
         )
+        self._attempt_lifecycle = attempt_lifecycle or AttemptLifecycleService(
+            InMemoryAttemptLifecycleStore(),
+        )
         trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
@@ -314,6 +322,7 @@ class NexusLoop:
             finish_task=self._finish_task,
             finalize_trace=self._finalize_persisting_trace,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
+            attempt_lifecycle=self._attempt_lifecycle,
             max_run_retries=max_run_retries,
             decision_flow_gate=decision_flow_gate,
         )

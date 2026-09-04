@@ -113,15 +113,6 @@ ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationRe
 RetryCallback = Callable[[RetryRecord], Awaitable[None]]
 
 
-async def _notify_retry(
-    on_retry: Optional[RetryCallback],
-    record: RetryRecord,
-) -> None:
-    if on_retry is not None:
-        await on_retry(record)
-HandoffExtra = tuple[str, AgentExecutionResult]
-
-
 @dataclass(frozen=True, slots=True)
 class _GraphNodeChildRequest:
     graph: ExecutionGraph
@@ -954,6 +945,7 @@ class GraphExecutor:
             agent,
             execute_fn,
             validate_fn=validate_fn,
+            on_retry=on_retry,
         )
         if CancellationCoordinator.is_requested(task.metadata):
             node.execution_result = execution
@@ -968,9 +960,6 @@ class GraphExecutor:
                 cancelled=True,
                 handoff_extras=[],
             )
-
-        for record in retries:
-            await _notify_retry(on_retry, record)
 
         node.execution_result = execution
         if execution.status == AgentExecutionStatus.NEEDS_INPUT:
@@ -1112,9 +1101,6 @@ class GraphExecutor:
             on_node_complete=on_node_complete,
             root_execution_authority=root_execution_authority,
         )
-        for record in handoff_retries:
-            await _notify_retry(on_retry, record)
-
         if handoff_failed or handoff_execution.status != AgentExecutionStatus.COMPLETED:
             node.metadata["handoff_failed"] = True
             return []

@@ -269,6 +269,8 @@ def build_harness_host_runtime(
         guardrail_wiring=guardrail_wiring,
         decision_wiring=decision_wiring,
         run_budget=cost_wiring.run_budget,
+        key_value_cache=key_value_cache,
+        document_store=document_store,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)

@@ -43,6 +43,7 @@ from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
+from intergrax.contracts.attempt_lifecycle import AttemptLifecycleStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.runtime.execution.authority import (
@@ -52,6 +53,10 @@ from intergrax.runtime.execution.budget import (
     create_execution_budget_ledger_factory,
     fixed_execution_budget_ledger_factory,
     resolve_execution_budget_allocation_policy_from_runtime_config,
+)
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    wire_attempt_lifecycle_store,
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -103,6 +108,9 @@ def build_nexus_loop_from_environment(
     budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
     execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     execution_budget_ledger: ExecutionBudgetLedger | None = None,
+    attempt_lifecycle_store: AttemptLifecycleStore | None = None,
+    key_value_cache: Any | None = None,
+    document_store: Any | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -141,6 +149,25 @@ def build_nexus_loop_from_environment(
             )
         else:
             resolved_budget_ledger_factory = create_execution_budget_ledger_factory(run_budget)
+    resolved_attempt_lifecycle_store = attempt_lifecycle_store
+    if resolved_attempt_lifecycle_store is None and (
+        key_value_cache is not None or document_store is not None
+    ):
+        from intergrax.distributed.contracts.kv_store import DistributedKVStore
+        from intergrax.integrations.contracts.document_store import DocumentStore
+
+        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+        doc_store = document_store if isinstance(document_store, DocumentStore) else None
+        if kv_store is not None or doc_store is not None:
+            resolved_attempt_lifecycle_store = wire_attempt_lifecycle_store(
+                kv_store=kv_store,
+                document_store=doc_store,
+            )
+    resolved_attempt_lifecycle = (
+        AttemptLifecycleService(resolved_attempt_lifecycle_store)
+        if resolved_attempt_lifecycle_store is not None
+        else None
+    )
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
@@ -186,6 +213,7 @@ def build_nexus_loop_from_environment(
         authority_policy=resolved_authority_policy,
         budget_allocation_policy=resolved_budget_policy,
         execution_budget_ledger_factory=resolved_budget_ledger_factory,
+        attempt_lifecycle=resolved_attempt_lifecycle,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

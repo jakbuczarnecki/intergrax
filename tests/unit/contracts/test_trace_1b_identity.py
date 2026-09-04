@@ -334,17 +334,15 @@ def test_graph_runner_critic_trace_emitter_uses_active_run_id() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_active_execution_identity_transition_retry_mints_new_attempt() -> None:
+def test_active_execution_identity_transition_retry_is_not_authoritative() -> None:
     from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 
     identity = ActiveExecutionIdentity()
     run_id = mint_run_id()
     attempt_a1 = mint_attempt_id()
     token = identity.bind(run_id=run_id, attempt_id=attempt_a1)
-    attempt_a2 = identity.transition_retry()
-    assert attempt_a2 != attempt_a1
-    assert identity.run_id == run_id
-    assert identity.attempt_id == attempt_a2
+    with pytest.raises(RuntimeError, match="not authoritative"):
+        identity.transition_retry()
     identity.reset(token)
     with pytest.raises(RuntimeError, match="active execution identity required"):
         identity.require()

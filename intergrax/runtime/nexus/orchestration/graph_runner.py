@@ -9,7 +9,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.contracts.execution_identity import require_active_execution_identity
+from intergrax.contracts.attempt_lifecycle import AttemptTransitionReason
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    rebind_active_attempt_for_retry,
+    require_active_execution_identity,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
@@ -36,6 +42,7 @@ from intergrax.runtime.nexus.retry.retry_engine import (
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
+from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -73,8 +80,30 @@ class NexusGraphRunner:
     finish_task: FinishFn
     finalize_trace: FinalizeFn
     maybe_checkpoint: CheckpointFn
+    attempt_lifecycle: AttemptLifecycleService
     max_run_retries: int = 0
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
+
+    def _transition_attempt_for_retry(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        expected_attempt_id: AttemptId,
+    ) -> AttemptId | None:
+        try:
+            result = self.attempt_lifecycle.transition_to_next_attempt(
+                tenant_id=task.tenant_id,
+                run_id=run_id,
+                expected_attempt_id=expected_attempt_id,
+                reason=AttemptTransitionReason.RETRY,
+            )
+        except Exception:
+            return None
+        return rebind_active_attempt_for_retry(
+            run_id=result.run_id,
+            attempt_id=result.active_attempt_id,
+        )
 
     async def run(
         self,
@@ -113,7 +142,13 @@ class NexusGraphRunner:
                 ),
                 task=task,
             )
-            new_attempt_id = self.graph_executor.execution_identity.transition_retry()
+            new_attempt_id = self._transition_attempt_for_retry(
+                task,
+                run_id=run_id,
+                expected_attempt_id=attempt_id,
+            )
+            if new_attempt_id is None:
+                raise RuntimeError("attempt lifecycle transition failed for agent retry")
             await self.events.publish(
                 RetryCoordinator.build_started_event(
                     task,
@@ -161,7 +196,13 @@ class NexusGraphRunner:
                 ),
                 task=task,
             )
-            new_attempt_id = self.graph_executor.execution_identity.transition_retry()
+            new_attempt_id = self._transition_attempt_for_retry(
+                task,
+                run_id=run_id,
+                expected_attempt_id=attempt_id,
+            )
+            if new_attempt_id is None:
+                break
             await self.events.publish(
                 RetryCoordinator.build_started_event(
                     task,
