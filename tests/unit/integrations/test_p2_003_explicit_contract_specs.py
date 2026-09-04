@@ -47,6 +47,7 @@ from intergrax.integrations.registry.contract_spec import (
     B2_TYPED_CONTRACT_CATEGORIES,
     B3_TYPED_CONTRACT_CATEGORIES,
     B4_TYPED_CONTRACT_CATEGORIES,
+    B5_TYPED_CONTRACT_CATEGORIES,
     EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS,
     IntegrationContractSpec,
     declare_integration_contract,
@@ -56,6 +57,7 @@ from intergrax.runtime.integrations.categories.data import RelationalStoreIntegr
 from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
 from intergrax.runtime.integrations.categories.messaging import MessageBusIntegrationContract
 from intergrax.runtime.integrations.categories.automation import BrowserAutomationIntegrationContract
+from intergrax.runtime.integrations.categories.search import SearchProviderIntegrationContract
 from intergrax.runtime.integrations.categories.security import FeatureFlagIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.contracts import PlatformIntegrationCapability, PlatformIntegrationSecurityPosture
@@ -106,6 +108,15 @@ def b4_provider_category_keys() -> tuple[tuple[str, str], ...]:
     return tuple(keys)
 
 
+def b5_provider_category_keys() -> tuple[tuple[str, str], ...]:
+    keys: list[tuple[str, str]] = []
+    for slug in sorted(SLUG_CATEGORY):
+        for category in categories_for_provider(slug):
+            if category in B5_TYPED_CONTRACT_CATEGORIES:
+                keys.append((slug, category))
+    return tuple(keys)
+
+
 def typed_register_function(slug: str, category: str) -> Callable[..., Any]:
     register_module = import_module(f"{provider_import_path(slug, category)}.register")
     for name, obj in inspect.getmembers(register_module, inspect.isfunction):
@@ -128,6 +139,10 @@ def b3_register_function(slug: str, category: str) -> Callable[..., Any]:
 
 
 def b4_register_function(slug: str, category: str) -> Callable[..., Any]:
+    return typed_register_function(slug, category)
+
+
+def b5_register_function(slug: str, category: str) -> Callable[..., Any]:
     return typed_register_function(slug, category)
 
 
@@ -713,6 +728,35 @@ def test_explicit_spec_covering_required_b1_category_succeeds() -> None:
         supports_health_check=True,
         metadata={"source": "test"},
     )
+
+    class _MultiCategorySearchIntegration(SearchProviderIntegrationContract):
+        pass
+
+    def _search_factory(*, enabled: bool = False) -> _MultiCategorySearchIntegration:
+        return _MultiCategorySearchIntegration.for_provider(
+            provider_id="multi_category_b1",
+            display_name="Multi Category B1",
+            config=CategoryIntegrationConfig(enabled=enabled),
+        )
+
+    search_spec = declare_integration_contract(
+        category="search_provider",
+        provider_id="multi_category_b1",
+        integration_class=_MultiCategorySearchIntegration,
+        contract_class=SearchProviderIntegrationContract,
+        contract_factory=_search_factory,
+        display_name="Multi Category B1",
+        config_class=CategoryIntegrationConfig,
+        capabilities=(
+            PlatformIntegrationCapability.CONNECT,
+            PlatformIntegrationCapability.READ,
+            PlatformIntegrationCapability.HEALTH_CHECK,
+        ),
+        security_posture=PlatformIntegrationSecurityPosture(),
+        supports_runtime_binding=True,
+        supports_health_check=True,
+        metadata={"source": "test"},
+    )
     manifest = IntegrationManifest(
         slug="multi_category_b1",
         categories=(IntegrationCategory.RELATIONAL_STORE, IntegrationCategory.SEARCH_PROVIDER),
@@ -723,7 +767,7 @@ def test_explicit_spec_covering_required_b1_category_succeeds() -> None:
     register_from_manifest(
         manifest,
         lambda **_: {},
-        contract_specs=(relational_spec,),
+        contract_specs=(relational_spec, search_spec),
     )
     entry = get_entry("multi_category_b1")
     assert any(spec.category == "relational_store" for spec in entry.contract_specs)
@@ -818,14 +862,26 @@ def test_b2_registry_v2_derives_from_explicit_specs() -> None:
     assert registration.category == "issue_tracker"
 
 
-def test_non_b1b2b3b4_reflective_builtin_registration_remains_unchanged() -> None:
-    from intergrax.integrations.providers.search_provider.tavily.register import register_tavily_integration
+def test_non_b1b2b3b4b5_ordinary_reflective_keys_are_empty() -> None:
+    from intergrax.runtime.integrations.categories import PROVIDER_CATEGORY_CONTRACT_REGISTRY
+    from intergrax.runtime.integrations.registry_v2 import DEFERRED_LLM_GUARDRAIL_SLUGS
+    from intergrax.integrations.registry.contract_spec import required_explicit_contract_categories
 
-    register_tavily_integration()
-    entry = get_entry("tavily")
-    assert entry.contract_specs
-    assert entry.contract_specs[0].category == "search_provider"
-    assert entry.contract_specs[0].metadata.get("source") == "builtin_provider_package"
+    explicit_category_gated = required_explicit_contract_categories()
+    normal_typed_keys: set[tuple[str, str]] = set()
+    for slug in sorted(SLUG_CATEGORY):
+        for category in categories_for_provider(slug):
+            if category in PROVIDER_CATEGORY_CONTRACT_REGISTRY:
+                normal_typed_keys.add((slug, category))
+
+    deferred_typed_keys = {(slug, "llm_guardrail") for slug in DEFERRED_LLM_GUARDRAIL_SLUGS}
+    explicit_normal_keys = {
+        key
+        for key in normal_typed_keys
+        if key[1] in explicit_category_gated or key in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+    }
+    reflective_normal_keys = normal_typed_keys - explicit_normal_keys - deferred_typed_keys
+    assert reflective_normal_keys == set()
 
 
 _B2_BOOTSTRAP_SOURCE_FILES: tuple[str, ...] = (
@@ -1265,11 +1321,11 @@ def test_partial_explicit_specs_missing_required_b4_category_fails() -> None:
         register_from_manifest(manifest, lambda **_: {}, contract_specs=())
 
 
-def test_llm_guardrail_remains_deferred_outside_b4_gate() -> None:
+def test_llm_guardrail_remains_deferred_outside_b5_gate() -> None:
     from intergrax.integrations.providers.llm_guardrail.register_all import register_llm_guardrail_integrations
     from intergrax.runtime.integrations.registry_v2 import DEFERRED_LLM_GUARDRAIL_SLUGS
 
-    assert "llm_guardrail" not in B4_TYPED_CONTRACT_CATEGORIES
+    assert "llm_guardrail" not in B5_TYPED_CONTRACT_CATEGORIES
     assert len(DEFERRED_LLM_GUARDRAIL_SLUGS) == 9
     register_llm_guardrail_integrations()
     for slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
@@ -1372,7 +1428,314 @@ def test_b4_bootstrap_provider_sets_preserved() -> None:
         clear_catalog()
 
 
-def test_staged_non_b1b2b3b4_explicit_keys_remain_in_migration_set() -> None:
+def test_staged_non_b1b2b3b4b5_explicit_keys_remain_in_migration_set() -> None:
     assert EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS == frozenset({("openai", "managed_retrieval")})
     assert ("playwright", "browser_automation") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
     assert ("trivy", "security_scanner") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+    assert ("tavily", "search_provider") not in EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS
+
+
+def test_b5_category_set_matches_expected_search_parser_rerank_crm_categories() -> None:
+    assert B5_TYPED_CONTRACT_CATEGORIES == frozenset(
+        {
+            "search_provider",
+            "document_parser",
+            "rerank_provider",
+            "crm",
+        }
+    )
+
+
+def test_b5_inventory_gate_all_typed_keys_explicit() -> None:
+    b5_keys = b5_provider_category_keys()
+    explicit_keys: list[tuple[str, str]] = []
+    for slug, category in b5_keys:
+        contract_path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        assert contract_path.is_file(), f"missing contract_spec for {(slug, category)}"
+        register_path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
+        register_source = register_path.read_text(encoding="utf-8")
+        assert "contract_specs=CONTRACT_SPECS" in register_source
+        explicit_keys.append((slug, category))
+    assert len(explicit_keys) == len(b5_keys) == 24
+
+
+def test_b5_typed_keys_exact_inventory() -> None:
+    b5_keys = b5_provider_category_keys()
+    assert b5_keys == (
+        ("algolia", "search_provider"),
+        ("arxiv", "search_provider"),
+        ("bing", "search_provider"),
+        ("brave", "search_provider"),
+        ("cohere_rerank", "rerank_provider"),
+        ("docling", "document_parser"),
+        ("exa", "search_provider"),
+        ("google_cse", "search_provider"),
+        ("google_places", "search_provider"),
+        ("hubspot", "crm"),
+        ("jina_rerank", "rerank_provider"),
+        ("llamaparse", "document_parser"),
+        ("openpyxl", "document_parser"),
+        ("perplexity", "search_provider"),
+        ("pymupdf", "document_parser"),
+        ("python_docx", "document_parser"),
+        ("reddit", "search_provider"),
+        ("salesforce", "crm"),
+        ("semantic_scholar", "search_provider"),
+        ("serpapi", "search_provider"),
+        ("tavily", "search_provider"),
+        ("unstructured", "document_parser"),
+        ("whisper", "document_parser"),
+        ("yt_dlp", "document_parser"),
+    )
+
+
+def test_b5_contract_spec_modules_have_no_reflection() -> None:
+    for slug, category in b5_provider_category_keys():
+        path = REPO_ROOT / provider_package_path(slug, category) / "contract_spec.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in _FORBIDDEN_CONTRACT_SPEC_NAMES:
+                    pytest.fail(f"{path}: forbidden reflective call {node.func.id}()")
+            if isinstance(node, ast.Attribute) and node.attr == "__dict__":
+                pytest.fail(f"{path}: forbidden __dict__ access")
+
+
+def test_b5_register_modules_do_not_import_contract_capture() -> None:
+    for slug, category in b5_provider_category_keys():
+        path = REPO_ROOT / provider_package_path(slug, category) / "register.py"
+        source = path.read_text(encoding="utf-8")
+        assert "contract_capture" not in source, path.as_posix()
+        assert "contract_specs=" in source, path.as_posix()
+
+
+@pytest.mark.parametrize("slug,category", b5_provider_category_keys())
+def test_b5_registration_bypasses_contract_capture(slug: str, category: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError(f"capture_builtin_contract_specs must not run for B5 {(slug, category)}")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    b5_register_function(slug, category)()
+    entry = get_entry(slug)
+    assert entry.contract_specs
+    matching = [spec for spec in entry.contract_specs if spec.category == category]
+    assert matching
+    assert matching[0].metadata.get("source") == "explicit_provider_declaration"
+
+
+@pytest.mark.parametrize("slug,category", b5_provider_category_keys())
+def test_b5_registration_does_not_execute_catalog_factory(
+    slug: str,
+    category: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    register_module = import_module(f"{provider_import_path(slug, category)}.register")
+    register_fn = b5_register_function(slug, category)
+    from intergrax.integrations.registry import plugin_register
+
+    original_rfm = plugin_register.register_from_manifest
+
+    def tracking_rfm(
+        manifest: IntegrationManifest,
+        factory: Callable[..., Any],
+        **kwargs: Any,
+    ) -> IntegrationManifest:
+        factory_mock = MagicMock(wraps=factory)
+        result = original_rfm(manifest, factory_mock, **kwargs)
+        factory_mock.assert_not_called()
+        return result
+
+    monkeypatch.setattr(register_module, "register_from_manifest", tracking_rfm)
+    register_fn()
+
+
+def test_b5_builtin_without_explicit_specs_fails_closed() -> None:
+    manifest = IntegrationManifest(
+        slug="tavily",
+        categories=(IntegrationCategory.SEARCH_PROVIDER,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_TAVILY",
+        description="tavily",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def test_external_fake_b5_provider_explicit_registration() -> None:
+    class _ExternalB5SearchIntegration(SearchProviderIntegrationContract):
+        pass
+
+    def _external_factory(*, enabled: bool = False) -> _ExternalB5SearchIntegration:
+        return _ExternalB5SearchIntegration.for_provider(
+            provider_id="external_b5_search",
+            display_name="External B5 Search",
+            config=CategoryIntegrationConfig(enabled=enabled),
+        )
+
+    spec = declare_integration_contract(
+        category="search_provider",
+        provider_id="external_b5_search",
+        integration_class=_ExternalB5SearchIntegration,
+        contract_class=SearchProviderIntegrationContract,
+        contract_factory=_external_factory,
+        display_name="External B5 Search",
+        config_class=CategoryIntegrationConfig,
+        capabilities=(
+            PlatformIntegrationCapability.CONNECT,
+            PlatformIntegrationCapability.READ,
+            PlatformIntegrationCapability.HEALTH_CHECK,
+        ),
+        security_posture=PlatformIntegrationSecurityPosture(),
+        supports_runtime_binding=True,
+        supports_health_check=True,
+        metadata={"source": "external_plugin_test"},
+    )
+    manifest = IntegrationManifest(
+        slug="external_b5_search",
+        categories=(IntegrationCategory.SEARCH_PROVIDER,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_EXTERNAL_B5_SEARCH",
+        description="external fake B5 provider",
+    )
+    register_from_manifest(manifest, lambda **_: {}, contract_specs=(spec,))
+    registration = build_integration_registration("external_b5_search")
+    assert registration.category == "search_provider"
+    assert registration.integration_class is _ExternalB5SearchIntegration
+
+
+def test_external_fake_b5_provider_without_explicit_specs_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _capture_must_not_run(*_args: object, **_kwargs: object) -> tuple[IntegrationContractSpec, ...]:
+        raise AssertionError("capture_builtin_contract_specs must not run for external B5 typed provider")
+
+    monkeypatch.setattr(contract_capture, "capture_builtin_contract_specs", _capture_must_not_run)
+    manifest = IntegrationManifest(
+        slug="external_b5_search",
+        categories=(IntegrationCategory.SEARCH_PROVIDER,),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_EXTERNAL_B5_SEARCH",
+        description="external fake B5 provider",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def test_multi_category_manifest_with_b5_category_without_specs_fails() -> None:
+    manifest = IntegrationManifest(
+        slug="multi_category_b5",
+        categories=(IntegrationCategory.SEARCH_PROVIDER, IntegrationCategory.BROWSER_AUTOMATION),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_MULTI_CATEGORY_B5",
+        description="multi-category manifest",
+    )
+    with pytest.raises(ValueError, match="requires explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {})
+
+
+def test_partial_explicit_specs_missing_required_b5_category_fails() -> None:
+    manifest = IntegrationManifest(
+        slug="multi_category_b5",
+        categories=(IntegrationCategory.SEARCH_PROVIDER, IntegrationCategory.BROWSER_AUTOMATION),
+        status=IntegrationStatus.BETA,
+        env_prefix="INTERGRAX_MULTI_CATEGORY_B5",
+        description="multi-category manifest",
+    )
+    with pytest.raises(ValueError, match="is missing explicit contract_specs for typed categories"):
+        register_from_manifest(manifest, lambda **_: {}, contract_specs=())
+
+
+def test_search_provider_registration_does_not_initialize_remote_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.search_provider import tavily as tavily_pkg
+
+    def _must_not_search(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("search client must not initialize during registration")
+
+    monkeypatch.setattr(tavily_pkg.bundle, "create_tavily_search_provider", _must_not_search)
+    monkeypatch.setattr(tavily_pkg.bundle, "create_tavily_search_provider_integration", _must_not_search)
+    tavily_pkg.register.register_tavily_integration()
+    entry = get_entry("tavily")
+    assert any(spec.category == "search_provider" for spec in entry.contract_specs)
+
+
+def test_document_parser_registration_does_not_parse_or_load_models(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.document_parser import pymupdf as pymupdf_pkg
+
+    def _must_not_parse(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("parser must not parse or load models during registration")
+
+    monkeypatch.setattr(pymupdf_pkg.bundle, "create_pymupdf_document_parser", _must_not_parse)
+    monkeypatch.setattr(pymupdf_pkg.bundle, "create_pymupdf_document_parser_integration", _must_not_parse)
+    pymupdf_pkg.register.register_pymupdf_integration()
+    entry = get_entry("pymupdf")
+    assert any(spec.category == "document_parser" for spec in entry.contract_specs)
+
+
+def test_rerank_provider_registration_does_not_score(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.rerank_provider import cohere_rerank as cohere_pkg
+
+    def _must_not_score(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("rerank client must not score during registration")
+
+    monkeypatch.setattr(cohere_pkg.bundle, "create_cohere_rerank_provider", _must_not_score)
+    monkeypatch.setattr(cohere_pkg.bundle, "create_cohere_rerank_rerank_provider_integration", _must_not_score)
+    cohere_pkg.register.register_cohere_rerank_integration()
+    entry = get_entry("cohere_rerank")
+    assert any(spec.category == "rerank_provider" for spec in entry.contract_specs)
+
+
+def test_crm_registration_does_not_authenticate(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.crm import salesforce as salesforce_pkg
+
+    def _must_not_auth(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("CRM client must not authenticate during registration")
+
+    monkeypatch.setattr(salesforce_pkg.bundle, "create_salesforce_crm", _must_not_auth)
+    monkeypatch.setattr(salesforce_pkg.bundle, "create_salesforce_crm_integration", _must_not_auth)
+    salesforce_pkg.register.register_salesforce_integration()
+    entry = get_entry("salesforce")
+    assert any(spec.category == "crm" for spec in entry.contract_specs)
+
+
+def test_b5_registry_v2_derives_from_explicit_specs() -> None:
+    from intergrax.integrations.providers.search_provider.tavily.register import register_tavily_integration
+
+    register_tavily_integration()
+    registration = build_integration_registration("tavily")
+    assert registration.provider_id == "tavily"
+    assert registration.category == "search_provider"
+
+
+_B5_BOOTSTRAP_SOURCE_FILES: tuple[str, ...] = _B4_BOOTSTRAP_SOURCE_FILES
+
+
+def _b5_keys_from_bootstrap_sources() -> frozenset[tuple[str, str]]:
+    import re
+
+    pattern = re.compile(
+        r"intergrax\.integrations\.providers\.(search_provider|document_parser|rerank_provider|crm)\.([a-z0-9_]+)\.register",
+    )
+    keys: set[tuple[str, str]] = set()
+    for relative_path in _B5_BOOTSTRAP_SOURCE_FILES:
+        source = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+        keys.update((slug, category) for category, slug in pattern.findall(source))
+    return frozenset(keys)
+
+
+def test_b5_bootstrap_provider_sets_preserved() -> None:
+    expected = _b5_keys_from_bootstrap_sources()
+    assert expected
+    for slug, category in sorted(expected):
+        b5_register_function(slug, category)()
+        entry = get_entry(slug)
+        assert entry is not None, (slug, category)
+        assert any(spec.category == category for spec in entry.contract_specs), (slug, category)
+        clear_catalog()
+
+
+def test_contract_capture_remaining_surface_is_deferred_guardrails_only() -> None:
+    source = (REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_capture.py").read_text(
+        encoding="utf-8",
+    )
+    assert "DEFERRED_LLM_GUARDRAIL_SLUGS" in source
+    assert "if slug in DEFERRED_LLM_GUARDRAIL_SLUGS" in source

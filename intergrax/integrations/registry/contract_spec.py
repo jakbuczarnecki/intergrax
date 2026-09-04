@@ -66,7 +66,17 @@ B4_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
     }
 )
 
-# Migration-only (provider_id, category) rows outside B1/B2/B3 category gates — removed in P2-003-C.
+# P2-003-B5: typed search/parser/rerank/CRM categories require provider-owned specs.
+B5_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
+    {
+        "search_provider",
+        "document_parser",
+        "rerank_provider",
+        "crm",
+    }
+)
+
+# Migration-only (provider_id, category) rows outside B1–B5 category gates — removed in P2-003-C.
 # Do not add B1/B2/B3 vendors here; category fail-closed derives from typed category sets.
 EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS: frozenset[tuple[str, str]] = frozenset(
     {
@@ -82,6 +92,7 @@ def required_explicit_contract_categories() -> frozenset[str]:
         | B2_TYPED_CONTRACT_CATEGORIES
         | B3_TYPED_CONTRACT_CATEGORIES
         | B4_TYPED_CONTRACT_CATEGORIES
+        | B5_TYPED_CONTRACT_CATEGORIES
     )
 
 
@@ -256,6 +267,7 @@ __all__ = [
     "B2_TYPED_CONTRACT_CATEGORIES",
     "B3_TYPED_CONTRACT_CATEGORIES",
     "B4_TYPED_CONTRACT_CATEGORIES",
+    "B5_TYPED_CONTRACT_CATEGORIES",
     "EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS",
     "IntegrationContractFactory",
     "IntegrationContractSpec",
