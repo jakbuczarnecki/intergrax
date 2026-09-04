@@ -4,6 +4,13 @@
 
 from __future__ import annotations
 
+import inspect
+import importlib
+import threading
+from pathlib import Path
+
+import pytest
+
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
@@ -25,12 +32,6 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from tests.unit.runtime.vendor_knowledge._fakes import InMemoryDocumentStore as PlainDocumentStore
-
-import inspect
-import importlib
-from pathlib import Path
-
-import pytest
 
 pytestmark = pytest.mark.unit
 
@@ -102,7 +103,7 @@ def test_initial_execution_mints_task_run_and_attempt() -> None:
     assert str(first.attempt_id).startswith("attempt_")
 
 
-def test_retry_preserves_task_and_run_but_mints_new_attempt() -> None:
+def test_redelivery_preserves_task_run_and_attempt() -> None:
     kv = _KV()
     persistence = KvBackgroundExecutionIdentityPersistence(kv)
     transport = _transport()
@@ -118,10 +119,10 @@ def test_retry_preserves_task_and_run_but_mints_new_attempt() -> None:
 
     assert second.task_id == first.task_id
     assert second.run_id == first.run_id
-    assert second.attempt_id != first.attempt_id
+    assert second.attempt_id == first.attempt_id
 
 
-def test_third_attempt_still_preserves_task_and_run() -> None:
+def test_third_redelivery_still_preserves_full_identity() -> None:
     kv = _KV()
     persistence = KvBackgroundExecutionIdentityPersistence(kv)
     transport = _transport()
@@ -141,10 +142,10 @@ def test_third_attempt_still_preserves_task_and_run() -> None:
 
     assert third.task_id == first.task_id
     assert third.run_id == first.run_id
-    assert len({first.attempt_id, second.attempt_id, third.attempt_id}) == 3
+    assert third.attempt_id == first.attempt_id == second.attempt_id
 
 
-def test_different_transport_task_mints_new_task_and_run() -> None:
+def test_different_transport_task_mints_new_task_run_and_attempt() -> None:
     kv = _KV()
     persistence = KvBackgroundExecutionIdentityPersistence(kv)
 
@@ -159,6 +160,7 @@ def test_different_transport_task_mints_new_task_and_run() -> None:
 
     assert second.task_id != first.task_id
     assert second.run_id != first.run_id
+    assert second.attempt_id != first.attempt_id
 
 
 def test_same_transport_id_different_provider_mints_new_task_and_run() -> None:
@@ -176,9 +178,10 @@ def test_same_transport_id_different_provider_mints_new_task_and_run() -> None:
 
     assert second.task_id != first.task_id
     assert second.run_id != first.run_id
+    assert second.attempt_id != first.attempt_id
 
 
-def test_same_provider_and_transport_id_different_tenant_mints_new_task_and_run() -> None:
+def test_same_provider_and_transport_id_different_tenant_mints_new_identity() -> None:
     kv = _KV()
     persistence = KvBackgroundExecutionIdentityPersistence(kv)
 
@@ -193,6 +196,7 @@ def test_same_provider_and_transport_id_different_tenant_mints_new_task_and_run(
 
     assert second.task_id != first.task_id
     assert second.run_id != first.run_id
+    assert second.attempt_id != first.attempt_id
 
 
 def test_process_reconstruction_uses_shared_kv_persistence() -> None:
@@ -212,7 +216,7 @@ def test_process_reconstruction_uses_shared_kv_persistence() -> None:
 
     assert second.task_id == first.task_id
     assert second.run_id == first.run_id
-    assert second.attempt_id != first.attempt_id
+    assert second.attempt_id == first.attempt_id
 
 
 def test_document_store_persistence_survives_new_instance() -> None:
@@ -232,10 +236,10 @@ def test_document_store_persistence_survives_new_instance() -> None:
 
     assert second.task_id == first.task_id
     assert second.run_id == first.run_id
-    assert second.attempt_id != first.attempt_id
+    assert second.attempt_id == first.attempt_id
 
 
-def test_broker_redelivery_preserves_task_and_run() -> None:
+def test_broker_redelivery_preserves_full_canonical_identity() -> None:
     import base64
     import json
 
@@ -292,10 +296,10 @@ def test_broker_redelivery_preserves_task_and_run() -> None:
     assert len(captured) == 2
     assert captured[1].task_id == captured[0].task_id
     assert captured[1].run_id == captured[0].run_id
-    assert captured[1].attempt_id != captured[0].attempt_id
+    assert captured[1].attempt_id == captured[0].attempt_id
 
 
-def test_bootstrap_persists_task_and_run_in_identity_store() -> None:
+def test_bootstrap_persists_task_run_and_attempt_in_identity_store() -> None:
     kv = _KV()
     persistence = KvBackgroundExecutionIdentityPersistence(kv)
     transport = _transport()
@@ -312,9 +316,71 @@ def test_bootstrap_persists_task_and_run_in_identity_store() -> None:
     assert stored is not None
     assert str(identity.task_id).encode("utf-8") in stored
     assert str(identity.run_id).encode("utf-8") in stored
+    assert str(identity.attempt_id).encode("utf-8") in stored
 
 
-def test_plain_document_store_rejected_for_identity_persistence() -> None:
+def test_concurrent_first_resolution_returns_single_canonical_identity() -> None:
+    kv = _KV()
+    persistence = KvBackgroundExecutionIdentityPersistence(kv)
+    transport = _transport(transport_task_id="concurrent-race")
+    barrier = threading.Barrier(2)
+    results: list[BackgroundExecutionIdentity] = []
+    errors: list[BaseException] = []
+
+    def _resolve() -> None:
+        try:
+            barrier.wait()
+            results.append(
+                resolve_background_execution(
+                    transport_ref=transport,
+                    identity_persistence=persistence,
+                )
+            )
+        except BaseException as exc:
+            errors.append(exc)
+
+    threads = [threading.Thread(target=_resolve) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert not errors
+    assert len(results) == 2
+    first, second = results
+    assert first.task_id == second.task_id
+    assert first.run_id == second.run_id
+    assert first.attempt_id == second.attempt_id
+
+
+def test_kv_corrupted_identity_record_fails_closed() -> None:
+    kv = _KV()
+    persistence = KvBackgroundExecutionIdentityPersistence(kv)
+    transport = _transport(transport_task_id="corrupt-kv")
+    kv.set(
+        tenant_id=transport.tenant_id,
+        key="bg_exec_identity:celery:corrupt-kv",
+        value=b"not-a-valid-record",
+    )
+
+    with pytest.raises(RuntimeError, match="invalid background execution identity record"):
+        persistence.resolve_or_create(transport)
+
+
+def test_document_store_corrupted_identity_record_fails_closed() -> None:
+    store = InMemoryDocumentStore()
+    persistence = DocumentStoreBackgroundExecutionIdentityPersistence(store)
+    transport = _transport(provider="document_store", transport_task_id="corrupt-doc")
+    store.put(
+        DocumentRecord(
+            partition_key="intergrax.bg_exec_identity.v1:tenant-a",
+            row_key="document_store:corrupt-doc",
+            data={"task_id": "task_" + "a" * 32, "run_id": "run_" + "b" * 32},
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="invalid background execution identity record"):
+        persistence.resolve_or_create(transport)
     store = PlainDocumentStore()
     with pytest.raises(TypeError, match="ConditionalDocumentStore"):
         DocumentStoreBackgroundExecutionIdentityPersistence(store)

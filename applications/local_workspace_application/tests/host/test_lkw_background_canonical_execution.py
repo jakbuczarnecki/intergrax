@@ -299,7 +299,7 @@ def test_redelivery_preserves_task_and_run_with_new_attempt_and_execution(
     assert facade_calls == 2
     assert first_identity.task_id == second_identity.task_id
     assert first_identity.run_id == second_identity.run_id
-    assert first_identity.attempt_id != second_identity.attempt_id
+    assert first_identity.attempt_id == second_identity.attempt_id
     assert len(execution_ids) == 2
     validate_execution_id(execution_ids[0])
     validate_execution_id(execution_ids[1])

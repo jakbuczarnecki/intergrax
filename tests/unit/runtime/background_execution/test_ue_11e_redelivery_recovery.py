@@ -304,7 +304,7 @@ def test_ue_11e_redelivery_identity_and_budget_continuity() -> None:
 
     assert second.task_id == first.task_id == third.task_id
     assert second.run_id == first.run_id == third.run_id
-    assert len({first.attempt_id, second.attempt_id, third.attempt_id}) == 3
+    assert second.attempt_id == first.attempt_id == third.attempt_id
     assert len({first.execution_id, second.execution_id, third.execution_id}) == 3
 
     assert first.remaining_before == 5

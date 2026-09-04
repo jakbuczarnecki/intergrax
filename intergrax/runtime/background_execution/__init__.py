@@ -16,6 +16,7 @@ from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
     DocumentStoreBackgroundExecutionIdentityPersistence,
     KvBackgroundExecutionIdentityPersistence,
+    PersistedBackgroundExecutionIdentity,
     wire_background_execution_identity_persistence,
 )
 from intergrax.runtime.background_execution.required_audit_evidence import (
@@ -35,6 +36,7 @@ __all__ = [
     "BackgroundExecutionIdentityMismatchError",
     "BackgroundExecutionIdentityPersistence",
     "BackgroundExecutionTenantMismatchError",
+    "PersistedBackgroundExecutionIdentity",
     "assert_handler_run_id_matches_identity",
     "assert_payload_run_id_consistent",
     "assert_payload_task_id_consistent",

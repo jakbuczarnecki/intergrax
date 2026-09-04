@@ -280,7 +280,7 @@ def test_document_store_worker_path_persists_required_causal_evidence() -> None:
     )
 
 
-def test_retry_redelivery_creates_new_attempt_and_evidence() -> None:
+def test_retry_redelivery_reuses_attempt_and_creates_new_evidence() -> None:
     kv = make_kv_store()
     persistence = make_causal_persistence()
     identity_persistence = KvBackgroundExecutionIdentityPersistence(kv)
@@ -319,7 +319,7 @@ def test_retry_redelivery_creates_new_attempt_and_evidence() -> None:
 
     assert first_identity.task_id == second_identity.task_id
     assert first_identity.run_id == second_identity.run_id
-    assert first_identity.attempt_id != second_identity.attempt_id
+    assert first_identity.attempt_id == second_identity.attempt_id
     assert handler_calls == 2
 
     records = persistence.list_for_transport_task(
@@ -329,7 +329,7 @@ def test_retry_redelivery_creates_new_attempt_and_evidence() -> None:
     )
     assert len(records) == 2
     stored_attempts = {record.target.attempt_id for record in records}
-    assert stored_attempts == {first_identity.attempt_id, second_identity.attempt_id}
+    assert stored_attempts == {first_identity.attempt_id}
     assert records[0].evidence_id != records[1].evidence_id
 
 

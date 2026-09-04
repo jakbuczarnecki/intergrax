@@ -11,7 +11,6 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
     TaskId,
-    mint_attempt_id,
 )
 from intergrax.runtime.background_execution.identity_persistence import (
     BackgroundExecutionIdentityPersistence,
@@ -62,7 +61,7 @@ def resolve_background_execution(
     task_tenant_id: str | None = None,
 ) -> BackgroundExecutionIdentity:
     """
-    Resolve stable canonical TaskId/RunId for one transport execution and mint AttemptId.
+    Resolve stable canonical TaskId/RunId/AttemptId for one transport execution.
 
     ``TaskRequest.run_id`` and broker message ``run_id`` are transport queue
     correlation only and must not be passed here as canonical ``RunId``.
@@ -76,12 +75,12 @@ def resolve_background_execution(
         provider=transport_ref.provider,
         transport_task_id=transport_ref.transport_task_id,
     )
-    task_id, run_id = identity_persistence.resolve_or_create(scoped_ref)
+    persisted = identity_persistence.resolve_or_create(scoped_ref)
     return BackgroundExecutionIdentity(
         tenant_id=tenant_id,
-        task_id=task_id,
-        run_id=run_id,
-        attempt_id=mint_attempt_id(),
+        task_id=persisted.task_id,
+        run_id=persisted.run_id,
+        attempt_id=persisted.attempt_id,
     )
 
 

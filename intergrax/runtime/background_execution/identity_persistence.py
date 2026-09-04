@@ -6,12 +6,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from intergrax.contracts.execution_identity import (
+    AttemptId,
     RunId,
     TaskId,
+    mint_attempt_id,
     mint_run_id,
     mint_task_id,
+    validate_attempt_id,
     validate_run_id,
     validate_task_id,
 )
@@ -30,16 +34,41 @@ _KV_KEY_PREFIX = "bg_exec_identity"
 _DOCUMENT_STORE_PARTITION_PREFIX = "intergrax.bg_exec_identity.v1"
 
 
-def _encode_identity_record(*, task_id: TaskId, run_id: RunId) -> bytes:
-    return f"{task_id}{_IDENTITY_RECORD_SEPARATOR}{run_id}".encode("utf-8")
+@dataclass(frozen=True, slots=True)
+class PersistedBackgroundExecutionIdentity:
+    """Durable canonical TaskId/RunId/AttemptId for one transport execution."""
+
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
 
 
-def _decode_identity_record(raw: bytes) -> tuple[TaskId, RunId]:
+def _encode_identity_record(
+    *,
+    task_id: TaskId,
+    run_id: RunId,
+    attempt_id: AttemptId,
+) -> bytes:
+    return (
+        f"{task_id}{_IDENTITY_RECORD_SEPARATOR}"
+        f"{run_id}{_IDENTITY_RECORD_SEPARATOR}"
+        f"{attempt_id}"
+    ).encode("utf-8")
+
+
+def _decode_identity_record(raw: bytes) -> PersistedBackgroundExecutionIdentity:
     try:
-        task_raw, run_raw = raw.decode("utf-8").split(_IDENTITY_RECORD_SEPARATOR, 1)
-    except ValueError as exc:
+        parts = raw.decode("utf-8").split(_IDENTITY_RECORD_SEPARATOR)
+    except UnicodeDecodeError as exc:
         raise RuntimeError("invalid background execution identity record") from exc
-    return validate_task_id(task_raw), validate_run_id(run_raw)
+    if len(parts) != 3:
+        raise RuntimeError("invalid background execution identity record")
+    task_raw, run_raw, attempt_raw = parts
+    return PersistedBackgroundExecutionIdentity(
+        task_id=validate_task_id(task_raw),
+        run_id=validate_run_id(run_raw),
+        attempt_id=validate_attempt_id(attempt_raw),
+    )
 
 
 def _kv_storage_key(transport_ref: BackgroundTransportExecutionRef) -> str:
@@ -55,13 +84,13 @@ def _document_row_key(transport_ref: BackgroundTransportExecutionRef) -> str:
 
 
 class BackgroundExecutionIdentityPersistence(ABC):
-    """Platform-owned durable mapping from transport identity to canonical TaskId/RunId."""
+    """Platform-owned durable mapping from transport identity to canonical identity."""
 
     @abstractmethod
     def resolve_or_create(
         self,
         transport_ref: BackgroundTransportExecutionRef,
-    ) -> tuple[TaskId, RunId]:
+    ) -> PersistedBackgroundExecutionIdentity:
         """Return stable canonical identity for one transport execution."""
 
 
@@ -74,7 +103,7 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
     def resolve_or_create(
         self,
         transport_ref: BackgroundTransportExecutionRef,
-    ) -> tuple[TaskId, RunId]:
+    ) -> PersistedBackgroundExecutionIdentity:
         key = _kv_storage_key(transport_ref)
         existing = self._kv_store.get(
             tenant_id=transport_ref.tenant_id,
@@ -85,14 +114,23 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
 
         task_id = mint_task_id()
         run_id = mint_run_id()
-        encoded = _encode_identity_record(task_id=task_id, run_id=run_id)
+        attempt_id = mint_attempt_id()
+        encoded = _encode_identity_record(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
         if self._kv_store.compare_and_set(
             tenant_id=transport_ref.tenant_id,
             key=key,
             expected=None,
             new_value=encoded,
         ):
-            return task_id, run_id
+            return PersistedBackgroundExecutionIdentity(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+            )
 
         raced = self._kv_store.get(tenant_id=transport_ref.tenant_id, key=key)
         if raced is None:
@@ -115,7 +153,7 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
     def resolve_or_create(
         self,
         transport_ref: BackgroundTransportExecutionRef,
-    ) -> tuple[TaskId, RunId]:
+    ) -> PersistedBackgroundExecutionIdentity:
         partition_key = _document_partition(transport_ref.tenant_id)
         row_key = _document_row_key(transport_ref)
         existing = self._document_store.get(partition_key, row_key)
@@ -124,16 +162,22 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
 
         task_id = mint_task_id()
         run_id = mint_run_id()
+        attempt_id = mint_attempt_id()
         document = DocumentRecord(
             partition_key=partition_key,
             row_key=row_key,
             data={
                 "task_id": str(task_id),
                 "run_id": str(run_id),
+                "attempt_id": str(attempt_id),
             },
         )
         if self._document_store.put_if_absent(document):
-            return task_id, run_id
+            return PersistedBackgroundExecutionIdentity(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+            )
 
         raced = self._document_store.get(partition_key, row_key)
         if raced is None:
@@ -141,12 +185,21 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
         return self._record_to_identity(raced)
 
     @staticmethod
-    def _record_to_identity(record: DocumentRecord) -> tuple[TaskId, RunId]:
+    def _record_to_identity(record: DocumentRecord) -> PersistedBackgroundExecutionIdentity:
         task_raw = record.data.get("task_id")
         run_raw = record.data.get("run_id")
-        if not isinstance(task_raw, str) or not isinstance(run_raw, str):
+        attempt_raw = record.data.get("attempt_id")
+        if (
+            not isinstance(task_raw, str)
+            or not isinstance(run_raw, str)
+            or not isinstance(attempt_raw, str)
+        ):
             raise RuntimeError("invalid background execution identity record")
-        return validate_task_id(task_raw), validate_run_id(run_raw)
+        return PersistedBackgroundExecutionIdentity(
+            task_id=validate_task_id(task_raw),
+            run_id=validate_run_id(run_raw),
+            attempt_id=validate_attempt_id(attempt_raw),
+        )
 
 
 def wire_background_execution_identity_persistence(
