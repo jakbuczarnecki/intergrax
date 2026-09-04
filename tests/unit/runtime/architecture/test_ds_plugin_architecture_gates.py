@@ -71,3 +71,29 @@ def test_decision_registries_remain_in_contracts() -> None:
     assert "class DecisionStrategyRegistry" in strategy_source
     assert "class VerificationStageRegistry" in verification_source
     assert "class DecisionArtifactKindRegistry" in artifact_source
+
+
+def test_required_manifest_binding_missing_distribution_is_fail_closed() -> None:
+    from intergrax.core.plugins.discovery import EntryPointSpec
+    from intergrax.runtime.decision_plugin_composition import (
+        DECISION_PLUGIN_DOMAIN,
+        DECISION_STRATEGY_CAPABILITY_ID,
+        EP_DECISION_STRATEGIES,
+        ManifestCapabilityBindingDisposition,
+        _validate_manifest_capability_binding,
+    )
+
+    spec = EntryPointSpec(
+        name="external_council",
+        group=EP_DECISION_STRATEGIES,
+        value="tests.unit.runtime.test_decision_plugin_composition:_ExternalCouncilStrategy",
+        distribution=None,
+    )
+    result = _validate_manifest_capability_binding(
+        spec,
+        domain=DECISION_PLUGIN_DOMAIN,
+        capability_id=DECISION_STRATEGY_CAPABILITY_ID,
+    )
+    assert result.disposition is ManifestCapabilityBindingDisposition.REJECTED
+    assert result.rejection is not None
+    assert result.rejection.fail_closed is True

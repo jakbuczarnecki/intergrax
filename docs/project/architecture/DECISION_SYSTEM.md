@@ -726,6 +726,10 @@ Decision domain composition (`intergrax/runtime/decision_plugin_composition.py`)
 targets and composes immutable registries. Installation alone does not activate plugins —
 explicit ``discover_entry_points=True`` composition is required.
 
+When ``require_manifest_capability_binding=True``, absence of positive Platform Plugin
+manifest capability evidence is an admission failure (fail-closed). Plugins without
+verifiable manifest binding are not loaded, instantiated, or registered.
+
 ---
 
 ## Cross-scenario validation

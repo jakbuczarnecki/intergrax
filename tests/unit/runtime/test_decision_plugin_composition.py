@@ -695,7 +695,7 @@ def test_manifest_capability_mismatch_rejects_strategy(monkeypatch: pytest.Monke
         discover_entry_points=True,
     )
     assert outcome.report.registered_count == 0
-    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.INVALID_TARGET_TYPE
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.CAPABILITY_ID_MISMATCH
 
 
 def test_manifest_capability_binding_accepts_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -740,6 +740,10 @@ def test_manifest_missing_entry_point_rejects_strategy(monkeypatch: pytest.Monke
         discover_entry_points=True,
     )
     assert outcome.report.registered_count == 0
+    assert (
+        outcome.report.rejected[0].reason_code
+        is PluginAdmissionReasonCode.MANIFEST_CAPABILITY_BINDING_MISSING
+    )
     assert "not declared" in outcome.report.rejected[0].reason
 
 
@@ -749,3 +753,467 @@ def test_registry_immutability_on_rejection(monkeypatch: pytest.MonkeyPatch) -> 
     outcome = load_decision_strategy_plugins(base, discover_entry_points=True)
     assert outcome.registry is base
     assert outcome.registry.registrations == base.registrations
+
+
+# --- hard manifest capability binding (enterprise) ---
+
+
+_FACTORY_LOAD_COUNT = 0
+
+
+def _factory_loaded_strategy() -> _ExternalCouncilStrategy:
+    global _FACTORY_LOAD_COUNT
+    _FACTORY_LOAD_COUNT += 1
+    return _ExternalCouncilStrategy()
+
+
+def _hard_binding_policy(**kwargs: object) -> DecisionPluginLoadPolicy:
+    return DecisionPluginLoadPolicy(
+        require_manifest_capability_binding=True,
+        **kwargs,
+    )
+
+
+def _valid_strategy_manifest() -> str:
+    return _manifest_toml(
+        capability=CapabilityDescriptor(
+            domain=DECISION_PLUGIN_DOMAIN,
+            entry_point_group=EP_DECISION_STRATEGIES,
+            entry_point_name="external_council",
+            capability_ids=(DECISION_STRATEGY_CAPABILITY_ID,),
+        ),
+    )
+
+
+def _valid_verification_manifest(*, name: str = "external_check") -> str:
+    return _manifest_toml(
+        capability=CapabilityDescriptor(
+            domain=DECISION_PLUGIN_DOMAIN,
+            entry_point_group=EP_DECISION_VERIFICATION_STAGES,
+            entry_point_name=name,
+            capability_ids=(DECISION_VERIFICATION_STAGE_CAPABILITY_ID,),
+        ),
+    )
+
+
+def _valid_artifact_manifest(*, name: str = "external_risk") -> str:
+    return _manifest_toml(
+        capability=CapabilityDescriptor(
+            domain=DECISION_PLUGIN_DOMAIN,
+            entry_point_group=EP_DECISION_ARTIFACT_KINDS,
+            entry_point_name=name,
+            capability_ids=(DECISION_ARTIFACT_KIND_CAPABILITY_ID,),
+        ),
+    )
+
+
+@pytest.fixture
+def _reset_factory_load_count() -> None:
+    global _FACTORY_LOAD_COUNT
+    _FACTORY_LOAD_COUNT = 0
+    yield
+    _FACTORY_LOAD_COUNT = 0
+
+
+def test_hard_binding_missing_distribution_rejects_before_load(
+    monkeypatch: pytest.MonkeyPatch,
+    _reset_factory_load_count: None,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [
+            _strategy_ep(
+                "external_council",
+                "_factory_loaded_strategy",
+                distribution=None,
+            ),
+        ],
+    )
+    base = decision_strategy_registry()
+    outcome = load_decision_strategy_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert _FACTORY_LOAD_COUNT == 0
+    assert outcome.registry is base
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.UNRESOLVED_PACKAGE_IDENTITY
+
+
+def test_hard_binding_unresolvable_distribution_rejects_before_load(
+    monkeypatch: pytest.MonkeyPatch,
+    _reset_factory_load_count: None,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [
+            _strategy_ep(
+                "external_council",
+                "_factory_loaded_strategy",
+                distribution="missing-package",
+            ),
+        ],
+    )
+    monkeypatch.setattr(
+        importlib.metadata,
+        "distribution",
+        lambda _name: (_ for _ in ()).throw(importlib.metadata.PackageNotFoundError("missing")),
+    )
+    base = decision_strategy_registry()
+    outcome = load_decision_strategy_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert _FACTORY_LOAD_COUNT == 0
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE
+
+
+def test_hard_binding_missing_file_metadata_rejects_before_load(
+    monkeypatch: pytest.MonkeyPatch,
+    _reset_factory_load_count: None,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_factory_loaded_strategy", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch)
+    base = decision_strategy_registry()
+    outcome = load_decision_strategy_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert _FACTORY_LOAD_COUNT == 0
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE
+
+
+def test_hard_binding_manifest_absent_rejects(
+    monkeypatch: pytest.MonkeyPatch,
+    _reset_factory_load_count: None,
+) -> None:
+    dist = MagicMock()
+    dist.version = _PACKAGE_VERSION
+    dist.files = [MagicMock(name="pyproject.toml")]
+    dist.read_text.side_effect = FileNotFoundError("pyproject.toml")
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_factory_loaded_strategy", distribution=_PACKAGE_NAME)],
+    )
+    monkeypatch.setattr(importlib.metadata, "distribution", lambda _name: dist)
+    base = decision_strategy_registry()
+    outcome = load_decision_strategy_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert _FACTORY_LOAD_COUNT == 0
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE
+
+
+def test_hard_binding_manifest_unreadable_rejects(
+    monkeypatch: pytest.MonkeyPatch,
+    _reset_factory_load_count: None,
+) -> None:
+    dist = MagicMock()
+    dist.version = _PACKAGE_VERSION
+    dist.files = [MagicMock(name="pyproject.toml")]
+    dist.read_text.side_effect = OSError("permission denied")
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_factory_loaded_strategy", distribution=_PACKAGE_NAME)],
+    )
+    monkeypatch.setattr(importlib.metadata, "distribution", lambda _name: dist)
+    base = decision_strategy_registry()
+    outcome = load_decision_strategy_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert _FACTORY_LOAD_COUNT == 0
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE
+
+
+def test_hard_binding_malformed_manifest_rejects(
+    monkeypatch: pytest.MonkeyPatch,
+    _reset_factory_load_count: None,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_factory_loaded_strategy", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch, manifest_toml="not-valid-manifest")
+    base = decision_strategy_registry()
+    outcome = load_decision_strategy_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert _FACTORY_LOAD_COUNT == 0
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.MANIFEST_INVALID
+
+
+def test_hard_binding_manifest_without_capabilities_rejects(
+    monkeypatch: pytest.MonkeyPatch,
+    _reset_factory_load_count: None,
+) -> None:
+    manifest = f"""
+[project]
+name = "{_PACKAGE_NAME}"
+version = "{_PACKAGE_VERSION}"
+
+[tool.intergrax.plugin]
+name = "{_PACKAGE_NAME}"
+version = "{_PACKAGE_VERSION}"
+intergrax_version = ">=0.1,<2"
+"""
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_factory_loaded_strategy", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch, manifest_toml=manifest)
+    base = decision_strategy_registry()
+    outcome = load_decision_strategy_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert _FACTORY_LOAD_COUNT == 0
+    assert (
+        outcome.report.rejected[0].reason_code
+        is PluginAdmissionReasonCode.MANIFEST_CAPABILITY_BINDING_MISSING
+    )
+
+
+def test_hard_binding_wrong_domain_capability_rejects_strategy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest = _manifest_toml(
+        capability=CapabilityDescriptor(
+            domain=DECISION_PLUGIN_DOMAIN,
+            entry_point_group=EP_DECISION_ARTIFACT_KINDS,
+            entry_point_name="external_council",
+            capability_ids=(DECISION_ARTIFACT_KIND_CAPABILITY_ID,),
+        ),
+    )
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_ExternalCouncilStrategy", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch, manifest_toml=manifest)
+    outcome = load_decision_strategy_plugins(
+        decision_strategy_registry(),
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert outcome.report.registered_count == 0
+    assert (
+        outcome.report.rejected[0].reason_code
+        is PluginAdmissionReasonCode.MANIFEST_CAPABILITY_BINDING_MISSING
+    )
+
+
+def test_hard_binding_valid_manifest_registers_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_ExternalCouncilStrategy", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch, manifest_toml=_valid_strategy_manifest())
+    outcome = load_decision_strategy_plugins(
+        decision_strategy_registry(),
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert outcome.report.registered_count == 1
+
+
+def test_hard_binding_valid_manifest_registers_verification_stage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [_verification_ep("external_check", "_ExternalVerificationStage", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch, manifest_toml=_valid_verification_manifest())
+    outcome = load_verification_stage_plugins(
+        verification_stage_registry(),
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert outcome.report.registered_count == 1
+
+
+def test_hard_binding_missing_manifest_rejects_verification_stage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [_verification_ep("external_check", "_ExternalVerificationStage", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch)
+    base = verification_stage_registry()
+    outcome = load_verification_stage_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert outcome.registry is base
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE
+
+
+def test_hard_binding_valid_manifest_registers_artifact_kind(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [_artifact_ep("external_risk", "_ExternalRiskArtifactKindContribution", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch, manifest_toml=_valid_artifact_manifest())
+    outcome = load_decision_artifact_kind_plugins(
+        decision_artifact_kind_registry(),
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert outcome.report.registered_count == 1
+
+
+def test_hard_binding_missing_manifest_rejects_artifact_kind(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [_artifact_ep("external_risk", "_ExternalRiskArtifactKindContribution", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch)
+    base = decision_artifact_kind_registry()
+    outcome = load_decision_artifact_kind_plugins(
+        base,
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert outcome.registry is base
+    assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE
+
+
+def test_optional_manifest_binding_allows_plugin_without_manifest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_ExternalCouncilStrategy", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch)
+    outcome = load_decision_strategy_plugins(
+        decision_strategy_registry(),
+        policy=DecisionPluginLoadPolicy(require_manifest_capability_binding=False),
+        discover_entry_points=True,
+    )
+    assert outcome.report.registered_count == 1
+
+
+@pytest.mark.parametrize(
+    ("require_production_admission", "require_manifest_capability_binding", "expect_registered"),
+    [
+        (False, False, True),
+        (True, False, False),
+        (False, True, False),
+        (True, True, False),
+    ],
+)
+def test_production_and_manifest_binding_policy_combinations_without_qualification_or_manifest(
+    monkeypatch: pytest.MonkeyPatch,
+    require_production_admission: bool,
+    require_manifest_capability_binding: bool,
+    expect_registered: bool,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_ExternalCouncilStrategy", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch)
+    outcome = load_decision_strategy_plugins(
+        decision_strategy_registry(),
+        policy=DecisionPluginLoadPolicy(
+            require_production_admission=require_production_admission,
+            require_manifest_capability_binding=require_manifest_capability_binding,
+            platform_version=_PLATFORM_VERSION,
+        ),
+        discover_entry_points=True,
+    )
+    assert (outcome.report.registered_count == 1) is expect_registered
+
+
+def test_production_and_manifest_binding_both_required(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    compatibility = _compatible_platform()
+    qualification = _production_package_qualification(
+        compatibility=compatibility,
+        group=EP_DECISION_STRATEGIES,
+        name="external_council",
+    )
+    _install_eps(
+        monkeypatch,
+        [_strategy_ep("external_council", "_ExternalCouncilStrategy", distribution=_PACKAGE_NAME)],
+    )
+    _mock_installed_distribution(monkeypatch, manifest_toml=_valid_strategy_manifest())
+    monkeypatch.setattr(
+        "intergrax.core.plugins.platform_qualification.resolve_installed_distribution_platform_compatibility",
+        lambda *_args, **_kwargs: compatibility,
+    )
+    outcome = load_decision_strategy_plugins(
+        decision_strategy_registry(),
+        policy=DecisionPluginLoadPolicy(
+            require_production_admission=True,
+            require_manifest_capability_binding=True,
+            package_qualification_lookup=_lookup_for(qualification),
+            platform_version=_PLATFORM_VERSION,
+        ),
+        discover_entry_points=True,
+    )
+    assert outcome.report.registered_count == 1
+
+
+def test_hard_binding_isolates_rejected_and_valid_plugins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_eps(
+        monkeypatch,
+        [
+            _strategy_ep("bad_manifest", "_ExternalCouncilStrategy", distribution=_PACKAGE_NAME),
+            _strategy_ep("good", "_ExternalCouncilStrategy", distribution=_PACKAGE_NAME),
+        ],
+    )
+
+    good_manifest = _manifest_toml(
+        capability=CapabilityDescriptor(
+            domain=DECISION_PLUGIN_DOMAIN,
+            entry_point_group=EP_DECISION_STRATEGIES,
+            entry_point_name="good",
+            capability_ids=(DECISION_STRATEGY_CAPABILITY_ID,),
+        ),
+    )
+
+    def _distribution(name: str) -> MagicMock:
+        dist = MagicMock()
+        dist.version = _PACKAGE_VERSION
+        file = MagicMock()
+        file.name = "pyproject.toml"
+        dist.files = [file]
+        if name == _PACKAGE_NAME:
+            dist.read_text.return_value = good_manifest
+        return dist
+
+    monkeypatch.setattr(importlib.metadata, "distribution", _distribution)
+    outcome = load_decision_strategy_plugins(
+        decision_strategy_registry(),
+        policy=_hard_binding_policy(),
+        discover_entry_points=True,
+    )
+    assert outcome.report.registered_count == 1
+    assert len(outcome.report.rejected) == 1
+    assert (
+        outcome.report.rejected[0].reason_code
+        is PluginAdmissionReasonCode.MANIFEST_CAPABILITY_BINDING_MISSING
+    )
+    assert is_decision_strategy_registered(outcome.registry, "external_council_variant")
