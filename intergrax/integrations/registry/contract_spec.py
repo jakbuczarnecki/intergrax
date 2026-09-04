@@ -39,19 +39,31 @@ B2_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
     }
 )
 
-# Migration-only (provider_id, category) rows outside B1/B2 category gates — removed in P2-003-C.
-# Do not add B1/B2 vendors here; category fail-closed derives from typed category sets.
+# P2-003-B3: typed infrastructure/operations categories require provider-owned specs.
+B3_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
+    {
+        "observability_backend",
+        "cloud_platform",
+        "ci_cd",
+        "workflow_orchestrator",
+        "feature_flag",
+        "secrets_store",
+        "billing_meter",
+    }
+)
+
+# Migration-only (provider_id, category) rows outside B1/B2/B3 category gates — removed in P2-003-C.
+# Do not add B1/B2/B3 vendors here; category fail-closed derives from typed category sets.
 EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS: frozenset[tuple[str, str]] = frozenset(
     {
         ("openai", "managed_retrieval"),
-        ("langfuse", "observability_backend"),
     }
 )
 
 
 def required_explicit_contract_categories() -> frozenset[str]:
     """Union of migration-stage typed categories that require explicit contract specs."""
-    return B1_TYPED_CONTRACT_CATEGORIES | B2_TYPED_CONTRACT_CATEGORIES
+    return B1_TYPED_CONTRACT_CATEGORIES | B2_TYPED_CONTRACT_CATEGORIES | B3_TYPED_CONTRACT_CATEGORIES
 
 
 @dataclass(frozen=True, repr=False)
@@ -223,6 +235,7 @@ def validate_contract_spec_identity(
 __all__ = [
     "B1_TYPED_CONTRACT_CATEGORIES",
     "B2_TYPED_CONTRACT_CATEGORIES",
+    "B3_TYPED_CONTRACT_CATEGORIES",
     "EXPLICIT_CONTRACT_SPEC_PROVIDER_KEYS",
     "IntegrationContractFactory",
     "IntegrationContractSpec",

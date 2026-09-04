@@ -33,7 +33,6 @@ from intergrax.integrations.registry.contract_spec import (
     IntegrationContractSpec,
     validate_contract_spec_identity,
 )
-from intergrax.runtime.integrations.categories import OBSERVABILITY_BACKEND_CATEGORY
 from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationCapability,
     PlatformIntegrationContract,
@@ -135,8 +134,6 @@ def _capture_builtin_category_spec(*, slug: str, category: str) -> IntegrationCo
 
 
 def _contract_factory_name(slug: str, category: str) -> str:
-    if category == OBSERVABILITY_BACKEND_CATEGORY:
-        return f"create_{slug}_observability_integration"
     return f"create_{slug}_{category}_integration"
 
 
