@@ -9,6 +9,11 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.applications._shared.application_lifecycle_conformance import (
+    ApplicationLifecycleRuleId,
+    assert_application_lifecycle_conformance,
+    validate_application_lifecycle_conformance,
+)
 from intergrax.scaffold.new_application import create_application
 from tests.unit.applications.ac3_projection_helpers import build_test_registry_projection
 from tests.unit.applications.scaffold_runtime_helper import (
@@ -49,6 +54,7 @@ def test_product_scaffold_has_no_registry_construction_bypass(tmp_path) -> None:
     )
     _assert_no_forbidden_patterns(target)
     assert not (target / "host" / "wiring.py").exists()
+    assert_application_lifecycle_conformance(tmp_path)
 
     factory_src = (target / "host" / "factory.py").read_text(encoding="utf-8")
     assert "registry_projection: MaterializedRegistryProjection" in factory_src
@@ -133,6 +139,20 @@ def test_product_scaffold_fail_closed_without_projection(tmp_path) -> None:
         create_backend()  # type: ignore[call-arg]
 
 
+def _assert_no_lab_lifecycle_bypass(repo_root: Path) -> None:
+    report = validate_application_lifecycle_conformance(repo_root, apply_legacy_baseline=False)
+    forbidden = tuple(
+        violation
+        for violation in report.violations
+        if violation.rule_id
+        in (
+            ApplicationLifecycleRuleId.AGENT_LIFECYCLE_BYPASS,
+            ApplicationLifecycleRuleId.BUILD_APPLICATION_REGISTRY_BYPASS,
+        )
+    )
+    assert not forbidden, "\n\n".join(violation.format() for violation in forbidden)
+
+
 def test_lab_scaffold_uses_shared_development_registry_bootstrap(tmp_path) -> None:
     target = create_application(
         name="lifecycle_lab",
@@ -145,6 +165,7 @@ def test_lab_scaffold_uses_shared_development_registry_bootstrap(tmp_path) -> No
     wiring = (target / "host" / "wiring.py").read_text(encoding="utf-8")
     assert "build_manifest_development_registry" in wiring
     assert "build_application_registry" not in wiring
+    _assert_no_lab_lifecycle_bypass(tmp_path)
     manifest = (target / "manifest.py").read_text(encoding="utf-8")
     assert "AgentBinding.mount(EchoAgent" in manifest
     assert "AgentBinding.mount(SignoffProbeAgent" in manifest
