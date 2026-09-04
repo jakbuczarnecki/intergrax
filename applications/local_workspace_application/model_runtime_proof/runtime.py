@@ -152,8 +152,10 @@ def build_proof_runtime_session(
         compensation_queue_store=harness_runtime.compensation_queue_store,
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
+    nexus_loop = resolve_harness_host_nexus_loop_legacy(harness_runtime)
     task_executor = LocalWorkspaceTaskExecutor(
-        build_lkw_host_task_execution(resolve_harness_host_nexus_loop_legacy(harness_runtime), environment_profile),
+        build_lkw_host_task_execution(nexus_loop, environment_profile),
+        nexus_loop=nexus_loop,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

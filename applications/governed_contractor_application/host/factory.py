@@ -134,6 +134,7 @@ def create_governed_contractor_backend_app(
     mount_governed_contractor_routes(
         app,
         host_execution=host_execution,
+        registry=runtime.registry,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
     )
@@ -172,6 +173,7 @@ def create_governed_contractor_backend_app(
 
         mcp = build_governed_contractor_mcp_server(
             host_execution=host_execution,
+            registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

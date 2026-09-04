@@ -126,6 +126,7 @@ def create_research_backend_app(
 
         mcp = build_research_mcp_server(
             host_execution=host_execution,
+            registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

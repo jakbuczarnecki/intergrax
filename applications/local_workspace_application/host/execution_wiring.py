@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.runtime.execution.host_task import HostTaskExecution, build_host_task_execution
+from intergrax.applications._shared.host_task_execution_wiring import build_host_task_execution
+from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration_capabilities import orchestration_capabilities_from_triggers
 

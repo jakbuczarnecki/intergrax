@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import fields
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -42,7 +44,7 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
 )
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
-from intergrax.runtime.execution.host_task import HostTaskExecution
+from intergrax.runtime.execution.host_task import HostTaskExecution, HostTaskExecutionPort
 from intergrax.runtime.execution.request import ExecutionCapability
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
@@ -56,6 +58,9 @@ from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_HOST_TASK_PATH = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 
 
 @pytest.fixture(autouse=True)
@@ -147,11 +152,38 @@ def test_harness_host_runtime_public_fields_do_not_include_nexus_loop() -> None:
     assert "execution" in public_fields
 
 
+def test_host_task_execution_port_has_no_nexus_loop() -> None:
+    source = inspect.getsource(HostTaskExecutionPort)
+    assert "nexus_loop" not in source
+    assert "NexusLoop" not in source
+
+
+def test_host_task_execution_has_no_public_nexus_loop_property() -> None:
+    public_names = {
+        name
+        for name in dir(HostTaskExecution)
+        if not name.startswith("_") and name != "execute"
+    }
+    assert "nexus_loop" not in public_names
+    assert not hasattr(HostTaskExecution, "nexus_loop")
+
+
+def test_host_task_module_has_no_nexus_import() -> None:
+    text = _HOST_TASK_PATH.read_text(encoding="utf-8")
+    assert "NexusLoop" not in text
+    assert "nexus_loop" not in text
+
+
+def test_runtime_execution_nexus_loop_is_impossible() -> None:
+    runtime = _build_echo_runtime()
+    assert not hasattr(runtime.execution, "nexus_loop")
+
+
 def test_legacy_compat_resolves_internal_nexus_without_public_field() -> None:
     runtime = _build_echo_runtime()
     nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     assert isinstance(nexus_loop, NexusLoop)
-    assert runtime.execution.nexus_loop is nexus_loop
+    assert not hasattr(runtime.execution, "nexus_loop")
 
 
 @pytest.mark.asyncio
@@ -166,21 +198,21 @@ async def test_agentic_execution_does_not_require_caller_nexus() -> None:
         agent_id="search",
     )
     nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
-    nexus_loop.handle_task = AsyncMock()  # type: ignore[method-assign]
 
-    with patch(
-        "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
-        new_callable=AsyncMock,
-        return_value=TaskResult(
-            task_id=task.task_id,
-            run_id=mint_run_id(),
-            state=TaskState.COMPLETED,
-            answer="ok",
-        ),
-    ):
-        await runtime.execution.execute(task)
+    with patch.object(nexus_loop, "handle_task", new_callable=AsyncMock) as handle_task_mock:
+        with patch(
+            "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
+            new_callable=AsyncMock,
+            return_value=TaskResult(
+                task_id=task.task_id,
+                run_id=mint_run_id(),
+                state=TaskState.COMPLETED,
+                answer="ok",
+            ),
+        ):
+            await runtime.execution.execute(task)
 
-    nexus_loop.handle_task.assert_not_called()
+    handle_task_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -194,18 +226,21 @@ async def test_orchestration_execution_reaches_internal_nexus_backend() -> None:
         context=TaskContext(capability="research.pipeline"),
     )
     nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
-    nexus_loop.handle_task = AsyncMock(  # type: ignore[method-assign]
+
+    with patch.object(
+        nexus_loop,
+        "handle_task",
+        new_callable=AsyncMock,
         return_value=TaskResult(
             task_id=task.task_id,
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="pipeline",
         ),
-    )
+    ) as handle_task_mock:
+        await runtime.execution.execute(task)
 
-    await runtime.execution.execute(task)
-
-    nexus_loop.handle_task.assert_called_once()
+    handle_task_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

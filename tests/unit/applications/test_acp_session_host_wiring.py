@@ -16,6 +16,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications._shared.harness_host_runtime_compat import (
+    HarnessHostLegacyComposition,
     resolve_harness_host_nexus_loop_legacy,
 )
 
@@ -28,7 +29,7 @@ def test_build_acp_session_host_from_harness_attaches_decision_gate() -> None:
     runtime.environment = ApplicationEnvironmentProfile.lab_defaults()
     nexus_loop = MagicMock()
     nexus_loop.peek_decision_flow_gate.return_value = decision_gate
-    runtime.execution = MagicMock(nexus_loop=nexus_loop)
+    runtime._legacy_composition = HarnessHostLegacyComposition(nexus_loop=nexus_loop)
     runtime.env_wiring.tool_wiring = MagicMock()
 
     host_ctx = build_acp_session_host_from_harness(runtime)

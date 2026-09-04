@@ -13,7 +13,7 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
 )
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
-from intergrax.runtime.execution.host_task import build_host_task_execution
+from intergrax.applications._shared.host_task_execution_wiring import build_host_task_execution
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
@@ -55,6 +55,7 @@ async def test_shared_mcp_run_agent_uses_canonical_execution_facade() -> None:
     mcp = build_nexus_mcp_server(
         name="Shared MCP Test",
         host_execution=host_execution,
+        registry=registry,
         default_capability="external_contractor.adapt",
     )
     facade_calls = 0
@@ -92,10 +93,11 @@ async def test_shared_mcp_run_agent_uses_canonical_execution_facade() -> None:
 async def test_governed_contractor_mcp_adapt_does_not_root_call_nexus_handle_task() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    nexus_loop.handle_task = AsyncMock()  # type: ignore[method-assign]
+    nexus_loop.handle_task = AsyncMock()
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_governed_contractor_mcp_server(
         host_execution=host_execution,
+        registry=registry,
         route_prefix="/v1/governed_contractor",
     )
 
@@ -127,6 +129,7 @@ async def test_governed_contractor_mcp_adapt_reaches_strategy_router_with_agenti
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_governed_contractor_mcp_server(
         host_execution=host_execution,
+        registry=registry,
         route_prefix="/v1/governed_contractor",
     )
     captured: dict[str, object] = {}
@@ -164,6 +167,7 @@ async def test_research_mcp_pipeline_reaches_orchestration_strategy() -> None:
     host_execution = _build_research_host_execution(nexus_loop)
     mcp = build_research_mcp_server(
         host_execution=host_execution,
+        registry=registry,
         route_prefix="/v1/research",
     )
     captured: dict[str, object] = {}
@@ -201,6 +205,7 @@ async def test_mcp_root_execution_id_is_platform_owned() -> None:
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_governed_contractor_mcp_server(
         host_execution=host_execution,
+        registry=registry,
         route_prefix="/v1/governed_contractor",
     )
     observed: dict[str, object] = {}
@@ -243,6 +248,7 @@ async def test_mcp_request_produces_single_root_execution_invocation() -> None:
     host_execution = _build_governed_contractor_host_execution(nexus_loop)
     mcp = build_governed_contractor_mcp_server(
         host_execution=host_execution,
+        registry=registry,
         route_prefix="/v1/governed_contractor",
     )
     router_calls = 0

@@ -104,6 +104,7 @@ def create_intergrax_assistant_application(
     mount_intergrax_assistant_routes(
         app,
         host_execution=host_execution,
+        registry=runtime.registry,
         prefix=settings.route_prefix,
     )
     if settings.include_task_control:
@@ -135,6 +136,7 @@ def create_intergrax_assistant_application(
         tool_registry = runtime.env_wiring.tool_wiring.registry
         mcp = build_intergrax_assistant_mcp_server(
             host_execution=host_execution,
+            registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=tool_registry,
         )

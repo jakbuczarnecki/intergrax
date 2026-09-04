@@ -46,7 +46,12 @@ def _build_executor(nexus_loop: NexusLoop) -> LocalWorkspaceTaskExecutor:
     lifecycle = LocalWorkspaceHostLifecycle()
     lifecycle.set_executor_available(True)
     lifecycle.transition_to_ready()
-    return LocalWorkspaceTaskExecutor(host_execution, task_enricher=None, readiness=lifecycle)
+    return LocalWorkspaceTaskExecutor(
+        host_execution,
+        nexus_loop=nexus_loop,
+        task_enricher=None,
+        readiness=lifecycle,
+    )
 
 
 @pytest.mark.asyncio

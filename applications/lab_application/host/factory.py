@@ -177,6 +177,7 @@ def create_lab_application(
     mount_lab_routes(
         app,
         host_execution=host_execution,
+        registry=runtime.registry,
         prefix=settings.route_prefix,
         task_enricher=task_enricher,
     )
@@ -216,6 +217,7 @@ def create_lab_application(
         )
         mcp = build_lab_mcp_server(
             host_execution=host_execution,
+            registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=tool_wiring.registry,
         )

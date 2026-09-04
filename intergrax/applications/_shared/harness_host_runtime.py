@@ -104,6 +104,9 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
+from intergrax.applications._shared.harness_host_runtime_compat import (
+    HarnessHostLegacyComposition,
+)
 from intergrax.applications._shared.host_task_execution_wiring import (
     build_environment_host_task_execution,
 )
@@ -145,6 +148,7 @@ class HarnessHostRuntime:
     evaluation: ApplicationEvaluationWiring
     diagnostic_wiring: DiagnosticWiring
     execution: HostTaskExecution
+    _legacy_composition: HarnessHostLegacyComposition
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
     compensation_queue_store: CompensationQueueStore
@@ -353,6 +357,7 @@ def build_harness_host_runtime(
         evaluation=evaluation_wiring,
         diagnostic_wiring=diagnostic_wiring,
         execution=execution,
+        _legacy_composition=HarnessHostLegacyComposition(nexus_loop=nexus_loop),
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,

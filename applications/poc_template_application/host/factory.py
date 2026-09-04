@@ -107,6 +107,7 @@ def create_poc_template_application(
     mount_poc_template_routes(
         app,
         host_execution=host_execution,
+        registry=runtime.registry,
         prefix=settings.route_prefix,
     )
     if settings.include_task_control:
@@ -137,6 +138,7 @@ def create_poc_template_application(
 
         mcp = build_poc_template_mcp_server(
             host_execution=host_execution,
+            registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

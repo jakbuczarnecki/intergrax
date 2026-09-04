@@ -22,16 +22,18 @@ class LocalWorkspaceTaskExecutor:
         self,
         host_execution: HostTaskExecutionPort,
         *,
+        nexus_loop: NexusLoop,
         task_enricher: TaskEnricher | None,
         readiness: LocalWorkspaceReadinessProvider,
     ) -> None:
         self._host_execution = host_execution
+        self._nexus_loop = nexus_loop
         self._task_enricher = task_enricher
         self._readiness = readiness
 
     @property
     def nexus_loop(self) -> NexusLoop:
-        return self._host_execution.nexus_loop
+        return self._nexus_loop
 
     @property
     def host_execution(self) -> HostTaskExecutionPort:

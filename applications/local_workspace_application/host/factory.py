@@ -187,6 +187,7 @@ def create_local_workspace_backend_app(
     lkw_host_execution = runtime.execution
     lkw_task_executor = LocalWorkspaceTaskExecutor(
         lkw_host_execution,
+        nexus_loop=nexus_loop,
         task_enricher=lkw_task_enricher,
         readiness=resolved_readiness,
     )
@@ -410,6 +411,7 @@ def create_local_workspace_backend_app(
 
         mcp = build_local_workspace_mcp_server(
             host_execution=lkw_host_execution,
+            registry=runtime.registry,
             route_prefix=resolved_settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )

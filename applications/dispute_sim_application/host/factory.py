@@ -142,6 +142,7 @@ def create_dispute_sim_backend_app(
     mount_dispute_sim_routes(
         app,
         host_execution=host_execution,
+        registry=runtime.registry,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
     )
@@ -183,6 +184,7 @@ def create_dispute_sim_backend_app(
 
         mcp = build_dispute_sim_mcp_server(
             host_execution=host_execution,
+            registry=runtime.registry,
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )
