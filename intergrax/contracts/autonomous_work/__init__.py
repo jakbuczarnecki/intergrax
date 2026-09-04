@@ -5,6 +5,14 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.autonomous_work.collaborative_work_bridge import (
+    CollaborativeWorkBridgeRejectionReason,
+    CollaborativeWorkRequest,
+    CollaborativeWorkRequestIdentity,
+    CollaborativeWorkSubmissionDisposition,
+    CollaborativeWorkSubmissionResult,
+    derive_collaborative_work_request_identity,
+)
 from intergrax.contracts.autonomous_work.continuity import (
     ProgressCheckpoint,
     WorkContinuityState,
@@ -125,9 +133,15 @@ __all__ = (
     "CapabilityProfileRef",
     "CodecraftProfileRef",
     "CollaborationProfileRef",
+    "CollaborativeWorkBridgeRejectionReason",
+    "CollaborativeWorkRequest",
+    "CollaborativeWorkRequestIdentity",
+    "CollaborativeWorkSubmissionDisposition",
+    "CollaborativeWorkSubmissionResult",
     "ContextAnchorReference",
     "DeadlineOrCadenceRef",
     "DefaultGoalPolicyRef",
+    "derive_collaborative_work_request_identity",
     "DefinitionRevision",
     "EscalationPolicyRef",
     "EvaluationCadenceRef",

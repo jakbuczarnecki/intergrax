@@ -53,7 +53,7 @@ Delivery rule:
 | AW-1 | Core semantic contracts | **DONE** |
 | AW-2 | Durable worker state and lifecycle | **DONE** |
 | AW-3 | Principal / authority / workspace composition | **DONE** |
-| AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE) |
+| AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
 | AW-5 | Worker → execution composition and budgets | NOT STARTED |
 | AW-6 | Recovery Controller and obstacle taxonomy | NOT STARTED |
 | AW-7 | Adaptive capability acquisition | NOT STARTED |
@@ -210,11 +210,13 @@ Delivery rule:
 |---|---|
 | **ID** | AW-4C |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **PARTIALLY_COMPLETE / boundary ready** — runtime activation **BLOCKED_BY_MP2** |
 | **Purpose** | Collaborative WorkItem/Assignment bridge |
-| **Dependencies** | MP-2 ownership/runtime status reviewed |
-| **Acceptance** | no permanent duplicate business WorkItem model; execution Task remains separate |
-| **Next step** | AW-5A |
+| **Dependencies** | MP-2 ownership/runtime status reviewed — canonical WorkItem intake **not implemented** |
+| **Exact scope** | `GoalEvaluationDecision.ACTION_REQUIRED` → `CollaborativeWorkRequest` → `CollaborativeWorkIntakePort` → future MP-2 WorkItem/Assignment |
+| **Acceptance** | no permanent duplicate business WorkItem model; execution Task remains separate; fail-closed when MP-2 unavailable |
+| **Blocker** | Collaborative Work MP-2 canonical WorkItem/Assignment runtime |
+| **Next step** | AW-5A (may proceed independently of MP-2 runtime activation) |
 
 ---
 

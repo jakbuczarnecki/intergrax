@@ -42,10 +42,20 @@ from intergrax.autonomous_work.goal_evaluation_service import (
     WorkerGoalEvaluationRejected,
     WorkerGoalEvaluationService,
 )
+from intergrax.autonomous_work.collaborative_work_intake import (
+    CollaborativeWorkIntakePort,
+    CollaborativeWorkIntakeUnavailable,
+    RecordingCollaborativeWorkIntake,
+    UnavailableCollaborativeWorkIntake,
+)
 from intergrax.autonomous_work.execution_authority_admission import (
     CollaborativeWorkAuthorityResolverPort,
     WorkerExecutionAdmissionService,
     WorkerExecutionAuthorityDenied,
+)
+from intergrax.autonomous_work.worker_collaborative_work_bridge import (
+    WorkerCollaborativeWorkBridge,
+    WorkerCollaborativeWorkBridgeRejected,
 )
 from intergrax.autonomous_work.principal_binding_resolver import (
     WorkerPrincipalBindingRequired,
@@ -100,6 +110,12 @@ __all__ = (
     "WorkerGoalEvaluationRejected",
     "WorkerGoalEvaluationService",
     "CollaborativeWorkAuthorityResolverPort",
+    "CollaborativeWorkIntakePort",
+    "CollaborativeWorkIntakeUnavailable",
+    "RecordingCollaborativeWorkIntake",
+    "UnavailableCollaborativeWorkIntake",
+    "WorkerCollaborativeWorkBridge",
+    "WorkerCollaborativeWorkBridgeRejected",
     "resolve_autonomous_work_repositories",
     "InMemoryResponsibilityRepository",
     "InMemoryWorkContinuityStateRepository",
