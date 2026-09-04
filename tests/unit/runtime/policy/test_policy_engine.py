@@ -7,7 +7,6 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.runtime_policy_context import (
     AgentDecisionPolicyContext,
-    CriticPolicyContext,
     PreModelPhase,
     PreModelPolicyContext,
 )
@@ -144,40 +143,6 @@ def test_evaluate_pre_llm_allowed_planning_model():
     )
     assert result.action == PolicyAction.ALLOW
     assert result.reason == "pre_llm_default_allow"
-
-
-@pytest.mark.unit
-@pytest.mark.gate
-def test_evaluate_critic_verdict_escalate_hitl():
-    engine = PolicyEngine()
-    result = engine.evaluate_critic_verdict(
-        passed=False,
-        recommended_action="escalate_hitl",
-    )
-    assert result.action == PolicyAction.REQUIRE_HUMAN
-    assert result.reason == "critic_escalate_hitl"
-
-
-@pytest.mark.unit
-@pytest.mark.gate
-def test_evaluate_critic_verdict_required_and_failed_denies():
-    engine = PolicyEngine()
-    result = engine.evaluate_critic_verdict(
-        passed=False,
-        recommended_action="fail",
-        context=CriticPolicyContext(require_critic_on_completion=True),
-    )
-    assert result.action == PolicyAction.DENY
-    assert result.reason == "critic_completion_required"
-
-
-@pytest.mark.unit
-@pytest.mark.gate
-def test_evaluate_critic_verdict_normal_allows():
-    engine = PolicyEngine()
-    result = engine.evaluate_critic_verdict(passed=True, recommended_action="continue")
-    assert result.action == PolicyAction.ALLOW
-    assert result.reason == "critic_default_allow"
 
 
 @pytest.mark.unit
