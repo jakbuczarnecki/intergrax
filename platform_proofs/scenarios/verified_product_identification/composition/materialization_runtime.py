@@ -62,6 +62,7 @@ def resolve_artifact_directory(
         embedding_dimension=embedding.expected_dimension,
         artifact_schema_version=EMBEDDING_ARTIFACT_SCHEMA_VERSION,
         catalog_id=config.catalog_id,
+        source_revision=config.source_revision,
     )
     fingerprint = artifact_directory_fingerprint(identity)
     return config.artifact_root_dir / fingerprint

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass
 
 from platform_proofs.scenarios.verified_product_identification.embedding_materialization.contracts.errors import (
@@ -24,6 +25,7 @@ class EmbeddingArtifactCompatibilityIdentity:
     embedding_dimension: int
     artifact_schema_version: str
     catalog_id: str
+    source_revision: str | None
 
 
 def compatibility_identity_from_manifest(
@@ -39,6 +41,7 @@ def compatibility_identity_from_manifest(
         embedding_dimension=manifest.embedding_dimension,
         artifact_schema_version=manifest.artifact_schema_version,
         catalog_id=manifest.catalog_id,
+        source_revision=manifest.source_revision,
     )
 
 
@@ -66,6 +69,8 @@ def assert_manifest_compatible(
         mismatches.append("artifact_schema_version")
     if existing.catalog_id != expected.catalog_id:
         mismatches.append("catalog_id")
+    if existing.source_revision != expected.source_revision:
+        mismatches.append("source_revision")
     if mismatches:
         joined = ", ".join(mismatches)
         raise ArtifactCompatibilityError(
@@ -76,15 +81,17 @@ def assert_manifest_compatible(
 
 def artifact_directory_fingerprint(identity: EmbeddingArtifactCompatibilityIdentity) -> str:
     """Short deterministic fingerprint for artifact directory naming."""
-    canonical = (
-        f"{identity.dataset_checksum}|"
-        f"{identity.dataset_record_count}|"
-        f"{identity.search_representation_derivation_version}|"
-        f"{identity.embedding_configuration_version}|"
-        f"{identity.embedding_provider}|"
-        f"{identity.embedding_model}|"
-        f"{identity.embedding_dimension}|"
-        f"{identity.artifact_schema_version}|"
-        f"{identity.catalog_id}"
-    )
+    canonical_payload = {
+        "artifact_schema_version": identity.artifact_schema_version,
+        "catalog_id": identity.catalog_id,
+        "dataset_checksum": identity.dataset_checksum,
+        "dataset_record_count": identity.dataset_record_count,
+        "embedding_configuration_version": identity.embedding_configuration_version,
+        "embedding_dimension": identity.embedding_dimension,
+        "embedding_model": identity.embedding_model,
+        "embedding_provider": identity.embedding_provider,
+        "search_representation_derivation_version": identity.search_representation_derivation_version,
+        "source_revision": identity.source_revision,
+    }
+    canonical = json.dumps(canonical_payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]

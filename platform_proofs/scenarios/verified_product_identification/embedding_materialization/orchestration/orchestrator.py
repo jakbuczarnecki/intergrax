@@ -429,6 +429,7 @@ class EmbeddingMaterializationOrchestrator:
             embedding_dimension=embedding.expected_dimension,
             artifact_schema_version=EMBEDDING_ARTIFACT_SCHEMA_VERSION,
             catalog_id=self.config.catalog_id,
+            source_revision=self.config.source_revision,
         )
 
     def _initial_manifest(

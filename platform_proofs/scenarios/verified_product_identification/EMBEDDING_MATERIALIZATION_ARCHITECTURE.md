@@ -87,8 +87,10 @@ Immutable compatibility identity (fail closed on mismatch):
 - `embedding_configuration_version`
 - `embedding_provider`, `embedding_model`, `embedding_dimension`
 - `artifact_schema_version`, `catalog_id`
+- `source_revision` (nullable; part of compatibility identity and directory fingerprint)
 
 A short SHA256 fingerprint derived from identity is used in the default artifact directory name.
+`source_revision` uses JSON `null` in the canonical fingerprint payload when absent.
 
 ## Artifact format
 

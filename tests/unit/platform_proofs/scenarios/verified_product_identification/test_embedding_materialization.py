@@ -33,6 +33,7 @@ from platform_proofs.scenarios.verified_product_identification.embedding_materia
     EmbeddingArtifactCompatibilityIdentity,
     artifact_directory_fingerprint,
     assert_manifest_compatible,
+    compatibility_identity_from_manifest,
 )
 from platform_proofs.scenarios.verified_product_identification.embedding_materialization.manifest.model import (
     EMBEDDING_ARTIFACT_SCHEMA_VERSION,
@@ -47,6 +48,12 @@ from platform_proofs.scenarios.verified_product_identification.embedding_materia
 from platform_proofs.scenarios.verified_product_identification.embedding_materialization.orchestration.orchestrator import (
     EmbeddingMaterializationOrchestrator,
     VpiEmbeddingMaterializationDependencies,
+)
+from platform_proofs.scenarios.verified_product_identification.embedding_materialization.stores.parquet.manifest_io import (
+    manifest_from_dict,
+    manifest_to_dict,
+    read_manifest_file,
+    write_manifest_file,
 )
 from platform_proofs.scenarios.verified_product_identification.embedding_materialization.stores.parquet.paths import (
     shard_file_name,
@@ -99,6 +106,7 @@ def _sample_identity(**overrides: object) -> EmbeddingArtifactCompatibilityIdent
         embedding_dimension=8,
         artifact_schema_version=EMBEDDING_ARTIFACT_SCHEMA_VERSION,
         catalog_id="wdc-v2-selected",
+        source_revision=None,
     )
     if not overrides:
         return base
@@ -232,6 +240,80 @@ def test_directory_fingerprint_changes_with_model() -> None:
         _sample_identity(embedding_model="other-model")
     )
     assert first != second
+
+
+def test_source_revision_compatible_when_matching() -> None:
+    manifest = _sample_manifest(source_revision="rev-a")
+    expected = _sample_identity(source_revision="rev-a")
+    assert_manifest_compatible(existing=manifest, expected=expected)
+
+
+def test_source_revision_rejects_drift() -> None:
+    manifest = _sample_manifest(source_revision="rev-a")
+    expected = _sample_identity(source_revision="rev-b")
+    with pytest.raises(ArtifactCompatibilityError, match="source_revision"):
+        assert_manifest_compatible(existing=manifest, expected=expected)
+
+
+def test_source_revision_none_to_value_is_incompatible() -> None:
+    manifest = _sample_manifest(source_revision=None)
+    expected = _sample_identity(source_revision="rev-a")
+    with pytest.raises(ArtifactCompatibilityError, match="source_revision"):
+        assert_manifest_compatible(existing=manifest, expected=expected)
+
+
+def test_source_revision_value_to_none_is_incompatible() -> None:
+    manifest = _sample_manifest(source_revision="rev-a")
+    expected = _sample_identity(source_revision=None)
+    with pytest.raises(ArtifactCompatibilityError, match="source_revision"):
+        assert_manifest_compatible(existing=manifest, expected=expected)
+
+
+def test_directory_fingerprint_changes_with_source_revision() -> None:
+    first = artifact_directory_fingerprint(_sample_identity(source_revision="rev-a"))
+    second = artifact_directory_fingerprint(_sample_identity(source_revision="rev-b"))
+    assert first != second
+
+
+def test_compatibility_identity_from_manifest_includes_source_revision() -> None:
+    manifest = _sample_manifest(source_revision="rev-a")
+    identity = compatibility_identity_from_manifest(manifest)
+    assert identity.source_revision == "rev-a"
+
+
+def test_manifest_roundtrip_preserves_source_revision(tmp_path: Path) -> None:
+    manifest = _sample_manifest(source_revision="rev-a")
+    manifest_path = tmp_path / "manifest.json"
+    write_manifest_file(manifest_path, manifest)
+    restored = read_manifest_file(manifest_path)
+    assert restored.source_revision == "rev-a"
+    assert manifest_to_dict(restored)["source_revision"] == "rev-a"
+
+
+def _manifest_wire_payload() -> dict[str, object]:
+    return dict(manifest_to_dict(_sample_manifest(source_revision="rev-a")))
+
+
+@pytest.mark.parametrize(
+    ("mutator", "match"),
+    [
+        (lambda payload: payload.update({"dataset_record_count": "1000"}), "dataset_record_count"),
+        (lambda payload: payload.update({"committed_shards": {}}), "committed_shards"),
+        (lambda payload: payload["committed_shards"].append({"shard_ordinal": "0"}), "shard_ordinal"),
+        (lambda payload: payload.pop("state"), "state"),
+        (lambda payload: payload.update({"source_revision": 42}), "source_revision"),
+        (lambda payload: payload.update({"embedding_dimension": -1}), "embedding_dimension"),
+        (lambda payload: payload.update({"checkpoint_rows_materialized": -1}), "checkpoint_rows_materialized"),
+    ],
+)
+def test_manifest_from_dict_rejects_malformed_payload(
+    mutator: object,
+    match: str,
+) -> None:
+    payload = _manifest_wire_payload()
+    mutator(payload)
+    with pytest.raises(ArtifactIntegrityError, match=match):
+        manifest_from_dict(payload)
 
 
 def test_shard_naming_is_deterministic() -> None:
