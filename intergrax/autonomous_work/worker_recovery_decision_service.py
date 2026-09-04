@@ -12,7 +12,7 @@ Does not execute recovery, grant authority, schedule work, or invoke LLM.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Final, Sequence
+from typing import Sequence
 
 from intergrax.autonomous_work.obstacle_recovery_ports import CapabilityAcquisitionPolicy
 from intergrax.autonomous_work.worker_obstacle_classifier import (
@@ -36,9 +36,16 @@ from intergrax.contracts.autonomous_work.obstacle_recovery import (
     derive_worker_obstacle_id,
     is_safety_critical_obstacle_kind,
 )
-from intergrax.contracts.resilience_policy import ResiliencePolicy
+from intergrax.contracts.resilience_policy import FailureClass, FailureResponse, ResiliencePolicy
 
-_DEFAULT_MAX_RETRY_ATTEMPTS: Final[int] = 3
+_RETRY_FAILURE_RESPONSES: frozenset[FailureResponse] = frozenset(
+    {
+        FailureResponse.RETRY,
+        FailureResponse.RETRY_ALTERNATE,
+        FailureResponse.RETRY_RUN,
+        FailureResponse.RECOVERY_REBOOT,
+    }
+)
 
 
 class WorkerRecoveryDecisionService:
@@ -94,31 +101,50 @@ class WorkerRecoveryDecisionService:
             evidence,
             classified_at=classified_at,
         )
-        domain_classification = None
+        if is_safety_critical_obstacle_kind(canonical.obstacle_kind):
+            return WorkerRecoveryDecisionResult(
+                disposition=ObstacleClassificationDisposition.CLASSIFIED,
+                classification=canonical,
+                decision=None,
+            )
+
+        domain_classifications: list[WorkerObstacleClassification] = []
         for classifier in self._domain_classifiers:
             candidate = classifier.classify(evidence, classified_at=classified_at)
-            if candidate is None:
-                continue
-            if domain_classification is None:
-                domain_classification = candidate
-                continue
-            if candidate.obstacle_kind is not domain_classification.obstacle_kind:
+            if candidate is not None:
+                domain_classifications.append(candidate)
+
+        if not domain_classifications:
+            return WorkerRecoveryDecisionResult(
+                disposition=ObstacleClassificationDisposition.CLASSIFIED,
+                classification=canonical,
+                decision=None,
+            )
+
+        domain_kind = domain_classifications[0].obstacle_kind
+        for candidate in domain_classifications[1:]:
+            if candidate.obstacle_kind is not domain_kind:
                 return _conflict_result(
                     evidence=evidence,
                     classified_at=classified_at,
                     reason_code=ObstacleClassificationReasonCode.CLASSIFIER_CONFLICT,
                 )
-        if domain_classification is not None:
-            if domain_classification.obstacle_kind is not canonical.obstacle_kind:
-                if (
-                    is_safety_critical_obstacle_kind(canonical.obstacle_kind)
-                    or is_safety_critical_obstacle_kind(domain_classification.obstacle_kind)
-                ):
-                    return _conflict_result(
-                        evidence=evidence,
-                        classified_at=classified_at,
-                        reason_code=ObstacleClassificationReasonCode.CLASSIFIER_CONFLICT,
-                    )
+
+        if canonical.obstacle_kind is WorkerObstacleKind.UNKNOWN:
+            return WorkerRecoveryDecisionResult(
+                disposition=ObstacleClassificationDisposition.CLASSIFIED,
+                classification=domain_classifications[0],
+                decision=None,
+            )
+
+        if domain_kind is not canonical.obstacle_kind:
+            if is_safety_critical_obstacle_kind(domain_kind):
+                return _conflict_result(
+                    evidence=evidence,
+                    classified_at=classified_at,
+                    reason_code=ObstacleClassificationReasonCode.CLASSIFIER_CONFLICT,
+                )
+
         return WorkerRecoveryDecisionResult(
             disposition=ObstacleClassificationDisposition.CLASSIFIED,
             classification=canonical,
@@ -202,7 +228,11 @@ class WorkerRecoveryDecisionService:
             )
 
         if classification.obstacle_kind is WorkerObstacleKind.TRANSIENT_FAILURE:
-            max_attempts = _resolve_max_attempts(context, self._resilience_policy)
+            max_attempts = _resolve_transient_max_attempts(
+                evidence,
+                context,
+                self._resilience_policy,
+            )
             if max_attempts is None or max_attempts <= 0:
                 return WorkerRecoveryDecision(
                     decision_id=decision_id,
@@ -235,6 +265,19 @@ class WorkerRecoveryDecisionService:
             )
 
         if classification.obstacle_kind is WorkerObstacleKind.DEPENDENCY_UNAVAILABLE:
+            if evidence.dependency_ref is None and evidence.retry_after is None:
+                return WorkerRecoveryDecision(
+                    decision_id=decision_id,
+                    obstacle_id=obstacle_id,
+                    obstacle_kind=classification.obstacle_kind,
+                    strategy=RecoveryStrategy.ESCALATE,
+                    decision_reason_code=RecoveryDecisionReasonCode.UNKNOWN_ESCALATE,
+                    evidence_refs=evidence_refs,
+                    decided_at=decided_at,
+                    source_ref=evidence.source_ref,
+                    decision_policy_version=context.decision_policy_version,
+                    resume_target_ref=resume_target_ref,
+                )
             return WorkerRecoveryDecision(
                 decision_id=decision_id,
                 obstacle_id=obstacle_id,
@@ -369,15 +412,34 @@ class WorkerRecoveryDecisionService:
         )
 
 
-def _resolve_max_attempts(
+def _resolve_transient_max_attempts(
+    evidence: WorkerObstacleEvidence,
     context: WorkerRecoveryDecisionContext,
     resilience_policy: ResiliencePolicy | None,
 ) -> int | None:
     if context.max_retry_attempts is not None:
+        if context.max_retry_attempts <= 0:
+            return None
         return context.max_retry_attempts
-    if resilience_policy is not None:
-        return resilience_policy.max_attempts
-    return _DEFAULT_MAX_RETRY_ATTEMPTS
+    if resilience_policy is None:
+        return None
+    failure_class = _failure_class_for_transient_retry(evidence)
+    response = resilience_policy.action_for(failure_class)
+    if response not in _RETRY_FAILURE_RESPONSES:
+        return None
+    if resilience_policy.max_attempts <= 0:
+        return None
+    return resilience_policy.max_attempts
+
+
+def _failure_class_for_transient_retry(evidence: WorkerObstacleEvidence) -> FailureClass:
+    if evidence.failure_class is not None:
+        return evidence.failure_class
+    if evidence.runtime_error_code == "timeout":
+        return FailureClass.RUNTIME_ERROR
+    if evidence.runtime_error_code == "dependency_error":
+        return FailureClass.DEPENDENCY_ERROR
+    return FailureClass.RUNTIME_ERROR
 
 
 def _capability_acquisition_allowed(

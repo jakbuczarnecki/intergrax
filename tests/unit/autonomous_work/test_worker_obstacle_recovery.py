@@ -30,10 +30,12 @@ from intergrax.contracts.autonomous_work.obstacle_recovery import (
 )
 from intergrax.contracts.autonomous_work.profile_reference import (
     CapabilityProfileRef,
-    ProfileVersion,
     initial_profile_version,
 )
-from intergrax.contracts.autonomous_work.references import ProblemReference
+from intergrax.contracts.autonomous_work.references import (
+    ExternalDependencyReference,
+    ProblemReference,
+)
 from intergrax.contracts.policy_action import PolicyAction
 from intergrax.contracts.resilience_policy import FailureClass, ResiliencePolicy
 from intergrax.contracts.runtime_policy import PolicyDecision
@@ -111,11 +113,36 @@ def test_transient_without_bounded_policy_escalates() -> None:
     )
 
 
+def test_transient_without_retry_policy_or_context_escalates() -> None:
+    result = _service().decide(
+        _evidence(runtime_error_code=RuntimeErrorCode.TIMEOUT.value),
+        decided_at=_NOW,
+    )
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.ESCALATE
+    assert result.decision.max_attempts is None
+    assert (
+        result.decision.decision_reason_code
+        is RecoveryDecisionReasonCode.TRANSIENT_RETRY_UNBOUNDED_ESCALATE
+    )
+
+
+def test_transient_explicit_context_retry_limit() -> None:
+    result = _decide(
+        _evidence(runtime_error_code=RuntimeErrorCode.TIMEOUT.value),
+        max_retry_attempts=2,
+    )
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.RETRY
+    assert result.decision.max_attempts == 2
+
+
 def test_dependency_unavailable_maps_to_wait() -> None:
     result = _decide(
         _evidence(
             source_kind=WorkerObstacleSourceKind.DEPENDENCY_STATUS,
             dependency_unavailable=True,
+            dependency_ref=ExternalDependencyReference("external/vendor-api"),
         ),
     )
     assert result.classification is not None
@@ -207,6 +234,23 @@ def test_alternative_path_maps_to_replan_when_explicit() -> None:
     assert result.classification.obstacle_kind is WorkerObstacleKind.ALTERNATIVE_PATH_AVAILABLE
     assert result.decision is not None
     assert result.decision.strategy is RecoveryStrategy.REPLAN
+
+
+def test_quality_error_without_alternative_escalates_not_replan() -> None:
+    result = _decide(_evidence(failure_class=FailureClass.QUALITY_ERROR))
+    assert result.classification is not None
+    assert result.classification.obstacle_kind is not WorkerObstacleKind.ALTERNATIVE_PATH_AVAILABLE
+    assert result.decision is not None
+    assert result.decision.strategy is not RecoveryStrategy.REPLAN
+    assert result.decision.strategy is RecoveryStrategy.ESCALATE
+
+
+def test_user_error_without_business_ambiguity_does_not_request_human() -> None:
+    result = _decide(_evidence(failure_class=FailureClass.USER_ERROR))
+    assert result.classification is not None
+    assert result.classification.obstacle_kind is not WorkerObstacleKind.BUSINESS_AMBIGUITY
+    assert result.decision is not None
+    assert result.decision.strategy is not RecoveryStrategy.REQUEST_HUMAN_DECISION
 
 
 def test_schema_drift_maps_to_adapt_integration() -> None:
@@ -361,11 +405,34 @@ def test_reuses_resilience_policy_max_attempts() -> None:
     policy = ResiliencePolicy(max_attempts=5)
     service = _service(resilience_policy=policy)
     result = service.decide(
-        _evidence(runtime_error_code=RuntimeErrorCode.TIMEOUT.value),
+        _evidence(
+            runtime_error_code=RuntimeErrorCode.TIMEOUT.value,
+            failure_class=FailureClass.RUNTIME_ERROR,
+        ),
         decided_at=_NOW,
     )
     assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.RETRY
     assert result.decision.max_attempts == 5
+
+
+def test_resilience_policy_non_retry_response_escalates() -> None:
+    from intergrax.contracts.resilience_policy import FailureResponse
+
+    policy = ResiliencePolicy(
+        on_runtime_error=FailureResponse.FAIL,
+        max_attempts=5,
+    )
+    service = _service(resilience_policy=policy)
+    result = service.decide(
+        _evidence(
+            runtime_error_code=RuntimeErrorCode.TIMEOUT.value,
+            failure_class=FailureClass.RUNTIME_ERROR,
+        ),
+        decided_at=_NOW,
+    )
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.ESCALATE
 
 
 def test_canonical_classifier_is_deterministic_first() -> None:
@@ -377,3 +444,163 @@ def test_canonical_classifier_is_deterministic_first() -> None:
     classification = classifier.classify(evidence, classified_at=_NOW)
     assert classification.obstacle_kind is WorkerObstacleKind.POLICY_DENIED
     assert classification.reason_code is ObstacleClassificationReasonCode.POLICY_DENIED
+
+
+def test_canonical_unknown_refined_by_domain_classifier() -> None:
+    class _SchemaDriftClassifier:
+        classifier_id = "domain.schema"
+
+        def classify(self, evidence, *, classified_at):
+            return WorkerObstacleClassification(
+                obstacle_id=derive_worker_obstacle_id(evidence),
+                obstacle_kind=WorkerObstacleKind.SCHEMA_OR_API_DRIFT,
+                classifier_id=self.classifier_id,
+                reason_code=ObstacleClassificationReasonCode.SCHEMA_OR_API_DRIFT,
+                evidence_refs=evidence.problem_evidence_refs,
+                classified_at=classified_at,
+            )
+
+    service = _service(domain_classifiers=[_SchemaDriftClassifier()])
+    result = service.decide(_evidence())
+    assert result.classification is not None
+    assert result.classification.obstacle_kind is WorkerObstacleKind.SCHEMA_OR_API_DRIFT
+    assert result.classification.classifier_id == "domain.schema"
+
+
+def test_canonical_unknown_agreeing_domain_classifiers_use_plugin() -> None:
+    class _SchemaDriftA:
+        classifier_id = "domain.schema.a"
+
+        def classify(self, evidence, *, classified_at):
+            return WorkerObstacleClassification(
+                obstacle_id=derive_worker_obstacle_id(evidence),
+                obstacle_kind=WorkerObstacleKind.SCHEMA_OR_API_DRIFT,
+                classifier_id=self.classifier_id,
+                reason_code=ObstacleClassificationReasonCode.SCHEMA_OR_API_DRIFT,
+                evidence_refs=evidence.problem_evidence_refs,
+                classified_at=classified_at,
+            )
+
+    class _SchemaDriftB:
+        classifier_id = "domain.schema.b"
+
+        def classify(self, evidence, *, classified_at):
+            return WorkerObstacleClassification(
+                obstacle_id=derive_worker_obstacle_id(evidence),
+                obstacle_kind=WorkerObstacleKind.SCHEMA_OR_API_DRIFT,
+                classifier_id=self.classifier_id,
+                reason_code=ObstacleClassificationReasonCode.SCHEMA_OR_API_DRIFT,
+                evidence_refs=evidence.problem_evidence_refs,
+                classified_at=classified_at,
+            )
+
+    service = _service(domain_classifiers=[_SchemaDriftA(), _SchemaDriftB()])
+    result = service.decide(_evidence())
+    assert result.classification is not None
+    assert result.classification.obstacle_kind is WorkerObstacleKind.SCHEMA_OR_API_DRIFT
+
+
+def test_canonical_policy_denied_domain_transient_never_retries() -> None:
+    class _TransientClassifier:
+        classifier_id = "domain.transient"
+
+        def classify(self, evidence, *, classified_at):
+            return WorkerObstacleClassification(
+                obstacle_id=derive_worker_obstacle_id(evidence),
+                obstacle_kind=WorkerObstacleKind.TRANSIENT_FAILURE,
+                classifier_id=self.classifier_id,
+                reason_code=ObstacleClassificationReasonCode.TRANSIENT_RUNTIME_FAILURE,
+                evidence_refs=evidence.problem_evidence_refs,
+                classified_at=classified_at,
+            )
+
+    service = _service(domain_classifiers=[_TransientClassifier()])
+    result = service.decide(
+        _evidence(
+            policy_decision=PolicyDecision(action=PolicyAction.DENY),
+            runtime_error_code=RuntimeErrorCode.TIMEOUT.value,
+        ),
+        context=WorkerRecoveryDecisionContext(max_retry_attempts=3),
+        decided_at=_NOW,
+    )
+    assert result.classification is not None
+    assert result.classification.obstacle_kind is WorkerObstacleKind.POLICY_DENIED
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.STOP
+
+
+def test_canonical_credential_domain_capability_never_acquires() -> None:
+    class _CapabilityClassifier:
+        classifier_id = "domain.capability"
+
+        def classify(self, evidence, *, classified_at):
+            return WorkerObstacleClassification(
+                obstacle_id=derive_worker_obstacle_id(evidence),
+                obstacle_kind=WorkerObstacleKind.CAPABILITY_MISSING,
+                classifier_id=self.classifier_id,
+                reason_code=ObstacleClassificationReasonCode.CAPABILITY_MISSING,
+                evidence_refs=evidence.problem_evidence_refs,
+                classified_at=classified_at,
+            )
+
+    service = _service(
+        domain_classifiers=[_CapabilityClassifier()],
+        capability_policy=StaticCapabilityAcquisitionPolicy(allowed=True),
+    )
+    result = service.decide(
+        _evidence(
+            credential_ref="credential/revoked",
+            capability_missing_ref="tool/parser",
+            source_kind=WorkerObstacleSourceKind.CAPABILITY_RESOLUTION,
+            capability_profile_ref=_CAPABILITY_PROFILE,
+        ),
+        decided_at=_NOW,
+    )
+    assert result.classification is not None
+    assert result.classification.obstacle_kind is WorkerObstacleKind.CREDENTIAL_UNAVAILABLE
+    assert result.decision is not None
+    assert result.decision.strategy is not RecoveryStrategy.ACQUIRE_CAPABILITY
+
+
+def test_retry_contract_rejects_missing_max_attempts() -> None:
+    from intergrax.contracts.autonomous_work.obstacle_recovery import WorkerRecoveryDecision
+
+    with pytest.raises(ValueError, match="max_attempts"):
+        WorkerRecoveryDecision(
+            decision_id="decision-1",
+            obstacle_id="obstacle-1",
+            obstacle_kind=WorkerObstacleKind.TRANSIENT_FAILURE,
+            strategy=RecoveryStrategy.RETRY,
+            decision_reason_code=RecoveryDecisionReasonCode.TRANSIENT_RETRY_BOUNDED,
+            evidence_refs=(_EVIDENCE_REF,),
+            decided_at=_NOW,
+            source_ref="execution/terminal/failed-1",
+        )
+
+
+def test_retry_contract_rejects_zero_max_attempts() -> None:
+    from intergrax.contracts.autonomous_work.obstacle_recovery import WorkerRecoveryDecision
+
+    with pytest.raises(ValueError, match="max_attempts"):
+        WorkerRecoveryDecision(
+            decision_id="decision-1",
+            obstacle_id="obstacle-1",
+            obstacle_kind=WorkerObstacleKind.TRANSIENT_FAILURE,
+            strategy=RecoveryStrategy.RETRY,
+            decision_reason_code=RecoveryDecisionReasonCode.TRANSIENT_RETRY_BOUNDED,
+            evidence_refs=(_EVIDENCE_REF,),
+            decided_at=_NOW,
+            source_ref="execution/terminal/failed-1",
+            max_attempts=0,
+        )
+
+
+def test_dependency_without_resume_semantics_escalates() -> None:
+    result = _decide(
+        _evidence(
+            source_kind=WorkerObstacleSourceKind.DEPENDENCY_STATUS,
+            dependency_unavailable=True,
+        ),
+    )
+    assert result.decision is not None
+    assert result.decision.strategy is RecoveryStrategy.ESCALATE

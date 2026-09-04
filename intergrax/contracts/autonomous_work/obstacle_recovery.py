@@ -446,6 +446,9 @@ class WorkerRecoveryDecision:
             )
         if self.max_attempts is not None and self.max_attempts < 0:
             raise ValueError("max_attempts must be non-negative")
+        if self.strategy is RecoveryStrategy.RETRY:
+            if self.max_attempts is None or self.max_attempts <= 0:
+                raise ValueError("RETRY strategy requires max_attempts > 0")
         if self.resume_target_ref is not None:
             object.__setattr__(
                 self,

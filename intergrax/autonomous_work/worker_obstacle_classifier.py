@@ -227,7 +227,12 @@ def _classify_human_business(
             WorkerObstacleKind.HUMAN_DECISION_REQUIRED,
             ObstacleClassificationReasonCode.HUMAN_GATE_PENDING,
         )
-    if evidence.business_ambiguity or evidence.source_kind is WorkerObstacleSourceKind.BUSINESS_DECISION:
+    if evidence.business_ambiguity:
+        return (
+            WorkerObstacleKind.BUSINESS_AMBIGUITY,
+            ObstacleClassificationReasonCode.BUSINESS_AMBIGUITY,
+        )
+    if evidence.source_kind is WorkerObstacleSourceKind.BUSINESS_DECISION:
         return (
             WorkerObstacleKind.BUSINESS_AMBIGUITY,
             ObstacleClassificationReasonCode.BUSINESS_AMBIGUITY,
@@ -256,18 +261,8 @@ def _classify_reliability(
             WorkerObstacleKind.DEPENDENCY_UNAVAILABLE,
             ObstacleClassificationReasonCode.DEPENDENCY_UNAVAILABLE,
         )
-    if evidence.failure_class is FailureClass.POLICY_ERROR:
+    if evidence.failure_class is FailureClass.POLICY_ERROR and evidence.policy_decision is not None:
         return WorkerObstacleKind.POLICY_DENIED, ObstacleClassificationReasonCode.POLICY_DENIED
-    if evidence.failure_class is FailureClass.USER_ERROR:
-        return (
-            WorkerObstacleKind.BUSINESS_AMBIGUITY,
-            ObstacleClassificationReasonCode.BUSINESS_AMBIGUITY,
-        )
-    if evidence.failure_class is FailureClass.QUALITY_ERROR:
-        return (
-            WorkerObstacleKind.ALTERNATIVE_PATH_AVAILABLE,
-            ObstacleClassificationReasonCode.ALTERNATIVE_PATH_AVAILABLE,
-        )
     if evidence.runtime_error_code in _TRANSIENT_RUNTIME_ERROR_CODES:
         return (
             WorkerObstacleKind.TRANSIENT_FAILURE,
