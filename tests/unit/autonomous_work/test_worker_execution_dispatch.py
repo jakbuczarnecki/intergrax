@@ -47,6 +47,9 @@ from intergrax.contracts.autonomous_work import (
     WorkerGoalStatus,
     WorkerLifecycleState,
     initial_revision,
+    mint_responsibility_id,
+    mint_wake_up_id,
+    mint_worker_goal_id,
     mint_worker_instance_id,
 )
 from intergrax.contracts.autonomous_work.execution_authority import (
@@ -60,6 +63,7 @@ from intergrax.contracts.collaborative_work import (
 from intergrax.contracts.execution_intake import (
     CanonicalExecutionIntakeRequest,
     CanonicalExecutionIntakeResult,
+    CanonicalExecutionInvocationFailed,
 )
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -77,6 +81,11 @@ from intergrax.runtime.governance.root_execution_authority_admission import (
     DenyingRootExecutionAuthorityAdmission,
     RootExecutionAuthorityAdmissionService,
     UnavailableRootExecutionAuthorityAdmission,
+)
+from intergrax.runtime.governance.runtime_execution_policy_admission import (
+    AllowingRuntimeExecutionPolicyAdmission,
+    DenyingRuntimeExecutionPolicyAdmission,
+    RequireHumanRuntimeExecutionPolicyAdmission,
 )
 from tests.unit.autonomous_work import repository_contracts as contract_suite
 
@@ -475,6 +484,7 @@ async def test_stale_goal_revision_rejected() -> None:
         goal_id=goal.goal_id,
         goal_revision=initial_revision(),
         responsibility_id=responsibility.responsibility_id,
+        wake_up_id=mint_wake_up_id(),
     )
     goal_repo.replace(goal, expected_revision=initial_revision())
 
@@ -528,6 +538,7 @@ async def test_wrong_responsibility_owner_rejected() -> None:
         goal_id=goal.goal_id,
         goal_revision=goal.revision,
         responsibility_id=responsibility.responsibility_id,
+        wake_up_id=mint_wake_up_id(),
     )
 
     result = await service.dispatch(request)
@@ -683,3 +694,185 @@ def test_root_admission_mints_trusted_authority_in_governance_layer() -> None:
     assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ALLOWED
     assert isinstance(result.trusted_parent_execution_authority, ParentExecutionAuthority)
     assert result.trusted_parent_execution_authority.permission_scopes == (_READ,)
+
+
+@pytest.mark.asyncio
+async def test_collaborative_allow_runtime_deny_skips_execution() -> None:
+    worker_id, binding_repo, membership_repo, authority_repo, delegation_repo = (
+        _seed_binding_and_authority()
+    )
+    worker_repo = InMemoryWorkerInstanceRepository()
+    _active_worker(worker_repo, worker_id=worker_id)
+    service, intake = _dispatch_service(
+        worker_repo=worker_repo,
+        binding_repo=binding_repo,
+        membership_repo=membership_repo,
+        authority_repo=authority_repo,
+        delegation_repo=delegation_repo,
+        root_admission=RootExecutionAuthorityAdmissionService(
+            runtime_policy_admission=DenyingRuntimeExecutionPolicyAdmission(),
+        ),
+    )
+
+    result = await service.dispatch(_dispatch_request(worker_id=worker_id))
+
+    assert result.disposition is WorkerExecutionDispatchDisposition.REJECTED
+    assert len(intake.calls) == 0
+
+
+@pytest.mark.asyncio
+async def test_collaborative_allow_runtime_require_human_skips_execution() -> None:
+    worker_id, binding_repo, membership_repo, authority_repo, delegation_repo = (
+        _seed_binding_and_authority()
+    )
+    worker_repo = InMemoryWorkerInstanceRepository()
+    _active_worker(worker_repo, worker_id=worker_id)
+    service, intake = _dispatch_service(
+        worker_repo=worker_repo,
+        binding_repo=binding_repo,
+        membership_repo=membership_repo,
+        authority_repo=authority_repo,
+        delegation_repo=delegation_repo,
+        root_admission=RootExecutionAuthorityAdmissionService(
+            runtime_policy_admission=RequireHumanRuntimeExecutionPolicyAdmission(),
+        ),
+    )
+
+    result = await service.dispatch(_dispatch_request(worker_id=worker_id))
+
+    assert result.disposition is WorkerExecutionDispatchDisposition.REJECTED
+    assert len(intake.calls) == 0
+
+
+def test_goal_without_revision_rejected_at_construction() -> None:
+    worker_id = mint_worker_instance_id()
+    with pytest.raises(ValueError, match="goal_revision"):
+        WorkerExecutionDispatchRequest(
+            worker_instance_id=worker_id,
+            worker_revision=initial_revision(),
+            requested_scopes=(_READ,),
+            runtime_request=ExecutionRequest(
+                input=ProbePayload(value="goal"),
+                capabilities=frozenset({ExecutionCapability.AGENT}),
+            ),
+            source=WorkerExecutionSource(
+                source_kind=WorkerExecutionSourceKind.GOAL_DECISION,
+                source_ref="goal/decision/missing-revision",
+            ),
+            requested_at=_UTC,
+            goal_id=mint_worker_goal_id(),
+            responsibility_id=mint_responsibility_id(),
+            wake_up_id=mint_wake_up_id(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_runtime_invocation_failure_preserves_execution_ids() -> None:
+    worker_id, binding_repo, membership_repo, authority_repo, delegation_repo = (
+        _seed_binding_and_authority()
+    )
+    worker_repo = InMemoryWorkerInstanceRepository()
+    _active_worker(worker_repo, worker_id=worker_id)
+
+    class FailingIntake:
+        async def dispatch(
+            self,
+            request: CanonicalExecutionIntakeRequest[ProbePayload],
+        ) -> CanonicalExecutionIntakeResult[ProbeResult]:
+            run_id = mint_run_id()
+            attempt_id = mint_attempt_id()
+            execution_id = mint_execution_id()
+            raise CanonicalExecutionInvocationFailed(
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                cause=RuntimeError("delegate failed"),
+            )
+
+    service, _ = _dispatch_service(
+        worker_repo=worker_repo,
+        binding_repo=binding_repo,
+        membership_repo=membership_repo,
+        authority_repo=authority_repo,
+        delegation_repo=delegation_repo,
+        intake=FailingIntake(),
+    )
+
+    result = await service.dispatch(_dispatch_request(worker_id=worker_id))
+
+    assert result.disposition is WorkerExecutionDispatchDisposition.FAILED
+    assert result.correlation.run_id is not None
+    assert result.correlation.attempt_id is not None
+    assert result.correlation.execution_id is not None
+    assert result.rejection_reason is None
+
+
+@pytest.mark.asyncio
+async def test_same_run_id_retry_is_not_idempotent() -> None:
+    worker_id, binding_repo, membership_repo, authority_repo, delegation_repo = (
+        _seed_binding_and_authority()
+    )
+    worker_repo = InMemoryWorkerInstanceRepository()
+    _active_worker(worker_repo, worker_id=worker_id)
+
+    class ProbeDelegate:
+        def __init__(self) -> None:
+            self.execute = AsyncMock(return_value=ProbeResult(echoed="runtime"))
+
+    delegate = ProbeDelegate()
+    runtime = ExecutionRuntime(delegate)
+    adapter = CanonicalExecutionRuntimeAdapter(runtime)
+    shared_run_id = mint_run_id()
+    shared_attempt_id = mint_attempt_id()
+    service = WorkerExecutionDispatchService(
+        worker_instance_repository=worker_repo,
+        responsibility_repository=InMemoryResponsibilityRepository(),
+        worker_goal_repository=InMemoryWorkerGoalRepository(),
+        admission_service=WorkerExecutionAdmissionService(
+            binding_resolver=WorkerPrincipalBindingResolver(binding_repo),
+            authority_resolver=CollaborativeWorkAuthorityResolver(
+                membership_repository=membership_repo,
+                delegation_repository=delegation_repo,
+                principal_authority_repository=authority_repo,
+                clock=lambda: _UTC,
+            ),
+        ),
+        root_authority_admission=RootExecutionAuthorityAdmissionService(
+            runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
+        ),
+        execution_intake=adapter,
+    )
+    base = _dispatch_request(worker_id=worker_id)
+    first_request = WorkerExecutionDispatchRequest(
+        worker_instance_id=base.worker_instance_id,
+        worker_revision=base.worker_revision,
+        requested_scopes=base.requested_scopes,
+        runtime_request=base.runtime_request,
+        source=base.source,
+        requested_at=base.requested_at,
+        run_id=shared_run_id,
+        attempt_id=shared_attempt_id,
+    )
+    second_request = WorkerExecutionDispatchRequest(
+        worker_instance_id=base.worker_instance_id,
+        worker_revision=base.worker_revision,
+        requested_scopes=base.requested_scopes,
+        runtime_request=base.runtime_request,
+        source=WorkerExecutionSource(
+            source_kind=WorkerExecutionSourceKind.OPERATOR,
+            source_ref="operator/retry",
+        ),
+        requested_at=base.requested_at,
+        run_id=shared_run_id,
+        attempt_id=shared_attempt_id,
+    )
+
+    first = await service.dispatch(first_request)
+    second = await service.dispatch(second_request)
+
+    assert first.disposition is WorkerExecutionDispatchDisposition.DISPATCHED
+    assert second.disposition is WorkerExecutionDispatchDisposition.DISPATCHED
+    assert first.correlation.run_id == second.correlation.run_id == shared_run_id
+    assert first.correlation.attempt_id == second.correlation.attempt_id == shared_attempt_id
+    assert first.correlation.execution_id != second.correlation.execution_id
+    assert delegate.execute.await_count == 2

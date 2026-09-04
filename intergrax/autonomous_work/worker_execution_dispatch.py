@@ -6,6 +6,12 @@
 Orchestrates worker eligibility, AW-3B collaborative authority admission,
 Runtime/Governance trusted root authority admission, and canonical execution
 intake. Does not own Run/Attempt/Execution lifecycle or mint trusted authority.
+
+``DISPATCHED`` means canonical execution invocation completed successfully — not
+asynchronous acceptance. AW-local correlation is not durable source of truth;
+canonical runtime IDs/events are the durable execution evidence. Same ``RunId``
+is correlation only — not idempotent when ExecutionRuntime mints a new
+``ExecutionId`` per invocation.
 """
 
 from __future__ import annotations
@@ -39,6 +45,7 @@ from intergrax.contracts.autonomous_work.responsibility import ResponsibilitySta
 from intergrax.contracts.execution_intake import (
     CanonicalExecutionIntakePort,
     CanonicalExecutionIntakeRequest,
+    CanonicalExecutionInvocationFailed,
 )
 from intergrax.contracts.runtime_execution_admission import (
     RootExecutionAuthorityAdmissionDisposition,
@@ -174,10 +181,22 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
                     attempt_id=request.attempt_id,
                 )
             )
-        except Exception:
-            return self._rejected(
-                correlation=base_correlation,
-                reason=WorkerExecutionDispatchRejectionReason.DISPATCH_FAILED,
+        except CanonicalExecutionInvocationFailed as exc:
+            return WorkerExecutionDispatchResult(
+                disposition=WorkerExecutionDispatchDisposition.FAILED,
+                correlation=WorkerExecutionCorrelation(
+                    worker_instance_id=request.worker_instance_id,
+                    source=request.source,
+                    run_id=exc.run_id,
+                    attempt_id=exc.attempt_id,
+                    execution_id=exc.execution_id,
+                    goal_id=request.goal_id,
+                    responsibility_id=request.responsibility_id,
+                    wake_up_id=request.wake_up_id,
+                    collaborative_work_ref=request.collaborative_work_ref,
+                    created_at=base_correlation.created_at,
+                ),
+                failure_reason=str(exc.cause or exc),
             )
 
         return WorkerExecutionDispatchResult(
@@ -203,12 +222,13 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
         request: WorkerExecutionDispatchRequest[InputT, OutputT],
     ) -> WorkerExecutionDispatchRejectionReason | None:
         assert request.goal_id is not None
+        assert request.goal_revision is not None
         goal = self._worker_goal_repository.get(goal_id=request.goal_id)
         if goal is None:
             return WorkerExecutionDispatchRejectionReason.OWNERSHIP_MISMATCH
         if goal.status is not WorkerGoalStatus.ACTIVE:
             return WorkerExecutionDispatchRejectionReason.STALE_SOURCE
-        if request.goal_revision is not None and goal.revision != request.goal_revision:
+        if goal.revision != request.goal_revision:
             return WorkerExecutionDispatchRejectionReason.STALE_SOURCE
         if request.responsibility_id is not None:
             responsibility = self._responsibility_repository.get(

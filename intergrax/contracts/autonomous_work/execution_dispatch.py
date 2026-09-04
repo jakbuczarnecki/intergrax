@@ -68,9 +68,9 @@ class WorkerExecutionDispatchDisposition(StrEnum):
     """Typed dispatch outcome — no fake execution identities on failure."""
 
     DISPATCHED = "DISPATCHED"
+    FAILED = "FAILED"
     REJECTED = "REJECTED"
     UNAVAILABLE = "UNAVAILABLE"
-    CONFLICT = "CONFLICT"
 
 
 class WorkerExecutionDispatchRejectionReason(StrEnum):
@@ -82,7 +82,6 @@ class WorkerExecutionDispatchRejectionReason(StrEnum):
     COLLABORATIVE_AUTHORITY_DENIED = "COLLABORATIVE_AUTHORITY_DENIED"
     RUNTIME_AUTHORITY_DENIED = "RUNTIME_AUTHORITY_DENIED"
     RUNTIME_UNAVAILABLE = "RUNTIME_UNAVAILABLE"
-    DISPATCH_FAILED = "DISPATCH_FAILED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,16 +201,43 @@ class WorkerExecutionDispatchRequest(Generic[InputT, OutputT]):
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
+        self._validate_source_payload_coherence()
+
+    def _validate_source_payload_coherence(self) -> None:
+        if self.source.source_kind is WorkerExecutionSourceKind.GOAL_DECISION:
+            if self.goal_id is None:
+                raise ValueError("GOAL_DECISION requires goal_id")
+            if self.goal_revision is None:
+                raise ValueError("GOAL_DECISION requires goal_revision")
+            if self.responsibility_id is None:
+                raise ValueError("GOAL_DECISION requires responsibility_id")
+            if self.wake_up_id is None:
+                raise ValueError("GOAL_DECISION requires wake_up_id")
+        if self.source.source_kind is WorkerExecutionSourceKind.COLLABORATIVE_WORK:
+            if self.collaborative_work_ref is None and self.work_request_identity is None:
+                raise ValueError(
+                    "COLLABORATIVE_WORK requires collaborative_work_ref or work_request_identity"
+                )
+        if self.goal_id is not None:
+            if self.goal_revision is None:
+                raise ValueError("goal_revision is required when goal_id is provided")
+            if self.responsibility_id is None:
+                raise ValueError("responsibility_id is required when goal_id is provided")
 
 
 @dataclass(frozen=True, slots=True)
 class WorkerExecutionDispatchResult(Generic[ResultT]):
-    """Typed dispatch result — runtime IDs only after successful dispatch."""
+    """Typed dispatch result.
+
+    ``DISPATCHED`` means canonical execution invocation completed successfully.
+    AW-local correlation is not durable source of truth — canonical runtime IDs/events are.
+    """
 
     disposition: WorkerExecutionDispatchDisposition
     correlation: WorkerExecutionCorrelation
     rejection_reason: WorkerExecutionDispatchRejectionReason | None = None
     runtime_result: ResultT | None = None
+    failure_reason: str | None = None
 
     def __post_init__(self) -> None:
         if type(self.disposition) is not WorkerExecutionDispatchDisposition:
@@ -230,12 +256,34 @@ class WorkerExecutionDispatchResult(Generic[ResultT]):
                 raise ValueError("DISPATCHED requires attempt_id")
             if self.correlation.execution_id is None:
                 raise ValueError("DISPATCHED requires execution_id")
-        else:
+            if self.rejection_reason is not None:
+                raise ValueError("DISPATCHED must not expose rejection_reason")
+            if self.failure_reason is not None:
+                raise ValueError("DISPATCHED must not expose failure_reason")
+        elif self.disposition is WorkerExecutionDispatchDisposition.FAILED:
+            if self.correlation.run_id is None:
+                raise ValueError("FAILED requires run_id")
+            if self.correlation.attempt_id is None:
+                raise ValueError("FAILED requires attempt_id")
+            if self.correlation.execution_id is None:
+                raise ValueError("FAILED requires execution_id")
+            if self.rejection_reason is not None:
+                raise ValueError("FAILED must not expose rejection_reason")
+        elif self.disposition in (
+            WorkerExecutionDispatchDisposition.REJECTED,
+            WorkerExecutionDispatchDisposition.UNAVAILABLE,
+        ):
+            if self.rejection_reason is None:
+                raise ValueError("REJECTED/UNAVAILABLE require rejection_reason")
             if (
                 self.correlation.run_id is not None
                 or self.correlation.attempt_id is not None
                 or self.correlation.execution_id is not None
             ):
                 raise ValueError(
-                    "non-DISPATCHED results must not expose runtime execution identities"
+                    "REJECTED/UNAVAILABLE must not expose runtime execution identities"
                 )
+            if self.failure_reason is not None:
+                raise ValueError("REJECTED/UNAVAILABLE must not expose failure_reason")
+        else:
+            raise ValueError(f"unsupported disposition: {self.disposition}")

@@ -89,3 +89,15 @@ def test_aw5a_contract_module_has_no_runtime_task_duplication() -> None:
     source = Path(module.__file__).read_text(encoding="utf-8")
     for token in ("WorkerTask", "AutonomousTask", "WorkerRun", "WorkerAttempt"):
         assert token not in source
+
+
+def test_aw5a_root_admission_does_not_trust_collaborative_allow_alone() -> None:
+    module = importlib.import_module(
+        "intergrax.runtime.governance.root_execution_authority_admission",
+    )
+    assert module.__file__ is not None
+    source = Path(module.__file__).read_text(encoding="utf-8")
+    assert "_runtime_policy_admission.evaluate" in source
+    assert source.index("_runtime_policy_admission.evaluate") < source.index(
+        "ParentExecutionAuthority.scoped"
+    )

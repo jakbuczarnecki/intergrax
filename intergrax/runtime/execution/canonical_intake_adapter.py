@@ -15,6 +15,7 @@ from intergrax.contracts.execution_intake import (
     CanonicalExecutionIntakePort,
     CanonicalExecutionIntakeRequest,
     CanonicalExecutionIntakeResult,
+    CanonicalExecutionInvocationFailed,
 )
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
@@ -48,7 +49,17 @@ class CanonicalExecutionRuntimeAdapter(
             tenant_id=request.tenant_id,
         )
         root_context = resolve_root_execution_context(options)
-        result = await self._runtime.execute(request.payload, root_context)
+        try:
+            result = await self._runtime.execute(request.payload, root_context)
+        except CanonicalExecutionInvocationFailed:
+            raise
+        except Exception as exc:
+            raise CanonicalExecutionInvocationFailed(
+                run_id=root_context.run_id,
+                attempt_id=root_context.attempt_id,
+                execution_id=root_context.execution_id,
+                cause=exc,
+            ) from exc
         return CanonicalExecutionIntakeResult(
             run_id=root_context.run_id,
             attempt_id=root_context.attempt_id,

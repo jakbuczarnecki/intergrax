@@ -4,6 +4,10 @@
 
 from __future__ import annotations
 
+import ast
+import importlib
+from pathlib import Path
+
 import pytest
 
 from intergrax.contracts.collaborative_work import EffectiveAuthorityDecision
@@ -17,6 +21,11 @@ from intergrax.runtime.governance.root_execution_authority_admission import (
     RootExecutionAuthorityAdmissionService,
     UnavailableRootExecutionAuthorityAdmission,
 )
+from intergrax.runtime.governance.runtime_execution_policy_admission import (
+    AllowingRuntimeExecutionPolicyAdmission,
+    DenyingRuntimeExecutionPolicyAdmission,
+    RequireHumanRuntimeExecutionPolicyAdmission,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -27,14 +36,16 @@ def _request(*, action: PolicyAction) -> RootExecutionAuthorityAdmissionRequest:
         workspace_id="workspace-x",
         principal_id="principal-1",
         collaborative_authority_scopes=("workspace.read",),
-            effective_authority_decision=EffectiveAuthorityDecision(
-                decision=PolicyDecision(action=action, reason="test"),
-            ),
+        effective_authority_decision=EffectiveAuthorityDecision(
+            decision=PolicyDecision(action=action, reason="test"),
+        ),
     )
 
 
 def test_allow_mints_scoped_trusted_authority() -> None:
-    service = RootExecutionAuthorityAdmissionService()
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
+    )
     result = service.authorize(_request(action=PolicyAction.ALLOW))
     assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ALLOWED
     assert result.trusted_parent_execution_authority is not None
@@ -56,10 +67,39 @@ def test_non_allow_fail_closed(
     action: PolicyAction,
     expected: RootExecutionAuthorityAdmissionDisposition,
 ) -> None:
-    service = RootExecutionAuthorityAdmissionService()
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
+    )
     result = service.authorize(_request(action=action))
     assert result.disposition is expected
     assert result.trusted_parent_execution_authority is None
+
+
+def test_collaborative_allow_runtime_deny_does_not_mint_authority() -> None:
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=DenyingRuntimeExecutionPolicyAdmission(),
+    )
+    result = service.authorize(_request(action=PolicyAction.ALLOW))
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.DENIED
+    assert result.trusted_parent_execution_authority is None
+
+
+def test_collaborative_allow_runtime_require_human_does_not_mint_authority() -> None:
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=RequireHumanRuntimeExecutionPolicyAdmission(),
+    )
+    result = service.authorize(_request(action=PolicyAction.ALLOW))
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.REQUIRE_HUMAN
+    assert result.trusted_parent_execution_authority is None
+
+
+def test_collaborative_allow_runtime_allow_mints_authority() -> None:
+    service = RootExecutionAuthorityAdmissionService(
+        runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
+    )
+    result = service.authorize(_request(action=PolicyAction.ALLOW))
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ALLOWED
+    assert result.trusted_parent_execution_authority is not None
 
 
 def test_denying_adapter() -> None:
@@ -72,3 +112,28 @@ def test_unavailable_adapter() -> None:
     service = UnavailableRootExecutionAuthorityAdmission()
     result = service.authorize(_request(action=PolicyAction.ALLOW))
     assert result.disposition is RootExecutionAuthorityAdmissionDisposition.UNAVAILABLE
+
+
+def test_root_admission_invokes_independent_runtime_policy_port() -> None:
+    module = importlib.import_module(
+        "intergrax.runtime.governance.root_execution_authority_admission",
+    )
+    assert module.__file__ is not None
+    source = Path(module.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    authorize_source = ""
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "authorize":
+            authorize_source = ast.get_source_segment(source, node) or ""
+            break
+    assert "_runtime_policy_admission.evaluate" in authorize_source
+    assert "collaborative_decision.action is not PolicyAction.ALLOW" in authorize_source
+    mint_lines = [
+        line
+        for line in authorize_source.splitlines()
+        if "ParentExecutionAuthority.scoped" in line
+    ]
+    assert len(mint_lines) == 1
+    mint_index = authorize_source.index("ParentExecutionAuthority.scoped")
+    evaluate_index = authorize_source.index("_runtime_policy_admission.evaluate")
+    assert evaluate_index < mint_index

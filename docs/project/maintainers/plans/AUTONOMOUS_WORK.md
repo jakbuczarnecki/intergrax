@@ -54,7 +54,7 @@ Delivery rule:
 | AW-2 | Durable worker state and lifecycle | **DONE** |
 | AW-3 | Principal / authority / workspace composition | **DONE** |
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
-| AW-5 | Worker → execution composition and budgets | **IN PROGRESS** (AW-5A DONE, AW-5B NOT STARTED) |
+| AW-5 | Worker → execution composition and budgets | **IN PROGRESS** (AW-5A IN PROGRESS, AW-5B NOT STARTED) |
 | AW-6 | Recovery Controller and obstacle taxonomy | NOT STARTED |
 | AW-7 | Adaptive capability acquisition | NOT STARTED |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
@@ -226,13 +226,13 @@ Delivery rule:
 |---|---|
 | **ID** | AW-5A |
 | **Priority** | P0 |
-| **Status** | **DONE** |
+| **Status** | **IN PROGRESS** |
 | **Purpose** | Canonical worker → Execution dispatch/correlation |
-| **REUSED** | `ExecutionRuntime`, `ExecutionBoundary`, `resolve_root_execution_context`, AW-3B `WorkerExecutionAdmissionService`, Collaborative Principal binding |
-| **NEW** | `WorkerExecutionDispatchService`, `WorkerExecutionDispatchRequest/Result`, `WorkerExecutionSource`, `WorkerExecutionCorrelation`, `RootExecutionAuthorityAdmissionPort` (Runtime/Governance), `CanonicalExecutionIntakePort`, `CanonicalExecutionRuntimeAdapter` |
-| **Trust boundary** | AW-3B collaborative authority context → Runtime/Governance `RootExecutionAuthorityAdmission` → trusted `ParentExecutionAuthority` → `ExecutionRuntime.execute`. AW does **not** mint trusted execution authority. AW does **not** own Run/Attempt/Execution. |
+| **REUSED** | `ExecutionRuntime`, `ExecutionBoundary`, `resolve_root_execution_context`, AW-3B `WorkerExecutionAdmissionService`, Collaborative Principal binding, `RuntimePolicyEngine` |
+| **NEW** | `WorkerExecutionDispatchService`, `WorkerExecutionDispatchRequest/Result`, `WorkerExecutionSource`, `WorkerExecutionCorrelation`, `RootExecutionAuthorityAdmissionPort`, `RuntimeExecutionPolicyAdmissionPort`, `CanonicalExecutionIntakePort`, `CanonicalExecutionRuntimeAdapter` |
+| **Trust boundary** | AW-3B collaborative authority context → independent Runtime/Governance policy admission → trusted `ParentExecutionAuthority` → `ExecutionRuntime.execute`. AW does **not** mint trusted execution authority. AW does **not** own Run/Attempt/Execution. |
 | **Acceptance** | worker may create many executions; execution lifecycle never becomes worker lifecycle; collaborative ALLOW ≠ runtime ALLOW; fail-closed on denied/unavailable admission; no new DB schema for correlation (runtime IDs sufficient) |
-| **Idempotency** | idempotent where canonical runtime intake supports caller-provided `RunId`; otherwise bounded retry with explicit correlation — no AW durable idempotency store |
+| **Idempotency** | **NOT IDEMPOTENT** — same `RunId`/`AttemptId` mints a new `ExecutionId` per invocation; caller `RunId` is correlation only unless canonical intake adds durable idempotency |
 | **Next step** | AW-5B |
 
 | Field | Value |

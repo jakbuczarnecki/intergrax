@@ -23,6 +23,27 @@ ResultT = TypeVar("ResultT")
 
 
 @dataclass(frozen=True, slots=True)
+class CanonicalExecutionInvocationFailed(Exception):
+    """Canonical execution started but delegate invocation failed."""
+
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
+    cause: BaseException | None = None
+
+    def __post_init__(self) -> None:
+        validate_run_id(self.run_id)
+        validate_attempt_id(self.attempt_id)
+        validate_execution_id(self.execution_id)
+
+    def __str__(self) -> str:
+        return (
+            f"canonical execution invocation failed "
+            f"(run={self.run_id}, attempt={self.attempt_id}, execution={self.execution_id})"
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class CanonicalExecutionIntakeRequest(Generic[PayloadT]):
     """Provider-neutral runtime intake request after trusted authority admission."""
 
