@@ -49,12 +49,12 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
 )
-from intergrax.runtime.critic.contracts import (
-    CriticAction,
-    CriticLayer,
-    CriticScope,
-    CriticVerdict,
-    LayerVerdict,
+from intergrax.runtime.migration.legacy_critic_contracts import (
+    LegacyCriticAction as CriticAction,
+    LegacyCriticLayer as CriticLayer,
+    LegacyCriticScope as CriticScope,
+    LegacyCriticVerdict as CriticVerdict,
+    LegacyLayerVerdict as LayerVerdict,
 )
 from intergrax.runtime.decision_flow import (
     DecisionFlowHostAction,
@@ -92,8 +92,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _MODULE_PATHS = (
     Path("intergrax/runtime/migration/decision_critic_parity.py"),
-    Path("intergrax/runtime/migration/critic_shadow_adapter.py"),
     Path("intergrax/runtime/migration/legacy_critic_human_evidence.py"),
+    Path("intergrax/runtime/migration/critic_retirement_qualification.py"),
 )
 _FORBIDDEN_FRAGMENTS = (
     "Any",
@@ -1138,8 +1138,6 @@ def test_aggregate_parity_metrics() -> None:
 
 
 def test_ds_mig_03_hitl_qualified_without_live_l2_gateway() -> None:
-    critic_root = Path("intergrax/runtime/critic")
-    assert not (critic_root / "l2_gateway.py").is_file()
     identity = build_parity_identity(
         flow_scope=DecisionFlowScope.GRAPH_FINAL,
         task_id="task-1",

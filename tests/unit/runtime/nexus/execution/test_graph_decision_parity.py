@@ -35,40 +35,8 @@ from intergrax.runtime.execution.active_decision_lifecycle_host import (
     reset_active_decision_lifecycle_host,
 )
 from intergrax.runtime.execution.decision_lifecycle_host import CanonicalDecisionLifecycleHost
-from intergrax.runtime.migration.critic_shadow_adapter import (
-    CriticShadowAdapter,
-    CriticShadowConfig,
-    build_critic_shadow_adapter,
-    observe_graph_final_parity,
-)
-from intergrax.runtime.migration.decision_critic_parity import (
-    CriticRetirementReadiness,
-    DecisionCriticParityClassification,
-    DecisionCriticParityResult,
-    ParityCapabilityRequirement,
-    ParityCapabilityRequirementMode,
-    ParityHostScope,
-    ParityVerificationCapability,
-    aggregate_parity_metrics,
-    evaluate_critic_retirement_readiness,
-)
-from intergrax.runtime.critic.contracts import (
-    CriticAction,
-    CriticLayer,
-    CriticScope,
-    CriticVerdict,
-    LayerVerdict,
-)
 
 pytestmark = pytest.mark.unit
-
-
-@dataclass
-class _RecordingParityObserver:
-    results: list[DecisionCriticParityResult] = field(default_factory=list)
-
-    def record(self, result: DecisionCriticParityResult) -> None:
-        self.results.append(result)
 
 
 def _structural_contract() -> AgentContract:
@@ -101,39 +69,6 @@ def _execution(*, summary: str) -> AgentExecutionResult:
     )
 
 
-def _pass_verdict() -> CriticVerdict:
-    return CriticVerdict(
-        scope=CriticScope.GRAPH_FINAL,
-        passed=True,
-        layers=[LayerVerdict(layer=CriticLayer.L0_DETERMINISTIC, passed=True, score=1.0)],
-        recommended_action=CriticAction.CONTINUE,
-    )
-
-
-def _fail_verdict() -> CriticVerdict:
-    return CriticVerdict(
-        scope=CriticScope.GRAPH_FINAL,
-        passed=False,
-        layers=[
-            LayerVerdict(
-                layer=CriticLayer.L0_DETERMINISTIC,
-                passed=False,
-                score=0.0,
-                errors=["structural failure"],
-            ),
-        ],
-        recommended_action=CriticAction.FAIL,
-        failure_reasons=("structural failure",),
-    )
-
-
-def _stub_shadow(adapter: CriticShadowAdapter, verdict: CriticVerdict) -> None:
-    def _verify_final(request, *, contract=None):
-        return verdict
-
-    adapter.orchestrator.verify_final = _verify_final  # type: ignore[method-assign]
-
-
 @pytest.fixture
 def lifecycle_binding():
     token = bind_active_decision_lifecycle_host(CanonicalDecisionLifecycleHost())
@@ -157,7 +92,7 @@ def execution_identity_binding():
 
 
 @pytest.mark.asyncio
-async def test_graph_production_validation_invariant_across_shadow_modes(
+async def test_graph_decision_validation_is_stable(
     lifecycle_binding,
     execution_identity_binding,
 ) -> None:
@@ -181,107 +116,36 @@ async def test_graph_production_validation_invariant_across_shadow_modes(
         identity_seed=identity_seed,
         flow_scope=DecisionFlowScope.GRAPH_FINAL,
     )
-    flow_result = await evaluate_agent_execution_flow(gate, flow_request)
-    baseline_validation = decision_flow_result_to_validation_result(flow_result)
-    observer = _RecordingParityObserver()
-    shadow = build_critic_shadow_adapter()
-    for verdict in (_pass_verdict(), _fail_verdict()):
-        _stub_shadow(shadow, verdict)
-        await observe_graph_final_parity(
-            shadow=shadow,
-            decision_result=flow_result,
-            execution=execution,
-            contract=contract,
-            task_id=str(task_id),
-            run_id=str(run_id),
-            attempt_id=str(attempt_id),
-            tenant_id="tenant-1",
-            graph_id="graph-1",
-            observer=observer,
-        )
-        assert decision_flow_result_to_validation_result(flow_result) == baseline_validation
-    broken = build_critic_shadow_adapter()
-
-    def _explode(request, *, contract=None):
-        raise RuntimeError("shadow exploded")
-
-    broken.orchestrator.verify_final = _explode  # type: ignore[method-assign]
-    await observe_graph_final_parity(
-        shadow=broken,
-        decision_result=flow_result,
-        execution=execution,
-        contract=contract,
-        task_id=str(task_id),
-        run_id=str(run_id),
-        attempt_id=str(attempt_id),
-        tenant_id="tenant-1",
-        graph_id="graph-1",
-        observer=observer,
-    )
-    assert decision_flow_result_to_validation_result(flow_result) == baseline_validation
-    assert observer.results[-1].classification is DecisionCriticParityClassification.SHADOW_ERROR
+    first = await evaluate_agent_execution_flow(gate, flow_request)
+    second = await evaluate_agent_execution_flow(gate, flow_request)
+    assert decision_flow_result_to_validation_result(first) == decision_flow_result_to_validation_result(second)
 
 
 @pytest.mark.asyncio
-async def test_qualification_matrix_structural_clean_and_failure(
+async def test_graph_decision_structural_failure(
     lifecycle_binding,
     execution_identity_binding,
 ) -> None:
     contract = _structural_contract()
     gate = _build_gate(contract=contract)
-    shadow = build_critic_shadow_adapter(config=CriticShadowConfig())
     task_id, run_id, attempt_id = execution_identity_binding
-    cases = (
-        ("clean", "valid summary", DecisionCriticParityClassification.CAPABILITY_GAP),
-        ("structural_failure", "", DecisionCriticParityClassification.MATCH),
+    execution = _execution(summary="")
+    decision_context = agent_execution_decision_context(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        tenant_id="tenant-1",
     )
-    results: list[DecisionCriticParityResult] = []
-    for _case_id, summary, expected in cases:
-        execution = _execution(summary=summary)
-        decision_context = agent_execution_decision_context(
-            task_id=task_id,
-            run_id=run_id,
-            attempt_id=attempt_id,
-            tenant_id="tenant-1",
-        )
-        identity_seed = agent_execution_identity_seed(
-            context=decision_context,
-            namespace="graph.final",
-            subject="graph-1",
-        )
-        flow_request = build_agent_execution_flow_request(
-            execution=execution,
-            identity_seed=identity_seed,
-            flow_scope=DecisionFlowScope.GRAPH_FINAL,
-        )
-        flow_result = await evaluate_agent_execution_flow(gate, flow_request)
-        result = await observe_graph_final_parity(
-            shadow=shadow,
-            decision_result=flow_result,
-            execution=execution,
-            contract=contract,
-            task_id=str(task_id),
-            run_id=str(run_id),
-            attempt_id=str(attempt_id),
-            tenant_id="tenant-1",
-            graph_id="graph-1",
-        )
-        results.append(result)
-        assert result.classification is expected
-    metrics = aggregate_parity_metrics(results)
-    assert metrics.total_comparisons == 2
-    readiness = evaluate_critic_retirement_readiness(
-        results,
-        required_scopes=frozenset({ParityHostScope.GRAPH_FINAL}),
-        capability_requirements=(
-            ParityCapabilityRequirement(
-                ParityVerificationCapability.STRUCTURAL,
-                ParityCapabilityRequirementMode.CROSS_SYSTEM,
-            ),
-        ),
+    identity_seed = agent_execution_identity_seed(
+        context=decision_context,
+        namespace="graph.final",
+        subject="graph-1",
     )
-    assert readiness.readiness in {
-        CriticRetirementReadiness.READY,
-        CriticRetirementReadiness.NOT_READY,
-        CriticRetirementReadiness.INSUFFICIENT_EVIDENCE,
-    }
+    flow_request = build_agent_execution_flow_request(
+        execution=execution,
+        identity_seed=identity_seed,
+        flow_scope=DecisionFlowScope.GRAPH_FINAL,
+    )
+    flow_result = await evaluate_agent_execution_flow(gate, flow_request)
+    validation = decision_flow_result_to_validation_result(flow_result)
+    assert validation.valid is False

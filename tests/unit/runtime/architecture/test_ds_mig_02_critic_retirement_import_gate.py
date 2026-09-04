@@ -46,9 +46,7 @@ _CRITIC_AUTHORITY_PATTERNS = (
 )
 
 _ALLOWED_PATHS = (
-    "intergrax/runtime/critic/",
     "intergrax/runtime/migration/",
-    "intergrax/agents/authoring/critic_gateway.py",
     "intergrax/applications/_shared/critic_runtime_bridge.py",
     "intergrax/applications/_shared/critic_wiring.py",
     "intergrax/applications/_shared/runtime_config_bridge.py",

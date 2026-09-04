@@ -72,7 +72,7 @@ from intergrax.runtime.decision_revision import (
     transition_lifecycle_for_revision,
     validate_revision_authorization_for_candidate,
 )
-from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 

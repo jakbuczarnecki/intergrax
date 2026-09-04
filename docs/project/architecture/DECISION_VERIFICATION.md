@@ -8,7 +8,7 @@ Verification answers **„czy ta wersja decyzji spełnia wymagania poprawności?
 > **Maturity boundary:**
 >
 > - **Architecture:** **TARGET CANON - FROZEN** (paired with [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)).
-> - **Implementation:** **NOT YET MIGRATED** - production uses CVL / [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+> - **Implementation:** migrated to Decision Verification — legacy Critic runtime deleted (DS-MIG-04).
 > - **Production:** `CriticOrchestrator` L0/L1/L2 stack is **CURRENT** until clean cut.
 
 **Primary audience:** Principal / Staff engineers configuring verification stages, rubric provenance, producer/verifier independence, and challenge → revision handoff.
