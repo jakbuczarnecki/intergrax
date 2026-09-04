@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -94,6 +95,7 @@ from intergrax.runtime.execution.budget.ledger import create_execution_budget_le
 from intergrax.runtime.execution.council_deliberation import (
     execute_council_deliberation,
     execute_parallel_participant_proposals,
+    execute_parallel_participant_proposals_resilient,
     materialize_participant_deliberation_input,
     participant_proposal_branch_id,
     synthesis_candidate_from_proposals,
@@ -272,6 +274,17 @@ def _three_participant_strategy(
     )
 
 
+async def _wait_until_participants_started(
+    started: list[str],
+    expected: frozenset[str],
+) -> None:
+    for _ in range(100):
+        if frozenset(started) == expected:
+            return
+        await asyncio.sleep(0)
+    raise AssertionError(f"expected started={sorted(expected)}, got={started}")
+
+
 class RecordingWorkPort(ExecutionWorkPort[tuple[ChatMessage, ...], CouncilPayload, CouncilPayload]):
     def __init__(
         self,
@@ -307,6 +320,54 @@ class RecordingWorkPort(ExecutionWorkPort[tuple[ChatMessage, ...], CouncilPayloa
             if request.inference_profile_id == profile:
                 return participant_id
         raise ValueError("unknown inference profile in recording work port")
+
+
+class BarrierRecordingWorkPort(
+    ExecutionWorkPort[tuple[ChatMessage, ...], CouncilPayload, CouncilPayload],
+):
+    def __init__(
+        self,
+        *,
+        responses: dict[str, CouncilPayload],
+        release: asyncio.Event,
+        started: list[str],
+        fail_participants: frozenset[str] = frozenset(),
+        completion_delays: dict[str, float] | None = None,
+    ) -> None:
+        self._responses = responses
+        self._fail_participants = fail_participants
+        self._release = release
+        self._started = started
+        self._completion_delays = completion_delays or {}
+        self.captured_messages: dict[str, tuple[ChatMessage, ...]] = {}
+
+    async def execute(
+        self,
+        request: ExecutionRequest[tuple[ChatMessage, ...], CouncilPayload],
+    ) -> CouncilPayload:
+        participant_id = self._infer_participant_id(request)
+        self._started.append(participant_id)
+        self.captured_messages[participant_id] = request.input
+        await self._release.wait()
+        delay = self._completion_delays.get(participant_id, 0.0)
+        if delay > 0.0:
+            await asyncio.sleep(delay)
+        if participant_id in self._fail_participants:
+            raise RuntimeError(f"participant failed: {participant_id}")
+        return self._responses[participant_id]
+
+    def _infer_participant_id(
+        self,
+        request: ExecutionRequest[tuple[ChatMessage, ...], CouncilPayload],
+    ) -> str:
+        for participant_id, profile in (
+            ("participant-a", "profile-a"),
+            ("participant-b", "profile-b"),
+            ("participant-c", "profile-c"),
+        ):
+            if request.inference_profile_id == profile:
+                return participant_id
+        raise ValueError("unknown inference profile in barrier recording work port")
 
 
 class StructuredDisagreementAnalyzer(CouncilDisagreementAnalyzer[CouncilPayload]):
@@ -672,6 +733,149 @@ async def test_ds_council_participant_failure_two_failures_deadlock() -> None:
     )
     assert result.disposition == CouncilResolutionDisposition.DEADLOCK
     assert result.deadlock_reason == CouncilDeadlockReasonCode.INSUFFICIENT_PROPOSALS
+
+
+@pytest.mark.asyncio
+async def test_ds_council_resilient_all_participants_start_before_barrier() -> None:
+    release = asyncio.Event()
+    started: list[str] = []
+    strategy = _three_participant_strategy()
+    deliberation_input = _deliberation_input()
+    work_port = BarrierRecordingWorkPort(
+        responses={
+            "participant-a": CouncilPayload(recommendation="a"),
+            "participant-b": CouncilPayload(recommendation="b"),
+            "participant-c": CouncilPayload(recommendation="c"),
+        },
+        release=release,
+        started=started,
+    )
+    task = asyncio.create_task(
+        execute_parallel_participant_proposals_resilient(
+            strategy=strategy,
+            deliberation_input=deliberation_input,
+            work_port=work_port,
+        ),
+    )
+    await _wait_until_participants_started(
+        started,
+        frozenset({"participant-a", "participant-b", "participant-c"}),
+    )
+    release.set()
+    proposals = await task
+    assert len(proposals) == 3
+
+
+@pytest.mark.asyncio
+async def test_ds_council_resilient_parallel_failure_continues_with_barrier() -> None:
+    release = asyncio.Event()
+    started: list[str] = []
+    strategy = _three_participant_strategy(minimum_successful_participants=2)
+    deliberation_input = _deliberation_input()
+    work_port = BarrierRecordingWorkPort(
+        responses={
+            "participant-a": CouncilPayload(recommendation="a"),
+            "participant-b": CouncilPayload(recommendation="b"),
+            "participant-c": CouncilPayload(recommendation="c"),
+        },
+        release=release,
+        started=started,
+        fail_participants=frozenset({"participant-b"}),
+    )
+    task = asyncio.create_task(
+        execute_council_deliberation(
+            strategy=strategy,
+            deliberation_input=deliberation_input,
+            work_port=work_port,
+            disagreement_analyzer=StructuredDisagreementAnalyzer(),
+            synthesizer=ConfigurableSynthesizer(SynthesizerBehavior()),
+            resilient_participant_failures=True,
+        ),
+    )
+    await _wait_until_participants_started(
+        started,
+        frozenset({"participant-a", "participant-b", "participant-c"}),
+    )
+    release.set()
+    result = await task
+    assert result.disposition == CouncilResolutionDisposition.SYNTHESIZED
+    branch_ids = tuple(ref.lineage_ref.branch_id for ref in result.proposal_refs)
+    assert branch_ids == (
+        participant_proposal_branch_id("participant-a"),
+        participant_proposal_branch_id("participant-c"),
+    )
+
+
+@pytest.mark.asyncio
+async def test_ds_council_resilient_out_of_order_completion_preserves_binding_order() -> None:
+    release = asyncio.Event()
+    started: list[str] = []
+    strategy = _three_participant_strategy(minimum_successful_participants=2)
+    deliberation_input = _deliberation_input()
+    work_port = BarrierRecordingWorkPort(
+        responses={
+            "participant-a": CouncilPayload(recommendation="a"),
+            "participant-b": CouncilPayload(recommendation="b"),
+            "participant-c": CouncilPayload(recommendation="c"),
+        },
+        release=release,
+        started=started,
+        fail_participants=frozenset({"participant-b"}),
+        completion_delays={
+            "participant-c": 0.0,
+            "participant-a": 0.01,
+            "participant-b": 0.02,
+        },
+    )
+    task = asyncio.create_task(
+        execute_parallel_participant_proposals_resilient(
+            strategy=strategy,
+            deliberation_input=deliberation_input,
+            work_port=work_port,
+        ),
+    )
+    await _wait_until_participants_started(
+        started,
+        frozenset({"participant-a", "participant-b", "participant-c"}),
+    )
+    release.set()
+    proposals = await task
+    branch_ids = tuple(proposal.proposal_ref.lineage_ref.branch_id for proposal in proposals)
+    assert branch_ids == (
+        participant_proposal_branch_id("participant-a"),
+        participant_proposal_branch_id("participant-c"),
+    )
+
+
+def test_resilient_council_uses_execution_concurrent_primitive() -> None:
+    source = _COUNCIL_DELIBERATION_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    resilient_function: ast.AsyncFunctionDef | None = None
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.AsyncFunctionDef)
+            and node.name == "execute_parallel_participant_proposals_resilient"
+        ):
+            resilient_function = node
+            break
+    assert resilient_function is not None
+    function_source = ast.get_source_segment(source, resilient_function) or ""
+    assert "execute_concurrent_execution_work_resilient" in function_source
+    for node in ast.walk(resilient_function):
+        if not isinstance(node, ast.Await):
+            continue
+        call = node.value
+        if not isinstance(call, ast.Call):
+            continue
+        if (
+            isinstance(call.func, ast.Attribute)
+            and call.func.attr == "execute"
+            and isinstance(call.func.value, ast.Name)
+            and call.func.value.id == "work_port"
+        ):
+            raise AssertionError(
+                "resilient council path must not await work_port.execute directly",
+            )
 
 
 def test_ds_council_context_visibility_materialization() -> None:
