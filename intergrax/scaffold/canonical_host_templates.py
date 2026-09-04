@@ -11,6 +11,14 @@ from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec
 from intergrax.scaffold.application_names import ScaffoldApplicationNames
 
 
+def _render_canonical_run_endpoint(*, pascal: str, request_model: str) -> str:
+    return (
+        f'            @router.post("/run", response_model={pascal}RunResponseV1)\n'
+        f"            async def run_agent(body: {request_model}) -> {pascal}RunResponseV1:\n"
+        f"                return await service.run_task(body)\n"
+    )
+
+
 def render_canonical_lab_serving_router_py(names: ScaffoldApplicationNames) -> str:
     short = names.short
     pascal = names.pascal
@@ -24,7 +32,7 @@ def render_canonical_lab_serving_router_py(names: ScaffoldApplicationNames) -> s
         from dataclasses import dataclass
         from typing import Optional
 
-        from fastapi import APIRouter, FastAPI, HTTPException, status
+        from fastapi import APIRouter, FastAPI
         from pydantic import BaseModel, Field
 
         from intergrax.runtime.execution.host_task import HostTaskExecutionPort
@@ -94,15 +102,7 @@ def render_canonical_lab_serving_router_py(names: ScaffoldApplicationNames) -> s
             service = {pascal}RunService.from_host_execution(host_execution)
             router = APIRouter(prefix=prefix, tags=["{short}"])
 
-            @router.post("/run", response_model={pascal}RunResponseV1)
-            async def run_agent(body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
-                try:
-                    return await service.run_task(body)
-                except Exception as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail=f"run_error: {{exc.__class__.__name__}}",
-                    ) from exc
+{_render_canonical_run_endpoint(pascal=pascal, request_model=f"{pascal}RunRequestV1")}
 
             @router.get("/agents")
             async def list_agents() -> dict[str, list[dict[str, object]]]:
@@ -141,7 +141,7 @@ def render_canonical_product_serving_router_py(
 
         from dataclasses import dataclass
 
-        from fastapi import APIRouter, FastAPI, HTTPException, status
+        from fastapi import APIRouter, FastAPI
 
         from intergrax.runtime.execution.host_task import HostTaskExecutionPort
         from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
@@ -203,15 +203,7 @@ def render_canonical_product_serving_router_py(
             )
             router = APIRouter(prefix=prefix, tags=["{short}"])
 
-            @router.post("/run", response_model={pascal}RunResponseV1)
-            async def run_agent(body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
-                try:
-                    return await service.run_task(body)
-                except Exception as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail=f"run_error: {{exc.__class__.__name__}}",
-                    ) from exc
+{_render_canonical_run_endpoint(pascal=pascal, request_model=f"{pascal}RunRequestV1")}
 
             @router.get("/agents")
             async def list_agents() -> dict[str, list[dict[str, object]]]:

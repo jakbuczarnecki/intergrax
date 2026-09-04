@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import ast
 import compileall
 import importlib
 import sys
@@ -11,6 +12,11 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.scaffold.application_names import ScaffoldApplicationNames
+from intergrax.scaffold.canonical_host_templates import (
+    render_canonical_lab_serving_router_py,
+    render_canonical_product_serving_router_py,
+)
 from intergrax.scaffold.new_application import create_application
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -65,6 +71,58 @@ def _iter_generated_py_files(app_root: Path) -> list[Path]:
 def _assert_no_forbidden_tokens(text: str, *, label: str) -> None:
     for token in _FORBIDDEN_GENERATED_TOKENS:
         assert token not in text, f"{label} must not contain forbidden token: {token}"
+
+
+def _count_broad_except_handlers(source: str) -> tuple[int, int]:
+    tree = ast.parse(source)
+    exception_handlers = 0
+    base_exception_handlers = 0
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ExceptHandler):
+            continue
+        handler_type = node.type
+        if handler_type is None:
+            exception_handlers += 1
+            continue
+        names: list[str] = []
+        if isinstance(handler_type, ast.Name):
+            names.append(handler_type.id)
+        elif isinstance(handler_type, ast.Tuple):
+            names.extend(
+                elt.id for elt in handler_type.elts if isinstance(elt, ast.Name)
+            )
+        for name in names:
+            if name == "Exception":
+                exception_handlers += 1
+            elif name == "BaseException":
+                base_exception_handlers += 1
+    return exception_handlers, base_exception_handlers
+
+
+def _assert_no_broad_except_handlers(source: str, *, label: str) -> None:
+    exception_handlers, base_exception_handlers = _count_broad_except_handlers(source)
+    assert exception_handlers == 0, (
+        f"{label} must not contain broad Exception handlers "
+        f"(found {exception_handlers})"
+    )
+    assert base_exception_handlers == 0, (
+        f"{label} must not contain BaseException handlers "
+        f"(found {base_exception_handlers})"
+    )
+
+
+def _assert_run_agent_propagates_exceptions(router_source: str, *, label: str) -> None:
+    tree = ast.parse(router_source)
+    run_agent: ast.AsyncFunctionDef | None = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == "run_agent":
+            run_agent = node
+            break
+    assert run_agent is not None, f"{label} must define run_agent route handler"
+    for child in ast.walk(run_agent):
+        assert not isinstance(child, ast.Try), (
+            f"{label} run_agent must not locally catch exceptions"
+        )
 
 
 def _assert_canonical_factory(factory_text: str) -> None:
@@ -129,6 +187,12 @@ def test_scaffold_generators_emit_canonical_execution_surface(tmp_path: Path, pr
 
     combined = "\n".join(path.read_text(encoding="utf-8") for path in generated_files)
     _assert_no_forbidden_tokens(combined, label=f"generated {profile} application")
+    for path in generated_files:
+        source = path.read_text(encoding="utf-8")
+        _assert_no_broad_except_handlers(
+            source,
+            label=f"generated {profile} file {path.relative_to(target)}",
+        )
 
     factory_text = (target / "host" / "factory.py").read_text(encoding="utf-8")
     _assert_canonical_factory(factory_text)
@@ -138,6 +202,10 @@ def test_scaffold_generators_emit_canonical_execution_surface(tmp_path: Path, pr
     assert "AgentRegistryRead" in router_text
     assert "host_execution.execute" in router_text
     _assert_no_forbidden_tokens(router_text, label="serving router")
+    _assert_no_broad_except_handlers(router_text, label=f"{profile} serving router")
+    _assert_run_agent_propagates_exceptions(router_text, label=f"{profile} serving router")
+    assert "HTTPException" not in router_text
+    assert "HTTP_502_BAD_GATEWAY" not in router_text
 
     mcp_text = (target / "mcp" / "server.py").read_text(encoding="utf-8")
     assert "host_execution: HostTaskExecutionPort" in mcp_text
@@ -172,3 +240,29 @@ def test_scaffold_template_sources_gate_forbidden_execution_tokens() -> None:
             "build_environment_host_task_execution",
         ):
             assert token not in text, f"{rel} must not reference forbidden token: {token}"
+
+
+def test_canonical_template_sources_do_not_emit_broad_except_handlers() -> None:
+    names = ScaffoldApplicationNames.resolve(
+        "npsc2q_lab",
+        port=8291,
+        route_prefix="/v1/npsc2q",
+    )
+    lab_router = render_canonical_lab_serving_router_py(names)
+    product_router = render_canonical_product_serving_router_py(names, specs=[])
+    for label, source in (
+        ("lab template", lab_router),
+        ("product template", product_router),
+    ):
+        _assert_no_broad_except_handlers(source, label=label)
+        _assert_run_agent_propagates_exceptions(source, label=label)
+        assert "except Exception" not in source
+        assert "HTTP_502_BAD_GATEWAY" not in source
+
+
+def test_canonical_template_module_has_no_broad_except_handlers() -> None:
+    repo_root = Path(__file__).resolve().parents[3]
+    template_source = (repo_root / "intergrax/scaffold/canonical_host_templates.py").read_text(
+        encoding="utf-8"
+    )
+    _assert_no_broad_except_handlers(template_source, label="canonical_host_templates.py")
