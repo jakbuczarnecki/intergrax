@@ -45,6 +45,14 @@ def resolve_recovery_attempt_claim(
     claimed_episode: WorkerRecoveryEpisode,
 ) -> WorkerRecoveryEpisodeClaim:
     """Resolve attempt claim against stored episode state."""
+    if (
+        stored.claimed_attempt_number is not None
+        and stored.last_execution_id is None
+    ):
+        return WorkerRecoveryEpisodeClaim(
+            status=WorkerRecoveryEpisodeClaimStatus.ALREADY_CLAIMED,
+            episode=stored,
+        )
     if stored.claimed_attempt_number == attempt_number:
         if stored.last_execution_id is not None:
             return WorkerRecoveryEpisodeClaim(
@@ -52,8 +60,8 @@ def resolve_recovery_attempt_claim(
                 episode=stored,
             )
         return WorkerRecoveryEpisodeClaim(
-            status=WorkerRecoveryEpisodeClaimStatus.CLAIMED,
-            episode=claimed_episode,
+            status=WorkerRecoveryEpisodeClaimStatus.ALREADY_CLAIMED,
+            episode=stored,
         )
     if stored.claimed_attempt_number is not None:
         return WorkerRecoveryEpisodeClaim(

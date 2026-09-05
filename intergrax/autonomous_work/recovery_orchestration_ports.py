@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from intergrax.contracts.autonomous_work.execution_dispatch import (
     WorkerExecutionDispatchRequest,
@@ -22,6 +22,9 @@ from intergrax.contracts.autonomous_work.recovery_orchestration import (
 from intergrax.contracts.autonomous_work.references import HumanPendingReference
 from intergrax.contracts.autonomous_work.worker import WorkerInstance
 from intergrax.contracts.execution_identity import ExecutionId
+
+InputT = TypeVar("InputT")
+OutputT = TypeVar("OutputT")
 
 
 class PortAvailabilityDisposition(StrEnum):
@@ -153,7 +156,7 @@ class WorkerEscalationPort(Protocol):
         ...
 
 
-class WorkerRecoveryExecutionDispatchPort(Protocol):
+class WorkerRecoveryExecutionDispatchPort(Protocol[InputT, OutputT]):
     """Dispatch recovery execution through AW-5A — no direct runtime access."""
 
     async def dispatch_recovery(
@@ -163,8 +166,8 @@ class WorkerRecoveryExecutionDispatchPort(Protocol):
         worker: WorkerInstance,
         resume_target: WorkerRecoveryResumeTarget,
         attempt_number: int,
-        request: WorkerExecutionDispatchRequest[object, object],
-    ) -> WorkerExecutionDispatchResult[object]:
+        request: WorkerExecutionDispatchRequest[InputT, OutputT],
+    ) -> WorkerExecutionDispatchResult[OutputT]:
         ...
 
 

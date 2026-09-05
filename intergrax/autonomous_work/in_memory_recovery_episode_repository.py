@@ -88,6 +88,14 @@ class InMemoryWorkerRecoveryEpisodeRepository:
                     status=WorkerRecoveryEpisodeClaimStatus.ALREADY_CLAIMED,
                     episode=stored,
                 )
+            if (
+                stored.claimed_attempt_number is not None
+                and stored.last_execution_id is None
+            ):
+                return WorkerRecoveryEpisodeClaim(
+                    status=WorkerRecoveryEpisodeClaimStatus.ALREADY_CLAIMED,
+                    episode=stored,
+                )
             claimed = replace(
                 stored,
                 status=RecoveryEpisodeStatus.IN_PROGRESS,

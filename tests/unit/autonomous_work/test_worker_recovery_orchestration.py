@@ -7,6 +7,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
+from unittest.mock import patch
+
 import pytest
 
 from intergrax.autonomous_work.in_memory_recovery_episode_repository import (
@@ -20,11 +22,13 @@ from intergrax.autonomous_work.in_memory_repository import (
 )
 from intergrax.autonomous_work.lifecycle import WorkerLifecycleService
 from intergrax.autonomous_work.recovery_orchestration_ports import (
+    CanonicalExecutionTerminalDisposition,
+    CanonicalExecutionTerminalOutcome,
     HumanDecisionRequest,
-    HumanDecisionRequestPort,
     HumanDecisionRequestResult,
     PortAvailabilityDisposition,
 )
+from intergrax.autonomous_work.repository import AutonomousWorkRevisionConflict
 from intergrax.autonomous_work.worker_recovery_decision_service import (
     WorkerRecoveryDecisionService,
 )
@@ -291,6 +295,7 @@ def _harness(
         "episode_repo": episode_repo,
         "worker_repo": worker_repo,
         "goal_repo": goal_repo,
+        "continuity_repo": continuity_repo,
     }
 
 
@@ -566,3 +571,193 @@ def test_aw6a_decision_service_still_usable() -> None:
     )
     result = WorkerRecoveryDecisionService().decide(evidence, decided_at=_NOW)
     assert result.decision is not None
+
+
+class StubExecutionOutcomeReader:
+    def __init__(self, disposition: CanonicalExecutionTerminalDisposition) -> None:
+        self._disposition = disposition
+
+    def get_terminal_outcome(self, execution_id: ExecutionId) -> CanonicalExecutionTerminalOutcome:
+        return CanonicalExecutionTerminalOutcome(
+            disposition=self._disposition,
+            execution_id=execution_id,
+        )
+
+
+@pytest.mark.asyncio
+async def test_continuity_cas_conflict_blocks_resume() -> None:
+    service, ctx = _harness()
+    continuity = ctx["continuity_repo"].get(worker_instance_id=_WORKER_ID)
+    assert continuity is not None
+    request = _orchestration_request(continuity_expected_revision=continuity.revision)
+    ctx["continuity_repo"].replace(
+        replace(continuity, next_action_hint="stale-bump"),
+        expected_revision=continuity.revision,
+    )
+    result = await service.orchestrate(request, dispatch_request=_dispatch_request())
+    assert result.disposition is WorkerRecoveryOrchestrationDisposition.STALE_CONTINUITY
+    assert result.resume_intent is None
+    assert result.episode.status is RecoveryEpisodeStatus.IN_PROGRESS
+    assert result.episode.last_execution_id is not None
+
+
+@pytest.mark.asyncio
+async def test_orphaned_claim_requires_reconciliation() -> None:
+    service, ctx = _harness()
+    request = _orchestration_request()
+    episode_id = derive_recovery_episode_id(
+        worker_instance_id=_WORKER_ID,
+        obstacle_id=request.decision.obstacle_id,
+        recovery_decision_id=request.decision.decision_id,
+    )
+    episode_repo = ctx["episode_repo"]
+    from intergrax.contracts.autonomous_work.recovery_orchestration import (
+        WorkerRecoveryEpisode,
+    )
+    from intergrax.contracts.autonomous_work.obstacle_recovery import DECISION_POLICY_VERSION
+    from intergrax.contracts.autonomous_work.revision import initial_revision
+
+    seed = WorkerRecoveryEpisode(
+        recovery_episode_id=episode_id,
+        worker_instance_id=_WORKER_ID,
+        obstacle_id=request.decision.obstacle_id,
+        recovery_decision_id=request.decision.decision_id,
+        decision_policy_version=DECISION_POLICY_VERSION,
+        strategy=request.decision.strategy,
+        original_source=request.original_source,
+        resume_target=request.resume_target,
+        started_at=_NOW,
+        status=RecoveryEpisodeStatus.PENDING,
+        attempt_count=0,
+        revision=initial_revision(),
+        max_attempts=2,
+        pre_recovery_lifecycle_state=WorkerLifecycleState.WORKING,
+    )
+    created = episode_repo.create_or_get(seed)
+    claim = episode_repo.claim_attempt(
+        recovery_episode_id=episode_id,
+        attempt_number=1,
+        expected_revision=created.episode.revision,
+        claimed_at=_NOW,
+    )
+    assert claim.episode.claimed_attempt_number == 1
+    result = await service.orchestrate(request, dispatch_request=_dispatch_request())
+    assert result.disposition is WorkerRecoveryOrchestrationDisposition.RECONCILIATION_REQUIRED
+    assert ctx["dispatch"].calls == []
+    assert result.episode.attempt_count == 1
+
+
+@pytest.mark.asyncio
+async def test_crash_after_bind_execution_in_progress_zero_dispatch() -> None:
+    execution_id = mint_execution_id()
+    reader = StubExecutionOutcomeReader(CanonicalExecutionTerminalDisposition.IN_PROGRESS)
+    service, ctx = _harness()
+    service._execution_outcome_reader = reader
+    request = _orchestration_request()
+    episode_id = derive_recovery_episode_id(
+        worker_instance_id=_WORKER_ID,
+        obstacle_id=request.decision.obstacle_id,
+        recovery_decision_id=request.decision.decision_id,
+    )
+    from intergrax.contracts.autonomous_work.obstacle_recovery import DECISION_POLICY_VERSION
+    from intergrax.contracts.autonomous_work.recovery_orchestration import WorkerRecoveryEpisode
+    from intergrax.contracts.autonomous_work.revision import initial_revision
+
+    bound = WorkerRecoveryEpisode(
+        recovery_episode_id=episode_id,
+        worker_instance_id=_WORKER_ID,
+        obstacle_id=request.decision.obstacle_id,
+        recovery_decision_id=request.decision.decision_id,
+        decision_policy_version=DECISION_POLICY_VERSION,
+        strategy=request.decision.strategy,
+        original_source=request.original_source,
+        resume_target=request.resume_target,
+        started_at=_NOW,
+        status=RecoveryEpisodeStatus.IN_PROGRESS,
+        attempt_count=1,
+        revision=Revision(2),
+        max_attempts=2,
+        claimed_attempt_number=1,
+        last_execution_id=execution_id,
+        pre_recovery_lifecycle_state=WorkerLifecycleState.WORKING,
+    )
+    ctx["episode_repo"].create_or_get(
+        replace(bound, status=RecoveryEpisodeStatus.PENDING, attempt_count=0, revision=initial_revision()),
+    )
+    ctx["episode_repo"]._records[episode_id] = bound  # type: ignore[attr-defined]
+    result = await service.orchestrate(request, dispatch_request=_dispatch_request())
+    assert result.disposition is WorkerRecoveryOrchestrationDisposition.ATTEMPT_DISPATCHED
+    assert ctx["dispatch"].calls == []
+
+
+@pytest.mark.asyncio
+async def test_crash_after_bind_execution_success_resumes() -> None:
+    execution_id = mint_execution_id()
+    reader = StubExecutionOutcomeReader(CanonicalExecutionTerminalDisposition.SUCCEEDED)
+    service, ctx = _harness()
+    service._execution_outcome_reader = reader
+    request = _orchestration_request()
+    episode_id = derive_recovery_episode_id(
+        worker_instance_id=_WORKER_ID,
+        obstacle_id=request.decision.obstacle_id,
+        recovery_decision_id=request.decision.decision_id,
+    )
+    from intergrax.contracts.autonomous_work.obstacle_recovery import DECISION_POLICY_VERSION
+    from intergrax.contracts.autonomous_work.recovery_orchestration import WorkerRecoveryEpisode
+
+    seed = WorkerRecoveryEpisode(
+        recovery_episode_id=episode_id,
+        worker_instance_id=_WORKER_ID,
+        obstacle_id=request.decision.obstacle_id,
+        recovery_decision_id=request.decision.decision_id,
+        decision_policy_version=DECISION_POLICY_VERSION,
+        strategy=request.decision.strategy,
+        original_source=request.original_source,
+        resume_target=request.resume_target,
+        started_at=_NOW,
+        status=RecoveryEpisodeStatus.IN_PROGRESS,
+        attempt_count=1,
+        revision=Revision(1),
+        max_attempts=2,
+        claimed_attempt_number=1,
+        last_execution_id=execution_id,
+        pre_recovery_lifecycle_state=WorkerLifecycleState.WORKING,
+    )
+    ctx["episode_repo"].create_or_get(seed)
+    result = await service.orchestrate(request, dispatch_request=_dispatch_request())
+    assert result.disposition is WorkerRecoveryOrchestrationDisposition.RESUMED
+    assert result.resume_intent is not None
+    assert result.episode.status is RecoveryEpisodeStatus.SUCCEEDED
+    assert ctx["dispatch"].calls == []
+
+
+@pytest.mark.asyncio
+async def test_quarantine_lifecycle_conflict_does_not_mark_episode() -> None:
+    service, ctx = _harness()
+    request = _orchestration_request(
+        decision=_decision(
+            strategy=RecoveryStrategy.QUARANTINE,
+            decision_reason_code=RecoveryDecisionReasonCode.SUSPICIOUS_QUARANTINE,
+            max_attempts=None,
+            obstacle_kind=WorkerObstacleKind.SUSPICIOUS_OR_UNSAFE,
+        ),
+    )
+    conflict = AutonomousWorkRevisionConflict(
+        "conflict",
+        entity_kind="WorkerInstance",
+        entity_id=_WORKER_ID,
+        expected_revision=Revision(0),
+        actual_revision=Revision(1),
+    )
+    with patch.object(
+        service._lifecycle_service,
+        "transition",
+        side_effect=conflict,
+    ):
+        result = await service.orchestrate(request)
+    assert result.disposition is WorkerRecoveryOrchestrationDisposition.CONFLICT
+    assert result.episode.status is RecoveryEpisodeStatus.PENDING
+    worker = ctx["worker_repo"].get(worker_instance_id=_WORKER_ID)
+    assert worker is not None
+    assert worker.lifecycle_state is WorkerLifecycleState.WORKING
+

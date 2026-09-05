@@ -113,9 +113,19 @@ class WorkerRecoveryOrchestrationDisposition(StrEnum):
     UNAVAILABLE = "UNAVAILABLE"
     CONFLICT = "CONFLICT"
     STALE_SOURCE = "STALE_SOURCE"
+    STALE_CONTINUITY = "STALE_CONTINUITY"
+    RECONCILIATION_REQUIRED = "RECONCILIATION_REQUIRED"
     LIMIT_EXCEEDED = "LIMIT_EXCEEDED"
     ALREADY_SUCCEEDED = "ALREADY_SUCCEEDED"
     ALREADY_TERMINAL = "ALREADY_TERMINAL"
+
+
+class WorkerOriginalWorkResumeDisposition(StrEnum):
+    """Typed resume-original-work preparation outcome."""
+
+    RESUMED = "RESUMED"
+    CONFLICT = "CONFLICT"
+    UNAVAILABLE = "UNAVAILABLE"
 
 
 def derive_recovery_episode_id(
@@ -452,6 +462,29 @@ class WorkerOriginalWorkResumeIntent:
             "created_at",
             require_aware_utc(self.created_at, label="created_at"),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerOriginalWorkResumeResult:
+    """Typed resume-original-work outcome — no silent stale continuity success."""
+
+    disposition: WorkerOriginalWorkResumeDisposition
+    resume_intent: WorkerOriginalWorkResumeIntent | None = None
+    continuity_revision: Revision | None = None
+
+    def __post_init__(self) -> None:
+        if type(self.disposition) is not WorkerOriginalWorkResumeDisposition:
+            raise TypeError("disposition must be WorkerOriginalWorkResumeDisposition")
+        if self.resume_intent is not None:
+            if type(self.resume_intent) is not WorkerOriginalWorkResumeIntent:
+                raise TypeError("resume_intent must be WorkerOriginalWorkResumeIntent")
+        if self.continuity_revision is not None:
+            validate_revision(self.continuity_revision)
+        if self.disposition is WorkerOriginalWorkResumeDisposition.RESUMED:
+            if self.resume_intent is None:
+                raise ValueError("RESUMED disposition requires resume_intent")
+            if self.continuity_revision is None:
+                raise ValueError("RESUMED disposition requires continuity_revision")
 
 
 @dataclass(frozen=True, slots=True)

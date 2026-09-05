@@ -10,10 +10,14 @@ original work on success. Does not classify obstacles or mint authority.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from enum import StrEnum
+from typing import TypeVar
 
 from intergrax.autonomous_work.lifecycle import (
+    AutonomousWorkInvalidLifecycleTransition,
+    AutonomousWorkLifecycleStateConflict,
     WorkerLifecycleService,
     WorkerLifecycleTransitionRequest,
 )
@@ -53,12 +57,15 @@ from intergrax.contracts.autonomous_work.execution_dispatch import (
     WorkerExecutionSourceKind,
 )
 from intergrax.contracts.autonomous_work.goal import WorkerGoalStatus
+from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
 from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.contracts.autonomous_work.obstacle_recovery import RecoveryStrategy
 from intergrax.contracts.autonomous_work.recovery_orchestration import (
     RecoveryEpisodeStatus,
     RecoveryExecutionBounds,
+    WorkerOriginalWorkResumeDisposition,
     WorkerOriginalWorkResumeIntent,
+    WorkerOriginalWorkResumeResult,
     WorkerRecoveryAttemptDisposition,
     WorkerRecoveryAttemptResult,
     WorkerRecoveryEpisode,
@@ -69,7 +76,7 @@ from intergrax.contracts.autonomous_work.recovery_orchestration import (
     derive_recovery_episode_id,
     is_terminal_recovery_episode_status,
 )
-from intergrax.contracts.autonomous_work.revision import Revision, initial_revision
+from intergrax.contracts.autonomous_work.revision import initial_revision
 from intergrax.contracts.autonomous_work.worker import WorkerInstance
 
 _INELIGIBLE_WORKER_LIFECYCLE_STATES: frozenset[WorkerLifecycleState] = frozenset(
@@ -81,12 +88,33 @@ _INELIGIBLE_WORKER_LIFECYCLE_STATES: frozenset[WorkerLifecycleState] = frozenset
     }
 )
 
+InputT = TypeVar("InputT")
+OutputT = TypeVar("OutputT")
+
+
+class WorkerRecoveryLifecycleTransitionDisposition(StrEnum):
+    """Typed lifecycle transition outcome for recovery orchestration."""
+
+    APPLIED = "APPLIED"
+    UNCHANGED = "UNCHANGED"
+    CONFLICT = "CONFLICT"
+    NOT_FOUND = "NOT_FOUND"
+    INVALID = "INVALID"
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerRecoveryLifecycleTransitionOutcome:
+    """Lifecycle transition result consumed by recovery orchestration."""
+
+    disposition: WorkerRecoveryLifecycleTransitionDisposition
+    worker: WorkerInstance | None = None
+
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-class WorkerRecoveryOrchestrationService:
+class WorkerRecoveryOrchestrationService[InputT, OutputT]:
     """Durable recovery episode orchestration with resume-original-work semantics."""
 
     def __init__(
@@ -124,7 +152,7 @@ class WorkerRecoveryOrchestrationService:
         self,
         request: WorkerRecoveryOrchestrationRequest,
         *,
-        dispatch_request: WorkerExecutionDispatchRequest[object, object] | None = None,
+        dispatch_request: WorkerExecutionDispatchRequest[InputT, OutputT] | None = None,
         bounds: RecoveryExecutionBounds | None = None,
     ) -> WorkerRecoveryOrchestrationResult:
         now = self._clock()
@@ -165,11 +193,19 @@ class WorkerRecoveryOrchestrationService:
                 episode=episode,
             )
 
-        reconciled = self._reconcile_in_progress_episode(episode, now=now)
+        reconciled = self._reconcile_in_progress_episode(
+            episode,
+            request=request,
+            now=now,
+        )
         if reconciled is not None:
-            episode = reconciled
-            if is_terminal_recovery_episode_status(episode.status):
-                return _terminal_reentry_result(episode)
+            return reconciled
+
+        if _episode_requires_reconciliation(episode):
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.RECONCILIATION_REQUIRED,
+                episode=episode,
+            )
 
         strategy = decision.strategy
         if strategy is RecoveryStrategy.STOP:
@@ -262,11 +298,20 @@ class WorkerRecoveryOrchestrationService:
     ) -> WorkerRecoveryOrchestrationResult:
         worker = self._load_worker(episode.worker_instance_id)
         if worker is not None:
-            self._transition_lifecycle(
+            transition = self._transition_lifecycle(
                 worker=worker,
                 target_state=WorkerLifecycleState.QUARANTINED,
                 reason="recovery_quarantine",
             )
+            if transition.disposition in {
+                WorkerRecoveryLifecycleTransitionDisposition.CONFLICT,
+                WorkerRecoveryLifecycleTransitionDisposition.NOT_FOUND,
+                WorkerRecoveryLifecycleTransitionDisposition.INVALID,
+            }:
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.CONFLICT,
+                    episode=episode,
+                )
         episode = self._episode_repository.mark_quarantined(
             recovery_episode_id=episode.recovery_episode_id,
             expected_revision=episode.revision,
@@ -322,11 +367,20 @@ class WorkerRecoveryOrchestrationService:
             )
         worker = self._load_worker(episode.worker_instance_id)
         if worker is not None:
-            self._transition_lifecycle(
+            transition = self._transition_lifecycle(
                 worker=worker,
                 target_state=WorkerLifecycleState.WAITING_FOR_HUMAN,
                 reason="recovery_human_decision",
             )
+            if transition.disposition in {
+                WorkerRecoveryLifecycleTransitionDisposition.CONFLICT,
+                WorkerRecoveryLifecycleTransitionDisposition.NOT_FOUND,
+                WorkerRecoveryLifecycleTransitionDisposition.INVALID,
+            }:
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.CONFLICT,
+                    episode=episode,
+                )
         episode = self._episode_repository.mark_waiting_for_human(
             recovery_episode_id=episode.recovery_episode_id,
             expected_revision=episode.revision,
@@ -352,11 +406,20 @@ class WorkerRecoveryOrchestrationService:
             )
         worker = self._load_worker(episode.worker_instance_id)
         if worker is not None:
-            self._transition_lifecycle(
+            transition = self._transition_lifecycle(
                 worker=worker,
                 target_state=WorkerLifecycleState.WAITING_EXTERNAL,
                 reason="recovery_dependency_wait",
             )
+            if transition.disposition in {
+                WorkerRecoveryLifecycleTransitionDisposition.CONFLICT,
+                WorkerRecoveryLifecycleTransitionDisposition.NOT_FOUND,
+                WorkerRecoveryLifecycleTransitionDisposition.INVALID,
+            }:
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.CONFLICT,
+                    episode=episode,
+                )
         episode = self._episode_repository.mark_waiting(
             recovery_episode_id=episode.recovery_episode_id,
             expected_revision=episode.revision,
@@ -409,7 +472,7 @@ class WorkerRecoveryOrchestrationService:
         episode: WorkerRecoveryEpisode,
         *,
         request: WorkerRecoveryOrchestrationRequest,
-        dispatch_request: WorkerExecutionDispatchRequest[object, object] | None,
+        dispatch_request: WorkerExecutionDispatchRequest[InputT, OutputT] | None,
         bounds: RecoveryExecutionBounds | None,
         now: datetime,
     ) -> WorkerRecoveryOrchestrationResult:
@@ -446,7 +509,7 @@ class WorkerRecoveryOrchestrationService:
         episode: WorkerRecoveryEpisode,
         *,
         request: WorkerRecoveryOrchestrationRequest,
-        dispatch_request: WorkerExecutionDispatchRequest[object, object] | None,
+        dispatch_request: WorkerExecutionDispatchRequest[InputT, OutputT] | None,
         bounds: RecoveryExecutionBounds | None,
         now: datetime,
         strategy: RecoveryStrategy = RecoveryStrategy.RETRY,
@@ -508,6 +571,11 @@ class WorkerRecoveryOrchestrationService:
             claimed_at=now,
         )
         if claim.status is WorkerRecoveryEpisodeClaimStatus.ALREADY_CLAIMED:
+            if _episode_requires_reconciliation(claim.episode):
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.RECONCILIATION_REQUIRED,
+                    episode=claim.episode,
+                )
             return WorkerRecoveryOrchestrationResult(
                 disposition=WorkerRecoveryOrchestrationDisposition.ATTEMPT_DISPATCHED,
                 episode=claim.episode,
@@ -521,11 +589,31 @@ class WorkerRecoveryOrchestrationService:
             return _terminal_reentry_result(claim.episode)
 
         episode = claim.episode
-        self._transition_lifecycle(
+        transition = self._transition_lifecycle(
             worker=worker,
             target_state=WorkerLifecycleState.RECOVERING,
             reason="recovery_attempt",
         )
+        if transition.disposition in {
+            WorkerRecoveryLifecycleTransitionDisposition.CONFLICT,
+            WorkerRecoveryLifecycleTransitionDisposition.NOT_FOUND,
+            WorkerRecoveryLifecycleTransitionDisposition.INVALID,
+        }:
+            episode = self._episode_repository.record_attempt_outcome(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                attempt_number=attempt_number,
+                finished_at=now,
+                last_failure_ref="lifecycle_transition_conflict",
+                next_retry_at=None,
+                status=RecoveryEpisodeStatus.PENDING,
+            )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.CONFLICT,
+                episode=episode,
+            )
+        if transition.worker is not None:
+            worker = transition.worker
 
         if dispatch_request is None:
             episode = self._episode_repository.record_attempt_outcome(
@@ -584,32 +672,57 @@ class WorkerRecoveryOrchestrationService:
                     execution_id=execution_id,
                     recorded_at=now,
                 )
-            episode = self._episode_repository.mark_succeeded(
-                recovery_episode_id=episode.recovery_episode_id,
-                expected_revision=episode.revision,
-                completed_at=now,
-                terminal_reason="recovery_attempt_succeeded",
-            )
-            resume_intent, episode = self._resume_original_work(
+            resume_result = self._resume_original_work(
                 episode=episode,
                 request=request,
                 now=now,
                 worker=worker,
             )
-            attempt = _attempt_result(
-                episode=episode,
-                attempt_number=attempt_number,
-                strategy=strategy,
-                disposition=WorkerRecoveryAttemptDisposition.SUCCEEDED,
-                started_at=now,
-                finished_at=now,
-                execution_id=execution_id,
-            )
+            if (
+                resume_result.disposition
+                is WorkerOriginalWorkResumeDisposition.RESUMED
+            ):
+                episode = self._episode_repository.mark_succeeded(
+                    recovery_episode_id=episode.recovery_episode_id,
+                    expected_revision=episode.revision,
+                    completed_at=now,
+                    terminal_reason="recovery_attempt_succeeded",
+                )
+                attempt = _attempt_result(
+                    episode=episode,
+                    attempt_number=attempt_number,
+                    strategy=strategy,
+                    disposition=WorkerRecoveryAttemptDisposition.SUCCEEDED,
+                    started_at=now,
+                    finished_at=now,
+                    execution_id=execution_id,
+                )
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.RESUMED,
+                    episode=episode,
+                    attempt_result=attempt,
+                    resume_intent=resume_result.resume_intent,
+                )
+            if (
+                resume_result.disposition
+                is WorkerOriginalWorkResumeDisposition.CONFLICT
+            ):
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.STALE_CONTINUITY,
+                    episode=episode,
+                    attempt_result=_attempt_result(
+                        episode=episode,
+                        attempt_number=attempt_number,
+                        strategy=strategy,
+                        disposition=WorkerRecoveryAttemptDisposition.SUCCEEDED,
+                        started_at=now,
+                        finished_at=now,
+                        execution_id=execution_id,
+                    ),
+                )
             return WorkerRecoveryOrchestrationResult(
-                disposition=WorkerRecoveryOrchestrationDisposition.RESUMED,
+                disposition=WorkerRecoveryOrchestrationDisposition.UNAVAILABLE,
                 episode=episode,
-                attempt_result=attempt,
-                resume_intent=resume_intent,
             )
 
         failure_ref = dispatch_result.disposition.value
@@ -683,32 +796,87 @@ class WorkerRecoveryOrchestrationService:
         self,
         episode: WorkerRecoveryEpisode,
         *,
+        request: WorkerRecoveryOrchestrationRequest,
         now: datetime,
-    ) -> WorkerRecoveryEpisode | None:
+    ) -> WorkerRecoveryOrchestrationResult | None:
         if episode.status is not RecoveryEpisodeStatus.IN_PROGRESS:
             return None
+        if _episode_requires_reconciliation(episode):
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.RECONCILIATION_REQUIRED,
+                episode=episode,
+            )
         if episode.last_execution_id is None:
-            return episode
+            return None
         terminal = self._execution_outcome_reader.get_terminal_outcome(
             episode.last_execution_id,
         )
         if terminal.disposition is CanonicalExecutionTerminalDisposition.IN_PROGRESS:
-            return episode
-        if terminal.disposition is CanonicalExecutionTerminalDisposition.UNAVAILABLE:
-            return episode
-        if terminal.disposition is CanonicalExecutionTerminalDisposition.SUCCEEDED:
-            return self._episode_repository.mark_succeeded(
-                recovery_episode_id=episode.recovery_episode_id,
-                expected_revision=episode.revision,
-                completed_at=now,
-                terminal_reason="execution_terminal_success",
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.ATTEMPT_DISPATCHED,
+                episode=episode,
             )
-        return self._episode_repository.mark_failed(
+        if terminal.disposition is CanonicalExecutionTerminalDisposition.UNAVAILABLE:
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.UNAVAILABLE,
+                episode=episode,
+            )
+        if terminal.disposition is CanonicalExecutionTerminalDisposition.SUCCEEDED:
+            worker = self._load_worker(episode.worker_instance_id)
+            if worker is None:
+                episode = self._episode_repository.mark_failed(
+                    recovery_episode_id=episode.recovery_episode_id,
+                    expected_revision=episode.revision,
+                    completed_at=now,
+                    terminal_reason="worker_not_found",
+                )
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.FAILED,
+                    episode=episode,
+                )
+            resume_result = self._resume_original_work(
+                episode=episode,
+                request=request,
+                now=now,
+                worker=worker,
+            )
+            if (
+                resume_result.disposition
+                is WorkerOriginalWorkResumeDisposition.RESUMED
+            ):
+                episode = self._episode_repository.mark_succeeded(
+                    recovery_episode_id=episode.recovery_episode_id,
+                    expected_revision=episode.revision,
+                    completed_at=now,
+                    terminal_reason="execution_terminal_success",
+                )
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.RESUMED,
+                    episode=episode,
+                    resume_intent=resume_result.resume_intent,
+                )
+            if (
+                resume_result.disposition
+                is WorkerOriginalWorkResumeDisposition.CONFLICT
+            ):
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.STALE_CONTINUITY,
+                    episode=episode,
+                )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.UNAVAILABLE,
+                episode=episode,
+            )
+        episode = self._episode_repository.mark_failed(
             recovery_episode_id=episode.recovery_episode_id,
             expected_revision=episode.revision,
             completed_at=now,
             terminal_reason="execution_terminal_failure",
             last_failure_ref=terminal.failure_ref,
+        )
+        return WorkerRecoveryOrchestrationResult(
+            disposition=WorkerRecoveryOrchestrationDisposition.FAILED,
+            episode=episode,
         )
 
     def _resume_original_work(
@@ -718,7 +886,7 @@ class WorkerRecoveryOrchestrationService:
         request: WorkerRecoveryOrchestrationRequest,
         now: datetime,
         worker: WorkerInstance,
-    ) -> tuple[WorkerOriginalWorkResumeIntent, WorkerRecoveryEpisode]:
+    ) -> WorkerOriginalWorkResumeResult:
         continuity = self._continuity_repository.get(
             worker_instance_id=episode.worker_instance_id,
         )
@@ -740,27 +908,29 @@ class WorkerRecoveryOrchestrationService:
                 )
                 continuity_revision = persisted.revision
             except AutonomousWorkRevisionConflict:
-                return (
-                    WorkerOriginalWorkResumeIntent(
-                        worker_instance_id=episode.worker_instance_id,
-                        recovery_episode_id=episode.recovery_episode_id,
-                        original_source=request.original_source,
-                        resume_target=request.resume_target,
-                        continuity_revision=continuity_revision,
-                        created_at=now,
-                    ),
-                    episode,
+                return WorkerOriginalWorkResumeResult(
+                    disposition=WorkerOriginalWorkResumeDisposition.CONFLICT,
+                    continuity_revision=continuity_revision,
                 )
 
         resume_state = _resume_lifecycle_state(
             pre_recovery=episode.pre_recovery_lifecycle_state,
             worker=worker,
         )
-        self._transition_lifecycle(
+        transition = self._transition_lifecycle(
             worker=worker,
             target_state=resume_state,
             reason="recovery_resume_original_work",
         )
+        if transition.disposition in {
+            WorkerRecoveryLifecycleTransitionDisposition.CONFLICT,
+            WorkerRecoveryLifecycleTransitionDisposition.NOT_FOUND,
+            WorkerRecoveryLifecycleTransitionDisposition.INVALID,
+        }:
+            return WorkerOriginalWorkResumeResult(
+                disposition=WorkerOriginalWorkResumeDisposition.CONFLICT,
+                continuity_revision=continuity_revision,
+            )
         resume_intent = WorkerOriginalWorkResumeIntent(
             worker_instance_id=episode.worker_instance_id,
             recovery_episode_id=episode.recovery_episode_id,
@@ -769,7 +939,11 @@ class WorkerRecoveryOrchestrationService:
             continuity_revision=continuity_revision,
             created_at=now,
         )
-        return resume_intent, episode
+        return WorkerOriginalWorkResumeResult(
+            disposition=WorkerOriginalWorkResumeDisposition.RESUMED,
+            resume_intent=resume_intent,
+            continuity_revision=continuity_revision,
+        )
 
     def _validate_source_freshness(
         self,
@@ -789,7 +963,7 @@ class WorkerRecoveryOrchestrationService:
             return WorkerRecoveryOrchestrationDisposition.STALE_SOURCE
         return None
 
-    def _load_worker(self, worker_instance_id: str) -> WorkerInstance | None:
+    def _load_worker(self, worker_instance_id: WorkerInstanceId) -> WorkerInstance | None:
         return self._worker_instance_repository.get(worker_instance_id=worker_instance_id)
 
     def _transition_lifecycle(
@@ -798,11 +972,14 @@ class WorkerRecoveryOrchestrationService:
         worker: WorkerInstance,
         target_state: WorkerLifecycleState,
         reason: str,
-    ) -> None:
+    ) -> WorkerRecoveryLifecycleTransitionOutcome:
         if worker.lifecycle_state == target_state:
-            return
+            return WorkerRecoveryLifecycleTransitionOutcome(
+                disposition=WorkerRecoveryLifecycleTransitionDisposition.UNCHANGED,
+                worker=worker,
+            )
         try:
-            self._lifecycle_service.transition(
+            result = self._lifecycle_service.transition(
                 WorkerLifecycleTransitionRequest(
                     worker_instance_id=worker.worker_instance_id,
                     expected_revision=worker.revision,
@@ -811,8 +988,40 @@ class WorkerRecoveryOrchestrationService:
                     transition_reason=reason,
                 )
             )
-        except (AutonomousWorkEntityNotFound, AutonomousWorkRevisionConflict):
-            return
+        except AutonomousWorkEntityNotFound:
+            return WorkerRecoveryLifecycleTransitionOutcome(
+                disposition=WorkerRecoveryLifecycleTransitionDisposition.NOT_FOUND,
+            )
+        except AutonomousWorkRevisionConflict:
+            return WorkerRecoveryLifecycleTransitionOutcome(
+                disposition=WorkerRecoveryLifecycleTransitionDisposition.CONFLICT,
+            )
+        except AutonomousWorkLifecycleStateConflict:
+            return WorkerRecoveryLifecycleTransitionOutcome(
+                disposition=WorkerRecoveryLifecycleTransitionDisposition.CONFLICT,
+            )
+        except AutonomousWorkInvalidLifecycleTransition:
+            return WorkerRecoveryLifecycleTransitionOutcome(
+                disposition=WorkerRecoveryLifecycleTransitionDisposition.INVALID,
+            )
+        disposition = (
+            WorkerRecoveryLifecycleTransitionDisposition.APPLIED
+            if result.changed
+            else WorkerRecoveryLifecycleTransitionDisposition.UNCHANGED
+        )
+        return WorkerRecoveryLifecycleTransitionOutcome(
+            disposition=disposition,
+            worker=result.worker_instance,
+        )
+
+
+def _episode_requires_reconciliation(episode: WorkerRecoveryEpisode) -> bool:
+    """Return whether a claimed attempt lacks canonical execution binding."""
+    return (
+        episode.status is RecoveryEpisodeStatus.IN_PROGRESS
+        and episode.claimed_attempt_number is not None
+        and episode.last_execution_id is None
+    )
 
 
 def _episode_from_request(

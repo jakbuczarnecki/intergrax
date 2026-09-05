@@ -9,7 +9,10 @@ from dataclasses import replace
 from datetime import datetime
 
 from intergrax.autonomous_work.postgresql_repository import PostgreSQLAutonomousWorkStore
-from intergrax.autonomous_work.recovery_episode_claim import resolve_recovery_episode_create
+from intergrax.autonomous_work.recovery_episode_claim import (
+    resolve_recovery_attempt_claim,
+    resolve_recovery_episode_create,
+)
 from intergrax.autonomous_work.recovery_episode_serialization import (
     worker_recovery_episode_from_json,
     worker_recovery_episode_to_json,
@@ -136,6 +139,14 @@ class PostgreSQLWorkerRecoveryEpisodeRepository:
                     status=WorkerRecoveryEpisodeClaimStatus.ALREADY_CLAIMED,
                     episode=stored,
                 )
+            if (
+                stored.claimed_attempt_number is not None
+                and stored.last_execution_id is None
+            ):
+                return WorkerRecoveryEpisodeClaim(
+                    status=WorkerRecoveryEpisodeClaimStatus.ALREADY_CLAIMED,
+                    episode=stored,
+                )
             claimed = replace(
                 stored,
                 status=RecoveryEpisodeStatus.IN_PROGRESS,
@@ -144,23 +155,26 @@ class PostgreSQLWorkerRecoveryEpisodeRepository:
                 last_attempt_at=claimed_at,
                 revision=Revision(stored.revision.value + 1),
             )
-            conn.execute(
-                f"""
-                UPDATE {self._TABLE}
-                SET record_json = %s, revision = %s
-                WHERE recovery_episode_id = %s AND revision = %s
-                """,
-                (
-                    worker_recovery_episode_to_json(claimed),
-                    claimed.revision.value,
-                    recovery_episode_id.strip(),
-                    expected_revision.value,
-                ),
+            claim = resolve_recovery_attempt_claim(
+                stored=stored,
+                attempt_number=attempt_number,
+                claimed_episode=claimed,
             )
-            return WorkerRecoveryEpisodeClaim(
-                status=WorkerRecoveryEpisodeClaimStatus.CLAIMED,
-                episode=claimed,
-            )
+            if claim.status is WorkerRecoveryEpisodeClaimStatus.CLAIMED:
+                conn.execute(
+                    f"""
+                    UPDATE {self._TABLE}
+                    SET record_json = %s, revision = %s
+                    WHERE recovery_episode_id = %s AND revision = %s
+                    """,
+                    (
+                        worker_recovery_episode_to_json(claimed),
+                        claimed.revision.value,
+                        recovery_episode_id.strip(),
+                        expected_revision.value,
+                    ),
+                )
+            return claim
 
     def record_execution(
         self,
