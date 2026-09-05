@@ -8,20 +8,37 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intergrax.applications._shared.task_control import governed_cancel_active_task, governed_set_task_autonomy
+from intergrax.applications._shared.task_control import (
+    governed_cancel_active_task,
+    governed_set_task_autonomy,
+)
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
-from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy import (
+    EnforcementLevel,
+    PolicyAction,
+    PolicyDecision,
+)
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
 from intergrax.contracts.autonomy_level import AutonomyLevel
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.active_execution_task_scope import (
+    ActiveExecutionTaskScopeUnavailable,
+)
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.task.active_task_registry import (
+    ActiveRunOwnershipConflict,
     ActiveTaskBinding,
     ActiveTaskOwnershipConflict,
     ActiveTaskRegistry,
+    ActiveTaskRegistryTaskScopeResolver,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -103,6 +120,8 @@ async def test_taskreg_4_existing_binding_remains_after_rejected_overwrite() -> 
     assert binding is not None
     assert binding.task is task
     assert binding.run_id == run_a
+    assert ActiveTaskRegistry.peek_task_id_for_run(run_a) == task.task_id
+    assert ActiveTaskRegistry.peek_task_id_for_run(run_b) is None
 
 
 @pytest.mark.asyncio
@@ -121,6 +140,28 @@ async def test_taskreg_5_same_run_re_register_is_idempotent() -> None:
     assert binding is not None
     assert binding.task is refreshed
     assert binding.run_id == run_id
+    assert ActiveTaskRegistry.peek_task_id_for_run(run_id) == task.task_id
+
+
+@pytest.mark.asyncio
+async def test_taskreg_5b_same_run_different_task_raises_run_ownership_conflict() -> (
+    None
+):
+    task_a = _task()
+    task_b = _task()
+    run_r = mint_run_id()
+    await ActiveTaskRegistry.register(task_a, run_r)
+    with pytest.raises(ActiveRunOwnershipConflict) as exc_info:
+        await ActiveTaskRegistry.register(task_b, run_r)
+    conflict = exc_info.value
+    assert conflict.run_id == run_r
+    assert conflict.existing_task_id == task_a.task_id
+    assert conflict.requested_task_id == task_b.task_id
+    binding_a = await ActiveTaskRegistry.get(task_a.task_id)
+    assert binding_a is not None
+    assert binding_a.run_id == run_r
+    assert await ActiveTaskRegistry.get(task_b.task_id) is None
+    assert ActiveTaskRegistry.peek_task_id_for_run(run_r) == task_a.task_id
 
 
 @pytest.mark.asyncio
@@ -131,6 +172,7 @@ async def test_taskreg_6_unregister_exact_task_id_run_id_removes_binding() -> No
     removed = await ActiveTaskRegistry.unregister(task.task_id, run_id)
     assert removed is True
     assert await ActiveTaskRegistry.get(task.task_id) is None
+    assert ActiveTaskRegistry.peek_task_id_for_run(run_id) is None
 
 
 @pytest.mark.asyncio
@@ -154,6 +196,18 @@ async def test_taskreg_8_binding_remains_after_wrong_run_unregister_attempt() ->
     assert binding is not None
     assert binding.run_id == run_current
     assert binding.task is task
+    assert ActiveTaskRegistry.peek_task_id_for_run(run_current) == task.task_id
+    assert ActiveTaskRegistry.peek_task_id_for_run(run_stale) is None
+
+
+@pytest.mark.asyncio
+async def test_taskreg_8b_clear_for_tests_removes_both_indexes() -> None:
+    task = _task()
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+    ActiveTaskRegistry.clear_for_tests()
+    assert await ActiveTaskRegistry.get(task.task_id) is None
+    assert ActiveTaskRegistry.peek_task_id_for_run(run_id) is None
 
 
 @pytest.mark.asyncio
@@ -165,7 +219,9 @@ async def test_taskreg_9_missing_unregister_is_harmless() -> None:
 
 
 @pytest.mark.asyncio
-async def test_taskreg_10_unified_task_runner_registers_canonical_run_identity() -> None:
+async def test_taskreg_10_unified_task_runner_registers_canonical_run_identity() -> (
+    None
+):
     task = _task()
     run_id = mint_run_id()
     seen_run_id: str | None = None
@@ -173,7 +229,9 @@ async def test_taskreg_10_unified_task_runner_registers_canonical_run_identity()
     async def _handle(task: Task, *, run_id, attempt_id=None):
         nonlocal seen_run_id
         seen_run_id = run_id
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED
+        )
 
     loop = MagicMock()
     loop.handle_task = _handle
@@ -187,7 +245,9 @@ async def test_taskreg_10_unified_task_runner_registers_canonical_run_identity()
 
 
 @pytest.mark.asyncio
-async def test_taskreg_11_unified_task_runner_cleanup_unregisters_same_run_identity() -> None:
+async def test_taskreg_11_unified_task_runner_cleanup_unregisters_same_run_identity() -> (
+    None
+):
     task = _task()
     run_id = mint_run_id()
     registered_run_ids: list[str] = []
@@ -196,7 +256,9 @@ async def test_taskreg_11_unified_task_runner_cleanup_unregisters_same_run_ident
         binding = await ActiveTaskRegistry.get(task.task_id)
         assert binding is not None
         registered_run_ids.append(binding.run_id)
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED
+        )
 
     loop = MagicMock()
     loop.handle_task = _handle
@@ -262,7 +324,9 @@ async def test_taskreg_14_governed_set_task_autonomy_targets_binding_task() -> N
     task = _task()
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
-    boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=_AllowCancelEvaluator())
+    boundary = ControlPlaneMutationAuthorizationBoundary(
+        evaluator=_AllowCancelEvaluator()
+    )
     result = await governed_set_task_autonomy(
         task_id=str(task.task_id),
         run_id=str(run_id),
@@ -278,3 +342,27 @@ async def test_taskreg_14_governed_set_task_autonomy_targets_binding_task() -> N
     )
     assert result.accepted is True
     assert task.options.governance.autonomy_level is AutonomyLevel.MANUAL
+
+
+@pytest.mark.asyncio
+async def test_taskreg_15_resolver_returns_exact_task_for_active_run() -> None:
+    task = _task()
+    run_id = mint_run_id()
+    await ActiveTaskRegistry.register(task, run_id)
+    resolver = ActiveTaskRegistryTaskScopeResolver()
+    resolved = resolver.resolve_current_task_scope(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    assert resolved == task.task_id
+
+
+def test_taskreg_16_resolver_unknown_run_fails_closed() -> None:
+    resolver = ActiveTaskRegistryTaskScopeResolver()
+    with pytest.raises(ActiveExecutionTaskScopeUnavailable):
+        resolver.resolve_current_task_scope(
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
+        )
