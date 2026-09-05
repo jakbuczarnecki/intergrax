@@ -13,6 +13,9 @@ from platform_proofs.scenarios.verified_product_identification.arena.composition
     list_execution_profile_ids,
     resolve_execution_budget,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.errors import (
+    ArenaExecutionEnvironmentError,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.integration.reporting import (
     write_arena_report,
     write_arena_summary,
@@ -60,12 +63,21 @@ def main(argv: list[str] | None = None) -> int:
 
     session_dir = args.session_dir or (_REPO_ROOT / ".tmp" / "session" / "vpi-5c4b")
     execution_budget = resolve_execution_budget(args.profile)
-    report = run_embedding_arena(
-        include_e5_control=args.include_e5_control,
-        run_gpu_stages=not args.skip_gpu_stages,
-        session_dir=str(session_dir),
-        execution_budget=execution_budget,
-    )
+    try:
+        report = run_embedding_arena(
+            include_e5_control=args.include_e5_control,
+            run_gpu_stages=not args.skip_gpu_stages,
+            session_dir=str(session_dir),
+            execution_budget=execution_budget,
+        )
+    except ArenaExecutionEnvironmentError as exc:
+        snapshot = exc.snapshot
+        print(f"status={snapshot.status.value}")
+        print(f"profile={snapshot.profile_id}")
+        print(f"python_executable={snapshot.python_executable}")
+        if snapshot.detail is not None:
+            print(f"detail={snapshot.detail}")
+        return 1
     write_arena_report(session_dir / "arena-report.json", report)
     write_arena_summary(session_dir / "ARENA_SUMMARY.md", report)
 

@@ -11,6 +11,9 @@ from platform_proofs.scenarios.verified_product_identification.arena.composition
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_budget import (
     EmbeddingArenaExecutionBudget,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_environment import (
+    ArenaAcceleratorRequirement,
+)
 
 STANDARD_ARENA_PROFILE_ID = "standard"
 SAFE_LOCAL_GPU_MICRO_ARENA_PROFILE_ID = "safe-local-gpu"
@@ -20,6 +23,7 @@ _SAFE_LOCAL_GPU_MAX_VRAM_BYTES = int(11.5 * 1024**3)
 
 STANDARD_ARENA_EXECUTION_BUDGET = EmbeddingArenaExecutionBudget(
     profile_id=STANDARD_ARENA_PROFILE_ID,
+    accelerator_requirement=ArenaAcceleratorRequirement.ANY,
     stage_a_records=DEFAULT_STAGE_A_RECORDS,
     stage_b_records=DEFAULT_STAGE_B_RECORDS,
     stage_c_records=DEFAULT_STAGE_C_RECORDS,
@@ -37,6 +41,7 @@ STANDARD_ARENA_EXECUTION_BUDGET = EmbeddingArenaExecutionBudget(
 
 SAFE_LOCAL_GPU_MICRO_ARENA_EXECUTION_BUDGET = EmbeddingArenaExecutionBudget(
     profile_id=SAFE_LOCAL_GPU_MICRO_ARENA_PROFILE_ID,
+    accelerator_requirement=ArenaAcceleratorRequirement.CUDA,
     stage_a_records=20,
     stage_b_records=50,
     stage_c_records=100,

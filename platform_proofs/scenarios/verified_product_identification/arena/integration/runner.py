@@ -40,6 +40,9 @@ from platform_proofs.scenarios.verified_product_identification.arena.contracts.e
     EmbeddingArenaTokenizerUnavailableError,
     EmbeddingArenaTruncationProfileError,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_environment import (
+    ArenaAcceleratorRequirement,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.results import (
     ArtifactSizeEstimate,
     CandidateArenaResult,
@@ -87,6 +90,9 @@ from platform_proofs.scenarios.verified_product_identification.arena.integration
 )
 from platform_proofs.scenarios.verified_product_identification.arena.integration.candidate_execution_session import (
     EmbeddingArenaCandidateExecutionSession,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.integration.execution_environment import (
+    validate_arena_execution_environment,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.integration.embedding_execution import (
     measure_candidate_warmup,
@@ -674,17 +680,19 @@ def execute_candidate_stage_ab(
     session_dir: str | None = None,
     include_e5_control: bool = False,
 ) -> _CandidateStageWork:
+    validate_arena_execution_environment(execution_budget)
     candidate = _resolve_candidate(candidate_id, include_e5_control=include_e5_control)
     records, _, stage_b_scope, _, _ = _load_arena_context(execution_budget=execution_budget)
     execution_configuration = load_vpi_embedding_provider_execution_configuration()
     device: str | None = execution_configuration.device
     gpu_available = True
     run_gpu_stages = True
-    try:
-        assert_execution_device_available(execution_configuration)
-    except VpiEmbeddingDeviceUnavailableError:
-        gpu_available = False
-        run_gpu_stages = False
+    if execution_budget.accelerator_requirement is ArenaAcceleratorRequirement.ANY:
+        try:
+            assert_execution_device_available(execution_configuration)
+        except VpiEmbeddingDeviceUnavailableError:
+            gpu_available = False
+            run_gpu_stages = False
     if candidate.license_classification is EmbeddingLicenseClassification.REJECTED:
         return _CandidateStageWork(
             candidate=candidate,
@@ -716,11 +724,13 @@ def execute_candidate_stage_c(
     session_dir: str | None = None,
     include_e5_control: bool = False,
 ) -> _CandidateFinalWork:
+    validate_arena_execution_environment(execution_budget)
     candidate = _resolve_candidate(candidate_id, include_e5_control=include_e5_control)
     records, _, _, stage_c_scope, _ = _load_arena_context(execution_budget=execution_budget)
     execution_configuration = load_vpi_embedding_provider_execution_configuration()
     device: str | None = execution_configuration.device
-    assert_execution_device_available(execution_configuration)
+    if execution_budget.accelerator_requirement is ArenaAcceleratorRequirement.ANY:
+        assert_execution_device_available(execution_configuration)
     _ = session_dir
     return _run_stage_c_for_candidate(
         candidate,
@@ -851,6 +861,24 @@ def run_embedding_arena(
     if session_dir is not None:
         resources_touched.append(session_dir)
 
+    execution_configuration = load_vpi_embedding_provider_execution_configuration()
+    environment_snapshot = validate_arena_execution_environment(
+        execution_budget,
+        execution_configuration=execution_configuration,
+    )
+    hardware = probe_hardware_runtime_capability(
+        configured_device=execution_configuration.device,
+    )
+    device: str | None = execution_configuration.device
+    gpu_available = environment_snapshot.cuda_available
+    if execution_budget.accelerator_requirement is ArenaAcceleratorRequirement.ANY:
+        try:
+            assert_execution_device_available(execution_configuration)
+        except VpiEmbeddingDeviceUnavailableError as exc:
+            gpu_available = False
+            run_gpu_stages = False
+            warnings.append(str(exc))
+
     records, sample_manifest, stage_b_scope, stage_c_scope, text_length_profile = (
         _load_arena_context(execution_budget=execution_budget)
     )
@@ -861,22 +889,6 @@ def run_embedding_arena(
         warnings.append(
             "Full-build estimates are ROUGH SCREENING PROJECTION only; "
             "do not use for GO/NO-GO on 3.77M records"
-        )
-
-    execution_configuration = load_vpi_embedding_provider_execution_configuration()
-    hardware = None
-    device: str | None = execution_configuration.device
-    gpu_available = True
-    try:
-        assert_execution_device_available(execution_configuration)
-    except VpiEmbeddingDeviceUnavailableError as exc:
-        gpu_available = False
-        run_gpu_stages = False
-        warnings.append(str(exc))
-
-    if gpu_available:
-        hardware = probe_hardware_runtime_capability(
-            configured_device=execution_configuration.device,
         )
 
     candidates = build_default_arena_candidates(include_e5_control=include_e5_control)

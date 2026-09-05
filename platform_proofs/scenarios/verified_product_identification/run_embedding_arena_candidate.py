@@ -11,8 +11,14 @@ from scripts.proof.intergrax_proof_environment import load_proof_environment
 from platform_proofs.scenarios.verified_product_identification.arena.composition.execution_profiles import (
     resolve_execution_budget,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.errors import (
+    ArenaExecutionEnvironmentError,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.integration.candidate_isolation import (
     write_candidate_phase_artifact,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.integration.execution_environment import (
+    validate_arena_execution_environment,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.integration.runner import (
     execute_candidate_stage_ab,
@@ -38,6 +44,14 @@ def main(argv: list[str] | None = None) -> int:
     load_proof_environment(proof_package_dir=_SCENARIO_DIR, repository_root=_REPO_ROOT)
 
     execution_budget = resolve_execution_budget(args.profile)
+    try:
+        validate_arena_execution_environment(execution_budget)
+    except ArenaExecutionEnvironmentError as exc:
+        snapshot = exc.snapshot
+        print(f"status={snapshot.status.value}", file=sys.stderr)
+        if snapshot.detail is not None:
+            print(snapshot.detail, file=sys.stderr)
+        return 1
     if args.phase == "stage_ab":
         payload = execute_candidate_stage_ab(
             candidate_id=args.candidate_id,

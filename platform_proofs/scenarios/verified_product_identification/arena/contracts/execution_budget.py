@@ -4,12 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_environment import (
+    ArenaAcceleratorRequirement,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class EmbeddingArenaExecutionBudget:
     """Resource and stage sizing contract for an arena execution profile."""
 
     profile_id: str
+    accelerator_requirement: ArenaAcceleratorRequirement
     stage_a_records: int
     stage_b_records: int
     stage_c_records: int

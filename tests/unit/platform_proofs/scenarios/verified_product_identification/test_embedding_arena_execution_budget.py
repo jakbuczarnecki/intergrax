@@ -17,6 +17,9 @@ from platform_proofs.scenarios.verified_product_identification.arena.composition
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_budget import (
     EmbeddingArenaExecutionBudget,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_environment import (
+    ArenaAcceleratorRequirement,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.evaluation.finalist_selection import (
     StageBCandidateEvidence,
     select_stage_c_finalist_ids,
@@ -30,6 +33,7 @@ pytestmark = pytest.mark.unit
 
 def test_safe_local_gpu_profile_sizes() -> None:
     budget = SAFE_LOCAL_GPU_MICRO_ARENA_EXECUTION_BUDGET
+    assert budget.accelerator_requirement is ArenaAcceleratorRequirement.CUDA
     assert budget.stage_a_records == 20
     assert budget.stage_b_records == 50
     assert budget.stage_c_records == 100
@@ -44,6 +48,7 @@ def test_safe_local_gpu_profile_sizes() -> None:
 
 def test_standard_profile_preserves_legacy_sizes() -> None:
     budget = STANDARD_ARENA_EXECUTION_BUDGET
+    assert budget.accelerator_requirement is ArenaAcceleratorRequirement.ANY
     assert budget.stage_a_records == 100
     assert budget.stage_b_records == 500
     assert budget.stage_c_records == 1000
@@ -60,6 +65,7 @@ def test_execution_budget_validation_rejects_bad_stage_order() -> None:
     with pytest.raises(ValueError, match="stage_a_records must be <= stage_b_records"):
         EmbeddingArenaExecutionBudget(
             profile_id="bad",
+            accelerator_requirement=ArenaAcceleratorRequirement.ANY,
             stage_a_records=50,
             stage_b_records=20,
             stage_c_records=100,
