@@ -197,6 +197,34 @@ class PostgreSQLWorkerRecoveryEpisodeRepository:
             validate=lambda stored: stored.claimed_attempt_number == attempt_number,
         )
 
+    def record_continuity_resume(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        continuity_resume_revision: Revision,
+        recorded_at: datetime,
+    ) -> WorkerRecoveryEpisode:
+        return self._mutate(
+            recovery_episode_id=recovery_episode_id,
+            expected_revision=expected_revision,
+            mutator=lambda stored: (
+                stored
+                if stored.continuity_resume_completed
+                else replace(
+                    stored,
+                    continuity_resume_completed=True,
+                    continuity_resume_revision=continuity_resume_revision,
+                    last_attempt_at=recorded_at,
+                    revision=Revision(stored.revision.value + 1),
+                )
+            ),
+            validate=lambda stored: (
+                not stored.continuity_resume_completed
+                or stored.continuity_resume_revision == continuity_resume_revision
+            ),
+        )
+
     def mark_waiting(
         self,
         *,

@@ -216,3 +216,37 @@ def test_recovery_episode_terminal_restart(
         claimed_at=_NOW,
     )
     assert reentry.status is WorkerRecoveryEpisodeClaimStatus.TERMINAL
+
+
+def test_recovery_episode_record_continuity_resume_idempotent(
+    factory: Callable[[], WorkerRecoveryEpisodeRepository],
+) -> None:
+    repo = factory()
+    seed = recovery_episode()
+    created = repo.create_or_get(seed)
+    claim = repo.claim_attempt(
+        recovery_episode_id=seed.recovery_episode_id,
+        attempt_number=1,
+        expected_revision=created.episode.revision,
+        claimed_at=_NOW,
+    )
+    continuity_revision = Revision(3)
+    recorded = repo.record_continuity_resume(
+        recovery_episode_id=seed.recovery_episode_id,
+        expected_revision=claim.episode.revision,
+        continuity_resume_revision=continuity_revision,
+        recorded_at=_NOW,
+    )
+    assert recorded.continuity_resume_completed is True
+    assert recorded.continuity_resume_revision == continuity_revision
+
+    replay = repo.record_continuity_resume(
+        recovery_episode_id=seed.recovery_episode_id,
+        expected_revision=recorded.revision,
+        continuity_resume_revision=continuity_revision,
+        recorded_at=_NOW,
+    )
+    assert replay == recorded
+
+    loaded = repo.get(recovery_episode_id=seed.recovery_episode_id)
+    assert loaded == recorded

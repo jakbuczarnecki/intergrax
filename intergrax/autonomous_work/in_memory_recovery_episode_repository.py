@@ -136,6 +136,31 @@ class InMemoryWorkerRecoveryEpisodeRepository:
             self._records[recovery_episode_id] = updated
             return updated
 
+    def record_continuity_resume(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        continuity_resume_revision: Revision,
+        recorded_at: datetime,
+    ) -> WorkerRecoveryEpisode:
+        with self._lock:
+            stored = self._require_episode(recovery_episode_id)
+            if stored.continuity_resume_completed:
+                if stored.continuity_resume_revision != continuity_resume_revision:
+                    raise ValueError("continuity resume revision mismatch on idempotent replay")
+                return stored
+            self._require_revision(stored, expected_revision)
+            updated = replace(
+                stored,
+                continuity_resume_completed=True,
+                continuity_resume_revision=continuity_resume_revision,
+                last_attempt_at=recorded_at,
+                revision=Revision(stored.revision.value + 1),
+            )
+            self._records[recovery_episode_id] = updated
+            return updated
+
     def mark_waiting(
         self,
         *,

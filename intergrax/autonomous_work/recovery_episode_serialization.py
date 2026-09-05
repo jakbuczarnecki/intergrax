@@ -76,6 +76,12 @@ def worker_recovery_episode_to_payload(episode: WorkerRecoveryEpisode) -> dict[s
         "dependency_ref": episode.dependency_ref,
         "human_decision_ref": episode.human_decision_ref,
         "claimed_attempt_number": episode.claimed_attempt_number,
+        "continuity_resume_completed": episode.continuity_resume_completed,
+        "continuity_resume_revision": (
+            episode.continuity_resume_revision.value
+            if episode.continuity_resume_revision is not None
+            else None
+        ),
     }
 
 
@@ -107,6 +113,8 @@ def worker_recovery_episode_from_payload(payload: dict[str, object]) -> WorkerRe
         dependency_ref=_optional_dependency_ref(payload.get("dependency_ref")),
         human_decision_ref=_optional_str(payload.get("human_decision_ref")),
         claimed_attempt_number=_optional_int(payload.get("claimed_attempt_number")),
+        continuity_resume_completed=bool(payload.get("continuity_resume_completed", False)),
+        continuity_resume_revision=_optional_revision(payload.get("continuity_resume_revision")),
     )
 
 
@@ -181,6 +189,12 @@ def _optional_int(value: object) -> int | None:
     if value is None:
         return None
     return int(value)
+
+
+def _optional_revision(value: object) -> Revision | None:
+    if value is None:
+        return None
+    return Revision(int(value))
 
 
 def _optional_execution_id(value: object) -> ExecutionId | None:

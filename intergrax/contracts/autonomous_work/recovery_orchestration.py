@@ -275,6 +275,8 @@ class WorkerRecoveryEpisode:
     dependency_ref: ExternalDependencyReference | None = None
     human_decision_ref: str | None = None
     claimed_attempt_number: int | None = None
+    continuity_resume_completed: bool = False
+    continuity_resume_revision: Revision | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -358,6 +360,16 @@ class WorkerRecoveryEpisode:
             )
         if self.claimed_attempt_number is not None and self.claimed_attempt_number < 1:
             raise ValueError("claimed_attempt_number must be >= 1 when provided")
+        if self.continuity_resume_revision is not None:
+            validate_revision(self.continuity_resume_revision)
+        if self.continuity_resume_completed and self.continuity_resume_revision is None:
+            raise ValueError(
+                "continuity_resume_completed requires continuity_resume_revision"
+            )
+        if not self.continuity_resume_completed and self.continuity_resume_revision is not None:
+            raise ValueError(
+                "continuity_resume_revision requires continuity_resume_completed"
+            )
         _validate_episode_invariants(self)
 
 

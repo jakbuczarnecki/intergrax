@@ -416,6 +416,17 @@ class WorkerRecoveryEpisodeRepository(Protocol):
         """Bind canonical execution correlation to a claimed attempt."""
         ...
 
+    def record_continuity_resume(
+        self,
+        *,
+        recovery_episode_id: str,
+        expected_revision: Revision,
+        continuity_resume_revision: Revision,
+        recorded_at: datetime,
+    ) -> WorkerRecoveryEpisode:
+        """Persist durable evidence that continuity resume step completed."""
+        ...
+
     def mark_waiting(
         self,
         *,

@@ -16,6 +16,7 @@ from intergrax.autonomous_work.postgresql_repository import (
     PostgreSQLAutonomousWorkStore,
 )
 from intergrax.autonomous_work.repository import WorkerRecoveryEpisodeClaimStatus
+from intergrax.contracts.autonomous_work.recovery_orchestration import RecoveryEpisodeStatus
 from intergrax.contracts.autonomous_work.revision import Revision
 from intergrax.integrations.providers.relational_store.postgresql.session import (
     PostgreSQLConnectionProvider,
@@ -369,3 +370,95 @@ def test_postgresql_recovery_multiprocess_attempt_claim(
         outcomes.count(WorkerRecoveryEpisodeClaimStatus.ALREADY_CLAIMED.name)
         + outcomes.count(WorkerRecoveryEpisodeClaimStatus.REVISION_CONFLICT.name)
     ) == 1
+
+
+def test_postgresql_recovery_execution_bind_restart(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    schema_name = postgresql_autonomous_work_bundle.store.schema_name
+    repo = postgresql_autonomous_work_bundle.worker_recovery_episode
+    seed = contracts.recovery_episode()
+    created = repo.create_or_get(seed)
+    claim = repo.claim_attempt(
+        recovery_episode_id=seed.recovery_episode_id,
+        attempt_number=1,
+        expected_revision=created.episode.revision,
+        claimed_at=_NOW,
+    )
+    from intergrax.contracts.execution_identity import mint_execution_id
+
+    execution_id = mint_execution_id()
+    bound = repo.record_execution(
+        recovery_episode_id=seed.recovery_episode_id,
+        attempt_number=1,
+        expected_revision=claim.episode.revision,
+        execution_id=execution_id,
+        recorded_at=_NOW,
+    )
+    postgresql_autonomous_work_bundle.close()
+
+    reopened = open_bundle(schema_name)
+    try:
+        loaded = reopened.worker_recovery_episode.get(
+            recovery_episode_id=seed.recovery_episode_id,
+        )
+        assert loaded is not None
+        assert loaded.status is RecoveryEpisodeStatus.IN_PROGRESS
+        assert loaded.attempt_count == 1
+        assert loaded.claimed_attempt_number == 1
+        assert loaded.last_execution_id == execution_id
+        assert loaded.revision == bound.revision
+    finally:
+        reopened.close()
+
+
+def test_postgresql_recovery_terminal_after_bind_restart(
+    postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
+) -> None:
+    from intergrax.contracts.autonomous_work.recovery_orchestration import RecoveryEpisodeStatus
+
+    schema_name = postgresql_autonomous_work_bundle.store.schema_name
+    repo = postgresql_autonomous_work_bundle.worker_recovery_episode
+    seed = contracts.recovery_episode()
+    created = repo.create_or_get(seed)
+    claim = repo.claim_attempt(
+        recovery_episode_id=seed.recovery_episode_id,
+        attempt_number=1,
+        expected_revision=created.episode.revision,
+        claimed_at=_NOW,
+    )
+    from intergrax.contracts.execution_identity import mint_execution_id
+
+    execution_id = mint_execution_id()
+    bound = repo.record_execution(
+        recovery_episode_id=seed.recovery_episode_id,
+        attempt_number=1,
+        expected_revision=claim.episode.revision,
+        execution_id=execution_id,
+        recorded_at=_NOW,
+    )
+    terminal = repo.mark_succeeded(
+        recovery_episode_id=seed.recovery_episode_id,
+        expected_revision=bound.revision,
+        completed_at=_NOW,
+    )
+    postgresql_autonomous_work_bundle.close()
+
+    reopened = open_bundle(schema_name)
+    try:
+        loaded = reopened.worker_recovery_episode.get(
+            recovery_episode_id=seed.recovery_episode_id,
+        )
+        assert loaded is not None
+        assert loaded.status is RecoveryEpisodeStatus.SUCCEEDED
+        assert loaded.last_execution_id == execution_id
+        assert loaded.revision == terminal.revision
+        reentry = reopened.worker_recovery_episode.claim_attempt(
+            recovery_episode_id=seed.recovery_episode_id,
+            attempt_number=2,
+            expected_revision=terminal.revision,
+            claimed_at=_NOW,
+        )
+        assert reentry.status is WorkerRecoveryEpisodeClaimStatus.TERMINAL
+    finally:
+        reopened.close()

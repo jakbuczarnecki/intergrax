@@ -761,3 +761,129 @@ async def test_quarantine_lifecycle_conflict_does_not_mark_episode() -> None:
     assert worker is not None
     assert worker.lifecycle_state is WorkerLifecycleState.WORKING
 
+
+@pytest.mark.asyncio
+async def test_partial_resume_continuity_then_lifecycle_conflict() -> None:
+    service, ctx = _harness()
+    continuity = ctx["continuity_repo"].get(worker_instance_id=_WORKER_ID)
+    assert continuity is not None
+    continuity = replace(
+        continuity,
+        unresolved_problem_refs=(_EVIDENCE_REF,),
+    )
+    ctx["continuity_repo"].replace(continuity, expected_revision=continuity.revision)
+    continuity = ctx["continuity_repo"].get(worker_instance_id=_WORKER_ID)
+    assert continuity is not None
+    request = _orchestration_request(continuity_expected_revision=continuity.revision)
+    conflict = AutonomousWorkRevisionConflict(
+        "conflict",
+        entity_kind="WorkerInstance",
+        entity_id=_WORKER_ID,
+        expected_revision=Revision(0),
+        actual_revision=Revision(1),
+    )
+    continuity_replace_calls = 0
+    original_replace = ctx["continuity_repo"].replace
+    original_lifecycle_transition = service._lifecycle_service.transition
+    lifecycle_transition_calls = 0
+
+    def counting_replace(updated, *, expected_revision):
+        nonlocal continuity_replace_calls
+        continuity_replace_calls += 1
+        return original_replace(updated, expected_revision=expected_revision)
+
+    def lifecycle_conflict_on_resume(request):
+        nonlocal lifecycle_transition_calls
+        lifecycle_transition_calls += 1
+        if request.target_state is WorkerLifecycleState.WORKING:
+            raise conflict
+        return original_lifecycle_transition(request)
+
+    with (
+        patch.object(ctx["continuity_repo"], "replace", side_effect=counting_replace),
+        patch.object(
+            service._lifecycle_service,
+            "transition",
+            side_effect=lifecycle_conflict_on_resume,
+        ),
+    ):
+        first = await service.orchestrate(request, dispatch_request=_dispatch_request())
+
+    assert first.disposition is WorkerRecoveryOrchestrationDisposition.CONFLICT
+    assert first.resume_intent is None
+    assert first.episode.status is RecoveryEpisodeStatus.IN_PROGRESS
+    assert first.episode.continuity_resume_completed is True
+    assert first.episode.continuity_resume_revision is not None
+    assert continuity_replace_calls == 1
+
+    second = await service.orchestrate(request, dispatch_request=_dispatch_request())
+    assert second.disposition is WorkerRecoveryOrchestrationDisposition.RESUMED
+    assert second.resume_intent is not None
+    assert second.resume_intent.continuity_revision == first.episode.continuity_resume_revision
+    assert second.episode.status is RecoveryEpisodeStatus.SUCCEEDED
+    assert continuity_replace_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_partial_resume_survives_restart_between_continuity_and_lifecycle() -> None:
+    service, ctx = _harness()
+    continuity = ctx["continuity_repo"].get(worker_instance_id=_WORKER_ID)
+    assert continuity is not None
+    continuity = replace(
+        continuity,
+        unresolved_problem_refs=(_EVIDENCE_REF,),
+    )
+    ctx["continuity_repo"].replace(continuity, expected_revision=continuity.revision)
+    continuity = ctx["continuity_repo"].get(worker_instance_id=_WORKER_ID)
+    assert continuity is not None
+    request = _orchestration_request(continuity_expected_revision=continuity.revision)
+    conflict = AutonomousWorkRevisionConflict(
+        "conflict",
+        entity_kind="WorkerInstance",
+        entity_id=_WORKER_ID,
+        expected_revision=Revision(0),
+        actual_revision=Revision(1),
+    )
+    original_lifecycle_transition = service._lifecycle_service.transition
+
+    def lifecycle_conflict_on_resume(request):
+        if request.target_state is WorkerLifecycleState.WORKING:
+            raise conflict
+        return original_lifecycle_transition(request)
+
+    with patch.object(
+        service._lifecycle_service,
+        "transition",
+        side_effect=lifecycle_conflict_on_resume,
+    ):
+        first = await service.orchestrate(request, dispatch_request=_dispatch_request())
+
+    assert first.episode.continuity_resume_completed is True
+    persisted_episode = first.episode
+    persisted_continuity = ctx["continuity_repo"].get(worker_instance_id=_WORKER_ID)
+
+    service2, ctx2 = _harness()
+    ctx2["episode_repo"].create_or_get(
+        replace(persisted_episode, status=RecoveryEpisodeStatus.PENDING, attempt_count=0),
+    )
+    ctx2["episode_repo"]._records[persisted_episode.recovery_episode_id] = persisted_episode  # type: ignore[attr-defined]
+    assert persisted_continuity is not None
+    ctx2["continuity_repo"]._store._records[_WORKER_ID] = persisted_continuity  # type: ignore[attr-defined]
+
+    continuity_replace_calls = 0
+    original_replace = ctx2["continuity_repo"].replace
+
+    def counting_replace(updated, *, expected_revision):
+        nonlocal continuity_replace_calls
+        continuity_replace_calls += 1
+        return original_replace(updated, expected_revision=expected_revision)
+
+    with patch.object(ctx2["continuity_repo"], "replace", side_effect=counting_replace):
+        second = await service2.orchestrate(request, dispatch_request=_dispatch_request())
+
+    assert second.disposition is WorkerRecoveryOrchestrationDisposition.RESUMED
+    assert second.episode.status is RecoveryEpisodeStatus.SUCCEEDED
+    assert second.resume_intent is not None
+    assert second.resume_intent.continuity_revision == persisted_episode.continuity_resume_revision
+    assert continuity_replace_calls == 0
+

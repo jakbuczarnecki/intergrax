@@ -76,7 +76,7 @@ from intergrax.contracts.autonomous_work.recovery_orchestration import (
     derive_recovery_episode_id,
     is_terminal_recovery_episode_status,
 )
-from intergrax.contracts.autonomous_work.revision import initial_revision
+from intergrax.contracts.autonomous_work.revision import Revision, initial_revision
 from intergrax.contracts.autonomous_work.worker import WorkerInstance
 
 _INELIGIBLE_WORKER_LIFECYCLE_STATES: frozenset[WorkerLifecycleState] = frozenset(
@@ -672,7 +672,7 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                     execution_id=execution_id,
                     recorded_at=now,
                 )
-            resume_result = self._resume_original_work(
+            episode, resume_result = self._resume_original_work(
                 episode=episode,
                 request=request,
                 now=now,
@@ -708,7 +708,10 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 is WorkerOriginalWorkResumeDisposition.CONFLICT
             ):
                 return WorkerRecoveryOrchestrationResult(
-                    disposition=WorkerRecoveryOrchestrationDisposition.STALE_CONTINUITY,
+                    disposition=_orchestration_disposition_for_resume(
+                        episode,
+                        resume_result,
+                    ),
                     episode=episode,
                     attempt_result=_attempt_result(
                         episode=episode,
@@ -806,6 +809,12 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 disposition=WorkerRecoveryOrchestrationDisposition.RECONCILIATION_REQUIRED,
                 episode=episode,
             )
+        if episode.continuity_resume_completed:
+            return self._reconcile_pending_lifecycle_resume(
+                episode,
+                request=request,
+                now=now,
+            )
         if episode.last_execution_id is None:
             return None
         terminal = self._execution_outcome_reader.get_terminal_outcome(
@@ -834,7 +843,7 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                     disposition=WorkerRecoveryOrchestrationDisposition.FAILED,
                     episode=episode,
                 )
-            resume_result = self._resume_original_work(
+            episode, resume_result = self._resume_original_work(
                 episode=episode,
                 request=request,
                 now=now,
@@ -860,7 +869,10 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 is WorkerOriginalWorkResumeDisposition.CONFLICT
             ):
                 return WorkerRecoveryOrchestrationResult(
-                    disposition=WorkerRecoveryOrchestrationDisposition.STALE_CONTINUITY,
+                    disposition=_orchestration_disposition_for_resume(
+                        episode,
+                        resume_result,
+                    ),
                     episode=episode,
                 )
             return WorkerRecoveryOrchestrationResult(
@@ -879,6 +891,48 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             episode=episode,
         )
 
+    def _reconcile_pending_lifecycle_resume(
+        self,
+        episode: WorkerRecoveryEpisode,
+        *,
+        request: WorkerRecoveryOrchestrationRequest,
+        now: datetime,
+    ) -> WorkerRecoveryOrchestrationResult:
+        worker = self._load_worker(episode.worker_instance_id)
+        if worker is None:
+            episode = self._episode_repository.mark_failed(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                completed_at=now,
+                terminal_reason="worker_not_found",
+            )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.FAILED,
+                episode=episode,
+            )
+        episode, resume_result = self._resume_original_work(
+            episode=episode,
+            request=request,
+            now=now,
+            worker=worker,
+        )
+        if resume_result.disposition is WorkerOriginalWorkResumeDisposition.RESUMED:
+            episode = self._episode_repository.mark_succeeded(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                completed_at=now,
+                terminal_reason="recovery_resume_completed",
+            )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.RESUMED,
+                episode=episode,
+                resume_intent=resume_result.resume_intent,
+            )
+        return WorkerRecoveryOrchestrationResult(
+            disposition=_orchestration_disposition_for_resume(episode, resume_result),
+            episode=episode,
+        )
+
     def _resume_original_work(
         self,
         *,
@@ -886,32 +940,17 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         request: WorkerRecoveryOrchestrationRequest,
         now: datetime,
         worker: WorkerInstance,
-    ) -> WorkerOriginalWorkResumeResult:
-        continuity = self._continuity_repository.get(
-            worker_instance_id=episode.worker_instance_id,
+    ) -> tuple[WorkerRecoveryEpisode, WorkerOriginalWorkResumeResult]:
+        episode, continuity_revision, continuity_conflict = self._apply_continuity_for_resume(
+            episode=episode,
+            request=request,
+            now=now,
         )
-        continuity_revision = continuity.revision if continuity is not None else initial_revision()
-        if continuity is not None and request.continuity_expected_revision is not None:
-            try:
-                updated = replace(
-                    continuity,
-                    unresolved_problem_refs=tuple(
-                        ref
-                        for ref in continuity.unresolved_problem_refs
-                        if ref not in request.evidence_refs
-                    ),
-                    revision=continuity.revision,
-                )
-                persisted = self._continuity_repository.replace(
-                    updated,
-                    expected_revision=request.continuity_expected_revision,
-                )
-                continuity_revision = persisted.revision
-            except AutonomousWorkRevisionConflict:
-                return WorkerOriginalWorkResumeResult(
-                    disposition=WorkerOriginalWorkResumeDisposition.CONFLICT,
-                    continuity_revision=continuity_revision,
-                )
+        if continuity_conflict:
+            return episode, WorkerOriginalWorkResumeResult(
+                disposition=WorkerOriginalWorkResumeDisposition.CONFLICT,
+                continuity_revision=continuity_revision,
+            )
 
         resume_state = _resume_lifecycle_state(
             pre_recovery=episode.pre_recovery_lifecycle_state,
@@ -927,7 +966,7 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             WorkerRecoveryLifecycleTransitionDisposition.NOT_FOUND,
             WorkerRecoveryLifecycleTransitionDisposition.INVALID,
         }:
-            return WorkerOriginalWorkResumeResult(
+            return episode, WorkerOriginalWorkResumeResult(
                 disposition=WorkerOriginalWorkResumeDisposition.CONFLICT,
                 continuity_revision=continuity_revision,
             )
@@ -939,11 +978,61 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             continuity_revision=continuity_revision,
             created_at=now,
         )
-        return WorkerOriginalWorkResumeResult(
+        return episode, WorkerOriginalWorkResumeResult(
             disposition=WorkerOriginalWorkResumeDisposition.RESUMED,
             resume_intent=resume_intent,
             continuity_revision=continuity_revision,
         )
+
+    def _apply_continuity_for_resume(
+        self,
+        *,
+        episode: WorkerRecoveryEpisode,
+        request: WorkerRecoveryOrchestrationRequest,
+        now: datetime,
+    ) -> tuple[WorkerRecoveryEpisode, Revision, bool]:
+        continuity = self._continuity_repository.get(
+            worker_instance_id=episode.worker_instance_id,
+        )
+        continuity_revision = (
+            continuity.revision if continuity is not None else initial_revision()
+        )
+        if episode.continuity_resume_completed:
+            assert episode.continuity_resume_revision is not None
+            return episode, episode.continuity_resume_revision, False
+        if continuity is None or request.continuity_expected_revision is None:
+            return episode, continuity_revision, False
+
+        owned_refs = frozenset(request.evidence_refs)
+        refs_to_clear = tuple(
+            ref for ref in owned_refs if ref in continuity.unresolved_problem_refs
+        )
+        try:
+            updated = replace(
+                continuity,
+                unresolved_problem_refs=tuple(
+                    ref
+                    for ref in continuity.unresolved_problem_refs
+                    if ref not in owned_refs
+                ),
+                revision=continuity.revision,
+            )
+            persisted = self._continuity_repository.replace(
+                updated,
+                expected_revision=request.continuity_expected_revision,
+            )
+            continuity_revision = persisted.revision
+        except AutonomousWorkRevisionConflict:
+            return episode, continuity_revision, True
+
+        if refs_to_clear:
+            episode = self._episode_repository.record_continuity_resume(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                continuity_resume_revision=continuity_revision,
+                recorded_at=now,
+            )
+        return episode, continuity_revision, False
 
     def _validate_source_freshness(
         self,
@@ -1013,6 +1102,17 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             disposition=disposition,
             worker=result.worker_instance,
         )
+
+
+def _orchestration_disposition_for_resume(
+    episode: WorkerRecoveryEpisode,
+    resume_result: WorkerOriginalWorkResumeResult,
+) -> WorkerRecoveryOrchestrationDisposition:
+    if resume_result.disposition is not WorkerOriginalWorkResumeDisposition.CONFLICT:
+        return WorkerRecoveryOrchestrationDisposition.UNAVAILABLE
+    if episode.continuity_resume_completed:
+        return WorkerRecoveryOrchestrationDisposition.CONFLICT
+    return WorkerRecoveryOrchestrationDisposition.STALE_CONTINUITY
 
 
 def _episode_requires_reconciliation(episode: WorkerRecoveryEpisode) -> bool:
