@@ -71,8 +71,9 @@ def test_product_scaffold_preserves_binding_identity_without_rewrite(tmp_path) -
         force=True,
     )
     manifest = (target / "manifest.py").read_text(encoding="utf-8")
-    assert "AgentBinding.mount(EchoAgent" in manifest
+    assert 'contract_id="echo"' in manifest
     assert "AgentBinding.mount(SignoffProbeAgent" in manifest
+    assert 'contract_id="signoff_probe"' in manifest
     assert 'model_copy(update={"contract_id"' not in manifest
     _assert_no_forbidden_patterns(target)
 
@@ -167,5 +168,6 @@ def test_lab_scaffold_uses_shared_development_registry_bootstrap(tmp_path) -> No
     assert "build_application_registry" not in wiring
     _assert_no_lab_lifecycle_bypass(tmp_path)
     manifest = (target / "manifest.py").read_text(encoding="utf-8")
-    assert "AgentBinding.mount(EchoAgent" in manifest
+    assert 'contract_id="echo"' in manifest
     assert "AgentBinding.mount(SignoffProbeAgent" in manifest
+    assert 'contract_id="signoff_probe"' in manifest

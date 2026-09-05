@@ -35,7 +35,7 @@ def test_capture_environment_snapshot_is_deterministic() -> None:
         name="Snapshot Deterministic",
         route_prefix="/v1/snapshot_deterministic",
         env_prefix="SNAPSHOT_DETERMINISTIC_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="snapshot_deterministic.lab")
     first = capture_environment_snapshot(manifest, environment)
@@ -52,7 +52,7 @@ def test_profile_snapshot_id_changes_when_profile_changes() -> None:
         name="Snapshot Profile Delta",
         route_prefix="/v1/snapshot_profile_delta",
         env_prefix="SNAPSHOT_PROFILE_DELTA_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     base = ApplicationEnvironmentProfile.lab_defaults(profile_id="snapshot_profile_delta.lab")
     mutated = base.model_copy(update={"spec_version": "1.0.1"})
@@ -65,7 +65,7 @@ def test_build_harness_host_runtime_mounts_snapshot_middleware() -> None:
         name="Snapshot Middleware Wiring",
         route_prefix="/v1/snapshot_middleware_wiring",
         env_prefix="SNAPSHOT_MIDDLEWARE_WIRING_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="snapshot_middleware_wiring.lab")
     runtime = build_harness_host_runtime(
@@ -87,7 +87,7 @@ async def test_strict_intake_records_profile_snapshot_id() -> None:
         name="Snapshot Strict Intake",
         route_prefix="/v1/snapshot_strict_intake",
         env_prefix="SNAPSHOT_STRICT_INTAKE_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(
         profile_id="snapshot_strict_intake.lab",

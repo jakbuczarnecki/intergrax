@@ -74,7 +74,9 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
     for s in specs:
         caps = ", ".join(repr(c) for c in s.capabilities)
         cap_arg = f", capabilities=[{caps}]" if s.capabilities else ""
-        mounts.append(f"        AgentBinding.mount({s.class_name}{cap_arg}),")
+        mounts.append(
+            f'        AgentBinding.mount({s.class_name}, contract_id="{s.contract_id}"{cap_arg}),'
+        )
     mounts_block = "\n".join(mounts)
     body = dedent(
         f'''\

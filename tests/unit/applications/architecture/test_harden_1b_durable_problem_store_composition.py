@@ -60,7 +60,7 @@ def _product_manifest() -> ApplicationManifest:
         name="HARDEN-1B Product Host",
         route_prefix="/v1/harden_1b",
         env_prefix="HARDEN_1B_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=env,
     )
 

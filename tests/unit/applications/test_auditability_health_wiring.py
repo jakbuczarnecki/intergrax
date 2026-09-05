@@ -221,7 +221,7 @@ def test_runtime_health_projection_uses_diagnostic_wiring(
         name="Auditability Runtime Host",
         route_prefix="/v1/auditability_runtime",
         env_prefix="AUDITABILITY_RUNTIME_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=environment,
     )
     registry = AgentRegistry()

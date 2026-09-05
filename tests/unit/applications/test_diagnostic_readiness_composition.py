@@ -58,7 +58,7 @@ def _scenario_manifest(app_id: str = "diag_readiness_test") -> ApplicationManife
         name="Diagnostic Readiness Test",
         route_prefix="/v1/diag_readiness",
         env_prefix="DIAG_READINESS_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
 
 
@@ -86,7 +86,7 @@ def _product_manifest() -> ApplicationManifest:
         name="Diagnostic Product Host",
         route_prefix="/v1/diag_product",
         env_prefix="DIAG_PRODUCT_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=env,
     )
 

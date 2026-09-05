@@ -151,8 +151,6 @@ class _MockAgentBase(HarnessReferenceAgent):
 
 
 class ResearchMockAgent(_MockAgentBase):
-    contract_id = "research_mock"
-
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
         super().__init__(
             harness,
@@ -165,8 +163,6 @@ class ResearchMockAgent(_MockAgentBase):
 
 
 class DocumentMockAgent(_MockAgentBase):
-    contract_id = "document_mock"
-
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
         super().__init__(
             harness,
@@ -179,8 +175,6 @@ class DocumentMockAgent(_MockAgentBase):
 
 
 class ValidatorMockAgent(_MockAgentBase):
-    contract_id = "validator_mock"
-
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
         super().__init__(
             harness,
@@ -193,8 +187,6 @@ class ValidatorMockAgent(_MockAgentBase):
 
 
 class ComposerMockAgent(_MockAgentBase):
-    contract_id = "composer_mock"
-
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
         super().__init__(
             harness,

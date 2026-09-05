@@ -31,6 +31,7 @@ def build_governed_contractor_manifest() -> ApplicationManifest:
         agents=[
             AgentBinding.mount(
                 ExternalContractorAdapterAgent,
+                contract_id="external_contractor_adapter",
                 factory=build_governed_contractor_external_contractor_adapter_from_context,
                 capabilities=["external_contractor.adapt"],
                 default=True,

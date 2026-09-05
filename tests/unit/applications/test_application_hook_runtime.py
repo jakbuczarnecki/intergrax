@@ -27,7 +27,7 @@ def test_build_harness_host_runtime_configures_hook_runtime_guard() -> None:
         name="Hook Guard Wiring Test",
         route_prefix="/v1/hook_guard_wiring_test",
         env_prefix="HOOK_GUARD_WIRING_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="hook_guard.lab").model_copy(
         update={

@@ -81,7 +81,7 @@ def _product_manifest(profile_id: str = "df5.product.host") -> ApplicationManife
         name="DF5 Product Host",
         route_prefix="/v1/df5_product",
         env_prefix="DF5_PRODUCT_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=environment,
     )
 

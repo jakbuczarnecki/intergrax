@@ -80,7 +80,7 @@ def test_scaffold_creates_application_tree(tmp_path):
     assert 'Intergrax-ai = { workspace = true }' in pyproject
 
     manifest = (target / "manifest.py").read_text(encoding="utf-8")
-    assert "AgentBinding.mount(EchoAgent" in manifest
+    assert 'contract_id="echo"' in manifest
     wiring_src = (target / "host" / "wiring.py").read_text(encoding="utf-8")
     assert "build_manifest_development_registry" in wiring_src
     assert "build_application_registry" not in wiring_src

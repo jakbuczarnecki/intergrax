@@ -32,7 +32,7 @@ class HarnessApplication:
 
         app = (
             HarnessApplication("my_lab")
-            .agents(EchoAgent)
+            .agents(EchoAgent, contract_id="echo")
             .integrations(IntegrationProfile.lab_stack())
             .mode("balanced")
             .build_fastapi()
@@ -52,7 +52,7 @@ class HarnessApplication:
         self._name = name or f"{slug.replace('_', ' ').title()} Application"
         self._route_prefix = route_prefix or f"/v1/{slug}"
         self._env_prefix = env_prefix or f"{slug.upper()}_"
-        self._agent_types: list[type[Agent]] = []
+        self._agent_bindings: list[AgentBinding] = []
         self._integration_profile: IntegrationProfile | None = None
         self._environment: ApplicationEnvironmentProfile | None = None
         self._graph: AgentGraph | None = None
@@ -62,8 +62,21 @@ class HarnessApplication:
         self._manifest: ApplicationManifest | None = None
         self._runtime: HarnessHostRuntime | None = None
 
-    def agents(self, *agent_types: type[Agent]) -> HarnessApplication:
-        self._agent_types.extend(agent_types)
+    def agents(
+        self,
+        agent_type: type[Agent],
+        /,
+        *,
+        contract_id: str,
+        capabilities: list[str] | None = None,
+    ) -> HarnessApplication:
+        self._agent_bindings.append(
+            AgentBinding.mount(
+                agent_type,
+                contract_id=contract_id,
+                capabilities=capabilities,
+            )
+        )
         return self
 
     def integrations(self, profile: IntegrationProfile) -> HarnessApplication:
@@ -112,7 +125,7 @@ class HarnessApplication:
     def _build_manifest(self) -> ApplicationManifest:
         if self._manifest is not None:
             return self._manifest
-        bindings = [AgentBinding.mount(agent_type) for agent_type in self._agent_types]
+        bindings = list(self._agent_bindings)
         return ApplicationManifest.lab(
             app_id=self._app_id,
             name=self._name,

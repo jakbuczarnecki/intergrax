@@ -35,7 +35,7 @@ def test_collect_dependencies_includes_agent_and_profile() -> None:
         name="Pkg Demo",
         route_prefix="/v1/pkg_demo",
         env_prefix="PKG_DEMO_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="pkg_demo.scaffold")
     deps = collect_application_dependencies(manifest, env)
@@ -70,7 +70,7 @@ def test_graph_trigger_capability_not_required_on_roster() -> None:
         name="Graph Trigger Demo",
         route_prefix="/v1/graph_trigger_demo",
         env_prefix="GRAPH_TRIGGER_DEMO_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="graph_trigger_demo.scaffold").model_copy(
         update={"graph_spec": graph},
@@ -88,7 +88,7 @@ def test_graph_invalid_node_still_fails_closure() -> None:
         name="Graph Invalid Node Demo",
         route_prefix="/v1/graph_invalid_node_demo",
         env_prefix="GRAPH_INVALID_NODE_DEMO_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="graph_invalid_node_demo.scaffold").model_copy(
         update={"graph_spec": graph},
@@ -103,7 +103,7 @@ def test_package_checksum_is_stable() -> None:
         name="Checksum Demo",
         route_prefix="/v1/checksum_demo",
         env_prefix="CHECKSUM_DEMO_",
-        agents=[AgentBinding.mount(EchoAgent)],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo")],
     )
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="checksum_demo.scaffold")
     package = build_application_package(manifest, env)

@@ -29,7 +29,7 @@ def test_manifest_json_roundtrip() -> None:
         name="Roundtrip",
         route_prefix="/v1/rt",
         environment=ApplicationEnvironmentProfile.lab_defaults(profile_id="rt"),
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         integration_profile=IntegrationProfile.lab_stack(),
     )
     restored = ApplicationManifest.model_validate_json(manifest.model_dump_json())

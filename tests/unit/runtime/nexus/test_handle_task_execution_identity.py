@@ -349,7 +349,7 @@ async def test_execute_scenario_task_reaches_graph_executor_with_execution_id(
         name="Scenario Platform 5D",
         route_prefix="/v1/scenario_platform_5d",
         env_prefix="SCENARIO_PLATFORM_5D_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=environment,
     )
     path = Path(str(tmp_path))

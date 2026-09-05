@@ -30,8 +30,8 @@ def test_diff_structured_reports_nested_change() -> None:
 
 
 def test_diff_roster_detects_capability_change() -> None:
-    left = [AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])]
-    right = [AgentBinding.mount(EchoAgent, capabilities=["echo.advanced"])]
+    left = [AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])]
+    right = [AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.advanced"])]
     changes = diff_roster(left, right)
     assert len(changes) == 1
     assert changes[0].kind is RosterChangeKind.CAPABILITIES_CHANGED
@@ -52,7 +52,7 @@ def test_execution_mode_change_is_high_risk() -> None:
         name="Diff Demo",
         route_prefix="/v1/diff_demo",
         env_prefix="DIFF_DEMO_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="diff_demo.product")
     relaxed = env.model_copy(update={"execution_mode": ExecutionMode.BALANCED})

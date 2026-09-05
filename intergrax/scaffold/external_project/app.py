@@ -14,7 +14,7 @@ def create_app():
     EchoAgent = importlib.import_module("echo.echo_agent").EchoAgent
     return (
         HarnessApplication("demo", route_prefix="/v1/demo")
-        .agents(EchoAgent)
+        .agents(EchoAgent, contract_id="echo")
         .integrations(IntegrationProfile.lab_stack())
         .graph(AgentGraph().default(EchoAgent))
         .mode("balanced")

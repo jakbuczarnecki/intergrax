@@ -70,7 +70,7 @@ def test_validate_strict_capability_graph_deploy_blocks_experimental_agent(
         name="Gate Test",
         route_prefix="/v1/gate_test",
         env_prefix="GATE_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     ).model_copy(update={"app_id": "gate_test"})
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="gate_test.product")
     view = _graph_view()
@@ -112,6 +112,6 @@ def test_check_strict_product_capability_graph_skips_non_strict_manifests() -> N
         name="Lab Skip Gate",
         route_prefix="/v1/lab_skip_gate",
         env_prefix="LAB_SKIP_GATE_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     assert check_strict_product_capability_graph("lab_skip_gate", manifest) == []

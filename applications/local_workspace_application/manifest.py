@@ -32,12 +32,14 @@ from local_workspace_application.host.environment_profile import (
 _LOCAL_WORKSPACE_AGENTS = [
     AgentBinding.mount(
         LocalIndexerAgent,
+        contract_id="local_indexer",
         factory=build_local_workspace_local_indexer_from_context,
         capabilities=["local.workspace.index"],
         budget_slice=product_agent_budget_slice(),
     ),
     AgentBinding.mount(
         LocalSearchAgent,
+        contract_id="local_search",
         factory=build_local_workspace_local_search_from_context,
         capabilities=["local.workspace.search"],
         default=True,
@@ -45,24 +47,28 @@ _LOCAL_WORKSPACE_AGENTS = [
     ),
     AgentBinding.mount(
         LocalSynthesizerAgent,
+        contract_id="local_synthesizer",
         factory=build_local_workspace_local_synthesizer_from_context,
         capabilities=["local.workspace.synthesize"],
         budget_slice=product_agent_budget_slice(),
     ),
     AgentBinding.mount(
         ToolSelectionQualifierAgent,
+        contract_id="tool_selection_qualifier",
         factory=build_local_workspace_tool_selection_qualifier_from_context,
         capabilities=["local.workspace.tool_selection_qualification"],
         budget_slice=product_agent_budget_slice(),
     ),
     AgentBinding.mount(
         WebSearchQualifierAgent,
+        contract_id="web_search_qualifier",
         factory=build_local_workspace_web_search_qualifier_from_context,
         capabilities=["local.workspace.web_search_qualification"],
         budget_slice=product_agent_budget_slice(),
     ),
     AgentBinding.mount(
         ModelRoutingQualifierAgent,
+        contract_id="model_routing_qualifier",
         factory=build_local_workspace_model_routing_qualifier_from_context,
         capabilities=["local.workspace.model_routing_qualification"],
         budget_slice=product_agent_budget_slice(),

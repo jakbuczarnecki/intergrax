@@ -21,6 +21,7 @@ from legal_application.host.agent_factories import build_legal_agent_from_contex
 _LEGAL_AGENTS = [
     AgentBinding.mount(
         LegalAgent,
+        contract_id="legal",
         factory=build_legal_agent_from_context,
         capabilities=["legal.review"],
         default=True,

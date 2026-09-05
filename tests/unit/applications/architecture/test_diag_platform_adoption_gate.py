@@ -68,7 +68,7 @@ def _product_manifest(profile_id: str = "diag.platform.product") -> ApplicationM
         name="Diag Platform Product",
         route_prefix="/v1/diag_platform",
         env_prefix="DIAG_PLATFORM_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=environment,
     )
 
@@ -79,7 +79,7 @@ def _scenario_manifest(app_id: str = "diag_platform_scenario") -> ApplicationMan
         name="Diag Platform Scenario",
         route_prefix="/v1/diag_platform_scenario",
         env_prefix="DIAG_PLATFORM_SCENARIO_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
 
 

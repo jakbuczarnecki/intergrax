@@ -51,7 +51,7 @@ def minimal_echo_scenario_manifest(
         name=resolved_name,
         route_prefix=f"/v1/{route_token}",
         env_prefix=f"{app_id.upper()}_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
 
 

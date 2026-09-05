@@ -22,6 +22,7 @@ def build_intergrax_assistant_manifest(
     agents: list[AgentBinding] = [
         AgentBinding.mount(
             IntergraxAssistantAgent,
+            contract_id="intergrax_assistant",
             capabilities=["platform.assist"],
             requires_uaep=True,
         ),
@@ -31,14 +32,24 @@ def build_intergrax_assistant_manifest(
         from echo.echo_agent import EchoAgent
 
         agents.append(
-            AgentBinding.mount(EchoAgent, capabilities=["echo.basic"], requires_uaep=True)
+            AgentBinding.mount(
+                EchoAgent,
+                contract_id="echo",
+                capabilities=["echo.basic"],
+                requires_uaep=True,
+            )
         )
 
     if settings.include_legal:
         from legal.legal_agent import LegalAgent
 
         agents.append(
-            AgentBinding.mount(LegalAgent, capabilities=["legal.review"], requires_uaep=True)
+            AgentBinding.mount(
+                LegalAgent,
+                contract_id="legal",
+                capabilities=["legal.review"],
+                requires_uaep=True,
+            )
         )
 
     if settings.include_research:
@@ -49,11 +60,13 @@ def build_intergrax_assistant_manifest(
             [
                 AgentBinding.mount(
                     ResearchAgent,
+                    contract_id="research",
                     capabilities=["research.web_search", "research.pipeline"],
                     requires_uaep=True,
                 ),
                 AgentBinding.mount(
                     SummaryAgent,
+                    contract_id="research-summary",
                     capabilities=["research.summarize"],
                     requires_uaep=True,
                 ),

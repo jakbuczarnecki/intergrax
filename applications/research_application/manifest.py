@@ -15,8 +15,16 @@ from research.summary_agent import SummaryAgent
 
 
 _RESEARCH_AGENTS = [
-    AgentBinding.mount(ResearchAgent, budget_slice=product_agent_budget_slice()),
-    AgentBinding.mount(SummaryAgent, budget_slice=product_agent_budget_slice()),
+    AgentBinding.mount(
+        ResearchAgent,
+        contract_id="research",
+        budget_slice=product_agent_budget_slice(),
+    ),
+    AgentBinding.mount(
+        SummaryAgent,
+        contract_id="research-summary",
+        budget_slice=product_agent_budget_slice(),
+    ),
 ]
 
 

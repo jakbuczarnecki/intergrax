@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 def test_harness_application_echo_run() -> None:
     app = (
         HarnessApplication("harness_test", route_prefix="/v1/harness_test")
-        .agents(EchoAgent)
+        .agents(EchoAgent, contract_id="echo")
         .integrations(IntegrationProfile.lab_stack())
         .graph(AgentGraph().default(EchoAgent))
         .build_fastapi()

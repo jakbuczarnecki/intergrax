@@ -79,7 +79,7 @@ def _audit_product_host_auditability() -> int:
         name="Observability Auditability Product Host",
         route_prefix="/v1/obs_auditability",
         env_prefix="OBS_AUDITABILITY_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=environment,
     )
     registry = AgentRegistry()
