@@ -94,6 +94,8 @@ def _merge_pytest_results(*results: PytestSubprocessResult) -> PytestSubprocessR
             stdout_tail="",
             stderr_tail="",
             duration_seconds=0.0,
+            basetemp_path=None,
+            failure_phase=None,
         )
     exit_code = 0
     for item in results:
@@ -115,6 +117,11 @@ def _merge_pytest_results(*results: PytestSubprocessResult) -> PytestSubprocessR
         stdout_tail=results[-1].stdout_tail,
         stderr_tail="\n".join(item.stderr_tail for item in results if item.stderr_tail),
         duration_seconds=sum(item.duration_seconds for item in results),
+        basetemp_path=results[-1].basetemp_path,
+        failure_phase=next(
+            (item.failure_phase for item in reversed(results) if item.failure_phase is not None),
+            None,
+        ),
     )
 
 

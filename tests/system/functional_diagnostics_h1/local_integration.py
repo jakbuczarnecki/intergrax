@@ -12,6 +12,7 @@ from tests.system.functional_diagnostics_h1.models import (
     LocalIntegrationDependencyClass,
     LocalIntegrationRunResult,
     LocalIntegrationSuiteResult,
+    PytestFailureEvidence,
     PytestSubprocessResult,
 )
 from tests.system.functional_diagnostics_h1.subprocess_pytest import (
@@ -67,6 +68,14 @@ def evaluate_local_integration_suite(
     if result.xpassed > 0:
         violations.append("unexpected_xpassed")
     verdict = HealthVerdict.PASS if not violations else HealthVerdict.FAILED
+    failure_evidence: PytestFailureEvidence | None = None
+    if verdict is not HealthVerdict.PASS:
+        failure_evidence = PytestFailureEvidence(
+            stdout_tail=result.stdout_tail,
+            stderr_tail=result.stderr_tail,
+            basetemp_path=result.basetemp_path or "",
+            failure_phase=result.failure_phase,
+        )
     return LocalIntegrationSuiteResult(
         target=target,
         collected=result.collected_count,
@@ -81,6 +90,7 @@ def evaluate_local_integration_suite(
         duration_seconds=result.duration_seconds,
         verdict=verdict,
         dependency_class=LocalIntegrationDependencyClass.LOCAL_DETERMINISTIC,
+        failure_evidence=failure_evidence,
     )
 
 

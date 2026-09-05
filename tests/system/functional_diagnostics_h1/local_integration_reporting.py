@@ -13,16 +13,30 @@ from tests.system.functional_diagnostics_h1.models import (
     LocalIntegrationQualificationReport,
     LocalIntegrationRunResult,
     LocalIntegrationSuiteResult,
+    PytestFailureEvidence,
 )
 from tests.system.functional_diagnostics_h1.qualification_spec import (
     resolve_local_integration_qualification_spec,
 )
 
 
+def _failure_evidence_to_json(
+    evidence: PytestFailureEvidence,
+) -> dict[str, str | None]:
+    return {
+        "stdout_tail": evidence.stdout_tail,
+        "stderr_tail": evidence.stderr_tail,
+        "basetemp_path": evidence.basetemp_path,
+        "failure_phase": (
+            evidence.failure_phase.value if evidence.failure_phase is not None else None
+        ),
+    }
+
+
 def _suite_to_json(
     suite: LocalIntegrationSuiteResult,
-) -> dict[str, str | int | float | None]:
-    return {
+) -> dict[str, str | int | float | None | dict[str, str | None]]:
+    payload: dict[str, str | int | float | None | dict[str, str | None]] = {
         "target": suite.target,
         "collected": suite.collected,
         "passed": suite.passed,
@@ -37,6 +51,9 @@ def _suite_to_json(
         "verdict": suite.verdict.value,
         "dependency_class": suite.dependency_class.value,
     }
+    if suite.failure_evidence is not None:
+        payload["failure_evidence"] = _failure_evidence_to_json(suite.failure_evidence)
+    return payload
 
 
 def _run_to_json(run: LocalIntegrationRunResult) -> dict[str, str | int | list[dict[str, str | int | float | None]] | None]:

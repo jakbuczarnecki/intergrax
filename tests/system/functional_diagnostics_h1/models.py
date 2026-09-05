@@ -83,6 +83,15 @@ class HealthGateId(StrEnum):
     H1_K_LOCAL_INTEGRATION = "H1-K"
 
 
+class PytestFailurePhase(StrEnum):
+    COLLECTION = "COLLECTION"
+    SETUP = "SETUP"
+    CALL = "CALL"
+    TEARDOWN = "TEARDOWN"
+    TIMEOUT = "TIMEOUT"
+    UNKNOWN = "UNKNOWN"
+
+
 class HealthDimension(StrEnum):
     DISCOVERABILITY = "DISCOVERABILITY"
     EXECUTABILITY = "EXECUTABILITY"
@@ -133,6 +142,14 @@ class QualificationRepositoryTransition:
 
 
 @dataclass(frozen=True, slots=True)
+class PytestFailureEvidence:
+    stdout_tail: str
+    stderr_tail: str
+    basetemp_path: str
+    failure_phase: PytestFailurePhase | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class PytestSubprocessResult:
     exit_code: int
     collected_count: int | None
@@ -146,6 +163,8 @@ class PytestSubprocessResult:
     stdout_tail: str
     stderr_tail: str
     duration_seconds: float
+    basetemp_path: str | None = None
+    failure_phase: PytestFailurePhase | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,6 +227,7 @@ class LocalIntegrationSuiteResult:
     duration_seconds: float
     verdict: HealthVerdict
     dependency_class: LocalIntegrationDependencyClass
+    failure_evidence: PytestFailureEvidence | None = None
 
 
 @dataclass(frozen=True, slots=True)
