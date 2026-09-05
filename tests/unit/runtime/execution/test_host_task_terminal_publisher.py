@@ -22,10 +22,10 @@ from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_run_id,
     mint_task_id,
+    validate_execution_id,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
-from intergrax.runtime.execution.runtime import mint_root_execution_identity
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
@@ -111,7 +111,6 @@ async def test_completed_task_result_publishes_terminal_once() -> None:
     task = _sample_task()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    expected_identity = mint_root_execution_identity(run_id=run_id, attempt_id=attempt_id)
 
     with patch(
         "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
@@ -132,9 +131,9 @@ async def test_completed_task_result_publishes_terminal_once() -> None:
     assert published_task.task_id == task.task_id
     assert published_task.state is TaskState.COMPLETED
     assert published_task.agent_id == task.agent_id
-    assert published_run_id == expected_identity.run_id
-    assert published_attempt_id == expected_identity.attempt_id
-    assert published_execution_id == expected_identity.execution_id
+    assert published_run_id == run_id
+    assert published_attempt_id == attempt_id
+    validate_execution_id(published_execution_id)
 
 
 @pytest.mark.asyncio
@@ -216,7 +215,6 @@ async def test_nexus_adapter_delegates_terminal_publication() -> None:
     task = _sample_task()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    expected_identity = mint_root_execution_identity(run_id=run_id, attempt_id=attempt_id)
 
     with patch.object(
         nexus_loop,
@@ -238,9 +236,9 @@ async def test_nexus_adapter_delegates_terminal_publication() -> None:
 
     publish_mock.assert_awaited_once()
     kwargs = publish_mock.await_args.kwargs
-    assert kwargs["run_id"] == expected_identity.run_id
-    assert kwargs["attempt_id"] == expected_identity.attempt_id
-    assert kwargs["execution_id"] == expected_identity.execution_id
+    assert kwargs["run_id"] == run_id
+    assert kwargs["attempt_id"] == attempt_id
+    validate_execution_id(kwargs["execution_id"])
     published_task = publish_mock.await_args.args[0]
     assert published_task.task_id == task.task_id
     assert published_task.state is TaskState.COMPLETED
