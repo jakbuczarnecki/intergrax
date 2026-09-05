@@ -760,6 +760,16 @@ Strategic root README visuals use reviewed self-contained light-dark image pairs
 
 Future strategic assets are validated when referenced; they are not mandatory before creation.
 
+### Strategic root README visual preservation policy
+
+Strategic root README visuals are protected public assets.
+
+1. Do not regenerate or replace strategic visuals as a side effect of architecture, code, domain documentation, or unrelated mechanism work.
+2. Changing a strategic visual requires an explicit task scope.
+3. Light and dark variants are one contract and must be changed together.
+4. A new strategic asset must be added to the registry in `tests/unit/docs/test_public_readme_contract.py` before merge.
+5. Content changes to a strategic visual must remain consistent with the current README and canonical documentation.
+
 ---
 
 ## Product documentation contract
