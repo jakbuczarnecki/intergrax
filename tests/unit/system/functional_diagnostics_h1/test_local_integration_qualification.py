@@ -32,6 +32,7 @@ from tests.system.functional_diagnostics_h1.models import (
     H1_K_QUALIFICATION_ID,
     H1_K_R2_QUALIFICATION_ID,
     H1_K_R3_QUALIFICATION_ID,
+    H1_K_R4_QUALIFICATION_ID,
     LocalIntegrationDependencyClass,
     LocalIntegrationQualificationReport,
     LocalIntegrationRunResult,
@@ -44,6 +45,7 @@ from tests.system.functional_diagnostics_h1.qualification_spec import (
     H1_K_R1_QUALIFICATION_SPEC,
     H1_K_R2_QUALIFICATION_SPEC,
     H1_K_R3_QUALIFICATION_SPEC,
+    H1_K_R4_QUALIFICATION_SPEC,
     LOCAL_INTEGRATION_QUALIFICATION_SPECS,
     LocalIntegrationQualificationSpec,
     resolve_local_integration_qualification_spec,
@@ -353,12 +355,24 @@ def test_r3_spec_identity() -> None:
     assert H1_K_R3_QUALIFICATION_SPEC.requires_origin_development_match is True
 
 
+def test_r4_spec_identity() -> None:
+    assert H1_K_R4_QUALIFICATION_SPEC.qualification_id == H1_K_R4_QUALIFICATION_ID
+    assert (
+        H1_K_R4_QUALIFICATION_SPEC.artifact_directory.as_posix()
+        == ".tmp/session/diag-h1-k-qualification-r4"
+    )
+    assert H1_K_R4_QUALIFICATION_SPEC.canonical_run_count == 3
+    assert H1_K_R4_QUALIFICATION_SPEC.requires_clean_repository is True
+    assert H1_K_R4_QUALIFICATION_SPEC.requires_origin_development_match is True
+
+
 @pytest.mark.parametrize(
     ("qualification_id", "expected_spec"),
     (
         (H1_K_QUALIFICATION_ID, H1_K_R1_QUALIFICATION_SPEC),
         (H1_K_R2_QUALIFICATION_ID, H1_K_R2_QUALIFICATION_SPEC),
         (H1_K_R3_QUALIFICATION_ID, H1_K_R3_QUALIFICATION_SPEC),
+        (H1_K_R4_QUALIFICATION_ID, H1_K_R4_QUALIFICATION_SPEC),
     ),
 )
 def test_resolve_local_integration_qualification_spec_by_id(
@@ -435,6 +449,8 @@ def test_registry_uniqueness_invariants() -> None:
     }
     assert len(qualification_ids) == len(LOCAL_INTEGRATION_QUALIFICATION_SPECS)
     assert len(artifact_dirs) == len(LOCAL_INTEGRATION_QUALIFICATION_SPECS)
+    for spec in LOCAL_INTEGRATION_QUALIFICATION_SPECS:
+        assert spec.canonical_run_count == 3
 
 
 def test_r2_report_id_matches_spec_not_r1() -> None:
