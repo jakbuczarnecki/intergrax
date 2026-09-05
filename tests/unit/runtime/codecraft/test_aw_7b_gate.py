@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -22,7 +23,13 @@ from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
 from intergrax.runtime.codecraft.substrate import resolve_craft_sandbox
 from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
 from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
-from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities
+from intergrax.integrations.contracts.sandbox_host import (
+    SandboxArtifact,
+    SandboxExecResult,
+    SandboxHostBackend,
+    SandboxSession as HostSandboxSession,
+)
+from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities, SandboxSecurityCapable
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.contracts.human_approver import local_development_approver_evidence
@@ -54,6 +61,22 @@ _CODECRAFT_OPS = frozenset(
 )
 
 
+class _PlainSandboxHostBackend:
+    """Canonical ``SandboxHostBackend`` without ``SandboxSecurityCapable`` attestation."""
+
+    def __init__(self, *, session_id: str = "hosted-plain") -> None:
+        self._session_id = session_id
+
+    def create_session(self) -> HostSandboxSession:
+        return HostSandboxSession(session_id=self._session_id)
+
+    def exec(self, session_id: str, command: str) -> SandboxExecResult:
+        return SandboxExecResult()
+
+    def upload_artifact(self, session_id: str, *, local_path: str, remote_name: str) -> SandboxArtifact:
+        return SandboxArtifact(artifact_id="artifact-1")
+
+
 class _FakeHostedSecurityBackend:
     """Provider-neutral hosted backend that attests sandbox security capabilities."""
 
@@ -75,6 +98,9 @@ class _FakeHostedSecurityBackend:
 
     def exec(self, session_id: str, command: str):
         return MagicMock(exit_code=0, stdout="", stderr="")
+
+    def upload_artifact(self, session_id: str, *, local_path: str, remote_name: str) -> SandboxArtifact:
+        return SandboxArtifact(artifact_id="artifact-1")
 
     def security_capabilities(self) -> SandboxSecurityCapabilities:
         return SandboxSecurityCapabilities(
@@ -297,8 +323,9 @@ def test_hitl_approval_from_other_craft_rejected(tmp_path: Path) -> None:
 
 
 def test_hosted_unknown_capability_fails_closed_on_deny() -> None:
-    backend = MagicMock()
-    backend.create_session.return_value = MagicMock(session_id="hosted-unknown")
+    backend = _PlainSandboxHostBackend(session_id="hosted-unknown")
+    assert isinstance(backend, SandboxHostBackend)
+    assert not isinstance(backend, SandboxSecurityCapable)
     profile = CodeCraftProfile(mode="autonomous", isolation_tier="cloud", network_egress="deny")
     resolution = resolve_craft_sandbox(
         ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": profile}),
@@ -308,6 +335,28 @@ def test_hosted_unknown_capability_fails_closed_on_deny() -> None:
     )
     assert resolution.session is None
     assert resolution.error == "network_egress_requirement_unsatisfied"
+
+
+def test_hosted_session_unknown_backend_returns_unknown_evidence() -> None:
+    backend = _PlainSandboxHostBackend(session_id="hosted-plain")
+    session = HostedSandboxSession.open(backend, tenant_id=TENANT, task_id=TASK)
+    caps = session.security_capabilities()
+    assert caps.isolation_tier == "cloud"
+    assert caps.provider_id == f"hosted:{session.session_id}"
+    assert caps.network_egress_deny_enforced is None
+
+
+def test_hosted_session_consumes_structural_sandbox_security_capable() -> None:
+    backend = _FakeHostedSecurityBackend(
+        session_id="hosted-structural",
+        provider_id="fake-hosted:structural",
+        network_egress_deny_enforced=True,
+    )
+    assert isinstance(backend, SandboxSecurityCapable)
+    session = HostedSandboxSession.open(backend, tenant_id=TENANT, task_id=TASK)
+    caps = session.security_capabilities()
+    assert caps.provider_id == "fake-hosted:structural"
+    assert caps.network_egress_deny_enforced is True
 
 
 def test_hosted_positive_capability_allows_deny() -> None:
@@ -370,6 +419,23 @@ def test_architecture_gate_blocks_private_sandbox_field_access() -> None:
     assert "_allowed_operations" not in substrate_source
     assert "_private_config" not in substrate_source
     assert "_backend" not in substrate_source
+
+
+def test_architecture_gate_blocks_reflective_security_capability_discovery() -> None:
+    """Security evidence must use ``SandboxSecurityCapable``, not getattr duck-typing."""
+    source_path = Path("intergrax/runtime/sandbox/hosted_session.py")
+    tree = ast.parse(source_path.read_text(encoding="utf-8"))
+    forbidden_attr_names = {"security_capabilities", "provider_id"}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != "getattr":
+            continue
+        if len(node.args) < 2:
+            continue
+        attr = node.args[1]
+        if isinstance(attr, ast.Constant) and attr.value in forbidden_attr_names:
+            pytest.fail(f"forbidden reflective getattr on {attr.value!r} in hosted_session security boundary")
 
 
 def test_hosted_resolution_marks_provider_identity() -> None:

@@ -67,15 +67,9 @@ class HostedSandboxSession:
         backend = self._backend
         if isinstance(backend, SandboxSecurityCapable):
             return backend.security_capabilities()
-        provider_fn = getattr(backend, "security_capabilities", None)
-        if callable(provider_fn):
-            caps = provider_fn()
-            if isinstance(caps, SandboxSecurityCapabilities):
-                return caps
-        provider_id = getattr(backend, "provider_id", None)
         return SandboxSecurityCapabilities(
             isolation_tier="cloud",
-            provider_id=str(provider_id or f"hosted:{self.session_id}"),
+            provider_id=f"hosted:{self.session_id}",
             network_egress_deny_enforced=None,
         )
 
