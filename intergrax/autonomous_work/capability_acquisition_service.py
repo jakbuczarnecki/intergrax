@@ -342,6 +342,11 @@ class WorkerCapabilityAcquisitionDecisionService:
             return _policy_blocked_result(request, decided_at)
 
         if policy.generated_capability_allowed:
+            if (
+                WorkerCapabilityCandidateKind.CODECRAFT_EPHEMERAL
+                not in policy.allowed_candidate_kinds
+            ):
+                return _policy_blocked_result(request, decided_at)
             if autonomy_level_allowed(
                 WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
                 policy.allowed_autonomy_levels,

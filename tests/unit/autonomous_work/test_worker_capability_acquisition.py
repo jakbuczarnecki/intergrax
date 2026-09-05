@@ -715,6 +715,43 @@ def test_a1_blocked_by_autonomy_policy() -> None:
     assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
 
 
+def test_a1_blocked_by_candidate_kind_policy() -> None:
+    policy = permissive_capability_policy(_CAPABILITY_PROFILE)
+    restricted = replace(
+        policy,
+        allowed_candidate_kinds=frozenset(
+            kind
+            for kind in policy.allowed_candidate_kinds
+            if kind is not WorkerCapabilityCandidateKind.CODECRAFT_EPHEMERAL
+        ),
+    )
+    service = _service(
+        tool_registry=ToolRegistry(),
+        skill_registry=SkillRegistry(),
+        policy=restricted,
+    )
+    result = service.decide(_request())
+
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+    assert result.decision.selected_candidate is None
+
+
+def test_a1_blocked_by_codecraft_profile_returns_no_safe_capability() -> None:
+    service = _service(
+        tool_registry=ToolRegistry(),
+        skill_registry=SkillRegistry(),
+        codecraft_allowed=False,
+    )
+    result = service.decide(_request())
+
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.NO_SAFE_CANDIDATE
+    assert result.decision.selected_candidate is None
+
+
 def test_a2_blocked_by_autonomy_policy() -> None:
     policy = permissive_capability_policy(_CAPABILITY_PROFILE)
     restricted = replace(
