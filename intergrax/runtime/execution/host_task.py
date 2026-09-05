@@ -12,6 +12,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     mint_attempt_id,
     mint_run_id,
@@ -36,6 +37,10 @@ from intergrax.runtime.execution.runtime import (
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
+from intergrax.runtime.execution.effective_profile_revision_admission import (
+    EffectiveProfileRevisionAdmissionPort,
+)
+from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.orchestration_capabilities import is_orchestration_capability
@@ -161,6 +166,7 @@ class HostTaskExecution:
     _ledger_factory: ExecutionBudgetLedgerFactory | None
     _run_budget: RunBudget | None
     _terminal_publisher: HostTaskTerminalPublisher | None = None
+    _revision_admission: EffectiveProfileRevisionAdmissionPort | None = None
 
     def _execution_runtime_for_task(
         self,
@@ -190,6 +196,8 @@ class HostTaskExecution:
         *,
         run_id: RunId | None = None,
         attempt_id: AttemptId | None = None,
+        execution_id: ExecutionId | None = None,
+        resume_checkpoint: TaskCheckpoint | None = None,
     ) -> TaskResult:
         capabilities = resolve_task_execution_capabilities(
             task,
@@ -206,7 +214,15 @@ class HostTaskExecution:
         root_identity = mint_root_execution_identity(
             run_id=resolved_run_id,
             attempt_id=resolved_attempt_id,
+            execution_id=execution_id,
         )
+        if self._revision_admission is not None:
+            task = self._revision_admission.admit_root_execution(
+                tenant_id=task.tenant_id,
+                execution_id=root_identity.execution_id,
+                task=task,
+                resume_checkpoint=resume_checkpoint,
+            )
         options = RootExecutionOptions(
             authority=resolve_root_parent_execution_authority(task.execution_authority),
             tenant_id=task.tenant_id,

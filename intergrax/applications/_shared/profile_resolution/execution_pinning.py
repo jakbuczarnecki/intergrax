@@ -9,6 +9,9 @@ from intergrax.applications.contracts.profile_resolution.errors import (
     EffectiveProfileRevisionError,
     MissingPinnedEffectiveProfileRevisionError,
 )
+from intergrax.applications.contracts.profile_resolution.revision import (
+    EffectiveProfileRevisionScope,
+)
 from intergrax.applications.contracts.profile_resolution.execution_binding import (
     EFFECTIVE_PROFILE_REVISION_METADATA_KEY,
     EffectiveProfileExecutionBinding,
@@ -34,6 +37,10 @@ class InMemoryEffectiveProfileExecutionPinningStore:
 
     def __init__(self) -> None:
         self._bindings: dict[tuple[str, str], EffectiveProfileExecutionBinding] = {}
+
+    @property
+    def is_durable(self) -> bool:
+        return False
 
     def pin(self, binding: EffectiveProfileExecutionBinding) -> None:
         key = (binding.tenant_id, binding.execution_id)
@@ -145,6 +152,30 @@ def attach_revision_checkpoint_evidence_to_task(
     return task.model_copy(update={"metadata": metadata})
 
 
+def verify_checkpoint_revision_consistency(
+    *,
+    checkpoint: TaskCheckpoint,
+    binding: EffectiveProfileExecutionBinding,
+) -> None:
+    """Fail closed when checkpoint evidence conflicts with canonical binding."""
+    checkpoint_revision_id = revision_id_from_checkpoint(checkpoint)
+    raw = checkpoint.task_snapshot.get("metadata", {}).get(EFFECTIVE_PROFILE_REVISION_METADATA_KEY)
+    if raw is None:
+        raise MissingPinnedEffectiveProfileRevisionError(
+            tenant_id=binding.tenant_id,
+            execution_id=str(binding.execution_id),
+        )
+    evidence = EffectiveProfileRevisionCheckpointEvidence.model_validate(raw)
+    if checkpoint_revision_id != binding.revision_id:
+        raise EffectiveProfileRevisionConflictError(
+            "checkpoint revision conflicts with execution binding",
+        )
+    if evidence.fingerprint != binding.fingerprint:
+        raise EffectiveProfileRevisionConflictError(
+            "checkpoint fingerprint conflicts with execution binding",
+        )
+
+
 def revision_id_from_checkpoint(checkpoint: TaskCheckpoint) -> EffectiveProfileRevisionId:
     """Resolve pinned revision identity from checkpoint task metadata."""
     raw = checkpoint.task_snapshot.get("metadata", {}).get(EFFECTIVE_PROFILE_REVISION_METADATA_KEY)
@@ -172,9 +203,8 @@ def resolve_revision_for_execution(
         execution_id=execution_id,
         pinning_store=pinning_store,
     )
-    from intergrax.applications.contracts.profile_resolution.revision import (
-        EffectiveProfileRevisionScope,
-    )
+    if binding.tenant_id != tenant_id:
+        raise EffectiveProfileRevisionError("execution binding tenant mismatch")
 
     revision = revision_store.get(
         binding.revision_id,
@@ -188,4 +218,10 @@ def resolve_revision_for_execution(
             tenant_id=tenant_id,
             execution_id=str(execution_id),
         )
+    if revision.fingerprint != binding.fingerprint:
+        raise EffectiveProfileRevisionError("pinned revision fingerprint mismatch")
+    if revision.scope.application_id != scope_application_id:
+        raise EffectiveProfileRevisionError("pinned revision application scope mismatch")
+    if scope_tenant_id is not None and revision.scope.tenant_id != scope_tenant_id:
+        raise EffectiveProfileRevisionError("pinned revision tenant scope mismatch")
     return revision

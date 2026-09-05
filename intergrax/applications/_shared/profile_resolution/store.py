@@ -26,6 +26,10 @@ class InMemoryEffectiveProfileRevisionStore:
     def __init__(self) -> None:
         self._revisions: dict[tuple[str, str | None, str], EffectiveProfileRevision] = {}
 
+    @property
+    def is_durable(self) -> bool:
+        return False
+
     def save(self, revision: EffectiveProfileRevision) -> None:
         app_id, tenant_id = _scope_key(revision.scope)
         key = (app_id, tenant_id, revision.revision_id.value)

@@ -114,15 +114,26 @@ from intergrax.applications._shared.profile_resolution import (
     materialize_effective_profile_revision,
     resolve_profile,
 )
+from intergrax.applications._shared.profile_resolution.execution_admission import (
+    EffectiveProfileExecutionPinningDependencies,
+)
+from intergrax.applications._shared.profile_resolution.wiring import (
+    resolve_effective_profile_persistence_wiring,
+)
 from intergrax.applications.contracts.profile_resolution import (
     EffectiveProfileRevision,
     EffectiveProfileRevisionScope,
     ProfileLayerInput,
     ProfileResolution,
 )
+from intergrax.applications.contracts.profile_resolution.execution_binding import (
+    EffectiveProfileExecutionPinningStore,
+)
 from intergrax.applications.contracts.profile_resolution.store import (
     EffectiveProfileRevisionStore,
 )
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -170,6 +181,8 @@ class HarnessHostRuntime:
     control_plane_governance: HarnessControlPlaneGovernance | None = None
     profile_resolution: ProfileResolution | None = None
     effective_profile_revision: EffectiveProfileRevision | None = None
+    effective_profile_revision_store: EffectiveProfileRevisionStore | None = None
+    effective_profile_pinning_store: EffectiveProfileExecutionPinningStore | None = None
 
 
 def build_harness_host_runtime(
@@ -197,6 +210,7 @@ def build_harness_host_runtime(
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
     profile_layers: tuple[ProfileLayerInput, ...] = (),
     revision_store: EffectiveProfileRevisionStore | None = None,
+    pinning_store: EffectiveProfileExecutionPinningStore | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -210,13 +224,24 @@ def build_harness_host_runtime(
 
     profile_resolution = resolve_profile(environment, layers=profile_layers)
     effective_environment = profile_resolution.effective_profile
+    production_mode = effective_environment.execution_mode.value == "strict"
+    kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+    doc_store = document_store if isinstance(document_store, DocumentStore) else None
+    profile_persistence = resolve_effective_profile_persistence_wiring(
+        production_mode=production_mode,
+        kv_store=kv_store,
+        document_store=doc_store,
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+    )
+    revision_scope = EffectiveProfileRevisionScope(
+        application_id=resolved_manifest.app_id,
+        tenant_id=tenant_id,
+    )
     effective_profile_revision = materialize_effective_profile_revision(
         profile_resolution,
-        scope=EffectiveProfileRevisionScope(
-            application_id=resolved_manifest.app_id,
-            tenant_id=tenant_id,
-        ),
-        store=revision_store,
+        scope=revision_scope,
+        store=profile_persistence.revision_store,
     )
 
     env_wiring = wire_application_environment(
@@ -370,7 +395,16 @@ def build_harness_host_runtime(
         effective_environment,
         mutation_authorization_boundary=mutation_authorization_boundary,
     )
-    execution = build_environment_host_task_execution(nexus_loop, effective_environment)
+    execution = build_environment_host_task_execution(
+        nexus_loop,
+        effective_environment,
+        pinning_dependencies=EffectiveProfileExecutionPinningDependencies(
+            revision=effective_profile_revision,
+            revision_store=profile_persistence.revision_store,
+            pinning_store=profile_persistence.pinning_store,
+            scope=revision_scope,
+        ),
+    )
     return HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=effective_environment,
@@ -393,4 +427,6 @@ def build_harness_host_runtime(
         control_plane_governance=control_plane_governance,
         profile_resolution=profile_resolution,
         effective_profile_revision=effective_profile_revision,
+        effective_profile_revision_store=profile_persistence.revision_store,
+        effective_profile_pinning_store=profile_persistence.pinning_store,
     )

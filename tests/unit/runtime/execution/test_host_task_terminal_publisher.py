@@ -94,6 +94,7 @@ def test_host_task_module_has_no_nexus_dependency() -> None:
 def test_host_task_execution_has_terminal_publisher_field_only() -> None:
     field_names = {field.name for field in fields(HostTaskExecution)}
     assert "_terminal_publisher" in field_names
+    assert "_revision_admission" in field_names
     assert "_nexus_loop" not in field_names
     assert "nexus_loop" not in field_names
 

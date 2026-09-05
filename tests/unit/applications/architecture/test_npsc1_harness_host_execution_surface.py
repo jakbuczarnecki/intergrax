@@ -85,6 +85,11 @@ def _relax_harness_environment_assertions(monkeypatch: pytest.MonkeyPatch) -> No
         "intergrax.runtime.nexus.nexus_loop.validate_durable_attempt_lifecycle_for_composition",
         lambda **_kwargs: None,
     )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.profile_resolution.wiring."
+        "validate_effective_profile_pinning_durability_for_composition",
+        lambda **_kwargs: None,
+    )
 
 
 def _strict_environment():
