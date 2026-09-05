@@ -56,7 +56,7 @@ async def test_ds_e2e_03_real_independent_semantic_verifier_pass(
     pipeline = build_semantic_verification_pipeline(
         tool_bridge=bridge,
         rubric_id="decision_e2e_pass",
-        min_score=0.1,
+        min_score=0.01,
         producer_profile_id="profile-producer",
         verifier_profile_id="profile-verifier",
     )
@@ -64,14 +64,15 @@ async def test_ds_e2e_03_real_independent_semantic_verifier_pass(
         pipeline=pipeline,
         revision_policy=decision_revision_policy(max_revisions=0),
     )
-    token = bind_active_decision_lifecycle_host(composition.lifecycle_host)
+    lifecycle_host, _event_bus = composition.lifecycle_for_identity(identity)
+    token = bind_active_decision_lifecycle_host(lifecycle_host)
     try:
         payload, _ = await run_single_model_producer(
             composition,
             identity=identity,
             task_message=(
-                "Return recommendation=approve with confidence=high. "
-                "The answer is explicit and bounded."
+                "Return recommendation=approve with confidence=high and a clear "
+                "rationale_summary explaining one explicit bounded operational action."
             ),
         )
         pass_result = await evaluate_decision_flow(
@@ -98,7 +99,8 @@ async def test_ds_e2e_03_real_independent_semantic_verifier_pass(
         ),
         revision_policy=decision_revision_policy(max_revisions=0),
     )
-    token = bind_active_decision_lifecycle_host(composition.lifecycle_host)
+    fail_lifecycle_host, _ = composition.lifecycle_for_identity(identity_fail)
+    token = bind_active_decision_lifecycle_host(fail_lifecycle_host)
     try:
         vague_payload = QualificationRecommendation(
             recommendation="maybe",

@@ -50,8 +50,10 @@ async def test_ds_e2e_05_governed_side_effect(
 ) -> None:
     composition = decision_e2e_composition
     store = SandboxSideEffectStore()
-    action = decision_execution_action(kind="sandbox_row_write")
-    policy = decision_governance_policy_context(policy_id="decision_e2e_sandbox")
+    action = decision_execution_action(kind="sandbox_row_write", subject="sandbox")
+    policy = decision_governance_policy_context(
+        policy_provenance_digest="decision_e2e_sandbox",
+    )
     allow_gate = composition.build_flow_gate(
         pipeline=build_pass_through_pipeline(),
         revision_policy=decision_revision_policy(max_revisions=0),
@@ -79,7 +81,8 @@ async def test_ds_e2e_05_governed_side_effect(
         ),
     )
     identity = mint_qualification_identity(subject="governance-allow")
-    token = bind_active_decision_lifecycle_host(composition.lifecycle_host)
+    lifecycle_host, _event_bus = composition.lifecycle_for_identity(identity)
+    token = bind_active_decision_lifecycle_host(lifecycle_host)
     try:
         payload, _ = await run_single_model_producer(
             composition,
@@ -111,7 +114,8 @@ async def test_ds_e2e_05_governed_side_effect(
     )
 
     deny_identity = mint_qualification_identity(subject="governance-deny")
-    token = bind_active_decision_lifecycle_host(composition.lifecycle_host)
+    deny_lifecycle_host, _ = composition.lifecycle_for_identity(deny_identity)
+    token = bind_active_decision_lifecycle_host(deny_lifecycle_host)
     try:
         deny_payload, _ = await run_single_model_producer(
             composition,

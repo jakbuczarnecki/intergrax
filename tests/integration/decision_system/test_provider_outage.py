@@ -6,6 +6,9 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.registry.profile import LLMProfile
+
 from testing_support.decision_e2e.composition import (
     build_qualification_composition,
     mint_qualification_identity,

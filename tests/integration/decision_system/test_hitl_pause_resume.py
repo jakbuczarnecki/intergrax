@@ -117,7 +117,8 @@ async def test_ds_e2e_04_hitl_pause_resume(
         revision_policy=decision_revision_policy(max_revisions=0),
         human_review_port=hitl_port,
     )
-    token = bind_active_decision_lifecycle_host(composition.lifecycle_host)
+    lifecycle_host, _event_bus = composition.lifecycle_for_identity(identity)
+    token = bind_active_decision_lifecycle_host(lifecycle_host)
     try:
         payload, _ = await run_single_model_producer(
             composition,
@@ -151,7 +152,8 @@ async def test_ds_e2e_04_hitl_pause_resume(
         revision_policy=decision_revision_policy(max_revisions=0),
         human_review_port=reject_port,
     )
-    token = bind_active_decision_lifecycle_host(composition.lifecycle_host)
+    reject_lifecycle_host, _ = composition.lifecycle_for_identity(reject_identity)
+    token = bind_active_decision_lifecycle_host(reject_lifecycle_host)
     try:
         reject_payload, _ = await run_single_model_producer(
             composition,
@@ -173,17 +175,40 @@ async def test_ds_e2e_04_hitl_pause_resume(
     )
 
     stale_identity = mint_qualification_identity(subject="hitl-stale")
-    stale_request = reject_port.pending_requests[0]
+    stale_port = DurableDecisionHumanReviewPort()
+    stale_gate = composition.build_flow_gate(
+        pipeline=_hitl_pipeline(),
+        revision_policy=decision_revision_policy(max_revisions=0),
+        human_review_port=stale_port,
+    )
+    stale_lifecycle_host, _ = composition.lifecycle_for_identity(stale_identity)
+    token = bind_active_decision_lifecycle_host(stale_lifecycle_host)
+    try:
+        stale_payload, _ = await run_single_model_producer(
+            composition,
+            identity=stale_identity,
+            task_message="Return recommendation=review with confidence=medium.",
+        )
+        stale_pending = await evaluate_decision_flow(
+            composition,
+            stale_gate,
+            identity=stale_identity,
+            payload=stale_payload,
+        )
+    finally:
+        reset_active_decision_lifecycle_host(token)
+    assert stale_pending.host_action is DecisionFlowHostAction.PENDING_HUMAN
+    stale_request = stale_port.pending_requests[0]
     bumped_identity = replace(
         stale_identity,
         version=next_decision_version(stale_identity.version),
     )
     stale_candidate = candidate_decision(
         identity=bumped_identity,
-        artifact_kind=reject_pending.candidate.artifact.kind,
-        payload=reject_pending.candidate.artifact.content,
+        artifact_kind=stale_pending.candidate.artifact.kind,
+        payload=stale_pending.candidate.artifact.content,
     )
-    reject_port.submit_stale_decision(
+    stale_port.submit_stale_decision(
         stale_request=stale_request,
         current_proposal_ref=candidate_decision_ref(stale_candidate),
     )

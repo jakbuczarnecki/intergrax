@@ -30,8 +30,8 @@ from tests.integration.runtime.diag_final_otel_support import (
     execute_host_run,
     refresh_collector_output,
     require_docker_for_external_otlp_proof,
-    start_collector_process_only,
-    stop_collector_process_only,
+    start_collector_stack,
+    stop_collector_stack,
     wait_for_collector_event_id,
 )
 
@@ -88,9 +88,10 @@ async def test_ds_e2e_11_otlp_reconstruction(
         pipeline=build_pass_through_pipeline(),
         revision_policy=decision_revision_policy(max_revisions=0),
     )
-    collector = start_collector_process_only()
+    collector = start_collector_stack(tmp_path)
+    lifecycle_host, event_bus = composition.lifecycle_for_identity(identity)
     try:
-        token = bind_active_decision_lifecycle_host(composition.lifecycle_host)
+        token = bind_active_decision_lifecycle_host(lifecycle_host)
         try:
             payload, _ = await run_single_model_producer(
                 composition,
@@ -105,7 +106,7 @@ async def test_ds_e2e_11_otlp_reconstruction(
             )
         finally:
             reset_active_decision_lifecycle_host(token)
-        events = tuple(composition.event_bus.history)
+        events = tuple(event_bus.history)
         snapshot = project_decision_lifecycle_snapshot(events)
         assert snapshot.decision_id == identity.decision_id
         assert snapshot.tenant_id == identity.tenant_id
@@ -140,7 +141,7 @@ async def test_ds_e2e_11_otlp_reconstruction(
         for item in forbidden:
             assert item not in collector_payload
     finally:
-        stop_collector_process_only(collector)
+        stop_collector_stack()
 
     decision_e2e_report_collector.record(
         DecisionE2EQualificationResult(

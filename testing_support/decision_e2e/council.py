@@ -78,7 +78,7 @@ class QualificationDisagreementAnalyzer(
         positions = tuple(
             disagreement_position(
                 proposal_ref=proposal.proposal_ref,
-                summary=proposal.candidate.artifact.content.recommendation,
+                summary=proposal.candidate.artifact.content.recommendation.strip(),
             )
             for proposal in proposals
         )

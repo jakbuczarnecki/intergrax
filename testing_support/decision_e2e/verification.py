@@ -51,7 +51,9 @@ class RecommendationSemanticExtractor:
 @dataclass(frozen=True, slots=True)
 class RecommendationToSemanticAdapter:
     def extract(self, candidate: CandidateDecision[QualificationRecommendation]) -> str:
-        return candidate.artifact.content.recommendation
+        content = candidate.artifact.content
+        parts = (content.recommendation.strip(), content.rationale_summary.strip())
+        return ". ".join(part for part in parts if part)
 
 
 class DeterministicPassStage:
@@ -85,7 +87,7 @@ class StaticRubricResolver:
 
 
 def _default_rubric(*, rubric_id: str, min_score: float) -> ResolvedSemanticRubric:
-    ref = semantic_rubric_ref(rubric_id=rubric_id, version="v1")
+    ref = semantic_rubric_ref(rubric_id=rubric_id, version=1)
     return resolved_semantic_rubric(
         ref=ref,
         criteria=("answer must be explicit and bounded",),

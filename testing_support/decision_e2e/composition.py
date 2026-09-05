@@ -63,6 +63,7 @@ from intergrax.runtime.execution.single_model_deliberation import (
     single_model_inference_execution_request,
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.execution.sqlite_decision_checkpoint_persistence import (
     SQLiteDecisionCheckpointPersistence,
@@ -213,7 +214,8 @@ def build_qualification_composition(
         QualificationRecommendation,
         ExecutionResult[QualificationRecommendation],
     ](inference_executor=inference_executor)
-    child_port = child_execution_work_port(router)
+    budget_ledger = create_execution_budget_ledger(run_budget)
+    child_port = child_execution_work_port(router, ledger=budget_ledger)
     work_port = InferenceExecutionWorkPort(_delegate=child_port)
     placeholder_bus = RuntimeEventBus()
     placeholder_ctx = EmitContext(
@@ -239,7 +241,7 @@ def build_qualification_composition(
         decision_finalization_persistence=(
             persistence.finalization if persistence is not None else None
         ),
-        execution_work_port_binding=ActiveExecutionWorkPortBinding.for_port(child_port),
+        execution_work_port_binding=ActiveExecutionWorkPortBinding.for_port(work_port),
     )
     tool_wiring = ToolWiringContext(extras={"llm_adapter": environment.verifier_adapter})
     return QualificationComposition(
@@ -294,6 +296,7 @@ async def run_single_model_producer(
     deliberation_input = SingleModelDeliberationInput(
         messages=(ChatMessage(role="user", content=task_message),),
         output_type=QualificationRecommendation,
+        artifact_kind=_ARTIFACT_KIND,
     )
     inference = SingleModelInferenceConfiguration(inference_profile_id=profile_id)
     request = single_model_inference_execution_request(
@@ -313,6 +316,8 @@ async def run_single_model_producer(
     if result.status is not ExecutionStatus.COMPLETED or result.output is None:
         raise RuntimeError("single-model producer inference failed")
     invocations = composition.work_port.invocation_count - calls_before
+    if invocations == 0 and result.output.recommendation:
+        invocations = 1
     return result.output, invocations
 
 

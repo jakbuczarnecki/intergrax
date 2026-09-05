@@ -20,7 +20,7 @@ from intergrax.runtime.execution.active_decision_lifecycle_host import (
     reset_active_decision_lifecycle_host,
 )
 from intergrax.runtime.execution.decision_recovery import persist_terminal_decision_state
-from intergrax.runtime.execution.decision_checkpoint_persistence import decision_checkpoint_state
+from intergrax.contracts.decision_checkpoint import decision_checkpoint_state
 
 from testing_support.decision_e2e.composition import (
     evaluate_decision_flow,
