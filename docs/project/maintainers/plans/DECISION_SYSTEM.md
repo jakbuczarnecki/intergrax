@@ -4,11 +4,11 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Canonical target architecture **FROZEN**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. Remaining work: Platform Plugins integration · lifecycle observability/diagnostics · real Docker E2E production qualification (**DS-E2E-02** Council multi-provider) · final exact-commit audit. **Not** whole-system production-qualified until DS-E2E + DS-FINAL-AUDIT.
+> **DS-ROADMAP-REALITY-SYNC (2026-09-05):** Canonical target architecture **FROZEN**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. Remaining work: real Docker E2E production qualification (**DS-E2E-02** Council multi-provider) · final exact-commit audit. **Not** whole-system production-qualified until DS-E2E + DS-FINAL-AUDIT.
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub**.
 
-**Last updated:** 2026-09-04 - DS-ROADMAP-REALITY-SYNC.
+**Last updated:** 2026-09-05 - DS-OBS-DIAG enterprise closed.
 
 ---
 
@@ -77,6 +77,7 @@ Ordered sequencing labels (existing **DS-\*** IDs remain authoritative):
 | **DS-VER-PIPE / DS-VER-STAGES** | **DONE** | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | **DS-DELIB / DS-COUNCIL** | **DONE** | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) - DS-DELIB + DS-COUNCIL **DONE** |
 | **DS-MIG** (Critic clean cut) | **COMPLETE** | [below](#phase-ds-mig--critic-clean-cut-migration) |
+| **DS-OBS-DIAG** | **DONE** | [below](#observability--diagnostics) |
 | **DS-E2E** (Docker qualification) | **PLANNED** | [below](#phase-ds-e2e--docker-production-qualification) |
 
 ---
@@ -223,8 +224,8 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-OBS-01 | P1 | Decision lifecycle audit events on observability spine | **PARTIAL** - canonical Verification RuntimeEvent integration exists (`decision.verification.started` · `stage_completed` · `stage_unavailable` · `probabilistic_skipped` · `completed`); full Decision Lifecycle transition coverage not yet implemented/proven |
-| DS-OBS-02 | P2 | Diagnostics feed boundaries (no lifecycle ownership) | **PLANNED** - diagnostics must consume/project Decision evidence; must not own Decision Lifecycle |
+| DS-OBS-01 | P1 | Decision lifecycle audit events on observability spine | **DONE / ENTERPRISE CLOSED** - `intergrax.decision.lifecycle.started` · `transitioned` · `resolved` · `finalized` · `terminal` via `intergrax/runtime/decision_lifecycle_observability.py` · optional `DecisionLifecycleObserver` on `CanonicalDecisionLifecycleHost` · proof `tests/unit/runtime/test_decision_lifecycle_observability.py` |
+| DS-OBS-02 | P2 | Diagnostics feed boundaries (no lifecycle ownership) | **DONE / ENTERPRISE CLOSED** - deterministic `DecisionLifecycleDiagnosticSnapshot` projection in `intergrax/runtime/diagnostics/decision_lifecycle_projection.py`; diagnostics consumes RuntimeEvent evidence only; proof `tests/unit/runtime/diagnostics/test_decision_lifecycle_projection.py` · architecture gates `tests/unit/runtime/architecture/test_decision_lifecycle_observability_gates.py` |
 
 ### Persistence / recovery / concurrency
 
