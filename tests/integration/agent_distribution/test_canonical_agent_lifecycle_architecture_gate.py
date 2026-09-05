@@ -41,6 +41,13 @@ _MONKEYPATCH_SETATTR = re.compile(
     re.MULTILINE,
 )
 
+_FORBIDDEN_LIFECYCLE_MUTATIONS: tuple[tuple[str, str], ...] = (
+    ("activation_service", "prepare_candidate"),
+    ("activation_service", "commit_activation"),
+    ("revision_service", "persist_candidate_revision"),
+    ("revision_service", "mark_validated"),
+)
+
 
 def _proof_files() -> tuple[Path, ...]:
     return tuple(
@@ -64,6 +71,23 @@ def _imported_names(path: Path) -> set[str]:
     return names
 
 
+def _forbidden_lifecycle_mutation_violations(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if not isinstance(node.func.value, ast.Name):
+            continue
+        receiver = node.func.value.id
+        method = node.func.attr
+        if (receiver, method) in _FORBIDDEN_LIFECYCLE_MUTATIONS:
+            violations.append(f"{path.name} calls forbidden lifecycle mutation {receiver}.{method}(...)")
+        elif receiver == "serving_store" and method.startswith("set_"):
+            violations.append(f"{path.name} calls forbidden serving store mutation {receiver}.{method}(...)")
+    return violations
+
+
 def _validation_bypass_violations(path: Path, text: str) -> list[str]:
     violations: list[str] = []
     for target in _MONKEYPATCH_SETATTR.findall(text):
@@ -83,6 +107,7 @@ def test_stage15_proof_files_avoid_forbidden_lifecycle_bypass_fragments() -> Non
             if fragment in text:
                 violations.append(f"{path.name} contains forbidden fragment {fragment!r}")
         violations.extend(_validation_bypass_violations(path, text))
+        violations.extend(_forbidden_lifecycle_mutation_violations(path))
     assert not violations, "\n".join(violations)
 
 

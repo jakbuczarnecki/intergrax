@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import textwrap
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from intergrax.agent_distribution.admin_models import (
     BindAgentRequest,
     BuildApplicationRevisionRequest,
     BuildRevisionResult,
+    EffectiveRosterView,
     InstallAgentRequest,
     SetAgentEnablementRequest,
 )
@@ -652,7 +654,7 @@ class CanonicalAgentLifecycleProofStack:
         ).bindings[0]
         return enabled_binding.binding_revision
 
-    def inspect_effective_roster(self):
+    def inspect_effective_roster(self) -> EffectiveRosterView:
         roster = self.admin.inspect_effective_roster(
             application_id=self.config.application_id,
             application_environment_id=self.config.environment_id,
@@ -699,6 +701,11 @@ class CanonicalAgentLifecycleProofStack:
         )
 
     def register_projection_and_activate(self, built: BuildRevisionResult) -> str:
+        assert built.artifact_locator is not None
+        assert built.materialization_artifact_digest is not None
+        assert built.materialized_runtime_lock_digest is not None
+        assert built.runtime_graph_digest is not None
+
         bundle = build_production_registry_projection_input_bundle_for_revision(
             application_id=self.config.application_id,
             application_environment_id=self.config.environment_id,
@@ -707,15 +714,21 @@ class CanonicalAgentLifecycleProofStack:
             build_context=ApplicationBuildContext.for_manifest(self.manifest),
             authority=self.composition.agent_platform_runtime.registry_projection_authority,
         )
+        serving_before = self.admin.inspect_serving(
+            application_id=self.config.application_id,
+            application_environment_id=self.config.environment_id,
+        )
+        activation_request = ActivateRuntimeRevisionRequest(
+            mutation_id=f"mut-stage15-activate:{built.runtime_revision_id}",
+            runtime_revision_id=built.runtime_revision_id,
+            artifact_locator=built.artifact_locator,
+            expected_artifact_digest=built.materialization_artifact_digest,
+            expected_serving_pointer_revision=serving_before.serving_pointer_revision,
+            expected_prior_traffic_revision_id=serving_before.traffic_serving_revision_id,
+        )
         result = self.launcher.deploy_and_activate(
-            bundle,
-            ActivateRuntimeRevisionRequest(
-                mutation_id=f"mut-stage15-activate:{built.runtime_revision_id}",
-                runtime_revision_id=built.runtime_revision_id,
-                artifact_locator=built.artifact_locator or "test://artifact",
-                expected_artifact_digest=built.materialization_artifact_digest or "",
-                expected_serving_pointer_revision=0,
-            ),
+            projection_input=bundle,
+            activation_request=activation_request,
             principal=self.governance.principal,
             admission_mutation_id=reference_admission_mutation_id(
                 built.runtime_revision_id,
@@ -728,12 +741,17 @@ class CanonicalAgentLifecycleProofStack:
             result.resolved_projection.evidence.runtime_revision_id
             == built.runtime_revision_id
         )
+        assert (
+            result.serving_pointer_revision
+            == serving_before.serving_pointer_revision + 1
+        )
         serving = self.admin.inspect_serving(
             application_id=self.config.application_id,
             application_environment_id=self.config.environment_id,
         )
         assert serving.traffic_serving_revision_id == built.runtime_revision_id
-        return serving.traffic_serving_revision_id or built.runtime_revision_id
+        assert serving.serving_pointer_revision == result.serving_pointer_revision
+        return serving.traffic_serving_revision_id
 
     def resolve_serving_projection(self) -> MaterializedRegistryProjection:
         serving = self.admin.inspect_serving(
@@ -795,7 +813,9 @@ class CanonicalAgentLifecycleProofStack:
         result = await host_runtime.execution.execute(task)
         assert result.agent_id == self.config.logical_agent_id
         assert result.answer == self.config.expected_output
-        return result.agent_id or "", result.answer or ""
+        assert result.agent_id is not None
+        assert result.answer is not None
+        return result.agent_id, result.answer
 
     def run_happy_path(self) -> CanonicalLifecycleProofResult:
         self.install_from_catalog()
@@ -815,6 +835,12 @@ class CanonicalAgentLifecycleProofStack:
         assert materialization is not None
         assert materialization.runtime_revision_id == built.runtime_revision_id
         assert materialization.materialization_artifact_digest == built.materialization_artifact_digest
+        assert built.materialization_artifact_digest is not None
+        assert built.materialized_runtime_lock_digest is not None
+        assert built.runtime_graph_digest is not None
+        assert built.artifact_locator is not None
+        assert roster.effective_roster_revision_id is not None
+        execution_agent_id, execution_answer = asyncio.run(self.execute_canonical())
         return CanonicalLifecycleProofResult(
             catalog_source_id=self.config.catalog_source_id,
             distribution_package_id=self.config.distribution_package_id,
@@ -822,14 +848,14 @@ class CanonicalAgentLifecycleProofStack:
             installation_id=self.config.installation_id,
             application_binding_id=self.config.application_binding_id,
             binding_revision=binding_revision,
-            effective_roster_revision_id=roster.effective_roster_revision_id or "",
+            effective_roster_revision_id=roster.effective_roster_revision_id,
             runtime_revision_id=built.runtime_revision_id,
-            materialization_artifact_digest=built.materialization_artifact_digest or "",
-            materialized_runtime_lock_digest=built.materialized_runtime_lock_digest or "",
-            runtime_graph_digest=built.runtime_graph_digest or "",
+            materialization_artifact_digest=built.materialization_artifact_digest,
+            materialized_runtime_lock_digest=built.materialized_runtime_lock_digest,
+            runtime_graph_digest=built.runtime_graph_digest,
             traffic_serving_revision_id=traffic_revision_id,
-            execution_agent_id="",
-            execution_answer="",
+            execution_agent_id=execution_agent_id,
+            execution_answer=execution_answer,
         )
 
 

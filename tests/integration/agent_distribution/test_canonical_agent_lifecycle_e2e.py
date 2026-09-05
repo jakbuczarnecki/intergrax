@@ -159,10 +159,8 @@ def test_canonical_agent_lifecycle_reaches_serving_and_execution(
     assert proof.distribution_package_id == config.distribution_package_id
     assert proof.package_digest == config.package_digest
     assert proof.traffic_serving_revision_id == config.revision_id
-
-    agent_id, answer = asyncio.run(stack.execute_canonical())
-    assert agent_id == config.logical_agent_id
-    assert answer == config.expected_output
+    assert proof.execution_agent_id == config.logical_agent_id
+    assert proof.execution_answer == config.expected_output
 
     manager_entry = next(
         item
