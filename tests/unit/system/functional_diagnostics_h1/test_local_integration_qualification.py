@@ -20,10 +20,17 @@ from tests.system.functional_diagnostics_h1.local_integration_reporting import (
     build_local_integration_human_report,
     validate_local_integration_report_integrity,
 )
+from tests.system.functional_diagnostics_h1.local_integration_qualification import (
+    _EXIT_FAILED_CONFIGURATION,
+    main,
+    run_h1_k_qualification,
+    run_local_integration_qualification,
+)
 from tests.system.functional_diagnostics_h1.models import (
     HealthGateId,
     HealthVerdict,
     H1_K_QUALIFICATION_ID,
+    H1_K_R2_QUALIFICATION_ID,
     LocalIntegrationDependencyClass,
     LocalIntegrationQualificationReport,
     LocalIntegrationRunResult,
@@ -31,7 +38,15 @@ from tests.system.functional_diagnostics_h1.models import (
     PytestSubprocessResult,
     QualificationRepositoryState,
 )
-from tests.system.functional_diagnostics_h1.qualification_spec import H1_K_QUALIFICATION_SPEC
+from tests.system.functional_diagnostics_h1.qualification_spec import (
+    H1_K_QUALIFICATION_SPEC,
+    H1_K_R1_QUALIFICATION_SPEC,
+    H1_K_R2_QUALIFICATION_SPEC,
+    LOCAL_INTEGRATION_QUALIFICATION_SPECS,
+    LocalIntegrationQualificationSpec,
+    resolve_local_integration_qualification_spec,
+    validate_local_integration_qualification_registry,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -194,10 +209,6 @@ def test_stable_runs_pass_repeatability() -> None:
 
 
 def test_dirty_start_failed_precondition() -> None:
-    from tests.system.functional_diagnostics_h1.local_integration_qualification import (
-        run_h1_k_qualification,
-    )
-
     artifact_dir = _REPO_ROOT / ".tmp" / "session" / "diag-h1-k-qualification-r1-unit"
     artifact_dir.mkdir(parents=True, exist_ok=True)
     with patch(
@@ -310,3 +321,146 @@ def test_human_report_is_projection_of_machine_report() -> None:
     assert "Overall PASS" in markdown
     for target in LOCAL_INTEGRATION_TARGETS:
         assert target in markdown
+
+
+def test_r1_spec_identity_immutable() -> None:
+    assert H1_K_R1_QUALIFICATION_SPEC.qualification_id == H1_K_QUALIFICATION_ID
+    assert (
+        H1_K_R1_QUALIFICATION_SPEC.artifact_directory.as_posix()
+        == ".tmp/session/diag-h1-k-qualification-r1"
+    )
+    assert H1_K_QUALIFICATION_SPEC is H1_K_R1_QUALIFICATION_SPEC
+
+
+def test_r2_spec_identity() -> None:
+    assert H1_K_R2_QUALIFICATION_SPEC.qualification_id == H1_K_R2_QUALIFICATION_ID
+    assert (
+        H1_K_R2_QUALIFICATION_SPEC.artifact_directory.as_posix()
+        == ".tmp/session/diag-h1-k-qualification-r2"
+    )
+
+
+def test_spec_driven_execution_uses_same_algorithm() -> None:
+    synthetic_spec = LocalIntegrationQualificationSpec(
+        qualification_id="DIAG-H1-K-QUALIFICATION-R99",
+        artifact_directory=Path(".tmp/session/diag-h1-k-qualification-r99"),
+        canonical_run_count=1,
+        requires_clean_repository=False,
+        requires_origin_development_match=False,
+    )
+    artifact_dir = _REPO_ROOT / ".tmp" / "session" / "diag-h1-k-qualification-r99-unit"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    with (
+        patch(
+            "tests.system.functional_diagnostics_h1.local_integration_qualification.capture_qualification_repository_state",
+            return_value=QualificationRepositoryState(
+                head_sha="abc",
+                origin_development_sha="abc",
+                working_tree_clean=True,
+            ),
+        ),
+        patch(
+            "tests.system.functional_diagnostics_h1.local_integration_qualification.run_h1_k_local_integration",
+            return_value=_run(1, (_suite("a.py"),)),
+        ),
+        patch(
+            "tests.system.functional_diagnostics_h1.local_integration_qualification.assert_local_integration_qualification_postconditions",
+            return_value=(HealthVerdict.PASS, ()),
+        ),
+    ):
+        exit_code = run_local_integration_qualification(
+            synthetic_spec,
+            artifact_dir=artifact_dir,
+        )
+    assert exit_code == 0
+    report_path = artifact_dir / "qualification-report.json"
+    assert report_path.is_file()
+    report_text = report_path.read_text(encoding="utf-8")
+    assert H1_K_R2_QUALIFICATION_ID not in report_text
+    assert "DIAG-H1-K-QUALIFICATION-R99" in report_text
+
+
+def test_unknown_qualification_id_fails() -> None:
+    with pytest.raises(ValueError, match="unknown qualification_id"):
+        resolve_local_integration_qualification_spec("DIAG-H1-K-QUALIFICATION-UNKNOWN")
+
+
+def test_cli_unknown_qualification_id_exits_nonzero() -> None:
+    with patch("sys.argv", ["local_integration_qualification", "--qualification-id", "UNKNOWN"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+    assert exc_info.value.code == _EXIT_FAILED_CONFIGURATION
+
+
+def test_cli_missing_qualification_id_exits_nonzero() -> None:
+    with patch("sys.argv", ["local_integration_qualification"]):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+    assert exc_info.value.code == _EXIT_FAILED_CONFIGURATION
+
+
+def test_registry_uniqueness_invariants() -> None:
+    assert validate_local_integration_qualification_registry() == ()
+    qualification_ids = {spec.qualification_id for spec in LOCAL_INTEGRATION_QUALIFICATION_SPECS}
+    artifact_dirs = {
+        spec.artifact_directory.as_posix() for spec in LOCAL_INTEGRATION_QUALIFICATION_SPECS
+    }
+    assert len(qualification_ids) == len(LOCAL_INTEGRATION_QUALIFICATION_SPECS)
+    assert len(artifact_dirs) == len(LOCAL_INTEGRATION_QUALIFICATION_SPECS)
+
+
+def test_r2_report_id_matches_spec_not_r1() -> None:
+    suites = (_suite("a.py"),)
+    report = LocalIntegrationQualificationReport(
+        qualification_id=H1_K_R2_QUALIFICATION_ID,
+        schema_version="diag_h1_k_local_integration_v1",
+        tested_sha="abc",
+        start_head="abc",
+        final_head="abc",
+        origin_development_at_start="abc",
+        origin_development_at_end="abc",
+        working_tree_clean_at_start=True,
+        working_tree_clean_at_end=True,
+        repository_precondition=HealthVerdict.PASS,
+        repository_postcondition=HealthVerdict.PASS,
+        runs=(_run(1, suites),),
+        repeatability_verdict=HealthVerdict.PASS,
+        overall_verdict=HealthVerdict.PASS,
+        blocking_findings=(),
+        timestamp="2026-01-01T00:00:00+00:00",
+    )
+    integrity, violations = validate_local_integration_report_integrity(
+        report,
+        artifact_directory=H1_K_R2_QUALIFICATION_SPEC.artifact_directory,
+    )
+    assert integrity is HealthVerdict.PASS
+    assert violations == ()
+    assert report.qualification_id != H1_K_QUALIFICATION_ID
+
+
+def test_artifact_directory_mismatch_fails_integrity() -> None:
+    suites = (_suite("a.py"),)
+    report = LocalIntegrationQualificationReport(
+        qualification_id=H1_K_R2_QUALIFICATION_ID,
+        schema_version="diag_h1_k_local_integration_v1",
+        tested_sha="abc",
+        start_head="abc",
+        final_head="abc",
+        origin_development_at_start="abc",
+        origin_development_at_end="abc",
+        working_tree_clean_at_start=True,
+        working_tree_clean_at_end=True,
+        repository_precondition=HealthVerdict.PASS,
+        repository_postcondition=HealthVerdict.PASS,
+        runs=(_run(1, suites),),
+        repeatability_verdict=HealthVerdict.PASS,
+        overall_verdict=HealthVerdict.PASS,
+        blocking_findings=(),
+        timestamp="2026-01-01T00:00:00+00:00",
+    )
+    integrity, violations = validate_local_integration_report_integrity(
+        report,
+        artifact_directory=H1_K_R1_QUALIFICATION_SPEC.artifact_directory,
+    )
+    assert integrity is HealthVerdict.FAILED
+    assert any("artifact_directory_mismatch" in item for item in violations)

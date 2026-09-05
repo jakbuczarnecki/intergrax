@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DIAG-H1-K-QUALIFICATION-R1 canonical local integration qualification runner."""
+"""Generic DIAG-H1-K local integration qualification runner."""
 
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ from tests.system.functional_diagnostics_h1.local_integration_reporting import (
 )
 from tests.system.functional_diagnostics_h1.models import (
     HealthVerdict,
-    H1_K_QUALIFICATION_ID,
     H1_K_SCHEMA_VERSION,
     LocalIntegrationQualificationReport,
     LocalIntegrationRunResult,
@@ -32,10 +31,12 @@ from tests.system.functional_diagnostics_h1.models import (
 )
 from tests.system.functional_diagnostics_h1.qualification_spec import (
     H1_K_QUALIFICATION_SPEC,
+    LocalIntegrationQualificationSpec,
+    resolve_local_integration_qualification_spec,
 )
 from tests.system.functional_diagnostics_h1.reporting import utc_now_iso
 from tests.system.functional_diagnostics_h1.repository_state import (
-    assert_qualification_repository_postconditions,
+    assert_local_integration_qualification_postconditions,
     assert_qualification_repository_state,
     capture_qualification_repository_state,
 )
@@ -43,8 +44,7 @@ from tests.system.functional_diagnostics_h1.repository_state import (
 _EXIT_PASS = 0
 _EXIT_FAILED = 1
 _EXIT_FAILED_PRECONDITION = 3
-
-_CANONICAL_RUN_COUNT = 3
+_EXIT_FAILED_CONFIGURATION = 2
 
 
 def _aggregate_overall_verdict(
@@ -70,12 +70,11 @@ def _aggregate_overall_verdict(
     return HealthVerdict.PASS
 
 
-def run_h1_k_qualification(
+def run_local_integration_qualification(
+    spec: LocalIntegrationQualificationSpec,
     *,
     artifact_dir: Path | None = None,
-    run_count: int = _CANONICAL_RUN_COUNT,
 ) -> int:
-    spec = H1_K_QUALIFICATION_SPEC
     resolved_artifact_dir = artifact_dir or spec.artifact_directory
     start_state = capture_qualification_repository_state(_REPO_ROOT)
     repository_precondition, precondition_violations = assert_qualification_repository_state(
@@ -85,7 +84,7 @@ def run_h1_k_qualification(
     )
     if repository_precondition is HealthVerdict.FAILED_PRECONDITION:
         report = LocalIntegrationQualificationReport(
-            qualification_id=H1_K_QUALIFICATION_ID,
+            qualification_id=spec.qualification_id,
             schema_version=H1_K_SCHEMA_VERSION,
             tested_sha=start_state.head_sha,
             start_head=start_state.head_sha,
@@ -113,7 +112,7 @@ def run_h1_k_qualification(
 
     runs: list[LocalIntegrationRunResult] = []
     blocking_findings: list[str] = list(precondition_violations)
-    for index in range(run_count):
+    for index in range(spec.canonical_run_count):
         runs.append(run_h1_k_local_integration(run_index=index + 1))
 
     repeatability_verdict, repeatability_findings = evaluate_local_integration_repeatability(
@@ -124,7 +123,7 @@ def run_h1_k_qualification(
     end_state = capture_qualification_repository_state(_REPO_ROOT)
     transition = QualificationRepositoryTransition(start=start_state, end=end_state)
     repository_postcondition, postcondition_violations = (
-        assert_qualification_repository_postconditions(transition, spec)
+        assert_local_integration_qualification_postconditions(transition, spec)
     )
     blocking_findings.extend(postcondition_violations)
 
@@ -137,7 +136,7 @@ def run_h1_k_qualification(
     )
 
     report = LocalIntegrationQualificationReport(
-        qualification_id=H1_K_QUALIFICATION_ID,
+        qualification_id=spec.qualification_id,
         schema_version=H1_K_SCHEMA_VERSION,
         tested_sha=start_state.head_sha,
         start_head=start_state.head_sha,
@@ -156,7 +155,8 @@ def run_h1_k_qualification(
     )
 
     integrity_verdict, integrity_violations = validate_local_integration_report_integrity(
-        report
+        report,
+        artifact_directory=resolved_artifact_dir,
     )
     if integrity_verdict is not HealthVerdict.PASS:
         blocking_findings.extend(integrity_violations)
@@ -195,8 +195,40 @@ def run_h1_k_qualification(
     return _EXIT_FAILED
 
 
+def run_h1_k_qualification(
+    *,
+    artifact_dir: Path | None = None,
+) -> int:
+    return run_local_integration_qualification(
+        H1_K_QUALIFICATION_SPEC,
+        artifact_dir=artifact_dir,
+    )
+
+
+def _parse_qualification_id(args: list[str]) -> str | None:
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg == "--qualification-id" and index + 1 < len(args):
+            return args[index + 1]
+        index += 1
+    return None
+
+
 def main() -> None:
-    exit_code = run_h1_k_qualification()
+    qualification_id = _parse_qualification_id(sys.argv[1:])
+    if qualification_id is None:
+        print("error: --qualification-id required", file=sys.stderr)
+        raise SystemExit(_EXIT_FAILED_CONFIGURATION)
+    try:
+        spec = resolve_local_integration_qualification_spec(qualification_id)
+    except ValueError:
+        print(
+            f"error: unknown qualification_id: {qualification_id}",
+            file=sys.stderr,
+        )
+        raise SystemExit(_EXIT_FAILED_CONFIGURATION)
+    exit_code = run_local_integration_qualification(spec)
     raise SystemExit(exit_code)
 
 

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from tests.system.functional_diagnostics_h1.models import (
     H1_K_QUALIFICATION_ID,
+    H1_K_R2_QUALIFICATION_ID,
     H1_QUALIFICATION_ID,
     H1_R1_QUALIFICATION_ID,
     H1_R2_QUALIFICATION_ID,
@@ -107,23 +108,53 @@ QUALIFICATION_SPECS: tuple[DiagnosticHealthQualificationSpec, ...] = (
     ),
 )
 
-H1_K_QUALIFICATION_SPEC = DiagnosticHealthQualificationSpec(
+@dataclass(frozen=True, slots=True)
+class LocalIntegrationQualificationSpec:
+    qualification_id: str
+    artifact_directory: Path
+    canonical_run_count: int
+    requires_clean_repository: bool
+    requires_origin_development_match: bool
+
+    @property
+    def artifact_report_json(self) -> Path:
+        return self.artifact_directory / "qualification-report.json"
+
+    @property
+    def artifact_human_report_md(self) -> Path:
+        return self.artifact_directory / "qualification-report.md"
+
+
+H1_K_R1_QUALIFICATION_SPEC = LocalIntegrationQualificationSpec(
     qualification_id=H1_K_QUALIFICATION_ID,
     artifact_directory=Path(".tmp/session/diag-h1-k-qualification-r1"),
-    closure_doc_path=Path(
-        "docs/project/maintainers/qualification/DIAG_H1_K_LOCAL_INTEGRATION_QUALIFICATION.md"
-    ),
+    canonical_run_count=3,
     requires_clean_repository=True,
     requires_origin_development_match=True,
-    requires_stable_head=True,
-    historical=False,
-    requires_closure_doc_at_run=False,
 )
+
+H1_K_R2_QUALIFICATION_SPEC = LocalIntegrationQualificationSpec(
+    qualification_id=H1_K_R2_QUALIFICATION_ID,
+    artifact_directory=Path(".tmp/session/diag-h1-k-qualification-r2"),
+    canonical_run_count=3,
+    requires_clean_repository=True,
+    requires_origin_development_match=True,
+)
+
+H1_K_QUALIFICATION_SPEC = H1_K_R1_QUALIFICATION_SPEC
+
+LOCAL_INTEGRATION_QUALIFICATION_SPECS: tuple[LocalIntegrationQualificationSpec, ...] = (
+    H1_K_R1_QUALIFICATION_SPEC,
+    H1_K_R2_QUALIFICATION_SPEC,
+)
+
+_LOCAL_INTEGRATION_SPEC_BY_ID: dict[str, LocalIntegrationQualificationSpec] = {
+    spec.qualification_id: spec for spec in LOCAL_INTEGRATION_QUALIFICATION_SPECS
+}
 
 _QUALIFICATION_SPEC_BY_ID: dict[str, DiagnosticHealthQualificationSpec] = {
     spec.qualification_id: spec for spec in QUALIFICATION_SPECS
 }
-_QUALIFICATION_SPEC_BY_ID[H1_K_QUALIFICATION_ID] = H1_K_QUALIFICATION_SPEC
 
 
 def resolve_qualification_spec(qualification_id: str) -> DiagnosticHealthQualificationSpec:
@@ -132,6 +163,30 @@ def resolve_qualification_spec(qualification_id: str) -> DiagnosticHealthQualifi
         msg = f"unknown qualification_id: {qualification_id}"
         raise ValueError(msg)
     return spec
+
+
+def resolve_local_integration_qualification_spec(
+    qualification_id: str,
+) -> LocalIntegrationQualificationSpec:
+    spec = _LOCAL_INTEGRATION_SPEC_BY_ID.get(qualification_id)
+    if spec is None:
+        msg = f"unknown qualification_id: {qualification_id}"
+        raise ValueError(msg)
+    return spec
+
+
+def validate_local_integration_qualification_registry() -> tuple[str, ...]:
+    violations: list[str] = []
+    qualification_ids = [spec.qualification_id for spec in LOCAL_INTEGRATION_QUALIFICATION_SPECS]
+    if len(qualification_ids) != len(set(qualification_ids)):
+        violations.append("duplicate_qualification_ids")
+    artifact_directories = [
+        spec.artifact_directory.as_posix()
+        for spec in LOCAL_INTEGRATION_QUALIFICATION_SPECS
+    ]
+    if len(artifact_directories) != len(set(artifact_directories)):
+        violations.append("duplicate_artifact_directories")
+    return tuple(violations)
 
 
 def compose_qualification_spec(

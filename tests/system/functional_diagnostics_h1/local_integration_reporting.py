@@ -14,6 +14,9 @@ from tests.system.functional_diagnostics_h1.models import (
     LocalIntegrationRunResult,
     LocalIntegrationSuiteResult,
 )
+from tests.system.functional_diagnostics_h1.qualification_spec import (
+    resolve_local_integration_qualification_spec,
+)
 
 
 def _suite_to_json(
@@ -73,8 +76,25 @@ def local_integration_qualification_report_to_json(
 
 def validate_local_integration_report_integrity(
     report: LocalIntegrationQualificationReport,
+    *,
+    artifact_directory: Path | None = None,
 ) -> tuple[HealthVerdict, tuple[str, ...]]:
     violations: list[str] = []
+    if artifact_directory is not None:
+        try:
+            expected_spec = resolve_local_integration_qualification_spec(
+                report.qualification_id
+            )
+        except ValueError:
+            pass
+        else:
+            if expected_spec.artifact_directory != artifact_directory:
+                violations.append(
+                    "artifact_directory_mismatch:"
+                    f"{report.qualification_id}:"
+                    f"expected={expected_spec.artifact_directory.as_posix()}:"
+                    f"actual={artifact_directory.as_posix()}"
+                )
     if report.overall_verdict is HealthVerdict.PASS:
         if report.repository_precondition is not HealthVerdict.PASS:
             violations.append("precondition_not_pass_with_overall_pass")
@@ -112,6 +132,9 @@ def build_local_integration_human_report(
         "",
         "## Verdict",
         report.overall_verdict.value,
+        "",
+        "## Historical R1",
+        "FAILED_PRECONDITION (immutable)",
         "",
         "## Start HEAD",
         report.start_head,
