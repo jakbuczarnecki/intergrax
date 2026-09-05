@@ -4,7 +4,7 @@
 **Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md)  
 **ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../../technical/adr/entries/2026-08-12/ADR-AGENT-004.md)  
 **Evidence:** [`audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../audit/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md)  
-**Last updated:** 2026-08-16
+**Last updated:** 2026-09-05
 
 ---
 
@@ -76,12 +76,14 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 - LKW-specific installer or persistence
 - Mandating Docker for all topologies
 
-## Verification intent (future)
+## Verification intent
 
-- Digest-pinned install → lock → graph → activate → registry → routable capability (LKW proof)
-- Rollback restores prior `RuntimeRevision` and lock digest
-- Catalog outage does not affect active revision reproducibility
-- Concurrent install/upgrade serialization on installation slot
+> **Historical (2026-08):** Original verification intent listed digest-pinned install → activate → registry as future LKW proof. AC-3 canonical lifecycle E2E and AC-4 production-composition E2E now provide **platform proof** under reference production V1 (§35 architecture). LKW consumer wiring (AP-12) remains separate.
+
+- Digest-pinned install → lock → graph → activate → registry → routable capability — **proven** (AC-3 E2E + AC-4 E2E)
+- Rollback restores prior `RuntimeRevision` and lock digest — AP-9 tests
+- Catalog outage does not affect active revision reproducibility — architecture invariant
+- Concurrent install/upgrade serialization on installation slot — AP-4 concurrency tests
 
 ## AGENT-PLATFORM-3 gate
 
@@ -300,3 +302,61 @@ read models, and enable/disable that never mutate the serving RuntimeRevision.
 | AP-9 focused tests + AP-8 regression | pending validation |
 
 **Evidence:** `intergrax/agent_distribution/activation.py`, `deployment.py`, `stores.py`, `in_memory_stores.py`, `tests/unit/agent_distribution/test_agent_distribution_activation.py`, `test_agent_distribution_rollback.py`
+
+---
+
+## AGENT-CONSOLIDATION-4 — Dynamic Capability Discovery & Acquisition
+
+**Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md` §35](../../architecture/AGENT_DISTRIBUTION.md#35-ac-4-dynamic-capability-discovery--acquisition-architecture-freeze)
+**Status:** Phases 1–9 **CLOSED** · Phase 10 documentation freeze **COMPLETE**
+**AC-4 closure:** **READY_FOR_FINAL_AUDIT** — independent audit required after Phase 10 commit; **AC-4 NOT CLOSED** until audit completes.
+
+### Phase delivery record
+
+| Phase | Deliverable | Module(s) | Status |
+|-------|-------------|-----------|--------|
+| **1** | Capability identity, requirement, deterministic matching | `capability_matching.py` | **CLOSED** |
+| **2** | Pluggable discovery contracts + catalog projection | `agent_discovery.py`, `catalog.py` | **CLOSED** |
+| **3** | Pluggable selection above matching | `agent_selection.py` | **CLOSED** |
+| **4** | Federated discovery composition | `federated_discovery.py` | **CLOSED** |
+| **5** | Task → capability resolution | `task_capability_resolution.py` | **CLOSED** |
+| **6** | Dynamic acquisition → AC-3 lifecycle bridge | `dynamic_acquisition.py` | **CLOSED** |
+| **7** | Task-scoped lease ownership | `task_scoped_agents.py` | **CLOSED** |
+| **8** | Delegated subtask orchestration + child execution | `delegated_subtasks.py`, `active_execution_task_scope.py`, `active_task_registry.py`, `delegated_subtask_child_port.py` | **CLOSED** |
+| **9** | Production composition wiring | `production_agent_capability_runtime.py`, `production_process_composition.py`, `production_delegated_subtask_plans.py`, `catalog_discovery.py` | **CLOSED** |
+| **10** | Architecture documentation freeze | `architecture/AGENT_DISTRIBUTION.md` §35, this section | **COMPLETE** |
+
+### AC-4 gate summary
+
+| Deliverable | Status |
+|-------------|--------|
+| Capability model + matcher | done |
+| Source-qualified discovery | done |
+| Federated discovery | done |
+| Pluggable selection | done |
+| Task capability resolution (deterministic reference) | done |
+| Dynamic acquisition (exact identity, no rediscovery) | done |
+| Task-scoped / ephemeral ownership leases | done |
+| Delegated subtask discovery/execution | done |
+| Production composition (single AC-3 universe) | done |
+| Canonical AC-3 lifecycle handoff | done |
+| Reference Production V1 limitations documented | done |
+| Platform proof E2E | done |
+
+**Evidence (by phase):** `tests/unit/agent_distribution/test_capability_matching.py`, `test_agent_discovery.py`, `test_agent_selection.py`, `test_federated_discovery.py`, `test_task_capability_resolution.py`, `test_dynamic_acquisition.py`, `test_task_scoped_agents.py`, `test_delegated_subtasks.py`, `tests/unit/applications/test_ac4_phase9_production_composition_e2e.py`, `tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py`, `tests/unit/runtime/task/test_active_task_registry.py`
+
+### Explicit non-goals (AC-4 — unchanged)
+
+- Public commercial marketplace product
+- Remote publisher onboarding backend
+- Billing / settlement / usage accounting
+- Durable multi-instance lease recovery
+- Generic universal `Registry → Agent.run` adapter
+- LLM semantic capability resolver (protocol extension only)
+- Second lifecycle or trust engine
+
+### Historical implementation waves (AP-3..AP-12)
+
+The AP-3+ table above remains the **historical delivery chronology** for AC-3 lifecycle infrastructure. AC-4 (AGENT-CONSOLIDATION-4) is a **separate consolidation program** layered on AC-3 — do not merge gate records.
+
+**Stale "Next" notes (historical):** Prior gate sections retain their original **Next:** lines as delivery chronology. Current follow-on for marketplace productization and LKW consumer proof (AP-12) remains open; AC-4 platform proof does not replace AP-12 LKW wiring.
