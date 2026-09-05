@@ -79,7 +79,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AC-4 federated discovery tests; no change to AC-3 lifecycle behavior. |
 | **Completion criteria** | Three domain adapters (Agent, Skill, Tool) produce federated read results; conflicts documented and tested; zero registry mutation paths. |
 | **Depends on** | Stage 1. |
-| **Maturity** | **Planned**. |
+| **Maturity** | **Implemented** — Tier-0 federated read model at `intergrax/capability_catalog/` (`CapabilityCatalogSource`, `CapabilityCatalogEntry`, `CapabilityCatalogSnapshot`, `FederatedCapabilityCatalog`, `merge_capability_catalog_entries`); domain adapters at `intergrax/capability_catalog/adapters/` (`AgentCatalogCapabilitySource`, `SkillBundleCatalogSource`, `ToolBundleCatalogSource`); conflict semantics reuse AC-4 exact-duplicate dedupe + source-qualified identity conflict fail-closed; provider read failure aborts snapshot (no partial output); `intergrax/core/catalog_snapshot.py` **not** reused (bootstrap/product in-memory inventory — distinct non-authoritative semantics); federation tests `tests/unit/capability_catalog/test_federation.py`; architecture gates `tests/unit/capability_catalog/test_architecture_gates.py`; adapter contract tests `tests/unit/capability_catalog/adapters/test_{agent,skill,tool}_adapter.py`; regression gates `tests/unit/agent_distribution/test_federated_discovery.py`, `tests/unit/agent_distribution/test_federated_catalog.py`, `tests/unit/agent_distribution/test_agent_discovery.py`, `tests/unit/tools/registry/test_catalog.py`, `tests/unit/contracts/capability_catalog/`. |
 
 ---
 
