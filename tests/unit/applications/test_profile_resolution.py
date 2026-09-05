@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 import pytest
 from pydantic import ValidationError
 
@@ -26,6 +28,7 @@ from intergrax.applications.contracts.profile_resolution import (
     ProfileLayerConflictError,
     ProfileLayerInput,
     ProfileResolutionDecisionKind,
+    ProfileResolutionError,
 )
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
@@ -308,8 +311,49 @@ class _ExecutionModeEchoResolver:
         )
 
 
+@dataclass
+class _RecordingExecutionModeResolver:
+    calls: list[ProfileLayer] = field(default_factory=list)
+    path: str = "meta.execution_mode"
+
+    def resolve(
+        self,
+        *,
+        profile: ApplicationEnvironmentProfile,
+        update: ProfileFieldUpdate[object],
+        source_layer: ProfileLayer,
+        context: ProfileFieldResolveContext | None = None,
+    ) -> ProfileFieldResolveResult:
+        from intergrax.applications._shared.profile_resolution.field_resolvers import (
+            ExecutionModeFieldResolver,
+            ProfileFieldResolveContext,
+        )
+
+        self.calls.append(source_layer)
+        return ExecutionModeFieldResolver().resolve(
+            profile=profile,
+            update=update,
+            source_layer=source_layer,
+            context=context or ProfileFieldResolveContext(),
+        )
+
+
+def _field_resolvers_with(
+    recording: _RecordingExecutionModeResolver,
+) -> tuple[ProfileFieldResolver, ...]:
+    from intergrax.applications._shared.profile_resolution.field_resolvers import (
+        DEFAULT_FIELD_RESOLVERS,
+    )
+
+    return tuple(
+        recording if resolver.path == recording.path else resolver
+        for resolver in DEFAULT_FIELD_RESOLVERS
+    )
+
+
 def test_custom_field_resolver_participates_without_core_change() -> None:
     application = _application(execution_mode=ExecutionMode.BALANCED)
+    recording = _RecordingExecutionModeResolver()
     resolution = resolve_profile(
         application,
         layers=(
@@ -320,9 +364,68 @@ def test_custom_field_resolver_participates_without_core_change() -> None:
                 ),
             ),
         ),
-        field_resolvers=(_ExecutionModeEchoResolver(),),
+        field_resolvers=_field_resolvers_with(recording),
     )
     assert resolution.effective_profile.execution_mode == ExecutionMode.STRICT
+    assert ProfileLayer.RUN in recording.calls
+
+
+def test_custom_resolver_invoked_for_application_layer() -> None:
+    application = _application(execution_mode=ExecutionMode.STRICT)
+    recording = _RecordingExecutionModeResolver()
+    resolve_profile(
+        application,
+        field_resolvers=_field_resolvers_with(recording),
+    )
+    assert recording.calls == [ProfileLayer.APPLICATION]
+
+
+def test_custom_resolver_records_platform_application_run_sequence() -> None:
+    application = _application(execution_mode=ExecutionMode.BALANCED)
+    recording = _RecordingExecutionModeResolver()
+    resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    execution_mode=ProfileFieldUpdate(value=ExecutionMode.BALANCED),
+                ),
+            ),
+            ProfileLayerInput(
+                layer=ProfileLayer.RUN,
+                delta=ProfileDelta(
+                    execution_mode=ProfileFieldUpdate(value=ExecutionMode.STRICT),
+                ),
+            ),
+        ),
+        field_resolvers=_field_resolvers_with(recording),
+    )
+    assert recording.calls == [
+        ProfileLayer.PLATFORM,
+        ProfileLayer.APPLICATION,
+        ProfileLayer.RUN,
+    ]
+
+
+def test_missing_resolver_fails_closed_for_partial_custom_set() -> None:
+    application = _application(execution_mode=ExecutionMode.BALANCED)
+    with pytest.raises(KeyError):
+        resolve_profile(
+            application,
+            field_resolvers=(_ExecutionModeEchoResolver(),),
+        )
+
+
+def test_duplicate_resolver_path_fails_closed() -> None:
+    with pytest.raises(ProfileResolutionError, match="duplicate field resolver"):
+        resolve_profile(
+            _application(),
+            field_resolvers=(
+                _ExecutionModeEchoResolver(),
+                _ExecutionModeEchoResolver(),
+            ),
+        )
 
 
 def test_build_harness_host_runtime_uses_effective_profile_resolution() -> None:

@@ -202,7 +202,6 @@ def resolve_profile(
     """
     configured_application = application_profile.model_copy(deep=True)
     resolvers = resolver_index(tuple(field_resolvers))
-    application_resolvers = resolver_index(DEFAULT_FIELD_RESOLVERS)
     normalized_layers = _normalize_layer_inputs(layers)
     pre_application_layers, post_application_layers = _partition_layers(normalized_layers)
 
@@ -232,7 +231,7 @@ def resolve_profile(
     effective, expressed_paths, application_decisions = _application_layer_decisions(
         upstream=effective,
         configured=configured_application,
-        resolvers=application_resolvers,
+        resolvers=resolvers,
         expressed_paths=expressed_paths,
     )
     decisions.extend(application_decisions)
