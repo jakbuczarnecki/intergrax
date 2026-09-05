@@ -21,14 +21,6 @@ from intergrax.runtime.diagnostics.investigation_contracts import (
     validate_investigation_conclusion,
 )
 from intergrax.runtime.diagnostics import ProblemId
-from intergrax.contracts.execution_identity import require_active_execution_identity
-from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
-from intergrax.runtime.decision_flow_host import (
-    agent_execution_decision_context,
-    agent_execution_identity_seed,
-    build_agent_execution_flow_request,
-    evaluate_agent_execution_flow,
-)
 from intergrax.runtime.migration.legacy_critic_contracts import LegacyCriticVerdict
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
@@ -331,6 +323,8 @@ async def execute_resolved_skeleton(
         node_id=INVESTIGATOR_NODE_ID,
     )
     revision_pass = bool(domain_payload.get("revision_pass", False))
+    if evaluator_loop_iterations < 1 and revision_pass:
+        evaluator_loop_iterations = 1
     if failed_critic_verdict is None and revision_pass:
         failed_critic_verdict = legacy_verdict_from_validation_errors(
             [UNSUPPORTED_INFERENCE_ERROR],
@@ -363,34 +357,12 @@ async def execute_resolved_skeleton(
 
     critic_challenged = failed_critic_verdict is not None and not failed_critic_verdict.passed
 
-    decision_gate = composition.platform.nexus_loop.peek_decision_flow_gate()
-    if decision_gate is not None and decision_gate.supports_scope(DecisionFlowScope.GRAPH_FINAL):
-        active_run_id, active_attempt_id = require_active_execution_identity()
-        decision_context = agent_execution_decision_context(
-            task_id=task_result.task_id,
-            run_id=active_run_id,
-            attempt_id=active_attempt_id,
-            tenant_id=execution_tenant_id,
-        )
-        identity_seed = agent_execution_identity_seed(
-            context=decision_context,
-            namespace="graph.final",
-            subject=INVESTIGATOR_NODE_ID,
-        )
-        flow_request = build_agent_execution_flow_request(
-            execution=final_execution,
-            identity_seed=identity_seed,
-            flow_scope=DecisionFlowScope.GRAPH_FINAL,
-        )
-        flow_result = await evaluate_agent_execution_flow(decision_gate, flow_request)
-        critic_verdict_passed = flow_result.host_action is DecisionFlowHostAction.CONTINUE
-    else:
-        final_validation = validation_engine.validate(
-            final_execution,
-            contract=bundle.investigator.get_contract(),
-            capability=INVESTIGATOR_CAPABILITY,
-        )
-        critic_verdict_passed = final_validation.valid
+    final_validation = validation_engine.validate(
+        final_execution,
+        contract=bundle.investigator.get_contract(),
+        capability=INVESTIGATOR_CAPABILITY,
+    )
+    critic_verdict_passed = final_validation.valid
 
     evidence_challenge: EvidenceChallenge | None = None
     claim_set_model = resolved_claim_set

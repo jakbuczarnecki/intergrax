@@ -590,18 +590,80 @@ See [extended depth — Recovery Controller](satellites/AUTONOMOUS_WORK_extended
 
 Missing capability recovery is broader than CodeCraft.
 
-Canonical search order:
+**Normative rule (AW-7 discovery alignment):**
 
 ```text
-existing Tool → Skill → Integration → approved alternate
-  → docs/schema inspection → configure existing capability → CodeCraft
+REUSE BEFORE CREATE
 ```
 
-CodeCraft is the canonical generated-code subsystem, not the default first response.
+Domain owns discovery. Autonomous Work owns reuse order and acquisition policy. CodeCraft is last-resort capability creation, not a discovery substitute.
+
+**Hard separation:**
+
+```text
+Discovery ≠ Selection ≠ Acquisition ≠ Execution
+```
+
+AW-7A is a read/decision layer only — it does not invoke Tools, Skills, Agents, or CodeCraft during discovery.
+
+### Canonical reuse ladder (frozen)
+
+Ordered by least authority expansion, least operational risk, least lifecycle complexity, and reuse over creation:
+
+```text
+1. Tool          — domain-owned Tool Discovery (when configured)
+2. Skill         — domain-owned Skill Discovery (when configured)
+3. Integration   — Integration-owned catalog/manifest query
+4. Agent         — Agent Distribution discovery + delegated-subtask semantics
+5. Approved alternate
+6. Existing configuration
+7. CodeCraft A1  — only after every configured layer returns authoritative NO_MATCH
+                   or permitted NOT_CONFIGURED
+```
+
+CodeCraft cannot be selected merely because one registry adapter found nothing. `UNAVAILABLE`, `CONFLICT`, and configured-layer failures fail closed — they do not escalate to CodeCraft.
+
+### Domain discovery ownership
+
+| Domain | Owner | Canonical surface (as-built on `development`) | AW consumption |
+|---|---|---|---|
+| **Agent** | Agent Distribution | `AgentDiscoveryRequest` / `AgentDiscoveryCandidate` / `AgentDiscoveryResult`; `AgentDiscoveryStrategy`; `FederatedAgentDiscovery`; `delegated_subtasks` | Thin projection adapter → `WorkerCapabilityCandidate` (planned); reuse public discovery only — never `AgentRegistry` lifecycle state |
+| **Tool** | Tools | **Not yet shipped** — no `DiscoveryRequest`/`DiscoveryResult` port | AW-7A retains `ToolRegistryCapabilityDiscoveryAdapter` as explicit legacy fallback until canonical Tool Discovery lands |
+| **Skill** | Skills | **Not yet shipped** — no `DiscoveryRequest`/`DiscoveryResult` port | AW-7A retains `SkillRegistryCapabilityDiscoveryAdapter` as explicit legacy fallback until canonical Skill Discovery lands |
+| **Integration** | Integrations | `integrations.registry.catalog.iter_entries()` | `IntegrationCatalogCapabilityDiscoveryAdapter` (projection only) |
+
+`intergrax/capability_catalog/` is a federated **catalog read model** (Stage 2), not a substitute for domain-owned semantic discovery with authoritative `NO_MATCH` / `UNAVAILABLE` / `NOT_CONFIGURED` dispositions.
+
+### Disposition semantics (per layer)
+
+| Disposition | Meaning | Ladder behavior |
+|---|---|---|
+| `MATCH_FOUND` | Authoritative eligible candidate(s) | AW may select after `WorkerCapabilityAuthorityCompatibilityPort` |
+| `NO_MATCH` | Configured discovery completed successfully; no eligible candidate | Continue to next layer |
+| `NOT_CONFIGURED` | Domain absent by deployment design | Continue (optional layer) |
+| `UNAVAILABLE` | Provider failure, timeout, partial failure | **Fail closed** — no further layers, no CodeCraft |
+| `CONFLICT` | Conflicting canonical facts for same identity | **Fail closed** — no arbitrary tie-break |
+
+Candidate existence ≠ authority compatibility. An existing approved Agent still requires `WorkerCapabilityAuthorityCompatibilityPort` before selection; no agent may expand Worker authority.
+
+### Agent representation (frozen decision)
+
+Use `WorkerCapabilityCandidateKind.AGENT` (to be added) — not `APPROVED_ALTERNATE`. Rationale: Agent candidates carry distinct provenance (`AgentDiscoveryCandidateIdentity`, strategy id, catalog entry id) and delegated execution semantics; folding them into `APPROVED_ALTERNATE` would lose type information and conflate workflow alternates with specialist delegation.
+
+### Provenance
+
+AW projection retains domain evidence (`ProblemReference`, canonical candidate identity, discovery strategy/source, version). AW normalizes into `WorkerCapabilityCandidate` but does not reinterpret underlying domain facts.
+
+### Forbidden in AW
+
+- Universal discovery mega-engine (`UniversalCapabilityDiscoveryEngine`, `DiscoveryManager`, `GlobalCapabilityResolver`, …)
+- AW-owned Tool/Skill/Agent semantic search or provider federation
+- Dual canonical paths for the same deployment (domain discovery **and** registry scan without explicit fallback activation condition)
+- Registry scanning when canonical domain discovery is configured and available
 
 See [extended depth — Capability acquisition](satellites/AUTONOMOUS_WORK_extended_depth.md#capability-acquisition) for the full nine-step ladder and missing-capability vs missing-authority rules.
 
-**Related canon (AW-7A):** dynamic capability discovery will integrate with [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) federation; AW-7A remains its own domain mechanism and may not bypass governance.
+**Related canon:** [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) federation (catalog plane); AC-4 agent acquisition remains separate from AW-7A worker recovery.
 
 ---
 

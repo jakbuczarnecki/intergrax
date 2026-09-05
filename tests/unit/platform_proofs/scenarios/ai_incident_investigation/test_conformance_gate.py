@@ -55,7 +55,24 @@ def test_ai_incident_manifest_declares_application_owned_tools() -> None:
 
 
 def test_ai_incident_lab_runtime_builds_with_default_conformance() -> None:
+    from intergrax.applications._shared.scenario_runtime_baseline import (
+        ScenarioLabAgentRegistration,
+        build_scenario_lab_agent_registry,
+    )
     from intergrax.tools.registry import ToolRegistry
+    from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import (
+        IncidentScope,
+    )
+    from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
+        IncidentInvestigatorAgent,
+    )
+    from platform_proofs.scenarios.ai_incident_investigation.application.investigator_contract import (
+        incident_investigator_contract,
+    )
+    from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
+        ScenarioRuntimeComposition,
+        build_scenario_environment_profile,
+    )
     from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import (
         build_resolved_fixture,
     )
@@ -63,9 +80,34 @@ def test_ai_incident_lab_runtime_builds_with_default_conformance() -> None:
         register_scenario_tools,
     )
 
+    operational_data = build_resolved_fixture().to_operational_data()
     registry = ToolRegistry()
-    register_scenario_tools(registry, build_resolved_fixture())
-    composition = build_scenario_runtime_composition(registry=registry)
+    evidence_store = register_scenario_tools(registry, operational_data)
+    environment = build_scenario_environment_profile()
+    composition = ScenarioRuntimeComposition(
+        environment=environment,
+        tool_registry=registry,
+    )
+    investigator = IncidentInvestigatorAgent(
+        registry=registry,
+        station_id=operational_data.station_id,
+        runtime_composition=composition,
+        incident_scope=IncidentScope.from_operational_defaults(
+            station_id=operational_data.station_id,
+        ),
+        evidence_store=evidence_store,
+    )
+    agent_registry = build_scenario_lab_agent_registry(
+        ScenarioLabAgentRegistration(
+            agent=investigator,
+            contract=incident_investigator_contract(),
+        )
+    )
+    composition = build_scenario_runtime_composition(
+        registry=registry,
+        composition=composition,
+        agent_registry=agent_registry,
+    )
     assert composition.platform.env_wiring.tool_wiring.registry.tool_ids()
     for tool_id in SCENARIO_TOOL_IDS:
         assert composition.platform.env_wiring.tool_wiring.registry.has(tool_id)
