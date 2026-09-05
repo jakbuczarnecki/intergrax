@@ -39,7 +39,6 @@ class DecisionObservabilityIdentity:
     decision_version: int
     tenant_id: str
     scope_namespace: str
-    scope_subject: str
     task_id: str
     run_id: str
     attempt_id: str
@@ -60,7 +59,6 @@ def decision_observability_identity_from_decision_identity(
         decision_version=identity.version.value,
         tenant_id=identity.tenant_id,
         scope_namespace=identity.scope.namespace,
-        scope_subject=identity.scope.subject,
         task_id=str(execution.task_id),
         run_id=str(execution.run_id),
         attempt_id=str(execution.attempt_id),

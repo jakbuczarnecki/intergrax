@@ -100,7 +100,6 @@ class DecisionLifecycleSignalPayloadV1(RuntimeEventPayload):
     decision_version: int
     tenant_id: str
     scope_namespace: str
-    scope_subject: str
     task_id: str
     run_id: str
     attempt_id: str
@@ -190,7 +189,6 @@ def _payload_from_observability_identity(
         decision_version=observability_identity.decision_version,
         tenant_id=observability_identity.tenant_id,
         scope_namespace=observability_identity.scope_namespace,
-        scope_subject=observability_identity.scope_subject,
         task_id=observability_identity.task_id,
         run_id=observability_identity.run_id,
         attempt_id=observability_identity.attempt_id,

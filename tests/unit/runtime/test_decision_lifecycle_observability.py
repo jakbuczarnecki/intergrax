@@ -81,6 +81,7 @@ from testing_support.runtime_events import emit_context_test_identity
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _SECRET_MARKER = "SUPER_SECRET_COT_AND_PROMPT"
+_SECRET_SCOPE_SUBJECT = "SUPER_SECRET_SCOPE_SUBJECT"
 _OBSERVABILITY_MODULE = (
     Path(__file__).resolve().parents[3]
     / "intergrax"
@@ -537,6 +538,22 @@ def test_redaction_excludes_secret_artifact_content() -> None:
     serialized = json.dumps([event.model_dump(mode="json") for event in bus.history])
     assert _SECRET_MARKER not in serialized
     assert "recommendation" not in serialized
+
+
+def test_redaction_excludes_secret_scope_subject() -> None:
+    identity = DecisionIdentity(
+        decision_id=mint_decision_id(),
+        version=initial_decision_version(),
+        scope=DecisionScope(namespace="incident", subject=_SECRET_SCOPE_SUBJECT),
+        tenant_id="tenant-a",
+        execution=_lineage(),
+    )
+    host, bus = _host_with_bus(identity)
+    host.start(identity)
+    serialized = json.dumps([event.model_dump(mode="json") for event in bus.history])
+    assert _SECRET_SCOPE_SUBJECT not in serialized
+    data = _payload_data(bus.history[0])
+    assert "scope_subject" not in data
 
 
 def test_payload_survives_runtime_event_serialization() -> None:
