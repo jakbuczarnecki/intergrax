@@ -5,9 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.classification import (
+    ArenaEvidenceClassification,
     EmbeddingArenaDecision,
     EmbeddingArenaStageStatus,
     EmbeddingArenaVerdict,
+    MicroArenaScreeningOutcome,
     SpeedupBand,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.query_benchmark import (
@@ -142,6 +144,7 @@ class CandidateArenaResult:
     full_build_estimate: FullBuildEstimate | None
     speedup_estimate: SpeedupEstimate | None
     warnings: tuple[str, ...]
+    screening_outcome: MicroArenaScreeningOutcome | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,3 +161,5 @@ class EmbeddingArenaReport:
     finalists_for_5c4c: tuple[str, ...]
     warnings: tuple[str, ...]
     resources_touched: tuple[str, ...]
+    execution_profile_id: str | None = None
+    evidence_classification: ArenaEvidenceClassification | None = None

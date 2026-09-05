@@ -36,14 +36,16 @@ def render_arena_summary_markdown(report: EmbeddingArenaReport) -> str:
         f"- Sample version: `{report.sample_manifest.version}`",
         f"- Query benchmark: `{report.query_benchmark_version}`",
         f"- Query cases: {len(report.query_cases)}",
+        f"- Execution profile: `{report.execution_profile_id}`",
+        f"- Evidence classification: `{report.evidence_classification.value if report.evidence_classification else 'n/a'}`",
         f"- Decision: `{report.decision.value}`",
         f"- Rationale: {report.decision_rationale}",
         f"- 5C4C finalists: {', '.join(report.finalists_for_5c4c) or 'none'}",
         "",
         "## Candidates",
         "",
-        "| candidate | verdict | stage C rps | Recall@10 | speedup |",
-        "|---|---|---:|---:|---:|",
+        "| candidate | verdict | screening | stage C rps | Recall@10 | speedup |",
+        "|---|---|---|---:|---:|---:|",
     ]
     for result in report.candidate_results:
         rps = result.stage_c.throughput_records_per_second if result.stage_c else None
@@ -51,8 +53,11 @@ def render_arena_summary_markdown(report: EmbeddingArenaReport) -> str:
         speedup = (
             result.speedup_estimate.speedup_vs_baseline if result.speedup_estimate else None
         )
+        screening = (
+            result.screening_outcome.value if result.screening_outcome is not None else "n/a"
+        )
         lines.append(
-            f"| {result.candidate_id} | {result.verdict.value} | "
+            f"| {result.candidate_id} | {result.verdict.value} | {screening} | "
             f"{rps or 'n/a'} | {recall if recall is not None else 'n/a'} | "
             f"{speedup if speedup is not None else 'n/a'} |"
         )

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.classification import (
     EmbeddingArenaDecision,
+    EmbeddingArenaStageStatus,
     EmbeddingArenaVerdict,
+    MicroArenaScreeningOutcome,
     SpeedupBand,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.results import (
@@ -160,3 +162,36 @@ def decide_arena_outcome(
         "Insufficient successful candidate evidence",
         (),
     )
+
+
+def classify_micro_arena_screening(
+    result: CandidateArenaResult,
+) -> MicroArenaScreeningOutcome:
+    """Map candidate evidence to micro-arena screening labels — not a production verdict."""
+    if result.verdict is EmbeddingArenaVerdict.REJECTED_RUNTIME:
+        if (
+            result.stage_a is not None
+            and result.stage_a.status is EmbeddingArenaStageStatus.FAILED_RUNTIME_BUDGET
+        ) or (
+            result.stage_b is not None
+            and result.stage_b.status is EmbeddingArenaStageStatus.FAILED_RUNTIME_BUDGET
+        ):
+            return MicroArenaScreeningOutcome.RUNTIME_REJECTED
+        return MicroArenaScreeningOutcome.RUNTIME_REJECTED
+    if result.verdict in {
+        EmbeddingArenaVerdict.REJECTED_CORRECTNESS,
+        EmbeddingArenaVerdict.REJECTED_LICENSE,
+    }:
+        return MicroArenaScreeningOutcome.RUNTIME_REJECTED
+    if result.verdict is EmbeddingArenaVerdict.REJECTED_QUALITY:
+        return MicroArenaScreeningOutcome.QUALITY_CONCERN
+    if result.verdict is EmbeddingArenaVerdict.WINNER_CANDIDATE:
+        return MicroArenaScreeningOutcome.PROMISING
+    if result.verdict in {
+        EmbeddingArenaVerdict.QUALIFIED,
+        EmbeddingArenaVerdict.QUALIFIED_TRADEOFF,
+    }:
+        return MicroArenaScreeningOutcome.MORE_EVIDENCE_REQUIRED
+    if result.verdict is EmbeddingArenaVerdict.BASELINE:
+        return MicroArenaScreeningOutcome.MORE_EVIDENCE_REQUIRED
+    return MicroArenaScreeningOutcome.NOT_PROMISING
