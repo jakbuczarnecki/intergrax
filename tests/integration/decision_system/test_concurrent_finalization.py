@@ -115,7 +115,7 @@ def _worker(db_dir: str, mode: str, ready: mp.Barrier, result_queue: mp.Queue[st
         requested_outcome=outcome,
     ).disposition
     result_queue.put(disposition.value)
-    del store
+    store.close()
 
 
 def test_ds_e2e_07_concurrent_finalization_race(
@@ -139,7 +139,7 @@ def test_ds_e2e_07_concurrent_finalization_race(
     SQLiteDecisionFinalizationPersistence(
         db_path=db_dir / "finalization.db",
         payload_codecs=conformance_artifact_payload_codec_registry(),
-    )
+    ).close()
     ctx = mp.get_context("spawn")
     ready = ctx.Barrier(2, timeout=120)
     result_queue: mp.Queue[str] = ctx.Queue()
@@ -161,6 +161,8 @@ def test_ds_e2e_07_concurrent_finalization_race(
             if worker.is_alive():
                 worker.terminate()
                 worker.join(timeout=5)
+        result_queue.close()
+        result_queue.join_thread()
 
     assert DecisionDurableFinalizationDisposition.COMMITTED.value in dispositions
     conflict_or_idempotent = {
@@ -174,23 +176,26 @@ def test_ds_e2e_07_concurrent_finalization_race(
         db_path=db_dir / "finalization.db",
         payload_codecs=codecs,
     )
-    key = decision_finalization_key(
-        DecisionIdentity(
-            decision_id=fixed_id,
-            version=initial_decision_version(),
-            scope=DecisionScope(namespace="decision_e2e", subject="race"),
-            tenant_id="tenant-race",
-            execution=DecisionExecutionLineage(
-                task_id=mint_task_id(),
-                run_id=mint_run_id(),
-                attempt_id=mint_attempt_id(),
-                execution_id=mint_execution_id(),
+    try:
+        key = decision_finalization_key(
+            DecisionIdentity(
+                decision_id=fixed_id,
+                version=initial_decision_version(),
+                scope=DecisionScope(namespace="decision_e2e", subject="race"),
+                tenant_id="tenant-race",
+                execution=DecisionExecutionLineage(
+                    task_id=mint_task_id(),
+                    run_id=mint_run_id(),
+                    attempt_id=mint_attempt_id(),
+                    execution_id=mint_execution_id(),
+                ),
             ),
-        ),
-    )
-    loaded = store.load_guard_state(key=key)
-    assert loaded is not None
-    assert loaded.authoritative_outcome is not None
+        )
+        loaded = store.load_guard_state(key=key)
+        assert loaded is not None
+        assert loaded.authoritative_outcome is not None
+    finally:
+        store.close()
 
     decision_e2e_report_collector.record(
         DecisionE2EQualificationResult(

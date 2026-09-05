@@ -35,6 +35,9 @@ class InMemoryDecisionFinalizationPersistence(Generic[T]):
         self._lock = Lock()
         self._store: dict[DecisionFinalizationKey, DecisionFinalizeGuardState[T]] = {}
 
+    def close(self) -> None:
+        """No-op for in-memory reference store lifetime contract."""
+
     def load_guard_state(
         self,
         *,
