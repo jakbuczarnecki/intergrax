@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 from intergrax.applications._shared.profile_resolution.field_resolvers import (
     DEFAULT_FIELD_RESOLVERS,
+    ProfileFieldResolveContext,
     ProfileFieldResolver,
     delta_update_for_path,
     resolver_index,
@@ -15,17 +16,16 @@ from intergrax.applications._shared.profile_resolution.field_resolvers import (
 from intergrax.applications._shared.profile_resolution.fingerprint import (
     compute_effective_profile_fingerprint,
 )
-from intergrax.applications._shared.profile_resolution.redaction import encode_provenance_value
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.profile_resolution import (
     ProfileDelta,
+    ProfileFieldUpdate,
     ProfileLayer,
     ProfileLayerConflictError,
     ProfileLayerInput,
     ProfileLayerResolution,
     ProfileResolution,
     ProfileResolutionDecision,
-    ProfileResolutionDecisionKind,
     ProfileResolutionError,
     profile_layer_sort_key,
 )
@@ -52,40 +52,80 @@ def _value_at_path(profile: ApplicationEnvironmentProfile, path: str) -> object:
     raise ProfileResolutionError(f"unsupported tracked path: {path}")
 
 
+def _set_value_at_path(
+    profile: ApplicationEnvironmentProfile,
+    path: str,
+    value: object,
+) -> ApplicationEnvironmentProfile:
+    if path == "meta.execution_mode":
+        return profile.model_copy(
+            update={"meta": profile.meta.model_copy(update={"execution_mode": value})},
+        )
+    if path == "capabilities.llm":
+        return profile.model_copy(
+            update={
+                "capabilities": profile.capabilities.model_copy(update={"llm": value}),
+            },
+        )
+    if path == "capabilities.tools":
+        return profile.model_copy(
+            update={
+                "capabilities": profile.capabilities.model_copy(update={"tools": value}),
+            },
+        )
+    if path == "governance.cost":
+        return profile.model_copy(
+            update={"governance": profile.governance.model_copy(update={"cost": value})},
+        )
+    raise ProfileResolutionError(f"unsupported tracked path: {path}")
+
+
+def _application_opinion_absent(path: str, value: object) -> bool:
+    if path == "capabilities.llm":
+        return value is None
+    return False
+
+
 def _application_layer_decisions(
     *,
-    previous: ApplicationEnvironmentProfile,
+    upstream: ApplicationEnvironmentProfile,
     configured: ApplicationEnvironmentProfile,
-) -> tuple[ApplicationEnvironmentProfile, tuple[ProfileResolutionDecision, ...]]:
+    resolvers: dict[str, ProfileFieldResolver],
+    expressed_paths: frozenset[str],
+) -> tuple[ApplicationEnvironmentProfile, frozenset[str], tuple[ProfileResolutionDecision, ...]]:
+    """
+    Apply configured application opinions through the same resolver pipeline as overlays.
+
+    Untracked fields keep the configured application baseline. Tracked authority paths
+    cannot widen stricter upstream platform/product/run policy.
+    """
+    effective = configured.model_copy(deep=True)
+    resolution_context = upstream.model_copy(deep=True)
     decisions: list[ProfileResolutionDecision] = []
+    updated_expressed_paths = set(expressed_paths)
+
     for path in _tracked_paths():
-        before = _value_at_path(previous, path)
-        after = _value_at_path(configured, path)
-        if before == after:
-            decisions.append(
-                ProfileResolutionDecision(
-                    path=path,
-                    requested_value=encode_provenance_value(path, after),
-                    source_layer=ProfileLayer.APPLICATION,
-                    previous_value=encode_provenance_value(path, before),
-                    decision=ProfileResolutionDecisionKind.UNCHANGED,
-                    effective_value=encode_provenance_value(path, after),
-                    reason="application configured value retained",
-                ),
-            )
+        opinion = _value_at_path(configured, path)
+        if _application_opinion_absent(path, opinion):
             continue
-        decisions.append(
-            ProfileResolutionDecision(
-                path=path,
-                requested_value=encode_provenance_value(path, after),
-                source_layer=ProfileLayer.APPLICATION,
-                previous_value=encode_provenance_value(path, before),
-                decision=ProfileResolutionDecisionKind.APPLIED,
-                effective_value=encode_provenance_value(path, after),
-                reason="application configured composition applied",
-            ),
+        resolver = resolvers[path]
+        result = resolver.resolve(
+            profile=resolution_context,
+            update=ProfileFieldUpdate(value=opinion),
+            source_layer=ProfileLayer.APPLICATION,
+            context=ProfileFieldResolveContext(expressed_paths=expressed_paths),
         )
-    return configured.model_copy(deep=True), tuple(decisions)
+        updated_expressed_paths.add(path)
+        expressed_paths = frozenset(updated_expressed_paths)
+        resolution_context = result.profile
+        effective = _set_value_at_path(
+            effective,
+            path,
+            _value_at_path(resolution_context, path),
+        )
+        decisions.extend(result.decisions)
+
+    return effective, frozenset(updated_expressed_paths), tuple(decisions)
 
 
 def _apply_delta(
@@ -94,9 +134,11 @@ def _apply_delta(
     delta: ProfileDelta,
     source_layer: ProfileLayer,
     resolvers: dict[str, ProfileFieldResolver],
-) -> tuple[ApplicationEnvironmentProfile, tuple[ProfileResolutionDecision, ...]]:
+    expressed_paths: frozenset[str],
+) -> tuple[ApplicationEnvironmentProfile, frozenset[str], tuple[ProfileResolutionDecision, ...]]:
     effective = profile
     decisions: list[ProfileResolutionDecision] = []
+    updated_expressed_paths = set(expressed_paths)
     for path in delta.opinion_paths():
         resolver = resolvers.get(path)
         if resolver is None:
@@ -104,10 +146,17 @@ def _apply_delta(
         update = delta_update_for_path(delta, path)
         if update is None:
             raise ProfileResolutionError(f"delta missing opinion for declared path: {path}")
-        result = resolver.resolve(profile=effective, update=update, source_layer=source_layer)
+        result = resolver.resolve(
+            profile=effective,
+            update=update,
+            source_layer=source_layer,
+            context=ProfileFieldResolveContext(expressed_paths=expressed_paths),
+        )
+        updated_expressed_paths.add(path)
+        expressed_paths = frozenset(updated_expressed_paths)
         effective = result.profile
         decisions.extend(result.decisions)
-    return effective, tuple(decisions)
+    return effective, frozenset(updated_expressed_paths), tuple(decisions)
 
 
 def _normalize_layer_inputs(
@@ -153,20 +202,23 @@ def resolve_profile(
     """
     configured_application = application_profile.model_copy(deep=True)
     resolvers = resolver_index(tuple(field_resolvers))
+    application_resolvers = resolver_index(DEFAULT_FIELD_RESOLVERS)
     normalized_layers = _normalize_layer_inputs(layers)
     pre_application_layers, post_application_layers = _partition_layers(normalized_layers)
 
     effective = ApplicationEnvironmentProfile()
     layer_records: list[ProfileLayerResolution] = []
     decisions: list[ProfileResolutionDecision] = []
+    expressed_paths: frozenset[str] = frozenset()
 
     for layer_input in pre_application_layers:
         assert layer_input.delta is not None
-        effective, layer_decisions = _apply_delta(
+        effective, expressed_paths, layer_decisions = _apply_delta(
             profile=effective,
             delta=layer_input.delta,
             source_layer=layer_input.layer,
             resolvers=resolvers,
+            expressed_paths=expressed_paths,
         )
         layer_records.append(
             ProfileLayerResolution(
@@ -177,9 +229,11 @@ def resolve_profile(
         )
         decisions.extend(layer_decisions)
 
-    effective, application_decisions = _application_layer_decisions(
-        previous=effective,
+    effective, expressed_paths, application_decisions = _application_layer_decisions(
+        upstream=effective,
         configured=configured_application,
+        resolvers=application_resolvers,
+        expressed_paths=expressed_paths,
     )
     decisions.extend(application_decisions)
     layer_records.append(
@@ -192,11 +246,12 @@ def resolve_profile(
 
     for layer_input in post_application_layers:
         assert layer_input.delta is not None
-        effective, layer_decisions = _apply_delta(
+        effective, expressed_paths, layer_decisions = _apply_delta(
             profile=effective,
             delta=layer_input.delta,
             source_layer=layer_input.layer,
             resolvers=resolvers,
+            expressed_paths=expressed_paths,
         )
         layer_records.append(
             ProfileLayerResolution(

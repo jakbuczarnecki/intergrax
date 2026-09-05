@@ -293,15 +293,18 @@ class _ExecutionModeEchoResolver:
         profile: ApplicationEnvironmentProfile,
         update: ProfileFieldUpdate[object],
         source_layer: ProfileLayer,
+        context: ProfileFieldResolveContext | None = None,
     ) -> ProfileFieldResolveResult:
         from intergrax.applications._shared.profile_resolution.field_resolvers import (
             ExecutionModeFieldResolver,
+            ProfileFieldResolveContext,
         )
 
         return ExecutionModeFieldResolver().resolve(
             profile=profile,
             update=update,
             source_layer=source_layer,
+            context=context or ProfileFieldResolveContext(),
         )
 
 
@@ -339,3 +342,254 @@ def test_build_harness_host_runtime_uses_effective_profile_resolution() -> None:
     assert runtime.profile_resolution is not None
     assert runtime.environment == runtime.profile_resolution.effective_profile
     assert configured.model_copy(deep=True) == configured
+
+
+def test_application_cannot_widen_platform_tool_authority() -> None:
+    application = _application(tools=["search", "shell"])
+    resolution = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(
+                        value=ToolProfile(enabled=["search"]),
+                    ),
+                ),
+            ),
+        ),
+    )
+    assert resolution.effective_profile.tool_profile.enabled == ["search"]
+    clamped = [
+        item
+        for item in resolution.decisions
+        if item.decision == ProfileResolutionDecisionKind.CLAMPED
+        and item.source_layer == ProfileLayer.APPLICATION
+    ]
+    assert clamped
+    assert "shell" in (clamped[0].requested_value or "")
+
+
+def test_product_narrowing_survives_application_widen_attempt() -> None:
+    application = _application(tools=["search", "calculator"])
+    resolution = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(
+                        value=ToolProfile(enabled=["search", "calculator"]),
+                    ),
+                ),
+            ),
+            ProfileLayerInput(
+                layer=ProfileLayer.PRODUCT,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(
+                        value=ToolProfile(enabled=["search"]),
+                    ),
+                ),
+            ),
+        ),
+    )
+    assert resolution.effective_profile.tool_profile.enabled == ["search"]
+    clamped = [
+        item
+        for item in resolution.decisions
+        if item.decision == ProfileResolutionDecisionKind.CLAMPED
+        and item.source_layer == ProfileLayer.APPLICATION
+    ]
+    assert clamped
+
+
+def test_execution_clear_cannot_widen_upstream_tools() -> None:
+    application = _application(tools=["search"])
+    resolution = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(
+                        value=ToolProfile(enabled=["search"]),
+                    ),
+                ),
+            ),
+            ProfileLayerInput(
+                layer=ProfileLayer.EXECUTION,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(action="clear"),
+                ),
+            ),
+        ),
+    )
+    assert resolution.effective_profile.tool_profile.enabled == ["search"]
+
+
+def test_execution_clear_cannot_widen_upstream_budget() -> None:
+    application = _application(max_tool_calls=10)
+    resolution = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    cost_profile=ProfileFieldUpdate(
+                        value=CostProfile(max_tool_calls=10),
+                    ),
+                ),
+            ),
+            ProfileLayerInput(
+                layer=ProfileLayer.EXECUTION,
+                delta=ProfileDelta(
+                    cost_profile=ProfileFieldUpdate(action="clear"),
+                ),
+            ),
+        ),
+    )
+    assert resolution.effective_profile.cost_profile.max_tool_calls == 10
+
+
+def test_bundle_authority_clamps_tools_outside_bundle() -> None:
+    application = _application(tools=["jira.search_tasks", "shell.exec"])
+    resolution = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(
+                        value=ToolProfile(enabled_bundles=["jira"]),
+                    ),
+                ),
+            ),
+        ),
+    )
+    assert resolution.effective_profile.tool_profile.enabled == ["jira.search_tasks"]
+    clamped = [
+        item
+        for item in resolution.decisions
+        if item.decision == ProfileResolutionDecisionKind.CLAMPED
+    ]
+    assert clamped
+    assert "shell.exec" in (clamped[0].requested_value or "")
+
+
+def test_empty_upstream_tool_profile_denies_downstream_tool() -> None:
+    application = _application(tools=["shell.exec"])
+    resolution = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(value=ToolProfile()),
+                ),
+            ),
+        ),
+    )
+    assert resolution.effective_profile.tool_profile.enabled == []
+    clamped = [
+        item
+        for item in resolution.decisions
+        if item.decision == ProfileResolutionDecisionKind.CLAMPED
+        and item.source_layer == ProfileLayer.APPLICATION
+    ]
+    assert clamped
+
+
+def test_application_scalar_execution_mode_override_allowed() -> None:
+    application = _application(execution_mode=ExecutionMode.STRICT)
+    resolution = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    execution_mode=ProfileFieldUpdate(value=ExecutionMode.BALANCED),
+                ),
+            ),
+        ),
+    )
+    assert resolution.effective_profile.execution_mode == ExecutionMode.STRICT
+    applied = [
+        item
+        for item in resolution.decisions
+        if item.path == "meta.execution_mode"
+        and item.source_layer == ProfileLayer.APPLICATION
+        and item.decision == ProfileResolutionDecisionKind.APPLIED
+    ]
+    assert applied
+
+
+def test_fingerprint_ignores_provenance_only_clamp_difference() -> None:
+    application = _application(tools=["search", "shell"])
+    platform_only = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(
+                        value=ToolProfile(enabled=["search"]),
+                    ),
+                ),
+            ),
+        ),
+    )
+    platform_and_product = resolve_profile(
+        application,
+        layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(
+                        value=ToolProfile(enabled=["search"]),
+                    ),
+                ),
+            ),
+            ProfileLayerInput(
+                layer=ProfileLayer.PRODUCT,
+                delta=ProfileDelta(
+                    tool_profile=ProfileFieldUpdate(
+                        value=ToolProfile(enabled=["search"]),
+                    ),
+                ),
+            ),
+        ),
+    )
+    assert platform_only.effective_profile == platform_and_product.effective_profile
+    assert platform_only.fingerprint == platform_and_product.fingerprint
+    assert platform_only.decisions != platform_and_product.decisions
+
+
+def test_resolution_evidence_survives_harness_composition() -> None:
+    manifest = ApplicationManifest.lab(
+        app_id="profile_resolution_evidence",
+        name="Profile Resolution Evidence",
+        route_prefix="/v1/profile_resolution_evidence",
+        env_prefix="PROFILE_RESOLUTION_EVIDENCE_",
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
+    )
+    configured = ApplicationEnvironmentProfile.lab_defaults(profile_id="profile_resolution_evidence.lab")
+    runtime = build_harness_host_runtime(
+        manifest,
+        configured,
+        use_in_memory_trace=True,
+        profile_layers=(
+            ProfileLayerInput(
+                layer=ProfileLayer.PLATFORM,
+                delta=ProfileDelta(
+                    execution_mode=ProfileFieldUpdate(value=ExecutionMode.STRICT),
+                ),
+            ),
+        ),
+    )
+    assert runtime.profile_resolution is not None
+    assert runtime.profile_resolution.fingerprint
+    assert runtime.environment == runtime.profile_resolution.effective_profile
+    assert any(
+        item.source_layer == ProfileLayer.PLATFORM
+        for item in runtime.profile_resolution.decisions
+    )
