@@ -410,10 +410,47 @@ def test_custom_resolver_records_platform_application_run_sequence() -> None:
 
 def test_missing_resolver_fails_closed_for_partial_custom_set() -> None:
     application = _application(execution_mode=ExecutionMode.BALANCED)
-    with pytest.raises(KeyError):
+    with pytest.raises(
+        ProfileResolutionError,
+        match=r"no resolver registered for profile path: capabilities\.llm",
+    ):
         resolve_profile(
             application,
             field_resolvers=(_ExecutionModeEchoResolver(),),
+        )
+
+
+def test_missing_resolver_fails_closed_for_run_overlay_delta() -> None:
+    from intergrax.applications._shared.profile_resolution.field_resolvers import (
+        DEFAULT_FIELD_RESOLVERS,
+    )
+
+    application = ApplicationEnvironmentProfile.lab_defaults(profile_id="resolution.test")
+    application = application.model_copy(
+        update={
+            "capabilities": application.capabilities.model_copy(update={"llm": None}),
+        },
+    )
+    partial_resolvers = tuple(
+        resolver for resolver in DEFAULT_FIELD_RESOLVERS if resolver.path != "capabilities.llm"
+    )
+    with pytest.raises(
+        ProfileResolutionError,
+        match=r"no resolver registered for profile path: capabilities\.llm",
+    ):
+        resolve_profile(
+            application,
+            layers=(
+                ProfileLayerInput(
+                    layer=ProfileLayer.RUN,
+                    delta=ProfileDelta(
+                        llm_profile=ProfileFieldUpdate(
+                            value=LLMProfile(provider=LLMProvider.OPENAI, model="gpt-4o-mini"),
+                        ),
+                    ),
+                ),
+            ),
+            field_resolvers=partial_resolvers,
         )
 
 

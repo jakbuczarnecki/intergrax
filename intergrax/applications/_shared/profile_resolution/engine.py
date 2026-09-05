@@ -86,6 +86,18 @@ def _application_opinion_absent(path: str, value: object) -> bool:
     return False
 
 
+def _require_resolver(
+    resolvers: dict[str, ProfileFieldResolver],
+    path: str,
+) -> ProfileFieldResolver:
+    resolver = resolvers.get(path)
+    if resolver is None:
+        raise ProfileResolutionError(
+            f"no resolver registered for profile path: {path}",
+        )
+    return resolver
+
+
 def _application_layer_decisions(
     *,
     upstream: ApplicationEnvironmentProfile,
@@ -108,7 +120,7 @@ def _application_layer_decisions(
         opinion = _value_at_path(configured, path)
         if _application_opinion_absent(path, opinion):
             continue
-        resolver = resolvers[path]
+        resolver = _require_resolver(resolvers, path)
         result = resolver.resolve(
             profile=resolution_context,
             update=ProfileFieldUpdate(value=opinion),
@@ -140,9 +152,7 @@ def _apply_delta(
     decisions: list[ProfileResolutionDecision] = []
     updated_expressed_paths = set(expressed_paths)
     for path in delta.opinion_paths():
-        resolver = resolvers.get(path)
-        if resolver is None:
-            raise ProfileResolutionError(f"no resolver registered for delta path: {path}")
+        resolver = _require_resolver(resolvers, path)
         update = delta_update_for_path(delta, path)
         if update is None:
             raise ProfileResolutionError(f"delta missing opinion for declared path: {path}")
