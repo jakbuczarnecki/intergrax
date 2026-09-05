@@ -331,17 +331,9 @@ def test_legacy_lifecycle_metadata_skips_validation(tmp_path: Path) -> None:
 
 
 def test_ai_incident_investigation_passes_universal_rules() -> None:
-    report = validate_scenario_application_architecture(
+    assert_scenario_application_architecture(
         repo_root=REPO_ROOT,
         scenario_slug="ai_incident_investigation",
-    )
-    legacy_violations = tuple(
-        violation
-        for violation in report.violations
-        if violation.rule_id is not ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
-    )
-    assert not legacy_violations, "\n\n".join(
-        violation.format() for violation in legacy_violations
     )
 
 
