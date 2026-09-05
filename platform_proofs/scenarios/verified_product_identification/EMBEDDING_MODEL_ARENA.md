@@ -75,6 +75,8 @@ Stages:
 | B | 500 | stable throughput + preliminary retrieval quality |
 | C | 1000 | finalists only — final throughput, quality, projections |
 
+Stage C finalists are selected deterministically from the **complete** Stage B result set (two-phase orchestration). Finalist selection does not depend on candidate iteration order.
+
 ## Query benchmark
 
 Deterministic query cases (`arena/evaluation/query_builder.py`) from WDC evidence:
@@ -88,7 +90,16 @@ Deterministic query cases (`arena/evaluation/query_builder.py`) from WDC evidenc
 
 `cluster_id` is benchmark-only evidence and never appears in query text.
 
-Metrics: Recall@1/5/10, MRR@10, nDCG@10 on in-memory cosine search over the arena corpus.
+### Stage-local benchmark scope
+
+Each quality stage builds its own immutable `EmbeddingArenaStageEvaluationScope`:
+
+- Stage B uses the first 500 arena records and stage-local query cases derived from those records only.
+- Stage C uses the first 1000 arena records and its own stage-local query cases.
+- Every `relevant_source_ref` must resolve inside the stage corpus; missing ground truth fails closed.
+- Scope identity includes sample version, query benchmark version, stage name, corpus size, and a deterministic content fingerprint.
+
+Metrics: Recall@1/5/10, MRR@10, nDCG@10 on in-memory cosine search over the stage corpus.
 
 ## Throughput methodology
 
@@ -96,9 +107,24 @@ Reuses 5C4A microbenchmark infrastructure (`qualification/integration/microbench
 
 Batch candidates: `8, 16, 32, 64` (baseline reuses known batch `16`).
 
+### Candidate execution session
+
+Each candidate stage evaluation opens one `EmbeddingArenaCandidateExecutionSession`:
+
+1. open provider once
+2. warmup
+3. embed document batches
+4. embed query batches through the same session
+5. measure warm query latency on the warmed session
+6. close once
+
+Query latency excludes provider/model construction and cold initialization.
+
 ## Truncation analysis
 
 Tokenizer-based profile per candidate (`arena/integration/truncation_probe.py`).
+
+Truncation profiling is fail-closed: tokenizer/profile failures produce typed errors and block quality qualification for short-context candidates that require truncation evidence.
 
 512-token models report truncation separately; long-input quality subset is mandatory when truncation occurs.
 
@@ -151,5 +177,5 @@ Maximum `1–2` finalists proceed to 10k/100k scaling qualification.
 ## Tests
 
 ```powershell
-uv run pytest tests/unit/platform_proofs/scenarios/verified_product_identification/test_embedding_arena.py -q
+uv run pytest tests/unit/platform_proofs/scenarios/verified_product_identification/test_embedding_arena.py tests/unit/platform_proofs/scenarios/verified_product_identification/test_embedding_arena_hardening.py -q
 ```

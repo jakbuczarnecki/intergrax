@@ -42,7 +42,7 @@ BASELINE_KNOWN_THROUGHPUT_RPS = 10.4
 FULL_DATASET_RECORD_COUNT = 3_770_377
 
 
-def _policy_ref_from_transformation(policy_id: str, role: str) -> EmbeddingInputPolicyRef:
+def _policy_ref_from_transformation(policy_id: str) -> EmbeddingInputPolicyRef:
     if policy_id == "bge-m3":
         transformation = bge_m3_input_policy()
     elif policy_id == "qwen3-embedding-0.6b":
@@ -54,8 +54,6 @@ def _policy_ref_from_transformation(policy_id: str, role: str) -> EmbeddingInput
     else:
         msg = f"unsupported policy id: {policy_id}"
         raise ValueError(msg)
-    if role == "query":
-        return transformation.policy_ref
     return transformation.policy_ref
 
 
@@ -63,12 +61,12 @@ def build_default_arena_candidates(
     *,
     include_e5_control: bool = False,
 ) -> tuple[EmbeddingArenaCandidate, ...]:
-    baseline_query = _policy_ref_from_transformation("bge-m3", "query")
-    baseline_document = _policy_ref_from_transformation("bge-m3", "document")
-    qwen_query = _policy_ref_from_transformation("qwen3-embedding-0.6b", "query")
-    qwen_document = _policy_ref_from_transformation("qwen3-embedding-0.6b", "document")
-    nomic_query = _policy_ref_from_transformation("nomic-embed-text-v2-moe", "query")
-    nomic_document = _policy_ref_from_transformation("nomic-embed-text-v2-moe", "document")
+    baseline_query = _policy_ref_from_transformation("bge-m3")
+    baseline_document = _policy_ref_from_transformation("bge-m3")
+    qwen_query = _policy_ref_from_transformation("qwen3-embedding-0.6b")
+    qwen_document = _policy_ref_from_transformation("qwen3-embedding-0.6b")
+    nomic_query = _policy_ref_from_transformation("nomic-embed-text-v2-moe")
+    nomic_document = _policy_ref_from_transformation("nomic-embed-text-v2-moe")
 
     candidates: list[EmbeddingArenaCandidate] = [
         EmbeddingArenaCandidate(
@@ -131,8 +129,8 @@ def build_default_arena_candidates(
     ]
 
     if include_e5_control:
-        e5_query = _policy_ref_from_transformation("e5-large-instruct", "query")
-        e5_document = _policy_ref_from_transformation("e5-large-instruct", "document")
+        e5_query = _policy_ref_from_transformation("e5-large-instruct")
+        e5_document = _policy_ref_from_transformation("e5-large-instruct")
         candidates.append(
             EmbeddingArenaCandidate(
                 candidate_id=E5_CANDIDATE_ID,
