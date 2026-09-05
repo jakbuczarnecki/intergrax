@@ -17,6 +17,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ReliabilityProfile,
 )
+from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
 from intergrax.contracts.execution_terminal import (
     AmbiguousExecutionTerminalProviderError,
     ExecutionTerminalError,
@@ -43,11 +44,16 @@ _COMPOSITION_ROOTS = (
 )
 
 
-def _env(*, provider: ExecutionTerminalPersistenceProvider | None = None) -> ApplicationEnvironmentProfile:
+def _env(
+    *,
+    provider: ExecutionTerminalPersistenceProvider | None = None,
+    attempt_provider: AttemptLifecyclePersistenceProvider | None = None,
+) -> ApplicationEnvironmentProfile:
     return ApplicationEnvironmentProfile.lab_defaults(profile_id="p0c8b.terminal.provider").model_copy(
         update={
             "reliability_profile": ReliabilityProfile(
                 execution_terminal_persistence_provider=provider,
+                attempt_lifecycle_persistence_provider=attempt_provider,
             ),
         },
     )
@@ -91,7 +97,10 @@ def test_explicit_execution_terminal_service_wins_over_ambiguous_platform_stores
     custom = ExecutionTerminalService(InMemoryExecutionTerminalStore())
     loop = build_nexus_loop_from_environment(
         AgentRegistry(),
-        env=_env(),
+        env=_env(
+            provider=ExecutionTerminalPersistenceProvider.KV,
+            attempt_provider=AttemptLifecyclePersistenceProvider.KV,
+        ),
         key_value_cache=InMemoryKVStore(),
         document_store=InMemoryDocumentStore(),
         execution_terminal=custom,
@@ -103,7 +112,10 @@ def test_explicit_execution_terminal_store_wins_over_ambiguous_platform_stores()
     custom_store = InMemoryExecutionTerminalStore()
     loop = build_nexus_loop_from_environment(
         AgentRegistry(),
-        env=_env(),
+        env=_env(
+            provider=ExecutionTerminalPersistenceProvider.KV,
+            attempt_provider=AttemptLifecyclePersistenceProvider.KV,
+        ),
         key_value_cache=InMemoryKVStore(),
         document_store=InMemoryDocumentStore(),
         execution_terminal_store=custom_store,
@@ -120,7 +132,10 @@ def test_single_available_provider_auto_selects() -> None:
 def test_nexus_factory_with_kv_and_document_store_and_explicit_provider() -> None:
     loop = build_nexus_loop_from_environment(
         AgentRegistry(),
-        env=_env(provider=ExecutionTerminalPersistenceProvider.KV),
+        env=_env(
+            provider=ExecutionTerminalPersistenceProvider.KV,
+            attempt_provider=AttemptLifecyclePersistenceProvider.KV,
+        ),
         key_value_cache=InMemoryKVStore(),
         document_store=InMemoryDocumentStore(),
     )
@@ -151,10 +166,22 @@ def test_checkpoint_provider_selects_checkpoint_terminal_store(tmp_path: Path) -
 
 
 def test_nexus_factory_ambiguous_platform_stores_fail_closed() -> None:
+    from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
+
     with pytest.raises(AmbiguousExecutionTerminalProviderError):
         build_nexus_loop_from_environment(
             AgentRegistry(),
-            env=_env(),
+            env=_env(
+                provider=None,
+            ).model_copy(
+                update={
+                    "reliability_profile": ReliabilityProfile(
+                        attempt_lifecycle_persistence_provider=(
+                            AttemptLifecyclePersistenceProvider.KV
+                        ),
+                    ),
+                },
+            ),
             key_value_cache=InMemoryKVStore(),
             document_store=InMemoryDocumentStore(),
         )

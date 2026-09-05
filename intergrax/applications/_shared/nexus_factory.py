@@ -56,13 +56,11 @@ from intergrax.runtime.execution.budget import (
 )
 from intergrax.runtime.execution.attempt_lifecycle import (
     AttemptLifecycleService,
-    wire_attempt_lifecycle_store,
+    resolve_attempt_lifecycle_store,
 )
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.execution.execution_terminal.wiring import (
-    resolve_execution_terminal_provider,
     resolve_execution_terminal_store,
-    resolve_platform_store_for_terminal_provider,
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -75,10 +73,7 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 
 if TYPE_CHECKING:
-    from intergrax.contracts.execution_terminal import (
-        ExecutionTerminalPersistenceProvider,
-        ExecutionTerminalStore,
-    )
+    from intergrax.contracts.execution_terminal import ExecutionTerminalStore
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedger,
@@ -161,7 +156,6 @@ def build_nexus_loop_from_environment(
             )
         else:
             resolved_budget_ledger_factory = create_execution_budget_ledger_factory(run_budget)
-    from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
     from intergrax.distributed.contracts.kv_store import DistributedKVStore
     from intergrax.integrations.contracts.document_store import DocumentStore
 
@@ -172,60 +166,12 @@ def build_nexus_loop_from_environment(
         if checkpoint_store is not None and reliability.long_running_scheduler_enabled
         else None
     )
-    resolved_terminal_provider: ExecutionTerminalPersistenceProvider | None = None
-    if (
-        execution_terminal is None
-        and execution_terminal_store is None
-        and (
-            kv_store is not None
-            or doc_store is not None
-            or durable_checkpoint_store is not None
-        )
-    ):
-        resolved_terminal_provider = resolve_execution_terminal_provider(
-            provider=reliability.execution_terminal_persistence_provider,
-            kv_store=kv_store,
-            document_store=doc_store,
-            checkpoint_store=durable_checkpoint_store,
-        )
-    platform_disambiguation_provider = (
-        resolved_terminal_provider
-        if resolved_terminal_provider is not None
-        else reliability.execution_terminal_persistence_provider
+    resolved_attempt_lifecycle_store = resolve_attempt_lifecycle_store(
+        provider=reliability.attempt_lifecycle_persistence_provider,
+        kv_store=kv_store,
+        document_store=doc_store,
+        explicit_store=attempt_lifecycle_store,
     )
-    resolved_attempt_lifecycle_store = attempt_lifecycle_store
-    if resolved_attempt_lifecycle_store is None and (kv_store is not None or doc_store is not None):
-        attempt_kv_store = kv_store
-        attempt_doc_store = doc_store
-        if kv_store is not None and doc_store is not None:
-            if platform_disambiguation_provider is None:
-                if execution_terminal is None and execution_terminal_store is None:
-                    resolve_execution_terminal_provider(
-                        provider=None,
-                        kv_store=kv_store,
-                        document_store=doc_store,
-                        checkpoint_store=None,
-                    )
-                else:
-                    attempt_kv_store = None
-                    attempt_doc_store = None
-            elif (
-                platform_disambiguation_provider
-                is not ExecutionTerminalPersistenceProvider.CHECKPOINT
-            ):
-                attempt_kv_store, attempt_doc_store = resolve_platform_store_for_terminal_provider(
-                    platform_disambiguation_provider,
-                    kv_store=kv_store,
-                    document_store=doc_store,
-                )
-            else:
-                attempt_kv_store = None
-                attempt_doc_store = None
-        if attempt_kv_store is not None or attempt_doc_store is not None:
-            resolved_attempt_lifecycle_store = wire_attempt_lifecycle_store(
-                kv_store=attempt_kv_store,
-                document_store=attempt_doc_store,
-            )
     resolved_attempt_lifecycle = (
         AttemptLifecycleService(resolved_attempt_lifecycle_store)
         if resolved_attempt_lifecycle_store is not None

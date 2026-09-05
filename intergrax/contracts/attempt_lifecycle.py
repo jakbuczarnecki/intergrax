@@ -39,8 +39,19 @@ class AttemptTransitionResult(BaseModel):
     generation: int = Field(ge=1)
 
 
+class AttemptLifecyclePersistenceProvider(StrEnum):
+    """Composition-time selector for durable :class:`AttemptLifecycleStore` wiring."""
+
+    KV = "kv"
+    DOCUMENT_STORE = "document_store"
+
+
 class AttemptLifecycleError(RuntimeError):
     """Raised when durable attempt lifecycle state is missing or corrupt."""
+
+
+class AmbiguousAttemptLifecycleProviderError(AttemptLifecycleError):
+    """Raised when multiple durable attempt providers are available without explicit selection."""
 
 
 class AttemptLifecycleStore(ABC):

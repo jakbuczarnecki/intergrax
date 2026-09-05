@@ -18,6 +18,7 @@ from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
 from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
@@ -198,6 +199,7 @@ class ReliabilityProfile(BaseModel):
     middleware_hook_timeout_seconds: float = Field(default=2.0, ge=0.01, le=60.0)
     recovery_contract: ApplicationRecoveryContract | None = None
     execution_terminal_persistence_provider: ExecutionTerminalPersistenceProvider | None = None
+    attempt_lifecycle_persistence_provider: AttemptLifecyclePersistenceProvider | None = None
 
 
 class EventSubscriptionSpec(BaseModel):
