@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
 from testing_support.decision_e2e.contracts import (
     DecisionE2EProofId,
     DecisionE2EQualificationResult,
@@ -18,10 +17,12 @@ from testing_support.decision_e2e.contracts import (
 from testing_support.decision_e2e.environment import qualification_required
 from testing_support.decision_e2e.requirements import qualify_cross_scenario_dual
 from testing_support.decision_e2e.scenario_qualification import (
+    AI_INCIDENT_SCENARIO_ID,
     CANONICAL_DECISION_RUNTIME_MODULES,
-    discover_decision_scenario_roots,
+    MIN_CROSS_SCENARIO_DECISION_SCENARIOS,
+    ScenarioQualificationAttempt,
+    discover_decision_scenario_slugs,
     run_ai_incident_live_qualification,
-    scenario_exercises_decision_runtime,
 )
 
 pytestmark = [
@@ -104,11 +105,7 @@ async def test_ds_e2e_13_cross_scenario_qualification(
         )
         pytest.fail("; ".join(violations))
 
-    decision_scenarios = tuple(
-        path
-        for path in discover_decision_scenario_roots(_REPO_ROOT)
-        if scenario_exercises_decision_runtime(path)
-    )
+    decision_scenarios = discover_decision_scenario_slugs(_REPO_ROOT)
     if not decision_scenarios:
         decision_e2e_report_collector.record(
             DecisionE2EQualificationResult(
@@ -118,6 +115,21 @@ async def test_ds_e2e_13_cross_scenario_qualification(
                 reason=(
                     "Cross-scenario qualification requires a live platform proof exercising "
                     "canonical Decision runtime"
+                ),
+            ),
+        )
+        return
+
+    if len(decision_scenarios) < MIN_CROSS_SCENARIO_DECISION_SCENARIOS:
+        decision_e2e_report_collector.record(
+            DecisionE2EQualificationResult(
+                proof_id=DecisionE2EProofId.DS_E2E_13,
+                disposition=QualificationDisposition.BLOCKED,
+                evidence=(),
+                reason=(
+                    "Cross-scenario qualification requires "
+                    f"{MIN_CROSS_SCENARIO_DECISION_SCENARIOS} distinct live Decision scenarios; "
+                    f"found {len(decision_scenarios)} ({', '.join(decision_scenarios)})"
                 ),
             ),
         )
@@ -134,8 +146,39 @@ async def test_ds_e2e_13_cross_scenario_qualification(
         )
         return
 
-    scenario_a = await run_ai_incident_live_qualification(variant=ScenarioVariant.RESOLVED)
-    scenario_b = await run_ai_incident_live_qualification(variant=ScenarioVariant.UNRESOLVED)
+    scenario_a_slug, scenario_b_slug = decision_scenarios[0], decision_scenarios[1]
+
+    async def _run_live_qualification(slug: str) -> ScenarioQualificationAttempt | None:
+        if slug == AI_INCIDENT_SCENARIO_ID:
+            return await run_ai_incident_live_qualification()
+        return None
+
+    scenario_a_attempt = await _run_live_qualification(scenario_a_slug)
+    scenario_b_attempt = await _run_live_qualification(scenario_b_slug)
+    if scenario_a_attempt is None or scenario_b_attempt is None:
+        missing = [
+            slug
+            for slug, attempt in (
+                (scenario_a_slug, scenario_a_attempt),
+                (scenario_b_slug, scenario_b_attempt),
+            )
+            if attempt is None
+        ]
+        decision_e2e_report_collector.record(
+            DecisionE2EQualificationResult(
+                proof_id=DecisionE2EProofId.DS_E2E_13,
+                disposition=QualificationDisposition.BLOCKED,
+                evidence=(),
+                reason=(
+                    "Cross-scenario qualification missing live runner for: "
+                    + ", ".join(missing)
+                ),
+            ),
+        )
+        return
+
+    scenario_a = scenario_a_attempt
+    scenario_b = scenario_b_attempt
     result = qualify_cross_scenario_dual(
         scenario_a=scenario_a.evidence,
         scenario_b=scenario_b.evidence,

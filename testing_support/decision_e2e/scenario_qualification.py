@@ -40,10 +40,7 @@ CANONICAL_DECISION_RUNTIME_MODULES: frozenset[str] = frozenset(
 )
 
 AI_INCIDENT_SCENARIO_ID = "ai_incident_investigation"
-
-
-def ai_incident_scenario_id(variant: ScenarioVariant) -> str:
-    return f"{AI_INCIDENT_SCENARIO_ID}:{variant.value}"
+MIN_CROSS_SCENARIO_DECISION_SCENARIOS = 2
 
 
 def resolve_canonical_runtime_modules(
@@ -89,7 +86,7 @@ async def run_ai_incident_live_qualification(
     variant: ScenarioVariant = ScenarioVariant.RESOLVED,
 ) -> ScenarioQualificationAttempt:
     invocation = canonical_reproduction_shell_command()
-    scenario_id = ai_incident_scenario_id(variant)
+    scenario_id = AI_INCIDENT_SCENARIO_ID
     provider, model = _provider_model_from_env()
     try:
         fixture_bundle = build_fixture_runtime_bundle(variant=variant)
@@ -181,15 +178,19 @@ async def run_ai_incident_live_qualification(
 
 def discover_decision_scenario_roots(repo_root: Path) -> tuple[Path, ...]:
     scenarios_root = repo_root / "platform_proofs" / "scenarios"
-    roots: list[Path] = []
-    for candidate in (
-        scenarios_root / "ai_incident_investigation",
-        scenarios_root / "verified_product_identification",
-        scenarios_root / "indirect_prompt_injection",
-    ):
-        if candidate.is_dir():
-            roots.append(candidate)
-    return tuple(roots)
+    if not scenarios_root.is_dir():
+        return ()
+    return tuple(
+        sorted(
+            path
+            for path in scenarios_root.iterdir()
+            if path.is_dir() and scenario_exercises_decision_runtime(path)
+        )
+    )
+
+
+def discover_decision_scenario_slugs(repo_root: Path) -> tuple[str, ...]:
+    return tuple(path.name for path in discover_decision_scenario_roots(repo_root))
 
 
 def scenario_exercises_decision_runtime(scenario_dir: Path) -> bool:

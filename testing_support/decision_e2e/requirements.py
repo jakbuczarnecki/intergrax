@@ -210,6 +210,13 @@ def qualify_live_scenario(
     )
 
 
+def _scenario_identity(scenario_id: str) -> str:
+    """Normalize scenario slug; outcome variants are not distinct scenarios."""
+    if ":" in scenario_id:
+        return scenario_id.split(":", 1)[0]
+    return scenario_id
+
+
 def qualify_cross_scenario_dual(
     *,
     scenario_a: ScenarioExecutionEvidence,
@@ -243,7 +250,7 @@ def qualify_cross_scenario_dual(
                 f"{label}: canonical Decision runtime module evidence missing",
             )
 
-    if scenario_a.scenario_id == scenario_b.scenario_id:
+    if _scenario_identity(scenario_a.scenario_id) == _scenario_identity(scenario_b.scenario_id):
         return _blocked(
             proof_id,
             "Cross-scenario qualification requires distinct scenario identities",

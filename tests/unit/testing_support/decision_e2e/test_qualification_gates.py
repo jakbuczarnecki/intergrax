@@ -231,7 +231,7 @@ def test_enterprise_closed_true_for_exact_thirteen_passed() -> None:
 
 
 def test_qualify_cross_scenario_dual_requires_two_distinct_scenarios() -> None:
-    evidence = _scenario_evidence("ai_incident_investigation:resolved")
+    evidence = _scenario_evidence("ai_incident_investigation")
     blocked = qualify_cross_scenario_dual(
         scenario_a=evidence,
         scenario_b=evidence,
@@ -239,10 +239,19 @@ def test_qualify_cross_scenario_dual_requires_two_distinct_scenarios() -> None:
     assert blocked.disposition is QualificationDisposition.BLOCKED
 
 
-def test_qualify_cross_scenario_dual_passes_with_two_live_scenarios() -> None:
-    passed = qualify_cross_scenario_dual(
+def test_qualify_cross_scenario_dual_blocks_legacy_outcome_variant_ids() -> None:
+    blocked = qualify_cross_scenario_dual(
         scenario_a=_scenario_evidence("ai_incident_investigation:resolved"),
         scenario_b=_scenario_evidence("ai_incident_investigation:unresolved"),
+    )
+    assert blocked.disposition is QualificationDisposition.BLOCKED
+    assert "distinct scenario identities" in (blocked.reason or "")
+
+
+def test_qualify_cross_scenario_dual_passes_with_two_live_scenarios() -> None:
+    passed = qualify_cross_scenario_dual(
+        scenario_a=_scenario_evidence("ai_incident_investigation"),
+        scenario_b=_scenario_evidence("indirect_prompt_injection"),
     )
     assert passed.disposition is QualificationDisposition.PASSED
     assert len([item for item in passed.evidence if item.kind == "scenario_execution"]) == 2
