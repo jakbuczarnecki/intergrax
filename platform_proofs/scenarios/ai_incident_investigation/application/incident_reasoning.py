@@ -42,6 +42,12 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
 )
 
 LEGAL_HYPOTHESIS_IDS: frozenset[str] = frozenset({"H1", "H2", "H3"})
+EVIDENCE_REFERENCE_CONTRACT = (
+    "Evidence reference contract: in supporting_evidence_ids and contradicting_evidence_ids "
+    "use only exact evidence_id strings copied from Gathered evidence IDs "
+    "(for example evidence.workload.line4.incident_window). "
+    "Never use aliases (E1, EVID-001, ev1), indices, or invented identifiers."
+)
 FORBIDDEN_MODEL_RESOLUTIONS: frozenset[ClaimResolution] = frozenset(
     {
         ClaimResolution.SUPPORTED,
@@ -76,8 +82,20 @@ class HypothesisProposal(BaseModel):
     hypothesis_id: Literal["H1", "H2", "H3"]
     disposition: HypothesisDisposition
     summary: str = Field(min_length=1, max_length=1024)
-    supporting_evidence_ids: tuple[str, ...] = ()
-    contradicting_evidence_ids: tuple[str, ...] = ()
+    supporting_evidence_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Exact evidence_id strings from Gathered evidence IDs only; "
+            "no aliases or invented identifiers."
+        ),
+    )
+    contradicting_evidence_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Exact evidence_id strings from Gathered evidence IDs only; "
+            "no aliases or invented identifiers."
+        ),
+    )
     uncertainty: str = Field(default="", max_length=512)
 
 
@@ -87,8 +105,20 @@ class ClaimProposal(BaseModel):
     hypothesis_id: Literal["H1", "H2", "H3"]
     statement: str = Field(min_length=1, max_length=4096)
     claim_kind: str = Field(min_length=1, max_length=128)
-    supporting_evidence_ids: tuple[str, ...] = ()
-    contradicting_evidence_ids: tuple[str, ...] = ()
+    supporting_evidence_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Exact evidence_id strings from Gathered evidence IDs only; "
+            "no aliases or invented identifiers."
+        ),
+    )
+    contradicting_evidence_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Exact evidence_id strings from Gathered evidence IDs only; "
+            "no aliases or invented identifiers."
+        ),
+    )
     rationale: str = Field(default="", max_length=1024)
     replaces_prior_claim: bool = False
 
@@ -391,7 +421,8 @@ def build_reasoning_messages(
         "Raw evidence acquisition tools and deterministic domain analysis tools are available.",
         "Use analysis tools when bounded deterministic comparison improves confidence.",
         "Do not treat workload-throughput correlation as causation.",
-        "Propose only evidence-backed claims; cite evidence IDs from observations.",
+        "Propose only evidence-backed claims.",
+        EVIDENCE_REFERENCE_CONTRACT,
         "Do not output claim_id, resolution, or supersedes_claim_id.",
         f"Investigation phase: {'revision' if is_revision else 'initial'}",
     ]
@@ -421,7 +452,13 @@ def build_reasoning_messages(
         )
     return [
         ChatMessage(role="system", content="\n".join(lines)),
-        ChatMessage(role="user", content="Produce structured incident reasoning proposal."),
+        ChatMessage(
+            role="user",
+            content=(
+                "Produce structured incident reasoning proposal. "
+                f"{EVIDENCE_REFERENCE_CONTRACT}"
+            ),
+        ),
     ]
 
 

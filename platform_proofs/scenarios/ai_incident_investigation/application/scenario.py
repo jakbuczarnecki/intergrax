@@ -10,6 +10,8 @@ from typing import Any
 
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioExecutionRequest,
+    ScenarioLabAgentRegistration,
+    build_scenario_lab_agent_registry,
     execute_scenario_task,
 )
 from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet, ClaimResolution
@@ -33,11 +35,13 @@ from platform_proofs.scenarios.ai_incident_investigation.application.critic_adap
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
     IncidentOperationalData,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_contract import (
+    incident_investigator_contract,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
     INITIAL_CLAIM_ID,
     IncidentInvestigatorAgent,
-    INVESTIGATOR_AGENT_ID,
     INVESTIGATOR_CAPABILITY,
     STAFFING_ATTENDANCE_EVIDENCE_ID,
     TELEMETRY_EVIDENCE_ID,
@@ -190,14 +194,6 @@ def build_runtime_bundle(
         tool_registry=tool_registry,
         llm_adapter_override=llm_adapter_override,
     )
-    if not composition.is_platform_attached:
-        build_scenario_runtime_composition(
-            registry=tool_registry,
-            tenant_id=tenant_id,
-            environment=composition.environment,
-            composition=composition,
-        )
-    composition.tool_registry = composition.platform.env_wiring.tool_wiring.registry
     investigator = IncidentInvestigatorAgent(
         registry=tool_registry,
         station_id=operational_data.station_id,
@@ -208,8 +204,21 @@ def build_runtime_bundle(
         evidence_store=evidence_store,
         investigation_input=investigation_input,
     )
-    if not composition.platform.registry.has(INVESTIGATOR_AGENT_ID):
-        composition.platform.registry.register(investigator)
+    if not composition.is_platform_attached:
+        agent_registry = build_scenario_lab_agent_registry(
+            ScenarioLabAgentRegistration(
+                agent=investigator,
+                contract=incident_investigator_contract(),
+            )
+        )
+        composition = build_scenario_runtime_composition(
+            registry=tool_registry,
+            tenant_id=tenant_id,
+            environment=composition.environment,
+            composition=composition,
+            agent_registry=agent_registry,
+        )
+    composition.tool_registry = composition.platform.env_wiring.tool_wiring.registry
     return ScenarioRuntimeBundle(
         operational_data=operational_data,
         registry=tool_registry,

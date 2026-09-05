@@ -297,3 +297,34 @@ def test_close_acp_catalog_exec_ctx_noop_when_missing() -> None:
     )
     close_acp_catalog_exec_ctx(step_ctx)
     assert "uaep_exec_ctx" not in step_ctx.metadata
+
+
+@pytest.mark.unit
+def test_runtime_context_closes_owned_tool_invoker() -> None:
+    runtime_context = _runtime_context()
+    invoker = runtime_context.config.tool_invoker
+    assert invoker is not None
+    runtime_context.close()
+    assert invoker._execution_pool_closed
+
+
+@pytest.mark.unit
+def test_host_managed_tool_invoker_survives_runtime_context_close() -> None:
+    from intergrax.agents.authoring.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
+    from intergrax.agents.persistence.catalog_declarative_invoker import (
+        build_catalog_declarative_invoker_from_registry,
+    )
+    from intergrax.agents.persistence.tool_invoker_wiring import attach_declarative_tool_invoker
+    from intergrax.tools.registry import ToolRegistry
+    from intergrax.tools.registry.bootstrap import register_default_tools
+
+    register_default_tools()
+    catalog = build_catalog_declarative_invoker_from_registry(ToolRegistry())
+    host_invoker = catalog.tool_invoker
+    runtime_context = _runtime_context()
+    metadata = attach_declarative_tool_invoker({}, catalog)
+    apply_host_tool_invoker_to_runtime_context(runtime_context, metadata)
+    assert runtime_context.tool_invoker_close_on_context_close is False
+    assert runtime_context.config.tool_invoker is host_invoker
+    runtime_context.close()
+    assert not host_invoker._execution_pool_closed

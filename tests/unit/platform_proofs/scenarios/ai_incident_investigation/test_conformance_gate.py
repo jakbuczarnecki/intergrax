@@ -16,6 +16,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     build_scenario_runtime_composition,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import SCENARIO_TOOL_IDS
+from scripts.proof.scenario_architecture_conformance import (
+    ScenarioArchitectureRuleId,
+    validate_scenario_application_architecture,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -35,6 +39,19 @@ def _application_sources() -> list[tuple[Path, str]]:
         (path, path.read_text(encoding="utf-8"))
         for path in sorted(_SCENARIO_APP_DIR.glob("*.py"))
     ]
+
+
+def test_ai_incident_application_passes_agent_lifecycle_conformance_gate() -> None:
+    report = validate_scenario_application_architecture(
+        repo_root=_REPO_ROOT,
+        scenario_slug="ai_incident_investigation",
+    )
+    lifecycle_violations = [
+        violation
+        for violation in report.violations
+        if violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+    ]
+    assert lifecycle_violations == []
 
 
 def test_ai_incident_application_must_not_disable_incident_specific_conformance_bypasses() -> None:

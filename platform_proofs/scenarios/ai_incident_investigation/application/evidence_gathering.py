@@ -455,6 +455,11 @@ def gather_incident_evidence(
     }
     for node in _evidence_nodes_from_tool_outputs(tool_outputs):
         merged[str(node["evidence_id"])] = dict(node)
+    if evidence_store is not None:
+        for node in evidence_store.evidence_nodes():
+            evidence_id = node.get("evidence_id")
+            if evidence_id:
+                merged[str(evidence_id)] = dict(node)
     evidence_nodes = tuple(merged.values())
 
     initial_ids = (

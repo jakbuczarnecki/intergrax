@@ -14,10 +14,13 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     ClaimHypothesisBinding,
     ClaimProposal,
     CompletionIntent,
+    EVIDENCE_REFERENCE_CONTRACT,
     HypothesisDisposition,
     HypothesisProposal,
     IncidentReasoningProposal,
+    PriorInvestigationState,
     ReasoningProposalValidationError,
+    build_reasoning_messages,
     convert_proposal_to_pending_claims,
     validate_reasoning_proposal,
 )
@@ -154,6 +157,96 @@ def test_unknown_evidence_ref_rejected() -> None:
     )
     with pytest.raises(ReasoningProposalValidationError, match="unknown evidence"):
         validate_reasoning_proposal(mutated, evidence_nodes=())
+
+
+def test_hypothesis_alias_evidence_ref_rejected() -> None:
+    """Live-shaped llama output using E1 aliases must stay rejected."""
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    evidence_nodes = ({"evidence_id": workload, "payload": {}},)
+    proposal = IncidentReasoningProposal(
+        hypotheses=(
+            HypothesisProposal(
+                hypothesis_id="H1",
+                disposition=HypothesisDisposition.PLAUSIBLE,
+                summary="Overload hypothesis.",
+                supporting_evidence_ids=("E1",),
+            ),
+        ),
+        preferred_hypothesis_id="H1",
+        uncertainty_class="high",
+        information_gaps=("comparison evidence",),
+        claim_proposals=(
+            ClaimProposal(
+                hypothesis_id="H1",
+                statement="Overload pending distinguishing evidence.",
+                claim_kind=str(DIAGNOSIS_KIND),
+                supporting_evidence_ids=(workload,),
+            ),
+        ),
+        completion_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+        action_objective="gather distinguishing evidence",
+    )
+    with pytest.raises(
+        ReasoningProposalValidationError,
+        match="unknown evidence reference in hypothesis: E1",
+    ):
+        validate_reasoning_proposal(proposal, evidence_nodes=evidence_nodes)
+
+
+def test_hypothesis_evid_dash_alias_rejected() -> None:
+    """Live-shaped llama3.1 output using EVID-NNN aliases must stay rejected."""
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    evidence_nodes = ({"evidence_id": workload, "payload": {}},)
+    proposal = IncidentReasoningProposal(
+        hypotheses=(
+            HypothesisProposal(
+                hypothesis_id="H1",
+                disposition=HypothesisDisposition.PLAUSIBLE,
+                summary="Overload hypothesis.",
+                supporting_evidence_ids=("EVID-001",),
+            ),
+        ),
+        preferred_hypothesis_id="H1",
+        uncertainty_class="high",
+        information_gaps=("comparison evidence",),
+        claim_proposals=(
+            ClaimProposal(
+                hypothesis_id="H1",
+                statement="Overload pending distinguishing evidence.",
+                claim_kind=str(DIAGNOSIS_KIND),
+                supporting_evidence_ids=(workload,),
+            ),
+        ),
+        completion_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+        action_objective="gather distinguishing evidence",
+    )
+    with pytest.raises(
+        ReasoningProposalValidationError,
+        match="unknown evidence reference in hypothesis: EVID-001",
+    ):
+        validate_reasoning_proposal(proposal, evidence_nodes=evidence_nodes)
+
+
+def test_reasoning_prompt_includes_evidence_reference_contract() -> None:
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    messages = build_reasoning_messages(
+        evidence_nodes=({"evidence_id": workload, "payload": {}},),
+        prior_state=PriorInvestigationState(
+            evidence_nodes=(),
+            reasoning_proposal=None,
+            claim_set=None,
+            claim_hypothesis_bindings=(),
+            completion_intent=None,
+            summary="",
+        ),
+        critic_feedback=None,
+        is_revision=False,
+    )
+    system_prompt = messages[0].content or ""
+    user_prompt = messages[1].content or ""
+    assert EVIDENCE_REFERENCE_CONTRACT in system_prompt
+    assert EVIDENCE_REFERENCE_CONTRACT in user_prompt
+    assert workload in system_prompt
 
 
 def test_critic_apply_resolutions_rejects_model_self_approval() -> None:
