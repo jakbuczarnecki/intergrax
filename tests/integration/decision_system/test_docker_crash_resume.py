@@ -66,7 +66,10 @@ from testing_support.decision_e2e.contracts import (
     DecisionE2EQualificationResult,
     QualificationDisposition,
 )
+from testing_support.decision_e2e.docker_qualification import run_docker_crash_qualification
 from testing_support.decision_e2e.evidence import lifecycle_stage_evidence
+from testing_support.decision_e2e.qualification_evidence import DockerCrashEvidence
+from testing_support.decision_e2e.requirements import qualify_docker_crash_resume
 
 pytestmark = [
     pytest.mark.integration,
@@ -220,7 +223,8 @@ def _subprocess_authority_commit(db_dir: str) -> None:
     )
 
 
-def test_ds_e2e_06_process_crash_resume(tmp_path: Path, decision_e2e_report_collector) -> None:
+def test_process_durability_crash_resume_regression(tmp_path: Path) -> None:
+    """Lower-level DS-REC-02 subprocess proof — not DS-E2E-06 Docker qualification."""
     db_dir = str(tmp_path)
     ctx = mp.get_context("spawn")
 
@@ -279,11 +283,75 @@ def test_ds_e2e_06_process_crash_resume(tmp_path: Path, decision_e2e_report_coll
     )
     assert terminal.lifecycle.stage is DecisionLifecycleStage.TERMINAL
 
+
+def test_subprocess_evidence_cannot_pass_docker_qualification(
+    decision_e2e_report_collector,
+) -> None:
+    subprocess_evidence = DockerCrashEvidence(
+        kill_method="subprocess_exit",
+        killed_container_id="",
+        killed_exit_code=0,
+        resume_container_id="",
+        durable_store_path="/tmp/subprocess-only",
+        window="subprocess",
+        final_disposition="finalization",
+    )
+    result = qualify_docker_crash_resume(crash_evidence=subprocess_evidence)
+    decision_e2e_report_collector.record(result)
+    assert result.disposition is QualificationDisposition.BLOCKED
+
+
+def test_ds_e2e_06_docker_crash_resume(
+    tmp_path: Path,
+    decision_e2e_report_collector,
+) -> None:
+    docker_run = run_docker_crash_qualification(
+        output_root=tmp_path / "docker_qualification",
+    )
+    if docker_run.block_reason:
+        decision_e2e_report_collector.record(
+            DecisionE2EQualificationResult(
+                proof_id=DecisionE2EProofId.DS_E2E_06,
+                disposition=QualificationDisposition.BLOCKED,
+                evidence=(),
+                reason=docker_run.block_reason,
+            ),
+        )
+        return
+
+    assert docker_run.checkpoint_evidence is not None
+    assert docker_run.authority_evidence is not None
+    checkpoint_payload = json.loads(
+        (docker_run.durable_root / "checkpoint" / "result.json").read_text(encoding="utf-8"),
+    )
+    assert checkpoint_payload["revision_count"] == 1
+    authority_payload = json.loads(
+        (docker_run.durable_root / "authority" / "result.json").read_text(encoding="utf-8"),
+    )
+    assert authority_payload["stage"] == DecisionLifecycleStage.TERMINAL.value
+
+    merged = DockerCrashEvidence(
+        kill_method="docker_kill",
+        killed_container_id=(
+            f"{docker_run.checkpoint_evidence.killed_container_id};"
+            f"{docker_run.authority_evidence.killed_container_id}"
+        ),
+        killed_exit_code=docker_run.authority_evidence.killed_exit_code,
+        resume_container_id=(
+            f"{docker_run.checkpoint_evidence.resume_container_id};"
+            f"{docker_run.authority_evidence.resume_container_id}"
+        ),
+        durable_store_path=str(docker_run.durable_root),
+        window="checkpoint+authority",
+        final_disposition=authority_payload["stage"],
+    )
     decision_e2e_report_collector.record(
-        DecisionE2EQualificationResult(
-            proof_id=DecisionE2EProofId.DS_E2E_06,
-            disposition=QualificationDisposition.PASSED,
-            evidence=(lifecycle_stage_evidence(terminal.lifecycle.stage),),
-            reason="sqlite durable subprocess crash/resume",
+        qualify_docker_crash_resume(
+            crash_evidence=merged,
+            evidence=(lifecycle_stage_evidence(DecisionLifecycleStage.TERMINAL),),
+            reason=(
+                f"docker image={docker_run.image}; run_id={docker_run.run_id}; "
+                "windows=checkpoint,authority"
+            ),
         ),
     )
