@@ -279,3 +279,77 @@ def test_hosted_resolution_marks_provider_identity() -> None:
     assert resolution.capabilities is not None
     assert resolution.capabilities.provider_id.startswith("hosted:")
     assert resolution.capabilities.network_egress_enforced is True
+
+
+@pytest.mark.parametrize("tier", ["container", "cloud"])
+def test_strong_isolation_does_not_call_local_resolver(tmp_path: Path, tier: str) -> None:
+    """Architecture gate: container/cloud must not fall back to resolve_sandbox_session."""
+    profile = CodeCraftProfile(mode="autonomous", isolation_tier=tier)  # type: ignore[arg-type]
+    ctx = _ctx(_sandbox(tmp_path), profile=profile)
+    with patch("intergrax.runtime.codecraft.substrate.resolve_sandbox_session") as local_resolver:
+        resolution = resolve_craft_sandbox(ctx, profile, tenant_id=TENANT, task_id=TASK)
+        local_resolver.assert_not_called()
+    assert resolution.session is None
+    assert resolution.error == "isolation_requirement_unsatisfied"
+
+
+def test_container_hosted_resolution_selects_hosted_session() -> None:
+    backend = MagicMock()
+    backend.create_session.return_value = MagicMock(session_id="hosted-container-1")
+    profile = CodeCraftProfile(mode="autonomous", isolation_tier="container")
+    resolution = resolve_craft_sandbox(
+        ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": profile}),
+        profile,
+        tenant_id=TENANT,
+        task_id=TASK,
+    )
+    assert isinstance(resolution.session, HostedSandboxSession)
+    assert resolution.capabilities is not None
+    assert resolution.capabilities.resolved_tier == "container"
+    assert resolution.capabilities.downgraded is False
+
+
+def test_orchestrator_reuses_resolved_sandbox_for_tests(tmp_path: Path) -> None:
+    """Execution and verification must share the same resolved sandbox context."""
+    profile = CodeCraftProfile(mode="autonomous", require_tests=True, max_iterations=2)
+    ctx = _ctx(_sandbox(tmp_path), profile=profile)
+    orchestrator = CodeCraftOrchestrator(ctx)
+    start_session, _ = orchestrator.start(
+        goal="demo",
+        tenant_id=TENANT,
+        task_id=TASK,
+        initial_code="print('ok')\n",
+    )
+    assert start_session is not None
+    captured_sessions: list[object] = []
+
+    def _capture_run(self, wiring_ctx, *, rel_path="craft_main.py", sandbox_session=None):
+        captured_sessions.append(sandbox_session)
+        from intergrax.codecraft.test_runner import CraftTestResult
+
+        return CraftTestResult(
+            passed=True,
+            skipped=False,
+            command="pytest craft_main.py",
+            stdout="",
+            stderr="",
+            exit_code=0,
+        )
+
+    with patch("intergrax.runtime.codecraft.orchestrator.CraftTestRunner.run", _capture_run):
+        with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
+            mocked_exec.return_value = MagicMock(
+                success=True,
+                session_id="exec-sandbox-1",
+                output={"stdout": "ok\n", "stderr": "", "exit_code": 0},
+                error="",
+            )
+            session, result = orchestrator.iterate(
+                craft_id=start_session.craft_id,
+                tenant_id=TENANT,
+                task_id=TASK,
+            )
+    assert session is not None
+    assert result.success is True
+    assert captured_sessions, "CraftTestRunner must receive resolved sandbox"
+    assert captured_sessions[0] is not None

@@ -35,9 +35,9 @@ from intergrax.runtime.execution.runtime import (
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
+from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.orchestration_capabilities import is_orchestration_capability
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -160,7 +160,7 @@ class HostTaskExecution:
     _pipeline_capability_suffix: str
     _ledger_factory: ExecutionBudgetLedgerFactory | None
     _run_budget: RunBudget | None
-    _nexus_loop: NexusLoop | None = None
+    _terminal_publisher: HostTaskTerminalPublisher | None = None
 
     def _execution_runtime_for_task(
         self,
@@ -219,7 +219,7 @@ class HostTaskExecution:
             execution = Execution(self._execution_runtime_for_task(task))
             result = await execution.execute(request, options=options)
             if (
-                self._nexus_loop is not None
+                self._terminal_publisher is not None
                 and terminal_outcome_from_task_state(result.state) is not None
             ):
                 terminal_task = task.model_copy(
@@ -228,7 +228,7 @@ class HostTaskExecution:
                         "agent_id": result.agent_id or task.agent_id,
                     },
                 )
-                await self._nexus_loop.publish_host_task_terminal_runtime(
+                await self._terminal_publisher.publish_terminal(
                     terminal_task,
                     run_id=root_identity.run_id,
                     attempt_id=root_identity.attempt_id,

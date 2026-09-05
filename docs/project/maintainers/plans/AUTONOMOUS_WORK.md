@@ -56,7 +56,7 @@ Delivery rule:
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
 | AW-5 | Worker → execution composition and budgets | **DONE** (AW-5A DONE, AW-5B DONE) |
 | AW-6 | Recovery Controller and obstacle taxonomy | **DONE** (AW-6A DONE, AW-6B DONE) |
-| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A IN PROGRESS) |
+| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A DONE, AW-7B-GATE IN PROGRESS) |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
 | AW-9 | Worker control plane | NOT STARTED |
 | AW-10 | Virtual Workforce reference application | NOT STARTED |
@@ -290,9 +290,9 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7 |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** (AW-7A **DONE**; AW-7B prerequisite gate **PASSED**) |
+| **Status** | **IN PROGRESS** (AW-7A **DONE**; AW-7B-GATE **READY FOR INDEPENDENT AUDIT**) |
 | **Purpose** | Capability discovery/acquisition policy and A0–A4 classification |
-| **Next step** | AW-7B |
+| **Next step** | AW-7B-GATE independent audit acceptance |
 
 | Field | Value |
 |---|---|
@@ -307,11 +307,21 @@ Delivery rule:
 
 | Field | Value |
 |---|---|
+| **ID** | AW-7B-GATE |
+| **Priority** | P0 |
+| **Status** | **READY FOR INDEPENDENT AUDIT** |
+| **Purpose** | CodeCraft safety prerequisite qualification (canonical CodeCraft/Sandbox/Governance reuse, anti-downgrade, identity/HITL, substrate coherence) |
+| **Dependencies** | AW-7A **DONE** |
+| **Acceptance** | anti-downgrade contract PASS; hosted substrate abstraction PASS; identity/HITL regressions PASS; docs = as-built; independent audit owns PASS |
+| **Next step** | Independent audit acceptance → unblock AW-7B |
+
+| Field | Value |
+|---|---|
 | **ID** | AW-7B |
 | **Priority** | P0 |
-| **Status** | **READY TO START** (AW-7B-GATE prerequisites **PASSED** on `development`) |
+| **Status** | **NOT STARTED** (BLOCKED UNTIL GATE ACCEPTED) |
 | **Purpose** | A1 ephemeral generated capability path |
-| **Dependencies** | CodeCraft authority defects closed; anti-downgrade strong isolation available |
+| **Dependencies** | AW-7A **DONE**; AW-7B-GATE **PASSED** (independent audit) |
 | **Acceptance** | generated parser/helper static-gated, strongly sandboxed, tested, verified, ephemeral, evidence-linked |
 | **Next step** | AW-7C |
 
