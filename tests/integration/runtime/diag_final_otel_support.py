@@ -211,7 +211,11 @@ def parse_collector_otlp_records(collector_text: str) -> list[dict[str, object]]
         stripped = line.strip()
         if not stripped:
             continue
-        parsed = json.loads(stripped)
+        try:
+            parsed = json.loads(stripped)
+        except json.JSONDecodeError:
+            # Collector NDJSON may be mid-flush while the polling loop reads the file.
+            continue
         if isinstance(parsed, dict):
             records.append(parsed)
     return records
