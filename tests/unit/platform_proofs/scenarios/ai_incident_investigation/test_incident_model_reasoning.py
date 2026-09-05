@@ -21,11 +21,15 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     ReasoningProposalValidationError,
     build_evidence_reference_contract,
     build_reasoning_messages,
+    completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
     validate_reasoning_proposal,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPARISON_EVIDENCE_ID,
+    COMPLETION_NEED_MORE_EVIDENCE,
+    COMPLETION_SUPPORTED_DIAGNOSIS,
+    COMPLETION_UNRESOLVED,
     DIAGNOSIS_KIND,
     H2_CLAIM_ID,
     H3_CLAIM_ID,
@@ -344,6 +348,47 @@ def test_revision_prompt_whitelist_includes_newly_gathered_evidence() -> None:
     assert "Revision contract:" in prompt
     assert "Do not cite evidence that is not in the current allowed list." in prompt
     assert str(COMPARISON_EVIDENCE_ID) not in prompt
+
+
+def test_completion_mode_maps_need_more_evidence_separately() -> None:
+    proposal = _sample_proposal().model_copy(
+        update={"completion_intent": CompletionIntent.NEED_MORE_EVIDENCE}
+    )
+    assert completion_mode_from_proposal(proposal) == COMPLETION_NEED_MORE_EVIDENCE
+
+
+def test_completion_mode_maps_unresolved_and_supported_diagnosis() -> None:
+    unresolved = _sample_proposal().model_copy(
+        update={
+            "completion_intent": CompletionIntent.UNRESOLVED,
+            "unresolved_reason": "telemetry unavailable",
+            "information_gaps": ("decisive telemetry",),
+        }
+    )
+    supported = _sample_proposal()
+    assert completion_mode_from_proposal(unresolved) == COMPLETION_UNRESOLVED
+    assert completion_mode_from_proposal(supported) == COMPLETION_SUPPORTED_DIAGNOSIS
+
+
+def test_reasoning_prompt_requires_unresolved_fields_and_claim_proposals() -> None:
+    messages = build_reasoning_messages(
+        evidence_nodes=(),
+        prior_state=PriorInvestigationState(
+            evidence_nodes=(),
+            reasoning_proposal=None,
+            claim_set=None,
+            claim_hypothesis_bindings=(),
+            completion_intent=None,
+            summary="",
+        ),
+        critic_feedback=None,
+        is_revision=False,
+    )
+    prompt = (messages[0].content or "") + (messages[1].content or "")
+    assert "unresolved_reason" in prompt
+    assert "information_gaps" in prompt
+    assert "claim_proposals must always be non-empty" in prompt
+    assert str(DIAGNOSIS_KIND) in prompt
 
 
 def test_critic_apply_resolutions_rejects_model_self_approval() -> None:

@@ -35,6 +35,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.platform_di
     format_platform_diagnostic_context_lines,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
+    COMPLETION_NEED_MORE_EVIDENCE,
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
     DIAGNOSIS_KIND,
@@ -44,10 +45,18 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
 LEGAL_HYPOTHESIS_IDS: frozenset[str] = frozenset({"H1", "H2", "H3"})
 COMPLETION_INTENT_CONTRACT = (
     "Completion intent contract:\n"
+    "- claim_proposals must always be non-empty; include diagnosis claim proposals for "
+    "each hypothesis you assess.\n"
     "- supported_diagnosis: only when gathered evidence supports a final diagnosis "
     "strongly enough for the scenario contract.\n"
-    "- unresolved: when evidence remains insufficient or conflicting after available investigation.\n"
-    "- need_more_evidence: only when additional allowed evidence-gathering work remains possible."
+    "- unresolved: only after available investigation is exhausted; must set unresolved_reason "
+    "to a non-empty string and information_gaps to a non-empty list.\n"
+    "- need_more_evidence: only when additional allowed evidence-gathering work remains possible; "
+    "still provide non-empty claim_proposals describing the current provisional assessment."
+)
+CLAIM_PROPOSAL_CONTRACT = (
+    "Claim proposal contract: always emit at least one claim_proposal with "
+    f"claim_kind={str(DIAGNOSIS_KIND)!s} for each hypothesis under active consideration."
 )
 FORBIDDEN_MODEL_RESOLUTIONS: frozenset[ClaimResolution] = frozenset(
     {
@@ -455,6 +464,7 @@ def build_reasoning_messages(
         "Propose only evidence-backed claims.",
         evidence_reference_contract,
         COMPLETION_INTENT_CONTRACT,
+        CLAIM_PROPOSAL_CONTRACT,
         "Do not output claim_id, resolution, or supersedes_claim_id.",
         f"Investigation phase: {'revision' if is_revision else 'initial'}",
     ]
@@ -603,6 +613,8 @@ def emit_reasoning_observability(
 def completion_mode_from_proposal(proposal: IncidentReasoningProposal) -> str:
     if proposal.completion_intent is CompletionIntent.UNRESOLVED:
         return COMPLETION_UNRESOLVED
+    if proposal.completion_intent is CompletionIntent.NEED_MORE_EVIDENCE:
+        return COMPLETION_NEED_MORE_EVIDENCE
     return COMPLETION_SUPPORTED_DIAGNOSIS
 
 

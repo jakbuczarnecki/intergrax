@@ -35,6 +35,7 @@ DIAGNOSIS_KIND = validate_claim_kind(DIAGNOSIS_CLAIM_KIND)
 
 COMPLETION_SUPPORTED_DIAGNOSIS = "supported_diagnosis"
 COMPLETION_UNRESOLVED = "unresolved"
+COMPLETION_NEED_MORE_EVIDENCE = "need_more_evidence"
 
 INCIDENT_EVIDENCE_IDS = IncidentEvidenceIds(
     workload=str(WORKLOAD_EVIDENCE_ID),
