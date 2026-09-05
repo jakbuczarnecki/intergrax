@@ -443,6 +443,27 @@ async def test_resume_preserves_pinned_revision_not_current_host_revision() -> N
     assert resolved.revision_id == runtime_r1.effective_profile_revision.revision_id
 
 
+def test_restore_existing_execution_missing_binding_fails_closed() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
+    admission = build_effective_profile_revision_admission(
+        EffectiveProfileExecutionPinningDependencies(
+            revision=_revision_from_application(_application(), store=revision_store),
+            revision_store=revision_store,
+            pinning_store=pinning_store,
+            scope=_SCOPE,
+        )
+    )
+    execution_id = mint_execution_id()
+    with pytest.raises(MissingPinnedEffectiveProfileRevisionError):
+        admission.admit_root_execution(
+            tenant_id="tenant-a",
+            execution_id=execution_id,
+            task=_echo_task(),
+            restore_existing_execution=True,
+        )
+
+
 @pytest.mark.asyncio
 async def test_checkpoint_binding_mismatch_fails_closed() -> None:
     revision_store = InMemoryEffectiveProfileRevisionStore()

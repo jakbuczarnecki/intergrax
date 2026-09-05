@@ -151,6 +151,9 @@ class HostTaskExecutionPort(Protocol):
         *,
         run_id: RunId | None = None,
         attempt_id: AttemptId | None = None,
+        execution_id: ExecutionId | None = None,
+        resume_checkpoint: TaskCheckpoint | None = None,
+        restore_existing_execution: bool = False,
     ) -> TaskResult: ...
 
 
@@ -198,6 +201,7 @@ class HostTaskExecution:
         attempt_id: AttemptId | None = None,
         execution_id: ExecutionId | None = None,
         resume_checkpoint: TaskCheckpoint | None = None,
+        restore_existing_execution: bool = False,
     ) -> TaskResult:
         capabilities = resolve_task_execution_capabilities(
             task,
@@ -222,6 +226,7 @@ class HostTaskExecution:
                 execution_id=root_identity.execution_id,
                 task=task,
                 resume_checkpoint=resume_checkpoint,
+                restore_existing_execution=restore_existing_execution,
             )
         options = RootExecutionOptions(
             authority=resolve_root_parent_execution_authority(task.execution_authority),

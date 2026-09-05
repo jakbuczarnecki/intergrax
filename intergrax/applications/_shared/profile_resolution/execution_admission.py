@@ -63,13 +63,14 @@ class EffectiveProfileRevisionAdmission(EffectiveProfileRevisionAdmissionPort):
     ) -> Task:
         """Pin or verify revision binding; return task with checkpoint evidence.
 
-        ``restore_existing_execution`` is retained for interface stability; resume
-        checkpoint presence is the canonical re-entry signal for missing bindings.
+        Re-entry is signaled by ``restore_existing_execution`` or a non-null
+        ``resume_checkpoint``. Re-entry without an existing binding fails closed.
         """
         deps = self._dependencies
+        is_reentry = restore_existing_execution or resume_checkpoint is not None
         existing = deps.pinning_store.get(tenant_id=tenant_id, execution_id=execution_id)
         if existing is None:
-            if resume_checkpoint is not None:
+            if is_reentry:
                 raise MissingPinnedEffectiveProfileRevisionError(
                     tenant_id=tenant_id,
                     execution_id=str(execution_id),
