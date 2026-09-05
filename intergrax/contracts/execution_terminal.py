@@ -22,6 +22,14 @@ class ExecutionTerminalOutcome(StrEnum):
     CANCELLED = "cancelled"
 
 
+class ExecutionTerminalPersistenceProvider(StrEnum):
+    """Composition-time selector for durable :class:`ExecutionTerminalStore` wiring."""
+
+    KV = "kv"
+    DOCUMENT_STORE = "document_store"
+    CHECKPOINT = "checkpoint"
+
+
 class ExecutionTerminalRecord(BaseModel):
     """Immutable durable fact that a task execution reached a terminal outcome."""
 
@@ -37,6 +45,10 @@ class ExecutionTerminalRecord(BaseModel):
 
 class ExecutionTerminalError(RuntimeError):
     """Raised when durable terminal authority is missing, corrupt, or unavailable."""
+
+
+class AmbiguousExecutionTerminalProviderError(ExecutionTerminalError):
+    """Raised when multiple durable terminal providers are available without explicit selection."""
 
 
 class ExecutionTerminalConflictError(ExecutionTerminalError):

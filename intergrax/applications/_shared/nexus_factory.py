@@ -58,9 +58,11 @@ from intergrax.runtime.execution.attempt_lifecycle import (
     AttemptLifecycleService,
     wire_attempt_lifecycle_store,
 )
-from intergrax.runtime.execution.execution_terminal import (
-    ExecutionTerminalService,
-    wire_execution_terminal_store,
+from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
+from intergrax.runtime.execution.execution_terminal.wiring import (
+    resolve_execution_terminal_provider,
+    resolve_execution_terminal_store,
+    resolve_platform_store_for_terminal_provider,
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -73,6 +75,10 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_terminal import (
+        ExecutionTerminalPersistenceProvider,
+        ExecutionTerminalStore,
+    )
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedger,
@@ -116,6 +122,7 @@ def build_nexus_loop_from_environment(
     key_value_cache: Any | None = None,
     document_store: Any | None = None,
     execution_terminal: ExecutionTerminalService | None = None,
+    execution_terminal_store: ExecutionTerminalStore | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -154,19 +161,70 @@ def build_nexus_loop_from_environment(
             )
         else:
             resolved_budget_ledger_factory = create_execution_budget_ledger_factory(run_budget)
-    resolved_attempt_lifecycle_store = attempt_lifecycle_store
-    if resolved_attempt_lifecycle_store is None and (
-        key_value_cache is not None or document_store is not None
-    ):
-        from intergrax.distributed.contracts.kv_store import DistributedKVStore
-        from intergrax.integrations.contracts.document_store import DocumentStore
+    from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
+    from intergrax.distributed.contracts.kv_store import DistributedKVStore
+    from intergrax.integrations.contracts.document_store import DocumentStore
 
-        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
-        doc_store = document_store if isinstance(document_store, DocumentStore) else None
-        if kv_store is not None or doc_store is not None:
+    kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+    doc_store = document_store if isinstance(document_store, DocumentStore) else None
+    durable_checkpoint_store = (
+        checkpoint_store
+        if checkpoint_store is not None and reliability.long_running_scheduler_enabled
+        else None
+    )
+    resolved_terminal_provider: ExecutionTerminalPersistenceProvider | None = None
+    if (
+        execution_terminal is None
+        and execution_terminal_store is None
+        and (
+            kv_store is not None
+            or doc_store is not None
+            or durable_checkpoint_store is not None
+        )
+    ):
+        resolved_terminal_provider = resolve_execution_terminal_provider(
+            provider=reliability.execution_terminal_persistence_provider,
+            kv_store=kv_store,
+            document_store=doc_store,
+            checkpoint_store=durable_checkpoint_store,
+        )
+    platform_disambiguation_provider = (
+        resolved_terminal_provider
+        if resolved_terminal_provider is not None
+        else reliability.execution_terminal_persistence_provider
+    )
+    resolved_attempt_lifecycle_store = attempt_lifecycle_store
+    if resolved_attempt_lifecycle_store is None and (kv_store is not None or doc_store is not None):
+        attempt_kv_store = kv_store
+        attempt_doc_store = doc_store
+        if kv_store is not None and doc_store is not None:
+            if platform_disambiguation_provider is None:
+                if execution_terminal is None and execution_terminal_store is None:
+                    resolve_execution_terminal_provider(
+                        provider=None,
+                        kv_store=kv_store,
+                        document_store=doc_store,
+                        checkpoint_store=None,
+                    )
+                else:
+                    attempt_kv_store = None
+                    attempt_doc_store = None
+            elif (
+                platform_disambiguation_provider
+                is not ExecutionTerminalPersistenceProvider.CHECKPOINT
+            ):
+                attempt_kv_store, attempt_doc_store = resolve_platform_store_for_terminal_provider(
+                    platform_disambiguation_provider,
+                    kv_store=kv_store,
+                    document_store=doc_store,
+                )
+            else:
+                attempt_kv_store = None
+                attempt_doc_store = None
+        if attempt_kv_store is not None or attempt_doc_store is not None:
             resolved_attempt_lifecycle_store = wire_attempt_lifecycle_store(
-                kv_store=kv_store,
-                document_store=doc_store,
+                kv_store=attempt_kv_store,
+                document_store=attempt_doc_store,
             )
     resolved_attempt_lifecycle = (
         AttemptLifecycleService(resolved_attempt_lifecycle_store)
@@ -175,20 +233,20 @@ def build_nexus_loop_from_environment(
     )
     resolved_execution_terminal = execution_terminal
     if resolved_execution_terminal is None and (
-        key_value_cache is not None or document_store is not None
+        execution_terminal_store is not None
+        or kv_store is not None
+        or doc_store is not None
+        or durable_checkpoint_store is not None
     ):
-        from intergrax.distributed.contracts.kv_store import DistributedKVStore
-        from intergrax.integrations.contracts.document_store import DocumentStore
-
-        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
-        doc_store = document_store if isinstance(document_store, DocumentStore) else None
-        if kv_store is not None or doc_store is not None:
-            resolved_execution_terminal = ExecutionTerminalService(
-                wire_execution_terminal_store(
-                    kv_store=kv_store,
-                    document_store=doc_store,
-                ),
-            )
+        resolved_execution_terminal = ExecutionTerminalService(
+            resolve_execution_terminal_store(
+                provider=reliability.execution_terminal_persistence_provider,
+                kv_store=kv_store,
+                document_store=doc_store,
+                checkpoint_store=durable_checkpoint_store,
+                execution_terminal_store=execution_terminal_store,
+            ),
+        )
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,

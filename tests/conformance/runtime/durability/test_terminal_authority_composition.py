@@ -27,9 +27,9 @@ def test_nexus_worker_runtime_receives_explicit_execution_terminal() -> None:
     assert "execution_terminal=execution_terminal" in source
 
 
-def test_nexus_factory_wires_kv_terminal_before_checkpoint_default() -> None:
+def test_nexus_factory_uses_terminal_provider_resolver() -> None:
     source = (_REPO_ROOT / "intergrax/applications/_shared/nexus_factory.py").read_text(
         encoding="utf-8",
     )
     assert "resolved_execution_terminal" in source
-    assert "wire_execution_terminal_store" in source
+    assert "resolve_execution_terminal_store" in source
