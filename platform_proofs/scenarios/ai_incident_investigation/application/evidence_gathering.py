@@ -19,7 +19,7 @@ from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from intergrax.tools.execution_models import ToolExecutionResult
+from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import (
     IncidentScope,
@@ -53,6 +53,11 @@ from platform_proofs.scenarios.ai_incident_investigation.application.tools impor
     TOOL_THROUGHPUT_READ,
     TOOL_WORKLOAD_EVALUATE,
     TOOL_WORKLOAD_READ,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    H3_FORGED_WITHOUT_TELEMETRY_ERROR,
+    MISSING_COMPARISON_ERROR,
+    UNSUPPORTED_INFERENCE_ERROR,
 )
 
 MAX_INCIDENT_TOOL_LOOP_ITERATIONS = 12
@@ -367,6 +372,109 @@ def _evidence_nodes_from_tool_outputs(
     return tuple(nodes)
 
 
+def _scoped_tool_args(tool_id: str, scope: IncidentScope) -> dict[str, str]:
+    if tool_id in {TOOL_WORKLOAD_READ, TOOL_THROUGHPUT_READ}:
+        return {"line_id": scope.line_id, "window": scope.incident_window}
+    if tool_id in {TOOL_STAFFING_SCHEDULE_READ, TOOL_STAFFING_ATTENDANCE_READ}:
+        return {
+            "line_id": scope.line_id,
+            "shift_id": scope.shift_id,
+            "window": scope.incident_window,
+        }
+    if tool_id == TOOL_COMPARISON_READ:
+        return {
+            "reference_line_id": scope.reference_line_id,
+            "comparison_line_id": scope.comparison_line_id,
+            "window": scope.comparison_window,
+        }
+    if tool_id == TOOL_TELEMETRY_READ:
+        return {"station_id": scope.station_id, "window": scope.incident_window}
+    raise ValueError(f"unsupported supplemental tool id: {tool_id}")
+
+
+_REVISION_EVIDENCE_TOOLS: tuple[str, ...] = (
+    TOOL_WORKLOAD_READ,
+    TOOL_THROUGHPUT_READ,
+    TOOL_STAFFING_SCHEDULE_READ,
+    TOOL_COMPARISON_READ,
+    TOOL_STAFFING_ATTENDANCE_READ,
+    TOOL_TELEMETRY_READ,
+)
+
+
+def _tools_for_critic_feedback(critic_feedback: Sequence[str] | None) -> tuple[str, ...]:
+    if not critic_feedback:
+        return ()
+    joined = " ".join(str(item) for item in critic_feedback)
+    required: list[str] = []
+    if MISSING_COMPARISON_ERROR in joined:
+        required.append(TOOL_COMPARISON_READ)
+    if H3_FORGED_WITHOUT_TELEMETRY_ERROR in joined:
+        required.append(TOOL_TELEMETRY_READ)
+    if UNSUPPORTED_INFERENCE_ERROR in joined:
+        required.extend((TOOL_COMPARISON_READ, TOOL_TELEMETRY_READ))
+    if "missing_distinguishing_equipment_evidence" in joined:
+        required.extend((TOOL_COMPARISON_READ, TOOL_TELEMETRY_READ))
+    if "staffing attendance" in joined.lower() or "attendance confirmation" in joined.lower():
+        required.append(TOOL_STAFFING_ATTENDANCE_READ)
+    deduped: list[str] = []
+    for tool_id in required:
+        if tool_id not in deduped:
+            deduped.append(tool_id)
+    return tuple(deduped)
+
+
+def _revision_supplement_tool_ids(
+    *,
+    is_revision: bool,
+    critic_feedback: Sequence[str] | None,
+) -> tuple[str, ...]:
+    if is_revision:
+        return _REVISION_EVIDENCE_TOOLS
+    return _tools_for_critic_feedback(critic_feedback)
+
+
+def _invoke_supplemental_tools(
+    *,
+    tool_ids: Sequence[str],
+    invoker: _IncidentScopedToolInvoker,
+    runtime_state: RuntimeState,
+    scope: IncidentScope,
+    existing_evidence_ids: set[str],
+) -> list[tuple[str, str, dict[str, object]]]:
+    outputs: list[tuple[str, str, dict[str, object]]] = []
+    for index, tool_id in enumerate(tool_ids):
+        mapped = _TOOL_EVIDENCE_MAP.get(tool_id)
+        if mapped is not None and mapped[0] in existing_evidence_ids:
+            continue
+        tool = invoker.registry.get(tool_id)
+        input_model = tool.contract.input_schema
+        request = ToolExecutionRequest(
+            run_id=runtime_state.run_id,
+            step_id=f"supplement_{index}",
+            tool_id=tool_id,
+            input=input_model.model_validate(_scoped_tool_args(tool_id, scope)),
+            idempotency_key=f"incident_supplement:{tool_id}:{index}",
+        )
+        result = invoker.invoke(runtime_state, request)
+        if not isinstance(result, ToolExecutionResult) or not result.success:
+            continue
+        payload = (
+            result.output.model_dump(mode="json")
+            if hasattr(result.output, "model_dump")
+            else dict(result.output)
+            if isinstance(result.output, dict)
+            else None
+        )
+        if payload is None:
+            continue
+        call_id = f"supplement_{tool_id.replace('.', '_')}_{index}"
+        outputs.append((call_id, tool_id, payload))
+        if mapped is not None:
+            existing_evidence_ids.add(mapped[0])
+    return outputs
+
+
 def gather_incident_evidence(
     *,
     runtime_state: RuntimeState,
@@ -427,6 +535,26 @@ def gather_incident_evidence(
         raise RuntimeError("incident_evidence_gathering_max_iterations")
 
     tool_outputs = _extract_tool_outputs(loop_result)
+    supplemental_outputs = _invoke_supplemental_tools(
+        tool_ids=_revision_supplement_tool_ids(
+            is_revision=is_revision,
+            critic_feedback=critic_feedback,
+        ),
+        invoker=invoker,
+        runtime_state=runtime_state,
+        scope=scope,
+        existing_evidence_ids={
+            str(node["evidence_id"])
+            for node in prior_evidence
+            if node.get("evidence_id")
+        }
+        | {
+            mapped[0]
+            for _call_id, tool_name, _payload in tool_outputs
+            if (mapped := _TOOL_EVIDENCE_MAP.get(tool_name)) is not None
+        },
+    )
+    tool_outputs = list(tool_outputs) + supplemental_outputs
     call_id_to_tool_name = {call_id: tool_name for call_id, tool_name, _payload in tool_outputs}
     planner_decisions = _emit_planner_decision_traces(
         runtime_state=runtime_state,
@@ -445,7 +573,7 @@ def gather_incident_evidence(
             investigation_phase=investigation_phase,
             stop_reason=loop_result.stop_reason,
             loop_iterations=loop_result.loop_iterations,
-            tool_invocations=len(loop_result.tool_traces),
+            tool_invocations=len(loop_result.tool_traces) + len(supplemental_outputs),
             selected_tool_order=tool_execution_order,
         ),
     )
@@ -469,7 +597,7 @@ def gather_incident_evidence(
     )
     return EvidenceGatheringResult(
         evidence_nodes=evidence_nodes,
-        tool_invocations=len(loop_result.tool_traces),
+        tool_invocations=len(loop_result.tool_traces) + len(supplemental_outputs),
         stop_reason=loop_result.stop_reason,
         loop_iterations=loop_result.loop_iterations,
         tool_execution_order=tool_execution_order,

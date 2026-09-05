@@ -22,6 +22,7 @@ from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from pydantic import BaseModel
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_gathering import (
+    _tools_for_critic_feedback,
     gather_incident_evidence,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import (
@@ -436,6 +437,13 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
     assert sentinel.invoke_count == 0
     assert any(event.step == "incident_scope_rejection" for event in state.trace_events)
     assert gathering.tool_invocations >= 1
+
+
+def test_tools_for_critic_feedback_maps_missing_comparison_to_comparison_read() -> None:
+    tools = _tools_for_critic_feedback(
+        ["unsupported_inference:missing_comparison_evidence"],
+    )
+    assert TOOL_COMPARISON_READ in tools
 
 
 def test_evidence_gathering_has_no_local_runtime_tool_invoker_construction() -> None:

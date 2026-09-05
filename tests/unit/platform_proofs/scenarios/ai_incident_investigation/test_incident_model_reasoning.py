@@ -23,6 +23,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     build_reasoning_messages,
     completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
+    normalize_supported_diagnosis_claim_evidence,
     validate_reasoning_proposal,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
@@ -321,6 +322,47 @@ def test_workload_example_id_absent_from_prompt_without_evidence() -> None:
     )
     prompt = (messages[0].content or "") + (messages[1].content or "")
     assert str(WORKLOAD_EVIDENCE_ID) not in prompt
+
+
+def test_normalize_supported_diagnosis_adds_missing_distinguishing_evidence_refs() -> None:
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    comparison = str(COMPARISON_EVIDENCE_ID)
+    telemetry = str(TELEMETRY_EVIDENCE_ID)
+    proposal = IncidentReasoningProposal(
+        hypotheses=(
+            HypothesisProposal(
+                hypothesis_id="H3",
+                disposition=HypothesisDisposition.SUPPORTED,
+                summary="Equipment degradation supported.",
+                supporting_evidence_ids=(workload, comparison, telemetry),
+            ),
+        ),
+        preferred_hypothesis_id="H3",
+        uncertainty_class="bounded",
+        claim_proposals=(
+            ClaimProposal(
+                hypothesis_id="H3",
+                statement="H3 diagnosis without explicit telemetry citation.",
+                claim_kind=str(DIAGNOSIS_KIND),
+                supporting_evidence_ids=(workload, comparison),
+            ),
+        ),
+        completion_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+        action_objective="propose bounded H3 diagnosis",
+    )
+    evidence_nodes = (
+        {"evidence_id": workload, "payload": {}},
+        {"evidence_id": comparison, "payload": {}},
+        {"evidence_id": telemetry, "payload": {"availability": "available"}},
+    )
+
+    normalized = normalize_supported_diagnosis_claim_evidence(
+        proposal,
+        evidence_nodes=evidence_nodes,
+    )
+
+    h3_claim = normalized.claim_proposals[0]
+    assert telemetry in h3_claim.supporting_evidence_ids
 
 
 def test_revision_prompt_whitelist_includes_newly_gathered_evidence() -> None:
