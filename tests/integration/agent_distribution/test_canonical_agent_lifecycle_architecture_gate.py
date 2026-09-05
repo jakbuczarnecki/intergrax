@@ -21,6 +21,7 @@ _FORBIDDEN_FRAGMENTS = (
     "NexusLoop(",
     "._private",
     "# noqa: SLF001",
+    "projection_input_store.register(",
 )
 
 _VALIDATION_BYPASS_TARGETS = (

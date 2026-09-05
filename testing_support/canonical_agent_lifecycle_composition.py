@@ -9,6 +9,7 @@ import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 
+from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
 from intergrax.agent_distribution.admin_models import (
     ActivateRuntimeRevisionRequest,
     BindAgentRequest,
@@ -78,6 +79,9 @@ from intergrax.applications._shared.production_process_composition import (
 from intergrax.applications._shared.production_registry_projection_input_bundle import (
     build_production_registry_projection_for_revision,
     build_production_registry_projection_input_bundle_for_revision,
+)
+from intergrax.applications._shared.registry_projection_input_bundle import (
+    reference_admission_mutation_id,
 )
 from intergrax.applications._shared.reference_production_governance_wiring import (
     ReferenceProductionControlPlaneGovernance,
@@ -483,7 +487,7 @@ class CanonicalAgentLifecycleProofStack:
     agent_manager_query: AgentManagerQueryService
 
     @property
-    def admin(self):
+    def admin(self) -> AgentPlatformAdminService:
         capability_runtime = self.composition.agent_capability_runtime
         assert capability_runtime is not None
         return capability_runtime.admin_service
@@ -703,21 +707,33 @@ class CanonicalAgentLifecycleProofStack:
             build_context=ApplicationBuildContext.for_manifest(self.manifest),
             authority=self.composition.agent_platform_runtime.registry_projection_authority,
         )
-        self.launcher.services.projection_input_store.register(bundle)
-        activated = self.admin.activate_revision(
-            application_id=self.config.application_id,
-            application_environment_id=self.config.environment_id,
-            principal=admin_test_principal(),
-            request=ActivateRuntimeRevisionRequest(
+        result = self.launcher.deploy_and_activate(
+            bundle,
+            ActivateRuntimeRevisionRequest(
                 mutation_id=f"mut-stage15-activate:{built.runtime_revision_id}",
                 runtime_revision_id=built.runtime_revision_id,
                 artifact_locator=built.artifact_locator or "test://artifact",
                 expected_artifact_digest=built.materialization_artifact_digest or "",
                 expected_serving_pointer_revision=0,
             ),
+            principal=self.governance.principal,
+            admission_mutation_id=reference_admission_mutation_id(
+                built.runtime_revision_id,
+            ),
         )
-        assert activated.traffic_serving_revision_id == built.runtime_revision_id
-        return activated.traffic_serving_revision_id or built.runtime_revision_id
+        assert result.runtime_revision_id == built.runtime_revision_id
+        assert result.application_id == self.config.application_id
+        assert result.application_environment_id == self.config.environment_id
+        assert (
+            result.resolved_projection.evidence.runtime_revision_id
+            == built.runtime_revision_id
+        )
+        serving = self.admin.inspect_serving(
+            application_id=self.config.application_id,
+            application_environment_id=self.config.environment_id,
+        )
+        assert serving.traffic_serving_revision_id == built.runtime_revision_id
+        return serving.traffic_serving_revision_id or built.runtime_revision_id
 
     def resolve_serving_projection(self) -> MaterializedRegistryProjection:
         serving = self.admin.inspect_serving(
