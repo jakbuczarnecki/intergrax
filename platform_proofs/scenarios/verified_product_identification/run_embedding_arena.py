@@ -46,7 +46,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--profile",
         choices=list_execution_profile_ids(),
         default=STANDARD_ARENA_PROFILE_ID,
-        help="Arena execution profile (safe-local-gpu = micro arena; nano-local-gpu = ultra-small CUDA screening)",
+        help="Arena execution profile (safe-local-gpu = micro arena; nano-local-gpu = ultra-small CUDA screening; finalist-local-gpu = controlled BGE vs Qwen qualification)",
     )
     parser.add_argument(
         "--session-dir",
@@ -63,6 +63,14 @@ def main(argv: list[str] | None = None) -> int:
 
     session_dir = args.session_dir or (_REPO_ROOT / ".tmp" / "session" / "vpi-5c4b")
     execution_budget = resolve_execution_budget(args.profile)
+    if args.profile.startswith("finalist-local-gpu"):
+        session_dir = args.session_dir or (
+            _REPO_ROOT / ".tmp" / "session" / "vpi-5c4b-finalist-qual"
+        )
+        if args.profile == "finalist-local-gpu-200":
+            session_dir = args.session_dir or (
+                _REPO_ROOT / ".tmp" / "session" / "vpi-5c4b-finalist-qual-200"
+            )
     try:
         report = run_embedding_arena(
             include_e5_control=args.include_e5_control,
@@ -83,6 +91,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"profile={report.execution_profile_id}")
     print(f"decision={report.decision.value}")
+    if report.finalist_qualification_gate is not None:
+        print(f"finalist_gate={report.finalist_qualification_gate.value}")
     print(f"report={session_dir / 'arena-report.json'}")
     print(f"summary={session_dir / 'ARENA_SUMMARY.md'}")
     return 0

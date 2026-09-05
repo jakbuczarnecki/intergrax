@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.candidate_selection import (
+    EmbeddingArenaCandidateSelection,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_environment import (
     ArenaAcceleratorRequirement,
 )
@@ -34,6 +37,9 @@ class EmbeddingArenaExecutionBudget:
     include_query_latency_benchmark: bool
     suppress_keep_baseline_decision: bool
     screening_evidence_label: str | None
+    finalist_qualification_mode: bool = False
+    candidate_batch_overrides: tuple[tuple[str, int], ...] = ()
+    default_candidate_selection: EmbeddingArenaCandidateSelection | None = None
 
     def __post_init__(self) -> None:
         if self.stage_a_records <= 0:
@@ -71,8 +77,12 @@ class EmbeddingArenaExecutionBudget:
     def batch_sizes_for_candidate(
         self,
         *,
+        candidate_id: str,
         fixed_provider_batch_size: int | None,
     ) -> tuple[int, ...]:
+        for override_candidate_id, batch_size in self.candidate_batch_overrides:
+            if override_candidate_id == candidate_id:
+                return (batch_size,)
         if fixed_provider_batch_size is not None:
             return (fixed_provider_batch_size,)
         if self.uses_batch_sweep:

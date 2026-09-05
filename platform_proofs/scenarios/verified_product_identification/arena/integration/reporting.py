@@ -39,6 +39,7 @@ def render_arena_summary_markdown(report: EmbeddingArenaReport) -> str:
         f"- Execution profile: `{report.execution_profile_id}`",
         f"- Evidence classification: `{report.evidence_classification.value if report.evidence_classification else 'n/a'}`",
         f"- Decision: `{report.decision.value}`",
+        f"- Finalist gate: `{report.finalist_qualification_gate.value if report.finalist_qualification_gate else 'n/a'}`",
         f"- Rationale: {report.decision_rationale}",
         f"- 5C4C finalists: {', '.join(report.finalists_for_5c4c) or 'none'}",
         "",

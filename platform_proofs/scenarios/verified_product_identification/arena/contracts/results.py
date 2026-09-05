@@ -9,6 +9,7 @@ from platform_proofs.scenarios.verified_product_identification.arena.contracts.c
     EmbeddingArenaDecision,
     EmbeddingArenaStageStatus,
     EmbeddingArenaVerdict,
+    FinalistQualificationGate,
     MicroArenaScreeningOutcome,
     SpeedupBand,
 )
@@ -163,3 +164,4 @@ class EmbeddingArenaReport:
     resources_touched: tuple[str, ...]
     execution_profile_id: str | None = None
     evidence_classification: ArenaEvidenceClassification | None = None
+    finalist_qualification_gate: FinalistQualificationGate | None = None

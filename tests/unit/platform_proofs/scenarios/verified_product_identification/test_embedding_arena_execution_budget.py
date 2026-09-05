@@ -97,9 +97,11 @@ def test_micro_batch_policy_is_primary_then_fallback_only() -> None:
     qwen = next(item for item in candidates if item.candidate_id == "qwen3-0.6b")
 
     assert budget.batch_sizes_for_candidate(
+        candidate_id=bge.candidate_id,
         fixed_provider_batch_size=bge.fixed_provider_batch_size,
     ) == (16,)
     assert budget.batch_sizes_for_candidate(
+        candidate_id=qwen.candidate_id,
         fixed_provider_batch_size=qwen.fixed_provider_batch_size,
     ) == (16, 8)
 
@@ -177,9 +179,11 @@ def test_nano_batch_policy_is_primary_then_fallback_only() -> None:
     qwen = next(item for item in candidates if item.candidate_id == "qwen3-0.6b")
 
     assert budget.batch_sizes_for_candidate(
+        candidate_id=bge.candidate_id,
         fixed_provider_batch_size=bge.fixed_provider_batch_size,
     ) == (16,)
     assert budget.batch_sizes_for_candidate(
+        candidate_id=qwen.candidate_id,
         fixed_provider_batch_size=qwen.fixed_provider_batch_size,
     ) == (8, 4)
 
