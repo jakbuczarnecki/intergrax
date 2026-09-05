@@ -32,6 +32,11 @@ def test_scaffold_product_profile_creates_fastapi_core_tree(tmp_path):
     assert "default=True" in manifest
     assert "build_demo_product_echo_from_context" in manifest
 
+    agent_factories = (target / "host" / "agent_factories.py").read_text(encoding="utf-8")
+    assert "ApplicationBuildContext" in agent_factories
+    assert "AgentBinding" in agent_factories
+    assert "def build_demo_product_echo_from_context(" in agent_factories
+
     factory = (target / "host" / "factory.py").read_text(encoding="utf-8")
     assert "create_demo_product_backend_app" in factory
     assert "create_app" in factory

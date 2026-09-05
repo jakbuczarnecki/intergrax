@@ -203,7 +203,14 @@ from intergrax.applications import build_registry_from_manifest
 registry = build_registry_from_manifest(manifest, settings=app_settings, builders=builders)
 ```
 
-### Resolution order (per binding)
+### Resolution order (per binding — development / lab / test only)
+
+Use :func:`~intergrax.applications._shared.wiring.build_manifest_development_registry`
+for explicit non-production manifest assembly. **Revision-bound production** (STRICT
+hosts, AP-10 registry projection) does **not** use this table; it resolves factories
+through ``RuntimeAgentFactoryResolver`` → ``CanonicalAgentFactory`` →
+:func:`~intergrax.applications._shared.wiring.invoke_canonical_agent_factory` with no
+builders, ``factory_path``, or zero-arg constructor fallback.
 
 | Priority | Source | When |
 |----------|--------|------|

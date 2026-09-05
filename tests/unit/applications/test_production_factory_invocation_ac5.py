@@ -1,9 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""AC-5 Phase 1 — canonical production factory invocation contract."""
+"""AC-5 — canonical production factory invocation contract (Phase 1 + Phase 2)."""
 
 from __future__ import annotations
 
+import inspect
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -28,12 +30,16 @@ from intergrax.applications._shared.wiring import (
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.errors import AgentImportError
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO = Path(__file__).resolve().parents[3]
 _WIRING_SOURCE = REPO / "intergrax" / "applications" / "_shared" / "wiring.py"
+_REGISTRY_PROJECTION_SOURCE = (
+    REPO / "intergrax" / "applications" / "_shared" / "registry_projection.py"
+)
 
 _APP = "app_ac5"
 _ENV = "env-ac5"
@@ -285,4 +291,199 @@ def test_revision_bound_path_forbids_host_builders_fallback() -> None:
             effective_roster=roster,
             runtime_revision=revision,
             factory_resolver=None,
+        )
+
+
+def _revision_bound_registry_block() -> str:
+    source = _WIRING_SOURCE.read_text(encoding="utf-8")
+    start = source.index("    if effective_roster is None:")
+    end = source.index("\ndef build_registry_from_manifest(")
+    return source[start:end]
+
+
+_REVISION_BOUND_FORBIDDEN = (
+    "invoke_legacy_compatible_agent_factory",
+    "invoke_agent_factory",
+    "build_agent_from_binding",
+    "load_agent_from_binding",
+    "load_callable(",
+    "resolved_agent_type()()",
+    "builders[",
+)
+
+
+@pytest.mark.parametrize("token", _REVISION_BOUND_FORBIDDEN)
+def test_revision_bound_assembly_has_no_legacy_or_bypass_tokens(token: str) -> None:
+    block = _revision_bound_registry_block()
+    assert token not in block
+
+
+def test_register_binding_canonical_branch_has_no_legacy_tokens() -> None:
+    source = _WIRING_SOURCE.read_text(encoding="utf-8")
+    start = source.index("def _register_binding(")
+    end = source.index("\ndef build_manifest_development_registry")
+    block = source[start:end]
+    assert "invoke_canonical_agent_factory" in block
+    assert "invoke_agent_factory" not in block
+    assert "invoke_legacy_compatible_agent_factory" not in block
+
+
+def test_registry_projection_builds_with_canonical_resolver_path_only() -> None:
+    text = _REGISTRY_PROJECTION_SOURCE.read_text(encoding="utf-8")
+    start = text.index("def build_registry_projection(")
+    end = text.index("\ndef ", start + 1)
+    block = text[start:end]
+    assert "build_application_registry(" in block
+    assert "builders=None" in block
+    assert "build_agent_from_binding" not in block
+
+
+def _assert_canonical_factory_signature(factory: Callable[..., object]) -> None:
+    sig = inspect.signature(factory)
+    params = list(sig.parameters.values())
+    assert len(params) == 2, f"{factory.__name__}: expected 2 parameters, got {len(params)}"
+    for param in params:
+        assert param.kind in (
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.KEYWORD_ONLY,
+        ), f"{factory.__name__}: parameter {param.name!r} must be positional or keyword"
+        assert param.kind not in (
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.VAR_KEYWORD,
+        ), f"{factory.__name__}: variadic parameters are forbidden"
+    type_hints = getattr(factory, "__annotations__", {})
+    if type_hints:
+        param_names = tuple(param.name for param in params)
+        assert "ctx" in param_names or "ApplicationBuildContext" in str(
+            type_hints.get(param_names[0], "")
+        )
+
+
+def _load_production_factory_inventory() -> list[tuple[str, str, Callable[..., object]]]:
+    from dispute_sim_application.host.agent_factories import (
+        build_dispute_sim_dispute_analyst_from_context,
+        build_dispute_sim_dispute_intake_from_context,
+        build_dispute_sim_dispute_scenario_from_context,
+        build_dispute_sim_dispute_strategist_from_context,
+    )
+    from governed_contractor_application.host.agent_factories import (
+        build_governed_contractor_external_contractor_adapter_from_context,
+    )
+    from legal_application.host.agent_factories import build_legal_agent_from_context
+    from local_workspace_application.host.agent_factories import (
+        build_local_workspace_local_indexer_from_context,
+        build_local_workspace_local_search_from_context,
+        build_local_workspace_local_synthesizer_from_context,
+        build_local_workspace_model_routing_qualifier_from_context,
+        build_local_workspace_tool_selection_qualifier_from_context,
+        build_local_workspace_web_search_qualifier_from_context,
+    )
+
+    return [
+        ("legal_application", "build_legal_agent_from_context", build_legal_agent_from_context),
+        (
+            "governed_contractor_application",
+            "build_governed_contractor_external_contractor_adapter_from_context",
+            build_governed_contractor_external_contractor_adapter_from_context,
+        ),
+        (
+            "local_workspace_application",
+            "build_local_workspace_local_indexer_from_context",
+            build_local_workspace_local_indexer_from_context,
+        ),
+        (
+            "local_workspace_application",
+            "build_local_workspace_local_search_from_context",
+            build_local_workspace_local_search_from_context,
+        ),
+        (
+            "local_workspace_application",
+            "build_local_workspace_local_synthesizer_from_context",
+            build_local_workspace_local_synthesizer_from_context,
+        ),
+        (
+            "local_workspace_application",
+            "build_local_workspace_tool_selection_qualifier_from_context",
+            build_local_workspace_tool_selection_qualifier_from_context,
+        ),
+        (
+            "local_workspace_application",
+            "build_local_workspace_web_search_qualifier_from_context",
+            build_local_workspace_web_search_qualifier_from_context,
+        ),
+        (
+            "local_workspace_application",
+            "build_local_workspace_model_routing_qualifier_from_context",
+            build_local_workspace_model_routing_qualifier_from_context,
+        ),
+        (
+            "dispute_sim_application",
+            "build_dispute_sim_dispute_intake_from_context",
+            build_dispute_sim_dispute_intake_from_context,
+        ),
+        (
+            "dispute_sim_application",
+            "build_dispute_sim_dispute_analyst_from_context",
+            build_dispute_sim_dispute_analyst_from_context,
+        ),
+        (
+            "dispute_sim_application",
+            "build_dispute_sim_dispute_strategist_from_context",
+            build_dispute_sim_dispute_strategist_from_context,
+        ),
+        (
+            "dispute_sim_application",
+            "build_dispute_sim_dispute_scenario_from_context",
+            build_dispute_sim_dispute_scenario_from_context,
+        ),
+    ]
+
+
+_PRODUCTION_FACTORY_INVENTORY = _load_production_factory_inventory()
+_PRODUCTION_FACTORY_IDS = [f"{app}::{name}" for app, name, _ in _PRODUCTION_FACTORY_INVENTORY]
+
+
+@pytest.mark.parametrize(
+    ("application", "factory_name", "factory"),
+    _PRODUCTION_FACTORY_INVENTORY,
+    ids=_PRODUCTION_FACTORY_IDS,
+)
+def test_real_production_factory_has_canonical_signature(
+    application: str,
+    factory_name: str,
+    factory: Callable[..., object],
+) -> None:
+    del application, factory_name
+    _assert_canonical_factory_signature(factory)
+
+
+def test_real_production_factory_inventory_is_complete() -> None:
+    inventory = _PRODUCTION_FACTORY_INVENTORY
+    applications = {entry[0] for entry in inventory}
+    assert applications == {
+        "legal_application",
+        "governed_contractor_application",
+        "local_workspace_application",
+        "dispute_sim_application",
+    }
+    assert len(inventory) == 12
+
+
+def test_one_arg_factory_from_resolver_fails_without_fallback() -> None:
+    def _settings_only_factory(_settings: object) -> EchoAgent:
+        return EchoAgent()
+
+    manifest = _manifest()
+    ctx = ApplicationBuildContext.for_manifest(manifest)
+    roster = _roster((_entry(),))
+    revision = _revision()
+    resolver = _resolver_with_factory(_settings_only_factory)
+
+    with pytest.raises(TypeError):
+        build_application_registry(
+            manifest,
+            ctx,
+            effective_roster=roster,
+            runtime_revision=revision,
+            factory_resolver=resolver,
         )
