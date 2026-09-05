@@ -135,6 +135,10 @@ def admit_background_execution_reentry(
         )
     except ValueError as exc:
         raise BackgroundExecutionReentryAdmissionError(str(exc)) from exc
+    except RuntimeError as exc:
+        raise BackgroundExecutionReentryAdmissionError(
+            "background execution identity authority is corrupt or unavailable",
+        ) from exc
 
     terminal = _check_terminal_authority(
         tenant_id=bootstrap.tenant_id,
