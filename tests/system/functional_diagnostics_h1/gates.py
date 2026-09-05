@@ -10,7 +10,6 @@ from pathlib import Path
 from tests.system.functional_diagnostics_h1.inventory import (
     COLLECTION_PYTEST_TARGETS,
     CORE_DETERMINISTIC_PYTEST_TARGETS,
-    LOCAL_INTEGRATION_TARGETS,
     QUALIFICATION_RUNNERS,
     REPEATABILITY_PYTEST_TARGETS,
     SLOW_ARCHITECTURE_PYTEST_TARGETS,
@@ -26,6 +25,11 @@ from tests.system.functional_diagnostics_h1.models import (
     PytestSubprocessResult,
     SkipClassification,
     SkipXfailFinding,
+)
+from tests.system.functional_diagnostics_h1.local_integration import (
+    gate_result_from_local_integration_run,
+    run_h1_k_local_integration,
+    validate_local_integration_metrics,
 )
 from tests.system.functional_diagnostics_h1.preflight import classify_external_dependencies
 from tests.system.functional_diagnostics_h1.qualification_spec import (
@@ -140,14 +144,7 @@ def gate_h1_b_core_health() -> tuple[GateResult, PytestSubprocessResult]:
 
 
 def _validate_repeatability_metrics(result: PytestSubprocessResult) -> tuple[bool, str | None]:
-    executed = result.passed + result.failed + result.skipped + result.xfailed + result.xpassed
-    if result.passed > 0 and result.collected_count == 0:
-        return False, "passed_gt_zero_but_collected_zero"
-    if result.passed > 0 and result.collected_count is None:
-        return False, "passed_gt_zero_but_collected_unknown"
-    if result.collected_count is not None and executed > 0 and result.collected_count < executed:
-        return False, "collected_lt_executed"
-    return True, None
+    return validate_local_integration_metrics(result)
 
 
 def gate_h1_c_repeatability() -> tuple[GateResult, tuple[DiagnosticTestSuiteResult, ...]]:
@@ -343,33 +340,8 @@ def gate_h1_i_supersession() -> GateResult:
 
 def gate_h1_k_local_integration() -> GateResult:
     """H1-K: local diagnostic integration — deterministic, must PASS."""
-    env_overrides = {
-        "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET": (
-            "h1-local-integration-diagnostic-cursor-secret"
-        ),
-    }
-    suite_details: list[str] = []
-    any_failed = False
-    for target in LOCAL_INTEGRATION_TARGETS:
-        result = run_pytest_subprocess(
-            (target,),
-            timeout_seconds=900.0,
-            env_overrides=env_overrides,
-        )
-        outcome = classify_pytest_exit(result)
-        suite_details.append(
-            f"{target}:outcome={outcome}:passed={result.passed}:failed={result.failed}:"
-            f"errors={result.errors}:dependency_class=LOCAL_DETERMINISTIC"
-        )
-        if outcome != "PASS":
-            any_failed = True
-    verdict = HealthVerdict.FAILED if any_failed else HealthVerdict.PASS
-    return GateResult(
-        gate_id=HealthGateId.H1_K_LOCAL_INTEGRATION,
-        verdict=verdict,
-        summary=f"local diagnostic integration (H1-K): {verdict.value}",
-        details=tuple(suite_details),
-    )
+    run = run_h1_k_local_integration(run_index=1)
+    return gate_result_from_local_integration_run(run)
 
 
 def gate_local_integration() -> GateResult:

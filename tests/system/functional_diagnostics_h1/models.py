@@ -189,6 +189,58 @@ class DiagnosticTestHealthStatus:
     message: str
 
 
+class LocalIntegrationDependencyClass(StrEnum):
+    LOCAL_DETERMINISTIC = "LOCAL_DETERMINISTIC"
+
+
+@dataclass(frozen=True, slots=True)
+class LocalIntegrationSuiteResult:
+    target: str
+    collected: int | None
+    passed: int
+    failed: int
+    skipped: int
+    xfailed: int
+    xpassed: int
+    errors: int
+    collection_errors: int
+    exit_code: int
+    duration_seconds: float
+    verdict: HealthVerdict
+    dependency_class: LocalIntegrationDependencyClass
+
+
+@dataclass(frozen=True, slots=True)
+class LocalIntegrationRunResult:
+    run_index: int
+    suite_results: tuple[LocalIntegrationSuiteResult, ...]
+    verdict: HealthVerdict
+    total_collected: int | None
+    total_passed: int
+    total_failed: int
+    total_errors: int
+
+
+@dataclass(frozen=True, slots=True)
+class LocalIntegrationQualificationReport:
+    qualification_id: str
+    schema_version: str
+    tested_sha: str
+    start_head: str
+    final_head: str
+    origin_development_at_start: str
+    origin_development_at_end: str
+    working_tree_clean_at_start: bool
+    working_tree_clean_at_end: bool
+    repository_precondition: HealthVerdict
+    repository_postcondition: HealthVerdict
+    runs: tuple[LocalIntegrationRunResult, ...]
+    repeatability_verdict: HealthVerdict
+    overall_verdict: HealthVerdict
+    blocking_findings: tuple[str, ...]
+    timestamp: str
+
+
 @dataclass(frozen=True, slots=True)
 class DiagnosticTestSuiteResult:
     scope: str
@@ -238,6 +290,8 @@ H1_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1"
 H1_R1_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R1"
 H1_R2_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R2"
 H1_R3_QUALIFICATION_ID = "DIAG-FUNCTIONAL-H1-R3"
+H1_K_QUALIFICATION_ID = "DIAG-H1-K-QUALIFICATION-R1"
+H1_K_SCHEMA_VERSION = "diag_h1_k_local_integration_v1"
 H1_SEMANTICS = (
     "H1 measures diagnostic TEST-SUITE HEALTH, not live requalification of all "
     "historical real-world qualifications. External service absence yields "
