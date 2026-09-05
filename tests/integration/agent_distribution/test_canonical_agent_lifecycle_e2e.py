@@ -58,14 +58,6 @@ def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
         "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
         _resolve,
     )
-    monkeypatch.setattr(
-        "intergrax.applications._shared.package_wiring.assert_manifest_package_closure",
-        lambda *args, **kwargs: None,
-    )
-    monkeypatch.setattr(
-        "intergrax.applications._shared.diagnostic_assembly_resolver.assert_diagnostic_assembly_valid",
-        lambda *args, **kwargs: None,
-    )
 
 
 _SECONDARY_LOGICAL_ID = "canonical-shadow-agent"
@@ -241,7 +233,8 @@ def test_serving_runtime_cannot_execute_agent_outside_serving_projection(
         stack.manifest,
         stack.environment,
         registry_projection=projection,
-        use_in_memory_trace=True,
+        trace_db_path=tmp_path / "secondary-trace.db",
+        runtime_events_db_path=tmp_path / "secondary-runtime_events.db",
         document_store=InMemoryDocumentStore(),
     )
     task = Task(

@@ -34,6 +34,7 @@ from intergrax.agent_distribution.in_memory_stores import (
 )
 from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
+from intergrax.agent_distribution.stores import DeploymentInstanceStore
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
@@ -67,6 +68,7 @@ class ReferenceProductionLifecycleServices:
     projection_coordinator: ApplicationRegistryProjectionCoordinator
     revision_service: RuntimeRevisionService
     projection_input_store: RegistryProjectionInputStore
+    deployment_instance_store: DeploymentInstanceStore
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,9 +118,10 @@ def wire_reference_production_lifecycle_services(
         input_store=projection_input_store,
         projection_store=stores.registry_projection_store,
     )
+    deployment_instance_store = InMemoryDeploymentInstanceStore(state)
     activation_service = ActivationService(
         revision_store=revision_store,
-        deployment_instance_store=InMemoryDeploymentInstanceStore(state),
+        deployment_instance_store=deployment_instance_store,
         serving_store=stores.serving_store,
         activation_store=InMemoryApplicationEnvironmentActivationStore(state),
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
@@ -129,6 +132,7 @@ def wire_reference_production_lifecycle_services(
         projection_coordinator=projection_coordinator,
         revision_service=RuntimeRevisionService(revision_store),
         projection_input_store=projection_input_store,
+        deployment_instance_store=deployment_instance_store,
     )
 
 

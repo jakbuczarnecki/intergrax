@@ -197,7 +197,7 @@ def build_production_agent_platform_admin_service(
         binding_store=binding_store,
         revision_store=stores.revision_store,
         serving_store=stores.serving_store,
-        deployment_instance_store=lifecycle_services.activation_service._deployment_instance_store,  # noqa: SLF001
+        deployment_instance_store=lifecycle_services.deployment_instance_store,
         lock_store=stores.lock_store,
         materialization_store=stores.materialization_store,
         effective_roster_snapshot_store=stores.effective_roster_snapshot_store,

@@ -17,8 +17,6 @@ from intergrax.agent_distribution.admin_models import (
     InstallAgentRequest,
     SetAgentEnablementRequest,
 )
-from intergrax.agent_distribution.admin_service import AgentPlatformAdminService
-from intergrax.agent_distribution.agent_manager_models import AgentManagerDerivedStatus
 from intergrax.agent_distribution.agent_manager_query_service import AgentManagerQueryService
 from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
@@ -32,31 +30,25 @@ from intergrax.agent_distribution.control_plane_governance import (
     StaticApplicationEnvironmentTenantResolver,
 )
 from intergrax.agent_distribution.dependency import RepositoryDependencyDeclaration
-from intergrax.agent_distribution.effective_roster import (
-    EffectiveRosterBuilder,
-    InstalledAgentRequirementSetBuilder,
-)
+from intergrax.agent_distribution.effective_roster import EffectiveRosterBuilder
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.in_memory_stores import (
-    InMemoryAgentArtifactMetadataStore,
     InMemoryAgentInstallationStore,
     InMemoryApplicationAgentBindingStore,
-    InMemoryApplicationEnvironmentServingStore,
-    InMemoryRuntimeRevisionStore,
 )
-from intergrax.agent_distribution.installation_service import InstallationService
-from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.materialization import (
     MaterializationInput,
     MaterializationOutput,
 )
 from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
-from intergrax.agent_distribution.runtime_graph_service import CandidateRuntimeGraphBuilder
 from intergrax.agent_distribution.runtime_revision import MaterializationTopology
-from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.runtime_context_staging import (
     RUNTIME_LOCK_MANIFEST_FILENAME,
     directory_content_digest,
+)
+from intergrax.agent_distribution.task_capability_resolution import (
+    build_deterministic_task_capability_resolver,
+    build_task_capability_rule,
 )
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
@@ -67,6 +59,14 @@ from intergrax.applications._shared.harness_host_runtime import build_harness_ho
 from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
+)
+from intergrax.applications._shared.production_agent_capability_runtime import (
+    AgentCapabilityApplicationComposition,
+    ProductionAgentPlatformAdminConfig,
+    build_production_agent_capability_runtime,
+)
+from intergrax.applications._shared.production_delegated_subtask_plans import (
+    ProductionDelegatedSubtaskPlanConfig,
 )
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
@@ -81,10 +81,11 @@ from intergrax.applications._shared.production_registry_projection_input_bundle 
 )
 from intergrax.applications._shared.reference_production_governance_wiring import (
     ReferenceProductionControlPlaneGovernance,
-    wire_governed_reference_production_launcher,
+    build_reference_production_control_plane_governance,
 )
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
+    wire_reference_production_lifecycle_services,
 )
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
@@ -92,13 +93,13 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.core.qualification import QualificationStatus
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.registry.presets import OTEL
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.agent_platform_dependency_resolver import make_identity_dependency_resolver
 from testing_support.canonical_lifecycle_ping_agent import (
     CANONICAL_PING_CAPABILITY,
     CANONICAL_PING_CONTRACT_ID,
-    CanonicalPingAgent,
 )
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     admin_test_principal,
@@ -106,6 +107,24 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
 )
 
 _DEFAULT_DIGEST = "sha256:" + ("a" * 64)
+
+
+def _stage15_proof_environment(profile_id: str) -> ApplicationEnvironmentProfile:
+    """Product defaults with observability backend required by host assembly validation."""
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id=profile_id)
+    integration = env.integration_profile
+    assert integration is not None
+    return env.model_copy(
+        update={
+            "capabilities": env.capabilities.model_copy(
+                update={
+                    "integrations": integration.model_copy(
+                        update={"observability_backend": OTEL},
+                    ),
+                },
+            ),
+        },
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,6 +193,76 @@ class _StaticCatalogProvider:
 
     def health(self) -> None:
         return None
+
+
+class _Stage15TrustRecordFactory:
+    def build_trust_record(
+        self,
+        *,
+        package_digest: str,
+        package_id: str,
+    ) -> AgentInstallationTrustRecord:
+        del package_id
+        return AgentInstallationTrustRecord(
+            qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
+            package_digest=package_digest,
+            publisher_identity_ref="publisher:stage15",
+            source_provider_id="builtin-stage15",
+            trust_evidence_refs=(
+                AgentTrustEvidenceRef(
+                    evidence_id="evidence:stage15",
+                    kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
+                ),
+            ),
+        )
+
+
+def _build_application_composition(
+    config: CanonicalLifecycleProofConfig,
+    tmp_path: Path,
+    catalog_provider: CatalogSourceProvider,
+    metadata_provider: _MetadataProvider,
+) -> AgentCapabilityApplicationComposition:
+    return AgentCapabilityApplicationComposition(
+        capability_resolver=build_deterministic_task_capability_resolver(
+            rules=(
+                build_task_capability_rule(
+                    rule_id="rule.canonical.ping.v1",
+                    task_kind="canonical.ping",
+                    required=(CANONICAL_PING_CAPABILITY,),
+                ),
+            ),
+        ),
+        catalog_providers=(catalog_provider,),
+        package_metadata_refs={config.distribution_package_id: config.metadata_ref},
+        package_logical_agents={config.distribution_package_id: config.logical_agent_id},
+        trust_record_factory=_Stage15TrustRecordFactory(),
+        admin_config=ProductionAgentPlatformAdminConfig(
+            metadata_provider=metadata_provider,
+            materialization_service=RuntimeMaterializationService(
+                {
+                    MaterializationTopology.VENV_BUNDLE: _LifecycleVenvBundleMaterializer(
+                        tmp_path,
+                    ),
+                }
+            ),
+            dependency_resolver=make_identity_dependency_resolver(),
+            mutation_authorization_boundary=allow_mutation_boundary(),
+            environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver(
+                "tenant-test",
+            ),
+            catalog_provider=catalog_provider,
+        ),
+        delegated_plan_config=ProductionDelegatedSubtaskPlanConfig(
+            application_id=config.application_id,
+            application_environment_id=config.environment_id,
+            application_release_id="rel-stage15",
+            package_metadata_refs={config.distribution_package_id: config.metadata_ref},
+            package_logical_agents={
+                config.distribution_package_id: config.logical_agent_id,
+            },
+        ),
+    )
 
 
 class _LifecycleVenvBundleMaterializer:
@@ -384,14 +473,20 @@ def default_stage15_proof_config(
 @dataclass(frozen=True, slots=True)
 class CanonicalAgentLifecycleProofStack:
     config: CanonicalLifecycleProofConfig
+    runtime_root: Path
     composition: ProductionProcessComposition
     launcher: ReferenceProductionLifecycleLauncher
     governance: ReferenceProductionControlPlaneGovernance
-    admin: AgentPlatformAdminService
     catalog_provider: CatalogSourceProvider
     manifest: ApplicationManifest
     environment: ApplicationEnvironmentProfile
     agent_manager_query: AgentManagerQueryService
+
+    @property
+    def admin(self):
+        capability_runtime = self.composition.agent_capability_runtime
+        assert capability_runtime is not None
+        return capability_runtime.admin_service
 
     @classmethod
     def build(
@@ -400,18 +495,7 @@ class CanonicalAgentLifecycleProofStack:
         config: CanonicalLifecycleProofConfig | None = None,
     ) -> CanonicalAgentLifecycleProofStack:
         resolved = config or default_stage15_proof_config()
-        composition = create_reference_production_process_composition()
-        environment = ApplicationEnvironmentProfile.product_defaults(
-            profile_id=resolved.environment_id,
-        )
-        launcher, governance = wire_governed_reference_production_launcher(
-            composition,
-            environment,
-        )
-        stores = composition.agent_platform_runtime.stores
-        state = composition.agent_platform_runtime.distribution_state
-        activation = launcher.services.activation_service
-
+        environment = _stage15_proof_environment(resolved.environment_id)
         catalog_entry = AgentCatalogEntry(
             catalog_entry_id=resolved.catalog_entry_id,
             catalog_source=CatalogSourceIdentity(
@@ -422,7 +506,6 @@ class CanonicalAgentLifecycleProofStack:
             package_id_line=resolved.distribution_package_id,
         )
         catalog_provider = _StaticCatalogProvider((catalog_entry,))
-
         metadata_provider = _MetadataProvider(
             {
                 resolved.metadata_ref: AgentProjectMetadata(
@@ -431,43 +514,40 @@ class CanonicalAgentLifecycleProofStack:
                 ),
             }
         )
+        application_composition = _build_application_composition(
+            resolved,
+            tmp_path,
+            catalog_provider,
+            metadata_provider,
+        )
+        base_composition = create_reference_production_process_composition()
+        lifecycle_services = wire_reference_production_lifecycle_services(base_composition)
+        capability_runtime = build_production_agent_capability_runtime(
+            agent_platform_runtime=base_composition.agent_platform_runtime,
+            application_composition=application_composition,
+            lifecycle_services=lifecycle_services,
+        )
+        composition = ProductionProcessComposition(
+            agent_platform_runtime=base_composition.agent_platform_runtime,
+            agent_capability_runtime=capability_runtime,
+        )
+        governance = build_reference_production_control_plane_governance(environment)
+        launcher = ReferenceProductionLifecycleLauncher(
+            composition,
+            services=lifecycle_services,
+            mutation_authorization_boundary=governance.mutation_authorization_boundary,
+            environment_tenant_resolver=governance.environment_tenant_resolver,
+        )
+        state = composition.agent_platform_runtime.distribution_state
+        stores = composition.agent_platform_runtime.stores
         installation_store = InMemoryAgentInstallationStore(state)
-        binding_store = InMemoryApplicationAgentBindingStore(state)
-        artifact_store = InMemoryAgentArtifactMetadataStore(state)
-        installation_service = InstallationService(installation_store)
-        binding_service = BindingService(binding_store, installation_service)
-        admin = AgentPlatformAdminService(
+        agent_manager_query = AgentManagerQueryService(
+            catalog_provider=catalog_provider,
             installation_store=installation_store,
-            binding_store=binding_store,
+            binding_store=InMemoryApplicationAgentBindingStore(state),
             revision_store=stores.revision_store,
             serving_store=stores.serving_store,
-            deployment_instance_store=activation._deployment_instance_store,  # noqa: SLF001
-            lock_store=stores.lock_store,
-            materialization_store=stores.materialization_store,
-            effective_roster_snapshot_store=stores.effective_roster_snapshot_store,
-            effective_roster_authority=composition.agent_platform_runtime.effective_roster_authority,
-            artifact_metadata_store=artifact_store,
-            installation_service=installation_service,
-            binding_service=binding_service,
-            revision_service=RuntimeRevisionService(stores.revision_store),
             roster_builder=EffectiveRosterBuilder(installation_store),
-            requirement_set_builder=InstalledAgentRequirementSetBuilder(artifact_store),
-            activation_service=activation,
-            graph_builder=CandidateRuntimeGraphBuilder(metadata_provider),
-            materialization_service=RuntimeMaterializationService(
-                {
-                    MaterializationTopology.VENV_BUNDLE: _LifecycleVenvBundleMaterializer(
-                        tmp_path,
-                    ),
-                }
-            ),
-            metadata_provider=metadata_provider,
-            catalog_provider=catalog_provider,
-            dependency_resolver=make_identity_dependency_resolver(),
-            mutation_authorization_boundary=allow_mutation_boundary(),
-            environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver(
-                "tenant-test",
-            ),
         )
         manifest = ApplicationManifest.lab(
             app_id=resolved.application_id,
@@ -479,20 +559,12 @@ class CanonicalAgentLifecycleProofStack:
                 ),
             ],
         )
-        agent_manager_query = AgentManagerQueryService(
-            catalog_provider=catalog_provider,
-            installation_store=installation_store,
-            binding_store=binding_store,
-            revision_store=InMemoryRuntimeRevisionStore(state),
-            serving_store=InMemoryApplicationEnvironmentServingStore(state),
-            roster_builder=EffectiveRosterBuilder(installation_store),
-        )
         return cls(
             config=resolved,
+            runtime_root=tmp_path,
             composition=composition,
             launcher=launcher,
             governance=governance,
-            admin=admin,
             catalog_provider=catalog_provider,
             manifest=manifest,
             environment=environment,
@@ -693,7 +765,8 @@ class CanonicalAgentLifecycleProofStack:
             self.manifest,
             self.environment,
             registry_projection=projection,
-            use_in_memory_trace=True,
+            trace_db_path=self.runtime_root / "trace.db",
+            runtime_events_db_path=self.runtime_root / "runtime_events.db",
             document_store=InMemoryDocumentStore(),
         )
         task = Task(

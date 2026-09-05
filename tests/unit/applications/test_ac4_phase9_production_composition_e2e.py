@@ -385,9 +385,10 @@ def _build_test_lifecycle_services(
     stores = composition.agent_platform_runtime.stores
     projection_input_store = InMemoryRegistryProjectionInputStore()
     projection_coordinator = FakeRuntimeServingProjectionCoordinator()
+    deployment_instance_store = InMemoryDeploymentInstanceStore(state)
     activation_service = ActivationService(
         revision_store=stores.revision_store,
-        deployment_instance_store=InMemoryDeploymentInstanceStore(state),
+        deployment_instance_store=deployment_instance_store,
         serving_store=stores.serving_store,
         activation_store=InMemoryApplicationEnvironmentActivationStore(state),
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
@@ -402,6 +403,7 @@ def _build_test_lifecycle_services(
         ),
         revision_service=RuntimeRevisionService(stores.revision_store),
         projection_input_store=projection_input_store,
+        deployment_instance_store=deployment_instance_store,
     )
 
 
