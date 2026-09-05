@@ -19,12 +19,12 @@ from intergrax.integrations.registry.catalog import clear_catalog, get_entry
 from intergrax.integrations.registry.contract_spec import declare_integration_contract
 from intergrax.integrations.registry.plugin_register import register_integration_plugin
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.managed_retrieval import (
     ManagedRetrievalIntegrationContract,
 )
 from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationCapability,
+    PlatformIntegrationConfig,
     PlatformIntegrationSecurityPosture,
 )
 from intergrax.tools.providers.openai_vector_store.service import resolve_managed_retrieval
@@ -97,7 +97,7 @@ def create_vendor_b_managed_retrieval_integration(
     return _VendorBManagedRetrievalIntegration.for_provider(
         provider_id=VENDOR_B_MANAGED_RETRIEVAL_PROVIDER_ID,
         display_name="Vendor B",
-        config=CategoryIntegrationConfig(enabled=enabled),
+        config=PlatformIntegrationConfig(enabled=enabled),
     )
 
 
@@ -108,7 +108,7 @@ VENDOR_B_CONTRACT_SPEC = declare_integration_contract(
     contract_class=ManagedRetrievalIntegrationContract,
     contract_factory=create_vendor_b_managed_retrieval_integration,
     display_name="Vendor B",
-    config_class=CategoryIntegrationConfig,
+    config_class=PlatformIntegrationConfig,
     capabilities=(
         PlatformIntegrationCapability.CONNECT,
         PlatformIntegrationCapability.READ,
