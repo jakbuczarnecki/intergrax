@@ -55,8 +55,8 @@ Delivery rule:
 | AW-3 | Principal / authority / workspace composition | **DONE** |
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
 | AW-5 | Worker → execution composition and budgets | **DONE** (AW-5A DONE, AW-5B DONE) |
-| AW-6 | Recovery Controller and obstacle taxonomy | **IN PROGRESS** (AW-6A DONE, AW-6B IN PROGRESS) |
-| AW-7 | Adaptive capability acquisition | NOT STARTED |
+| AW-6 | Recovery Controller and obstacle taxonomy | **DONE** (AW-6A DONE, AW-6B DONE) |
+| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A IN PROGRESS) |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
 | AW-9 | Worker control plane | NOT STARTED |
 | AW-10 | Virtual Workforce reference application | NOT STARTED |
@@ -269,9 +269,17 @@ Delivery rule:
 |---|---|
 | **ID** | AW-6B |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** |
+| **Status** | **DONE** |
 | **Purpose** | Recovery orchestration with resume-original-work semantics |
 | **Acceptance** | recovery has bounded attempts/time/cost; successful recovery returns to original WorkItem/goal with evidence chain |
+| **Next step** | AW-7A |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-6 |
+| **Priority** | P0 |
+| **Status** | **DONE** |
+| **Purpose** | Recovery Controller (AW-6A + AW-6B) |
 | **Next step** | AW-7A |
 
 ---
@@ -280,9 +288,17 @@ Delivery rule:
 
 | Field | Value |
 |---|---|
+| **ID** | AW-7 |
+| **Priority** | P0 |
+| **Status** | **IN PROGRESS** (AW-7A IN PROGRESS) |
+| **Purpose** | Capability discovery/acquisition policy and A0–A4 classification |
+| **Next step** | AW-7B |
+
+| Field | Value |
+|---|---|
 | **ID** | AW-7A |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **IN PROGRESS** |
 | **Purpose** | Capability discovery/acquisition policy |
 | **Exact scope** | ordered search Tool → Skill → Integration → approved alternate/configuration → CodeCraft; A0-A4 risk classification |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Capability acquisition, §A0–A4, §CodeCraft recovery, §Durable capability promotion |
