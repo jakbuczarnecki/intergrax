@@ -219,7 +219,7 @@ def build_runtime_bundle(
         evidence_store=evidence_store,
         investigation_input=investigation_input,
     )
-    if investigator.get_contract().id not in composition.platform.registry.list_agent_ids():
+    if not composition.platform.registry.has(INVESTIGATOR_AGENT_ID):
         composition.platform.registry.register(investigator)
     return ScenarioRuntimeBundle(
         operational_data=operational_data,

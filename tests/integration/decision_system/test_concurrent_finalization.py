@@ -136,6 +136,10 @@ def test_ds_e2e_07_concurrent_finalization_race(
         ),
         encoding="utf-8",
     )
+    SQLiteDecisionFinalizationPersistence(
+        db_path=db_dir / "finalization.db",
+        payload_codecs=conformance_artifact_payload_codec_registry(),
+    )
     ctx = mp.get_context("spawn")
     ready = ctx.Barrier(2, timeout=120)
     result_queue: mp.Queue[str] = ctx.Queue()

@@ -47,18 +47,29 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_contract import (
+    INVESTIGATOR_AGENT_ID,
+    INVESTIGATOR_CAPABILITY,
+    incident_investigator_contract,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import SCENARIO_TOOL_IDS
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     IncidentInvestigationValidationEngine,
 )
 
-INVESTIGATOR_AGENT_ID = "incident_investigator"
-INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
 INVESTIGATOR_NODE_ID = f"node_{INVESTIGATOR_AGENT_ID}"
 DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS = 2
+
+
+def _ensure_investigator_contract_registered(registry: AgentRegistry) -> None:
+    try:
+        registry.get_contract(INVESTIGATOR_AGENT_ID)
+    except KeyError:
+        registry._contracts[INVESTIGATOR_AGENT_ID] = incident_investigator_contract()
 
 
 def _incident_lab_manifest(environment: ApplicationEnvironmentProfile) -> ApplicationManifest:
@@ -119,6 +130,7 @@ def build_scenario_environment_profile(
     env.integration_profile = IntegrationProfile(notification_channel=LOG)
     env.context_profile = ContextProfile(enable_rag=False, enable_websearch=False)
     env.memory_profile = MemoryProfile()
+    env.skill_profile = SkillProfile()
     env.tool_profile = ToolProfile(enabled=list(SCENARIO_TOOL_IDS))
     env.graph_spec = _incident_graph_spec(
         evaluator_loop_max_iterations=evaluator_loop_max_iterations,
@@ -202,6 +214,7 @@ def build_scenario_runtime_composition(
     )
     workspace = create_scenario_lab_workspace(workspace_root)
     roster = agent_registry or AgentRegistry()
+    _ensure_investigator_contract_registered(roster)
     manifest = _incident_lab_manifest(resolved_environment)
     platform = build_scenario_runtime_from_environment(
         environment=resolved_environment,

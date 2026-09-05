@@ -112,8 +112,25 @@ async def run_ai_incident_live_qualification(
                 evaluation_passed=False,
             )
 
-        result = await execute_resolved_skeleton(bundle)
-        evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
+        try:
+            result = await execute_resolved_skeleton(bundle)
+            evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
+        except Exception as exc:
+            return ScenarioQualificationAttempt(
+                evidence=ScenarioExecutionEvidence(
+                    scenario_id=AI_INCIDENT_SCENARIO_ID,
+                    invocation=invocation,
+                    provider=provider,
+                    model=model,
+                    executed=True,
+                    decision_path_exercised=True,
+                    used_mock_provider=False,
+                    runtime_modules=CANONICAL_DECISION_RUNTIME_MODULES,
+                    block_reason=f"scenario evaluation failed: {type(exc).__name__}",
+                ),
+                evaluation_passed=False,
+                error=str(exc),
+            )
     except Exception as exc:
         return ScenarioQualificationAttempt(
             evidence=ScenarioExecutionEvidence(

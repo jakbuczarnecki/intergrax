@@ -49,8 +49,11 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import SCENARIO_TOOL_IDS
 
-INVESTIGATOR_AGENT_ID = "incident_investigator"
-INVESTIGATOR_CAPABILITY = "incident_investigation.investigate"
+from platform_proofs.scenarios.ai_incident_investigation.application.investigator_contract import (
+    INVESTIGATOR_AGENT_ID,
+    INVESTIGATOR_CAPABILITY,
+    incident_investigator_contract,
+)
 
 
 def _extract_critic_feedback(ctx: RuntimeExecutionContext, is_revision: bool) -> list[str]:
@@ -107,13 +110,7 @@ class IncidentInvestigatorAgent(Agent):
         self._investigation_input = investigation_input
 
     def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=INVESTIGATOR_AGENT_ID,
-            name=INVESTIGATOR_AGENT_ID,
-            description="Incident investigator — platform-native scenario",
-            capabilities=[INVESTIGATOR_CAPABILITY],
-            allowed_tools=list(SCENARIO_TOOL_IDS),
-        )
+        return incident_investigator_contract()
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
         capability = getattr(task_context, "capability", None)

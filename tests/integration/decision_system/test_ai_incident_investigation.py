@@ -48,9 +48,7 @@ def test_ai_incident_scenario_packaging_assets_exist() -> None:
     assert runtime_composition.is_file()
 
 
-def test_assets_only_cannot_produce_ds_e2e_12_passed(
-    decision_e2e_report_collector,
-) -> None:
+def test_assets_only_cannot_produce_ds_e2e_12_passed() -> None:
     """Regression gate: qualification flag + assets must not auto-pass DS-E2E-12."""
     from testing_support.decision_e2e.reporting import validate_qualification_result
 
@@ -67,7 +65,6 @@ def test_assets_only_cannot_produce_ds_e2e_12_passed(
         ),
     )
     assert false_positive.disposition is not QualificationDisposition.PASSED
-    decision_e2e_report_collector.record(false_positive)
 
 
 @pytest.mark.asyncio
@@ -101,4 +98,7 @@ async def test_ds_e2e_12_ai_incident_live_scenario(
     if result.disposition is QualificationDisposition.FAILED:
         decision_e2e_report_collector.record(result)
         pytest.fail(result.reason or "scenario failed")
+    if result.disposition is QualificationDisposition.BLOCKED:
+        decision_e2e_report_collector.record(result)
+        pytest.fail(result.reason or "scenario blocked")
     decision_e2e_report_collector.record(result)

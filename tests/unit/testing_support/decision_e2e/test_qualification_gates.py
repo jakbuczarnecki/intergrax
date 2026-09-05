@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from testing_support.decision_e2e.contracts import (
     DecisionE2EProofId,
     DecisionE2EQualificationResult,
@@ -15,7 +17,10 @@ from testing_support.decision_e2e.qualification_evidence import (
     DockerCrashEvidence,
     ScenarioExecutionEvidence,
 )
-from testing_support.decision_e2e.reporting import validate_qualification_result
+from testing_support.decision_e2e.reporting import (
+    QualificationReportCollector,
+    validate_qualification_result,
+)
 from testing_support.decision_e2e.requirements import (
     qualify_docker_crash_resume,
     qualify_independent_verifier,
@@ -114,3 +119,25 @@ def test_false_passed_construction_still_blocked_for_ds_e2e_02() -> None:
         ),
     )
     assert blocked.disposition is QualificationDisposition.BLOCKED
+
+
+def test_qualification_report_rejects_duplicate_proof_ids() -> None:
+    collector = QualificationReportCollector()
+    collector.record(
+        DecisionE2EQualificationResult(
+            proof_id=DecisionE2EProofId.DS_E2E_06,
+            disposition=QualificationDisposition.BLOCKED,
+            evidence=(),
+            reason="negative contract gate",
+        ),
+    )
+    collector.record(
+        DecisionE2EQualificationResult(
+            proof_id=DecisionE2EProofId.DS_E2E_06,
+            disposition=QualificationDisposition.PASSED,
+            evidence=(),
+            reason="authoritative proof",
+        ),
+    )
+    with pytest.raises(ValueError, match="duplicate proof_id entries"):
+        collector.build_report(environment_profile="test")

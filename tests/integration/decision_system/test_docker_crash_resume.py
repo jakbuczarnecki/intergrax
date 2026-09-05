@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import multiprocessing as mp
+import uuid
 from pathlib import Path
 
 import pytest
@@ -284,9 +285,7 @@ def test_process_durability_crash_resume_regression(tmp_path: Path) -> None:
     assert terminal.lifecycle.stage is DecisionLifecycleStage.TERMINAL
 
 
-def test_subprocess_evidence_cannot_pass_docker_qualification(
-    decision_e2e_report_collector,
-) -> None:
+def test_subprocess_evidence_cannot_pass_docker_qualification() -> None:
     subprocess_evidence = DockerCrashEvidence(
         kill_method="subprocess_exit",
         killed_container_id="",
@@ -297,16 +296,18 @@ def test_subprocess_evidence_cannot_pass_docker_qualification(
         final_disposition="finalization",
     )
     result = qualify_docker_crash_resume(crash_evidence=subprocess_evidence)
-    decision_e2e_report_collector.record(result)
     assert result.disposition is QualificationDisposition.BLOCKED
 
 
 def test_ds_e2e_06_docker_crash_resume(
-    tmp_path: Path,
     decision_e2e_report_collector,
 ) -> None:
+    output_root = (
+        Path(".tmp/decision_e2e_qualification")
+        / f"docker-pytest-{uuid.uuid4().hex[:12]}"
+    )
     docker_run = run_docker_crash_qualification(
-        output_root=tmp_path / "docker_qualification",
+        output_root=output_root,
     )
     if docker_run.block_reason:
         decision_e2e_report_collector.record(

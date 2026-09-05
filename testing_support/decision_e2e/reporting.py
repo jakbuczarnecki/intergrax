@@ -91,6 +91,19 @@ class QualificationReportCollector:
         self._results.append(validate_qualification_result(result))
 
     def build_report(self, *, environment_profile: str) -> QualificationReport:
+        seen: set[str] = set()
+        duplicates: list[str] = []
+        for row in self._results:
+            proof_id = row.proof_id.value
+            if proof_id in seen:
+                duplicates.append(proof_id)
+            seen.add(proof_id)
+        if duplicates:
+            joined = ", ".join(sorted(set(duplicates)))
+            raise ValueError(
+                "Authoritative qualification report requires exactly one result per proof; "
+                f"duplicate proof_id entries: {joined}",
+            )
         return QualificationReport(
             git_sha=resolve_git_sha(),
             timestamp=datetime.now(UTC).isoformat(),
