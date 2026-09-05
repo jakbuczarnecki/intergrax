@@ -351,6 +351,10 @@ markers = [
   "tier3_scenario: Tier-3 UC-A* scenario matrix coverage (APP-CON-7).",
   "vectorstore_soak: RAG vector-store prod SLO soak against real backends (M-RAG.30); skipped when service unreachable.",
   "qualification: Real integration qualification gates (DIAG-FUNCTIONAL-Q1); requires external services.",
+  "decision_e2e: Decision System Docker/production qualification (DS-E2E); requires INTERGRAX_DECISION_E2E_QUALIFICATION=1.",
+  "docker: Tests requiring Docker daemon.",
+  "slow: Long-running qualification or soak tests.",
+  "external_provider: Tests requiring real external model provider credentials.",
 ]
 
 filterwarnings = [

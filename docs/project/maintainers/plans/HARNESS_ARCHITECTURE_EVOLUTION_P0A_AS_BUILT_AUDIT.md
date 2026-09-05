@@ -427,18 +427,24 @@ at-most-once authorization
 
 ## P1.1 Full ProfileResolution layering and provenance
 
-**Status: GAP/PARTIAL**
+**Status: CLOSED (P1.1)**
 
-`ApplicationEnvironmentProfile` is a strong current composition authority and must remain canonical.
+`ApplicationEnvironmentProfile` remains the sole Tier-3 composition authority.
 
-Missing/convergence work:
+Delivered in P1.1:
 
-- formal typed delta layers for platform/product/application/agent/run/execution,
-- one effective-resolution result,
-- provenance of winning/rejected values,
-- authority clamps,
-- dependency failures/degraded state,
-- immutable effective fingerprint/revision.
+- typed `ProfileLayer` / `ProfileDelta` / `ProfileLayerInput` contracts,
+- `resolve_profile(...)` → immutable `ProfileResolution` evidence,
+- provenance decisions (`APPLIED` / `REJECTED` / `CLAMPED` / `UNCHANGED`),
+- domain-owned field resolvers (`capabilities.tools`, `capabilities.llm`, `meta.execution_mode`, `governance.cost`),
+- deterministic effective semantic fingerprint,
+- canonical harness host adoption via `build_harness_host_runtime(profile_layers=...)`.
+
+Deferred to P1.2+:
+
+- full semantic diff UI,
+- capability dependency graph population,
+- broader field resolver coverage beyond initial domain seams.
 
 Do not introduce `HarnessProfile`.
 

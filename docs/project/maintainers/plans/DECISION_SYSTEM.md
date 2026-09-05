@@ -334,19 +334,19 @@ Real Docker E2E qualification is the **final gate** before any Decision System p
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-E2E-01 | P0 | Real single-model Decision System path | **Planned** |
-| DS-E2E-02 | P0 | Real multi-model Council | **Planned** |
-| DS-E2E-03 | P0 | Real independent semantic verifier | **Planned** |
-| DS-E2E-04 | P0 | Real HITL pause/resume | **Planned** |
-| DS-E2E-05 | P0 | Governed real side effect: ALLOW and DENY | **Planned** |
-| DS-E2E-06 | P1 | Docker process/container crash + resume without duplicate decision | **Planned** |
-| DS-E2E-07 | P1 | Concurrent proposal/finalization race test | **Planned** |
-| DS-E2E-08 | P1 | Real budget exhaustion / bounded stop | **Planned** |
-| DS-E2E-09 | P1 | Real provider outage / fail-closed behavior | **Planned** |
-| DS-E2E-10 | P1 | Two-tenant isolation | **Planned** |
-| DS-E2E-11 | P1 | Real observability / OTLP evidence reconstruction | **Planned** |
-| DS-E2E-12 | P1 | `ai_incident_investigation` full real integration proof | **Planned** |
-| DS-E2E-13 | P1 | Cross-scenario qualification proving no scenario-specific Decision runtime branching | **Planned** |
+| DS-E2E-01 | P0 | Real single-model Decision System path | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_real_single_model.py` |
+| DS-E2E-02 | P0 | Real multi-model Council | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_real_council.py` |
+| DS-E2E-03 | P0 | Real independent semantic verifier | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_real_semantic_verifier.py` |
+| DS-E2E-04 | P0 | Real HITL pause/resume | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_hitl_pause_resume.py` |
+| DS-E2E-05 | P0 | Governed real side effect: ALLOW and DENY | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_governed_side_effect.py` |
+| DS-E2E-06 | P1 | Docker process/container crash + resume without duplicate decision | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_docker_crash_resume.py` (SQLite subprocess; PostgreSQL decision store not yet in production composition) |
+| DS-E2E-07 | P1 | Concurrent proposal/finalization race test | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_concurrent_finalization.py` |
+| DS-E2E-08 | P1 | Real budget exhaustion / bounded stop | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_budget_exhaustion.py` |
+| DS-E2E-09 | P1 | Real provider outage / fail-closed behavior | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_provider_outage.py` |
+| DS-E2E-10 | P1 | Two-tenant isolation | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_tenant_isolation.py` |
+| DS-E2E-11 | P1 | Real observability / OTLP evidence reconstruction | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_otlp_reconstruction.py` |
+| DS-E2E-12 | P1 | `ai_incident_investigation` full real integration proof | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_ai_incident_investigation.py` + `platform_proofs/scenarios/ai_incident_investigation` |
+| DS-E2E-13 | P1 | Cross-scenario qualification proving no scenario-specific Decision runtime branching | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_cross_scenario_architecture.py` |
 | DS-FINAL-AUDIT | P0 | Independent exact-commit architecture/runtime/docs/E2E audit | **Planned** |
 
 ---

@@ -110,6 +110,8 @@ from intergrax.applications._shared.harness_host_runtime_compat import (
 from intergrax.applications._shared.host_task_execution_wiring import (
     build_environment_host_task_execution,
 )
+from intergrax.applications._shared.profile_resolution import resolve_profile
+from intergrax.applications.contracts.profile_resolution import ProfileLayerInput, ProfileResolution
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -155,6 +157,7 @@ class HarnessHostRuntime:
     registry_projection_evidence: RegistryProjectionEvidence | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
     control_plane_governance: HarnessControlPlaneGovernance | None = None
+    profile_resolution: ProfileResolution | None = None
 
 
 def build_harness_host_runtime(
@@ -180,6 +183,7 @@ def build_harness_host_runtime(
     key_value_cache: Any | None = None,
     boundary_event_buffer: Any | None = None,
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    profile_layers: tuple[ProfileLayerInput, ...] = (),
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -191,9 +195,12 @@ def build_harness_host_runtime(
     if manifest.environment is None:
         resolved_manifest = manifest.model_copy(update={"environment": environment})
 
+    profile_resolution = resolve_profile(environment, layers=profile_layers)
+    effective_environment = profile_resolution.effective_profile
+
     env_wiring = wire_application_environment(
         resolved_manifest,
-        environment,
+        effective_environment,
         settings=settings,
         tenant_id=tenant_id,
         document_store=document_store,
@@ -201,23 +208,23 @@ def build_harness_host_runtime(
         boundary_event_buffer=boundary_event_buffer,
     )
     assembly_mode = resolve_registry_assembly_mode(
-        environment,
+        effective_environment,
         explicit=registry_assembly_mode,
     )
     resolved_registry, registry_evidence = resolve_harness_host_registry(
         manifest=resolved_manifest,
         build_context=env_wiring.build_context,
-        environment=environment,
+        environment=effective_environment,
         assembly_mode=assembly_mode,
         registry_projection=registry_projection,
         registry=registry,
         builders=builders,
     )
     observability_wiring = wire_application_observability(
-        environment,
+        effective_environment,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
-        integration_profile=environment.integration_profile,
+        integration_profile=effective_environment.integration_profile,
     )
     if use_in_memory_trace:
         from intergrax.runtime.nexus.observability_wiring import (
@@ -227,32 +234,32 @@ def build_harness_host_runtime(
         observability = wire_nexus_observability(
             trace_db_path=trace_db_path,
             runtime_events_db_path=runtime_events_db_path,
-            integration_profile=environment.integration_profile,
+            integration_profile=effective_environment.integration_profile,
             use_in_memory_trace=True,
             enable_runtime_events=False,
         )
     else:
-        assert_observability_assembly_valid(observability_wiring, environment)
+        assert_observability_assembly_valid(observability_wiring, effective_environment)
         observability = observability_wiring.stores
     reliability_wiring = wire_application_reliability(
-        environment,
+        effective_environment,
         idempotency_db_path=idempotency_db_path,
     )
-    assert_reliability_assembly_valid(reliability_wiring, environment)
-    security_wiring = wire_application_security(environment)
-    assert_security_assembly_valid(security_wiring, environment)
-    guardrail_wiring = wire_application_guardrail(environment)
-    cost_wiring = wire_application_cost(environment)
-    assert_cost_assembly_valid(cost_wiring, environment)
-    evaluation_wiring = wire_application_evaluation(environment)
-    assert_evaluation_assembly_valid(evaluation_wiring, environment)
-    decision_spec = application_decision_wiring_spec_from_environment(environment)
+    assert_reliability_assembly_valid(reliability_wiring, effective_environment)
+    security_wiring = wire_application_security(effective_environment)
+    assert_security_assembly_valid(security_wiring, effective_environment)
+    guardrail_wiring = wire_application_guardrail(effective_environment)
+    cost_wiring = wire_application_cost(effective_environment)
+    assert_cost_assembly_valid(cost_wiring, effective_environment)
+    evaluation_wiring = wire_application_evaluation(effective_environment)
+    assert_evaluation_assembly_valid(evaluation_wiring, effective_environment)
+    decision_spec = application_decision_wiring_spec_from_environment(effective_environment)
     decision_wiring = wire_application_decision(
         registry=resolved_registry,
-        agent_id=resolve_application_decision_agent_id(resolved_registry, environment),
+        agent_id=resolve_application_decision_agent_id(resolved_registry, effective_environment),
         spec=decision_spec,
     )
-    task_memory = wire_task_memory_from_profile(environment)
+    task_memory = wire_task_memory_from_profile(effective_environment)
     declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
         agent_checkpoint_store=agent_checkpoint_store,
@@ -263,7 +270,7 @@ def build_harness_host_runtime(
     )
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
-        env=environment,
+        env=effective_environment,
         trace_store=observability.trace_store,
         checkpoint_store=checkpoint_store,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
@@ -276,7 +283,7 @@ def build_harness_host_runtime(
         task_memory_db_path=task_memory.db_path,
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
-        llm_adapter=resolve_environment_llm_adapter(environment, tenant_id="default"),
+        llm_adapter=resolve_environment_llm_adapter(effective_environment, tenant_id="default"),
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
@@ -285,8 +292,8 @@ def build_harness_host_runtime(
         key_value_cache=key_value_cache,
         document_store=document_store,
     )
-    assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
-    assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
+    assert_security_assembly_valid(security_wiring, effective_environment, nexus=nexus_loop)
+    assert_guardrail_assembly_valid(guardrail_wiring, effective_environment, nexus=nexus_loop)
     from intergrax.applications._shared.capability_alias_intake_wiring import (
         apply_capability_alias_wiring,
     )
@@ -295,57 +302,57 @@ def build_harness_host_runtime(
         cache_deploy_environment_snapshot,
     )
 
-    apply_capability_alias_wiring(nexus_loop, environment=environment)
+    apply_capability_alias_wiring(nexus_loop, environment=effective_environment)
     cache_deploy_environment_snapshot(
         resolved_manifest,
-        environment,
+        effective_environment,
         registry_snapshot=env_wiring.registry_snapshot,
     )
     apply_environment_snapshot_wiring(
         nexus_loop,
         manifest=resolved_manifest,
-        environment=environment,
+        environment=effective_environment,
         registry_snapshot=env_wiring.registry_snapshot,
     )
     apply_application_environment_state_wiring(
         nexus_loop,
         manifest=resolved_manifest,
-        environment=environment,
+        environment=effective_environment,
         run_budget=cost_wiring.run_budget,
     )
     apply_application_host_wiring(nexus_loop, application_host)
-    apply_hook_runtime_guard_wiring(nexus_loop, environment)
+    apply_hook_runtime_guard_wiring(nexus_loop, effective_environment)
     from intergrax.applications._shared.observability_wiring import (
         wire_observability_event_subscriptions,
     )
 
     wire_observability_event_subscriptions(
         nexus_loop.event_bus,
-        environment.observability_profile,
+        effective_environment.observability_profile,
     )
     from intergrax.applications._shared.reliability_wiring import (
         apply_reliability_governance_wiring,
     )
 
-    apply_reliability_governance_wiring(nexus_loop, environment)
+    apply_reliability_governance_wiring(nexus_loop, effective_environment)
     from intergrax.applications._shared.diagnostic_runtime_wiring import (
         wire_terminal_execution_diagnostics,
     )
 
     diagnostic_wiring = wire_terminal_execution_diagnostics(
-        env=environment,
+        env=effective_environment,
         env_wiring=env_wiring,
         observability=observability,
         nexus_loop=nexus_loop,
     )
     control_plane_governance = build_harness_control_plane_governance(
-        environment,
+        effective_environment,
         mutation_authorization_boundary=mutation_authorization_boundary,
     )
-    execution = build_environment_host_task_execution(nexus_loop, environment)
+    execution = build_environment_host_task_execution(nexus_loop, effective_environment)
     return HarnessHostRuntime(
         manifest=resolved_manifest,
-        environment=environment,
+        environment=effective_environment,
         env_wiring=env_wiring,
         registry=resolved_registry,
         registry_projection_evidence=registry_evidence,
@@ -363,4 +370,5 @@ def build_harness_host_runtime(
         compensation_queue_store=resolved_compensation_queue_store,
         boundary_event_buffer=boundary_event_buffer,
         control_plane_governance=control_plane_governance,
+        profile_resolution=profile_resolution,
     )
