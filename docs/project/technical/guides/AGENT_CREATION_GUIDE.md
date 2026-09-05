@@ -398,7 +398,7 @@ Manual / reference pattern:
 2. Define roster in `applications/<product>/manifest.py` - `AgentBinding.mount(AgentClass, factory=...)`
 3. Implement factories in `host/agent_factories.py` or `host/agent_builders.py`
 4. In `host/wiring.py` - `build_application_registry(manifest, ctx, builders=...)`
-5. In `host/factory.py` - registry → `NexusLoop` → routes
+5. In `host/factory.py` - materialized registry projection → canonical **Execution** (internal Nexus orchestration is composed by the platform host — not wired by Tier-3 authors)
 
 **Usage guides (define / invoke / run):**
 
@@ -798,24 +798,22 @@ Result metadata includes `shadow_workspace_id` or `sandbox_session_id`.
 
 **Full orchestration map:** [Appendix I](.#appendix-i--orchestration-control-plane) (control plane, contracts, hooks, customization).
 
-Register multiple agents, then run through graph orchestration (Nexus planner or explicit graph):
+Register multiple agents through **Agent Distribution** and manifest `AgentBinding` entries, then execute via the public **Execution** boundary (`HostTaskExecutionPort` / `execution.execute`). The host materializes roster projection and selects orchestration strategy; **Nexus** remains internal Tier-1 orchestration — application authors do not construct `NexusLoop` or call `handle_task` directly.
 
 ```python
-from intergrax.runtime.registry.bootstrap import build_research_registry
-
-registry = build_research_registry()  # Research + Summary
-loop = NexusLoop(registry)
-result = await loop.handle_task(
-    Task(
+# Tier-3 application host (conceptual)
+result = await host_execution.execute(
+    execution_request_for(
         tenant_id="t1",
         user_id="u1",
         message="AI logistics partners in Poland",
-        context=TaskContext(capability="research.pipeline", intent="research_summarize"),
+        capability="research.pipeline",
+        intent="research_summarize",
     )
 )
 ```
 
-Agents share context via `SharedTaskContext` and `MemoryView` - owned by Nexus, not agent code.
+Agents share context via `SharedTaskContext` and `MemoryView` through the selected orchestration strategy — not via ad-hoc agent-to-agent calls in `agents/`.
 
 **Declarative topology (Tier-3):** `AgentGraph` fluent builder → `ApplicationGraphSpec` on `ApplicationEnvironmentProfile.graph_spec` (roster validation, DX round-trip). Runtime bridge via `GraphSpecSeedingPlanner` when the task has no pre-built plan id - see Appendix I §I.4.
 
@@ -957,14 +955,11 @@ from lab_application.host.integration_wiring import wire_lab_integrations
 register_default_integrations()
 integrations = wire_lab_integrations(settings=settings, db_path=trace_db_path)
 
-nexus_loop = NexusLoop(
-    registry,
-    trace_store=integrations.trace_store,
-    notification_adapter=integrations.notification_adapter,
-    interaction_adapter=integrations.interaction_adapter,
-    checkpoint_store=integrations.checkpoint_store,
-    runtime_event_store=integrations.runtime_event_store,
-)
+# Tier-3 host factory composes Execution + internal Nexus from environment profile.
+# Authors pass integration adapters via ApplicationEnvironmentProfile / host wiring —
+# do not construct NexusLoop in application routes or agent packages.
+host_bundle = build_lab_application_host(...)  # see lab_application/host/factory.py
+await host_bundle.host_execution.execute(execution_request)
 ```
 
 **Custom product profile** - pick slugs per category:
@@ -1425,6 +1420,9 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ---
 
 ## Appendix I - Orchestration control plane
+> **Stage 17 terminology (appendices I–O):** **Execution** = public application execution boundary (`HostTaskExecutionPort` / `execution.execute`). **Nexus** = internal Tier-1 orchestration runtime (not a Tier-3 integration quickstart). **Agent Distribution** = lifecycle authority (install → bind → revision → materialization → activation). **AgentRegistry** = derived runtime projection (`AgentRegistryRead`) — not an author registration API.
+
+
 
 **Audience:** Tier-3 application authors, platform engineers, operators.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §7 (Reasoning/planning), §8 (Agent OS), §9 (Orchestration/graph), §10 (Subagents); canon [§42.3](architecture/UNIFIED_EXECUTION_RUNTIME.md#423-hook-system)–[§42.15](architecture/UNIFIED_EXECUTION_RUNTIME.md#4215-agent-handoff-contracts), [§42.43](architecture/UNIFIED_EXECUTION_RUNTIME.md#4243-multi-agent-collaboration-flow-reference).
@@ -1604,6 +1602,9 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ---
 
 ## Appendix J - Tools & skills control plane
+> **Stage 17 terminology (appendices I–O):** **Execution** = public application execution boundary (`HostTaskExecutionPort` / `execution.execute`). **Nexus** = internal Tier-1 orchestration runtime (not a Tier-3 integration quickstart). **Agent Distribution** = lifecycle authority (install → bind → revision → materialization → activation). **AgentRegistry** = derived runtime projection (`AgentRegistryRead`) — not an author registration API.
+
+
 
 **Audience:** Tier-3 application authors, extension authors, platform engineers.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §11 (Tool layer), §12 (Skill layer); canon [§7.1.6](architecture/PLATFORM_FOUNDATION.md#716-tool-catalog)–[§7.1.8](architecture/PLATFORM_FOUNDATION.md#718-skill-catalog).
@@ -1722,6 +1723,9 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ---
 
 ## Appendix K - Integration & RAG control plane
+> **Stage 17 terminology (appendices I–O):** **Execution** = public application execution boundary (`HostTaskExecutionPort` / `execution.execute`). **Nexus** = internal Tier-1 orchestration runtime (not a Tier-3 integration quickstart). **Agent Distribution** = lifecycle authority (install → bind → revision → materialization → activation). **AgentRegistry** = derived runtime projection (`AgentRegistryRead`) — not an author registration API.
+
+
 
 **Audience:** Tier-3 application authors, extension authors, platform engineers.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §13 (Integration), §14 (RAG); canon [§7.1](architecture/PLATFORM_FOUNDATION.md#71-integration-library)–[§7.1.5](architecture/PLATFORM_FOUNDATION.md#715-integration-profile); memory/RAG naming: [Appendix G](.#appendix-g--memory--rag-naming-phase-q).
@@ -1830,6 +1834,9 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ---
 
 ## Appendix L - Context engineering control plane
+> **Stage 17 terminology (appendices I–O):** **Execution** = public application execution boundary (`HostTaskExecutionPort` / `execution.execute`). **Nexus** = internal Tier-1 orchestration runtime (not a Tier-3 integration quickstart). **Agent Distribution** = lifecycle authority (install → bind → revision → materialization → activation). **AgentRegistry** = derived runtime projection (`AgentRegistryRead`) — not an author registration API.
+
+
 
 **Audience:** Tier-3 application authors, platform engineers.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../../maintainers/plans/CONTEXT_ENGINEERING.md); memory stores: [Appendix G](.#appendix-g--memory--rag-naming-phase-q).
@@ -1915,6 +1922,9 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ---
 
 ## Appendix M - Prompt registry control plane
+> **Stage 17 terminology (appendices I–O):** **Execution** = public application execution boundary (`HostTaskExecutionPort` / `execution.execute`). **Nexus** = internal Tier-1 orchestration runtime (not a Tier-3 integration quickstart). **Agent Distribution** = lifecycle authority (install → bind → revision → materialization → activation). **AgentRegistry** = derived runtime projection (`AgentRegistryRead`) — not an author registration API.
+
+
 
 **Audience:** Tier-3 application authors, platform engineers.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §17; governance schema: V-REM-PE.1/PE.2 (**Done**).
@@ -1991,6 +2001,9 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ---
 
 ## Appendix N - Agent assembly control plane
+> **Stage 17 terminology (appendices I–O):** **Execution** = public application execution boundary (`HostTaskExecutionPort` / `execution.execute`). **Nexus** = internal Tier-1 orchestration runtime (not a Tier-3 integration quickstart). **Agent Distribution** = lifecycle authority (install → bind → revision → materialization → activation). **AgentRegistry** = derived runtime projection (`AgentRegistryRead`) — not an author registration API.
+
+
 
 **Audience:** Tier-2 agent authors, platform engineers.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §18; ideal model §17 in [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md).
@@ -2074,6 +2087,9 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ---
 
 ## Appendix O - Registry architecture control plane
+> **Stage 17 terminology (appendices I–O):** **Execution** = public application execution boundary (`HostTaskExecutionPort` / `execution.execute`). **Nexus** = internal Tier-1 orchestration runtime (not a Tier-3 integration quickstart). **Agent Distribution** = lifecycle authority (install → bind → revision → materialization → activation). **AgentRegistry** = derived runtime projection (`AgentRegistryRead`) — not an author registration API.
+
+
 
 **Audience:** Tier-3 application authors, platform engineers.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §19; capability graph: canon §53.2 · Phase V-CG **Done**.

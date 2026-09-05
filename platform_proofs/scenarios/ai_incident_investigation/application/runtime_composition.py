@@ -14,6 +14,7 @@ from intergrax.applications._shared.runtime_config_bridge import (
 )
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeComposition as PlatformScenarioRuntimeComposition,
+    build_scenario_lab_agent_registry,
     build_scenario_runtime_from_environment,
     rewire_scenario_decision_wiring,
 )
@@ -213,7 +214,7 @@ def build_scenario_runtime_composition(
         tool_registry=registry,
     )
     workspace = create_scenario_lab_workspace(workspace_root)
-    roster = agent_registry or AgentRegistry()
+    roster = agent_registry or build_scenario_lab_agent_registry()
     _ensure_investigator_contract_registered(roster)
     manifest = _incident_lab_manifest(resolved_environment)
     platform = build_scenario_runtime_from_environment(

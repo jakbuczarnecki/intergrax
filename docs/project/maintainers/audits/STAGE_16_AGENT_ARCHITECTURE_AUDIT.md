@@ -64,11 +64,11 @@ Nexus: internal orchestration — NOT Tier-3 public execution API
 | S16-004 | P1 | `agents/*/README.md` (9 active) | Public README quickstarts used mutable `AgentRegistry` | Public agent surfaces must not recommend local registration | Migrated to `agent.run()` + distribution lifecycle guidance | **Fixed** |
 | S16-004b | P1 | `agents/*/README.md` (9 active) | Stage 16 migration dropped `## Capabilities`, corrupted `## Layout`, duplicated Step 4 | Active README must preserve capability ids and valid section headings | Restored Capabilities/Layout; extended conformance gate for structure | **Fixed** |
 | S16-005 | P1 | Missing gate | No reusable guard on canonical authoring surfaces | Prevent regression on guide/scaffold/README | Added `check_canonical_authoring_surface_conformance.py` + unit gate | **Fixed** |
-| S16-006 | P2 | `agents/*/notebooks/*.ipynb` | Historical notebooks still import `NexusLoop` | Active/canonical notebooks must be current | Left as historical; scaffold notebook now uses `agent.run()` | **Residual** |
-| S16-007 | P2 | `agents/*/tests/*` (legacy packages) | Some agent tests still use `NexusLoop` smoke path | Unit tests should prefer `agent.run()` | Out of Stage 16 scope; existing packages not bulk-migrated | **Residual** |
-| S16-008 | P2 | `AGENT_CREATION_GUIDE.md` appendices I–O | Deep appendix examples still reference `NexusLoop(...)` for orchestration internals | Appendices are control-plane reference, not Tier-3 quickstart | Bounded gate excludes appendices; Stage 17 doc cleanup | **Residual** |
-| S16-009 | P2 | `platform_proofs/.../scenario.py` | Fallback `AgentRegistry()` when `not composition.is_platform_attached` | Scenarios must use platform-attached lifecycle | Covered by scenario architecture gate for new code; legacy fallback documented | **Residual** |
-| S16-010 | P3 | `RuntimeContext` / `RuntimeRequest` in `intergrax.runtime.nexus.*` | Authoring API still on Nexus namespace | Neutral public contract pending | No broad move per Stage 16 stop rule | **Residual debt** |
+| S16-006 | P2 | `agents/*/notebooks/*.ipynb` | Historical notebooks still import `NexusLoop` | Active/canonical notebooks must be current | Left as historical; scaffold notebook now uses `agent.run()` | **Residual** → **Closed (retained historical)** by [Stage 17](STAGE_17_AGENT_DX_CLOSURE.md) |
+| S16-007 | P2 | `agents/*/tests/*` (legacy packages) | Some agent tests still use `NexusLoop` smoke path | Unit tests should prefer `agent.run()` | Out of Stage 16 scope; existing packages not bulk-migrated | **Residual** → **Closed (migrated)** by [Stage 17](STAGE_17_AGENT_DX_CLOSURE.md) |
+| S16-008 | P2 | `AGENT_CREATION_GUIDE.md` appendices I–O | Deep appendix examples still reference `NexusLoop(...)` for orchestration internals | Appendices are control-plane reference, not Tier-3 quickstart | Bounded gate excludes appendices; Stage 17 doc cleanup | **Residual** → **Closed (terminology + Appendix C)** by [Stage 17](STAGE_17_AGENT_DX_CLOSURE.md) |
+| S16-009 | P2 | `platform_proofs/.../scenario.py` | Fallback `AgentRegistry()` when `not composition.is_platform_attached` | Scenarios must use platform-attached lifecycle | Covered by scenario architecture gate for new code; legacy fallback documented | **Residual** → **Closed (fallback removed)** by [Stage 17](STAGE_17_AGENT_DX_CLOSURE.md) |
+| S16-010 | P3 | `RuntimeContext` / `RuntimeRequest` in `intergrax.runtime.nexus.*` | Authoring API still on Nexus namespace | Neutral public contract pending | No broad move per Stage 16 stop rule | **Residual debt** → **Explicitly accepted namespace debt** by [Stage 17](STAGE_17_AGENT_DX_CLOSURE.md) |
 
 **P0 findings:** none discovered in production serving paths during bounded scan.
 
@@ -152,3 +152,9 @@ Nexus: internal orchestration — NOT Tier-3 public execution API
 - `scripts/maintenance/check_canonical_authoring_surface_conformance.py`
 - `tests/unit/docs/test_canonical_authoring_surface_conformance.py`
 - `docs/project/maintainers/audits/STAGE_16_AGENT_ARCHITECTURE_AUDIT.md`
+
+---
+
+## Stage 17 closure references
+
+Residual items S16-006 through S16-010 are dispositioned in [`STAGE_17_AGENT_DX_CLOSURE.md`](STAGE_17_AGENT_DX_CLOSURE.md). This document remains the Stage 16 historical snapshot; findings table rows include closure links only.

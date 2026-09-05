@@ -12,6 +12,7 @@ from pathlib import Path
 from scripts.proof.create_scenario_proof import CANONICAL_SCENARIOS_ROOT, scenario_package_root
 from scripts.proof.create_scenario_proof import ScenarioSlug, validate_scenario_slug
 from intergrax.runtime.architecture.agent_lifecycle_bypass_ast import (
+    collect_agent_registry_import_bindings,
     collect_agent_registry_lifecycle_violations,
 )
 from scripts.proof.scenario_lifecycle import (

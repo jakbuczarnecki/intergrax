@@ -381,6 +381,7 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
         from {slug}.contract import build_agent_contract
         from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
         from intergrax.contracts.agent_run_enums import AgentRunStatus
+        from testing_support.builder import canonical_execution_identity_scope
 
 
         @pytest.mark.asyncio
@@ -390,13 +391,14 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
             agent = {class_name}()
             contract = build_agent_contract()
             assert contract.cognitive_pattern is not None
-            result = await agent.run(
-                AgentRunRequest(
-                    input="scaffold smoke",
-                    identity=RequestIdentity(tenant_id="t1", user_id="u1"),
-                    agent_id=contract.id,
+            with canonical_execution_identity_scope("scaffold-smoke"):
+                result = await agent.run(
+                    AgentRunRequest(
+                        input="scaffold smoke",
+                        identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+                        agent_id=contract.id,
+                    )
                 )
-            )
             assert result.status == AgentRunStatus.SUCCEEDED
             assert "{primary_capability}" in str(result.output)
         '''

@@ -95,6 +95,7 @@ __all__ = [
     "ScenarioRuntimeMode",
     "ScenarioRuntimeWorkspace",
     "build_scenario_runtime_from_environment",
+    "build_scenario_lab_agent_registry",
     "execute_scenario_task",
     "rebuild_scenario_runtime_from_composition",
     "rewire_scenario_decision_wiring",
@@ -104,6 +105,11 @@ __all__ = [
 
 class ScenarioRuntimeBuildError(RuntimeError):
     """Raised when scenario runtime composition cannot satisfy platform invariants."""
+
+
+def build_scenario_lab_agent_registry() -> AgentRegistry:
+    """Tier-1 baseline roster construction for lab scenario runtime composition."""
+    return AgentRegistry()
 
 
 @dataclass(frozen=True, slots=True)

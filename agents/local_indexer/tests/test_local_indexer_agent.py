@@ -6,31 +6,30 @@ from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolResponse, ToolResponseStatus
 from local_indexer.local_indexer_agent import LocalIndexerAgent
+from local_indexer.contract import build_agent_contract
 from local_indexer.steps.index_job import run_index_job
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
+from intergrax.contracts.agent_run_enums import AgentRunStatus
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from testing_support.builder import canonical_execution_identity_scope
 
 
 @pytest.mark.asyncio
-@pytest.mark.integration
+@pytest.mark.unit
 @pytest.mark.gate
-async def test_local_indexer_agent_runs_through_nexus():
-    registry = AgentRegistry()
-    registry.register(LocalIndexerAgent())
-    loop = NexusLoop(registry)
-    result = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="scaffold smoke",
-            context=TaskContext(capability="local.workspace.index"),
+async def test_local_indexer_agent_typed_run_smoke():
+    agent = LocalIndexerAgent()
+    contract = build_agent_contract()
+    with canonical_execution_identity_scope("agent-smoke"):
+        result = await agent.run(
+            AgentRunRequest(
+                input="scaffold smoke",
+                identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+                agent_id=contract.id,
+            )
         )
-    )
-    assert result.state == TaskState.COMPLETED
-    assert "source_paths_missing" in result.answer
-    assert result.agent_id == "local_indexer"
+    assert result.status == AgentRunStatus.SUCCEEDED
+    assert "local_indexer" in str(result.output)
 
 
 class _IngestGateway:
