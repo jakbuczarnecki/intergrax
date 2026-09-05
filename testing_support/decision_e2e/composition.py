@@ -71,8 +71,15 @@ from intergrax.runtime.execution.sqlite_decision_checkpoint_persistence import (
 from intergrax.runtime.execution.sqlite_decision_finalization_persistence import (
     SQLiteDecisionFinalizationPersistence,
 )
+from intergrax.knowledge.contracts.validation import JsonValue
+from intergrax.runtime.execution.decision_artifact_payload_codec import (
+    DecisionArtifactPayloadCodec,
+    DecisionArtifactPayloadCodecRegistry,
+    decision_artifact_payload_codec_registry,
+)
 from intergrax.runtime.execution.decision_finalization_conformance import (
     IncidentDecisionPayload,
+    IncidentDecisionPayloadCodec,
     conformance_artifact_payload_codec_registry,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -85,6 +92,52 @@ _PROFILE_PRODUCER = validate_inference_profile_id("profile-producer")
 _PROFILE_VERIFIER = validate_inference_profile_id("profile-verifier")
 _PROFILE_B = validate_inference_profile_id("profile-b")
 _PROFILE_C = validate_inference_profile_id("profile-c")
+
+
+@dataclass(frozen=True, slots=True)
+class QualificationRecommendationPayloadCodec:
+    """Durable codec for DS-E2E qualification artifact payloads."""
+
+    def encode(self, payload: object) -> JsonValue:
+        if type(payload) is not QualificationRecommendation:
+            raise TypeError("decision_e2e_qualification codec expects QualificationRecommendation")
+        return {
+            "recommendation": payload.recommendation,
+            "confidence": payload.confidence,
+            "rationale_summary": payload.rationale_summary,
+        }
+
+    def decode(self, payload: JsonValue) -> QualificationRecommendation:
+        if type(payload) is not dict:
+            raise TypeError("decision_e2e_qualification payload must be a JSON object")
+        recommendation = payload.get("recommendation")
+        if type(recommendation) is not str:
+            raise TypeError("decision_e2e_qualification recommendation must be str")
+        confidence = payload.get("confidence", "medium")
+        rationale_summary = payload.get("rationale_summary", "")
+        if type(confidence) is not str or type(rationale_summary) is not str:
+            raise TypeError("decision_e2e_qualification payload fields must be str")
+        return QualificationRecommendation(
+            recommendation=recommendation,
+            confidence=confidence,
+            rationale_summary=rationale_summary,
+        )
+
+
+def qualification_artifact_payload_codec_registry() -> DecisionArtifactPayloadCodecRegistry:
+    """Registry for DS-E2E durable persistence (incident + qualification kinds)."""
+    incident_kind = validate_decision_artifact_kind("incident_resolution")
+    qualification_kind = validate_decision_artifact_kind("decision_e2e_qualification")
+    incident_codec: DecisionArtifactPayloadCodec[object] = IncidentDecisionPayloadCodec()
+    qualification_codec: DecisionArtifactPayloadCodec[object] = (
+        QualificationRecommendationPayloadCodec()
+    )
+    return decision_artifact_payload_codec_registry(
+        codecs={
+            incident_kind: incident_codec,
+            qualification_kind: qualification_codec,
+        },
+    )
 
 
 @dataclass(slots=True)
@@ -184,7 +237,7 @@ def build_profile_catalog(environment: QualificationEnvironment) -> InferencePro
 
 
 def build_sqlite_persistence(tmp_dir: Path) -> QualificationPersistenceBundle:
-    codecs = conformance_artifact_payload_codec_registry()
+    codecs = qualification_artifact_payload_codec_registry()
     return QualificationPersistenceBundle(
         checkpoint=SQLiteDecisionCheckpointPersistence(
             db_path=tmp_dir / "checkpoint.db",

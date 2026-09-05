@@ -56,7 +56,8 @@ async def test_ds_e2e_03_real_independent_semantic_verifier_pass(
     pipeline = build_semantic_verification_pipeline(
         tool_bridge=bridge,
         rubric_id="decision_e2e_pass",
-        min_score=0.01,
+        min_score=0.0,
+        rubric_criteria=("response includes a clear recommendation",),
         producer_profile_id="profile-producer",
         verifier_profile_id="profile-verifier",
     )

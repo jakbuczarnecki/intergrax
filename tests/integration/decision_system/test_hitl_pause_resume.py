@@ -15,6 +15,8 @@ from intergrax.contracts.decision_lifecycle import DecisionLifecycleStage
 from intergrax.contracts.decision_record import (
     candidate_decision,
     candidate_decision_ref,
+    decision_lineage_ref,
+    decision_version_lineage,
 )
 from intergrax.contracts.decision_verification import (
     VerificationStageOutcome,
@@ -203,10 +205,15 @@ async def test_ds_e2e_04_hitl_pause_resume(
         stale_identity,
         version=next_decision_version(stale_identity.version),
     )
+    v1_lineage_ref = candidate_decision_ref(stale_pending.candidate).lineage_ref
     stale_candidate = candidate_decision(
         identity=bumped_identity,
         artifact_kind=stale_pending.candidate.artifact.kind,
         payload=stale_pending.candidate.artifact.content,
+        lineage=decision_version_lineage(
+            current=decision_lineage_ref(bumped_identity.version),
+            parents=(v1_lineage_ref,),
+        ),
     )
     stale_port.submit_stale_decision(
         stale_request=stale_request,

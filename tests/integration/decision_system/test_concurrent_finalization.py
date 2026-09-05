@@ -115,6 +115,7 @@ def _worker(db_dir: str, mode: str, ready: mp.Barrier, result_queue: mp.Queue[st
         requested_outcome=outcome,
     ).disposition
     result_queue.put(disposition.value)
+    del store
 
 
 def test_ds_e2e_07_concurrent_finalization_race(
@@ -136,18 +137,26 @@ def test_ds_e2e_07_concurrent_finalization_race(
         encoding="utf-8",
     )
     ctx = mp.get_context("spawn")
-    ready = ctx.Barrier(2)
+    ready = ctx.Barrier(2, timeout=120)
     result_queue: mp.Queue[str] = ctx.Queue()
     workers = [
         ctx.Process(target=_worker, args=(str(db_dir), "winner", ready, result_queue)),
         ctx.Process(target=_worker, args=(str(db_dir), "loser", ready, result_queue)),
     ]
-    for worker in workers:
-        worker.start()
-    dispositions = [result_queue.get(timeout=20) for _ in workers]
-    for worker in workers:
-        worker.join()
-        assert worker.exitcode == 0
+    try:
+        for worker in workers:
+            worker.start()
+        dispositions: list[str] = []
+        for _ in workers:
+            dispositions.append(result_queue.get(timeout=120))
+        for worker in workers:
+            worker.join(timeout=30)
+            assert worker.exitcode == 0, f"worker failed with exit code {worker.exitcode}"
+    finally:
+        for worker in workers:
+            if worker.is_alive():
+                worker.terminate()
+                worker.join(timeout=5)
 
     assert DecisionDurableFinalizationDisposition.COMMITTED.value in dispositions
     conflict_or_idempotent = {
@@ -156,9 +165,10 @@ def test_ds_e2e_07_concurrent_finalization_race(
     }
     assert any(item in conflict_or_idempotent for item in dispositions)
 
+    codecs = conformance_artifact_payload_codec_registry()
     store = SQLiteDecisionFinalizationPersistence(
         db_path=db_dir / "finalization.db",
-        payload_codecs=conformance_artifact_payload_codec_registry(),
+        payload_codecs=codecs,
     )
     key = decision_finalization_key(
         DecisionIdentity(

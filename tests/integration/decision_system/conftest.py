@@ -9,6 +9,15 @@ from pathlib import Path
 
 import pytest
 
+_CURSOR_SECRET_ENV = "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET"
+_CURSOR_SECRET_VALUE = "decision-e2e-diagnostic-problem-list-cursor-secret"
+
+
+@pytest.fixture(autouse=True)
+def _diagnostic_problem_list_cursor_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(_CURSOR_SECRET_ENV, _CURSOR_SECRET_VALUE)
+
+
 from testing_support.decision_e2e.composition import (
     QualificationComposition,
     build_qualification_composition,

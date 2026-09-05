@@ -86,11 +86,16 @@ class StaticRubricResolver:
         return self.rubric
 
 
-def _default_rubric(*, rubric_id: str, min_score: float) -> ResolvedSemanticRubric:
+def _default_rubric(
+    *,
+    rubric_id: str,
+    min_score: float,
+    criteria: tuple[str, ...] = ("answer must be explicit and bounded",),
+) -> ResolvedSemanticRubric:
     ref = semantic_rubric_ref(rubric_id=rubric_id, version=1)
     return resolved_semantic_rubric(
         ref=ref,
-        criteria=("answer must be explicit and bounded",),
+        criteria=criteria,
         min_score=min_score,
         provenance_ref="decision_e2e_qualification",
     )
@@ -118,8 +123,13 @@ def build_semantic_verification_pipeline(
     min_score: float,
     producer_profile_id: str,
     verifier_profile_id: str,
+    rubric_criteria: tuple[str, ...] = ("answer must be explicit and bounded",),
 ) -> VerificationPipeline[QualificationRecommendation]:
-    rubric = _default_rubric(rubric_id=rubric_id, min_score=min_score)
+    rubric = _default_rubric(
+        rubric_id=rubric_id,
+        min_score=min_score,
+        criteria=rubric_criteria,
+    )
     resolver = StaticRubricResolver(rubric=rubric)
     return build_decision_verification_pipeline(
         DecisionVerificationPipelineBuildSpec(

@@ -24,7 +24,10 @@ from testing_support.decision_e2e.environment import (
     docker_daemon_available,
     qualification_strict_required,
 )
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from tests.integration.runtime.diag_final_otel_support import (
+    assert_collector_hos_privacy,
+    assert_runtime_event_truth,
     build_diag_final_product_host,
     build_observability_export_config,
     execute_host_run,
@@ -59,11 +62,32 @@ pytestmark = [
 ]
 
 
+@pytest.fixture
+def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+    from testing_support.builder import MeteringFakeLLMAdapter
+
+    adapter = MeteringFakeLLMAdapter()
+
+    def _resolve(
+        env: object,
+        agent_override: object | None = None,
+        **_: object,
+    ) -> object:
+        del env
+        return agent_override or adapter
+
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        _resolve,
+    )
+
+
 @pytest.mark.asyncio
 async def test_ds_e2e_11_otlp_reconstruction(
     decision_e2e_composition,
     decision_e2e_report_collector,
     tmp_path: Path,
+    _stub_host_llm: None,
 ) -> None:
     if not docker_daemon_available():
         disposition = QualificationDisposition.BLOCKED
@@ -116,11 +140,8 @@ async def test_ds_e2e_11_otlp_reconstruction(
         }
         export_config = build_observability_export_config(collector.endpoint)
         host = build_diag_final_product_host(
-            tmp_path=tmp_path,
-            document_store=__import__(
-                "intergrax.integrations._shared.in_memory_document_store",
-                fromlist=["InMemoryDocumentStore"],
-            ).InMemoryDocumentStore(),
+            tmp_path=tmp_path / "hos-storage",
+            document_store=InMemoryDocumentStore(),
             observability_export=export_config,
             tenant_id=identity.tenant_id,
         )
@@ -129,10 +150,16 @@ async def test_ds_e2e_11_otlp_reconstruction(
             tenant_id=identity.tenant_id,
             message="decision-e2e otlp spine",
         )
-        event_id = str(run["terminal_event_id"])
-        wait_for_collector_event_id(collector, event_id=event_id)
+        terminal_event = assert_runtime_event_truth(
+            host,
+            tenant_id=identity.tenant_id,
+            run_id=str(run["run_id"]),
+            task_id=str(run["task_id"]),
+        )
+        wait_for_collector_event_id(collector, str(terminal_event.event_id))
         collector_payload = refresh_collector_output(collector)
         assert collector_payload
+        assert_collector_hos_privacy(collector_payload)
         forbidden = (
             identity.scope.subject,
             payload.recommendation,
