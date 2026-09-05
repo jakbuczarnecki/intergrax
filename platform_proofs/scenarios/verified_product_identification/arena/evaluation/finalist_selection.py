@@ -22,6 +22,15 @@ class StageBCandidateEvidence:
     quality_metrics: RetrievalQualityMetrics | None
 
 
+def _rank_key(item: StageBCandidateEvidence) -> tuple[float, float, str]:
+    metrics = item.quality_metrics
+    throughput = item.throughput_records_per_second
+    if metrics is None or throughput is None:
+        msg = "eligible Stage B evidence must include quality and throughput"
+        raise ValueError(msg)
+    return (-metrics.recall_at_10, -throughput, item.candidate_id)
+
+
 def select_stage_c_finalist_ids(
     stage_b_evidence: tuple[StageBCandidateEvidence, ...],
     *,
@@ -44,44 +53,45 @@ def select_stage_c_finalist_ids(
         and item.throughput_records_per_second > 0.0
     ]
 
-    def _rank_key(item: StageBCandidateEvidence) -> tuple[float, float, str]:
-        metrics = item.quality_metrics
-        throughput = item.throughput_records_per_second
-        if metrics is None or throughput is None:
-            msg = "eligible Stage B evidence must include quality and throughput"
-            raise ValueError(msg)
-        return (-metrics.recall_at_10, -throughput, item.candidate_id)
+    if len(eligible) <= max_finalists:
+        return tuple(sorted(item.candidate_id for item in eligible))
 
     ranked = sorted(eligible, key=_rank_key)
-
-    finalist_ids: list[str] = []
     baseline_present = any(
         item.candidate_id == baseline_candidate_id for item in eligible
     )
+    boost_threshold = baseline_throughput * THROUGHPUT_SPEEDUP_THRESHOLD
+
+    finalist_ids: list[str] = []
+    seen: set[str] = set()
+
+    def _try_add(candidate_id: str) -> None:
+        if candidate_id in seen:
+            return
+        if len(finalist_ids) >= max_finalists:
+            return
+        seen.add(candidate_id)
+        finalist_ids.append(candidate_id)
+
     if baseline_present:
-        finalist_ids.append(baseline_candidate_id)
+        _try_add(baseline_candidate_id)
 
     for item in ranked:
         if item.candidate_id == baseline_candidate_id:
             continue
-        if item.candidate_id in finalist_ids:
-            continue
-        if len(finalist_ids) >= max_finalists:
-            break
-        finalist_ids.append(item.candidate_id)
+        _try_add(item.candidate_id)
 
-    for item in eligible:
+    for item in ranked:
         if item.candidate_id == baseline_candidate_id:
             continue
-        if item.candidate_id in finalist_ids:
+        if item.candidate_id in seen:
             continue
         throughput = item.throughput_records_per_second
-        if throughput is not None and throughput >= baseline_throughput * THROUGHPUT_SPEEDUP_THRESHOLD:
-            finalist_ids.append(item.candidate_id)
+        if throughput is not None and throughput >= boost_threshold:
+            _try_add(item.candidate_id)
 
-    if len(eligible) <= max_finalists:
-        for item in eligible:
-            if item.candidate_id not in finalist_ids:
-                finalist_ids.append(item.candidate_id)
+    if len(finalist_ids) > max_finalists:
+        msg = "Stage C finalist selection exceeded max_finalists"
+        raise RuntimeError(msg)
 
     return tuple(sorted(finalist_ids))

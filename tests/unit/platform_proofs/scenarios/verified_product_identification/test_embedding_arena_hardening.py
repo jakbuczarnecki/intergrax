@@ -454,6 +454,147 @@ def test_rejected_candidates_cannot_enter_finalists() -> None:
     assert BASELINE_CANDIDATE_ID in finalists
 
 
+def test_stage_c_finalist_hard_limit_with_throughput_boosted_challengers() -> None:
+    baseline_throughput = 10.0
+    evidence = (
+        _stage_b_evidence(BASELINE_CANDIDATE_ID, recall_at_10=0.90, throughput=baseline_throughput),
+        _stage_b_evidence("challenger-a", recall_at_10=0.95, throughput=baseline_throughput * 1.5),
+        _stage_b_evidence("challenger-b", recall_at_10=0.94, throughput=baseline_throughput * 1.6),
+        _stage_b_evidence("challenger-c", recall_at_10=0.93, throughput=baseline_throughput * 1.7),
+        _stage_b_evidence("challenger-d", recall_at_10=0.92, throughput=baseline_throughput * 1.8),
+    )
+    finalists = select_stage_c_finalist_ids(
+        evidence,
+        baseline_candidate_id=BASELINE_CANDIDATE_ID,
+        baseline_throughput=baseline_throughput,
+        max_finalists=3,
+    )
+    assert len(finalists) == 3
+
+
+def test_stage_c_finalist_baseline_counts_toward_limit() -> None:
+    baseline_throughput = 10.0
+    evidence = (
+        _stage_b_evidence(BASELINE_CANDIDATE_ID, recall_at_10=0.90, throughput=baseline_throughput),
+        _stage_b_evidence("challenger-a", recall_at_10=0.95, throughput=baseline_throughput * 1.3),
+        _stage_b_evidence("challenger-b", recall_at_10=0.94, throughput=baseline_throughput * 1.4),
+        _stage_b_evidence("challenger-c", recall_at_10=0.93, throughput=baseline_throughput * 1.5),
+        _stage_b_evidence("challenger-d", recall_at_10=0.92, throughput=baseline_throughput * 1.6),
+    )
+    finalists = select_stage_c_finalist_ids(
+        evidence,
+        baseline_candidate_id=BASELINE_CANDIDATE_ID,
+        baseline_throughput=baseline_throughput,
+        max_finalists=3,
+    )
+    assert len(finalists) == 3
+    assert BASELINE_CANDIDATE_ID in finalists
+    assert sum(1 for candidate_id in finalists if candidate_id != BASELINE_CANDIDATE_ID) == 2
+
+
+def test_stage_c_finalist_selection_permutation_determinism() -> None:
+    baseline_throughput = 10.0
+    evidence = (
+        _stage_b_evidence(BASELINE_CANDIDATE_ID, recall_at_10=0.90, throughput=baseline_throughput),
+        _stage_b_evidence("challenger-a", recall_at_10=0.95, throughput=baseline_throughput * 2.0),
+        _stage_b_evidence("challenger-b", recall_at_10=0.94, throughput=baseline_throughput * 3.0),
+        _stage_b_evidence("challenger-c", recall_at_10=0.93, throughput=baseline_throughput * 4.0),
+        _stage_b_evidence("challenger-d", recall_at_10=0.92, throughput=baseline_throughput * 5.0),
+    )
+    expected = select_stage_c_finalist_ids(
+        evidence,
+        baseline_candidate_id=BASELINE_CANDIDATE_ID,
+        baseline_throughput=baseline_throughput,
+        max_finalists=3,
+    )
+    for permutation in itertools.permutations(evidence):
+        actual = select_stage_c_finalist_ids(
+            permutation,
+            baseline_candidate_id=BASELINE_CANDIDATE_ID,
+            baseline_throughput=baseline_throughput,
+            max_finalists=3,
+        )
+        assert actual == expected
+
+
+def test_stage_c_finalist_throughput_does_not_break_limit() -> None:
+    baseline_throughput = 10.0
+    evidence = (
+        _stage_b_evidence(BASELINE_CANDIDATE_ID, recall_at_10=0.90, throughput=baseline_throughput),
+        _stage_b_evidence("challenger-a", recall_at_10=0.80, throughput=baseline_throughput * 2.0),
+        _stage_b_evidence("challenger-b", recall_at_10=0.79, throughput=baseline_throughput * 3.0),
+        _stage_b_evidence("challenger-c", recall_at_10=0.78, throughput=baseline_throughput * 4.0),
+        _stage_b_evidence("challenger-d", recall_at_10=0.77, throughput=baseline_throughput * 5.0),
+    )
+    finalists = select_stage_c_finalist_ids(
+        evidence,
+        baseline_candidate_id=BASELINE_CANDIDATE_ID,
+        baseline_throughput=baseline_throughput,
+        max_finalists=3,
+    )
+    assert len(finalists) <= 3
+
+
+@pytest.mark.parametrize("max_finalists", [1, 2])
+def test_stage_c_finalist_small_limits(max_finalists: int) -> None:
+    baseline_throughput = 10.0
+    evidence = (
+        _stage_b_evidence(BASELINE_CANDIDATE_ID, recall_at_10=0.90, throughput=baseline_throughput),
+        _stage_b_evidence("challenger-a", recall_at_10=0.95, throughput=baseline_throughput * 2.0),
+        _stage_b_evidence("challenger-b", recall_at_10=0.94, throughput=baseline_throughput * 3.0),
+    )
+    finalists = select_stage_c_finalist_ids(
+        evidence,
+        baseline_candidate_id=BASELINE_CANDIDATE_ID,
+        baseline_throughput=baseline_throughput,
+        max_finalists=max_finalists,
+    )
+    assert len(finalists) == max_finalists
+
+
+def test_stage_c_finalist_invalid_max_finalists_raises() -> None:
+    evidence = (
+        _stage_b_evidence(BASELINE_CANDIDATE_ID, recall_at_10=0.90, throughput=10.0),
+    )
+    with pytest.raises(ValueError, match="max_finalists must be > 0"):
+        select_stage_c_finalist_ids(
+            evidence,
+            baseline_candidate_id=BASELINE_CANDIDATE_ID,
+            baseline_throughput=10.0,
+            max_finalists=0,
+        )
+
+
+def test_stage_c_finalist_quality_ranks_before_throughput() -> None:
+    baseline_throughput = 10.0
+    evidence = (
+        _stage_b_evidence(BASELINE_CANDIDATE_ID, recall_at_10=0.90, throughput=baseline_throughput),
+        _stage_b_evidence("quality-leader", recall_at_10=0.95, throughput=baseline_throughput * 1.1),
+        _stage_b_evidence("throughput-leader", recall_at_10=0.80, throughput=baseline_throughput * 5.0),
+    )
+    finalists = select_stage_c_finalist_ids(
+        evidence,
+        baseline_candidate_id=BASELINE_CANDIDATE_ID,
+        baseline_throughput=baseline_throughput,
+        max_finalists=2,
+    )
+    assert finalists == (BASELINE_CANDIDATE_ID, "quality-leader")
+
+
+def test_stage_c_finalist_alphabetical_tie_break() -> None:
+    evidence = (
+        _stage_b_evidence("beta", recall_at_10=0.90, throughput=10.0),
+        _stage_b_evidence("alpha", recall_at_10=0.90, throughput=10.0),
+    )
+    finalists = select_stage_c_finalist_ids(
+        evidence,
+        baseline_candidate_id=BASELINE_CANDIDATE_ID,
+        baseline_throughput=10.0,
+        max_finalists=1,
+    )
+    assert finalists == ("alpha",)
+
+
 def test_truncation_tokenizer_unavailable_is_typed(monkeypatch: pytest.MonkeyPatch) -> None:
     def _raise_import_error(*_args, **_kwargs) -> None:
         raise ImportError("no transformers")
