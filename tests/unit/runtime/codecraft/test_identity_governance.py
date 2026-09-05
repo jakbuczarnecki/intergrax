@@ -54,7 +54,7 @@ def _sandbox(tmp_path: Path, *, tenant_id: str, task_id: str) -> SandboxSession:
         tenant_id=tenant_id,
         task_id=task_id,
         allowed_operations=frozenset(
-            {"echo", "write_file", "read_file", "list_files", "run_python", "run_script", "browser_fetch"}
+            {"echo", "write_file", "read_file", "list_files", "run_python", "run_script"}
         ),
     )
 

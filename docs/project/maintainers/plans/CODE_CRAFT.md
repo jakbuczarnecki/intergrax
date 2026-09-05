@@ -64,7 +64,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY - Session authority, canonical HITL, override lattice (Protocol v2 · 2026-08-18)
 
-**Status:** `PLANNED`
+**Status:** `IMPLEMENTED` (AW-7B-GATE on `development`)
 **Priority:** P0
 **Type:** Arch / Wire / Proof
 **Source:** [`AUDIT-20260818-CODE_CRAFT-01`](../../audit_results/2026-08-18/CODE_CRAFT.md), [`AUDIT-20260818-CODE_CRAFT-02`](../../audit_results/2026-08-18/CODE_CRAFT.md), [`AUDIT-20260818-CODE_CRAFT-03`](../../audit_results/2026-08-18/CODE_CRAFT.md)
@@ -89,7 +89,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### CODECRAFT-VERIFICATION-INTEGRITY - Promotion eligibility and same-sandbox verification (Protocol v2 · 2026-08-18)
 
-**Status:** `PLANNED`
+**Status:** `IMPLEMENTED` (AW-7B-GATE on `development`)
 **Priority:** P0
 **Type:** Arch / Wire / Proof
 **Source:** [`AUDIT-20260818-CODE_CRAFT-04`](../../audit_results/2026-08-18/CODE_CRAFT.md), [`AUDIT-20260818-CODE_CRAFT-05`](../../audit_results/2026-08-18/CODE_CRAFT.md)
@@ -113,7 +113,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### CODECRAFT-ISOLATION-INTEGRITY - Anti-downgrade and network egress enforcement (Protocol v2 · 2026-08-18)
 
-**Status:** `PLANNED`
+**Status:** `IMPLEMENTED` (AW-7B-GATE on `development`)
 **Priority:** P0
 **Type:** Arch / Wire / Proof
 **Source:** [`AUDIT-20260818-CODE_CRAFT-06`](../../audit_results/2026-08-18/CODE_CRAFT.md), [`AUDIT-20260818-CODE_CRAFT-07`](../../audit_results/2026-08-18/CODE_CRAFT.md)

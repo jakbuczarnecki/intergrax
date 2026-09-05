@@ -290,7 +290,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7 |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** (AW-7A IN PROGRESS) |
+| **Status** | **IN PROGRESS** (AW-7A **DONE**; AW-7B prerequisite gate **PASSED**) |
 | **Purpose** | Capability discovery/acquisition policy and A0–A4 classification |
 | **Next step** | AW-7B |
 
@@ -298,7 +298,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7A |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** |
+| **Status** | **DONE** |
 | **Purpose** | Capability discovery/acquisition policy |
 | **Exact scope** | ordered search Tool → Skill → Integration → approved alternate/configuration → CodeCraft; A0-A4 risk classification |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Capability acquisition, §A0–A4, §CodeCraft recovery, §Durable capability promotion |
@@ -309,7 +309,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7B |
 | **Priority** | P0 |
-| **Status** | BLOCKED by CodeCraft/sandbox hardening prerequisites |
+| **Status** | **READY TO START** (AW-7B-GATE prerequisites **PASSED** on `development`) |
 | **Purpose** | A1 ephemeral generated capability path |
 | **Dependencies** | CodeCraft authority defects closed; anti-downgrade strong isolation available |
 | **Acceptance** | generated parser/helper static-gated, strongly sandboxed, tested, verified, ephemeral, evidence-linked |

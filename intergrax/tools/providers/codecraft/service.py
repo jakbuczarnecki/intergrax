@@ -20,7 +20,7 @@ from intergrax.runtime.codecraft.ownership import (
     resolve_codecraft_ownership,
 )
 from intergrax.runtime.codecraft.orchestrator import CodeCraftOrchestrator, resolve_codecraft_profile
-from intergrax.runtime.codecraft.sandbox_resolver import resolve_craft_sandbox_session
+from intergrax.runtime.codecraft.sandbox_resolver import resolve_craft_sandbox_with_evidence
 from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
 from intergrax.runtime.codecraft.trace import CodeCraftTraceEmitter
 from intergrax.tools.providers.codecraft.contracts import (
@@ -422,13 +422,15 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
             trace_event_count=len(emitter.events),
         )
 
-    sandbox = resolve_craft_sandbox_session(
+    sandbox_resolution = resolve_craft_sandbox_with_evidence(
         ctx,
         profile,
         tenant_id=trace_tenant_id,
         task_id=trace_task_id,
     )
+    sandbox = sandbox_resolution.session
     if sandbox is None:
+        error = sandbox_resolution.error or "sandbox_session_not_configured"
         emitter.disposed(
             craft_id=craft_id,
             mode=profile.mode,
@@ -442,7 +444,7 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
                 success=False,
                 mode=profile.mode,
                 static_gate=gate,
-                error="sandbox_session_not_configured",
+                error=error,
                 verdict="abort",
             ),
             trace_event_count=len(emitter.events),

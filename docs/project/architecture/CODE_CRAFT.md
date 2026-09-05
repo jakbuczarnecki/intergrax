@@ -20,7 +20,7 @@ Without a platform-owned ephemeral codegen path:
 CodeCraft addresses this through `CodeCraftOrchestrator`, typed `CodeCraftProfile`, static gate (L0), governed sandbox execution, bounded iteration, CVL verification, typed promotion via `CraftResult`, and ephemeral lifecycle semantics.
 
 > [!NOTE]
-> **Maturity boundary:** Phases **ECC-0…ECC-6** and post-closeout **S7–S11** are **Done** on the harness path, with **Full Harness LC** internal evidence. That is **not** universal production qualification for arbitrary generated-code execution: Protocol v2 audit [`CODE_CRAFT`](../../audit_results/2026-08-18/CODE_CRAFT.md) records **2 CRITICAL** authority defects (session identity binding, HITL self-assertion) that invalidate any unconditional production-safe interpretation until remediated; `local` isolation is workspace-level dev substrate, `container` isolation is not yet a distinct OCI boundary, `network_egress` is a profile contract with **partial** runtime enforcement, `cloud`/`container` tiers may fall back to local when hosted substrate is unresolved, and hostile-code / sandbox-escape evidence is not claimed. See [Protocol v2 CodeCraft target invariants](#protocol-v2-codecraft-target-invariants-2026-08-18) and [Current maturity](#current-maturity).
+> **Maturity boundary:** Phases **ECC-0…ECC-6** and post-closeout **S7–S11** are **Done** on the harness path. **AW-7B-GATE** (2026-09) closed session authority binding, canonical HITL, anti-downgrade isolation resolution, promotion evidence fail-closed, and substrate capability evidence on `development`. `local` isolation remains workspace-level dev substrate (not OS-network proof); `container`/`cloud` tiers fail closed when hosted substrate is unavailable; `network_egress=deny` requires substrate-proven operation-level egress denial before exec. Hostile-code / sandbox-escape production evidence is still not claimed. See [Protocol v2 CodeCraft target invariants](#protocol-v2-codecraft-target-invariants-2026-08-18) and [Current maturity](#current-maturity).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and application authors configuring `CodeCraftProfile` and `codecraft.*` tool access - after the platform overview in the root README.
 
@@ -42,7 +42,7 @@ CodeCraft addresses this through `CodeCraftOrchestrator`, typed `CodeCraftProfil
 | **Ephemeral tools** | `EphemeralToolRegistry` - session-scoped; ≠ global `ToolRegistry` |
 | **Promotion** | **Promote the verified result** (`CraftResult`) - not automatic durable tool synthesis |
 | **Isolation modes** | `local` (dev substrate) · `container` / `cloud` (stronger where configured) - not equivalent tiers |
-| **Fail-closed behavior** | Profile disabled/denied, policy deny, static gate rejection → `DENIED` / controlled failure; isolation-tier anti-downgrade **not** fail-closed today |
+| **Fail-closed behavior** | Profile disabled/denied, policy deny, static gate rejection, isolation-tier unsatisfied, egress requirement unsatisfied → controlled failure; **no silent container/cloud → local downgrade** |
 | **Tools relation** | `codecraft.*` exposed via `ToolRuntime`; catalog tools preferred when available |
 | **Skills relation** | Skills may compose `codecraft.*`; skills do not execute the craft loop |
 | **Production boundary** | Harness-proven orchestration - not representative hostile-code production posture |
@@ -252,19 +252,19 @@ Tiers are **not** equivalent guarantees. Production regulated profiles should pr
 
 ### Hosted sandbox boundary
 
-When `isolation_tier` is `cloud` or `container`, `resolve_craft_sandbox_session` (as-built):
+When `isolation_tier` is `cloud` or `container`, `resolve_craft_sandbox` (current):
 
 1. tries `IntegrationProfile` hosted sandbox resolution when present,
 2. tries `ctx.sandbox_host` → `HostedSandboxSession` when configured,
-3. if neither resolves, **falls through** to `resolve_sandbox_session(ctx)` - the standard local `SandboxSession` path.
+3. if neither resolves → **fail closed** (`isolation_requirement_unsatisfied`) — **no** local fallback.
 
-Therefore cloud/container tiers **do not** currently enforce strict fail-closed anti-downgrade semantics when hosted substrate is unavailable. Treat this fallback as a **production and safety limitation**: a profile requesting `cloud` or `container` may still execute on the local workspace substrate.
+Typed substrate evidence (`CraftSubstrateCapabilities`) records requested tier, resolved tier, provider identity, downgrade flag, and egress enforcement proof.
 
 - `sandbox_host` / `IntegrationProfile` selects the backend provider when wired,
 - CodeCraft does **not** own vendor SDKs - it resolves substrate through existing integration wiring,
-- successfully resolved hosted paths use provider-backed isolation; unresolved paths downgrade to local - presence of `SandboxSession` alone does **not** make that downgrade secure.
+- `local` tier remains valid when profile explicitly requests `isolation_tier=local`.
 
-> **Current as-built warning:** cloud/container resolution may fall back to the standard local sandbox path when no hosted substrate resolves. Strict isolation-tier anti-downgrade enforcement is **not** yet guaranteed.
+> **Current as-built:** cloud/container without hosted substrate **cannot** execute — silent downgrade is **impossible** on the harness path.
 
 Cloud sandbox is **not** automatically secure enough for arbitrary hostile code without deployment-specific evidence.
 
@@ -369,15 +369,22 @@ See [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) for the governance plane; C
 
 - `supervised` mode requires HITL before exec when `require_hitl_before_exec` is set (default posture for supervised),
 - `autonomous` may still trigger HITL on policy violation or high-risk paths,
-- HITL lifecycle belongs to UER / Governed Execution / `HitlRunner` - not CodeCraft alone.
+- HITL lifecycle belongs to UER / Governed Execution / `HitlRunner` - not CodeCraft alone,
+- **canonical source:** `resolve_codecraft_exec_authorization` reads `HumanDecisionStore` records scoped to tenant/task/run and `codecraft_exec:{craft_id}` notes — tool inputs cannot assert `hitl_approved`.
 
 Not every CodeCraft execution uses HITL.
+
+## Trusted session identity
+
+- `resolve_codecraft_ownership` binds tenant/task from `sandbox_session` and run from `peek_active_execution_identity()`,
+- `CodeCraftSessionManager` stores `run_id` on open and enforces exact match on every stateful operation,
+- `craft_id` alone is **not** authorization; conflicting reopen under different identity → `craft_session_ownership_conflict`.
 
 ## Network egress
 
 `CodeCraftProfile.network_egress`: `deny` | `allowlist`.
 
-**Enforcement status:** profile contract and governance fragment wiring exist; **runtime network isolation enforcement is partial** - do not treat the field alone as a complete egress boundary without deployment evidence.
+**Enforcement (AW-7B-GATE):** when `deny`, `resolve_craft_sandbox` requires substrate-proven egress denial before exec — local `SandboxSession` must not expose `browser_fetch`; hosted sessions are treated as provider-enforced. Fail closed with `network_egress_requirement_unsatisfied` when proof is missing.
 
 ## Forbidden imports and security scan
 

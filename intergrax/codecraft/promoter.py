@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.codecraft.contracts import CodeCraftSession, CraftResult, StaticGateResult
 
@@ -24,8 +24,36 @@ class CraftPromotionPayload(BaseModel):
     success: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class CraftPromotionEligibility:
+    """Evidence-backed promotion eligibility — never caller-asserted."""
+
+    eligible: bool
+    error: str = ""
+
+
 class CraftResultPromoter:
     """Validate and export craft output for pipeline handoff."""
+
+    def assess_promotion_eligibility(self, session: CodeCraftSession) -> CraftPromotionEligibility:
+        if session.disposed:
+            return CraftPromotionEligibility(eligible=False, error="craft_session_disposed")
+        if session.promoted:
+            return CraftPromotionEligibility(eligible=False, error="craft_already_promoted")
+        if not session.iterations:
+            return CraftPromotionEligibility(eligible=False, error="promotion_verification_missing")
+        last = session.iterations[-1]
+        if not last.static_gate.passed:
+            return CraftPromotionEligibility(eligible=False, error="static_gate_failed")
+        if not last.exec_success:
+            return CraftPromotionEligibility(eligible=False, error="execution_not_verified")
+        if last.test_passed is False:
+            return CraftPromotionEligibility(eligible=False, error="tests_not_passed")
+        if last.verdict != "promote":
+            return CraftPromotionEligibility(eligible=False, error="cvl_verdict_not_promote")
+        if not bool(session.structured_output.get("success", False)):
+            return CraftPromotionEligibility(eligible=False, error="promotion_verification_missing")
+        return CraftPromotionEligibility(eligible=True)
 
     def promote_session(
         self,
@@ -33,21 +61,30 @@ class CraftResultPromoter:
         *,
         schema_ref: str | None = None,
     ) -> CraftResult:
+        eligibility = self.assess_promotion_eligibility(session)
+        if not eligibility.eligible:
+            gate = StaticGateResult(
+                passed=False,
+                rule_ids=[eligibility.error or "promotion_denied"],
+                message=eligibility.error or "promotion_denied",
+            )
+            return CraftResult(
+                craft_id=session.craft_id,
+                success=False,
+                mode=session.mode,
+                static_gate=gate,
+                error=eligibility.error or "promotion_denied",
+                verdict="abort",
+            )
+
         payload = CraftPromotionPayload(
             craft_id=session.craft_id,
             goal=session.goal,
             stdout=str(session.structured_output.get("stdout") or ""),
             code=session.code,
-            success=bool(session.structured_output.get("success", False)),
+            success=True,
         )
         structured = self._validate_payload(payload, schema_ref=schema_ref)
-        session = session.model_copy(
-            update={
-                "promoted": True,
-                "structured_output": structured,
-                "status": "closed",
-            },
-        )
         return CraftResult(
             craft_id=session.craft_id,
             success=True,
@@ -60,10 +97,11 @@ class CraftResultPromoter:
         )
 
     @staticmethod
-    def _validate_payload(payload: CraftPromotionPayload, *, schema_ref: str | None) -> dict[str, Any]:
+    def _validate_payload(payload: CraftPromotionPayload, *, schema_ref: str | None) -> dict[str, object]:
         if schema_ref is None:
             return payload.model_dump()
-        # Extension point: resolve schema_ref to Pydantic model via catalog.
+        if not schema_ref.strip():
+            raise ValueError("promotion_schema_validation_failed: empty schema_ref")
         try:
             return payload.model_dump()
         except ValidationError as exc:

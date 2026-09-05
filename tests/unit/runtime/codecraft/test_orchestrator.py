@@ -49,7 +49,7 @@ def sandbox_session(tmp_path: Path) -> SandboxSession:
         tenant_id="tenant-1",
         task_id="task-1",
         allowed_operations=frozenset(
-            {"echo", "write_file", "read_file", "list_files", "run_python", "run_script", "browser_fetch"}
+            {"echo", "write_file", "read_file", "list_files", "run_python", "run_script"}
         ),
     )
 

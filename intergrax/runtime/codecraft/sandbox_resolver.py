@@ -5,11 +5,9 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.sandbox.hosted_resolver import resolve_hosted_sandbox_session
 from intergrax.codecraft.profile import CodeCraftProfile
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.codecraft.substrate import CraftSandboxResolution, resolve_craft_sandbox
 from intergrax.runtime.sandbox.contracts import SandboxExecCapable
-from intergrax.tools.providers.sandbox._session import resolve_sandbox_session
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -21,23 +19,16 @@ def resolve_craft_sandbox_session(
     task_id: str,
 ) -> SandboxExecCapable | None:
     """Route execution substrate per ``CodeCraftProfile.isolation_tier``."""
-    if profile.isolation_tier in ("cloud", "container"):
-        integration_raw = ctx.extras.get("integration_profile")
-        if isinstance(integration_raw, IntegrationProfile):
-            hosted = resolve_hosted_sandbox_session(
-                integration_raw,
-                tenant_id=tenant_id,
-                task_id=task_id,
-            )
-            if hosted is not None:
-                return hosted
-        if ctx.sandbox_host is not None:
-            from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
+    resolution = resolve_craft_sandbox(ctx, profile, tenant_id=tenant_id, task_id=task_id)
+    return resolution.session
 
-            return HostedSandboxSession.open(
-                ctx.sandbox_host,
-                tenant_id=tenant_id,
-                task_id=task_id,
-            )
-        return None
-    return resolve_sandbox_session(ctx)
+
+def resolve_craft_sandbox_with_evidence(
+    ctx: ToolWiringContext,
+    profile: CodeCraftProfile,
+    *,
+    tenant_id: str,
+    task_id: str,
+) -> CraftSandboxResolution:
+    """Resolve substrate and return typed capability evidence for qualification."""
+    return resolve_craft_sandbox(ctx, profile, tenant_id=tenant_id, task_id=task_id)

@@ -38,7 +38,7 @@ def sandbox_session(tmp_path: Path) -> SandboxSession:
         tenant_id="tenant-1",
         task_id="task-1",
         allowed_operations=frozenset(
-            {"echo", "write_file", "read_file", "list_files", "run_python", "run_script", "browser_fetch"}
+            {"echo", "write_file", "read_file", "list_files", "run_python", "run_script"}
         ),
     )
 
@@ -122,7 +122,7 @@ def test_codecraft_run_cloud_tier_requires_hosted_sandbox(sandbox_session: Sandb
         CodeCraftRunToolInput(code="print('cloud-fallback')\n", tenant_id="tenant-1", task_id="task-1"),
     )
     assert out.result.success is False
-    assert out.result.error == "sandbox_session_not_configured"
+    assert out.result.error == "isolation_requirement_unsatisfied"
 
 
 def test_codecraft_dry_run_skips_exec(sandbox_session: SandboxSession) -> None:
@@ -215,10 +215,10 @@ def test_register_codecraft_tools_on_registry(sandbox_session: SandboxSession) -
     assert registry.has("codecraft.run")
 
 
-def test_resolve_codecraft_profile_task_metadata_overrides_mode() -> None:
+def test_resolve_codecraft_profile_task_metadata_narrows_mode() -> None:
     from intergrax.runtime.codecraft.orchestrator import resolve_codecraft_profile
 
-    base = CodeCraftProfile(mode="disabled")
+    base = CodeCraftProfile(mode="autonomous")
     ctx = ToolWiringContext(
         extras={
             "codecraft_profile": base,
@@ -228,3 +228,16 @@ def test_resolve_codecraft_profile_task_metadata_overrides_mode() -> None:
     profile = resolve_codecraft_profile(ctx)
     assert profile is not None
     assert profile.mode == "supervised"
+
+
+def test_resolve_codecraft_profile_rejects_mode_expansion() -> None:
+    from intergrax.runtime.codecraft.orchestrator import resolve_codecraft_profile
+
+    base = CodeCraftProfile(mode="disabled")
+    ctx = ToolWiringContext(
+        extras={
+            "codecraft_profile": base,
+            "task_metadata": {"codecraft_mode": "supervised"},
+        },
+    )
+    assert resolve_codecraft_profile(ctx) is None
