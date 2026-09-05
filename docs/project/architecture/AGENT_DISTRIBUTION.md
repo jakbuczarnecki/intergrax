@@ -1758,6 +1758,8 @@ Manifest → development registry → host. No production lifecycle requirement.
 
 AC-4 resolves **what specialist/capability is needed** and **how it becomes available dynamically**. AC-3 remains sole authority for **INSTALL · BIND · BUILD · VALIDATE · PROJECT · ACTIVATE · SERVE · ROLLBACK**. Cross-link AC-3 sections; do not duplicate full lifecycle specification here.
 
+**Related canon:** AC-4 remains Agent-specific discovery and acquisition; it is one domain source and use case referenced by the broader [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) federation architecture. AC-4 semantics are unchanged.
+
 ### 35.2 Canonical terminology (frozen)
 
 | Concept | Module / type |

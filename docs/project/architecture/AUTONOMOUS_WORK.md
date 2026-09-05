@@ -601,6 +601,8 @@ CodeCraft is the canonical generated-code subsystem, not the default first respo
 
 See [extended depth — Capability acquisition](satellites/AUTONOMOUS_WORK_extended_depth.md#capability-acquisition) for the full nine-step ladder and missing-capability vs missing-authority rules.
 
+**Related canon (AW-7A):** dynamic capability discovery will integrate with [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) federation; AW-7A remains its own domain mechanism and may not bypass governance.
+
 ---
 
 ## Capability autonomy tiers

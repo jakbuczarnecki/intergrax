@@ -188,6 +188,8 @@ A Virtual Worker:
 
 **Maturity:** canonical architecture and implementation plan exist; worker runtime, control plane, reference application, and end-to-end proof are **not implemented**. Details: [Autonomous Work](AUTONOMOUS_WORK.md) · product-facing [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md).
 
+Virtual Workers may need to discover Agent, Skill, and Tool capabilities dynamically; that discovery remains separate from lifecycle, enablement, and execution. Frozen architecture: [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) (**implementation planned**).
+
 ## Decision System inside Nexus execution
 
 The **Decision System** is the platform capability that leads a decision from candidate proposal through optional deliberation, verification, revision, and resolution to an **authoritative lifecycle outcome** - executed as a **Decision Lifecycle model inside Nexus**, not as a second runtime.
@@ -237,6 +239,8 @@ Intergrax has longer-term architectural directions that may extend the current o
 - **Autonomous Work / Virtual Workforce** - persistent Virtual Workers that own business responsibilities and goals across many governed executions. Canonical architecture and implementation plan exist; worker runtime, control plane, reference application, and end-to-end proof are **not implemented**. Details: [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Autonomous Work](AUTONOMOUS_WORK.md).
 
 - **Platform extensibility / Plugins** - coordinates independently packaged extensions at the package boundary. Domain-specific extension mechanisms already exist across integrations, tools, skills, RAG, Vendor Knowledge, security, policy, host composition, and other domains; multiple cross-cutting extension-platform implementation slices exist while residual Protocol v2 breadth and complete external third-party install-to-runtime E2E qualification remain incomplete. Platform Plugin is **not** a universal `PlatformPlugin.execute()` and does **not** replace IntegrationPlugin, ToolPlugin, SkillPlugin, RAG contracts, Vendor Knowledge contracts, security or policy contracts, RuntimePlugin, or other domain-owned surfaces. Details: [Platform Plugins architecture](PLATFORM_PLUGINS.md).
+
+- **Capability Catalog & Discovery** - governed federated read/discovery of Agent, Skill, and Tool candidates across domain registries; discovery remains separate from selection, enablement, materialization, activation, and execution. **Architecture frozen — implementation planned.** Details: [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md).
 
 ## Architect review path
 

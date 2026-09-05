@@ -79,7 +79,8 @@ with Try LKW as the repository’s primary product action.
 | Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) - candidate proposals, verification, deliberation, authoritative outcomes separate from authorization (**target canon**; **CURRENT:** [Critic Verification](../architecture/CRITIC_VERIFICATION.md)) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore Virtual Workforce / Virtual Workers | [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work](../architecture/AUTONOMOUS_WORK.md) |
-| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) - see [Strategic directions](#strategic-directions) below |
+| Explore dynamic capability discovery, Agent/Skill/Tool ecosystem, or future marketplace architecture | [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) — frozen architecture for governed federated Agent/Skill/Tool discovery; implementation planned |
+| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) · [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) - see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore Scenario Proofs (problem-first) | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
@@ -189,6 +190,12 @@ Future ecosystem and platform directions - **not** current product proofs and **
 **Strategic platform capability - canonical architecture frozen with implemented slices; complete third-party E2E qualification not established**
 
 [Open the Platform Extensibility / Plugins architecture](../architecture/PLATFORM_PLUGINS.md)
+
+### Capability Catalog & Discovery
+
+**Frozen architecture for governed federated Agent/Skill/Tool discovery — implementation planned**
+
+[Open the Capability Catalog & Discovery architecture](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md)
 
 ### Agent Marketplace
 
