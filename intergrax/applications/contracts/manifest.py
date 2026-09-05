@@ -46,8 +46,8 @@ class AgentBinding(BaseModel):
 
     **Preferred (strongly typed):** ::
 
-        AgentBinding.mount(EchoAgent)
-        AgentBinding.mount(LegalAgent, factory=build_legal_agent)
+        AgentBinding.mount(EchoAgent, contract_id="echo")
+        AgentBinding.mount(LegalAgent, contract_id="legal", factory=build_legal_agent)
 
     **Serialized (scaffold / YAML only):** ``deserialize(import_path=..., factory_path=...)``
 
@@ -89,7 +89,7 @@ class AgentBinding(BaseModel):
     )
     contract_id: str | None = Field(
         default=None,
-        description="Optional override for AgentContract.id at register time",
+        description="Declarative AgentContract.id for capability projection and roster closure",
     )
     capabilities: list[str] = Field(
         default_factory=list,
@@ -137,7 +137,7 @@ class AgentBinding(BaseModel):
         factory: Callable[..., Any] | None = None,
         builder_key: str | None = None,
         config: dict[str, Any] | None = None,
-        contract_id: str | None = None,
+        contract_id: str,
         capabilities: list[str] | None = None,
         enabled: bool = True,
         default: bool = False,
@@ -157,7 +157,12 @@ class AgentBinding(BaseModel):
             from legal.legal_agent import LegalAgent
             from legal_application.host.wiring import build_legal_agent
 
-            AgentBinding.mount(LegalAgent, factory=build_legal_agent, default=True)
+            AgentBinding.mount(
+                LegalAgent,
+                contract_id="legal",
+                factory=build_legal_agent,
+                default=True,
+            )
         """
         if factory is not None and builder_key is not None:
             raise ValueError("AgentBinding.mount: pass factory or builder_key, not both")
@@ -295,12 +300,6 @@ class AgentBinding(BaseModel):
             object.__setattr__(self, "import_path", qualname_for_agent(self.agent_type))
         if self.factory is not None and self.factory_path is None:
             object.__setattr__(self, "factory_path", qualname_for_callable(self.factory))
-        if self.contract_id is None and self.agent_type is not None:
-            class_contract_id = getattr(self.agent_type, "contract_id", None)
-            if isinstance(class_contract_id, str):
-                stripped = class_contract_id.strip()
-                if stripped:
-                    object.__setattr__(self, "contract_id", stripped)
 
         if self.agent_type is None and self.import_path is None and not self.contract_id:
             raise ValueError(

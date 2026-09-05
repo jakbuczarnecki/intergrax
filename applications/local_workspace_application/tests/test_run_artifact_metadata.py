@@ -186,7 +186,6 @@ async def test_run_task_exposes_platform_bundle_and_lkw_synthesize_diagnostic() 
     lifecycle.transition_to_ready()
     executor = AsyncMock(spec=LocalWorkspaceTaskExecutor)
     executor.execute = AsyncMock(return_value=task_result)
-    executor.nexus_loop = None
     service = LocalWorkspaceRunService(task_executor=executor, default_agent_id="local_synthesizer")
 
     response = await service.run_task(

@@ -8,6 +8,8 @@ from dataclasses import dataclass
 
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
+from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
 from intergrax.distributed.contracts.kv_store import (
     DistributedKVStore,
     DistributedKVStoreProvider,
@@ -75,6 +77,18 @@ def apply_queue_worker_environment_profile(
         update={
             "integration_profile": apply_queue_worker_integration_profile(
                 integration_profile,
+            ),
+            "reliability_profile": environment.reliability_profile.model_copy(
+                update={
+                    "execution_terminal_persistence_provider": (
+                        environment.reliability_profile.execution_terminal_persistence_provider
+                        or ExecutionTerminalPersistenceProvider.KV
+                    ),
+                    "attempt_lifecycle_persistence_provider": (
+                        environment.reliability_profile.attempt_lifecycle_persistence_provider
+                        or AttemptLifecyclePersistenceProvider.KV
+                    ),
+                },
             ),
         },
     )

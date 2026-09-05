@@ -26,7 +26,11 @@ def build_poc_template_manifest() -> ApplicationManifest:
         integration_profile=IntegrationProfile.lab_stack(),
         environment=environment,
         agents=[
-            AgentBinding.mount(EchoAgent, capabilities=["echo.basic"]),
+            AgentBinding.mount(
+                EchoAgent,
+                contract_id="echo",
+                capabilities=["echo.basic"],
+            ),
         ],
         description="Scaffolded Tier-3 lab environment (Phase AA-POC.2)",
     )

@@ -20,7 +20,7 @@ from typing import Final, Protocol
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.runtime_revision import RuntimeRevision
-from intergrax.applications.contracts.factory import AgentFactory
+from intergrax.applications.contracts.factory import AgentFactory, CanonicalAgentFactory
 
 # Aggregate deferral remains True while OCI_IMAGE / SANDBOX_SIDECAR lack loaders.
 # VENV_BUNDLE production resolver: ``venv_bundle_runtime_agent_factory_resolver``.
@@ -42,7 +42,7 @@ class RuntimeAgentFactoryResolver(Protocol):
         runtime_revision: RuntimeRevision,
         package_digest: str,
         factory_reference: AgentBindingFactoryReference,
-    ) -> AgentFactory:
+    ) -> CanonicalAgentFactory:
         """Return the factory bound to ``package_digest`` + ``factory_reference``."""
 
 
@@ -88,7 +88,7 @@ class InMemoryRuntimeAgentFactoryResolver:
         runtime_revision: RuntimeRevision,
         package_digest: str,
         factory_reference: AgentBindingFactoryReference,
-    ) -> AgentFactory:
+    ) -> CanonicalAgentFactory:
         digest = normalize_package_digest(package_digest)
         trusted = frozenset(runtime_revision.installed_agent_package_digests)
         if digest not in trusted:

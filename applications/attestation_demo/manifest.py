@@ -76,6 +76,7 @@ def build_attestation_demo_manifest() -> ApplicationManifest:
         agents=[
             AgentBinding.mount(
                 BoundaryDemoAgent,
+                contract_id="boundary_demo_agent",
                 capabilities=["attestation.demo"],
             ),
         ],

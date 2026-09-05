@@ -44,7 +44,7 @@ def test_build_harness_host_runtime_mounts_environment_state_middleware() -> Non
         name="Env State Wiring Test",
         route_prefix="/v1/env_state_wiring_test",
         env_prefix="ENV_STATE_WIRING_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="env_state_wiring_test.lab")
     runtime = build_harness_host_runtime(
@@ -65,7 +65,7 @@ async def test_environment_state_phase_tracks_lifecycle_hooks() -> None:
         name="Env State Lifecycle Test",
         route_prefix="/v1/env_state_lifecycle_test",
         env_prefix="ENV_STATE_LIFECYCLE_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="env_state_lifecycle_test.lab")
     host = _PhaseCaptureHost()
@@ -118,7 +118,7 @@ async def test_environment_state_hitl_hook_updates_health() -> None:
         name="Env State HITL Test",
         route_prefix="/v1/env_state_hitl_test",
         env_prefix="ENV_STATE_HITL_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="env_state_hitl_test.lab")
     runtime = build_harness_host_runtime(

@@ -25,7 +25,7 @@ from intergrax.runtime.codecraft.ownership import (
     resolve_codecraft_exec_authorization,
     resolve_codecraft_ownership,
 )
-from intergrax.runtime.codecraft.sandbox_resolver import resolve_craft_sandbox_session
+from intergrax.runtime.codecraft.sandbox_resolver import resolve_craft_sandbox_with_evidence
 from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager, get_session_manager
 from intergrax.runtime.codecraft.trace import CodeCraftTraceEmitter
 from intergrax.tools.providers.sandbox.contracts import CodeExecInput
@@ -38,6 +38,30 @@ def resolve_codegen_adapter(ctx: ToolWiringContext) -> CodeGenerationAdapter:
     if isinstance(raw, CodeGenerationAdapter):
         return raw
     return TemplateCodeGenerationAdapter()
+
+
+from intergrax.codecraft.profile import CodeCraftProfile, CraftMode
+
+_MODE_RESTRICTIVENESS: dict[CraftMode, int] = {
+    "disabled": 0,
+    "dry_run": 1,
+    "assist_only": 2,
+    "supervised": 3,
+    "autonomous": 4,
+}
+
+
+def _apply_task_mode_override(profile: CodeCraftProfile, override: str) -> CodeCraftProfile | None:
+    candidate = override.strip()
+    if not candidate:
+        return profile
+    if candidate not in _MODE_RESTRICTIVENESS:
+        return None
+    host_rank = _MODE_RESTRICTIVENESS[profile.mode]
+    override_rank = _MODE_RESTRICTIVENESS[candidate]  # type: ignore[index]
+    if override_rank > host_rank:
+        return None
+    return profile.model_copy(update={"mode": candidate})  # type: ignore[arg-type]
 
 
 def resolve_codecraft_profile(ctx: ToolWiringContext) -> CodeCraftProfile | None:
@@ -54,7 +78,10 @@ def resolve_codecraft_profile(ctx: ToolWiringContext) -> CodeCraftProfile | None
     if isinstance(task_meta, dict):
         mode_override = task_meta.get("codecraft_mode")
         if isinstance(mode_override, str) and mode_override:
-            profile = profile.model_copy(update={"mode": mode_override})  # type: ignore[arg-type]
+            narrowed = _apply_task_mode_override(profile, mode_override)
+            if narrowed is None:
+                return None
+            profile = narrowed
     return profile
 
 
@@ -308,19 +335,21 @@ class CodeCraftOrchestrator:
                 verdict="abort",
             )
 
-        sandbox = resolve_craft_sandbox_session(
+        sandbox_resolution = resolve_craft_sandbox_with_evidence(
             self._ctx,
             profile,
             tenant_id=tenant_id,
             task_id=task_id,
         )
+        sandbox = sandbox_resolution.session
         if sandbox is None and profile.exec_allowed():
+            error = sandbox_resolution.error or "sandbox_session_not_configured"
             return session, CraftResult(
                 craft_id=craft_id,
                 success=False,
                 mode=profile.mode,
                 static_gate=gate,
-                error="sandbox_session_not_configured",
+                error=error,
                 verdict="abort",
             )
 
@@ -330,6 +359,7 @@ class CodeCraftOrchestrator:
         exit_code: int | None = None
         sandbox_session_id: str | None = None
         duration_ms: float | None = None
+        exec_ctx = self._ctx
 
         if profile.exec_allowed() and sandbox is not None:
             self._write_craft_file(sandbox, code)
@@ -362,7 +392,11 @@ class CodeCraftOrchestrator:
                 duration_ms=duration_ms,
             )
 
-        test_result = CraftTestRunner(profile).run(self._ctx, rel_path="craft_main.py")
+        test_result = CraftTestRunner(profile).run(
+            exec_ctx,
+            rel_path="craft_main.py",
+            sandbox_session=sandbox,
+        )
         self._emitter.test_completed(
             craft_id=craft_id,
             mode=profile.mode,
@@ -502,6 +536,8 @@ class CodeCraftOrchestrator:
 
         promoter = CraftResultPromoter()
         result = promoter.promote_session(session, schema_ref=profile.promotion_schema_ref)
+        if not result.success:
+            return result
         self._emitter.promoted(
             craft_id=craft_id,
             mode=profile.mode,

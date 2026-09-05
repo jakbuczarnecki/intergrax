@@ -414,6 +414,7 @@ lack established runtime proof:
 | **Autonomous Work / Virtual Workforce** | Persistent Virtual Workers that own business responsibilities and goals across many governed executions | **Canonical architecture defined — AW-0 independent review pending** — worker runtime, control plane, reference application, and end-to-end proof **not implemented** | [Virtual Workforce](docs/project/overview/VIRTUAL_WORKFORCE.md) · [Autonomous Work](docs/project/architecture/AUTONOMOUS_WORK.md) |
 | **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** - multiple extension-platform slices implemented; core program closed. Residual Protocol v2 work remains planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
 | **Agent Marketplace** | Future ecosystem layer - discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT - NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
+| **Capability Catalog & Discovery** | Governed federated discovery of Agent, Skill, and Tool candidates for dynamic capability selection and autonomous work | **Architecture frozen — implementation planned** | [Capability Catalog & Discovery architecture](docs/project/architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
 
 ## License and collaboration
 

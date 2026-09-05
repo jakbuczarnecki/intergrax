@@ -30,7 +30,6 @@ from intergrax.runtime.decision_flow_host import (
     evaluate_agent_execution_flow,
 )
 from intergrax.runtime.migration.legacy_critic_contracts import LegacyCriticVerdict
-from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
 from platform_proofs.scenarios.ai_incident_investigation.application.critic_adapter import (
@@ -200,12 +199,10 @@ def build_runtime_bundle(
         llm_adapter_override=llm_adapter_override,
     )
     if not composition.is_platform_attached:
-        agent_registry = AgentRegistry()
         build_scenario_runtime_composition(
             registry=tool_registry,
             tenant_id=tenant_id,
             environment=composition.environment,
-            agent_registry=agent_registry,
             composition=composition,
         )
     composition.tool_registry = composition.platform.env_wiring.tool_wiring.registry
@@ -219,7 +216,7 @@ def build_runtime_bundle(
         evidence_store=evidence_store,
         investigation_input=investigation_input,
     )
-    if investigator.get_contract().id not in composition.platform.registry.list_agent_ids():
+    if not composition.platform.registry.has(INVESTIGATOR_AGENT_ID):
         composition.platform.registry.register(investigator)
     return ScenarioRuntimeBundle(
         operational_data=operational_data,

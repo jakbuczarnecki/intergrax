@@ -55,8 +55,11 @@ def main() -> int:
             errors.append(f"trace step {step!r} missing from trace.py")
 
     service_source = Path("intergrax/tools/providers/codecraft/service.py").read_text(encoding="utf-8")
-    if "resolve_craft_sandbox_session" not in service_source:
-        errors.append("codecraft.run must use resolve_craft_sandbox_session")
+    if (
+        "resolve_craft_sandbox_session" not in service_source
+        and "resolve_craft_sandbox_with_evidence" not in service_source
+    ):
+        errors.append("codecraft.run must resolve craft sandbox with trusted capability evidence")
 
     if errors:
         print("check_codecraft_layer: FAIL", file=sys.stderr)

@@ -23,7 +23,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_materialize_roster_certifications_for_enabled_agents() -> None:
-    agents = [AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])]
+    agents = [AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])]
     profile = materialize_roster_certifications_for_agents(agents, app_id="demo")
     assert len(profile.certifications) == 1
     assert profile.certifications[0].agent_id == "echo"
@@ -35,7 +35,7 @@ def test_strict_gate_blocks_experimental_agent(monkeypatch: pytest.MonkeyPatch) 
         name="Gate Cert",
         route_prefix="/v1/gate_cert",
         env_prefix="GATE_CERT_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="gate_cert.product")
     env = apply_roster_agent_governance(env, agents=manifest.agents, app_id="gate_cert")
@@ -58,7 +58,7 @@ def test_strict_gate_requires_certification_for_staging_agent() -> None:
         name="Gate Cert 2",
         route_prefix="/v1/gate_cert2",
         env_prefix="GATE_CERT2_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="gate_cert2.product").model_copy(
         update={"agent_governance_profile": AgentGovernanceProfile()},

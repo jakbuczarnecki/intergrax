@@ -25,6 +25,7 @@ from dispute_sim_application.host.agent_factories import (
 _DISPUTE_SIM_AGENTS = [
     AgentBinding.mount(
         DisputeIntakeAgent,
+        contract_id="dispute_intake",
         factory=build_dispute_sim_dispute_intake_from_context,
         capabilities=["dispute.intake"],
         default=True,
@@ -32,18 +33,21 @@ _DISPUTE_SIM_AGENTS = [
     ),
     AgentBinding.mount(
         DisputeAnalystAgent,
+        contract_id="dispute_analyst",
         factory=build_dispute_sim_dispute_analyst_from_context,
         capabilities=["dispute.analyze"],
         budget_slice=product_agent_budget_slice(),
     ),
     AgentBinding.mount(
         DisputeStrategistAgent,
+        contract_id="dispute_strategist",
         factory=build_dispute_sim_dispute_strategist_from_context,
         capabilities=["dispute.strategy"],
         budget_slice=product_agent_budget_slice(),
     ),
     AgentBinding.mount(
         DisputeScenarioAgent,
+        contract_id="dispute_scenario",
         factory=build_dispute_sim_dispute_scenario_from_context,
         capabilities=["dispute.scenario"],
         budget_slice=product_agent_budget_slice(),

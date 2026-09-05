@@ -13,6 +13,7 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     AttemptId,
+    ExecutionId,
     RunId,
     require_active_execution_id,
     require_active_execution_identity,
@@ -78,6 +79,7 @@ from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.events.store import resolve_runtime_event_persistence
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 from intergrax.runtime.task_memory.store import resolve_task_memory_persistence
@@ -808,28 +810,66 @@ class NexusLoop:
             )
 
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
+        await self._publish_terminal_runtime_event_with_active_identity(task)
+
+    async def publish_host_task_terminal_runtime(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id: ExecutionId,
+    ) -> RuntimeEvent:
+        """Publish terminal RuntimeEvent truth for canonical host task execution."""
+        from intergrax.contracts.execution_identity import (
+            bind_active_execution_identity,
+            reset_active_execution_identity,
+        )
+        from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+
+        token = bind_active_execution_identity(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+        )
+        try:
+            operational_completed = runtime_event_from_task_state(
+                task,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                message="task state -> completed",
+            )
+            await self._events.publish(operational_completed, task=task)
+            return await self._publish_terminal_runtime_event_with_active_identity(task)
+        finally:
+            reset_active_execution_identity(token)
+
+    async def _publish_terminal_runtime_event_with_active_identity(
+        self,
+        task: Task,
+    ) -> RuntimeEvent:
         terminal_event = await self._events.publish_terminal(task)
-        if self._terminal_diagnostic_trigger is None:
-            return
-        from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
-            invoke_terminal_execution_diagnostics,
-        )
+        if self._terminal_diagnostic_trigger is not None:
+            from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
+                invoke_terminal_execution_diagnostics,
+            )
 
-        from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
+            from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 
-        invoke_terminal_execution_diagnostics(
-            self._terminal_diagnostic_trigger,
-            tenant_id=task.tenant_id,
-            task_id=task.task_id,
-            run_id=terminal_event.run_id,
-            observed_at=terminal_event.timestamp,
-            event_bus=self._event_bus,
-            execution_identity=ExecutionIdentityBinding(
+            invoke_terminal_execution_diagnostics(
+                self._terminal_diagnostic_trigger,
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
                 run_id=terminal_event.run_id,
-                attempt_id=terminal_event.attempt_id,
-                execution_id=terminal_event.execution_id,
-            ),
-        )
+                observed_at=terminal_event.timestamp,
+                event_bus=self._event_bus,
+                execution_identity=ExecutionIdentityBinding(
+                    run_id=terminal_event.run_id,
+                    attempt_id=terminal_event.attempt_id,
+                    execution_id=terminal_event.execution_id,
+                ),
+            )
+        return terminal_event
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:
         return resolve_nexus_lifecycle(

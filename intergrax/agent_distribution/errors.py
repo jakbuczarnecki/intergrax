@@ -13,6 +13,15 @@ class AgentDistributionError(Exception):
 class AgentPackageTrustError(AgentDistributionError):
     """Malformed trust invocation or unacceptable installation trust evidence."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason_code: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.reason_code = reason_code
+
 
 class AgentDistributionNotFoundError(AgentDistributionError):
     """Requested durable record does not exist."""

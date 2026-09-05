@@ -32,6 +32,7 @@ def manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec])
         mounts.append(
             f"        AgentBinding.mount("
             f"{s.class_name}, "
+            f'contract_id="{s.contract_id}", '
             f"factory=build_{short}_{s.slug}_from_context"
             f"{cap_arg}{default_arg}),"
         )

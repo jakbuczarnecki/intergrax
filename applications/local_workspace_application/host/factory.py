@@ -189,7 +189,6 @@ def create_local_workspace_backend_app(
     lkw_host_execution = runtime.execution
     lkw_task_executor = LocalWorkspaceTaskExecutor(
         lkw_host_execution,
-        nexus_loop=nexus_loop,
         task_enricher=lkw_task_enricher,
         readiness=resolved_readiness,
     )
@@ -263,6 +262,8 @@ def create_local_workspace_backend_app(
     mount_local_workspace_routes(
         app,
         task_executor=lkw_task_executor,
+        registry=runtime.registry,
+        runtime_event_persistence=runtime.observability.runtime_event_store,
         prefix=resolved_settings.route_prefix,
         default_agent_id=resolved_settings.default_agent_id,
     )

@@ -35,7 +35,7 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolutionError,
     RuntimeAgentFactoryResolver,
 )
-from intergrax.applications.contracts.factory import AgentFactory
+from intergrax.applications.contracts.factory import AgentFactory, CanonicalAgentFactory
 
 PRODUCTION_RUNTIME_FACTORY_TOPOLOGY_STATUS: Final = {
     MaterializationTopology.VENV_BUNDLE: "implemented",
@@ -138,7 +138,7 @@ def _attach_scoped_module_chain(
         return
     for index in range(1, len(parts)):
         parent_original = ".".join(parts[:index])
-        child_original = ".".join(parts[:index + 1])
+        child_original = ".".join(parts[: index + 1])
         parent_name = _scoped_module_name(scope.scope_root, parent_original)
         child_name = _scoped_module_name(scope.scope_root, child_original)
         parent_module = sys.modules.get(parent_name)
@@ -185,7 +185,9 @@ def _artifact_aware_import(
     return _OriginalBuiltinImport(scoped_name, globals, locals, fromlist, level)
 
 
-def _register_artifact_scope(*, artifact_digest: str, site_packages: Path) -> _ArtifactImportScope:
+def _register_artifact_scope(
+    *, artifact_digest: str, site_packages: Path
+) -> _ArtifactImportScope:
     resolved_site_packages = site_packages.resolve()
     scope_root = _artifact_scope_root(artifact_digest)
     with _ArtifactScopeRegistryLock:
@@ -232,7 +234,9 @@ def _package_search_locations(
     return [str(package_dir)]
 
 
-def _cleanup_scoped_modules(module_names: Sequence[str], *, scope_root: str | None = None) -> None:
+def _cleanup_scoped_modules(
+    module_names: Sequence[str], *, scope_root: str | None = None
+) -> None:
     for name in reversed(module_names):
         sys.modules.pop(name, None)
     if scope_root is not None:
@@ -462,7 +466,9 @@ def _import_scoped_module(
             touched.extend(_ensure_package_hierarchy(scope, original_module_path))
             if scoped_name in sys.modules:
                 return sys.modules[scoped_name]
-            spec = _ARTIFACT_IMPORT_FINDER._spec_for_original(scope, original_module_path)
+            spec = _ARTIFACT_IMPORT_FINDER._spec_for_original(
+                scope, original_module_path
+            )
             if spec is None or spec.loader is None:
                 raise RuntimeAgentFactoryResolutionError(
                     f"cannot create import spec for {original_module_path!r}"
@@ -509,7 +515,9 @@ def build_production_runtime_agent_factory_resolver(
     """Construct the production resolver for one revision-bound artifact."""
     topology = runtime_revision.materialization_topology
     if topology == MaterializationTopology.VENV_BUNDLE:
-        digest = expected_artifact_digest or runtime_revision.materialization_artifact_digest
+        digest = (
+            expected_artifact_digest or runtime_revision.materialization_artifact_digest
+        )
         return VenvBundleRuntimeAgentFactoryResolver(
             artifact_root=artifact_root,
             expected_artifact_digest=digest,
@@ -584,9 +592,7 @@ def _verify_package_digest_in_lock(
 ) -> None:
     trusted = {entry.package_digest for entry in lock.agent_closure}
     trusted.update(
-        pkg.package_digest
-        for pkg in lock.packages
-        if pkg.package_digest is not None
+        pkg.package_digest for pkg in lock.packages if pkg.package_digest is not None
     )
     if package_digest not in trusted:
         raise RuntimeAgentFactoryResolutionError(
@@ -678,7 +684,10 @@ class VenvBundleRuntimeAgentFactoryResolver:
             return actual
 
     def _validate_revision(self, runtime_revision: RuntimeRevision) -> None:
-        if runtime_revision.materialization_topology != MaterializationTopology.VENV_BUNDLE:
+        if (
+            runtime_revision.materialization_topology
+            != MaterializationTopology.VENV_BUNDLE
+        ):
             raise RuntimeAgentFactoryResolutionError(
                 "VenvBundleRuntimeAgentFactoryResolver requires VENV_BUNDLE topology"
             )
@@ -711,7 +720,7 @@ class VenvBundleRuntimeAgentFactoryResolver:
         runtime_revision: RuntimeRevision,
         package_digest: str,
         factory_reference: AgentBindingFactoryReference,
-    ) -> AgentFactory:
+    ) -> CanonicalAgentFactory:
         self._validate_revision(runtime_revision)
         digest = normalize_package_digest(package_digest)
         trusted = frozenset(runtime_revision.installed_agent_package_digests)

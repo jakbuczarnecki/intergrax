@@ -4,11 +4,11 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-ROADMAP-REALITY-SYNC (2026-09-04):** Canonical target architecture **FROZEN**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. Remaining work: Platform Plugins integration · lifecycle observability/diagnostics · real Docker E2E production qualification (**DS-E2E-02** Council multi-provider) · final exact-commit audit. **Not** whole-system production-qualified until DS-E2E + DS-FINAL-AUDIT.
+> **DS-ROADMAP-REALITY-SYNC (2026-09-05):** Canonical target architecture **FROZEN**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. **DS-E2E = PARTIAL / FINAL HARDENING** — fail-closed qualification contracts landed for DS-E2E-02/03/06/12/13; real provider/Docker/scenario proofs still required before enterprise close. **Not** whole-system production-qualified until DS-E2E + DS-FINAL-AUDIT.
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub**.
 
-**Last updated:** 2026-09-04 - DS-ROADMAP-REALITY-SYNC.
+**Last updated:** 2026-09-05 - DS-OBS-DIAG enterprise closed.
 
 ---
 
@@ -77,7 +77,8 @@ Ordered sequencing labels (existing **DS-\*** IDs remain authoritative):
 | **DS-VER-PIPE / DS-VER-STAGES** | **DONE** | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) |
 | **DS-DELIB / DS-COUNCIL** | **DONE** | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) - DS-DELIB + DS-COUNCIL **DONE** |
 | **DS-MIG** (Critic clean cut) | **COMPLETE** | [below](#phase-ds-mig--critic-clean-cut-migration) |
-| **DS-E2E** (Docker qualification) | **PLANNED** | [below](#phase-ds-e2e--docker-production-qualification) |
+| **DS-OBS-DIAG** | **DONE** | [below](#observability--diagnostics) |
+| **DS-E2E** (Docker qualification) | **PARTIAL / FINAL HARDENING** | [below](#phase-ds-e2e--docker-production-qualification) |
 
 ---
 
@@ -223,8 +224,8 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-OBS-01 | P1 | Decision lifecycle audit events on observability spine | **PARTIAL** - canonical Verification RuntimeEvent integration exists (`decision.verification.started` · `stage_completed` · `stage_unavailable` · `probabilistic_skipped` · `completed`); full Decision Lifecycle transition coverage not yet implemented/proven |
-| DS-OBS-02 | P2 | Diagnostics feed boundaries (no lifecycle ownership) | **PLANNED** - diagnostics must consume/project Decision evidence; must not own Decision Lifecycle |
+| DS-OBS-01 | P1 | Decision lifecycle audit events on observability spine | **DONE / ENTERPRISE CLOSED** - `intergrax.decision.lifecycle.started` · `transitioned` · `resolved` · `finalized` · `terminal` via `intergrax/runtime/decision_lifecycle_observability.py` · optional `DecisionLifecycleObserver` on `CanonicalDecisionLifecycleHost` · proof `tests/unit/runtime/test_decision_lifecycle_observability.py` |
+| DS-OBS-02 | P2 | Diagnostics feed boundaries (no lifecycle ownership) | **DONE / ENTERPRISE CLOSED** - deterministic `DecisionLifecycleDiagnosticSnapshot` projection in `intergrax/runtime/diagnostics/decision_lifecycle_projection.py`; diagnostics consumes RuntimeEvent evidence only; proof `tests/unit/runtime/diagnostics/test_decision_lifecycle_projection.py` · architecture gates `tests/unit/runtime/architecture/test_decision_lifecycle_observability_gates.py` |
 
 ### Persistence / recovery / concurrency
 
@@ -327,25 +328,25 @@ Re-owned from [`CRITIC_VERIFICATION` plan](CRITIC_VERIFICATION.md) Protocol v2 f
 
 ---
 
-## Phase DS-E2E - Docker production qualification (PLANNED) - **blocking gate**
+## Phase DS-E2E - Docker production qualification (PARTIAL / FINAL HARDENING) - **blocking gate**
 
-Real Docker E2E qualification is the **final gate** before any Decision System production-qualified claim. Unit, integration, and mocked E2E alone are **insufficient**.
+Real Docker E2E qualification is the **final gate** before any Decision System production-qualified claim. Unit, integration, and mocked E2E alone are **insufficient**. Qualification harness now **fail-closes** weak proofs for DS-E2E-02/03/06/12/13 (`testing_support/decision_e2e/requirements.py`).
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-E2E-01 | P0 | Real single-model Decision System path | **Planned** |
-| DS-E2E-02 | P0 | Real multi-model Council | **Planned** |
-| DS-E2E-03 | P0 | Real independent semantic verifier | **Planned** |
-| DS-E2E-04 | P0 | Real HITL pause/resume | **Planned** |
-| DS-E2E-05 | P0 | Governed real side effect: ALLOW and DENY | **Planned** |
-| DS-E2E-06 | P1 | Docker process/container crash + resume without duplicate decision | **Planned** |
-| DS-E2E-07 | P1 | Concurrent proposal/finalization race test | **Planned** |
-| DS-E2E-08 | P1 | Real budget exhaustion / bounded stop | **Planned** |
-| DS-E2E-09 | P1 | Real provider outage / fail-closed behavior | **Planned** |
-| DS-E2E-10 | P1 | Two-tenant isolation | **Planned** |
-| DS-E2E-11 | P1 | Real observability / OTLP evidence reconstruction | **Planned** |
-| DS-E2E-12 | P1 | `ai_incident_investigation` full real integration proof | **Planned** |
-| DS-E2E-13 | P1 | Cross-scenario qualification proving no scenario-specific Decision runtime branching | **Planned** |
+| DS-E2E-01 | P0 | Real single-model Decision System path | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_real_single_model.py` |
+| DS-E2E-02 | P0 | Real multi-model Council (≥2 distinct model identities) | **PARTIAL** — fail-closed independence gate; **BLOCKED** when profile-only / same model |
+| DS-E2E-03 | P0 | Real independent semantic verifier (producer model ≠ verifier model) | **PARTIAL** — fail-closed independence gate; **BLOCKED** on same model |
+| DS-E2E-04 | P0 | Real HITL pause/resume | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_hitl_pause_resume.py` |
+| DS-E2E-05 | P0 | Governed real side effect: ALLOW and DENY | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_governed_side_effect.py` |
+| DS-E2E-06 | P1 | Docker container kill + durable resume (not subprocess-only) | **PARTIAL** — real `docker kill` proof via `testing_support/decision_e2e/docker_qualification.py`; subprocess retained as DS-REC regression only |
+| DS-E2E-07 | P1 | Concurrent proposal/finalization race test | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_concurrent_finalization.py` |
+| DS-E2E-08 | P1 | Real budget exhaustion / bounded stop | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_budget_exhaustion.py` |
+| DS-E2E-09 | P1 | Real provider outage / fail-closed behavior | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_provider_outage.py` |
+| DS-E2E-10 | P1 | Two-tenant isolation | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_tenant_isolation.py` |
+| DS-E2E-11 | P1 | Real observability / OTLP evidence reconstruction | **QUALIFICATION OPEN** — `tests/integration/decision_system/test_otlp_reconstruction.py` |
+| DS-E2E-12 | P1 | `ai_incident_investigation` live scenario proof | **PARTIAL** — asset-only auto-PASSED removed; requires live scenario execution evidence |
+| DS-E2E-13 | P1 | Cross-scenario qualification (two live Decision scenarios + AST gate) | **PARTIAL** — AST gate retained; **BLOCKED** until second Decision platform proof exists |
 | DS-FINAL-AUDIT | P0 | Independent exact-commit architecture/runtime/docs/E2E audit | **Planned** |
 
 ---

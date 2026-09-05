@@ -427,18 +427,24 @@ at-most-once authorization
 
 ## P1.1 Full ProfileResolution layering and provenance
 
-**Status: GAP/PARTIAL**
+**Status: CLOSED (P1.1)**
 
-`ApplicationEnvironmentProfile` is a strong current composition authority and must remain canonical.
+`ApplicationEnvironmentProfile` remains the sole Tier-3 composition authority.
 
-Missing/convergence work:
+Delivered in P1.1:
 
-- formal typed delta layers for platform/product/application/agent/run/execution,
-- one effective-resolution result,
-- provenance of winning/rejected values,
-- authority clamps,
-- dependency failures/degraded state,
-- immutable effective fingerprint/revision.
+- typed `ProfileLayer` / `ProfileDelta` / `ProfileLayerInput` contracts,
+- `resolve_profile(...)` → immutable `ProfileResolution` evidence,
+- provenance decisions (`APPLIED` / `REJECTED` / `CLAMPED` / `UNCHANGED`),
+- domain-owned field resolvers (`capabilities.tools`, `capabilities.llm`, `meta.execution_mode`, `governance.cost`),
+- deterministic effective semantic fingerprint,
+- canonical harness host adoption via `build_harness_host_runtime(profile_layers=...)`.
+
+Deferred to P1.2+:
+
+- full semantic diff UI,
+- capability dependency graph population,
+- broader field resolver coverage beyond initial domain seams.
 
 Do not introduce `HarnessProfile`.
 
@@ -446,16 +452,22 @@ Do not introduce `HarnessProfile`.
 
 ## P1.2 Effective profile diff/versioning
 
-**Status: GAP/PARTIAL**
+**Status: CLOSED (P1.2)**
 
-Version/revision concepts exist in adjacent domains, but no one canonical full environment semantic diff/fingerprint was established by this audit.
+Delivered in P1.2:
 
-Need:
+- typed `EffectiveProfileRevisionId` / `EffectiveProfileRevision` immutable snapshot contract,
+- `materialize_effective_profile_revision(...)` from `ProfileResolution` evidence,
+- domain-aware `EffectiveProfileDiff` (`meta.execution_mode`, `capabilities.llm`, `capabilities.tools`, `governance.cost`),
+- append-only `EffectiveProfileRevisionStore` with in-memory adapter,
+- execution pinning evidence (`EffectiveProfileExecutionBinding`) with checkpoint/resume/child inheritance,
+- harness host adoption via `build_harness_host_runtime(revision_store=...)`.
 
-- immutable effective revision,
-- semantic diff,
-- Execution pinning,
-- historical inspectability.
+Deferred to P1.3+:
+
+- capability dependency graph population,
+- broader field diff coverage beyond initial domain seams,
+- Runtime Inspection API (P1.4).
 
 ---
 

@@ -7,18 +7,20 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import StrEnum
-from typing import Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
-from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.observability.export_attributes import (
     ApplicationObservabilityAttributes,
     ObservabilityArtifactReference,
     SanitizedApplicationObservabilityAttributes,
 )
-from intergrax.runtime.observability.journal_export import JournalRef
+
+if TYPE_CHECKING:
+    from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
+    from intergrax.runtime.events.runtime_event import RuntimeEvent
+    from intergrax.runtime.observability.journal_export import JournalRef
 
 OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA = "observability_export_envelope.v1"
 
@@ -238,6 +240,39 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def envelope_from_platform_observability_source(
+    source: PlatformObservabilityExportSource,
+) -> ObservabilityExportEnvelope:
+    """Map a non-execution platform observability source to an export envelope."""
+    return ObservabilityExportEnvelope(
+        record_kind=ExportRecordKind.PLATFORM_SIGNAL,
+        recorded_at=_utc_now(),
+        event_type=source.event_type,
+        status=ExportStatus.UNKNOWN,
+        schema_id=source.schema_version,
+        source_schema_id=source.source_schema_id,
+        correlation_id=source.correlation_id,
+        event_id=source.event_id,
+        application_attributes=source.application_attributes,
+    )
+
+
+def envelope_is_content_safe(envelope: ObservabilityExportEnvelope) -> bool:
+    """Return False when serialized envelope exposes forbidden raw-content field names."""
+    serialized = envelope.model_dump_json()
+    for key in FORBIDDEN_EXPORT_CONTENT_FIELDS:
+        if f'"{key}"' in serialized:
+            return False
+    return True
+
+
+from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
+from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.observability.journal_export import JournalRef
+
+GatewayCallExportSource.model_rebuild()
+
+
 def _gateway_status_to_export(status: GatewayCallStatus) -> ExportStatus:
     mapping = {
         GatewayCallStatus.SUCCEEDED: ExportStatus.SUCCEEDED,
@@ -333,23 +368,6 @@ def gateway_call_export_source_from_rag_call(
         latency_ms=record.latency_ms,
         hit_count=record.hit_count,
         policy_rule_id=record.policy_rule_id,
-    )
-
-
-def envelope_from_platform_observability_source(
-    source: PlatformObservabilityExportSource,
-) -> ObservabilityExportEnvelope:
-    """Map a non-execution platform observability source to an export envelope."""
-    return ObservabilityExportEnvelope(
-        record_kind=ExportRecordKind.PLATFORM_SIGNAL,
-        recorded_at=_utc_now(),
-        event_type=source.event_type,
-        status=ExportStatus.UNKNOWN,
-        schema_id=source.schema_version,
-        source_schema_id=source.source_schema_id,
-        correlation_id=source.correlation_id,
-        event_id=source.event_id,
-        application_attributes=source.application_attributes,
     )
 
 
@@ -498,12 +516,3 @@ def envelope_with_observability_extensions(
     if not updates:
         return envelope
     return envelope.model_copy(update=updates)
-
-
-def envelope_is_content_safe(envelope: ObservabilityExportEnvelope) -> bool:
-    """Return False when serialized envelope exposes forbidden raw-content field names."""
-    serialized = envelope.model_dump_json()
-    for key in FORBIDDEN_EXPORT_CONTENT_FIELDS:
-        if f'"{key}"' in serialized:
-            return False
-    return True

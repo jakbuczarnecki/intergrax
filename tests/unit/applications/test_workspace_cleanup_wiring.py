@@ -113,7 +113,7 @@ async def test_harness_factory_lifespan_teardown(tmp_path) -> None:
         name="Workspace Cleanup Factory Test",
         route_prefix="/v1/workspace_cleanup_factory_test",
         env_prefix="WORKSPACE_CLEANUP_FACTORY_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(
         profile_id="workspace_cleanup_factory_test.lab"
@@ -145,7 +145,7 @@ async def test_environment_state_middleware_syncs_isolation_refs(tmp_path) -> No
         name="Env State Isolation Test",
         route_prefix="/v1/env_state_isolation_test",
         env_prefix="ENV_STATE_ISOLATION_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="env_state_isolation_test.lab")
     runtime = build_harness_host_runtime(
@@ -183,7 +183,7 @@ def test_build_factory_lifespans_includes_workspace_cleanup() -> None:
         name="Factory Lifespan Test",
         route_prefix="/v1/factory_lifespan_test",
         env_prefix="FACTORY_LIFESPAN_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="factory_lifespan_test.lab")
     runtime = build_harness_host_runtime(

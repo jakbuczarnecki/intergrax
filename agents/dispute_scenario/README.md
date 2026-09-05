@@ -14,17 +14,29 @@ Process simulation and correspondence safety for **DSW** - court path variants, 
 2. `uv run pytest agents/dispute_scenario/tests -q`
 3. Host run: `capability: dispute.scenario` on `POST /v1/dispute_sim/run` (port 8025)
 
-## Register (programmatic)
+## Unit-test authoring (isolated)
 
 ```python
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from dispute_scenario.dispute_scenario_agent import DisputeScenarioAgent
 
-registry = AgentRegistry()
-registry.register(DisputeScenarioAgent())
+agent = DisputeScenarioAgent()
+result = await agent.run(
+    AgentRunRequest(
+        input="hello",
+        identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+        agent_id=agent.contract_id,
+    )
+)
 ```
 
-See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
+## Lab / product integration
+
+Add the agent via ``AgentBinding.mount(...)`` in the Tier-3 manifest and run through
+**Agent Distribution → registry projection → Execution**. Do not use local
+``AgentRegistry()`` or ``NexusLoop`` on serving paths.
+
+See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
 ## Capabilities
 

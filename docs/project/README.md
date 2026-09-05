@@ -36,6 +36,7 @@ what you want to understand, try, inspect, build, or review.
   separate bounded evaluation route.
 - **Architect** - read the [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md),
   then [Autonomous Work](architecture/AUTONOMOUS_WORK.md) for persistent governed workers when relevant;
+  for federated Agent/Skill/Tool discovery boundaries see [Capability Catalog & Discovery](architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) (**architecture frozen / implementation planned**);
   use the [Harness Architecture Evolution Roadmap](overview/HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md)
   for cross-domain sequencing; continue to the [Technical Documentation Map](technical/DOCUMENTATION_MAP.md)
   for deep engineering material.
@@ -51,6 +52,9 @@ Grouped platform areas and canonical domain links:
 
 Persistent autonomous work and Virtual Worker architecture:
 [Autonomous Work](architecture/AUTONOMOUS_WORK.md) → [implementation plan](maintainers/plans/AUTONOMOUS_WORK.md).
+
+Federated Agent/Skill/Tool discovery (architecture frozen / implementation planned):
+[Capability Catalog & Discovery](architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) → [implementation plan](maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md).
 
 Product-facing Virtual Workforce direction:
 [Virtual Workforce](overview/VIRTUAL_WORKFORCE.md).

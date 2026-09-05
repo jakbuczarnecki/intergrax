@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.reference_capability_bundle import harness_platform_tool_profile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.integrations.core.binding import IntegrationBinding
@@ -17,6 +18,13 @@ def build_governed_contractor_environment_profile(
     profile = ApplicationEnvironmentProfile.product_defaults(
         skill_bundles=["harness"],
         profile_id="governed_contractor.product",
+    )
+    profile = profile.model_copy(
+        update={
+            "capabilities": profile.capabilities.model_copy(
+                update={"tools": harness_platform_tool_profile()},
+            ),
+        },
     )
     profile.observability_profile.otel_enabled = True
     profile.observability_profile.debug_surface_override = True

@@ -36,7 +36,7 @@ def _lab_env() -> ApplicationEnvironmentProfile:
 
 
 def test_agent_type_binding_passes_conformance() -> None:
-    binding = AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])
+    binding = AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])
     violations = EnvironmentSkillToolConsistencyCheck(fail_on_violation=False).validate_binding(
         binding,
         _lab_env(),

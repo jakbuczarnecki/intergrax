@@ -10,6 +10,7 @@ import time
 from uuid import uuid4
 
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
+from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities, SandboxSecurityCapable
 from intergrax.runtime.sandbox.models import SandboxAuditEntry, SandboxExecutionResult
 from intergrax.runtime.sandbox.sandbox_runtime import DEFAULT_SANDBOX_OPERATIONS
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -60,6 +61,17 @@ class HostedSandboxSession:
     @property
     def cancelled(self) -> bool:
         return self._cancelled
+
+    def security_capabilities(self) -> SandboxSecurityCapabilities:
+        """Return trusted substrate security capability evidence."""
+        backend = self._backend
+        if isinstance(backend, SandboxSecurityCapable):
+            return backend.security_capabilities()
+        return SandboxSecurityCapabilities(
+            isolation_tier="cloud",
+            provider_id=f"hosted:{self.session_id}",
+            network_egress_deny_enforced=None,
+        )
 
     def cancel(self) -> None:
         self._cancelled = True

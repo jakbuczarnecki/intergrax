@@ -83,6 +83,11 @@ def lab_reference_tool_profile(*, harness_tools: bool = True) -> ToolProfile:
     return ToolProfile(enabled_bundles=enabled_bundles)
 
 
+def harness_platform_tool_profile() -> ToolProfile:
+    """Tool availability for harness-only platform skill hosts (pairs with harness skill bundle)."""
+    return lab_reference_tool_profile(harness_tools=False)
+
+
 def harness_lab_capability_bundle(*, harness_tools: bool = True) -> CapabilityBundle:
     """Shared lab harness tools/skills/integration stack (legal, research, lab hosts)."""
     from intergrax.applications._shared.skill_wiring import lab_skill_profile

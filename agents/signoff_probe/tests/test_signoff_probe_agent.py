@@ -3,26 +3,25 @@
 import pytest
 
 from signoff_probe.signoff_probe_agent import SignoffProbeAgent
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from signoff_probe.contract import build_agent_contract
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
+from intergrax.contracts.agent_run_enums import AgentRunStatus
+from testing_support.builder import canonical_execution_identity_scope
 
 
 @pytest.mark.asyncio
-@pytest.mark.integration
+@pytest.mark.unit
 @pytest.mark.gate
-async def test_signoff_probe_agent_runs_through_nexus():
-    registry = AgentRegistry()
-    registry.register(SignoffProbeAgent())
-    loop = NexusLoop(registry)
-    result = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="scaffold smoke",
-            context=TaskContext(capability="signoff.probe"),
+async def test_signoff_probe_agent_typed_run_smoke():
+    agent = SignoffProbeAgent()
+    contract = build_agent_contract()
+    with canonical_execution_identity_scope("agent-smoke"):
+        result = await agent.run(
+            AgentRunRequest(
+                input="scaffold smoke",
+                identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+                agent_id=contract.id,
+            )
         )
-    )
-    assert result.state == TaskState.COMPLETED
-    assert "scaffold smoke" in result.answer
-    assert result.agent_id == "signoff_probe"
+    assert result.status == AgentRunStatus.SUCCEEDED
+    assert "scaffold smoke" in str(result.output)

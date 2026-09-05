@@ -9,7 +9,9 @@ Single-host transactional uniqueness via PRIMARY KEY and BEGIN IMMEDIATE.
 from __future__ import annotations
 
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 from intergrax.contracts.decision_finalization import (
     DecisionFinalizationKey,
@@ -57,15 +59,27 @@ class SQLiteDecisionFinalizationPersistence:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_schema()
 
-    def _connection(self) -> sqlite3.Connection:
+    @contextmanager
+    def _managed_connection(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self._db_path)
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=FULL;")
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+    def close(self) -> None:
+        """Release SQLite handles for this database path (idempotent)."""
+        conn = sqlite3.connect(self._db_path)
+        try:
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+        finally:
+            conn.close()
 
     def _ensure_schema(self) -> None:
-        with self._connection() as conn:
+        with self._managed_connection() as conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS decision_finalizations (
@@ -111,7 +125,7 @@ class SQLiteDecisionFinalizationPersistence:
         *,
         key: DecisionFinalizationKey,
     ) -> DecisionFinalizeGuardState[object] | None:
-        with self._connection() as conn:
+        with self._managed_connection() as conn:
             return self._load_existing_guard(conn, key)
 
     def commit_authoritative_outcome(
@@ -120,7 +134,7 @@ class SQLiteDecisionFinalizationPersistence:
         key: DecisionFinalizationKey,
         requested_outcome: AuthoritativeAcceptedDecision[object] | AuthoritativeResolutionRecord,
     ) -> DecisionDurableFinalizationResult[object]:
-        with self._connection() as conn:
+        with self._managed_connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             existing = self._load_existing_guard(conn, key)
             result = evaluate_durable_finalization_guard(

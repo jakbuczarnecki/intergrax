@@ -55,8 +55,8 @@ Delivery rule:
 | AW-3 | Principal / authority / workspace composition | **DONE** |
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
 | AW-5 | Worker → execution composition and budgets | **DONE** (AW-5A DONE, AW-5B DONE) |
-| AW-6 | Recovery Controller and obstacle taxonomy | **IN PROGRESS** (AW-6A IN PROGRESS, AW-6B NOT STARTED) |
-| AW-7 | Adaptive capability acquisition | NOT STARTED |
+| AW-6 | Recovery Controller and obstacle taxonomy | **DONE** (AW-6A DONE, AW-6B DONE) |
+| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A DONE, AW-7B-GATE READY FOR INDEPENDENT AUDIT, AW-7B NOT STARTED) |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
 | AW-9 | Worker control plane | NOT STARTED |
 | AW-10 | Virtual Workforce reference application | NOT STARTED |
@@ -256,7 +256,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-6A |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** |
+| **Status** | **DONE** |
 | **Purpose** | Freeze canonical obstacle taxonomy and recovery decision contract |
 | **REUSED** | DIAG problem evidence, reliability retry, HITL, policy decisions |
 | **NEW** | worker-level obstacle→strategy contract/controller |
@@ -269,9 +269,17 @@ Delivery rule:
 |---|---|
 | **ID** | AW-6B |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **DONE** |
 | **Purpose** | Recovery orchestration with resume-original-work semantics |
 | **Acceptance** | recovery has bounded attempts/time/cost; successful recovery returns to original WorkItem/goal with evidence chain |
+| **Next step** | AW-7A |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-6 |
+| **Priority** | P0 |
+| **Status** | **DONE** |
+| **Purpose** | Recovery Controller (AW-6A + AW-6B) |
 | **Next step** | AW-7A |
 
 ---
@@ -280,9 +288,17 @@ Delivery rule:
 
 | Field | Value |
 |---|---|
+| **ID** | AW-7 |
+| **Priority** | P0 |
+| **Status** | **IN PROGRESS** (AW-7A **DONE**; AW-7B-GATE **READY FOR INDEPENDENT AUDIT**) |
+| **Purpose** | Capability discovery/acquisition policy and A0–A4 classification |
+| **Next step** | AW-7B-GATE independent audit acceptance |
+
+| Field | Value |
+|---|---|
 | **ID** | AW-7A |
 | **Priority** | P0 |
-| **Status** | NOT STARTED |
+| **Status** | **DONE** |
 | **Purpose** | Capability discovery/acquisition policy |
 | **Exact scope** | ordered search Tool → Skill → Integration → approved alternate/configuration → CodeCraft; A0-A4 risk classification |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Capability acquisition, §A0–A4, §CodeCraft recovery, §Durable capability promotion |
@@ -291,11 +307,21 @@ Delivery rule:
 
 | Field | Value |
 |---|---|
+| **ID** | AW-7B-GATE |
+| **Priority** | P0 |
+| **Status** | **READY FOR INDEPENDENT AUDIT** |
+| **Purpose** | CodeCraft safety prerequisite qualification (canonical CodeCraft/Sandbox/Governance reuse, anti-downgrade, identity/HITL, substrate coherence) |
+| **Dependencies** | AW-7A **DONE** |
+| **Acceptance** | anti-downgrade contract PASS; hosted substrate abstraction PASS; identity/HITL regressions PASS; docs = as-built; independent audit owns PASS |
+| **Next step** | Independent audit acceptance → unblock AW-7B |
+
+| Field | Value |
+|---|---|
 | **ID** | AW-7B |
 | **Priority** | P0 |
-| **Status** | BLOCKED by CodeCraft/sandbox hardening prerequisites |
+| **Status** | **NOT STARTED** (BLOCKED UNTIL GATE ACCEPTED) |
 | **Purpose** | A1 ephemeral generated capability path |
-| **Dependencies** | CodeCraft authority defects closed; anti-downgrade strong isolation available |
+| **Dependencies** | AW-7A **DONE**; AW-7B-GATE **PASSED** (independent audit) |
 | **Acceptance** | generated parser/helper static-gated, strongly sandboxed, tested, verified, ephemeral, evidence-linked |
 | **Next step** | AW-7C |
 

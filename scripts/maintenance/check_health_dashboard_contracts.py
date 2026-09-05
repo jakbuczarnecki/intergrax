@@ -45,7 +45,7 @@ def _build_product_runtime_for_gate() -> object:
         name="Health Dashboard Gate Host",
         route_prefix="/v1/health_dashboard_gate",
         env_prefix="HEALTH_DASHBOARD_GATE_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=environment,
     )
     registry = AgentRegistry()

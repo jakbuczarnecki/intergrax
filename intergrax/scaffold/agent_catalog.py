@@ -15,26 +15,33 @@ class ScaffoldAgentSpec:
     slug: str
     module: str
     class_name: str
+    contract_id: str
     capabilities: tuple[str, ...] = ()
 
 
 # Built-in reference agents (must exist under ``agents/`` on pythonpath).
 BUILTIN_AGENTS: dict[str, tuple[ScaffoldAgentSpec, ...]] = {
     "echo": (
-        ScaffoldAgentSpec("echo", "echo.echo_agent", "EchoAgent", ("echo.basic",)),
+        ScaffoldAgentSpec("echo", "echo.echo_agent", "EchoAgent", "echo", ("echo.basic",)),
     ),
     "signoff_probe": (
-        ScaffoldAgentSpec("signoff_probe", "signoff_probe.signoff_probe_agent", "SignoffProbeAgent", ()),
+        ScaffoldAgentSpec(
+            "signoff_probe",
+            "signoff_probe.signoff_probe_agent",
+            "SignoffProbeAgent",
+            "signoff_probe",
+        ),
     ),
     "research": (
-        ScaffoldAgentSpec("research", "research.research_agent", "ResearchAgent", ()),
-        ScaffoldAgentSpec("summary", "research.summary_agent", "SummaryAgent", ()),
+        ScaffoldAgentSpec("research", "research.research_agent", "ResearchAgent", "research"),
+        ScaffoldAgentSpec("summary", "research.summary_agent", "SummaryAgent", "research-summary"),
     ),
     "problem_radar": (
         ScaffoldAgentSpec(
             "problem_radar",
             "problem_radar.problem_radar_agent",
             "ProblemRadarAgent",
+            "problem_radar",
             ("problem_radar.scan",),
         ),
     ),
@@ -43,6 +50,7 @@ BUILTIN_AGENTS: dict[str, tuple[ScaffoldAgentSpec, ...]] = {
             "vendor_discovery",
             "vendor_discovery.vendor_discovery_agent",
             "VendorDiscoveryAgent",
+            "vendor_discovery",
             ("vendor_discovery.search",),
         ),
     ),
@@ -82,6 +90,7 @@ def resolve_agent_specs(slugs: list[str]) -> list[ScaffoldAgentSpec]:
                 slug=key,
                 module=f"{key}.{key}_agent",
                 class_name=class_name,
+                contract_id=key,
                 capabilities=(f"{key}.basic",),
             )
         )

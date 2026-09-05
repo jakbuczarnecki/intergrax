@@ -79,12 +79,14 @@ _ISOLATION_LEVEL = PostgreSQLIsolationLevel.READ_COMMITTED
 # v3 introduced ``aw_worker_wake_up_receipts`` for AW-4A durable wake-up idempotency.
 # v4 introduced ``aw_goal_evaluation_cadence_states`` for AW-4B durable cadence checkpoints.
 # v5 introduced ``aw_worker_accounting_snapshots`` for AW-5B durable worker accounting.
+# v6 introduced ``aw_worker_recovery_episodes`` for AW-6B durable recovery orchestration.
 _SCHEMA_VERSION_V1 = 1
 _SCHEMA_VERSION_V2 = 2
 _SCHEMA_VERSION_V3 = 3
 _SCHEMA_VERSION_V4 = 4
 _SCHEMA_VERSION_V5 = 5
-_SCHEMA_VERSION = _SCHEMA_VERSION_V5
+_SCHEMA_VERSION_V6 = 6
+_SCHEMA_VERSION = _SCHEMA_VERSION_V6
 _SCHEMA_META_TABLE = "autonomous_work_schema_meta"
 _SCHEMA_LOCK_KEY = "autonomous_work_schema_init"
 
@@ -230,6 +232,13 @@ class PostgreSQLAutonomousWorkStore:
                     snapshot_json TEXT NOT NULL,
                     revision INTEGER NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS aw_worker_recovery_episodes (
+                    recovery_episode_id TEXT NOT NULL PRIMARY KEY,
+                    worker_instance_id TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    revision INTEGER NOT NULL
+                );
                 """
             )
             session.execute(
@@ -285,6 +294,9 @@ class PostgreSQLAutonomousWorkStore:
             from_version = _SCHEMA_VERSION_V4
         if from_version == _SCHEMA_VERSION_V4:
             self._migrate_v4_to_v5(session)
+            from_version = _SCHEMA_VERSION_V5
+        if from_version == _SCHEMA_VERSION_V5:
+            self._migrate_v5_to_v6(session)
             return
         raise AutonomousWorkSchemaVersionError(
             f"unsupported Autonomous Work schema migration from version {from_version}"
@@ -422,6 +434,32 @@ class PostgreSQLAutonomousWorkStore:
             session,
             expected_from=_SCHEMA_VERSION_V4,
             expected_to=_SCHEMA_VERSION_V5,
+            updated_rows=updated.rowcount,
+        )
+
+    def _migrate_v5_to_v6(self, session: PostgreSQLSession) -> None:
+        session.execute(
+            """
+            CREATE TABLE IF NOT EXISTS aw_worker_recovery_episodes (
+                recovery_episode_id TEXT NOT NULL PRIMARY KEY,
+                worker_instance_id TEXT NOT NULL,
+                record_json TEXT NOT NULL,
+                revision INTEGER NOT NULL
+            );
+            """
+        )
+        updated = session.execute(
+            f"""
+            UPDATE {_SCHEMA_META_TABLE}
+            SET schema_version = %s
+            WHERE id = 1 AND schema_version = %s
+            """,
+            (_SCHEMA_VERSION_V6, _SCHEMA_VERSION_V5),
+        )
+        self._complete_migration_step(
+            session,
+            expected_from=_SCHEMA_VERSION_V5,
+            expected_to=_SCHEMA_VERSION_V6,
             updated_rows=updated.rowcount,
         )
 

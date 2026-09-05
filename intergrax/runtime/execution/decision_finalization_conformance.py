@@ -355,9 +355,12 @@ def assert_concurrent_finalization_race(
     assert results.count(DecisionDurableFinalizationDisposition.CONFLICT) == 1
 
     verify_store = factory()
-    loaded = verify_store.load_guard_state(key=key)
-    assert loaded is not None
-    assert loaded.authoritative_outcome is not None
+    try:
+        loaded = verify_store.load_guard_state(key=key)
+        assert loaded is not None
+        assert loaded.authoritative_outcome is not None
+    finally:
+        verify_store.close()
 
 
 def assert_concurrent_idempotent_replay(

@@ -39,7 +39,7 @@ This does **not** mean every extension surface has identical maturity or univers
 
 **Primary audience:** CTOs, principal/staff engineers, and extension authors evaluating how Intergrax coordinates packages without collapsing domain contracts.
 
-**Related canon:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) · [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) (agent-specific distribution - parallel concern)
+**Related canon:** [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) · [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) (agent-specific distribution - parallel concern) · [`CAPABILITY_CATALOG_AND_DISCOVERY.md`](CAPABILITY_CATALOG_AND_DISCOVERY.md) (federated capability-level read/discovery — Platform Plugins owns package/plugin coordination)
 
 ## At a glance
 
@@ -522,6 +522,8 @@ A single plugin package **may** expose zero, one, or many capabilities across on
 ---
 
 ## 9. Discovery architecture
+
+Platform Plugins coordinates **package/plugin discovery** at the extension boundary. Federated **capability-level** read/discovery across Agent, Skill, and Tool registries is owned by [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) — a separate concern; responsibilities are not merged here.
 
 ### 9.1 Target principles
 

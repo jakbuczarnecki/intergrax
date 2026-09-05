@@ -33,6 +33,22 @@ _IMPORT_ORDER_MATRIX = (
         "E observability emitter first",
         "from intergrax.runtime.observability.emitter import ObservabilityEmitter; import intergrax.runtime.task; import intergrax.runtime.events",
     ),
+    (
+        "F observability then diagnostics",
+        "import intergrax.runtime.observability; import intergrax.runtime.diagnostics",
+    ),
+    (
+        "G diagnostics then observability",
+        "import intergrax.runtime.diagnostics; import intergrax.runtime.observability",
+    ),
+    (
+        "H task events then observability emitter",
+        "import intergrax.runtime.task; import intergrax.runtime.events; from intergrax.runtime.observability.emitter import ObservabilityEmitter",
+    ),
+    (
+        "I integrations then observability emitter",
+        "import intergrax.integrations; from intergrax.runtime.observability.emitter import ObservabilityEmitter",
+    ),
 )
 
 _PUBLIC_API_MATRIX = (
@@ -48,6 +64,21 @@ _ = events.RuntimeEvent
 assert 'intergrax.runtime.events.trace_bridge' not in sys.modules
 _ = events.trace_event_to_runtime_event
 assert 'intergrax.runtime.events.trace_bridge' in sys.modules
+"""
+
+_OBSERVABILITY_PUBLIC_API_MATRIX = (
+    "from intergrax.runtime.observability import ObservabilityEmitter, CausalEvidencePersistence",
+    "from intergrax.runtime.observability import InMemoryObservabilityExporter, ProblemReporter",
+)
+
+_OBSERVABILITY_FACADE_LAZY_EMITTER = """
+import sys
+import intergrax.runtime.observability as obs
+assert 'intergrax.runtime.observability.emitter' not in sys.modules
+_ = obs.TraceScope
+assert 'intergrax.runtime.observability.emitter' not in sys.modules
+_ = obs.ObservabilityEmitter
+assert 'intergrax.runtime.observability.emitter' in sys.modules
 """
 
 
@@ -67,22 +98,7 @@ def test_task_events_import_boundary_subprocess(statement: str) -> None:
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
-@pytest.mark.skip(
-    reason=(
-        "observability.__init__ has a separate diagnostics↔causal_evidence cycle "
-        "outside P2-003-D2 task/events facade scope"
-    ),
-)
-@pytest.mark.parametrize("label,statement", (("E observability emitter first", _IMPORT_ORDER_MATRIX[4][1]),))
-def test_task_events_import_order_matrix_observability_emitter_first(
-    label: str,
-    statement: str,
-) -> None:
-    completed = _run_import_subprocess(statement)
-    assert completed.returncode == 0, f"{label}: {completed.stdout}{completed.stderr}"
-
-
-@pytest.mark.parametrize("label,statement", _IMPORT_ORDER_MATRIX[:4] + _IMPORT_ORDER_MATRIX[5:])
+@pytest.mark.parametrize("label,statement", _IMPORT_ORDER_MATRIX)
 def test_task_events_import_order_matrix(label: str, statement: str) -> None:
     completed = _run_import_subprocess(statement)
     assert completed.returncode == 0, f"{label}: {completed.stdout}{completed.stderr}"
@@ -96,6 +112,17 @@ def test_task_events_public_api_import_matrix(statement: str) -> None:
 
 def test_events_package_facade_defers_trace_bridge_until_accessed() -> None:
     completed = _run_import_subprocess(_EVENTS_FACADE_LAZY_BRIDGE)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+@pytest.mark.parametrize("statement", _OBSERVABILITY_PUBLIC_API_MATRIX)
+def test_observability_public_api_import_matrix(statement: str) -> None:
+    completed = _run_import_subprocess(statement)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_observability_package_facade_defers_emitter_until_accessed() -> None:
+    completed = _run_import_subprocess(_OBSERVABILITY_FACADE_LAZY_EMITTER)
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 

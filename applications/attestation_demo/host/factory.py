@@ -100,6 +100,7 @@ def create_attestation_demo_application(
     mount_attestation_demo_routes(
         app,
         host_execution=host_execution,
+        registry=resolved_registry,
         boundary_event_buffer=runtime.boundary_event_buffer or resolved_buffer,
         prefix=settings.route_prefix,
     )

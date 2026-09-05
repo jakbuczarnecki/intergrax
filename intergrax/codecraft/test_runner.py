@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.codecraft.profile import CodeCraftProfile
+from intergrax.runtime.sandbox.contracts import SandboxExecCapable
 from intergrax.tools.providers.sandbox._session import resolve_sandbox_session
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -33,6 +34,7 @@ class CraftTestRunner:
         ctx: ToolWiringContext,
         *,
         rel_path: str = "craft_main.py",
+        sandbox_session: SandboxExecCapable | None = None,
     ) -> CraftTestResult:
         if not self._profile.require_tests:
             return CraftTestResult(
@@ -44,7 +46,7 @@ class CraftTestRunner:
                 exit_code=None,
             )
 
-        session = resolve_sandbox_session(ctx)
+        session = sandbox_session or resolve_sandbox_session(ctx)
         if session is None:
             return CraftTestResult(
                 passed=False,

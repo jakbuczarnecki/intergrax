@@ -187,6 +187,11 @@ class CatalogSourceProviderRegistry:
     ) -> None:
         self._providers = dict(providers)
 
+    @property
+    def registered_source_ids(self) -> tuple[str, ...]:
+        """Deterministic catalog source ids registered for acquisition resolution."""
+        return tuple(sorted(self._providers))
+
     def require(self, catalog_source_id: str) -> CatalogSourceProvider:
         provider = self._providers.get(catalog_source_id)
         if provider is None:

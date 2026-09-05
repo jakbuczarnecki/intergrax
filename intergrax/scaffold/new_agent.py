@@ -381,6 +381,7 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
         from {slug}.contract import build_agent_contract
         from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
         from intergrax.contracts.agent_run_enums import AgentRunStatus
+        from testing_support.builder import canonical_execution_identity_scope
 
 
         @pytest.mark.asyncio
@@ -390,13 +391,14 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
             agent = {class_name}()
             contract = build_agent_contract()
             assert contract.cognitive_pattern is not None
-            result = await agent.run(
-                AgentRunRequest(
-                    input="scaffold smoke",
-                    identity=RequestIdentity(tenant_id="t1", user_id="u1"),
-                    agent_id=contract.id,
+            with canonical_execution_identity_scope("scaffold-smoke"):
+                result = await agent.run(
+                    AgentRunRequest(
+                        input="scaffold smoke",
+                        identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+                        agent_id=contract.id,
+                    )
                 )
-            )
             assert result.status == AgentRunStatus.SUCCEEDED
             assert "{primary_capability}" in str(result.output)
         '''
@@ -450,7 +452,7 @@ def _notebook_stub(slug: str, primary_capability: str) -> str:
           {{
            "cell_type": "markdown",
            "metadata": {{}},
-           "source": ["# {slug} experiment\\n", "\\n", "Run via NexusLoop or ``applications/lab_application``."]
+           "source": ["# {slug} experiment (historical / offline)\\n", "\\n", "Prefer ``agent.run()`` — not a canonical production quickstart. For lab/product HTTP use Agent Distribution lifecycle (see AGENT_CREATION_GUIDE Step 4)."]
           }},
           {{
            "cell_type": "code",
@@ -459,16 +461,17 @@ def _notebook_stub(slug: str, primary_capability: str) -> str:
            "outputs": [],
            "source": [
             "from {slug}.{slug}_agent import {_class_name(slug)}\\n",
-            "from intergrax.runtime.nexus.nexus_loop import NexusLoop\\n",
-            "from intergrax.runtime.registry.agent_registry import AgentRegistry\\n",
-            "from intergrax.runtime.task.task import Task, TaskContext\\n",
+            "from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity\\n",
             "\\n",
-            "registry = AgentRegistry()\\n",
-            "registry.register({_class_name(slug)}())\\n",
-            "loop = NexusLoop(registry)\\n",
-            "task = Task(tenant_id='t1', user_id='u1', message='hello', context=TaskContext(capability='{primary_capability}'))\\n",
-            "result = await loop.handle_task(task)\\n",
-            "result.answer"
+            "agent = {_class_name(slug)}()\\n",
+            "result = await agent.run(\\n",
+            "    AgentRunRequest(\\n",
+            "        input='hello',\\n",
+            "        identity=RequestIdentity(tenant_id='t1', user_id='u1'),\\n",
+            "        agent_id=agent.contract_id,\\n",
+            "    )\\n",
+            ")\\n",
+            "result.output"
            ]
           }}
          ],
@@ -502,17 +505,29 @@ def _readme(slug: str, class_name: str, capabilities: list[str], *, pattern: str
 
         Stub LLM in ``{slug}_agent.py`` keeps tests offline — no Tier-3 host required.
 
-        ## Register (programmatic)
+        ## Unit-test authoring (isolated)
 
         ```python
-        from intergrax.runtime.registry.agent_registry import AgentRegistry
+        from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
         from {slug}.{slug}_agent import {class_name}
 
-        registry = AgentRegistry()
-        registry.register({class_name}())
+        agent = {class_name}()
+        result = await agent.run(
+            AgentRunRequest(
+                input="hello",
+                identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+                agent_id=agent.contract_id,
+            )
+        )
         ```
 
-        See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md`` for host wiring.
+        ## Lab / product integration
+
+        Add ``AgentBinding.mount({class_name}, ...)`` to the Tier-3 manifest and run through
+        **Agent Distribution → registry projection → Execution**. Do not use mutable
+        registry construction or direct ``NexusLoop`` on serving paths.
+
+        See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
         ## Capabilities
 

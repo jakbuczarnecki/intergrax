@@ -92,7 +92,6 @@ async def test_run_task_intake_mints_canonical_task_id_and_reaches_executor() ->
     )
     executor = AsyncMock(spec=LocalWorkspaceTaskExecutor)
     executor.execute = AsyncMock(return_value=task_result)
-    executor.nexus_loop = None
     service = LocalWorkspaceRunService(task_executor=executor, default_agent_id="local_search")
 
     response = await service.run_task(

@@ -47,9 +47,14 @@ from intergrax.agent_distribution.federated_catalog import FederatedCatalogSourc
 from intergrax.applications._shared.agent_manager_routes import mount_agent_manager_routes
 from intergrax.applications._shared.harness_auth import HarnessAuthState
 from intergrax.runtime.architecture.capability_graph import (
+    CapabilityEdge,
+    CapabilityEdgeType,
     CapabilityGraph,
     CapabilityNode,
     CapabilityNodeType,
+)
+from intergrax.runtime.architecture.capability_graph_applications import (
+    application_capability_node_id,
 )
 from intergrax.runtime.architecture.capability_graph_query import CapabilityGraphQuery
 from tests.unit.agent_distribution.test_agent_platform_admin_service import (
@@ -156,6 +161,38 @@ def _install_bind(stack: AdminStack) -> None:
         request=_bind_request(),
         principal=admin_test_principal(),
     )
+
+
+def _application_capability_graph(
+    *,
+    application_id: str = _APP,
+    agent_contract_ids: tuple[str, ...] = (),
+    extra_nodes: tuple[CapabilityNode, ...] = (),
+) -> CapabilityGraph:
+    application_node = application_capability_node_id(application_id)
+    nodes: list[CapabilityNode] = [
+        CapabilityNode(
+            node_id=application_node,
+            node_type=CapabilityNodeType.APPLICATION,
+        ),
+        *extra_nodes,
+    ]
+    edges: list[CapabilityEdge] = []
+    for contract_id in agent_contract_ids:
+        nodes.append(
+            CapabilityNode(
+                node_id=f"agent:{contract_id}",
+                node_type=CapabilityNodeType.AGENT,
+            )
+        )
+        edges.append(
+            CapabilityEdge(
+                source_node_id=application_node,
+                target_node_id=f"agent:{contract_id}",
+                edge_type=CapabilityEdgeType.DEPENDS_ON,
+            )
+        )
+    return CapabilityGraph(nodes=nodes, edges=edges)
 
 
 def test_catalog_only_agent_is_discoverable() -> None:
@@ -372,28 +409,148 @@ def test_capability_filter() -> None:
     assert filtered.total == 1
 
 
-def test_application_filter_via_capability_graph() -> None:
-    graph = CapabilityGraph(
-        nodes=[
-            CapabilityNode(
-                node_id="agent:researcher",
-                node_type=CapabilityNodeType.AGENT,
-            ),
-            CapabilityNode(
-                node_id="application:app-a_application",
-                node_type=CapabilityNodeType.APPLICATION,
-            ),
-        ],
-        edges=[],
-    )
+def test_list_agents_for_application_returns_only_graph_members() -> None:
     stack = build_admin_stack()
     _install_bind(stack)
+    graph = _application_capability_graph(agent_contract_ids=("researcher",))
     query = _query_service(stack, capability_graph=graph)
     result = query.list_agents_for_application(
         application_id=_APP,
         application_environment_id=_ENV,
     )
-    assert result.total >= 1
+    assert result.total == 1
+    assert result.items[0].lifecycle.logical_agent_id == "researcher"
+
+
+def test_list_agents_for_application_known_app_zero_agents_returns_empty() -> None:
+    stack = build_admin_stack()
+    _install_bind(stack)
+    graph = _application_capability_graph()
+    query = _query_service(stack, capability_graph=graph)
+    global_result = query.list_agents(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    scoped = query.list_agents_for_application(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    assert global_result.total >= 1
+    assert scoped.total == 0
+    assert scoped.items == ()
+
+
+def test_list_agents_for_application_unknown_application_returns_empty() -> None:
+    stack = build_admin_stack()
+    _install_bind(stack)
+    graph = _application_capability_graph(application_id="other-app")
+    query = _query_service(stack, capability_graph=graph)
+    scoped = query.list_agents_for_application(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    assert scoped.total == 0
+    assert scoped.items == ()
+
+
+def test_list_agents_for_application_without_capability_graph_preserves_global_list() -> None:
+    stack = build_admin_stack()
+    _install_bind(stack)
+    query = _query_service(stack)
+    global_result = query.list_agents(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    scoped = query.list_agents_for_application(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    assert scoped.total == global_result.total
+    assert [item.identity.manager_entry_id for item in scoped.items] == [
+        item.identity.manager_entry_id for item in global_result.items
+    ]
+
+
+def test_list_agents_for_application_does_not_infer_membership_from_capability_labels() -> None:
+    stack = build_admin_stack()
+    _install_only(stack)
+    stack.service.bind_agent(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=BindAgentRequest(
+            mutation_id="mut-bind-decoy",
+            application_binding_id="bind-decoy",
+            logical_agent_id="decoy",
+            installation_slot_id="slot-search",
+        ),
+        principal=admin_test_principal(),
+    )
+    graph = _application_capability_graph(
+        agent_contract_ids=("researcher",),
+        extra_nodes=(
+            CapabilityNode(
+                node_id="agent:decoy",
+                node_type=CapabilityNodeType.AGENT,
+                metadata={"capabilities": "researcher"},
+            ),
+        ),
+    )
+    query = _query_service(stack, capability_graph=graph)
+    result = query.list_agents_for_application(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    assert result.total == 0
+    assert result.items == ()
+
+
+def test_list_agents_for_application_deterministic_ordering() -> None:
+    builtin = _StaticCatalog(
+        [
+            _catalog_entry(
+                entry_id="cat-z",
+                source_id="builtin-z",
+                provider_kind=CatalogProviderKind.BUILTIN,
+                display_name="Z Agent",
+            )
+        ]
+    )
+    official = _StaticCatalog(
+        [
+            _catalog_entry(
+                entry_id="cat-a",
+                source_id="official-a",
+                provider_kind=CatalogProviderKind.OFFICIAL_CATALOG,
+                display_name="A Agent",
+            )
+        ]
+    )
+    federated = FederatedCatalogSourceProvider((builtin, official))
+    stack = build_admin_stack()
+    _install_bind(stack)
+    graph = _application_capability_graph(agent_contract_ids=("researcher",))
+    query = AgentManagerQueryService(
+        catalog_provider=federated,
+        installation_store=InMemoryAgentInstallationStore(stack.state),
+        binding_store=InMemoryApplicationAgentBindingStore(stack.state),
+        revision_store=InMemoryRuntimeRevisionStore(stack.state),
+        serving_store=InMemoryApplicationEnvironmentServingStore(stack.state),
+        roster_builder=EffectiveRosterBuilder(
+            InMemoryAgentInstallationStore(stack.state),
+        ),
+        capability_graph_query=CapabilityGraphQuery(graph),
+    )
+    first = query.list_agents_for_application(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    second = query.list_agents_for_application(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    assert [item.identity.manager_entry_id for item in first.items] == [
+        item.identity.manager_entry_id for item in second.items
+    ]
 
 
 def test_deterministic_ordering() -> None:

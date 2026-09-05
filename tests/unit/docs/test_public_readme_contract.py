@@ -47,6 +47,12 @@ SCENARIO_INCIDENT_LIGHT_PATH = (
 SCENARIO_INCIDENT_DARK_PATH = (
     README_STRATEGIC_ASSETS_DIR / "scenario-ai-incident-investigation-dark.png"
 )
+DECISION_SYSTEM_LIGHT_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "intergrax-decision-system-light.png"
+)
+DECISION_SYSTEM_DARK_PATH = (
+    README_STRATEGIC_ASSETS_DIR / "intergrax-decision-system-dark.png"
+)
 _FULL_SIZE_LINK_LABEL = "View full-size diagram"
 _STRATEGIC_FULL_SIZE_LINKS = (
     (
@@ -88,6 +94,7 @@ _STRATEGIC_PNG_PAIRS = (
     (THREE_ENTRY_POINTS_LIGHT_PATH, THREE_ENTRY_POINTS_DARK_PATH),
     (SCENARIOS_OVERVIEW_LIGHT_PATH, SCENARIOS_OVERVIEW_DARK_PATH),
     (SCENARIO_INCIDENT_LIGHT_PATH, SCENARIO_INCIDENT_DARK_PATH),
+    (DECISION_SYSTEM_LIGHT_PATH, DECISION_SYSTEM_DARK_PATH),
 )
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"

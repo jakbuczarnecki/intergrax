@@ -7,11 +7,12 @@ import json
 import pytest
 
 from vendor_discovery.vendor_discovery_agent import VendorDiscoveryAgent
+from vendor_discovery.contract import build_agent_contract
 from vendor_discovery.schemas.output import VendorDiscoveryOutput
 from vendor_discovery.steps.domain import build_stub_vendor_discovery_output
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
+from intergrax.contracts.agent_run_enums import AgentRunStatus
+from testing_support.builder import canonical_execution_identity_scope
 
 
 @pytest.mark.unit
@@ -30,23 +31,19 @@ def test_contract_declares_canon_capabilities() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.integration
+@pytest.mark.unit
 @pytest.mark.gate
-async def test_vendor_discovery_runs_through_nexus() -> None:
-    registry = AgentRegistry()
-    registry.register(VendorDiscoveryAgent(), requires_uaep=True)
-    loop = NexusLoop(registry)
-    result = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="need CRM vendor",
-            context=TaskContext(capability="vendor_discovery.search"),
+async def test_vendor_discovery_agent_typed_run_smoke() -> None:
+    agent = VendorDiscoveryAgent()
+    contract = build_agent_contract()
+    with canonical_execution_identity_scope("agent-smoke"):
+        result = await agent.run(
+            AgentRunRequest(
+                input="need CRM vendor",
+                identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+                agent_id=contract.id,
+            )
         )
-    )
-    assert result.state == TaskState.COMPLETED
-    assert result.agent_id == "vendor_discovery"
-    payload = json.loads(result.answer)
-    parsed = VendorDiscoveryOutput.model_validate(payload)
-    assert parsed.candidates
-    assert "CRM vendor" in parsed.candidates[0].name
+    assert result.status == AgentRunStatus.SUCCEEDED
+    assert "stub-1" in str(result.output)
+    assert "CRM vendor" in str(result.output)

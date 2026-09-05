@@ -387,7 +387,6 @@ def rag_e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     nexus_loop = resolve_harness_host_nexus_loop_legacy(harness_runtime)
     task_executor = LocalWorkspaceTaskExecutor(
         build_lkw_host_task_execution(nexus_loop, env),
-        nexus_loop=nexus_loop,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

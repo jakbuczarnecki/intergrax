@@ -461,20 +461,55 @@ def test_failed_prepare_preserves_active_revision() -> None:
 
 def test_trust_rejection_propagates_through_install_path() -> None:
     harness = build_acquisition_harness()
-    request = _acquisition_request("rev-trust")
+    harness.service.acquire(
+        _acquisition_request("rev-active"),
+        principal=admin_test_principal(),
+    )
+    serving_before = harness.stack.service.inspect_serving(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    assert serving_before.traffic_serving_revision_id == "rev-active"
+    install_count_before = len(harness.stack.state.installations)
+    binding_count_before = len(harness.stack.state.bindings)
+    revision_count_before = len(harness.stack.state.revisions)
+
+    request = _acquisition_request(
+        "rev-trust",
+        install_mutation_id="mut-install-trust-fail",
+        bind_mutation_id="mut-bind-trust-fail",
+        pointer_revision=1,
+        prior_revision_id="rev-active",
+    )
     request = request.model_copy(
         update={
             "install": request.install.model_copy(
                 update={
+                    "installation_id": "inst-trust-fail",
                     "trust_record": _trust().model_copy(
                         update={"package_digest": "sha256:" + ("c" * 64)},
                     ),
                 },
             ),
+            "bind": request.bind.model_copy(
+                update={"application_binding_id": "bind-trust-fail"},
+            ),
         },
     )
     with pytest.raises(AgentPackageTrustError):
         harness.service.acquire(request, principal=admin_test_principal())
+
+    serving_after = harness.stack.service.inspect_serving(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    assert serving_after.traffic_serving_revision_id == "rev-active"
+    assert len(harness.stack.state.installations) == install_count_before
+    assert len(harness.stack.state.bindings) == binding_count_before
+    assert len(harness.stack.state.revisions) == revision_count_before
+    assert "inst-trust-fail" not in harness.stack.state.installations
+    assert "bind-trust-fail" not in harness.stack.state.bindings
+    assert "rev-trust" not in harness.stack.state.revisions
 
 
 def _discovery_candidate(capability_ids: tuple[str, ...]) -> AgentDiscoveryCandidate:

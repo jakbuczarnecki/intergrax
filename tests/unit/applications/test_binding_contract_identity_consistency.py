@@ -86,3 +86,48 @@ def test_manifest_binding_contract_id_consistent_across_consumers() -> None:
 
     deploy_result = validate_strict_capability_graph_deploy(view, snapshot, manifest, env)
     assert not any(f"roster agent {contract_id!r} missing" in error for error in deploy_result.errors)
+
+
+def test_explicit_mount_contract_id_flows_through_projection_graph_and_package() -> None:
+    from echo.echo_agent import EchoAgent
+
+    contract_id = "echo"
+    manifest = ApplicationManifest.lab(
+        app_id="explicit_mount_identity",
+        name="Explicit Mount Identity",
+        route_prefix="/v1/explicit_mount_identity",
+        env_prefix="EXPLICIT_MOUNT_IDENTITY_",
+        agents=[
+            AgentBinding.mount(
+                EchoAgent,
+                contract_id=contract_id,
+                capabilities=["echo.basic"],
+            )
+        ],
+    )
+    binding = manifest.enabled_agents()[0]
+    assert binding.contract_id == contract_id
+    assert resolve_binding_contract_id(binding) == contract_id
+
+    descriptor = application_capability_descriptor_from_manifest(manifest)
+    assert descriptor.agent_contract_ids == (contract_id,)
+
+    snapshot = _empty_snapshot()
+    view = resolve_environment_capability_graph(
+        manifest,
+        ApplicationEnvironmentProfile.lab_defaults(profile_id="explicit_mount_identity.scaffold"),
+        snapshot,
+    )
+    assert view.contains_node(f"agent:{contract_id}")
+
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="explicit_mount_identity.scaffold")
+    package = build_application_package(manifest, env)
+    agent_refs = {
+        dep.ref for dep in package.dependencies if dep.kind is ApplicationDependencyKind.AGENT
+    }
+    assert contract_id in agent_refs
+
+    deploy_result = validate_strict_capability_graph_deploy(view, snapshot, manifest, env)
+    assert not any(
+        f"roster agent {contract_id!r} missing" in error for error in deploy_result.errors
+    )

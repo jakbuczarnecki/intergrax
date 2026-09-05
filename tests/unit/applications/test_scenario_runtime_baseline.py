@@ -71,7 +71,7 @@ def _scenario_manifest(app_id: str = "scenario_baseline_test") -> ApplicationMan
         name="Scenario Baseline Test",
         route_prefix="/v1/scenario_baseline_test",
         env_prefix="SCENARIO_BASELINE_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
 
 

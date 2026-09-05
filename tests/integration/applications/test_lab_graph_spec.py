@@ -21,7 +21,7 @@ def test_lab_graph_spec_validates_echo_roster() -> None:
     manifest = manifest.model_copy(
         update={
             "agents": [
-                AgentBinding.mount(EchoAgent, capabilities=["echo.basic"]),
+                AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"]),
             ]
         }
     )

@@ -8,7 +8,6 @@ from collections.abc import Callable
 
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.interactions.errors import HostNotAcceptingWorkError
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult
 from local_workspace_application.host.readiness import LocalWorkspaceReadinessProvider
 
@@ -22,18 +21,12 @@ class LocalWorkspaceTaskExecutor:
         self,
         host_execution: HostTaskExecutionPort,
         *,
-        nexus_loop: NexusLoop,
         task_enricher: TaskEnricher | None,
         readiness: LocalWorkspaceReadinessProvider,
     ) -> None:
         self._host_execution = host_execution
-        self._nexus_loop = nexus_loop
         self._task_enricher = task_enricher
         self._readiness = readiness
-
-    @property
-    def nexus_loop(self) -> NexusLoop:
-        return self._nexus_loop
 
     @property
     def host_execution(self) -> HostTaskExecutionPort:

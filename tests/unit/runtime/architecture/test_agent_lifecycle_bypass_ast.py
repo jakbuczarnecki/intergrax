@@ -96,7 +96,7 @@ def test_agent_registry_read_passes() -> None:
 def test_agent_binding_mount_passes() -> None:
     source = (
         "from intergrax.applications.contracts.manifest import AgentBinding\n"
-        "BINDING = AgentBinding.mount(contract_id='demo.agent', capabilities=['demo.run'])\n"
+        "BINDING = AgentBinding.mount(DemoAgent, contract_id='demo.agent', capabilities=['demo.run'])\n"
     )
     assert _violations(source) == ()
 

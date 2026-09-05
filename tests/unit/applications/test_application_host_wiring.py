@@ -33,7 +33,7 @@ def test_build_harness_host_runtime_mounts_application_host() -> None:
         name="Host Wiring Test",
         route_prefix="/v1/host_wiring_test",
         env_prefix="HOST_WIRING_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="host_wiring_test.lab")
     runtime = build_harness_host_runtime(
@@ -55,7 +55,7 @@ async def test_application_host_blocks_agent_selection() -> None:
         name="Host Block Test",
         route_prefix="/v1/host_block_test",
         env_prefix="HOST_BLOCK_TEST_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="host_block_test.lab")
     runtime = build_harness_host_runtime(

@@ -22,6 +22,11 @@ from intergrax.contracts.decision_verification_stage import (
     T,
     VerificationStageRegistration,
 )
+from intergrax.runtime.decision_observability_common import (
+    validate_decision_version_value,
+    validate_emit_context_lineage_for_candidate,
+    validate_positive_int,
+)
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_kind_registry import register_event_kind
 from intergrax.runtime.events.payload_registry import register_payload_schema
@@ -78,22 +83,6 @@ class DecisionVerificationSkipReason(StrEnum):
     DETERMINISTIC_CHALLENGE = "deterministic_challenge"
 
 
-def _validate_positive_int(value: int, label: str) -> int:
-    if type(value) is not int or isinstance(value, bool):
-        raise TypeError(f"{label} must be int, got {type(value).__name__}")
-    if value < 0:
-        raise ValueError(f"{label} must be >= 0")
-    return value
-
-
-def _validate_decision_version_value(value: int) -> int:
-    if type(value) is not int or isinstance(value, bool):
-        raise TypeError(f"decision_version must be int, got {type(value).__name__}")
-    if value < 1:
-        raise ValueError("decision_version must be >= 1")
-    return value
-
-
 def _validate_disposition_value(value: str) -> str:
     if value not in {item.value for item in VerificationDisposition}:
         raise ValueError(f"overall_disposition must be a VerificationDisposition value, got {value!r}")
@@ -131,7 +120,7 @@ class DecisionVerificationSignalPayloadV1(RuntimeEventPayload):
 
     @model_validator(mode="after")
     def _validate_semantic_shape(self) -> DecisionVerificationSignalPayloadV1:
-        _validate_decision_version_value(self.decision_version)
+        validate_decision_version_value(self.decision_version)
         if self.phase not in {item.value for item in DecisionVerificationSignalPhase}:
             raise ValueError(f"phase must be a DecisionVerificationSignalPhase value, got {self.phase!r}")
         if self.stage_outcome is not None:
@@ -139,13 +128,13 @@ class DecisionVerificationSignalPayloadV1(RuntimeEventPayload):
         if self.overall_disposition is not None:
             _validate_disposition_value(self.overall_disposition)
         if self.executed_stage_count is not None:
-            _validate_positive_int(self.executed_stage_count, "executed_stage_count")
+            validate_positive_int(self.executed_stage_count, "executed_stage_count")
         if self.challenged_stage_count is not None:
-            _validate_positive_int(self.challenged_stage_count, "challenged_stage_count")
+            validate_positive_int(self.challenged_stage_count, "challenged_stage_count")
         if self.skipped_stage_count is not None:
-            _validate_positive_int(self.skipped_stage_count, "skipped_stage_count")
+            validate_positive_int(self.skipped_stage_count, "skipped_stage_count")
         if self.stage_count is not None:
-            _validate_positive_int(self.stage_count, "stage_count")
+            validate_positive_int(self.stage_count, "stage_count")
             if self.stage_count < 1:
                 raise ValueError("stage_count must be >= 1")
         phase = DecisionVerificationSignalPhase(self.phase)
@@ -206,23 +195,6 @@ def _identity_fields_from_candidate(
         proposal_ref.identity.version.value,
         str(proposal_ref.lineage_ref.branch_id),
     )
-
-
-def _validate_emit_context_lineage(
-    candidate: CandidateDecision[T],
-    ctx: EmitContext,
-) -> None:
-    execution = candidate.identity.execution
-    if execution.task_id != ctx.task_id:
-        raise ValueError("candidate execution task_id must match EmitContext.task_id")
-    if execution.run_id != ctx.run_id:
-        raise ValueError("candidate execution run_id must match EmitContext.run_id")
-    if execution.attempt_id != ctx.attempt_id:
-        raise ValueError("candidate execution attempt_id must match EmitContext.attempt_id")
-    if execution.execution_id is not None and execution.execution_id != ctx.execution_id:
-        raise ValueError("candidate execution execution_id must match EmitContext.execution_id")
-    if ctx.tenant_id is not None and candidate.identity.tenant_id != ctx.tenant_id:
-        raise ValueError("candidate tenant_id must match EmitContext.tenant_id")
 
 
 def _emit_decision_verification_signal(
@@ -289,14 +261,14 @@ class CanonicalRuntimeEventVerificationObserver(Generic[T]):
         *,
         stage_count: int,
     ) -> None:
-        _validate_emit_context_lineage(candidate, self.ctx)
+        validate_emit_context_lineage_for_candidate(candidate, self.ctx)
         decision_id, decision_version, branch_id = _identity_fields_from_candidate(candidate)
         payload = DecisionVerificationSignalPayloadV1(
             phase=DecisionVerificationSignalPhase.STARTED.value,
             decision_id=decision_id,
             decision_version=decision_version,
             branch_id=branch_id,
-            stage_count=_validate_positive_int(stage_count, "stage_count"),
+            stage_count=validate_positive_int(stage_count, "stage_count"),
         )
         _emit_decision_verification_signal(
             self.ctx,
@@ -310,7 +282,7 @@ class CanonicalRuntimeEventVerificationObserver(Generic[T]):
         registration: VerificationStageRegistration[T],
         record: VerificationStageRecord,
     ) -> None:
-        _validate_emit_context_lineage(candidate, self.ctx)
+        validate_emit_context_lineage_for_candidate(candidate, self.ctx)
         decision_id, decision_version, branch_id = _identity_fields_from_candidate(candidate)
         requirement_code: str | None = None
         finding_code: str | None = None
@@ -342,7 +314,7 @@ class CanonicalRuntimeEventVerificationObserver(Generic[T]):
         *,
         required: bool,
     ) -> None:
-        _validate_emit_context_lineage(candidate, self.ctx)
+        validate_emit_context_lineage_for_candidate(candidate, self.ctx)
         decision_id, decision_version, branch_id = _identity_fields_from_candidate(candidate)
         unavailable_reason_category: str | None = None
         if required:
@@ -371,14 +343,14 @@ class CanonicalRuntimeEventVerificationObserver(Generic[T]):
         *,
         skipped_stage_count: int,
     ) -> None:
-        _validate_emit_context_lineage(candidate, self.ctx)
+        validate_emit_context_lineage_for_candidate(candidate, self.ctx)
         decision_id, decision_version, branch_id = _identity_fields_from_candidate(candidate)
         payload = DecisionVerificationSignalPayloadV1(
             phase=DecisionVerificationSignalPhase.PROBABILISTIC_SKIPPED.value,
             decision_id=decision_id,
             decision_version=decision_version,
             branch_id=branch_id,
-            skipped_stage_count=_validate_positive_int(
+            skipped_stage_count=validate_positive_int(
                 skipped_stage_count,
                 "skipped_stage_count",
             ),
@@ -398,7 +370,7 @@ class CanonicalRuntimeEventVerificationObserver(Generic[T]):
         executed_stage_count: int,
         challenged_stage_count: int,
     ) -> None:
-        _validate_emit_context_lineage(candidate, self.ctx)
+        validate_emit_context_lineage_for_candidate(candidate, self.ctx)
         decision_id, decision_version, branch_id = _identity_fields_from_candidate(candidate)
         payload = DecisionVerificationSignalPayloadV1(
             phase=DecisionVerificationSignalPhase.COMPLETED.value,
@@ -406,11 +378,11 @@ class CanonicalRuntimeEventVerificationObserver(Generic[T]):
             decision_version=decision_version,
             branch_id=branch_id,
             overall_disposition=result.disposition.value,
-            executed_stage_count=_validate_positive_int(
+            executed_stage_count=validate_positive_int(
                 executed_stage_count,
                 "executed_stage_count",
             ),
-            challenged_stage_count=_validate_positive_int(
+            challenged_stage_count=validate_positive_int(
                 challenged_stage_count,
                 "challenged_stage_count",
             ),

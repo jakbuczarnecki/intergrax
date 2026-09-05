@@ -38,6 +38,10 @@ _FORBIDDEN_IMPORT_TOKENS = (
     "testing_support",
     "build_reference_registry_projection_input_bundle",
     "BuilderMap",
+    "invoke_legacy_compatible_agent_factory",
+    "invoke_agent_factory",
+    "build_agent_from_binding",
+    "load_agent_from_binding",
 )
 
 

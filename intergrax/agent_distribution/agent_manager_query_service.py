@@ -332,12 +332,6 @@ class AgentManagerQueryService:
         graph_agents = self._capability_graph_query.agents_for_application(
             application_id,
         )
-        if not graph_agents:
-            return self.list_agents(
-                application_id=application_id,
-                application_environment_id=application_environment_id,
-                filters=filters,
-            )
         base = self.list_agents(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -348,7 +342,6 @@ class AgentManagerQueryService:
             item
             for item in base.items
             if item.lifecycle.logical_agent_id in allowed
-            or _contract_in_capabilities(item, allowed)
         )
         return AgentManagerListResult(
             items=items,
@@ -710,16 +703,3 @@ def _matches_filters(
         if filters.capability not in item.discovery.capabilities:
             return False
     return True
-
-
-def _contract_in_capabilities(
-    item: AgentManagerEntry,
-    allowed_agents: set[str],
-) -> bool:
-    logical = item.lifecycle.logical_agent_id
-    if logical is not None and logical in allowed_agents:
-        return True
-    package_line = item.identity.package_id_line
-    if package_line is None:
-        return False
-    return any(agent in package_line or package_line in agent for agent in allowed_agents)

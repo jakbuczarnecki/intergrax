@@ -39,7 +39,7 @@ def test_product_manifest_without_ownership_fails_gate() -> None:
         name="Ownership Missing",
         route_prefix="/v1/ownership_missing",
         env_prefix="OWNERSHIP_MISSING_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
     violations = check_manifest_operational_ownership("ownership_missing", manifest)
     assert any("ownership must be declared" in item for item in violations)

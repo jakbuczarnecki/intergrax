@@ -12,6 +12,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     mint_attempt_id,
     mint_run_id,
@@ -19,15 +20,27 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
+from intergrax.runtime.execution.execution_terminal.persistence import (
+    terminal_outcome_from_task_state,
+)
 from intergrax.runtime.execution.facade import Execution
 from intergrax.runtime.execution.orchestration import (
     OrchestrationExecutor,
     TaskBoundOrchestrationDelegate,
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
-from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionOptions
+from intergrax.runtime.execution.runtime import (
+    ExecutionRuntime,
+    RootExecutionOptions,
+    mint_root_execution_identity,
+)
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
+from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
+from intergrax.runtime.execution.effective_profile_revision_admission import (
+    EffectiveProfileRevisionAdmissionPort,
+)
+from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.orchestration_capabilities import is_orchestration_capability
@@ -138,6 +151,9 @@ class HostTaskExecutionPort(Protocol):
         *,
         run_id: RunId | None = None,
         attempt_id: AttemptId | None = None,
+        execution_id: ExecutionId | None = None,
+        resume_checkpoint: TaskCheckpoint | None = None,
+        restore_existing_execution: bool = False,
     ) -> TaskResult: ...
 
 
@@ -152,6 +168,8 @@ class HostTaskExecution:
     _pipeline_capability_suffix: str
     _ledger_factory: ExecutionBudgetLedgerFactory | None
     _run_budget: RunBudget | None
+    _terminal_publisher: HostTaskTerminalPublisher | None = None
+    _revision_admission: EffectiveProfileRevisionAdmissionPort | None = None
 
     def _execution_runtime_for_task(
         self,
@@ -181,6 +199,9 @@ class HostTaskExecution:
         *,
         run_id: RunId | None = None,
         attempt_id: AttemptId | None = None,
+        execution_id: ExecutionId | None = None,
+        resume_checkpoint: TaskCheckpoint | None = None,
+        restore_existing_execution: bool = False,
     ) -> TaskResult:
         capabilities = resolve_task_execution_capabilities(
             task,
@@ -194,15 +215,46 @@ class HostTaskExecution:
         )
         resolved_run_id = run_id or mint_run_id()
         resolved_attempt_id = attempt_id or mint_attempt_id()
+        root_identity = mint_root_execution_identity(
+            run_id=resolved_run_id,
+            attempt_id=resolved_attempt_id,
+            execution_id=execution_id,
+        )
+        if self._revision_admission is not None:
+            task = self._revision_admission.admit_root_execution(
+                tenant_id=task.tenant_id,
+                execution_id=root_identity.execution_id,
+                task=task,
+                resume_checkpoint=resume_checkpoint,
+                restore_existing_execution=restore_existing_execution,
+            )
         options = RootExecutionOptions(
             authority=resolve_root_parent_execution_authority(task.execution_authority),
             tenant_id=task.tenant_id,
-            run_id=resolved_run_id,
-            attempt_id=resolved_attempt_id,
+            run_id=root_identity.run_id,
+            attempt_id=root_identity.attempt_id,
+            execution_id=root_identity.execution_id,
         )
-        await ActiveTaskRegistry.register(task, resolved_run_id)
+        await ActiveTaskRegistry.register(task, root_identity.run_id)
         try:
             execution = Execution(self._execution_runtime_for_task(task))
-            return await execution.execute(request, options=options)
+            result = await execution.execute(request, options=options)
+            if (
+                self._terminal_publisher is not None
+                and terminal_outcome_from_task_state(result.state) is not None
+            ):
+                terminal_task = task.model_copy(
+                    update={
+                        "state": result.state,
+                        "agent_id": result.agent_id or task.agent_id,
+                    },
+                )
+                await self._terminal_publisher.publish_terminal(
+                    terminal_task,
+                    run_id=root_identity.run_id,
+                    attempt_id=root_identity.attempt_id,
+                    execution_id=root_identity.execution_id,
+                )
+            return result
         finally:
-            await ActiveTaskRegistry.unregister(task.task_id, resolved_run_id)
+            await ActiveTaskRegistry.unregister(task.task_id, root_identity.run_id)

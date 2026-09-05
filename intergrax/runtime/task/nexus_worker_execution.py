@@ -19,6 +19,7 @@ from intergrax.runtime.background_execution.identity_admission import (
 )
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.budget.persistence import (
@@ -86,6 +87,7 @@ class NexusWorkerRuntime:
         run_budget: RunBudget | None = None,
         run_budget_persistence: RunBudgetPersistence | None = None,
         execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
+        execution_terminal: ExecutionTerminalService | None = None,
     ) -> NexusWorkerRuntime:
         resolved_factory = execution_budget_ledger_factory
         if resolved_factory is None and run_budget_persistence is not None:
@@ -98,6 +100,7 @@ class NexusWorkerRuntime:
             checkpoint_store=checkpoint_store,
             run_budget=run_budget,
             execution_budget_ledger_factory=resolved_factory,
+            execution_terminal=execution_terminal,
         )
         return cls(
             UnifiedTaskRunner(

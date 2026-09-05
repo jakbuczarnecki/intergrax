@@ -629,7 +629,7 @@ def test_postgresql_schema_v4_includes_goal_evaluation_cadence_states(
             "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
         ).fetchone()
         assert row is not None
-        assert int(row["schema_version"]) == 5
+        assert int(row["schema_version"]) == 6
         table_row = conn.execute(
             """
             SELECT 1 FROM information_schema.tables
@@ -703,7 +703,7 @@ def test_postgresql_migration_atomicity_schema_version_not_advanced_without_tabl
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 5
+            assert int(row["schema_version"]) == 6
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables
@@ -742,7 +742,7 @@ def test_postgresql_schema_v1_to_v2_migration_preserves_existing_data(
                 "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
             ).fetchone()
             assert row is not None
-            assert int(row["schema_version"]) == 5
+            assert int(row["schema_version"]) == 6
             table_row = conn.execute(
                 """
                 SELECT 1 FROM information_schema.tables
@@ -767,4 +767,4 @@ def test_postgresql_fresh_database_bootstraps_schema_v4(
             "SELECT schema_version FROM autonomous_work_schema_meta WHERE id = 1"
         ).fetchone()
         assert row is not None
-        assert int(row["schema_version"]) == 5
+        assert int(row["schema_version"]) == 6

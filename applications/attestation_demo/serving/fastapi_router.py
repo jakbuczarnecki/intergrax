@@ -12,6 +12,7 @@ from intergrax.applications._shared.harness_auth import require_harness_api_key
 
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 
@@ -97,10 +98,10 @@ def mount_attestation_demo_routes(
     app: FastAPI,
     *,
     host_execution: HostTaskExecutionPort,
+    registry: AgentRegistryRead,
     boundary_event_buffer: BoundaryEventBuffer,
     prefix: str = "/v1/attestation_demo",
 ) -> AttestationPocRunService:
-    nexus_loop = host_execution.nexus_loop
     service = AttestationPocRunService(
         host_execution=host_execution,
         boundary_event_buffer=boundary_event_buffer,
@@ -132,8 +133,8 @@ def mount_attestation_demo_routes(
     @router.get("/agents")
     async def list_agents() -> dict[str, list[dict[str, object]]]:
         agents: list[dict[str, object]] = []
-        for agent_id in nexus_loop.registry.list_agent_ids():
-            contract = nexus_loop.registry.get(agent_id).get_contract()
+        for agent_id in registry.list_agent_ids():
+            contract = registry.get(agent_id).get_contract()
             agents.append(
                 {
                     "agent_id": contract.id,

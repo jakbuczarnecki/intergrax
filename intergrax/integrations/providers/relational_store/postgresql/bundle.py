@@ -124,6 +124,9 @@ def _materialize_postgresql_autonomous_work_repositories(
         PostgreSQLWorkerPrincipalBindingRepository,
         PostgreSQLWorkerWakeUpReceiptRepository,
     )
+    from intergrax.autonomous_work.postgresql_recovery_episode_repository import (
+        PostgreSQLWorkerRecoveryEpisodeRepository,
+    )
     from intergrax.autonomous_work.postgresql_worker_accounting_repository import (
         PostgreSQLWorkerAccountingRepository,
     )
@@ -158,6 +161,7 @@ def _materialize_postgresql_autonomous_work_repositories(
         worker_principal_binding=PostgreSQLWorkerPrincipalBindingRepository(store),
         worker_wake_up_receipt=PostgreSQLWorkerWakeUpReceiptRepository(store),
         worker_accounting=PostgreSQLWorkerAccountingRepository(store),
+        worker_recovery_episode=PostgreSQLWorkerRecoveryEpisodeRepository(store),
         store=store,
     )
 

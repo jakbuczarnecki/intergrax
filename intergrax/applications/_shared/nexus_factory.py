@@ -56,7 +56,11 @@ from intergrax.runtime.execution.budget import (
 )
 from intergrax.runtime.execution.attempt_lifecycle import (
     AttemptLifecycleService,
-    wire_attempt_lifecycle_store,
+    resolve_attempt_lifecycle_store,
+)
+from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
+from intergrax.runtime.execution.execution_terminal.wiring import (
+    resolve_execution_terminal_store,
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -69,6 +73,7 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_terminal import ExecutionTerminalStore
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedger,
@@ -111,6 +116,8 @@ def build_nexus_loop_from_environment(
     attempt_lifecycle_store: AttemptLifecycleStore | None = None,
     key_value_cache: Any | None = None,
     document_store: Any | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
+    execution_terminal_store: ExecutionTerminalStore | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -149,25 +156,43 @@ def build_nexus_loop_from_environment(
             )
         else:
             resolved_budget_ledger_factory = create_execution_budget_ledger_factory(run_budget)
-    resolved_attempt_lifecycle_store = attempt_lifecycle_store
-    if resolved_attempt_lifecycle_store is None and (
-        key_value_cache is not None or document_store is not None
-    ):
-        from intergrax.distributed.contracts.kv_store import DistributedKVStore
-        from intergrax.integrations.contracts.document_store import DocumentStore
+    from intergrax.distributed.contracts.kv_store import DistributedKVStore
+    from intergrax.integrations.contracts.document_store import DocumentStore
 
-        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
-        doc_store = document_store if isinstance(document_store, DocumentStore) else None
-        if kv_store is not None or doc_store is not None:
-            resolved_attempt_lifecycle_store = wire_attempt_lifecycle_store(
-                kv_store=kv_store,
-                document_store=doc_store,
-            )
+    kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+    doc_store = document_store if isinstance(document_store, DocumentStore) else None
+    durable_checkpoint_store = (
+        checkpoint_store
+        if checkpoint_store is not None and reliability.long_running_scheduler_enabled
+        else None
+    )
+    resolved_attempt_lifecycle_store = resolve_attempt_lifecycle_store(
+        provider=reliability.attempt_lifecycle_persistence_provider,
+        kv_store=kv_store,
+        document_store=doc_store,
+        explicit_store=attempt_lifecycle_store,
+    )
     resolved_attempt_lifecycle = (
         AttemptLifecycleService(resolved_attempt_lifecycle_store)
         if resolved_attempt_lifecycle_store is not None
         else None
     )
+    resolved_execution_terminal = execution_terminal
+    if resolved_execution_terminal is None and (
+        execution_terminal_store is not None
+        or kv_store is not None
+        or doc_store is not None
+        or durable_checkpoint_store is not None
+    ):
+        resolved_execution_terminal = ExecutionTerminalService(
+            resolve_execution_terminal_store(
+                provider=reliability.execution_terminal_persistence_provider,
+                kv_store=kv_store,
+                document_store=doc_store,
+                checkpoint_store=durable_checkpoint_store,
+                execution_terminal_store=execution_terminal_store,
+            ),
+        )
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
@@ -214,6 +239,7 @@ def build_nexus_loop_from_environment(
         budget_allocation_policy=resolved_budget_policy,
         execution_budget_ledger_factory=resolved_budget_ledger_factory,
         attempt_lifecycle=resolved_attempt_lifecycle,
+        execution_terminal=resolved_execution_terminal,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

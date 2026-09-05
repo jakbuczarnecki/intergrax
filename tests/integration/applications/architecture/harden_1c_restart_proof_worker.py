@@ -122,7 +122,7 @@ def _product_manifest(*, integration_profile: IntegrationProfile) -> Application
         name="HARDEN-1C Product Host",
         route_prefix="/v1/harden_1c",
         env_prefix="HARDEN_1C_",
-        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
         environment=env,
         integration_profile=integration_profile,
     )

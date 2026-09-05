@@ -590,7 +590,7 @@ The Decision System **invokes** the existing HITL mechanism ([`RELIABILITY_FAILU
 | **Diagnostics** | Detect / classify platform operation problems |
 | **Decision System** | Lead decision process from proposal to authoritative outcome |
 
-Diagnostics may pass data into investigation / decision flows. Diagnostics is **not** owner of Decision System. Decision System is **not** owner of Diagnostics ([`OBSERVABILITY.md`](OBSERVABILITY.md) DIAG semantics).
+Diagnostics may pass data into investigation / decision flows. Diagnostics is **not** owner of Decision System. Decision System is **not** owner of Diagnostics ([`OBSERVABILITY.md`](OBSERVABILITY.md) DIAG semantics). Lifecycle diagnostic projection (`decision_lifecycle_projection.py`) consumes Decision lifecycle RuntimeEvent evidence only and must not transition, revise, or finalize Decision state.
 
 ---
 
@@ -619,6 +619,22 @@ The Decision System must support full reconstruction of:
 - authorization relation to bound version.
 
 **Do not** persist private chain-of-thought.
+
+### Lifecycle RuntimeEvent spine (DS-OBS-01)
+
+Canonical lifecycle audit events emit through the shared RuntimeEvent spine (`emit_domain_signal`) with typed payload schema `intergrax.decision.lifecycle.signal.v1`:
+
+- `intergrax.decision.lifecycle.started`
+- `intergrax.decision.lifecycle.transitioned`
+- `intergrax.decision.lifecycle.resolved`
+- `intergrax.decision.lifecycle.finalized`
+- `intergrax.decision.lifecycle.terminal`
+
+Implementation: `intergrax/runtime/decision_lifecycle_observability.py` · shared identity validation in `intergrax/runtime/decision_observability_common.py` · optional `DecisionLifecycleObserver` on `CanonicalDecisionLifecycleHost` · resolution/finalization observation seams (`observe_decision_resolution`, `observe_durable_decision_finalization`). Observability is optional and must not authorize lifecycle transitions. Verification telemetry (`intergrax.decision.verification.*`) remains separate and complementary.
+
+### Diagnostic projection (DS-OBS-02)
+
+Diagnostics projects lifecycle RuntimeEvent evidence into `DecisionLifecycleDiagnosticSnapshot` via `intergrax/runtime/diagnostics/decision_lifecycle_projection.py`. Projection is observational only — it reconstructs operator-facing lifecycle state from evidence and fails closed on gaps or conflicts.
 
 <a href="assets/fullsize/decision-observability-audit-reconstruction.md">
 <picture>

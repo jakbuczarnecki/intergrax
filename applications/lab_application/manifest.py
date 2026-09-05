@@ -28,6 +28,7 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
         agents.append(
             AgentBinding.mount(
                 EchoAgent,
+                contract_id="echo",
                 capabilities=["echo.basic"],
                 requires_uaep=True,
             )
@@ -36,21 +37,51 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
     if settings.include_mock_agents:
         agents.extend(
             [
-                AgentBinding.mount(ResearchMockAgent, requires_uaep=True),
-                AgentBinding.mount(DocumentMockAgent, requires_uaep=True),
-                AgentBinding.mount(ValidatorMockAgent, requires_uaep=True),
-                AgentBinding.mount(ComposerMockAgent, requires_uaep=True),
+                AgentBinding.mount(
+                    ResearchMockAgent,
+                    contract_id="research_mock",
+                    requires_uaep=True,
+                ),
+                AgentBinding.mount(
+                    DocumentMockAgent,
+                    contract_id="document_mock",
+                    requires_uaep=True,
+                ),
+                AgentBinding.mount(
+                    ValidatorMockAgent,
+                    contract_id="validator_mock",
+                    requires_uaep=True,
+                ),
+                AgentBinding.mount(
+                    ComposerMockAgent,
+                    contract_id="composer_mock",
+                    requires_uaep=True,
+                ),
             ]
         )
 
     if settings.include_signoff_probe:
-        agents.append(AgentBinding.mount(SignoffProbeAgent, requires_uaep=True))
+        agents.append(
+            AgentBinding.mount(
+                SignoffProbeAgent,
+                contract_id="signoff_probe",
+                requires_uaep=True,
+            )
+        )
 
     if settings.include_research:
         agents.extend(
             [
-                AgentBinding.mount(ResearchAgent, requires_uaep=True),
-                AgentBinding.mount(SummaryAgent, requires_uaep=True),
+                AgentBinding.mount(
+                    ResearchAgent,
+                    contract_id="research",
+                    requires_uaep=True,
+                ),
+                AgentBinding.mount(
+                    SummaryAgent,
+                    contract_id="research-summary",
+                    requires_uaep=True,
+                ),
             ]
         )
 
@@ -58,6 +89,7 @@ def build_lab_manifest(settings: LabApplicationSettings) -> ApplicationManifest:
         agents.append(
             AgentBinding.mount(
                 ProblemRadarAgent,
+                contract_id="problem_radar",
                 capabilities=["problem_radar.scan"],
                 requires_uaep=True,
             )
