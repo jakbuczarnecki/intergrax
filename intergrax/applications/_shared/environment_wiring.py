@@ -71,8 +71,8 @@ from intergrax.applications._shared.notify_tool_wiring import (
 from intergrax.applications._shared.session_tool_wiring import (
     wire_session_storage_tool_binding,
 )
-from intergrax.applications._shared.skill_tool_profile import (
-    assert_skill_tool_requirements_for_profile,
+from intergrax.applications._shared.capability_dependency import (
+    validate_capability_dependencies_for_environment,
 )
 from intergrax.applications._shared.sandbox_wiring import (
     tool_profile_with_sandbox,
@@ -262,9 +262,8 @@ def wire_application_environment(
         tool_profile = extend_tool_profile_for_integration(
             tool_profile, resolved_integration
         )
-    assert_skill_tool_requirements_for_profile(
-        tool_profile,
-        env.skill_profile,
+    validate_capability_dependencies_for_environment(
+        env.model_copy(update={"tool_profile": tool_profile}),
         skill_registry=skill_wiring.registry,
     )
     wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)

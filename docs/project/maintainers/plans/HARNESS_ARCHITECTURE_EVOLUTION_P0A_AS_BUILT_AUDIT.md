@@ -473,17 +473,22 @@ Deferred to P1.3+:
 
 ## P1.3 Capability dependency validation
 
-**Status: PARTIAL**
+**Status: CLOSED (P1.3)**
 
-Existing domain validation includes Skill dependencies, tool existence, integration/config checks, plugin admission, and sandbox/integration wiring.
+Delivered in P1.3:
 
-Missing:
+- typed `CapabilityDependency` declarations with `REQUIRED` / `OPTIONAL` semantics,
+- provider-neutral `CapabilityDependencyValidator` with domain-owned `CapabilityDependencyProvider` seam,
+- Skill → Tool adoption via `SkillToolCapabilityDependencyProvider` (reuses ToolProfile effective availability),
+- composition-time fail-closed gate in `environment_wiring`,
+- `ProfileResolution.dependency_failures` / `degraded_capabilities` evidence population,
+- deterministic dedup with `REQUIRED` dominance over `OPTIONAL`.
 
-- cross-domain dependency graph,
-- required vs optional dependency semantics,
-- unified explainability of degraded/unavailable capability state.
+Deferred to P1.4+:
 
-Do not create a universal runtime semantics registry; dependency metadata should aggregate domain-owned contracts.
+- Runtime Inspection / explain API,
+- cross-domain operational readiness projection (P1.5),
+- Integration → Provider / Credential chain adoption until domain contracts mature.
 
 ---
 

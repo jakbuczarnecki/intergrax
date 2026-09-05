@@ -37,7 +37,7 @@ def _relax_harness_environment_assertions(monkeypatch: pytest.MonkeyPatch) -> No
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        "intergrax.applications._shared.environment_wiring.assert_skill_tool_requirements_for_profile",
+        "intergrax.applications._shared.environment_wiring.validate_capability_dependencies_for_environment",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(

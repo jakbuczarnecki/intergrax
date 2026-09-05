@@ -18,6 +18,9 @@ from intergrax.skills.core.contracts import SkillManifest
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.skills.registry.tool_requirements import SkillToolRequirementError
+from intergrax.applications.contracts.capability_dependency import (
+    RequiredCapabilityDependencyUnavailableError,
+)
 from intergrax.tools.registry.profile import ToolProfile
 from lab_application.host.settings import LabApplicationSettings
 
@@ -84,7 +87,7 @@ def test_wire_application_environment_rejects_unsatisfied_skill_tools() -> None:
         agents=[],
     )
 
-    with pytest.raises(SkillToolRequirementError):
+    with pytest.raises(RequiredCapabilityDependencyUnavailableError):
         wire_application_environment(manifest, env, conformance_check=False)
 
 
