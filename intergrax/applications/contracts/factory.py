@@ -5,12 +5,26 @@
 
 from __future__ import annotations
 
-from typing import Callable, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
 from intergrax.agents.agent_contract import Agent
 
-# Canonical signature: (ApplicationBuildContext, AgentBinding) -> Agent
-# Types omitted here to avoid circular imports between contract modules.
+if TYPE_CHECKING:
+    from intergrax.applications.contracts.build_context import ApplicationBuildContext
+    from intergrax.applications.contracts.manifest import AgentBinding
+
+
+class CanonicalAgentFactory(Protocol):
+    """Strict production factory contract: ``(ctx, binding) -> Agent``."""
+
+    def __call__(
+        self,
+        ctx: ApplicationBuildContext,
+        binding: AgentBinding,
+    ) -> Agent: ...
+
+
+# Broad alias retained for dev/lab builders and legacy compatibility surfaces.
 AgentFactory = Callable[..., Agent]
 
 

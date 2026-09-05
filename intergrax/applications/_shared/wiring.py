@@ -23,7 +23,7 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolver,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.factory import AgentFactory
+from intergrax.applications.contracts.factory import AgentFactory, CanonicalAgentFactory
 from intergrax.applications.contracts.errors import (
     AgentImportError,
     ApplicationManifestConformanceError,
@@ -56,9 +56,7 @@ def load_callable(import_path: str) -> Callable[..., Any]:
 
     namespace = vars(module)
     if attr_name not in namespace:
-        raise AgentImportError(
-            f"Module {module_path!r} has no attribute {attr_name!r}"
-        )
+        raise AgentImportError(f"Module {module_path!r} has no attribute {attr_name!r}")
     target = namespace[attr_name]
 
     if not callable(target):
@@ -87,15 +85,46 @@ def resolve_builder(
     return None
 
 
-def invoke_agent_factory(
+def _validate_factory_result(
+    result: object,
+    factory: object,
+    binding: AgentBinding,
+) -> Agent:
+    if not isinstance(result, Agent):
+        raise AgentImportError(
+            f"Factory {factory!r} must return Agent, got {type(result)!r}"
+        )
+    if binding.agent_type is not None or binding.import_path is not None:
+        expected = binding.resolved_agent_type()
+        if not isinstance(result, expected):
+            raise AgentImportError(
+                f"Factory for {binding.display_name()} returned {type(result)!r}, "
+                f"expected instance of {expected.__name__}"
+            )
+    return result
+
+
+def invoke_canonical_agent_factory(
+    factory: CanonicalAgentFactory,
+    ctx: ApplicationBuildContext,
+    binding: AgentBinding,
+) -> Agent:
+    """Strict production invocation: exactly ``(ctx, binding)`` with no signature probing."""
+    result = factory(ctx, binding)
+    return _validate_factory_result(result, factory, binding)
+
+
+def invoke_legacy_compatible_agent_factory(
     factory: Callable[..., Any],
     ctx: ApplicationBuildContext,
     binding: AgentBinding,
 ) -> Agent:
     """
-    Call a Tier-3 factory with the canonical ``(ctx, binding)`` signature.
+    DEV / LAB / COMPATIBILITY ONLY — multi-signature factory invocation.
 
-    Falls back to ``(settings,)``, ``(ctx,)``, or ``()`` for legacy factories.
+    Attempts ``(ctx, binding)``, ``(settings,)``, ``(ctx,)``, then ``()``.
+    Production revision-bound assembly must use
+    :func:`invoke_canonical_agent_factory` instead.
     """
     attempts: list[tuple[tuple[Any, ...], dict[str, Any]]] = [
         ((ctx, binding), {}),
@@ -111,23 +140,21 @@ def invoke_agent_factory(
         except TypeError as exc:
             last_error = exc
             continue
-        if not isinstance(result, Agent):
-            raise AgentImportError(
-                f"Factory {factory!r} must return Agent, got {type(result)!r}"
-            )
-        if binding.agent_type is not None or binding.import_path is not None:
-            expected = binding.resolved_agent_type()
-            if not isinstance(result, expected):
-                raise AgentImportError(
-                    f"Factory for {binding.display_name()} returned {type(result)!r}, "
-                    f"expected instance of {expected.__name__}"
-                )
-        return result
+        return _validate_factory_result(result, factory, binding)
 
     message = f"Cannot invoke factory for {binding.display_name()!r}"
     if last_error is not None:
         raise AgentImportError(message) from last_error
     raise AgentImportError(message)
+
+
+def invoke_agent_factory(
+    factory: Callable[..., Any],
+    ctx: ApplicationBuildContext,
+    binding: AgentBinding,
+) -> Agent:
+    """Backward-compatible alias for :func:`invoke_legacy_compatible_agent_factory`."""
+    return invoke_legacy_compatible_agent_factory(factory, ctx, binding)
 
 
 def build_agent_from_binding(
@@ -154,7 +181,9 @@ def build_agent_from_binding(
             f"or a builders entry (zero-arg construction failed)"
         ) from exc
     if not isinstance(agent, agent_cls):
-        raise AgentImportError(f"{binding.display_name()}: constructor did not return {agent_cls.__name__}")
+        raise AgentImportError(
+            f"{binding.display_name()}: constructor did not return {agent_cls.__name__}"
+        )
     return agent
 
 
@@ -336,10 +365,10 @@ def _register_binding(
     *,
     builders: BuilderMap | None,
     skill_registry: SkillRegistry | None,
-    resolved_factory: AgentFactory | None = None,
+    resolved_factory: CanonicalAgentFactory | None = None,
 ) -> None:
     if resolved_factory is not None:
-        agent = invoke_agent_factory(resolved_factory, ctx, binding)
+        agent = invoke_canonical_agent_factory(resolved_factory, ctx, binding)
     else:
         agent = build_agent_from_binding(binding, ctx, builders=builders)
     registry.register(
@@ -426,7 +455,9 @@ def build_application_registry(
         raise ApplicationManifestConformanceError(
             f"{manifest.app_id}: effective roster has no enabled agents"
         )
-    default_entries = [entry for entry in enabled_entries if entry.effective_default_agent]
+    default_entries = [
+        entry for entry in enabled_entries if entry.effective_default_agent
+    ]
     if len(default_entries) > 1:
         raise ApplicationManifestConformanceError(
             f"{manifest.app_id}: multiple default agents in effective roster"
