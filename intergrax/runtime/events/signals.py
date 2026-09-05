@@ -5,31 +5,14 @@
 
 from __future__ import annotations
 
-import re
-
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_catalog import category_for_event_kind, get_catalog_entry
+from intergrax.runtime.events.event_kind import DomainSignalError, validate_event_kind
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-
-_EVENT_KIND_RE = re.compile(
-    r"^(agents|applications|platform|intergrax)\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$"
-)
-
-
-class DomainSignalError(ValueError):
-    """Raised when a domain signal kind or payload is invalid."""
-
-
-def validate_event_kind(kind: str) -> None:
-    if not _EVENT_KIND_RE.match(kind):
-        raise DomainSignalError(
-            "event_kind must be a namespaced lowercase id "
-            "(e.g. agents.legal.clause_flagged)"
-        )
 
 
 def _trace_fields_from_ctx(ctx: EmitContext) -> dict[str, str]:

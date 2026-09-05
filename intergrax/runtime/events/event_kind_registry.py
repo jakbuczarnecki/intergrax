@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.runtime.events.event_kind import DomainSignalError, validate_event_kind
 from intergrax.runtime.events.event_taxonomy import category_for_event_kind
 from intergrax.runtime.events.payload_registry import get_payload_schema
-from intergrax.runtime.events.signals import DomainSignalError, validate_event_kind
 
 _HOS_STREAM_PREFIX = "intergrax.llm.stream."
 
