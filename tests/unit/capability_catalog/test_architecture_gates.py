@@ -52,6 +52,7 @@ _FORBIDDEN_RUNTIME_MUTATION_FUNCTION_NAMES = frozenset(
         "select",
         "rank",
         "authorize",
+        "grant_permission",
     },
 )
 
