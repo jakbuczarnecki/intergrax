@@ -303,7 +303,19 @@ Delivery rule:
 | **Exact scope** | ordered search Tool → Skill → Integration → approved alternate/configuration → CodeCraft; A0-A4 risk classification |
 | **Architecture depth** | [`satellites/AUTONOMOUS_WORK_extended_depth.md`](../../architecture/satellites/AUTONOMOUS_WORK_extended_depth.md) §Capability acquisition, §A0–A4, §CodeCraft recovery, §Durable capability promotion |
 | **Acceptance** | CodeCraft is not default; A4 self-authorization impossible |
-| **Next step** | AW-7B |
+| **Next step** | AW-7-DISCOVERY-ALIGNMENT |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7-DISCOVERY-ALIGNMENT |
+| **Priority** | P0 |
+| **Status** | **BLOCKED_WAITING_FOR_PARALLEL_DISCOVERY** (audit frozen 2026-09-05 @ `74f59733`) |
+| **Purpose** | Align AW-7A with domain-owned discovery surfaces; freeze reuse ladder before CodeCraft A1 |
+| **Exact scope** | consume canonical Tool/Skill/Agent/Integration discovery via thin AW adapters; no AW-owned semantic discovery; Agent before CodeCraft; authoritative `NO_MATCH` / fail-closed `UNAVAILABLE` |
+| **Blocked on** | canonical Tool Discovery and Skill Discovery public ports (`DiscoveryRequest`/`DiscoveryResult`/strategy) not yet on `development` |
+| **As-built (partial)** | AW-7A ladder + registry fallback adapters; Integration catalog adapter; Agent Distribution discovery reference architecture documented; Agent AW projection **planned** |
+| **Acceptance** | no dual Tool/Skill authority; provenance preserved; CodeCraft only after exhaustive configured layers; architecture gates PASS |
+| **Next step** | unblock when Tool + Skill canonical discovery merge → implement AW projection adapters + Agent layer → independent audit |
 
 | Field | Value |
 |---|---|

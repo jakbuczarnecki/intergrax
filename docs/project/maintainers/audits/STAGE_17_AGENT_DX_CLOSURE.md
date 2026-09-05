@@ -125,6 +125,7 @@ Documented as **namespace debt only** — not a lifecycle or public-execution by
 | `check_canonical_authoring_surface_conformance.py` | Pass (run in Stage 17 verification) |
 | Agent package `-m gate` smoke (migrated packages) | 13 passed |
 | Scenario architecture gates | Pass (run in Stage 17 verification) |
+| Dedicated ai_incident real-package conformance | PASS with zero lifecycle exemptions |
 | Application lifecycle gates | Pass (run in Stage 17 verification) |
 | Stage 15 architecture gate | Pass (run in Stage 17 verification) |
 | Stage 15 E2E | Pass (run in Stage 17 verification) |

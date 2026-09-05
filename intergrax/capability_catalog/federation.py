@@ -11,7 +11,7 @@ from intergrax.capability_catalog.errors import (
     CapabilityCatalogIdentityConflict,
     CapabilityCatalogSourceFailure,
 )
-from intergrax.capability_catalog.snapshot import CapabilityCatalogSnapshot, _entry_sort_key
+from intergrax.capability_catalog.snapshot import CapabilityCatalogSnapshot
 from intergrax.capability_catalog.source import CapabilityCatalogSource
 
 
@@ -89,10 +89,17 @@ class FederatedCapabilityCatalog:
                     f"catalog source {source_id!r} failed during read",
                 ) from exc
             for entry in entries:
+                entry_source_id = entry.identity.source.source_id
+                if entry_source_id != source_id:
+                    raise CapabilityCatalogConfigurationError(
+                        "catalog source "
+                        f"{source_id!r} returned entry with mismatched identity source "
+                        f"{entry_source_id!r}",
+                    )
                 observations.append((source_id, entry))
 
         merged = merge_capability_catalog_entries(tuple(observations))
-        ordered_entries = tuple(sorted(merged, key=_entry_sort_key))
+        ordered_entries = tuple(sorted(merged, key=lambda entry: entry.identity.sort_key))
         return CapabilityCatalogSnapshot(
             source_ids=tuple(
                 _source_id_sort_key(source.source_id) for source in ordered_sources

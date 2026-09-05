@@ -242,6 +242,86 @@ def _violation(
     )
 
 
+def _attribute_chain_parts(expr: ast.expr) -> tuple[str, tuple[str, ...]] | None:
+    attrs: list[str] = []
+    current = expr
+    while isinstance(current, ast.Attribute):
+        attrs.append(current.attr)
+        current = current.value
+    if isinstance(current, ast.Name):
+        return current.id, tuple(reversed(attrs))
+    return None
+
+
+def _collect_scenario_registry_mutation_violations(
+    *,
+    tree: ast.AST,
+    scenario_slug: str,
+    relative_path: str,
+) -> list[ScenarioArchitectureViolation]:
+    violations: list[ScenarioArchitectureViolation] = []
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Subscript) and isinstance(node.value, ast.Attribute):
+            if node.value.attr == "_contracts":
+                violations.append(
+                    _violation(
+                        rule_id=ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS,
+                        scenario_slug=scenario_slug,
+                        relative_path=relative_path,
+                        line=node.lineno,
+                        symbol="_contracts",
+                        message=(
+                            "scenario application must not mutate AgentRegistry private fields; "
+                            "use platform-owned LAB bootstrap register(..., contract=...)"
+                        ),
+                    )
+                )
+
+        if isinstance(node, ast.Attribute) and node.attr == "_contracts":
+            violations.append(
+                _violation(
+                    rule_id=ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS,
+                    scenario_slug=scenario_slug,
+                    relative_path=relative_path,
+                    line=node.lineno,
+                    symbol="_contracts",
+                    message=(
+                        "scenario application must not access AgentRegistry private fields; "
+                        "use platform-owned LAB bootstrap register(..., contract=...)"
+                    ),
+                )
+            )
+
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr != "register":
+            continue
+
+        parts = _attribute_chain_parts(node.func.value)
+        if parts is None:
+            continue
+        _root, attrs = parts
+        if not attrs or attrs[-1] != "registry":
+            continue
+
+        violations.append(
+            _violation(
+                rule_id=ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS,
+                scenario_slug=scenario_slug,
+                relative_path=relative_path,
+                line=node.lineno,
+                symbol="registry.register",
+                message=(
+                    "scenario application must not call registry.register(); "
+                    "assemble roster via platform-owned build_scenario_lab_agent_registry"
+                ),
+            )
+        )
+
+    return violations
+
+
 def _collect_agent_lifecycle_violations(
     *,
     tree: ast.AST,
@@ -249,7 +329,7 @@ def _collect_agent_lifecycle_violations(
     relative_path: str,
 ) -> list[ScenarioArchitectureViolation]:
     bindings = collect_agent_registry_import_bindings(tree)
-    return [
+    violations = [
         _violation(
             rule_id=ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS,
             scenario_slug=scenario_slug,
@@ -266,6 +346,14 @@ def _collect_agent_lifecycle_violations(
             bindings=bindings,
         )
     ]
+    violations.extend(
+        _collect_scenario_registry_mutation_violations(
+            tree=tree,
+            scenario_slug=scenario_slug,
+            relative_path=relative_path,
+        )
+    )
+    return violations
 
 
 def _collect_application_violations(

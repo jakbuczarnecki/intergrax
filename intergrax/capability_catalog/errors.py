@@ -20,3 +20,7 @@ class CapabilityCatalogIdentityConflict(CapabilityCatalogError):
 
 class CapabilityCatalogSourceFailure(CapabilityCatalogError):
     """A catalog source failed during read — federation aborts fail-closed."""
+
+
+class CapabilityCatalogDiscoveryError(CapabilityCatalogError):
+    """Invalid discovery query inputs or missing enterprise availability evidence."""

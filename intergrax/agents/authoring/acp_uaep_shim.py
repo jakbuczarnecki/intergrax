@@ -47,6 +47,7 @@ def apply_host_tool_invoker_to_runtime_context(
         return
     runtime_context.config.tool_registry = registry
     runtime_context.config.tool_invoker = tool_invoker
+    runtime_context.tool_invoker_close_on_context_close = False
 
     from intergrax.applications._shared.rag_runtime_bridge import apply_rag_from_tool_wiring_context
     from intergrax.tools.core.handler import WiringContextToolHandler

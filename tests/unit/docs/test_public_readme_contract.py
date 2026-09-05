@@ -8,6 +8,7 @@ import re
 import struct
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 
@@ -17,84 +18,130 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 README_STRATEGIC_ASSETS_DIR = REPO_ROOT / "docs" / "project" / "assets" / "public" / "readme"
-ECOSYSTEM_HERO_LIGHT_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-light.png"
-ECOSYSTEM_HERO_DARK_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-dark.png"
-PLATFORM_MAP_LIGHT_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-platform-map-light.png"
-PLATFORM_MAP_DARK_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-platform-map-dark.png"
-WHY_LIGHT_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-why-light.png"
-WHY_DARK_PATH = README_STRATEGIC_ASSETS_DIR / "intergrax-why-dark.png"
-GOVERNED_EXECUTION_LIGHT_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "intergrax-governed-execution-light.png"
-)
-GOVERNED_EXECUTION_DARK_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "intergrax-governed-execution-dark.png"
-)
-THREE_ENTRY_POINTS_LIGHT_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "intergrax-three-entry-points-light.png"
-)
-THREE_ENTRY_POINTS_DARK_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "intergrax-three-entry-points-dark.png"
-)
-SCENARIOS_OVERVIEW_LIGHT_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "intergrax-scenarios-overview-light.png"
-)
-SCENARIOS_OVERVIEW_DARK_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "intergrax-scenarios-overview-dark.png"
-)
-SCENARIO_INCIDENT_LIGHT_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "scenario-ai-incident-investigation-light.png"
-)
-SCENARIO_INCIDENT_DARK_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "scenario-ai-incident-investigation-dark.png"
-)
-DECISION_SYSTEM_LIGHT_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "intergrax-decision-system-light.png"
-)
-DECISION_SYSTEM_DARK_PATH = (
-    README_STRATEGIC_ASSETS_DIR / "intergrax-decision-system-dark.png"
-)
 _FULL_SIZE_LINK_LABEL = "View full-size diagram"
-_STRATEGIC_FULL_SIZE_LINKS = (
-    (
-        "## Explore the Intergrax Platform",
-        "| Platform area | What it provides | Explore |",
-        "docs/project/assets/public/readme/fullsize/intergrax-platform-map.md",
-        "docs/project/assets/public/readme/intergrax-platform-map-light.png",
+_MIN_STRATEGIC_PNG_WIDTH = 800
+_MIN_STRATEGIC_PNG_HEIGHT = 400
+_MAX_STRATEGIC_ASPECT_RATIO = 6.0
+_MIN_STRATEGIC_ASPECT_RATIO = 1.0 / _MAX_STRATEGIC_ASPECT_RATIO
+_README_STRATEGIC_PNG_STEM = re.compile(
+    r"docs/project/assets/public/readme/([a-z0-9-]+)-(?:light|dark)\.png"
+)
+
+
+def _repo_relative_path(path: Path) -> str:
+    return path.relative_to(REPO_ROOT).as_posix()
+
+
+class StrategicReadmeVisual(NamedTuple):
+    logical_name: str
+    light_path: Path
+    dark_path: Path
+    fullsize_path: str | None
+    section_start_marker: str | None = None
+    section_end_marker: str | None = None
+    requires_view_full_size_label: bool = True
+
+
+_STRATEGIC_README_VISUALS: tuple[StrategicReadmeVisual, ...] = (
+    StrategicReadmeVisual(
+        logical_name="intergrax-ecosystem-hero",
+        light_path=README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-light.png",
+        dark_path=README_STRATEGIC_ASSETS_DIR / "intergrax-ecosystem-hero-dark.png",
+        fullsize_path="docs/project/assets/public/readme/fullsize/intergrax-ecosystem-hero.md",
+        requires_view_full_size_label=False,
     ),
-    (
-        "## Why this matters",
-        "---",
-        "docs/project/assets/public/readme/fullsize/intergrax-why.md",
-        "docs/project/assets/public/readme/intergrax-why-light.png",
+    StrategicReadmeVisual(
+        logical_name="intergrax-why",
+        light_path=README_STRATEGIC_ASSETS_DIR / "intergrax-why-light.png",
+        dark_path=README_STRATEGIC_ASSETS_DIR / "intergrax-why-dark.png",
+        fullsize_path="docs/project/assets/public/readme/fullsize/intergrax-why.md",
+        section_start_marker="## Why this matters",
+        section_end_marker="---",
     ),
-    (
-        "## AI execution should not be a black box",
-        "A governed run can leave correlated runtime events",
-        "docs/project/assets/public/readme/fullsize/intergrax-governed-execution.md",
-        "docs/project/assets/public/readme/intergrax-governed-execution-light.png",
+    StrategicReadmeVisual(
+        logical_name="intergrax-three-entry-points",
+        light_path=README_STRATEGIC_ASSETS_DIR / "intergrax-three-entry-points-light.png",
+        dark_path=README_STRATEGIC_ASSETS_DIR / "intergrax-three-entry-points-dark.png",
+        fullsize_path="docs/project/assets/public/readme/fullsize/intergrax-three-entry-points.md",
+        section_start_marker="## Explore Intergrax",
+        section_end_marker="**[Explore Proof Library]",
     ),
-    (
-        "## Explore Intergrax",
-        "**[Explore Proof Library]",
-        "docs/project/assets/public/readme/fullsize/intergrax-three-entry-points.md",
-        "docs/project/assets/public/readme/intergrax-three-entry-points-light.png",
+    StrategicReadmeVisual(
+        logical_name="intergrax-scenarios-overview",
+        light_path=README_STRATEGIC_ASSETS_DIR / "intergrax-scenarios-overview-light.png",
+        dark_path=README_STRATEGIC_ASSETS_DIR / "intergrax-scenarios-overview-dark.png",
+        fullsize_path="docs/project/assets/public/readme/fullsize/intergrax-scenarios-overview.md",
+        section_start_marker="## Real problems. Executable evidence.",
+        section_end_marker="**[Explore Proof Library]",
     ),
-    (
-        "## Real problems. Executable evidence.",
-        "**[Explore Proof Library]",
-        "docs/project/assets/public/readme/fullsize/intergrax-scenarios-overview.md",
-        "docs/project/assets/public/readme/intergrax-scenarios-overview-light.png",
+    StrategicReadmeVisual(
+        logical_name="scenario-ai-incident-investigation",
+        light_path=README_STRATEGIC_ASSETS_DIR / "scenario-ai-incident-investigation-light.png",
+        dark_path=README_STRATEGIC_ASSETS_DIR / "scenario-ai-incident-investigation-dark.png",
+        fullsize_path="docs/project/assets/public/readme/fullsize/scenario-ai-incident-investigation.md",
+        section_start_marker="### Featured scenario in development",
+        section_end_marker="---",
+    ),
+    StrategicReadmeVisual(
+        logical_name="intergrax-platform-map",
+        light_path=README_STRATEGIC_ASSETS_DIR / "intergrax-platform-map-light.png",
+        dark_path=README_STRATEGIC_ASSETS_DIR / "intergrax-platform-map-dark.png",
+        fullsize_path="docs/project/assets/public/readme/fullsize/intergrax-platform-map.md",
+        section_start_marker="## Explore the Intergrax Platform",
+        section_end_marker="| Platform area | What it provides | Explore |",
+    ),
+    StrategicReadmeVisual(
+        logical_name="intergrax-decision-system",
+        light_path=README_STRATEGIC_ASSETS_DIR / "intergrax-decision-system-light.png",
+        dark_path=README_STRATEGIC_ASSETS_DIR / "intergrax-decision-system-dark.png",
+        fullsize_path="docs/project/assets/public/readme/fullsize/intergrax-decision-system.md",
+        section_start_marker="## Decision quality before execution",
+        section_end_marker="## AI execution should not be a black box",
+    ),
+    StrategicReadmeVisual(
+        logical_name="intergrax-governed-execution",
+        light_path=README_STRATEGIC_ASSETS_DIR / "intergrax-governed-execution-light.png",
+        dark_path=README_STRATEGIC_ASSETS_DIR / "intergrax-governed-execution-dark.png",
+        fullsize_path="docs/project/assets/public/readme/fullsize/intergrax-governed-execution.md",
+        section_start_marker="## AI execution should not be a black box",
+        section_end_marker="A governed run can leave correlated runtime events",
     ),
 )
-_STRATEGIC_PNG_PAIRS = (
-    (ECOSYSTEM_HERO_LIGHT_PATH, ECOSYSTEM_HERO_DARK_PATH),
-    (PLATFORM_MAP_LIGHT_PATH, PLATFORM_MAP_DARK_PATH),
-    (WHY_LIGHT_PATH, WHY_DARK_PATH),
-    (GOVERNED_EXECUTION_LIGHT_PATH, GOVERNED_EXECUTION_DARK_PATH),
-    (THREE_ENTRY_POINTS_LIGHT_PATH, THREE_ENTRY_POINTS_DARK_PATH),
-    (SCENARIOS_OVERVIEW_LIGHT_PATH, SCENARIOS_OVERVIEW_DARK_PATH),
-    (SCENARIO_INCIDENT_LIGHT_PATH, SCENARIO_INCIDENT_DARK_PATH),
-    (DECISION_SYSTEM_LIGHT_PATH, DECISION_SYSTEM_DARK_PATH),
+
+_STRATEGIC_VISUAL_BY_NAME = {visual.logical_name: visual for visual in _STRATEGIC_README_VISUALS}
+ECOSYSTEM_HERO_LIGHT_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-ecosystem-hero"].light_path
+ECOSYSTEM_HERO_DARK_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-ecosystem-hero"].dark_path
+PLATFORM_MAP_LIGHT_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-platform-map"].light_path
+PLATFORM_MAP_DARK_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-platform-map"].dark_path
+WHY_LIGHT_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-why"].light_path
+WHY_DARK_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-why"].dark_path
+GOVERNED_EXECUTION_LIGHT_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-governed-execution"].light_path
+GOVERNED_EXECUTION_DARK_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-governed-execution"].dark_path
+THREE_ENTRY_POINTS_LIGHT_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-three-entry-points"].light_path
+THREE_ENTRY_POINTS_DARK_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-three-entry-points"].dark_path
+SCENARIOS_OVERVIEW_LIGHT_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-scenarios-overview"].light_path
+SCENARIOS_OVERVIEW_DARK_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-scenarios-overview"].dark_path
+SCENARIO_INCIDENT_LIGHT_PATH = _STRATEGIC_VISUAL_BY_NAME["scenario-ai-incident-investigation"].light_path
+SCENARIO_INCIDENT_DARK_PATH = _STRATEGIC_VISUAL_BY_NAME["scenario-ai-incident-investigation"].dark_path
+DECISION_SYSTEM_LIGHT_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-decision-system"].light_path
+DECISION_SYSTEM_DARK_PATH = _STRATEGIC_VISUAL_BY_NAME["intergrax-decision-system"].dark_path
+_STRATEGIC_FULL_SIZE_LINKS = tuple(
+    (
+        visual.section_start_marker,
+        visual.section_end_marker,
+        visual.fullsize_path,
+        _repo_relative_path(visual.light_path),
+    )
+    for visual in _STRATEGIC_README_VISUALS
+    if (
+        visual.fullsize_path is not None
+        and visual.section_start_marker is not None
+        and visual.section_end_marker is not None
+        and visual.requires_view_full_size_label
+    )
+)
+_STRATEGIC_PNG_PAIRS = tuple(
+    (visual.light_path, visual.dark_path) for visual in _STRATEGIC_README_VISUALS
 )
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
@@ -556,6 +603,89 @@ def _validate_light_dark_pair(light_path: Path, dark_path: Path) -> list[str]:
     return violations
 
 
+def _validate_strategic_png_quality(light_path: Path, dark_path: Path) -> list[str]:
+    violations = _validate_light_dark_pair(light_path, dark_path)
+    if violations:
+        return violations
+
+    width, height = _png_dimensions(light_path)
+    if width <= 0 or height <= 0:
+        violations.append("non-positive dimensions")
+    if width < _MIN_STRATEGIC_PNG_WIDTH:
+        violations.append(f"width below minimum {_MIN_STRATEGIC_PNG_WIDTH}px")
+    if height < _MIN_STRATEGIC_PNG_HEIGHT:
+        violations.append(f"height below minimum {_MIN_STRATEGIC_PNG_HEIGHT}px")
+
+    aspect_ratio = width / height if height else 0.0
+    if aspect_ratio > _MAX_STRATEGIC_ASPECT_RATIO or aspect_ratio < _MIN_STRATEGIC_ASPECT_RATIO:
+        violations.append(f"absurd aspect ratio {aspect_ratio:.2f}")
+    return violations
+
+
+def _strategic_png_stem(path: Path) -> str:
+    stem = _normalize_light_dark_stem(path.name)
+    if stem is None:
+        raise ValueError(f"not a light/dark strategic PNG filename: {path.name}")
+    return stem
+
+
+def _collect_readme_strategic_png_stems(readme_text: str) -> set[str]:
+    return {match.group(1) for match in _README_STRATEGIC_PNG_STEM.finditer(readme_text)}
+
+
+def _registered_strategic_png_stems() -> set[str]:
+    return {_strategic_png_stem(visual.light_path) for visual in _STRATEGIC_README_VISUALS}
+
+
+def _visual_readme_section(readme_text: str, visual: StrategicReadmeVisual) -> str:
+    if visual.section_start_marker is not None and visual.section_end_marker is not None:
+        return _section_slice(
+            readme_text,
+            visual.section_start_marker,
+            visual.section_end_marker,
+        )
+    return readme_text[: readme_text.index("## Choose your path")]
+
+
+def _assert_readme_picture_contract(readme_text: str, visual: StrategicReadmeVisual) -> None:
+    light_ref = _repo_relative_path(visual.light_path)
+    dark_ref = _repo_relative_path(visual.dark_path)
+    matching_blocks = [
+        block for block in _extract_picture_blocks(readme_text) if light_ref in block
+    ]
+    assert len(matching_blocks) == 1, (
+        f"{visual.logical_name} must appear in exactly one <picture> block; "
+        f"found {len(matching_blocks)}"
+    )
+    parsed = _parse_picture_block(matching_blocks[0])
+    assert parsed["light"] == light_ref, f"{visual.logical_name} light source mismatch"
+    assert parsed["dark"] == dark_ref, f"{visual.logical_name} dark source mismatch"
+    assert parsed["img_src"] == light_ref, (
+        f"{visual.logical_name} <img src> must match light fallback"
+    )
+    assert parsed["img_alt"], f"{visual.logical_name} picture block missing non-empty alt text"
+
+
+def _assert_fullsize_wrapper(readme_text: str, visual: StrategicReadmeVisual) -> None:
+    assert visual.fullsize_path is not None
+    section = _visual_readme_section(readme_text, visual)
+    light_ref = _repo_relative_path(visual.light_path)
+    anchor = f'<a href="{visual.fullsize_path}">'
+
+    assert anchor in section, f"Missing full-size anchor wrapper for {visual.logical_name}"
+    assert light_ref in section, f"Missing README reference to {visual.logical_name} light PNG"
+    assert (REPO_ROOT / visual.fullsize_path).is_file(), (
+        f"Missing full-size preview for {visual.logical_name}: {visual.fullsize_path}"
+    )
+
+    if visual.requires_view_full_size_label:
+        _assert_full_size_link_after_picture(section, visual.fullsize_path)
+    else:
+        assert _FULL_SIZE_LINK_LABEL not in section, (
+            f"{visual.logical_name} must not expose a View full-size diagram label"
+        )
+
+
 def _light_dark_pair_paths(stem: str, directory: Path, extension: str) -> tuple[Path, Path]:
     return (
         directory / f"{stem}-light{extension}",
@@ -817,10 +947,38 @@ def test_readme_controlled_multi_visual_contract(readme_text: str) -> None:
         assert not violations, f"{svg_path.name}: {violations}"
 
 
+def test_strategic_visual_regression_guard(readme_text: str) -> None:
+    """Canonical registry protects strategic root README visuals from technical regression."""
+    for visual in _STRATEGIC_README_VISUALS:
+        assert visual.light_path.is_file(), f"Missing strategic light PNG: {visual.light_path.name}"
+        assert visual.dark_path.is_file(), f"Missing strategic dark PNG: {visual.dark_path.name}"
+        violations = _validate_strategic_png_quality(visual.light_path, visual.dark_path)
+        assert not violations, f"{visual.logical_name}: {violations}"
+        _assert_readme_picture_contract(readme_text, visual)
+        if visual.fullsize_path is not None:
+            _assert_fullsize_wrapper(readme_text, visual)
+
+
+def test_strategic_readme_png_registry_completeness(readme_text: str) -> None:
+    """Every strategic PNG referenced in root README must be registered explicitly."""
+    referenced = _collect_readme_strategic_png_stems(readme_text)
+    registered = _registered_strategic_png_stems()
+    unregistered = referenced - registered
+    assert not unregistered, (
+        "README uses strategic PNGs outside the canonical registry: "
+        f"{sorted(unregistered)}"
+    )
+    missing_from_readme = registered - referenced
+    assert not missing_from_readme, (
+        "Registry lists strategic PNGs not referenced in root README: "
+        f"{sorted(missing_from_readme)}"
+    )
+
+
 def test_strategic_light_dark_pair_convention() -> None:
     """Reusable pair validation for strategic PNG families and module-owned SVG families."""
     for light_path, dark_path in _STRATEGIC_PNG_PAIRS:
-        violations = _validate_light_dark_pair(light_path, dark_path)
+        violations = _validate_strategic_png_quality(light_path, dark_path)
         assert not violations, f"{light_path.parent.name}/{light_path.stem}: {violations}"
         assert light_path.suffix == ".png"
         assert dark_path.suffix == ".png"

@@ -331,17 +331,9 @@ def test_legacy_lifecycle_metadata_skips_validation(tmp_path: Path) -> None:
 
 
 def test_ai_incident_investigation_passes_universal_rules() -> None:
-    report = validate_scenario_application_architecture(
+    assert_scenario_application_architecture(
         repo_root=REPO_ROOT,
         scenario_slug="ai_incident_investigation",
-    )
-    legacy_violations = tuple(
-        violation
-        for violation in report.violations
-        if violation.rule_id is not ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
-    )
-    assert not legacy_violations, "\n\n".join(
-        violation.format() for violation in legacy_violations
     )
 
 
@@ -565,3 +557,52 @@ def test_manifest_agent_binding_without_local_registry_passes(tmp_path: Path) ->
         skip_lifecycle_check=True,
     )
     assert report.ok
+
+
+def test_private_agent_registry_contracts_mutation_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "from intergrax.runtime.registry.agent_registry import AgentRegistry\n"
+            "registry = AgentRegistry()\n"
+            "registry._contracts['demo.agent'] = object()\n"
+        ),
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert any(
+        violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+        and violation.symbol == "_contracts"
+        for violation in report.violations
+    )
+
+
+def test_platform_registry_register_mutation_fails(tmp_path: Path) -> None:
+    package_root = _synthetic_package(tmp_path)
+    _write_application_file(
+        package_root,
+        "application/runtime.py",
+        _valid_runtime_source()
+        + (
+            "def attach(agent, composition):\n"
+            "    composition.platform.registry.register(agent)\n"
+        ),
+    )
+    report = validate_scenario_application_architecture(
+        repo_root=tmp_path,
+        scenario_slug="synthetic_scenario",
+        package_root=package_root,
+        skip_lifecycle_check=True,
+    )
+    assert any(
+        violation.rule_id is ScenarioArchitectureRuleId.AGENT_LIFECYCLE_BYPASS
+        and violation.symbol == "registry.register"
+        for violation in report.violations
+    )

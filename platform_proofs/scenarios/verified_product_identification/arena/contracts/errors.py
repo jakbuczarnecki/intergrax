@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_environment import (
+    ArenaExecutionEnvironmentSnapshot,
+)
+
 
 class EmbeddingArenaBenchmarkGroundTruthError(ValueError):
     """Benchmark ground truth cannot be resolved within the stage corpus."""
@@ -21,3 +25,12 @@ class EmbeddingArenaEvaluationScopeError(ValueError):
 
 class EmbeddingArenaCandidateSessionError(RuntimeError):
     """Candidate execution session lifecycle violation."""
+
+
+class ArenaExecutionEnvironmentError(RuntimeError):
+    """Arena pre-flight environment validation failed before candidate execution."""
+
+    def __init__(self, snapshot: ArenaExecutionEnvironmentSnapshot) -> None:
+        self.snapshot = snapshot
+        message = snapshot.detail or snapshot.status.value
+        super().__init__(message)

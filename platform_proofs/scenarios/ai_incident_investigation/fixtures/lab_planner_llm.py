@@ -62,6 +62,23 @@ _DEFAULT_REVISION_SEQUENCE: tuple[str, ...] = (
     TOOL_STAFFING_ATTENDANCE_READ,
     TOOL_TELEMETRY_READ,
 )
+_REVISION_FOLLOW_UP_SEQUENCE: tuple[str, ...] = _DEFAULT_REVISION_SEQUENCE[3:]
+
+_TOOL_TO_EVIDENCE_ID: dict[str, str] = {
+    TOOL_WORKLOAD_READ: str(WORKLOAD_EVIDENCE_ID),
+    TOOL_THROUGHPUT_READ: str(THROUGHPUT_EVIDENCE_ID),
+    TOOL_STAFFING_SCHEDULE_READ: str(STAFFING_PRELIMINARY_EVIDENCE_ID),
+    TOOL_COMPARISON_READ: str(COMPARISON_EVIDENCE_ID),
+    TOOL_STAFFING_ATTENDANCE_READ: str(STAFFING_ATTENDANCE_EVIDENCE_ID),
+    TOOL_TELEMETRY_READ: str(TELEMETRY_EVIDENCE_ID),
+}
+_INITIAL_REVISION_EVIDENCE_IDS: frozenset[str] = frozenset(
+    {
+        str(WORKLOAD_EVIDENCE_ID),
+        str(THROUGHPUT_EVIDENCE_ID),
+        str(STAFFING_PRELIMINARY_EVIDENCE_ID),
+    }
+)
 
 
 def lab_planner_enabled() -> bool:
@@ -104,6 +121,35 @@ def _evidence_ids_from_messages(messages: Sequence[ChatMessage]) -> set[str]:
                 if candidate.startswith("evidence."):
                     ids.add(candidate)
     return ids
+
+
+def _planner_gathered_evidence_ids(messages: Sequence[ChatMessage]) -> set[str]:
+    gathered: set[str] = set()
+    for message in messages:
+        content = message.content or ""
+        if "Already gathered evidence IDs:" not in content:
+            continue
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("- evidence."):
+                candidate = stripped[2:].strip()
+                if " availability=" in candidate:
+                    candidate = candidate.split(" availability=", 1)[0].strip()
+                gathered.add(candidate)
+    return gathered
+
+
+def _sequence_without_gathered_tools(
+    sequence: Sequence[str],
+    gathered_evidence_ids: set[str],
+) -> tuple[str, ...]:
+    remaining: list[str] = []
+    for tool_id in sequence:
+        evidence_id = _TOOL_TO_EVIDENCE_ID.get(tool_id)
+        if evidence_id and evidence_id in gathered_evidence_ids:
+            continue
+        remaining.append(tool_id)
+    return tuple(remaining)
 
 
 def _telemetry_unavailable_from_messages(messages: Sequence[ChatMessage]) -> bool:
@@ -371,8 +417,14 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
                 return "revision"
         return "initial"
 
-    def _active_sequence(self, phase: str) -> tuple[str, ...]:
-        return self._revision_sequence if phase == "revision" else self._initial_sequence
+    def _active_sequence(self, phase: str, messages: Sequence[ChatMessage]) -> tuple[str, ...]:
+        if phase == "revision":
+            gathered = _planner_gathered_evidence_ids(messages)
+            if _INITIAL_REVISION_EVIDENCE_IDS.issubset(gathered):
+                trimmed = _sequence_without_gathered_tools(self._revision_sequence, gathered)
+                return trimmed or _REVISION_FOLLOW_UP_SEQUENCE
+            return self._revision_sequence
+        return self._initial_sequence
 
     def _detect_reasoning_phase(self, messages: Sequence[ChatMessage]) -> str:
         for message in messages:
@@ -400,7 +452,7 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
         if not has_tool_messages:
             self._prior_tool_call_ids = []
             self._round_by_phase[phase] = 0
-        sequence = self._active_sequence(phase)
+        sequence = self._active_sequence(phase, messages)
         round_index = self._round_by_phase[phase]
         if round_index >= len(sequence):
             return LLMAdapterResponse(content="evidence gathering complete", tool_calls=())

@@ -35,6 +35,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.platform_di
     format_platform_diagnostic_context_lines,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
+    COMPLETION_NEED_MORE_EVIDENCE,
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
     DIAGNOSIS_KIND,
@@ -42,6 +43,21 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
 )
 
 LEGAL_HYPOTHESIS_IDS: frozenset[str] = frozenset({"H1", "H2", "H3"})
+COMPLETION_INTENT_CONTRACT = (
+    "Completion intent contract:\n"
+    "- claim_proposals must always be non-empty; include diagnosis claim proposals for "
+    "each hypothesis you assess.\n"
+    "- supported_diagnosis: only when gathered evidence supports a final diagnosis "
+    "strongly enough for the scenario contract.\n"
+    "- unresolved: only after available investigation is exhausted; must set unresolved_reason "
+    "to a non-empty string and information_gaps to a non-empty list.\n"
+    "- need_more_evidence: only when additional allowed evidence-gathering work remains possible; "
+    "still provide non-empty claim_proposals describing the current provisional assessment."
+)
+CLAIM_PROPOSAL_CONTRACT = (
+    "Claim proposal contract: always emit at least one claim_proposal with "
+    f"claim_kind={str(DIAGNOSIS_KIND)!s} for each hypothesis under active consideration."
+)
 FORBIDDEN_MODEL_RESOLUTIONS: frozenset[ClaimResolution] = frozenset(
     {
         ClaimResolution.SUPPORTED,
@@ -76,8 +92,20 @@ class HypothesisProposal(BaseModel):
     hypothesis_id: Literal["H1", "H2", "H3"]
     disposition: HypothesisDisposition
     summary: str = Field(min_length=1, max_length=1024)
-    supporting_evidence_ids: tuple[str, ...] = ()
-    contradicting_evidence_ids: tuple[str, ...] = ()
+    supporting_evidence_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Exact evidence_id strings from Gathered evidence IDs only; "
+            "no aliases or invented identifiers."
+        ),
+    )
+    contradicting_evidence_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Exact evidence_id strings from Gathered evidence IDs only; "
+            "no aliases or invented identifiers."
+        ),
+    )
     uncertainty: str = Field(default="", max_length=512)
 
 
@@ -87,8 +115,20 @@ class ClaimProposal(BaseModel):
     hypothesis_id: Literal["H1", "H2", "H3"]
     statement: str = Field(min_length=1, max_length=4096)
     claim_kind: str = Field(min_length=1, max_length=128)
-    supporting_evidence_ids: tuple[str, ...] = ()
-    contradicting_evidence_ids: tuple[str, ...] = ()
+    supporting_evidence_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Exact evidence_id strings from Gathered evidence IDs only; "
+            "no aliases or invented identifiers."
+        ),
+    )
+    contradicting_evidence_ids: tuple[str, ...] = Field(
+        default=(),
+        description=(
+            "Exact evidence_id strings from Gathered evidence IDs only; "
+            "no aliases or invented identifiers."
+        ),
+    )
     rationale: str = Field(default="", max_length=1024)
     replaces_prior_claim: bool = False
 
@@ -166,6 +206,35 @@ def _known_evidence_ids(nodes: Sequence[dict[str, object]]) -> frozenset[str]:
     return frozenset(
         str(node["evidence_id"]) for node in nodes if node.get("evidence_id")
     )
+
+
+def _sorted_evidence_ids(nodes: Sequence[dict[str, object]]) -> tuple[str, ...]:
+    return tuple(sorted(_known_evidence_ids(nodes)))
+
+
+def build_evidence_reference_contract(
+    evidence_nodes: Sequence[dict[str, object]],
+) -> str:
+    allowed_ids = _sorted_evidence_ids(evidence_nodes)
+    lines = [
+        "Evidence reference contract:",
+        "- supporting_evidence_ids and contradicting_evidence_ids may contain only IDs "
+        "from the Allowed evidence IDs list below.",
+        "- Copy IDs exactly.",
+        "- Do not invent aliases, indices, abbreviations, or new IDs.",
+        "- If no gathered evidence supports a claim, use an empty evidence-ID list "
+        "and express the uncertainty instead.",
+    ]
+    if allowed_ids:
+        lines.append("Allowed evidence IDs:")
+        lines.extend(f"- {evidence_id}" for evidence_id in allowed_ids)
+    else:
+        lines.append(
+            "Allowed evidence IDs: none. "
+            "Use empty supporting_evidence_ids and contradicting_evidence_ids. "
+            "Do not invent an evidence ID."
+        )
+    return "\n".join(lines)
 
 
 def validate_reasoning_proposal(
@@ -385,13 +454,17 @@ def build_reasoning_messages(
     is_revision: bool,
     investigation_input: IncidentInvestigationInput | None = None,
 ) -> list[ChatMessage]:
+    evidence_reference_contract = build_evidence_reference_contract(evidence_nodes)
     lines = [
         "Investigate Line 4 target attainment degradation using gathered evidence only.",
         "Compare competing hypotheses H1 sustained overload, H2 understaffing, H3 equipment degradation.",
         "Raw evidence acquisition tools and deterministic domain analysis tools are available.",
         "Use analysis tools when bounded deterministic comparison improves confidence.",
         "Do not treat workload-throughput correlation as causation.",
-        "Propose only evidence-backed claims; cite evidence IDs from observations.",
+        "Propose only evidence-backed claims.",
+        evidence_reference_contract,
+        COMPLETION_INTENT_CONTRACT,
+        CLAIM_PROPOSAL_CONTRACT,
         "Do not output claim_id, resolution, or supersedes_claim_id.",
         f"Investigation phase: {'revision' if is_revision else 'initial'}",
     ]
@@ -417,11 +490,22 @@ def build_reasoning_messages(
         lines.extend(f"- {item}" for item in critic_feedback)
     if is_revision:
         lines.append(
-            "Perform incremental correction using all prior evidence; do not discard valid prior observations."
+            "Revision contract: revise the semantic reasoning using the prior proposal, "
+            "critic feedback, current evidence, and current allowed evidence IDs. "
+            "Do not merely repeat the previous proposal. "
+            "Do not cite evidence that is not in the current allowed list. "
+            "Perform incremental correction using all prior evidence; "
+            "do not discard valid prior observations."
         )
     return [
         ChatMessage(role="system", content="\n".join(lines)),
-        ChatMessage(role="user", content="Produce structured incident reasoning proposal."),
+        ChatMessage(
+            role="user",
+            content=(
+                "Produce structured incident reasoning proposal. "
+                f"{evidence_reference_contract}"
+            ),
+        ),
     ]
 
 
@@ -529,6 +613,8 @@ def emit_reasoning_observability(
 def completion_mode_from_proposal(proposal: IncidentReasoningProposal) -> str:
     if proposal.completion_intent is CompletionIntent.UNRESOLVED:
         return COMPLETION_UNRESOLVED
+    if proposal.completion_intent is CompletionIntent.NEED_MORE_EVIDENCE:
+        return COMPLETION_NEED_MORE_EVIDENCE
     return COMPLETION_SUPPORTED_DIAGNOSIS
 
 

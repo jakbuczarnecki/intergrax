@@ -8,6 +8,14 @@ from pathlib import Path
 
 from scripts.proof.intergrax_proof_environment import load_proof_environment
 
+from platform_proofs.scenarios.verified_product_identification.arena.composition.execution_profiles import (
+    STANDARD_ARENA_PROFILE_ID,
+    list_execution_profile_ids,
+    resolve_execution_budget,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.errors import (
+    ArenaExecutionEnvironmentError,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.integration.reporting import (
     write_arena_report,
     write_arena_summary,
@@ -35,6 +43,12 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Build sample/query evidence only; skip GPU embedding stages",
     )
     parser.add_argument(
+        "--profile",
+        choices=list_execution_profile_ids(),
+        default=STANDARD_ARENA_PROFILE_ID,
+        help="Arena execution profile (safe-local-gpu = micro arena; nano-local-gpu = ultra-small CUDA screening; finalist-local-gpu = controlled BGE vs Qwen qualification)",
+    )
+    parser.add_argument(
         "--session-dir",
         type=Path,
         default=None,
@@ -48,15 +62,37 @@ def main(argv: list[str] | None = None) -> int:
     load_proof_environment(proof_package_dir=_SCENARIO_DIR, repository_root=_REPO_ROOT)
 
     session_dir = args.session_dir or (_REPO_ROOT / ".tmp" / "session" / "vpi-5c4b")
-    report = run_embedding_arena(
-        include_e5_control=args.include_e5_control,
-        run_gpu_stages=not args.skip_gpu_stages,
-        session_dir=str(session_dir),
-    )
+    execution_budget = resolve_execution_budget(args.profile)
+    if args.profile.startswith("finalist-local-gpu"):
+        session_dir = args.session_dir or (
+            _REPO_ROOT / ".tmp" / "session" / "vpi-5c4b-finalist-qual"
+        )
+        if args.profile == "finalist-local-gpu-200":
+            session_dir = args.session_dir or (
+                _REPO_ROOT / ".tmp" / "session" / "vpi-5c4b-finalist-qual-200"
+            )
+    try:
+        report = run_embedding_arena(
+            include_e5_control=args.include_e5_control,
+            run_gpu_stages=not args.skip_gpu_stages,
+            session_dir=str(session_dir),
+            execution_budget=execution_budget,
+        )
+    except ArenaExecutionEnvironmentError as exc:
+        snapshot = exc.snapshot
+        print(f"status={snapshot.status.value}")
+        print(f"profile={snapshot.profile_id}")
+        print(f"python_executable={snapshot.python_executable}")
+        if snapshot.detail is not None:
+            print(f"detail={snapshot.detail}")
+        return 1
     write_arena_report(session_dir / "arena-report.json", report)
     write_arena_summary(session_dir / "ARENA_SUMMARY.md", report)
 
+    print(f"profile={report.execution_profile_id}")
     print(f"decision={report.decision.value}")
+    if report.finalist_qualification_gate is not None:
+        print(f"finalist_gate={report.finalist_qualification_gate.value}")
     print(f"report={session_dir / 'arena-report.json'}")
     print(f"summary={session_dir / 'ARENA_SUMMARY.md'}")
     return 0

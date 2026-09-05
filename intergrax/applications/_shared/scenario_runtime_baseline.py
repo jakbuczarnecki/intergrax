@@ -69,6 +69,8 @@ from intergrax.applications._shared.task_memory_wiring import wire_task_memory_f
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.execution_identity import RunId, TaskId, mint_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -95,6 +97,7 @@ __all__ = [
     "ScenarioRuntimeMode",
     "ScenarioRuntimeWorkspace",
     "build_scenario_runtime_from_environment",
+    "ScenarioLabAgentRegistration",
     "build_scenario_lab_agent_registry",
     "execute_scenario_task",
     "rebuild_scenario_runtime_from_composition",
@@ -107,9 +110,25 @@ class ScenarioRuntimeBuildError(RuntimeError):
     """Raised when scenario runtime composition cannot satisfy platform invariants."""
 
 
-def build_scenario_lab_agent_registry() -> AgentRegistry:
+@dataclass(frozen=True, slots=True)
+class ScenarioLabAgentRegistration:
+    """Typed LAB roster entry assembled before scenario runtime composition."""
+
+    agent: Agent
+    contract: AgentContract | None = None
+
+
+def build_scenario_lab_agent_registry(
+    *registrations: ScenarioLabAgentRegistration,
+) -> AgentRegistry:
     """Tier-1 baseline roster construction for lab scenario runtime composition."""
-    return AgentRegistry()
+    registry = AgentRegistry()
+    for registration in registrations:
+        registry.register(
+            registration.agent,
+            contract=registration.contract,
+        )
+    return registry
 
 
 @dataclass(frozen=True, slots=True)

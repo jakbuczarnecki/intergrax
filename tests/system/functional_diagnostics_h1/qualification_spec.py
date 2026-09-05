@@ -10,6 +10,9 @@ from pathlib import Path
 from tests.system.functional_diagnostics_h1.models import (
     H1_K_QUALIFICATION_ID,
     H1_K_R2_QUALIFICATION_ID,
+    H1_K_R3_QUALIFICATION_ID,
+    H1_K_R4_QUALIFICATION_ID,
+    H1_K_R5_QUALIFICATION_ID,
     H1_QUALIFICATION_ID,
     H1_R1_QUALIFICATION_ID,
     H1_R2_QUALIFICATION_ID,
@@ -141,11 +144,38 @@ H1_K_R2_QUALIFICATION_SPEC = LocalIntegrationQualificationSpec(
     requires_origin_development_match=True,
 )
 
+H1_K_R3_QUALIFICATION_SPEC = LocalIntegrationQualificationSpec(
+    qualification_id=H1_K_R3_QUALIFICATION_ID,
+    artifact_directory=Path(".tmp/session/diag-h1-k-qualification-r3"),
+    canonical_run_count=3,
+    requires_clean_repository=True,
+    requires_origin_development_match=True,
+)
+
+H1_K_R4_QUALIFICATION_SPEC = LocalIntegrationQualificationSpec(
+    qualification_id=H1_K_R4_QUALIFICATION_ID,
+    artifact_directory=Path(".tmp/session/diag-h1-k-qualification-r4"),
+    canonical_run_count=3,
+    requires_clean_repository=True,
+    requires_origin_development_match=True,
+)
+
+H1_K_R5_QUALIFICATION_SPEC = LocalIntegrationQualificationSpec(
+    qualification_id=H1_K_R5_QUALIFICATION_ID,
+    artifact_directory=Path(".tmp/session/diag-h1-k-qualification-r5"),
+    canonical_run_count=3,
+    requires_clean_repository=True,
+    requires_origin_development_match=True,
+)
+
 H1_K_QUALIFICATION_SPEC = H1_K_R1_QUALIFICATION_SPEC
 
 LOCAL_INTEGRATION_QUALIFICATION_SPECS: tuple[LocalIntegrationQualificationSpec, ...] = (
     H1_K_R1_QUALIFICATION_SPEC,
     H1_K_R2_QUALIFICATION_SPEC,
+    H1_K_R3_QUALIFICATION_SPEC,
+    H1_K_R4_QUALIFICATION_SPEC,
+    H1_K_R5_QUALIFICATION_SPEC,
 )
 
 _LOCAL_INTEGRATION_SPEC_BY_ID: dict[str, LocalIntegrationQualificationSpec] = {

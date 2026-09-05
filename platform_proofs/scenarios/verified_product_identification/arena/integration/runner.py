@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -13,27 +14,40 @@ from platform_proofs.scenarios.verified_product_identification.application.confi
 from platform_proofs.scenarios.verified_product_identification.embedding_materialization.contracts.config import (
     load_vpi_embedding_materialization_config,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.composition.candidate_selection import (
+    resolve_arena_candidates,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.composition.candidates import (
     BASELINE_CANDIDATE_ID,
     BASELINE_KNOWN_THROUGHPUT_RPS,
-    DEFAULT_BATCH_CANDIDATES,
-    DEFAULT_STAGE_A_RECORDS,
-    DEFAULT_STAGE_B_RECORDS,
-    DEFAULT_STAGE_C_RECORDS,
     FULL_DATASET_RECORD_COUNT,
-    build_default_arena_candidates,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.composition.execution_profiles import (
+    STANDARD_ARENA_EXECUTION_BUDGET,
+    resolve_execution_budget,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.candidate_selection import (
+    EmbeddingArenaCandidateSelection,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_budget import (
+    EmbeddingArenaExecutionBudget,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.candidates import (
     EmbeddingArenaCandidate,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.classification import (
+    ArenaEvidenceClassification,
     EmbeddingArenaStageStatus,
     EmbeddingArenaVerdict,
     EmbeddingLicenseClassification,
+    MicroArenaScreeningOutcome,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.errors import (
     EmbeddingArenaTokenizerUnavailableError,
     EmbeddingArenaTruncationProfileError,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_environment import (
+    ArenaAcceleratorRequirement,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.results import (
     ArtifactSizeEstimate,
@@ -59,6 +73,10 @@ from platform_proofs.scenarios.verified_product_identification.arena.evaluation.
     estimate_artifact_size,
     estimate_preliminary_full_build,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.evaluation.finalist_qualification import (
+    classify_finalist_qualification_gate,
+    map_finalist_gate_to_decision,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.evaluation.finalist_selection import (
     StageBCandidateEvidence,
     select_stage_c_finalist_ids,
@@ -71,12 +89,20 @@ from platform_proofs.scenarios.verified_product_identification.arena.evaluation.
 )
 from platform_proofs.scenarios.verified_product_identification.arena.evaluation.verdict import (
     classify_candidate_verdict,
+    classify_micro_arena_screening,
     compute_quality_delta,
     compute_speedup_estimate,
     decide_arena_outcome,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.integration.candidate_isolation import (
+    load_candidate_phase_artifact,
+    run_candidate_phase_subprocess,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.integration.candidate_execution_session import (
     EmbeddingArenaCandidateExecutionSession,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.integration.execution_environment import (
+    validate_arena_execution_environment,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.integration.embedding_execution import (
     measure_candidate_warmup,
@@ -142,55 +168,137 @@ def _stage_status_from_microbenchmark(results) -> EmbeddingArenaStageStatus:
     return EmbeddingArenaStageStatus.FAILED_RUNTIME
 
 
+def _runtime_budget_stage_snapshot(
+    *,
+    stage_name: str,
+    record_count: int,
+    detail: str,
+) -> CandidateStageSnapshot:
+    return CandidateStageSnapshot(
+        stage_name=stage_name,
+        record_count=record_count,
+        status=EmbeddingArenaStageStatus.FAILED_RUNTIME_BUDGET,
+        selected_provider_batch_size=None,
+        warmup_timing=None,
+        microbenchmark_results=(),
+        throughput_records_per_second=None,
+        peak_vram_bytes=None,
+        output_dimension=None,
+        detail=detail,
+    )
+
+
+def _vram_exceeded(
+    execution_budget: EmbeddingArenaExecutionBudget,
+    peak_vram_bytes: int | None,
+) -> bool:
+    return (
+        execution_budget.max_vram_bytes is not None
+        and peak_vram_bytes is not None
+        and peak_vram_bytes > execution_budget.max_vram_bytes
+    )
+
+
+def _run_microbenchmark_with_budget(
+    candidate: EmbeddingArenaCandidate,
+    texts: Sequence[str],
+    *,
+    execution_budget: EmbeddingArenaExecutionBudget,
+    device: str | None,
+) -> tuple:
+    batch_sizes = execution_budget.batch_sizes_for_candidate(
+        candidate_id=candidate.candidate_id,
+        fixed_provider_batch_size=candidate.fixed_provider_batch_size,
+    )
+    results = []
+    for index, batch_size in enumerate(batch_sizes):
+        result = run_candidate_microbenchmark(
+            candidate,
+            texts,
+            provider_batch_size=batch_size,
+            device=device,
+        )
+        results.append(result)
+        if execution_budget.uses_batch_sweep:
+            continue
+        if result.status is MicrobenchmarkCandidateStatus.PASS:
+            break
+        if (
+            result.status is MicrobenchmarkCandidateStatus.FAILED_OOM
+            and index < len(batch_sizes) - 1
+        ):
+            continue
+        break
+    return tuple(results)
+
+
+def _select_provider_batch_size(
+    candidate: EmbeddingArenaCandidate,
+    microbenchmark_results: tuple,
+    *,
+    execution_budget: EmbeddingArenaExecutionBudget,
+) -> tuple[int | None, str]:
+    if candidate.fixed_provider_batch_size is not None:
+        batch_size = candidate.fixed_provider_batch_size
+        return batch_size, f"reused known baseline batch size {batch_size} from 5C4A2 evidence"
+    if execution_budget.uses_batch_sweep:
+        batch_size, rationale = select_best_provider_batch_size(
+            microbenchmark_results,
+            expected_dimension=candidate.expected_dimension,
+        )
+        if batch_size is None:
+            return None, "no stable provider batch candidate"
+        return batch_size, rationale
+    for result in microbenchmark_results:
+        if (
+            result.status is MicrobenchmarkCandidateStatus.PASS
+            and result.records_per_second > 0.0
+        ):
+            return (
+                result.provider_batch_size,
+                f"micro arena batch {result.provider_batch_size}",
+            )
+    if any(
+        item.status is MicrobenchmarkCandidateStatus.FAILED_OOM
+        for item in microbenchmark_results
+    ):
+        return None, "OOM at primary and fallback batch"
+    return None, "no stable provider batch candidate"
+
+
 def _run_stage(
     candidate: EmbeddingArenaCandidate,
     records: Sequence[ArenaSampleRecord],
     *,
     stage_name: str,
-    batch_candidates: tuple[int, ...],
+    execution_budget: EmbeddingArenaExecutionBudget,
     device: str | None,
 ) -> CandidateStageSnapshot:
     texts = tuple(record.semantic_text for record in records)
-    if candidate.fixed_provider_batch_size is not None:
-        batch_size = candidate.fixed_provider_batch_size
-        microbenchmark_results = (
-            run_candidate_microbenchmark(
-                candidate,
-                texts,
-                provider_batch_size=batch_size,
-                device=device,
-            ),
+    microbenchmark_results = _run_microbenchmark_with_budget(
+        candidate,
+        texts,
+        execution_budget=execution_budget,
+        device=device,
+    )
+    batch_size, selection_rationale = _select_provider_batch_size(
+        candidate,
+        microbenchmark_results,
+        execution_budget=execution_budget,
+    )
+    if batch_size is None:
+        return CandidateStageSnapshot(
+            stage_name=stage_name,
+            record_count=len(records),
+            status=_stage_status_from_microbenchmark(microbenchmark_results),
+            selected_provider_batch_size=None,
+            warmup_timing=None,
+            microbenchmark_results=microbenchmark_results,
+            throughput_records_per_second=None,
+            peak_vram_bytes=None,
+            output_dimension=None,
+            detail=selection_rationale,
         )
-        selection_rationale = (
-            f"reused known baseline batch size {batch_size} from 5C4A2 evidence"
-        )
-    else:
-        microbenchmark_results = tuple(
-            run_candidate_microbenchmark(
-                candidate,
-                texts,
-                provider_batch_size=batch_candidate,
-                device=device,
-            )
-            for batch_candidate in batch_candidates
-        )
-        batch_size, selection_rationale = select_best_provider_batch_size(
-            microbenchmark_results,
-            expected_dimension=candidate.expected_dimension,
-        )
-        if batch_size is None:
-            return CandidateStageSnapshot(
-                stage_name=stage_name,
-                record_count=len(records),
-                status=_stage_status_from_microbenchmark(microbenchmark_results),
-                selected_provider_batch_size=None,
-                warmup_timing=None,
-                microbenchmark_results=microbenchmark_results,
-                throughput_records_per_second=None,
-                peak_vram_bytes=None,
-                output_dimension=None,
-                detail="no stable provider batch candidate",
-            )
 
     warmup_timing = measure_candidate_warmup(
         candidate,
@@ -207,10 +315,16 @@ def _run_stage(
         ),
         microbenchmark_results[0],
     )
+    status = _stage_status_from_microbenchmark(microbenchmark_results)
+    if _vram_exceeded(execution_budget, best.peak_vram_bytes):
+        status = EmbeddingArenaStageStatus.FAILED_OOM
+        selection_rationale = (
+            f"{selection_rationale}; peak VRAM exceeded profile guardrail"
+        )
     return CandidateStageSnapshot(
         stage_name=stage_name,
         record_count=len(records),
-        status=_stage_status_from_microbenchmark(microbenchmark_results),
+        status=status,
         selected_provider_batch_size=batch_size,
         warmup_timing=warmup_timing,
         microbenchmark_results=microbenchmark_results,
@@ -227,6 +341,7 @@ def _evaluate_stage_quality(
     *,
     batch_size: int,
     device: str | None,
+    execution_budget: EmbeddingArenaExecutionBudget,
 ) -> tuple[RetrievalQualityMetrics, RetrievalQualityMetrics | None]:
     canonical_texts = tuple(record.semantic_text for record in scope.records)
     with EmbeddingArenaCandidateExecutionSession(
@@ -252,7 +367,7 @@ def _evaluate_stage_quality(
         )
         long_cases = tuple(case for case in scope.query_cases if case.is_long_input_query)
         long_input_quality_metrics = None
-        if long_cases:
+        if execution_budget.run_long_input_quality_benchmark and long_cases:
             long_scope_cases = scope.query_cases
             long_query_texts = tuple(case.query_text for case in long_cases)
             long_indices = [
@@ -355,11 +470,12 @@ def _run_stage_ab_for_candidate(
     run_gpu_stages: bool,
     gpu_available: bool,
     device: str | None,
+    execution_budget: EmbeddingArenaExecutionBudget,
 ) -> _CandidateStageWork:
     candidate_warnings: list[str] = []
     truncation_profile, truncation_ok, truncation_warnings = _profile_truncation(
         candidate,
-        records,
+        records[: execution_budget.stage_c_records],
     )
     candidate_warnings.extend(truncation_warnings)
 
@@ -371,9 +487,9 @@ def _run_stage_ab_for_candidate(
     if run_gpu_stages and gpu_available:
         stage_a = _run_stage(
             candidate,
-            records[:DEFAULT_STAGE_A_RECORDS],
+            records[: execution_budget.stage_a_records],
             stage_name="stage_a",
-            batch_candidates=DEFAULT_BATCH_CANDIDATES,
+            execution_budget=execution_budget,
             device=device,
         )
         if stage_a.status is not EmbeddingArenaStageStatus.PASS:
@@ -381,9 +497,9 @@ def _run_stage_ab_for_candidate(
         else:
             stage_b = _run_stage(
                 candidate,
-                records[:DEFAULT_STAGE_B_RECORDS],
+                records[: execution_budget.stage_b_records],
                 stage_name="stage_b",
-                batch_candidates=DEFAULT_BATCH_CANDIDATES,
+                execution_budget=execution_budget,
                 device=device,
             )
             if stage_b.status is not EmbeddingArenaStageStatus.PASS:
@@ -394,6 +510,7 @@ def _run_stage_ab_for_candidate(
                     stage_b_scope,
                     batch_size=stage_b.selected_provider_batch_size,
                     device=device,
+                    execution_budget=execution_budget,
                 )
     else:
         candidate_warnings.append("GPU stages skipped; throughput/quality evidence unavailable")
@@ -420,12 +537,13 @@ def _run_stage_c_for_candidate(
     device: str | None,
     baseline_throughput: float,
     baseline_embedding_hours: float | None,
+    execution_budget: EmbeddingArenaExecutionBudget,
 ) -> _CandidateFinalWork:
     stage_c = _run_stage(
         candidate,
-        records[:DEFAULT_STAGE_C_RECORDS],
+        records[: execution_budget.stage_c_records],
         stage_name="stage_c",
-        batch_candidates=DEFAULT_BATCH_CANDIDATES,
+        execution_budget=execution_budget,
         device=device,
     )
     quality_metrics = None
@@ -443,33 +561,48 @@ def _run_stage_c_for_candidate(
             stage_c_scope,
             batch_size=batch_size,
             device=device,
+            execution_budget=execution_budget,
         )
         canonical_texts = tuple(record.semantic_text for record in stage_c_scope.records)
-        with EmbeddingArenaCandidateExecutionSession(
-            candidate,
-            provider_batch_size=batch_size,
-            device=device,
-        ) as session:
-            session.warmup(canonical_texts[: min(8, len(canonical_texts))])
-            p50, p95 = session.measure_query_latency(
-                tuple(case.query_text for case in stage_c_scope.query_cases[:5]),
-                expected_dimension=candidate.expected_dimension,
+        if execution_budget.include_query_latency_benchmark:
+            with EmbeddingArenaCandidateExecutionSession(
+                candidate,
+                provider_batch_size=batch_size,
+                device=device,
+            ) as session:
+                session.warmup(canonical_texts[: min(8, len(canonical_texts))])
+                p50, p95 = session.measure_query_latency(
+                    tuple(
+                        case.query_text
+                        for case in stage_c_scope.query_cases[
+                            : execution_budget.query_latency_query_count
+                        ]
+                    ),
+                    expected_dimension=candidate.expected_dimension,
+                    repetitions=execution_budget.query_latency_repetitions,
+                )
+            query_latency = QueryLatencySnapshot(
+                single_query_p50_seconds=p50,
+                single_query_p95_seconds=p95,
+                small_batch_records_per_second=stage_c.throughput_records_per_second,
             )
-        query_latency = QueryLatencySnapshot(
-            single_query_p50_seconds=p50,
-            single_query_p95_seconds=p95,
-            small_batch_records_per_second=stage_c.throughput_records_per_second,
-        )
-        artifact_size_estimate = estimate_artifact_size(
-            dimension=candidate.expected_dimension,
-            record_count=FULL_DATASET_RECORD_COUNT,
-        )
+        if execution_budget.include_full_build_estimate:
+            artifact_size_estimate = estimate_artifact_size(
+                dimension=candidate.expected_dimension,
+                record_count=FULL_DATASET_RECORD_COUNT,
+            )
+            throughput = stage_c.throughput_records_per_second or baseline_throughput
+            throughput_source = (
+                "micro_arena_stage_c_screening"
+                if execution_budget.screening_mode
+                else "arena_stage_c"
+            )
+            full_build_estimate = estimate_preliminary_full_build(
+                record_count=FULL_DATASET_RECORD_COUNT,
+                steady_records_per_second=throughput,
+                throughput_source=throughput_source,
+            )
         throughput = stage_c.throughput_records_per_second or baseline_throughput
-        full_build_estimate = estimate_preliminary_full_build(
-            record_count=FULL_DATASET_RECORD_COUNT,
-            steady_records_per_second=throughput,
-            throughput_source="arena_stage_c",
-        )
         if candidate.candidate_id != BASELINE_CANDIDATE_ID and baseline_throughput > 0.0:
             speedup_estimate = compute_speedup_estimate(
                 candidate_records_per_second=throughput,
@@ -489,52 +622,625 @@ def _run_stage_c_for_candidate(
     )
 
 
+def _load_arena_context(
+    *,
+    execution_budget: EmbeddingArenaExecutionBudget,
+) -> tuple[tuple[ArenaSampleRecord, ...], ArenaSampleManifest, EmbeddingArenaStageEvaluationScope, EmbeddingArenaStageEvaluationScope, object]:
+    materialization_config = load_vpi_embedding_materialization_config()
+    records = load_arena_sample_records(
+        materialization_config,
+        target_size=execution_budget.stage_c_records,
+    )
+    sample_manifest = build_arena_sample_manifest(records)
+    stage_b_scope = build_stage_evaluation_scope(
+        stage_name="stage_b",
+        records=tuple(records[: execution_budget.stage_b_records]),
+    )
+    stage_c_scope = build_stage_evaluation_scope(
+        stage_name="stage_c",
+        records=tuple(records[: execution_budget.stage_c_records]),
+    )
+    text_length_profile = profile_text_lengths(tuple(record.semantic_text for record in records))
+    return (
+        tuple(records),
+        sample_manifest,
+        stage_b_scope,
+        stage_c_scope,
+        text_length_profile,
+    )
+
+
+def _resolve_candidate(
+    candidate_id: str,
+    *,
+    include_e5_control: bool,
+    candidate_selection: EmbeddingArenaCandidateSelection | None = None,
+) -> EmbeddingArenaCandidate:
+    candidates = resolve_arena_candidates(
+        include_e5_control=include_e5_control,
+        selection=candidate_selection,
+    )
+    for candidate in candidates:
+        if candidate.candidate_id == candidate_id:
+            return candidate
+    msg = f"unknown arena candidate id: {candidate_id}"
+    raise ValueError(msg)
+
+
+def _runtime_budget_stage_work(
+    candidate: EmbeddingArenaCandidate,
+    *,
+    execution_budget: EmbeddingArenaExecutionBudget,
+    detail: str,
+) -> _CandidateStageWork:
+    return _CandidateStageWork(
+        candidate=candidate,
+        warnings=(detail,),
+        truncation_profile=None,
+        truncation_ok=False,
+        stage_a=_runtime_budget_stage_snapshot(
+            stage_name="stage_a",
+            record_count=execution_budget.stage_a_records,
+            detail=detail,
+        ),
+        stage_b=_runtime_budget_stage_snapshot(
+            stage_name="stage_b",
+            record_count=execution_budget.stage_b_records,
+            detail=detail,
+        ),
+        stage_b_quality=None,
+        stage_b_long_input_quality=None,
+        runtime_ok=False,
+    )
+
+
+def execute_candidate_stage_ab(
+    *,
+    candidate_id: str,
+    execution_budget: EmbeddingArenaExecutionBudget,
+    session_dir: str | None = None,
+    include_e5_control: bool = False,
+) -> _CandidateStageWork:
+    validate_arena_execution_environment(execution_budget)
+    candidate = _resolve_candidate(candidate_id, include_e5_control=include_e5_control)
+    records, _, stage_b_scope, _, _ = _load_arena_context(execution_budget=execution_budget)
+    execution_configuration = load_vpi_embedding_provider_execution_configuration()
+    device: str | None = execution_configuration.device
+    gpu_available = True
+    run_gpu_stages = True
+    if execution_budget.accelerator_requirement is ArenaAcceleratorRequirement.ANY:
+        try:
+            assert_execution_device_available(execution_configuration)
+        except VpiEmbeddingDeviceUnavailableError:
+            gpu_available = False
+            run_gpu_stages = False
+    if candidate.license_classification is EmbeddingLicenseClassification.REJECTED:
+        return _CandidateStageWork(
+            candidate=candidate,
+            warnings=(),
+            truncation_profile=None,
+            truncation_ok=True,
+            stage_a=None,
+            stage_b=None,
+            stage_b_quality=None,
+            stage_b_long_input_quality=None,
+            runtime_ok=False,
+        )
+    _ = session_dir
+    return _run_stage_ab_for_candidate(
+        candidate,
+        records=records,
+        stage_b_scope=stage_b_scope,
+        run_gpu_stages=run_gpu_stages,
+        gpu_available=gpu_available,
+        device=device,
+        execution_budget=execution_budget,
+    )
+
+
+def execute_candidate_stage_c(
+    *,
+    candidate_id: str,
+    execution_budget: EmbeddingArenaExecutionBudget,
+    session_dir: str | None = None,
+    include_e5_control: bool = False,
+) -> _CandidateFinalWork:
+    validate_arena_execution_environment(execution_budget)
+    candidate = _resolve_candidate(candidate_id, include_e5_control=include_e5_control)
+    records, _, _, stage_c_scope, _ = _load_arena_context(execution_budget=execution_budget)
+    execution_configuration = load_vpi_embedding_provider_execution_configuration()
+    device: str | None = execution_configuration.device
+    if execution_budget.accelerator_requirement is ArenaAcceleratorRequirement.ANY:
+        assert_execution_device_available(execution_configuration)
+    _ = session_dir
+    return _run_stage_c_for_candidate(
+        candidate,
+        records=records,
+        stage_c_scope=stage_c_scope,
+        device=device,
+        baseline_throughput=BASELINE_KNOWN_THROUGHPUT_RPS,
+        baseline_embedding_hours=None,
+        execution_budget=execution_budget,
+    )
+
+
+def _run_stage_ab_isolated(
+    candidate: EmbeddingArenaCandidate,
+    *,
+    execution_budget: EmbeddingArenaExecutionBudget,
+    session_dir: str,
+    include_e5_control: bool,
+) -> _CandidateStageWork:
+    from pathlib import Path
+
+    session_path = Path(session_dir)
+    completed = run_candidate_phase_subprocess(
+        candidate_id=candidate.candidate_id,
+        phase="stage_ab",
+        execution_budget=execution_budget,
+        session_dir=session_path,
+        include_e5_control=include_e5_control,
+    )
+    if completed is None:
+        return _runtime_budget_stage_work(
+            candidate,
+            execution_budget=execution_budget,
+            detail="candidate subprocess exceeded runtime budget",
+        )
+    payload = load_candidate_phase_artifact(
+        session_path,
+        candidate.candidate_id,
+        "stage_ab",
+    )
+    if payload is None:
+        detail = "candidate subprocess produced no stage_ab artifact"
+        if completed.returncode != 0:
+            detail = (
+                f"candidate subprocess failed (exit={completed.returncode}): "
+                f"{completed.stderr.strip() or completed.stdout.strip()}"
+            )
+        return _runtime_budget_stage_work(
+            candidate,
+            execution_budget=execution_budget,
+            detail=detail,
+        )
+    return payload
+
+
+def _run_stage_c_isolated(
+    candidate: EmbeddingArenaCandidate,
+    *,
+    execution_budget: EmbeddingArenaExecutionBudget,
+    session_dir: str,
+    include_e5_control: bool,
+) -> _CandidateFinalWork:
+    from pathlib import Path
+
+    session_path = Path(session_dir)
+    completed = run_candidate_phase_subprocess(
+        candidate_id=candidate.candidate_id,
+        phase="stage_c",
+        execution_budget=execution_budget,
+        session_dir=session_path,
+        include_e5_control=include_e5_control,
+    )
+    if completed is None:
+        return _CandidateFinalWork(
+            stage_c=_runtime_budget_stage_snapshot(
+                stage_name="stage_c",
+                record_count=execution_budget.stage_c_records,
+                detail="candidate subprocess exceeded runtime budget",
+            ),
+            quality_metrics=None,
+            long_input_quality_metrics=None,
+            quality_delta=None,
+            query_latency=None,
+            artifact_size_estimate=None,
+            full_build_estimate=None,
+            speedup_estimate=None,
+        )
+    payload = load_candidate_phase_artifact(
+        session_path,
+        candidate.candidate_id,
+        "stage_c",
+    )
+    if payload is None:
+        return _CandidateFinalWork(
+            stage_c=_runtime_budget_stage_snapshot(
+                stage_name="stage_c",
+                record_count=execution_budget.stage_c_records,
+                detail="candidate subprocess produced no stage_c artifact",
+            ),
+            quality_metrics=None,
+            long_input_quality_metrics=None,
+            quality_delta=None,
+            query_latency=None,
+            artifact_size_estimate=None,
+            full_build_estimate=None,
+            speedup_estimate=None,
+        )
+    return payload
+
+
+def _wall_time_budget_exceeded(
+    *,
+    started_monotonic: float,
+    execution_budget: EmbeddingArenaExecutionBudget,
+) -> bool:
+    if execution_budget.max_total_wall_time_seconds is None:
+        return False
+    return (
+        time.perf_counter() - started_monotonic
+        >= execution_budget.max_total_wall_time_seconds
+    )
+
+
+def _ordered_finalist_candidates(
+    candidates: tuple[EmbeddingArenaCandidate, ...],
+) -> tuple[EmbeddingArenaCandidate, ...]:
+    ordered_ids = sorted(candidate.candidate_id for candidate in candidates)
+    if BASELINE_CANDIDATE_ID in ordered_ids:
+        ordered_ids = [BASELINE_CANDIDATE_ID] + [
+            candidate_id
+            for candidate_id in ordered_ids
+            if candidate_id != BASELINE_CANDIDATE_ID
+        ]
+    by_id = {candidate.candidate_id: candidate for candidate in candidates}
+    return tuple(by_id[candidate_id] for candidate_id in ordered_ids)
+
+
+def _build_candidate_result_from_finalist_work(
+    *,
+    candidate: EmbeddingArenaCandidate,
+    work: _CandidateStageWork,
+    final: _CandidateFinalWork,
+    baseline_quality: RetrievalQualityMetrics | None,
+    device: str | None,
+) -> CandidateArenaResult:
+    quality_metrics = final.quality_metrics
+    quality_delta = None
+    if (
+        quality_metrics is not None
+        and baseline_quality is not None
+        and not candidate.is_baseline
+    ):
+        quality_delta = compute_quality_delta(quality_metrics, baseline_quality)
+
+    long_input_regression = False
+    if (
+        final.long_input_quality_metrics is not None
+        and baseline_quality is not None
+        and work.truncation_profile is not None
+        and work.truncation_profile.truncated_percentage > 0.0
+    ):
+        long_input_regression = (
+            final.long_input_quality_metrics.recall_at_10
+            < baseline_quality.recall_at_10 - 0.10
+        )
+
+    runtime_ok = (
+        final.stage_c is not None
+        and final.stage_c.status is EmbeddingArenaStageStatus.PASS
+    )
+    verdict = classify_candidate_verdict(
+        is_baseline=candidate.is_baseline,
+        license_eligible=candidate.license_classification
+        is EmbeddingLicenseClassification.ELIGIBLE_COMMERCIAL,
+        runtime_ok=runtime_ok,
+        correctness_ok=work.truncation_ok,
+        quality_delta=quality_delta,
+        speedup=final.speedup_estimate,
+        long_input_regression=long_input_regression,
+    )
+    runtime_metadata = _runtime_metadata(
+        candidate,
+        batch_size=(
+            final.stage_c.selected_provider_batch_size
+            if final.stage_c is not None
+            else candidate.fixed_provider_batch_size
+        ),
+        device=device,
+    )
+    return CandidateArenaResult(
+        candidate_id=candidate.candidate_id,
+        verdict=verdict,
+        runtime_metadata=runtime_metadata,
+        truncation_profile=work.truncation_profile,
+        stage_a=None,
+        stage_b=None,
+        stage_c=final.stage_c,
+        quality_metrics=quality_metrics,
+        long_input_quality_metrics=final.long_input_quality_metrics,
+        quality_delta_vs_baseline=quality_delta,
+        query_latency=final.query_latency,
+        artifact_size_estimate=final.artifact_size_estimate,
+        full_build_estimate=final.full_build_estimate,
+        speedup_estimate=final.speedup_estimate,
+        warnings=work.warnings,
+        screening_outcome=None,
+    )
+
+
+def _run_finalist_qualification_arena(
+    *,
+    candidates: tuple[EmbeddingArenaCandidate, ...],
+    run_gpu_stages: bool,
+    gpu_available: bool,
+    session_dir: str | None,
+    include_e5_control: bool,
+    execution_budget: EmbeddingArenaExecutionBudget,
+    records: tuple[ArenaSampleRecord, ...],
+    sample_manifest: ArenaSampleManifest,
+    stage_c_scope: EmbeddingArenaStageEvaluationScope,
+    text_length_profile: object,
+    hardware: object,
+    device: str | None,
+    warnings: list[str],
+    resources_touched: list[str],
+    arena_started_monotonic: float,
+) -> EmbeddingArenaReport:
+    from platform_proofs.scenarios.verified_product_identification.arena.contracts.classification import (
+        ArenaEvidenceClassification,
+    )
+
+    if session_dir is None:
+        msg = "session_dir is required for finalist qualification with candidate isolation"
+        raise ValueError(msg)
+
+    baseline_throughput = BASELINE_KNOWN_THROUGHPUT_RPS
+    baseline_quality: RetrievalQualityMetrics | None = None
+    baseline_embedding_hours: float | None = None
+    stage_work: dict[str, _CandidateStageWork] = {}
+    final_work: dict[str, _CandidateFinalWork] = {}
+
+    for candidate in _ordered_finalist_candidates(candidates):
+        if _wall_time_budget_exceeded(
+            started_monotonic=arena_started_monotonic,
+            execution_budget=execution_budget,
+        ):
+            warnings.append(
+                "Total wall-time budget exceeded before all finalists completed; "
+                "stopping remaining finalists"
+            )
+            break
+
+        truncation_profile, truncation_ok, truncation_warnings = _profile_truncation(
+            candidate,
+            records[: execution_budget.stage_c_records],
+        )
+        candidate_warnings = list(truncation_warnings)
+
+        if not run_gpu_stages or not gpu_available:
+            candidate_warnings.append("GPU stages skipped; finalist evidence unavailable")
+            stage_work[candidate.candidate_id] = _CandidateStageWork(
+                candidate=candidate,
+                warnings=tuple(candidate_warnings),
+                truncation_profile=truncation_profile,
+                truncation_ok=truncation_ok,
+                stage_a=None,
+                stage_b=None,
+                stage_b_quality=None,
+                stage_b_long_input_quality=None,
+                runtime_ok=False,
+            )
+            final_work[candidate.candidate_id] = _CandidateFinalWork(
+                stage_c=None,
+                quality_metrics=None,
+                long_input_quality_metrics=None,
+                quality_delta=None,
+                query_latency=None,
+                artifact_size_estimate=None,
+                full_build_estimate=None,
+                speedup_estimate=None,
+            )
+            continue
+
+        if execution_budget.isolate_candidates:
+            final = _run_stage_c_isolated(
+                candidate,
+                execution_budget=execution_budget,
+                session_dir=session_dir,
+                include_e5_control=include_e5_control,
+            )
+        else:
+            final = _run_stage_c_for_candidate(
+                candidate,
+                records=records,
+                stage_c_scope=stage_c_scope,
+                device=device,
+                baseline_throughput=baseline_throughput,
+                baseline_embedding_hours=baseline_embedding_hours,
+                execution_budget=execution_budget,
+            )
+
+        runtime_ok = (
+            final.stage_c is not None
+            and final.stage_c.status is EmbeddingArenaStageStatus.PASS
+        )
+        stage_work[candidate.candidate_id] = _CandidateStageWork(
+            candidate=candidate,
+            warnings=tuple(candidate_warnings),
+            truncation_profile=truncation_profile,
+            truncation_ok=truncation_ok,
+            stage_a=None,
+            stage_b=None,
+            stage_b_quality=None,
+            stage_b_long_input_quality=None,
+            runtime_ok=runtime_ok,
+        )
+        final_work[candidate.candidate_id] = final
+
+        if candidate.candidate_id == BASELINE_CANDIDATE_ID:
+            if final.quality_metrics is not None:
+                baseline_quality = final.quality_metrics
+            if final.full_build_estimate is not None:
+                baseline_embedding_hours = final.full_build_estimate.estimated_embedding_hours
+            if (
+                final.stage_c is not None
+                and final.stage_c.throughput_records_per_second is not None
+            ):
+                baseline_throughput = final.stage_c.throughput_records_per_second
+
+    if baseline_throughput > 0.0 and baseline_embedding_hours is not None:
+        for candidate_id, final in final_work.items():
+            if candidate_id == BASELINE_CANDIDATE_ID:
+                continue
+            if final.stage_c is None or final.stage_c.throughput_records_per_second is None:
+                continue
+            final_work[candidate_id] = _CandidateFinalWork(
+                stage_c=final.stage_c,
+                quality_metrics=final.quality_metrics,
+                long_input_quality_metrics=final.long_input_quality_metrics,
+                quality_delta=final.quality_delta,
+                query_latency=final.query_latency,
+                artifact_size_estimate=final.artifact_size_estimate,
+                full_build_estimate=final.full_build_estimate,
+                speedup_estimate=compute_speedup_estimate(
+                    candidate_records_per_second=final.stage_c.throughput_records_per_second,
+                    baseline_records_per_second=baseline_throughput,
+                    baseline_embedding_hours=baseline_embedding_hours,
+                ),
+            )
+
+    candidate_results: list[CandidateArenaResult] = []
+    for candidate in candidates:
+        work = stage_work.get(candidate.candidate_id)
+        final = final_work.get(candidate.candidate_id)
+        if work is None or final is None:
+            continue
+        candidate_results.append(
+            _build_candidate_result_from_finalist_work(
+                candidate=candidate,
+                work=work,
+                final=final,
+                baseline_quality=baseline_quality,
+                device=device,
+            )
+        )
+
+    gate, gate_rationale = classify_finalist_qualification_gate(tuple(candidate_results))
+    decision = map_finalist_gate_to_decision(gate)
+    finalists = tuple(
+        item.candidate_id
+        for item in candidate_results
+        if item.stage_c is not None
+        and item.stage_c.status is EmbeddingArenaStageStatus.PASS
+    )
+    return EmbeddingArenaReport(
+        arena_version=VPI_EMBEDDING_ARENA_VERSION,
+        sample_manifest=sample_manifest,
+        query_benchmark_version=ARENA_QUERY_BENCHMARK_VERSION,
+        query_cases=stage_c_scope.query_cases,
+        hardware=hardware,
+        text_length_profile=text_length_profile,
+        candidate_results=tuple(candidate_results),
+        decision=decision,
+        decision_rationale=gate_rationale,
+        finalists_for_5c4c=finalists,
+        warnings=tuple(warnings),
+        resources_touched=tuple(resources_touched),
+        execution_profile_id=execution_budget.profile_id,
+        evidence_classification=ArenaEvidenceClassification.FINALIST_QUALIFICATION,
+        finalist_qualification_gate=gate,
+    )
+
+
 def run_embedding_arena(
     *,
     include_e5_control: bool = False,
     run_gpu_stages: bool = True,
     session_dir: str | None = None,
+    execution_budget: EmbeddingArenaExecutionBudget | None = None,
+    profile_id: str | None = None,
+    candidate_selection: EmbeddingArenaCandidateSelection | None = None,
 ) -> EmbeddingArenaReport:
+    if execution_budget is None:
+        execution_budget = (
+            resolve_execution_budget(profile_id)
+            if profile_id is not None
+            else STANDARD_ARENA_EXECUTION_BUDGET
+        )
+
     warnings: list[str] = []
     resources_touched: list[str] = []
     if session_dir is not None:
         resources_touched.append(session_dir)
 
-    materialization_config = load_vpi_embedding_materialization_config()
-    records = load_arena_sample_records(materialization_config, target_size=DEFAULT_STAGE_C_RECORDS)
-    sample_manifest = build_arena_sample_manifest(records)
-    stage_b_scope = build_stage_evaluation_scope(
-        stage_name="stage_b",
-        records=tuple(records[:DEFAULT_STAGE_B_RECORDS]),
-    )
-    stage_c_scope = build_stage_evaluation_scope(
-        stage_name="stage_c",
-        records=tuple(records[:DEFAULT_STAGE_C_RECORDS]),
-    )
-    text_length_profile = profile_text_lengths(tuple(record.semantic_text for record in records))
-
     execution_configuration = load_vpi_embedding_provider_execution_configuration()
-    hardware = None
+    environment_snapshot = validate_arena_execution_environment(
+        execution_budget,
+        execution_configuration=execution_configuration,
+    )
+    hardware = probe_hardware_runtime_capability(
+        configured_device=execution_configuration.device,
+    )
     device: str | None = execution_configuration.device
-    gpu_available = True
-    try:
-        assert_execution_device_available(execution_configuration)
-    except VpiEmbeddingDeviceUnavailableError as exc:
-        gpu_available = False
-        run_gpu_stages = False
-        warnings.append(str(exc))
+    gpu_available = environment_snapshot.cuda_available
+    if execution_budget.accelerator_requirement is ArenaAcceleratorRequirement.ANY:
+        try:
+            assert_execution_device_available(execution_configuration)
+        except VpiEmbeddingDeviceUnavailableError as exc:
+            gpu_available = False
+            run_gpu_stages = False
+            warnings.append(str(exc))
 
-    if gpu_available:
-        hardware = probe_hardware_runtime_capability(
-            configured_device=execution_configuration.device,
+    records, sample_manifest, stage_b_scope, stage_c_scope, text_length_profile = (
+        _load_arena_context(execution_budget=execution_budget)
+    )
+    arena_started_monotonic = time.perf_counter()
+
+    effective_selection = candidate_selection or execution_budget.default_candidate_selection
+    candidates = resolve_arena_candidates(
+        include_e5_control=include_e5_control,
+        selection=effective_selection,
+    )
+
+    if execution_budget.finalist_qualification_mode:
+        return _run_finalist_qualification_arena(
+            candidates=candidates,
+            run_gpu_stages=run_gpu_stages,
+            gpu_available=gpu_available,
+            session_dir=session_dir,
+            include_e5_control=include_e5_control,
+            execution_budget=execution_budget,
+            records=records,
+            sample_manifest=sample_manifest,
+            stage_c_scope=stage_c_scope,
+            text_length_profile=text_length_profile,
+            hardware=hardware,
+            device=device,
+            warnings=warnings,
+            resources_touched=resources_touched,
+            arena_started_monotonic=arena_started_monotonic,
         )
 
-    candidates = build_default_arena_candidates(include_e5_control=include_e5_control)
+    if execution_budget.screening_mode:
+        label = (
+            execution_budget.screening_evidence_label
+            or "MICRO-ARENA SCREENING EVIDENCE"
+        )
+        warnings.append(f"{label} — not a final production quality verdict")
+        if execution_budget.include_full_build_estimate:
+            warnings.append(
+                "Full-build estimates are ROUGH SCREENING PROJECTION only; "
+                "do not use for GO/NO-GO on 3.77M records"
+            )
+        else:
+            warnings.append(
+                "Relative throughput on nano sample only — NOT FOR SCALING DECISION"
+            )
+        if execution_budget.max_total_wall_time_seconds is not None:
+            warnings.append(
+                "Total screening wall-time target <= 15 minutes; "
+                f"hard stop at {execution_budget.max_total_wall_time_seconds / 60:.0f} minutes"
+            )
+
     baseline_throughput = BASELINE_KNOWN_THROUGHPUT_RPS
     baseline_quality: RetrievalQualityMetrics | None = None
     baseline_embedding_hours: float | None = None
 
     stage_work: dict[str, _CandidateStageWork] = {}
+    wall_time_stop_announced = False
     for candidate in candidates:
         if candidate.license_classification is EmbeddingLicenseClassification.REJECTED:
             stage_work[candidate.candidate_id] = _CandidateStageWork(
@@ -549,14 +1255,42 @@ def run_embedding_arena(
                 runtime_ok=False,
             )
             continue
-        stage_work[candidate.candidate_id] = _run_stage_ab_for_candidate(
-            candidate,
-            records=tuple(records),
-            stage_b_scope=stage_b_scope,
-            run_gpu_stages=run_gpu_stages,
-            gpu_available=gpu_available,
-            device=device,
-        )
+        if _wall_time_budget_exceeded(
+            started_monotonic=arena_started_monotonic,
+            execution_budget=execution_budget,
+        ):
+            if not wall_time_stop_announced:
+                warnings.append(
+                    "Total wall-time budget exceeded before all candidates completed; "
+                    "stopping remaining candidates"
+                )
+                wall_time_stop_announced = True
+            stage_work[candidate.candidate_id] = _runtime_budget_stage_work(
+                candidate,
+                execution_budget=execution_budget,
+                detail="total screening wall-time budget exceeded",
+            )
+            continue
+        if run_gpu_stages and gpu_available and execution_budget.isolate_candidates:
+            if session_dir is None:
+                msg = "session_dir is required when isolate_candidates is enabled"
+                raise ValueError(msg)
+            stage_work[candidate.candidate_id] = _run_stage_ab_isolated(
+                candidate,
+                execution_budget=execution_budget,
+                session_dir=session_dir,
+                include_e5_control=include_e5_control,
+            )
+        else:
+            stage_work[candidate.candidate_id] = _run_stage_ab_for_candidate(
+                candidate,
+                records=records,
+                stage_b_scope=stage_b_scope,
+                run_gpu_stages=run_gpu_stages,
+                gpu_available=gpu_available,
+                device=device,
+                execution_budget=execution_budget,
+            )
 
     stage_b_evidence = tuple(
         StageBCandidateEvidence(
@@ -579,6 +1313,7 @@ def run_embedding_arena(
         stage_b_evidence,
         baseline_candidate_id=BASELINE_CANDIDATE_ID,
         baseline_throughput=baseline_throughput,
+        max_finalists=execution_budget.max_stage_c_finalists,
     )
 
     final_work: dict[str, _CandidateFinalWork] = {}
@@ -590,18 +1325,42 @@ def run_embedding_arena(
                 for finalist_id in ordered_finalist_ids
                 if finalist_id != BASELINE_CANDIDATE_ID
             )
+        finalist_wall_time_stop_announced = False
         for finalist_id in ordered_finalist_ids:
+            if _wall_time_budget_exceeded(
+                started_monotonic=arena_started_monotonic,
+                execution_budget=execution_budget,
+            ):
+                if not finalist_wall_time_stop_announced:
+                    warnings.append(
+                        "Total wall-time budget exceeded before all finalists completed; "
+                        "stopping remaining finalists"
+                    )
+                    finalist_wall_time_stop_announced = True
+                continue
             work = stage_work.get(finalist_id)
             if work is None:
                 continue
-            final_work[finalist_id] = _run_stage_c_for_candidate(
-                work.candidate,
-                records=tuple(records),
-                stage_c_scope=stage_c_scope,
-                device=device,
-                baseline_throughput=baseline_throughput,
-                baseline_embedding_hours=baseline_embedding_hours,
-            )
+            if execution_budget.isolate_candidates:
+                if session_dir is None:
+                    msg = "session_dir is required when isolate_candidates is enabled"
+                    raise ValueError(msg)
+                final_work[finalist_id] = _run_stage_c_isolated(
+                    work.candidate,
+                    execution_budget=execution_budget,
+                    session_dir=session_dir,
+                    include_e5_control=include_e5_control,
+                )
+            else:
+                final_work[finalist_id] = _run_stage_c_for_candidate(
+                    work.candidate,
+                    records=records,
+                    stage_c_scope=stage_c_scope,
+                    device=device,
+                    baseline_throughput=baseline_throughput,
+                    baseline_embedding_hours=baseline_embedding_hours,
+                    execution_budget=execution_budget,
+                )
             if finalist_id == BASELINE_CANDIDATE_ID:
                 final = final_work[finalist_id]
                 if final.quality_metrics is not None:
@@ -655,6 +1414,7 @@ def run_embedding_arena(
                     full_build_estimate=None,
                     speedup_estimate=None,
                     warnings=(),
+                    screening_outcome=None,
                 )
             )
             continue
@@ -711,27 +1471,71 @@ def run_embedding_arena(
             device=device,
         )
 
-        candidate_results.append(
-            CandidateArenaResult(
-                candidate_id=candidate.candidate_id,
-                verdict=verdict,
-                runtime_metadata=runtime_metadata,
-                truncation_profile=work.truncation_profile,
-                stage_a=work.stage_a,
-                stage_b=work.stage_b,
-                stage_c=final.stage_c if final is not None else None,
-                quality_metrics=quality_metrics,
-                long_input_quality_metrics=long_input_quality_metrics,
-                quality_delta_vs_baseline=quality_delta,
-                query_latency=final.query_latency if final is not None else None,
-                artifact_size_estimate=final.artifact_size_estimate if final is not None else None,
-                full_build_estimate=final.full_build_estimate if final is not None else None,
-                speedup_estimate=final.speedup_estimate if final is not None else None,
-                warnings=work.warnings,
-            )
+        result = CandidateArenaResult(
+            candidate_id=candidate.candidate_id,
+            verdict=verdict,
+            runtime_metadata=runtime_metadata,
+            truncation_profile=work.truncation_profile,
+            stage_a=work.stage_a,
+            stage_b=work.stage_b,
+            stage_c=final.stage_c if final is not None else None,
+            quality_metrics=quality_metrics,
+            long_input_quality_metrics=long_input_quality_metrics,
+            quality_delta_vs_baseline=quality_delta,
+            query_latency=final.query_latency if final is not None else None,
+            artifact_size_estimate=final.artifact_size_estimate if final is not None else None,
+            full_build_estimate=final.full_build_estimate if final is not None else None,
+            speedup_estimate=final.speedup_estimate if final is not None else None,
+            warnings=work.warnings,
+            screening_outcome=(
+                classify_micro_arena_screening(
+                    CandidateArenaResult(
+                        candidate_id=candidate.candidate_id,
+                        verdict=verdict,
+                        runtime_metadata=runtime_metadata,
+                        truncation_profile=work.truncation_profile,
+                        stage_a=work.stage_a,
+                        stage_b=work.stage_b,
+                        stage_c=final.stage_c if final is not None else None,
+                        quality_metrics=quality_metrics,
+                        long_input_quality_metrics=long_input_quality_metrics,
+                        quality_delta_vs_baseline=quality_delta,
+                        query_latency=final.query_latency if final is not None else None,
+                        artifact_size_estimate=(
+                            final.artifact_size_estimate if final is not None else None
+                        ),
+                        full_build_estimate=(
+                            final.full_build_estimate if final is not None else None
+                        ),
+                        speedup_estimate=final.speedup_estimate if final is not None else None,
+                        warnings=work.warnings,
+                        screening_outcome=None,
+                    )
+                )
+                if execution_budget.screening_mode
+                else None
+            ),
         )
+        candidate_results.append(result)
 
-    decision, rationale, finalists = decide_arena_outcome(tuple(candidate_results))
+    decision, rationale, finalists = decide_arena_outcome(
+        tuple(candidate_results),
+        suppress_keep_baseline_decision=execution_budget.suppress_keep_baseline_decision,
+    )
+    if execution_budget.screening_mode:
+        prefix = execution_budget.screening_evidence_label or "MICRO-ARENA SCREENING"
+        suffix = (
+            "no promotion decision from nano evidence"
+            if execution_budget.suppress_keep_baseline_decision
+            else "larger controlled qualification required before promotion"
+        )
+        rationale = f"{prefix} — {rationale}; {suffix}"
+    if execution_budget.screening_mode and not execution_budget.include_full_build_estimate:
+        evidence_classification = ArenaEvidenceClassification.NANO_ARENA_SCREENING
+    elif execution_budget.screening_mode:
+        evidence_classification = ArenaEvidenceClassification.MICRO_ARENA_SCREENING
+    else:
+        evidence_classification = ArenaEvidenceClassification.FINAL_MODEL_QUALITY
     return EmbeddingArenaReport(
         arena_version=VPI_EMBEDDING_ARENA_VERSION,
         sample_manifest=sample_manifest,
@@ -745,4 +1549,6 @@ def run_embedding_arena(
         finalists_for_5c4c=finalists,
         warnings=tuple(warnings),
         resources_touched=tuple(resources_touched),
+        execution_profile_id=execution_budget.profile_id,
+        evidence_classification=evidence_classification,
     )

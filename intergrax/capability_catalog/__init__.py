@@ -1,16 +1,22 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Federated capability catalog read model (CAPABILITY-CATALOG-1 Stage 2)."""
+"""Federated capability catalog read model (CAPABILITY-CATALOG-1 Stage 2–3)."""
 
 from __future__ import annotations
 
+from intergrax.capability_catalog.candidate import (
+    SCHEMA_CAPABILITY_DISCOVERY_CANDIDATE_V1,
+    CapabilityDiscoveryCandidate,
+)
+from intergrax.capability_catalog.discovery import discover_capability_candidates
 from intergrax.capability_catalog.entry import (
     SCHEMA_CAPABILITY_CATALOG_ENTRY_V1,
     CapabilityCatalogEntry,
 )
 from intergrax.capability_catalog.errors import (
     CapabilityCatalogConfigurationError,
+    CapabilityCatalogDiscoveryError,
     CapabilityCatalogError,
     CapabilityCatalogIdentityConflict,
     CapabilityCatalogSourceFailure,
@@ -27,14 +33,18 @@ from intergrax.capability_catalog.source import CapabilityCatalogSource
 
 __all__ = [
     "CapabilityCatalogConfigurationError",
+    "CapabilityCatalogDiscoveryError",
     "CapabilityCatalogEntry",
     "CapabilityCatalogError",
     "CapabilityCatalogIdentityConflict",
     "CapabilityCatalogSnapshot",
     "CapabilityCatalogSource",
     "CapabilityCatalogSourceFailure",
+    "CapabilityDiscoveryCandidate",
     "FederatedCapabilityCatalog",
     "SCHEMA_CAPABILITY_CATALOG_ENTRY_V1",
     "SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_V1",
+    "SCHEMA_CAPABILITY_DISCOVERY_CANDIDATE_V1",
+    "discover_capability_candidates",
     "merge_capability_catalog_entries",
 ]

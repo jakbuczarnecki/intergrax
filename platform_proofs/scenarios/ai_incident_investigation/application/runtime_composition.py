@@ -55,7 +55,6 @@ from intergrax.applications.contracts.build_context import ApplicationBuildConte
 from platform_proofs.scenarios.ai_incident_investigation.application.investigator_contract import (
     INVESTIGATOR_AGENT_ID,
     INVESTIGATOR_CAPABILITY,
-    incident_investigator_contract,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import SCENARIO_TOOL_IDS
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
@@ -64,13 +63,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.validation 
 
 INVESTIGATOR_NODE_ID = f"node_{INVESTIGATOR_AGENT_ID}"
 DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS = 2
-
-
-def _ensure_investigator_contract_registered(registry: AgentRegistry) -> None:
-    try:
-        registry.get_contract(INVESTIGATOR_AGENT_ID)
-    except KeyError:
-        registry._contracts[INVESTIGATOR_AGENT_ID] = incident_investigator_contract()
 
 
 def _incident_lab_manifest(environment: ApplicationEnvironmentProfile) -> ApplicationManifest:
@@ -215,7 +207,6 @@ def build_scenario_runtime_composition(
     )
     workspace = create_scenario_lab_workspace(workspace_root)
     roster = agent_registry or build_scenario_lab_agent_registry()
-    _ensure_investigator_contract_registered(roster)
     manifest = _incident_lab_manifest(resolved_environment)
     platform = build_scenario_runtime_from_environment(
         environment=resolved_environment,

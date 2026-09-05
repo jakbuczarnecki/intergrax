@@ -47,23 +47,33 @@ class ProfileResolutionWarning(BaseModel):
 
 
 class ProfileDependencyFailure(BaseModel):
-    """Placeholder carrier for P1.3 dependency validation."""
+    """P1.3 dependency validation evidence carrier for required failures."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     capability: str
     reason: str
     source_layer: ProfileLayer | None = None
+    dependency_kind: str | None = None
+    dependency_id: str | None = None
+    requirement: str | None = None
+    status: str | None = None
+    source_domain: str | None = None
 
 
 class DegradedCapability(BaseModel):
-    """Placeholder carrier for degraded capability state."""
+    """P1.3 dependency validation evidence carrier for optional degradation."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     capability: str
     reason: str
     source_layer: ProfileLayer | None = None
+    dependency_kind: str | None = None
+    dependency_id: str | None = None
+    requirement: str | None = None
+    status: str | None = None
+    source_domain: str | None = None
 
 
 class ProfileLayerResolution(BaseModel):

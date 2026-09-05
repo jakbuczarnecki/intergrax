@@ -23,6 +23,19 @@ class AgentPackageTrustError(AgentDistributionError):
         self.reason_code = reason_code
 
 
+class AgentPackageAttestationError(AgentDistributionError):
+    """Malformed attestation verification inputs at the package authenticity boundary."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason_code: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.reason_code = reason_code
+
+
 class AgentDistributionNotFoundError(AgentDistributionError):
     """Requested durable record does not exist."""
 

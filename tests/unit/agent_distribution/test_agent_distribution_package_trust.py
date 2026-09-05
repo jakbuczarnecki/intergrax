@@ -41,6 +41,10 @@ from intergrax.agent_distribution.trust import (
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
 )
+from testing_support.agent_package_attestation import (
+    build_test_attestation_trust_coordinator,
+    verified_signature_qualification_evidence,
+)
 
 _DIGEST_A = "sha256:" + ("a" * 64)
 _DIGEST_B = "sha256:" + ("b" * 64)
@@ -111,10 +115,9 @@ def _qualification(
         publisher=publisher,
         status=status,
         evidence=(
-            QualificationEvidence(
-                kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
-                code="signature_ok",
-                ref="sig-ref",
+            verified_signature_qualification_evidence(
+                package_identity=_PACKAGE,
+                publisher_id=publisher.publisher_id,
             ),
             QualificationEvidence(
                 kind=AgentQualificationEvidenceKind.REVOCATION_CHECK,
@@ -128,7 +131,7 @@ def _qualification(
 
 
 def _evaluate(**overrides: object):
-    coordinator = AgentPackageTrustCoordinator()
+    coordinator = build_test_attestation_trust_coordinator()
     params = {
         "package_identity": _PACKAGE,
         "catalog_source": _BUILTIN_SOURCE,
@@ -190,7 +193,7 @@ def test_same_package_version_different_digest_cannot_reuse_qualification() -> N
     same_version_other_digest = _PACKAGE.model_copy(
         update={"package_digest": _DIGEST_B}
     )
-    decision = AgentPackageTrustCoordinator().evaluate(
+    decision = build_test_attestation_trust_coordinator().evaluate(
         package_identity=same_version_other_digest,
         catalog_source=_BUILTIN_SOURCE,
         delivery_source=AgentDeliverySource.BUILTIN,

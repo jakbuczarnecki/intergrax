@@ -17,15 +17,24 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     HypothesisDisposition,
     HypothesisProposal,
     IncidentReasoningProposal,
+    PriorInvestigationState,
     ReasoningProposalValidationError,
+    build_evidence_reference_contract,
+    build_reasoning_messages,
+    completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
     validate_reasoning_proposal,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
+    COMPARISON_EVIDENCE_ID,
+    COMPLETION_NEED_MORE_EVIDENCE,
+    COMPLETION_SUPPORTED_DIAGNOSIS,
+    COMPLETION_UNRESOLVED,
     DIAGNOSIS_KIND,
     H2_CLAIM_ID,
     H3_CLAIM_ID,
     INITIAL_CLAIM_ID,
+    TELEMETRY_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
@@ -154,6 +163,232 @@ def test_unknown_evidence_ref_rejected() -> None:
     )
     with pytest.raises(ReasoningProposalValidationError, match="unknown evidence"):
         validate_reasoning_proposal(mutated, evidence_nodes=())
+
+
+def test_hypothesis_alias_evidence_ref_rejected() -> None:
+    """Live-shaped llama output using E1 aliases must stay rejected."""
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    evidence_nodes = ({"evidence_id": workload, "payload": {}},)
+    proposal = IncidentReasoningProposal(
+        hypotheses=(
+            HypothesisProposal(
+                hypothesis_id="H1",
+                disposition=HypothesisDisposition.PLAUSIBLE,
+                summary="Overload hypothesis.",
+                supporting_evidence_ids=("E1",),
+            ),
+        ),
+        preferred_hypothesis_id="H1",
+        uncertainty_class="high",
+        information_gaps=("comparison evidence",),
+        claim_proposals=(
+            ClaimProposal(
+                hypothesis_id="H1",
+                statement="Overload pending distinguishing evidence.",
+                claim_kind=str(DIAGNOSIS_KIND),
+                supporting_evidence_ids=(workload,),
+            ),
+        ),
+        completion_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+        action_objective="gather distinguishing evidence",
+    )
+    with pytest.raises(
+        ReasoningProposalValidationError,
+        match="unknown evidence reference in hypothesis: E1",
+    ):
+        validate_reasoning_proposal(proposal, evidence_nodes=evidence_nodes)
+
+
+def test_hypothesis_evid_dash_alias_rejected() -> None:
+    """Live-shaped llama3.1 output using EVID-NNN aliases must stay rejected."""
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    evidence_nodes = ({"evidence_id": workload, "payload": {}},)
+    proposal = IncidentReasoningProposal(
+        hypotheses=(
+            HypothesisProposal(
+                hypothesis_id="H1",
+                disposition=HypothesisDisposition.PLAUSIBLE,
+                summary="Overload hypothesis.",
+                supporting_evidence_ids=("EVID-001",),
+            ),
+        ),
+        preferred_hypothesis_id="H1",
+        uncertainty_class="high",
+        information_gaps=("comparison evidence",),
+        claim_proposals=(
+            ClaimProposal(
+                hypothesis_id="H1",
+                statement="Overload pending distinguishing evidence.",
+                claim_kind=str(DIAGNOSIS_KIND),
+                supporting_evidence_ids=(workload,),
+            ),
+        ),
+        completion_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+        action_objective="gather distinguishing evidence",
+    )
+    with pytest.raises(
+        ReasoningProposalValidationError,
+        match="unknown evidence reference in hypothesis: EVID-001",
+    ):
+        validate_reasoning_proposal(proposal, evidence_nodes=evidence_nodes)
+
+
+def test_reasoning_prompt_includes_evidence_reference_contract() -> None:
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    telemetry = str(TELEMETRY_EVIDENCE_ID)
+    evidence_nodes = (
+        {"evidence_id": workload, "payload": {}},
+        {"evidence_id": telemetry, "payload": {}},
+    )
+    contract = build_evidence_reference_contract(evidence_nodes)
+    messages = build_reasoning_messages(
+        evidence_nodes=evidence_nodes,
+        prior_state=PriorInvestigationState(
+            evidence_nodes=(),
+            reasoning_proposal=None,
+            claim_set=None,
+            claim_hypothesis_bindings=(),
+            completion_intent=None,
+            summary="",
+        ),
+        critic_feedback=None,
+        is_revision=False,
+    )
+    system_prompt = messages[0].content or ""
+    user_prompt = messages[1].content or ""
+    assert contract in system_prompt
+    assert contract in user_prompt
+    assert workload in system_prompt
+    assert telemetry in system_prompt
+    assert "Allowed evidence IDs:" in system_prompt
+    assert str(WORKLOAD_EVIDENCE_ID) not in system_prompt or workload in system_prompt
+
+
+def test_evidence_reference_contract_excludes_invented_example_id() -> None:
+    actual_a = "evidence.actual.id.a"
+    actual_b = "evidence.actual.id.b"
+    contract = build_evidence_reference_contract(
+        (
+            {"evidence_id": actual_a, "payload": {}},
+            {"evidence_id": actual_b, "payload": {}},
+        )
+    )
+    assert actual_a in contract
+    assert actual_b in contract
+    assert "for example" not in contract.lower()
+    assert "e.g." not in contract.lower()
+    assert str(WORKLOAD_EVIDENCE_ID) not in contract
+
+
+def test_evidence_reference_contract_empty_whitelist() -> None:
+    contract = build_evidence_reference_contract(())
+    assert "Allowed evidence IDs: none." in contract
+    assert "Do not invent an evidence ID." in contract
+
+
+def test_reasoning_prompt_empty_evidence_instructs_no_invention() -> None:
+    messages = build_reasoning_messages(
+        evidence_nodes=(),
+        prior_state=PriorInvestigationState(
+            evidence_nodes=(),
+            reasoning_proposal=None,
+            claim_set=None,
+            claim_hypothesis_bindings=(),
+            completion_intent=None,
+            summary="",
+        ),
+        critic_feedback=None,
+        is_revision=False,
+    )
+    system_prompt = messages[0].content or ""
+    assert "Allowed evidence IDs: none." in system_prompt
+    assert "Do not invent an evidence ID." in system_prompt
+
+
+def test_workload_example_id_absent_from_prompt_without_evidence() -> None:
+    messages = build_reasoning_messages(
+        evidence_nodes=(),
+        prior_state=PriorInvestigationState(
+            evidence_nodes=(),
+            reasoning_proposal=None,
+            claim_set=None,
+            claim_hypothesis_bindings=(),
+            completion_intent=None,
+            summary="",
+        ),
+        critic_feedback=None,
+        is_revision=False,
+    )
+    prompt = (messages[0].content or "") + (messages[1].content or "")
+    assert str(WORKLOAD_EVIDENCE_ID) not in prompt
+
+
+def test_revision_prompt_whitelist_includes_newly_gathered_evidence() -> None:
+    initial_nodes = ({"evidence_id": str(WORKLOAD_EVIDENCE_ID), "payload": {}},)
+    revision_nodes = (
+        {"evidence_id": str(WORKLOAD_EVIDENCE_ID), "payload": {}},
+        {"evidence_id": str(TELEMETRY_EVIDENCE_ID), "payload": {}},
+    )
+    prior_proposal = _sample_proposal()
+    messages = build_reasoning_messages(
+        evidence_nodes=revision_nodes,
+        prior_state=PriorInvestigationState(
+            evidence_nodes=initial_nodes,
+            reasoning_proposal=prior_proposal,
+            claim_set=None,
+            claim_hypothesis_bindings=(),
+            completion_intent=CompletionIntent.NEED_MORE_EVIDENCE,
+            summary="prior summary",
+        ),
+        critic_feedback=("unsupported inference",),
+        is_revision=True,
+    )
+    prompt = messages[0].content or ""
+    assert str(TELEMETRY_EVIDENCE_ID) in prompt
+    assert "Revision contract:" in prompt
+    assert "Do not cite evidence that is not in the current allowed list." in prompt
+    assert str(COMPARISON_EVIDENCE_ID) not in prompt
+
+
+def test_completion_mode_maps_need_more_evidence_separately() -> None:
+    proposal = _sample_proposal().model_copy(
+        update={"completion_intent": CompletionIntent.NEED_MORE_EVIDENCE}
+    )
+    assert completion_mode_from_proposal(proposal) == COMPLETION_NEED_MORE_EVIDENCE
+
+
+def test_completion_mode_maps_unresolved_and_supported_diagnosis() -> None:
+    unresolved = _sample_proposal().model_copy(
+        update={
+            "completion_intent": CompletionIntent.UNRESOLVED,
+            "unresolved_reason": "telemetry unavailable",
+            "information_gaps": ("decisive telemetry",),
+        }
+    )
+    supported = _sample_proposal()
+    assert completion_mode_from_proposal(unresolved) == COMPLETION_UNRESOLVED
+    assert completion_mode_from_proposal(supported) == COMPLETION_SUPPORTED_DIAGNOSIS
+
+
+def test_reasoning_prompt_requires_unresolved_fields_and_claim_proposals() -> None:
+    messages = build_reasoning_messages(
+        evidence_nodes=(),
+        prior_state=PriorInvestigationState(
+            evidence_nodes=(),
+            reasoning_proposal=None,
+            claim_set=None,
+            claim_hypothesis_bindings=(),
+            completion_intent=None,
+            summary="",
+        ),
+        critic_feedback=None,
+        is_revision=False,
+    )
+    prompt = (messages[0].content or "") + (messages[1].content or "")
+    assert "unresolved_reason" in prompt
+    assert "information_gaps" in prompt
+    assert "claim_proposals must always be non-empty" in prompt
+    assert str(DIAGNOSIS_KIND) in prompt
 
 
 def test_critic_apply_resolutions_rejects_model_self_approval() -> None:

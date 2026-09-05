@@ -97,9 +97,12 @@ class RuntimeContext:
 
     policy_bundle: Optional[RuntimePolicyBundle] = None
     max_parallel_per_tenant: Optional[int] = None
+    tool_invoker_close_on_context_close: bool = True
 
     def close(self) -> None:
         """Release runtime-owned resources (tool execution pool)."""
+        if not self.tool_invoker_close_on_context_close:
+            return
         invoker = self.config.tool_invoker
         if invoker is not None:
             invoker.close()

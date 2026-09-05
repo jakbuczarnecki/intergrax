@@ -52,6 +52,7 @@ _FORBIDDEN_RUNTIME_MUTATION_FUNCTION_NAMES = frozenset(
         "select",
         "rank",
         "authorize",
+        "grant_permission",
     },
 )
 
@@ -84,6 +85,32 @@ def _collect_imports(tree: ast.AST) -> list[str]:
         elif isinstance(node, ast.ImportFrom) and node.module:
             imported.append(node.module)
     return imported
+
+
+def _collect_private_cross_module_imports(path: Path, tree: ast.AST) -> list[str]:
+    current_module = (
+        _CORE_MODULE
+        if path.stem == "__init__"
+        else f"{_CORE_MODULE}.{path.stem}"
+    )
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom) or not node.module:
+            continue
+        if not (
+            node.module == _CORE_MODULE
+            or node.module.startswith(f"{_CORE_MODULE}.")
+        ):
+            continue
+        if node.module == current_module:
+            continue
+        for alias in node.names:
+            if alias.name.startswith("_"):
+                violations.append(
+                    f"{path.name}:{node.lineno} imports private {alias.name} "
+                    f"from {node.module}",
+                )
+    return violations
 
 
 def _collect_forbidden_registry_class_defs(tree: ast.AST) -> list[str]:
@@ -158,3 +185,14 @@ def test_capability_catalog_core_does_not_import_adapters() -> None:
                 raise AssertionError(
                     f"{path.relative_to(root)} imports domain adapters: {imported}",
                 )
+
+
+def test_capability_catalog_core_has_no_private_cross_module_imports() -> None:
+    root = _package_root(_CORE_MODULE)
+    for path in _iter_core_py_files():
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        violations = _collect_private_cross_module_imports(path, tree)
+        assert not violations, (
+            f"{path.relative_to(root)} has forbidden private cross-module imports: "
+            + ", ".join(violations)
+        )

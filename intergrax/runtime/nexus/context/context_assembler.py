@@ -16,6 +16,9 @@ from intergrax.runtime.nexus.context.context_models import (
 )
 from intergrax.runtime.nexus.context.metadata_keys import HANDOFF_STRUCTURED_OUTPUT_PREFIX
 from intergrax.runtime.nexus.context.shared_task_context import SharedTaskContext
+from intergrax.runtime.nexus.execution.evaluator_loop_metadata import (
+    current_evaluator_loop_iteration,
+)
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.task.task import Task
 
@@ -56,7 +59,15 @@ def collect_dependency_records(
     evidence: List[str] = []
     provenance: List[ContextProvenance] = []
 
-    for dep_id in node.depends_on[: policy.max_prior_entries]:
+    dependency_ids = list(node.depends_on[: policy.max_prior_entries])
+    if (
+        node.node_id in prior_outputs
+        and node.node_id not in dependency_ids
+        and current_evaluator_loop_iteration(node) > 0
+    ):
+        dependency_ids.append(node.node_id)
+
+    for dep_id in dependency_ids:
         prior = prior_outputs.get(dep_id)
         if prior is None:
             continue
