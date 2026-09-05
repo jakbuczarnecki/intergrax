@@ -1007,6 +1007,15 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         refs_to_clear = tuple(
             ref for ref in owned_refs if ref in continuity.unresolved_problem_refs
         )
+        if not refs_to_clear:
+            episode = self._episode_repository.record_continuity_resume(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                continuity_resume_revision=continuity.revision,
+                recorded_at=now,
+            )
+            return episode, continuity.revision, False
+
         try:
             updated = replace(
                 continuity,
@@ -1025,13 +1034,12 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         except AutonomousWorkRevisionConflict:
             return episode, continuity_revision, True
 
-        if refs_to_clear:
-            episode = self._episode_repository.record_continuity_resume(
-                recovery_episode_id=episode.recovery_episode_id,
-                expected_revision=episode.revision,
-                continuity_resume_revision=continuity_revision,
-                recorded_at=now,
-            )
+        episode = self._episode_repository.record_continuity_resume(
+            recovery_episode_id=episode.recovery_episode_id,
+            expected_revision=episode.revision,
+            continuity_resume_revision=continuity_revision,
+            recorded_at=now,
+        )
         return episode, continuity_revision, False
 
     def _validate_source_freshness(
