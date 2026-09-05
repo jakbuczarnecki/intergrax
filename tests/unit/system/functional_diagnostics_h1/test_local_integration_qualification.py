@@ -31,6 +31,7 @@ from tests.system.functional_diagnostics_h1.models import (
     HealthVerdict,
     H1_K_QUALIFICATION_ID,
     H1_K_R2_QUALIFICATION_ID,
+    H1_K_R3_QUALIFICATION_ID,
     LocalIntegrationDependencyClass,
     LocalIntegrationQualificationReport,
     LocalIntegrationRunResult,
@@ -42,6 +43,7 @@ from tests.system.functional_diagnostics_h1.qualification_spec import (
     H1_K_QUALIFICATION_SPEC,
     H1_K_R1_QUALIFICATION_SPEC,
     H1_K_R2_QUALIFICATION_SPEC,
+    H1_K_R3_QUALIFICATION_SPEC,
     LOCAL_INTEGRATION_QUALIFICATION_SPECS,
     LocalIntegrationQualificationSpec,
     resolve_local_integration_qualification_spec,
@@ -338,6 +340,32 @@ def test_r2_spec_identity() -> None:
         H1_K_R2_QUALIFICATION_SPEC.artifact_directory.as_posix()
         == ".tmp/session/diag-h1-k-qualification-r2"
     )
+
+
+def test_r3_spec_identity() -> None:
+    assert H1_K_R3_QUALIFICATION_SPEC.qualification_id == H1_K_R3_QUALIFICATION_ID
+    assert (
+        H1_K_R3_QUALIFICATION_SPEC.artifact_directory.as_posix()
+        == ".tmp/session/diag-h1-k-qualification-r3"
+    )
+    assert H1_K_R3_QUALIFICATION_SPEC.canonical_run_count == 3
+    assert H1_K_R3_QUALIFICATION_SPEC.requires_clean_repository is True
+    assert H1_K_R3_QUALIFICATION_SPEC.requires_origin_development_match is True
+
+
+@pytest.mark.parametrize(
+    ("qualification_id", "expected_spec"),
+    (
+        (H1_K_QUALIFICATION_ID, H1_K_R1_QUALIFICATION_SPEC),
+        (H1_K_R2_QUALIFICATION_ID, H1_K_R2_QUALIFICATION_SPEC),
+        (H1_K_R3_QUALIFICATION_ID, H1_K_R3_QUALIFICATION_SPEC),
+    ),
+)
+def test_resolve_local_integration_qualification_spec_by_id(
+    qualification_id: str,
+    expected_spec: LocalIntegrationQualificationSpec,
+) -> None:
+    assert resolve_local_integration_qualification_spec(qualification_id) is expected_spec
 
 
 def test_spec_driven_execution_uses_same_algorithm() -> None:
