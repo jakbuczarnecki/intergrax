@@ -21,13 +21,12 @@ from testing_support.decision_e2e.composition import (
 )
 from testing_support.decision_e2e.contracts import (
     DecisionE2EProofId,
-    DecisionE2EQualificationResult,
     QualificationDisposition,
 )
 from testing_support.decision_e2e.evidence import (
     decision_identity_evidence,
-    provider_evidence_ref,
 )
+from testing_support.decision_e2e.requirements import qualify_independent_verifier
 from testing_support.decision_e2e.payloads import QualificationRecommendation
 from testing_support.decision_e2e.verification import (
     build_semantic_verification_pipeline,
@@ -121,15 +120,13 @@ async def test_ds_e2e_03_real_independent_semantic_verifier_pass(
     assert fail_result.verification_result.disposition is VerificationDisposition.CHALLENGED
 
     decision_e2e_report_collector.record(
-        DecisionE2EQualificationResult(
-            proof_id=DecisionE2EProofId.DS_E2E_03,
-            disposition=QualificationDisposition.PASSED,
+        qualify_independent_verifier(
+            producer=composition.environment.producer_evidence,
+            verifier=composition.environment.verifier_evidence,
             evidence=(
-                provider_evidence_ref(composition.environment.producer_evidence),
-                provider_evidence_ref(composition.environment.verifier_evidence),
                 decision_identity_evidence(identity),
                 decision_identity_evidence(identity_fail),
             ),
-            reason=composition.environment.independence_level,
+            reason=composition.environment.independence_level.value,
         ),
     )

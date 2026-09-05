@@ -15,21 +15,14 @@ from testing_support.decision_e2e.composition import (
     evaluate_decision_flow,
     mint_qualification_identity,
 )
-from testing_support.decision_e2e.contracts import (
-    DecisionE2EProofId,
-    DecisionE2EQualificationResult,
-    QualificationDisposition,
-)
 from testing_support.decision_e2e.council import (
     council_deliberation_input,
     run_council_deliberation,
     run_with_execution_bindings,
     three_participant_strategy,
 )
-from testing_support.decision_e2e.evidence import (
-    decision_identity_evidence,
-    provider_evidence_ref,
-)
+from testing_support.decision_e2e.evidence import decision_identity_evidence
+from testing_support.decision_e2e.requirements import qualify_real_multi_model
 from testing_support.decision_e2e.verification import build_pass_through_pipeline
 
 pytestmark = [
@@ -90,15 +83,13 @@ async def test_ds_e2e_02_real_council(
     assert flow_result.lifecycle_state.stage is DecisionLifecycleStage.FINALIZATION
 
     decision_e2e_report_collector.record(
-        DecisionE2EQualificationResult(
-            proof_id=DecisionE2EProofId.DS_E2E_02,
-            disposition=QualificationDisposition.PASSED,
-            evidence=(
-                provider_evidence_ref(composition.environment.producer_evidence),
-                provider_evidence_ref(composition.environment.council_b_evidence),
-                provider_evidence_ref(composition.environment.council_c_evidence),
-                decision_identity_evidence(identity),
+        qualify_real_multi_model(
+            council_bindings=(
+                composition.environment.producer_evidence,
+                composition.environment.council_b_evidence,
+                composition.environment.council_c_evidence,
             ),
-            reason=composition.environment.independence_level,
+            evidence=(decision_identity_evidence(identity),),
+            reason=composition.environment.independence_level.value,
         ),
     )

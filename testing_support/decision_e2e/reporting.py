@@ -14,6 +14,7 @@ from testing_support.decision_e2e.contracts import (
     DecisionE2EQualificationResult,
     QualificationDisposition,
 )
+from testing_support.decision_e2e.requirements import validate_qualification_result
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,7 +88,7 @@ class QualificationReportCollector:
         self._results: list[DecisionE2EQualificationResult] = []
 
     def record(self, result: DecisionE2EQualificationResult) -> None:
-        self._results.append(result)
+        self._results.append(validate_qualification_result(result))
 
     def build_report(self, *, environment_profile: str) -> QualificationReport:
         return QualificationReport(
