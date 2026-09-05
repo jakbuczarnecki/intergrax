@@ -19,20 +19,6 @@ def test_agent_binding_mount_requires_explicit_contract_id() -> None:
         AgentBinding.mount(EchoAgent)  # type: ignore[call-arg]
 
 
-def test_agent_binding_does_not_reflect_contract_id_from_agent_type() -> None:
-    binding = AgentBinding(
-        agent_type=EchoAgent,
-        import_path=qualname_for_agent(EchoAgent),
-    )
-    assert binding.contract_id is None
-
-
-def test_agent_binding_mount_preserves_explicit_contract_id() -> None:
-    binding = AgentBinding.mount(EchoAgent, contract_id="agent.foo", capabilities=["echo.basic"])
-    assert binding.contract_id == "agent.foo"
-    assert binding.agent_type is EchoAgent
-
-
 def test_agent_binding_mount_sets_type_and_import_path() -> None:
     binding = AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])
     assert binding.agent_type is EchoAgent

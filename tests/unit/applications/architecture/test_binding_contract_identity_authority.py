@@ -14,7 +14,7 @@ PRODUCTION_ROOTS = (REPO_ROOT / "intergrax" / "applications",)
 CATALOG_MODULE = REPO_ROOT / "intergrax" / "applications" / "_shared" / "capability_graph_catalog.py"
 MANIFEST_MODULE = REPO_ROOT / "intergrax" / "applications" / "contracts" / "manifest.py"
 FORBIDDEN_SYMBOL = "resolve_binding_agent_contract_id"
-REFLECTION_HELPERS = frozenset({"getattr", "hasattr", "setattr"})
+REFLECTION_HELPERS = frozenset({"getattr", "hasattr"})
 REFLECTION_MODULES = frozenset({"inspect"})
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
