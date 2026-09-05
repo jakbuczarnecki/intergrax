@@ -51,8 +51,9 @@ External providers register via existing manifest/plugin path:
 
 1. Provider package implementing `ManagedRetrievalBackend`
 2. `IntegrationManifest` with `IntegrationCategory.MANAGED_RETRIEVAL`
-3. `register_from_manifest` or `register_integration_plugin`
-4. Profile binding: `managed_retrieval=<slug>`
+3. Provider-owned explicit `IntegrationContractSpec` via `declare_integration_contract`
+4. `register_from_manifest(..., contract_specs=...)` or `register_integration_plugin(..., contract_specs=...)`
+5. Profile binding: `managed_retrieval=<slug>`
 
 No changes to tool service, `RuntimeToolInvoker`, or tool registry are required for Vendor B.
 
@@ -82,9 +83,13 @@ Generic Integrations core does not assume OpenAI. Without profile binding,
 ## registry_v2
 
 Managed retrieval appears in `registry_v2` only via derived projection from canonical catalog
-registration (`register_from_manifest` + contract capture). No manual V2 state.
+registration: provider-owned explicit `IntegrationContractSpec` →
+`register_from_manifest(..., contract_specs=...)` → Integration Catalog → `registry_v2`.
+No manual V2 state.
 
 ## P2-003 note
 
-Built-in OpenAI registration uses existing `contract_capture` reflection path (inherited P2-003).
-No new reflection-based runtime behavior was introduced in tool or materialization layers.
+Built-in OpenAI registration uses provider-owned explicit `IntegrationContractSpec`
+(`intergrax/integrations/providers/managed_retrieval/openai/contract_spec.py`).
+Typed `managed_retrieval` category registration fails closed without explicit `contract_specs`.
+No reflection-based contract discovery remains on the registration path.

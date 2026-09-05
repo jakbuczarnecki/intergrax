@@ -16,8 +16,17 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.providers.managed_retrieval.openai.manifest import MANIFEST as OPENAI_MANAGED_RETRIEVAL
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog, get_entry
+from intergrax.integrations.registry.contract_spec import declare_integration_contract
 from intergrax.integrations.registry.plugin_register import register_integration_plugin
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.categories.managed_retrieval import (
+    ManagedRetrievalIntegrationContract,
+)
+from intergrax.runtime.integrations.contracts import (
+    PlatformIntegrationCapability,
+    PlatformIntegrationSecurityPosture,
+)
 from intergrax.tools.providers.openai_vector_store.service import resolve_managed_retrieval
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -51,18 +60,87 @@ class FakeManagedRetrievalBackend:
         return "vendor-b"
 
 
+VENDOR_B_MANAGED_RETRIEVAL_PROVIDER_ID = "vendor_b_managed_retrieval"
+
+
+class _VendorBManagedRetrievalIntegration(ManagedRetrievalIntegrationContract):
+    def ensure_store_exists(self, store_id: str) -> None:
+        _ = store_id
+
+    def list_attached_file_ids(self, store_id: str) -> list[str]:
+        _ = store_id
+        return []
+
+    def upload_folder(
+        self,
+        store_id: str,
+        folder: str | Path,
+        *,
+        patterns: tuple[str, ...] | list[str],
+    ) -> ManagedRetrievalUploadResult:
+        _ = store_id, folder, patterns
+        return ManagedRetrievalUploadResult(uploaded_names=(), failed_names=())
+
+    def clear_store(self, store_id: str) -> int:
+        _ = store_id
+        return 0
+
+    def query(self, request: ManagedRetrievalQueryRequest) -> str:
+        _ = request
+        return "vendor-b"
+
+
+def create_vendor_b_managed_retrieval_integration(
+    *,
+    enabled: bool = False,
+) -> _VendorBManagedRetrievalIntegration:
+    return _VendorBManagedRetrievalIntegration.for_provider(
+        provider_id=VENDOR_B_MANAGED_RETRIEVAL_PROVIDER_ID,
+        display_name="Vendor B",
+        config=CategoryIntegrationConfig(enabled=enabled),
+    )
+
+
+VENDOR_B_CONTRACT_SPEC = declare_integration_contract(
+    category="managed_retrieval",
+    provider_id=VENDOR_B_MANAGED_RETRIEVAL_PROVIDER_ID,
+    integration_class=_VendorBManagedRetrievalIntegration,
+    contract_class=ManagedRetrievalIntegrationContract,
+    contract_factory=create_vendor_b_managed_retrieval_integration,
+    display_name="Vendor B",
+    config_class=CategoryIntegrationConfig,
+    capabilities=(
+        PlatformIntegrationCapability.CONNECT,
+        PlatformIntegrationCapability.READ,
+        PlatformIntegrationCapability.WRITE,
+        PlatformIntegrationCapability.HEALTH_CHECK,
+    ),
+    security_posture=PlatformIntegrationSecurityPosture(),
+    supports_runtime_binding=True,
+    supports_health_check=True,
+    metadata={"source": "test_vendor_b_plugin"},
+)
+
+
 class VendorBPlugin:
     @classmethod
     def integration_manifest(cls) -> IntegrationManifest:
         return IntegrationManifest(
-            slug="vendor_b_managed_retrieval",
+            slug=VENDOR_B_MANAGED_RETRIEVAL_PROVIDER_ID,
             categories=(IntegrationCategory.MANAGED_RETRIEVAL,),
         )
 
     @classmethod
     def create_integration(cls, **kwargs: object) -> ManagedRetrievalBackend:
         _ = kwargs
-        return FakeManagedRetrievalBackend()
+        return create_vendor_b_managed_retrieval_integration(enabled=True)
+
+
+def _register_vendor_b_plugin() -> None:
+    register_integration_plugin(
+        VendorBPlugin,
+        contract_specs=(VENDOR_B_CONTRACT_SPEC,),
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -128,7 +206,7 @@ def test_resolve_managed_retrieval_uses_typed_binding() -> None:
 
 
 def test_external_plugin_registers_managed_retrieval() -> None:
-    register_integration_plugin(VendorBPlugin)
+    _register_vendor_b_plugin()
     profile = IntegrationProfile(managed_retrieval=VendorBPlugin)
     backend = profile.resolve(IntegrationCategory.MANAGED_RETRIEVAL)
     assert isinstance(backend, ManagedRetrievalBackend)
@@ -145,7 +223,7 @@ def test_external_plugin_registers_managed_retrieval() -> None:
 
 
 def test_second_fake_provider_resolves_without_tool_changes() -> None:
-    register_integration_plugin(VendorBPlugin)
+    _register_vendor_b_plugin()
     profile = IntegrationProfile(managed_retrieval="vendor_b_managed_retrieval")
     ctx = ToolWiringContext.from_integration_profile(profile)
     assert ctx.managed_retrieval is not None
