@@ -57,7 +57,6 @@ async def test_run_task_attaches_lkw_evidence_metadata() -> None:
     lifecycle.transition_to_ready()
     executor = AsyncMock(spec=LocalWorkspaceTaskExecutor)
     executor.execute = AsyncMock(return_value=task_result)
-    executor.nexus_loop = None
     service = LocalWorkspaceRunService(task_executor=executor, default_agent_id="local_search")
 
     response = await service.run_task(

@@ -155,7 +155,6 @@ def build_proof_runtime_session(
     nexus_loop = resolve_harness_host_nexus_loop_legacy(harness_runtime)
     task_executor = LocalWorkspaceTaskExecutor(
         build_lkw_host_task_execution(nexus_loop, environment_profile),
-        nexus_loop=nexus_loop,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

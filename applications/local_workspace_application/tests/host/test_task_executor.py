@@ -32,10 +32,6 @@ class _FakeReadiness:
         return self.snapshot
 
 
-def _nexus_loop_mock() -> AsyncMock:
-    return AsyncMock()
-
-
 def _host_execution_mock(*, execute_result: TaskResult) -> AsyncMock:
     host_execution = AsyncMock()
     host_execution.execute = AsyncMock(return_value=execute_result)
@@ -67,7 +63,6 @@ async def test_executor_applies_application_enrichment(lifecycle: LocalWorkspace
     )
     executor = LocalWorkspaceTaskExecutor(
         host_execution,
-        nexus_loop=_nexus_loop_mock(),
         task_enricher=enricher,
         readiness=lifecycle,
     )
@@ -96,7 +91,6 @@ async def test_executor_rejects_unsupported_capability(lifecycle: LocalWorkspace
     )
     executor = LocalWorkspaceTaskExecutor(
         host_execution,
-        nexus_loop=_nexus_loop_mock(),
         task_enricher=enricher,
         readiness=lifecycle,
     )
@@ -123,7 +117,6 @@ async def test_executor_rejects_when_host_not_ready() -> None:
     )
     executor = LocalWorkspaceTaskExecutor(
         host_execution,
-        nexus_loop=_nexus_loop_mock(),
         task_enricher=None,
         readiness=lifecycle,
     )
@@ -146,7 +139,6 @@ async def test_executor_delegates_to_host_execution_once(
     )
     executor = LocalWorkspaceTaskExecutor(
         host_execution,
-        nexus_loop=_nexus_loop_mock(),
         task_enricher=None,
         readiness=lifecycle,
     )
@@ -189,7 +181,6 @@ async def test_executor_uses_readiness_provider_snapshot() -> None:
     )
     executor = LocalWorkspaceTaskExecutor(
         host_execution,
-        nexus_loop=_nexus_loop_mock(),
         task_enricher=None,
         readiness=readiness,
     )

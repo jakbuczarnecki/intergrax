@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import inspect
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pathlib import Path
@@ -48,7 +50,6 @@ def _build_executor(nexus_loop: NexusLoop) -> LocalWorkspaceTaskExecutor:
     lifecycle.transition_to_ready()
     return LocalWorkspaceTaskExecutor(
         host_execution,
-        nexus_loop=nexus_loop,
         task_enricher=None,
         readiness=lifecycle,
     )
@@ -278,3 +279,22 @@ async def test_lkw_request_produces_single_root_execution_invocation() -> None:
 
     assert facade_calls == 1
     assert router_calls == 1
+
+
+@pytest.mark.unit
+def test_lkw_task_executor_has_no_nexus_surface() -> None:
+    signature = inspect.signature(LocalWorkspaceTaskExecutor.__init__)
+    assert "nexus_loop" not in signature.parameters
+    assert not hasattr(LocalWorkspaceTaskExecutor, "nexus_loop")
+
+
+@pytest.mark.unit
+def test_lkw_factory_wires_executor_without_nexus_and_router_with_registry() -> None:
+    factory_source = (
+        Path(__file__).resolve().parents[2] / "host" / "factory.py"
+    ).read_text(encoding="utf-8")
+    executor_block = factory_source.split("lkw_task_executor = LocalWorkspaceTaskExecutor", 1)[1]
+    assert "nexus_loop=" not in executor_block.split(")", 1)[0]
+    router_block = factory_source.split("mount_local_workspace_routes(", 1)[1]
+    assert "registry=runtime.registry" in router_block
+    assert "runtime_event_persistence=runtime.observability.runtime_event_store" in router_block

@@ -316,7 +316,6 @@ def _restart_application(
     nexus_loop = resolve_harness_host_nexus_loop_legacy(harness_runtime)
     task_executor = LocalWorkspaceTaskExecutor(
         build_lkw_host_task_execution(nexus_loop, environment),
-        nexus_loop=nexus_loop,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

@@ -9,7 +9,6 @@ from typing import Any
 
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import TaskResult
 
 RUNTIME_EVENT_SUMMARY_KEY = "runtime_event_summary.v1"
@@ -111,12 +110,12 @@ def runtime_event_summary_is_safe(payload: dict[str, Any]) -> bool:
 
 def collect_runtime_events_for_task(
     *,
-    nexus_loop: NexusLoop | None,
+    runtime_event_persistence: RuntimeEventPersistence | None,
     task_result: TaskResult,
     tenant_id: str,
 ) -> list[RuntimeEvent]:
-    """Resolve runtime events for a completed task from bus history or persistence."""
-    if nexus_loop is None:
+    """Resolve runtime events for a completed task from canonical persistence."""
+    if runtime_event_persistence is None:
         return []
 
     run_id = task_result.run_id or ""
@@ -124,25 +123,19 @@ def collect_runtime_events_for_task(
     match_ids = _task_run_id_candidates(task_result)
     merged: dict[str, RuntimeEvent] = {}
 
-    for event in nexus_loop.event_bus.history:
-        if _event_matches_task(event, match_ids=match_ids):
-            merged[event.event_id] = event
-
-    store: RuntimeEventPersistence | None = nexus_loop.runtime_event_store
-    if store is not None:
-        for candidate in match_ids:
-            for source in (
-                store.list_for_run(candidate, tenant_id=tenant_id),
-                store.list_for_task(candidate, tenant_id=tenant_id),
-            ):
-                for event in source:
-                    merged.setdefault(event.event_id, event)
+    for candidate in match_ids:
         for source in (
-            store.list_for_run(run_id, tenant_id=tenant_id),
-            store.list_for_task(task_id, tenant_id=tenant_id),
+            runtime_event_persistence.list_for_run(candidate, tenant_id=tenant_id),
+            runtime_event_persistence.list_for_task(candidate, tenant_id=tenant_id),
         ):
             for event in source:
                 merged.setdefault(event.event_id, event)
+    for source in (
+        runtime_event_persistence.list_for_run(run_id, tenant_id=tenant_id),
+        runtime_event_persistence.list_for_task(task_id, tenant_id=tenant_id),
+    ):
+        for event in source:
+            merged.setdefault(event.event_id, event)
 
     return list(merged.values())
 
@@ -171,34 +164,18 @@ def attach_runtime_event_summary_metadata(
     metadata: dict[str, Any],
     *,
     task_result: TaskResult,
-    nexus_loop: NexusLoop | None,
+    runtime_event_persistence: RuntimeEventPersistence | None,
     tenant_id: str,
 ) -> dict[str, Any]:
     """Attach curated ``runtime_event_summary.v1`` derived from platform runtime events."""
     events = collect_runtime_events_for_task(
-        nexus_loop=nexus_loop,
+        runtime_event_persistence=runtime_event_persistence,
         task_result=task_result,
         tenant_id=tenant_id,
     )
     summary = build_runtime_event_summary(events)
     metadata[RUNTIME_EVENT_SUMMARY_KEY] = summary
     return metadata
-
-
-def _event_matches_task(
-    event: RuntimeEvent,
-    *,
-    match_ids: set[str],
-) -> bool:
-    if event.run_id:
-        if event.run_id in match_ids:
-            return True
-        if any(event.run_id.startswith(f"{candidate}:") for candidate in match_ids):
-            return True
-    if event.task_id and event.task_id in match_ids:
-        return True
-    return False
-
 
 def _tool_id_from_payload(payload: dict[str, Any]) -> str:
     for key in ("tool_id", "tool_name"):

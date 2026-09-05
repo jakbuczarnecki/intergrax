@@ -6,7 +6,9 @@ from dataclasses import dataclass
 
 from fastapi import APIRouter, FastAPI, HTTPException, status
 
+from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.interactions.errors import HostNotAcceptingWorkError
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
@@ -21,6 +23,7 @@ from local_workspace_application.serving.schemas import LocalWorkspaceRunRequest
 class LocalWorkspaceRunService:
     task_executor: LocalWorkspaceTaskExecutor
     default_agent_id: str
+    runtime_event_persistence: RuntimeEventPersistence | None = None
 
     async def run_task(self, body: LocalWorkspaceRunRequestV1) -> LocalWorkspaceRunResponseV1:
         task_id, _ = mint_intake_execution_identity()
@@ -53,7 +56,7 @@ class LocalWorkspaceRunService:
         attach_runtime_event_summary_metadata(
             metadata,
             task_result=result,
-            nexus_loop=self.task_executor.nexus_loop,
+            runtime_event_persistence=self.runtime_event_persistence,
             tenant_id=body.tenant_id or "default",
         )
         attach_lkw_proof_summary_metadata(
@@ -74,33 +77,26 @@ def mount_local_workspace_routes(
     app: FastAPI,
     *,
     task_executor: LocalWorkspaceTaskExecutor,
+    registry: AgentRegistryRead,
+    runtime_event_persistence: RuntimeEventPersistence | None = None,
     prefix: str = "/v1/local_workspace",
     default_agent_id: str = "local_search",
 ) -> LocalWorkspaceRunService:
     service = LocalWorkspaceRunService(
         task_executor=task_executor,
         default_agent_id=default_agent_id,
+        runtime_event_persistence=runtime_event_persistence,
     )
     router = APIRouter(prefix=prefix, tags=["local_workspace"])
 
     @router.post("/run", response_model=LocalWorkspaceRunResponseV1)
     async def run_agent(body: LocalWorkspaceRunRequestV1) -> LocalWorkspaceRunResponseV1:
-        try:
-            return await service.run_task(body)
-        except HTTPException:
-            raise
-        except Exception as exc:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"run_error: {exc.__class__.__name__}",
-            ) from exc
+        return await service.run_task(body)
 
     @router.get("/agents")
     async def list_agents() -> dict[str, list[dict[str, object]]]:
         agents: list[dict[str, object]] = []
-        nexus_loop = task_executor.nexus_loop
-        for agent_id in nexus_loop.registry.list_agent_ids():
-            contract = nexus_loop.registry.get(agent_id).get_contract()
+        for contract in registry.list_contracts():
             agents.append(
                 {
                     "agent_id": contract.id,
