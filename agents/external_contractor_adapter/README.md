@@ -16,28 +16,35 @@ uv run pytest agents/external_contractor_adapter/tests -q
 
 Stub LLM + ``tests/fakes/DeterministicExternalWorkFake`` keep tests offline - no network / Tier-3 host required.
 
-## Register (programmatic)
+## Unit-test authoring (isolated)
 
 ```python
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from external_contractor_adapter.external_contractor_adapter_agent import ExternalContractorAdapterAgent
 
-registry = AgentRegistry()
-registry.register(
-    ExternalContractorAdapterAgent(
-        external_work=my_integration,
-        side_effect_policy=my_side_effect_policy,
+agent = ExternalContractorAdapterAgent(external_work=my_integration, side_effect_policy=my_policy)
+result = await agent.run(
+    AgentRunRequest(
+        input="hello",
+        identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+        agent_id=agent.contract_id,
     )
 )
 ```
 
-See **Step 4** in ``../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`` for host wiring. Host may inject via ``settings.external_work_integration`` and ``settings.meaningful_side_effect_policy``.
+## Lab / product integration
 
-## Capabilities
+Add the agent via ``AgentBinding.mount(...)`` in the Tier-3 manifest and run through
+**Agent Distribution → registry projection → Execution**. Do not use local
+``AgentRegistry()`` or ``NexusLoop`` on serving paths.
 
-`external_contractor.adapt`
+See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
-## Layout
+Host may inject via ``settings.external_work_integration`` and ``settings.meaningful_side_effect_policy``.
+
+
+
+## ## Layout
 
 - ``external_contractor_adapter_agent.py`` - Agent class (ACP hooks)
 - ``contract.py`` / ``capabilities.py`` - AgentContract

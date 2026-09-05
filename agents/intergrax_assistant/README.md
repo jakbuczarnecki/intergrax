@@ -14,23 +14,32 @@ UAEP-first scaffold. Full process: [`../../docs/project/technical/guides/AGENT_C
 2. Run smoke test: `uv run pytest agents/intergrax_assistant/tests -q`
 3. For lab HTTP: register in `applications/lab_application/host/wiring.py` (see guide Step 4C)
 
-## Register (programmatic)
+## Unit-test authoring (isolated)
 
 ```python
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax_assistant.intergrax_assistant_agent import IntergraxAssistantAgent
 
-registry = AgentRegistry()
-registry.register(IntergraxAssistantAgent())
+agent = IntergraxAssistantAgent()
+result = await agent.run(
+    AgentRunRequest(
+        input="hello",
+        identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+        agent_id=agent.contract_id,
+    )
+)
 ```
 
-See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
+## Lab / product integration
 
-## Capabilities
+Add the agent via ``AgentBinding.mount(...)`` in the Tier-3 manifest and run through
+**Agent Distribution → registry projection → Execution**. Do not use local
+``AgentRegistry()`` or ``NexusLoop`` on serving paths.
 
-`platform.assist`
+See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
-## Layout
+
+## ## Layout
 
 - ``intergrax_assistant_agent.py`` - Agent class (UAEP)
 - ``contract.py`` / ``capabilities.py`` - AgentContract

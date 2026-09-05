@@ -11,7 +11,7 @@ Implementation status: [`intergrax_runtime_architecture.md`](intergrax_runtime_a
 
 **Audience:** human developers, GPT, Claude, Gemini, Cursor agents.
 
-**Success metric:** from idea to first Nexus run in **under one hour**, with **zero changes** to `intergrax/runtime`.
+**Success metric:** from idea to first `agent.run()` smoke test in **under one hour**, with **zero changes** to `intergrax/runtime`.
 
 ---
 
@@ -73,16 +73,19 @@ Canon: [APPLICATION_RUNTIME_GRAPH_MODEL.md](../../architecture/APPLICATION_RUNTI
 ## 1. Mental model
 
 ```text
-Tier-0  intergrax/           Platform (LLM, storage, queues, logging, …)
-Tier-1  intergrax/runtime/   Nexus - Agent Operating System
+Tier-0  intergrax/           Platform + Agent Distribution (lifecycle authority)
+Tier-1  intergrax/runtime/   Execution boundary, projections, internal Nexus orchestration
 Tier-2  agents/              Reusable agent capabilities
-Tier-3  applications/        Execution environments (wiring only)
+Tier-3  applications/        Host wiring only (no lifecycle ownership)
 ```
 
 ```text
-Nexus (Tier-1)          = Agent Operating System  (orchestration, lifecycle, trace, memory, HITL)
-Agents (Tier-2)         = domain logic            (decisions, prompts, tools, workflows)
-Applications (Tier-3)   = configuration           (which agents, routes, integrations)
+Agent Distribution    = lifecycle authority (install, bind, revision, activation)
+Execution (Tier-1)    = public execution boundary for Tier-3 consumers
+AgentRegistry         = derived runtime projection (read-only at serving boundary)
+Nexus (Tier-1)        = internal orchestration strategy/runtime — not Tier-3 public API
+Agents (Tier-2)       = domain logic (decisions, prompts, tools, workflows)
+Applications (Tier-3) = host composition (manifest, routes, integrations)
 ```
 
 When you create an agent you work **only** on Tier-2:
@@ -93,7 +96,7 @@ When you create an agent you work **only** on Tier-2:
 | prompts, tools, outputs | lifecycle, tracing, memory |
 | `AgentContract`, `on_next_step` + typed state | checkpointing, retries, HITL, graphs |
 
-**Registration rule:** a new agent integrates through `AgentRegistry.register()` - never by editing `NexusLoop`, `GraphExecutor`, or task lifecycle code.
+**Integration rule:** agent packages integrate through **Agent Distribution lifecycle** and Tier-3 `AgentBinding` roster entries — never through local `AgentRegistry.register()` on production, lab, product, or scenario serving paths. Unit tests may use `agent.run()` only.
 
 ### Author terminology canon (single entry - ACP-CLOSE-PAT-3)
 
@@ -105,7 +108,7 @@ When you create an agent you work **only** on Tier-2:
 | `on_next_step(step_ctx) → StepOutcome` | One **domain iteration**; primary hook | Author `get_steps` / `run_step` / `decide_after_step` (UAEP - harness-internal §13.3) |
 | `AgentRuntime.advance_step` | Inside framework `run()` loop | Author override |
 | `HarnessKernel.execute_step` | Policy, trace, gateways after decision | Domain logic |
-| `Task` → `NexusLoop` | Production multi-agent posture | Agent-internal orchestration graph |
+| Tier-3 `host_execution.execute(...)` | Production / lab HTTP serving | Direct `NexusLoop` from Tier-3 |
 | UAEP | Framework bridge for pattern bases | Author implementation path |
 
 ---
@@ -118,8 +121,8 @@ idea
   → capability id
   → scaffold                    (python -m intergrax.scaffold new-agent …)
   → implement domain logic      (steps/, prompts/, contract.py)
-  → register                    (pick context: test / script / lab / product / scaffold app)
-  → run                         (pytest / NexusLoop / lab HTTP)
+  → integrate                   (unit test: agent.run · lab/product: Agent Distribution → projection)
+  → run                         (pytest / host_execution.execute / lab HTTP)
   → inspect                     (debug API / CLI)
   → evaluate
   → decision: keep | improve | pause | delete
@@ -243,31 +246,45 @@ Never import Nexus runtime steps from agent code.
 
 ---
 
-## Step 4 - Register the agent
+## Step 4 - Integrate the agent (lifecycle + host roster)
 
-Registration means adding your agent instance to an `AgentRegistry` that is passed to `NexusLoop` (directly or via a Tier-3 application).
+**Canonical rule:** production, lab, product, and scenario hosts **do not** own agent lifecycle. Agents enter runtime through **Agent Distribution** (catalog → install → bind → revision → materialization → activation → **registry projection** → **Execution**). Tier-3 hosts consume `AgentRegistryRead` and `HostTaskExecutionPort` — they never construct mutable `AgentRegistry` instances or call `registry.register()` for serving paths.
+
+**Unit-test / isolated authoring** is the only context where you exercise an agent without the distribution lifecycle:
 
 ```python
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
+from intergrax.contracts.agent_run_enums import AgentRunStatus
 from document_automation.document_automation_agent import DocumentAutomationAgent
 
-registry = AgentRegistry()
-registry.register(DocumentAutomationAgent())
+agent = DocumentAutomationAgent()
+result = await agent.run(
+    AgentRunRequest(
+        input="hello",
+        identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+        agent_id=agent.contract_id,
+    )
+)
+assert result.status == AgentRunStatus.SUCCEEDED
 ```
 
-Optional contract override:
+Canon: [`AGENT_DISTRIBUTION.md`](../../architecture/AGENT_DISTRIBUTION.md) · [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](../../architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md)
 
-```python
-contract = DocumentAutomationAgent().get_contract().model_copy(update={"version": "0.2.0"})
-registry.register(DocumentAutomationAgent(), contract=contract)
-```
+### Choose an integration context
 
-### Choose a registration context
+| Context | When to use | Canonical path |
+|---------|-------------|----------------|
+| **A - Smoke test** | Fastest first run; CI for the agent package | `agent.run(AgentRunRequest(...))` in `agents/<slug>/tests` (generated) |
+| **B - Script / notebook** | Offline experiments only — **not** production quickstart | `agent.run()`; notebooks are historical/non-canonical unless refreshed |
+| **C - Lab application** | HTTP experimentation via scaffolded lab host | `AgentBinding.mount(...)` in manifest → revision-bound host factory → `host_execution.execute(...)` |
+| **D - Product application** | Existing or new product host | Same lifecycle as C; production uses reference composition + activation |
+| **E - Dedicated application (scaffold)** | New deployable host (env, Docker, HTTP API) | `python -m intergrax.scaffold new-application` → § [Step 4E](.#e--dedicated-application-scaffold) |
+
 
 | Context | When to use | Where to register |
 |---------|-------------|-------------------|
 | **A - Smoke test** | Fastest first run; CI for the agent | Already in `agents/<slug>/tests` (generated) |
-| **B - Script / notebook** | Interactive experiments | Your script: `registry.register(...)` |
+| **B - Script / notebook** | Offline experiments only | `agent.run(AgentRunRequest(...))` — not lifecycle registration |
 | **C - Lab application** | HTTP experimentation via `/v1/lab/run` | `applications/lab_application/manifest.py` + `host/wiring.py` |
 | **D - Product application** | Existing product host (Legal, Research, …) | `applications/<product>/manifest.py` + `host/wiring.py` |
 | **E - Dedicated application (scaffold)** | New deployable host (env, Docker, HTTP API) | `python -m intergrax.scaffold new-application` → § [Step 4E](.#e--dedicated-application-scaffold) |
@@ -284,51 +301,51 @@ The agent must satisfy lifecycle governance gates tracked in implementation plan
 
 Use this guide for creation workflow, and use Phase V governance streams for production lifecycle readiness.
 
-There is **no auto-discovery**. Every context requires an explicit roster entry (`AgentBinding.mount` or `registry.register()`).
+There is **no auto-discovery**. Lab/product/scenario hosts require explicit `AgentBinding.mount` entries and Agent Distribution lifecycle materialization — not ad-hoc `registry.register()`.
 
 ### A - Smoke test (recommended first run)
 
-Generated by scaffold - no extra wiring:
+Generated by scaffold — no Tier-3 host required:
 
 ```bash
 uv run pytest agents/document_automation/tests -q
 ```
 
-The test creates its own `AgentRegistry`, registers the agent, and runs `NexusLoop.handle_task()`.
+The generated test calls `await agent.run(AgentRunRequest(...))` — **not** `AgentRegistry()` or `NexusLoop`.
 
-### B - Script or notebook
+### B - Script or notebook (historical / offline only)
+
+For one-off exploration, prefer the author contract:
 
 ```python
 import asyncio
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskContext
+
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from document_automation.document_automation_agent import DocumentAutomationAgent
 
 async def main() -> None:
-    registry = AgentRegistry()
-    registry.register(DocumentAutomationAgent())
-    loop = NexusLoop(registry)
-    result = await loop.handle_task(
-        Task(
-            tenant_id="lab",
-            user_id="dev",
-            message="hello",
-            context=TaskContext(capability="documents.automation"),
+    agent = DocumentAutomationAgent()
+    result = await agent.run(
+        AgentRunRequest(
+            input="hello",
+            identity=RequestIdentity(tenant_id="lab", user_id="dev"),
+            agent_id=agent.contract_id,
         )
     )
-    print(result.state, result.answer)
+    print(result.status, result.output)
 
 asyncio.run(main())
 ```
 
-Notebook template: `agents/<slug>/notebooks/01_<slug>_experiment.ipynb`.
+Notebook templates under `agents/<slug>/notebooks/` are **historical experiments** unless linked from this guide or scaffold. Do **not** treat `NexusLoop` notebook stubs as canonical production quickstarts.
 
 ### C - Lab application (HTTP)
 
 **Step C.1 - Add agent to lab roster**
 
-Edit `applications/lab_application/manifest.py` (and `host/agent_builders.py` if the agent needs a custom factory). The lab host assembles the registry via `build_application_registry()` in `host/wiring.py` - do not call `registry.register()` by hand unless you are in a one-off script.
+Edit `applications/<lab_pkg>/manifest.py` (and `host/agent_builders.py` when the agent needs a custom factory). The canonical lab host factory materializes **registry projection** and **Execution** — do **not** call `registry.register()` by hand.
+
+Example binding:
 
 Example binding:
 
@@ -510,7 +527,7 @@ Scaffold pre-registers agents from `--agents`. To add or change the roster after
 
 3. **Factories** (settings-driven agents, product profile) - `host/agent_factories.py` + typed factory callable.
 
-4. **Wiring** - usually unchanged; calls `build_application_registry(manifest, ctx, builders=...)`.
+4. **Host factory** - canonical scaffold emits revision-bound `host_execution` + `AgentRegistryRead`; do not add local `AgentRegistry()` construction in serving routes.
 
 Re-run host smoke tests after edits.
 
@@ -600,13 +617,13 @@ Task(
 | Method | Command / entry point |
 |--------|----------------------|
 | Smoke test | `uv run pytest agents/<slug>/tests -q` |
-| Python | `NexusLoop(registry).handle_task(task)` |
+| Host execution | `host_execution.execute(task)` (canonical Tier-3 boundary) |
 | Lab HTTP | `POST /v1/lab/run` |
 | Debug-only API | `uv run uvicorn intergrax.debug.app:create_debug_app --factory --port 8099` |
 | Legal host | `uv run uvicorn legal_application.host.main:app --port 8000` |
 | Research host | `uv run uvicorn research_application.host.main:app --port 8010` |
 
-**Capability routing:** Nexus reads `task.context.capability` and selects the agent whose `AgentContract.capabilities` includes that id (via `can_handle` / registry lookup).
+**Capability routing:** Execution reads `task.context.capability` and selects the agent whose `AgentContract.capabilities` includes that id from the **materialized registry projection**.
 
 ---
 
@@ -1460,7 +1477,7 @@ Coordination patterns (Phase V-MA)
       → RuntimeArchitectureGovernanceBridge metadata on runs
 ```
 
-**Rule:** register agents via `AgentRegistry` - **never** edit `NexusLoop` / `GraphExecutor` for one agent. Extend via hooks, injected collaborators, or Tier-3 profile wiring.
+**Rule:** integrate agents via Agent Distribution + manifest bindings - **never** edit `NexusLoop` / `GraphExecutor` for one agent. Extend via hooks, injected collaborators, or Tier-3 profile wiring.
 
 ### I.3 Core contracts (typed, inspectable)
 
@@ -1986,7 +2003,7 @@ Agents are **composable capability units** - not monolithic orchestrators. Assem
 |-----------|----------------------|
 | Contract-first | `AgentContract` carries id, capabilities, skills, lifecycle - no runtime edits |
 | Skill composition | Authors declare `skills` (`SkillManifest`) + optional `extra_tools` (`ToolContract`) |
-| Registry resolution | `AgentRegistry.register` merges skills → `allowed_tools`; authors keep `allowed_tools=[]` |
+| Registry resolution | materialized projection merges skills → `allowed_tools`; authors keep `allowed_tools=[]` |
 | Bounded local loop | `on_next_step` on agent; Nexus owns global orchestration |
 | Lifecycle governance | `AgentLifecycleState` + `evaluate_agent_routing` gate production selection |
 | Register-time validation | `agent_assembly_resolver` fails fast on incomplete contracts |
@@ -2943,7 +2960,7 @@ python scripts/maintenance/check_agents_vendor_imports.py
 | Import `intergrax.chat_agent` / `ChatAgent` | Nexus `AgentEngine` / `on_next_step` |
 | Import `intergrax.rag.answers` from runtime | `RetrievalService` |
 | Put agent logic in `applications` | Logic in `agents`, wiring in application |
-| Modify `NexusLoop` for one agent | `registry.register()` + contract/metadata |
+| Modify `NexusLoop` for one agent | manifest `AgentBinding` + distribution lifecycle |
 | Expect lab app to auto-load new agents | Add `AgentBinding.mount(...)` in `lab_application/manifest.py` + builder |
 | Use string `import_path` / `factory_path` in Python manifests | `AgentBinding.mount(AgentClass, factory=callable)` - see `intergrax/applications/USAGE.md` |
 | Duplicate LLM/trace/queue stacks | Extend Tier-0 platform |

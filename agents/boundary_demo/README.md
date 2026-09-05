@@ -20,23 +20,35 @@ Full tool-resolution regression (requires attestation host wiring):
 uv run pytest tests/unit/agents/test_boundary_demo_skill_resolution.py -q
 ```
 
-## Register (programmatic)
+## Unit-test authoring (isolated)
 
 ```python
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from boundary_demo.boundary_demo_agent import BoundaryDemoAgent
 
-registry = AgentRegistry()
-registry.register(BoundaryDemoAgent())
+agent = BoundaryDemoAgent()
+result = await agent.run(
+    AgentRunRequest(
+        input="hello",
+        identity=RequestIdentity(tenant_id="t1", user_id="u1"),
+        agent_id=agent.contract_id,
+    )
+)
 ```
 
-Production PoC mounts the agent via `applications/attestation_demo/host/agent_builders.py`.
+## Lab / product integration
 
-## Capabilities
+Add the agent via ``AgentBinding.mount(...)`` in the Tier-3 manifest and run through
+**Agent Distribution → registry projection → Execution**. Do not use local
+``AgentRegistry()`` or ``NexusLoop`` on serving paths.
 
-`attestation.demo`
+See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
-## Layout
+Production PoC mounts the agent via ``applications/attestation_demo/host/agent_builders.py`` and Agent Distribution lifecycle.
+
+
+
+## ## Layout
 
 - ``boundary_demo_agent.py`` - UAEP agent (`get_steps` / `run_step`)
 - ``capabilities.py`` - capability ids

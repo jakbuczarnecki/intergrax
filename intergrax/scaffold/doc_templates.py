@@ -122,10 +122,11 @@ def render_agent_architecture_doc(
         - Imports only `intergrax.*` and `agents/{slug}` — **no** `applications/` imports
         - Tools resolved by Tier-3 host `ToolProfile` / `ApplicationEnvironmentProfile`
 
-        ## Registration
+        ## Integration
 
-        - Programmatic: `AgentRegistry.register({class_name}())`
-        - Tier-3 host: `AgentBinding.mount({class_name}, ...)` in application `manifest.py`
+        - Unit tests: `await agent.run(AgentRunRequest(...))` (isolated author contract)
+        - Lab/product hosts: `AgentBinding.mount({class_name}, ...)` in application `manifest.py`
+          → Agent Distribution lifecycle → registry projection → Execution
         - Workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Step 4
         """
     )
