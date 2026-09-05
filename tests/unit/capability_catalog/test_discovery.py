@@ -34,20 +34,21 @@ from intergrax.contracts.capability_catalog import (
 pytestmark = pytest.mark.unit
 
 
-def _source(source_id: str = "official.catalog") -> CapabilitySourceIdentity:
-    return CapabilitySourceIdentity(
-        source_id=source_id,
-        source_kind=CapabilitySourceKind.OFFICIAL,
-    )
+def _source(
+    source_id: str = "official.catalog",
+    kind: CapabilitySourceKind = CapabilitySourceKind.OFFICIAL,
+) -> CapabilitySourceIdentity:
+    return CapabilitySourceIdentity(source_id=source_id, source_kind=kind)
 
 
 def _entry(
     *,
     kind: CapabilityKind = CapabilityKind.TOOL,
     source_id: str = "official.catalog",
+    source_kind: CapabilitySourceKind = CapabilitySourceKind.OFFICIAL,
     logical_id: str = "tools.echo.ping",
 ) -> CapabilityCatalogEntry:
-    source = _source(source_id)
+    source = _source(source_id, source_kind)
     return CapabilityCatalogEntry(
         identity=CapabilityDiscoveryIdentity(
             kind=kind,
@@ -62,7 +63,7 @@ def _entry(
 def _snapshot(*entries: CapabilityCatalogEntry) -> CapabilityCatalogSnapshot:
     ordered = tuple(sorted(entries, key=lambda entry: entry.identity.sort_key))
     return CapabilityCatalogSnapshot(
-        source_ids=("official.catalog",),
+        source_ids=tuple(sorted({entry.identity.source.source_id for entry in ordered})),
         entries=ordered,
     )
 
@@ -79,18 +80,9 @@ def _identity_key(entry: CapabilityCatalogEntry) -> CapabilityIdentityKey:
     return CapabilityIdentityKey.from_discovery_identity(entry.identity)
 
 
-def _enterprise_evidence(
-    *,
-    visible: tuple[CapabilityCatalogEntry, ...],
-    host: tuple[CapabilityCatalogEntry, ...] = (),
-    blocked: tuple[CapabilityCatalogEntry, ...] = (),
-    unavailable: tuple[CapabilityCatalogEntry, ...] = (),
-) -> CapabilityDiscoveryAvailabilityEvidence:
+def _visible_evidence(*entries: CapabilityCatalogEntry) -> CapabilityDiscoveryAvailabilityEvidence:
     return CapabilityDiscoveryAvailabilityEvidence(
-        scope_visible_keys=tuple(_identity_key(entry) for entry in visible),
-        host_available_keys=tuple(_identity_key(entry) for entry in host),
-        blocked_keys=tuple(_identity_key(entry) for entry in blocked),
-        unavailable_keys=tuple(_identity_key(entry) for entry in unavailable),
+        scope_visible_keys=tuple(_identity_key(entry) for entry in entries),
     )
 
 
@@ -99,28 +91,20 @@ def test_filter_agent_skill_tool_kinds() -> None:
     skill = _entry(kind=CapabilityKind.SKILL, logical_id="skills.browser")
     tool = _entry(kind=CapabilityKind.TOOL, logical_id="tools.echo.ping")
     snapshot = _snapshot(agent, skill, tool)
-    evidence = _enterprise_evidence(visible=(agent, skill, tool))
+    evidence = _visible_evidence(agent, skill, tool)
 
-    agent_only = discover_capability_candidates(
-        snapshot,
-        CapabilityDiscoveryQuery(scope=_enterprise_scope(), kinds=(CapabilityKind.AGENT,)),
-        availability_evidence=evidence,
-    )
-    assert [candidate.identity.kind for candidate in agent_only] == [CapabilityKind.AGENT]
-
-    skill_only = discover_capability_candidates(
-        snapshot,
-        CapabilityDiscoveryQuery(scope=_enterprise_scope(), kinds=(CapabilityKind.SKILL,)),
-        availability_evidence=evidence,
-    )
-    assert [candidate.identity.kind for candidate in skill_only] == [CapabilityKind.SKILL]
-
-    tool_only = discover_capability_candidates(
-        snapshot,
-        CapabilityDiscoveryQuery(scope=_enterprise_scope(), kinds=(CapabilityKind.TOOL,)),
-        availability_evidence=evidence,
-    )
-    assert [candidate.identity.kind for candidate in tool_only] == [CapabilityKind.TOOL]
+    for kind, expected_id in (
+        (CapabilityKind.AGENT, "agents.researcher"),
+        (CapabilityKind.SKILL, "skills.browser"),
+        (CapabilityKind.TOOL, "tools.echo.ping"),
+    ):
+        result = discover_capability_candidates(
+            snapshot,
+            CapabilityDiscoveryQuery(scope=_enterprise_scope(), kinds=(kind,)),
+            availability_evidence=evidence,
+        )
+        assert len(result) == 1
+        assert result[0].identity.logical.logical_id == expected_id
 
 
 def test_filter_multiple_kinds_preserves_snapshot_order() -> None:
@@ -128,7 +112,7 @@ def test_filter_multiple_kinds_preserves_snapshot_order() -> None:
     skill = _entry(kind=CapabilityKind.SKILL, logical_id="skills.browser")
     tool = _entry(kind=CapabilityKind.TOOL, logical_id="tools.echo.ping")
     snapshot = _snapshot(tool, agent, skill)
-    evidence = _enterprise_evidence(visible=(agent, skill, tool))
+    evidence = _visible_evidence(agent, skill, tool)
 
     candidates = discover_capability_candidates(
         snapshot,
@@ -146,25 +130,18 @@ def test_filter_multiple_kinds_preserves_snapshot_order() -> None:
 
 
 def test_source_filter_by_source_id_and_kind() -> None:
-    official = _entry(source_id="official.catalog", logical_id="tools.official")
-    private_source = CapabilitySourceIdentity(
+    official = _entry(
+        source_id="official.catalog",
+        source_kind=CapabilitySourceKind.OFFICIAL,
+        logical_id="tools.official",
+    )
+    private = _entry(
         source_id="enterprise.private",
         source_kind=CapabilitySourceKind.ENTERPRISE_PRIVATE,
-    )
-    private = CapabilityCatalogEntry(
-        identity=CapabilityDiscoveryIdentity(
-            kind=CapabilityKind.TOOL,
-            source=private_source,
-            logical=CapabilityLogicalIdentity(
-                kind=CapabilityKind.TOOL,
-                logical_id="tools.private",
-            ),
-        ),
-        provenance=CapabilityProvenance(source=private_source, version_label="1.0.0"),
-        display_label="tools.private",
+        logical_id="tools.private",
     )
     snapshot = _snapshot(official, private)
-    evidence = _enterprise_evidence(visible=(official, private))
+    evidence = _visible_evidence(official, private)
 
     by_source = discover_capability_candidates(
         snapshot,
@@ -193,7 +170,7 @@ def test_logical_identity_exact_and_prefix_filters() -> None:
     ping = _entry(logical_id="tools.echo.ping")
     search = _entry(logical_id="tools.rag.search")
     snapshot = _snapshot(ping, search)
-    evidence = _enterprise_evidence(visible=(ping, search))
+    evidence = _visible_evidence(ping, search)
 
     exact = discover_capability_candidates(
         snapshot,
@@ -221,7 +198,7 @@ def test_logical_identity_exact_and_prefix_filters() -> None:
 def test_no_match_returns_empty_tuple() -> None:
     entry = _entry(logical_id="tools.echo.ping")
     snapshot = _snapshot(entry)
-    evidence = _enterprise_evidence(visible=(entry,))
+    evidence = _visible_evidence(entry)
 
     candidates = discover_capability_candidates(
         snapshot,
@@ -242,7 +219,7 @@ def test_discovery_is_deterministic_for_same_inputs() -> None:
     )
     snapshot = _snapshot(*entries)
     query = CapabilityDiscoveryQuery(scope=_enterprise_scope())
-    evidence = _enterprise_evidence(visible=entries)
+    evidence = _visible_evidence(*entries)
 
     first = discover_capability_candidates(snapshot, query, availability_evidence=evidence)
     second = discover_capability_candidates(snapshot, query, availability_evidence=evidence)
@@ -253,17 +230,15 @@ def test_snapshot_entry_order_independent_of_input_order() -> None:
     a = _entry(kind=CapabilityKind.AGENT, logical_id="agents.a")
     b = _entry(kind=CapabilityKind.SKILL, logical_id="skills.b")
     c = _entry(kind=CapabilityKind.TOOL, logical_id="tools.c")
-    snapshot_ab = _snapshot(a, b, c)
-    snapshot_cb = _snapshot(c, b, a)
     query = CapabilityDiscoveryQuery(scope=_enterprise_scope())
-    evidence = _enterprise_evidence(visible=(a, b, c))
+    evidence = _visible_evidence(a, b, c)
 
     assert discover_capability_candidates(
-        snapshot_ab,
+        _snapshot(a, b, c),
         query,
         availability_evidence=evidence,
     ) == discover_capability_candidates(
-        snapshot_cb,
+        _snapshot(c, b, a),
         query,
         availability_evidence=evidence,
     )
@@ -298,22 +273,41 @@ def test_scope_visibility_differs_between_tenants_via_evidence() -> None:
     tenant_a_candidates = discover_capability_candidates(
         snapshot,
         CapabilityDiscoveryQuery(scope=tenant_a_scope),
-        availability_evidence=_enterprise_evidence(visible=(tenant_a_tool,)),
+        availability_evidence=_visible_evidence(tenant_a_tool),
     )
     tenant_b_candidates = discover_capability_candidates(
         snapshot,
         CapabilityDiscoveryQuery(scope=tenant_b_scope),
-        availability_evidence=_enterprise_evidence(visible=(tenant_b_tool,)),
+        availability_evidence=_visible_evidence(tenant_b_tool),
     )
 
-    assert len(tenant_a_candidates) == 2
-    assert tenant_a_candidates[0].availability is AvailabilityDisposition.CATALOG_AVAILABLE
-    assert tenant_a_candidates[0].identity.logical.logical_id == "tools.tenant-a"
-    assert tenant_a_candidates[1].availability is AvailabilityDisposition.SCOPE_UNAVAILABLE
+    tenant_a_by_id = {
+        item.identity.logical.logical_id: item.availability for item in tenant_a_candidates
+    }
+    tenant_b_by_id = {
+        item.identity.logical.logical_id: item.availability for item in tenant_b_candidates
+    }
+    assert tenant_a_by_id["tools.tenant-a"] is AvailabilityDisposition.CATALOG_AVAILABLE
+    assert tenant_a_by_id["tools.tenant-b"] is AvailabilityDisposition.SCOPE_UNAVAILABLE
+    assert tenant_b_by_id["tools.tenant-b"] is AvailabilityDisposition.CATALOG_AVAILABLE
+    assert tenant_b_by_id["tools.tenant-a"] is AvailabilityDisposition.SCOPE_UNAVAILABLE
 
-    assert len(tenant_b_candidates) == 2
-    assert tenant_b_candidates[1].availability is AvailabilityDisposition.CATALOG_AVAILABLE
-    assert tenant_b_candidates[1].identity.logical.logical_id == "tools.tenant-b"
+
+def test_scope_unavailable_surfaced_when_explicitly_requested() -> None:
+    visible = _entry(logical_id="tools.visible")
+    hidden = _entry(logical_id="tools.hidden")
+    snapshot = _snapshot(visible, hidden)
+    result = discover_capability_candidates(
+        snapshot,
+        CapabilityDiscoveryQuery(
+            scope=_enterprise_scope(),
+            availability_constraints=(AvailabilityDisposition.SCOPE_UNAVAILABLE,),
+        ),
+        availability_evidence=_visible_evidence(visible),
+    )
+    assert len(result) == 1
+    assert result[0].identity.logical.logical_id == "tools.hidden"
+    assert result[0].availability is AvailabilityDisposition.SCOPE_UNAVAILABLE
 
 
 def test_global_scope_does_not_require_scope_visible_evidence() -> None:
@@ -321,13 +315,15 @@ def test_global_scope_does_not_require_scope_visible_evidence() -> None:
     snapshot = _snapshot(entry)
     candidates = discover_capability_candidates(
         snapshot,
-        CapabilityDiscoveryQuery(scope=CapabilityDiscoveryScope(mode=CapabilityDiscoveryScopeMode.GLOBAL)),
+        CapabilityDiscoveryQuery(
+            scope=CapabilityDiscoveryScope(mode=CapabilityDiscoveryScopeMode.GLOBAL),
+        ),
     )
     assert len(candidates) == 1
     assert candidates[0].availability is AvailabilityDisposition.CATALOG_AVAILABLE
 
 
-def test_availability_dispositions_are_surfaced() -> None:
+def test_availability_dispositions_are_surfaced_when_requested() -> None:
     catalog = _entry(logical_id="tools.catalog")
     host = _entry(logical_id="tools.host")
     blocked = _entry(logical_id="tools.blocked")
@@ -346,7 +342,10 @@ def test_availability_dispositions_are_surfaced() -> None:
 
     candidates = discover_capability_candidates(
         snapshot,
-        CapabilityDiscoveryQuery(scope=_enterprise_scope()),
+        CapabilityDiscoveryQuery(
+            scope=_enterprise_scope(),
+            availability_constraints=tuple(AvailabilityDisposition),
+        ),
         availability_evidence=evidence,
     )
     by_id = {candidate.identity.logical.logical_id: candidate.availability for candidate in candidates}
@@ -361,15 +360,21 @@ def test_availability_dispositions_are_surfaced() -> None:
 def test_empty_result_differs_from_blocked_candidate() -> None:
     blocked = _entry(logical_id="tools.blocked")
     snapshot = _snapshot(blocked)
-    evidence = _enterprise_evidence(visible=(blocked,), blocked=(blocked,))
+    evidence = CapabilityDiscoveryAvailabilityEvidence(
+        scope_visible_keys=(_identity_key(blocked),),
+        blocked_keys=(_identity_key(blocked),),
+    )
 
-    all_candidates = discover_capability_candidates(
+    blocked_only = discover_capability_candidates(
         snapshot,
-        CapabilityDiscoveryQuery(scope=_enterprise_scope()),
+        CapabilityDiscoveryQuery(
+            scope=_enterprise_scope(),
+            availability_constraints=(AvailabilityDisposition.BLOCKED,),
+        ),
         availability_evidence=evidence,
     )
-    assert len(all_candidates) == 1
-    assert all_candidates[0].availability is AvailabilityDisposition.BLOCKED
+    assert len(blocked_only) == 1
+    assert blocked_only[0].availability is AvailabilityDisposition.BLOCKED
 
     available_only = discover_capability_candidates(
         snapshot,
@@ -389,7 +394,10 @@ def test_availability_constraint_filter() -> None:
     host = _entry(logical_id="tools.host")
     catalog = _entry(logical_id="tools.catalog")
     snapshot = _snapshot(catalog, host)
-    evidence = _enterprise_evidence(visible=(catalog, host), host=(host,))
+    evidence = CapabilityDiscoveryAvailabilityEvidence(
+        scope_visible_keys=(_identity_key(catalog), _identity_key(host)),
+        host_available_keys=(_identity_key(host),),
+    )
 
     host_only = discover_capability_candidates(
         snapshot,
@@ -406,7 +414,10 @@ def test_availability_constraint_filter() -> None:
 def test_candidate_preserves_identity_and_provenance() -> None:
     entry = _entry(logical_id="tools.echo.ping")
     snapshot = _snapshot(entry)
-    evidence = _enterprise_evidence(visible=(entry,), host=(entry,))
+    evidence = CapabilityDiscoveryAvailabilityEvidence(
+        scope_visible_keys=(_identity_key(entry),),
+        host_available_keys=(_identity_key(entry),),
+    )
 
     candidate = discover_capability_candidates(
         snapshot,
@@ -423,7 +434,7 @@ def test_candidate_preserves_identity_and_provenance() -> None:
 def test_candidate_and_snapshot_are_immutable() -> None:
     entry = _entry()
     snapshot = _snapshot(entry)
-    evidence = _enterprise_evidence(visible=(entry,))
+    evidence = _visible_evidence(entry)
     candidate = discover_capability_candidates(
         snapshot,
         CapabilityDiscoveryQuery(scope=_enterprise_scope()),
