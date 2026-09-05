@@ -110,8 +110,19 @@ from intergrax.applications._shared.harness_host_runtime_compat import (
 from intergrax.applications._shared.host_task_execution_wiring import (
     build_environment_host_task_execution,
 )
-from intergrax.applications._shared.profile_resolution import resolve_profile
-from intergrax.applications.contracts.profile_resolution import ProfileLayerInput, ProfileResolution
+from intergrax.applications._shared.profile_resolution import (
+    materialize_effective_profile_revision,
+    resolve_profile,
+)
+from intergrax.applications.contracts.profile_resolution import (
+    EffectiveProfileRevision,
+    EffectiveProfileRevisionScope,
+    ProfileLayerInput,
+    ProfileResolution,
+)
+from intergrax.applications.contracts.profile_resolution.store import (
+    EffectiveProfileRevisionStore,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -158,6 +169,7 @@ class HarnessHostRuntime:
     boundary_event_buffer: BoundaryEventBuffer | None = None
     control_plane_governance: HarnessControlPlaneGovernance | None = None
     profile_resolution: ProfileResolution | None = None
+    effective_profile_revision: EffectiveProfileRevision | None = None
 
 
 def build_harness_host_runtime(
@@ -184,6 +196,7 @@ def build_harness_host_runtime(
     boundary_event_buffer: Any | None = None,
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
     profile_layers: tuple[ProfileLayerInput, ...] = (),
+    revision_store: EffectiveProfileRevisionStore | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -197,6 +210,14 @@ def build_harness_host_runtime(
 
     profile_resolution = resolve_profile(environment, layers=profile_layers)
     effective_environment = profile_resolution.effective_profile
+    effective_profile_revision = materialize_effective_profile_revision(
+        profile_resolution,
+        scope=EffectiveProfileRevisionScope(
+            application_id=resolved_manifest.app_id,
+            tenant_id=tenant_id,
+        ),
+        store=revision_store,
+    )
 
     env_wiring = wire_application_environment(
         resolved_manifest,
@@ -371,4 +392,5 @@ def build_harness_host_runtime(
         boundary_event_buffer=boundary_event_buffer,
         control_plane_governance=control_plane_governance,
         profile_resolution=profile_resolution,
+        effective_profile_revision=effective_profile_revision,
     )

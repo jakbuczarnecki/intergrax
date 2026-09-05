@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 profile resolution contracts (P1.1)."""
+"""Tier-3 profile resolution contracts (P1.1/P1.2)."""
 
 from intergrax.applications.contracts.profile_resolution.decision import (
     DegradedCapability,
@@ -15,10 +15,25 @@ from intergrax.applications.contracts.profile_resolution.delta import (
     ProfileFieldUpdate,
     ProfileLayerInput,
 )
+from intergrax.applications.contracts.profile_resolution.diff import (
+    EffectiveProfileDiff,
+    ProfileDiffChangeKind,
+    ProfileDiffEntry,
+    ProfileDiffProvenanceRef,
+)
 from intergrax.applications.contracts.profile_resolution.errors import (
+    EffectiveProfileRevisionConflictError,
+    EffectiveProfileRevisionError,
+    MissingPinnedEffectiveProfileRevisionError,
     ProfileLayerConflictError,
     ProfileOverrideRejectedError,
     ProfileResolutionError,
+)
+from intergrax.applications.contracts.profile_resolution.execution_binding import (
+    EFFECTIVE_PROFILE_REVISION_METADATA_KEY,
+    EffectiveProfileExecutionBinding,
+    EffectiveProfileExecutionPinningStore,
+    EffectiveProfileRevisionCheckpointEvidence,
 )
 from intergrax.applications.contracts.profile_resolution.layer import (
     CANONICAL_LAYER_ORDER,
@@ -26,12 +41,39 @@ from intergrax.applications.contracts.profile_resolution.layer import (
     profile_layer_sort_key,
 )
 from intergrax.applications.contracts.profile_resolution.resolution import ProfileResolution
+from intergrax.applications.contracts.profile_resolution.revision import (
+    EffectiveProfileRevision,
+    EffectiveProfileRevisionScope,
+)
+from intergrax.applications.contracts.profile_resolution.revision_id import (
+    EffectiveProfileRevisionId,
+    mint_effective_profile_revision_id,
+    validate_effective_profile_revision_id,
+)
+from intergrax.applications.contracts.profile_resolution.store import (
+    EffectiveProfileRevisionStore,
+)
 
 __all__ = [
     "CANONICAL_LAYER_ORDER",
     "DegradedCapability",
+    "EFFECTIVE_PROFILE_REVISION_METADATA_KEY",
+    "EffectiveProfileDiff",
+    "EffectiveProfileExecutionBinding",
+    "EffectiveProfileExecutionPinningStore",
+    "EffectiveProfileRevision",
+    "EffectiveProfileRevisionCheckpointEvidence",
+    "EffectiveProfileRevisionConflictError",
+    "EffectiveProfileRevisionError",
+    "EffectiveProfileRevisionId",
+    "EffectiveProfileRevisionScope",
+    "EffectiveProfileRevisionStore",
+    "MissingPinnedEffectiveProfileRevisionError",
     "ProfileDelta",
     "ProfileDependencyFailure",
+    "ProfileDiffChangeKind",
+    "ProfileDiffEntry",
+    "ProfileDiffProvenanceRef",
     "ProfileFieldUpdate",
     "ProfileLayer",
     "ProfileLayerConflictError",
@@ -43,5 +85,7 @@ __all__ = [
     "ProfileResolutionDecisionKind",
     "ProfileResolutionError",
     "ProfileResolutionWarning",
+    "mint_effective_profile_revision_id",
     "profile_layer_sort_key",
+    "validate_effective_profile_revision_id",
 ]

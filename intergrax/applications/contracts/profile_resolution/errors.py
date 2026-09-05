@@ -27,3 +27,23 @@ class ProfileOverrideRejectedError(ProfileResolutionError):
         self.path = path
         self.layer = layer
         self.reason = reason
+
+
+class EffectiveProfileRevisionError(RuntimeError):
+    """Effective profile revision lifecycle failure."""
+
+
+class EffectiveProfileRevisionConflictError(EffectiveProfileRevisionError):
+    """Append-only store rejected duplicate revision identity."""
+
+
+class MissingPinnedEffectiveProfileRevisionError(EffectiveProfileRevisionError):
+    """Required pinned revision is absent — fail closed."""
+
+    def __init__(self, *, tenant_id: str, execution_id: str) -> None:
+        super().__init__(
+            f"missing pinned effective profile revision for execution {execution_id!r} "
+            f"in tenant {tenant_id!r}"
+        )
+        self.tenant_id = tenant_id
+        self.execution_id = execution_id

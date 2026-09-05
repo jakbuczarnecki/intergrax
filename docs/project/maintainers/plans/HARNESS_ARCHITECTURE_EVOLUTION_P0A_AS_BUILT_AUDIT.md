@@ -452,16 +452,22 @@ Do not introduce `HarnessProfile`.
 
 ## P1.2 Effective profile diff/versioning
 
-**Status: GAP/PARTIAL**
+**Status: CLOSED (P1.2)**
 
-Version/revision concepts exist in adjacent domains, but no one canonical full environment semantic diff/fingerprint was established by this audit.
+Delivered in P1.2:
 
-Need:
+- typed `EffectiveProfileRevisionId` / `EffectiveProfileRevision` immutable snapshot contract,
+- `materialize_effective_profile_revision(...)` from `ProfileResolution` evidence,
+- domain-aware `EffectiveProfileDiff` (`meta.execution_mode`, `capabilities.llm`, `capabilities.tools`, `governance.cost`),
+- append-only `EffectiveProfileRevisionStore` with in-memory adapter,
+- execution pinning evidence (`EffectiveProfileExecutionBinding`) with checkpoint/resume/child inheritance,
+- harness host adoption via `build_harness_host_runtime(revision_store=...)`.
 
-- immutable effective revision,
-- semantic diff,
-- Execution pinning,
-- historical inspectability.
+Deferred to P1.3+:
+
+- capability dependency graph population,
+- broader field diff coverage beyond initial domain seams,
+- Runtime Inspection API (P1.4).
 
 ---
 
