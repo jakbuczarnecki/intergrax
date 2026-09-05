@@ -32,3 +32,13 @@ class RequiredCapabilityDependencyUnavailableError(CapabilityDependencyValidatio
 
 class CapabilityDependencyDeclarationConflictError(CapabilityDependencyValidationError):
     """Conflicting dependency declarations cannot be merged deterministically."""
+
+
+class CapabilityDependencyProviderConflictError(RuntimeError):
+    """Duplicate provider routing identity — fail closed before validation."""
+
+    def __init__(self, provider_id: str) -> None:
+        self.provider_id = provider_id
+        super().__init__(
+            f"duplicate capability dependency provider id {provider_id!r}",
+        )

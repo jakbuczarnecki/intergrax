@@ -52,7 +52,7 @@ class CapabilityDependency(BaseModel):
     owner: CapabilityRef
     dependency: CapabilityRef
     requirement: CapabilityDependencyRequirement
-    source_domain: str = Field(min_length=1)
+    source_domains: tuple[str, ...] = Field(min_length=1)
 
     @property
     def dedup_key(self) -> tuple[str, str, str]:

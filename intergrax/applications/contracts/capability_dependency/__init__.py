@@ -11,6 +11,7 @@ from intergrax.applications.contracts.capability_dependency.dependency import (
 )
 from intergrax.applications.contracts.capability_dependency.errors import (
     CapabilityDependencyDeclarationConflictError,
+    CapabilityDependencyProviderConflictError,
     CapabilityDependencyValidationError,
     RequiredCapabilityDependencyUnavailableError,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "CapabilityDependency",
     "CapabilityDependencyAvailabilityStatus",
     "CapabilityDependencyDeclarationConflictError",
+    "CapabilityDependencyProviderConflictError",
     "CapabilityDependencyDegradationEvidence",
     "CapabilityDependencyEvaluation",
     "CapabilityDependencyFailureEvidence",

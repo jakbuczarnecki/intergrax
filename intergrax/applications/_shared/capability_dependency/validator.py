@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from intergrax.applications.contracts.capability_dependency import (
     CapabilityDependency,
@@ -15,6 +16,7 @@ from intergrax.applications.contracts.capability_dependency import (
     CapabilityDependencyFailureEvidence,
     CapabilityDependencyOutcome,
     CapabilityDependencyProvider,
+    CapabilityDependencyProviderConflictError,
     CapabilityDependencyRequirement,
     CapabilityDependencyValidationContext,
     CapabilityDependencyValidationResult,
@@ -26,6 +28,27 @@ def _requirement_rank(requirement: CapabilityDependencyRequirement) -> int:
     if requirement is CapabilityDependencyRequirement.REQUIRED:
         return 1
     return 0
+
+
+def _status_severity(status: CapabilityDependencyAvailabilityStatus) -> int:
+    if status is CapabilityDependencyAvailabilityStatus.UNAVAILABLE:
+        return 2
+    if status is CapabilityDependencyAvailabilityStatus.UNKNOWN:
+        return 1
+    return 0
+
+
+def _merge_source_domains(
+    left: tuple[str, ...],
+    right: tuple[str, ...],
+) -> tuple[str, ...]:
+    return tuple(sorted(set(left) | set(right)))
+
+
+def _canonical_source_domain(source_domains: tuple[str, ...]) -> str:
+    if len(source_domains) == 1:
+        return source_domains[0]
+    return ", ".join(source_domains)
 
 
 def _merge_declarations(
@@ -41,12 +64,12 @@ def _merge_declarations(
         if existing == declaration:
             continue
         if existing.requirement is declaration.requirement:
-            if existing.source_domain != declaration.source_domain:
+            if existing.source_domains != declaration.source_domains:
                 merged[key] = existing.model_copy(
                     update={
-                        "source_domain": _merge_source_domains(
-                            existing.source_domain,
-                            declaration.source_domain,
+                        "source_domains": _merge_source_domains(
+                            existing.source_domains,
+                            declaration.source_domains,
                         ),
                     },
                 )
@@ -64,9 +87,9 @@ def _merge_declarations(
             merged[key] = winner.model_copy(
                 update={
                     "requirement": CapabilityDependencyRequirement.REQUIRED,
-                    "source_domain": _merge_source_domains(
-                        existing.source_domain,
-                        declaration.source_domain,
+                    "source_domains": _merge_source_domains(
+                        existing.source_domains,
+                        declaration.source_domains,
                     ),
                 },
             )
@@ -77,11 +100,44 @@ def _merge_declarations(
     return tuple(sorted(merged.values(), key=_declaration_sort_key))
 
 
-def _merge_source_domains(left: str, right: str) -> str:
-    if left == right:
-        return left
-    parts = sorted({left, right})
-    return "+".join(parts)
+def _merge_evaluations(
+    evaluations: Sequence[CapabilityDependencyEvaluation],
+    declarations_by_key: dict[tuple[str, str, str], CapabilityDependency],
+) -> tuple[CapabilityDependencyEvaluation, ...]:
+    grouped: dict[tuple[str, str, str], list[CapabilityDependencyEvaluation]] = {}
+    for evaluation in evaluations:
+        grouped.setdefault(evaluation.dependency.dedup_key, []).append(evaluation)
+
+    merged: list[CapabilityDependencyEvaluation] = []
+    for key in sorted(grouped):
+        group = grouped[key]
+        declaration = declarations_by_key[key]
+        dominant = max(
+            group,
+            key=lambda item: (
+                _status_severity(item.status),
+                item.reason,
+            ),
+        )
+        if len(group) == 1:
+            reason = dominant.reason
+        else:
+            reason = "; ".join(
+                sorted(
+                    {
+                        f"{_canonical_source_domain(item.dependency.source_domains)}: {item.reason}"
+                        for item in group
+                    },
+                ),
+            )
+        merged.append(
+            CapabilityDependencyEvaluation(
+                dependency=declaration,
+                status=dominant.status,
+                reason=reason,
+            ),
+        )
+    return tuple(merged)
 
 
 def _declaration_sort_key(declaration: CapabilityDependency) -> tuple[str, str, str, str]:
@@ -139,82 +195,101 @@ def _empty_validation_result(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class _TaggedDeclaration:
+    provider_id: str
+    declaration: CapabilityDependency
+
+
 class CapabilityDependencyValidator:
     """Collect declarations, merge deterministically, evaluate via domain providers."""
 
     def __init__(self, providers: Sequence[CapabilityDependencyProvider]) -> None:
         self._providers = tuple(providers)
-        self._providers_by_source = {
-            provider.source_domain: provider for provider in self._providers
-        }
+        providers_by_id: dict[str, CapabilityDependencyProvider] = {}
+        for provider in self._providers:
+            provider_id = provider.provider_id
+            if provider_id in providers_by_id:
+                raise CapabilityDependencyProviderConflictError(provider_id)
+            providers_by_id[provider_id] = provider
+        self._providers_by_id = providers_by_id
 
     def validate(
         self,
         context: CapabilityDependencyValidationContext,
     ) -> CapabilityDependencyValidationResult:
-        raw_declarations: list[CapabilityDependency] = []
+        tagged_declarations: list[_TaggedDeclaration] = []
         for provider in self._providers:
-            raw_declarations.extend(provider.dependencies_for(context))
-        declarations = _merge_declarations(raw_declarations)
+            for declaration in provider.dependencies_for(context):
+                tagged_declarations.append(
+                    _TaggedDeclaration(provider.provider_id, declaration),
+                )
 
-        evaluations: list[CapabilityDependencyEvaluation] = []
+        raw_evaluations: list[CapabilityDependencyEvaluation] = []
+        for tagged in tagged_declarations:
+            provider = self._providers_by_id[tagged.provider_id]
+            status, reason = provider.evaluate_availability(tagged.declaration, context)
+            raw_evaluations.append(
+                CapabilityDependencyEvaluation(
+                    dependency=tagged.declaration,
+                    status=status,
+                    reason=reason,
+                ),
+            )
+
+        declarations = _merge_declarations(
+            [tagged.declaration for tagged in tagged_declarations],
+        )
+        declarations_by_key = {declaration.dedup_key: declaration for declaration in declarations}
+        evaluations = _merge_evaluations(raw_evaluations, declarations_by_key)
+
         required_failures: list[CapabilityDependencyFailureEvidence] = []
         optional_degradations: list[CapabilityDependencyDegradationEvidence] = []
 
-        for declaration in declarations:
-            provider = self._providers_by_source.get(declaration.source_domain)
-            if provider is None:
-                status = CapabilityDependencyAvailabilityStatus.UNKNOWN
-                reason = (
-                    f"no provider registered for source domain {declaration.source_domain!r}"
-                )
-            else:
-                status, reason = provider.evaluate_availability(declaration, context)
-
-            evaluation = CapabilityDependencyEvaluation(
-                dependency=declaration,
-                status=status,
-                reason=reason,
-            )
-            evaluations.append(evaluation)
-
+        for evaluation in evaluations:
+            declaration = evaluation.dependency
+            source_domains = declaration.source_domains
+            source_domain = _canonical_source_domain(source_domains)
             if declaration.requirement is CapabilityDependencyRequirement.REQUIRED:
-                if status is not CapabilityDependencyAvailabilityStatus.AVAILABLE:
+                if evaluation.status is not CapabilityDependencyAvailabilityStatus.AVAILABLE:
                     required_failures.append(
                         CapabilityDependencyFailureEvidence(
                             owner=declaration.owner,
                             dependency=declaration.dependency,
                             dependency_kind=declaration.dependency.kind,
                             requirement=declaration.requirement,
-                            status=status,
-                            reason=reason,
-                            source_domain=declaration.source_domain,
+                            status=evaluation.status,
+                            reason=evaluation.reason,
+                            source_domains=source_domains,
+                            source_domain=source_domain,
                         ),
                     )
                 continue
 
-            if status is CapabilityDependencyAvailabilityStatus.UNAVAILABLE:
+            if evaluation.status is CapabilityDependencyAvailabilityStatus.UNAVAILABLE:
                 optional_degradations.append(
                     CapabilityDependencyDegradationEvidence(
                         owner=declaration.owner,
                         dependency=declaration.dependency,
                         dependency_kind=declaration.dependency.kind,
                         requirement=declaration.requirement,
-                        status=status,
-                        reason=reason,
-                        source_domain=declaration.source_domain,
+                        status=evaluation.status,
+                        reason=evaluation.reason,
+                        source_domains=source_domains,
+                        source_domain=source_domain,
                     ),
                 )
-            elif status is CapabilityDependencyAvailabilityStatus.UNKNOWN:
+            elif evaluation.status is CapabilityDependencyAvailabilityStatus.UNKNOWN:
                 optional_degradations.append(
                     CapabilityDependencyDegradationEvidence(
                         owner=declaration.owner,
                         dependency=declaration.dependency,
                         dependency_kind=declaration.dependency.kind,
                         requirement=declaration.requirement,
-                        status=status,
-                        reason=reason,
-                        source_domain=declaration.source_domain,
+                        status=evaluation.status,
+                        reason=evaluation.reason,
+                        source_domains=source_domains,
+                        source_domain=source_domain,
                     ),
                 )
 

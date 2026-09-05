@@ -36,7 +36,8 @@ class CapabilityDependencyFailureEvidence(BaseModel):
     requirement: CapabilityDependencyRequirement
     status: CapabilityDependencyAvailabilityStatus
     reason: str
-    source_domain: str
+    source_domains: tuple[str, ...] = Field(min_length=1)
+    source_domain: str = Field(min_length=1)
 
 
 class CapabilityDependencyDegradationEvidence(BaseModel):
@@ -50,7 +51,8 @@ class CapabilityDependencyDegradationEvidence(BaseModel):
     requirement: CapabilityDependencyRequirement
     status: CapabilityDependencyAvailabilityStatus
     reason: str
-    source_domain: str
+    source_domains: tuple[str, ...] = Field(min_length=1)
+    source_domain: str = Field(min_length=1)
 
 
 class CapabilityDependencyOutcome(BaseModel):

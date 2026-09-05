@@ -26,6 +26,10 @@ class SkillToolCapabilityDependencyProvider:
     """Declare skill manifest tool requirements without expanding host ToolProfile."""
 
     @property
+    def provider_id(self) -> str:
+        return "skill_tool_contract"
+
+    @property
     def source_domain(self) -> str:
         return "skill_tool_contract"
 
@@ -57,7 +61,7 @@ class SkillToolCapabilityDependencyProvider:
                             capability_id=normalized,
                         ),
                         requirement=CapabilityDependencyRequirement.REQUIRED,
-                        source_domain=self.source_domain,
+                        source_domains=(self.source_domain,),
                     ),
                 )
         return tuple(
@@ -69,10 +73,10 @@ class SkillToolCapabilityDependencyProvider:
         dependency: CapabilityDependency,
         context: CapabilityDependencyValidationContext,
     ) -> tuple[CapabilityDependencyAvailabilityStatus, str]:
-        if dependency.source_domain != self.source_domain:
+        if self.source_domain not in dependency.source_domains:
             return (
                 CapabilityDependencyAvailabilityStatus.UNKNOWN,
-                f"provider cannot evaluate source domain {dependency.source_domain!r}",
+                f"provider cannot evaluate source domains {dependency.source_domains!r}",
             )
         if dependency.dependency.kind is not CapabilityDependencyKind.TOOL:
             return (

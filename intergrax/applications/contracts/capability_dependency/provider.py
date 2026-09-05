@@ -27,6 +27,10 @@ class CapabilityDependencyProvider(Protocol):
     """Domain plugin: declare edges and evaluate availability for its declarations."""
 
     @property
+    def provider_id(self) -> str:
+        """Stable routing identity for evaluation dispatch."""
+
+    @property
     def source_domain(self) -> str:
         """Provenance label for declarations emitted by this provider."""
 

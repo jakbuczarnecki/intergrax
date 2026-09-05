@@ -20,6 +20,7 @@ from intergrax.applications.contracts.capability_dependency import (
     CapabilityDependencyAvailabilityStatus,
     CapabilityDependencyKind,
     CapabilityDependencyProvider,
+    CapabilityDependencyProviderConflictError,
     CapabilityDependencyRequirement,
     CapabilityDependencyValidationContext,
     RequiredCapabilityDependencyUnavailableError,
@@ -39,13 +40,19 @@ class _SyntheticDependencyProvider:
     def __init__(
         self,
         *,
+        provider_id: str | None = None,
         source_domain: str,
         declarations: tuple[CapabilityDependency, ...],
         availability: dict[tuple[str, str, str], tuple[CapabilityDependencyAvailabilityStatus, str]],
     ) -> None:
+        self._provider_id = provider_id or source_domain
         self._source_domain = source_domain
         self._declarations = declarations
         self._availability = availability
+
+    @property
+    def provider_id(self) -> str:
+        return self._provider_id
 
     @property
     def source_domain(self) -> str:
@@ -101,6 +108,19 @@ def _skill_tool_env(
     return profile, registry
 
 
+def _same_edge_declaration(
+    *,
+    source_domain: str,
+    requirement: CapabilityDependencyRequirement = CapabilityDependencyRequirement.REQUIRED,
+) -> CapabilityDependency:
+    return CapabilityDependency(
+        owner=CapabilityRef(kind=CapabilityDependencyKind.SKILL, capability_id="skill.a"),
+        dependency=CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.b"),
+        requirement=requirement,
+        source_domains=(source_domain,),
+    )
+
+
 def test_required_dependency_available_happy_path() -> None:
     owner = CapabilityRef(kind=CapabilityDependencyKind.SKILL, capability_id="skill.a")
     dependency = CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.b")
@@ -108,7 +128,7 @@ def test_required_dependency_available_happy_path() -> None:
         owner=owner,
         dependency=dependency,
         requirement=CapabilityDependencyRequirement.REQUIRED,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     provider = _SyntheticDependencyProvider(
         source_domain="synthetic",
@@ -137,7 +157,7 @@ def test_required_dependency_missing_fails_closed() -> None:
         owner=owner,
         dependency=dependency,
         requirement=CapabilityDependencyRequirement.REQUIRED,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     provider = _SyntheticDependencyProvider(
         source_domain="synthetic",
@@ -169,7 +189,7 @@ def test_optional_dependency_missing_degrades_without_blocking() -> None:
         owner=owner,
         dependency=dependency,
         requirement=CapabilityDependencyRequirement.OPTIONAL,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     provider = _SyntheticDependencyProvider(
         source_domain="synthetic",
@@ -197,13 +217,13 @@ def test_required_unknown_fails_closed_optional_unknown_degrades() -> None:
         owner=owner,
         dependency=CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.req"),
         requirement=CapabilityDependencyRequirement.REQUIRED,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     optional = CapabilityDependency(
         owner=owner,
         dependency=CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.opt"),
         requirement=CapabilityDependencyRequirement.OPTIONAL,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     provider = _SyntheticDependencyProvider(
         source_domain="synthetic",
@@ -236,7 +256,7 @@ def test_custom_provider_participates_without_core_changes() -> None:
         owner=owner,
         dependency=dependency,
         requirement=CapabilityDependencyRequirement.REQUIRED,
-        source_domain="plugin.domain",
+        source_domains=("plugin.domain",),
     )
     plugin = _SyntheticDependencyProvider(
         source_domain="plugin.domain",
@@ -252,7 +272,7 @@ def test_custom_provider_participates_without_core_changes() -> None:
     result = CapabilityDependencyValidator(
         (SkillToolCapabilityDependencyProvider(), plugin),
     ).validate(CapabilityDependencyValidationContext(environment_profile=env))
-    assert any(item.source_domain == "plugin.domain" for item in result.declarations)
+    assert any("plugin.domain" in item.source_domains for item in result.declarations)
 
 
 def test_duplicate_declarations_deduplicate_deterministically() -> None:
@@ -262,7 +282,7 @@ def test_duplicate_declarations_deduplicate_deterministically() -> None:
         owner=owner,
         dependency=dependency,
         requirement=CapabilityDependencyRequirement.REQUIRED,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     provider = _SyntheticDependencyProvider(
         source_domain="synthetic",
@@ -298,13 +318,13 @@ def test_required_dominates_optional_on_same_edge() -> None:
         owner=owner,
         dependency=dependency,
         requirement=CapabilityDependencyRequirement.REQUIRED,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     optional = CapabilityDependency(
         owner=owner,
         dependency=dependency,
         requirement=CapabilityDependencyRequirement.OPTIONAL,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     provider = _SyntheticDependencyProvider(
         source_domain="synthetic",
@@ -344,6 +364,7 @@ def test_skill_requires_tool_unavailable_blocks_skill_capability() -> None:
     assert failure.owner.capability_id == "research.web_evidence"
     assert failure.dependency.capability_id == "websearch.query"
     assert failure.source_domain == "skill_tool_contract"
+    assert failure.source_domains == ("skill_tool_contract",)
 
 
 def test_skill_requirements_do_not_expand_host_tool_profile() -> None:
@@ -405,13 +426,13 @@ def test_optional_degradation_does_not_block_unrelated_capability() -> None:
         owner=owner_a,
         dependency=CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.opt"),
         requirement=CapabilityDependencyRequirement.OPTIONAL,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     required_b = CapabilityDependency(
         owner=owner_b,
         dependency=CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.ok"),
         requirement=CapabilityDependencyRequirement.REQUIRED,
-        source_domain="synthetic",
+        source_domains=("synthetic",),
     )
     provider = _SyntheticDependencyProvider(
         source_domain="synthetic",
@@ -459,7 +480,7 @@ def test_one_hop_scope_no_transitive_cycle_traversal() -> None:
             owner=CapabilityRef(kind=CapabilityDependencyKind.SKILL, capability_id="skill.a"),
             dependency=CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.a"),
             requirement=CapabilityDependencyRequirement.REQUIRED,
-            source_domain="synthetic",
+            source_domains=("synthetic",),
         ),
     )
     provider = _SyntheticDependencyProvider(
@@ -478,3 +499,227 @@ def test_one_hop_scope_no_transitive_cycle_traversal() -> None:
         providers=(provider,),
     )
     assert len(result.evaluations) == 1
+
+
+def test_merged_provenance_does_not_create_synthetic_unknown() -> None:
+    declaration_a = _same_edge_declaration(source_domain="domain_a")
+    declaration_b = _same_edge_declaration(source_domain="domain_b")
+    provider_a = _SyntheticDependencyProvider(
+        source_domain="domain_a",
+        declarations=(declaration_a,),
+        availability={
+            declaration_a.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "available from a",
+            ),
+        },
+    )
+    provider_b = _SyntheticDependencyProvider(
+        source_domain="domain_b",
+        declarations=(declaration_b,),
+        availability={
+            declaration_b.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "available from b",
+            ),
+        },
+    )
+    env, _ = _env()
+    result = CapabilityDependencyValidator(
+        (provider_a, provider_b),
+    ).validate(CapabilityDependencyValidationContext(environment_profile=env))
+    assert result.available is True
+    assert result.required_failures == ()
+    assert len(result.declarations) == 1
+    assert result.declarations[0].source_domains == ("domain_a", "domain_b")
+    assert result.evaluations[0].status is CapabilityDependencyAvailabilityStatus.AVAILABLE
+
+
+def test_required_dominates_optional_across_providers_with_valid_evaluation() -> None:
+    required = _same_edge_declaration(
+        source_domain="domain_a",
+        requirement=CapabilityDependencyRequirement.REQUIRED,
+    )
+    optional = _same_edge_declaration(
+        source_domain="domain_b",
+        requirement=CapabilityDependencyRequirement.OPTIONAL,
+    )
+    provider_a = _SyntheticDependencyProvider(
+        source_domain="domain_a",
+        declarations=(required,),
+        availability={
+            required.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "required available",
+            ),
+        },
+    )
+    provider_b = _SyntheticDependencyProvider(
+        source_domain="domain_b",
+        declarations=(optional,),
+        availability={
+            optional.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "optional available",
+            ),
+        },
+    )
+    env, _ = _env()
+    result = CapabilityDependencyValidator(
+        (provider_a, provider_b),
+    ).validate(CapabilityDependencyValidationContext(environment_profile=env))
+    merged = result.declarations[0]
+    assert merged.requirement is CapabilityDependencyRequirement.REQUIRED
+    assert merged.source_domains == ("domain_a", "domain_b")
+    assert result.available is True
+    assert result.required_failures == ()
+    assert result.evaluations[0].status is CapabilityDependencyAvailabilityStatus.AVAILABLE
+
+
+def test_same_required_edge_from_multiple_sources_retains_provenance() -> None:
+    declaration_a = _same_edge_declaration(source_domain="domain_a")
+    declaration_b = _same_edge_declaration(source_domain="domain_b")
+    provider_a = _SyntheticDependencyProvider(
+        source_domain="domain_a",
+        declarations=(declaration_a,),
+        availability={
+            declaration_a.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "from a",
+            ),
+        },
+    )
+    provider_b = _SyntheticDependencyProvider(
+        source_domain="domain_b",
+        declarations=(declaration_b,),
+        availability={
+            declaration_b.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "from b",
+            ),
+        },
+    )
+    env, _ = _env()
+    result = CapabilityDependencyValidator(
+        (provider_a, provider_b),
+    ).validate(CapabilityDependencyValidationContext(environment_profile=env))
+    assert len(result.declarations) == 1
+    assert result.declarations[0].source_domains == ("domain_a", "domain_b")
+    assert result.declarations[0].requirement is CapabilityDependencyRequirement.REQUIRED
+
+
+def test_duplicate_provider_identity_fails_closed() -> None:
+    provider_a = _SyntheticDependencyProvider(
+        provider_id="shared.id",
+        source_domain="domain_a",
+        declarations=(),
+        availability={},
+    )
+    provider_b = _SyntheticDependencyProvider(
+        provider_id="shared.id",
+        source_domain="domain_b",
+        declarations=(),
+        availability={},
+    )
+    with pytest.raises(CapabilityDependencyProviderConflictError) as exc_info:
+        CapabilityDependencyValidator((provider_a, provider_b))
+    assert exc_info.value.provider_id == "shared.id"
+
+
+def test_provider_order_does_not_change_semantic_result() -> None:
+    declaration_a = _same_edge_declaration(source_domain="domain_a")
+    declaration_b = _same_edge_declaration(source_domain="domain_b")
+    provider_a = _SyntheticDependencyProvider(
+        source_domain="domain_a",
+        declarations=(declaration_a,),
+        availability={
+            declaration_a.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "from a",
+            ),
+        },
+    )
+    provider_b = _SyntheticDependencyProvider(
+        source_domain="domain_b",
+        declarations=(declaration_b,),
+        availability={
+            declaration_b.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "from b",
+            ),
+        },
+    )
+    env, _ = _env()
+    context = CapabilityDependencyValidationContext(environment_profile=env)
+    first = CapabilityDependencyValidator((provider_a, provider_b)).validate(context)
+    second = CapabilityDependencyValidator((provider_b, provider_a)).validate(context)
+    assert first == second
+
+
+def test_evaluation_disagreement_prefers_unavailable_over_available() -> None:
+    declaration_a = _same_edge_declaration(source_domain="domain_a")
+    declaration_b = _same_edge_declaration(source_domain="domain_b")
+    provider_a = _SyntheticDependencyProvider(
+        source_domain="domain_a",
+        declarations=(declaration_a,),
+        availability={
+            declaration_a.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.AVAILABLE,
+                "available from a",
+            ),
+        },
+    )
+    provider_b = _SyntheticDependencyProvider(
+        source_domain="domain_b",
+        declarations=(declaration_b,),
+        availability={
+            declaration_b.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.UNAVAILABLE,
+                "missing from b",
+            ),
+        },
+    )
+    env, _ = _env()
+    result = CapabilityDependencyValidator(
+        (provider_a, provider_b),
+    ).validate(CapabilityDependencyValidationContext(environment_profile=env))
+    assert result.available is False
+    assert result.evaluations[0].status is CapabilityDependencyAvailabilityStatus.UNAVAILABLE
+    assert "domain_a" in result.evaluations[0].reason
+    assert "domain_b" in result.evaluations[0].reason
+
+
+def test_profile_resolution_multi_source_provenance_is_truthful() -> None:
+    declaration_a = _same_edge_declaration(source_domain="domain_a")
+    declaration_b = _same_edge_declaration(source_domain="domain_b")
+    provider_a = _SyntheticDependencyProvider(
+        source_domain="domain_a",
+        declarations=(declaration_a,),
+        availability={
+            declaration_a.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.UNAVAILABLE,
+                "missing from a",
+            ),
+        },
+    )
+    provider_b = _SyntheticDependencyProvider(
+        source_domain="domain_b",
+        declarations=(declaration_b,),
+        availability={
+            declaration_b.dedup_key: (
+                CapabilityDependencyAvailabilityStatus.UNAVAILABLE,
+                "missing from b",
+            ),
+        },
+    )
+    env, _ = _env()
+    validation = CapabilityDependencyValidator(
+        (provider_a, provider_b),
+    ).validate(CapabilityDependencyValidationContext(environment_profile=env))
+    resolution = enrich_profile_resolution_with_capability_dependencies(
+        resolve_profile(env),
+        providers=(provider_a, provider_b),
+    )
+    assert resolution.dependency_failures
+    assert resolution.dependency_failures[0].source_domain == "domain_a, domain_b"
+    assert validation.required_failures[0].source_domains == ("domain_a", "domain_b")

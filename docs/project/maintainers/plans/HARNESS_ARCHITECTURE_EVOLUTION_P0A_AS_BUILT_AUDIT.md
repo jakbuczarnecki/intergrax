@@ -473,7 +473,7 @@ Deferred to P1.3+:
 
 ## P1.3 Capability dependency validation
 
-**Status: CLOSED (P1.3)**
+**Status: CLOSED (P1.3 + P1.3A)**
 
 Delivered in P1.3:
 
@@ -483,6 +483,13 @@ Delivered in P1.3:
 - composition-time fail-closed gate in `environment_wiring`,
 - `ProfileResolution.dependency_failures` / `degraded_capabilities` evidence population,
 - deterministic dedup with `REQUIRED` dominance over `OPTIONAL`.
+
+P1.3A correction:
+
+- explicit `provider_id` routing identity separate from `source_domains` provenance,
+- evaluate-before-merge with deterministic evaluation merge (`UNAVAILABLE` / `UNKNOWN` dominate `AVAILABLE`),
+- duplicate `provider_id` fails closed via `CapabilityDependencyProviderConflictError`,
+- provider registration order independence for merged semantic results.
 
 Deferred to P1.4+:
 
