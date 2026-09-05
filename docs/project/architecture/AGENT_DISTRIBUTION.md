@@ -136,6 +136,19 @@ AgentRegistry projection (MaterializedRegistryProjection)
 Nexus capability routing (ROUTABLE agents)
 ```
 
+### Canonical lifecycle E2E proof
+
+Offline regression proof (Stage 15) exercises the full frozen chain through canonical authorities only:
+
+```text
+catalog → install → bind → effective roster → RuntimeRevision
+  → materialization → activation → traffic_serving_revision_id
+  → RegistryProjectionAuthority → MaterializedRegistryProjection
+  → AgentRegistryRead → HostTaskExecution → agent result
+```
+
+Evidence: `tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py` and reusable composition `testing_support/canonical_agent_lifecycle_composition.py`.
+
 ### Agent ownership classes (conceptual)
 
 The platform supports multiple ownership and visibility patterns. All four classes below share the **same** lifecycle authority — only ownership, visibility, and reuse scope differ. This is a documentation model only; it does not prescribe concrete schema fields such as `visibility`, `scope`, or `owner` until contracts define them.
