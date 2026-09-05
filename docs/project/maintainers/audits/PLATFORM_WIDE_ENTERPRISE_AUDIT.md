@@ -773,7 +773,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 | ID | Finding | Files | Recommendation |
 |----|---------|-------|----------------|
 | P2-001 | Dual side-effect models without documented precedence | policy + CW docs | **Closed by ADR** — multi-strategy model documented; Phase 1 fail-closed pending |
-| P2-002 | LLM/embedding outside Integrations catalog | `llm_adapters/`, `rag/embedding/` | ADR or migrate |
+| P2-002 | LLM/embedding outside Integrations catalog | `llm_adapters/`, `rag/embedding/` | **DECIDED — implementation pending** ([ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md](../architecture/ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md)): Option C hybrid — LLM Adapters remain dedicated domain; embedding provider catalog/config migrates to Integrations `embedding_provider` category; `EmbeddingProvider` runtime stays in RAG; `registry_v2` projects embedding rows only. |
 | P2-003 | Reflective provider discovery at registration | `integrations/registry/` (removed `contract_capture.py`) | **CLOSED — final independent audit PASS** (P2-003-D @ `cb547a0fe4e1d09a2da7e32f5422558629486f49`): 200/200 explicit provider/category keys; zero production `contract_capture`/reflective contract discovery; Catalog authority + provider-owned `IntegrationContractSpec` + `registry_v2` derived projection only; typed-category fail-closed derives from `PROVIDER_CATEGORY_CONTRACT_REGISTRY`; P2-003 suite 457 passed. |
 | P2-004 | AW docs say "not implemented" but AW-2B code exists | `autonomous_work/`, `AUTONOMOUS_WORK.md` | Align maturity statement |
 | P2-005 | LKW lacks durable CW persistence | LKW host | Planned adoption |
