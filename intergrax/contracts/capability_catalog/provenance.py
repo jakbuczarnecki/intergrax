@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
@@ -20,7 +20,7 @@ class CapabilityProvenance(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: str = SCHEMA_CAPABILITY_PROVENANCE_V1
+    schema_version: Literal["capability_provenance.v1"] = SCHEMA_CAPABILITY_PROVENANCE_V1
     source: CapabilitySourceIdentity
     version_label: str | None = None
     package_reference: str | None = None

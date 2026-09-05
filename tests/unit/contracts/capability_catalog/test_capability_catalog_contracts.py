@@ -8,8 +8,11 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.contracts.capability_catalog import (
+    SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1,
+    SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1,
+    SCHEMA_CAPABILITY_PROVENANCE_V1,
+    SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1,
     CapabilityDiscoveryIdentity,
-    CapabilityDiscoveryIdentityConflict,
     CapabilityKind,
     CapabilityLogicalIdentity,
     CapabilityProvenance,
@@ -18,7 +21,6 @@ from intergrax.contracts.capability_catalog import (
     CapabilityStageVocabulary,
     NORMATIVE_CAPABILITY_STAGE_VOCABULARY,
     V1_CAPABILITY_KINDS,
-    normalize_discovery_identity_set,
 )
 
 pytestmark = pytest.mark.unit
@@ -103,20 +105,170 @@ def test_provenance_allows_absent_optional_fields() -> None:
     assert provenance.publisher is None
 
 
-def test_normalize_discovery_identity_set_orders_deterministically() -> None:
-    first = _identity(logical_id="tools.a")
-    second = _identity(logical_id="tools.b")
-    normalized = normalize_discovery_identity_set((second, first))
-    assert normalized == (first, second)
+@pytest.mark.parametrize(
+    ("model_factory", "schema_constant", "foreign_version"),
+    [
+        (
+            lambda: CapabilitySourceIdentity(source_id="official.catalog"),
+            SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1,
+            "capability_source_identity.v2",
+        ),
+        (
+            lambda: CapabilityLogicalIdentity(
+                kind=CapabilityKind.TOOL,
+                logical_id="tools.rag.search",
+            ),
+            SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1,
+            "capability_logical_identity.v2",
+        ),
+        (
+            lambda: _identity(),
+            SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1,
+            "capability_discovery_identity.v2",
+        ),
+        (
+            lambda: CapabilityProvenance(source=_source()),
+            SCHEMA_CAPABILITY_PROVENANCE_V1,
+            "capability_provenance.v2",
+        ),
+    ],
+    ids=[
+        "CapabilitySourceIdentity",
+        "CapabilityLogicalIdentity",
+        "CapabilityDiscoveryIdentity",
+        "CapabilityProvenance",
+    ],
+)
+def test_schema_version_defaults_to_v1(
+    model_factory: object,
+    schema_constant: str,
+    foreign_version: str,
+) -> None:
+    model = model_factory()  # type: ignore[operator]
+    assert model.schema_version == schema_constant
 
 
-def test_normalize_discovery_identity_set_fails_closed_on_duplicate() -> None:
-    duplicate = _identity()
-    with pytest.raises(
-        CapabilityDiscoveryIdentityConflict,
-        match="duplicate source-qualified discovery identity",
-    ):
-        normalize_discovery_identity_set((duplicate, duplicate))
+@pytest.mark.parametrize(
+    ("model_factory", "schema_constant"),
+    [
+        (
+            lambda: CapabilitySourceIdentity(
+                schema_version=SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1,
+                source_id="official.catalog",
+            ),
+            SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1,
+        ),
+        (
+            lambda: CapabilityLogicalIdentity(
+                schema_version=SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1,
+                kind=CapabilityKind.TOOL,
+                logical_id="tools.rag.search",
+            ),
+            SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1,
+        ),
+        (
+            lambda: CapabilityDiscoveryIdentity(
+                schema_version=SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1,
+                kind=CapabilityKind.TOOL,
+                source=_source(),
+                logical=CapabilityLogicalIdentity(
+                    kind=CapabilityKind.TOOL,
+                    logical_id="tools.rag.search",
+                ),
+            ),
+            SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1,
+        ),
+        (
+            lambda: CapabilityProvenance(
+                schema_version=SCHEMA_CAPABILITY_PROVENANCE_V1,
+                source=_source(),
+            ),
+            SCHEMA_CAPABILITY_PROVENANCE_V1,
+        ),
+    ],
+    ids=[
+        "CapabilitySourceIdentity",
+        "CapabilityLogicalIdentity",
+        "CapabilityDiscoveryIdentity",
+        "CapabilityProvenance",
+    ],
+)
+def test_schema_version_accepts_explicit_v1(
+    model_factory: object,
+    schema_constant: str,
+) -> None:
+    model = model_factory()  # type: ignore[operator]
+    assert model.schema_version == schema_constant
+
+
+@pytest.mark.parametrize(
+    "model_factory",
+    [
+        lambda: CapabilitySourceIdentity(
+            schema_version="capability_source_identity.v2",
+            source_id="official.catalog",
+        ),
+        lambda: CapabilityLogicalIdentity(
+            schema_version="capability_logical_identity.v2",
+            kind=CapabilityKind.TOOL,
+            logical_id="tools.rag.search",
+        ),
+        lambda: CapabilityDiscoveryIdentity(
+            schema_version="capability_discovery_identity.v2",
+            kind=CapabilityKind.TOOL,
+            source=_source(),
+            logical=CapabilityLogicalIdentity(
+                kind=CapabilityKind.TOOL,
+                logical_id="tools.rag.search",
+            ),
+        ),
+        lambda: CapabilityProvenance(
+            schema_version="capability_provenance.v2",
+            source=_source(),
+        ),
+    ],
+    ids=[
+        "CapabilitySourceIdentity",
+        "CapabilityLogicalIdentity",
+        "CapabilityDiscoveryIdentity",
+        "CapabilityProvenance",
+    ],
+)
+def test_schema_version_rejects_foreign_version(model_factory: object) -> None:
+    with pytest.raises(ValidationError):
+        model_factory()  # type: ignore[operator]
+
+
+@pytest.mark.parametrize(
+    "model_factory",
+    [
+        lambda: CapabilitySourceIdentity(schema_version="", source_id="official.catalog"),
+        lambda: CapabilityLogicalIdentity(
+            schema_version="",
+            kind=CapabilityKind.TOOL,
+            logical_id="tools.rag.search",
+        ),
+        lambda: CapabilityDiscoveryIdentity(
+            schema_version="",
+            kind=CapabilityKind.TOOL,
+            source=_source(),
+            logical=CapabilityLogicalIdentity(
+                kind=CapabilityKind.TOOL,
+                logical_id="tools.rag.search",
+            ),
+        ),
+        lambda: CapabilityProvenance(schema_version="", source=_source()),
+    ],
+    ids=[
+        "CapabilitySourceIdentity",
+        "CapabilityLogicalIdentity",
+        "CapabilityDiscoveryIdentity",
+        "CapabilityProvenance",
+    ],
+)
+def test_schema_version_rejects_empty_string(model_factory: object) -> None:
+    with pytest.raises(ValidationError):
+        model_factory()  # type: ignore[operator]
 
 
 def test_public_import_surface() -> None:

@@ -24,33 +24,40 @@ _FORBIDDEN_IMPORT_PREFIXES = (
     "intergrax.tools",
 )
 
-_FORBIDDEN_REGISTRY_TOKENS = (
-    "AgentRegistry",
-    "SkillRegistry",
-    "ToolRegistry",
-    "UniversalCapabilityEngine",
-    "UniversalRegistry",
-    "CapabilityRegistry",
+_FORBIDDEN_REGISTRY_CLASS_NAMES = frozenset(
+    {
+        "AgentRegistry",
+        "SkillRegistry",
+        "ToolRegistry",
+        "UniversalCapabilityEngine",
+        "UniversalRegistry",
+        "CapabilityRegistry",
+    },
 )
 
-_FORBIDDEN_RUNTIME_MUTATION_TOKENS = (
-    "def install",
-    "def enable",
-    "def activate",
-    "def materialize",
-    "def register",
-    "def mutate",
+_FORBIDDEN_RUNTIME_MUTATION_FUNCTION_NAMES = frozenset(
+    {
+        "install",
+        "enable",
+        "activate",
+        "materialize",
+        "register",
+        "mutate",
+    },
 )
 
 
-def _package_paths() -> list[Path]:
+def _package_root() -> Path:
     package = importlib.import_module(_PACKAGE_MODULE)
     assert package.__path__ is not None
-    return sorted(Path(path) for path in package.__path__)
+    return Path(package.__path__[0])
 
 
-def _collect_imports(path: Path) -> list[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"))
+def _iter_package_py_files() -> list[Path]:
+    return sorted(path for path in _package_root().rglob("*.py") if path.is_file())
+
+
+def _collect_imports(tree: ast.AST) -> list[str]:
     imported: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -60,37 +67,65 @@ def _collect_imports(path: Path) -> list[str]:
     return imported
 
 
+def _collect_forbidden_registry_class_defs(tree: ast.AST) -> list[str]:
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and node.name in _FORBIDDEN_REGISTRY_CLASS_NAMES:
+            violations.append(f"class {node.name} at line {node.lineno}")
+    return violations
+
+
+def _collect_forbidden_runtime_mutation_defs(tree: ast.AST) -> list[str]:
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if node.name in _FORBIDDEN_RUNTIME_MUTATION_FUNCTION_NAMES:
+                violations.append(f"function {node.name} at line {node.lineno}")
+    return violations
+
+
+def test_ast_gate_ignores_forbidden_tokens_in_comments_and_docstrings() -> None:
+    source = '''
+"""AgentRegistry is documented but not defined."""
+
+# def install(): pass
+
+x = "UniversalRegistry"
+'''
+    tree = ast.parse(source)
+    assert _collect_forbidden_registry_class_defs(tree) == []
+    assert _collect_forbidden_runtime_mutation_defs(tree) == []
+
+
 def test_capability_catalog_package_has_no_forbidden_imports() -> None:
-    for path in _package_paths():
-        if path.name == "__pycache__":
-            continue
-        if not path.suffix == ".py":
-            continue
-        joined = "\n".join(_collect_imports(path))
-        for prefix in _FORBIDDEN_IMPORT_PREFIXES:
-            for imported in joined.splitlines():
+    for path in _iter_package_py_files():
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for imported in _collect_imports(tree):
+            for prefix in _FORBIDDEN_IMPORT_PREFIXES:
                 if imported == prefix or imported.startswith(f"{prefix}."):
                     raise AssertionError(
-                        f"{path.name} imports forbidden dependency: {imported}",
+                        f"{path.relative_to(_package_root())} imports forbidden dependency: {imported}",
                     )
 
 
-def test_capability_catalog_package_has_no_registry_unification_tokens() -> None:
-    for path in _package_paths():
-        if not path.suffix == ".py":
-            continue
-        source = path.read_text(encoding="utf-8")
-        for token in _FORBIDDEN_REGISTRY_TOKENS:
-            assert token not in source, f"{path.name} defines forbidden token {token}"
+def test_capability_catalog_package_has_no_registry_unification_classes() -> None:
+    for path in _iter_package_py_files():
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        violations = _collect_forbidden_registry_class_defs(tree)
+        assert not violations, (
+            f"{path.relative_to(_package_root())} defines forbidden registry symbols: "
+            + ", ".join(violations)
+        )
 
 
 def test_capability_catalog_package_has_no_runtime_mutation_api() -> None:
-    for path in _package_paths():
-        if not path.suffix == ".py":
-            continue
-        source = path.read_text(encoding="utf-8")
-        for token in _FORBIDDEN_RUNTIME_MUTATION_TOKENS:
-            assert token not in source, f"{path.name} exposes forbidden API {token}"
+    for path in _iter_package_py_files():
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        violations = _collect_forbidden_runtime_mutation_defs(tree)
+        assert not violations, (
+            f"{path.relative_to(_package_root())} exposes forbidden API: "
+            + ", ".join(violations)
+        )
 
 
 def test_capability_catalog_import_smoke_subprocess() -> None:
@@ -103,11 +138,9 @@ from intergrax.contracts.capability_catalog import (
     CapabilityDiscoveryIdentity,
     CapabilityKind,
     CapabilityStageVocabulary,
-    normalize_discovery_identity_set,
 )
 assert CapabilityKind.AGENT.value == "agent"
 assert CapabilityStageVocabulary.DISCOVERED.value == "discovered"
-assert normalize_discovery_identity_set(()) == ()
 print("capability catalog import smoke OK")
 """
     completed = subprocess.run(

@@ -6,14 +6,11 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Final
+from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from intergrax.contracts.capability_catalog._validation import (
-    normalize_optional_text,
-    require_non_empty_text,
-)
+from intergrax.contracts.capability_catalog._validation import require_non_empty_text
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 
 _NON_EMPTY = Field(min_length=1)
@@ -25,10 +22,6 @@ SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1: Final = "capability_discovery_identity.
 
 class CapabilityCatalogContractError(ValueError):
     """Malformed capability catalog contract."""
-
-
-class CapabilityDiscoveryIdentityConflict(CapabilityCatalogContractError):
-    """Duplicate or conflicting source-qualified discovery identities."""
 
 
 class CapabilitySourceKind(StrEnum):
@@ -47,7 +40,9 @@ class CapabilitySourceIdentity(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: str = SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1
+    schema_version: Literal["capability_source_identity.v1"] = (
+        SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1
+    )
     source_id: str = _NON_EMPTY
     source_kind: CapabilitySourceKind = CapabilitySourceKind.UNKNOWN
 
@@ -62,7 +57,9 @@ class CapabilityLogicalIdentity(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: str = SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1
+    schema_version: Literal["capability_logical_identity.v1"] = (
+        SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1
+    )
     kind: CapabilityKind
     logical_id: str = _NON_EMPTY
 
@@ -77,7 +74,9 @@ class CapabilityDiscoveryIdentity(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: str = SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1
+    schema_version: Literal["capability_discovery_identity.v1"] = (
+        SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1
+    )
     kind: CapabilityKind
     source: CapabilitySourceIdentity
     logical: CapabilityLogicalIdentity
@@ -98,26 +97,3 @@ class CapabilityDiscoveryIdentity(BaseModel):
             self.source.source_kind.value,
             self.logical.logical_id,
         )
-
-
-def discovery_identity_sort_key(
-    identity: CapabilityDiscoveryIdentity,
-) -> tuple[str, str, str, str]:
-    return identity.sort_key
-
-
-def normalize_discovery_identity_set(
-    identities: tuple[CapabilityDiscoveryIdentity, ...],
-) -> tuple[CapabilityDiscoveryIdentity, ...]:
-    """Deterministic ordering with fail-closed duplicate and conflict detection."""
-    ordered = tuple(sorted(identities, key=discovery_identity_sort_key))
-    seen: dict[tuple[str, str, str, str], CapabilityDiscoveryIdentity] = {}
-    for identity in ordered:
-        key = identity.sort_key
-        existing = seen.get(key)
-        if existing is not None:
-            raise CapabilityDiscoveryIdentityConflict(
-                "duplicate source-qualified discovery identity",
-            )
-        seen[key] = identity
-    return ordered

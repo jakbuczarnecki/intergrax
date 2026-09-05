@@ -11,12 +11,9 @@ from intergrax.contracts.capability_catalog.identity import (
     SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1,
     CapabilityCatalogContractError,
     CapabilityDiscoveryIdentity,
-    CapabilityDiscoveryIdentityConflict,
     CapabilityLogicalIdentity,
     CapabilitySourceIdentity,
     CapabilitySourceKind,
-    discovery_identity_sort_key,
-    normalize_discovery_identity_set,
 )
 from intergrax.contracts.capability_catalog.kind import (
     V1_CAPABILITY_KINDS,
@@ -34,7 +31,6 @@ from intergrax.contracts.capability_catalog.vocabulary import (
 __all__ = [
     "CapabilityCatalogContractError",
     "CapabilityDiscoveryIdentity",
-    "CapabilityDiscoveryIdentityConflict",
     "CapabilityKind",
     "CapabilityLogicalIdentity",
     "CapabilityProvenance",
@@ -47,6 +43,4 @@ __all__ = [
     "SCHEMA_CAPABILITY_PROVENANCE_V1",
     "SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1",
     "V1_CAPABILITY_KINDS",
-    "discovery_identity_sort_key",
-    "normalize_discovery_identity_set",
 ]
