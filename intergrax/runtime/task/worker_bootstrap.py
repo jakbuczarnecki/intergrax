@@ -28,6 +28,7 @@ from intergrax.runtime.task.worker_payload import NEXUS_TASK_V2_LOGICAL_NAME
 from intergrax.runtime.background_execution.admission_wiring import (
     wire_background_execution_admission_dependencies,
 )
+from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.execution.budget.persistence import wire_run_budget_persistence
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
@@ -41,6 +42,7 @@ def build_nexus_task_execution_registry(
     lifecycle=None,
     kv_store: Optional[DistributedKVStore] = None,
     run_budget: RunBudget | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
 ) -> TaskExecutionRegistry:
     """Register ``nexus.task.v2`` on a worker TaskExecutionRegistry."""
     run_budget_persistence = None
@@ -53,6 +55,7 @@ def build_nexus_task_execution_registry(
         lifecycle=lifecycle,
         run_budget=run_budget,
         run_budget_persistence=run_budget_persistence,
+        execution_terminal=execution_terminal,
     )
     register_nexus_task_worker(worker_registry, runtime)
     return worker_registry
@@ -88,11 +91,14 @@ def create_nexus_celery_worker_app(
                 f"({max_retry_window})."
             )
 
+    admission = wire_background_execution_admission_dependencies(kv_store=kv_store)
+
     worker_registry = build_nexus_task_execution_registry(
         agent_registry,
         checkpoint_store=checkpoint_store,
         lifecycle=lifecycle,
         kv_store=kv_store,
+        execution_terminal=admission.execution_terminal,
     )
 
     app = Celery(app_name, broker=broker_url, backend=backend_url)
@@ -105,8 +111,6 @@ def create_nexus_celery_worker_app(
         raise ValueError(
             "create_nexus_celery_worker_app requires kv_store for BG-EXEC-2 identity persistence",
         )
-
-    admission = wire_background_execution_admission_dependencies(kv_store=kv_store)
 
     register_dispatcher_task(
         app=app,

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from intergrax.contracts.execution_terminal import ExecutionTerminalStore
 from intergrax.runtime.background_execution.admission_wiring import (
     BackgroundExecutionAdmissionDependencies,
 )
@@ -28,9 +29,24 @@ from tests.conformance.runtime.durability.provider_factories import (
 
 def fresh_admission_composition(
     backing: DurableAdmissionBacking,
+    *,
+    execution_terminal_store: ExecutionTerminalStore | None = None,
 ) -> BackgroundExecutionAdmissionDependencies:
     """Return a new admission dependency bundle bound to the same durable backing."""
-    return create_admission_dependencies(backing)
+    return create_admission_dependencies(
+        backing,
+        execution_terminal_store=execution_terminal_store,
+    )
+
+
+def fresh_shared_checkpoint_composition(
+    backing: DurableAdmissionBacking,
+    db_path: Path,
+) -> tuple[SQLiteTaskCheckpointStore, ExecutionTerminalService]:
+    """Fresh checkpoint store + canonical terminal service on shared admission backing."""
+    store = create_checkpoint_store(db_path)
+    terminal = fresh_admission_composition(backing).execution_terminal
+    return store, terminal
 
 
 def fresh_checkpoint_composition(

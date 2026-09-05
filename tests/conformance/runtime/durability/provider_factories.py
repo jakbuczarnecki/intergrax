@@ -15,6 +15,7 @@ from intergrax.runtime.background_execution.admission_wiring import (
     BackgroundExecutionAdmissionDependencies,
     wire_background_execution_admission_dependencies,
 )
+from intergrax.contracts.execution_terminal import ExecutionTerminalStore
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.execution.execution_terminal.persistence import (
     CheckpointStoreExecutionTerminalStore,
@@ -57,16 +58,32 @@ BACKGROUND_IDENTITY_PROVIDERS: tuple[DurableProviderKind, ...] = (
 
 def create_admission_dependencies(
     backing: DurableAdmissionBacking,
+    *,
+    execution_terminal_store: ExecutionTerminalStore | None = None,
 ) -> BackgroundExecutionAdmissionDependencies:
     if backing.kind is DurableProviderKind.KV:
         if backing.kv_store is None:
             raise ValueError("KV backing requires kv_store")
-        return wire_background_execution_admission_dependencies(kv_store=backing.kv_store)
+        return wire_background_execution_admission_dependencies(
+            kv_store=backing.kv_store,
+            execution_terminal_store=execution_terminal_store,
+        )
     if backing.document_store is None:
         raise ValueError("DocumentStore backing requires document_store")
     return wire_background_execution_admission_dependencies(
         document_store=backing.document_store,
+        execution_terminal_store=execution_terminal_store,
     )
+
+
+def create_shared_terminal_composition(
+    admission_backing: DurableAdmissionBacking,
+    checkpoint_db_path: Path,
+) -> tuple[BackgroundExecutionAdmissionDependencies, SQLiteTaskCheckpointStore]:
+    """One canonical terminal authority for background + checkpoint/resume consumers."""
+    admission = create_admission_dependencies(admission_backing)
+    checkpoint_store = create_checkpoint_store(checkpoint_db_path)
+    return admission, checkpoint_store
 
 
 def create_checkpoint_store(db_path: Path) -> SQLiteTaskCheckpointStore:
@@ -100,6 +117,7 @@ def provider_qualification_matrix() -> dict[str, dict[str, str]]:
             "KV": yes,
             "DocumentStore": yes,
             "Checkpoint": yes,
+            "note": "selected per composition graph; not simultaneous authorities",
         },
         "checkpoint/recovery": {
             "KV": na,

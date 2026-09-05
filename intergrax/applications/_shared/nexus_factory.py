@@ -58,6 +58,10 @@ from intergrax.runtime.execution.attempt_lifecycle import (
     AttemptLifecycleService,
     wire_attempt_lifecycle_store,
 )
+from intergrax.runtime.execution.execution_terminal import (
+    ExecutionTerminalService,
+    wire_execution_terminal_store,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
@@ -111,6 +115,7 @@ def build_nexus_loop_from_environment(
     attempt_lifecycle_store: AttemptLifecycleStore | None = None,
     key_value_cache: Any | None = None,
     document_store: Any | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -168,6 +173,22 @@ def build_nexus_loop_from_environment(
         if resolved_attempt_lifecycle_store is not None
         else None
     )
+    resolved_execution_terminal = execution_terminal
+    if resolved_execution_terminal is None and (
+        key_value_cache is not None or document_store is not None
+    ):
+        from intergrax.distributed.contracts.kv_store import DistributedKVStore
+        from intergrax.integrations.contracts.document_store import DocumentStore
+
+        kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+        doc_store = document_store if isinstance(document_store, DocumentStore) else None
+        if kv_store is not None or doc_store is not None:
+            resolved_execution_terminal = ExecutionTerminalService(
+                wire_execution_terminal_store(
+                    kv_store=kv_store,
+                    document_store=doc_store,
+                ),
+            )
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
@@ -214,6 +235,7 @@ def build_nexus_loop_from_environment(
         budget_allocation_policy=resolved_budget_policy,
         execution_budget_ledger_factory=resolved_budget_ledger_factory,
         attempt_lifecycle=resolved_attempt_lifecycle,
+        execution_terminal=resolved_execution_terminal,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)
