@@ -62,7 +62,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Existing AC-4 unit/integration suite unchanged; Platform Plugin contract suite unchanged. |
 | **Completion criteria** | Architecture invariants traceable to typed contracts; no new runtime mutation APIs; peer review sign-off on boundary doc ↔ contract alignment. |
 | **Depends on** | Frozen architecture document (this program). |
-| **Maturity** | **Planned** — documentation frozen; contracts not yet extracted as shared Tier-0 module. |
+| **Maturity** | **Implemented** — Tier-0 contracts at `intergrax/contracts/capability_catalog/` (`CapabilityKind`, `CapabilitySourceIdentity`, `CapabilityLogicalIdentity`, `CapabilityDiscoveryIdentity`, `CapabilityProvenance`, `CapabilityStageVocabulary`); contract tests `tests/unit/contracts/capability_catalog/test_capability_catalog_contracts.py`; architecture gates `tests/unit/contracts/capability_catalog/test_capability_catalog_architecture_gates.py`. |
 
 ---
 
