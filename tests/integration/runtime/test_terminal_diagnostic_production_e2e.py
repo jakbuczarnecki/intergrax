@@ -44,6 +44,7 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
 )
 from intergrax.runtime.background_execution.transport_ref import BackgroundTransportExecutionRef
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
+from intergrax.runtime.diagnostics.persistence_conformance import query_all_problems_for_tenant
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -137,7 +138,7 @@ def _build_diagnostic_nexus_loop(
     inject_violation: bool,
     violating_event_type: RuntimeEventType = RuntimeEventType.RETRY_SCHEDULED,
     problem_persistence: object | None = None,
-) -> tuple[NexusLoop, InMemoryRuntimeEventStore, object]:
+) -> tuple[NexusLoop, InMemoryRuntimeEventStore, HostDiagnosticReadDependencies]:
     document_store = InMemoryDocumentStore()
     runtime_store = InMemoryRuntimeEventStore()
     stores = wire_nexus_observability(
@@ -170,7 +171,7 @@ def _build_diagnostic_nexus_loop(
             event_types={RuntimeEventType.TASK_COMPLETED},
             priority=10,
         )
-    return loop, runtime_store, deps.problem_persistence
+    return loop, runtime_store, deps
 
 
 @pytest.mark.asyncio
@@ -209,7 +210,7 @@ async def test_real_nexus_execution_triggers_diagnostics_without_manual_orchestr
 
 @pytest.mark.asyncio
 async def test_clean_execution_does_not_create_problem() -> None:
-    loop, _, persistence = _build_diagnostic_nexus_loop(inject_violation=False)
+    loop, _, persistence_deps = _build_diagnostic_nexus_loop(inject_violation=False)
     runner = UnifiedTaskRunner(loop)
 
     result = await runner.run_task(
@@ -223,7 +224,7 @@ async def test_clean_execution_does_not_create_problem() -> None:
     )
 
     assert result.state is TaskState.COMPLETED
-    assert query_all_problems_for_tenant(persistence, _TENANT_A) == ()
+    assert query_all_problems_for_tenant(persistence_deps.problem_persistence, _TENANT_A) == ()
 
 
 @pytest.mark.asyncio
@@ -476,13 +477,8 @@ def test_background_execution_records_diagnostic_failure_evidence(
 
 @pytest.mark.asyncio
 async def test_separate_terminal_executions_reconcile_same_problem() -> None:
-    loop, _, persistence = _build_diagnostic_nexus_loop(inject_violation=True)
+    loop, _, read_deps = _build_diagnostic_nexus_loop(inject_violation=True)
     runner = UnifiedTaskRunner(loop)
-    read_deps = HostDiagnosticReadDependencies(
-        problem_persistence=persistence,
-        runtime_event_persistence=loop._runtime_event_store,  # noqa: SLF001
-        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
-    )
     read_service = build_diagnostic_read_service(read_deps)
 
     await runner.run_task(
@@ -494,7 +490,7 @@ async def test_separate_terminal_executions_reconcile_same_problem() -> None:
         ),
         run_id=mint_run_id(),
     )
-    problems_after_a = query_all_problems_for_tenant(persistence, _TENANT_A)
+    problems_after_a = query_all_problems_for_tenant(read_deps.problem_persistence, _TENANT_A)
     assert len(problems_after_a) == 1
     problem_id = problems_after_a[0].problem_id
     assert problems_after_a[0].occurrence_count == 1
@@ -508,7 +504,7 @@ async def test_separate_terminal_executions_reconcile_same_problem() -> None:
         ),
         run_id=mint_run_id(),
     )
-    problems_after_b = query_all_problems_for_tenant(persistence, _TENANT_A)
+    problems_after_b = query_all_problems_for_tenant(read_deps.problem_persistence, _TENANT_A)
     assert len(problems_after_b) == 1
     assert problems_after_b[0].problem_id == problem_id
     assert problems_after_b[0].occurrence_count == 2
@@ -607,7 +603,7 @@ async def test_replay_terminal_trigger_does_not_duplicate_failure_evidence() -> 
 
 @pytest.mark.asyncio
 async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
-    loop, _, persistence = _build_diagnostic_nexus_loop(inject_violation=True)
+    loop, _, persistence_deps = _build_diagnostic_nexus_loop(inject_violation=True)
     runner = UnifiedTaskRunner(loop)
     task = Task(
         tenant_id=_TENANT_A,
@@ -619,7 +615,10 @@ async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     attempt_id = mint_attempt_id()
 
     await runner.run_task(task, run_id=run_id, attempt_id=attempt_id)
-    problems_before_replay = query_all_problems_for_tenant(persistence, _TENANT_A)
+    problems_before_replay = query_all_problems_for_tenant(
+        persistence_deps.problem_persistence,
+        _TENANT_A,
+    )
     assert len(problems_before_replay) == 1
     assert problems_before_replay[0].occurrence_count == 1
     token = bind_active_execution_identity(
@@ -633,7 +632,10 @@ async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     finally:
         reset_active_execution_identity(token)
 
-    problems_after_replay = query_all_problems_for_tenant(persistence, _TENANT_A)
+    problems_after_replay = query_all_problems_for_tenant(
+        persistence_deps.problem_persistence,
+        _TENANT_A,
+    )
     assert len(problems_after_replay) == 1
     assert problems_after_replay[0].occurrence_count == 1
 
@@ -739,15 +741,10 @@ def test_dashboard_sees_problem_on_shared_persistence_after_runtime_trigger(
         _resolve,
     )
 
-    loop, _, persistence = _build_diagnostic_nexus_loop(inject_violation=True)
+    loop, _, read_deps = _build_diagnostic_nexus_loop(inject_violation=True)
     env = _product_env()
     tenant_id = env.profile_id
-    deps = HostDiagnosticReadDependencies(
-        problem_persistence=persistence,
-        runtime_event_persistence=loop._runtime_event_store,  # noqa: SLF001
-        causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
-    )
-    read_service = build_diagnostic_read_service(deps)
+    read_service = build_diagnostic_read_service(read_deps)
     runner = UnifiedTaskRunner(loop)
     _run_coro_sync(
         runner.run_task(

@@ -474,10 +474,12 @@ def attach_retry_violation_injector(
                 task_id=event.task_id,
                 run_id=event.run_id,
                 attempt_id=event.attempt_id,
+                execution_id=event.execution_id,
             ).model_copy(
                 update={
                     "event_type": RuntimeEventType.RETRY_SCHEDULED,
                     "phase": ExecutionPhase.RETRY_HANDLING,
+                    "timestamp": event.timestamp,
                 },
             ),
             tenant_id=event.tenant_id,
