@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.capability_catalog.identity import CapabilityDiscoveryIdentity
 from intergrax.contracts.capability_catalog.provenance import CapabilityProvenance
@@ -36,3 +36,9 @@ class CapabilityCatalogEntry(BaseModel):
         if not normalized:
             raise ValueError("display_label must be non-empty when provided")
         return normalized
+
+    @model_validator(mode="after")
+    def _validate_identity_provenance_source_consistency(self) -> CapabilityCatalogEntry:
+        if self.identity.source != self.provenance.source:
+            raise ValueError("identity.source must equal provenance.source")
+        return self

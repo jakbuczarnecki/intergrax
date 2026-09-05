@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.capability_catalog import (
     CapabilityCatalogConfigurationError,
@@ -41,8 +42,10 @@ def _entry(
     logical_id: str = "tools.echo.ping",
     version_label: str | None = "1.0.0",
     display_label: str | None = "Echo Ping",
+    provenance_source: CapabilitySourceIdentity | None = None,
 ) -> CapabilityCatalogEntry:
     source = _source(source_id)
+    provenance = provenance_source if provenance_source is not None else source
     return CapabilityCatalogEntry(
         identity=CapabilityDiscoveryIdentity(
             kind=kind,
@@ -50,7 +53,7 @@ def _entry(
             logical=CapabilityLogicalIdentity(kind=kind, logical_id=logical_id),
         ),
         provenance=CapabilityProvenance(
-            source=source,
+            source=provenance,
             version_label=version_label,
         ),
         display_label=display_label,
@@ -83,6 +86,56 @@ class _FailingSource:
     def read_entries(self) -> tuple[CapabilityCatalogEntry, ...]:
         self.read_calls += 1
         raise RuntimeError("catalog backend unavailable")
+
+
+def test_entry_identity_provenance_source_mismatch_rejected() -> None:
+    provenance_source = _source("source-b")
+    with pytest.raises(ValidationError, match="identity.source must equal provenance.source"):
+        _entry(source_id="source-a", provenance_source=provenance_source)
+
+
+def test_entry_identity_provenance_source_kind_mismatch_rejected() -> None:
+    identity_source = CapabilitySourceIdentity(
+        source_id="source-a",
+        source_kind=CapabilitySourceKind.OFFICIAL,
+    )
+    provenance_source = CapabilitySourceIdentity(
+        source_id="source-a",
+        source_kind=CapabilitySourceKind.THIRD_PARTY,
+    )
+    with pytest.raises(ValidationError, match="identity.source must equal provenance.source"):
+        CapabilityCatalogEntry(
+            identity=CapabilityDiscoveryIdentity(
+                kind=CapabilityKind.TOOL,
+                source=identity_source,
+                logical=CapabilityLogicalIdentity(
+                    kind=CapabilityKind.TOOL,
+                    logical_id="tools.echo.ping",
+                ),
+            ),
+            provenance=CapabilityProvenance(source=provenance_source),
+        )
+
+
+def test_entry_identity_provenance_source_match_accepted() -> None:
+    entry = _entry(source_id="source-a")
+    assert entry.identity.source == entry.provenance.source
+
+
+def test_provider_source_mismatch_fails_closed() -> None:
+    mismatched = _entry(source_id="source-b")
+    federated = FederatedCapabilityCatalog((_StaticSource("source-a", (mismatched,)),))
+    with pytest.raises(
+        CapabilityCatalogConfigurationError,
+        match=r"catalog source 'source-a' returned entry with mismatched identity source 'source-b'",
+    ):
+        federated.snapshot()
+
+
+def test_provider_source_match_accepted() -> None:
+    entry = _entry(source_id="source-a")
+    snapshot = FederatedCapabilityCatalog((_StaticSource("source-a", (entry,)),)).snapshot()
+    assert snapshot.entries == (entry,)
 
 
 def test_single_source_preserves_entries() -> None:
@@ -159,24 +212,24 @@ def test_same_logical_id_different_source_both_preserved() -> None:
 
 
 def test_exact_duplicate_is_deterministically_deduped() -> None:
-    entry = _entry()
+    entry = _entry(source_id="official.catalog")
     merged = merge_capability_catalog_entries(
         (
-            ("source-a", entry),
-            ("source-b", entry),
+            ("official.catalog", entry),
+            ("official.catalog", entry),
         ),
     )
     assert merged == (entry,)
 
 
 def test_conflicting_duplicate_identity_fails_closed() -> None:
-    base = _entry()
-    conflicting = _entry(display_label="Different label")
+    base = _entry(source_id="official.catalog")
+    conflicting = _entry(source_id="official.catalog", display_label="Different label")
     with pytest.raises(CapabilityCatalogIdentityConflict):
         merge_capability_catalog_entries(
             (
-                ("source-a", base),
-                ("source-b", conflicting),
+                ("official.catalog", base),
+                ("official.catalog", conflicting),
             ),
         )
 
