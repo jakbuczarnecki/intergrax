@@ -30,7 +30,6 @@ from intergrax.applications._shared.wiring import (
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.errors import AgentImportError
-from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -341,7 +340,9 @@ def test_registry_projection_builds_with_canonical_resolver_path_only() -> None:
 def _assert_canonical_factory_signature(factory: Callable[..., object]) -> None:
     sig = inspect.signature(factory)
     params = list(sig.parameters.values())
-    assert len(params) == 2, f"{factory.__name__}: expected 2 parameters, got {len(params)}"
+    assert len(params) == 2, (
+        f"{factory.__name__}: expected 2 parameters, got {len(params)}"
+    )
     for param in params:
         assert param.kind in (
             inspect.Parameter.POSITIONAL_OR_KEYWORD,
@@ -359,7 +360,9 @@ def _assert_canonical_factory_signature(factory: Callable[..., object]) -> None:
         )
 
 
-def _load_production_factory_inventory() -> list[tuple[str, str, Callable[..., object]]]:
+def _load_production_factory_inventory() -> list[
+    tuple[str, str, Callable[..., object]]
+]:
     from dispute_sim_application.host.agent_factories import (
         build_dispute_sim_dispute_analyst_from_context,
         build_dispute_sim_dispute_intake_from_context,
@@ -380,7 +383,11 @@ def _load_production_factory_inventory() -> list[tuple[str, str, Callable[..., o
     )
 
     return [
-        ("legal_application", "build_legal_agent_from_context", build_legal_agent_from_context),
+        (
+            "legal_application",
+            "build_legal_agent_from_context",
+            build_legal_agent_from_context,
+        ),
         (
             "governed_contractor_application",
             "build_governed_contractor_external_contractor_adapter_from_context",
@@ -440,7 +447,9 @@ def _load_production_factory_inventory() -> list[tuple[str, str, Callable[..., o
 
 
 _PRODUCTION_FACTORY_INVENTORY = _load_production_factory_inventory()
-_PRODUCTION_FACTORY_IDS = [f"{app}::{name}" for app, name, _ in _PRODUCTION_FACTORY_INVENTORY]
+_PRODUCTION_FACTORY_IDS = [
+    f"{app}::{name}" for app, name, _ in _PRODUCTION_FACTORY_INVENTORY
+]
 
 
 @pytest.mark.parametrize(
