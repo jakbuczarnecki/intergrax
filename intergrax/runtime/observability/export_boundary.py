@@ -270,6 +270,8 @@ from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.observability.journal_export import JournalRef
 
+GatewayCallExportSource.model_rebuild()
+
 
 def _gateway_status_to_export(status: GatewayCallStatus) -> ExportStatus:
     mapping = {
