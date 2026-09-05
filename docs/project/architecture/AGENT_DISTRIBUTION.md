@@ -1676,6 +1676,7 @@ ProductionProcessComposition                    ← canonical owner (process lif
     │               └── RuntimeRegistryProjectionStore       (AP-10 authority surface)
     │
     └── ProductionAgentCapabilityRuntime (optional, AC-4 Phase 9)
+            ├── AgentPlatformAdminService
             ├── DynamicAgentAcquisitionService
             ├── TaskScopedAgentService + lease store
             ├── discovery / matcher / selector
@@ -1745,7 +1746,7 @@ Manifest → development registry → host. No production lifecycle requirement.
 ## 35. AC-4 Dynamic Capability Discovery & Acquisition (architecture freeze)
 
 **Program:** AGENT-CONSOLIDATION-4
-**Status:** Phases 1–9 **CLOSED** · Phase 10 documentation freeze **COMPLETE** · **READY_FOR_FINAL_AUDIT** (independent audit required before AC-4 closure)
+**Status:** Phases 1–9 **CLOSED** · Phase 10 **READY_FOR_INDEPENDENT_AUDIT** · **READY_FOR_FINAL_AUDIT** (independent audit required before AC-4 closure)
 **AC-3 authority:** [`§20 Activation`](#20-activation-and-rollback-model) · canonical lifecycle E2E · [`§34 Reference production`](#34-reference-production-topology-agent-consolidation-3-arch)
 **Plan chronology:** [maintainers plan § AGENT-CONSOLIDATION-4](../maintainers/plans/AGENT_DISTRIBUTION.md#agent-consolidation-4--dynamic-capability-discovery--acquisition)
 
@@ -1782,22 +1783,28 @@ AC-4 resolves **what specialist/capability is needed** and **how it becomes avai
 | `ProductionAgentCapabilityRuntime` | `intergrax/applications/_shared/production_agent_capability_runtime.py` |
 | `AgentCapabilityApplicationComposition` | same |
 | `SpecialistInvocationPort` | `intergrax/agent_distribution/delegated_subtasks.py` |
+| `AgentPlatformAdminService` | `intergrax/agent_distribution/admin_service.py` |
+| `DelegatedSubtaskServiceFactory` | `intergrax/applications/_shared/production_agent_capability_runtime.py` |
+| `ProductionProcessComposition` | `intergrax/applications/_shared/production_process_composition.py` |
+| `CatalogSourceProviderRegistry` | `intergrax/agent_distribution/dynamic_acquisition.py` |
 
 ### 35.3 Responsibility model
 
-| Layer | Question | Authority |
-|-------|----------|-----------|
-| **Task Capability Resolver** | What capability does this task require? | `TaskCapabilityResolver` (pluggable; reference: deterministic mapping) |
-| **Discovery** | Which candidates exist? | `AgentDiscoveryStrategy` / `FederatedAgentDiscoveryStrategy` |
-| **Capability Matcher** | Which candidates satisfy the requirement? | `CapabilityMatcher` |
-| **Selection Strategy** | Which eligible candidate should be chosen? | `AgentSelectionStrategy` |
-| **Trust / policy** | May selected artifact be admitted? | AC-3 `AgentPackageTrust` + install verification (no second AC-4 trust engine) |
-| **Dynamic Acquisition** | How does selected package enter canonical lifecycle? | `DynamicAgentAcquisitionService` → `AgentPlatformLifecyclePort` |
-| **Task-scoped ownership** | How long does temporary ownership remain? | `TaskScopedAgentService` + `TaskScopedAgentLeaseStore` |
-| **Delegated Subtask** | How does active execution request specialist work? | `DelegatedSubtaskService` |
-| **AC-3 lifecycle** | How does package become ACTIVE? | `AgentPlatformAdminService` / activation chain (§20) |
-| **ChildExecutionRunner** | How is child execution authority/lineage created? | `intergrax/runtime/execution/child.py` via `ChildExecutionPort` |
-| **SpecialistInvocationPort** | How does application-specific specialist payload execute? | Application/plugin adapter — **not** lifecycle authority |
+| Concern | Question | Authority |
+|---------|----------|-----------|
+| **Task Capability Resolution** | What capability is required? | `TaskCapabilityResolver` (pluggable; reference: deterministic mapping) |
+| **Discovery** | Which candidates exist? | `AgentDiscoveryStrategy` |
+| **Federation** | How are results from multiple discovery strategies combined? | `FederatedAgentDiscoveryStrategy` |
+| **Matching** | Which discovered candidates satisfy the requirement? | `CapabilityMatcher` |
+| **Selection** | Which eligible candidate should be chosen? | `AgentSelectionStrategy` |
+| **Trust / admission** | May the selected exact package enter runtime? | Canonical AC-3 trust/lifecycle (no second AC-4 trust engine) |
+| **Dynamic Acquisition** | How does the selected package become ACTIVE? | `DynamicAgentAcquisitionService` + AC-3 (`AgentPlatformAdminService`) |
+| **Task-scoped ownership** | How long should temporary specialist ownership remain? | `TaskScopedAgentService` |
+| **Delegation** | How does an active execution request specialist work? | `DelegatedSubtaskService` |
+| **Execution lineage** | How is the specialist child execution created? | `ChildExecutionRunner` via `ChildExecutionPort` |
+| **Specialist invocation** | How is the typed application-specific payload delivered to the specialist? | `SpecialistInvocationPort` implementation — **not** lifecycle authority |
+
+**Hard rule:** **DISCOVERY ≠ MATCHING ≠ SELECTION ≠ ACQUISITION ≠ EXECUTION**. Each stage has a single authority; no stage may substitute for another.
 
 ### 35.4 Primary AC-4 pipeline (Diagram 1)
 
@@ -1938,33 +1945,40 @@ Side boundary:
 ProductionProcessComposition
 ├── ProductionAgentPlatformRuntime
 │   ├── canonical AC-3 stores (single universe)
-│   └── lifecycle authority (AgentPlatformAdminService)
+│   ├── effective roster authority
+│   └── lifecycle / serving authority
 │
 └── ProductionAgentCapabilityRuntime
+    ├── AgentPlatformAdminService
     ├── DynamicAgentAcquisitionService
     ├── TaskScopedAgentService
-    ├── lease store (TaskScopedAgentLeaseStore)
-    ├── discovery (AgentDiscoveryStrategy)
-    ├── matcher (CapabilityMatcher)
-    ├── selector (AgentSelectionStrategy)
-    ├── task scope authority (ActiveExecutionTaskScopePort)
+    ├── TaskScopedAgentLeaseStore
+    ├── ActiveExecutionTaskScopePort
+    ├── AgentDiscoveryStrategy
+    ├── CapabilityMatcher
+    ├── AgentSelectionStrategy
     ├── acquisition plan factory
     └── release plan factory
 
-DelegatedSubtaskServiceFactory → runtime + application plugin boundaries
+DelegatedSubtaskServiceFactory uses:
+  ProductionAgentCapabilityRuntime
+  + AgentCapabilityApplicationComposition
+  + SpecialistInvocationPort
 ```
 
 **Critical invariant:** `ProductionAgentCapabilityRuntime` is constructed from the **same** `ProductionAgentPlatformRuntime`. No second stores. No second lifecycle.
 
-### 35.11 Discovery ≠ Matching ≠ Selection (normative)
+### 35.11 Discovery ≠ Matching ≠ Selection ≠ Acquisition ≠ Execution (normative)
 
 | Stage | Returns | MUST NOT |
 |-------|---------|----------|
 | **Discovery** | `AgentDiscoveryCandidate` set | Select winner; install; mutate lifecycle |
 | **Matching** | Eligible subset (`CapabilityMatchResult`) | Install; resolve marketplace remotely |
 | **Selection** | One `AgentDiscoveryCandidateIdentity` or explicit no-eligible | Rediscover; bypass trust; install |
+| **Acquisition** | ACTIVE specialist via canonical AC-3 lifecycle | Fuzzy rediscovery; substitute selected identity |
+| **Execution** | Delegated child result / specialist work outcome | Install; mutate lifecycle stores; bypass task scope |
 
-**Prohibited:** discovery selecting winner; matcher performing install; selector resolving marketplace remotely; running agent selecting package and installing it directly.
+**Prohibited:** discovery selecting winner; matcher performing install; selector resolving marketplace remotely; acquisition substituting a different package; running agent selecting package and installing it directly.
 
 ### 35.12 Federated discovery
 
@@ -2002,6 +2016,30 @@ selected AgentDiscoveryCandidateIdentity
 ```
 
 No fuzzy rediscovery. No package switching after selection. Activation failure leaves desired state updated with explicit `DESIRED_STATE_UPDATED_ACTIVATION_FAILED` outcome; prior **N** continues serving per AC-3 zero-downtime rules (§20).
+
+### 35.14a AC-3 handoff (freeze)
+
+AC-4 does **not** create a second activation system. Handoff after selection:
+
+```text
+selected AgentDiscoveryCandidateIdentity
+  → DynamicAgentAcquisitionService
+  → AgentPlatformAdminService / canonical lifecycle
+  → RuntimeRevision
+  → RegistryProjection
+  → ACTIVE serving authority
+```
+
+Discovery and selection **cannot** bypass trust. AC-3 remains sole lifecycle authority — cross-link [§20](#20-activation-and-rollback-model); do not restate full lifecycle here.
+
+### 35.14b N / N+1 safety (dynamic acquisition)
+
+Dynamic specialist acquisition respects existing AC-3 activation semantics (§20):
+
+- **N** continues serving while **N+1** is prepared.
+- **READY** does not change serving authority.
+- **COMMIT** changes serving authority.
+- Failed **N+1** preparation leaves **N** active.
 
 ### 35.15 Task-scoped ownership (Phase 7)
 
@@ -2064,7 +2102,7 @@ Shared `ProductionProcessComposition` remains application-neutral.
 | `TaskScopedAgentLeaseStore` | YES | `InMemoryTaskScopedAgentLeaseStore` |
 | `ActiveExecutionTaskScopePort` | YES | `ActiveTaskRegistryTaskScopeResolver` |
 | `SpecialistInvocationPort` | YES | Application-specific (E2E: OCR specialist) |
-| Trust record factory | YES | `ProductionDelegatedSubtaskAcquisitionPlanFactory` |
+| `DelegatedSubtaskTrustRecordFactory` | YES | `ProductionDelegatedSubtaskAcquisitionPlanFactory` |
 | Materialization service | YES | `RuntimeMaterializationService` + adapters |
 | Dependency resolver | YES | `DependencyResolver` port |
 
@@ -2094,9 +2132,12 @@ Shared `ProductionProcessComposition` remains application-neutral.
 | Restart recovery | **NO** for these reference stores |
 | Multi-instance | **NO** |
 | Distributed lease authority | **NO** |
-| Remote marketplace | **NO** |
-| Universal specialist invocation | **NO** |
+| Remote marketplace backend | **NO** |
+| Commercial publisher ecosystem | **NO** |
+| Billing | **NO** |
+| Generic universal `SpecialistInvocationPort` adapter | **NO** |
 | Typed `SpecialistInvocationPort` | **YES** |
+| Plugin-replaceable production boundaries | **YES** |
 | Durable adapters | Future replaceable implementations |
 
 ### 35.23 AC-4 proven in Reference Production V1
@@ -2108,6 +2149,7 @@ Shared `ProductionProcessComposition` remains application-neutral.
 - Task-scoped lease acquire/release
 - Delegated child execution with lineage
 - Persistent binding preservation (`PRE_EXISTING`) and task isolation (`TASK_CREATED`)
+- Cross-task scope rejection (fail before discovery)
 - Source/provider coherence end-to-end
 
 ### 35.24 What is NOT claimed
@@ -2139,7 +2181,7 @@ Shared `ProductionProcessComposition` remains application-neutral.
 
 ### 35.26 AC-4 Architecture Freeze (normative rules)
 
-1. Discovery ≠ Matching ≠ Selection.
+1. Discovery ≠ Matching ≠ Selection ≠ Acquisition ≠ Execution.
 2. Candidate identity is source-qualified (`AgentDiscoveryCandidateIdentity`).
 3. Selected identity cannot be fuzzily rediscovered.
 4. Platform owns acquisition — not the running agent.

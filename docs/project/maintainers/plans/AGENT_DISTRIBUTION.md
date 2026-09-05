@@ -308,7 +308,7 @@ read models, and enable/disable that never mutate the serving RuntimeRevision.
 ## AGENT-CONSOLIDATION-4 — Dynamic Capability Discovery & Acquisition
 
 **Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md` §35](../../architecture/AGENT_DISTRIBUTION.md#35-ac-4-dynamic-capability-discovery--acquisition-architecture-freeze)
-**Status:** Phases 1–9 **CLOSED** · Phase 10 documentation freeze **COMPLETE**
+**Status:** Phases 1–9 **CLOSED** · Phase 10 **READY_FOR_INDEPENDENT_AUDIT**
 **AC-4 closure:** **READY_FOR_FINAL_AUDIT** — independent audit required after Phase 10 commit; **AC-4 NOT CLOSED** until audit completes.
 
 ### Phase delivery record
@@ -324,7 +324,7 @@ read models, and enable/disable that never mutate the serving RuntimeRevision.
 | **7** | Task-scoped lease ownership | `task_scoped_agents.py` | **CLOSED** |
 | **8** | Delegated subtask orchestration + child execution | `delegated_subtasks.py`, `active_execution_task_scope.py`, `active_task_registry.py`, `delegated_subtask_child_port.py` | **CLOSED** |
 | **9** | Production composition wiring | `production_agent_capability_runtime.py`, `production_process_composition.py`, `production_delegated_subtask_plans.py`, `catalog_discovery.py` | **CLOSED** |
-| **10** | Architecture documentation freeze | `architecture/AGENT_DISTRIBUTION.md` §35, this section | **COMPLETE** |
+| **10** | Architecture documentation freeze | `architecture/AGENT_DISTRIBUTION.md` §35, this section | **READY_FOR_INDEPENDENT_AUDIT** |
 
 ### AC-4 gate summary
 
