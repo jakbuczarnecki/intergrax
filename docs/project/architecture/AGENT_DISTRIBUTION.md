@@ -720,6 +720,24 @@ revocation_checked_at
 org_policy_decision_ref                 # optional
 ```
 
+### 10.4 Cryptographic package attestation (AC-6 Phase 2)
+
+Cryptographic verification and trust policy are **separate authorities**:
+
+```text
+artifact digest
+  → AgentPackageAttestationVerifier (offline Ed25519)
+  → QualificationEvidence[SIGNATURE_VERIFICATION] via platform adapter
+  → AgentPackageTrustCoordinator (sole ALLOW/DENY authority)
+  → installation admission
+```
+
+- **Verifier scope:** proves signature validity over a canonical `AgentPackageAttestationStatement` binding `schema_id`, `distribution_package_id`, `package_version`, `package_digest`, `publisher_id`, and `key_id`. Digest mismatch or publisher mismatch fails verification before trust evaluation.
+- **Trust scope:** policy, revocation, required evidence kinds, qualification status. A cryptographically valid signature may still be **DENY** (revoked digest, denied publisher, missing other evidence).
+- **Evidence authority:** production `SIGNATURE_VERIFICATION` evidence MUST be emitted via `qualification_evidence_from_attestation_verification()` after verifier success. `AgentPackageTrustCoordinator` rejects caller-asserted signature evidence lacking the platform `attestation_verified` code and structured `agent_package_attestation:` ref with digest binding.
+- **Algorithm (V1):** `ED25519` only. Keys resolved via injected `AgentPublisherVerificationKeyProvider` or explicit pinned public key bytes — no network fetch in core verification.
+- **Non-claims (Phase 2):** Sigstore/cosign, X.509 chains, transparency logs, and key-trust registries are out of scope. Key/publisher trust remains policy/config responsibility upstream of verification.
+
 ---
 
 ## 11. Installation model

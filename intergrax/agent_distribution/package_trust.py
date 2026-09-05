@@ -14,6 +14,9 @@ from intergrax.agent_distribution.identity import (
     AgentPackageCandidate,
     AgentPackageIdentity,
 )
+from intergrax.agent_distribution.package_attestation import (
+    is_verified_signature_qualification_evidence,
+)
 from intergrax.agent_distribution.trust import (
     AgentDeliverySource,
     AgentInstallationTrustRecord,
@@ -325,6 +328,20 @@ class AgentPackageTrustCoordinator:
                 reason="qualification evidence digest does not match package digest",
             )
 
+        signature_validation = self._validate_signature_verification_evidence(
+            qualification.evidence,
+            required_kinds=policy.required_evidence_kinds,
+            package_digest=digest,
+            package_identity=package_identity,
+            publisher=publisher,
+            catalog_source_id=source_id,
+            delivery_source=delivery_source,
+            policy=policy,
+            qualification=qualification,
+        )
+        if signature_validation is not None:
+            return signature_validation
+
         trust_evidence_refs = self._build_evidence_refs(
             qualification.evidence,
             evidence_id=evidence_id,
@@ -500,6 +517,42 @@ class AgentPackageTrustCoordinator:
                     "qualification evidence is revoked at install admission",
                     reason_code=AgentPackageTrustReasonCode.EVIDENCE_REVOKED.value,
                 )
+
+    def _validate_signature_verification_evidence(
+        self,
+        evidence: tuple[QualificationEvidence[AgentQualificationEvidenceKind], ...],
+        *,
+        required_kinds: frozenset[AgentQualificationEvidenceKind],
+        package_digest: str,
+        package_identity: AgentPackageIdentity,
+        publisher: AgentPublisherIdentity,
+        catalog_source_id: str,
+        delivery_source: AgentDeliverySource,
+        policy: AgentPackageTrustPolicy,
+        qualification: AgentPackageQualificationResult,
+    ) -> AgentPackageTrustDecision | None:
+        del required_kinds
+        for item in evidence:
+            if item.kind is not AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION:
+                continue
+            if not is_verified_signature_qualification_evidence(
+                item,
+                expected_package_digest=package_digest,
+            ):
+                return self._deny(
+                    package_identity=package_identity,
+                    publisher=publisher,
+                    catalog_source_id=catalog_source_id,
+                    delivery_source=delivery_source,
+                    policy=policy,
+                    qualification=qualification,
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE,
+                    reason=(
+                        "signature verification evidence lacks platform-verified "
+                        "attestation provenance"
+                    ),
+                )
+        return None
 
     @staticmethod
     def _build_evidence_refs(

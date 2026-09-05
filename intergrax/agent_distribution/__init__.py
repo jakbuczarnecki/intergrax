@@ -260,6 +260,17 @@ from intergrax.agent_distribution.package_trust import (
     AgentPackageTrustCoordinator,
     assert_installation_trust_record_acceptable,
 )
+from intergrax.agent_distribution.package_attestation import (
+    AgentPackageAttestationAlgorithm,
+    AgentPackageAttestationVerificationRequest,
+    AgentPackageAttestationVerificationResult,
+    AgentPackageAttestationVerifier,
+    AgentPublisherVerificationKeyProvider,
+    qualification_evidence_from_attestation_verification,
+)
+from intergrax.agent_distribution.ed25519_package_attestation_verifier import (
+    Ed25519PackageAttestationVerifier,
+)
 from intergrax.agent_distribution.activation import (
     ActivationCommitResult,
     ActivationService,
@@ -452,6 +463,10 @@ __all__ = [
     "AgentPackageCandidate",
     "AgentPackageIdentity",
     "AgentPackageQualificationResult",
+    "AgentPackageAttestationAlgorithm",
+    "AgentPackageAttestationVerificationRequest",
+    "AgentPackageAttestationVerificationResult",
+    "AgentPackageAttestationVerifier",
     "AgentPackageTrustCoordinator",
     "AgentPackageTrustDecision",
     "AgentPackageTrustError",
@@ -461,6 +476,7 @@ __all__ = [
     "AgentPackageTrustReasonCode",
     "AgentPackageTrustRevocationState",
     "AgentPublisherIdentity",
+    "AgentPublisherVerificationKeyProvider",
     "AgentQualificationEvidenceKind",
     "AgentTrustEvidenceRef",
     "ApplicationAgentBinding",
@@ -471,7 +487,7 @@ __all__ = [
     "ArtifactRevalidationHook",
     "AgentContractMetadataParityError",
     "AgentContractMetadataParityMismatch",
-    "PackageAgentCapabilityMetadataProvider",
+    "qualification_evidence_from_attestation_verification",
     "BindingLifecycleError",
     "BindingRevisionConflict",
     "BindingService",
@@ -492,7 +508,7 @@ __all__ = [
     "AcquisitionMode",
     "AgentPlatformLifecyclePort",
     "CatalogSourceProviderRegistry",
-    "DynamicAgentAcquisitionActivationError",
+    "Ed25519PackageAttestationVerifier",
     "DynamicAgentAcquisitionContractError",
     "DynamicAgentAcquisitionError",
     "DynamicAgentAcquisitionInstallIntent",

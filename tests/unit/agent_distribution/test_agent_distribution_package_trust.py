@@ -41,6 +41,9 @@ from intergrax.agent_distribution.trust import (
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
 )
+from testing_support.agent_package_attestation import (
+    verified_signature_qualification_evidence,
+)
 
 _DIGEST_A = "sha256:" + ("a" * 64)
 _DIGEST_B = "sha256:" + ("b" * 64)
@@ -111,10 +114,9 @@ def _qualification(
         publisher=publisher,
         status=status,
         evidence=(
-            QualificationEvidence(
-                kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
-                code="signature_ok",
-                ref="sig-ref",
+            verified_signature_qualification_evidence(
+                package_identity=_PACKAGE,
+                publisher_id=publisher.publisher_id,
             ),
             QualificationEvidence(
                 kind=AgentQualificationEvidenceKind.REVOCATION_CHECK,
