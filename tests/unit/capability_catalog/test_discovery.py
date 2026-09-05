@@ -244,6 +244,19 @@ def test_snapshot_entry_order_independent_of_input_order() -> None:
     )
 
 
+def test_conflicting_availability_evidence_fails_before_discovery() -> None:
+    entry = _entry(logical_id="tools.conflicted")
+    key = _identity_key(entry)
+    snapshot = _snapshot(entry)
+    query = CapabilityDiscoveryQuery(scope=_enterprise_scope())
+    with pytest.raises(ValidationError, match="host_available_keys and blocked_keys"):
+        evidence = CapabilityDiscoveryAvailabilityEvidence(
+            host_available_keys=(key,),
+            blocked_keys=(key,),
+        )
+        discover_capability_candidates(snapshot, query, availability_evidence=evidence)
+
+
 def test_enterprise_scope_requires_scope_visible_evidence() -> None:
     snapshot = _snapshot(_entry())
     query = CapabilityDiscoveryQuery(scope=_enterprise_scope())

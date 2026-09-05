@@ -30,7 +30,7 @@ class CapabilityDiscoveryAvailabilityEvidence(BaseModel):
     scope_visible_keys: tuple[CapabilityIdentityKey, ...] | None = None
 
     @model_validator(mode="after")
-    def _validate_unique_keys_per_evidence_list(
+    def _validate_evidence_consistency(
         self,
     ) -> CapabilityDiscoveryAvailabilityEvidence:
         for label, keys in (
@@ -47,4 +47,18 @@ class CapabilityDiscoveryAvailabilityEvidence(BaseModel):
                         f"{label} must not repeat the same identity key",
                     )
                 seen.add(sort_key)
+
+        host_keys = {key.sort_key for key in self.host_available_keys}
+        blocked_keys = {key.sort_key for key in self.blocked_keys}
+        unavailable_keys = {key.sort_key for key in self.unavailable_keys}
+        for left_label, right_label, left, right in (
+            ("host_available_keys", "blocked_keys", host_keys, blocked_keys),
+            ("host_available_keys", "unavailable_keys", host_keys, unavailable_keys),
+            ("blocked_keys", "unavailable_keys", blocked_keys, unavailable_keys),
+        ):
+            if left & right:
+                raise ValueError(
+                    f"{left_label} and {right_label} must not contain "
+                    "the same identity key",
+                )
         return self

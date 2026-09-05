@@ -176,6 +176,85 @@ def test_availability_evidence_rejects_duplicate_identity_keys() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("evidence_kwargs",),
+    [
+        ({"host_available_keys": (_identity_key(),)},),
+        ({"blocked_keys": (_identity_key(),)},),
+        ({"unavailable_keys": (_identity_key(),)},),
+        (
+            {
+                "scope_visible_keys": (_identity_key(),),
+                "host_available_keys": (_identity_key(),),
+            },
+        ),
+        (
+            {
+                "scope_visible_keys": (_identity_key(),),
+                "blocked_keys": (_identity_key(),),
+            },
+        ),
+        (
+            {
+                "scope_visible_keys": (_identity_key(),),
+                "unavailable_keys": (_identity_key(),),
+            },
+        ),
+    ],
+)
+def test_availability_evidence_accepts_legal_disposition_combinations(
+    evidence_kwargs: dict[str, object],
+) -> None:
+    evidence = CapabilityDiscoveryAvailabilityEvidence(**evidence_kwargs)
+    assert evidence.schema_version == "capability_discovery_availability_evidence.v1"
+
+
+def test_availability_evidence_accepts_distinct_identities_across_dispositions() -> None:
+    host = _identity_key(logical_id="tools.host")
+    blocked = _identity_key(logical_id="tools.blocked")
+    unavailable = _identity_key(logical_id="tools.unavailable")
+    evidence = CapabilityDiscoveryAvailabilityEvidence(
+        host_available_keys=(host,),
+        blocked_keys=(blocked,),
+        unavailable_keys=(unavailable,),
+    )
+    assert evidence.host_available_keys == (host,)
+    assert evidence.blocked_keys == (blocked,)
+    assert evidence.unavailable_keys == (unavailable,)
+
+
+@pytest.mark.parametrize(
+    ("left_field", "right_field"),
+    [
+        ("host_available_keys", "blocked_keys"),
+        ("host_available_keys", "unavailable_keys"),
+        ("blocked_keys", "unavailable_keys"),
+    ],
+)
+def test_availability_evidence_rejects_conflicting_disposition_pairs(
+    left_field: str,
+    right_field: str,
+) -> None:
+    key = _identity_key()
+    with pytest.raises(
+        ValidationError,
+        match=f"{left_field} and {right_field} must not contain the same identity key",
+    ):
+        CapabilityDiscoveryAvailabilityEvidence(
+            **{left_field: (key,), right_field: (key,)},
+        )
+
+
+def test_availability_evidence_rejects_triple_disposition_conflict() -> None:
+    key = _identity_key()
+    with pytest.raises(ValidationError, match="must not contain the same identity key"):
+        CapabilityDiscoveryAvailabilityEvidence(
+            host_available_keys=(key,),
+            blocked_keys=(key,),
+            unavailable_keys=(key,),
+        )
+
+
 def test_availability_constraints_deduplicated() -> None:
     query = CapabilityDiscoveryQuery(
         scope=_enterprise_scope(),
