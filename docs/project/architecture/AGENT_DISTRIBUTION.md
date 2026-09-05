@@ -1399,6 +1399,39 @@ AgentRegistry != Lifecycle Manager
 
 AP-10 implements the projection mechanism; AP-9 architecture **requires** this atomic relationship.
 
+### Canonical production factory invocation (AC-5, frozen)
+
+Production agent materialization during registry projection follows one revision-bound chain. AC-3 owns lifecycle; AC-5 owns factory resolution and invocation only after a validated `RuntimeRevision` exists.
+
+```text
+RuntimeRevision
+  + EffectiveRosterEntry.package_digest
+  + AgentBindingFactoryReference
+        ↓
+RuntimeAgentFactoryResolver          (sole replaceable resolution boundary)
+        ↓
+CanonicalAgentFactory                (plugin implementations; strict contract)
+        ↓
+invoke_canonical_agent_factory     (exactly (ctx, binding) → Agent)
+        ↓
+registry assembly / RegistryProjection
+        ↓
+AgentRegistry (derived projection; not factory authority)
+```
+
+| Invariant | Detail |
+|-----------|--------|
+| Revision authority | `package_digest` MUST be listed on `RuntimeRevision.installed_agent_package_digests`; resolver catalog knowledge ≠ revision authority |
+| Factory reference | Exact `(builder_key \| factory_path)` match; no fuzzy match, no manifest-local callable override |
+| Strict invocation | Production never probes signatures; internal `TypeError` is a real factory failure |
+| No bypass | Revision-bound path forbids `builders` map, `factory_path` direct import, constructor fallback |
+| Dev/lab isolation | `build_manifest_development_registry` / `invoke_legacy_compatible_agent_factory` remain explicit non-production only |
+| Topology | `VENV_BUNDLE` in-process resolver implemented; `OCI_IMAGE` / `SANDBOX_SIDECAR` deferred |
+
+AC-4 dynamic acquisition enters the same AC-5 path once lifecycle reaches canonical `RuntimeRevision` (see §35).
+
+Evidence: `tests/unit/applications/test_ac5_phase3_factory_e2e.py`, `test_production_factory_invocation_ac5.py`.
+
 Registry snapshots (`registry_snapshot_store`) SHOULD include `effective_roster_revision_id`, `runtime_revision_id`, `traffic_serving_revision_id`, and installation/binding ids for audit - not as install DB.
 
 <a id="protocol-v2-agent-system-identity-projection-invariants-2026-08-18"></a>
