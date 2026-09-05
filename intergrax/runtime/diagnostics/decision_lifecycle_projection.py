@@ -120,17 +120,9 @@ def project_decision_lifecycle_snapshot(
     evidence_event_ids: list[EventId] = []
     started_seen = False
     expected_next_transition_index = 1
+    outcome_phase_max_order_at_current_index = 0
 
-    ordered = sorted(
-        parsed_events,
-        key=lambda item: (
-            item.payload.transition_index,
-            _PHASE_ORDER[DecisionLifecycleSignalPhase(item.payload.phase)],
-            str(item.event_id),
-        ),
-    )
-
-    for evidence in ordered:
+    for evidence in parsed_events:
         payload = evidence.payload
         if evidence.event_id in seen_event_ids:
             if seen_event_ids[evidence.event_id] != payload:
@@ -190,17 +182,27 @@ def project_decision_lifecycle_snapshot(
             current_stage = to_stage
             transition_count = payload.transition_index
             expected_next_transition_index = payload.transition_index + 1
+            outcome_phase_max_order_at_current_index = 0
             evidence_event_ids.append(evidence.event_id)
             continue
+
+        if phase in _OUTCOME_PHASES:
+            if payload.transition_index != transition_count:
+                raise DecisionLifecycleReconstructionError(
+                    f"{phase.value} signal transition_index does not match "
+                    "reconstructed count",
+                )
+            phase_order = _PHASE_ORDER[phase]
+            if phase_order <= outcome_phase_max_order_at_current_index:
+                raise DecisionLifecycleReconstructionError(
+                    "lifecycle evidence outcome phase reorder detected",
+                )
+            outcome_phase_max_order_at_current_index = phase_order
 
         if phase is DecisionLifecycleSignalPhase.RESOLVED:
             if payload.resolution_outcome is None:
                 raise DecisionLifecycleReconstructionError(
                     "resolved signal missing resolution_outcome",
-                )
-            if payload.transition_index != transition_count:
-                raise DecisionLifecycleReconstructionError(
-                    "resolved signal transition_index does not match reconstructed count",
                 )
             resolution_outcome = DecisionResolution(payload.resolution_outcome)
             evidence_event_ids.append(evidence.event_id)
@@ -210,10 +212,6 @@ def project_decision_lifecycle_snapshot(
             if payload.finalization_disposition is None:
                 raise DecisionLifecycleReconstructionError(
                     "finalized signal missing finalization_disposition",
-                )
-            if payload.transition_index != transition_count:
-                raise DecisionLifecycleReconstructionError(
-                    "finalized signal transition_index does not match reconstructed count",
                 )
             finalization_disposition = DecisionDurableFinalizationDisposition(
                 payload.finalization_disposition,
@@ -225,10 +223,6 @@ def project_decision_lifecycle_snapshot(
             if current_stage is not DecisionLifecycleStage.TERMINAL:
                 raise DecisionLifecycleReconstructionError(
                     "terminal signal requires reconstructed stage terminal",
-                )
-            if payload.transition_index != transition_count:
-                raise DecisionLifecycleReconstructionError(
-                    "terminal signal transition_index does not match reconstructed count",
                 )
             terminal = True
             evidence_event_ids.append(evidence.event_id)
@@ -263,3 +257,11 @@ _PHASE_ORDER: dict[DecisionLifecycleSignalPhase, int] = {
     DecisionLifecycleSignalPhase.FINALIZED: 3,
     DecisionLifecycleSignalPhase.TERMINAL: 4,
 }
+
+_OUTCOME_PHASES: frozenset[DecisionLifecycleSignalPhase] = frozenset(
+    {
+        DecisionLifecycleSignalPhase.RESOLVED,
+        DecisionLifecycleSignalPhase.FINALIZED,
+        DecisionLifecycleSignalPhase.TERMINAL,
+    },
+)

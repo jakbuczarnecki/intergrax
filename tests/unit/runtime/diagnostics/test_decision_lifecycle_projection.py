@@ -35,6 +35,7 @@ from intergrax.contracts.decision_resolution import (
 )
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
+    mint_event_id,
     mint_execution_id,
     mint_run_id,
     mint_task_id,
@@ -319,6 +320,94 @@ def test_gap_fails_closed_proof_g() -> None:
     ]
     with pytest.raises(DecisionLifecycleReconstructionError):
         project_decision_lifecycle_snapshot(tuple(list_events))
+
+
+def _transition_event(events: tuple[RuntimeEvent, ...], transition_index: int) -> RuntimeEvent:
+    for event in events:
+        data = event.payload.get("data")
+        if type(data) is dict and data.get("phase") == "transitioned":
+            if data.get("transition_index") == transition_index:
+                return event
+    raise ValueError(f"transition_index {transition_index} not found")
+
+
+def test_out_of_order_transition_fails_closed() -> None:
+    identity = _identity()
+    _, events = _record_normal_lifecycle(identity)
+    list_events = list(events)
+    index_one = list_events.index(_transition_event(events, 1))
+    index_two = list_events.index(_transition_event(events, 2))
+    list_events[index_one], list_events[index_two] = (
+        list_events[index_two],
+        list_events[index_one],
+    )
+    with pytest.raises(DecisionLifecycleReconstructionError):
+        project_decision_lifecycle_snapshot(tuple(list_events))
+
+
+def test_backwards_transition_index_fails_closed() -> None:
+    identity = _identity()
+    _, events = _record_normal_lifecycle(identity)
+    list_events = list(events)
+    transition_two = _transition_event(events, 2)
+    backwards_transition = RuntimeEvent.model_validate(
+        {
+            **transition_two.model_dump(mode="json"),
+            "event_id": mint_event_id(),
+        },
+    )
+    transition_three_index = list_events.index(_transition_event(events, 3))
+    list_events.insert(transition_three_index + 1, backwards_transition)
+    with pytest.raises(DecisionLifecycleReconstructionError):
+        project_decision_lifecycle_snapshot(tuple(list_events))
+
+
+def test_non_transition_phase_order_fails_closed() -> None:
+    identity = _identity()
+    _, events = _record_normal_lifecycle(identity)
+    list_events = list(events)
+    resolved_index = None
+    finalized_index = None
+    for index, event in enumerate(list_events):
+        data = event.payload.get("data")
+        if type(data) is not dict:
+            continue
+        if data.get("phase") == "resolved":
+            resolved_index = index
+        if data.get("phase") == "finalized":
+            finalized_index = index
+    assert resolved_index is not None
+    assert finalized_index is not None
+    resolved_event = list_events[resolved_index]
+    finalized_event = list_events[finalized_index]
+    resolved_data = resolved_event.payload.get("data")
+    assert type(resolved_data) is dict
+    aligned_index = resolved_data["transition_index"]
+    finalized_payload = dict(finalized_event.payload)
+    finalized_data = dict(finalized_payload["data"])
+    finalized_data["transition_index"] = aligned_index
+    finalized_payload["data"] = finalized_data
+    finalized_at_resolved_index = RuntimeEvent.model_validate(
+        {
+            **finalized_event.model_dump(mode="json"),
+            "payload": finalized_payload,
+        },
+    )
+    middle_tail = [
+        event
+        for index, event in enumerate(list_events)
+        if index > resolved_index and index != finalized_index
+    ]
+    reordered = (
+        list_events[:resolved_index]
+        + [finalized_at_resolved_index, resolved_event]
+        + middle_tail
+    )
+    with pytest.raises(
+        DecisionLifecycleReconstructionError,
+        match="outcome phase reorder",
+    ):
+        project_decision_lifecycle_snapshot(tuple(reordered))
 
 
 def test_duplicate_event_id_is_idempotent() -> None:
