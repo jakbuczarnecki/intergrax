@@ -210,6 +210,62 @@ def qualify_live_scenario(
     )
 
 
+def qualify_cross_scenario_dual(
+    *,
+    scenario_a: ScenarioExecutionEvidence,
+    scenario_b: ScenarioExecutionEvidence,
+    reason: str | None = None,
+) -> DecisionE2EQualificationResult:
+    """DS-E2E-13 fail-closed constructor for two live Decision scenario executions."""
+    proof_id = DecisionE2EProofId.DS_E2E_13
+    for label, scenario_evidence in (
+        ("scenario_a", scenario_a),
+        ("scenario_b", scenario_b),
+    ):
+        if not scenario_evidence.executed:
+            return _blocked(
+                proof_id,
+                f"{label}: {scenario_evidence.block_reason or 'live execution missing'}",
+            )
+        if scenario_evidence.decision_path_exercised is False:
+            return _blocked(
+                proof_id,
+                f"{label}: canonical Decision runtime path not exercised",
+            )
+        if scenario_evidence.used_mock_provider:
+            return _blocked(
+                proof_id,
+                f"{label}: production qualification requires real provider path",
+            )
+        if not scenario_evidence.runtime_modules:
+            return _blocked(
+                proof_id,
+                f"{label}: canonical Decision runtime module evidence missing",
+            )
+
+    if scenario_a.scenario_id == scenario_b.scenario_id:
+        return _blocked(
+            proof_id,
+            "Cross-scenario qualification requires distinct scenario identities",
+        )
+    if scenario_a.runtime_modules != scenario_b.runtime_modules:
+        return _blocked(
+            proof_id,
+            "Both scenarios must exercise the same canonical Decision runtime modules",
+        )
+
+    merged = (
+        scenario_execution_evidence_ref(scenario_a),
+        scenario_execution_evidence_ref(scenario_b),
+    )
+    return DecisionE2EQualificationResult(
+        proof_id=proof_id,
+        disposition=QualificationDisposition.PASSED,
+        evidence=merged,
+        reason=reason,
+    )
+
+
 def validate_qualification_result(
     result: DecisionE2EQualificationResult,
 ) -> DecisionE2EQualificationResult:

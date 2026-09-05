@@ -26,6 +26,33 @@ class DecisionE2EProofId(StrEnum):
     DS_E2E_13 = "DS-E2E-13"
 
 
+EXPECTED_DECISION_E2E_PROOFS = frozenset(DecisionE2EProofId)
+
+
+@dataclass(frozen=True, slots=True)
+class QualificationCompleteness:
+    """Exact DS-E2E proof-set completeness assessment."""
+
+    expected: frozenset[DecisionE2EProofId]
+    actual: frozenset[DecisionE2EProofId]
+
+    @property
+    def missing(self) -> frozenset[DecisionE2EProofId]:
+        return self.expected - self.actual
+
+    @property
+    def unexpected(self) -> frozenset[DecisionE2EProofId]:
+        return self.actual - self.expected
+
+    @property
+    def complete(self) -> bool:
+        return (
+            not self.missing
+            and not self.unexpected
+            and len(self.actual) == len(self.expected)
+        )
+
+
 class QualificationDisposition(StrEnum):
     """Machine-verifiable qualification outcome."""
 

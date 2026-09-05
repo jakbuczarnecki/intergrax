@@ -6,22 +6,24 @@ from __future__ import annotations
 
 import pytest
 
+from testing_support.decision_e2e.bindings import ProviderBindingEvidence
 from testing_support.decision_e2e.contracts import (
     DecisionE2EProofId,
     DecisionE2EQualificationResult,
     QualificationDisposition,
 )
-from testing_support.decision_e2e.bindings import ProviderBindingEvidence
 from testing_support.decision_e2e.evidence import scenario_execution_evidence_ref
 from testing_support.decision_e2e.qualification_evidence import (
     DockerCrashEvidence,
     ScenarioExecutionEvidence,
 )
 from testing_support.decision_e2e.reporting import (
+    QualificationReport,
     QualificationReportCollector,
     validate_qualification_result,
 )
 from testing_support.decision_e2e.requirements import (
+    qualify_cross_scenario_dual,
     qualify_docker_crash_resume,
     qualify_independent_verifier,
     qualify_live_scenario,
@@ -119,6 +121,131 @@ def test_false_passed_construction_still_blocked_for_ds_e2e_02() -> None:
         ),
     )
     assert blocked.disposition is QualificationDisposition.BLOCKED
+
+
+from testing_support.decision_e2e.scenario_qualification import CANONICAL_DECISION_RUNTIME_MODULES
+
+
+def _scenario_evidence(
+    scenario_id: str,
+    *,
+    executed: bool = True,
+) -> ScenarioExecutionEvidence:
+    return ScenarioExecutionEvidence(
+        scenario_id=scenario_id,
+        invocation="uv run python ...",
+        provider="ollama",
+        model="llama3.1:8b",
+        executed=executed,
+        decision_path_exercised=True,
+        used_mock_provider=False,
+        outcome="RESOLVED",
+        runtime_modules=CANONICAL_DECISION_RUNTIME_MODULES,
+    )
+
+
+def _passed_row(proof_id: DecisionE2EProofId) -> DecisionE2EQualificationResult:
+    return DecisionE2EQualificationResult(
+        proof_id=proof_id,
+        disposition=QualificationDisposition.PASSED,
+        evidence=(),
+    )
+
+
+def test_enterprise_closed_false_for_empty_report() -> None:
+    report = QualificationReport(
+        git_sha="test",
+        timestamp="now",
+        environment_profile="test",
+        results=(),
+    )
+    assert report.enterprise_closed() is False
+
+
+def test_enterprise_closed_false_for_subset_all_passed() -> None:
+    report = QualificationReport(
+        git_sha="test",
+        timestamp="now",
+        environment_profile="test",
+        results=(_passed_row(DecisionE2EProofId.DS_E2E_01),),
+    )
+    assert report.enterprise_closed() is False
+
+
+def test_enterprise_closed_false_for_twelve_of_thirteen_passed() -> None:
+    rows = tuple(_passed_row(proof_id) for proof_id in list(DecisionE2EProofId)[:12])
+    report = QualificationReport(
+        git_sha="test",
+        timestamp="now",
+        environment_profile="test",
+        results=rows,
+    )
+    assert report.enterprise_closed() is False
+
+
+def test_enterprise_closed_false_when_thirteen_passed_with_blocked() -> None:
+    rows = tuple(_passed_row(proof_id) for proof_id in list(DecisionE2EProofId)[:12])
+    rows = rows + (
+        DecisionE2EQualificationResult(
+            proof_id=DecisionE2EProofId.DS_E2E_13,
+            disposition=QualificationDisposition.BLOCKED,
+            evidence=(),
+        ),
+    )
+    report = QualificationReport(
+        git_sha="test",
+        timestamp="now",
+        environment_profile="test",
+        results=rows,
+    )
+    assert report.enterprise_closed() is False
+
+
+def test_enterprise_closed_false_when_thirteen_passed_with_failed() -> None:
+    rows = tuple(_passed_row(proof_id) for proof_id in list(DecisionE2EProofId)[:12])
+    rows = rows + (
+        DecisionE2EQualificationResult(
+            proof_id=DecisionE2EProofId.DS_E2E_13,
+            disposition=QualificationDisposition.FAILED,
+            evidence=(),
+        ),
+    )
+    report = QualificationReport(
+        git_sha="test",
+        timestamp="now",
+        environment_profile="test",
+        results=rows,
+    )
+    assert report.enterprise_closed() is False
+
+
+def test_enterprise_closed_true_for_exact_thirteen_passed() -> None:
+    rows = tuple(_passed_row(proof_id) for proof_id in DecisionE2EProofId)
+    report = QualificationReport(
+        git_sha="test",
+        timestamp="now",
+        environment_profile="test",
+        results=rows,
+    )
+    assert report.enterprise_closed() is True
+
+
+def test_qualify_cross_scenario_dual_requires_two_distinct_scenarios() -> None:
+    evidence = _scenario_evidence("ai_incident_investigation:resolved")
+    blocked = qualify_cross_scenario_dual(
+        scenario_a=evidence,
+        scenario_b=evidence,
+    )
+    assert blocked.disposition is QualificationDisposition.BLOCKED
+
+
+def test_qualify_cross_scenario_dual_passes_with_two_live_scenarios() -> None:
+    passed = qualify_cross_scenario_dual(
+        scenario_a=_scenario_evidence("ai_incident_investigation:resolved"),
+        scenario_b=_scenario_evidence("ai_incident_investigation:unresolved"),
+    )
+    assert passed.disposition is QualificationDisposition.PASSED
+    assert len([item for item in passed.evidence if item.kind == "scenario_execution"]) == 2
 
 
 def test_qualification_report_rejects_duplicate_proof_ids() -> None:

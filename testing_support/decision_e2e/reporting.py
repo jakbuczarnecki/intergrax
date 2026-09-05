@@ -11,10 +11,32 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from testing_support.decision_e2e.contracts import (
+    DecisionE2EProofId,
     DecisionE2EQualificationResult,
+    EXPECTED_DECISION_E2E_PROOFS,
+    QualificationCompleteness,
     QualificationDisposition,
 )
 from testing_support.decision_e2e.requirements import validate_qualification_result
+
+__all__ = (
+    "QualificationReport",
+    "QualificationReportCollector",
+    "assess_qualification_completeness",
+    "resolve_git_sha",
+    "validate_qualification_result",
+    "write_qualification_artifacts",
+)
+
+
+def assess_qualification_completeness(
+    results: tuple[DecisionE2EQualificationResult, ...],
+) -> QualificationCompleteness:
+    actual = frozenset(row.proof_id for row in results)
+    return QualificationCompleteness(
+        expected=EXPECTED_DECISION_E2E_PROOFS,
+        actual=actual,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,19 +46,44 @@ class QualificationReport:
     environment_profile: str
     results: tuple[DecisionE2EQualificationResult, ...]
 
+    def completeness(self) -> QualificationCompleteness:
+        return assess_qualification_completeness(self.results)
+
     def enterprise_closed(self) -> bool:
-        if not self.results:
+        completeness = self.completeness()
+        if not completeness.complete:
+            return False
+        if len(self.results) != len(EXPECTED_DECISION_E2E_PROOFS):
             return False
         return all(
             row.disposition is QualificationDisposition.PASSED for row in self.results
         )
 
     def to_dict(self) -> dict[str, object]:
+        completeness = self.completeness()
+        passed = sum(
+            1 for row in self.results if row.disposition is QualificationDisposition.PASSED
+        )
+        failed = sum(
+            1 for row in self.results if row.disposition is QualificationDisposition.FAILED
+        )
+        blocked = sum(
+            1 for row in self.results if row.disposition is QualificationDisposition.BLOCKED
+        )
         return {
             "git_sha": self.git_sha,
             "timestamp": self.timestamp,
             "environment_profile": self.environment_profile,
             "enterprise_closed": self.enterprise_closed(),
+            "proof_count": len(self.results),
+            "unique_proof_count": len(completeness.actual),
+            "expected_proof_set": sorted(item.value for item in completeness.expected),
+            "actual_proof_set": sorted(item.value for item in completeness.actual),
+            "missing_proof_set": sorted(item.value for item in completeness.missing),
+            "unexpected_proof_set": sorted(item.value for item in completeness.unexpected),
+            "passed_count": passed,
+            "failed_count": failed,
+            "blocked_count": blocked,
             "proofs": [row.to_report_row() for row in self.results],
         }
 
@@ -103,6 +150,14 @@ class QualificationReportCollector:
             raise ValueError(
                 "Authoritative qualification report requires exactly one result per proof; "
                 f"duplicate proof_id entries: {joined}",
+            )
+        actual_ids = frozenset(row.proof_id for row in self._results)
+        unexpected = actual_ids - EXPECTED_DECISION_E2E_PROOFS
+        if unexpected:
+            joined = ", ".join(sorted(item.value for item in unexpected))
+            raise ValueError(
+                "Authoritative qualification report contains unexpected proof IDs: "
+                f"{joined}",
             )
         return QualificationReport(
             git_sha=resolve_git_sha(),

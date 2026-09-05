@@ -7,10 +7,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.applications._shared.scenario_runtime_baseline import (
+    ScenarioRuntimeComposition as PlatformScenarioRuntimeComposition,
+)
 from intergrax.llm_adapters.registry.profile import llm_profile_from_env
-from intergrax.runtime.decision_flow import DecisionFlowScope
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
+from intergrax.runtime.decision_flow import DecisionFlowScope
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     resolve_scenario_llm_adapter,
 )
@@ -37,6 +40,21 @@ CANONICAL_DECISION_RUNTIME_MODULES: frozenset[str] = frozenset(
 )
 
 AI_INCIDENT_SCENARIO_ID = "ai_incident_investigation"
+
+
+def ai_incident_scenario_id(variant: ScenarioVariant) -> str:
+    return f"{AI_INCIDENT_SCENARIO_ID}:{variant.value}"
+
+
+def resolve_canonical_runtime_modules(
+    composition: PlatformScenarioRuntimeComposition,
+) -> frozenset[str]:
+    decision_gate = composition.nexus_loop.peek_decision_flow_gate()
+    if decision_gate is None:
+        return frozenset()
+    if not decision_gate.supports_scope(DecisionFlowScope.GRAPH_FINAL):
+        return frozenset()
+    return CANONICAL_DECISION_RUNTIME_MODULES
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,16 +89,18 @@ async def run_ai_incident_live_qualification(
     variant: ScenarioVariant = ScenarioVariant.RESOLVED,
 ) -> ScenarioQualificationAttempt:
     invocation = canonical_reproduction_shell_command()
+    scenario_id = ai_incident_scenario_id(variant)
     provider, model = _provider_model_from_env()
     try:
         fixture_bundle = build_fixture_runtime_bundle(variant=variant)
         bundle = fixture_bundle.bundle
         composition = bundle.runtime_composition
+        runtime_modules = resolve_canonical_runtime_modules(composition.platform)
         adapter = resolve_scenario_llm_adapter(composition.environment)
         if _is_mock_adapter_type(adapter):
             return ScenarioQualificationAttempt(
                 evidence=ScenarioExecutionEvidence(
-                    scenario_id=AI_INCIDENT_SCENARIO_ID,
+                    scenario_id=scenario_id,
                     invocation=invocation,
                     provider=provider,
                     model=model,
@@ -92,15 +112,10 @@ async def run_ai_incident_live_qualification(
                 evaluation_passed=False,
             )
 
-        decision_gate = composition.platform.nexus_loop.peek_decision_flow_gate()
-        decision_path = (
-            decision_gate is not None
-            and decision_gate.supports_scope(DecisionFlowScope.GRAPH_FINAL)
-        )
-        if not decision_path:
+        if not runtime_modules:
             return ScenarioQualificationAttempt(
                 evidence=ScenarioExecutionEvidence(
-                    scenario_id=AI_INCIDENT_SCENARIO_ID,
+                    scenario_id=scenario_id,
                     invocation=invocation,
                     provider=provider,
                     model=model,
@@ -118,14 +133,14 @@ async def run_ai_incident_live_qualification(
         except Exception as exc:
             return ScenarioQualificationAttempt(
                 evidence=ScenarioExecutionEvidence(
-                    scenario_id=AI_INCIDENT_SCENARIO_ID,
+                    scenario_id=scenario_id,
                     invocation=invocation,
                     provider=provider,
                     model=model,
                     executed=True,
                     decision_path_exercised=True,
                     used_mock_provider=False,
-                    runtime_modules=CANONICAL_DECISION_RUNTIME_MODULES,
+                    runtime_modules=runtime_modules,
                     block_reason=f"scenario evaluation failed: {type(exc).__name__}",
                 ),
                 evaluation_passed=False,
@@ -134,7 +149,7 @@ async def run_ai_incident_live_qualification(
     except Exception as exc:
         return ScenarioQualificationAttempt(
             evidence=ScenarioExecutionEvidence(
-                scenario_id=AI_INCIDENT_SCENARIO_ID,
+                scenario_id=scenario_id,
                 invocation=invocation,
                 provider=provider,
                 model=model,
@@ -149,7 +164,7 @@ async def run_ai_incident_live_qualification(
 
     return ScenarioQualificationAttempt(
         evidence=ScenarioExecutionEvidence(
-            scenario_id=AI_INCIDENT_SCENARIO_ID,
+            scenario_id=scenario_id,
             invocation=invocation,
             provider=provider,
             model=model,
@@ -157,7 +172,7 @@ async def run_ai_incident_live_qualification(
             decision_path_exercised=True,
             used_mock_provider=False,
             outcome=result.outcome,
-            runtime_modules=CANONICAL_DECISION_RUNTIME_MODULES,
+            runtime_modules=runtime_modules,
         ),
         evaluation_passed=evaluation.passed,
         error=None if evaluation.passed else "; ".join(evaluation.failures),

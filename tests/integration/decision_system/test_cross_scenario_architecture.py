@@ -9,16 +9,15 @@ from pathlib import Path
 
 import pytest
 
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
 from testing_support.decision_e2e.contracts import (
     DecisionE2EProofId,
     DecisionE2EQualificationResult,
     QualificationDisposition,
 )
 from testing_support.decision_e2e.environment import qualification_required
-from testing_support.decision_e2e.qualification_evidence import ScenarioExecutionEvidence
-from testing_support.decision_e2e.requirements import qualify_live_scenario
+from testing_support.decision_e2e.requirements import qualify_cross_scenario_dual
 from testing_support.decision_e2e.scenario_qualification import (
-    AI_INCIDENT_SCENARIO_ID,
     CANONICAL_DECISION_RUNTIME_MODULES,
     discover_decision_scenario_roots,
     run_ai_incident_live_qualification,
@@ -110,15 +109,15 @@ async def test_ds_e2e_13_cross_scenario_qualification(
         for path in discover_decision_scenario_roots(_REPO_ROOT)
         if scenario_exercises_decision_runtime(path)
     )
-    if len(decision_scenarios) < 2:
+    if not decision_scenarios:
         decision_e2e_report_collector.record(
             DecisionE2EQualificationResult(
                 proof_id=DecisionE2EProofId.DS_E2E_13,
                 disposition=QualificationDisposition.BLOCKED,
                 evidence=(),
                 reason=(
-                    "Cross-scenario qualification requires two live platform proofs exercising "
-                    "canonical Decision runtime; only ai_incident_investigation currently qualifies"
+                    "Cross-scenario qualification requires a live platform proof exercising "
+                    "canonical Decision runtime"
                 ),
             ),
         )
@@ -135,31 +134,39 @@ async def test_ds_e2e_13_cross_scenario_qualification(
         )
         return
 
-    scenario_a = await run_ai_incident_live_qualification()
-    scenario_b_evidence = ScenarioExecutionEvidence(
-        scenario_id=decision_scenarios[1].name,
-        invocation="pending-second-scenario-runner",
-        provider=scenario_a.evidence.provider,
-        model=scenario_a.evidence.model,
-        executed=False,
-        decision_path_exercised=True,
-        used_mock_provider=False,
-        block_reason="Second Decision platform proof runner not yet implemented",
-        runtime_modules=CANONICAL_DECISION_RUNTIME_MODULES,
-    )
-    result = qualify_live_scenario(
-        proof_id=DecisionE2EProofId.DS_E2E_13,
-        scenario_evidence=scenario_a.evidence,
+    scenario_a = await run_ai_incident_live_qualification(variant=ScenarioVariant.RESOLVED)
+    scenario_b = await run_ai_incident_live_qualification(variant=ScenarioVariant.UNRESOLVED)
+    result = qualify_cross_scenario_dual(
+        scenario_a=scenario_a.evidence,
+        scenario_b=scenario_b.evidence,
         reason=(
-            f"scenario_a={AI_INCIDENT_SCENARIO_ID}; "
+            f"scenario_a={scenario_a.evidence.scenario_id}; "
+            f"scenario_b={scenario_b.evidence.scenario_id}; "
             f"runtime_modules={','.join(sorted(CANONICAL_DECISION_RUNTIME_MODULES))}"
         ),
     )
-    if result.disposition is QualificationDisposition.PASSED:
+    if result.disposition is QualificationDisposition.PASSED and (
+        not scenario_a.evaluation_passed or not scenario_b.evaluation_passed
+    ):
+        failures = []
+        if not scenario_a.evaluation_passed:
+            failures.append(
+                f"{scenario_a.evidence.scenario_id}: {scenario_a.error or 'evaluation failed'}",
+            )
+        if not scenario_b.evaluation_passed:
+            failures.append(
+                f"{scenario_b.evidence.scenario_id}: {scenario_b.error or 'evaluation failed'}",
+            )
         result = DecisionE2EQualificationResult(
             proof_id=DecisionE2EProofId.DS_E2E_13,
-            disposition=QualificationDisposition.BLOCKED,
+            disposition=QualificationDisposition.FAILED,
             evidence=result.evidence,
-            reason=scenario_b_evidence.block_reason,
+            reason="; ".join(failures),
         )
+    if result.disposition is QualificationDisposition.FAILED:
+        decision_e2e_report_collector.record(result)
+        pytest.fail(result.reason or "cross-scenario qualification failed")
+    if result.disposition is QualificationDisposition.BLOCKED:
+        decision_e2e_report_collector.record(result)
+        pytest.fail(result.reason or "cross-scenario qualification blocked")
     decision_e2e_report_collector.record(result)
