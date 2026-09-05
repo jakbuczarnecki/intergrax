@@ -31,6 +31,7 @@ def build_host_task_execution(
         _pipeline_capability_suffix=pipeline_capability_suffix,
         _ledger_factory=nexus_loop.execution_budget_ledger_factory,
         _run_budget=nexus_loop.run_budget,
+        _nexus_loop=nexus_loop,
     )
 
 
