@@ -40,6 +40,7 @@ class MicroArenaScreeningOutcome(str, Enum):
 class ArenaEvidenceClassification(str, Enum):
     FINAL_MODEL_QUALITY = "FINAL_MODEL_QUALITY"
     MICRO_ARENA_SCREENING = "MICRO_ARENA_SCREENING"
+    NANO_ARENA_SCREENING = "NANO_ARENA_SCREENING"
 
 
 class EmbeddingArenaVerdict(str, Enum):

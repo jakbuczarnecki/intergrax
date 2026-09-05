@@ -46,7 +46,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--profile",
         choices=list_execution_profile_ids(),
         default=STANDARD_ARENA_PROFILE_ID,
-        help="Arena execution profile (safe-local-gpu = resource-bounded micro arena)",
+        help="Arena execution profile (safe-local-gpu = micro arena; nano-local-gpu = ultra-small CUDA screening)",
     )
     parser.add_argument(
         "--session-dir",

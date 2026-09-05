@@ -17,6 +17,7 @@ from platform_proofs.scenarios.verified_product_identification.arena.contracts.e
 
 STANDARD_ARENA_PROFILE_ID = "standard"
 SAFE_LOCAL_GPU_MICRO_ARENA_PROFILE_ID = "safe-local-gpu"
+NANO_LOCAL_GPU_ARENA_PROFILE_ID = "nano-local-gpu"
 
 # RTX 4080 Laptop 12 GB — sustained VRAM guardrail (~11.5 GiB).
 _SAFE_LOCAL_GPU_MAX_VRAM_BYTES = int(11.5 * 1024**3)
@@ -37,6 +38,12 @@ STANDARD_ARENA_EXECUTION_BUDGET = EmbeddingArenaExecutionBudget(
     max_vram_bytes=None,
     query_latency_repetitions=5,
     query_latency_query_count=5,
+    max_total_wall_time_seconds=None,
+    run_long_input_quality_benchmark=True,
+    include_full_build_estimate=True,
+    include_query_latency_benchmark=True,
+    suppress_keep_baseline_decision=False,
+    screening_evidence_label=None,
 )
 
 SAFE_LOCAL_GPU_MICRO_ARENA_EXECUTION_BUDGET = EmbeddingArenaExecutionBudget(
@@ -55,11 +62,45 @@ SAFE_LOCAL_GPU_MICRO_ARENA_EXECUTION_BUDGET = EmbeddingArenaExecutionBudget(
     max_vram_bytes=_SAFE_LOCAL_GPU_MAX_VRAM_BYTES,
     query_latency_repetitions=3,
     query_latency_query_count=3,
+    max_total_wall_time_seconds=None,
+    run_long_input_quality_benchmark=True,
+    include_full_build_estimate=True,
+    include_query_latency_benchmark=True,
+    suppress_keep_baseline_decision=False,
+    screening_evidence_label=None,
+)
+
+# Ultra-small CUDA screening — throughput/order-of-magnitude only, not a benchmark.
+_NANO_SCREENING_WALL_TIME_SECONDS = 20.0 * 60.0
+
+NANO_LOCAL_GPU_ARENA_EXECUTION_BUDGET = EmbeddingArenaExecutionBudget(
+    profile_id=NANO_LOCAL_GPU_ARENA_PROFILE_ID,
+    accelerator_requirement=ArenaAcceleratorRequirement.CUDA,
+    stage_a_records=5,
+    stage_b_records=10,
+    stage_c_records=20,
+    max_stage_c_finalists=2,
+    candidate_timeout_seconds=180.0,
+    default_batch_size=8,
+    fallback_batch_size=4,
+    batch_sweep_sizes=(),
+    isolate_candidates=True,
+    screening_mode=True,
+    max_vram_bytes=_SAFE_LOCAL_GPU_MAX_VRAM_BYTES,
+    query_latency_repetitions=1,
+    query_latency_query_count=2,
+    max_total_wall_time_seconds=_NANO_SCREENING_WALL_TIME_SECONDS,
+    run_long_input_quality_benchmark=False,
+    include_full_build_estimate=False,
+    include_query_latency_benchmark=True,
+    suppress_keep_baseline_decision=True,
+    screening_evidence_label="NANO SCREENING ONLY",
 )
 
 _EXECUTION_PROFILES: dict[str, EmbeddingArenaExecutionBudget] = {
     STANDARD_ARENA_PROFILE_ID: STANDARD_ARENA_EXECUTION_BUDGET,
     SAFE_LOCAL_GPU_MICRO_ARENA_PROFILE_ID: SAFE_LOCAL_GPU_MICRO_ARENA_EXECUTION_BUDGET,
+    NANO_LOCAL_GPU_ARENA_PROFILE_ID: NANO_LOCAL_GPU_ARENA_EXECUTION_BUDGET,
 }
 
 

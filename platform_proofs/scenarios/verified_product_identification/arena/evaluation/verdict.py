@@ -106,6 +106,8 @@ def classify_candidate_verdict(
 
 def decide_arena_outcome(
     results: tuple[CandidateArenaResult, ...],
+    *,
+    suppress_keep_baseline_decision: bool = False,
 ) -> tuple[EmbeddingArenaDecision, str, tuple[str, ...]]:
     baseline = next((item for item in results if item.verdict is EmbeddingArenaVerdict.BASELINE), None)
     winners = [
@@ -151,6 +153,12 @@ def decide_arena_outcome(
         return EmbeddingArenaDecision.MORE_EVIDENCE_REQUIRED, rationale, finalists
 
     if baseline is not None:
+        if suppress_keep_baseline_decision:
+            return (
+                EmbeddingArenaDecision.MORE_EVIDENCE_REQUIRED,
+                "No challenger promotion from nano screening evidence",
+                ("bge-m3",),
+            )
         return (
             EmbeddingArenaDecision.KEEP_BGE_M3,
             "No challenger materially improved throughput without quality regression",

@@ -28,6 +28,12 @@ class EmbeddingArenaExecutionBudget:
     max_vram_bytes: int | None
     query_latency_repetitions: int
     query_latency_query_count: int
+    max_total_wall_time_seconds: float | None
+    run_long_input_quality_benchmark: bool
+    include_full_build_estimate: bool
+    include_query_latency_benchmark: bool
+    suppress_keep_baseline_decision: bool
+    screening_evidence_label: str | None
 
     def __post_init__(self) -> None:
         if self.stage_a_records <= 0:
