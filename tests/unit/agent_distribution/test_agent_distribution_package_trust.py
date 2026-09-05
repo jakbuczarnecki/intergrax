@@ -405,3 +405,63 @@ def test_installation_service_accepts_coordinator_trust_record() -> None:
         trust_record=decision.trust_record,
     )
     assert verified.value.installation_state is InstallationState.VERIFIED
+
+
+def test_policy_fingerprint_is_deterministic() -> None:
+    first = _production_policy()
+    second = _production_policy()
+    assert first.policy_fingerprint == second.policy_fingerprint
+    assert first.policy_fingerprint.startswith("sha256:")
+
+
+def test_policy_difference_changes_fingerprint() -> None:
+    production = _production_policy()
+    development = _development_policy()
+    assert production.policy_fingerprint != development.policy_fingerprint
+
+
+def test_allow_decision_records_policy_fingerprint() -> None:
+    decision = _evaluate()
+    assert decision.trust_record is not None
+    assert decision.trust_record.policy_fingerprint == _production_policy().policy_fingerprint
+    audit = decision.to_audit_dict()
+    assert audit["policy_fingerprint"] == decision.trust_record.policy_fingerprint
+
+
+def test_stale_allow_blocked_after_revocation_at_admission() -> None:
+    decision = _evaluate()
+    assert decision.trust_record is not None
+    coordinator = AgentPackageTrustCoordinator()
+    revocation = AgentPackageTrustRevocationState(
+        revoked_package_digests=frozenset({_DIGEST_A}),
+    )
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        coordinator.assert_install_admission(
+            trust_record=decision.trust_record,
+            package_identity=_PACKAGE,
+            revocation_state=revocation,
+        )
+    assert exc_info.value.reason_code == AgentPackageTrustReasonCode.PACKAGE_DIGEST_REVOKED.value
+
+
+def test_revocation_overrides_production_qualification_at_admission() -> None:
+    decision = _evaluate()
+    assert decision.trust_record is not None
+    coordinator = AgentPackageTrustCoordinator()
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        coordinator.assert_install_admission(
+            trust_record=decision.trust_record,
+            package_identity=_PACKAGE,
+            revocation_state=AgentPackageTrustRevocationState(
+                revoked_evidence_ids=frozenset({"evidence:pkg-a:0"}),
+            ),
+        )
+    assert exc_info.value.reason_code == AgentPackageTrustReasonCode.EVIDENCE_REVOKED.value
+
+
+def test_source_qualified_evidence_cannot_authorize_other_delivery_source() -> None:
+    decision = _evaluate(
+        delivery_source=AgentDeliverySource.BUILTIN,
+        qualification=_qualification(delivery_source=AgentDeliverySource.MARKETPLACE),
+    )
+    assert decision.reason_code is AgentPackageTrustReasonCode.EVIDENCE_PACKAGE_MISMATCH

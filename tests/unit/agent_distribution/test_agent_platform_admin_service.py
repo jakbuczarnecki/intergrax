@@ -54,6 +54,7 @@ from intergrax.agent_distribution.effective_roster import (
 )
 from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
+    AgentPackageTrustError,
     BindingRevisionConflict,
     RuntimeActivationConflict,
 )
@@ -87,6 +88,7 @@ from intergrax.agent_distribution.runtime_revision import (
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
+    AgentPackageTrustRevocationState,
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
 )
@@ -260,7 +262,11 @@ class AdminStack:
     effective_roster_snapshot_store: InMemoryEffectiveRosterSnapshotStore
 
 
-def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
+def build_admin_stack(
+    *,
+    with_catalog: bool = True,
+    package_trust_revocation_state_source: object | None = None,
+) -> AdminStack:
     state = AgentDistributionStoreState()
     installation_store = InMemoryAgentInstallationStore(state)
     binding_store = InMemoryApplicationAgentBindingStore(state)
@@ -298,23 +304,23 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
             )
         ]
     )
-    service = AgentPlatformAdminService(
-        installation_store=installation_store,
-        binding_store=binding_store,
-        revision_store=revision_store,
-        serving_store=serving_store,
-        deployment_instance_store=deployment_store,
-        lock_store=lock_store,
-        materialization_store=materialization_store,
-        effective_roster_snapshot_store=effective_roster_snapshot_store,
-        effective_roster_authority=effective_roster_authority,
-        artifact_metadata_store=artifact_store,
-        installation_service=installation_service,
-        binding_service=binding_service,
-        revision_service=revision_service,
-        roster_builder=EffectiveRosterBuilder(installation_store),
-        requirement_set_builder=InstalledAgentRequirementSetBuilder(artifact_store),
-        activation_service=ActivationService(
+    admin_service_kwargs = {
+        "installation_store": installation_store,
+        "binding_store": binding_store,
+        "revision_store": revision_store,
+        "serving_store": serving_store,
+        "deployment_instance_store": deployment_store,
+        "lock_store": lock_store,
+        "materialization_store": materialization_store,
+        "effective_roster_snapshot_store": effective_roster_snapshot_store,
+        "effective_roster_authority": effective_roster_authority,
+        "artifact_metadata_store": artifact_store,
+        "installation_service": installation_service,
+        "binding_service": binding_service,
+        "revision_service": revision_service,
+        "roster_builder": EffectiveRosterBuilder(installation_store),
+        "requirement_set_builder": InstalledAgentRequirementSetBuilder(artifact_store),
+        "activation_service": ActivationService(
             revision_store=revision_store,
             deployment_instance_store=deployment_store,
             serving_store=serving_store,
@@ -322,18 +328,23 @@ def build_admin_stack(*, with_catalog: bool = True) -> AdminStack:
             deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
             projection_coordinator=FakeRuntimeServingProjectionCoordinator(),
         ),
-        graph_builder=CandidateRuntimeGraphBuilder(metadata_provider),
-        materialization_service=RuntimeMaterializationService(
+        "graph_builder": CandidateRuntimeGraphBuilder(metadata_provider),
+        "materialization_service": RuntimeMaterializationService(
             {MaterializationTopology.OCI_IMAGE: _DeterministicAdapter()}
         ),
-        metadata_provider=metadata_provider,
-        catalog_provider=catalog if with_catalog else None,
-        dependency_resolver=make_identity_dependency_resolver(),
-        mutation_authorization_boundary=allow_mutation_boundary(),
-        environment_tenant_resolver=StaticApplicationEnvironmentTenantResolver(
+        "metadata_provider": metadata_provider,
+        "catalog_provider": catalog if with_catalog else None,
+        "dependency_resolver": make_identity_dependency_resolver(),
+        "mutation_authorization_boundary": allow_mutation_boundary(),
+        "environment_tenant_resolver": StaticApplicationEnvironmentTenantResolver(
             "tenant-test"
         ),
-    )
+    }
+    if package_trust_revocation_state_source is not None:
+        admin_service_kwargs["package_trust_revocation_state_source"] = (
+            package_trust_revocation_state_source
+        )
+    service = AgentPlatformAdminService(**admin_service_kwargs)
     return AdminStack(
         service=service,
         state=state,
@@ -846,3 +857,35 @@ def test_cross_application_resource_isolation() -> None:
     )
     assert app_b_status.bound is False
     assert app_b_status.included_in_active_revision is False
+
+
+def test_install_rejected_when_digest_revoked_before_store_mutation() -> None:
+    stack = build_admin_stack(
+        package_trust_revocation_state_source=lambda: AgentPackageTrustRevocationState(
+            revoked_package_digests=frozenset({_DIGEST}),
+        ),
+    )
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        stack.service.install_agent(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=_install_request(),
+            principal=admin_test_principal(),
+        )
+    assert exc_info.value.reason_code == "package_digest_revoked"
+    assert "inst-1" not in stack.state.installations
+
+
+def test_install_request_digest_mismatch_rejected_at_boundary() -> None:
+    with pytest.raises(AgentPackageTrustError):
+        InstallAgentRequest(
+            mutation_id="mut-install",
+            installation_id="inst-mismatch",
+            installation_slot_id="slot-search",
+            package_identity=_PACKAGE,
+            artifact_store_ref="store://artifacts/inst-mismatch",
+            trust_record=_trust().model_copy(
+                update={"package_digest": "sha256:" + ("c" * 64)},
+            ),
+            agent_project_metadata_ref=_META_REF,
+        )

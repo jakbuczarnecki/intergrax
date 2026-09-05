@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from intergrax.agent_distribution.activation import ActivationService, RollbackResult
 from intergrax.agent_distribution.admin_models import (
     ActivationResultView,
@@ -104,6 +106,7 @@ from intergrax.agent_distribution.installation import (
     installation_state_is_installed,
 )
 from intergrax.agent_distribution.installation_service import InstallationService
+from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
 from intergrax.agent_distribution.materialization import (
     ApplicationBuildContext,
     MaterializationInput,
@@ -131,6 +134,7 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
+from intergrax.agent_distribution.trust import AgentPackageTrustRevocationState
 from intergrax.agent_distribution.stores import (
     AgentArtifactMetadata,
     AgentArtifactMetadataStore,
@@ -242,6 +246,11 @@ class AgentPlatformAdminService:
         mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
         | None = None,
         environment_tenant_resolver: ApplicationEnvironmentTenantResolver | None = None,
+        package_trust_coordinator: AgentPackageTrustCoordinator | None = None,
+        package_trust_revocation_state_source: Callable[
+            [], AgentPackageTrustRevocationState
+        ]
+        | None = None,
     ) -> None:
         self._installation_store = installation_store
         self._binding_store = binding_store
@@ -273,6 +282,13 @@ class AgentPlatformAdminService:
         self._manifest_defaults = manifest_defaults
         self._mutation_authorization_boundary = mutation_authorization_boundary
         self._environment_tenant_resolver = environment_tenant_resolver
+        self._package_trust_coordinator = (
+            package_trust_coordinator or AgentPackageTrustCoordinator()
+        )
+        self._package_trust_revocation_state_source = (
+            package_trust_revocation_state_source
+            or (lambda: AgentPackageTrustRevocationState())
+        )
 
     def list_catalog(
         self,
@@ -597,6 +613,12 @@ class AgentPlatformAdminService:
                 current_revision=current_revision,
             ),
             operation="install_agent",
+        )
+
+        self._package_trust_coordinator.assert_install_admission(
+            trust_record=request.trust_record,
+            package_identity=identity,
+            revocation_state=self._package_trust_revocation_state_source(),
         )
 
         created = self._installation_service.create_candidate_installation(

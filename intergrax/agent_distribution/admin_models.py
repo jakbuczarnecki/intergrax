@@ -7,9 +7,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from intergrax.agent_distribution._config_validation import validate_non_secret_distribution_config
+from intergrax.agent_distribution.errors import AgentPackageTrustError
+from intergrax.agent_distribution._config_validation import (
+    validate_non_secret_distribution_config,
+)
 from intergrax.agent_distribution._immutable_json import DistributionJsonValue
 from intergrax.agent_distribution.binding import (
     AgentBindingFactoryReference,
@@ -24,7 +27,10 @@ from intergrax.agent_distribution.runtime_revision import (
     MaterializationTopology,
     RuntimeRevisionState,
 )
-from intergrax.agent_distribution.trust import AgentInstallationTrustRecord
+from intergrax.agent_distribution.trust import (
+    AgentInstallationTrustRecord,
+    AgentPackageTrustReasonCode,
+)
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationAuthorizationEvidence,
@@ -56,7 +62,9 @@ class ControlPlaneTenantScopeDenial(BaseModel):
     principal_auth_subject: str | None = None
     reason: str = _NON_EMPTY
 
-    @field_validator("tenant_id", "resource_type", "resource_id", "resource_scope", "reason")
+    @field_validator(
+        "tenant_id", "resource_type", "resource_id", "resource_scope", "reason"
+    )
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
@@ -137,6 +145,15 @@ class InstallAgentRequest(BaseModel):
             raise ValueError("must be non-empty")
         return normalized
 
+    @model_validator(mode="after")
+    def _validate_trust_record_digest_binding(self) -> InstallAgentRequest:
+        if self.trust_record.package_digest != self.package_identity.package_digest:
+            raise AgentPackageTrustError(
+                "install request trust record digest does not match package identity",
+                reason_code=AgentPackageTrustReasonCode.EVIDENCE_DIGEST_MISMATCH.value,
+            )
+        return self
+
 
 class BindAgentRequest(BaseModel):
     """Bind an installed slot to one application environment."""
@@ -156,7 +173,9 @@ class BindAgentRequest(BaseModel):
 
     @field_validator("config", mode="before")
     @classmethod
-    def _reject_secret_config(cls, value: object) -> Mapping[str, DistributionJsonValue]:
+    def _reject_secret_config(
+        cls, value: object
+    ) -> Mapping[str, DistributionJsonValue]:
         if not isinstance(value, Mapping):
             raise ValueError("config must be a mapping")
         return validate_non_secret_distribution_config(
@@ -200,7 +219,9 @@ class UpdateAgentBindingRequest(BaseModel):
 
     @field_validator("config", mode="before")
     @classmethod
-    def _reject_secret_config(cls, value: object) -> Mapping[str, DistributionJsonValue]:
+    def _reject_secret_config(
+        cls, value: object
+    ) -> Mapping[str, DistributionJsonValue]:
         if not isinstance(value, Mapping):
             raise ValueError("config must be a mapping")
         return validate_non_secret_distribution_config(
@@ -541,7 +562,9 @@ class PostCutoverFailureResultView(BaseModel):
 
     runtime_revision_id: str
     instance_state: DeploymentInstanceState | None = None
-    failure_mark_authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
+    failure_mark_authorization_evidence: (
+        ControlPlaneMutationAuthorizationEvidence | None
+    ) = None
     rollback_result: RollbackResultView | None = None
     audit_event_types: tuple[str, ...] = ()
 

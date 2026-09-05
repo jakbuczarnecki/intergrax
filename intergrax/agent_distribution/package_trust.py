@@ -10,7 +10,10 @@ from datetime import UTC, datetime
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.catalog import CatalogSourceIdentity
 from intergrax.agent_distribution.errors import AgentPackageTrustError
-from intergrax.agent_distribution.identity import AgentPackageCandidate, AgentPackageIdentity
+from intergrax.agent_distribution.identity import (
+    AgentPackageCandidate,
+    AgentPackageIdentity,
+)
 from intergrax.agent_distribution.trust import (
     AgentDeliverySource,
     AgentInstallationTrustRecord,
@@ -335,6 +338,7 @@ class AgentPackageTrustCoordinator:
             source_entry_ref=source_entry_ref,
             revocation_checked_at=checked_at,
             org_policy_decision_ref=org_policy_decision_ref,
+            policy_fingerprint=policy.policy_fingerprint,
         )
 
         return AgentPackageTrustDecision(
@@ -373,8 +377,7 @@ class AgentPackageTrustCoordinator:
                 package_identity=AgentPackageIdentity(
                     distribution_package_id=package_candidate.distribution_package_id,
                     package_version=package_candidate.package_version,
-                    package_digest=evidence_package_digest
-                    or ("sha256:" + ("0" * 64)),
+                    package_digest=evidence_package_digest or ("sha256:" + ("0" * 64)),
                 ),
                 publisher=publisher,
                 catalog_source_id=catalog_source.catalog_source_id,
@@ -450,6 +453,53 @@ class AgentPackageTrustCoordinator:
             )
 
         return None
+
+    def assert_install_admission(
+        self,
+        *,
+        trust_record: AgentInstallationTrustRecord,
+        package_identity: AgentPackageIdentity,
+        revocation_state: AgentPackageTrustRevocationState | None = None,
+    ) -> None:
+        """Fail closed when stale trust evidence cannot satisfy current revocation state."""
+        assert_installation_trust_record_acceptable(
+            trust_record,
+            package_identity=package_identity,
+        )
+        revocation = revocation_state or AgentPackageTrustRevocationState()
+        digest = package_identity.package_digest
+
+        if digest in revocation.revoked_package_digests:
+            raise AgentPackageTrustError(
+                "package digest is revoked at install admission",
+                reason_code=AgentPackageTrustReasonCode.PACKAGE_DIGEST_REVOKED.value,
+            )
+
+        if trust_record.publisher_identity_ref in revocation.revoked_publisher_ids:
+            raise AgentPackageTrustError(
+                "publisher is revoked at install admission",
+                reason_code=AgentPackageTrustReasonCode.PUBLISHER_REVOKED.value,
+            )
+
+        source_id = trust_record.source_provider_id
+        if source_id in revocation.revoked_catalog_source_ids:
+            raise AgentPackageTrustError(
+                "catalog source is revoked at install admission",
+                reason_code=AgentPackageTrustReasonCode.SOURCE_REVOKED.value,
+            )
+
+        if source_id in revocation.disabled_catalog_source_ids:
+            raise AgentPackageTrustError(
+                "catalog source is disabled at install admission",
+                reason_code=AgentPackageTrustReasonCode.SOURCE_DISABLED.value,
+            )
+
+        for evidence_ref in trust_record.trust_evidence_refs:
+            if evidence_ref.evidence_id in revocation.revoked_evidence_ids:
+                raise AgentPackageTrustError(
+                    "qualification evidence is revoked at install admission",
+                    reason_code=AgentPackageTrustReasonCode.EVIDENCE_REVOKED.value,
+                )
 
     @staticmethod
     def _build_evidence_refs(
@@ -533,7 +583,9 @@ def assert_installation_trust_record_acceptable(
             "installation verification requires source_provider_id"
         )
     if package_identity.package_digest == "":
-        raise AgentPackageTrustError("installation verification requires digest-pinned package")
+        raise AgentPackageTrustError(
+            "installation verification requires digest-pinned package"
+        )
     if trust_record.package_digest != package_identity.package_digest:
         raise AgentPackageTrustError(
             "installation verification trust record digest does not match package digest"

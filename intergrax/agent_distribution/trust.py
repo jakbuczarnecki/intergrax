@@ -12,13 +12,15 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from intergrax.agent_distribution._digest import normalize_package_digest
+from intergrax.agent_distribution._digest import (
+    content_digest_for_model,
+    normalize_package_digest,
+)
 from intergrax.agent_distribution.catalog import CatalogProviderKind
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.core.qualification import (
     QualificationEvidence,
     QualificationStatus,
-    qualification_status_satisfies,
 )
 
 _NON_EMPTY = Field(min_length=1)
@@ -115,13 +117,20 @@ class AgentInstallationTrustRecord(BaseModel):
     source_entry_ref: str | None = None
     revocation_checked_at: datetime | None = None
     org_policy_decision_ref: str | None = None
+    policy_fingerprint: str | None = None
 
     @field_validator("package_digest")
     @classmethod
     def _validate_package_digest(cls, value: str) -> str:
         return normalize_package_digest(value)
 
-    @field_validator("publisher_identity_ref", "source_provider_id", "source_entry_ref", "org_policy_decision_ref")
+    @field_validator(
+        "publisher_identity_ref",
+        "source_provider_id",
+        "source_entry_ref",
+        "org_policy_decision_ref",
+        "policy_fingerprint",
+    )
     @classmethod
     def _strip_optional(cls, value: str | None) -> str | None:
         if value is None:
@@ -202,6 +211,11 @@ class AgentPackageTrustPolicy(BaseModel):
             return QualificationStatus.PRODUCTION_QUALIFIED
         return QualificationStatus.QUALIFIED
 
+    @property
+    def policy_fingerprint(self) -> str:
+        """Deterministic identity for the policy value used at admission time."""
+        return content_digest_for_model(self)
+
 
 class AgentPackageTrustRevocationState(BaseModel):
     """Authoritative revocation state supplied to trust evaluation (no network fetch)."""
@@ -233,7 +247,10 @@ class AgentPackageTrustDecision:
 
     @property
     def installable(self) -> bool:
-        return self.outcome is AgentPackageTrustOutcome.ALLOW and self.trust_record is not None
+        return (
+            self.outcome is AgentPackageTrustOutcome.ALLOW
+            and self.trust_record is not None
+        )
 
     def to_audit_dict(self) -> dict[str, Any]:
         """Deterministic audit payload — stable across repeated evaluation."""
@@ -247,8 +264,15 @@ class AgentPackageTrustDecision:
             "catalog_source_id": self.catalog_source_id,
             "delivery_source": self.delivery_source.value,
             "policy_profile_ref": self.policy_profile_ref,
+            "policy_fingerprint": (
+                self.trust_record.policy_fingerprint
+                if self.trust_record is not None
+                else None
+            ),
             "qualification_status": (
-                self.qualification.status.value if self.qualification is not None else None
+                self.qualification.status.value
+                if self.qualification is not None
+                else None
             ),
             "trust_evidence_refs": [
                 {
