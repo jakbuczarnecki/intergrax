@@ -42,11 +42,12 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
 )
 
 LEGAL_HYPOTHESIS_IDS: frozenset[str] = frozenset({"H1", "H2", "H3"})
-EVIDENCE_REFERENCE_CONTRACT = (
-    "Evidence reference contract: in supporting_evidence_ids and contradicting_evidence_ids "
-    "use only exact evidence_id strings copied from Gathered evidence IDs "
-    "(for example evidence.workload.line4.incident_window). "
-    "Never use aliases (E1, EVID-001, ev1), indices, or invented identifiers."
+COMPLETION_INTENT_CONTRACT = (
+    "Completion intent contract:\n"
+    "- supported_diagnosis: only when gathered evidence supports a final diagnosis "
+    "strongly enough for the scenario contract.\n"
+    "- unresolved: when evidence remains insufficient or conflicting after available investigation.\n"
+    "- need_more_evidence: only when additional allowed evidence-gathering work remains possible."
 )
 FORBIDDEN_MODEL_RESOLUTIONS: frozenset[ClaimResolution] = frozenset(
     {
@@ -196,6 +197,35 @@ def _known_evidence_ids(nodes: Sequence[dict[str, object]]) -> frozenset[str]:
     return frozenset(
         str(node["evidence_id"]) for node in nodes if node.get("evidence_id")
     )
+
+
+def _sorted_evidence_ids(nodes: Sequence[dict[str, object]]) -> tuple[str, ...]:
+    return tuple(sorted(_known_evidence_ids(nodes)))
+
+
+def build_evidence_reference_contract(
+    evidence_nodes: Sequence[dict[str, object]],
+) -> str:
+    allowed_ids = _sorted_evidence_ids(evidence_nodes)
+    lines = [
+        "Evidence reference contract:",
+        "- supporting_evidence_ids and contradicting_evidence_ids may contain only IDs "
+        "from the Allowed evidence IDs list below.",
+        "- Copy IDs exactly.",
+        "- Do not invent aliases, indices, abbreviations, or new IDs.",
+        "- If no gathered evidence supports a claim, use an empty evidence-ID list "
+        "and express the uncertainty instead.",
+    ]
+    if allowed_ids:
+        lines.append("Allowed evidence IDs:")
+        lines.extend(f"- {evidence_id}" for evidence_id in allowed_ids)
+    else:
+        lines.append(
+            "Allowed evidence IDs: none. "
+            "Use empty supporting_evidence_ids and contradicting_evidence_ids. "
+            "Do not invent an evidence ID."
+        )
+    return "\n".join(lines)
 
 
 def validate_reasoning_proposal(
@@ -415,6 +445,7 @@ def build_reasoning_messages(
     is_revision: bool,
     investigation_input: IncidentInvestigationInput | None = None,
 ) -> list[ChatMessage]:
+    evidence_reference_contract = build_evidence_reference_contract(evidence_nodes)
     lines = [
         "Investigate Line 4 target attainment degradation using gathered evidence only.",
         "Compare competing hypotheses H1 sustained overload, H2 understaffing, H3 equipment degradation.",
@@ -422,7 +453,8 @@ def build_reasoning_messages(
         "Use analysis tools when bounded deterministic comparison improves confidence.",
         "Do not treat workload-throughput correlation as causation.",
         "Propose only evidence-backed claims.",
-        EVIDENCE_REFERENCE_CONTRACT,
+        evidence_reference_contract,
+        COMPLETION_INTENT_CONTRACT,
         "Do not output claim_id, resolution, or supersedes_claim_id.",
         f"Investigation phase: {'revision' if is_revision else 'initial'}",
     ]
@@ -448,7 +480,12 @@ def build_reasoning_messages(
         lines.extend(f"- {item}" for item in critic_feedback)
     if is_revision:
         lines.append(
-            "Perform incremental correction using all prior evidence; do not discard valid prior observations."
+            "Revision contract: revise the semantic reasoning using the prior proposal, "
+            "critic feedback, current evidence, and current allowed evidence IDs. "
+            "Do not merely repeat the previous proposal. "
+            "Do not cite evidence that is not in the current allowed list. "
+            "Perform incremental correction using all prior evidence; "
+            "do not discard valid prior observations."
         )
     return [
         ChatMessage(role="system", content="\n".join(lines)),
@@ -456,7 +493,7 @@ def build_reasoning_messages(
             role="user",
             content=(
                 "Produce structured incident reasoning proposal. "
-                f"{EVIDENCE_REFERENCE_CONTRACT}"
+                f"{evidence_reference_contract}"
             ),
         ),
     ]
