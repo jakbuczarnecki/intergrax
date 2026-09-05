@@ -12,7 +12,7 @@ UAEP-first scaffold. Full process: [`../../docs/project/technical/guides/AGENT_C
 
 1. Implement domain logic in `steps/`
 2. Run smoke test: `uv run pytest agents/intergrax_assistant/tests -q`
-3. For lab HTTP: register in `applications/lab_application/host/wiring.py` (see guide Step 4C)
+3. For lab HTTP: add `AgentBinding.mount(...)` in lab manifest (see guide Step 4C)
 
 ## Unit-test authoring (isolated)
 
@@ -38,8 +38,11 @@ Add the agent via ``AgentBinding.mount(...)`` in the Tier-3 manifest and run thr
 
 See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
+## Capabilities
 
-## ## Layout
+`platform.assist`
+
+## Layout
 
 - ``intergrax_assistant_agent.py`` - Agent class (UAEP)
 - ``contract.py`` / ``capabilities.py`` - AgentContract

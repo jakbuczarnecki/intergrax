@@ -35,11 +35,11 @@ Add the agent via ``AgentBinding.mount(...)`` in the Tier-3 manifest and run thr
 
 See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
-See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md`` for all integration contexts.
+## Capabilities
 
+`legal.review`
 
-
-## ## Layout
+## Layout
 
 - ``legal_agent.py`` - Agent class (UAEP)
 - ``contract.py`` / ``capabilities.py`` - AgentContract

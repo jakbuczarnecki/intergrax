@@ -46,9 +46,11 @@ See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
 Production PoC mounts the agent via ``applications/attestation_demo/host/agent_builders.py`` and Agent Distribution lifecycle.
 
+## Capabilities
 
+`attestation.demo`
 
-## ## Layout
+## Layout
 
 - ``boundary_demo_agent.py`` - UAEP agent (`get_steps` / `run_step`)
 - ``capabilities.py`` - capability ids

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 from collections.abc import Sequence
 from pathlib import Path
@@ -17,6 +18,23 @@ CANONICAL_SURFACES: tuple[Path, ...] = (
     REPO_ROOT / "intergrax" / "scaffold" / "new_agent.py",
     REPO_ROOT / "intergrax" / "scaffold" / "doc_templates.py",
 )
+
+STAGE_16_ACTIVE_AGENTS: tuple[str, ...] = (
+    "boundary_demo",
+    "dispute_analyst",
+    "dispute_intake",
+    "dispute_scenario",
+    "dispute_strategist",
+    "external_contractor_adapter",
+    "intergrax_assistant",
+    "legal",
+    "signoff_probe",
+)
+
+_FORBIDDEN_HEADING = re.compile(r"^##\s+##")
+_CAPABILITIES_HEADING = re.compile(r"^##\s+Capabilities\s*$")
+_LAYOUT_HEADING = re.compile(r"^##\s+Layout\s*$")
+_STEP_4_LINE = re.compile(r"See \*\*Step 4\*\*")
 
 GUIDE_BOUNDED_START = "## 1. Mental model"
 GUIDE_BOUNDED_END = "## Step 6 - Inspect traces"
@@ -53,6 +71,88 @@ _ALLOW_SUBSTRINGS: tuple[str, ...] = (
     "must not",
     "without the distribution",
 )
+
+
+def _parse_capability_ids(capabilities_path: Path) -> list[str]:
+    if not capabilities_path.is_file():
+        return []
+    tree = ast.parse(capabilities_path.read_text(encoding="utf-8"))
+    string_constants: dict[str, str] = {}
+    capability_ids: list[str] = []
+
+    for node in tree.body:
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            name = node.target.id
+            value = node.value
+            if value is None:
+                continue
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                if name in ("CAPABILITY", "CAPABILITIES"):
+                    string_constants[name] = value.value
+            elif name == "CAPABILITIES" and isinstance(value, (ast.List, ast.Tuple)):
+                for elt in value.elts:
+                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                        capability_ids.append(elt.value)
+                    elif isinstance(elt, ast.Name) and elt.id in string_constants:
+                        capability_ids.append(string_constants[elt.id])
+            continue
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if not isinstance(target, ast.Name):
+                continue
+            name = target.id
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                if name in ("CAPABILITY", "CAPABILITIES"):
+                    string_constants[name] = node.value.value
+            elif name == "CAPABILITIES" and isinstance(node.value, (ast.List, ast.Tuple)):
+                for elt in node.value.elts:
+                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                        capability_ids.append(elt.value)
+                    elif isinstance(elt, ast.Name) and elt.id in string_constants:
+                        capability_ids.append(string_constants[elt.id])
+
+    if "CAPABILITY" in string_constants and string_constants["CAPABILITY"] not in capability_ids:
+        capability_ids.append(string_constants["CAPABILITY"])
+    return capability_ids
+
+
+def scan_active_agent_readme(path: Path, agent_slug: str) -> list[str]:
+    violations: list[str] = []
+    rel = path.relative_to(REPO_ROOT)
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+
+    if any(_FORBIDDEN_HEADING.match(line) for line in lines):
+        violations.append(
+            f"CANONICAL_AUTHORING_README_STRUCTURE: {rel}: forbidden heading '## ##'"
+        )
+
+    if not any(_CAPABILITIES_HEADING.match(line) for line in lines):
+        violations.append(
+            f"CANONICAL_AUTHORING_README_STRUCTURE: {rel}: missing '## Capabilities' section"
+        )
+
+    if not any(_LAYOUT_HEADING.match(line) for line in lines):
+        violations.append(
+            f"CANONICAL_AUTHORING_README_STRUCTURE: {rel}: missing valid '## Layout' section"
+        )
+
+    step_4_lines = [line for line in lines if _STEP_4_LINE.search(line)]
+    if len(step_4_lines) > 1:
+        violations.append(
+            f"CANONICAL_AUTHORING_README_STRUCTURE: {rel}: duplicate Step 4 integration instruction"
+        )
+
+    capabilities_path = REPO_ROOT / "agents" / agent_slug / "capabilities.py"
+    capability_ids = _parse_capability_ids(capabilities_path)
+    if capability_ids and not any(cap_id in text for cap_id in capability_ids):
+        violations.append(
+            "CANONICAL_AUTHORING_README_STRUCTURE: "
+            f"{rel}: README missing capability id from capabilities.py"
+        )
+
+    return violations
 
 
 def _surface_paths() -> tuple[Path, ...]:
@@ -111,6 +211,8 @@ def audit_repository(repo_root: Path = REPO_ROOT) -> list[str]:
             violations.append(f"CANONICAL_AUTHORING_MISSING_SURFACE: {path.relative_to(repo_root)}")
             continue
         violations.extend(scan_surface(path))
+        if path.parent.parent.name == "agents" and path.parent.name in STAGE_16_ACTIVE_AGENTS:
+            violations.extend(scan_active_agent_readme(path, path.parent.name))
     return violations
 
 

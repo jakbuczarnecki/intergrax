@@ -41,8 +41,11 @@ Add the agent via ``AgentBinding.mount(...)`` in the Tier-3 manifest and run thr
 
 See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
+## Capabilities
 
-## ## Layout
+`dispute.intake`
+
+## Layout
 
 - ``dispute_intake_agent.py`` - Agent class (UAEP)
 - ``contract.py`` / ``capabilities.py`` - AgentContract

@@ -42,9 +42,11 @@ See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
 Host may inject via ``settings.external_work_integration`` and ``settings.meaningful_side_effect_policy``.
 
+## Capabilities
 
+`external_contractor.adapt`
 
-## ## Layout
+## Layout
 
 - ``external_contractor_adapter_agent.py`` - Agent class (ACP hooks)
 - ``contract.py`` / ``capabilities.py`` - AgentContract

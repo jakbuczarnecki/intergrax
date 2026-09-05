@@ -6,7 +6,7 @@ Architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plan: [IMPLEMENTATION_P
 
 1. Implement domain logic in `steps/`
 2. Run smoke test: `uv run pytest agents/signoff_probe/tests -q`
-3. For lab HTTP: register in `applications/lab_application/host/wiring.py` (see guide Step 4C)
+3. For lab HTTP: add `AgentBinding.mount(...)` in lab manifest (see guide Step 4C)
 
 ## Unit-test authoring (isolated)
 
@@ -32,8 +32,11 @@ Add the agent via ``AgentBinding.mount(...)`` in the Tier-3 manifest and run thr
 
 See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md``.
 
+## Capabilities
 
-## ## Layout
+`signoff.probe`
+
+## Layout
 
 - ``signoff_probe_agent.py`` - Agent class (UAEP)
 - ``contract.py`` / ``capabilities.py`` - AgentContract

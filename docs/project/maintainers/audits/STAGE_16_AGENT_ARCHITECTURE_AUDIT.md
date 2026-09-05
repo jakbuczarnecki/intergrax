@@ -62,6 +62,7 @@ Nexus: internal orchestration — NOT Tier-3 public execution API
 | S16-002 | P1 | `intergrax/scaffold/new_agent.py` | Scaffold README/notebook emitted `AgentRegistry()` + `NexusLoop` quickstart | Scaffold must not teach lifecycle bypass | Updated `_readme`, `_notebook_stub`, integration wording | **Fixed** |
 | S16-003 | P1 | `intergrax/scaffold/doc_templates.py` | Architecture doc template listed `AgentRegistry.register()` | Same as S16-001 | Registration → Integration section | **Fixed** |
 | S16-004 | P1 | `agents/*/README.md` (9 active) | Public README quickstarts used mutable `AgentRegistry` | Public agent surfaces must not recommend local registration | Migrated to `agent.run()` + distribution lifecycle guidance | **Fixed** |
+| S16-004b | P1 | `agents/*/README.md` (9 active) | Stage 16 migration dropped `## Capabilities`, corrupted `## Layout`, duplicated Step 4 | Active README must preserve capability ids and valid section headings | Restored Capabilities/Layout; extended conformance gate for structure | **Fixed** |
 | S16-005 | P1 | Missing gate | No reusable guard on canonical authoring surfaces | Prevent regression on guide/scaffold/README | Added `check_canonical_authoring_surface_conformance.py` + unit gate | **Fixed** |
 | S16-006 | P2 | `agents/*/notebooks/*.ipynb` | Historical notebooks still import `NexusLoop` | Active/canonical notebooks must be current | Left as historical; scaffold notebook now uses `agent.run()` | **Residual** |
 | S16-007 | P2 | `agents/*/tests/*` (legacy packages) | Some agent tests still use `NexusLoop` smoke path | Unit tests should prefer `agent.run()` | Out of Stage 16 scope; existing packages not bulk-migrated | **Residual** |
@@ -138,6 +139,7 @@ Nexus: internal orchestration — NOT Tier-3 public execution API
 - **No Capability Map authority leak** found.
 - **No Agent Manager lifecycle write leak** (existing gate).
 - **Stage 15 proof gate** remains valid (no changes to proof targets).
+- **active README structure integrity** = PASS (9 agents: Capabilities preserved, valid `## Layout`, no `## ##`, no duplicate Step 4).
 
 ---
 
