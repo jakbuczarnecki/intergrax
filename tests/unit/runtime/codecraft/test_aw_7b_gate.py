@@ -22,6 +22,7 @@ from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
 from intergrax.runtime.codecraft.substrate import resolve_craft_sandbox
 from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
 from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
+from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.contracts.human_approver import local_development_approver_evidence
@@ -51,6 +52,36 @@ ATTEMPT_ID = mint_attempt_id()
 _CODECRAFT_OPS = frozenset(
     {"echo", "write_file", "read_file", "list_files", "run_python", "run_script"},
 )
+
+
+class _FakeHostedSecurityBackend:
+    """Provider-neutral hosted backend that attests sandbox security capabilities."""
+
+    def __init__(
+        self,
+        *,
+        session_id: str = "hosted-1",
+        provider_id: str = "fake-hosted",
+        isolation_tier: str = "cloud",
+        network_egress_deny_enforced: bool | None = None,
+    ) -> None:
+        self._session_id = session_id
+        self._provider_id = provider_id
+        self._isolation_tier = isolation_tier
+        self._network_egress_deny_enforced = network_egress_deny_enforced
+
+    def create_session(self):
+        return MagicMock(session_id=self._session_id)
+
+    def exec(self, session_id: str, command: str):
+        return MagicMock(exit_code=0, stdout="", stderr="")
+
+    def security_capabilities(self) -> SandboxSecurityCapabilities:
+        return SandboxSecurityCapabilities(
+            isolation_tier=self._isolation_tier,  # type: ignore[arg-type]
+            provider_id=self._provider_id,
+            network_egress_deny_enforced=self._network_egress_deny_enforced,
+        )
 
 
 def _sandbox(tmp_path: Path) -> SandboxSession:
@@ -265,9 +296,26 @@ def test_hitl_approval_from_other_craft_rejected(tmp_path: Path) -> None:
         reset_active_execution_identity(token)
 
 
-def test_hosted_resolution_marks_provider_identity() -> None:
+def test_hosted_unknown_capability_fails_closed_on_deny() -> None:
     backend = MagicMock()
-    backend.create_session.return_value = MagicMock(session_id="hosted-1")
+    backend.create_session.return_value = MagicMock(session_id="hosted-unknown")
+    profile = CodeCraftProfile(mode="autonomous", isolation_tier="cloud", network_egress="deny")
+    resolution = resolve_craft_sandbox(
+        ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": profile}),
+        profile,
+        tenant_id=TENANT,
+        task_id=TASK,
+    )
+    assert resolution.session is None
+    assert resolution.error == "network_egress_requirement_unsatisfied"
+
+
+def test_hosted_positive_capability_allows_deny() -> None:
+    backend = _FakeHostedSecurityBackend(
+        session_id="hosted-proven",
+        provider_id="fake-hosted:proven",
+        network_egress_deny_enforced=True,
+    )
     profile = CodeCraftProfile(mode="autonomous", isolation_tier="cloud", network_egress="deny")
     resolution = resolve_craft_sandbox(
         ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": profile}),
@@ -277,7 +325,69 @@ def test_hosted_resolution_marks_provider_identity() -> None:
     )
     assert isinstance(resolution.session, HostedSandboxSession)
     assert resolution.capabilities is not None
-    assert resolution.capabilities.provider_id.startswith("hosted:")
+    assert resolution.capabilities.network_egress_enforced is True
+    assert resolution.capabilities.provider_id == "fake-hosted:proven"
+
+
+def test_hosted_false_capability_fails_closed_on_deny() -> None:
+    backend = _FakeHostedSecurityBackend(network_egress_deny_enforced=False)
+    profile = CodeCraftProfile(mode="autonomous", isolation_tier="cloud", network_egress="deny")
+    resolution = resolve_craft_sandbox(
+        ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": profile}),
+        profile,
+        tenant_id=TENANT,
+        task_id=TASK,
+    )
+    assert resolution.session is None
+    assert resolution.error == "network_egress_requirement_unsatisfied"
+
+
+def test_hosted_type_alone_does_not_prove_egress_deny() -> None:
+    backend = MagicMock()
+    backend.create_session.return_value = MagicMock(session_id="hosted-type-only")
+    profile = CodeCraftProfile(mode="autonomous", isolation_tier="cloud", network_egress="deny")
+    resolution = resolve_craft_sandbox(
+        ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": profile}),
+        profile,
+        tenant_id=TENANT,
+        task_id=TASK,
+    )
+    assert isinstance(resolution.session, HostedSandboxSession) is False
+    assert resolution.error == "network_egress_requirement_unsatisfied"
+
+
+def test_local_capability_evidence_uses_public_contract(tmp_path: Path) -> None:
+    sandbox = _sandbox(tmp_path)
+    caps = sandbox.security_capabilities()
+    assert caps.isolation_tier == "local"
+    assert caps.network_egress_deny_enforced is True
+    substrate_source = Path("intergrax/runtime/codecraft/substrate.py").read_text(encoding="utf-8")
+    assert "_allowed_operations" not in substrate_source
+
+
+def test_architecture_gate_blocks_private_sandbox_field_access() -> None:
+    substrate_source = Path("intergrax/runtime/codecraft/substrate.py").read_text(encoding="utf-8")
+    assert "_allowed_operations" not in substrate_source
+    assert "_private_config" not in substrate_source
+    assert "_backend" not in substrate_source
+
+
+def test_hosted_resolution_marks_provider_identity() -> None:
+    backend = _FakeHostedSecurityBackend(
+        session_id="hosted-1",
+        provider_id="fake-hosted:identity",
+        network_egress_deny_enforced=True,
+    )
+    profile = CodeCraftProfile(mode="autonomous", isolation_tier="cloud", network_egress="deny")
+    resolution = resolve_craft_sandbox(
+        ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": profile}),
+        profile,
+        tenant_id=TENANT,
+        task_id=TASK,
+    )
+    assert isinstance(resolution.session, HostedSandboxSession)
+    assert resolution.capabilities is not None
+    assert resolution.capabilities.provider_id == "fake-hosted:identity"
     assert resolution.capabilities.network_egress_enforced is True
 
 
@@ -294,9 +404,12 @@ def test_strong_isolation_does_not_call_local_resolver(tmp_path: Path, tier: str
 
 
 def test_container_hosted_resolution_selects_hosted_session() -> None:
-    backend = MagicMock()
-    backend.create_session.return_value = MagicMock(session_id="hosted-container-1")
-    profile = CodeCraftProfile(mode="autonomous", isolation_tier="container")
+    backend = _FakeHostedSecurityBackend(
+        session_id="hosted-container-1",
+        isolation_tier="container",
+        network_egress_deny_enforced=True,
+    )
+    profile = CodeCraftProfile(mode="autonomous", isolation_tier="container", network_egress="deny")
     resolution = resolve_craft_sandbox(
         ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": profile}),
         profile,

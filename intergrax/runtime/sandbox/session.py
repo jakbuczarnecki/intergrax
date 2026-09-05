@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import FrozenSet
 from uuid import uuid4
 
+from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities
 from intergrax.runtime.sandbox.models import (
     SandboxAuditEntry,
     SandboxExecutionResult,
@@ -82,6 +83,19 @@ class SandboxSession:
     @property
     def cancelled(self) -> bool:
         return self._cancelled
+
+    @property
+    def allowed_operations(self) -> frozenset[str]:
+        """Public allowlist surface for operation-level capability evidence."""
+        return frozenset(self._allowed_operations)
+
+    def security_capabilities(self) -> SandboxSecurityCapabilities:
+        """Honest local substrate evidence — workspace isolation, not OS-network proof."""
+        return SandboxSecurityCapabilities(
+            isolation_tier="local",
+            provider_id=f"local:{self.session_id}",
+            network_egress_deny_enforced="browser_fetch" not in self._allowed_operations,
+        )
 
     @property
     def audit_log(self) -> list[SandboxAuditEntry]:

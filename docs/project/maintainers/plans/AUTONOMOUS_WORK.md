@@ -56,7 +56,7 @@ Delivery rule:
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
 | AW-5 | Worker → execution composition and budgets | **DONE** (AW-5A DONE, AW-5B DONE) |
 | AW-6 | Recovery Controller and obstacle taxonomy | **DONE** (AW-6A DONE, AW-6B DONE) |
-| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A DONE, AW-7B-GATE IN PROGRESS) |
+| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A DONE, AW-7B-GATE READY FOR INDEPENDENT AUDIT, AW-7B NOT STARTED) |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
 | AW-9 | Worker control plane | NOT STARTED |
 | AW-10 | Virtual Workforce reference application | NOT STARTED |

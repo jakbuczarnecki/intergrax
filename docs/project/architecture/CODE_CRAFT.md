@@ -384,7 +384,7 @@ Not every CodeCraft execution uses HITL.
 
 `CodeCraftProfile.network_egress`: `deny` | `allowlist`.
 
-**Enforcement (AW-7B-GATE):** when `deny`, `resolve_craft_sandbox` requires substrate-proven egress denial before exec — local `SandboxSession` must not expose `browser_fetch`; hosted sessions are treated as provider-enforced. Fail closed with `network_egress_requirement_unsatisfied` when proof is missing.
+**Enforcement (AW-7B-GATE):** when `deny`, `resolve_craft_sandbox` requires explicit trusted substrate capability evidence before exec. Local `SandboxSession` proves operation-level denial only (`browser_fetch` unavailable) — not universal OS-network isolation. Hosted substrate type alone is not proof; provider backends must attest `network_egress_deny_enforced` through the public Sandbox security-capability contract. Unknown capability fails closed with `network_egress_requirement_unsatisfied`.
 
 ## Forbidden imports and security scan
 
@@ -497,7 +497,7 @@ Accepted Protocol v2 audit layer [`CODE_CRAFT`](../../audit_results/2026-08-18/C
 4. **Evidence-consuming promotion** - promotion eligible only from verified session state; must preserve real gate/verdict/test/HITL evidence; must never fabricate success; `promotion_schema_ref` fail-closed when configured ([`AUDIT-20260818-CODE_CRAFT-04`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** on harness path (AW-7B-GATE, 2026-09).
 5. **Same-sandbox verification** - tests and verdict bind to the same sandbox/artifact identity as execution; no silent re-resolution of a different substrate ([`AUDIT-20260818-CODE_CRAFT-05`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** on harness path — `CodeCraftOrchestrator` passes resolved sandbox to `CraftTestRunner` (AW-7B-GATE, 2026-09).
 6. **Isolation anti-downgrade** - required `cloud`/`container` tier fails closed when eligible substrate cannot resolve; no silent local downgrade unless explicit trusted downgrade policy ([`AUDIT-20260818-CODE_CRAFT-06`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** on harness path (AW-7B-GATE, 2026-09).
-7. **Runtime egress enforcement** - `network_egress` is substrate-enforced capability; `deny` requires provable outbound denial before exec; fail closed when substrate cannot satisfy posture ([`AUDIT-20260818-CODE_CRAFT-07`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** for operation-level local proof and hosted substrate path (AW-7B-GATE, 2026-09); universal OS-network egress proof not claimed.
+7. **Runtime egress enforcement** - `network_egress` is substrate-enforced capability; `deny` requires trusted capability evidence (`network_egress_deny_enforced`) before exec; hosted substrate type alone is not proof; unknown capability fails closed ([`AUDIT-20260818-CODE_CRAFT-07`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** for operation-level local proof and hosted provider-attested path (AW-7B-GATE, 2026-09); universal OS-network egress proof not claimed.
 
 CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOrchestrator` remains canonical lifecycle owner. Remediation tracks **CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY** (01–03), **CODECRAFT-VERIFICATION-INTEGRITY** (04–05), **CODECRAFT-ISOLATION-INTEGRITY** (06–07) in [plan](../maintainers/plans/CODE_CRAFT.md). Historical Protocol v2 audit records pre-remediation defects; AW-7B-GATE implementation on `development` addresses 01–07 on the harness path pending independent audit acceptance.
 

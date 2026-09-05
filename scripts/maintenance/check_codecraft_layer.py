@@ -59,7 +59,7 @@ def main() -> int:
         "resolve_craft_sandbox_session" not in service_source
         and "resolve_craft_sandbox_with_evidence" not in service_source
     ):
-        errors.append("codecraft.run must use resolve_craft_sandbox_session")
+        errors.append("codecraft.run must resolve craft sandbox with trusted capability evidence")
 
     if errors:
         print("check_codecraft_layer: FAIL", file=sys.stderr)

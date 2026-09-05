@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from intergrax.codecraft.profile import CodeCraftProfile, IsolationTier, NetworkEgress
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.sandbox.contracts import SandboxExecCapable
+from intergrax.runtime.sandbox.contracts import SandboxExecCapable, SandboxSecurityCapable
 from intergrax.runtime.sandbox.hosted_resolver import resolve_hosted_sandbox_session
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from intergrax.runtime.sandbox.session import SandboxSession
@@ -37,17 +37,13 @@ class CraftSandboxResolution:
     error: str = ""
 
 
-def _local_provider_id(session: SandboxSession) -> str:
-    return f"local:{session.session_id}"
-
-
-def _hosted_provider_id(session: HostedSandboxSession) -> str:
-    return f"hosted:{session.session_id}"
-
-
-def _local_network_egress_enforced(session: SandboxSession) -> bool:
-    """Operation-level egress deny — local subprocess isolation is not OS-network proof."""
-    return "browser_fetch" not in session._allowed_operations  # noqa: SLF001 — substrate probe
+def _egress_deny_proven(network_egress: NetworkEgress, session: SandboxExecCapable) -> bool:
+    if network_egress != "deny":
+        return True
+    if not isinstance(session, SandboxSecurityCapable):
+        return False
+    evidence = session.security_capabilities()
+    return evidence.network_egress_deny_enforced is True
 
 
 def probe_substrate_capabilities(
@@ -56,25 +52,33 @@ def probe_substrate_capabilities(
     requested_tier: IsolationTier,
     network_egress: NetworkEgress,
 ) -> CraftSubstrateCapabilities:
+    egress_enforced = _egress_deny_proven(network_egress, session)
+
     if isinstance(session, HostedSandboxSession):
         resolved_tier: IsolationTier = "cloud" if requested_tier == "cloud" else "container"
-        egress_enforced = network_egress != "deny" or True
+        provider_id = (
+            session.security_capabilities().provider_id
+            if isinstance(session, SandboxSecurityCapable)
+            else f"hosted:{session.session_id}"
+        )
         return CraftSubstrateCapabilities(
             requested_tier=requested_tier,
             resolved_tier=resolved_tier,
-            provider_id=_hosted_provider_id(session),
+            provider_id=provider_id,
             downgraded=False,
             network_egress_enforced=egress_enforced,
         )
 
     if isinstance(session, SandboxSession):
-        egress_enforced = (
-            network_egress != "deny" or _local_network_egress_enforced(session)
+        provider_id = (
+            session.security_capabilities().provider_id
+            if isinstance(session, SandboxSecurityCapable)
+            else f"local:{session.session_id}"
         )
         return CraftSubstrateCapabilities(
             requested_tier=requested_tier,
             resolved_tier="local",
-            provider_id=_local_provider_id(session),
+            provider_id=provider_id,
             downgraded=requested_tier in ("container", "cloud"),
             network_egress_enforced=egress_enforced,
         )
@@ -84,7 +88,7 @@ def probe_substrate_capabilities(
         resolved_tier=requested_tier,
         provider_id="unknown",
         downgraded=False,
-        network_egress_enforced=network_egress != "deny",
+        network_egress_enforced=egress_enforced,
     )
 
 
