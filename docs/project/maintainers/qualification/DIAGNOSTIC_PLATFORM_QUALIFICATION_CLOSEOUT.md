@@ -97,4 +97,5 @@ Distinct runtime/integration classes = 6
 ## Related closeouts
 
 - Engine: [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md)
+- H1 test-suite health (R3): [`DIAG_FUNCTIONAL_H1_R3_TEST_SUITE_HEALTH_QUALIFICATION.md`](DIAG_FUNCTIONAL_H1_R3_TEST_SUITE_HEALTH_QUALIFICATION.md) — `TEST-SUITE HEALTH QUALIFIED` at `869653f7c7861657d331efd059118e96a37058e9`; does not claim live external-service requalification
 - Architecture: [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md)
