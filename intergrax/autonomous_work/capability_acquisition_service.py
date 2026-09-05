@@ -32,6 +32,7 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     CapabilityAcquisitionReasonCode,
     CapabilityDiscoveryDisposition,
     CapabilityNeedKind,
+    ResolvedWorkerCapabilityPolicy,
     WorkerAutonomyLevel,
     WorkerCapabilityAcquisitionDecision,
     WorkerCapabilityAcquisitionRequest,
@@ -43,11 +44,13 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     WorkerCapabilityDiscoveryResult,
     WorkerCapabilityNeed,
     WorkerCapabilityAuthorityCompatibility,
+    autonomy_level_allowed,
     derive_worker_capability_acquisition_decision_id,
     derive_worker_capability_candidate_id,
     derive_worker_capability_need_id,
     is_capability_acquisition_recovery_strategy,
     need_implies_authority_expansion,
+    operations_allowed_by_policy,
 )
 from intergrax.contracts.autonomous_work.obstacle_recovery import (
     RecoveryStrategy,
@@ -87,7 +90,6 @@ class _DiscoveryLayer:
         | WorkerApprovedAlternateDiscoveryPort
         | WorkerConfigurationOpportunityDiscoveryPort
     )
-    required: bool
 
 
 class WorkerCapabilityAcquisitionDecisionService:
@@ -109,11 +111,11 @@ class WorkerCapabilityAcquisitionDecisionService:
         self._authority_compatibility = authority_compatibility
         self._codecraft_profile_resolver = codecraft_profile_resolver
         self._layers = (
-            _DiscoveryLayer("tool", tool_discovery, required=True),
-            _DiscoveryLayer("skill", skill_discovery, required=True),
-            _DiscoveryLayer("integration", integration_discovery, required=True),
-            _DiscoveryLayer("approved_alternate", approved_alternate_discovery, required=False),
-            _DiscoveryLayer("configuration", configuration_discovery, required=False),
+            _DiscoveryLayer("tool", tool_discovery),
+            _DiscoveryLayer("skill", skill_discovery),
+            _DiscoveryLayer("integration", integration_discovery),
+            _DiscoveryLayer("approved_alternate", approved_alternate_discovery),
+            _DiscoveryLayer("configuration", configuration_discovery),
         )
 
     def decide(
@@ -161,7 +163,7 @@ class WorkerCapabilityAcquisitionDecisionService:
         all_candidates: list[WorkerCapabilityCandidate] = []
         for layer in self._layers:
             outcome = layer.port.discover(discovery_request)
-            layer_result = _handle_layer_outcome(outcome, layer_required=layer.required)
+            layer_result = _handle_layer_outcome(outcome)
             if isinstance(layer_result, WorkerCapabilityAcquisitionResult):
                 if layer_result.decision is None:
                     return _simple_result(
@@ -177,7 +179,7 @@ class WorkerCapabilityAcquisitionDecisionService:
                 all_candidates.extend(layer_result)
                 selected = self._select_existing_candidate(
                     request=request,
-                    policy_allowed_kinds=policy.allowed_candidate_kinds,
+                    policy=policy,
                     candidates=tuple(all_candidates),
                     decided_at=timestamp,
                 )
@@ -194,7 +196,7 @@ class WorkerCapabilityAcquisitionDecisionService:
         self,
         *,
         request: WorkerCapabilityAcquisitionRequest,
-        policy_allowed_kinds: frozenset[WorkerCapabilityCandidateKind],
+        policy: ResolvedWorkerCapabilityPolicy,
         candidates: tuple[WorkerCapabilityCandidate, ...],
         decided_at: datetime,
     ) -> WorkerCapabilityAcquisitionResult | None:
@@ -209,8 +211,20 @@ class WorkerCapabilityAcquisitionDecisionService:
 
         eligible: list[tuple[WorkerCapabilityCandidate, WorkerCapabilityAuthorityCompatibility]] = []
         authority_blocked: list[WorkerCapabilityCandidate] = []
+        policy_blocked_autonomy = False
         for candidate in normalized:
-            if candidate.candidate_kind not in policy_allowed_kinds:
+            if candidate.candidate_kind not in policy.allowed_candidate_kinds:
+                continue
+            if not autonomy_level_allowed(
+                candidate.risk_class,
+                policy.allowed_autonomy_levels,
+            ):
+                policy_blocked_autonomy = True
+                continue
+            if not operations_allowed_by_policy(
+                request.need.required_operations,
+                policy.allowed_operation_patterns,
+            ):
                 continue
             compatibility = self._authority_compatibility.assess(
                 worker_instance_id=request.need.worker_instance_id,
@@ -251,15 +265,23 @@ class WorkerCapabilityAcquisitionDecisionService:
                 reason_code=CapabilityAcquisitionReasonCode.A4_AUTHORITY_CHANGE_REQUIRED,
                 decided_at=decided_at,
             )
+        if policy_blocked_autonomy:
+            return _policy_blocked_result(request, decided_at)
         return None
 
     def _classify_generated_candidate(
         self,
         *,
         request: WorkerCapabilityAcquisitionRequest,
-        policy,
+        policy: ResolvedWorkerCapabilityPolicy,
         decided_at: datetime,
     ) -> WorkerCapabilityAcquisitionResult:
+        if not operations_allowed_by_policy(
+            request.need.required_operations,
+            policy.allowed_operation_patterns,
+        ):
+            return _policy_blocked_result(request, decided_at)
+
         strategy = request.recovery_decision.strategy
         need_kind = request.need.need_kind
 
@@ -272,20 +294,25 @@ class WorkerCapabilityAcquisitionDecisionService:
                 and WorkerCapabilityCandidateKind.ADAPTIVE_INTEGRATION
                 in policy.allowed_candidate_kinds
             ):
-                candidate = _synthetic_candidate(
-                    request.need,
-                    candidate_kind=WorkerCapabilityCandidateKind.ADAPTIVE_INTEGRATION,
-                    autonomy=WorkerAutonomyLevel.A2_SCOPED_ADAPTIVE,
-                    capability_ref="adaptive:integration",
-                )
-                return _decision_result(
-                    request=request,
-                    disposition=CapabilityAcquisitionDisposition.SCOPED_ADAPTATION_CANDIDATE,
-                    reason_code=CapabilityAcquisitionReasonCode.A2_ADAPTATION_REQUIRED,
-                    selected_candidate=candidate,
-                    autonomy_level=WorkerAutonomyLevel.A2_SCOPED_ADAPTIVE,
-                    decided_at=decided_at,
-                )
+                if autonomy_level_allowed(
+                    WorkerAutonomyLevel.A2_SCOPED_ADAPTIVE,
+                    policy.allowed_autonomy_levels,
+                ):
+                    candidate = _synthetic_candidate(
+                        request.need,
+                        candidate_kind=WorkerCapabilityCandidateKind.ADAPTIVE_INTEGRATION,
+                        autonomy=WorkerAutonomyLevel.A2_SCOPED_ADAPTIVE,
+                        capability_ref="adaptive:integration",
+                    )
+                    return _decision_result(
+                        request=request,
+                        disposition=CapabilityAcquisitionDisposition.SCOPED_ADAPTATION_CANDIDATE,
+                        reason_code=CapabilityAcquisitionReasonCode.A2_ADAPTATION_REQUIRED,
+                        selected_candidate=candidate,
+                        autonomy_level=WorkerAutonomyLevel.A2_SCOPED_ADAPTIVE,
+                        decided_at=decided_at,
+                    )
+                return _policy_blocked_result(request, decided_at)
             return _fail_closed_no_safe(request, decided_at)
 
         if (
@@ -294,47 +321,59 @@ class WorkerCapabilityAcquisitionDecisionService:
             in policy.allowed_candidate_kinds
             and need_kind is CapabilityNeedKind.EXTERNAL_INTEGRATION
         ):
-            candidate = _synthetic_candidate(
-                request.need,
-                candidate_kind=WorkerCapabilityCandidateKind.DURABLE_PRODUCTION_CHANGE,
-                autonomy=WorkerAutonomyLevel.A3_PRODUCTION_CHANGE,
-                capability_ref="durable:production-change",
-            )
-            return _decision_result(
-                request=request,
-                disposition=CapabilityAcquisitionDisposition.PRODUCTION_CHANGE_REQUIRED,
-                reason_code=CapabilityAcquisitionReasonCode.A3_PRODUCTION_CHANGE_REQUIRED,
-                selected_candidate=candidate,
-                autonomy_level=WorkerAutonomyLevel.A3_PRODUCTION_CHANGE,
-                decided_at=decided_at,
-            )
+            if autonomy_level_allowed(
+                WorkerAutonomyLevel.A3_PRODUCTION_CHANGE,
+                policy.allowed_autonomy_levels,
+            ):
+                candidate = _synthetic_candidate(
+                    request.need,
+                    candidate_kind=WorkerCapabilityCandidateKind.DURABLE_PRODUCTION_CHANGE,
+                    autonomy=WorkerAutonomyLevel.A3_PRODUCTION_CHANGE,
+                    capability_ref="durable:production-change",
+                )
+                return _decision_result(
+                    request=request,
+                    disposition=CapabilityAcquisitionDisposition.PRODUCTION_CHANGE_REQUIRED,
+                    reason_code=CapabilityAcquisitionReasonCode.A3_PRODUCTION_CHANGE_REQUIRED,
+                    selected_candidate=candidate,
+                    autonomy_level=WorkerAutonomyLevel.A3_PRODUCTION_CHANGE,
+                    decided_at=decided_at,
+                )
+            return _policy_blocked_result(request, decided_at)
 
-        if policy.generated_capability_allowed and _codecraft_allowed(
-            request,
-            self._codecraft_profile_resolver,
-        ):
-            candidate = _synthetic_candidate(
-                request.need,
-                candidate_kind=WorkerCapabilityCandidateKind.CODECRAFT_EPHEMERAL,
-                autonomy=WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
-                capability_ref="ephemeral:codecraft",
-            )
-            return _decision_result(
-                request=request,
-                disposition=CapabilityAcquisitionDisposition.EPHEMERAL_GENERATION_CANDIDATE,
-                reason_code=CapabilityAcquisitionReasonCode.A1_CANDIDATE_ALLOWED,
-                selected_candidate=candidate,
-                autonomy_level=WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
-                decided_at=decided_at,
-            )
+        if policy.generated_capability_allowed:
+            if autonomy_level_allowed(
+                WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
+                policy.allowed_autonomy_levels,
+            ) and _codecraft_allowed(
+                request,
+                self._codecraft_profile_resolver,
+            ):
+                candidate = _synthetic_candidate(
+                    request.need,
+                    candidate_kind=WorkerCapabilityCandidateKind.CODECRAFT_EPHEMERAL,
+                    autonomy=WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
+                    capability_ref="ephemeral:codecraft",
+                )
+                return _decision_result(
+                    request=request,
+                    disposition=CapabilityAcquisitionDisposition.EPHEMERAL_GENERATION_CANDIDATE,
+                    reason_code=CapabilityAcquisitionReasonCode.A1_CANDIDATE_ALLOWED,
+                    selected_candidate=candidate,
+                    autonomy_level=WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
+                    decided_at=decided_at,
+                )
+            if not autonomy_level_allowed(
+                WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
+                policy.allowed_autonomy_levels,
+            ):
+                return _policy_blocked_result(request, decided_at)
 
         return _fail_closed_no_safe(request, decided_at)
 
 
 def _handle_layer_outcome(
     outcome: WorkerCapabilityDiscoveryLayerOutcome,
-    *,
-    layer_required: bool,
 ) -> list[WorkerCapabilityCandidate] | WorkerCapabilityAcquisitionResult | None:
     if outcome.disposition is CapabilityDiscoveryDisposition.CONFLICT:
         return WorkerCapabilityAcquisitionResult(
@@ -342,11 +381,11 @@ def _handle_layer_outcome(
             decision=None,
         )
     if outcome.disposition is CapabilityDiscoveryDisposition.UNAVAILABLE:
-        if layer_required:
-            return WorkerCapabilityAcquisitionResult(
-                disposition=CapabilityAcquisitionDisposition.UNAVAILABLE,
-                decision=None,
-            )
+        return WorkerCapabilityAcquisitionResult(
+            disposition=CapabilityAcquisitionDisposition.UNAVAILABLE,
+            decision=None,
+        )
+    if outcome.disposition is CapabilityDiscoveryDisposition.NOT_CONFIGURED:
         return None
     if outcome.disposition is CapabilityDiscoveryDisposition.NO_MATCH:
         return None
@@ -451,6 +490,18 @@ def _fail_closed_no_safe(
         request=request,
         disposition=CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY,
         reason_code=CapabilityAcquisitionReasonCode.NO_SAFE_CANDIDATE,
+        decided_at=decided_at,
+    )
+
+
+def _policy_blocked_result(
+    request: WorkerCapabilityAcquisitionRequest,
+    decided_at: datetime,
+) -> WorkerCapabilityAcquisitionResult:
+    return _simple_result(
+        request=request,
+        disposition=CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY,
+        reason_code=CapabilityAcquisitionReasonCode.POLICY_BLOCKED,
         decided_at=decided_at,
     )
 

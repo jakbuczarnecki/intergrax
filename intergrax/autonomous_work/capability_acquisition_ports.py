@@ -170,7 +170,7 @@ class UnavailableIntegrationCapabilityDiscovery:
 
 
 class UnavailableApprovedAlternateDiscovery:
-    """Fail-closed approved alternate discovery when catalog is absent."""
+    """Fail-closed approved alternate discovery when catalog lookup fails."""
 
     def discover(
         self,
@@ -183,11 +183,28 @@ class UnavailableApprovedAlternateDiscovery:
 
         return WorkerCapabilityDiscoveryLayerOutcome(
             disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+        )
+
+
+class NotConfiguredApprovedAlternateDiscovery:
+    """Approved alternate domain absent by deployment design — ladder may continue."""
+
+    def discover(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> WorkerCapabilityDiscoveryLayerOutcome:
+        del request
+        from intergrax.contracts.autonomous_work.capability_acquisition import (
+            CapabilityDiscoveryDisposition,
+        )
+
+        return WorkerCapabilityDiscoveryLayerOutcome(
+            disposition=CapabilityDiscoveryDisposition.NOT_CONFIGURED,
         )
 
 
 class UnavailableConfigurationOpportunityDiscovery:
-    """Fail-closed configuration opportunity discovery when domain is absent."""
+    """Fail-closed configuration opportunity discovery when lookup fails."""
 
     def discover(
         self,
@@ -200,6 +217,23 @@ class UnavailableConfigurationOpportunityDiscovery:
 
         return WorkerCapabilityDiscoveryLayerOutcome(
             disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+        )
+
+
+class NotConfiguredConfigurationOpportunityDiscovery:
+    """Configuration opportunity domain absent by deployment design — ladder may continue."""
+
+    def discover(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> WorkerCapabilityDiscoveryLayerOutcome:
+        del request
+        from intergrax.contracts.autonomous_work.capability_acquisition import (
+            CapabilityDiscoveryDisposition,
+        )
+
+        return WorkerCapabilityDiscoveryLayerOutcome(
+            disposition=CapabilityDiscoveryDisposition.NOT_CONFIGURED,
         )
 
 
@@ -266,7 +300,7 @@ def permissive_capability_policy(
         profile_ref=profile_ref,
         allowed_candidate_kinds=frozenset(WorkerCapabilityCandidateKind),
         allowed_autonomy_levels=frozenset(WorkerAutonomyLevel),
-        allowed_operation_patterns=(),
+        allowed_operation_patterns=("*",),
         generated_capability_allowed=True,
         adaptive_integration_allowed=True,
         durable_change_allowed=True,

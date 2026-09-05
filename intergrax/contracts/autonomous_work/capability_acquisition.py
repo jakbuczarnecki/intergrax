@@ -9,6 +9,7 @@ Does not execute capability acquisition, mint authority, or invoke CodeCraft.
 
 from __future__ import annotations
 
+import fnmatch
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -101,6 +102,7 @@ class CapabilityDiscoveryDisposition(StrEnum):
     MATCH_FOUND = "MATCH_FOUND"
     NO_MATCH = "NO_MATCH"
     UNAVAILABLE = "UNAVAILABLE"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
     CONFLICT = "CONFLICT"
     POLICY_BLOCKED = "POLICY_BLOCKED"
     AUTHORITY_CHANGE_REQUIRED = "AUTHORITY_CHANGE_REQUIRED"
@@ -134,6 +136,7 @@ class CapabilityAcquisitionReasonCode(StrEnum):
     A3_PRODUCTION_CHANGE_REQUIRED = "A3_PRODUCTION_CHANGE_REQUIRED"
     A4_AUTHORITY_CHANGE_REQUIRED = "A4_AUTHORITY_CHANGE_REQUIRED"
     NO_SAFE_CANDIDATE = "NO_SAFE_CANDIDATE"
+    POLICY_BLOCKED = "POLICY_BLOCKED"
     DISCOVERY_UNAVAILABLE = "DISCOVERY_UNAVAILABLE"
     PROFILE_UNAVAILABLE = "PROFILE_UNAVAILABLE"
     STALE_PROFILE = "STALE_PROFILE"
@@ -397,7 +400,13 @@ class WorkerCapabilityDiscoveryLayerOutcome:
 
 @dataclass(frozen=True, slots=True)
 class ResolvedWorkerCapabilityPolicy:
-    """Resolved capability acquisition policy — does not grant authority."""
+    """Resolved capability acquisition policy — does not grant authority.
+
+  ``allowed_operation_patterns`` semantics:
+  - empty tuple: no operations allowed (fail-closed)
+  - ``*``: unrestricted operation admission
+  - otherwise: exact operation ID or ``fnmatch`` glob match
+    """
 
     profile_ref: CapabilityProfileRef
     allowed_candidate_kinds: frozenset[WorkerCapabilityCandidateKind]
@@ -599,6 +608,43 @@ def a4_never_self_authorized(autonomy_level: WorkerAutonomyLevel | None) -> bool
     """Hard invariant gate — A4 must never be auto-executable."""
 
     return autonomy_level is WorkerAutonomyLevel.A4_AUTHORITY_CHANGE
+
+
+def operation_allowed(operation: str, allowed_patterns: tuple[str, ...]) -> bool:
+    """Return whether ``operation`` is admitted by capability policy patterns.
+
+    Empty ``allowed_patterns`` means no operations are allowed (fail-closed).
+    Pattern ``*`` admits any operation. Otherwise exact match or ``fnmatch`` glob.
+    """
+
+    if not allowed_patterns:
+        return False
+    for pattern in allowed_patterns:
+        if pattern == "*":
+            return True
+        if operation == pattern:
+            return True
+        if fnmatch.fnmatch(operation, pattern):
+            return True
+    return False
+
+
+def operations_allowed_by_policy(
+    required_operations: tuple[str, ...],
+    allowed_patterns: tuple[str, ...],
+) -> bool:
+    """Return True when every required operation is admitted by policy patterns."""
+
+    return all(operation_allowed(item, allowed_patterns) for item in required_operations)
+
+
+def autonomy_level_allowed(
+    autonomy_level: WorkerAutonomyLevel,
+    allowed_levels: frozenset[WorkerAutonomyLevel],
+) -> bool:
+    """Return True when ``autonomy_level`` is admitted by resolved capability policy."""
+
+    return autonomy_level in allowed_levels
 
 
 def _validate_operations(value: tuple[str, ...] | list[str]) -> tuple[str, ...]:

@@ -13,6 +13,8 @@ from pydantic import BaseModel
 
 from intergrax.autonomous_work.capability_acquisition_ports import (
     AllowAllAuthorityCompatibilityPort,
+    NotConfiguredApprovedAlternateDiscovery,
+    NotConfiguredConfigurationOpportunityDiscovery,
     StaticCodecraftProfileResolver,
     StaticWorkerCapabilityProfileResolver,
     UnavailableApprovedAlternateDiscovery,
@@ -46,6 +48,7 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     WorkerCapabilityDiscoveryLayerOutcome,
     WorkerCapabilityNeed,
     WorkerCapabilityAuthorityCompatibility,
+    operation_allowed,
     derive_worker_capability_candidate_id,
 )
 from intergrax.contracts.autonomous_work.obstacle_recovery import (
@@ -212,8 +215,8 @@ def _service(
         or SkillRegistryCapabilityDiscoveryAdapter(skill_registry or SkillRegistry()),
         integration_discovery=integration_adapter
         or IntegrationCatalogCapabilityDiscoveryAdapter(),
-        approved_alternate_discovery=UnavailableApprovedAlternateDiscovery(),
-        configuration_discovery=UnavailableConfigurationOpportunityDiscovery(),
+        approved_alternate_discovery=NotConfiguredApprovedAlternateDiscovery(),
+        configuration_discovery=NotConfiguredConfigurationOpportunityDiscovery(),
         authority_compatibility=authority or AllowAllAuthorityCompatibilityPort(),
         codecraft_profile_resolver=StaticCodecraftProfileResolver(allowed=codecraft_allowed),
     )
@@ -306,7 +309,7 @@ def test_approved_alternate_selected() -> None:
         approved_alternate_discovery=MappingApprovedAlternateDiscoveryAdapter(
             {(_OPERATION,): (candidate,)},
         ),
-        configuration_discovery=UnavailableConfigurationOpportunityDiscovery(),
+        configuration_discovery=NotConfiguredConfigurationOpportunityDiscovery(),
         authority_compatibility=AllowAllAuthorityCompatibilityPort(),
     )
     result = service.decide(_request())
@@ -341,7 +344,7 @@ def test_existing_configuration_selected() -> None:
         tool_discovery=ToolRegistryCapabilityDiscoveryAdapter(ToolRegistry()),
         skill_discovery=SkillRegistryCapabilityDiscoveryAdapter(SkillRegistry()),
         integration_discovery=IntegrationCatalogCapabilityDiscoveryAdapter(),
-        approved_alternate_discovery=UnavailableApprovedAlternateDiscovery(),
+        approved_alternate_discovery=NotConfiguredApprovedAlternateDiscovery(),
         configuration_discovery=MappingConfigurationOpportunityDiscoveryAdapter(
             {(_OPERATION,): (candidate,)},
         ),
@@ -495,8 +498,8 @@ def test_profile_unavailable_fail_closed() -> None:
         tool_discovery=UnavailableToolCapabilityDiscovery(),
         skill_discovery=UnavailableSkillCapabilityDiscovery(),
         integration_discovery=UnavailableIntegrationCapabilityDiscovery(),
-        approved_alternate_discovery=UnavailableApprovedAlternateDiscovery(),
-        configuration_discovery=UnavailableConfigurationOpportunityDiscovery(),
+        approved_alternate_discovery=NotConfiguredApprovedAlternateDiscovery(),
+        configuration_discovery=NotConfiguredConfigurationOpportunityDiscovery(),
         authority_compatibility=AllowAllAuthorityCompatibilityPort(),
     )
     result = service.decide(_request())
@@ -651,11 +654,200 @@ def test_plugin_discovery_port_injection() -> None:
         tool_discovery=fake,
         skill_discovery=UnavailableSkillCapabilityDiscovery(),
         integration_discovery=UnavailableIntegrationCapabilityDiscovery(),
-        approved_alternate_discovery=UnavailableApprovedAlternateDiscovery(),
-        configuration_discovery=UnavailableConfigurationOpportunityDiscovery(),
+        approved_alternate_discovery=NotConfiguredApprovedAlternateDiscovery(),
+        configuration_discovery=NotConfiguredConfigurationOpportunityDiscovery(),
         authority_compatibility=AllowAllAuthorityCompatibilityPort(),
     )
     result = service.decide(_request())
 
     assert fake.calls == 1
     assert result.disposition is CapabilityAcquisitionDisposition.USE_EXISTING
+
+
+def test_operation_allowed_empty_patterns_fail_closed() -> None:
+    assert operation_allowed(_OPERATION, ()) is False
+
+
+def test_operation_allowed_wildcard_and_glob() -> None:
+    assert operation_allowed(_OPERATION, ("*",)) is True
+    assert operation_allowed(_OPERATION, ("document.*",)) is True
+    assert operation_allowed(_OPERATION, ("other.*",)) is False
+
+
+def test_a0_blocked_by_autonomy_policy() -> None:
+    policy = permissive_capability_policy(_CAPABILITY_PROFILE)
+    restricted = replace(
+        policy,
+        allowed_autonomy_levels=frozenset(
+            level
+            for level in policy.allowed_autonomy_levels
+            if level is not WorkerAutonomyLevel.A0_KNOWN_CAPABILITY
+        ),
+        generated_capability_allowed=False,
+    )
+    service = _service(tool_registry=_tool_registry(_OPERATION), policy=restricted)
+    result = service.decide(_request())
+
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+
+
+def test_a1_blocked_by_autonomy_policy() -> None:
+    policy = permissive_capability_policy(_CAPABILITY_PROFILE)
+    restricted = replace(
+        policy,
+        allowed_autonomy_levels=frozenset(
+            level
+            for level in policy.allowed_autonomy_levels
+            if level is not WorkerAutonomyLevel.A1_EPHEMERAL_SAFE
+        ),
+    )
+    service = _service(
+        tool_registry=ToolRegistry(),
+        skill_registry=SkillRegistry(),
+        policy=restricted,
+    )
+    result = service.decide(_request())
+
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+
+
+def test_a2_blocked_by_autonomy_policy() -> None:
+    policy = permissive_capability_policy(_CAPABILITY_PROFILE)
+    restricted = replace(
+        policy,
+        allowed_autonomy_levels=frozenset(
+            level
+            for level in policy.allowed_autonomy_levels
+            if level is not WorkerAutonomyLevel.A2_SCOPED_ADAPTIVE
+        ),
+    )
+    recovery = _recovery_decision(strategy=RecoveryStrategy.ADAPT_INTEGRATION)
+    service = _service(
+        tool_registry=ToolRegistry(),
+        skill_registry=SkillRegistry(),
+        policy=restricted,
+    )
+    result = service.decide(_request(recovery, need_kind=CapabilityNeedKind.SCHEMA_ADAPTATION))
+
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+
+
+def test_a3_blocked_by_autonomy_policy() -> None:
+    policy = permissive_capability_policy(_CAPABILITY_PROFILE)
+    restricted = replace(
+        policy,
+        generated_capability_allowed=False,
+        adaptive_integration_allowed=False,
+        durable_change_allowed=True,
+        allowed_autonomy_levels=frozenset(
+            level
+            for level in policy.allowed_autonomy_levels
+            if level is not WorkerAutonomyLevel.A3_PRODUCTION_CHANGE
+        ),
+    )
+    service = _service(
+        tool_registry=ToolRegistry(),
+        skill_registry=SkillRegistry(),
+        policy=restricted,
+        codecraft_allowed=False,
+    )
+    result = service.decide(_request(need_kind=CapabilityNeedKind.EXTERNAL_INTEGRATION))
+
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+
+
+def test_operation_blocked_by_profile_does_not_select_tool() -> None:
+    policy = permissive_capability_policy(_CAPABILITY_PROFILE)
+    restricted = replace(policy, allowed_operation_patterns=("integration:*",))
+    service = _service(tool_registry=_tool_registry(_OPERATION), policy=restricted)
+    result = service.decide(_request())
+
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+
+
+def test_operation_blocked_does_not_invoke_authority_compatibility() -> None:
+    class CountingAuthority:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def assess(self, *, worker_instance_id, candidate):
+            del worker_instance_id, candidate
+            self.calls += 1
+            return WorkerCapabilityAuthorityCompatibility.COMPATIBLE
+
+    policy = permissive_capability_policy(_CAPABILITY_PROFILE)
+    restricted = replace(
+        policy,
+        allowed_operation_patterns=("integration:*",),
+        generated_capability_allowed=False,
+    )
+    authority = CountingAuthority()
+    service = _service(
+        tool_registry=_tool_registry(_OPERATION),
+        policy=restricted,
+        authority=authority,
+        codecraft_allowed=False,
+    )
+    result = service.decide(_request())
+
+    assert authority.calls == 0
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+
+
+def test_approved_alternate_unavailable_blocks_codecraft_fallback() -> None:
+    service = WorkerCapabilityAcquisitionDecisionService(
+        profile_resolver=StaticWorkerCapabilityProfileResolver(
+            permissive_capability_policy(_CAPABILITY_PROFILE),
+        ),
+        tool_discovery=ToolRegistryCapabilityDiscoveryAdapter(ToolRegistry()),
+        skill_discovery=SkillRegistryCapabilityDiscoveryAdapter(SkillRegistry()),
+        integration_discovery=IntegrationCatalogCapabilityDiscoveryAdapter(),
+        approved_alternate_discovery=UnavailableApprovedAlternateDiscovery(),
+        configuration_discovery=NotConfiguredConfigurationOpportunityDiscovery(),
+        authority_compatibility=AllowAllAuthorityCompatibilityPort(),
+        codecraft_profile_resolver=StaticCodecraftProfileResolver(allowed=True),
+    )
+    result = service.decide(_request())
+
+    assert result.disposition is CapabilityAcquisitionDisposition.UNAVAILABLE
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.DISCOVERY_UNAVAILABLE
+
+
+def test_configuration_unavailable_blocks_codecraft_fallback() -> None:
+    service = WorkerCapabilityAcquisitionDecisionService(
+        profile_resolver=StaticWorkerCapabilityProfileResolver(
+            permissive_capability_policy(_CAPABILITY_PROFILE),
+        ),
+        tool_discovery=ToolRegistryCapabilityDiscoveryAdapter(ToolRegistry()),
+        skill_discovery=SkillRegistryCapabilityDiscoveryAdapter(SkillRegistry()),
+        integration_discovery=IntegrationCatalogCapabilityDiscoveryAdapter(),
+        approved_alternate_discovery=NotConfiguredApprovedAlternateDiscovery(),
+        configuration_discovery=UnavailableConfigurationOpportunityDiscovery(),
+        authority_compatibility=AllowAllAuthorityCompatibilityPort(),
+        codecraft_profile_resolver=StaticCodecraftProfileResolver(allowed=True),
+    )
+    result = service.decide(_request())
+
+    assert result.disposition is CapabilityAcquisitionDisposition.UNAVAILABLE
+    assert result.decision is not None
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.DISCOVERY_UNAVAILABLE
+
+
+def test_not_configured_optional_layer_allows_codecraft_fallback() -> None:
+    service = _service(tool_registry=ToolRegistry(), skill_registry=SkillRegistry())
+    result = service.decide(_request())
+
+    assert result.disposition is CapabilityAcquisitionDisposition.EPHEMERAL_GENERATION_CANDIDATE
