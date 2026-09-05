@@ -262,11 +262,11 @@ from intergrax.agent_distribution.package_trust import (
 )
 from intergrax.agent_distribution.package_attestation import (
     AgentPackageAttestationAlgorithm,
+    AgentPackageAttestationQualificationEvidence,
     AgentPackageAttestationVerificationRequest,
     AgentPackageAttestationVerificationResult,
     AgentPackageAttestationVerifier,
     AgentPublisherVerificationKeyProvider,
-    qualification_evidence_from_attestation_verification,
 )
 from intergrax.agent_distribution.ed25519_package_attestation_verifier import (
     Ed25519PackageAttestationVerifier,
@@ -487,7 +487,7 @@ __all__ = [
     "ArtifactRevalidationHook",
     "AgentContractMetadataParityError",
     "AgentContractMetadataParityMismatch",
-    "qualification_evidence_from_attestation_verification",
+    "AgentPackageAttestationQualificationEvidence",
     "BindingLifecycleError",
     "BindingRevisionConflict",
     "BindingService",

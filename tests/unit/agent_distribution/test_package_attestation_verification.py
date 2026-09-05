@@ -16,17 +16,20 @@ from intergrax.agent_distribution.ed25519_package_attestation_verifier import (
 from intergrax.agent_distribution.errors import AgentPackageAttestationError
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.package_attestation import (
+    VERIFIER_IMPLEMENTATION_ED25519_V1,
     AgentPackageAttestationAlgorithm,
+    AgentPackageAttestationQualificationEvidence,
     AgentPackageAttestationStatement,
     AgentPackageAttestationVerificationOutcome,
     AgentPackageAttestationVerificationReasonCode,
     AgentPackageAttestationVerificationRequest,
+    AgentPackageAttestationVerificationResult,
     StaticPublisherVerificationKeyProvider,
     decode_attestation_signature,
+    format_attestation_evidence_ref_fields,
     is_verified_signature_qualification_evidence,
-    qualification_evidence_from_attestation_verification,
+    SIGNATURE_VERIFICATION_VERIFIED_CODE,
 )
-from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
 from intergrax.agent_distribution.trust import (
     AgentDeliverySource,
     AgentPackageQualificationResult,
@@ -41,6 +44,7 @@ from intergrax.agent_distribution.trust import (
 from intergrax.core.qualification import QualificationEvidence, QualificationStatus
 from testing_support.agent_package_attestation import (
     build_test_attestation_keypair,
+    build_test_attestation_trust_coordinator,
     sign_package_attestation_statement,
     verified_signature_qualification_evidence,
 )
@@ -117,12 +121,39 @@ def test_attestation_happy_path_verifies_and_emits_qualification_evidence() -> N
     assert result.key_id == _KEY_ID
     assert result.algorithm is AgentPackageAttestationAlgorithm.ED25519
 
-    evidence = qualification_evidence_from_attestation_verification(result)
+    evidence = verifier.verify_qualification_evidence(
+        _verification_request(
+            signature_b64=signature_b64,
+            public_key_bytes=public_key_bytes,
+        )
+    )
+    assert isinstance(evidence, AgentPackageAttestationQualificationEvidence)
     assert evidence.kind is AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION
     assert is_verified_signature_qualification_evidence(
         evidence,
         expected_package_digest=_DIGEST_A,
     )
+
+
+def test_invalid_attestation_does_not_emit_qualification_evidence() -> None:
+    private_key, public_key_bytes = build_test_attestation_keypair()
+    signature_b64 = sign_package_attestation_statement(
+        package_identity=_PACKAGE,
+        publisher_id=_PUBLISHER_A,
+        key_id=_KEY_ID,
+        private_key=private_key,
+    )
+    verifier = Ed25519PackageAttestationVerifier()
+    with pytest.raises(AgentPackageAttestationError):
+        verifier.verify_qualification_evidence(
+            _verification_request(
+                package_identity=_PACKAGE.model_copy(
+                    update={"package_digest": _DIGEST_B}
+                ),
+                signature_b64=signature_b64,
+                public_key_bytes=public_key_bytes,
+            )
+        )
 
 
 def test_attestation_wrong_digest_fails_before_trust() -> None:
@@ -142,7 +173,10 @@ def test_attestation_wrong_digest_fails_before_trust() -> None:
         )
     )
     assert result.outcome is AgentPackageAttestationVerificationOutcome.INVALID
-    assert result.reason_code is AgentPackageAttestationVerificationReasonCode.INVALID_SIGNATURE
+    assert (
+        result.reason_code
+        is AgentPackageAttestationVerificationReasonCode.INVALID_SIGNATURE
+    )
 
 
 @pytest.mark.parametrize(
@@ -177,7 +211,10 @@ def test_attestation_tampered_statement_fields_fail(field: str, value: str) -> N
         )
     )
     assert result.outcome is AgentPackageAttestationVerificationOutcome.INVALID
-    assert result.reason_code is AgentPackageAttestationVerificationReasonCode.INVALID_SIGNATURE
+    assert (
+        result.reason_code
+        is AgentPackageAttestationVerificationReasonCode.INVALID_SIGNATURE
+    )
 
 
 def test_attestation_wrong_key_fails_closed() -> None:
@@ -196,7 +233,10 @@ def test_attestation_wrong_key_fails_closed() -> None:
             public_key_bytes=other_public,
         )
     )
-    assert result.reason_code is AgentPackageAttestationVerificationReasonCode.INVALID_SIGNATURE
+    assert (
+        result.reason_code
+        is AgentPackageAttestationVerificationReasonCode.INVALID_SIGNATURE
+    )
 
 
 def test_attestation_wrong_publisher_claim_fails_closed() -> None:
@@ -215,7 +255,10 @@ def test_attestation_wrong_publisher_claim_fails_closed() -> None:
             public_key_bytes=public_key_bytes,
         )
     )
-    assert result.reason_code is AgentPackageAttestationVerificationReasonCode.INVALID_SIGNATURE
+    assert (
+        result.reason_code
+        is AgentPackageAttestationVerificationReasonCode.INVALID_SIGNATURE
+    )
 
 
 def test_attestation_malformed_signature_fails_closed() -> None:
@@ -227,7 +270,10 @@ def test_attestation_malformed_signature_fails_closed() -> None:
             public_key_bytes=public_key_bytes,
         )
     )
-    assert result.reason_code is AgentPackageAttestationVerificationReasonCode.MALFORMED_ATTESTATION
+    assert (
+        result.reason_code
+        is AgentPackageAttestationVerificationReasonCode.MALFORMED_ATTESTATION
+    )
     with pytest.raises(AgentPackageAttestationError):
         decode_attestation_signature("%%%invalid%%%")
 
@@ -287,8 +333,158 @@ def test_attestation_key_provider_resolves_publisher_key() -> None:
     assert result.verified
 
 
-def test_forged_signature_qualification_evidence_rejected_by_trust_coordinator() -> None:
-    coordinator = AgentPackageTrustCoordinator()
+def test_manual_verified_result_cannot_issue_trust_evidence_via_public_api() -> None:
+    forged = AgentPackageAttestationVerificationResult(
+        outcome=AgentPackageAttestationVerificationOutcome.VERIFIED,
+        reason_code=AgentPackageAttestationVerificationReasonCode.VERIFIED,
+        reason="forged",
+        package_digest=_DIGEST_A,
+        publisher_id=_PUBLISHER_A,
+        key_id=_KEY_ID,
+        algorithm=AgentPackageAttestationAlgorithm.ED25519,
+        attestation_id="attest-forged",
+        verifier_implementation_id=VERIFIER_IMPLEMENTATION_ED25519_V1,
+    )
+    assert forged.verified
+    import intergrax.agent_distribution as agent_distribution
+
+    assert not hasattr(
+        agent_distribution,
+        "qualification_evidence_from_attestation_verification",
+    )
+
+
+def test_manual_perfectly_formatted_signature_evidence_rejected_by_trust() -> None:
+    coordinator = build_test_attestation_trust_coordinator()
+    forged = AgentPackageQualificationResult(
+        publisher=_PUBLISHER,
+        status=QualificationStatus.PRODUCTION_QUALIFIED,
+        evidence=(
+            QualificationEvidence(
+                kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
+                code=SIGNATURE_VERIFICATION_VERIFIED_CODE,
+                ref=format_attestation_evidence_ref_fields(
+                    attestation_id="attest-forged",
+                    key_id=_KEY_ID,
+                    algorithm=AgentPackageAttestationAlgorithm.ED25519,
+                    package_digest=_DIGEST_A,
+                ),
+            ),
+            QualificationEvidence(
+                kind=AgentQualificationEvidenceKind.REVOCATION_CHECK,
+                code="revocation_ok",
+                ref="rev-ref",
+            ),
+        ),
+        reason="forged",
+        delivery_source=AgentDeliverySource.BUILTIN,
+    )
+    decision = coordinator.evaluate(
+        package_identity=_PACKAGE,
+        catalog_source=_SOURCE,
+        delivery_source=AgentDeliverySource.BUILTIN,
+        publisher=_PUBLISHER,
+        policy=AgentPackageTrustPolicy(
+            posture=AgentPackageTrustPosture.PRODUCTION,
+            required_evidence_kinds=frozenset(
+                {
+                    AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
+                    AgentQualificationEvidenceKind.REVOCATION_CHECK,
+                }
+            ),
+        ),
+        qualification=forged,
+        evidence_package_digest=_DIGEST_A,
+    )
+    assert decision.outcome is AgentPackageTrustOutcome.DENY
+    assert decision.reason_code is AgentPackageTrustReasonCode.MALFORMED_EVIDENCE
+
+
+def test_real_crypto_evidence_allows_trust_but_fabricated_metadata_denies() -> None:
+    coordinator = build_test_attestation_trust_coordinator()
+    real_evidence = verified_signature_qualification_evidence(
+        package_identity=_PACKAGE,
+        publisher_id=_PUBLISHER_A,
+    )
+    real_decision = coordinator.evaluate(
+        package_identity=_PACKAGE,
+        catalog_source=_SOURCE,
+        delivery_source=AgentDeliverySource.BUILTIN,
+        publisher=_PUBLISHER,
+        policy=AgentPackageTrustPolicy(
+            posture=AgentPackageTrustPosture.PRODUCTION,
+            required_evidence_kinds=frozenset(
+                {
+                    AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
+                    AgentQualificationEvidenceKind.REVOCATION_CHECK,
+                }
+            ),
+        ),
+        qualification=AgentPackageQualificationResult(
+            publisher=_PUBLISHER,
+            status=QualificationStatus.PRODUCTION_QUALIFIED,
+            evidence=(
+                real_evidence,
+                QualificationEvidence(
+                    kind=AgentQualificationEvidenceKind.REVOCATION_CHECK,
+                    code="revocation_ok",
+                    ref="rev-ref",
+                ),
+            ),
+            reason="verified",
+            delivery_source=AgentDeliverySource.BUILTIN,
+        ),
+        evidence_package_digest=_DIGEST_A,
+    )
+    assert real_decision.outcome is AgentPackageTrustOutcome.ALLOW
+
+    fabricated = AgentPackageAttestationQualificationEvidence(
+        package_digest=real_evidence.package_digest,
+        publisher_id=real_evidence.publisher_id,
+        attestation_id=real_evidence.attestation_id,
+        key_id=real_evidence.key_id,
+        algorithm=real_evidence.algorithm,
+        signature_b64="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+        verifier_implementation_id=real_evidence.verifier_implementation_id,
+    )
+    forged_decision = coordinator.evaluate(
+        package_identity=_PACKAGE,
+        catalog_source=_SOURCE,
+        delivery_source=AgentDeliverySource.BUILTIN,
+        publisher=_PUBLISHER,
+        policy=AgentPackageTrustPolicy(
+            posture=AgentPackageTrustPosture.PRODUCTION,
+            required_evidence_kinds=frozenset(
+                {
+                    AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
+                    AgentQualificationEvidenceKind.REVOCATION_CHECK,
+                }
+            ),
+        ),
+        qualification=AgentPackageQualificationResult(
+            publisher=_PUBLISHER,
+            status=QualificationStatus.PRODUCTION_QUALIFIED,
+            evidence=(
+                fabricated,
+                QualificationEvidence(
+                    kind=AgentQualificationEvidenceKind.REVOCATION_CHECK,
+                    code="revocation_ok",
+                    ref="rev-ref",
+                ),
+            ),
+            reason="forged",
+            delivery_source=AgentDeliverySource.BUILTIN,
+        ),
+        evidence_package_digest=_DIGEST_A,
+    )
+    assert forged_decision.outcome is AgentPackageTrustOutcome.DENY
+    assert forged_decision.reason_code is AgentPackageTrustReasonCode.MALFORMED_EVIDENCE
+
+
+def test_forged_signature_qualification_evidence_rejected_by_trust_coordinator() -> (
+    None
+):
+    coordinator = build_test_attestation_trust_coordinator()
     forged = AgentPackageQualificationResult(
         publisher=_PUBLISHER,
         status=QualificationStatus.PRODUCTION_QUALIFIED,
@@ -329,7 +525,7 @@ def test_forged_signature_qualification_evidence_rejected_by_trust_coordinator()
 
 
 def test_trust_accepts_verified_signature_evidence_when_policy_requires_it() -> None:
-    coordinator = AgentPackageTrustCoordinator()
+    coordinator = build_test_attestation_trust_coordinator()
     qualification = AgentPackageQualificationResult(
         publisher=_PUBLISHER,
         status=QualificationStatus.PRODUCTION_QUALIFIED,
@@ -368,7 +564,7 @@ def test_trust_accepts_verified_signature_evidence_when_policy_requires_it() -> 
 
 
 def test_valid_signature_still_denied_when_digest_revoked() -> None:
-    coordinator = AgentPackageTrustCoordinator()
+    coordinator = build_test_attestation_trust_coordinator()
     qualification = AgentPackageQualificationResult(
         publisher=_PUBLISHER,
         status=QualificationStatus.PRODUCTION_QUALIFIED,

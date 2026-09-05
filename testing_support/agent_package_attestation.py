@@ -14,12 +14,12 @@ from intergrax.agent_distribution.ed25519_package_attestation_verifier import (
 from intergrax.agent_distribution.identity import AgentPackageIdentity
 from intergrax.agent_distribution.package_attestation import (
     AgentPackageAttestationAlgorithm,
+    AgentPackageAttestationQualificationEvidence,
     AgentPackageAttestationStatement,
     AgentPackageAttestationVerificationRequest,
-    qualification_evidence_from_attestation_verification,
+    StaticPublisherVerificationKeyProvider,
 )
-from intergrax.agent_distribution.trust import AgentQualificationEvidenceKind
-from intergrax.core.qualification import QualificationEvidence
+from intergrax.agent_distribution.package_trust import AgentPackageTrustCoordinator
 
 _DEFAULT_SEED = b"\x01" * 32
 
@@ -48,6 +48,27 @@ def sign_package_attestation_statement(
     return base64.b64encode(signature).decode("ascii")
 
 
+def build_test_attestation_verifier(
+    *,
+    keys: dict[tuple[str, str], bytes] | None = None,
+) -> Ed25519PackageAttestationVerifier:
+    if keys is None:
+        _, public_key_bytes = build_test_attestation_keypair()
+        keys = {("publisher:acme", "test-publisher-key-1"): public_key_bytes}
+    return Ed25519PackageAttestationVerifier(
+        key_provider=StaticPublisherVerificationKeyProvider(keys)
+    )
+
+
+def build_test_attestation_trust_coordinator(
+    *,
+    keys: dict[tuple[str, str], bytes] | None = None,
+) -> AgentPackageTrustCoordinator:
+    return AgentPackageTrustCoordinator(
+        attestation_verifier=build_test_attestation_verifier(keys=keys)
+    )
+
+
 def verified_signature_qualification_evidence(
     *,
     package_identity: AgentPackageIdentity,
@@ -55,7 +76,7 @@ def verified_signature_qualification_evidence(
     key_id: str = "test-publisher-key-1",
     attestation_id: str = "attest-test-1",
     seed: bytes = _DEFAULT_SEED,
-) -> QualificationEvidence[AgentQualificationEvidenceKind]:
+) -> AgentPackageAttestationQualificationEvidence:
     private_key, public_key_bytes = build_test_attestation_keypair(seed=seed)
     signature_b64 = sign_package_attestation_statement(
         package_identity=package_identity,
@@ -63,8 +84,10 @@ def verified_signature_qualification_evidence(
         key_id=key_id,
         private_key=private_key,
     )
-    verifier = Ed25519PackageAttestationVerifier()
-    result = verifier.verify(
+    verifier = build_test_attestation_verifier(
+        keys={(publisher_id.strip(), key_id.strip()): public_key_bytes}
+    )
+    return verifier.verify_qualification_evidence(
         AgentPackageAttestationVerificationRequest(
             package_identity=package_identity,
             publisher_id=publisher_id,
@@ -72,7 +95,5 @@ def verified_signature_qualification_evidence(
             key_id=key_id,
             algorithm=AgentPackageAttestationAlgorithm.ED25519,
             signature_b64=signature_b64,
-            public_key_bytes=public_key_bytes,
         )
     )
-    return qualification_evidence_from_attestation_verification(result)

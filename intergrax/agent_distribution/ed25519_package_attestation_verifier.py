@@ -9,9 +9,11 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from intergrax.agent_distribution._digest import normalize_package_digest
+from intergrax.agent_distribution.errors import AgentPackageAttestationError
 from intergrax.agent_distribution.package_attestation import (
     VERIFIER_IMPLEMENTATION_ED25519_V1,
     AgentPackageAttestationAlgorithm,
+    AgentPackageAttestationQualificationEvidence,
     AgentPackageAttestationStatement,
     AgentPackageAttestationVerificationOutcome,
     AgentPackageAttestationVerificationReasonCode,
@@ -133,6 +135,26 @@ class Ed25519PackageAttestationVerifier:
             algorithm=request.algorithm,
             attestation_id=request.attestation_id,
             verifier_implementation_id=self._verifier_implementation_id,
+        )
+
+    def verify_qualification_evidence(
+        self,
+        request: AgentPackageAttestationVerificationRequest,
+    ) -> AgentPackageAttestationQualificationEvidence:
+        result = self.verify(request)
+        if not result.verified:
+            raise AgentPackageAttestationError(
+                "cannot emit signature qualification evidence for invalid attestation",
+                reason_code=result.reason_code.value,
+            )
+        return AgentPackageAttestationQualificationEvidence(
+            package_digest=result.package_digest,
+            publisher_id=result.publisher_id,
+            attestation_id=result.attestation_id,
+            key_id=result.key_id,
+            algorithm=result.algorithm,
+            signature_b64=request.signature_b64,
+            verifier_implementation_id=result.verifier_implementation_id,
         )
 
     @staticmethod

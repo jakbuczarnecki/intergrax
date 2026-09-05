@@ -117,7 +117,7 @@ class AgentPackageAttestationVerificationRequest:
 
 @dataclass(frozen=True, slots=True)
 class AgentPackageAttestationVerificationResult:
-    """Typed immutable cryptographic verification result."""
+    """Diagnostic cryptographic verification report — not qualification authority."""
 
     outcome: AgentPackageAttestationVerificationOutcome
     reason_code: AgentPackageAttestationVerificationReasonCode
@@ -132,6 +132,57 @@ class AgentPackageAttestationVerificationResult:
     @property
     def verified(self) -> bool:
         return self.outcome is AgentPackageAttestationVerificationOutcome.VERIFIED
+
+
+@dataclass(frozen=True, slots=True)
+class AgentPackageAttestationQualificationEvidence:
+    """Platform-issued signature qualification evidence bound to attestation material."""
+
+    package_digest: str
+    publisher_id: str
+    attestation_id: str
+    key_id: str
+    algorithm: AgentPackageAttestationAlgorithm
+    signature_b64: str
+    verifier_implementation_id: str
+
+    @property
+    def kind(self) -> AgentQualificationEvidenceKind:
+        return AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION
+
+    @property
+    def code(self) -> str:
+        return SIGNATURE_VERIFICATION_VERIFIED_CODE
+
+    @property
+    def ref(self) -> str:
+        return format_attestation_evidence_ref_fields(
+            attestation_id=self.attestation_id,
+            key_id=self.key_id,
+            algorithm=self.algorithm,
+            package_digest=self.package_digest,
+        )
+
+    @property
+    def label(self) -> str:
+        return (
+            f"{self.algorithm.value} attestation {self.attestation_id} "
+            f"via {self.verifier_implementation_id}"
+        )
+
+    def to_verification_request(
+        self,
+        *,
+        package_identity: AgentPackageIdentity,
+    ) -> AgentPackageAttestationVerificationRequest:
+        return AgentPackageAttestationVerificationRequest(
+            package_identity=package_identity,
+            publisher_id=self.publisher_id,
+            attestation_id=self.attestation_id,
+            key_id=self.key_id,
+            algorithm=self.algorithm,
+            signature_b64=self.signature_b64,
+        )
 
 
 @runtime_checkable
@@ -156,6 +207,13 @@ class AgentPackageAttestationVerifier(Protocol):
         request: AgentPackageAttestationVerificationRequest,
     ) -> AgentPackageAttestationVerificationResult:
         """Verify cryptographic attestation for the exact digest-pinned package."""
+        ...
+
+    def verify_qualification_evidence(
+        self,
+        request: AgentPackageAttestationVerificationRequest,
+    ) -> AgentPackageAttestationQualificationEvidence:
+        """Verify attestation and emit canonical SIGNATURE_VERIFICATION evidence."""
         ...
 
 
@@ -196,13 +254,28 @@ def decode_attestation_signature(signature_b64: str) -> bytes:
     return signature
 
 
+def format_attestation_evidence_ref_fields(
+    *,
+    attestation_id: str,
+    key_id: str,
+    algorithm: AgentPackageAttestationAlgorithm,
+    package_digest: str,
+) -> str:
+    digest = normalize_package_digest(package_digest)
+    return (
+        f"{SIGNATURE_VERIFICATION_REF_PREFIX}{attestation_id}"
+        f";key={key_id};alg={algorithm.value};digest={digest}"
+    )
+
+
 def format_attestation_evidence_ref(
     result: AgentPackageAttestationVerificationResult,
 ) -> str:
-    digest = normalize_package_digest(result.package_digest)
-    return (
-        f"{SIGNATURE_VERIFICATION_REF_PREFIX}{result.attestation_id}"
-        f";key={result.key_id};alg={result.algorithm.value};digest={digest}"
+    return format_attestation_evidence_ref_fields(
+        attestation_id=result.attestation_id,
+        key_id=result.key_id,
+        algorithm=result.algorithm,
+        package_digest=result.package_digest,
     )
 
 
@@ -214,46 +287,27 @@ def parse_attestation_evidence_ref(ref: str) -> dict[str, str] | None:
 
 
 def is_verified_signature_qualification_evidence(
-    evidence: QualificationEvidence[AgentQualificationEvidenceKind],
+    evidence: QualificationEvidence[AgentQualificationEvidenceKind]
+    | AgentPackageAttestationQualificationEvidence,
     *,
     expected_package_digest: str | None = None,
 ) -> bool:
-    """Return True only for platform-verified signature qualification evidence."""
-    if evidence.kind is not AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION:
+    """Return True only for structurally valid platform attestation evidence."""
+    if isinstance(evidence, AgentPackageAttestationQualificationEvidence):
+        if evidence.code != SIGNATURE_VERIFICATION_VERIFIED_CODE:
+            return False
+        if parse_attestation_evidence_ref(evidence.ref) is None:
+            return False
+        digest = evidence.package_digest
+    else:
         return False
-    if evidence.code != SIGNATURE_VERIFICATION_VERIFIED_CODE:
-        return False
-    if evidence.ref is None:
-        return False
-    parsed = parse_attestation_evidence_ref(evidence.ref)
-    if parsed is None:
-        return False
+
     if expected_package_digest is not None:
         try:
             expected = normalize_package_digest(expected_package_digest)
-            actual = normalize_package_digest(parsed["digest"])
+            actual = normalize_package_digest(digest)
         except ValueError:
             return False
         if expected != actual:
             return False
     return True
-
-
-def qualification_evidence_from_attestation_verification(
-    result: AgentPackageAttestationVerificationResult,
-) -> QualificationEvidence[AgentQualificationEvidenceKind]:
-    """Map a verified attestation result into qualification evidence."""
-    if not result.verified:
-        raise AgentPackageAttestationError(
-            "cannot emit signature qualification evidence for invalid attestation",
-            reason_code=result.reason_code.value,
-        )
-    return QualificationEvidence(
-        kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
-        code=SIGNATURE_VERIFICATION_VERIFIED_CODE,
-        ref=format_attestation_evidence_ref(result),
-        label=(
-            f"{result.algorithm.value} attestation {result.attestation_id} "
-            f"via {result.verifier_implementation_id}"
-        ),
-    )

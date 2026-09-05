@@ -15,6 +15,8 @@ from intergrax.agent_distribution.identity import (
     AgentPackageIdentity,
 )
 from intergrax.agent_distribution.package_attestation import (
+    AgentPackageAttestationQualificationEvidence,
+    AgentPackageAttestationVerifier,
     is_verified_signature_qualification_evidence,
 )
 from intergrax.agent_distribution.trust import (
@@ -39,6 +41,13 @@ from intergrax.core.qualification import (
 
 class AgentPackageTrustCoordinator:
     """Fail-closed trust and qualification gate for digest-pinned agent packages."""
+
+    def __init__(
+        self,
+        *,
+        attestation_verifier: AgentPackageAttestationVerifier | None = None,
+    ) -> None:
+        self._attestation_verifier = attestation_verifier
 
     def evaluate(
         self,
@@ -532,9 +541,53 @@ class AgentPackageTrustCoordinator:
         qualification: AgentPackageQualificationResult,
     ) -> AgentPackageTrustDecision | None:
         del required_kinds
-        for item in evidence:
-            if item.kind is not AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION:
-                continue
+        signature_items = [
+            item
+            for item in evidence
+            if item.kind is AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION
+        ]
+        if not signature_items:
+            return None
+        if self._attestation_verifier is None:
+            return self._deny(
+                package_identity=package_identity,
+                publisher=publisher,
+                catalog_source_id=catalog_source_id,
+                delivery_source=delivery_source,
+                policy=policy,
+                qualification=qualification,
+                reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE,
+                reason=(
+                    "signature verification evidence requires an injected "
+                    "attestation verifier"
+                ),
+            )
+        for item in signature_items:
+            if not isinstance(item, AgentPackageAttestationQualificationEvidence):
+                return self._deny(
+                    package_identity=package_identity,
+                    publisher=publisher,
+                    catalog_source_id=catalog_source_id,
+                    delivery_source=delivery_source,
+                    policy=policy,
+                    qualification=qualification,
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE,
+                    reason=(
+                        "signature verification evidence lacks platform-verified "
+                        "attestation provenance"
+                    ),
+                )
+            if item.publisher_id != publisher.publisher_id:
+                return self._deny(
+                    package_identity=package_identity,
+                    publisher=publisher,
+                    catalog_source_id=catalog_source_id,
+                    delivery_source=delivery_source,
+                    policy=policy,
+                    qualification=qualification,
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE,
+                    reason="signature verification evidence publisher mismatch",
+                )
             if not is_verified_signature_qualification_evidence(
                 item,
                 expected_package_digest=package_digest,
@@ -550,6 +603,23 @@ class AgentPackageTrustCoordinator:
                     reason=(
                         "signature verification evidence lacks platform-verified "
                         "attestation provenance"
+                    ),
+                )
+            verification = self._attestation_verifier.verify(
+                item.to_verification_request(package_identity=package_identity)
+            )
+            if not verification.verified:
+                return self._deny(
+                    package_identity=package_identity,
+                    publisher=publisher,
+                    catalog_source_id=catalog_source_id,
+                    delivery_source=delivery_source,
+                    policy=policy,
+                    qualification=qualification,
+                    reason_code=AgentPackageTrustReasonCode.MALFORMED_EVIDENCE,
+                    reason=(
+                        "signature verification evidence failed cryptographic "
+                        "re-validation"
                     ),
                 )
         return None
