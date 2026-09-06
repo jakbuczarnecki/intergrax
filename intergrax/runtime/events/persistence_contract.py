@@ -5,13 +5,22 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from threading import Lock
 from typing import List, Optional
 
-from intergrax.contracts.execution_identity import EventId, validate_event_id
+from intergrax.contracts.execution_identity import (
+    EventId,
+    RunId,
+    TaskId,
+    validate_event_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.runtime.events.execution_position import (
     AsOfBoundary,
     ExecutionEventPosition,
@@ -23,6 +32,163 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 class RuntimeEventPersistenceIntegrityError(Exception):
     """Raised when runtime event storage or derived indexes are inconsistent."""
+
+
+EVENT_ID_OWNERSHIP_SCHEMA_V1 = "runtime_event.event_id_ownership.v1"
+_IDENTITY_FINGERPRINT_HEX_LEN = 64
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeEventIdentityClaim:
+    """Immutable global EventId ownership metadata (consistency guard, not event truth)."""
+
+    tenant_id: str
+    run_id: RunId
+    task_id: TaskId
+    fingerprint: str
+
+
+@dataclass(frozen=True, slots=True)
+class LegacyRuntimeEventIdentityClaim:
+    """Pre-R2 ownership metadata without canonical fingerprint evidence."""
+
+    tenant_id: str
+    run_id: str
+
+
+EventIdOwnershipRecord = RuntimeEventIdentityClaim | LegacyRuntimeEventIdentityClaim
+
+
+def runtime_event_identity_fingerprint(event: RuntimeEvent) -> str:
+    """Deterministic SHA-256 fingerprint over canonical RuntimeEvent JSON."""
+    canonical_json = json.dumps(
+        event.model_dump(mode="json"),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    return hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
+
+
+def build_runtime_event_identity_claim(
+    *,
+    persistence_tenant_id: str,
+    event: RuntimeEvent,
+) -> RuntimeEventIdentityClaim:
+    tenant_id = _validate_persistence_tenant_id(persistence_tenant_id)
+    return RuntimeEventIdentityClaim(
+        tenant_id=tenant_id,
+        run_id=validate_run_id(event.run_id),
+        task_id=validate_task_id(event.task_id),
+        fingerprint=runtime_event_identity_fingerprint(event),
+    )
+
+
+def encode_event_identity_claim(claim: RuntimeEventIdentityClaim) -> dict[str, str]:
+    return {
+        "schema_version": EVENT_ID_OWNERSHIP_SCHEMA_V1,
+        "tenant_id": claim.tenant_id,
+        "run_id": str(claim.run_id),
+        "task_id": str(claim.task_id),
+        "fingerprint": claim.fingerprint,
+    }
+
+
+def decode_event_identity_claim(data: object) -> EventIdOwnershipRecord:
+    if not isinstance(data, dict):
+        raise RuntimeEventPersistenceIntegrityError("invalid runtime event ownership")
+    schema_version = data.get("schema_version")
+    if schema_version == EVENT_ID_OWNERSHIP_SCHEMA_V1:
+        return _decode_v1_event_identity_claim(data)
+    raw_tenant_id = data.get("tenant_id")
+    raw_run_id = data.get("run_id")
+    if (
+        schema_version is None
+        and "fingerprint" not in data
+        and "task_id" not in data
+        and type(raw_tenant_id) is str
+        and raw_tenant_id.strip()
+        and type(raw_run_id) is str
+        and raw_run_id.strip()
+    ):
+        return LegacyRuntimeEventIdentityClaim(
+            tenant_id=raw_tenant_id,
+            run_id=raw_run_id,
+        )
+    raise RuntimeEventPersistenceIntegrityError("unsupported runtime event ownership schema")
+
+
+def verify_runtime_event_identity_claim(
+    existing: RuntimeEventIdentityClaim,
+    expected: RuntimeEventIdentityClaim,
+) -> None:
+    if existing.tenant_id != expected.tenant_id:
+        raise RuntimeEventPersistenceIntegrityError(
+            "event_id accepted under different persistence tenant",
+        )
+    if existing.run_id != expected.run_id:
+        raise RuntimeEventPersistenceIntegrityError(
+            "event_id conflicts with previously accepted runtime event run_id",
+        )
+    if existing.task_id != expected.task_id:
+        raise RuntimeEventPersistenceIntegrityError(
+            "event_id conflicts with previously accepted runtime event task_id",
+        )
+    if existing.fingerprint != expected.fingerprint:
+        raise RuntimeEventPersistenceIntegrityError(
+            "event_id conflicts with previously accepted runtime event fingerprint",
+        )
+
+
+def _decode_v1_event_identity_claim(data: dict[str, object]) -> RuntimeEventIdentityClaim:
+    raw_tenant_id = data.get("tenant_id")
+    raw_run_id = data.get("run_id")
+    raw_task_id = data.get("task_id")
+    raw_fingerprint = data.get("fingerprint")
+    if type(raw_tenant_id) is not str or not raw_tenant_id.strip():
+        raise RuntimeEventPersistenceIntegrityError(
+            "invalid runtime event ownership tenant_id",
+        )
+    if raw_tenant_id != raw_tenant_id.strip():
+        raise RuntimeEventPersistenceIntegrityError(
+            "invalid runtime event ownership tenant_id",
+        )
+    if type(raw_run_id) is not str or not raw_run_id.strip():
+        raise RuntimeEventPersistenceIntegrityError(
+            "invalid runtime event ownership run_id",
+        )
+    if type(raw_task_id) is not str or not raw_task_id.strip():
+        raise RuntimeEventPersistenceIntegrityError(
+            "invalid runtime event ownership task_id",
+        )
+    fingerprint = _validate_identity_fingerprint(raw_fingerprint)
+    return RuntimeEventIdentityClaim(
+        tenant_id=raw_tenant_id,
+        run_id=validate_run_id(raw_run_id),
+        task_id=validate_task_id(raw_task_id),
+        fingerprint=fingerprint,
+    )
+
+
+def _validate_identity_fingerprint(fingerprint: object) -> str:
+    if type(fingerprint) is not str:
+        raise RuntimeEventPersistenceIntegrityError(
+            "invalid runtime event ownership fingerprint",
+        )
+    if len(fingerprint) != _IDENTITY_FINGERPRINT_HEX_LEN:
+        raise RuntimeEventPersistenceIntegrityError(
+            "invalid runtime event ownership fingerprint",
+        )
+    if fingerprint != fingerprint.lower():
+        raise RuntimeEventPersistenceIntegrityError(
+            "invalid runtime event ownership fingerprint",
+        )
+    for character in fingerprint:
+        if character not in "0123456789abcdef":
+            raise RuntimeEventPersistenceIntegrityError(
+                "invalid runtime event ownership fingerprint",
+            )
+    return fingerprint
 
 
 @dataclass(frozen=True, slots=True)

@@ -11,9 +11,12 @@ import pytest
 from intergrax.contracts.execution_identity import mint_event_id, mint_run_id, mint_task_id
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.events.persistence_contract import (
+    EVENT_ID_OWNERSHIP_SCHEMA_V1,
     NullRuntimeEventPersistence,
     RuntimeEventPersistence,
     RuntimeEventPersistenceIntegrityError,
+    build_runtime_event_identity_claim,
+    encode_event_identity_claim,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.document_backed_runtime_event_store import (
@@ -209,7 +212,12 @@ def test_document_backed_conflict_leaves_no_second_canonical_record(tmp_path: Pa
     assert backend.get(_run_partition(tenant_id, run_b), event_id) is None
     ownership = backend.get(_global_event_id_partition(), event_id)
     assert ownership is not None
-    assert ownership.data == {"tenant_id": tenant_id, "run_id": run_a}
+    expected_claim = build_runtime_event_identity_claim(
+        persistence_tenant_id=tenant_id,
+        event=original,
+    )
+    assert ownership.data == encode_event_identity_claim(expected_claim)
+    assert ownership.data["schema_version"] == EVENT_ID_OWNERSHIP_SCHEMA_V1
     store.close()
 
 
