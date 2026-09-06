@@ -14,6 +14,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.resumable_builder import (
     DataPackBuildConfig,
+    ShardBuildSeams,
     run_resumable_data_pack_build,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.build_state import (
@@ -22,9 +23,11 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     read_build_state_file,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.errors import (
+    VpiDataPackBuildError,
     VpiDataPackBuildIdentityMismatchError,
     VpiDataPackReadyShardCorruptionError,
     VpiDataPackResumeError,
+    VpiDataPackValidationError,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
     EMBEDDING_SCHEMA_VERSION,
@@ -302,3 +305,157 @@ def test_interrupted_writing_shard_rebuilt_on_resume(tmp_path: Path, monkeypatch
     report = run_resumable_data_pack_build(resume_config, embedding_port=resume_embedding)
     assert report.finalized is True
     assert not temp_shard_path(paths.relational_dir, 2).exists()
+
+
+def test_temp_validation_failure_leaves_no_final(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_canonical_model_identity(monkeypatch)
+    dataset_path, manifest_path = write_tiny_selected_dataset(tmp_path / "dataset", row_count=25)
+    output_root = tmp_path / "pack"
+    paths = resolve_data_pack_paths(output_root)
+
+    def corrupt_relational_temp() -> None:
+        temp_shard_path(paths.relational_dir, 1).write_bytes(b"not-parquet")
+
+    with pytest.raises(VpiDataPackValidationError):
+        run_resumable_data_pack_build(
+            _build_config(
+                tmp_path,
+                dataset_path=dataset_path,
+                manifest_path=manifest_path,
+                output_root=output_root,
+                shard_size=25,
+                max_records=25,
+                start_fresh=True,
+            ),
+            embedding_port=FakeDataPackEmbeddingPort(),
+            build_seams=ShardBuildSeams(after_both_temp_writes=corrupt_relational_temp),
+        )
+    assert not final_shard_path(paths.relational_dir, 1).exists()
+    assert not final_shard_path(paths.embeddings_dir, 1).exists()
+
+
+def test_crash_between_renames_recovered_on_resume(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_canonical_model_identity(monkeypatch)
+    dataset_path, manifest_path = write_tiny_selected_dataset(tmp_path / "dataset", row_count=25)
+    output_root = tmp_path / "pack"
+    paths = resolve_data_pack_paths(output_root)
+
+    def fail_embedding_commit() -> None:
+        raise VpiDataPackBuildError("simulated embedding rename failure")
+
+    with pytest.raises(VpiDataPackBuildError, match="simulated embedding rename failure"):
+        run_resumable_data_pack_build(
+            _build_config(
+                tmp_path,
+                dataset_path=dataset_path,
+                manifest_path=manifest_path,
+                output_root=output_root,
+                shard_size=25,
+                max_records=25,
+                start_fresh=True,
+            ),
+            embedding_port=FakeDataPackEmbeddingPort(),
+            build_seams=ShardBuildSeams(before_embedding_commit=fail_embedding_commit),
+        )
+    assert final_shard_path(paths.relational_dir, 1).exists()
+    assert not final_shard_path(paths.embeddings_dir, 1).exists()
+
+    report = run_resumable_data_pack_build(
+        _build_config(
+            tmp_path,
+            dataset_path=dataset_path,
+            manifest_path=manifest_path,
+            output_root=output_root,
+            shard_size=25,
+            max_records=25,
+            resume=True,
+        ),
+        embedding_port=FakeDataPackEmbeddingPort(),
+    )
+    assert report.finalized is True
+    assert final_shard_path(paths.relational_dir, 1).exists()
+    assert final_shard_path(paths.embeddings_dir, 1).exists()
+
+
+def test_validating_with_both_finals_rebuilt_on_resume(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_canonical_model_identity(monkeypatch)
+    dataset_path, manifest_path = write_tiny_selected_dataset(tmp_path / "dataset", row_count=50)
+    output_root = tmp_path / "pack"
+    paths = resolve_data_pack_paths(output_root)
+    run_resumable_data_pack_build(
+        _build_config(
+            tmp_path,
+            dataset_path=dataset_path,
+            manifest_path=manifest_path,
+            output_root=output_root,
+            shard_size=25,
+            max_records=50,
+            start_fresh=True,
+            stop_after_shard=1,
+        ),
+        embedding_port=FakeDataPackEmbeddingPort(),
+    )
+    final_rel = final_shard_path(paths.relational_dir, 2)
+    final_emb = final_shard_path(paths.embeddings_dir, 2)
+    final_rel.write_bytes(b"orphan-relational")
+    final_emb.write_bytes(b"orphan-embedding")
+    payload = json.loads(paths.build_state_file.read_text(encoding="utf-8"))
+    payload["shards"][1]["status"] = "VALIDATING"
+    payload["shards"][1]["relational_relative_path"] = "relational/part-000002.parquet"
+    payload["shards"][1]["embedding_relative_path"] = "embeddings/part-000002.parquet"
+    paths.build_state_file.write_text(json.dumps(payload), encoding="utf-8")
+
+    report = run_resumable_data_pack_build(
+        _build_config(
+            tmp_path,
+            dataset_path=dataset_path,
+            manifest_path=manifest_path,
+            output_root=output_root,
+            shard_size=25,
+            max_records=50,
+            resume=True,
+        ),
+        embedding_port=FakeDataPackEmbeddingPort(),
+    )
+    assert report.finalized is True
+    state = read_build_state_file(paths.build_state_file)
+    assert state.shards[1].status is DataPackShardStatus.READY
+    assert not temp_shard_path(paths.relational_dir, 2).exists()
+    assert not temp_shard_path(paths.embeddings_dir, 2).exists()
+
+
+def test_validating_with_only_relational_final_rebuilt_on_resume(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_canonical_model_identity(monkeypatch)
+    paths = resolve_data_pack_paths(tmp_path / "pack")
+    shard = DataPackShardBuildState(
+        ordinal=2,
+        start_row_index=25,
+        end_row_index_exclusive=50,
+        expected_record_count=25,
+        status=DataPackShardStatus.VALIDATING,
+        relational_relative_path="relational/part-000002.parquet",
+        embedding_relative_path="embeddings/part-000002.parquet",
+        attempt=1,
+    )
+    paths.relational_dir.mkdir(parents=True)
+    paths.embeddings_dir.mkdir(parents=True)
+    final_shard_path(paths.relational_dir, 2).write_text("orphan-rel", encoding="utf-8")
+    recovered = recover_non_ready_shard(
+        shard,
+        relational_dir=paths.relational_dir,
+        embeddings_dir=paths.embeddings_dir,
+    )
+    assert recovered.status is DataPackShardStatus.PENDING
+    assert not final_shard_path(paths.relational_dir, 2).exists()

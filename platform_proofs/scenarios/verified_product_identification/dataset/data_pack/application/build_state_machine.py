@@ -9,7 +9,6 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     sha256_file,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.shard_integrity import (
-    compute_source_ref_set_sha256,
     validate_embedding_shard_source_identity,
     validate_relational_shard_source_identity,
     validate_shard_pair_identity,
@@ -80,30 +79,57 @@ def reset_shard_to_pending(shard: DataPackShardBuildState) -> DataPackShardBuild
     )
 
 
-def transition_shard(
+def mark_deriving(shard: DataPackShardBuildState) -> DataPackShardBuildState:
+    validate_shard_status_transition(shard.status, DataPackShardStatus.DERIVING)
+    return replace(shard, status=DataPackShardStatus.DERIVING)
+
+
+def mark_embedding(shard: DataPackShardBuildState) -> DataPackShardBuildState:
+    validate_shard_status_transition(shard.status, DataPackShardStatus.EMBEDDING)
+    return replace(shard, status=DataPackShardStatus.EMBEDDING)
+
+
+def mark_writing(shard: DataPackShardBuildState) -> DataPackShardBuildState:
+    validate_shard_status_transition(shard.status, DataPackShardStatus.WRITING)
+    return replace(shard, status=DataPackShardStatus.WRITING)
+
+
+def mark_validating(
     shard: DataPackShardBuildState,
-    target: DataPackShardStatus,
-    **updates: object,
+    *,
+    relational_relative_path: str,
+    embedding_relative_path: str,
 ) -> DataPackShardBuildState:
-    validate_shard_status_transition(shard.status, target)
-    payload = {
-        "ordinal": shard.ordinal,
-        "start_row_index": shard.start_row_index,
-        "end_row_index_exclusive": shard.end_row_index_exclusive,
-        "expected_record_count": shard.expected_record_count,
-        "status": target,
-        "relational_relative_path": shard.relational_relative_path,
-        "embedding_relative_path": shard.embedding_relative_path,
-        "attempt": shard.attempt,
-        "relational_sha256": shard.relational_sha256,
-        "embedding_sha256": shard.embedding_sha256,
-        "relational_source_ref_set_sha256": shard.relational_source_ref_set_sha256,
-        "embedding_source_ref_set_sha256": shard.embedding_source_ref_set_sha256,
-        "last_error_code": shard.last_error_code,
-        "last_error_message": shard.last_error_message,
-    }
-    payload.update(updates)
-    return DataPackShardBuildState(**payload)
+    validate_shard_status_transition(shard.status, DataPackShardStatus.VALIDATING)
+    return replace(
+        shard,
+        status=DataPackShardStatus.VALIDATING,
+        relational_relative_path=relational_relative_path,
+        embedding_relative_path=embedding_relative_path,
+    )
+
+
+def mark_ready(
+    shard: DataPackShardBuildState,
+    *,
+    relational_relative_path: str,
+    embedding_relative_path: str,
+    relational_sha256: str,
+    embedding_sha256: str,
+    relational_source_ref_set_sha256: str,
+    embedding_source_ref_set_sha256: str,
+) -> DataPackShardBuildState:
+    validate_shard_status_transition(shard.status, DataPackShardStatus.READY)
+    return replace(
+        shard,
+        status=DataPackShardStatus.READY,
+        relational_relative_path=relational_relative_path,
+        embedding_relative_path=embedding_relative_path,
+        relational_sha256=relational_sha256,
+        embedding_sha256=embedding_sha256,
+        relational_source_ref_set_sha256=relational_source_ref_set_sha256,
+        embedding_source_ref_set_sha256=embedding_source_ref_set_sha256,
+    )
 
 
 def replace_shard(state: DataPackBuildState, shard: DataPackShardBuildState) -> DataPackBuildState:

@@ -55,7 +55,7 @@ def write_tiny_selected_dataset(
             {
                 "source_dataset_name": "offers_corpus_all_v2_non_norm",
                 "output_path": str(dataset_path),
-                "output_sha256": "testsha256" + "0" * 54,
+                "output_sha256": "a" * 64,
                 "selected_record_count": row_count,
             }
         ),

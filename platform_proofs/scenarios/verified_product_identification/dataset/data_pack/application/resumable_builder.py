@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import shutil
 import time
 import uuid
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -40,16 +39,21 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     compute_build_progress,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.build_state_machine import (
-    discard_shard_temp_outputs,
+    mark_deriving,
+    mark_embedding,
+    mark_ready,
+    mark_validating,
+    mark_writing,
     persist_build_state,
     recover_non_ready_shard,
     replace_shard,
     shard_descriptor_paths,
-    transition_shard,
     validate_ready_shard_artifacts,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.dataset_manifest import (
+    load_dataset_identity,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.checksums import (
-    sha256_file,
     write_sha256sums,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.compatibility import (
@@ -59,8 +63,10 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.sample_selection import (
     SelectedDatasetRow,
 )
-from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.shard_plan import (
-    plan_data_pack_shards,
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.shard_write import (
+    commit_temp_shard_pair,
+    prepare_validated_temp_shard_pair,
+    write_temp_shard,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.validation import (
     assert_validation_pass,
@@ -91,6 +97,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     VpiDataPackBuildIdentityMismatchError,
     VpiDataPackBuildStateError,
     VpiDataPackResumeError,
+    VpiDataPackValidationError,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
     DATA_PACK_VERSION,
@@ -104,7 +111,6 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     VPI_CANONICAL_EMBEDDING_REVISION,
     semantic_text_hash,
     source_ref_key,
-    source_ref_set_sha256,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.manifest import (
     BuildExecutionProvenance,
@@ -113,11 +119,13 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     SourceDatasetIdentity,
     write_manifest_file,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.shard_plan import (
+    plan_data_pack_shards,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.paths import (
     DataPackPaths,
-    final_shard_path,
+    DEFAULT_GENERATED_ROOT,
     resolve_data_pack_paths,
-    temp_shard_path,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.relational import (
     RelationalDataPackRecord,
@@ -175,6 +183,16 @@ class DataPackEmbeddingPort(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
+class ShardBuildSeams:
+    """Deterministic interruption hooks for resume/atomicity tests."""
+
+    after_relational_temp_write: Callable[[], None] | None = None
+    after_both_temp_writes: Callable[[], None] | None = None
+    before_embedding_commit: Callable[[], None] | None = None
+    after_both_renames_before_ready_persist: Callable[[], None] | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class DataPackBuildConfig:
     output_root: Path
     dataset_path: Path
@@ -203,15 +221,20 @@ class DataPackBuildReport:
     finalized: bool
 
 
-def _load_dataset_identity(dataset_manifest_path: Path) -> SourceDatasetIdentity:
-    payload = json.loads(dataset_manifest_path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise VpiDataPackBuildError("dataset manifest must be a JSON object")
-    return SourceDatasetIdentity(
-        dataset_name=str(payload.get("source_dataset_name", "offers_corpus_all_v2_non_norm")),
-        dataset_path=str(payload.get("output_path", "")),
-        dataset_sha256=str(payload.get("output_sha256", "")),
-        dataset_record_count=int(payload.get("selected_record_count", 0)),
+def _assert_destructive_clear_allowed(output_root: Path, paths: DataPackPaths) -> None:
+    resolved_root = output_root.resolve()
+    canonical_root = DEFAULT_GENERATED_ROOT.resolve()
+    if resolved_root == canonical_root or resolved_root.is_relative_to(canonical_root):
+        return
+    if paths.build_state_file.is_file():
+        return
+    if not output_root.exists():
+        return
+    if not _output_root_has_unexpected_content(output_root):
+        return
+    raise VpiDataPackResumeError(
+        "refusing --start-fresh outside canonical generated/data_pack root without "
+        "existing build-state authority or scenario-owned build layout"
     )
 
 
@@ -273,21 +296,6 @@ def _sort_relational_records(
     records: Sequence[RelationalDataPackRecord],
 ) -> tuple[RelationalDataPackRecord, ...]:
     return tuple(sorted(records, key=lambda record: record.global_row_index))
-
-
-def _write_shard_atomically(
-    directory: Path,
-    shard_ordinal: int,
-    write_callable,
-) -> Path:
-    directory.mkdir(parents=True, exist_ok=True)
-    temp_path = temp_shard_path(directory, shard_ordinal)
-    final_path = final_shard_path(directory, shard_ordinal)
-    if temp_path.exists():
-        temp_path.unlink()
-    write_callable(temp_path)
-    temp_path.replace(final_path)
-    return final_path
 
 
 def _ensure_build_directories(paths: DataPackPaths) -> None:
@@ -579,9 +587,10 @@ def run_resumable_data_pack_build(
     config: DataPackBuildConfig,
     *,
     embedding_port: DataPackEmbeddingPort | None = None,
+    build_seams: ShardBuildSeams | None = None,
 ) -> DataPackBuildReport:
     paths = resolve_data_pack_paths(config.output_root)
-    dataset_identity = _load_dataset_identity(config.dataset_manifest_path)
+    dataset_identity = load_dataset_identity(config.dataset_manifest_path)
     expected_record_count = dataset_identity.dataset_record_count
     if config.max_records is not None:
         expected_record_count = min(expected_record_count, config.max_records)
@@ -621,6 +630,7 @@ def run_resumable_data_pack_build(
     )
 
     if config.start_fresh:
+        _assert_destructive_clear_allowed(config.output_root, paths)
         _clear_build_contents(paths.root)
 
     state_exists = paths.build_state_file.is_file()
@@ -692,6 +702,8 @@ def run_resumable_data_pack_build(
     if config.stop_after_shard is not None:
         shard_limit = config.stop_after_shard
 
+    seams = build_seams or ShardBuildSeams()
+
     try:
         for shard in state.shards:
             if shard_limit is not None and shard.ordinal > shard_limit:
@@ -710,7 +722,7 @@ def run_resumable_data_pack_build(
 
             current = shard
             try:
-                current = transition_shard(current, DataPackShardStatus.DERIVING)
+                current = mark_deriving(current)
                 state = replace_shard(state, current)
                 state = _persist_state(paths, state)
 
@@ -736,7 +748,7 @@ def run_resumable_data_pack_build(
                     stage="relational_validation",
                 )
 
-                current = transition_shard(current, DataPackShardStatus.EMBEDDING)
+                current = mark_embedding(current)
                 state = replace_shard(state, current)
                 state = _persist_state(paths, state)
 
@@ -776,17 +788,19 @@ def run_resumable_data_pack_build(
                     stage="semantic_text_hash_validation",
                 )
 
-                current = transition_shard(current, DataPackShardStatus.WRITING)
+                current = mark_writing(current)
                 state = replace_shard(state, current)
                 state = _persist_state(paths, state)
 
                 relational_rel, embedding_rel = shard_descriptor_paths(current.ordinal)
-                relational_path = _write_shard_atomically(
+                relational_temp = write_temp_shard(
                     paths.relational_dir,
                     current.ordinal,
                     lambda temp_path: write_relational_parquet(temp_path, relational_records),
                 )
-                embedding_path = _write_shard_atomically(
+                if seams.after_relational_temp_write is not None:
+                    seams.after_relational_temp_write()
+                embedding_temp = write_temp_shard(
                     paths.embeddings_dir,
                     current.ordinal,
                     lambda temp_path: write_embedding_parquet(
@@ -795,42 +809,48 @@ def run_resumable_data_pack_build(
                         embedding_dimension=embedding_configuration.expected_dimension,
                     ),
                 )
+                if seams.after_both_temp_writes is not None:
+                    seams.after_both_temp_writes()
 
-                current = transition_shard(
+                current = mark_validating(
                     current,
-                    DataPackShardStatus.VALIDATING,
                     relational_relative_path=relational_rel,
                     embedding_relative_path=embedding_rel,
                 )
                 state = replace_shard(state, current)
                 state = _persist_state(paths, state)
 
-                relational_sha = sha256_file(relational_path)
-                embedding_sha = sha256_file(embedding_path)
-                relational_digest = source_ref_set_sha256(
-                    tuple(record.source_ref for record in relational_records)
+                validated = prepare_validated_temp_shard_pair(
+                    relational_temp_path=relational_temp,
+                    embedding_temp_path=embedding_temp,
+                    relational_relative_path=relational_rel,
+                    embedding_relative_path=embedding_rel,
+                    expected_count=current.expected_record_count,
+                    expected_dimension=embedding_configuration.expected_dimension,
                 )
-                embedding_digest = source_ref_set_sha256(
-                    tuple(record.source_ref for record in embedding_records)
+                relational_final, embedding_final = commit_temp_shard_pair(
+                    relational_dir=paths.relational_dir,
+                    embeddings_dir=paths.embeddings_dir,
+                    shard_ordinal=current.ordinal,
+                    embedding_commit_guard=seams.before_embedding_commit,
                 )
-                if relational_digest != embedding_digest:
-                    raise VpiDataPackBuildError(
-                        f"shard {current.ordinal} relational/embedding source-ref digest mismatch"
-                    )
+                if seams.after_both_renames_before_ready_persist is not None:
+                    seams.after_both_renames_before_ready_persist()
 
-                current = transition_shard(
+                current = mark_ready(
                     current,
-                    DataPackShardStatus.READY,
-                    relational_sha256=relational_sha,
-                    embedding_sha256=embedding_sha,
-                    relational_source_ref_set_sha256=relational_digest,
-                    embedding_source_ref_set_sha256=embedding_digest,
+                    relational_relative_path=validated.relational_relative_path,
+                    embedding_relative_path=validated.embedding_relative_path,
+                    relational_sha256=validated.relational_sha256,
+                    embedding_sha256=validated.embedding_sha256,
+                    relational_source_ref_set_sha256=validated.relational_source_ref_set_sha256,
+                    embedding_source_ref_set_sha256=validated.embedding_source_ref_set_sha256,
                 )
                 state = replace_shard(state, current)
                 state = _persist_state(paths, state)
 
-                relational_bytes.append(relational_path.stat().st_size)
-                embedding_bytes.append(embedding_path.stat().st_size)
+                relational_bytes.append(relational_final.stat().st_size)
+                embedding_bytes.append(embedding_final.stat().st_size)
                 logger.info(
                     "shard READY ordinal=%s records=%s",
                     current.ordinal,
@@ -839,7 +859,7 @@ def run_resumable_data_pack_build(
             except KeyboardInterrupt:
                 state = _persist_state(paths, state)
                 raise
-            except (VpiDataPackBuildError, VpiDataPackBuildStateError) as exc:
+            except (VpiDataPackBuildError, VpiDataPackBuildStateError, VpiDataPackValidationError) as exc:
                 state = _record_failure(
                     state,
                     current,

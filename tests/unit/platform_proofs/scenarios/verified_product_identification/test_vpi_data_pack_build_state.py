@@ -5,8 +5,12 @@ from __future__ import annotations
 import pytest
 
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.build_state_machine import (
+    mark_deriving,
+    mark_embedding,
+    mark_ready,
+    mark_validating,
+    mark_writing,
     reset_shard_to_pending,
-    transition_shard,
     validate_shard_status_transition,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.shard_plan import (
@@ -125,13 +129,16 @@ def test_ready_to_non_ready_forbidden() -> None:
 
 def test_valid_transition_chain() -> None:
     shard = _pending_shard()
-    shard = transition_shard(shard, DataPackShardStatus.DERIVING)
-    shard = transition_shard(shard, DataPackShardStatus.EMBEDDING)
-    shard = transition_shard(shard, DataPackShardStatus.WRITING)
-    shard = transition_shard(shard, DataPackShardStatus.VALIDATING)
-    shard = transition_shard(
+    shard = mark_deriving(shard)
+    shard = mark_embedding(shard)
+    shard = mark_writing(shard)
+    shard = mark_validating(
         shard,
-        DataPackShardStatus.READY,
+        relational_relative_path="relational/part-000001.parquet",
+        embedding_relative_path="embeddings/part-000001.parquet",
+    )
+    shard = mark_ready(
+        shard,
         relational_relative_path="relational/part-000001.parquet",
         embedding_relative_path="embeddings/part-000001.parquet",
         relational_sha256="a" * 64,

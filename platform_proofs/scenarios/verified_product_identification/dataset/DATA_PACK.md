@@ -140,6 +140,15 @@ generated/data_pack/<build>/
 - Non-READY shards are rebuilt from scratch (no record-level resume in v1)
 - READY shards are immutable; validated before skip on resume
 - Corrupt READY shard → fail closed (`CORRUPT_READY_SHARD`), no silent rebuild
+- Temp shards use `.parquet.tmp`; serialized temp artifacts are read back and validated before atomic rename to final `.parquet`
+- Final filename means validated immutable shard, not artifact awaiting validation
+- Crash between relational/embedding renames leaves shard non-READY; resume removes partial finals/temps and rebuilds
+- Both finals may exist while state is still VALIDATING; resume does not auto-adopt them
+
+### Dataset reader
+
+- Row-group-aware `read_range(start, end)` reads only intersecting Parquet row groups (no O(N × shard_count) prefix rescan)
+- Metadata index is resident; row-group payloads load on demand per requested range
 
 ### Shard lifecycle (builder-local)
 
@@ -147,7 +156,7 @@ generated/data_pack/<build>/
 PENDING → DERIVING → EMBEDDING → WRITING → VALIDATING → READY
 ```
 
-Incomplete outputs use `.tmp` suffix; never adopted as READY. Orphan `.tmp` for non-READY shards is removed on resume.
+Incomplete outputs use `.parquet.tmp` suffix; never adopted as READY. Orphan `.tmp` or partial finals for non-READY shards are removed on resume.
 
 ### Content identity vs shard layout
 
