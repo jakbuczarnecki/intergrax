@@ -785,6 +785,87 @@ traffic_serving_revision_id
 - **No safe target:** when no prior revision exists or prior revision fails current trust, expose explicit unresolved security state — do not null the serving pointer (Reference Production V1).
 - **Process-local V1:** single revocation snapshot per invocation; concurrent activation races fail closed via expected serving pointer CAS.
 
+### 10.7 AC-6 Trust, Certification and Runtime Revocation - Frozen Architecture
+
+**Status:** AC-6 Trust / Certification / Runtime Revocation architecture: **FROZEN - Reference Production V1**
+
+Canonical production chain (Reference Production V1):
+
+```text
+Catalog/Source
+  → Exact AgentPackageIdentity digest
+  → Publisher/provenance
+  → AgentPackageAttestationVerifier (Ed25519)
+  → AgentPackageAttestationQualificationEvidence
+  → Immutable AgentPackageQualificationResult (qualified_at)
+  → AgentPackageTrustPolicy + AgentPackageTrustRevocationState snapshot
+  → AgentPackageTrustCoordinator (sole ALLOW/DENY authority)
+  → AgentInstallationTrustRecord
+  → canonical install (AgentPlatformAdminService / InstallationService)
+  → EffectiveRoster snapshot
+  → RuntimeRevision candidate
+  → trust readmission (assert_install_admission)
+  → ActivationService activation
+  → traffic_serving_revision_id (ACTIVE N)
+  → active security revocation scan
+  → safe prior revision trust revalidation
+  → ActivationService.rollback()
+  → prior revision ACTIVE / superseded revision DRAINING
+```
+
+#### Frozen invariants
+
+| Invariant | Meaning |
+|-----------|---------|
+| **QUALIFICATION != TRUST** | Qualification answers what evidence/status the package has; trust answers whether this exact artifact may be used under current policy. No qualification object alone authorizes install. |
+| **SIGNATURE != TRUST** | Valid cryptographic signature does not imply ALLOW; revocation, publisher/source policy, qualification status, freshness, and other evidence may still DENY. |
+| **HISTORICAL ALLOW != CURRENT ALLOW** | `AgentInstallationTrustRecord` is historical audit evidence, not an eternal bearer credential. New install/readmission/rollback checks use current authority. |
+| **INSTALLED != ADMISSIBLE** | Installed packages may become revoked, stale, or policy-incompatible; existing records remain; new runtime revision admission fails until trusted again. |
+| **ACTIVE != SAFE FOREVER** | Serving revision may become unsafe under explicit security revocation; response is revision transition, not in-place mutation. |
+| **RUNTIME REVISION INDIVISIBLE** | No hot agent removal from an active immutable revision; registry remains derived projection. |
+| **ROLLBACK TARGET REVALIDATED** | Prior historical validity does not imply current safety; emergency rollback targets must satisfy current revocation, policy, freshness, and artifact revalidation. |
+| **REVOCATION VS EXPIRY** | Qualification expiry blocks future admission; explicit security revocation may trigger active emergency response — semantics are not merged. |
+| **SOURCE ADMIN ACTION != MALWARE** | Source disabled/revoked restricts future admission; it does not automatically trigger active emergency rollback in Reference V1. |
+| **ONE REVOCATION SNAPSHOT PER RESPONSE** | One emergency invocation evaluates one immutable revocation snapshot. |
+| **NO SAFE TARGET** | When no trusted rollback target exists, expose explicit unresolved security state; do not null serving pointer, promote arbitrary revisions, or claim recovery. |
+
+#### Authority uniqueness (frozen)
+
+| Concern | Sole authority |
+|---------|----------------|
+| ALLOW/DENY | `AgentPackageTrustCoordinator` |
+| Cryptographic authenticity | `AgentPackageAttestationVerifier` |
+| Installation mutation | canonical installation lifecycle (`InstallationService` via admin facade) |
+| Runtime traffic | `ActivationService` / canonical activation store CAS |
+| Registry | derived projection only (revision-bound) |
+
+#### Security property matrix (closure)
+
+| Property | Authority | Proof |
+|----------|-----------|-------|
+| Exact artifact identity | `AgentPackageIdentity.package_digest` | Phase 1 unit tests |
+| Crypto authenticity | `AgentPackageAttestationVerifier` | Phase 2 unit tests |
+| Policy/revocation | `AgentPackageTrustCoordinator` | Phase 1–2 unit tests |
+| Freshness | `qualified_at` + `max_qualification_age` | Phase 3 unit tests |
+| New revision readmission | `AgentPlatformAdminService` trust gate | Phase 3 + Phase 5 E2E |
+| Active security revocation | `AgentEmergencyRevocationService` | Phase 4 + Phase 5 E2E |
+| Traffic mutation | `ActivationService` | AC-3 / Phase 4 tests |
+| Dynamic acquisition trust path | admin install admission | AC-4 Phase 1–2 + dynamic acquisition tests |
+| Factory authority | revision-bound canonical factory | AC-5 Phase 3 E2E |
+
+#### Reference Production V1 limitations (non-claims)
+
+- Process-local; no distributed consensus or leader election
+- No background revocation watcher
+- No Sigstore/transparency integration
+- No X.509 chain authority; Ed25519 baseline only
+- No HSM/KMS requirement
+- No automatic zero-serving quarantine transition
+- No arbitrary historical safe-revision search (one prior rollback target)
+- Concurrent activation races fail closed via expected serving pointer CAS
+
+**Future extensions (not AC-6 blockers):** distributed trust/revocation coordination; Sigstore/transparency adapters; HSM/KMS key providers; zero-serving quarantine; historical safe revision selector.
+
 ---
 
 ## 11. Installation model
