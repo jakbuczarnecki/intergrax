@@ -16,6 +16,12 @@ from intergrax.applications._shared.runtime_inspection.merge import (
     invoke_provider_safely,
     merge_provider_contributions,
 )
+from intergrax.applications._shared.runtime_inspection.redaction import (
+    safe_effective_profile_diff_view,
+    safe_effective_profile_revision_view,
+    safe_profile_resolution_view,
+    sanitize_extension_evidence,
+)
 from intergrax.applications.contracts.capability_dependency.dependency import CapabilityRef
 from intergrax.applications.contracts.capability_dependency.validation import (
     CapabilityDependencyValidationResult,
@@ -153,10 +159,11 @@ class RuntimeInspectionService:
         return ProfileInspectionResult(
             configured_profile_ref=configured_profile_ref,
             resolution=resolution,
+            safe_resolution=safe_profile_resolution_view(resolution),
             completeness=completeness,
             explanations=explanations,
             provider_failures=failures,
-            extension_evidence=extensions,
+            extension_evidence=tuple(sanitize_extension_evidence(item) for item in extensions),
         )
 
     def inspect_revision(
@@ -211,11 +218,14 @@ class RuntimeInspectionService:
             revision_id=revision_id,
             scope=scope,
             revision=revision,
+            safe_revision=(
+                safe_effective_profile_revision_view(revision) if revision is not None else None
+            ),
             completeness=completeness,
             inconsistencies=tuple(inconsistencies),
             explanations=explanations,
             provider_failures=failures,
-            extension_evidence=extensions,
+            extension_evidence=tuple(sanitize_extension_evidence(item) for item in extensions),
         )
 
     def compare_revisions(
@@ -236,9 +246,10 @@ class RuntimeInspectionService:
         completeness, _, extensions, failures = merge_provider_contributions(contributions)
         return RevisionCompareResult(
             diff=diff,
+            safe_diff=safe_effective_profile_diff_view(diff),
             completeness=completeness,
             provider_failures=failures,
-            extension_evidence=extensions,
+            extension_evidence=tuple(sanitize_extension_evidence(item) for item in extensions),
         )
 
     def inspect_execution(
@@ -311,11 +322,16 @@ class RuntimeInspectionService:
             scope_tenant_id=scope_tenant_id,
             binding=binding,
             pinned_revision=pinned_revision,
+            safe_pinned_revision=(
+                safe_effective_profile_revision_view(pinned_revision)
+                if pinned_revision is not None
+                else None
+            ),
             completeness=completeness,
             inconsistencies=tuple(inconsistencies),
             explanations=explanations,
             provider_failures=failures,
-            extension_evidence=extensions,
+            extension_evidence=tuple(sanitize_extension_evidence(item) for item in extensions),
         )
 
     def inspect_capability(
@@ -377,5 +393,5 @@ class RuntimeInspectionService:
             completeness=completeness,
             explanations=explanations,
             provider_failures=failures,
-            extension_evidence=extensions,
+            extension_evidence=tuple(sanitize_extension_evidence(item) for item in extensions),
         )

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Runtime inspection read-model results (P1.4)."""
+"""Runtime inspection read-model results (P1.4 / P1.4A)."""
 
 from __future__ import annotations
 
@@ -39,6 +39,11 @@ from intergrax.applications.contracts.runtime_inspection.provider import (
     InspectionExtensionEvidence,
     InspectionProviderFailure,
 )
+from intergrax.applications.contracts.runtime_inspection.safe_views import (
+    SafeEffectiveProfileDiffView,
+    SafeEffectiveProfileRevisionView,
+    SafeProfileResolutionView,
+)
 from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
 
 
@@ -49,7 +54,8 @@ class ProfileInspectionResult(BaseModel):
 
     schema_version: str = "profile_inspection.v1"
     configured_profile_ref: str | None = None
-    resolution: ProfileResolution
+    resolution: ProfileResolution = Field(exclude=True)
+    safe_resolution: SafeProfileResolutionView
     completeness: InspectionCompleteness
     inconsistencies: tuple[InspectionInconsistency, ...] = Field(default_factory=tuple)
     explanations: tuple[InspectionExplanation, ...] = Field(default_factory=tuple)
@@ -65,7 +71,8 @@ class RevisionInspectionResult(BaseModel):
     schema_version: str = "revision_inspection.v1"
     revision_id: EffectiveProfileRevisionId
     scope: EffectiveProfileRevisionScope
-    revision: EffectiveProfileRevision | None = None
+    revision: EffectiveProfileRevision | None = Field(default=None, exclude=True)
+    safe_revision: SafeEffectiveProfileRevisionView | None = None
     completeness: InspectionCompleteness
     inconsistencies: tuple[InspectionInconsistency, ...] = Field(default_factory=tuple)
     explanations: tuple[InspectionExplanation, ...] = Field(default_factory=tuple)
@@ -86,7 +93,8 @@ class RevisionCompareResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     schema_version: str = "revision_compare.v1"
-    diff: EffectiveProfileDiff
+    diff: EffectiveProfileDiff = Field(exclude=True)
+    safe_diff: SafeEffectiveProfileDiffView
     completeness: InspectionCompleteness
     inconsistencies: tuple[InspectionInconsistency, ...] = Field(default_factory=tuple)
     provider_failures: tuple[InspectionProviderFailure, ...] = Field(default_factory=tuple)
@@ -104,7 +112,8 @@ class ExecutionInspectionResult(BaseModel):
     scope_application_id: str = Field(min_length=1)
     scope_tenant_id: str | None = None
     binding: EffectiveProfileExecutionBinding | None = None
-    pinned_revision: EffectiveProfileRevision | None = None
+    pinned_revision: EffectiveProfileRevision | None = Field(default=None, exclude=True)
+    safe_pinned_revision: SafeEffectiveProfileRevisionView | None = None
     completeness: InspectionCompleteness
     inconsistencies: tuple[InspectionInconsistency, ...] = Field(default_factory=tuple)
     explanations: tuple[InspectionExplanation, ...] = Field(default_factory=tuple)

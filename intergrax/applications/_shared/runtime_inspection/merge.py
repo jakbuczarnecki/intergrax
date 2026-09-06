@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.runtime_inspection.redaction import (
+    sanitize_provider_failure_reason,
+)
 from intergrax.applications.contracts.runtime_inspection.completeness import (
     InspectionCompleteness,
 )
@@ -66,6 +69,6 @@ def invoke_provider_safely(
             provider_id=str(provider_id),
             failure=InspectionProviderFailure(
                 provider_id=str(provider_id),
-                reason=str(exc),
+                reason=sanitize_provider_failure_reason(exc),
             ),
         )

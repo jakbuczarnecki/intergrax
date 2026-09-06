@@ -8,6 +8,11 @@ from intergrax.applications._shared.runtime_inspection.composition import (
 from intergrax.applications._shared.runtime_inspection.redaction import (
     profile_contains_no_raw_secrets,
     redacted_profile_snapshot,
+    safe_effective_profile_diff_view,
+    safe_effective_profile_revision_view,
+    safe_profile_resolution_view,
+    sanitize_extension_evidence,
+    sanitize_provider_failure_reason,
 )
 from intergrax.applications._shared.runtime_inspection.service import (
     RuntimeInspectionService,
@@ -18,4 +23,9 @@ __all__ = [
     "default_runtime_inspection_providers",
     "profile_contains_no_raw_secrets",
     "redacted_profile_snapshot",
+    "safe_effective_profile_diff_view",
+    "safe_effective_profile_revision_view",
+    "safe_profile_resolution_view",
+    "sanitize_extension_evidence",
+    "sanitize_provider_failure_reason",
 ]

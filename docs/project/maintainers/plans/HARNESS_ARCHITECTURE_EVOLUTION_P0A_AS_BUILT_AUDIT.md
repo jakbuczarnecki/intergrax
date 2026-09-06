@@ -501,7 +501,7 @@ Deferred to P1.4+:
 
 ## P1.4 Runtime Inspection / explain
 
-**Status: CLOSED (P1.4)**
+**Status: CLOSED (P1.4 + P1.4A)**
 
 Delivered in P1.4:
 
@@ -514,6 +514,13 @@ Delivered in P1.4:
 - capability inspection reuses `CapabilityDependencyValidationResult` evidence (not operational readiness),
 - typed `InspectionCompleteness` / `InspectionInconsistency` / `InspectionExplanation` read models,
 - deterministic ordering, partial provider-failure visibility, and profile redaction helpers.
+
+Delivered in P1.4A (serialization safety correction):
+
+- safe-by-construction inspection result serialization via `Field(exclude=True)` on canonical runtime objects plus typed safe projections (`SafeProfileResolutionView`, `SafeEffectiveProfileRevisionView`, `SafeEffectiveProfileDiffView`),
+- reuse of `encode_provenance_value` / `redacted_profile_snapshot` as sole redaction authority (no second detector),
+- sanitized provider failure reasons and defensive extension-evidence payload redaction,
+- direct `model_dump` / `model_dump_json` proof tests for profile, revision, execution, compare, provider failure, and extension payload paths.
 
 Deferred to P1.5+:
 

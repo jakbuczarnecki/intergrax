@@ -32,6 +32,12 @@ from intergrax.applications.contracts.runtime_inspection.results import (
     RevisionCompareResult,
     RevisionInspectionResult,
 )
+from intergrax.applications.contracts.runtime_inspection.safe_views import (
+    RedactedProfileSnapshot,
+    SafeEffectiveProfileDiffView,
+    SafeEffectiveProfileRevisionView,
+    SafeProfileResolutionView,
+)
 from intergrax.applications.contracts.runtime_inspection.scope import InspectionScope
 
 __all__ = [
@@ -54,4 +60,8 @@ __all__ = [
     "RevisionInspectionRef",
     "RevisionInspectionResult",
     "RuntimeInspectionProvider",
+    "RedactedProfileSnapshot",
+    "SafeEffectiveProfileDiffView",
+    "SafeEffectiveProfileRevisionView",
+    "SafeProfileResolutionView",
 ]

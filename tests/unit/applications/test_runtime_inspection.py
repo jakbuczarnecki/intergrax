@@ -50,14 +50,15 @@ from intergrax.applications.contracts.runtime_inspection import (
     RuntimeInspectionProvider,
 )
 from intergrax.contracts.execution_identity import mint_execution_id
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.tools.registry.profile import ToolProfile
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 _SCOPE = EffectiveProfileRevisionScope(application_id="inspection.test", tenant_id="tenant-a")
 _SCOPE_B = EffectiveProfileRevisionScope(application_id="inspection.test", tenant_id="tenant-b")
+_RAW_SECRET = "RAW_SECRET_123"
 
 
 def _application(
@@ -81,6 +82,35 @@ def _application(
             update={"cost": CostProfile(max_tool_calls=max_tool_calls)},
         )
     return profile.model_copy(update=updates)
+
+
+def _application_with_secret(*, secret: str = _RAW_SECRET) -> ApplicationEnvironmentProfile:
+    profile = _application()
+    integration = profile.capabilities.integrations.model_copy(
+        update={
+            "options": {
+                **profile.capabilities.integrations.options,
+                "inspection.test.secret": {"api_token": secret},
+            },
+        },
+    )
+    return profile.model_copy(
+        update={
+            "capabilities": profile.capabilities.model_copy(
+                update={"integrations": integration},
+            ),
+        },
+    )
+
+
+def _assert_direct_serialization_excludes_secret(result: object, *, raw_secret: str) -> None:
+    dumped = result.model_dump(mode="json")
+    assert profile_contains_no_raw_secrets(dumped, raw_secret=raw_secret)
+    assert profile_contains_no_raw_secrets(result.model_dump_json(), raw_secret=raw_secret)
+    assert profile_contains_no_raw_secrets(
+        json.dumps(dumped, sort_keys=True),
+        raw_secret=raw_secret,
+    )
 
 
 def _service(
@@ -215,6 +245,73 @@ class _FailingInspectionProvider:
         return InspectionProviderContribution(provider_id=self.provider_id)
 
 
+class _SecretFailingInspectionProvider:
+    @property
+    def provider_id(self) -> str:
+        return "secret.failing.inspection"
+
+    def contribute_profile(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        raise RuntimeError(f"token={_RAW_SECRET}")
+
+    def contribute_revision(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        return InspectionProviderContribution(provider_id=self.provider_id)
+
+    def contribute_execution(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        return InspectionProviderContribution(provider_id=self.provider_id)
+
+    def contribute_capability(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        return InspectionProviderContribution(provider_id=self.provider_id)
+
+    def contribute_revision_compare(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        return InspectionProviderContribution(provider_id=self.provider_id)
+
+
+class _SecretPayloadInspectionProvider:
+    @property
+    def provider_id(self) -> str:
+        return "secret.payload.inspection"
+
+    def contribute_profile(
+        self,
+        *,
+        resolution,
+        configured_profile_ref: str | None,
+    ) -> InspectionProviderContribution:
+        del resolution, configured_profile_ref
+        return InspectionProviderContribution(
+            provider_id=self.provider_id,
+            extension_evidence=(
+                InspectionExtensionEvidence(
+                    provider_id=self.provider_id,
+                    scope=InspectionScope.PROFILE,
+                    subject="secret_payload",
+                    payload={"marker": _RAW_SECRET},
+                ),
+            ),
+        )
+
+    def contribute_revision(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        return InspectionProviderContribution(provider_id=self.provider_id)
+
+    def contribute_execution(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        return InspectionProviderContribution(provider_id=self.provider_id)
+
+    def contribute_capability(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        return InspectionProviderContribution(provider_id=self.provider_id)
+
+    def contribute_revision_compare(self, **kwargs) -> InspectionProviderContribution:
+        del kwargs
+        return InspectionProviderContribution(provider_id=self.provider_id)
+
+
 def test_profile_explain_clamped_decision_from_existing_resolution() -> None:
     application = _application(tools=["search"], max_tool_calls=10)
     resolution = resolve_profile(
@@ -310,10 +407,10 @@ def test_revision_diff_reuses_semantic_paths() -> None:
         store=store,
     )
     compare = _service(revision_store=store).compare_revisions(revision_a, revision_b)
-    paths = {entry.path for entry in compare.diff.entries}
+    paths = {entry.path for entry in compare.safe_diff.entries}
     assert "governance.cost.max_tool_calls" in paths
-    assert compare.diff.from_revision_id == revision_a.revision_id
-    assert compare.diff.to_revision_id == revision_b.revision_id
+    assert compare.safe_diff.from_revision_id == revision_a.revision_id
+    assert compare.safe_diff.to_revision_id == revision_b.revision_id
 
 
 def test_execution_inspect_returns_pinned_revision_not_latest() -> None:
@@ -609,3 +706,105 @@ def test_inspection_is_read_only_no_store_mutation() -> None:
     )
     assert set(revision_store._revisions.keys()) == before_revision_keys  # noqa: SLF001
     assert set(pinning_store._bindings.keys()) == before_binding_keys  # noqa: SLF001
+
+
+def test_profile_direct_serialization_excludes_raw_secret() -> None:
+    resolution = resolve_profile(_application_with_secret(), layers=())
+    result = _service().inspect_profile(resolution)
+    assert result.resolution is resolution
+    _assert_direct_serialization_excludes_secret(result, raw_secret=_RAW_SECRET)
+    assert result.safe_resolution.fingerprint == resolution.fingerprint
+
+
+def test_revision_direct_serialization_excludes_raw_secret() -> None:
+    store = InMemoryEffectiveProfileRevisionStore()
+    _, revision = _revision(_application_with_secret(), (), store=store)
+    result = _service(revision_store=store).inspect_revision(
+        revision.revision_id,
+        scope=_SCOPE,
+    )
+    assert result.revision is revision
+    _assert_direct_serialization_excludes_secret(result, raw_secret=_RAW_SECRET)
+    assert result.safe_revision is not None
+    assert result.safe_revision.revision_id == revision.revision_id
+
+
+def test_execution_direct_serialization_excludes_raw_secret() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
+    _, revision = _revision(_application_with_secret(), (), store=revision_store)
+    execution_id = mint_execution_id()
+    pin_effective_profile_revision_for_execution(
+        revision=revision,
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        pinning_store=pinning_store,
+        revision_store=revision_store,
+    )
+    result = _service(
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+    ).inspect_execution(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        scope_application_id=_SCOPE.application_id,
+        scope_tenant_id=_SCOPE.tenant_id,
+    )
+    assert result.pinned_revision is revision
+    _assert_direct_serialization_excludes_secret(result, raw_secret=_RAW_SECRET)
+    assert result.safe_pinned_revision is not None
+    assert result.safe_pinned_revision.fingerprint == revision.fingerprint
+
+
+def test_revision_compare_direct_serialization_redacts_sensitive_diff_values() -> None:
+    store = InMemoryEffectiveProfileRevisionStore()
+    profile_a = _application()
+    profile_a = profile_a.model_copy(
+        update={
+            "capabilities": profile_a.capabilities.model_copy(
+                update={
+                    "llm": LLMProfile(provider=LLMProvider.OPENAI, model=_RAW_SECRET),
+                },
+            ),
+        },
+    )
+    profile_b = _application()
+    _, revision_a = _revision(profile_a, (), store=store)
+    _, revision_b = _revision(profile_b, (), store=store)
+    compare = _service(revision_store=store).compare_revisions(revision_a, revision_b)
+    _assert_direct_serialization_excludes_secret(compare, raw_secret=_RAW_SECRET)
+    assert compare.safe_diff.from_fingerprint == revision_a.fingerprint
+    assert any(entry.path == "capabilities.llm.model" for entry in compare.safe_diff.entries)
+
+
+def test_safe_serialization_retains_non_sensitive_facts() -> None:
+    resolution = resolve_profile(_application_with_secret(), layers=())
+    result = _service().inspect_profile(resolution)
+    payload = result.model_dump(mode="json")
+    assert payload["safe_resolution"]["fingerprint"] == resolution.fingerprint
+    assert payload["safe_resolution"]["decisions"]
+    assert payload["completeness"] == InspectionCompleteness.COMPLETE.value
+
+
+def test_provider_exception_secret_is_sanitized_in_serialized_result() -> None:
+    resolution = resolve_profile(_application(), layers=())
+    result = _service(providers=(_SecretFailingInspectionProvider(),)).inspect_profile(resolution)
+    _assert_direct_serialization_excludes_secret(result, raw_secret=_RAW_SECRET)
+    assert result.completeness is InspectionCompleteness.PARTIAL
+    assert result.provider_failures[0].provider_id == "secret.failing.inspection"
+    assert result.provider_failures[0].reason.startswith("RuntimeError:")
+
+
+def test_provider_extension_payload_is_defensively_redacted() -> None:
+    resolution = resolve_profile(_application(), layers=())
+    result = _service(providers=(_SecretPayloadInspectionProvider(),)).inspect_profile(resolution)
+    _assert_direct_serialization_excludes_secret(result, raw_secret=_RAW_SECRET)
+    assert result.extension_evidence[0].subject == "secret_payload"
+
+
+def test_internal_canonical_fields_excluded_from_serialization() -> None:
+    resolution = resolve_profile(_application_with_secret(), layers=())
+    result = _service().inspect_profile(resolution)
+    payload = result.model_dump(mode="json")
+    assert "resolution" not in payload
+    assert result.resolution is resolution
