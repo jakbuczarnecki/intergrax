@@ -18,6 +18,10 @@ from intergrax.applications._shared.production_agent_platform_runtime import (
     AgentPlatformRuntimeStores,
     ProductionAgentPlatformRuntime,
 )
+from intergrax.applications._shared.production_platform_persistence import (
+    ProductionPlatformPersistence,
+    build_reference_production_platform_persistence,
+)
 from intergrax.applications._shared.registry_projection import (
     InMemoryRuntimeRegistryProjectionStore,
 )
