@@ -13,6 +13,10 @@ from intergrax.contracts.agent_step import AgentStep
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 import intergrax.contracts.execution_identity as execution_identity
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.runtime.execution.active_execution_budget import bind_root_execution_budget
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.governance.active_execution_authority import bind_active_execution_authority
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -36,7 +40,14 @@ from platform_proofs.scenarios.ai_incident_investigation.application.investigato
     INVESTIGATOR_AGENT_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
+    COMPARISON_EVIDENCE_ID,
     COMPLETION_UNRESOLVED,
+    STAFFING_ATTENDANCE_EVIDENCE_ID,
+    TELEMETRY_EVIDENCE_ID,
+    WORKLOAD_EVIDENCE_ID,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    UNSUPPORTED_INFERENCE_ERROR,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
@@ -104,7 +115,7 @@ class _MarkedDecoratorInvoker:
         return self._inner.invoke(state=state, agent_id=agent_id, request=request)
 
 
-def _build_runtime_state(bundle) -> RuntimeState:
+def _build_runtime_state(bundle) -> tuple[RuntimeState, execution_identity.ExecutionId]:
     request = RuntimeRequest(
         agent_id=INVESTIGATOR_AGENT_ID,
         user_id="u",
@@ -115,12 +126,19 @@ def _build_runtime_state(bundle) -> RuntimeState:
         message="investigate",
     )
     ctx = bundle.investigator.build_context(request)
+    execution_id = execution_identity.mint_execution_id()
+    attempt_id = execution_identity.mint_attempt_id()
     execution_identity.bind_active_execution_identity(
         run_id=request.run_id,
-        attempt_id=execution_identity.mint_attempt_id(),
-        execution_id=execution_identity.mint_execution_id(),
+        attempt_id=attempt_id,
+        execution_id=execution_id,
     )
-    return RuntimeState(context=ctx, request=request, run_id=request.run_id)
+    bind_active_execution_authority(ParentExecutionAuthority.unrestricted_root())
+    bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(None),
+    )
+    return RuntimeState(context=ctx, request=request, run_id=request.run_id), execution_id
 
 
 def test_incident_scope_rejects_out_of_scope_line() -> None:
@@ -178,7 +196,15 @@ async def test_alternative_tool_order_executes_planner_selected_sequence(
     bundle = build_runtime_bundle()
     result = await execute_resolved_skeleton(bundle)
     assert result.outcome == OUTCOME_RESOLVED
-    assert result.tool_invocations >= 6
+    assert result.revision_used_tools
+    evidence_ids = {
+        str(node.get("evidence_id"))
+        for node in result.evidence_nodes
+        if node.get("evidence_id")
+    }
+    assert str(COMPARISON_EVIDENCE_ID) in evidence_ids
+    assert str(STAFFING_ATTENDANCE_EVIDENCE_ID) in evidence_ids
+    assert str(TELEMETRY_EVIDENCE_ID) in evidence_ids
 
     request = RuntimeRequest(
         agent_id=INVESTIGATOR_AGENT_ID,
@@ -190,46 +216,25 @@ async def test_alternative_tool_order_executes_planner_selected_sequence(
         message="investigate",
         metadata={"critic_feedback": ["revise"]},
     )
-    runtime_state = bundle.investigator.build_context(request)
-    execution_identity.bind_active_execution_identity(
-        run_id=request.run_id,
-        attempt_id=execution_identity.mint_attempt_id(),
-        execution_id=execution_identity.mint_execution_id(),
-    )
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-
-    state = RuntimeState(context=runtime_state, request=request, run_id=request.run_id)
+    bundle = build_runtime_bundle()
+    state, _ = _build_runtime_state(bundle)
     gathering = gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
         is_revision=True,
-        critic_feedback=["unsupported inference"],
+        critic_feedback=[UNSUPPORTED_INFERENCE_ERROR],
+        prior_evidence=[{"evidence_id": str(WORKLOAD_EVIDENCE_ID), "payload": {}}],
     )
-    assert gathering.tool_execution_order[: len(alt_order)] == alt_order
+    assert {TOOL_COMPARISON_READ, TOOL_TELEMETRY_READ}.issubset(
+        set(gathering.tool_execution_order)
+    )
 
 
 @pytest.mark.asyncio
 async def test_observability_correlates_decision_trace_tool_trace_and_evidence() -> None:
     bundle = build_runtime_bundle()
-    request = RuntimeRequest(
-        agent_id=INVESTIGATOR_AGENT_ID,
-        user_id="u",
-        session_id="s",
-        tenant_id="t",
-        task_id=execution_identity.mint_task_id(),
-        run_id=execution_identity.mint_run_id(),
-        message="investigate",
-    )
-    runtime_state = bundle.investigator.build_context(request)
-    execution_identity.bind_active_execution_identity(
-        run_id=request.run_id,
-        attempt_id=execution_identity.mint_attempt_id(),
-        execution_id=execution_identity.mint_execution_id(),
-    )
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-
-    state = RuntimeState(context=runtime_state, request=request, run_id=request.run_id)
+    state, _ = _build_runtime_state(bundle)
     gathering = gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
@@ -299,24 +304,10 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
         lambda *_args, **_kwargs: _out_of_scope_llm(),
     )
     bundle = build_runtime_bundle()
-    request = RuntimeRequest(
-        agent_id=INVESTIGATOR_AGENT_ID,
-        user_id="u",
-        session_id="s",
-        tenant_id="t",
-        task_id=execution_identity.mint_task_id(),
-        run_id=execution_identity.mint_run_id(),
-        message="investigate",
-    )
-    runtime_state = bundle.investigator.build_context(request)
-    execution_identity.bind_active_execution_identity(
-        run_id=request.run_id,
-        attempt_id=execution_identity.mint_attempt_id(),
-        execution_id=execution_identity.mint_execution_id(),
-    )
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-
-    state = RuntimeState(context=runtime_state, request=request, run_id=request.run_id)
+    state, execution_id = _build_runtime_state(bundle)
+    bound = execution_identity.peek_active_execution_identity()
+    assert bound is not None
+    run_id, attempt_id = bound
     step = AgentStep(
         step_id="investigate",
         step_name="investigate",
@@ -325,11 +316,12 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
         allowed_tools=[],
     )
     exec_ctx = RuntimeExecutionContext(
-        task_id=request.task_id,
-        run_id=request.run_id,
-        attempt_id=execution_identity.mint_attempt_id(),
+        task_id=state.request.task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
         agent_id=INVESTIGATOR_AGENT_ID,
-        request=request,
+        request=state.request,
         metadata={"runtime_state": state},
     )
     output = await bundle.investigator.run_step(step, exec_ctx)
@@ -340,7 +332,7 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
 
 def test_gather_incident_evidence_requires_runtime_config_tool_invoker() -> None:
     bundle = build_runtime_bundle()
-    state = _build_runtime_state(bundle)
+    state, _ = _build_runtime_state(bundle)
     state.context.config.tool_invoker = None
     with pytest.raises(RuntimeError, match="incident_runtime_tool_invoker_missing"):
         gather_incident_evidence(
@@ -353,7 +345,7 @@ def test_gather_incident_evidence_requires_runtime_config_tool_invoker() -> None
 
 def test_gather_incident_evidence_delegates_to_runtime_config_tool_invoker() -> None:
     bundle = build_runtime_bundle()
-    state = _build_runtime_state(bundle)
+    state, _ = _build_runtime_state(bundle)
     canonical = state.context.config.tool_invoker
     assert canonical is not None
     sentinel = _SentinelCanonicalInvoker(inner=canonical, registry=bundle.registry)
@@ -372,7 +364,7 @@ def test_gather_incident_evidence_delegates_to_runtime_config_tool_invoker() -> 
 
 def test_incident_scoped_invoker_preserves_decorated_canonical_invoker() -> None:
     bundle = build_runtime_bundle()
-    state = _build_runtime_state(bundle)
+    state, _ = _build_runtime_state(bundle)
     canonical = state.context.config.tool_invoker
     assert canonical is not None
     decorated = _MarkedDecoratorInvoker(canonical)
@@ -421,7 +413,7 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
         lambda *_args, **_kwargs: _out_of_scope_llm(),
     )
     bundle = build_runtime_bundle()
-    state = _build_runtime_state(bundle)
+    state, _ = _build_runtime_state(bundle)
     canonical = state.context.config.tool_invoker
     assert canonical is not None
     sentinel = _SentinelCanonicalInvoker(inner=canonical, registry=bundle.registry)
@@ -444,6 +436,12 @@ def test_tools_for_critic_feedback_maps_missing_comparison_to_comparison_read() 
         ["unsupported_inference:missing_comparison_evidence"],
     )
     assert TOOL_COMPARISON_READ in tools
+
+
+def test_tools_for_critic_feedback_maps_unsupported_inference_to_follow_up_tools() -> None:
+    tools = _tools_for_critic_feedback([UNSUPPORTED_INFERENCE_ERROR])
+    assert TOOL_COMPARISON_READ in tools
+    assert TOOL_TELEMETRY_READ in tools
 
 
 def test_evidence_gathering_has_no_local_runtime_tool_invoker_construction() -> None:

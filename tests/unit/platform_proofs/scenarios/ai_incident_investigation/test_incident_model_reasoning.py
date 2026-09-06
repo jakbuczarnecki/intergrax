@@ -10,6 +10,7 @@ import inspect
 import pytest
 
 from intergrax.contracts.evidence_claims import ClaimResolution, EvidenceClaimSet
+from intergrax.contracts.validation import ValidationResult
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     ClaimHypothesisBinding,
     ClaimProposal,
@@ -20,12 +21,13 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     PriorInvestigationState,
     ReasoningProposalValidationError,
     build_evidence_reference_contract,
+    build_investigation_summary,
     build_reasoning_messages,
     completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
-    normalize_supported_diagnosis_claim_evidence,
     validate_reasoning_proposal,
 )
+from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import build_resolved_fixture
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPARISON_EVIDENCE_ID,
     COMPLETION_NEED_MORE_EVIDENCE,
@@ -36,14 +38,120 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
     H3_CLAIM_ID,
     INITIAL_CLAIM_ID,
     TELEMETRY_EVIDENCE_ID,
+    THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    H3_FORGED_WITHOUT_TELEMETRY_ERROR,
     apply_critic_claim_resolutions,
     validate_claim_set_against_observations,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _resolved_evidence_nodes() -> tuple[dict[str, object], ...]:
+    fixture = build_resolved_fixture()
+    return (
+        {
+            "evidence_id": str(WORKLOAD_EVIDENCE_ID),
+            "payload": {
+                "order_volume_delta_pct": fixture.workload_incident.order_volume_delta_pct,
+                "admissible": True,
+            },
+        },
+        {
+            "evidence_id": str(THROUGHPUT_EVIDENCE_ID),
+            "payload": {
+                "target_attainment_pct": fixture.throughput_incident.target_attainment_pct,
+                "baseline_attainment_pct": fixture.throughput_incident.baseline_attainment_pct,
+                "admissible": True,
+            },
+        },
+        {
+            "evidence_id": str(COMPARISON_EVIDENCE_ID),
+            "payload": {
+                "workload_delta_pct": fixture.comparison.workload_delta_pct,
+                "comparison_attainment_pct": fixture.comparison.target_attainment_pct,
+                "reference_attainment_pct": fixture.comparison.reference_attainment_pct,
+                "admissible": True,
+            },
+        },
+        {
+            "evidence_id": str(TELEMETRY_EVIDENCE_ID),
+            "payload": {
+                "availability": "available",
+                "signal_state": fixture.telemetry.signal_state,
+                "complex_assembly_throughput_pct": fixture.telemetry.complex_assembly_throughput_pct,
+                "baseline_throughput_pct": fixture.telemetry.baseline_throughput_pct,
+                "admissible": True,
+            },
+        },
+    )
+
+
+def _h3_supported_proposal(*, supporting_evidence_ids: tuple[str, ...]) -> IncidentReasoningProposal:
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    comparison = str(COMPARISON_EVIDENCE_ID)
+    telemetry = str(TELEMETRY_EVIDENCE_ID)
+    return IncidentReasoningProposal(
+        hypotheses=(
+            HypothesisProposal(
+                hypothesis_id="H3",
+                disposition=HypothesisDisposition.SUPPORTED,
+                summary="Equipment degradation supported.",
+                supporting_evidence_ids=(workload, comparison, telemetry),
+            ),
+        ),
+        preferred_hypothesis_id="H3",
+        uncertainty_class="bounded",
+        claim_proposals=(
+            ClaimProposal(
+                hypothesis_id="H3",
+                statement="H3 diagnosis without explicit telemetry citation.",
+                claim_kind=str(DIAGNOSIS_KIND),
+                supporting_evidence_ids=supporting_evidence_ids,
+            ),
+        ),
+        completion_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+        action_objective="propose bounded H3 diagnosis",
+    )
+
+
+def _validate_h3_claim_set(
+    proposal: IncidentReasoningProposal,
+    *,
+    evidence_nodes: tuple[dict[str, object], ...],
+) -> tuple[EvidenceClaimSet, ValidationResult]:
+    conversion = convert_proposal_to_pending_claims(
+        proposal,
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    resolved = apply_critic_claim_resolutions(
+        conversion.claim_set,
+        {
+            "evidence_nodes": list(evidence_nodes),
+            "claim_hypothesis_bindings": [
+                binding.model_dump(mode="json") for binding in conversion.bindings
+            ],
+        },
+        bindings=conversion.bindings,
+    )
+    validation = validate_claim_set_against_observations(
+        resolved,
+        {
+            "claim_set": resolved.model_dump(mode="json"),
+            "claim_hypothesis_bindings": [
+                binding.model_dump(mode="json") for binding in conversion.bindings
+            ],
+            "evidence_nodes": list(evidence_nodes),
+            "active_hypothesis": "H3",
+            "completion_mode": COMPLETION_SUPPORTED_DIAGNOSIS,
+        },
+        bindings=conversion.bindings,
+    )
+    return resolved, validation
 
 
 def _sample_proposal(*, claim_order: tuple[str, ...] = ("H1",)) -> IncidentReasoningProposal:
@@ -324,48 +432,117 @@ def test_workload_example_id_absent_from_prompt_without_evidence() -> None:
     assert str(WORKLOAD_EVIDENCE_ID) not in prompt
 
 
-def test_normalize_supported_diagnosis_adds_missing_distinguishing_evidence_refs() -> None:
-    workload = str(WORKLOAD_EVIDENCE_ID)
+def test_semantic_output_repair_removed() -> None:
+    import platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning as mod
+
+    assert not hasattr(mod, "normalize_supported_diagnosis_claim_evidence")
+
+
+def test_model_omitted_telemetry_not_silently_inserted() -> None:
+    evidence_nodes = _resolved_evidence_nodes()
     comparison = str(COMPARISON_EVIDENCE_ID)
     telemetry = str(TELEMETRY_EVIDENCE_ID)
-    proposal = IncidentReasoningProposal(
-        hypotheses=(
-            HypothesisProposal(
-                hypothesis_id="H3",
-                disposition=HypothesisDisposition.SUPPORTED,
-                summary="Equipment degradation supported.",
-                supporting_evidence_ids=(workload, comparison, telemetry),
-            ),
-        ),
-        preferred_hypothesis_id="H3",
-        uncertainty_class="bounded",
-        claim_proposals=(
-            ClaimProposal(
-                hypothesis_id="H3",
-                statement="H3 diagnosis without explicit telemetry citation.",
-                claim_kind=str(DIAGNOSIS_KIND),
-                supporting_evidence_ids=(workload, comparison),
-            ),
-        ),
-        completion_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
-        action_objective="propose bounded H3 diagnosis",
-    )
-    evidence_nodes = (
-        {"evidence_id": workload, "payload": {}},
-        {"evidence_id": comparison, "payload": {}},
-        {"evidence_id": telemetry, "payload": {"availability": "available"}},
-    )
+    workload = str(WORKLOAD_EVIDENCE_ID)
+    proposal = _h3_supported_proposal(supporting_evidence_ids=(workload, comparison))
+    validate_reasoning_proposal(proposal, evidence_nodes=evidence_nodes)
 
-    normalized = normalize_supported_diagnosis_claim_evidence(
+    h3_claim = proposal.claim_proposals[0]
+    assert telemetry not in h3_claim.supporting_evidence_ids
+
+    conversion = convert_proposal_to_pending_claims(
         proposal,
-        evidence_nodes=evidence_nodes,
+        prior_claim_set=None,
+        critic_feedback=None,
     )
+    assert telemetry not in conversion.claim_set.claims[0].supporting_evidence_ids
 
-    h3_claim = normalized.claim_proposals[0]
-    assert telemetry in h3_claim.supporting_evidence_ids
+    _, validation = _validate_h3_claim_set(proposal, evidence_nodes=evidence_nodes)
+    assert not validation.valid
+    assert H3_FORGED_WITHOUT_TELEMETRY_ERROR in validation.errors
 
 
-def test_revision_prompt_whitelist_includes_newly_gathered_evidence() -> None:
+def test_evidence_availability_does_not_imply_claim_support() -> None:
+    evidence_nodes = _resolved_evidence_nodes()
+    assert any(
+        str(node.get("evidence_id")) == str(TELEMETRY_EVIDENCE_ID) for node in evidence_nodes
+    )
+    proposal = _h3_supported_proposal(
+        supporting_evidence_ids=(str(WORKLOAD_EVIDENCE_ID), str(COMPARISON_EVIDENCE_ID)),
+    )
+    _, validation = _validate_h3_claim_set(proposal, evidence_nodes=evidence_nodes)
+    assert not validation.valid
+    assert H3_FORGED_WITHOUT_TELEMETRY_ERROR in validation.errors
+
+
+def test_revision_with_explicit_citations_accepted() -> None:
+    evidence_nodes = _resolved_evidence_nodes()
+    invalid = _h3_supported_proposal(
+        supporting_evidence_ids=(str(WORKLOAD_EVIDENCE_ID), str(COMPARISON_EVIDENCE_ID)),
+    )
+    _, invalid_validation = _validate_h3_claim_set(invalid, evidence_nodes=evidence_nodes)
+    assert not invalid_validation.valid
+
+    revised = _h3_supported_proposal(
+        supporting_evidence_ids=(
+            str(WORKLOAD_EVIDENCE_ID),
+            str(COMPARISON_EVIDENCE_ID),
+            str(TELEMETRY_EVIDENCE_ID),
+        ),
+    ).model_copy(
+        update={
+            "claim_proposals": (
+                ClaimProposal(
+                    hypothesis_id="H3",
+                    statement="Revised H3 diagnosis cites comparison and telemetry explicitly.",
+                    claim_kind=str(DIAGNOSIS_KIND),
+                    supporting_evidence_ids=(
+                        str(WORKLOAD_EVIDENCE_ID),
+                        str(COMPARISON_EVIDENCE_ID),
+                        str(TELEMETRY_EVIDENCE_ID),
+                    ),
+                    replaces_prior_claim=True,
+                ),
+            )
+        }
+    )
+    _, revised_validation = _validate_h3_claim_set(revised, evidence_nodes=evidence_nodes)
+    assert revised_validation.valid
+
+
+def test_revision_still_omitting_required_citation_remains_invalid() -> None:
+    evidence_nodes = _resolved_evidence_nodes()
+    still_invalid = _h3_supported_proposal(
+        supporting_evidence_ids=(str(WORKLOAD_EVIDENCE_ID), str(COMPARISON_EVIDENCE_ID)),
+    ).model_copy(
+        update={
+            "claim_proposals": (
+                ClaimProposal(
+                    hypothesis_id="H3",
+                    statement="Revision still omits telemetry citation.",
+                    claim_kind=str(DIAGNOSIS_KIND),
+                    supporting_evidence_ids=(
+                        str(WORKLOAD_EVIDENCE_ID),
+                        str(COMPARISON_EVIDENCE_ID),
+                    ),
+                    replaces_prior_claim=True,
+                ),
+            )
+        }
+    )
+    _, validation = _validate_h3_claim_set(still_invalid, evidence_nodes=evidence_nodes)
+    assert not validation.valid
+    assert H3_FORGED_WITHOUT_TELEMETRY_ERROR in validation.errors
+
+
+def test_bounded_summary_requires_explicit_model_citations() -> None:
+    proposal = _h3_supported_proposal(
+        supporting_evidence_ids=(str(WORKLOAD_EVIDENCE_ID), str(COMPARISON_EVIDENCE_ID)),
+    )
+    summary = build_investigation_summary(proposal, is_revision=False)
+    assert "best-supported initiating cause" not in summary
+
+
+def test_revision_prompt_requires_explicit_citation_repair_by_model() -> None:
     initial_nodes = ({"evidence_id": str(WORKLOAD_EVIDENCE_ID), "payload": {}},)
     revision_nodes = (
         {"evidence_id": str(WORKLOAD_EVIDENCE_ID), "payload": {}},
@@ -388,6 +565,7 @@ def test_revision_prompt_whitelist_includes_newly_gathered_evidence() -> None:
     prompt = messages[0].content or ""
     assert str(TELEMETRY_EVIDENCE_ID) in prompt
     assert "Revision contract:" in prompt
+    assert "Do not assume the platform will add or repair claim citations." in prompt
     assert "Do not cite evidence that is not in the current allowed list." in prompt
     assert str(COMPARISON_EVIDENCE_ID) not in prompt
 
@@ -536,8 +714,13 @@ async def test_application_survives_without_proof_evaluator() -> None:
     assert result.critic_verdict_passed
     assert result.claim_set
     assert result.evidence_nodes
+    bound_claim_ids = {
+        binding["claim_id"]
+        for binding in result.claim_hypothesis_bindings
+    }
     assert all(
         claim.get("resolution") != ClaimResolution.PENDING.value
         for claim in result.claim_set.get("claims", [])
         if claim.get("claim_kind") == str(DIAGNOSIS_KIND)
+        and claim.get("claim_id") in bound_claim_ids
     )

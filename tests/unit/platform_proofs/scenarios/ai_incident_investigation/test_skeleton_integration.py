@@ -19,7 +19,17 @@ from intergrax.contracts.evidence_claims import (
     ClaimResolution,
     EvidenceClaimSet,
 )
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.runtime.execution.active_execution_budget import bind_root_execution_budget
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.governance.active_execution_authority import bind_active_execution_authority
 from intergrax.runtime.migration.legacy_critic_contracts import (
     LegacyCriticAction as CriticAction,
     LegacyCriticLayer as CriticLayer,
@@ -157,7 +167,6 @@ async def test_resolved_skeleton_executes_platform_path() -> None:
     assert result.critic_challenged
     assert result.evaluator_loop_iterations >= 1
     assert result.evaluator_loop_iterations <= EVALUATOR_LOOP_MAX_ITERATIONS
-    assert result.tool_invocations >= 6
     assert result.revision_used_tools
     assert result.failed_critic_verdict is not None
     assert UNSUPPORTED_INFERENCE_ERROR in result.failed_critic_verdict.failure_reasons
@@ -372,6 +381,17 @@ async def test_tool_runtime_invoked_not_mocked_away() -> None:
         prompt_registry=pytest.importorskip("unittest.mock").MagicMock(),
     )
     run_id = mint_run_id()
+    execution_id = mint_execution_id()
+    bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    bind_active_execution_authority(ParentExecutionAuthority.unrestricted_root())
+    bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(None),
+    )
     state = RuntimeState(
         context=ctx,
         request=RuntimeRequest(
@@ -404,7 +424,14 @@ async def test_follow_up_uses_platform_tools_not_direct_fixture() -> None:
     bundle = fixture_bundle.bundle
     result = await execute_resolved_skeleton(bundle)
     assert result.revision_used_tools
-    assert result.tool_invocations == 6
+    evidence_ids = {
+        str(node.get("evidence_id"))
+        for node in result.evidence_nodes
+        if node.get("evidence_id")
+    }
+    assert str(TELEMETRY_EVIDENCE_ID) in evidence_ids
+    assert str(COMPARISON_EVIDENCE_ID) in evidence_ids
+    assert str(STAFFING_ATTENDANCE_EVIDENCE_ID) in evidence_ids
 
 
 @pytest.mark.asyncio
