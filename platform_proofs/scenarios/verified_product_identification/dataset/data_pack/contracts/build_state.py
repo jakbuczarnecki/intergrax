@@ -96,16 +96,22 @@ class DataPackShardBuildState:
         if self.attempt < 0:
             raise ValueError("attempt must be >= 0")
         if self.status is DataPackShardStatus.READY:
-            for field_name in (
-                "relational_relative_path",
-                "embedding_relative_path",
-                "relational_sha256",
-                "embedding_sha256",
-                "relational_source_ref_set_sha256",
-                "embedding_source_ref_set_sha256",
-            ):
-                if getattr(self, field_name) is None:
-                    raise ValueError(f"{field_name} is required when shard status is READY")
+            if self.relational_relative_path is None:
+                raise ValueError("relational_relative_path is required when shard status is READY")
+            if self.embedding_relative_path is None:
+                raise ValueError("embedding_relative_path is required when shard status is READY")
+            if self.relational_sha256 is None:
+                raise ValueError("relational_sha256 is required when shard status is READY")
+            if self.embedding_sha256 is None:
+                raise ValueError("embedding_sha256 is required when shard status is READY")
+            if self.relational_source_ref_set_sha256 is None:
+                raise ValueError(
+                    "relational_source_ref_set_sha256 is required when shard status is READY"
+                )
+            if self.embedding_source_ref_set_sha256 is None:
+                raise ValueError(
+                    "embedding_source_ref_set_sha256 is required when shard status is READY"
+                )
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,6 +148,72 @@ class DataPackBuildState:
         ready_count = sum(1 for shard in self.shards if shard.status is DataPackShardStatus.READY)
         if ready_count != self.completed_shards:
             raise ValueError("completed_shards must equal READY shard count")
+        _validate_shard_plan_integrity(
+            expected_record_count=self.expected_record_count,
+            shards=self.shards,
+        )
+
+
+def _validate_shard_plan_integrity(
+    *,
+    expected_record_count: int,
+    shards: tuple[DataPackShardBuildState, ...],
+) -> None:
+    shard_count = len(shards)
+    ordinals = tuple(shard.ordinal for shard in shards)
+    seen_ordinals: set[int] = set()
+    for ordinal in ordinals:
+        if ordinal in seen_ordinals:
+            raise ValueError(f"duplicate shard ordinal: {ordinal}")
+        seen_ordinals.add(ordinal)
+
+    expected_ordinals = tuple(range(1, shard_count + 1))
+    if ordinals != expected_ordinals:
+        raise ValueError(
+            f"shard ordinals must be contiguous 1..{shard_count}; got {ordinals}"
+        )
+
+    first_shard = shards[0]
+    if first_shard.start_row_index != 0:
+        raise ValueError(
+            f"first shard must start at row index 0; got {first_shard.start_row_index}"
+        )
+
+    total_records = 0
+    for index, shard in enumerate(shards):
+        range_length = shard.end_row_index_exclusive - shard.start_row_index
+        if range_length != shard.expected_record_count:
+            raise ValueError(
+                f"shard {shard.ordinal} range length {range_length} "
+                f"does not match expected_record_count {shard.expected_record_count}"
+            )
+        total_records += shard.expected_record_count
+
+        if index + 1 < shard_count:
+            next_shard = shards[index + 1]
+            if shard.end_row_index_exclusive != next_shard.start_row_index:
+                if shard.end_row_index_exclusive > next_shard.start_row_index:
+                    raise ValueError(
+                        f"shard range overlap between ordinal {shard.ordinal} "
+                        f"and {next_shard.ordinal}"
+                    )
+                raise ValueError(
+                    f"shard range gap between ordinal {shard.ordinal} and "
+                    f"{next_shard.ordinal}: {shard.end_row_index_exclusive} != "
+                    f"{next_shard.start_row_index}"
+                )
+
+    last_shard = shards[-1]
+    if last_shard.end_row_index_exclusive != expected_record_count:
+        raise ValueError(
+            f"last shard end {last_shard.end_row_index_exclusive} does not match "
+            f"build expected_record_count {expected_record_count}"
+        )
+    if total_records != expected_record_count:
+        raise ValueError(
+            f"sum of shard expected_record_count {total_records} does not match "
+            f"build expected_record_count {expected_record_count}"
+        )
 
 
 def _shard_status_from_str(value: str) -> DataPackShardStatus:
@@ -191,6 +263,8 @@ def shard_build_state_from_json_dict(payload: dict[str, JsonValue]) -> DataPackS
         )
     except VpiDataPackFormatError as exc:
         raise VpiDataPackBuildStateError(str(exc)) from exc
+    except ValueError as exc:
+        raise VpiDataPackBuildStateError(str(exc)) from exc
 
 
 def build_state_from_json_dict(payload: dict[str, JsonValue]) -> DataPackBuildState:
@@ -220,6 +294,8 @@ def build_state_from_json_dict(payload: dict[str, JsonValue]) -> DataPackBuildSt
             shards=shards,
         )
     except VpiDataPackFormatError as exc:
+        raise VpiDataPackBuildStateError(str(exc)) from exc
+    except ValueError as exc:
         raise VpiDataPackBuildStateError(str(exc)) from exc
 
 

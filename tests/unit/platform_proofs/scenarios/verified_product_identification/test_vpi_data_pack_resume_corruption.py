@@ -302,7 +302,7 @@ def test_semantic_invalid_completed_shards_fails_closed(
     fixture, _ = prepare_partial_build(tmp_path, monkeypatch, ready_shards=1)
     payload = read_build_state_dict(fixture)
     payload["completed_shards"] = 2
-    with pytest.raises(ValueError, match="completed_shards must equal READY shard count"):
+    with pytest.raises(VpiDataPackBuildStateError, match="completed_shards must equal READY shard count"):
         build_state_from_json_dict(payload)
 
 
@@ -312,7 +312,7 @@ def test_semantic_ready_without_sha_metadata_fails_closed(
 ) -> None:
     fixture, _ = prepare_partial_build(tmp_path, monkeypatch, ready_shards=1)
     update_shard(fixture, READY_ORDINAL, relational_sha256=None)
-    with pytest.raises(ValueError, match="relational_sha256 is required"):
+    with pytest.raises(VpiDataPackBuildStateError, match="relational_sha256 is required"):
         read_build_state_file(_paths(fixture).build_state_file)
 
 

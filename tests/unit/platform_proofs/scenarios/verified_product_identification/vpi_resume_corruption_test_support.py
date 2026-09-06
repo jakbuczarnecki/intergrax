@@ -28,6 +28,9 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     ShardBuildSeams,
     run_resumable_data_pack_build,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.shard_plan import (
+    plan_data_pack_shards,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.build_state import (
     DataPackShardStatus,
     read_build_state_file,
@@ -207,6 +210,91 @@ def update_shard(fixture: PartialBuildFixture, ordinal: int, **updates: object) 
             break
     else:
         raise KeyError(f"shard ordinal {ordinal} not found")
+    write_build_state_dict(fixture, payload)
+
+
+def align_shard_record_count(
+    fixture: PartialBuildFixture,
+    ordinal: int,
+    record_count: int,
+) -> None:
+    payload = read_build_state_dict(fixture)
+    shards_raw = payload["shards"]
+    if not isinstance(shards_raw, list):
+        raise TypeError("shards must be a list")
+    build_total = payload["expected_record_count"]
+    shard_size = payload["shard_size"]
+    if not isinstance(build_total, int) or not isinstance(shard_size, int):
+        raise TypeError("expected_record_count and shard_size must be int")
+
+    sorted_entries = sorted(
+        (entry for entry in shards_raw if isinstance(entry, dict)),
+        key=lambda entry: int(entry["ordinal"]),
+    )
+    result: list[dict[str, object]] = []
+    start_row_index = 0
+    tail_ordinals: list[int] = []
+
+    for entry in sorted_entries:
+        entry_ordinal = int(entry["ordinal"])
+        if entry_ordinal < ordinal:
+            result.append(entry)
+            start_row_index = int(entry["end_row_index_exclusive"])
+        elif entry_ordinal == ordinal:
+            end_row_index_exclusive = start_row_index + record_count
+            result.append(
+                {
+                    **entry,
+                    "start_row_index": start_row_index,
+                    "end_row_index_exclusive": end_row_index_exclusive,
+                    "expected_record_count": record_count,
+                }
+            )
+            start_row_index = end_row_index_exclusive
+        else:
+            tail_ordinals.append(entry_ordinal)
+
+    if not tail_ordinals:
+        payload["shards"] = result
+        write_build_state_dict(fixture, payload)
+        return
+
+    remaining = build_total - start_row_index
+    original_tail = {
+        int(entry["ordinal"]): entry
+        for entry in sorted_entries
+        if int(entry["ordinal"]) in tail_ordinals
+    }
+    if len(tail_ordinals) == 1:
+        original = original_tail[tail_ordinals[0]]
+        result.append(
+            {
+                **original,
+                "start_row_index": start_row_index,
+                "end_row_index_exclusive": build_total,
+                "expected_record_count": remaining,
+            }
+        )
+    else:
+        tail_plan = plan_data_pack_shards(record_count=remaining, shard_size=shard_size)
+        if len(tail_plan) != len(tail_ordinals):
+            msg = (
+                f"cannot align tail shard plan: {len(tail_plan)} planned entries "
+                f"for {len(tail_ordinals)} tail shards"
+            )
+            raise ValueError(msg)
+        for index, plan_entry in enumerate(tail_plan):
+            original = original_tail[tail_ordinals[index]]
+            result.append(
+                {
+                    **original,
+                    "start_row_index": start_row_index + plan_entry.start_row_index,
+                    "end_row_index_exclusive": start_row_index + plan_entry.end_row_index_exclusive,
+                    "expected_record_count": plan_entry.expected_record_count,
+                }
+            )
+
+    payload["shards"] = result
     write_build_state_dict(fixture, payload)
 
 
@@ -448,6 +536,7 @@ def install_duplicate_source_ref_ready_shard(
         expected_record_count=2,
         attempt=1,
     )
+    align_shard_record_count(fixture, ordinal, 2)
     payload = read_build_state_dict(fixture)
     payload["completed_shards"] = sum(
         1
@@ -478,6 +567,7 @@ def install_record_count_mismatch_ready_shard(
         expected_record_count=2,
         attempt=1,
     )
+    align_shard_record_count(fixture, ordinal, 2)
     payload = read_build_state_dict(fixture)
     payload["completed_shards"] = sum(
         1
@@ -518,6 +608,7 @@ def install_schema_corrupt_ready_shard(
         expected_record_count=1,
         attempt=1,
     )
+    align_shard_record_count(fixture, ordinal, 1)
     payload = read_build_state_dict(fixture)
     payload["completed_shards"] = 1
     write_build_state_dict(fixture, payload)
@@ -546,6 +637,7 @@ def install_dimension_corrupt_ready_shard(
         expected_record_count=1,
         attempt=1,
     )
+    align_shard_record_count(fixture, ordinal, 1)
     payload = read_build_state_dict(fixture)
     payload["completed_shards"] = 1
     write_build_state_dict(fixture, payload)
