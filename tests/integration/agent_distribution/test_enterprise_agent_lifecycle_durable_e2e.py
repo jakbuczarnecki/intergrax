@@ -96,21 +96,27 @@ def test_enterprise_durable_lifecycle_happy_path_and_restart(tmp_path: Path) -> 
     stack_a = EnterpriseAgentLifecycleProofStack.build(shared_root, db_path=db_path)
     result = stack_a.run_happy_path()
     _assert_checkpoint(stack_a, result)
-    serving_projection = stack_a.resolve_serving_projection()
+    revision_id = result.runtime_revision_id
+    expected_agent_id = result.execution_agent_id
+    expected_answer = result.execution_answer
+    pointer_revision = stack_a.admin.inspect_serving(
+        application_id=config.application_id,
+        application_environment_id=config.environment_id,
+    ).serving_pointer_revision
 
     del stack_a
     stack_b = EnterpriseAgentLifecycleProofStack.reopen(shared_root, db_path, config)
-    stack_b.restore_serving_projection(serving_projection)
     serving = stack_b.admin.inspect_serving(
         application_id=config.application_id,
         application_environment_id=config.environment_id,
     )
-    assert serving.traffic_serving_revision_id == result.traffic_serving_revision_id
+    assert serving.traffic_serving_revision_id == revision_id
+    assert serving.serving_pointer_revision == pointer_revision
     projection = stack_b.resolve_serving_projection()
-    assert projection.evidence.runtime_revision_id == result.runtime_revision_id
+    assert projection.evidence.runtime_revision_id == revision_id
     execution_agent_id, execution_answer = asyncio.run(stack_b.execute_canonical())
-    assert execution_agent_id == result.execution_agent_id
-    assert execution_answer == result.execution_answer
+    assert execution_agent_id == expected_agent_id
+    assert execution_answer == expected_answer
     _assert_checkpoint(stack_b, result)
 
 
