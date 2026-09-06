@@ -48,6 +48,35 @@ from intergrax.runtime.diagnostics.diagnostic_read_service import (
     MAX_PROBLEM_LIST_LIMIT,
     DiagnosticReadService,
 )
+from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
+    DEFAULT_SCOPE_DISCOVERY_CANDIDATE_LIMIT,
+    DiagnosticExecutionScopeCandidate,
+    DiagnosticScopeDiscoveryIntegrityError,
+    DiagnosticScopeDiscoveryRequest,
+    DiagnosticScopeDiscoveryResult,
+    DiagnosticScopeDiscoveryStatus,
+    DiagnosticScopeDiscoveryValidationError,
+    DiagnosticScopeReferenceKind,
+    DiagnosticScopeResolutionProvenance,
+    MAX_SCOPE_DISCOVERY_CANDIDATE_LIMIT,
+    ProblemScopeReference,
+    build_diagnostic_scope_discovery_result,
+    unsupported_reference_result,
+    validate_scope_discovery_request,
+)
+from intergrax.runtime.diagnostics.diagnostic_scope_discovery_provider import (
+    DiagnosticScopeDiscoveryProvider,
+    DiagnosticScopeDiscoveryProviderRegistry,
+    DiagnosticScopeProviderResult,
+    assert_diagnostic_scope_discovery_provider_conformance,
+)
+from intergrax.runtime.diagnostics.diagnostic_scope_discovery_service import (
+    DiagnosticScopeDiscoveryService,
+)
+from intergrax.runtime.diagnostics.providers.problem_scope_provider import (
+    PROBLEM_SCOPE_PROVIDER_ID,
+    ProblemScopeProvider,
+)
 from intergrax.runtime.diagnostics.execution_reconstruction import (
     ExecutionReconstruction,
     ExecutionReconstructionIntegrityError,
@@ -204,16 +233,33 @@ from intergrax.runtime.diagnostics.problem_grouping import (
 __all__ = [
     "DEFAULT_OCCURRENCE_LIMIT",
     "DEFAULT_PROBLEM_LIST_LIMIT",
+    "DEFAULT_SCOPE_DISCOVERY_CANDIDATE_LIMIT",
+    "DiagnosticExecutionScopeCandidate",
     "DiagnosticExecutionAnalysis",
     "DiagnosticExecutionScope",
     "DiagnosticOrchestrationIntegrityError",
     "DiagnosticOrchestrationRequest",
     "DiagnosticOrchestrationResult",
     "DiagnosticOrchestrator",
+    "DiagnosticScopeDiscoveryIntegrityError",
+    "DiagnosticScopeDiscoveryProvider",
+    "DiagnosticScopeDiscoveryProviderRegistry",
+    "DiagnosticScopeDiscoveryRequest",
+    "DiagnosticScopeDiscoveryResult",
+    "DiagnosticScopeDiscoveryService",
+    "DiagnosticScopeDiscoveryStatus",
+    "DiagnosticScopeDiscoveryValidationError",
+    "DiagnosticScopeProviderResult",
+    "DiagnosticScopeReferenceKind",
+    "DiagnosticScopeResolutionProvenance",
     "DiagnosticSignalSubjectAnalysis",
     "DiagnosticSignalSubjectScope",
     "MAX_DIAGNOSTIC_ORCHESTRATION_EXECUTIONS",
     "MAX_DIAGNOSTIC_ORCHESTRATION_SIGNAL_SUBJECTS",
+    "MAX_SCOPE_DISCOVERY_CANDIDATE_LIMIT",
+    "PROBLEM_SCOPE_PROVIDER_ID",
+    "ProblemScopeProvider",
+    "ProblemScopeReference",
     "ApplicationDiagnosticSubjectRef",
     "DiagnosticSubjectKind",
     "DiagnosticSubjectRef",
@@ -355,6 +401,7 @@ __all__ = [
     "validate_investigation_conclusion",
     "assert_problem_persistence_conformance",
     "assert_problem_persistence_typed_round_trip",
+    "assert_diagnostic_scope_discovery_provider_conformance",
     "sample_problem",
     "wire_problem_persistence",
 ]

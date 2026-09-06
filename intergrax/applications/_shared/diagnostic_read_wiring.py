@@ -15,6 +15,9 @@ from intergrax.applications._shared.harness_host_runtime_compat import (
 )
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
+from intergrax.runtime.diagnostics.diagnostic_scope_discovery_service import (
+    DiagnosticScopeDiscoveryService,
+)
 from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence import (
     wire_problem_occurrence_persistence,
 )
@@ -22,6 +25,7 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import wir
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import ProblemOccurrencePersistence
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
+from intergrax.runtime.diagnostics.providers.problem_scope_provider import ProblemScopeProvider
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
@@ -96,6 +100,20 @@ def build_diagnostic_read_service(
     )
 
 
+def build_diagnostic_scope_discovery_service(
+    dependencies: HostDiagnosticReadDependencies,
+) -> DiagnosticScopeDiscoveryService:
+    """Construct canonical scope discovery over shared platform Problem persistence."""
+    return DiagnosticScopeDiscoveryService(
+        providers=(
+            ProblemScopeProvider(
+                problem_persistence=dependencies.problem_persistence,
+                occurrence_persistence=dependencies.occurrence_persistence,
+            ),
+        ),
+    )
+
+
 def resolve_host_diagnostic_read_service(
     runtime: HarnessHostRuntime,
 ) -> DiagnosticReadService:
@@ -106,6 +124,7 @@ def resolve_host_diagnostic_read_service(
 __all__ = [
     "HostDiagnosticReadDependencies",
     "build_diagnostic_read_service",
+    "build_diagnostic_scope_discovery_service",
     "resolve_host_diagnostic_read_dependencies",
     "resolve_host_diagnostic_read_service",
 ]
