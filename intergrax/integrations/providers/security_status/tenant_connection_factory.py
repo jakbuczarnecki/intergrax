@@ -12,10 +12,10 @@ from intergrax.integrations.providers.security_status.integration import Securit
 from intergrax.integrations.providers.security_status.knowledge_read import (
     SECURITY_STATUS_PROVIDER_ID,
 )
-from intergrax.runtime.vendor_knowledge.models import JsonValue
-from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
-    TenantConnectionIntegrationFactory,
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
 )
+from intergrax.runtime.vendor_knowledge.models import JsonValue
 
 _ALLOWED_SECRET_FREE_CONFIG_KEYS = frozenset({"base_url", "timeout_seconds"})
 
@@ -46,7 +46,9 @@ def _parse_secret_free_config(
     )
 
 
-class SecurityStatusTenantConnectionIntegrationFactory(TenantConnectionIntegrationFactory):
+class SecurityStatusTenantConnectionIntegrationFactory(
+    EagerTenantConnectionIntegrationFactoryMixin,
+):
     """Compose one Security Status integration from durable tenant connection config."""
 
     def __init__(
@@ -65,6 +67,27 @@ class SecurityStatusTenantConnectionIntegrationFactory(TenantConnectionIntegrati
         integration_kind: IntegrationCategory,
         credential_ref: str,
         credential: str,
+        secret_free_config: Mapping[str, JsonValue],
+    ) -> SecurityStatusIntegration:
+        return self.create_integration_with_resolved_credential(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            credential_ref=credential_ref,
+            resolved_credential=credential,
+            secret_free_config=secret_free_config,
+        )
+
+    def create_integration_with_resolved_credential(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        resolved_credential: str,
         secret_free_config: Mapping[str, JsonValue],
     ) -> SecurityStatusIntegration:
         _require_nonblank(tenant_id, field_name="tenant_id")

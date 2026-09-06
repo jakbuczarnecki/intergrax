@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -49,6 +49,7 @@ from testing_support.agent_package_attestation import (
 _DIGEST_A = "sha256:" + ("a" * 64)
 _DIGEST_B = "sha256:" + ("b" * 64)
 _FIXED_AT = datetime(2026, 8, 13, 12, 0, 0, tzinfo=UTC)
+_QUALIFIED_AT = datetime(2026, 8, 6, 12, 0, 0, tzinfo=UTC)
 
 _PACKAGE = AgentPackageIdentity(
     distribution_package_id="intergrax-local-search-agent",
@@ -110,6 +111,7 @@ def _qualification(
     status: QualificationStatus = QualificationStatus.PRODUCTION_QUALIFIED,
     publisher: AgentPublisherIdentity = _PUBLISHER,
     delivery_source: AgentDeliverySource = AgentDeliverySource.BUILTIN,
+    qualified_at: datetime = _QUALIFIED_AT,
 ) -> AgentPackageQualificationResult:
     return AgentPackageQualificationResult(
         publisher=publisher,
@@ -127,6 +129,7 @@ def _qualification(
         ),
         reason="qualified by test evidence",
         delivery_source=delivery_source,
+        qualified_at=qualified_at,
     )
 
 
@@ -270,6 +273,7 @@ def test_trust_development_source_accepted_only_when_policy_permits() -> None:
         ),
         reason="development qualification",
         delivery_source=AgentDeliverySource.LOCAL_DEVELOPER,
+        qualified_at=_QUALIFIED_AT,
     )
     allowed = coordinator.evaluate(
         package_identity=_PACKAGE,
@@ -513,3 +517,151 @@ def test_source_qualified_evidence_cannot_authorize_other_delivery_source() -> N
         qualification=_qualification(delivery_source=AgentDeliverySource.MARKETPLACE),
     )
     assert decision.reason_code is AgentPackageTrustReasonCode.EVIDENCE_PACKAGE_MISMATCH
+
+
+def test_fresh_qualification_continues_normal_evaluation() -> None:
+    decision = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=7)),
+        qualification=_qualification(qualified_at=_QUALIFIED_AT),
+        evaluated_at=_QUALIFIED_AT + timedelta(days=6),
+    )
+    assert decision.outcome is AgentPackageTrustOutcome.ALLOW
+
+
+def test_exact_max_age_boundary_is_fresh() -> None:
+    decision = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=7)),
+        qualification=_qualification(qualified_at=_QUALIFIED_AT),
+        evaluated_at=_QUALIFIED_AT + timedelta(days=7),
+    )
+    assert decision.outcome is AgentPackageTrustOutcome.ALLOW
+
+
+def test_expired_qualification_denied() -> None:
+    decision = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=7)),
+        qualification=_qualification(qualified_at=_QUALIFIED_AT),
+        evaluated_at=_QUALIFIED_AT + timedelta(days=7, microseconds=1),
+    )
+    assert decision.outcome is AgentPackageTrustOutcome.DENY
+    assert decision.reason_code is AgentPackageTrustReasonCode.QUALIFICATION_EXPIRED
+
+
+def test_future_qualification_timestamp_denied() -> None:
+    decision = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=7)),
+        qualification=_qualification(
+            qualified_at=_QUALIFIED_AT + timedelta(hours=1),
+        ),
+        evaluated_at=_QUALIFIED_AT,
+    )
+    assert decision.outcome is AgentPackageTrustOutcome.DENY
+    assert (
+        decision.reason_code is AgentPackageTrustReasonCode.QUALIFICATION_TIMESTAMP_INVALID
+    )
+
+
+def test_no_max_age_preserves_backward_compatibility() -> None:
+    decision = _evaluate(
+        qualification=_qualification(
+            qualified_at=_QUALIFIED_AT - timedelta(days=365),
+        ),
+        evaluated_at=_FIXED_AT,
+    )
+    assert decision.outcome is AgentPackageTrustOutcome.ALLOW
+
+
+def test_naive_qualification_timestamp_rejected() -> None:
+    with pytest.raises(ValueError, match="timezone-aware UTC datetime"):
+        AgentPackageQualificationResult(
+            publisher=_PUBLISHER,
+            status=QualificationStatus.PRODUCTION_QUALIFIED,
+            evidence=(),
+            reason="naive timestamp",
+            delivery_source=AgentDeliverySource.BUILTIN,
+            qualified_at=datetime(2026, 8, 6, 12, 0, 0),
+        )
+
+
+def test_requalification_replaces_immutable_snapshot() -> None:
+    expired = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=7)),
+        qualification=_qualification(qualified_at=_QUALIFIED_AT),
+        evaluated_at=_QUALIFIED_AT + timedelta(days=8),
+    )
+    assert expired.reason_code is AgentPackageTrustReasonCode.QUALIFICATION_EXPIRED
+
+    refreshed = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=7)),
+        qualification=_qualification(qualified_at=_FIXED_AT),
+        evaluated_at=_FIXED_AT,
+    )
+    assert refreshed.outcome is AgentPackageTrustOutcome.ALLOW
+    assert expired.qualification is not refreshed.qualification
+    assert expired.qualification.qualified_at == _QUALIFIED_AT
+
+
+def test_policy_fingerprint_includes_max_qualification_age() -> None:
+    seven_days = _production_policy(max_qualification_age=timedelta(days=7))
+    thirty_days = _production_policy(max_qualification_age=timedelta(days=30))
+    assert seven_days.policy_fingerprint != thirty_days.policy_fingerprint
+
+
+def test_stale_qualification_install_replay_blocked() -> None:
+    decision = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=7)),
+        qualification=_qualification(qualified_at=_QUALIFIED_AT),
+        evaluated_at=_QUALIFIED_AT,
+    )
+    assert decision.trust_record is not None
+    coordinator = AgentPackageTrustCoordinator()
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        coordinator.assert_install_admission(
+            trust_record=decision.trust_record,
+            package_identity=_PACKAGE,
+            policy=_production_policy(max_qualification_age=timedelta(days=7)),
+            evaluated_at=_QUALIFIED_AT + timedelta(days=10),
+        )
+    assert (
+        exc_info.value.reason_code
+        == AgentPackageTrustReasonCode.QUALIFICATION_EXPIRED.value
+    )
+
+
+def test_policy_tightening_denies_new_admission() -> None:
+    decision = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=30)),
+        qualification=_qualification(qualified_at=_QUALIFIED_AT),
+        evaluated_at=_QUALIFIED_AT + timedelta(days=10),
+    )
+    assert decision.outcome is AgentPackageTrustOutcome.ALLOW
+    coordinator = AgentPackageTrustCoordinator()
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        coordinator.assert_install_admission(
+            trust_record=decision.trust_record,
+            package_identity=_PACKAGE,
+            policy=_production_policy(max_qualification_age=timedelta(days=7)),
+            evaluated_at=_QUALIFIED_AT + timedelta(days=10),
+        )
+    assert (
+        exc_info.value.reason_code
+        == AgentPackageTrustReasonCode.QUALIFICATION_EXPIRED.value
+    )
+
+
+def test_revocation_precedes_qualification_expiry() -> None:
+    decision = _evaluate(
+        policy=_production_policy(max_qualification_age=timedelta(days=7)),
+        qualification=_qualification(qualified_at=_QUALIFIED_AT),
+        evaluated_at=_QUALIFIED_AT + timedelta(days=10),
+        revocation_state=AgentPackageTrustRevocationState(
+            revoked_package_digests=frozenset({_DIGEST_A}),
+        ),
+    )
+    assert decision.reason_code is AgentPackageTrustReasonCode.PACKAGE_DIGEST_REVOKED
+
+
+def test_allow_decision_records_qualification_qualified_at() -> None:
+    decision = _evaluate()
+    assert decision.trust_record is not None
+    assert decision.trust_record.qualification_qualified_at == _QUALIFIED_AT

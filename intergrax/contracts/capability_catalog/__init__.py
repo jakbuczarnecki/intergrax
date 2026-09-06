@@ -41,14 +41,49 @@ from intergrax.contracts.capability_catalog.provenance import (
     SCHEMA_CAPABILITY_PROVENANCE_V1,
     CapabilityProvenance,
 )
+from intergrax.contracts.capability_catalog.ranking import (
+    SCHEMA_CAPABILITY_RANKING_CONTEXT_V1,
+    SCHEMA_CAPABILITY_RANKING_EVIDENCE_V1,
+    CapabilityRankingContext,
+    CapabilityRankingEvidence,
+    CapabilityRankingSignal,
+)
 from intergrax.contracts.capability_catalog.scope import (
     SCHEMA_CAPABILITY_DISCOVERY_SCOPE_V1,
     CapabilityDiscoveryScope,
     CapabilityDiscoveryScopeMode,
 )
+from intergrax.contracts.capability_catalog.skill_version_binding import (
+    SkillVersionBindingDisposition,
+)
+from intergrax.contracts.capability_catalog.governance import (
+    SCHEMA_CAPABILITY_AGENT_GOVERNANCE_EVIDENCE_V1,
+    SCHEMA_CAPABILITY_GOVERNANCE_CONTEXT_V1,
+    SCHEMA_CAPABILITY_SKILL_GOVERNANCE_EVIDENCE_V1,
+    SCHEMA_CAPABILITY_TOOL_GOVERNANCE_EVIDENCE_V1,
+    SCHEMA_GOVERNANCE_DECISION_EVIDENCE_V1,
+    CapabilityAgentGovernanceEvidence,
+    CapabilityGovernanceContext,
+    CapabilityGovernancePosture,
+    CapabilityGovernanceReasonCode,
+    CapabilitySetConstraintMode,
+    CapabilitySkillGovernanceEvidence,
+    CapabilityToolGovernanceEvidence,
+    GovernanceDecisionEvidence,
+    GovernanceDisposition,
+    NORMATIVE_CAPABILITY_GOVERNANCE_REASON_CODES,
+)
 from intergrax.contracts.capability_catalog.vocabulary import (
     NORMATIVE_CAPABILITY_STAGE_VOCABULARY,
     CapabilityStageVocabulary,
+)
+from intergrax.contracts.capability_catalog.work_stage import (
+    SCHEMA_WORK_STAGE_CAPABILITY_NEED_V1,
+    WorkContextReference,
+    WorkStageCapabilityNeed,
+    WorkStageReference,
+    validate_work_context_reference,
+    validate_work_stage_reference,
 )
 
 __all__ = [
@@ -65,9 +100,22 @@ __all__ = [
     "LogicalIdentityFilter",
     "NORMATIVE_AVAILABILITY_DISPOSITIONS",
     "CapabilityProvenance",
+    "CapabilityRankingContext",
+    "CapabilityRankingEvidence",
+    "CapabilityRankingSignal",
     "CapabilitySourceIdentity",
     "CapabilitySourceKind",
-    "CapabilityStageVocabulary",
+    "SkillVersionBindingDisposition",
+    "CapabilityAgentGovernanceEvidence",
+    "CapabilityGovernanceContext",
+    "CapabilityGovernancePosture",
+    "CapabilityGovernanceReasonCode",
+    "CapabilitySetConstraintMode",
+    "CapabilitySkillGovernanceEvidence",
+    "CapabilityToolGovernanceEvidence",
+    "GovernanceDecisionEvidence",
+    "GovernanceDisposition",
+    "NORMATIVE_CAPABILITY_GOVERNANCE_REASON_CODES",
     "NORMATIVE_CAPABILITY_STAGE_VOCABULARY",
     "SCHEMA_CAPABILITY_DISCOVERY_AVAILABILITY_EVIDENCE_V1",
     "SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1",
@@ -77,6 +125,20 @@ __all__ = [
     "SourceFilter",
     "SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1",
     "SCHEMA_CAPABILITY_PROVENANCE_V1",
+    "SCHEMA_CAPABILITY_RANKING_CONTEXT_V1",
+    "SCHEMA_CAPABILITY_RANKING_EVIDENCE_V1",
     "SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1",
+    "SCHEMA_CAPABILITY_AGENT_GOVERNANCE_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_SKILL_GOVERNANCE_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_TOOL_GOVERNANCE_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_GOVERNANCE_CONTEXT_V1",
+    "SCHEMA_GOVERNANCE_DECISION_EVIDENCE_V1",
+    "CapabilityStageVocabulary",
     "V1_CAPABILITY_KINDS",
+    "SCHEMA_WORK_STAGE_CAPABILITY_NEED_V1",
+    "WorkContextReference",
+    "WorkStageCapabilityNeed",
+    "WorkStageReference",
+    "validate_work_context_reference",
+    "validate_work_stage_reference",
 ]

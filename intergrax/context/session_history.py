@@ -14,10 +14,12 @@ from types import MappingProxyType
 from typing import Any
 
 from intergrax.context.contracts import (
+    BUILTIN_PROVIDER_VERSION,
     ContextAssemblyRequest,
     ContextFragment,
     ContextFragmentSource,
     ContextProviderContext,
+    ContextProviderDescriptor,
 )
 from intergrax.llm.messages import ChatMessage, MessageRole
 
@@ -454,9 +456,24 @@ def session_history_chat_message_from_fragment(
 class HandleSessionHistoryProvider:
     """Canonical handle-backed session history provider."""
 
+    _PROVIDER_VERSION = BUILTIN_PROVIDER_VERSION
+
     @property
     def provider_id(self) -> str:
         return "builtin.session_history_snapshot"
+
+    @property
+    def supported_sources(self) -> frozenset[ContextFragmentSource]:
+        return frozenset({ContextFragmentSource.SESSION_HISTORY})
+
+    @property
+    def descriptor(self) -> ContextProviderDescriptor:
+        return ContextProviderDescriptor(
+            provider_id=self.provider_id,
+            provider_version=self._PROVIDER_VERSION,
+            supported_sources=self.supported_sources,
+            origin="builtin",
+        )
 
     async def load_snapshot(
         self,

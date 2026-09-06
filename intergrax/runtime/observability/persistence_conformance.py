@@ -21,6 +21,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import (
@@ -30,9 +31,12 @@ from intergrax.runtime.observability.causal_evidence import (
     RuntimeExecutionRef,
 )
 from intergrax.runtime.observability.causal_evidence_persistence import (
+    CAUSAL_EVIDENCE_QUERY_MAX_LIMIT,
     CausalEvidencePersistence,
     CausalEvidencePersistenceConflictError,
+    CausalEvidencePersistenceIntegrityError,
     causal_evidence_query_order_key,
+    validate_causal_evidence_query_limit,
 )
 
 
@@ -118,6 +122,54 @@ def assert_runtime_event_persistence_conformance(
     assert duplicate.position == positioned[0].position
     assert store.list_for_run(run_id, tenant_id=tenant_b) == []
     assert store.list_for_task(task_id, tenant_id=tenant_b) == []
+
+    assert_runtime_event_get_by_event_id_conformance(
+        store,
+        label=label,
+        tenant_a=tenant_a,
+        tenant_b=tenant_b,
+        first=first,
+        duplicate=duplicate,
+        positioned_first=positioned[0],
+    )
+
+
+def assert_runtime_event_get_by_event_id_conformance(
+    store: RuntimeEventPersistence,
+    *,
+    label: str,
+    tenant_a: str,
+    tenant_b: str,
+    first: RuntimeEvent,
+    duplicate: PositionedRuntimeEvent,
+    positioned_first: PositionedRuntimeEvent,
+) -> None:
+    """Shared ``get_by_event_id`` contract for every ``RuntimeEventPersistence`` backend."""
+    lookup = store.get_by_event_id(tenant_id=tenant_a, event_id=first.event_id)
+    assert lookup is not None, f"{label}: expected positioned event for accepted event_id"
+    assert lookup.event.event_id == first.event_id
+    assert lookup.position == positioned_first.position
+
+    unknown_id = mint_event_id()
+    assert store.get_by_event_id(tenant_id=tenant_a, event_id=unknown_id) is None
+
+    assert store.get_by_event_id(tenant_id=tenant_b, event_id=first.event_id) is None
+
+    duplicate_lookup = store.get_by_event_id(tenant_id=tenant_a, event_id=first.event_id)
+    assert duplicate_lookup is not None
+    assert duplicate_lookup.position == duplicate.position
+
+    repeat_lookup = store.get_by_event_id(tenant_id=tenant_a, event_id=first.event_id)
+    assert repeat_lookup == duplicate_lookup
+
+    assert lookup.position.value == positioned_first.position.value
+
+    snapshot_event_id = lookup.event.event_id
+    snapshot_position = lookup.position.value
+    after_lookup = store.get_by_event_id(tenant_id=tenant_a, event_id=first.event_id)
+    assert after_lookup is not None
+    assert after_lookup.event.event_id == snapshot_event_id
+    assert after_lookup.position.value == snapshot_position
 
 
 def sample_causal_evidence(
@@ -378,3 +430,196 @@ def assert_causal_evidence_typed_round_trip(
     assert by_execution[0].source.provider == evidence.source.provider
     assert by_execution[0].source.task_id == evidence.source.task_id
     assert by_execution[0].target.attempt_id == evidence.target.attempt_id
+
+
+def assert_causal_evidence_paging_conformance(
+    store: CausalEvidencePersistence,
+    *,
+    label: str,
+) -> None:
+    """Shared bounded paging contract for ``page_for_execution`` / ``page_for_transport_task``."""
+    tenant_a = f"{label}-page-tenant-a"
+    tenant_b = f"{label}-page-tenant-b"
+    provider = "celery"
+    transport_task_id = f"{label}-page-transport"
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+
+    empty_exec = store.page_for_execution(
+        tenant_id=tenant_a,
+        task_id=task_id,
+        run_id=run_id,
+        limit=10,
+    )
+    assert empty_exec.items == () and empty_exec.next_cursor is None, f"{label}: P1 empty execution"
+
+    empty_transport = store.page_for_transport_task(
+        tenant_id=tenant_a,
+        provider=provider,
+        transport_task_id=transport_task_id,
+        limit=10,
+    )
+    assert empty_transport.items == () and empty_transport.next_cursor is None, f"{label}: P1 empty transport"
+
+    single = sample_causal_evidence(
+        tenant_id=tenant_a,
+        provider=provider,
+        transport_task_id=transport_task_id,
+        task_id=task_id,
+        run_id=run_id,
+    )
+    store.append(single)
+    one_exec = store.page_for_execution(
+        tenant_id=tenant_a,
+        task_id=task_id,
+        run_id=run_id,
+        limit=10,
+    )
+    assert one_exec.items == (single,) and one_exec.next_cursor is None, f"{label}: P2 one record"
+
+    records: list[PlatformCausalEvidence] = [single]
+    for suffix in ("b", "c", "d", "e"):
+        records.append(
+            sample_causal_evidence(
+                tenant_id=tenant_a,
+                provider=provider,
+                transport_task_id=transport_task_id,
+                task_id=task_id,
+                run_id=run_id,
+                evidence_id=mint_event_id(),
+            ),
+        )
+        store.append(records[-1])
+
+    tie_time = datetime(2026, 6, 8, 12, 0, 0, tzinfo=timezone.utc)
+    tie_a = sample_causal_evidence(
+        tenant_id=tenant_a,
+        provider=provider,
+        transport_task_id=transport_task_id,
+        task_id=task_id,
+        run_id=run_id,
+        evidence_id=mint_event_id(),
+    )
+    tie_b = sample_causal_evidence(
+        tenant_id=tenant_a,
+        provider=provider,
+        transport_task_id=transport_task_id,
+        task_id=task_id,
+        run_id=run_id,
+        evidence_id=mint_event_id(),
+    )
+    tie_a = tie_a.model_copy(update={"recorded_at": tie_time})
+    tie_b = tie_b.model_copy(update={"recorded_at": tie_time})
+    if str(tie_a.evidence_id) > str(tie_b.evidence_id):
+        tie_a, tie_b = tie_b, tie_a
+    store.append(tie_a)
+    store.append(tie_b)
+    records.extend((tie_a, tie_b))
+
+    expected = tuple(sorted(records, key=causal_evidence_query_order_key))
+    paged_exec: list[PlatformCausalEvidence] = []
+    cursor: str | None = None
+    while True:
+        page = store.page_for_execution(
+            tenant_id=tenant_a,
+            task_id=task_id,
+            run_id=run_id,
+            limit=2,
+            cursor=cursor,
+        )
+        assert len(page.items) <= 2, f"{label}: P11 page length"
+        paged_exec.extend(page.items)
+        cursor = page.next_cursor
+        if cursor is None:
+            break
+    assert tuple(paged_exec) == expected, f"{label}: P3/P10 execution paging"
+
+    paged_transport: list[PlatformCausalEvidence] = []
+    cursor = None
+    while True:
+        page = store.page_for_transport_task(
+            tenant_id=tenant_a,
+            provider=provider,
+            transport_task_id=transport_task_id,
+            limit=2,
+            cursor=cursor,
+        )
+        paged_transport.extend(page.items)
+        cursor = page.next_cursor
+        if cursor is None:
+            break
+    assert tuple(paged_transport) == expected, f"{label}: P3/P10 transport paging"
+
+    tie_slice = tuple(item for item in paged_exec if item.recorded_at == tie_time)
+    assert tie_slice == (tie_a, tie_b), f"{label}: P4 tie-break"
+
+    foreign = sample_causal_evidence(
+        tenant_id=tenant_b,
+        provider=provider,
+        transport_task_id=transport_task_id,
+        task_id=task_id,
+        run_id=run_id,
+    )
+    store.append(foreign)
+    assert store.page_for_execution(
+        tenant_id=tenant_b,
+        task_id=task_id,
+        run_id=run_id,
+        limit=10,
+    ).items == (foreign,), f"{label}: P5 execution tenant isolation"
+    assert store.page_for_transport_task(
+        tenant_id=tenant_b,
+        provider=provider,
+        transport_task_id=transport_task_id,
+        limit=10,
+    ).items == (foreign,), f"{label}: P6 transport tenant isolation"
+
+    transport_cursor = store.page_for_transport_task(
+        tenant_id=tenant_a,
+        provider=provider,
+        transport_task_id=transport_task_id,
+        limit=1,
+    ).next_cursor
+    assert transport_cursor is not None
+    try:
+        store.page_for_execution(
+            tenant_id=tenant_a,
+            task_id=task_id,
+            run_id=run_id,
+            limit=1,
+            cursor=transport_cursor,
+        )
+    except CausalEvidencePersistenceIntegrityError:
+        pass
+    else:
+        raise AssertionError(f"{label}: P8 transport cursor on execution rejected")
+
+    try:
+        store.page_for_transport_task(
+            tenant_id=tenant_b,
+            provider=provider,
+            transport_task_id=transport_task_id,
+            limit=1,
+            cursor=transport_cursor,
+        )
+    except CausalEvidencePersistenceIntegrityError:
+        pass
+    else:
+        raise AssertionError(f"{label}: P7 wrong tenant cursor rejected")
+
+    try:
+        validate_causal_evidence_query_limit(0)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f"{label}: P9 invalid limit rejected")
+
+    listed = store.list_for_execution(
+        tenant_id=tenant_a,
+        task_id=task_id,
+        run_id=run_id,
+    )
+    assert listed == expected, f"{label}: P10 list equals concatenated pages"
+
+    assert validate_causal_evidence_query_limit(1) == 1
+    assert CAUSAL_EVIDENCE_QUERY_MAX_LIMIT == 1000

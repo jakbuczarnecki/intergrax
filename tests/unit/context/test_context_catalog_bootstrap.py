@@ -16,6 +16,7 @@ from intergrax.context.bootstrap import (
 )
 from intergrax.context.plugin import ContextPlugin
 from intergrax.context.providers.builtin import BuiltinContextPlugin
+from intergrax.context.provider_descriptor import build_provider_descriptor
 from intergrax.context.registry import ContextPluginRegistry, clear_context_plugin_catalog, list_context_plugin_ids
 from intergrax.core.plugins.admission import PluginAdmissionReasonCode
 from intergrax.core.plugins.discovery import EP_CONTEXT, reset_entry_point_spec_cache_for_tests
@@ -41,7 +42,19 @@ class _EntryPoints:
 
 class _StubProvider:
     provider_id = "acme.stub"
-    supported_sources = frozenset()
+
+    @property
+    def supported_sources(self):
+        return frozenset({ContextFragmentSource.CUSTOM})
+
+    @property
+    def descriptor(self):
+        return build_provider_descriptor(
+            self.provider_id,
+            provider_version="0.1.0",
+            supported_sources=self.supported_sources,
+            origin="plugin:acme.context",
+        )
 
     async def collect(self, request: object, ctx: object) -> list[object]:
         return []

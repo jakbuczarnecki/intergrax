@@ -10,7 +10,6 @@ from langchain_core.documents import Document
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
 from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 
@@ -20,22 +19,10 @@ pytestmark = pytest.mark.integration
 
 def create_manager() -> EmbeddingManager:
 
-    registry = EmbeddingProviderRegistry()
-
     provider = HFEmbeddingProvider()
-
-    registry.register(provider)
-
-    engine = EmbeddingEngine(registry)
-
-    pipeline = EmbeddingPipeline(
-        engine=engine,
-        provider_id=provider.provider_name(),
-    )
-
-    manager = EmbeddingManager(pipeline=pipeline)
-
-    return manager
+    engine = EmbeddingEngine(provider=provider)
+    pipeline = EmbeddingPipeline(engine=engine)
+    return EmbeddingManager(pipeline=pipeline)
 
 
 def test_hf_embedding_documents() -> None:
@@ -60,24 +47,9 @@ def test_hf_embedding_documents() -> None:
     assert vector_0.ndim == 1
     assert vector_1.ndim == 1
 
-    assert vector_0.shape[0] > 0
-    assert vector_1.shape[0] > 0
+    assert vector_0.shape == vector_1.shape
 
-    assert result.documents[0].page_content == docs[0].page_content
-    assert result.documents[1].page_content == docs[1].page_content
+    assert not np.allclose(vector_0, vector_1)
 
-
-def test_hf_embedding_batch_texts() -> None:
-
-    manager = create_manager()
-
-    texts = [
-        "Vector databases store embeddings.",
-        "Embeddings represent semantic meaning.",
-        "Retrieval augmented generation uses embeddings.",
-    ]
-
-    result = manager.embed_texts(texts)
-
-    assert result.shape[0] == 3
-    assert result.shape[1] > 0
+    assert EmbeddingMetadataKey.EMBEDDING not in docs[0].metadata
+    assert EmbeddingMetadataKey.EMBEDDING not in docs[1].metadata

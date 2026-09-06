@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""CAPABILITY-CATALOG-1 Stage 2 architecture boundary regression gates."""
+"""CAPABILITY-CATALOG-1 Stage 2–5 architecture boundary regression gates."""
 
 from __future__ import annotations
 
@@ -50,11 +50,12 @@ _FORBIDDEN_RUNTIME_MUTATION_FUNCTION_NAMES = frozenset(
         "register",
         "execute",
         "select",
-        "rank",
         "authorize",
         "grant_permission",
     },
 )
+
+_RANKING_MODULE_ALLOWLIST = frozenset({"ranking.py"})
 
 
 def _package_root(module_name: str) -> Path:
@@ -121,11 +122,18 @@ def _collect_forbidden_registry_class_defs(tree: ast.AST) -> list[str]:
     return violations
 
 
-def _collect_forbidden_runtime_mutation_defs(tree: ast.AST) -> list[str]:
+def _collect_forbidden_runtime_mutation_defs(
+    tree: ast.AST,
+    *,
+    path_name: str,
+) -> list[str]:
     violations: list[str] = []
+    allow_rank = path_name in _RANKING_MODULE_ALLOWLIST
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             if node.name in _FORBIDDEN_RUNTIME_MUTATION_FUNCTION_NAMES:
+                violations.append(f"function {node.name} at line {node.lineno}")
+            elif node.name == "rank" and not allow_rank:
                 violations.append(f"function {node.name} at line {node.lineno}")
     return violations
 
@@ -157,9 +165,47 @@ def test_capability_catalog_core_has_no_runtime_mutation_api() -> None:
     root = _package_root(_CORE_MODULE)
     for path in _iter_core_py_files():
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        violations = _collect_forbidden_runtime_mutation_defs(tree)
+        violations = _collect_forbidden_runtime_mutation_defs(
+            tree,
+            path_name=path.name,
+        )
         assert not violations, (
             f"{path.relative_to(root)} exposes forbidden API: "
+            + ", ".join(violations)
+        )
+
+
+def test_private_catalog_adapters_do_not_import_runtime_registries() -> None:
+    root = _package_root(_ADAPTERS_MODULE)
+    private_modules = (
+        "private_tool.py",
+        "private_skill.py",
+        "_private_validation.py",
+    )
+    for module_name in private_modules:
+        path = root / module_name
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for imported in _collect_imports(tree):
+            for forbidden in _FORBIDDEN_ADAPTER_RUNTIME_IMPORTS:
+                if imported == forbidden or imported.startswith(f"{forbidden}."):
+                    raise AssertionError(
+                        f"{module_name} imports runtime registry: {imported}",
+                    )
+            for prefix in ("intergrax.tools.registry", "intergrax.skills.registry"):
+                if imported == prefix or imported.startswith(f"{prefix}."):
+                    raise AssertionError(
+                        f"{module_name} imports domain registry package: {imported}",
+                    )
+
+
+def test_private_catalog_adapters_do_not_define_registry_classes() -> None:
+    root = _package_root(_ADAPTERS_MODULE)
+    for module_name in ("private_tool.py", "private_skill.py"):
+        path = root / module_name
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        violations = _collect_forbidden_registry_class_defs(tree)
+        assert not violations, (
+            f"{module_name} defines forbidden registry symbols: "
             + ", ".join(violations)
         )
 
@@ -184,6 +230,34 @@ def test_capability_catalog_core_does_not_import_adapters() -> None:
             if imported == _ADAPTERS_MODULE or imported.startswith(f"{_ADAPTERS_MODULE}."):
                 raise AssertionError(
                     f"{path.relative_to(root)} imports domain adapters: {imported}",
+                )
+
+
+def test_work_stage_discovery_has_no_forbidden_stage9_imports() -> None:
+    import ast
+    import importlib
+    from pathlib import Path
+
+    module = importlib.import_module("intergrax.capability_catalog.work_stage_discovery")
+    path = Path(module.__file__)
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    imported: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported.append(node.module)
+    forbidden_prefixes = (
+        "intergrax.autonomous_work",
+        "intergrax.tools.registry.runtime",
+        "intergrax.skills.registry.runtime",
+        "intergrax.applications",
+    )
+    for name in imported:
+        for prefix in forbidden_prefixes:
+            if name == prefix or name.startswith(f"{prefix}."):
+                raise AssertionError(
+                    f"work_stage_discovery imports forbidden dependency: {name}",
                 )
 
 

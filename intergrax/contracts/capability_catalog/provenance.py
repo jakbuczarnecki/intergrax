@@ -11,6 +11,9 @@ from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
 from intergrax.contracts.capability_catalog._validation import normalize_optional_text
 from intergrax.contracts.capability_catalog.identity import CapabilitySourceIdentity
+from intergrax.contracts.capability_catalog.skill_version_binding import (
+    SkillVersionBindingDisposition,
+)
 
 SCHEMA_CAPABILITY_PROVENANCE_V1: Final = "capability_provenance.v1"
 
@@ -23,6 +26,7 @@ class CapabilityProvenance(BaseModel):
     schema_version: Literal["capability_provenance.v1"] = SCHEMA_CAPABILITY_PROVENANCE_V1
     source: CapabilitySourceIdentity
     version_label: str | None = None
+    version_binding_disposition: SkillVersionBindingDisposition | None = None
     package_reference: str | None = None
     content_digest: str | None = None
     publisher: str | None = None

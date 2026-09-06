@@ -7,6 +7,9 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile.bundles import IsolationBundle
+from intergrax.applications.contracts.environment_profile.sub_profiles import SandboxProfile
 from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.providers.sandbox.bundle import register_sandbox_tools
@@ -18,11 +21,30 @@ from intergrax.tools.registry.factory import build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from testing_support.builder import build_runtime_state_for_tests
 
 pytestmark = pytest.mark.unit
+
+
+def _sandbox_env_profile() -> ApplicationEnvironmentProfile:
+    profile = ApplicationEnvironmentProfile.lab_defaults(profile_id="sandbox-exec-test")
+    return profile.model_copy(
+        update={
+            "isolation": IsolationBundle(
+                sandbox=SandboxProfile(enable_exec_tool=True),
+            ),
+        },
+    )
+
+
+def _sandbox_ctx(session: SandboxSession) -> ToolWiringContext:
+    return ToolWiringContext(
+        sandbox_session=session,
+        extras={"effective_environment_profile": _sandbox_env_profile()},
+    )
 
 
 @pytest.fixture
@@ -44,7 +66,7 @@ def _clean_catalog() -> None:
 
 
 def test_sandbox_exec_echo(sandbox_session: SandboxSession) -> None:
-    ctx = ToolWiringContext(sandbox_session=sandbox_session)
+    ctx = _sandbox_ctx(sandbox_session)
     out = sandbox_exec(
         ctx,
         SandboxExecInput(operation="echo", payload={"message": "hello sandbox"}),
@@ -60,7 +82,7 @@ def test_sandbox_exec_not_configured() -> None:
         SandboxExecInput(operation="echo", payload={"text": "x"}),
     )
     assert out.success is False
-    assert out.error == "sandbox_session_not_configured"
+    assert out.error == "execution_environment_authority_unavailable"
 
 
 def test_sandbox_tool_registered_in_catalog() -> None:
@@ -76,11 +98,15 @@ def test_sandbox_tool_registered_in_catalog() -> None:
 
 
 def test_sandbox_exec_via_runtime_invoker(sandbox_session: SandboxSession) -> None:
-    ctx = ToolWiringContext(sandbox_session=sandbox_session)
+    ctx = _sandbox_ctx(sandbox_session)
     registry = ToolRegistry()
     register_sandbox_tools(registry, ctx)
 
-    invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=RegistryToolExecutor(registry),
+        sandbox_availability=sandbox_availability_provider(ctx),
+    )
     state = build_runtime_state_for_tests(run_id="sbox_run")
     request = ToolExecutionRequest(
         run_id="sbox_run",
@@ -98,6 +124,6 @@ def test_sandbox_exec_via_runtime_invoker(sandbox_session: SandboxSession) -> No
 
 def test_build_registry_enables_sandbox_tool(sandbox_session: SandboxSession) -> None:
     register_default_tools()
-    ctx = ToolWiringContext(sandbox_session=sandbox_session)
+    ctx = _sandbox_ctx(sandbox_session)
     registry = build_registry_from_profile(ToolProfile(enabled=["sandbox.exec"]), ctx=ctx)
     assert registry.has("sandbox.exec")

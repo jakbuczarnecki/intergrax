@@ -10,6 +10,10 @@ import pytest
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_registry_authority import HarnessHostRegistryAuthorityError
+from intergrax.applications._shared.production_platform_persistence import (
+    resolve_harness_host_profile_persistence_kwargs_from_composition,
+    resolve_reference_production_strict_host_environment,
+)
 from intergrax.applications._shared.production_host_composition import (
     bootstrap_production_registry_projection,
 )
@@ -27,6 +31,9 @@ from intergrax.applications._shared.reference_production_governance_wiring impor
 )
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
+)
+from intergrax.applications._shared.reference_runtime_materialization import (
+    prepare_reference_runtime_materialization,
 )
 from intergrax.applications._shared.harness_host_runtime_compat import (
     resolve_harness_host_nexus_loop_legacy,
@@ -65,6 +72,11 @@ def _deploy_launcher(
     *,
     principal,
 ):
+    prepare_reference_runtime_materialization(
+        launcher.process_composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
+    )
     return launcher.deploy_and_activate(
         projection_input,
         activation_request,
@@ -89,6 +101,11 @@ def _deploy_and_activate(
         settings=settings,
         application_id=application_id,
         application_environment_id=application_environment_id,
+    )
+    prepare_reference_runtime_materialization(
+        composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
     )
     return launcher.deploy_and_activate(
         projection_input,
@@ -174,12 +191,16 @@ def test_reference_lifecycle_research_e2e_without_seed_helper(
     assert resolved.agent_registry.list_agent_ids() == ["research"]
 
     app = create_research_process_app(process_composition=composition)
+    strict_env = resolve_reference_production_strict_host_environment(env)
     runtime = build_harness_host_runtime(
-        manifest.model_copy(update={"environment": env}),
-        env,
+        manifest.model_copy(update={"environment": strict_env}),
+        strict_env,
         settings=settings,
         registry_projection=resolved,
-        use_in_memory_trace=True,
+        **resolve_harness_host_profile_persistence_kwargs_from_composition(
+            production_mode=strict_env.execution_mode.value == "strict",
+            composition=composition,
+        ),
     )
     assert runtime.registry_projection_evidence.runtime_revision_id == "rev-lifecycle-e2e"
     assert resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids() == ["research"]

@@ -22,6 +22,9 @@ from intergrax.applications._shared.registry_projection_input_bundle import (
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
 )
+from intergrax.applications._shared.reference_runtime_materialization import (
+    prepare_reference_runtime_materialization,
+)
 from local_workspace_application.host.reference_lifecycle_input import (
     build_local_workspace_reference_lifecycle_input,
 )
@@ -86,6 +89,11 @@ def run_reference_production() -> None:
     resolved_settings = LocalWorkspaceBackendSettings.from_env()
     env = build_local_workspace_environment_profile(resolved_settings)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
+    prepare_reference_runtime_materialization(
+        composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
+    )
     launcher.deploy_and_activate(
         projection_input,
         activation_request,

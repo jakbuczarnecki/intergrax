@@ -232,7 +232,7 @@ def test_multi_writer_stress_unique_strictly_increasing_positions() -> None:
     assert len(set(ordered_positions)) == event_count
 
 
-def test_concurrent_same_event_id_may_leave_unused_position_gap() -> None:
+def test_concurrent_same_event_id_does_not_consume_extra_position() -> None:
     backend = _GapInducingDocumentStore()
     store_a = DocumentBackedRuntimeEventStore(backend)
     store_b = DocumentBackedRuntimeEventStore(backend)
@@ -280,11 +280,9 @@ def test_concurrent_same_event_id_may_leave_unused_position_gap() -> None:
     assert len(accepted_positions) == 2
     assert accepted_positions[0] == accepted_positions[1]
     accepted_position = accepted_positions[0]
-    assert accepted_position >= 2
+    assert accepted_position == 1
     next_position = store_a.append(follow_up, tenant_id=_TENANT).position.value
-    assert next_position > accepted_position
+    assert next_position == 2
     ordered = store_a.list_positioned_for_run(run_id, tenant_id=_TENANT, limit=10)
     ordered_positions = sorted(row.position.value for row in ordered)
-    assert ordered_positions == sorted({accepted_position, next_position})
-    assert len(ordered_positions) == 2
-    assert ordered_positions[0] != 1
+    assert ordered_positions == [1, 2]

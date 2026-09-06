@@ -63,6 +63,27 @@ FinishFn = Callable[..., Awaitable[TaskResult]]
 FinalizeFn = Callable[..., Awaitable[None]]
 CheckpointFn = Callable[..., Awaitable[None]]
 
+NODE_VALIDATION_ERRORS_METADATA_KEY = "node_validation_errors"
+
+
+def graph_failure_validation_errors(
+    graph: ExecutionGraph,
+    failed_nodes: list[str],
+) -> list[str]:
+    """Preserve typed node validation failures alongside graph-level failure markers."""
+    errors: list[str] = [f"graph node failed: {failed_nodes}"]
+    for node in graph.nodes:
+        if node.node_id not in failed_nodes:
+            continue
+        node_errors = node.metadata.get(NODE_VALIDATION_ERRORS_METADATA_KEY)
+        if isinstance(node_errors, list) and node_errors:
+            errors.extend(str(item) for item in node_errors)
+            continue
+        critic_feedback = node.metadata.get("critic_feedback")
+        if isinstance(critic_feedback, list) and critic_feedback:
+            errors.extend(str(item) for item in critic_feedback)
+    return list(dict.fromkeys(errors))
+
 
 @dataclass(slots=True)
 class GraphPhaseOutcome:
@@ -497,7 +518,7 @@ class NexusGraphRunner:
             executions=executions,
             validation=ValidationResult(
                 valid=False,
-                errors=[f"graph node failed: {failed_nodes}"],
+                errors=graph_failure_validation_errors(graph, failed_nodes),
             ),
             plan=plan,
             retry_records=retry_records,

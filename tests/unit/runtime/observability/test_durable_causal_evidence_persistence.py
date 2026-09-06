@@ -18,6 +18,10 @@ from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistenceConflictError,
     CausalEvidencePersistenceIntegrityError,
 )
+from intergrax.runtime.observability.causal_evidence_index import (
+    execution_index_v2_row_key_from_evidence,
+    transport_index_v2_row_key_from_evidence,
+)
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
     DocumentStoreCausalEvidencePersistence,
     wire_causal_evidence_persistence,
@@ -28,6 +32,7 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
 from intergrax.runtime.observability.persistence_conformance import (
     assert_causal_evidence_conflicting_append_fails_closed,
     assert_causal_evidence_persistence_conformance,
+    assert_causal_evidence_paging_conformance,
     assert_causal_evidence_provider_isolation,
     assert_causal_evidence_typed_round_trip,
     sample_causal_evidence,
@@ -96,10 +101,13 @@ class _KV(DistributedKVStore):
 @pytest.mark.parametrize(
     ("label", "factory"),
     [
-        ("memory", lambda: InMemoryCausalEvidencePersistence()),
+        ("memory", lambda: InMemoryCausalEvidencePersistence(cursor_secret=b"durable-causal-evidence-secret-32")),
         (
             "document_store",
-            lambda: DocumentStoreCausalEvidencePersistence(InMemoryDocumentStore()),
+            lambda: DocumentStoreCausalEvidencePersistence(
+                InMemoryDocumentStore(cursor_secret=b"durable-causal-evidence-secret-32"),
+                cursor_secret=b"durable-causal-evidence-secret-32",
+            ),
         ),
     ],
 )
@@ -110,6 +118,7 @@ def test_causal_evidence_persistence_conformance_matrix(
     store: CausalEvidencePersistence = factory()
     try:
         assert_causal_evidence_persistence_conformance(store, label=label)
+        assert_causal_evidence_paging_conformance(store, label=label)
         assert_causal_evidence_conflicting_append_fails_closed(store, label=label)
         assert_causal_evidence_provider_isolation(store, label=label)
         assert_causal_evidence_typed_round_trip(store, label=label)
@@ -359,7 +368,7 @@ def test_document_store_append_retries_after_first_index_write_failure() -> None
     partition_key = f"intergrax.causal_evidence.v1:{evidence.tenant_id}"
     exec_key = (
         partition_key,
-        f"exec:{evidence.target.task_id}:{evidence.target.run_id}:{evidence.evidence_id}",
+        execution_index_v2_row_key_from_evidence(evidence),
     )
     store = _FailingPutIfAbsentDocumentStore(fail_keys=frozenset({exec_key}))
     persistence = DocumentStoreCausalEvidencePersistence(store)
@@ -394,7 +403,7 @@ def test_document_store_append_retries_after_transport_index_write_failure() -> 
     partition_key = f"intergrax.causal_evidence.v1:{evidence.tenant_id}"
     transport_key = (
         partition_key,
-        f"transport:{evidence.source.provider}:{evidence.source.task_id}:{evidence.evidence_id}",
+        transport_index_v2_row_key_from_evidence(evidence),
     )
     store = _FailingPutIfAbsentDocumentStore(fail_keys=frozenset({transport_key}))
     persistence = DocumentStoreCausalEvidencePersistence(store)

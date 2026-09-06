@@ -9,18 +9,31 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
     ContextProviderContext,
+    ContextProviderDescriptor,
     content_hash_for_text,
 )
+from intergrax.context.contracts import BUILTIN_PROVIDER_VERSION
+from intergrax.context.provider_descriptor import build_provider_descriptor
 
 
 class SessionSemanticRecallProvider:
     """Emits ``SESSION_HISTORY_SEMANTIC`` fragments when vector recall is enabled."""
 
     provider_id = "builtin.session_history_semantic"
+    _PROVIDER_VERSION = BUILTIN_PROVIDER_VERSION
 
     @property
     def supported_sources(self) -> frozenset[ContextFragmentSource]:
         return frozenset({ContextFragmentSource.SESSION_HISTORY_SEMANTIC})
+
+    @property
+    def descriptor(self) -> ContextProviderDescriptor:
+        return build_provider_descriptor(
+            self.provider_id,
+            provider_version=self._PROVIDER_VERSION,
+            supported_sources=self.supported_sources,
+            origin="builtin",
+        )
 
     async def collect(
         self,

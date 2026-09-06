@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 - OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** - runtime implementation NOT STARTED
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-1** - ownership frozen (MP-1A); awaiting review before runtime implementation
-**Next task after MP-1 review:** **COLLAB-WORK-1A** - MP-1 contract slice implementation
+**Current active task:** **COLLAB-WORK-2D** (SQLite durability parity)
+**Next task after MP-2 gate:** COLLAB-WORK-2D — SQLite durability parity
 
 ---
 
@@ -116,7 +116,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 (after MP-0) |
-| **Status** | **OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** - runtime NOT STARTED |
+| **Status** | **CLOSED / FINAL INDEPENDENT REVIEW PASS** |
 | **Purpose** | Platform collaborative identity, workspace membership, and delegation with effective authority. |
 | **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) - frozen by ADR-MP-001 / ADR-MP-002 |
 | **Dependencies** | MP-0 accepted |
@@ -124,8 +124,8 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **REUSED EXISTING CAPABILITY** | Request-context principal propagation; LKW application principal docs (consumer reference only) |
 | **NEW CAPABILITY REQUIRED** | Principal (collaborative), WorkspaceMembership, Delegation / effective authority |
 | **Explicit out of scope** | Using `LKW-CONVERSATION-CONTEXT-*` or `CONVERSATION-CHANNEL-1` as MP-1 anchor |
-| **Architecture/ADR gate** | ADR-MP-001 and ADR-MP-002 **Accepted** (MP-1A); architecture/plan sync **Done** - runtime implementation awaits review |
-| **Pre-implementation domain-sync gate** | **Done** (MP-1A) - see [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) COLLAB-WORK-1A |
+| **Architecture/ADR gate** | ADR-MP-001 and ADR-MP-002 **Accepted**; COLLAB-WORK-1A…1J-R2 **CLOSED** per [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) |
+| **Pre-implementation domain-sync gate** | **Done** — MP-1 final independent review pass closed |
 | **User-visible outcome** | Governed multi-principal identity and authority model |
 | **Acceptance criteria** | Meaningful mutations resolve an effective Principal; membership is explicit where required; delegation cannot amplify authority; tenant/workspace identifiers alone cannot authorize; agent authority remains distinct and failures are closed |
 | **Expected proof/evidence** | Contract tests; isolation/authorization tests; fail-closed tests; delegation non-amplification tests; idempotency tests for membership/invite and delegation mutations |
@@ -137,19 +137,21 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED / NOT STARTED |
+| **Status** | **IMPLEMENTATION IN PROGRESS** — COLLAB-WORK-2A APPROVED / CLOSED; COLLAB-WORK-2B APPROVED / CLOSED; COLLAB-WORK-2C APPROVED / CLOSED |
 | **Purpose** | Platform-owned shared work primitives with lifecycle and concurrency semantics. |
-| **Likely owning domain plans** | `ORCHESTRATION.md`, `UNIFIED_EXECUTION_RUNTIME.md`, `BACKGROUND_TASKS.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-003 |
+| **Reused domain capabilities** | `ORCHESTRATION` (explicit bridge), `UNIFIED_EXECUTION_RUNTIME` / NEXUS (execution identities), `BACKGROUND_TASKS` (associated execution), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance) |
 | **Dependencies** | MP-1 accepted |
 | **Exact scope** | WorkItem; Assignment; collaborative lifecycle; explicit optimistic concurrency and idempotency semantics |
-| **REUSED EXISTING CAPABILITY** | Execution-runtime task/session concepts where they remain runtime-internal |
+| **REUSED EXISTING CAPABILITY** | MP-1 authority, repository concurrency/idempotency patterns; Nexus task/run identities as execution references only |
 | **NEW CAPABILITY REQUIRED** | WorkItem, Assignment, shared-work lifecycle and concurrency |
-| **Explicit out of scope** | Slack shared-conversation or any channel adapter as Shared Work owner |
-| **Architecture/ADR gate** | WorkItem/Task separation and concurrency direction accepted; ADR-MP-003 completed |
-| **Pre-implementation domain-sync gate** | Bounded ownership check → domain architecture/plan sync with MP-2 rows |
+| **Explicit out of scope** | Slack shared-conversation or any channel adapter as Shared Work owner; WorkArtifact (MP-3); Decision (MP-4); Activity (MP-6) |
+| **Architecture/ADR gate** | WorkItem/Task separation and concurrency direction accepted; **ADR-MP-003 Accepted** |
+| **Pre-implementation domain-sync gate** | **Done** — bounded ownership check closed; COLLAB-WORK-2A…2G rows registered |
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
 | **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real `task_id`/`run_id` |
+| **Next implementation row** | **COLLAB-WORK-2D** |
 
 ---
 

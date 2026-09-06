@@ -275,6 +275,25 @@ def _persisted_trace_events(
     return [dict(item) for item in persisted.events if isinstance(item, dict)]
 
 
+def _revision_gathered_follow_up_evidence(domain_payload: dict[str, Any]) -> bool:
+    if not domain_payload.get("revision_pass"):
+        return False
+    raw_nodes = domain_payload.get("evidence_nodes")
+    if not isinstance(raw_nodes, list):
+        return False
+    gathered = {
+        str(node.get("evidence_id"))
+        for node in raw_nodes
+        if isinstance(node, dict) and node.get("evidence_id")
+    }
+    required = {
+        str(COMPARISON_EVIDENCE_ID),
+        str(STAFFING_ATTENDANCE_EVIDENCE_ID),
+        str(TELEMETRY_EVIDENCE_ID),
+    }
+    return required.issubset(gathered)
+
+
 async def execute_resolved_skeleton(
     bundle: ScenarioRuntimeBundle,
     *,
@@ -425,7 +444,7 @@ async def execute_resolved_skeleton(
         tool_invocations=tool_invocations,
         evaluator_loop_iterations=evaluator_loop_iterations,
         critic_challenged=critic_challenged,
-        revision_used_tools=revision_pass and tool_invocations >= 6,
+        revision_used_tools=_revision_gathered_follow_up_evidence(domain_payload),
         revision_pass=revision_pass,
         critic_verdict_passed=critic_verdict_passed,
         leak_scan_blob=leak_blob,

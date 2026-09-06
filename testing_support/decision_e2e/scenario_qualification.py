@@ -12,9 +12,12 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
 )
 from intergrax.llm_adapters.registry.profile import llm_profile_from_env
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.tools.registry import ToolRegistry
 
 from intergrax.runtime.decision_flow import DecisionFlowScope
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
+    ScenarioRuntimeComposition,
+    build_scenario_environment_profile,
     resolve_scenario_llm_adapter,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
@@ -27,6 +30,10 @@ from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle
 from platform_proofs.scenarios.ai_incident_investigation.proof.evaluator import evaluate_scenario_run
 from platform_proofs.scenarios.ai_incident_investigation.proof.reproduction import (
     canonical_reproduction_shell_command,
+)
+from testing_support.decision_e2e.provider_binding import (
+    QualificationProviderBinding,
+    bind_qualification_llm_profile,
 )
 from testing_support.decision_e2e.qualification_evidence import ScenarioExecutionEvidence
 
@@ -71,14 +78,29 @@ def _is_mock_adapter_type(adapter: object) -> bool:
     return name == "FixtureDrivenIncidentInvestigationLLM"
 
 
-def _provider_model_from_env() -> tuple[str, str | None]:
-    profile = llm_profile_from_env()
-    provider = (
-        profile.provider.value
-        if isinstance(profile.provider, LLMProvider)
-        else str(profile.provider)
+def _provider_model_from_binding(binding: QualificationProviderBinding) -> tuple[str, str | None]:
+    return binding.resolved_provider, binding.resolved_model
+
+
+def _scenario_evidence_base(
+    *,
+    scenario_id: str,
+    invocation: str,
+    binding: QualificationProviderBinding,
+    **kwargs: object,
+) -> ScenarioExecutionEvidence:
+    return ScenarioExecutionEvidence(
+        scenario_id=scenario_id,
+        invocation=invocation,
+        provider=binding.resolved_provider,
+        model=binding.resolved_model,
+        requested_provider=binding.requested_provider,
+        requested_model=binding.requested_model,
+        resolved_provider=binding.resolved_provider,
+        resolved_model=binding.resolved_model,
+        binding_source=binding.binding_source,
+        **kwargs,
     )
-    return provider, profile.model
 
 
 async def run_ai_incident_live_qualification(
@@ -87,20 +109,50 @@ async def run_ai_incident_live_qualification(
 ) -> ScenarioQualificationAttempt:
     invocation = canonical_reproduction_shell_command()
     scenario_id = AI_INCIDENT_SCENARIO_ID
-    provider, model = _provider_model_from_env()
+    environment = build_scenario_environment_profile()
+    binding, block_reason = bind_qualification_llm_profile(environment)
+    if block_reason is not None or binding is None:
+        profile = llm_profile_from_env()
+        provider = (
+            profile.provider.value
+            if isinstance(profile.provider, LLMProvider)
+            else str(profile.provider)
+        )
+        return ScenarioQualificationAttempt(
+            evidence=ScenarioExecutionEvidence(
+                scenario_id=scenario_id,
+                invocation=invocation,
+                provider=provider,
+                model=profile.model,
+                executed=False,
+                decision_path_exercised=None,
+                used_mock_provider=False,
+                block_reason=block_reason or "qualification provider binding failed",
+            ),
+            evaluation_passed=False,
+            error=block_reason,
+        )
+
+    provider, model = _provider_model_from_binding(binding)
     try:
-        fixture_bundle = build_fixture_runtime_bundle(variant=variant)
+        runtime_composition = ScenarioRuntimeComposition(
+            environment=environment,
+            tool_registry=ToolRegistry(),
+        )
+        fixture_bundle = build_fixture_runtime_bundle(
+            variant=variant,
+            runtime_composition=runtime_composition,
+        )
         bundle = fixture_bundle.bundle
         composition = bundle.runtime_composition
         runtime_modules = resolve_canonical_runtime_modules(composition.platform)
         adapter = resolve_scenario_llm_adapter(composition.environment)
         if _is_mock_adapter_type(adapter):
             return ScenarioQualificationAttempt(
-                evidence=ScenarioExecutionEvidence(
+                evidence=_scenario_evidence_base(
                     scenario_id=scenario_id,
                     invocation=invocation,
-                    provider=provider,
-                    model=model,
+                    binding=binding,
                     executed=False,
                     decision_path_exercised=None,
                     used_mock_provider=True,
@@ -111,11 +163,10 @@ async def run_ai_incident_live_qualification(
 
         if not runtime_modules:
             return ScenarioQualificationAttempt(
-                evidence=ScenarioExecutionEvidence(
+                evidence=_scenario_evidence_base(
                     scenario_id=scenario_id,
                     invocation=invocation,
-                    provider=provider,
-                    model=model,
+                    binding=binding,
                     executed=False,
                     decision_path_exercised=False,
                     used_mock_provider=False,
@@ -129,11 +180,10 @@ async def run_ai_incident_live_qualification(
             evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
         except Exception as exc:
             return ScenarioQualificationAttempt(
-                evidence=ScenarioExecutionEvidence(
+                evidence=_scenario_evidence_base(
                     scenario_id=scenario_id,
                     invocation=invocation,
-                    provider=provider,
-                    model=model,
+                    binding=binding,
                     executed=True,
                     decision_path_exercised=True,
                     used_mock_provider=False,
@@ -145,11 +195,10 @@ async def run_ai_incident_live_qualification(
             )
     except Exception as exc:
         return ScenarioQualificationAttempt(
-            evidence=ScenarioExecutionEvidence(
+            evidence=_scenario_evidence_base(
                 scenario_id=scenario_id,
                 invocation=invocation,
-                provider=provider,
-                model=model,
+                binding=binding,
                 executed=False,
                 decision_path_exercised=None,
                 used_mock_provider=False,
@@ -160,11 +209,10 @@ async def run_ai_incident_live_qualification(
         )
 
     return ScenarioQualificationAttempt(
-        evidence=ScenarioExecutionEvidence(
+        evidence=_scenario_evidence_base(
             scenario_id=scenario_id,
             invocation=invocation,
-            provider=provider,
-            model=model,
+            binding=binding,
             executed=True,
             decision_path_exercised=True,
             used_mock_provider=False,

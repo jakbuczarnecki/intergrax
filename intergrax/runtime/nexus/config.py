@@ -58,7 +58,9 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
+from intergrax.skills.execution_binding import SkillExecutionPinningStore
 from intergrax.skills.registry.profile import SkillProfile
+from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.runtime.nexus.tools.tool_chain_spec import ToolChainSpec
 from intergrax.runtime.nexus.tools.tool_engine_hook import ToolEngineHook
@@ -262,6 +264,10 @@ class RuntimeConfig:
     tool_profile: Optional[ToolProfile] = None
 
     skill_profile: Optional[SkillProfile] = None
+
+    skill_registry: Optional[SkillRegistry] = None
+
+    skill_pinning_store: Optional[SkillExecutionPinningStore] = None
 
     tool_registry: Optional[ToolRegistry] = None
 

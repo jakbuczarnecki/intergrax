@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextBudgetSnapshot,
@@ -25,8 +26,10 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.investigation_proof import (
     InvestigationProof,
     InvestigationProofStep,
-    build_investigation_proof_step,
+    build_investigation_proof_step_from_action_context,
     collect_available_evidence_ids,
+    investigation_native_planner_protocol_config,
+    prepare_native_planner_messages_with_follow_up_context,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
@@ -90,6 +93,7 @@ async def run_ce_bounded_tool_loop(
     planner_input: str | list[ChatMessage],
     allowed_tool_ids: Sequence[str] | None,
     max_iterations: int,
+    prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
 ) -> ToolInvocationResult:
     """Bounded ReAct with tool feedback routed through Context Engineering."""
     max_iters = max(1, int(max_iterations))
@@ -116,12 +120,24 @@ async def run_ce_bounded_tool_loop(
         planner_messages = list(
             await assemble_iterative_tool_planner_messages(state, engine, messages)
         )
-        llm_result, tool_plan = tool_planner.plan_native_round(
+        planning_messages = prepare_native_planner_messages_with_follow_up_context(
             planner_messages,
+            round_index=iterations,
+            prior_model_visible_references=prior_model_visible_references,
+        )
+        protocol_config = investigation_native_planner_protocol_config(
+            planner_messages,
+            prior_model_visible_references,
+        )
+        planner_round = tool_planner.plan_native_round(
+            planning_messages,
             allowed_tool_ids=allowed_tool_ids,
             run_id=state.run_id,
             tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
+            protocol_config=protocol_config,
         )
+        llm_result = planner_round.response
+        tool_plan = planner_round.tool_plan
 
         if llm_result.content and not tool_plan.calls:
             stop_reason = "planner_final_answer"
@@ -131,14 +147,18 @@ async def run_ce_bounded_tool_loop(
             stop_reason = "empty_tool_calls"
             break
 
-        validate_native_tool_plan_alignment(llm_result.tool_calls, tool_plan)
+        validate_native_tool_plan_alignment(
+            planner_round.business_tool_calls,
+            tool_plan,
+        )
 
         proof_steps.append(
-            build_investigation_proof_step(
+            build_investigation_proof_step_from_action_context(
                 round_index=iterations,
-                assistant_content=llm_result.content,
-                tool_calls=llm_result.tool_calls,
+                action_context=planner_round.action_context,
+                tool_calls=planner_round.business_tool_calls,
                 messages_before_round=planner_messages,
+                prior_model_visible_references=prior_model_visible_references,
             )
         )
 
@@ -159,11 +179,11 @@ async def run_ce_bounded_tool_loop(
         append_assistant_tool_call_message(
             messages,
             assistant_content=llm_result.content,
-            tool_calls=llm_result.tool_calls,
+            tool_calls=planner_round.business_tool_calls,
         )
         state.iterative_tool_output_blocks.extend(
             tool_output_blocks_from_native_round(
-                llm_result.tool_calls,
+                planner_round.business_tool_calls,
                 tool_plan.calls,
                 round_outcomes,
             )
@@ -176,7 +196,10 @@ async def run_ce_bounded_tool_loop(
             evidence_messages = list(
                 await assemble_iterative_tool_planner_messages(state, engine, messages)
             )
-            final_available_evidence_ids = collect_available_evidence_ids(evidence_messages)
+            final_available_evidence_ids = collect_available_evidence_ids(
+                evidence_messages,
+                prior_model_visible_references,
+            )
         investigation_proof = InvestigationProof(
             steps=tuple(proof_steps),
             final_available_evidence_ids=final_available_evidence_ids,

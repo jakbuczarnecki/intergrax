@@ -423,6 +423,7 @@ class GraphExecutor:
                     CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
                     return all_executions, all_retries, graph, True
                 if failed:
+                    all_executions.append(execution)
                     return all_executions, all_retries, graph, False
                 all_executions.append(execution)
                 prior_outputs[node.node_id] = execution
@@ -461,6 +462,7 @@ class GraphExecutor:
                         CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
                         return all_executions, all_retries, graph, True
                     if failed:
+                        all_executions.append(execution)
                         return all_executions, all_retries, graph, False
                     for node_id, extra_execution in handoff_extras:
                         all_executions.append(extra_execution)
@@ -1016,6 +1018,7 @@ class GraphExecutor:
             )
             if not can_revise:
                 node.status = ExecutionNodeStatus.FAILED
+                node.metadata["node_validation_errors"] = list(validation.errors)
                 handoff_extras = []
                 failed = True
                 break

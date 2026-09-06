@@ -216,3 +216,8 @@ def register_extended_integrations(*, override: bool = False) -> None:
     )
 
     register_llm_guardrail_integrations(override=override)
+    from intergrax.integrations.providers.embedding_provider.register_all import (
+        register_embedding_provider_integrations,
+    )
+
+    register_embedding_provider_integrations(override=override)

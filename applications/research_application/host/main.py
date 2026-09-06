@@ -22,6 +22,9 @@ from intergrax.applications._shared.registry_projection_input_bundle import (
 from intergrax.applications._shared.reference_production_governance_wiring import (
     wire_governed_reference_production_launcher,
 )
+from intergrax.applications._shared.reference_runtime_materialization import (
+    prepare_reference_runtime_materialization,
+)
 from research_application.host.factory import create_research_backend_app
 from research_application.host.reference_lifecycle_input import build_research_reference_lifecycle_input
 from research_application.host.wiring import build_research_environment_profile
@@ -50,6 +53,7 @@ def create_research_process_app(
             application_environment_id=env.profile_id,
             stores=process_composition.agent_platform_runtime.stores,
         ),
+        process_composition=process_composition,
     )
 
 
@@ -75,6 +79,11 @@ def run_reference_production() -> None:
     manifest = RESEARCH_APPLICATION_MANIFEST
     env = manifest.environment or build_research_environment_profile()
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
+    prepare_reference_runtime_materialization(
+        composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
+    )
     launcher.deploy_and_activate(
         projection_input,
         activation_request,

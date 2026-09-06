@@ -53,6 +53,7 @@ class IntegrationCategory(str, Enum):
     CRM = "crm"
     LLM_GUARDRAIL = "llm_guardrail"
     MANAGED_RETRIEVAL = "managed_retrieval"
+    EMBEDDING_PROVIDER = "embedding_provider"
     EXTERNAL_WORK = "external_work"
 
 
@@ -173,6 +174,7 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.CRM.value: "crm",
     IntegrationCategory.LLM_GUARDRAIL.value: "llm_guardrail",
     IntegrationCategory.MANAGED_RETRIEVAL.value: "managed_retrieval",
+    IntegrationCategory.EMBEDDING_PROVIDER.value: "embedding_provider",
     IntegrationCategory.EXTERNAL_WORK.value: "external_work",
 }
 

@@ -40,7 +40,7 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 
 **B. Existing reusable implementation.** Platform Plugins (packaging, discovery primitives, trust/qualification vocabulary), Agent Distribution discovery/acquisition (AC-4), Tool selection layers, SkillResolver, domain registries, `wire_application_environment()` Tier-3 composition, AW-7A policy adapters (in progress).
 
-**C. Missing / planned.** Federated Capability Catalog read model across Agent + Skill + Tool, cross-domain ranking utilities, Skill version pinning, Tools/Skills typed bootstrap evidence in application evidence aggregates, private enterprise catalog sources for Tool/Skill, third-party isolation beyond trusted in-process, monetization/metering product surfaces.
+**C. Missing / planned.** Federated Capability Catalog read model across Agent + Skill + Tool, cross-domain ranking utilities, private enterprise catalog sources for Tool/Skill, third-party isolation beyond trusted in-process, monetization/metering product surfaces.
 
 **D. Future product surfaces.** Public/private Marketplace is a **product layer above** federated discovery — presentation, publisher metadata, pricing metadata, availability — not runtime or lifecycle authority.
 
@@ -380,9 +380,9 @@ Candidates and selections should carry, where the domain defines them:
 | **Runtime revision** | `RuntimeRevision` when active | N/A (resolver-time) | Registry bootstrap revision |
 | **Immutable artifact digest** | Required for install | Where packaged | Where packaged |
 
-### Known gap: Skill version pinning
+### Skill version pinning (Stage 6 — closed)
 
-Skill manifests carry versions, but **enterprise-grade version pinning** for resolved skill packs (immutable resolved snapshot across transitive `requires_skills`) is **not fully closed** in current production semantics. This is a **roadmap decision/work item** — do not invent an ad hoc pinning scheme in discovery; resolve in Skill domain + Stage 6 of the [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md).
+Enterprise skill version correctness is owned by the Skill domain (`SkillResolver`, `ResolvedSkillPack`, `AgentRegistry.get_resolved_skill_pack`). Root agent declarations are **PINNED**; transitive `requires_skills` are **MATERIALIZED** with exact versions captured in immutable snapshots. Capability Catalog discovery projects catalog `version_label` and `SkillVersionBindingDisposition` only — it does not resolve or override runtime bind versions. See [SKILLS.md](SKILLS.md) and Stage 6 in the [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md).
 
 ---
 
@@ -449,6 +449,70 @@ Architecture must support:
 
 Therefore **public Marketplace is not a mandatory platform dependency**. Federated catalog must operate from local, enterprise-private, and built-in sources alone.
 
+### Private Tool and Skill catalog sources (Stage 7)
+
+Private Tool and Skill catalogs implement the same read-only `CapabilityCatalogSource` port as built-in bundle adapters. Entries use `CapabilitySourceKind.ENTERPRISE_PRIVATE` with a stable per-source `source_id` (for example `enterprise.acme.tools`, `enterprise.acme.skills`).
+
+**Catalog presence does not imply installation, profile enablement, registry materialization, entitlement, trust, or runtime routability.**
+
+Operator flow (Tool and Skill):
+
+```text
+1. discover private capability via federated catalog query
+2. operator/admin chooses acquisition path (Platform Plugin package availability)
+3. domain plugin registered through existing catalog/bootstrap paths
+4. ToolProfile or SkillProfile updated by operator
+5. wire_application_environment()
+6. ToolRegistry or SkillRegistry materializes the capability
+7. availability evidence may then classify HOST_AVAILABLE separately from CATALOG_AVAILABLE
+```
+
+Discovery **must not** execute steps 2–6.
+
+### Adaptive work-stage discovery (Stage 8)
+
+Workers rediscover capabilities per work stage as goals and current steps evolve — not once at bootstrap.
+
+```text
+Goal (durable objective)
+        ↓
+Current work stage (step identity + stage objective)
+        ↓
+WorkStageCapabilityNeed (wraps CapabilityDiscoveryQuery)
+        ↓
+Stage-3 discovery → Stage-4 ranking → Stage-5 governance
+        ↓
+EffectiveCapabilitySet (HOST_AVAILABLE ∩ governed allowed)
+        ↓
+WorkStageCapabilityDiscoveryEvidence
+```
+
+**`EffectiveCapabilitySet` is a deterministic query result — not runtime inventory authority, not lifecycle authority, not permission authority.** Catalog-only (`CATALOG_AVAILABLE`) candidates may appear in governed discovery evidence but do not become executable effective members until host/profile availability evidence classifies them as `HOST_AVAILABLE`. The public contract is self-validating: every effective member must be an exact `governed_result.allowed` candidate with `HOST_AVAILABLE` availability and unique identity; derived catalog-only and transition evidence cannot diverge from canonical result state.
+
+Capability Catalog Stage 8 provides stage-scoped adaptive discovery; it does **not** perform Autonomous Work recovery, acquisition, or registry mutation.
+
+### Stage 9 — Autonomous Work bridge (implemented)
+
+AW-7A consumes Tool/Skill discovery through thin AW adapters over governed catalog discovery (`intergrax/autonomous_work/capability_catalog_discovery_adapters.py`):
+
+```text
+WorkerCapabilityNeed
+        ↓ map_worker_capability_need_to_discovery_query
+Stage-3 discovery → Stage-4 ranking → Stage-5 governance
+        ↓ HOST_AVAILABLE executable narrowing
+WorkerCapabilityCandidate projection
+        ↓
+WorkerCapabilityAcquisitionDecisionService (A0–A4 unchanged)
+```
+
+AW retains A0–A4 decision authority. Catalog does not execute acquisition. Stage 8 (`WorkStageCapabilityNeed`) remains for callers with real work/stage context; AW recovery uses the Stage 3–5 plane (PATH B) because `WorkerCapabilityDiscoveryRequest` does not carry canonical work/stage identity.
+
+Registry-backed Tool/Skill adapters are **not** canonical AW production discovery after Stage 9; no silent catalog→registry fallback.
+
+AW Tool A0 projection requires exact evidence-backed operation coverage; partial or unknown coverage remains `NO_MATCH`.
+
+Contracts: `intergrax/contracts/autonomous_work/capability_acquisition.py`. Adapters: `intergrax/autonomous_work/capability_catalog_discovery_adapters.py`.
+
 ---
 
 ## Security and third-party code
@@ -479,7 +543,9 @@ evidence ≠ runtime source of truth
 
 Evidence supports audit and governance; registries and `RuntimeRevision` remain execution truth.
 
-**Roadmap requirement:** typed Tools and Skills bootstrap evidence aggregated into application evidence (alongside Security, Policy, Context, Memory today) — evidence only, not registry authority. See [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) observability chain.
+**Bootstrap evidence (Stage 10):** Tool/Skill package discovery → domain admission → runtime/domain wiring → immutable `DomainPluginLoadReport` → `ApplicationPlatformPluginEvidence`. Evidence describes the canonical bootstrap pass only; it is **not** registry authority, lifecycle authority, or production qualification. See [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) observability chain.
+
+**Roadmap requirement:** typed Tools and Skills bootstrap evidence aggregated into application evidence (alongside Security, Policy, Context, Memory) — **implemented** in Stage 10; evidence only, not registry authority.
 
 ---
 
@@ -595,8 +661,8 @@ UniversalCapabilityEngine
 |-----|--------|
 | Cross-domain Capability Catalog federation | Planned |
 | Cross-domain ranking shared utilities | Planned (only if reuse proven) |
-| Skill version pinning | Planned — domain decision required |
-| Tools/Skills typed bootstrap evidence | Planned |
+| Skill version pinning | **Implemented** — Skill domain + discovery projection (Stage 6) |
+| Tools/Skills typed bootstrap evidence | **Implemented** — Stage 10 `DomainPluginLoadReport` on `ApplicationPlatformPluginEvidence` |
 | Private enterprise catalog for Tool/Skill | Planned |
 | Third-party isolation beyond in-process | Future |
 | Monetization / metering consumer | Future |
@@ -614,7 +680,7 @@ UniversalCapabilityEngine
 - [x] AC-4 and AW-7A separation documented
 - [x] Effective capability availability as logical model only
 - [x] Governance narrowing rules documented
-- [x] Skill version pinning recorded as gap
+- [x] Skill version pinning closed in Skill domain + discovery projection (Stage 6)
 - [x] Marketplace / monetization / enterprise boundaries documented
 - [x] Hard invariants and forbidden flows listed
 - [x] Maturity boundary A/B/C explicit

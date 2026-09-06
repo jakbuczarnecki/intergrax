@@ -12,6 +12,7 @@ from types import MappingProxyType
 from typing import Any
 
 from intergrax.integrations.core.manifest import IntegrationManifest
+from intergrax.integrations.registry.runtime_binding import IntegrationRuntimeBindingSpec
 
 IntegrationContractFactory = Callable[..., Any]
 
@@ -104,6 +105,11 @@ class IntegrationContractSpec:
     security_posture: Any = None
     supports_runtime_binding: bool = True
     supports_health_check: bool = False
+    runtime_binding: IntegrationRuntimeBindingSpec | None = field(
+        default=None,
+        compare=False,
+        repr=False,
+    )
     metadata: Mapping[str, object] = field(default_factory=dict, compare=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -125,6 +131,7 @@ def declare_integration_contract(
     integration_kind: str | None = None,
     supports_runtime_binding: bool = True,
     supports_health_check: bool | None = None,
+    runtime_binding: IntegrationRuntimeBindingSpec | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> IntegrationContractSpec:
     """Build an explicit provider-owned contract declaration without reflection."""
@@ -176,6 +183,7 @@ def declare_integration_contract(
         security_posture=security_posture,
         supports_runtime_binding=supports_runtime_binding,
         supports_health_check=health_supported,
+        runtime_binding=runtime_binding,
         metadata=dict(metadata or {}),
     )
 

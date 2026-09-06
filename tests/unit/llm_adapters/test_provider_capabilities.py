@@ -20,10 +20,12 @@ pytestmark = pytest.mark.unit
 @pytest.fixture()
 def _restore_registry_state():
     snapshot = dict(LLMAdapterRegistry._factories)
+    installed = LLMAdapterRegistry._builtin_registrations_installed
     try:
         yield snapshot
     finally:
         LLMAdapterRegistry._factories = snapshot
+        LLMAdapterRegistry._builtin_registrations_installed = installed
 
 
 def test_openai_supports_tools_and_streaming() -> None:
@@ -35,6 +37,7 @@ def test_openai_supports_tools_and_streaming() -> None:
 
 def test_lazy_registry_loads_openai(_restore_registry_state: Dict[str, Any]) -> None:
     LLMAdapterRegistry._factories.clear()
+    LLMAdapterRegistry._builtin_registrations_installed = False
     with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}, clear=False):
         adapter = LLMAdapterRegistry.create(LLMProvider.OPENAI, client=MagicMock(), model="gpt-4o-mini")
     inner = unwrap_catalog_capability_adapter(adapter)

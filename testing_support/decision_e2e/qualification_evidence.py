@@ -31,3 +31,8 @@ class ScenarioExecutionEvidence:
     decision_id: str | None = None
     outcome: str | None = None
     runtime_modules: frozenset[str] = frozenset()
+    requested_provider: str | None = None
+    requested_model: str | None = None
+    resolved_provider: str | None = None
+    resolved_model: str | None = None
+    binding_source: str | None = None

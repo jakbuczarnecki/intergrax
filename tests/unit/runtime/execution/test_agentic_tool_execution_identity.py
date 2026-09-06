@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,6 +41,15 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.investigation_proof import (
+    collect_available_evidence_ids,
+    investigation_native_planner_protocol_config,
+)
+from intergrax.runtime.nexus.tools.native_planner_action_context import (
+    PLANNER_ACTION_CONTEXT_TOOL_ID,
+    NativePlannerRound,
+    resolve_native_planner_protocol,
+)
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.tool_loop import (
     execute_planned_tool_calls,
@@ -251,6 +261,41 @@ def _decision_note(*basis_ids: str, purpose: str) -> str:
     return f"EVIDENCE_BASIS: {basis}\nPURPOSE: {purpose}"
 
 
+def _action_context_call(
+    *basis_ids: str,
+    purpose: str,
+    call_id: str = "ann-ctx",
+) -> LLMToolCall:
+    return LLMToolCall(
+        id=call_id,
+        name=PLANNER_ACTION_CONTEXT_TOOL_ID,
+        arguments_json=json.dumps(
+            {
+                "evidence_basis_references": list(basis_ids),
+                "purpose": purpose,
+            }
+        ),
+    )
+
+
+def _native_round_from_response(
+    response: LLMAdapterResponse,
+    tool_plan: ToolCallPlan,
+    messages: list[ChatMessage],
+) -> NativePlannerRound:
+    protocol_config = investigation_native_planner_protocol_config(messages)
+    action_context, business_calls = resolve_native_planner_protocol(
+        response.tool_calls,
+        protocol_config=protocol_config,
+    )
+    return NativePlannerRound(
+        response=response,
+        business_tool_calls=business_calls,
+        tool_plan=tool_plan,
+        action_context=action_context,
+    )
+
+
 class _TwoRoundPlanner:
     def __init__(self) -> None:
         self._round = 0
@@ -266,52 +311,55 @@ class _TwoRoundPlanner:
         allowed_tool_ids=None,
         run_id: str,
         tool_choice=None,
-    ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
-        _ = messages, allowed_tool_ids, run_id, tool_choice
+        protocol_config=None,
+        **kwargs,
+    ) -> NativePlannerRound:
+        _ = allowed_tool_ids, run_id, tool_choice, protocol_config, kwargs
         self._round += 1
         if self._round == 1:
-            return (
-                LLMAdapterResponse(
-                    content=_decision_note("basis-1", purpose="probe round one"),
-                    tool_calls=(
-                        LLMToolCall.from_openai_shape(
-                            call_id="tc-1",
-                            name="probe.read",
-                            arguments={"value": 1},
-                        ),
-                    ),
-                ),
-                ToolCallPlan(
-                    calls=[
-                        PlannedToolCall(
-                            step_id="step-1",
-                            tool_id="probe.read",
-                            input=_In(value=1),
-                        )
-                    ]
-                ),
-            )
-        return (
-            LLMAdapterResponse(
-                content=_decision_note("tc-1", purpose="probe round two"),
+            response = LLMAdapterResponse(
+                content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
-                        call_id="tc-2",
+                        call_id="tc-1",
                         name="probe.read",
-                        arguments={"value": 2},
+                        arguments={"value": 1},
                     ),
                 ),
-            ),
-            ToolCallPlan(
+            )
+            tool_plan = ToolCallPlan(
                 calls=[
                     PlannedToolCall(
-                        step_id="step-2",
+                        step_id="step-1",
                         tool_id="probe.read",
-                        input=_In(value=2),
+                        input=_In(value=1),
                     )
                 ]
+            )
+            return _native_round_from_response(response, tool_plan, messages)
+        prior_basis = collect_available_evidence_ids(messages)
+        business_call = LLMToolCall.from_openai_shape(
+            call_id="tc-2",
+            name="probe.read",
+            arguments={"value": 2},
+        )
+        response = LLMAdapterResponse(
+            content="",
+            tool_calls=(
+                _action_context_call(*prior_basis, purpose="probe round two"),
+                business_call,
             ),
         )
+        tool_plan = ToolCallPlan(
+            calls=[
+                PlannedToolCall(
+                    step_id="step-2",
+                    tool_id="probe.read",
+                    input=_In(value=2),
+                )
+            ]
+        )
+        return _native_round_from_response(response, tool_plan, messages)
 
 
 class _ParallelReadOnlyPlanner:

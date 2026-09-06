@@ -460,6 +460,22 @@ def derive_hypothesis_dispositions(
     return IncidentAssessment(h1=h1, h2=h2, h3=h3, active_hypothesis=active, summary=summary)
 
 
+def hypothesis_evidence_relations(
+    hypothesis_id: HypothesisId,
+    observations: IncidentObservations,
+    evidence_ids: IncidentEvidenceIds,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Deterministic supporting/contradicting evidence ID tuples for one hypothesis."""
+    h1 = _assess_h1(observations, evidence_ids)
+    if hypothesis_id is HypothesisId.H1:
+        return h1.supporting_evidence_ids, h1.contradicting_evidence_ids
+    if hypothesis_id is HypothesisId.H2:
+        h2 = _assess_h2(observations, evidence_ids)
+        return h2.supporting_evidence_ids, h2.contradicting_evidence_ids
+    h3 = _assess_h3(observations, evidence_ids, h1)
+    return h3.supporting_evidence_ids, h3.contradicting_evidence_ids
+
+
 def normalize_tool_payload(payload: object) -> dict[str, object]:
     """Convert ToolRuntime preview transport into a mapping for typed parsing."""
     if isinstance(payload, BaseModel):

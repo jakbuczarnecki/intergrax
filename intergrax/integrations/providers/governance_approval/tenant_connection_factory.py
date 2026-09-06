@@ -18,10 +18,10 @@ from intergrax.integrations.providers.governance_approval.integration import (
 from intergrax.integrations.providers.governance_approval.knowledge_read import (
     GOVERNANCE_APPROVAL_PROVIDER_ID,
 )
-from intergrax.runtime.vendor_knowledge.models import JsonValue
-from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
-    TenantConnectionIntegrationFactory,
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
 )
+from intergrax.runtime.vendor_knowledge.models import JsonValue
 
 _ALLOWED_SECRET_FREE_CONFIG_KEYS = frozenset({"base_url", "timeout_seconds"})
 
@@ -53,7 +53,7 @@ def _parse_secret_free_config(
 
 
 class GovernanceApprovalTenantConnectionIntegrationFactory(
-    TenantConnectionIntegrationFactory,
+    EagerTenantConnectionIntegrationFactoryMixin,
 ):
     """Compose one Governance Approval integration from durable tenant connection config."""
 
@@ -73,6 +73,27 @@ class GovernanceApprovalTenantConnectionIntegrationFactory(
         integration_kind: IntegrationCategory,
         credential_ref: str,
         credential: str,
+        secret_free_config: Mapping[str, JsonValue],
+    ) -> GovernanceApprovalIntegration:
+        return self.create_integration_with_resolved_credential(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            credential_ref=credential_ref,
+            resolved_credential=credential,
+            secret_free_config=secret_free_config,
+        )
+
+    def create_integration_with_resolved_credential(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        resolved_credential: str,
         secret_free_config: Mapping[str, JsonValue],
     ) -> GovernanceApprovalIntegration:
         _require_nonblank(tenant_id, field_name="tenant_id")

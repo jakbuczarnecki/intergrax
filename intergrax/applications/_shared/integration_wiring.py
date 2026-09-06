@@ -25,4 +25,6 @@ def bootstrap_application_integration_catalog(
         register_shipped=True,
         integration_preset=integration_preset,
         discover_entry_points=discover,
+        discover_tool_entry_points=False,
+        discover_skill_entry_points=False,
     )

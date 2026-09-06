@@ -14,6 +14,7 @@ from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.skills.execution_binding import SkillExecutionPinningStore
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.registry.profile import ToolProfile
@@ -42,6 +43,7 @@ class ApplicationBuildContext:
     tool_wiring_context: ToolWiringContext | None = None
     skill_profile: SkillProfile | None = None
     skill_registry: SkillRegistry | None = None
+    skill_pinning_store: SkillExecutionPinningStore | None = None
     tool_registry: ToolRegistry | None = None
     policy_bundle: RuntimePolicyBundle | None = None
     runtime_event_bus: RuntimeEventBus | None = None
@@ -62,6 +64,7 @@ class ApplicationBuildContext:
         tool_wiring_context: ToolWiringContext | None = None,
         skill_profile: SkillProfile | None = None,
         skill_registry: SkillRegistry | None = None,
+        skill_pinning_store: SkillExecutionPinningStore | None = None,
         tool_registry: ToolRegistry | None = None,
         policy_bundle: RuntimePolicyBundle | None = None,
         runtime_event_bus: RuntimeEventBus | None = None,
@@ -82,6 +85,7 @@ class ApplicationBuildContext:
             tool_wiring_context=tool_wiring_context,
             skill_profile=skill_profile,
             skill_registry=skill_registry,
+            skill_pinning_store=skill_pinning_store,
             tool_registry=tool_registry,
             policy_bundle=policy_bundle,
             runtime_event_bus=runtime_event_bus,

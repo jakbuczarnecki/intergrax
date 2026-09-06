@@ -17,6 +17,10 @@ from platform_proofs.scenarios.verified_product_identification.embedding_materia
 from platform_proofs.scenarios.verified_product_identification.arena.composition.candidate_selection import (
     resolve_arena_candidates,
 )
+from platform_proofs.scenarios.verified_product_identification.arena.composition.finalist_qualification_policy import (
+    map_finalist_gate_to_decision,
+    resolve_finalist_qualification_selection,
+)
 from platform_proofs.scenarios.verified_product_identification.arena.composition.candidates import (
     BASELINE_CANDIDATE_ID,
     BASELINE_KNOWN_THROUGHPUT_RPS,
@@ -28,6 +32,9 @@ from platform_proofs.scenarios.verified_product_identification.arena.composition
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.candidate_selection import (
     EmbeddingArenaCandidateSelection,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.finalist_qualification import (
+    FinalistQualificationSelection,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.execution_budget import (
     EmbeddingArenaExecutionBudget,
@@ -75,7 +82,6 @@ from platform_proofs.scenarios.verified_product_identification.arena.evaluation.
 )
 from platform_proofs.scenarios.verified_product_identification.arena.evaluation.finalist_qualification import (
     classify_finalist_qualification_gate,
-    map_finalist_gate_to_decision,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.evaluation.finalist_selection import (
     StageBCandidateEvidence,
@@ -964,6 +970,7 @@ def _build_candidate_result_from_finalist_work(
 def _run_finalist_qualification_arena(
     *,
     candidates: tuple[EmbeddingArenaCandidate, ...],
+    qualification_selection: FinalistQualificationSelection,
     run_gpu_stages: bool,
     gpu_available: bool,
     session_dir: str | None,
@@ -1118,8 +1125,11 @@ def _run_finalist_qualification_arena(
             )
         )
 
-    gate, gate_rationale = classify_finalist_qualification_gate(tuple(candidate_results))
-    decision = map_finalist_gate_to_decision(gate)
+    gate, gate_rationale = classify_finalist_qualification_gate(
+        tuple(candidate_results),
+        qualification_selection,
+    )
+    decision = map_finalist_gate_to_decision(gate, qualification_selection)
     finalists = tuple(
         item.candidate_id
         for item in candidate_results
@@ -1196,8 +1206,13 @@ def run_embedding_arena(
     )
 
     if execution_budget.finalist_qualification_mode:
+        if effective_selection is None:
+            msg = "finalist qualification requires an explicit candidate selection"
+            raise ValueError(msg)
+        qualification_selection = resolve_finalist_qualification_selection(effective_selection)
         return _run_finalist_qualification_arena(
             candidates=candidates,
+            qualification_selection=qualification_selection,
             run_gpu_stages=run_gpu_stages,
             gpu_available=gpu_available,
             session_dir=session_dir,

@@ -21,10 +21,19 @@ from intergrax.runtime.nexus.tools.hierarchical_tool_selector import (
     select_tools_hierarchical,
 )
 from intergrax.runtime.nexus.tools.tool_catalog_embedder import ToolCatalogEmbedder
-from intergrax.skills.registry import SkillProfile, build_registry_from_profile, enabled_skill_ids_for_profile
-from intergrax.skills.resolver import SkillResolver
+from intergrax.skills.execution_binding import (
+    SkillExecutionPinningStore,
+    resolve_bound_skill_pack,
+)
+from intergrax.skills.registry import SkillProfile, build_registry_from_profile
+from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.search.keyword_ranking import (
+    ToolKeywordSearchDocument,
+    score_tool_keyword_document,
+    tokenize_tool_search_query,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +43,9 @@ class ToolSelectionContext:
     registry: ToolRegistry
     query: str
     skill_profile: SkillProfile | None = None
+    skill_registry: SkillRegistry | None = None
+    skill_pinning_store: SkillExecutionPinningStore | None = None
+    tenant_id: str | None = None
     plan_allowed_tool_ids: Sequence[str] | None = None
     top_k: int = 20
     max_hierarchy_passes: int = 2
@@ -76,11 +88,15 @@ class SkillPackSelectionStrategy:
     def select_tool_ids(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
         if ctx.skill_profile is None:
             return ()
-        skill_ids = enabled_skill_ids_for_profile(ctx.skill_profile)
-        if not skill_ids:
+        skill_registry = ctx.skill_registry or build_registry_from_profile(ctx.skill_profile)
+        pack = resolve_bound_skill_pack(
+            tenant_id=ctx.tenant_id or "",
+            skill_profile=ctx.skill_profile,
+            skill_registry=skill_registry,
+            pinning_store=ctx.skill_pinning_store,
+        )
+        if not pack.resolved_skills:
             return ()
-        skill_registry = build_registry_from_profile(ctx.skill_profile)
-        pack = SkillResolver(skill_registry, tool_registry=None).resolve(skill_ids)
         present = tuple(
             sorted(tool_id for tool_id in pack.tool_ids if ctx.registry.has(tool_id))
         )
@@ -95,7 +111,7 @@ class RetrievalTopKSelectionStrategy:
         if not registered:
             return ()
 
-        query_tokens = _query_tokens(ctx.query)
+        query_tokens = tokenize_tool_search_query(ctx.query)
         if not query_tokens:
             ranked = sorted(registered, key=lambda item: item.contract.tool_id)
             return tuple(rt.contract.tool_id for rt in ranked[: ctx.top_k])
@@ -294,24 +310,24 @@ async def resolve_planner_allowed_tool_ids_async(
     return strategy_ids
 
 
-def _query_tokens(query: str) -> tuple[str, ...]:
-    return tuple(
-        token
-        for token in query.lower().split()
-        if len(token) > 2
+def _tool_keyword_search_document(contract: ToolContract) -> ToolKeywordSearchDocument:
+    return ToolKeywordSearchDocument(
+        tool_id=contract.tool_id,
+        text_parts=tuple(
+            part
+            for part in (
+                contract.description,
+                contract.description_short,
+                " ".join(contract.tags),
+                contract.category,
+            )
+            if part
+        ),
     )
 
 
 def _score_contract(contract: ToolContract, query_tokens: Sequence[str]) -> int:
-    haystack = " ".join(
-        part
-        for part in (
-            contract.tool_id,
-            contract.description,
-            contract.description_short or "",
-            " ".join(contract.tags),
-            contract.category,
-        )
-        if part
-    ).lower()
-    return sum(1 for token in query_tokens if token in haystack)
+    return score_tool_keyword_document(
+        _tool_keyword_search_document(contract),
+        query_tokens,
+    )

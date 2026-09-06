@@ -249,7 +249,11 @@ def test_conflicting_availability_evidence_fails_before_discovery() -> None:
     key = _identity_key(entry)
     snapshot = _snapshot(entry)
     query = CapabilityDiscoveryQuery(scope=_enterprise_scope())
-    with pytest.raises(ValidationError, match="host_available_keys and blocked_keys"):
+    with pytest.raises(
+        ValidationError,
+        match="availability evidence conflict: identity .* appears in both "
+        "host_available_keys and blocked_keys",
+    ):
         evidence = CapabilityDiscoveryAvailabilityEvidence(
             host_available_keys=(key,),
             blocked_keys=(key,),

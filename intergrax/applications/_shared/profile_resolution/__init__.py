@@ -2,6 +2,16 @@
 
 """Application-owned profile resolution entrypoints (P1.1/P1.2)."""
 
+from intergrax.applications._shared.profile_resolution.activation_service import (
+    EffectiveProfileActivationDependencies,
+    EffectiveProfileActivationService,
+    activate_materialized_revision,
+    resolve_active_effective_profile_revision,
+)
+from intergrax.applications._shared.profile_resolution.activation_store import (
+    InMemoryActiveEffectiveProfileRevisionStore,
+    wire_active_effective_profile_revision_store,
+)
 from intergrax.applications._shared.profile_resolution.diff_engine import (
     ProfileFieldDiffer,
     diff_effective_profile_revisions,
@@ -40,13 +50,17 @@ from intergrax.applications._shared.profile_resolution.store import (
 
 __all__ = [
     "DEFAULT_FIELD_RESOLVERS",
+    "EffectiveProfileActivationDependencies",
+    "EffectiveProfileActivationService",
     "EffectiveProfileExecutionPinningDependencies",
     "EffectiveProfileRevisionAdmission",
+    "InMemoryActiveEffectiveProfileRevisionStore",
     "InMemoryEffectiveProfileExecutionPinningStore",
     "InMemoryEffectiveProfileRevisionStore",
     "ProfileFieldDiffer",
     "ProfileFieldResolveResult",
     "ProfileFieldResolver",
+    "activate_materialized_revision",
     "attach_revision_checkpoint_evidence_to_task",
     "build_effective_profile_revision_admission",
     "checkpoint_evidence_for_revision",
@@ -56,8 +70,10 @@ __all__ = [
     "materialize_effective_profile_revision",
     "pin_effective_profile_revision_for_execution",
     "require_execution_pinned_revision",
+    "resolve_active_effective_profile_revision",
     "resolve_profile",
     "resolve_revision_for_execution",
     "revision_id_from_checkpoint",
     "verify_checkpoint_revision_consistency",
+    "wire_active_effective_profile_revision_store",
 ]

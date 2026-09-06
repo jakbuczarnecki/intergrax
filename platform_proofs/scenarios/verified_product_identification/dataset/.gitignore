@@ -3,3 +3,5 @@ raw/*
 !raw/.gitkeep
 processed/*
 !processed/.gitkeep
+generated/data_pack/**
+!generated/data_pack/.gitkeep

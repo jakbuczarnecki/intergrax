@@ -33,6 +33,7 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.providers._openai_schema import prepare_openai_strict_generation_schema
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
@@ -313,7 +314,7 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
         run_id: Optional[str] = None,
     ) -> LLMStructuredResult[Any]:
         system_text, convo = split_system_messages(messages)
-        schema = self._model_json_schema(output_model)
+        schema = prepare_openai_strict_generation_schema(output_model)
         payload = self._build_chat_params(
             system_text=system_text,
             convo=convo,

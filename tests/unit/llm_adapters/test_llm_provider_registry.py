@@ -1,26 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
-
-"""
-Unit tests for LLMAdapterRegistry.
-
-These tests define the behavioral contract for adapter registration and creation:
-- provider normalization is deterministic (strip + lowercase; enum values supported),
-- invalid providers fail fast,
-- register() overwrites existing factories explicitly,
-- create() raises a clear error for unknown providers,
-- create() forwards kwargs to the underlying factory,
-- factories must return a valid LLMAdapter instance.
-
-Why this matters:
-LLMAdapterRegistry is a central wiring mechanism. Regressions here can break
-adapter resolution across the system in subtle, hard-to-debug ways.
-"""
+# Integrax framework – proprietary and confidential.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Iterator, Sequence, Optional
+import sys
+from pathlib import Path
+from typing import Any, Callable, Dict, Iterator, Optional, Sequence
 
 import pytest
 
@@ -31,7 +16,6 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import (
     LLMAdapterDependencyError,
-    LLMAdapterRegistrationError,
     LLMAdapterRegistry,
 )
 from intergrax.llm_adapters.providers.native_ollama_adapter import NativeOllamaAdapter
@@ -39,6 +23,7 @@ from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapt
 from intergrax.llm_adapters.registry.catalog_capabilities import (
     unwrap_catalog_capability_adapter,
 )
+from intergrax.llm_adapters.registry.registration_contract import LLMAdapterRegistrationSpec
 
 
 pytestmark = pytest.mark.unit
@@ -47,16 +32,9 @@ pytestmark = pytest.mark.unit
 _Factory = Callable[..., LLMAdapter]
 
 
-# ---------------------------------------------------------------------------
-# Minimal test adapter
-# ---------------------------------------------------------------------------
-
 class _TestAdapter(LLMAdapter):
-    """
-    Minimal concrete LLMAdapter used for registry contract tests.
-    """
-
     provider = "unit-test"
+    model = "unit-test"
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
@@ -77,49 +55,28 @@ class _TestAdapter(LLMAdapter):
         return build_adapter_response(content="ok")
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 @pytest.fixture()
 def _restore_registry_state() -> Iterator[Dict[str, _Factory]]:
-    """
-    Snapshot and restore the global registry state.
-
-    LLMAdapterRegistry uses class-level global state. Unit tests must isolate changes
-    to avoid cross-test coupling and flakiness.
-    """
     snapshot: Dict[str, _Factory] = dict(LLMAdapterRegistry._factories)
+    installed = LLMAdapterRegistry._builtin_registrations_installed
     try:
         yield snapshot
     finally:
         LLMAdapterRegistry._factories = snapshot
+        LLMAdapterRegistry._builtin_registrations_installed = installed
 
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 def test_normalize_provider_accepts_enum_values(_restore_registry_state: Dict[str, Any]) -> None:
-    """
-    Enum providers must normalize to their canonical string values.
-    """
     key = LLMAdapterRegistry._normalize_provider(LLMProvider.OPENAI)
     assert key == LLMProvider.OPENAI.value
 
 
 def test_normalize_provider_strips_and_lowercases(_restore_registry_state: Dict[str, Any]) -> None:
-    """
-    String providers must be stripped and lowercased to ensure stable lookup keys.
-    """
     key = LLMAdapterRegistry._normalize_provider("  OpEnAI  ")
     assert key == "openai"
 
 
 def test_normalize_provider_rejects_empty(_restore_registry_state: Dict[str, Any]) -> None:
-    """
-    Empty or whitespace-only providers must fail fast.
-    """
     with pytest.raises(ValueError) as exc:
         LLMAdapterRegistry._normalize_provider("   ")
 
@@ -127,10 +84,6 @@ def test_normalize_provider_rejects_empty(_restore_registry_state: Dict[str, Any
 
 
 def test_register_overwrites_existing_factory(_restore_registry_state: Dict[str, Any]) -> None:
-    """
-    register() must NOT silently overwrite existing factories.
-    Overwrite is only allowed when override=True is explicitly provided.
-    """
     provider = "unit-test-provider"
 
     def factory_v1(**kwargs: Any) -> LLMAdapter:
@@ -139,19 +92,16 @@ def test_register_overwrites_existing_factory(_restore_registry_state: Dict[str,
     def factory_v2(**kwargs: Any) -> LLMAdapter:
         return _TestAdapter(version="v2")
 
-    # First registration works
     LLMAdapterRegistry.register(provider, factory_v1)
     out1 = LLMAdapterRegistry.create(provider)
     assert isinstance(out1, _TestAdapter)
     assert out1.kwargs["version"] == "v1"
 
-    # Second registration WITHOUT override must fail
     with pytest.raises(ValueError) as exc:
         LLMAdapterRegistry.register(provider, factory_v2)
 
     assert "already registered" in str(exc.value)
 
-    # Explicit override must succeed
     LLMAdapterRegistry.register(provider, factory_v2, override=True)
     out2 = LLMAdapterRegistry.create(provider)
     assert isinstance(out2, _TestAdapter)
@@ -159,9 +109,8 @@ def test_register_overwrites_existing_factory(_restore_registry_state: Dict[str,
 
 
 def test_create_raises_for_unregistered_provider(_restore_registry_state: Dict[str, Any]) -> None:
-    """
-    create() must raise a clear error when provider is not registered.
-    """
+    LLMAdapterRegistry._factories = {}
+    LLMAdapterRegistry._builtin_registrations_installed = True
     with pytest.raises(ValueError) as exc:
         LLMAdapterRegistry.create("missing-provider")
 
@@ -171,9 +120,6 @@ def test_create_raises_for_unregistered_provider(_restore_registry_state: Dict[s
 
 
 def test_create_forwards_kwargs_to_factory(_restore_registry_state: Dict[str, Any]) -> None:
-    """
-    create() must forward kwargs to the registered factory.
-    """
     provider = "unit-test-kwargs"
 
     def factory(**kwargs: Any) -> LLMAdapter:
@@ -184,6 +130,17 @@ def test_create_forwards_kwargs_to_factory(_restore_registry_state: Dict[str, An
     out = LLMAdapterRegistry.create(provider, x=1, y="a")
     assert isinstance(out, _TestAdapter)
     assert out.kwargs == {"x": 1, "y": "a"}
+
+
+def test_create_rejects_non_adapter_factory(_restore_registry_state: Dict[str, Any]) -> None:
+    provider = "invalid-return-type"
+
+    def bad_factory(**kwargs: object) -> object:
+        return object()
+
+    LLMAdapterRegistry.register(provider, bad_factory, override=True)
+    with pytest.raises(TypeError, match="expected LLMAdapter"):
+        LLMAdapterRegistry.create(provider)
 
 
 def test_ollama_default_resolves_to_native_adapter(
@@ -201,9 +158,6 @@ def test_ollama_default_resolves_to_native_adapter(
 
 
 def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_state: Dict[str, Any]) -> None:
-    """
-    Non-string and non-enum provider values must be rejected explicitly.
-    """
     with pytest.raises((TypeError, ValueError)):
         LLMAdapterRegistry._normalize_provider(None)  # type: ignore[arg-type]
 
@@ -215,48 +169,59 @@ def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_st
 
 
 def test_missing_optional_llm_dependency_is_controlled(
-    _restore_registry_state: Dict[str, Any],
-    monkeypatch: pytest.MonkeyPatch,
+    _restore_registry_state: Dict[str, _Factory],
 ) -> None:
-    def missing_dependency(_: str) -> Any:
-        raise ModuleNotFoundError("anthropic is missing", name="anthropic")
+    import importlib.abc
+    import importlib.machinery
+    import sys
+    from typing import Sequence as _Sequence
 
-    monkeypatch.setattr(
-        "intergrax.llm_adapters.llm_provider_registry.importlib.import_module",
-        missing_dependency,
-    )
+    class _AnthropicBlocker(importlib.abc.MetaPathFinder):
+        def find_spec(
+            self,
+            fullname: str,
+            path: _Sequence[str] | None,
+            target: object | None = None,
+        ) -> importlib.machinery.ModuleSpec | None:
+            if fullname == "anthropic" or fullname.startswith("anthropic."):
+                return importlib.machinery.ModuleSpec(fullname, self)
+            return None
 
-    with pytest.raises(
-        LLMAdapterDependencyError,
-        match=r"Intergrax-ai\[llm-anthropic\]",
-    ):
-        LLMAdapterRegistry.create(LLMProvider.CLAUDE, model="claude-3")
+        def create_module(self, spec: importlib.machinery.ModuleSpec) -> None:
+            return None
+
+        def exec_module(self, module: object) -> None:
+            name = getattr(module, "__name__", "anthropic")
+            raise ModuleNotFoundError(f"No module named '{name}'", name=name)
+
+    removed = {
+        name: sys.modules.pop(name)
+        for name in list(sys.modules)
+        if name == "anthropic" or name.startswith("anthropic.")
+    }
+    blocker = _AnthropicBlocker()
+    sys.meta_path.insert(0, blocker)
+    try:
+        with pytest.raises(
+            LLMAdapterDependencyError,
+            match=r"Intergrax-ai\[llm-anthropic\]",
+        ):
+            LLMAdapterRegistry.create(LLMProvider.CLAUDE, model="claude-3")
+    finally:
+        sys.meta_path.remove(blocker)
+        sys.modules.update(removed)
 
 
-def test_internal_llm_import_error_is_not_mapped_to_missing_dependency(
+def test_register_from_spec_delegates_to_same_storage(
     _restore_registry_state: Dict[str, Any],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def broken_import(_: str) -> Any:
-        raise ImportError("provider implementation failed internally")
+    provider = "typed-spec-provider"
 
-    monkeypatch.setattr(
-        "intergrax.llm_adapters.llm_provider_registry.importlib.import_module",
-        broken_import,
+    def factory(**kwargs: object) -> LLMAdapter:
+        return _TestAdapter(**kwargs)
+
+    LLMAdapterRegistry.register_from_spec(
+        LLMAdapterRegistrationSpec(provider_id=provider, factory=factory)
     )
-
-    with pytest.raises(ImportError, match="provider implementation failed internally"):
-        LLMAdapterRegistry.create(LLMProvider.CLAUDE, model="claude-3")
-
-
-def test_missing_llm_adapter_class_is_registration_error(
-    _restore_registry_state: Dict[str, Any],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        "intergrax.llm_adapters.llm_provider_registry.importlib.import_module",
-        lambda _: object(),
-    )
-
-    with pytest.raises(LLMAdapterRegistrationError, match="does not define"):
-        LLMAdapterRegistry.create(LLMProvider.CLAUDE, model="claude-3")
+    out = LLMAdapterRegistry.create(provider)
+    assert isinstance(out, _TestAdapter)

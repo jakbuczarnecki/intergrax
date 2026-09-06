@@ -151,6 +151,8 @@ SkillRegistry
 | **SkillProfile** | Host policy - `enabled_bundles`, `enabled`, `register_all_catalog_bundles` |
 | **SkillRegistry** | Runtime lookup used by `SkillResolver` and validation |
 
+Enterprise-private Skill catalog discovery (Capability Catalog Stage 7) lists skills from non-public sources with versioned provenance. **Private Skill discovery ≠ `SkillRegistry` availability** — registry materialization still requires `SkillPlugin` bootstrap, `SkillProfile` enablement, and `wire_application_environment()`.
+
 ## AgentContract.skills and allowed_tools
 
 - Agents declare **`SkillManifest` objects** on `AgentContract.skills[]`.
@@ -177,11 +179,28 @@ Pre-declared `allowed_tools` on the author contract are **not** preserved. Envir
 
 ```text
 ResolvedSkillPack
-├── skill_ids          (expanded order - dependencies first)
+├── resolved_skills    (immutable ResolvedSkillRef evidence, deps-first order)
+├── skill_ids          (projection from resolved_skills)
 ├── tool_ids
 ├── prompt_instruction_ids
 ├── policy_fragment_ids
-└── risk_tier          (max tier across merged skills)
+├── risk_tier          (max tier across merged skills)
+└── snapshot_digest    (deterministic sha256 identity over resolved evidence)
+```
+
+`ResolvedSkillPack` snapshot identity uses collision-safe canonical binary framing
+(length-prefixed UTF-8 fields, schema prefix `resolved_skill_pack.v1`, record count,
+deterministic topological order) before SHA-256 (`sha256:<hex>`).
+
+Each `ResolvedSkillRef` records:
+
+```text
+ResolvedSkillRef
+├── skill_id
+├── version
+├── qualified_id
+├── resolution_mode    (PINNED | MATERIALIZED)
+└── role               (ROOT | TRANSITIVE)
 ```
 
 | Behavior | Detail |
@@ -190,8 +209,10 @@ ResolvedSkillPack
 | Tool validation | When `tool_registry` provided, every `tool_id` must exist |
 | Unknown skill | `SkillResolutionError` at resolve / validate |
 | Authority | Resolver **composes contracts**; it does not make autonomous policy decisions |
-| Version identity | **Target:** one explicit model - version-pinned resolution **or** logical `skill_id` with runtime/profile owning resolved version. **Current as-built gap:** validation and resolution use `skill_id` only; registry current version may disagree with agent-declared `SkillManifest.version` ([`AUDIT-20260818-SKILLS-02`](../../audit_results/2026-08-18/SKILLS.md)) |
-| Provenance retention | **Target:** canonical `ResolvedSkillPack` snapshot bound to registered agent/runtime revision for audit and risk inspection. **Current as-built gap:** `AgentRegistry.register()` discards pack after `allowed_tools` merge ([`AUDIT-20260818-SKILLS-04`](../../audit_results/2026-08-18/SKILLS.md)) |
+| Root version identity | **Agent-declared `SkillManifest` roots are PINNED** — `skill_id` + `version` must equal the materialized `SkillRegistry` manifest |
+| Transitive `requires_skills` | **MATERIALIZED** — logical `skill_id` resolves to the registry materialized version; exact version captured in `resolved_skills` |
+| Root/transitive conflict | Fail closed when a pinned root version disagrees with registry materialization reachable via the graph |
+| Provenance retention | `AgentRegistry.register()` stores immutable `ResolvedSkillPack` via `get_resolved_skill_pack(agent_id)`; snapshots do not auto-refresh after `register_or_replace()` |
 
 ## requires_skills
 

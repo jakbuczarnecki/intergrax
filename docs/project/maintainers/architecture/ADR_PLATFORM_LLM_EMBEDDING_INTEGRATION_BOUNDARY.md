@@ -1,8 +1,36 @@
 # ADR: LLM and Embedding Integration Boundary
 
-**Status:** Accepted — implementation pending  
-**Date:** 2026-09-05  
-**Task:** P2-002-A · P2-002
+**Status:** Accepted — IMPLEMENTED / CLOSED — FINAL INDEPENDENT AUDIT PASS
+**Date:** 2026-09-05
+**Task:** P2-002 · P2-002-A through P2-002-D
+**Audited implementation:** `ec22d19980c6bc6a04b26cd2cccf92ce93cb63cd` (P2-002-D independent audit pass; not necessarily current `development` HEAD)
+
+## P2-002 closure
+
+| Phase | Status |
+|---|---|
+| P2-002-A (decision) | **CLOSED** |
+| P2-002-B1 (embedding catalog/category) | **CLOSED** |
+| P2-002-B2 (first-party embedding providers) | **CLOSED** |
+| P2-002-B3 (runtime binding cutover) | **CLOSED** |
+| P2-002-B4 (legacy registry removal) | **CLOSED** |
+| P2-002-C (LLM registry decentralization) | **CLOSED** |
+| P2-002-D (final independent audit) | **FINAL INDEPENDENT AUDIT PASS** |
+
+**Overall:** P2-002 — **CLOSED**
+
+## Implementation summary
+
+Implementation complete:
+
+- embedding provider catalog/category migrated to Integrations (`IntegrationCategory.EMBEDDING_PROVIDER`)
+- five first-party embedding providers registered explicitly via `IntegrationContractSpec`
+- canonical embedding runtime binding through `IntegrationProfile` + Integrations catalog → `IntegrationRuntimeBindingSpec` → `EmbeddingProviderRuntimeBindingSpec` → provider-owned binder → `EmbeddingProvider`
+- legacy `EmbeddingProviderRegistry`, `create_default_registry()`, and central `provider_factory_registration` removed
+- LLM remains dedicated domain (not an Integrations category)
+- LLM built-ins use provider-owned explicit `LLMAdapterRegistrationSpec`; central `_BUILTIN_ADAPTERS` and reflective provider loading removed
+- `ModelCatalog`, `ModelRouter`, `LLMRoutingEvaluator`, and `FailoverLLMAdapter` unchanged
+- final independent audit passed (P2-002-D)
 
 ## Context
 
@@ -18,13 +46,14 @@ model serving runtime, secrets store, …) with a single canonical catalog and d
 |---|---|---|
 | **Integrations** | Canonical catalog for platform backend categories; `IntegrationProfile` host selection; `registry_v2` derived projection only | Category-specific `*IntegrationContract` (e.g. `VectorStore`, `RerankProvider`) |
 | **LLM Adapters** | `LLMProvider` + `LLMAdapterRegistry` + `ModelCatalog` (model metadata) | `LLMAdapter` — generate, stream, tools, structured output, usage |
-| **Embedding** | `EmbeddingProviderRegistry` + `EmbeddingProfile` + bootstrap factory map | `EmbeddingProvider` — batch `embed()` → vectors |
+| **Embedding** | Integrations catalog (`embedding_provider`) + `EmbeddingProfile` + `bind_embedding_provider()` | `EmbeddingProvider` — batch `embed()` → vectors |
 
 Documented boundaries in `INTEGRATIONS.md` and `LLM_ADAPTERS.md` already state that
 Integrations does **not** own LLM model invocation and that LLM Adapters are a separate
 catalog from Integrations.
 
-`IntegrationCategory` has no `llm_provider` or `embedding_provider` row today.
+`IntegrationCategory.EMBEDDING_PROVIDER` is registered in the Integrations catalog. There is no
+`llm_provider` category — LLM remains outside Integrations by design.
 `model_serving_runtime` (e.g. Ollama host health/list_models) is intentionally distinct from
 chat/completion adapters.
 
@@ -62,11 +91,11 @@ Adopt **Option C (hybrid)**:
 | LLM model identity (`gpt-*`, `claude-*`, …) | `ModelCatalog` (`model_catalog.yaml`) | Separate from provider slug |
 | LLM runtime contract | `LLMAdapter` ABC | Streaming, tools, structured output, usage |
 | LLM routing / failover | `ModelRouter`, `LLMRoutingEvaluator`, `FailoverLLMAdapter` | Domain runtime router |
-| LLM provider registration | `LLMAdapterRegistry` | Evolve to provider-owned explicit registration; remove central `_BUILTIN_ADAPTERS` map |
-| Embedding provider identity | **Target:** Integrations catalog (`embedding_provider`) | **Interim:** `EmbeddingProviderRegistry` |
+| LLM provider registration | `LLMAdapterRegistry` via provider-owned `LLMAdapterRegistrationSpec` | Central `_BUILTIN_ADAPTERS` removed (P2-002-C); no reflection-based registration |
+| Embedding provider identity | Integrations catalog (`embedding_provider`) | `IntegrationProfile.embedding_provider` |
 | Embedding model selection | `EmbeddingProfile.model` + host/env | Model is domain config, not catalog slug |
 | Embedding runtime contract | `EmbeddingProvider` ABC in `rag/embedding/` | Batch vectors, dimensions, normalization |
-| Embedding provider registration | **Target:** Integrations `register_from_manifest` path | **Interim:** `create_default_registry()` factory map |
+| Embedding provider registration | Integrations `register_from_manifest` + provider-owned `runtime_binding.py` | No central registry or factory map |
 | Platform backends (vector store, parser, rerank, …) | Integrations catalog | Unchanged |
 | Local inference host probe | `model_serving_runtime` Integration | Health/list_models only — not LLM/embedding runtime |
 | Connection credentials | Tier-3 host + `SecretsStore` Integration | Domain profiles consume resolved secrets |
@@ -87,17 +116,20 @@ and embedding adapters; it does **not** replace `LLMAdapter`.
 Embedding is a **provider category** (like `rerank_provider`) for catalog/config/security,
 but RAG owns **embedding semantics** (pipeline, manager, chunk→vector orchestration).
 
-Target flow:
+Canonical runtime flow:
 
 ```text
 RAG ingest / retriever
-  → EmbeddingManager / EmbeddingPipeline
+  → EmbeddingEngine / EmbeddingPipeline / EmbeddingManager
   → EmbeddingProvider (runtime contract)
   → IntegrationProfile.embedding_provider (host selection)
-  → Integrations catalog factory
-  → provider adapter (OpenAI, Ollama, HF, …)
+  → IntegrationRuntimeBindingSpec → EmbeddingProviderRuntimeBindingSpec
+  → provider-owned runtime binder
   → vendor SDK / local runtime
 ```
+
+There is no `EmbeddingProviderRegistry`, `create_default_registry()`, or central
+`provider_factory_registration`.
 
 ### registry_v2 participation
 
@@ -114,7 +146,8 @@ RAG ingest / retriever
 
 ## Migration implications
 
-Implementation is **out of scope** for P2-002-A. Logical blocks:
+P2-002-A recorded the decision only; implementation completed in phases B1–C. Independent audit
+closure: P2-002-D. Logical blocks (all complete):
 
 1. **Contract/catalog alignment** — add `IntegrationCategory.EMBEDDING_PROVIDER`, category
    contract, `IntegrationProfile` slot, `PROVIDER_CATEGORY_CONTRACT_REGISTRY` entry.
@@ -122,14 +155,14 @@ Implementation is **out of scope** for P2-002-A. Logical blocks:
    `integrations/providers/embedding_provider/<slug>/` with explicit `IntegrationContractSpec`;
    register via `register_from_manifest`.
 3. **Runtime binding** — `EmbeddingPipeline` resolves provider via `IntegrationProfile` → catalog
-   factory → `EmbeddingProvider` adapter; retain `EmbeddingProviderRegistry` as thin runtime
-   router during transition.
-4. **LLM registry hardening** — replace `_BUILTIN_ADAPTERS` central map with provider-owned
+   runtime binder → bound `EmbeddingProvider` adapter (**B3/B4 complete**).
+4. **LLM registry hardening** — `_BUILTIN_ADAPTERS` central map replaced with provider-owned
    registration modules (same pluginability invariant as P2-003; **no** Integrations migration).
-5. **Compatibility removal** — remove `create_default_registry()` central factory map and
-   hardcoded `_REGISTERED_EMBEDDING_PROVIDERS` after host profile cutover.
+5. **Compatibility removal** — legacy `EmbeddingProviderRegistry`, `create_default_registry()`,
+   and central `provider_factory_registration` removed in B4; hosts bind one typed provider.
 6. **Tests/docs** — registry, plugin, and profile resolution tests; update RAG operator guide.
-7. **Final audit** — independent pass confirming single catalog authority for embedding providers.
+7. **Final audit** — independent pass confirming single catalog authority for embedding providers
+   (**P2-002-D PASS** @ `ec22d19980c6bc6a04b26cd2cccf92ce93cb63cd`).
 
 ## Invariants
 
@@ -143,19 +176,20 @@ Implementation is **out of scope** for P2-002-A. Logical blocks:
 
 ## Rollout phases
 
-| Phase | Scope |
-|---|---|
-| **0 (now)** | Document decision; no production code changes |
-| **1** | Embedding catalog category + first-party provider packages in Integrations |
-| **2** | `IntegrationProfile` + RAG bootstrap cutover; compatibility shim for env-based embedding |
-| **3** | Remove legacy `EmbeddingProviderRegistry` bootstrap map |
-| **4** | LLM `LLMAdapterRegistry` provider-owned registration (decentralize `_BUILTIN_ADAPTERS`) |
+| Phase | Scope | Status |
+|---|---|---|
+| **0** | Document decision (P2-002-A) | **CLOSED** |
+| **1** | Embedding catalog category + first-party provider packages (`P2-002-B1`, `P2-002-B2`) | **CLOSED** — `IntegrationCategory.EMBEDDING_PROVIDER`, profile slot, five first-party providers via explicit `IntegrationContractSpec` |
+| **2** | `IntegrationProfile` + RAG bootstrap cutover (`P2-002-B3`) | **CLOSED** — canonical provider selection through Integrations catalog runtime binders; `EmbeddingProfile` env input retained |
+| **3** | Remove legacy `EmbeddingProviderRegistry` bootstrap (`P2-002-B4`) | **CLOSED** — legacy registry/factory removed; Integrations is single embedding provider authority |
+| **4** | LLM provider-owned registration (`P2-002-C`) | **CLOSED** — `_BUILTIN_ADAPTERS` removed; built-ins register explicitly; custom providers need no enum/core-map edit; `ModelCatalog`/routing/failover unchanged |
+| **5** | Final independent audit (`P2-002-D`) | **FINAL INDEPENDENT AUDIT PASS** @ `ec22d19980c6bc6a04b26cd2cccf92ce93cb63cd` |
 
 ## Compatibility policy
 
 - **LLM:** Stable public API (`LLMAdapter`, `LLMProfile`, `LLMAdapterRegistry`) — no breaking
   changes during Option C; registry internal refactor only.
-- **Embedding:** Maintain `EmbeddingProvider` ABC and `EmbeddingProfile` through Phase 2; deprecate
-  `create_default_registry()` after profile cutover.
+- **Embedding:** Maintain `EmbeddingProvider` ABC and `EmbeddingProfile`; legacy
+  `EmbeddingProviderRegistry` and `create_default_registry()` removed in B4.
 - **Legacy paths** with no production consumers: remove rather than indefinite shim (per audit
   rule).

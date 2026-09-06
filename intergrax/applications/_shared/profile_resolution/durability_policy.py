@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
 from intergrax.applications.contracts.profile_resolution.errors import EffectiveProfileRevisionError
 
 DURABLE_EFFECTIVE_PROFILE_REVISION_REQUIRED_MSG = (
@@ -14,21 +16,22 @@ DURABLE_EFFECTIVE_PROFILE_PINNING_REQUIRED_MSG = (
 )
 
 
-def _is_durable_store(store: object) -> bool:
-    durable = getattr(store, "is_durable", None)
-    return bool(durable) if durable is not None else False
+class DurablePersistenceCapability(Protocol):
+    @property
+    def is_durable(self) -> bool:
+        """Whether state survives process restart."""
 
 
 def validate_effective_profile_pinning_durability_for_composition(
     *,
     production_mode: bool,
-    revision_store: object,
-    pinning_store: object,
+    revision_store: DurablePersistenceCapability,
+    pinning_store: DurablePersistenceCapability,
 ) -> None:
     """Fail closed when production host composition lacks durable revision authorities."""
     if not production_mode:
         return
-    if not _is_durable_store(revision_store):
+    if not revision_store.is_durable:
         raise EffectiveProfileRevisionError(DURABLE_EFFECTIVE_PROFILE_REVISION_REQUIRED_MSG)
-    if not _is_durable_store(pinning_store):
+    if not pinning_store.is_durable:
         raise EffectiveProfileRevisionError(DURABLE_EFFECTIVE_PROFILE_PINNING_REQUIRED_MSG)

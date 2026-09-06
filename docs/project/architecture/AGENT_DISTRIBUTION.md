@@ -25,14 +25,16 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 
 **B. Implemented pieces (capability-specific).** Tier-0 modules under `intergrax/agent_distribution/` and reference process-local production semantics (§34) implement parts of the chain - contracts, stores, trust, roster merge, lock production, materialization adapters, activation/projection services - under explicit scope limits. Process-local in-memory stores are **reference single-process semantics**, not general durable multi-instance production.
 
-**C. Implemented platform proofs (AC-3 + AC-4, reference production V1).** The canonical **install → bind → build → activate → serve** chain and **dynamic capability discovery → match → select → acquire → delegate → release** pipeline are **proven in reference production composition** (§34, §35). Evidence includes canonical AC-3 lifecycle E2E and AC-4 Phase 9 production-composition E2E. This is **platform proof**, not a claim of public commercial marketplace rollout.
+**C. Implemented platform proofs (AC-3 through AC-6, reference production V1).** The canonical **install → bind → build → activate → serve** chain, **dynamic capability discovery → match → select → acquire → delegate → release** pipeline, **revision-bound canonical factory invocation** (AC-5), and **trust/certification/revocation/freshness/active emergency response** (AC-6) are **proven in reference production composition** (§34, §35, §21 AC-5, §10.7 AC-6). Evidence includes AC-3 lifecycle E2E, AC-4 Phase 9 production-composition E2E, AC-5 factory E2E, and AC-6 trust lifecycle E2E. This is **platform proof**, not a claim of public commercial marketplace rollout.
 
-**Still planned / not publicly productized:** Durable cross-process activation, horizontal host scale-out, LKW consumer proof wiring (AP-12), commercial marketplace product, remote publisher onboarding, billing/settlement, multi-instance lease recovery, and universal specialist invocation adapter. Manifest-only development assembly (migration phase M0) remains valid for lab; STRICT production hosts require an active revision-bound registry projection (§31, §34).
+**Still planned / not publicly productized:** Horizontal host scale-out, LKW consumer proof wiring (AP-12), commercial marketplace product, remote publisher onboarding, billing/settlement, multi-instance lease recovery, and universal specialist invocation adapter. Manifest-only development assembly (migration phase M0) remains valid for lab; STRICT production hosts require an active revision-bound registry projection (§31, §34).
+
+**Durable reference production lifecycle (EA-01/EA-02):** SQLite-backed store adapters behind existing Tier-0 store protocols prove **durable single-host / multi-process** install → bind → revision → activation → serving with restart recovery, **deterministic projection rehydration**, and CAS semantics. This is **reference durability**, not distributed multi-region HA. Evidence: `tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py`, `tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py`.
 
 **D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience - one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific Nexus branches are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry, or Nexus. AC-4 does **not** require a marketplace backend.
 
 > [!NOTE]
-> **Maturity boundary:** AC-3 lifecycle authority and AC-4 dynamic capability plane are **implemented and frozen** for reference production V1. Public product rollout, durable multi-instance production, and commercial marketplace remain **out of scope** for this maturity tier. Frozen architecture documentation is not equivalent to universal production rollout.
+> **Maturity boundary:** AC-1–AC-6 architecture authority is **implemented and frozen** for reference production V1 (final audit: [`maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md`](../maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md)). Public product rollout, durable multi-instance production, and commercial marketplace remain **out of scope** for this maturity tier. Frozen architecture documentation is not equivalent to universal production rollout.
 
 **Primary audience:** CTOs, principal/staff engineers, software architects, and AI platform engineers evaluating how Intergrax separates agent packaging from runtime execution - after the platform overview in the root README.
 
@@ -54,7 +56,9 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 | **Marketplace relation** | Future catalog/discovery surface only - not execution fork, not second Nexus |
 | **LKW relation** | Future **consumer** via generic platform APIs - MUST NOT own stores, catalog, or materializer |
 | **AC-4 capability plane** | Task need → resolve → discover → match → select → acquire → delegate → release (§35) |
-| **Maturity** | AC-3 + AC-4 frozen for reference production V1; durable multi-instance and marketplace product deferred - see [Current reality](#current-reality--maturity-boundary), §34–§35 |
+| **AC-5 factory authority** | Revision-bound `RuntimeAgentFactoryResolver` → `invoke_canonical_agent_factory(ctx, binding)` (§21) |
+| **AC-6 trust authority** | `AgentPackageTrustCoordinator` sole ALLOW/DENY; crypto attestation + freshness + active revocation (§10.7) |
+| **Maturity** | AC-1–AC-6 frozen for reference production V1; durable multi-instance and marketplace product deferred - see [Current reality](#current-reality--maturity-boundary), [§36](#36-ac-16-final-agent-architecture-freeze) |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§3 invariants](#3-architecture-invariants) · [§35 AC-4 freeze](#35-ac-4-dynamic-capability-discovery--acquisition-architecture-freeze) · [§27 LKW](#27-lkw-proof-boundary) · [§28 marketplace](#28-marketplace-readiness) · [plan](../maintainers/plans/AGENT_DISTRIBUTION.md) |
 
 ## Core mental model
@@ -212,11 +216,13 @@ AgentRegistry
 Nexus
 ```
 
-### Marketplace ≠ Agent Distribution
+### Agent Manager ≠ Agent Distribution
 
-[Agent Marketplace](../overview/AGENT_MARKETPLACE.md) and Agent Manager surfaces (future / planned) are **product and discovery layers** — convenient panels for discovering, installing, uninstalling, activating, deactivating, assigning, and configuring agents. Architecturally they are **not** runtime, **not** `AgentRegistry`, **not** Nexus, and **not** lifecycle authority.
+**Agent Manager** is an **implemented** derived read/control facade over `AgentPlatformAdminService` and canonical lifecycle stores. Operators use it to inspect install/bind/enable/serving state and issue governed mutations; it does **not** own lifecycle authority.
 
-Marketplace / Agent Manager **MAY** call Tier-0 Agent Distribution services. They **MUST NOT** replace Agent Distribution, fork activation semantics, or become a second path into production runtime.
+[Agent Marketplace](../overview/AGENT_MARKETPLACE.md) remains a **future** product/discovery surface — convenient listing for discovering packages. Architecturally it is **not** runtime, **not** `AgentRegistry`, **not** Nexus, and **not** lifecycle authority.
+
+Agent Manager / Marketplace **MAY** call Tier-0 Agent Distribution services. They **MUST NOT** replace Agent Distribution, fork activation semantics, or become a second path into production runtime.
 
 **Agent Manager / Marketplace** is a control-plane and discovery surface. It **MUST NOT** own installation, binding, revision, activation, or serving authority.
 
@@ -242,7 +248,7 @@ AVAILABLE ≠ INSTALLED ≠ BOUND_TO_APPLICATION ≠ CONFIGURED ≠ ENABLED
 
 **Status:** Canonical architecture (AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 activation semantics frozen - documentation only)
 **Plan (1:1):** [`plan/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md)
-**ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) · [`adr/entries/2026-08-17/ADR-AGENT-005.md`](../technical/adr/entries/2026-08-17/ADR-AGENT-005.md) (AC-3 store ownership)
+**ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) · [`adr/entries/2026-08-17/ADR-AGENT-005.md`](../technical/adr/entries/2026-08-17/ADR-AGENT-005.md) (AC-3 store ownership) · [`adr/entries/2026-09-06/ADR-AGENT-008.md`](../technical/adr/entries/2026-09-06/ADR-AGENT-008.md) (EA-03 durable projection rehydration)
 **Evidence gate:** [`audit_results/legacy/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../../audit_results/legacy/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md) (AGENT-PLATFORM-0)
 **Execution hub (do not duplicate):** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §15–§16
 **Runtime graph:** [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md)
@@ -737,6 +743,134 @@ artifact digest
 - **Evidence authority:** production `SIGNATURE_VERIFICATION` evidence MUST originate from `AgentPackageAttestationVerifier.verify_qualification_evidence()`, which performs cryptographic verification before emission. `AgentPackageAttestationVerificationResult` from diagnostic `verify()` alone is not qualification authority. `AgentPackageTrustCoordinator` requires injected attestation verifier re-validation plus platform-issued `AgentPackageAttestationQualificationEvidence`; caller-formatted `QualificationEvidence` or fabricated attestation metadata is rejected even when code/ref match. Evidence `ref` is audit metadata, not a cryptographic credential.
 - **Algorithm (V1):** `ED25519` only. Keys resolved via injected `AgentPublisherVerificationKeyProvider` or explicit pinned public key bytes — no network fetch in core verification.
 - **Non-claims (Phase 2):** Sigstore/cosign, X.509 chains, transparency logs, and key-trust registries are out of scope. Key/publisher trust remains policy/config responsibility upstream of verification.
+
+### 10.5 Qualification freshness (AC-6 Phase 3)
+
+Qualification freshness is policy-dependent and evaluated deterministically at explicit admission time:
+
+```text
+AgentPackageQualificationResult.qualified_at   # immutable snapshot timestamp (UTC)
+  + AgentPackageTrustPolicy.max_qualification_age
+  + explicit evaluated_at
+  → AgentPackageTrustCoordinator (sole ALLOW/DENY authority)
+```
+
+- **Snapshot semantics:** `AgentPackageQualificationResult` is one immutable qualification snapshot; all nested evidence corresponds to `qualified_at`.
+- **Policy:** `max_qualification_age: timedelta | None` — `None` disables age limits; positive durations enforce `age = evaluated_at - qualified_at` with exact-boundary freshness (`age <= max` is FRESH).
+- **Fail closed:** future `qualified_at`, expired qualification, and missing `qualification_qualified_at` under an age-limited policy → **DENY** with stable reason codes (`qualification_expired`, `qualification_timestamp_invalid`).
+- **Requalification:** produce a new immutable `AgentPackageQualificationResult` with a new `qualified_at`; never mutate historical snapshots or trust records.
+- **Admission:** install admission and candidate runtime revision build re-check current policy + `qualification_qualified_at` on installation trust records; historical `policy_fingerprint` explains prior ALLOW only.
+- **Non-claims (Phase 3):** no background scheduler, no automatic uninstall, no async active-runtime kill — stale qualification blocks future admission/revision only. Phase 4 owns active emergency response.
+
+### 10.6 Active runtime revocation response (AC-6 Phase 4)
+
+Explicit **security revocation** may require response for the **currently serving** `RuntimeRevision`. Future-admission blocking (Phases 1–3) and active emergency response are distinct concerns.
+
+```text
+traffic_serving_revision_id
+  → RuntimeRevision
+  → immutable EffectiveRoster snapshot
+  → enabled entries → installation trust records
+  → AgentPackageTrustRevocationState snapshot (single evaluation)
+  → AgentEmergencyRevocationService
+  → ActivationService.rollback() when prior revision is currently trust-admissible
+```
+
+| Revocation scope | Future admission | Active emergency response | Rationale |
+|------------------|------------------|---------------------------|-----------|
+| `revoked_package_digests` | block | **respond** | digest compromise invalidates serving bytes |
+| `revoked_publisher_ids` | block | **respond** | publisher compromise invalidates provenance |
+| `revoked_evidence_ids` | block | **respond** when evidence backs active installation | evidence invalidation is security authority |
+| `revoked_catalog_source_ids` | block | no auto-response | source revoke ≠ installed digest compromise |
+| `disabled_catalog_source_ids` | block | no auto-response | administrative disable ≠ malware emergency |
+| qualification expiry | block future | **no response** | Phase 3 freshness only |
+
+- **Revision indivisibility:** runtime revision is immutable; emergency response transitions revision (rollback), never hot-removes an agent from an active roster/registry projection.
+- **Safe rollback target:** canonical `prior_traffic_revision_id` must pass current `AgentPackageTrustCoordinator.assert_install_admission()` under the same immutable revocation snapshot; revoked or stale prior revisions are rejected (`BLOCKED_NO_SAFE_TARGET`).
+- **Canonical lifecycle:** traffic commit precedes physical drain; no direct serving-pointer mutation outside `ActivationService`; no background watcher/thread in core.
+- **No safe target:** when no prior revision exists or prior revision fails current trust, expose explicit unresolved security state — do not null the serving pointer (Reference Production V1).
+- **Process-local V1:** single revocation snapshot per invocation; concurrent activation races fail closed via expected serving pointer CAS.
+
+### 10.7 AC-6 Trust, Certification and Runtime Revocation - Frozen Architecture
+
+**Status:** AC-6 Trust / Certification / Runtime Revocation architecture: **FROZEN - Reference Production V1**
+
+Canonical production chain (Reference Production V1):
+
+```text
+Catalog/Source
+  → Exact AgentPackageIdentity digest
+  → Publisher/provenance
+  → AgentPackageAttestationVerifier (Ed25519)
+  → AgentPackageAttestationQualificationEvidence
+  → Immutable AgentPackageQualificationResult (qualified_at)
+  → AgentPackageTrustPolicy + AgentPackageTrustRevocationState snapshot
+  → AgentPackageTrustCoordinator (sole ALLOW/DENY authority)
+  → AgentInstallationTrustRecord
+  → canonical install (AgentPlatformAdminService / InstallationService)
+  → EffectiveRoster snapshot
+  → RuntimeRevision candidate
+  → trust readmission (assert_install_admission)
+  → ActivationService activation
+  → traffic_serving_revision_id (ACTIVE N)
+  → active security revocation scan
+  → safe prior revision trust revalidation
+  → ActivationService.rollback()
+  → prior revision ACTIVE / superseded revision DRAINING
+```
+
+#### Frozen invariants
+
+| Invariant | Meaning |
+|-----------|---------|
+| **QUALIFICATION != TRUST** | Qualification answers what evidence/status the package has; trust answers whether this exact artifact may be used under current policy. No qualification object alone authorizes install. |
+| **SIGNATURE != TRUST** | Valid cryptographic signature does not imply ALLOW; revocation, publisher/source policy, qualification status, freshness, and other evidence may still DENY. |
+| **HISTORICAL ALLOW != CURRENT ALLOW** | `AgentInstallationTrustRecord` is historical audit evidence, not an eternal bearer credential. New install/readmission/rollback checks use current authority. |
+| **INSTALLED != ADMISSIBLE** | Installed packages may become revoked, stale, or policy-incompatible; existing records remain; new runtime revision admission fails until trusted again. |
+| **ACTIVE != SAFE FOREVER** | Serving revision may become unsafe under explicit security revocation; response is revision transition, not in-place mutation. |
+| **RUNTIME REVISION INDIVISIBLE** | No hot agent removal from an active immutable revision; registry remains derived projection. |
+| **ROLLBACK TARGET REVALIDATED** | Prior historical validity does not imply current safety; emergency rollback targets must satisfy current revocation, policy, freshness, and artifact revalidation. |
+| **REVOCATION VS EXPIRY** | Qualification expiry blocks future admission; explicit security revocation may trigger active emergency response — semantics are not merged. |
+| **SOURCE ADMIN ACTION != MALWARE** | Source disabled/revoked restricts future admission; it does not automatically trigger active emergency rollback in Reference V1. |
+| **ONE REVOCATION SNAPSHOT PER RESPONSE** | One emergency invocation evaluates one immutable revocation snapshot. |
+| **NO SAFE TARGET** | When no trusted rollback target exists, expose explicit unresolved security state; do not null serving pointer, promote arbitrary revisions, or claim recovery. |
+
+#### Authority uniqueness (frozen)
+
+| Concern | Sole authority |
+|---------|----------------|
+| ALLOW/DENY | `AgentPackageTrustCoordinator` |
+| Cryptographic authenticity | `AgentPackageAttestationVerifier` |
+| Installation mutation | canonical installation lifecycle (`InstallationService` via admin facade) |
+| Runtime traffic | `ActivationService` / canonical activation store CAS |
+| Registry | derived projection only (revision-bound) |
+
+#### Security property matrix (closure)
+
+| Property | Authority | Proof |
+|----------|-----------|-------|
+| Exact artifact identity | `AgentPackageIdentity.package_digest` | Phase 1 unit tests |
+| Crypto authenticity | `AgentPackageAttestationVerifier` | Phase 2 unit tests |
+| Policy/revocation | `AgentPackageTrustCoordinator` | Phase 1–2 unit tests |
+| Freshness | `qualified_at` + `max_qualification_age` | Phase 3 unit tests |
+| New revision readmission | `AgentPlatformAdminService` trust gate | Phase 3 + Phase 5 E2E |
+| Active security revocation | `AgentEmergencyRevocationService` | Phase 4 + Phase 5 E2E |
+| Traffic mutation | `ActivationService` | AC-3 / Phase 4 tests |
+| Dynamic acquisition trust path | admin install admission | AC-4 Phase 1–2 + dynamic acquisition tests |
+| Factory authority | revision-bound canonical factory | AC-5 Phase 3 E2E |
+
+#### Reference Production V1 limitations (non-claims)
+
+- Process-local; no distributed consensus or leader election
+- No background revocation watcher
+- No Sigstore/transparency integration
+- No X.509 chain authority; Ed25519 baseline only
+- No HSM/KMS requirement
+- No automatic zero-serving quarantine transition
+- No arbitrary historical safe-revision search (one prior rollback target)
+- Concurrent activation races fail closed via expected serving pointer CAS
+
+**Future extensions (not AC-6 blockers):** distributed trust/revocation coordination; Sigstore/transparency adapters; HSM/KMS key providers; zero-serving quarantine; historical safe revision selector.
 
 ---
 
@@ -1416,6 +1550,52 @@ AgentRegistry != Lifecycle Manager
 **Atomic registry rule (ARCH-AGENT-ACTIVATION-1):** `AgentRegistry` is a **projection of the exact traffic-serving `RuntimeRevision`**. Registry publication and traffic switch MUST be coordinated in the same activation boundary (§20.5 step 8) so operators and concurrent users never observe a mixed revision (e.g. registry agents from N+1 while requests still route to N). Registry population is **not** an independent best-effort post-activation step.
 
 AP-10 implements the projection mechanism; AP-9 architecture **requires** this atomic relationship.
+
+### Activation-time projection authority vs restart-time rehydration (EA-03, frozen)
+
+Cold process restart MUST restore traffic-serving execution **without** any runtime object from the previous process. The durable/runtime split is explicit:
+
+```text
+DURABLE RUNTIME AUTHORITY                PROCESS-LOCAL RUNTIME OBJECT
+RuntimeRevision + roster/lock/materialization   MaterializedRegistryProjection
+        ↓                                              ↑
+RuntimeRegistryProjectionDescriptor (immutable)        |
+        ↓                                              |
+traffic_serving_revision_id (serving pointer)          |
+                                                       |
+ACTIVATION (lifecycle)                                 |
+   ↓                                                   |
+build projection from canonical authority              |
+   ↓                                                   |
+persist descriptor ───────── durable                   |
+   ↓                                                   |
+activate serving pointer ─── durable                   |
+                                                       |
+PROCESS RESTART                                        |
+   ↓                                                   |
+read serving pointer                                   |
+   ↓                                                   |
+load descriptor for serving revision                   |
+   ↓                                                   |
+validate revision authority                            |
+   ↓                                                   |
+rehydrate process-local projection ────────────────────┘
+   ↓
+Execution
+```
+
+| Term | Meaning |
+|------|---------|
+| **Projection descriptor** | Durable immutable typed reconstruction authority keyed by `runtime_revision_id` (embeds `ApplicationManifest`, `BuildContextDescriptorSnapshot` with `SkillProfile` / `ToolProfile` / `EnvironmentIdentitySnapshot`; not a generic JSON blob) |
+| **MaterializedRegistryProjection** | Process-local runtime object in `RuntimeRegistryProjectionStore` |
+| **Rehydration** | Deterministic construction of process-local projection from durable revision-bound authority |
+| **Reprojection** | Recomputation from potentially current/mutable lifecycle inputs — **forbidden at startup** |
+
+**Invariant:** `SERVING(revision N) ⇒ durable rehydration descriptor for N exists and validates` before activation commit completes. Startup-time projection from mutable desired state is forbidden; startup-time deterministic rehydration of the already traffic-serving revision from durable canonical authority is allowed.
+
+**ADR:** [`ADR-AGENT-008`](../technical/adr/entries/2026-09-06/ADR-AGENT-008.md) (canonical decision record).
+
+Evidence: `intergrax/applications/_shared/registry_projection_descriptor.py`, `registry_projection_rehydrator.py`, `tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py`.
 
 ### Canonical production factory invocation (AC-5, frozen)
 
@@ -2278,6 +2458,59 @@ Marketplace may become a `CatalogSourceProvider` / discovery source. AC-4 does *
 
 ---
 
+## 36. AC-1–AC-6 Final Agent Architecture Freeze
+
+**Status:** **FROZEN — Reference Production V1** (2026-09-06 final audit)
+
+Independent audit evidence: [`maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md`](../maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md).
+
+### Frozen canonical chain
+
+```text
+DISCOVER → RESOLVE → VERIFY → TRUST → INSTALL → BIND → ENABLE
+  → SNAPSHOT → LOCK → MATERIALIZE → VALIDATE → PROJECT
+  → PREPARE → READY → COMMIT → ACTIVE → ROUTE → DRAIN/SUPERSEDE
+```
+
+Dynamic acquisition enters at **DISCOVER/RESOLVE** only — never via alternate execution.
+
+### Authority uniqueness (summary)
+
+| Concern | Sole authority |
+|---------|----------------|
+| Trust ALLOW/DENY | `AgentPackageTrustCoordinator` |
+| Installation | `InstallationService` |
+| Binding | `BindingService` |
+| Effective roster snapshot | `EffectiveRosterAuthorityService` |
+| Runtime revision | `RuntimeRevisionService` |
+| Dependency lock | deterministic resolver → `MaterializedRuntimeLock` |
+| Materialization | `RuntimeMaterializationService` |
+| Factory resolution | `RuntimeAgentFactoryResolver` |
+| Registry projection | revision-bound `build_application_registry` / projection coordinator |
+| Traffic activation | `ActivationService` |
+| Capability routing | Nexus |
+| Active revocation | `AgentEmergencyRevocationService` → `ActivationService.rollback()` |
+| Process root | `ProductionProcessComposition` |
+
+### AC closure map
+
+| AC | Scope | Status |
+|----|-------|--------|
+| AC-1 | Foundational lifecycle/domain contracts | **CLOSED** |
+| AC-2 | Distribution ↔ application binding boundaries | **CLOSED** |
+| AC-3 | Production lifecycle authority (N/N+1, rollback, historical replay) | **CLOSED** |
+| AC-4 | Capability plane (discover/match/select/acquire/delegate) | **CLOSED** |
+| AC-5 | Canonical revision-bound factory invocation | **CLOSED** |
+| AC-6 | Trust, certification, freshness, active revocation | **CLOSED** |
+
+### Reference Production V1 non-claims
+
+Single process; process-local stores where documented; no distributed consensus; no commercial marketplace product; no background revocation watcher; no Sigstore transparency; manifest-only assembly remains **lab/dev explicit** only (`build_manifest_development_registry`, scenario lab baseline).
+
+**Next program stage:** APPLICATION-INTEGRATION-AND-PROOF-VALIDATION — scenarios stress the frozen platform; platform gaps get bounded tasks, not a new AC lifecycle phase.
+
+---
+
 ## Compliance checklist
 
 - [x] Platform-neutral chain documented end-to-end
@@ -2294,3 +2527,93 @@ Marketplace may become a `CatalogSourceProvider` / discovery source. AC-4 does *
 - [x] Discovery / matching / selection separation documented
 - [x] Source-qualified candidate identity documented
 - [x] Reference Production V1 AC-4 limitations explicit
+- [x] AC-5 canonical factory authority frozen (§21)
+- [x] AC-6 trust/certification/revocation frozen (§10.7)
+- [x] AC-1–AC-6 final architecture freeze documented (§36)
+
+## Enterprise lifecycle visual map
+
+### System context
+
+```mermaid
+flowchart TB
+  subgraph sources [Catalog sources]
+    MP[Marketplace FUTURE]
+    PC[Private catalog]
+    BC[Bundled / scenario agents]
+  end
+  AD[Agent Distribution authority]
+  RP[Runtime projection]
+  EX[Execution Nexus]
+  sources --> AD --> RP --> EX
+```
+
+### Lifecycle authority chain
+
+```mermaid
+flowchart TD
+  D[discover] --> I[install InstallationService]
+  I --> B[bind BindingService]
+  B --> R[effective roster EffectiveRosterAuthority]
+  R --> V[revision RuntimeRevisionService]
+  V --> M[materialize RuntimeMaterializationService]
+  M --> A[activate ActivationService]
+  A --> S[serve traffic_serving_revision_id]
+  S --> P[project RegistryProjectionAuthority]
+  P --> X[execute HostTaskExecution]
+```
+
+### Desired vs serving
+
+```text
+enabled (binding) != serving (traffic pointer)
+candidate revision VALIDATED != ACTIVE != serving
+```
+
+### Trust / rollback
+
+```mermaid
+flowchart LR
+  PKG[package] --> TR[trust AgentPackageTrustCoordinator]
+  TR --> ADM[admission]
+  ADM --> ACT[activate]
+  REV[revocation] --> EV[evaluate]
+  EV --> RB[rollback ActivationService]
+  RB --> PRIOR[prior revision serving]
+```
+
+### LAB vs PRODUCT
+
+```text
+LAB bootstrap (manifest assembly) != production lifecycle (revision-bound registry)
+STRICT hosts require activated serving revision — no manifest-only authority.
+```
+
+### Agent Manager
+
+```mermaid
+flowchart TB
+  OP[Operator] --> AM[Agent Manager facade]
+  AM --> Q[derived read model queries]
+  AM --> C[commands via AgentPlatformAdminService]
+  C --> AD[Agent Distribution services]
+```
+
+## Operator lifecycle (safe change)
+
+```text
+discover → inspect trust → install → bind → enable
+→ build revision → inspect candidate → activate → inspect serving
+```
+
+Emergency revocation: trust coordinator flags digest → `ActivationService` rollback to prior validated revision → serving pointer CAS → durable stores retain history.
+
+## Evidence index
+
+| Proof | Test file |
+| ----- | --------- |
+| Semantic lifecycle (Stage 15) | `tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py` |
+| Enterprise durable lifecycle | `tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py` |
+| Trust / revocation (AC-6) | `tests/integration/agent_distribution/test_ac6_trust_lifecycle_e2e.py` |
+| Agent Manager | `tests/unit/agent_distribution/test_agent_manager.py` |
+| Architecture gates | `tests/unit/agent_distribution/test_ac6_architecture_gates.py` |

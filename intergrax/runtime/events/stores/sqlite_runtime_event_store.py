@@ -10,13 +10,19 @@ import sqlite3
 from pathlib import Path
 from typing import List
 
+from intergrax.contracts.execution_identity import EventId, validate_event_id
 from intergrax.runtime.events.execution_position import (
     ExecutionEventPosition,
     PositionedRuntimeEvent,
 )
 from intergrax.runtime.events.persistence_contract import (
+    AcceptedRuntimeEvent,
     RuntimeEventPersistence,
+    RuntimeEventPersistenceIntegrityError,
+    _validate_persistence_tenant_id,
     _validate_through_limit,
+    reconcile_idempotent_event_acceptance,
+    resolve_persistence_scope,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, parse_runtime_event_payload
 
@@ -123,9 +129,17 @@ class SQLiteRuntimeEventStore(RuntimeEventPersistence):
     def _load_positioned(self, row: sqlite3.Row) -> PositionedRuntimeEvent:
         raw_position = row["execution_position"]
         if raw_position is None:
-            raise RuntimeError("runtime_events row missing execution_position")
+            raise RuntimeEventPersistenceIntegrityError(
+                "runtime_events row missing execution_position",
+            )
+        try:
+            event = parse_runtime_event_payload(json.loads(row["event_json"]))
+        except (json.JSONDecodeError, TypeError, ValueError) as exc:
+            raise RuntimeEventPersistenceIntegrityError(
+                "runtime_events row has malformed event_json",
+            ) from exc
         return PositionedRuntimeEvent(
-            event=parse_runtime_event_payload(json.loads(row["event_json"])),
+            event=event,
             position=ExecutionEventPosition(int(raw_position)),
         )
 
@@ -151,22 +165,31 @@ class SQLiteRuntimeEventStore(RuntimeEventPersistence):
         return ExecutionEventPosition(int(row["allocated_position"]))
 
     def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
-        scope = tenant_id or event.tenant_id or ""
+        scope = resolve_persistence_scope(event=event, tenant_id=tenant_id)
         payload = event.model_dump(mode="json")
         with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 existing = conn.execute(
                     """
-                    SELECT event_json, execution_position
+                    SELECT tenant_id, event_json, execution_position
                     FROM runtime_events
                     WHERE event_id = ?
                     """,
                     (event.event_id,),
                 ).fetchone()
                 if existing is not None:
+                    accepted_tenant_id = existing["tenant_id"]
+                    positioned = self._load_positioned(existing)
                     conn.commit()
-                    return self._load_positioned(existing)
+                    return reconcile_idempotent_event_acceptance(
+                        AcceptedRuntimeEvent(
+                            tenant_id=accepted_tenant_id,
+                            positioned=positioned,
+                        ),
+                        event,
+                        persistence_tenant_id=scope,
+                    )
                 position = self._allocate_position(
                     conn,
                     tenant_id=scope,
@@ -241,3 +264,27 @@ class SQLiteRuntimeEventStore(RuntimeEventPersistence):
                 (tenant_id, task_id, limit),
             ).fetchall()
         return [self._load_positioned(row).event for row in rows]
+
+    def get_by_event_id(
+        self,
+        *,
+        tenant_id: str,
+        event_id: EventId,
+    ) -> PositionedRuntimeEvent | None:
+        validated_tenant_id = _validate_persistence_tenant_id(tenant_id)
+        validated_event_id = validate_event_id(event_id)
+        with self._connection() as conn:
+            row = conn.execute(
+                """
+                SELECT event_json, execution_position, tenant_id
+                FROM runtime_events
+                WHERE tenant_id = ? AND event_id = ?
+                LIMIT 1
+                """,
+                (validated_tenant_id, str(validated_event_id)),
+            ).fetchone()
+        if row is None:
+            return None
+        if row["tenant_id"] != validated_tenant_id:
+            return None
+        return self._load_positioned(row)

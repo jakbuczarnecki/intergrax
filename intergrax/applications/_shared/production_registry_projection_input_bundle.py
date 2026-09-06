@@ -158,7 +158,7 @@ def _validate_revision_roster_lock_authority(
             )
 
 
-def _assemble_production_registry_projection_input_bundle(
+def assemble_production_registry_projection_input_bundle(
     *,
     runtime_revision: RuntimeRevision,
     effective_roster: EffectiveRoster,
@@ -228,7 +228,7 @@ def build_production_registry_projection_input_bundle_for_revision(
     except RegistryProjectionAuthorityError as exc:
         raise ProductionRegistryProjectionInputError(str(exc)) from exc
 
-    return _assemble_production_registry_projection_input_bundle(
+    return assemble_production_registry_projection_input_bundle(
         runtime_revision=resolved.runtime_revision,
         effective_roster=resolved.effective_roster,
         materialized_runtime_lock=resolved.materialized_runtime_lock,
@@ -270,6 +270,7 @@ def build_production_registry_projection_for_revision(
 
 __all__ = [
     "ProductionRegistryProjectionInputError",
+    "assemble_production_registry_projection_input_bundle",
     "build_production_registry_projection_for_revision",
     "build_production_registry_projection_input_bundle_for_revision",
     "production_test_artifact_locator",

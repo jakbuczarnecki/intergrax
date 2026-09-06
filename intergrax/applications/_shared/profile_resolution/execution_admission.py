@@ -10,6 +10,9 @@ from intergrax.applications.contracts.profile_resolution.errors import (
     EffectiveProfileRevisionConflictError,
     MissingPinnedEffectiveProfileRevisionError,
 )
+from intergrax.applications._shared.profile_resolution.activation_service import (
+    resolve_active_effective_profile_revision,
+)
 from intergrax.applications._shared.profile_resolution.execution_pinning import (
     attach_revision_checkpoint_evidence_to_task,
     pin_effective_profile_revision_for_execution,
@@ -17,6 +20,9 @@ from intergrax.applications._shared.profile_resolution.execution_pinning import 
     resolve_revision_for_execution,
     revision_id_from_checkpoint,
     verify_checkpoint_revision_consistency,
+)
+from intergrax.applications.contracts.profile_resolution.activation import (
+    ActiveEffectiveProfileRevisionStore,
 )
 from intergrax.applications.contracts.profile_resolution.execution_binding import (
     EffectiveProfileExecutionPinningStore,
@@ -40,9 +46,9 @@ from intergrax.runtime.task.task import Task
 class EffectiveProfileExecutionPinningDependencies:
     """Immutable dependency bundle for one host effective profile revision."""
 
-    revision: EffectiveProfileRevision
     revision_store: EffectiveProfileRevisionStore
     pinning_store: EffectiveProfileExecutionPinningStore
+    active_store: ActiveEffectiveProfileRevisionStore
     scope: EffectiveProfileRevisionScope
 
 
@@ -75,14 +81,18 @@ class EffectiveProfileRevisionAdmission(EffectiveProfileRevisionAdmissionPort):
                     tenant_id=tenant_id,
                     execution_id=str(execution_id),
                 )
+            admitted_revision = resolve_active_effective_profile_revision(
+                active_store=deps.active_store,
+                revision_store=deps.revision_store,
+                scope=deps.scope,
+            )
             pin_effective_profile_revision_for_execution(
-                revision=deps.revision,
+                revision=admitted_revision,
                 tenant_id=tenant_id,
                 execution_id=execution_id,
                 pinning_store=deps.pinning_store,
                 revision_store=deps.revision_store,
             )
-            admitted_revision = deps.revision
         else:
             admitted_revision = resolve_revision_for_execution(
                 tenant_id=tenant_id,

@@ -1,10 +1,10 @@
 # Collaborative Work
 
-**Status:** Canonical architecture (domain pair 1:1) - **MP-1 core runtime implemented; final review pending**
+**Status:** Canonical architecture (domain pair 1:1) - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
-**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md)
+**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
 ---
 
@@ -192,7 +192,93 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 | **Delegation** | delegator + delegate principals; scoped authority; optional resource/time bounds; never amplifies delegator base authority |
 | **Effective authority** | base principal authority ∩ membership ∩ delegation ∩ workspace policy ∩ resource policy ∩ runtime/tool policy |
 
-Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core; LKW/application adoption remains out of scope until MP-1 final review closes.
+Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
+
+**MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**.
+**Current active task:** **COLLAB-WORK-2D** (SQLite durability parity).
+
+---
+
+## MP-2 — Shared Work (architecture frozen)
+
+**Owning domain:** Collaborative Work (this hub). **ADR:** [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md).
+
+### Ownership
+
+Collaborative Work owns MP-2 Shared Work:
+
+- WorkItem identity and **WorkItemState** lifecycle,
+- **Assignment** identity and assignment lifecycle,
+- collaborative ownership / assignment semantics (multi-principal),
+- collaborative optimistic concurrency and idempotency,
+- work-level `tenant_id` + `workspace_id` isolation,
+- work-level authority requirements (via MP-1 enforcement),
+- zero..N **execution links** to Nexus/UER identities.
+
+Collaborative Work does **not** own: Nexus Task lifecycle, run/attempt lifecycle, execution scheduling/retries, workflow graph execution, worker/process scheduling, or background task runtime ownership.
+
+**Reused (non-owners):** ORCHESTRATION (graph policy; may consume WorkItem context), UNIFIED_EXECUTION_RUNTIME / NEXUS (`Task`, `run_id`, `attempt`, outcomes), BACKGROUND_TASKS (may execute work associated with a WorkItem), OBSERVABILITY / PROOF_RECEIPTS (provenance consumption).
+
+### WorkItem != Nexus Task
+
+| WorkItem | Nexus Task |
+|----------|------------|
+| Durable collaborative work | Execution unit |
+| Independently addressable | Runtime lifecycle |
+| May exist with zero active executions | Created to advance work |
+| May span multiple tasks/runs | Does not own collaborative truth |
+| May survive execution completion | Belongs to execution plane |
+| Multi-principal assignments | Not 1:1 with WorkItem |
+
+No subclassing Task, renaming Task to WorkItem, or wrapper-as-source-of-truth. **WorkItemState != TaskState** — state must not be inferred solely from TaskState.
+
+### Assignment != AgentAssignment
+
+**Assignment** is a separate collaborative primitive (`work_item_id`, `principal_id`, assignment state, revision, authority/lifecycle provenance). Supports human↔human, human↔agent, agent↔agent, and service/external-agent principals through MP-1 `CollaborativePrincipal`. **`principal_id` is immutable** on an Assignment record — reassignment is represented by lifecycle termination of the old Assignment and creation of a new Assignment, not by mutating `principal_id` in place.
+
+Do **not** encode assignments as a single `WorkItem.assignee_id` when multi-principal or assignment history is required. **Assignment != AgentAssignment** when the latter denotes runtime/agent execution assignment elsewhere in canon.
+
+**Reassignment semantics (MP-2 / COLLAB-WORK-2C):** `reassign` = revoke existing Assignment + create a new Assignment — two independently authorized, CAS-protected repository mutations. COLLAB-WORK-2B repositories expose no transactional Unit of Work; MP-2 must not expose a combined atomic reassignment command or simulate rollback across records. Atomic multi-record orchestration requires an explicit transactional boundary (future concern, not MP-2 scope).
+
+### Execution linkage
+
+```text
+WorkItem → zero..N execution links
+  → optional task_id, run_id, attempt_id (provenance references)
+```
+
+Deleting or ending a run must not delete WorkItem. Any orchestration bridge must be explicit — no incidental workflow status propagation into WorkItemState.
+
+### Contract direction (semantic categories only)
+
+**WorkItem:** `work_item_id`, `tenant_id`, `workspace_id`, `WorkItemState`, `created_by_principal_id`; optional title/description or canonical payload reference; `revision`; `created_at` / `updated_at`. No `dict[str, Any]` metadata core; no channel/thread IDs as canonical identity.
+
+**Assignment:** separate from WorkItem body; typed assignment state; revision; provenance for create/reassign/revoke.
+
+### Lifecycle
+
+Collaborative lifecycle only — explicit, validated, deterministic transitions; authority checked; auditable; optimistic-concurrency protected. No approval workflow encoded in WorkItem state (MP-4). No artifact bodies on WorkItem (MP-3). Stable identity/revision for future MP-6 Activity projection without implementing activity feeds in MP-2.
+
+### Concurrency and idempotency
+
+Reuse MP-1 repository semantics: revision 0 create, `expected_revision` CAS, typed conflict, deterministic idempotency replay for WorkItem create, Assignment create, and state transitions subject to external retry. No silent last-write-wins.
+
+### Persistence direction
+
+Authoritative WorkItem and Assignment state uses Collaborative Work repository ports → in-memory reference → SQLite (local/dev) → production-qualified relational adapter (PostgreSQL first). No separate SharedWork database subsystem. Storage selection remains composition-root concern — no provider string switches in core contracts.
+
+### Authority reuse
+
+Mutations (create WorkItem, assign, WorkItem/Assignment state transitions, close/reopen, cancel; reassignment via revoke + create-new Assignment) pass through MP-1 effective authority and policy composition. MP-2 defines work resource semantics; MP-1 owns collaborative authority foundation. No separate WorkItem ACL engine.
+
+### Extension boundaries (MP-3+)
+
+| Phase | Boundary |
+|-------|----------|
+| MP-3 | WorkArtifact / WorkArtifactVersion — not WorkItem payload |
+| MP-4 | Decision / Approval — distinct primitive; not WorkItem state machine |
+| MP-6 | Activity projection — hooks via stable identity/revision only |
+| MP-7 | LKW/channel IDs — adapter reference mappings only |
 
 ---
 

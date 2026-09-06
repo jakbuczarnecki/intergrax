@@ -14,6 +14,7 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
     ContextProviderContext,
+    ContextProviderDescriptor,
 )
 from intergrax.context.session_history import SessionHistorySnapshot
 from intergrax.llm.messages import ChatMessage
@@ -28,6 +29,9 @@ class ContextSourceProvider(Protocol):
 
     @property
     def supported_sources(self) -> frozenset[ContextFragmentSource]: ...
+
+    @property
+    def descriptor(self) -> ContextProviderDescriptor: ...
 
     async def collect(
         self,

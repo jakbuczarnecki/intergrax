@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -18,6 +19,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.domain_reas
     IncidentObservations,
     attendance_meets_required,
     comparison_weakens_overload,
+    derive_hypothesis_dispositions,
     h1_initially_plausible,
     observations_from_evidence_nodes,
     preliminary_suggests_shortage,
@@ -31,12 +33,18 @@ from platform_proofs.scenarios.ai_incident_investigation.application.execution_p
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     ClaimHypothesisBinding,
+    latest_active_claim_for_hypothesis,
     parse_claim_hypothesis_bindings,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_UNRESOLVED,
     INCIDENT_EVIDENCE_IDS,
     TELEMETRY_EVIDENCE_ID,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
+    TOOL_COMPARISON_READ,
+    TOOL_STAFFING_ATTENDANCE_READ,
+    TOOL_TELEMETRY_READ,
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 
@@ -64,6 +72,28 @@ UNRESOLVED_MISSING_TELEMETRY_UNAVAILABLE_ERROR = (
 )
 UNRESOLVED_H3_NOT_INSUFFICIENT_ERROR = "unsupported_inference:unresolved_h3_not_insufficient"
 MODEL_SELF_APPROVED_ERROR = "unsupported_inference:model_self_approved_claim_resolution"
+
+CRITIC_EVIDENCE_REQUIREMENTS: Mapping[str, tuple[str, ...]] = {
+    MISSING_COMPARISON_ERROR: (TOOL_COMPARISON_READ,),
+    H3_FORGED_WITHOUT_TELEMETRY_ERROR: (TOOL_TELEMETRY_READ,),
+    UNSUPPORTED_INFERENCE_ERROR: (TOOL_COMPARISON_READ, TOOL_TELEMETRY_READ),
+    H2_DISPOSITION_ERROR: (TOOL_STAFFING_ATTENDANCE_READ,),
+}
+
+
+def tools_for_critic_validation_errors(
+    critic_feedback: Sequence[str] | None,
+) -> tuple[str, ...]:
+    if not critic_feedback:
+        return ()
+    required: list[str] = []
+    seen: set[str] = set()
+    for item in critic_feedback:
+        for tool_id in CRITIC_EVIDENCE_REQUIREMENTS.get(str(item), ()):
+            if tool_id not in seen:
+                seen.add(tool_id)
+                required.append(tool_id)
+    return tuple(required)
 
 
 def _observable_evidence_ids(payload: dict[str, object]) -> frozenset[str]:
@@ -164,11 +194,7 @@ def _resolve_h1_claim(
 
 
 def _resolve_h2_claim(observations: IncidentObservations) -> ClaimResolution:
-    if _h2_claim_supported_by_evidence(observations):
-        return ClaimResolution.SUPPORTED
-    if _h2_claim_rejected_by_evidence(observations):
-        return ClaimResolution.REJECTED
-    return ClaimResolution.PENDING
+    return derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS).h2.disposition
 
 
 def _resolve_h3_claim(observations: IncidentObservations) -> ClaimResolution:
@@ -196,12 +222,8 @@ def _claims_for_hypothesis(
     bindings: tuple[ClaimHypothesisBinding, ...],
     hypothesis_id: Literal["H1", "H2", "H3"],
 ) -> list[EvidenceBackedClaim]:
-    claim_ids = {
-        binding.claim_id
-        for binding in bindings
-        if binding.hypothesis_id == hypothesis_id
-    }
-    return [claim for claim in claim_set.claims if str(claim.claim_id) in claim_ids]
+    effective = latest_active_claim_for_hypothesis(claim_set, bindings, hypothesis_id)
+    return [effective] if effective is not None else []
 
 
 def _classify_diagnosis_claim(

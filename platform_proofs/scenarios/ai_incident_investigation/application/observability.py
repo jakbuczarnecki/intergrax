@@ -80,6 +80,29 @@ class IncidentPlannerStopDiagV1(DiagnosticPayload):
 
 
 @dataclass(frozen=True, slots=True)
+class IncidentBaselineEvidenceDiagV1(DiagnosticPayload):
+    """Mandatory baseline evidence acquisition before planner-selected tools."""
+
+    investigation_phase: str
+    acquisition_reason: str
+    selected_tool_ids: tuple[str, ...]
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "incident.baseline_evidence.v1"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "investigation_phase": self.investigation_phase,
+            "acquisition_reason": self.acquisition_reason,
+            "selected_tool_ids": list(self.selected_tool_ids),
+        }
+
+    def redact(self) -> IncidentBaselineEvidenceDiagV1:
+        return self
+
+
+@dataclass(frozen=True, slots=True)
 class IncidentScopeRejectionDiagV1(DiagnosticPayload):
     """Planner-selected tool args rejected before provider execution."""
 

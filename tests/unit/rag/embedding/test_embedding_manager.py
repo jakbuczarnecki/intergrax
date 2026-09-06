@@ -11,7 +11,6 @@ from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvid
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 
 
 pytestmark = pytest.mark.unit
@@ -50,19 +49,10 @@ class FakeEmbeddingProvider(EmbeddingProvider):
 
 def create_manager() -> BaseEmbeddingManager:
 
-    registry = EmbeddingProviderRegistry()
-    registry.register(FakeEmbeddingProvider())
-
-    engine = EmbeddingEngine(registry)
-
-    pipeline = EmbeddingPipeline(
-        engine=engine,
-        provider_id="fake",
-    )
-
-    manager = EmbeddingManager(pipeline=pipeline)
-
-    return manager
+    provider = FakeEmbeddingProvider()
+    engine = EmbeddingEngine(provider=provider)
+    pipeline = EmbeddingPipeline(engine=engine)
+    return EmbeddingManager(pipeline=pipeline)
 
 
 def test_manager_embed_texts() -> None:

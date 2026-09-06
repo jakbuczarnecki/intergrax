@@ -493,24 +493,40 @@ P1.3A correction:
 
 Deferred to P1.4+:
 
-- Runtime Inspection / explain API,
-- cross-domain operational readiness projection (P1.5),
+- Runtime Inspection / explain API (P1.4 — CLOSED),
+- cross-domain operational readiness projection (P1.5 — CLOSED),
 - Integration → Provider / Credential chain adoption until domain contracts mature.
 
 ---
 
 ## P1.4 Runtime Inspection / explain
 
-**Status: GAP/PARTIAL**
+**Status: CLOSED (P1.4 + P1.4A)**
 
-Domain-specific diagnostics and evidence exist, but this audit found no canonical cross-domain read model that can consistently answer:
+Delivered in P1.4:
 
-- configured vs effective,
-- why tool available/denied,
-- why profile value won,
-- why context included/excluded,
-- execution tree/state,
-- provider health/credential dependency.
+- canonical read-only `RuntimeInspectionService` aggregator in `intergrax/applications/_shared/runtime_inspection/`,
+- typed contracts in `intergrax/applications/contracts/runtime_inspection/`,
+- explicit immutable `RuntimeInspectionProvider` extension seam (no global registry),
+- profile inspection reuses existing `ProfileResolution.decisions` evidence (no precedence recompute),
+- revision inspection/compare reuse `EffectiveProfileRevisionStore` and `diff_effective_profile_revisions`,
+- execution inspection resolves exact pinned revision via `EffectiveProfileExecutionPinningStore` (no latest fallback),
+- capability inspection reuses `CapabilityDependencyValidationResult` evidence and projects effective health via P1.5 (`CapabilityInspectionResult.health`),
+- typed `InspectionCompleteness` / `InspectionInconsistency` / `InspectionExplanation` read models,
+- deterministic ordering, partial provider-failure visibility, and profile redaction helpers.
+
+Delivered in P1.4A (serialization safety correction):
+
+- safe-by-construction inspection result serialization via `Field(exclude=True)` on canonical runtime objects plus typed safe projections (`SafeProfileResolutionView`, `SafeEffectiveProfileRevisionView`, `SafeEffectiveProfileDiffView`),
+- reuse of `encode_provenance_value` / `redacted_profile_snapshot` as sole redaction authority (no second detector),
+- sanitized provider failure reasons and defensive extension-evidence payload redaction,
+- direct `model_dump` / `model_dump_json` proof tests for profile, revision, execution, compare, provider failure, and extension payload paths.
+
+Deferred to post-P1.5:
+
+- REST/CLI/dashboard operator surfaces,
+- HOS execution-tree inspection adoption,
+- live probes / background health monitors.
 
 Add a read model only. It must not own runtime truth.
 
@@ -518,53 +534,157 @@ Add a read model only. It must not own runtime truth.
 
 ## P1.5 Effective capability health/readiness
 
-**Status: GAP/PARTIAL**
+**Status: CLOSED (P1.5 + P1.5A)**
 
-Provider/domain health concepts exist, but no canonical cross-domain `READY/DEGRADED/UNAVAILABLE/FAILED/DRAINING` effective capability projection was established.
+Delivered in P1.5:
 
-Build from canonical facts; do not create policy authority.
+- canonical `CapabilityHealthStatus` (`READY` / `DEGRADED` / `UNAVAILABLE`) operational projection,
+- typed `CapabilityHealthFact` / `CapabilityHealthReason` / `EffectiveCapabilityHealth` contracts in `intergrax/applications/contracts/capability_health/`,
+- provider-neutral `CapabilityHealthProvider` seam and `EffectiveCapabilityHealthProjector` in `intergrax/applications/_shared/capability_health/`,
+- real P1.3 adoption via `DependencyValidationHealthProvider` (reuses `CapabilityDependencyValidationResult` — no second validator),
+- real Tool effective availability adoption via `ToolEffectiveAvailabilityHealthProvider` (reuses `available_tool_ids_for_profile`),
+- Runtime Inspection integration on `inspect_capability(...)` (`health` + `safe_health` on `CapabilityInspectionResult`),
+- deterministic fact merge/dominance, duplicate `provider_id` fail-fast (`CapabilityHealthProviderConflictError`),
+- conservative provider-failure facts, tenant scope isolation, P1.4A-safe health serialization.
+
+P1.5A correction (fail-closed missing evidence):
+
+- no applicable canonical readiness evidence → `UNAVAILABLE` (never synthetic `READY`),
+- typed missing-evidence reason `capability.health.evidence_missing` via projection-owned `READINESS_EVIDENCE` fact,
+- decision taken after scope and capability filtering; `READY` requires at least one applicable positive canonical fact.
+
+Explicitly not adopted (honest boundary):
+
+- provider live operational health (`integrations.contracts.HealthStatus` exists; not wired into capability projection),
+- credential operational health (deferred to P1.7),
+- integration binding health facts,
+- background monitors / polling / automatic fallback.
+
+Operational read model only — does not grant capability, activate providers, or change governance.
 
 ---
 
 ## P1.6 Atomic activation lifecycle
 
-**Status: PARTIAL**
+**Status: CLOSED (P1.6 + P1.6A + P1.6B)**
 
-Platform Plugins already has discovery/admission/qualification/STRICT fail-closed semantics and a closed implementation program.
-
-The missing concern is a narrower runtime-composition transaction model:
+Canonical scoped active revision pointer with CAS semantics:
 
 ```text
-resolve → validate → stage → activate → readiness → commit / rollback
+EffectiveProfileRevisionStore (immutable authority)
+        ↓
+ActiveEffectiveProfileRevisionStore (atomic pointer)
+        ↓
+EffectiveProfileActivationService (validation/orchestration)
+        ↓
+EffectiveProfileExecutionPinningDependencies (future admission read seam)
 ```
 
-Do not reopen Platform Plugins as a universal lifecycle engine.
+Delivered:
+
+- `ActiveEffectiveProfileRevisionBinding` — immutable scoped pointer/read contract
+- `ActiveEffectiveProfileRevisionStore.compare_and_set_active` — expected-current CAS, no hidden retry
+- `EffectiveProfileActivationService` — candidate existence/scope validation, P1.3 eligibility reuse hook
+- `InMemoryActiveEffectiveProfileRevisionStore` — thread-safe reference adapter
+- `KvActiveEffectiveProfileRevisionStore` — durable-capable KV adapter (production path when KV wired)
+- Host admission resolves active revision atomically; execution pinning unchanged (P1.2)
+- Runtime inspection `inspect_active_revision(scope)` — read-only active exposure
+- **P1.6A:** canonical `build_harness_host_runtime()` prepare-before-publish ordering — capture baseline → materialize → prepare/wire/validate → CAS activate (`expected=baseline`); materialized inactive candidates remain valid historical revisions; CAS is sole publication boundary
+- **P1.6B:** activation intent baseline captured before preparation and held immutable through final CAS — no late reread/rebase of expected active revision
+
+Durability statement:
+
+```text
+production durable activation store: PARTIAL — KvActiveEffectiveProfileRevisionStore when DistributedKVStore wired; in-memory default for lab/harness
+```
+
+Preserves INV-25 (atomic activation), INV-26 (in-flight pinning), INV-33 (revision immutability).
+
+**Next: P1.9 — Context provider lifecycle/provenance hardening**
 
 ---
 
 ## P1.7 CredentialRef / late resolution
 
-**Status: GAP on canonical runtime contract, CURRENT/PARTIAL on secret storage**
+**Status: CLOSED**
 
-`SecretsStore` already exists. `CredentialRef`-style per-operation late resolution/execution-scoped exposure was not found as one canonical runtime contract.
+## P1.7A Explicit late-credential factory contract
 
-Add around existing secret/integration ownership.
+**Status: CLOSED**
+
+`SecretsStore` remains canonical secret-storage authority. P1.7 adds typed `CredentialRef` identity and `SecretsStoreCredentialResolver` for provider-neutral late resolution above the existing store seam. P1.7A replaces reflection/sentinel dispatch with an explicit typed factory contract.
+
+Delivered:
+
+- `intergrax/integrations/contracts/credential.py` — `CredentialRef`, `CredentialResolutionContext`, `ResolvedCredential` (safe repr), `CredentialUseEvidence`, typed errors, `CredentialResolutionMode`
+- `intergrax/integrations/credentials/secrets_store_resolver.py` — `SecretsStoreCredentialResolver` delegating to `SecretsStore.get_secret(path, version=...)`
+- `intergrax/integrations/credentials/google_workspace.py` — Google Workspace operation-boundary adapter
+- `intergrax/runtime/vendor_knowledge/tenant_connection_factory_contract.py` — eager factory mixin + mode validation
+- Google Workspace tenant-connection factory declares `CredentialResolutionMode.LATE_BOUND` when `secrets_store` is wired; legacy providers declare `RESOLVED_MATERIAL`
+- `TenantConnectionIntegrationFactoryRegistry` + `TenantConnectionRehydrator` deterministic dispatch via `credential_resolution_mode_for` and explicit `create_late_bound_integration` / `create_integration_with_resolved_credential` paths
+- Focused P1.7 / P1.7A proof suite: `tests/unit/integrations/credentials/test_p1_7_credential_ref.py`
+
+Semantics:
+
+```text
+configuration stores CredentialRef (safe identity)
+        ↓
+runtime operation boundary
+        ↓
+SecretsStoreCredentialResolver
+        ↓
+SecretsStore.get_secret(...)
+        ↓
+provider-specific codec / client construction
+```
+
+Factory credential behavior:
+
+```text
+late/eager credential behavior is declared by typed factory contract;
+no hasattr/getattr dispatch;
+no empty-string credential sentinel.
+```
+
+- Unversioned `CredentialRef` rotation affects future operations without profile rebuild/revision activation
+- Explicit `version` pin supported when store adapter exposes version semantics
+- Tenant scope enforced via `CredentialResolutionContext.tenant_id` vs `CredentialRef.tenant_id`
+- No raw secret material in profile revision, checkpoint, or inspection serialization paths (proof tests)
+- Eager resolution during profile resolution / revision materialization / activation: **0** `get_secret` calls (proof tests)
+- Google Workspace rehydration: **0** `get_secret` calls; operation boundary: **1** read per operation
+
+Durability statement:
+
+```text
+raw secret material persisted in profile/revision/checkpoint: NO
+CredentialRef may be durable in connection/catalog configuration: YES
+secret material authority: existing SecretsStore backends only
+```
+
+**Next: P1.9 — Context provider lifecycle/provenance hardening**
 
 ---
 
 ## P1.8 Sandbox / ExecutionEnvironment convergence
 
-**Status: PARTIAL**
+**Status: CLOSED (P1.8A correction — fail-closed without profile authority)**
 
-Significant sandbox runtime exists. Remaining concern is convergence around execution-scoped effective environment, policy, provider inspection, credentials/network/process restrictions, and escalation.
+Canonical immutable `EffectiveExecutionEnvironment` projection added under `intergrax/runtime/sandbox/` with pure `resolve_effective_execution_environment` narrowing semantics (profile authority ∩ requirement ∩ provider capabilities). `ApplicationEnvironmentProfile` / `IsolationBundle.sandbox` remains sole environment authority; `SandboxProfile` is configured isolation; `SandboxSessionManager` / `SandboxHostBackend` remain runtime substrates.
 
-Do not rebuild sandbox session/manager/provider infrastructure.
+P1.8A hardening: removed synthetic `ProfileIsolationAuthority` fallback when provider exists but effective profile authority is missing; missing authority → `authority_unavailable` fail-closed before side effects. Pinned `effective_profile_revision` dominates legacy `effective_environment_profile` in `ToolWiringContext`. `profile_isolation_authority()` maps conservative semantics from `SandboxProfile` contract (no network overclaim from profile; hosted provider network claims require egress proof).
 
----
+Real adoption: `sandbox.exec` and shared `_session.run_sandbox_operation` resolve effective environment before side effects; fail closed on authority violation, missing authority, missing provider, or capability mismatch; no host subprocess fallback after resolution failure. Runtime inspection provider `execution_environment` exposes safe execution-scoped projection from pinned revision.
 
-## P1.9 Context provider lifecycle/provenance hardening
+Provider support matrix (honest):
 
-**Status: CURRENT/PARTIAL**
+| Substrate | Filesystem | Process exec | Network isolation claim |
+|---|---|---|---|
+| Local `SandboxSession` | workspace-root write | subprocess in sandbox cwd | operation allowlist only; no OS network proof |
+| Hosted `SandboxHostBackend` | remote workspace ops | remote shell | provider-attested when `SandboxSecurityCapable` |
+
+Known remaining convergence (not blockers): CodeCraft tier mapping still uses `substrate.py` path; not all sandbox consumers migrated; child execution environment binding at runtime admission deferred until child execution wiring exposes parent baseline.
+
+**Next: P1.9 — Context provider lifecycle/provenance hardening**
 
 ContextProvider contracts and providers already exist.
 

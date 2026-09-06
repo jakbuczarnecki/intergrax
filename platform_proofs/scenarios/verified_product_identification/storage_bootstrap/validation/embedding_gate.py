@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
+from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 
 from platform_proofs.scenarios.verified_product_identification.application.config.embedding_configuration import (
     VpiEmbeddingConfiguration,
@@ -20,19 +20,19 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 
 
-class RegistryEmbeddingReadinessProbe:
-    """Compatibility wrapper over ``IntergraxEmbeddingBootstrapAdapter`` for Gate 0 reports."""
+class EmbeddingReadinessProbe:
+    """Gate 0 readiness probe over ``IntergraxEmbeddingBootstrapAdapter``."""
 
     def __init__(
         self,
         configuration: VpiEmbeddingConfiguration,
         *,
-        registry: EmbeddingProviderRegistry | None = None,
+        provider: EmbeddingProvider | None = None,
         probe_texts: tuple[str, ...] = GATE0_PROBE_TEXTS,
     ) -> None:
         self._adapter = IntergraxEmbeddingBootstrapAdapter(
             configuration,
-            registry=registry,
+            provider=provider,
             probe_texts=probe_texts,
         )
 

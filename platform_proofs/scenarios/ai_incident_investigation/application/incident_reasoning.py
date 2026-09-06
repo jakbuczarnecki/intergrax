@@ -17,13 +17,17 @@ from intergrax.contracts.evidence_claims import (
     EvidenceClaimSet,
     mint_evidence_claim_id,
     validate_claim_kind,
-    validate_evidence_reference_id,
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.diagnostics.investigation_contracts import IncidentInvestigationInput
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import HypothesisId
+from platform_proofs.scenarios.ai_incident_investigation.application.claim_evidence_attribution import (
+    attribute_claim_evidence,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
+    observations_from_evidence_nodes,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.observability import (
     IncidentClaimProposedDiagV1,
     IncidentClaimRevisedDiagV1,
@@ -54,9 +58,10 @@ COMPLETION_INTENT_CONTRACT = (
     "- need_more_evidence: only when additional allowed evidence-gathering work remains possible; "
     "still provide non-empty claim_proposals describing the current provisional assessment."
 )
-CLAIM_PROPOSAL_CONTRACT = (
+CLAIM_SEMANTIC_CONTRACT = (
     "Claim proposal contract: always emit at least one claim_proposal with "
-    f"claim_kind={str(DIAGNOSIS_KIND)!s} for each hypothesis under active consideration."
+    f"claim_kind={str(DIAGNOSIS_KIND)!s} for each hypothesis under active consideration. "
+    "Do not emit evidence_id fields — the platform binds evidence relations deterministically."
 )
 FORBIDDEN_MODEL_RESOLUTIONS: frozenset[ClaimResolution] = frozenset(
     {
@@ -92,20 +97,6 @@ class HypothesisProposal(BaseModel):
     hypothesis_id: Literal["H1", "H2", "H3"]
     disposition: HypothesisDisposition
     summary: str = Field(min_length=1, max_length=1024)
-    supporting_evidence_ids: tuple[str, ...] = Field(
-        default=(),
-        description=(
-            "Exact evidence_id strings from Gathered evidence IDs only; "
-            "no aliases or invented identifiers."
-        ),
-    )
-    contradicting_evidence_ids: tuple[str, ...] = Field(
-        default=(),
-        description=(
-            "Exact evidence_id strings from Gathered evidence IDs only; "
-            "no aliases or invented identifiers."
-        ),
-    )
     uncertainty: str = Field(default="", max_length=512)
 
 
@@ -115,20 +106,6 @@ class ClaimProposal(BaseModel):
     hypothesis_id: Literal["H1", "H2", "H3"]
     statement: str = Field(min_length=1, max_length=4096)
     claim_kind: str = Field(min_length=1, max_length=128)
-    supporting_evidence_ids: tuple[str, ...] = Field(
-        default=(),
-        description=(
-            "Exact evidence_id strings from Gathered evidence IDs only; "
-            "no aliases or invented identifiers."
-        ),
-    )
-    contradicting_evidence_ids: tuple[str, ...] = Field(
-        default=(),
-        description=(
-            "Exact evidence_id strings from Gathered evidence IDs only; "
-            "no aliases or invented identifiers."
-        ),
-    )
     rationale: str = Field(default="", max_length=1024)
     replaces_prior_claim: bool = False
 
@@ -212,49 +189,13 @@ def _sorted_evidence_ids(nodes: Sequence[dict[str, object]]) -> tuple[str, ...]:
     return tuple(sorted(_known_evidence_ids(nodes)))
 
 
-def build_evidence_reference_contract(
-    evidence_nodes: Sequence[dict[str, object]],
-) -> str:
-    allowed_ids = _sorted_evidence_ids(evidence_nodes)
-    lines = [
-        "Evidence reference contract:",
-        "- supporting_evidence_ids and contradicting_evidence_ids may contain only IDs "
-        "from the Allowed evidence IDs list below.",
-        "- Copy IDs exactly.",
-        "- Do not invent aliases, indices, abbreviations, or new IDs.",
-        "- If no gathered evidence supports a claim, use an empty evidence-ID list "
-        "and express the uncertainty instead.",
-    ]
-    if allowed_ids:
-        lines.append("Allowed evidence IDs:")
-        lines.extend(f"- {evidence_id}" for evidence_id in allowed_ids)
-    else:
-        lines.append(
-            "Allowed evidence IDs: none. "
-            "Use empty supporting_evidence_ids and contradicting_evidence_ids. "
-            "Do not invent an evidence ID."
-        )
-    return "\n".join(lines)
-
-
 def validate_reasoning_proposal(
     proposal: IncidentReasoningProposal,
     *,
     evidence_nodes: Sequence[dict[str, object]],
 ) -> None:
-    known = _known_evidence_ids(evidence_nodes)
     if proposal.preferred_hypothesis_id not in LEGAL_HYPOTHESIS_IDS:
         raise ReasoningProposalValidationError("illegal preferred_hypothesis_id")
-
-    for hypothesis in proposal.hypotheses:
-        for evidence_id in (
-            *hypothesis.supporting_evidence_ids,
-            *hypothesis.contradicting_evidence_ids,
-        ):
-            if str(evidence_id) not in known:
-                raise ReasoningProposalValidationError(
-                    f"unknown evidence reference in hypothesis: {evidence_id}"
-                )
 
     if not proposal.claim_proposals:
         raise ReasoningProposalValidationError("claim_proposals must be non-empty")
@@ -263,14 +204,6 @@ def validate_reasoning_proposal(
         if not claim.statement.strip():
             raise ReasoningProposalValidationError("claim statement must be non-empty")
         validate_claim_kind(claim.claim_kind)
-        for evidence_id in (
-            *claim.supporting_evidence_ids,
-            *claim.contradicting_evidence_ids,
-        ):
-            if str(evidence_id) not in known:
-                raise ReasoningProposalValidationError(
-                    f"unknown evidence reference in claim: {evidence_id}"
-                )
 
 
 def parse_claim_hypothesis_bindings(
@@ -307,13 +240,48 @@ def claim_id_for_hypothesis(
     return None
 
 
+def latest_active_claim_for_hypothesis(
+    claim_set: EvidenceClaimSet,
+    bindings: Sequence[ClaimHypothesisBinding],
+    hypothesis_id: Literal["H1", "H2", "H3"],
+) -> EvidenceBackedClaim | None:
+    """Return the effective claim for a hypothesis, following supersession revisions."""
+    by_id = {str(claim.claim_id): claim for claim in claim_set.claims}
+    current_id = claim_id_for_hypothesis(bindings, hypothesis_id)
+    if current_id is None:
+        return None
+    while True:
+        claim = by_id.get(current_id)
+        if claim is None:
+            return None
+        successor = next(
+            (
+                candidate
+                for candidate in claim_set.claims
+                if str(candidate.supersedes_claim_id) == current_id
+            ),
+            None,
+        )
+        if successor is None:
+            return claim
+        current_id = str(successor.claim_id)
+
+
 def convert_proposal_to_pending_claims(
     proposal: IncidentReasoningProposal,
     *,
+    evidence_nodes: Sequence[dict[str, object]],
     prior_claim_set: EvidenceClaimSet | None,
     prior_bindings: Sequence[ClaimHypothesisBinding] = (),
     critic_feedback: Sequence[str] | None,
 ) -> PendingClaimsConversion:
+    _ = critic_feedback
+    observable_ids = _known_evidence_ids(evidence_nodes)
+    observations = observations_from_evidence_nodes(
+        tuple(evidence_nodes),
+        INCIDENT_EVIDENCE_IDS,
+    )
+
     prior_by_hypothesis: dict[str, str] = {
         binding.hypothesis_id: binding.claim_id for binding in prior_bindings
     }
@@ -323,6 +291,12 @@ def convert_proposal_to_pending_claims(
     for claim_proposal in proposal.claim_proposals:
         if claim_proposal.hypothesis_id not in LEGAL_HYPOTHESIS_IDS:
             raise ReasoningProposalValidationError("illegal hypothesis_id on claim proposal")
+        attribution = attribute_claim_evidence(
+            claim_proposal.hypothesis_id,
+            observations,
+            INCIDENT_EVIDENCE_IDS,
+            observable_ids,
+        )
         supersedes: str | None = None
         if claim_proposal.replaces_prior_claim:
             supersedes = prior_by_hypothesis.get(claim_proposal.hypothesis_id)
@@ -332,14 +306,8 @@ def convert_proposal_to_pending_claims(
                 claim_id=claim_id,
                 statement=claim_proposal.statement,
                 claim_kind=validate_claim_kind(claim_proposal.claim_kind),
-                supporting_evidence_ids=tuple(
-                    validate_evidence_reference_id(eid)
-                    for eid in claim_proposal.supporting_evidence_ids
-                ),
-                contradicting_evidence_ids=tuple(
-                    validate_evidence_reference_id(eid)
-                    for eid in claim_proposal.contradicting_evidence_ids
-                ),
+                supporting_evidence_ids=attribution.supporting_evidence_ids,
+                contradicting_evidence_ids=attribution.contradicting_evidence_ids,
                 resolution=ClaimResolution.PENDING,
                 supersedes_claim_id=supersedes,
             )
@@ -454,18 +422,29 @@ def build_reasoning_messages(
     is_revision: bool,
     investigation_input: IncidentInvestigationInput | None = None,
 ) -> list[ChatMessage]:
-    evidence_reference_contract = build_evidence_reference_contract(evidence_nodes)
+    evidence_reference_lines = [
+        "Gathered evidence is listed for semantic reasoning only.",
+        "Do not emit evidence_id fields in structured output — evidence binding is platform-owned.",
+    ]
+    allowed_ids = _sorted_evidence_ids(evidence_nodes)
+    if allowed_ids:
+        evidence_reference_lines.append("Gathered evidence IDs (reference only):")
+        evidence_reference_lines.extend(f"- {evidence_id}" for evidence_id in allowed_ids)
+    else:
+        evidence_reference_lines.append("Gathered evidence IDs: none yet.")
+    evidence_context = "\n".join(evidence_reference_lines)
+
     lines = [
         "Investigate Line 4 target attainment degradation using gathered evidence only.",
         "Compare competing hypotheses H1 sustained overload, H2 understaffing, H3 equipment degradation.",
         "Raw evidence acquisition tools and deterministic domain analysis tools are available.",
         "Use analysis tools when bounded deterministic comparison improves confidence.",
         "Do not treat workload-throughput correlation as causation.",
-        "Propose only evidence-backed claims.",
-        evidence_reference_contract,
+        "Propose semantic diagnosis claims only — do not copy evidence IDs into structured output.",
+        evidence_context,
         COMPLETION_INTENT_CONTRACT,
-        CLAIM_PROPOSAL_CONTRACT,
-        "Do not output claim_id, resolution, or supersedes_claim_id.",
+        CLAIM_SEMANTIC_CONTRACT,
+        "Do not output claim_id, resolution, supersedes_claim_id, or evidence_id lists.",
         f"Investigation phase: {'revision' if is_revision else 'initial'}",
     ]
     if investigation_input is not None:
@@ -491,9 +470,8 @@ def build_reasoning_messages(
     if is_revision:
         lines.append(
             "Revision contract: revise the semantic reasoning using the prior proposal, "
-            "critic feedback, current evidence, and current allowed evidence IDs. "
+            "critic feedback, and current evidence. "
             "Do not merely repeat the previous proposal. "
-            "Do not cite evidence that is not in the current allowed list. "
             "Perform incremental correction using all prior evidence; "
             "do not discard valid prior observations."
         )
@@ -503,7 +481,7 @@ def build_reasoning_messages(
             role="user",
             content=(
                 "Produce structured incident reasoning proposal. "
-                f"{evidence_reference_contract}"
+                f"{evidence_context}"
             ),
         ),
     ]
@@ -626,6 +604,20 @@ def build_investigation_summary(proposal: IncidentReasoningProposal, *, is_revis
                 "are not supported, while the equipment hypothesis cannot be accepted "
                 "because decisive telemetry for the incident window is unavailable."
             )
+    if proposal.completion_intent is CompletionIntent.SUPPORTED_DIAGNOSIS:
+        if proposal.preferred_hypothesis_id == "H3":
+            h3_claim = next(
+                (item for item in proposal.claim_proposals if item.hypothesis_id == "H3"),
+                None,
+            )
+            if h3_claim is not None:
+                bounded = (
+                    "Intermittent station signal degradation on the complex-assembly step "
+                    "is the best-supported initiating cause; comparison evidence shows "
+                    "similar elevated workload elsewhere without comparable degradation; "
+                    "workload growth plausibly amplified impact — bounded H3 diagnosis."
+                )
+                return f"revised: {bounded}" if is_revision else bounded
     preferred = next(
         (item for item in proposal.hypotheses if item.hypothesis_id == proposal.preferred_hypothesis_id),
         None,

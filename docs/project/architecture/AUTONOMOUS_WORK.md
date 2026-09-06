@@ -628,8 +628,8 @@ CodeCraft cannot be selected merely because one registry adapter found nothing. 
 | Domain | Owner | Canonical surface (as-built on `development`) | AW consumption |
 |---|---|---|---|
 | **Agent** | Agent Distribution | `AgentDiscoveryRequest` / `AgentDiscoveryCandidate` / `AgentDiscoveryResult`; `AgentDiscoveryStrategy`; `FederatedAgentDiscovery`; `delegated_subtasks` | Thin projection adapter → `WorkerCapabilityCandidate` (planned); reuse public discovery only — never `AgentRegistry` lifecycle state |
-| **Tool** | Tools | **Not yet shipped** — no `DiscoveryRequest`/`DiscoveryResult` port | AW-7A retains `ToolRegistryCapabilityDiscoveryAdapter` as explicit legacy fallback until canonical Tool Discovery lands |
-| **Skill** | Skills | **Not yet shipped** — no `DiscoveryRequest`/`DiscoveryResult` port | AW-7A retains `SkillRegistryCapabilityDiscoveryAdapter` as explicit legacy fallback until canonical Skill Discovery lands |
+| **Tool** | Capability Catalog (Stage 3–5) | `CapabilityDiscoveryQuery` → discovery → ranking → governance → `HOST_AVAILABLE` narrowing | AW-7A production composition uses `CapabilityCatalogToolDiscoveryAdapter` (thin projection); `ToolRegistryCapabilityDiscoveryAdapter` retained only as explicit legacy/test wiring — not canonical production discovery |
+| **Skill** | Capability Catalog (Stage 3–5) | Same governed pipeline; skill manifest supplies operation evidence at projection | AW-7A production composition uses `CapabilityCatalogSkillDiscoveryAdapter`; `SkillRegistryCapabilityDiscoveryAdapter` retained only as explicit legacy/test wiring |
 | **Integration** | Integrations | `integrations.registry.catalog.iter_entries()` | `IntegrationCatalogCapabilityDiscoveryAdapter` (projection only) |
 
 `intergrax/capability_catalog/` is a federated **catalog read model** (Stage 2), not a substitute for domain-owned semantic discovery with authoritative `NO_MATCH` / `UNAVAILABLE` / `NOT_CONFIGURED` dispositions.

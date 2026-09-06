@@ -6,17 +6,17 @@ import math
 from collections.abc import Sequence
 
 import numpy as np
-from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_registry
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
-from intergrax.rag.embedding.registry.embedding_provider_registry import (
-    EmbeddingProviderDependencyError,
-    EmbeddingProviderRegistry,
-)
+from intergrax.rag.embedding.contracts.runtime_binding import EmbeddingProviderDependencyError
 from intergrax.rag.embedding.registry.execution_diagnostics import (
     EmbeddingProviderExecutionDiagnostics,
     EmbeddingProviderExecutionSnapshotResult,
     EmbeddingProviderExecutionSnapshotStatus,
 )
+from intergrax.rag.embedding.registry.profile import EmbeddingProfile
+from intergrax.rag.embedding.registry.provider_authority import validate_embedding_provider_slug
+from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
 
 from platform_proofs.scenarios.verified_product_identification.application.config.embedding_configuration import (
     VpiEmbeddingConfiguration,
@@ -45,7 +45,7 @@ class IntergraxEmbeddingBootstrapAdapter:
         self,
         configuration: VpiEmbeddingConfiguration,
         *,
-        registry: EmbeddingProviderRegistry | None = None,
+        provider: EmbeddingProvider | None = None,
         probe_texts: tuple[str, ...] = GATE0_PROBE_TEXTS,
         execution_configuration: VpiEmbeddingProviderExecutionConfiguration | None = None,
     ) -> None:
@@ -59,12 +59,28 @@ class IntergraxEmbeddingBootstrapAdapter:
             if execution_configuration is not None
             else None
         )
-        resolved_registry = registry or create_default_registry(
-            embedding_model=model,
-            execution_config=execution_config,
-        )
+        if provider is not None:
+            configured_provider = validate_embedding_provider_slug(configuration.provider)
+            runtime_provider = provider.provider_name()
+            if runtime_provider != configured_provider:
+                raise VpiBootstrapProviderError(
+                    "injected embedding provider identity mismatch: "
+                    f"configured provider={configured_provider!r}, "
+                    f"provider.provider_name()={runtime_provider!r}"
+                )
+            self._provider = provider
+            return
         try:
-            self._provider: EmbeddingProvider = resolved_registry.get(configuration.provider)
+            self._provider = bind_embedding_provider(
+                integration_profile=IntegrationProfile(
+                    embedding_provider=configuration.provider,
+                ),
+                embedding_profile=EmbeddingProfile(
+                    provider=configuration.provider,
+                    model=model,
+                ),
+                execution_config=execution_config,
+            )
         except (RuntimeError, EmbeddingProviderDependencyError) as exc:
             raise VpiBootstrapProviderError(
                 f"embedding provider {configuration.provider!r} is unavailable: {exc}"

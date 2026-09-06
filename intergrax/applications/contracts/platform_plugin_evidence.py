@@ -17,6 +17,8 @@ PLATFORM_PLUGIN_DOMAIN_MEMORY = "memory"
 PLATFORM_PLUGIN_DOMAIN_CONTEXT = "context"
 PLATFORM_PLUGIN_DOMAIN_POLICY = "policy"
 PLATFORM_PLUGIN_DOMAIN_SECURITY = "security"
+PLATFORM_PLUGIN_DOMAIN_TOOLS = "tools"
+PLATFORM_PLUGIN_DOMAIN_SKILLS = "skills"
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +56,8 @@ def build_application_platform_plugin_evidence(
     memory_report: DomainPluginLoadReport,
     context_report: DomainPluginLoadReport,
     security_report: DomainPluginLoadReport,
+    tools_report: DomainPluginLoadReport,
+    skills_report: DomainPluginLoadReport,
     policy_bundle: RuntimePolicyBundle,
 ) -> ApplicationPlatformPluginEvidence:
     """Compose application evidence from the same domain wiring invocations."""
@@ -61,6 +65,8 @@ def build_application_platform_plugin_evidence(
         PLATFORM_PLUGIN_DOMAIN_MEMORY: memory_report,
         PLATFORM_PLUGIN_DOMAIN_CONTEXT: context_report,
         PLATFORM_PLUGIN_DOMAIN_SECURITY: security_report,
+        PLATFORM_PLUGIN_DOMAIN_TOOLS: tools_report,
+        PLATFORM_PLUGIN_DOMAIN_SKILLS: skills_report,
     }
     declarative_runtime = policy_bundle.declarative_policy_runtime
     if declarative_runtime is not None:

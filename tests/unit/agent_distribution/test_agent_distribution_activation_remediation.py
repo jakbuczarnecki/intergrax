@@ -36,6 +36,9 @@ from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleGovernanceBlockedError,
     ReferenceProductionLifecycleLauncher,
 )
+from intergrax.applications._shared.reference_runtime_materialization import (
+    prepare_reference_runtime_materialization,
+)
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
@@ -116,6 +119,11 @@ def _reference_deploy_and_activate(
     *,
     principal: RequestIdentity,
 ):
+    prepare_reference_runtime_materialization(
+        launcher.process_composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
+    )
     return launcher.deploy_and_activate(
         projection_input,
         activation_request,

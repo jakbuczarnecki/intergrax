@@ -10,10 +10,12 @@ import os
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-_REGISTERED_EMBEDDING_PROVIDERS = frozenset(
-    {"hf", "openai", "ollama", "vllm", "llama_cpp"}
+from intergrax.rag.embedding.registry.provider_authority import (
+    default_embedding_provider_slug,
+    validate_embedding_provider_slug,
 )
-_DEFAULT_EMBEDDING_PROVIDER = "ollama"
+
+_DEFAULT_EMBEDDING_PROVIDER = default_embedding_provider_slug()
 
 
 class EmbeddingProfile(BaseModel):
@@ -29,13 +31,7 @@ class EmbeddingProfile(BaseModel):
     def _coerce_provider(cls, value: str) -> str:
         if not isinstance(value, str) or not value.strip():
             raise ValueError("provider must be a non-empty string slug")
-        key = value.strip().lower()
-        if key not in _REGISTERED_EMBEDDING_PROVIDERS:
-            raise ValueError(
-                f"unknown embedding provider slug {key!r}; "
-                f"expected one of {sorted(_REGISTERED_EMBEDDING_PROVIDERS)}"
-            )
-        return key
+        return validate_embedding_provider_slug(value.strip().lower())
 
     @field_validator("model", mode="before")
     @classmethod

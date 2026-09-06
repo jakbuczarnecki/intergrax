@@ -308,8 +308,8 @@ read models, and enable/disable that never mutate the serving RuntimeRevision.
 ## AGENT-CONSOLIDATION-4 — Dynamic Capability Discovery & Acquisition
 
 **Architecture (1:1):** [`architecture/AGENT_DISTRIBUTION.md` §35](../../architecture/AGENT_DISTRIBUTION.md#35-ac-4-dynamic-capability-discovery--acquisition-architecture-freeze)
-**Status:** Phases 1–9 **CLOSED** · Phase 10 **READY_FOR_INDEPENDENT_AUDIT**
-**AC-4 closure:** **READY_FOR_FINAL_AUDIT** — independent audit required after Phase 10 commit; **AC-4 NOT CLOSED** until audit completes.
+**Status:** Phases 1–10 **CLOSED** (final audit 2026-09-06)
+**AC-4 closure:** **CLOSED** — verified in [`audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md`](../audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md)
 
 ### Phase delivery record
 

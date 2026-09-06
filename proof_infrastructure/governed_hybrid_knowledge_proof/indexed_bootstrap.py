@@ -16,9 +16,9 @@ from typing import Protocol
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.registry_projection import build_registry_projection
 from intergrax.applications._shared.registry_projection_input_bundle import (
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
     build_reference_registry_projection_input_bundle,
 )
+from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.host.agent_builders import LOCAL_WORKSPACE_AGENT_BUILDERS
 from local_workspace_application.host.environment_profile import (
@@ -62,7 +62,6 @@ from testing_support.builder import FakeEmbeddingProvider, build_fake_embedding_
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
@@ -82,10 +81,8 @@ class _DeterministicHashEmbeddingProvider(FakeEmbeddingProvider):
 
 
 def _build_proof_embedding_manager() -> EmbeddingManager:
-  registry = EmbeddingProviderRegistry()
   provider = _DeterministicHashEmbeddingProvider()
-  registry.register(provider)
-  pipeline = EmbeddingPipeline(engine=EmbeddingEngine(registry), provider_id=provider.provider_name())
+  pipeline = EmbeddingPipeline(engine=EmbeddingEngine(provider=provider))
   return EmbeddingManager(pipeline=pipeline)
 
 

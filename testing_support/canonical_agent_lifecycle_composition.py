@@ -20,7 +20,9 @@ from intergrax.agent_distribution.admin_models import (
     InstallAgentRequest,
     SetAgentEnablementRequest,
 )
-from intergrax.agent_distribution.agent_manager_query_service import AgentManagerQueryService
+from intergrax.agent_distribution.agent_manager_query_service import (
+    AgentManagerQueryService,
+)
 from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.catalog import (
@@ -43,7 +45,9 @@ from intergrax.agent_distribution.materialization import (
     MaterializationInput,
     MaterializationOutput,
 )
-from intergrax.agent_distribution.materialization_service import RuntimeMaterializationService
+from intergrax.agent_distribution.materialization_service import (
+    RuntimeMaterializationService,
+)
 from intergrax.agent_distribution.runtime_revision import MaterializationTopology
 from intergrax.agent_distribution.runtime_context_staging import (
     RUNTIME_LOCK_MANIFEST_FILENAME,
@@ -58,7 +62,9 @@ from intergrax.agent_distribution.trust import (
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
 )
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.harness_host_runtime import (
+    build_harness_host_runtime,
+)
 from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
@@ -93,23 +99,32 @@ from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
     wire_reference_production_lifecycle_services,
 )
-from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.registry_projection import (
+    MaterializedRegistryProjection,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.core.qualification import QualificationStatus
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.registry.presets import OTEL
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
-from testing_support.agent_platform_dependency_resolver import make_identity_dependency_resolver
+from testing_support.agent_platform_dependency_resolver import (
+    make_identity_dependency_resolver,
+)
 from testing_support.canonical_lifecycle_ping_agent import (
     CANONICAL_PING_CAPABILITY,
     CANONICAL_PING_CONTRACT_ID,
 )
-from tests.unit.agent_distribution.test_agent_platform_admin_service import (
+from testing_support.agent_platform_admin_harness import (
     admin_test_principal,
     allow_mutation_boundary,
+    lifecycle_proof_durable_profile_stores,
 )
 
 _DEFAULT_DIGEST = "sha256:" + ("a" * 64)
@@ -193,7 +208,9 @@ class _StaticCatalogProvider:
         del filters
         return list(self._entries)
 
-    def resolve_package(self, entry: AgentCatalogEntry, *, version_selector: str) -> object:
+    def resolve_package(
+        self, entry: AgentCatalogEntry, *, version_selector: str
+    ) -> object:
         del entry, version_selector
         raise NotImplementedError
 
@@ -241,7 +258,9 @@ def _build_application_composition(
         ),
         catalog_providers=(catalog_provider,),
         package_metadata_refs={config.distribution_package_id: config.metadata_ref},
-        package_logical_agents={config.distribution_package_id: config.logical_agent_id},
+        package_logical_agents={
+            config.distribution_package_id: config.logical_agent_id
+        },
         trust_record_factory=_Stage15TrustRecordFactory(),
         admin_config=ProductionAgentPlatformAdminConfig(
             metadata_provider=metadata_provider,
@@ -279,7 +298,9 @@ class _LifecycleVenvBundleMaterializer:
     def __init__(self, artifact_root_base: Path) -> None:
         self._artifact_root_base = artifact_root_base
 
-    def materialize(self, materialization_input: MaterializationInput) -> MaterializationOutput:
+    def materialize(
+        self, materialization_input: MaterializationInput
+    ) -> MaterializationOutput:
         revision_id = materialization_input.runtime_revision.runtime_revision_id
         artifact_root = self._artifact_root_base / revision_id
         site_packages = artifact_root / "site-packages"
@@ -527,7 +548,9 @@ class CanonicalAgentLifecycleProofStack:
             metadata_provider,
         )
         base_composition = create_reference_production_process_composition()
-        lifecycle_services = wire_reference_production_lifecycle_services(base_composition)
+        lifecycle_services = wire_reference_production_lifecycle_services(
+            base_composition
+        )
         capability_runtime = build_production_agent_capability_runtime(
             agent_platform_runtime=base_composition.agent_platform_runtime,
             application_composition=application_composition,
@@ -764,7 +787,10 @@ class CanonicalAgentLifecycleProofStack:
             application_environment_id=self.config.environment_id,
             stores=self.composition.agent_platform_runtime.stores,
         )
-        assert projection.evidence.runtime_revision_id == serving.traffic_serving_revision_id
+        assert (
+            projection.evidence.runtime_revision_id
+            == serving.traffic_serving_revision_id
+        )
         return projection
 
     def resolve_registry_read(self) -> AgentRegistryRead:
@@ -795,6 +821,7 @@ class CanonicalAgentLifecycleProofStack:
 
     async def execute_canonical(self) -> tuple[str, str]:
         projection = self.resolve_serving_projection()
+        profile_stores = lifecycle_proof_durable_profile_stores(self.runtime_root)
         host_runtime = build_harness_host_runtime(
             self.manifest,
             self.environment,
@@ -802,6 +829,9 @@ class CanonicalAgentLifecycleProofStack:
             trace_db_path=self.runtime_root / "trace.db",
             runtime_events_db_path=self.runtime_root / "runtime_events.db",
             document_store=InMemoryDocumentStore(),
+            revision_store=profile_stores.revision_store,
+            pinning_store=profile_stores.pinning_store,
+            active_store=profile_stores.active_store,
         )
         task = Task(
             tenant_id="tenant-test",
@@ -827,14 +857,15 @@ class CanonicalAgentLifecycleProofStack:
         registry = self.resolve_registry_read()
         assert isinstance(registry, AgentRegistryRead)
         assert registry.has(self.config.logical_agent_id)
-        materialization = (
-            self.composition.agent_platform_runtime.stores.materialization_store.get_by_revision(
-                built.runtime_revision_id,
-            )
+        materialization = self.composition.agent_platform_runtime.stores.materialization_store.get_by_revision(
+            built.runtime_revision_id,
         )
         assert materialization is not None
         assert materialization.runtime_revision_id == built.runtime_revision_id
-        assert materialization.materialization_artifact_digest == built.materialization_artifact_digest
+        assert (
+            materialization.materialization_artifact_digest
+            == built.materialization_artifact_digest
+        )
         assert built.materialization_artifact_digest is not None
         assert built.materialized_runtime_lock_digest is not None
         assert built.runtime_graph_digest is not None

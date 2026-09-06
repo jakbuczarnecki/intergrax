@@ -12,7 +12,10 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
     ContextProviderContext,
+    ContextProviderDescriptor,
 )
+from intergrax.context.contracts import BUILTIN_PROVIDER_VERSION
+from intergrax.context.provider_descriptor import build_provider_descriptor
 from intergrax.context.providers.legacy_bridge import (
     ATTACHMENT_SUMMARIES_HANDLE,
     LTM_ENTRIES_HANDLE,
@@ -225,6 +228,7 @@ def _make_stub_provider(
         list[ContextFragment],
     ]
     | None = None,
+    provider_version: str = BUILTIN_PROVIDER_VERSION,
 ) -> object:
     async def _default_collect(
         request: ContextAssemblyRequest,
@@ -233,11 +237,20 @@ def _make_stub_provider(
         return []
 
     collect = collect_fn or _default_collect
+    normalized_id = provider_id.strip().lower()
+    supported_sources = frozenset({source})
+    descriptor = build_provider_descriptor(
+        normalized_id,
+        provider_version=provider_version,
+        supported_sources=supported_sources,
+        origin="builtin",
+    )
 
     class _StubProvider:
         def __init__(self) -> None:
-            self._provider_id = provider_id
-            self._supported_sources = frozenset({source})
+            self._provider_id = normalized_id
+            self._supported_sources = supported_sources
+            self._descriptor = descriptor
 
         @property
         def provider_id(self) -> str:
@@ -246,6 +259,10 @@ def _make_stub_provider(
         @property
         def supported_sources(self) -> frozenset[ContextFragmentSource]:
             return self._supported_sources
+
+        @property
+        def descriptor(self) -> ContextProviderDescriptor:
+            return self._descriptor
 
         async def collect(
             self,

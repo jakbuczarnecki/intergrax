@@ -13,9 +13,13 @@ import pytest
 from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.profile_resolution import (
+    EffectiveProfileActivationDependencies,
+    EffectiveProfileActivationService,
     EffectiveProfileExecutionPinningDependencies,
+    InMemoryActiveEffectiveProfileRevisionStore,
     InMemoryEffectiveProfileExecutionPinningStore,
     InMemoryEffectiveProfileRevisionStore,
+    activate_materialized_revision,
     attach_revision_checkpoint_evidence_to_task,
     build_effective_profile_revision_admission,
     materialize_effective_profile_revision,
@@ -87,6 +91,31 @@ def _echo_manifest() -> ApplicationManifest:
         route_prefix="/v1/revision_adoption",
         env_prefix="REVISION_ADOPTION_",
         agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
+    )
+
+
+def _pinning_dependencies(
+    revision: object,
+    revision_store: InMemoryEffectiveProfileRevisionStore,
+    pinning_store: InMemoryEffectiveProfileExecutionPinningStore,
+) -> EffectiveProfileExecutionPinningDependencies:
+    active_store = InMemoryActiveEffectiveProfileRevisionStore()
+    activation_service = EffectiveProfileActivationService(
+        EffectiveProfileActivationDependencies(
+            revision_store=revision_store,
+            active_store=active_store,
+        ),
+    )
+    activate_materialized_revision(
+        activation_service,
+        scope=_SCOPE,
+        candidate_revision_id=revision.revision_id,
+    )
+    return EffectiveProfileExecutionPinningDependencies(
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+        active_store=active_store,
+        scope=_SCOPE,
     )
 
 
@@ -447,11 +476,10 @@ def test_restore_existing_execution_missing_binding_fails_closed() -> None:
     revision_store = InMemoryEffectiveProfileRevisionStore()
     pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
     admission = build_effective_profile_revision_admission(
-        EffectiveProfileExecutionPinningDependencies(
-            revision=_revision_from_application(_application(), store=revision_store),
-            revision_store=revision_store,
-            pinning_store=pinning_store,
-            scope=_SCOPE,
+        _pinning_dependencies(
+            _revision_from_application(_application(), store=revision_store),
+            revision_store,
+            pinning_store,
         )
     )
     execution_id = mint_execution_id()
@@ -487,12 +515,7 @@ async def test_checkpoint_binding_mismatch_fails_closed() -> None:
         task_snapshot=admitted_task.model_dump(mode="json"),
     )
     admission = build_effective_profile_revision_admission(
-        EffectiveProfileExecutionPinningDependencies(
-            revision=revision_b,
-            revision_store=revision_store,
-            pinning_store=pinning_store,
-            scope=_SCOPE,
-        )
+        _pinning_dependencies(revision_b, revision_store, pinning_store),
     )
     with pytest.raises(EffectiveProfileRevisionConflictError):
         admission.admit_root_execution(

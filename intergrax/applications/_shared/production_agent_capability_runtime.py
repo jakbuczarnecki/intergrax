@@ -50,6 +50,7 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryAgentInstallationStore,
     InMemoryApplicationAgentBindingStore,
 )
+from intergrax.agent_distribution.sqlite_stores import SqliteAgentDistributionStoreBundle
 from intergrax.agent_distribution.installation_service import InstallationService
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
@@ -180,13 +181,19 @@ def build_production_agent_platform_admin_service(
     agent_platform_runtime: ProductionAgentPlatformRuntime,
     lifecycle_services: ReferenceProductionLifecycleServices,
     admin_config: ProductionAgentPlatformAdminConfig,
+    durable_store_bundle: SqliteAgentDistributionStoreBundle | None = None,
 ) -> AgentPlatformAdminService:
     """Construct one admin facade over the canonical process store universe."""
     state = agent_platform_runtime.distribution_state
     stores = agent_platform_runtime.stores
-    installation_store = InMemoryAgentInstallationStore(state)
-    binding_store = InMemoryApplicationAgentBindingStore(state)
-    artifact_store = InMemoryAgentArtifactMetadataStore(state)
+    if durable_store_bundle is not None:
+        installation_store = durable_store_bundle.installation_store
+        binding_store = durable_store_bundle.binding_store
+        artifact_store = durable_store_bundle.artifact_metadata_store
+    else:
+        installation_store = InMemoryAgentInstallationStore(state)
+        binding_store = InMemoryApplicationAgentBindingStore(state)
+        artifact_store = InMemoryAgentArtifactMetadataStore(state)
     installation_service = InstallationService(installation_store)
     binding_service = BindingService(binding_store, installation_service)
     graph_builder = admin_config.graph_builder or CandidateRuntimeGraphBuilder(
@@ -247,6 +254,7 @@ def build_production_agent_capability_runtime(
     agent_platform_runtime: ProductionAgentPlatformRuntime,
     application_composition: AgentCapabilityApplicationComposition,
     lifecycle_services: ReferenceProductionLifecycleServices | None = None,
+    durable_store_bundle: SqliteAgentDistributionStoreBundle | None = None,
 ) -> ProductionAgentCapabilityRuntime:
     """Wire AC-4 Phases 6–8 from one canonical AP-3 runtime — no duplicate stores."""
     if lifecycle_services is None:
@@ -264,6 +272,7 @@ def build_production_agent_capability_runtime(
         agent_platform_runtime=agent_platform_runtime,
         lifecycle_services=lifecycle_services,
         admin_config=application_composition.admin_config,
+        durable_store_bundle=durable_store_bundle,
     )
     catalog_registry = _build_catalog_registry(
         application_composition.catalog_providers

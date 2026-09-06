@@ -26,6 +26,12 @@ At a fictional industrial manufacturing plant, production target attainment on a
 | **Proof class** | SCENARIO |
 | **Slug** | `ai_incident_investigation` |
 
+## Agent Platform integration
+
+- **LAB authoring runtime:** supported (`application/runtime_composition.py`)
+- **Reference Production V1 lifecycle validation:** PASS
+- **Evidence:** `tests/integration/platform_proofs/test_ai_incident_investigation_agent_platform_e2e.py`
+
 ## Visual proof story
 
 <a href="assets/proof-story-light.svg">

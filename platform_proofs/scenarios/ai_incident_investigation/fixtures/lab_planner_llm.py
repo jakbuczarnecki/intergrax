@@ -12,6 +12,10 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.runtime.nexus.tools.investigation_proof import (
+    collect_available_evidence_ids,
+    parse_follow_up_context_evidence_references,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     h1_initially_plausible,
     observations_from_evidence_nodes,
@@ -123,6 +127,19 @@ def _evidence_ids_from_messages(messages: Sequence[ChatMessage]) -> set[str]:
     return ids
 
 
+def _available_basis_refs_from_messages(messages: Sequence[ChatMessage]) -> tuple[str, ...]:
+    tool_refs = collect_available_evidence_ids(messages)
+    if tool_refs:
+        return tool_refs
+    follow_up_refs = parse_follow_up_context_evidence_references(messages)
+    if follow_up_refs:
+        return follow_up_refs
+    gathered = _planner_gathered_evidence_ids(messages)
+    if gathered:
+        return tuple(sorted(gathered))
+    return ()
+
+
 def _planner_gathered_evidence_ids(messages: Sequence[ChatMessage]) -> set[str]:
     gathered: set[str] = set()
     for message in messages:
@@ -206,15 +223,11 @@ def build_fixture_reasoning_proposal(
                     hypothesis_id="H1",
                     disposition=HypothesisDisposition.SUPERSEDED,
                     summary="Overload weakened by comparison evidence.",
-                    supporting_evidence_ids=(workload, throughput),
-                    contradicting_evidence_ids=(comparison,),
                 ),
                 HypothesisProposal(
                     hypothesis_id="H2",
                     disposition=HypothesisDisposition.REJECTED,
                     summary="Understaffing rejected by attendance confirmation.",
-                    supporting_evidence_ids=(schedule,),
-                    contradicting_evidence_ids=(attendance,),
                 ),
                 HypothesisProposal(
                     hypothesis_id="H3",
@@ -233,7 +246,6 @@ def build_fixture_reasoning_proposal(
                         "while throughput declined — overload hypothesis H1."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(workload, throughput),
                 ),
                 ClaimProposal(
                     hypothesis_id="H2",
@@ -243,8 +255,6 @@ def build_fixture_reasoning_proposal(
                         "incident window — hypothesis H2 rejected."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(schedule,),
-                    contradicting_evidence_ids=(attendance,),
                 ),
                 ClaimProposal(
                     hypothesis_id="H3",
@@ -269,21 +279,16 @@ def build_fixture_reasoning_proposal(
                     hypothesis_id="H1",
                     disposition=HypothesisDisposition.SUPERSEDED,
                     summary="Overload correlation weakened by peer-line comparison evidence.",
-                    supporting_evidence_ids=(workload, throughput),
-                    contradicting_evidence_ids=(comparison,),
                 ),
                 HypothesisProposal(
                     hypothesis_id="H2",
                     disposition=HypothesisDisposition.REJECTED,
                     summary="Understaffing rejected after attendance confirmation.",
-                    supporting_evidence_ids=(schedule,),
-                    contradicting_evidence_ids=(attendance,),
                 ),
                 HypothesisProposal(
                     hypothesis_id="H3",
                     disposition=HypothesisDisposition.SUPPORTED,
                     summary="Intermittent equipment degradation supported by telemetry and comparison.",
-                    supporting_evidence_ids=(workload, throughput, comparison, telemetry),
                 ),
             ),
             preferred_hypothesis_id="H3",
@@ -297,7 +302,6 @@ def build_fixture_reasoning_proposal(
                         "while throughput declined — overload hypothesis H1."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(workload, throughput),
                 ),
                 ClaimProposal(
                     hypothesis_id="H2",
@@ -307,8 +311,6 @@ def build_fixture_reasoning_proposal(
                         "incident window — hypothesis H2 rejected."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(schedule,),
-                    contradicting_evidence_ids=(attendance,),
                 ),
                 ClaimProposal(
                     hypothesis_id="H3",
@@ -319,7 +321,6 @@ def build_fixture_reasoning_proposal(
                         "workload growth plausibly amplified impact — bounded H3 diagnosis."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(workload, throughput, comparison, telemetry),
                     replaces_prior_claim=True,
                 ),
             ),
@@ -331,20 +332,17 @@ def build_fixture_reasoning_proposal(
         observations is not None
         and h1_initially_plausible(observations.workload, observations.throughput)
     )
-    initial_support = tuple(eid for eid in (workload, throughput) if eid in evidence_ids)
     return IncidentReasoningProposal(
         hypotheses=(
             HypothesisProposal(
                 hypothesis_id="H1",
                 disposition=HypothesisDisposition.PLAUSIBLE if h1_plausible else HypothesisDisposition.REJECTED,
                 summary="Workload-throughput correlation is plausible but not yet causal.",
-                supporting_evidence_ids=initial_support,
             ),
             HypothesisProposal(
                 hypothesis_id="H2",
                 disposition=HypothesisDisposition.PENDING,
                 summary="Staffing shortage requires attendance confirmation.",
-                supporting_evidence_ids=tuple(eid for eid in (schedule,) if eid in evidence_ids),
             ),
             HypothesisProposal(
                 hypothesis_id="H3",
@@ -363,10 +361,9 @@ def build_fixture_reasoning_proposal(
                     "target attainment degradation — hypothesis H1."
                 ),
                 claim_kind=str(DIAGNOSIS_KIND),
-                supporting_evidence_ids=initial_support,
             ),
         )
-        if initial_support
+        if h1_plausible
         else (
             ClaimProposal(
                 hypothesis_id="H1",
@@ -424,7 +421,8 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
                 trimmed = _sequence_without_gathered_tools(self._revision_sequence, gathered)
                 return trimmed or _REVISION_FOLLOW_UP_SEQUENCE
             return self._revision_sequence
-        return self._initial_sequence
+        gathered = _planner_gathered_evidence_ids(messages)
+        return _sequence_without_gathered_tools(self._initial_sequence, gathered)
 
     def _detect_reasoning_phase(self, messages: Sequence[ChatMessage]) -> str:
         for message in messages:
@@ -461,11 +459,11 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
         call_id = f"tc-{phase}-{round_index + 1}"
         self._round_by_phase[phase] = round_index + 1
         purpose = f"gather {tool_id.split('.')[-1]} evidence for incident investigation"
-        if round_index == 0:
-            content = _decision_note(purpose=purpose)
+        available_refs = _available_basis_refs_from_messages(messages)
+        if available_refs:
+            content = _decision_note(available_refs[-1], purpose=purpose)
         else:
-            basis = self._prior_tool_call_ids[-1]
-            content = _decision_note(basis, purpose=purpose)
+            content = _decision_note(purpose=purpose)
         self._prior_tool_call_ids.append(call_id)
         return LLMAdapterResponse(
             content=content,

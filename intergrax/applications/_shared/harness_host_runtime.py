@@ -114,6 +114,10 @@ from intergrax.applications._shared.profile_resolution import (
     materialize_effective_profile_revision,
     resolve_profile,
 )
+from intergrax.applications._shared.profile_resolution.activation_service import (
+    EffectiveProfileActivationDependencies,
+    EffectiveProfileActivationService,
+)
 from intergrax.applications._shared.profile_resolution.execution_admission import (
     EffectiveProfileExecutionPinningDependencies,
 )
@@ -126,6 +130,12 @@ from intergrax.applications.contracts.profile_resolution import (
     ProfileLayerInput,
     ProfileResolution,
 )
+from intergrax.applications.contracts.profile_resolution.activation import (
+    ActivateEffectiveProfileRevisionRequest,
+    ActiveEffectiveProfileRevisionBinding,
+    ActiveEffectiveProfileRevisionStore,
+)
+from intergrax.skills.execution_binding import SkillExecutionPinningStore
 from intergrax.applications.contracts.profile_resolution.execution_binding import (
     EffectiveProfileExecutionPinningStore,
 )
@@ -183,6 +193,8 @@ class HarnessHostRuntime:
     effective_profile_revision: EffectiveProfileRevision | None = None
     effective_profile_revision_store: EffectiveProfileRevisionStore | None = None
     effective_profile_pinning_store: EffectiveProfileExecutionPinningStore | None = None
+    effective_profile_active_store: ActiveEffectiveProfileRevisionStore | None = None
+    skill_pinning_store: SkillExecutionPinningStore | None = None
 
 
 def build_harness_host_runtime(
@@ -211,6 +223,7 @@ def build_harness_host_runtime(
     profile_layers: tuple[ProfileLayerInput, ...] = (),
     revision_store: EffectiveProfileRevisionStore | None = None,
     pinning_store: EffectiveProfileExecutionPinningStore | None = None,
+    active_store: ActiveEffectiveProfileRevisionStore | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -233,10 +246,20 @@ def build_harness_host_runtime(
         document_store=doc_store,
         revision_store=revision_store,
         pinning_store=pinning_store,
+        active_store=active_store,
     )
     revision_scope = EffectiveProfileRevisionScope(
         application_id=resolved_manifest.app_id,
         tenant_id=tenant_id,
+    )
+    # P1.6B: capture activation baseline before candidate preparation — immutable intent.
+    activation_baseline_binding: ActiveEffectiveProfileRevisionBinding | None = (
+        profile_persistence.active_store.get_active(revision_scope)
+    )
+    activation_baseline_revision_id = (
+        activation_baseline_binding.revision_id
+        if activation_baseline_binding is not None
+        else None
     )
     effective_profile_revision = materialize_effective_profile_revision(
         profile_resolution,
@@ -395,13 +418,28 @@ def build_harness_host_runtime(
         effective_environment,
         mutation_authorization_boundary=mutation_authorization_boundary,
     )
+    # P1.6A: publication boundary — CAS only after required host preparation succeeds.
+    # wire_application_environment already performed P1.3 dependency validation.
+    activation_service = EffectiveProfileActivationService(
+        EffectiveProfileActivationDependencies(
+            revision_store=profile_persistence.revision_store,
+            active_store=profile_persistence.active_store,
+        ),
+    )
+    activation_service.activate(
+        ActivateEffectiveProfileRevisionRequest(
+            scope=revision_scope,
+            candidate_revision_id=effective_profile_revision.revision_id,
+            expected_active_revision_id=activation_baseline_revision_id,
+        ),
+    )
     execution = build_environment_host_task_execution(
         nexus_loop,
         effective_environment,
         pinning_dependencies=EffectiveProfileExecutionPinningDependencies(
-            revision=effective_profile_revision,
             revision_store=profile_persistence.revision_store,
             pinning_store=profile_persistence.pinning_store,
+            active_store=profile_persistence.active_store,
             scope=revision_scope,
         ),
     )
@@ -429,4 +467,6 @@ def build_harness_host_runtime(
         effective_profile_revision=effective_profile_revision,
         effective_profile_revision_store=profile_persistence.revision_store,
         effective_profile_pinning_store=profile_persistence.pinning_store,
+        effective_profile_active_store=profile_persistence.active_store,
+        skill_pinning_store=env_wiring.build_context.skill_pinning_store,
     )

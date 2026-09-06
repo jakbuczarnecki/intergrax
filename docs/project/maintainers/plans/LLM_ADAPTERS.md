@@ -188,7 +188,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 - `LLMAdapter` remains the hot-path execution contract (generate, stream, tools, structured output, token counting, quota/resilience).
 - `LLMProvider` enum remains valid for stable built-in providers.
-- Custom providers MUST NOT require editing `LLMProvider` enum or core `_BUILTIN_ADAPTERS`.
+- Custom providers MUST NOT require editing `LLMProvider` enum or core registry maps.
 - Provider packages are discoverable / registrable through a deterministic provider registration contract.
 - Mirror integrations registry v2: `provider_id`, provider kind, config class, factory, capabilities, health check support, security posture, metadata, default disabled behavior.
 - The new layer creates or describes `LLMAdapter` instances - it does **not** replace them.
@@ -207,7 +207,7 @@ Load **only** the satellite matching your task or cited gap ID.
 1. Built-in LLM providers still work exactly as today.
 2. `LLMProvider` enum remains available for stable built-ins.
 3. A custom provider package can register itself without modifying `LLMProvider` enum.
-4. A custom provider package can register itself without modifying `_BUILTIN_ADAPTERS`.
+4. A custom provider package can register itself without modifying built-in registration modules.
 5. Registry lists provider metadata: `provider_id`, `display_name`, supported protocol, config class, factory, capabilities, default model, secret/env requirements.
 6. Registry can instantiate an `LLMAdapter` from the provider registration.
 7. Provider metadata supports safe public view without exposing secrets.

@@ -64,21 +64,21 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 |-------|-------|
 | **ID** | DG-002 |
 | **Discovered by** | LKW File Watcher proof / operator diagnostic qualification |
-| **Failure scenario** | Operator has transport correlation or problem signal but no canonical TaskId/RunId |
+| **Failure scenario** | Operator has transport task reference, problem signal, or EventId but no canonical TaskId/RunId |
 | **Observed terminal symptom** | DIAG-7 request requires explicit TaskId + RunId |
-| **What Diagnostic Engine could prove** | Partial when IDs supplied; none when only transport/correlation refs exist |
-| **Last proven canonical boundary** | Transport or problem reference (when present) |
-| **First failed/unknown boundary** | Scope discovery from correlation references |
+| **What Diagnostic Engine could prove** | Execution scope from ProblemId, transport reference, or EventId when canonical persistence is available; not from unstructured correlation alone |
+| **Last proven canonical boundary** | ProblemId, transport reference, or EventId (when present) |
+| **First failed/unknown boundary** | Enterprise-scale transport causal-evidence lookup (unbounded public persistence read) |
 | **Root cause automatically proven** | NO |
-| **Missing canonical evidence** | Canonical mapping from transport/problem/execution/correlation refs to TaskId/RunId |
-| **Missing diagnostic capability** | Scope discovery without explicit execution IDs |
-| **Manual work that was required** | Manual ID lookup across logs/stores |
-| **Universal platform improvement** | Canonical discovery from transport/problem/execution/correlation references |
-| **Why this is not application-specific** | Any async or multi-host workload may surface correlation without explicit scope |
+| **Missing canonical evidence** | Bounded transport causal-evidence lookup contract (public paging at persistence boundary) |
+| **Missing diagnostic capability** | Enterprise-qualified transport scope discovery under high fan-out evidence cardinality |
+| **Manual work that was required** | Manual ID lookup across logs/stores when only unstructured correlation available |
+| **Universal platform improvement** | Canonical discovery from **supported core references**: ProblemId, transport task reference (`provider` + `transport_task_id`), EventId |
+| **Why this is not application-specific** | Any async or multi-host workload may surface transport/problem/event refs without explicit execution scope |
 | **Priority** | P1 |
-| **Status** | OPEN |
-| **Related implementation** | - |
-| **Qualification result after fix** | Pending |
+| **Status** | PARTIALLY ADDRESSED |
+| **Related implementation** | `f2198be56` — ProblemId scope discovery (Slice 1); `causal_transport_scope` — transport reference scope discovery (Slice 2); `runtime_event_scope` — EventId exact RuntimeEvent scope discovery (Slice 3); reassessment R1 — [`DG_002_SCOPE_DISCOVERY_REASSESSMENT.md`](DG_002_SCOPE_DISCOVERY_REASSESSMENT.md); bounded-read audit R1 — [`DG_002_TRANSPORT_BOUNDED_READ_HARDENING_AUDIT.md`](DG_002_TRANSPORT_BOUNDED_READ_HARDENING_AUDIT.md) |
+| **Qualification result after fix** | **Core architecture qualified.** Functional semantics qualified for ProblemId, transport reference, and EventId. **Enterprise closure blocked** by transport bounded read: `CausalEvidencePersistence.list_for_transport_task()` has no public `limit`/`cursor`; implementations materialize all matching evidence before return; `candidate_limit` bounds projection only, not storage read. **Bounded-read design frozen (audit R1 PASS):** add `CausalEvidencePage` + `page_for_*`; retain `list_for_*` facades; INDEX V2 row-key ordering; migrate `CausalTransportScopeProvider` only. **Supported core references:** ProblemId, transport task reference, EventId. **Deferred extension:** correlation-based discovery pending explicit canonical correlation identity/cardinality/persistence contract. **Deferred / not core:** ExecutionId discovery. Does not close DG-004 (transport causal continuity in reconstruction) or DG-005 (topology qualification). **Next:** DG-002 causal evidence paging contract implementation (R1) |
 
 ---
 

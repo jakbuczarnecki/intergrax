@@ -16,10 +16,10 @@ from intergrax.integrations.providers.relational_store.databricks.integration im
     DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
     DatabricksRelationalStoreIntegration,
 )
-from intergrax.runtime.vendor_knowledge.models import JsonValue
-from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
-    TenantConnectionIntegrationFactory,
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
 )
+from intergrax.runtime.vendor_knowledge.models import JsonValue
 
 _ALLOWED_SECRET_FREE_CONFIG_KEYS = frozenset(
     {"host", "http_path", "catalog", "tenant_schema"}
@@ -54,7 +54,9 @@ def _parse_secret_free_config(
     return host, http_path, catalog, tenant_schema
 
 
-class DatabricksTenantConnectionIntegrationFactory(TenantConnectionIntegrationFactory):
+class DatabricksTenantConnectionIntegrationFactory(
+    EagerTenantConnectionIntegrationFactoryMixin,
+):
     """Compose one Databricks relational integration from durable connection data."""
 
     def __init__(
@@ -75,6 +77,27 @@ class DatabricksTenantConnectionIntegrationFactory(TenantConnectionIntegrationFa
         credential: str,
         secret_free_config: Mapping[str, JsonValue],
     ) -> DatabricksRelationalStoreIntegration:
+        return self.create_integration_with_resolved_credential(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            credential_ref=credential_ref,
+            resolved_credential=credential,
+            secret_free_config=secret_free_config,
+        )
+
+    def create_integration_with_resolved_credential(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        resolved_credential: str,
+        secret_free_config: Mapping[str, JsonValue],
+    ) -> DatabricksRelationalStoreIntegration:
         _require_nonblank(tenant_id, field_name="tenant_id")
         _require_nonblank(connection_ref, field_name="connection_ref")
         _require_nonblank(credential_ref, field_name="credential_ref")
@@ -82,7 +105,7 @@ class DatabricksTenantConnectionIntegrationFactory(TenantConnectionIntegrationFa
             raise ValueError("provider_id does not match databricks")
         if integration_kind is not IntegrationCategory.RELATIONAL_STORE:
             raise ValueError("integration_kind does not match relational_store")
-        token = _require_nonblank(credential, field_name="credential")
+        token = _require_nonblank(resolved_credential, field_name="credential")
         host, http_path, catalog, tenant_schema = _parse_secret_free_config(
             secret_free_config
         )

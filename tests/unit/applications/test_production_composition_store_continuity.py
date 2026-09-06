@@ -16,6 +16,10 @@ from intergrax.applications._shared.harness_host_runtime import (
 from intergrax.applications._shared.harness_registry_authority import (
     HarnessHostRegistryAuthorityError,
 )
+from intergrax.applications._shared.production_platform_persistence import (
+    resolve_harness_host_profile_persistence_kwargs_from_composition,
+    resolve_reference_production_strict_host_environment,
+)
 from intergrax.applications._shared.production_agent_platform_runtime import (
     build_production_agent_platform_runtime,
 )
@@ -39,6 +43,9 @@ from intergrax.applications._shared.reference_production_governance_wiring impor
 )
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
+)
+from intergrax.applications._shared.reference_runtime_materialization import (
+    prepare_reference_runtime_materialization,
 )
 from intergrax.applications._shared.harness_host_runtime_compat import (
     resolve_harness_host_nexus_loop_legacy,
@@ -128,6 +135,11 @@ def _activate_projection_via_ap_lifecycle(
         tenant_id=revision.application_environment_id,
     )
     activation_request = build_reference_activation_request(bundle)
+    prepare_reference_runtime_materialization(
+        composition.agent_platform_runtime.stores,
+        bundle,
+        artifact_locator=activation_request.artifact_locator,
+    )
     result = launcher.deploy_and_activate(
         bundle,
         activation_request,
@@ -204,12 +216,16 @@ def test_production_store_continuity_resolves_active_projection_and_nexus_regist
     assert resolved.agent_registry.list_agent_ids() == ["research"]
 
     app = create_research_process_app(process_composition=composition)
+    strict_env = resolve_reference_production_strict_host_environment(env)
     runtime = build_harness_host_runtime(
-        manifest.model_copy(update={"environment": env}),
-        env,
+        manifest.model_copy(update={"environment": strict_env}),
+        strict_env,
         settings=settings,
         registry_projection=resolved,
-        use_in_memory_trace=True,
+        **resolve_harness_host_profile_persistence_kwargs_from_composition(
+            production_mode=strict_env.execution_mode.value == "strict",
+            composition=composition,
+        ),
     )
     assert runtime.registry_projection_evidence.runtime_revision_id == revision_id
     assert resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids() == ["research"]

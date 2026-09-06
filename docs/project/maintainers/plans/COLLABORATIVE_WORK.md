@@ -3,9 +3,10 @@
 **Architecture (1:1):** [`architecture/COLLABORATIVE_WORK.md`](../../architecture/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/plan/MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
-**ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md)
+**ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
-**Status:** Domain registered - **MP-1 core - production persistence gate OPEN** (final review pending)
+**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
+**Current active task:** **COLLAB-WORK-2D** (SQLite durability parity)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -49,6 +50,7 @@ Delivery order: **platform architecture/contract slice → platform implementati
 | COLLAB-WORK-0B | ADR-MP-002 Principal / Membership / Delegation semantics | **Done** (MP-1A) |
 | COLLAB-WORK-0C | Domain architecture + plan pair registration | **Done** (MP-1A) |
 | COLLAB-WORK-0D | Multiplayer hub ownership synchronization | **Done** (MP-1A) |
+| COLLAB-WORK-0E | ADR-MP-003 WorkItem vs Nexus Task — Shared Work ownership | **Done** (MP-2 ownership freeze) |
 
 COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB-WORK-1A** after MP-1 review acceptance.
 
@@ -172,13 +174,9 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | MP-2+ rows; broad connector/application wiring; observability routing layer; Alembic/Postgres vendor lock-in; second runtime or HITL engine |
 | **Acceptance** | Durable adapters report `durable=True` / `reference_only=False`; CAS/idempotency/uniqueness parity with in-memory; shared boundary invokes gate before side effects; ALLOW-only continuation; fail closed on missing state |
 | **Proof requirements** | `tests/unit/collaborative_work/test_repository_contracts.py`; `tests/unit/runtime/policy/test_meaningful_side_effect_authorization.py`; `tests/unit/collaborative_work/test_vendor_neutrality.py`; enforcement gate regressions |
-| **Next step** | MP-1 CORE FINAL REVIEW |
-
-| Field | Value |
-|-------|-------|
-| **ID** | COLLAB-WORK-1H-R2 |
+| **Next step** | COLLAB-WORK-1H-R2 |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | MP-1 core security and typed-wiring closure - canonical principal membership, delegator membership validity, zero dynamic attribute mutation |
 | **Dependencies** | COLLAB-WORK-1H approved lineage; `CollaborativeWorkAuthorityResolver`; repository ports |
 | **Exact scope** | `get_for_principal` membership lookup; principal uniqueness in memory/SQLite; delegator active membership gate; Pydantic repository commands; AST typed-wiring proof |
@@ -187,13 +185,13 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | LKW integration; MP-2+; observability; Postgres |
 | **Acceptance** | One membership per principal/workspace; delegator must remain active member; no `getattr`/`setattr` family in scoped production paths; docs synchronized |
 | **Proof requirements** | `tests/unit/collaborative_work/test_canonical_membership_closure.py`; `tests/unit/collaborative_work/test_typed_wiring_architecture.py`; authority and repository regressions |
-| **Next step** | MP-1 CORE FINAL REVIEW |
+| **Next step** | COLLAB-WORK-1H-R3 |
 
 | Field | Value |
 |-------|-------|
 | **ID** | COLLAB-WORK-1H-R3 |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | SQLite canonical membership migration closure - schema parity with fresh databases |
 | **Dependencies** | COLLAB-WORK-1H-R2 canonical membership semantics; durable SQLite adapter |
 | **Exact scope** | Transactional rebuild of legacy `workspace_memberships` to `principal_id TEXT NOT NULL` plus unique principal membership |
@@ -202,13 +200,13 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | Authority semantics; LKW integration; MP-2+; Alembic/SQLAlchemy |
 | **Acceptance** | Migrated schema matches fresh constraints; duplicates fail closed; original legacy table intact on failure; reopen is idempotent |
 | **Proof requirements** | `tests/unit/collaborative_work/test_sqlite_membership_migration.py`; repository, canonical membership, authority, typed-wiring, vendor-neutrality regressions |
-| **Next step** | MP-1 CORE FINAL REVIEW |
+| **Next step** | COLLAB-WORK-1J |
 
 | Field | Value |
 |-------|-------|
 | **ID** | COLLAB-WORK-1J |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | PostgreSQL durable backend and production parity - cross-process transactional concurrency proof |
 | **Dependencies** | COLLAB-WORK-1H durable SQLite adapter; platform PostgreSQL integration (`psycopg`, `PostgreSQLIntegrationConfig`) |
 | **Exact scope** | `PostgreSQLCollaborativeWorkStore` + typed repositories for all MP-1 authoritative ports; `open_postgresql_collaborative_work_repositories`; real PostgreSQL parity/concurrency/integration tests |
@@ -217,13 +215,13 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | LKW integration; MP-2+; Alembic unless platform canon changes; CI platform redesign |
 | **Acceptance** | Semantic parity with InMemory/SQLite; real PostgreSQL tests pass; no production fallback to SQLite; vendor neutrality and typed-wiring gates hold |
 | **Proof requirements** | `tests/integration/collaborative_work/test_postgresql_repository.py`; repository/authority/enforcement/typed-wiring/vendor-neutrality regressions |
-| **Next step** | MP-1 CORE FINAL REVIEW |
+| **Next step** | MP-1 CORE FINAL REVIEW (closed) |
 
 | Field | Value |
 |-------|-------|
 | **ID** | COLLAB-WORK-1J-R2 |
 | **Priority** | P0 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Platform PostgreSQL transactional session provider and Collaborative Work infrastructure reuse |
 | **Dependencies** | COLLAB-WORK-1J; platform PostgreSQL integration (`PostgreSQLIntegrationConfig`) |
 | **Exact scope** | `PostgreSQLConnectionProvider` / session API; refactor `opens.py` and CW PostgreSQL store to consume platform provider; remove duplicated psycopg/connect/search_path/transaction mechanics from CW; production `integrations-postgresql` extra |
@@ -232,21 +230,130 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | LKW integration; MP-2+; CW SQLite refactor; CI platform redesign unless narrow gate fits file budget |
 | **Acceptance** | CW no longer owns generic PostgreSQL mechanics; platform owns driver/session/transaction/search_path; real PostgreSQL CW tests pass; RelationalStore regressions pass; PLATFORM-REUSE invariants preserved |
 | **Proof requirements** | `tests/unit/integrations/providers/relational_store/test_postgresql_session.py`; `tests/unit/collaborative_work/test_postgresql_platform_reuse.py`; `tests/integration/collaborative_work/test_postgresql_repository.py`; existing PostgreSQL + CW regressions |
-| **Next step** | MP-1 CORE FINAL REVIEW |
+| **Next step** | MP-1 CORE FINAL REVIEW (closed) |
 
 ### MP-1 closure and provider qualification (PROVIDER-QUAL)
 
 | Field | Value |
 |-------|-------|
+| **MP-1 final review** | **CLOSED** — final independent implementation review pass (MP-1-FINAL-REVIEW) |
 | **PostgreSQL live qualification** | **Accepted** - CW PostgreSQL repository suite: 15 passed / 0 skipped / 0 failed; `real_backend=true`; bounded local Docker qualification host; capability `collaborative_work.persistence.v1`; provider version `16.6` only |
-| **MP-1 final closure** | Depends on **provider qualification evidence integration** ([`PROVIDER-QUAL-3`](PLATFORM_PLUGINS.md#provider-qual-track-post-plugin-9)), **not** vendor-specific CI jobs or per-provider workflow changes |
+| **Provider qualification evidence integration** | **SATISFIED** — `CollaborativeWorkRepositoryQualificationBinding` materializes via `resolve_collaborative_work_repositories`; `execute_provider_qualification` persists `ProviderQualificationRun` through canonical `DocumentStoreProviderQualificationPersistence` / `ProofReceipt` ([`PROVIDER-QUAL-3`](PLATFORM_PLUGINS.md#provider-qual-track-post-plugin-9)); no CW-specific parallel evidence system |
 | **Architecture** | [`satellites/PLATFORM_PLUGINS_provider_qualification.md`](../../architecture/satellites/PLATFORM_PLUGINS_provider_qualification.md) |
+
+---
+
+### COLLAB-WORK-2 - MP-2 Shared Work (architecture frozen — ADR-MP-003)
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-2A |
+| **Priority** | P1 |
+| **Status** | **APPROVED / CLOSED** |
+| **Purpose** | WorkItem and Assignment semantic contracts plus collaborative lifecycle transition design |
+| **Dependencies** | MP-1 closed; ADR-MP-003 Accepted |
+| **Exact scope** | `WorkItem`, `WorkItemState`, `Assignment`, `AssignmentState`, typed lifecycle transition requests/helpers in `intergrax/contracts/collaborative_work.py`; explicit transition rules; Assignment != AgentAssignment documented; no persistence; no execution linkage |
+| **REUSED** | MP-1 `CollaborativePrincipal`, tenant/workspace scoping, revision semantics direction |
+| **NEW** | WorkItem and Assignment collaborative contracts; lifecycle transition specification |
+| **Explicit out of scope** | Repositories, services, APIs, Nexus wiring, execution linkage / Nexus bridge, LKW/channel IDs, WorkArtifact (MP-3), Decision (MP-4), Activity (MP-6), runtime implementation |
+| **Acceptance** | WorkItem != Nexus Task frozen in contracts; Assignment separate from WorkItem assignee field; semantic fields only; multi-principal assignment supported |
+| **Proof requirements** | `tests/unit/contracts/test_collaborative_work.py` extensions for MP-2 contracts |
+| **Next step** | COLLAB-WORK-2B — repository ports + in-memory reference |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-2B |
+| **Priority** | P1 |
+| **Status** | **APPROVED / CLOSED** |
+| **Purpose** | WorkItem and Assignment repository ports with optimistic concurrency and idempotency |
+| **Dependencies** | COLLAB-WORK-2A approved |
+| **Exact scope** | `WorkItemRepository`, `AssignmentRepository` ports; in-memory reference adapters; revision 0 create; `expected_revision` CAS; typed conflict; idempotent create replay |
+| **REUSED** | COLLAB-WORK-1B repository/exception patterns; MP-1 idempotency semantics |
+| **NEW** | MP-2 repository ports and in-memory adapters |
+| **Explicit out of scope** | Authoritative transition service; authority enforcement wiring; SQL/Postgres adapters; execution linkage persistence |
+| **Acceptance** | No silent last-write-wins; scoped isolation; deterministic idempotency replay |
+| **Proof requirements** | `tests/unit/collaborative_work/test_in_memory_repository.py` MP-2 extensions |
+| **Next step** | COLLAB-WORK-2C — authoritative service and transition layer |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-2C |
+| **Priority** | P1 |
+| **Status** | **APPROVED / CLOSED** |
+| **Purpose** | Authoritative WorkItem/Assignment mutation and validated state transitions with MP-1 authority enforcement |
+| **Dependencies** | COLLAB-WORK-2B approved; `CollaborativeWorkAuthorityResolver`; `CollaborativeWorkEnforcementGate` |
+| **Exact scope** | Transition service for create/assign; WorkItem and Assignment state transitions; close/reopen/cancel; reassignment via revoke-existing Assignment + create-new Assignment (two independently authorized, CAS-protected mutations); explicit validated transitions; authority-checked mutations; no combined atomic reassignment API without transactional Unit of Work; no TaskState inference |
+| **REUSED** | MP-1 effective authority and policy composition; COLLAB-WORK-2B repository semantics |
+| **NEW** | WorkItem/Assignment authoritative service layer |
+| **Explicit out of scope** | Combined atomic multi-record reassignment / Unit of Work; durable SQL adapters; execution bridge; LKW adoption; MP-3+ |
+| **Acceptance** | Arbitrary caller-supplied state replacement rejected; stale writes fail explicitly; authority fail-closed |
+| **Proof requirements** | Service unit tests; authority/isolation tests; lifecycle transition tests |
+| **Next step** | COLLAB-WORK-2D — SQLite durability parity |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-2D |
+| **Priority** | P1 |
+| **Status** | **NOT STARTED** |
+| **Purpose** | SQLite durable adapters for WorkItem and Assignment authoritative state |
+| **Dependencies** | COLLAB-WORK-2C approved; COLLAB-WORK-1H SQLite adapter patterns |
+| **Exact scope** | SQLite repository adapters for MP-2 ports; composition factory extension; local/dev durability parity |
+| **REUSED** | `open_sqlite_collaborative_work_repositories` pattern; MP-1 SQLite store layout conventions |
+| **NEW** | MP-2 SQLite persistence adapters |
+| **Explicit out of scope** | PostgreSQL; execution linkage; LKW; MP-3+ |
+| **Acceptance** | Durable authoritative state; concurrency/idempotency parity with in-memory reference |
+| **Proof requirements** | SQLite repository unit/integration tests |
+| **Next step** | COLLAB-WORK-2E — PostgreSQL/provider qualification parity |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-2E |
+| **Priority** | P1 |
+| **Status** | **NOT STARTED** |
+| **Purpose** | PostgreSQL/production-qualified repository materialization for WorkItem and Assignment |
+| **Dependencies** | COLLAB-WORK-2D approved; COLLAB-WORK-1J PostgreSQL patterns; provider qualification binding |
+| **Exact scope** | PostgreSQL typed repositories for MP-2 ports; `open_postgresql_collaborative_work_repositories` extension; qualification evidence |
+| **REUSED** | Platform PostgreSQL integration; `CollaborativeWorkRepositoryQualificationBinding` |
+| **NEW** | MP-2 PostgreSQL adapters and qualification proof |
+| **Explicit out of scope** | LKW adoption; execution bridge; MP-3+ |
+| **Acceptance** | Cross-process transactional concurrency proven; provider qualification evidence persisted |
+| **Proof requirements** | `tests/integration/collaborative_work/test_postgresql_repository.py` MP-2 extensions; provider qualification run |
+| **Next step** | COLLAB-WORK-2F — execution linkage / Nexus bridge |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-2F |
+| **Priority** | P1 |
+| **Status** | **NOT STARTED** |
+| **Purpose** | Explicit execution linkage from WorkItem to Nexus/UER identities without lifecycle substitution |
+| **Dependencies** | COLLAB-WORK-2C approved (may ship after 2D/2E per rollout) |
+| **Exact scope** | Neutral execution-link contracts; zero..N links referencing `task_id`/`run_id`/`attempt_id`; explicit bridge — no WorkItemState from TaskState |
+| **REUSED** | UER/Nexus execution identity contracts; ORCHESTRATION explicit context consumption |
+| **NEW** | WorkItem execution-link persistence and bridge semantics |
+| **Explicit out of scope** | Renaming Task; subclassing Task; background task ownership of WorkItem; implicit workflow propagation |
+| **Acceptance** | Run end/delete does not delete WorkItem; links are provenance only; tier boundaries preserved |
+| **Proof requirements** | Link contract tests; bridge integration proof with real `task_id`/`run_id` |
+| **Next step** | COLLAB-WORK-2G — final MP-2 review |
+
+| Field | Value |
+|-------|-------|
+| **ID** | COLLAB-WORK-2G |
+| **Priority** | P1 |
+| **Status** | **NOT STARTED** |
+| **Purpose** | Final MP-2 independent review and closure gate |
+| **Dependencies** | COLLAB-WORK-2A…2F approved per rollout policy |
+| **Exact scope** | Architecture/plan/doc sync verification; ADR-MP-003 compliance; anti-substitution audit |
+| **REUSED** | MP-1 final review pattern |
+| **NEW** | MP-2 closure evidence |
+| **Explicit out of scope** | MP-3+ implementation |
+| **Acceptance** | All MP-2 acceptance criteria met; no contradictory ownership statements; implementation proof complete |
+| **Proof requirements** | Focused regression suite; documentation link integrity; `check_harness_adr.py` |
+| **Next step** | MP-3 bounded ownership check |
 
 ---
 
 ## 4. Out of scope (current phase)
 
-- MP-2 WorkItem / Assignment implementation rows
-- MP-3…MP-6 architecture or implementation rows
+- MP-3…MP-6 architecture or implementation rows (except bounded ownership checks when gated)
 - LKW product adoption (MP-7)
-- Runtime Python models beyond contract stubs when implementation gate opens
+- Runtime Python models beyond contract stubs until COLLAB-WORK-2A opens

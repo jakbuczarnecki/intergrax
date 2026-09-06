@@ -1,7 +1,7 @@
 ---
 scenario_slug: indirect_prompt_injection
-lifecycle: IMPLEMENTATION_COMPLETE
-implementation_status: COMPLETE
+lifecycle: EXECUTABLE
+implementation_status: INITIALIZED
 intergrax_fit: COMPLETED
 gap_decision: RESOLVED
 observability_contract: COMPLETED
@@ -13,7 +13,7 @@ application_vs_proof_ownership: COMPLETED
 **Scenario:** Indirect Prompt Injection with Governed Action Prevention  
 **Slug:** `indirect_prompt_injection`  
 **Proof class:** SCENARIO  
-**Status:** ACCEPTED FOR IMPLEMENTATION - scenario design accepted; implementation not yet initialized; no executable proof, evidence, or report yet.
+**Status:** Business implementation complete and executable - canonical real-model proof not yet independently verified.
 
 [← Back to public Scenario page](README.md)
 
@@ -590,7 +590,7 @@ This scenario does **not** claim:
 - Synthetic controlled order provider - same **application-facing contract** as production integration, not a specific vendor.
 - Canonical proof requires **real configured model** - behavior may vary; falsification relies on governance invariants, not model refusal.
 - Evaluator semantics scoped to this scenario’s bounded claim.
-- Design stage only - no executable proof, evidence, or report yet.
+- Executable via `run_proof.py`; canonical real-model proof not yet independently verified.
 
 ---
 
@@ -718,6 +718,6 @@ Provider exposes `sensitive_write_count` and request log.
 
 1. Human Scenario Quality Gate acceptance - **DONE** (ACCEPTED FOR IMPLEMENTATION).
 2. Implementation preparation - verify Intergrax fit; resolve platform gaps if discovered - **DONE** (`intergrax_fit: COMPLETED`, `gap_decision: RESOLVED`).
-3. `init_scenario_implementation.py`.
-4. Implement application + proof layers per accepted architecture.
-5. Real proof execution before public catalog update.
+3. `init_scenario_implementation.py` - **DONE**.
+4. Implement application + proof layers per accepted architecture - **DONE**.
+5. Real proof execution before public catalog update - **pending** (canonical real-model proof not yet independently verified).

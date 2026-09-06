@@ -201,7 +201,15 @@ def _reference_deploy_and_activate(
     from intergrax.applications._shared.registry_projection_input_bundle import (
         reference_admission_mutation_id,
     )
+    from intergrax.applications._shared.reference_runtime_materialization import (
+        prepare_reference_runtime_materialization,
+    )
 
+    prepare_reference_runtime_materialization(
+        launcher.process_composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
+    )
     return launcher.deploy_and_activate(
         projection_input,
         activation_request,
@@ -863,6 +871,7 @@ def test_adb22_production_revision_write_bypass_inventory() -> None:
         ),
         "intergrax/agent_distribution/runtime_revision_service.py": "domain_executor",
         "intergrax/agent_distribution/in_memory_stores.py": "store_executor",
+        "intergrax/agent_distribution/sqlite_stores.py": "store_executor",
         "intergrax/agent_distribution/materialization_service.py": "materialization_executor",
         "intergrax/agent_distribution/materialization_adapters.py": "materialization_executor",
         "intergrax/agent_distribution/stores.py": "store_contract",

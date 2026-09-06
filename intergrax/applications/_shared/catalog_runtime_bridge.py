@@ -84,4 +84,8 @@ def apply_catalog_profiles_from_build_context(
         config.tool_registry = build_ctx.tool_registry
     if build_ctx.skill_profile is not None:
         config.skill_profile = build_ctx.skill_profile
+    if build_ctx.skill_registry is not None:
+        config.skill_registry = build_ctx.skill_registry
+    if build_ctx.skill_pinning_store is not None:
+        config.skill_pinning_store = build_ctx.skill_pinning_store
     return config

@@ -43,11 +43,16 @@ def _unique_layout_categories() -> frozenset[str]:
     return frozenset(SLUG_CATEGORY.values())
 
 
+# P2-002-B1: typed contract registered before first-party provider layout folders (B2).
+_REGISTRY_CATEGORIES_PENDING_LAYOUT: frozenset[str] = frozenset()
+
+
 def test_every_layout_category_has_contract_or_alias() -> None:
     layout_categories = _unique_layout_categories()
     registry_categories = frozenset(PROVIDER_CATEGORY_CONTRACT_REGISTRY.keys())
-
-    assert layout_categories == registry_categories
+    assert layout_categories <= registry_categories
+    pending = registry_categories - layout_categories
+    assert pending <= _REGISTRY_CATEGORIES_PENDING_LAYOUT
 
 
 def test_every_category_contract_derives_from_platform_integration_contract() -> None:

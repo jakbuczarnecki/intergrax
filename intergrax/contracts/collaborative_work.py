@@ -1,13 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Collaborative Work identity and authority contracts (MP-1 / COLLAB-WORK-1A).
+"""Collaborative Work identity, authority, and shared-work contracts (MP-1 / MP-2).
 
 Semantic source of truth for collaborative principals, explicit workspace
-membership, authority delegation, and the effective-authority evaluation
-boundary. Distinct from:
+membership, authority delegation, effective-authority evaluation, WorkItem
+lifecycle, and Assignment lifecycle. Distinct from:
 
 - ``RequestIdentity`` / ``PrincipalType`` — run-scoped execution intake only.
 - ``DelegationSpec`` — Nexus graph child-run execution delegation only.
+- ``Task`` / ``TaskState`` — Nexus execution units and runtime lifecycle only.
 - ``PolicyEngine`` — enforcement of resolved authority at runtime boundaries.
 
 Effective authority intersection (resolver implementation is out of scope):
@@ -22,6 +23,7 @@ Effective authority intersection (resolver implementation is out of scope):
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from typing import Final, Literal
@@ -50,6 +52,14 @@ SCHEMA_COLLABORATIVE_WORK_ENFORCEMENT_REQUEST_V1: Final = (
 SCHEMA_COLLABORATIVE_WORK_ENFORCEMENT_RESULT_V1: Final = (
     "collaborative_work_enforcement_result.v1"
 )
+SCHEMA_WORK_ITEM_V1: Final = "work_item.v1"
+SCHEMA_ASSIGNMENT_V1: Final = "assignment.v1"
+SCHEMA_WORK_ITEM_TRANSITION_REQUEST_V1: Final = "work_item_transition_request.v1"
+SCHEMA_ASSIGNMENT_TRANSITION_REQUEST_V1: Final = "assignment_transition_request.v1"
+SCHEMA_CREATE_WORK_ITEM_REQUEST_V1: Final = "create_work_item_request.v1"
+SCHEMA_TRANSITION_WORK_ITEM_REQUEST_V1: Final = "transition_work_item_request.v1"
+SCHEMA_CREATE_ASSIGNMENT_REQUEST_V1: Final = "create_assignment_request.v1"
+SCHEMA_TRANSITION_ASSIGNMENT_REQUEST_V1: Final = "transition_assignment_request.v1"
 
 _SUPPORTED_COLLABORATIVE_POLICY_ACTIONS: Final = frozenset(
     {
@@ -716,3 +726,672 @@ class CollaborativeWorkEnforcementResult(BaseModel):
             return None
         normalized = value.strip()
         return normalized or None
+
+
+class CollaborativeWorkLifecycleError(ValueError):
+    """Invalid collaborative WorkItem or Assignment lifecycle transition."""
+
+
+class WorkItemState(StrEnum):
+    """Conservative collaborative WorkItem lifecycle — not Nexus ``TaskState``."""
+
+    OPEN = "open"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
+class AssignmentState(StrEnum):
+    """Collaborative assignment participation lifecycle — not execution assignment."""
+
+    ACTIVE = "active"
+    REVOKED = "revoked"
+    COMPLETED = "completed"
+
+
+_ALLOWED_WORK_ITEM_TRANSITIONS: Final = {
+    WorkItemState.OPEN: frozenset({WorkItemState.ACTIVE, WorkItemState.CANCELLED}),
+    WorkItemState.ACTIVE: frozenset({WorkItemState.COMPLETED, WorkItemState.CANCELLED}),
+    WorkItemState.COMPLETED: frozenset({WorkItemState.ACTIVE}),
+    WorkItemState.CANCELLED: frozenset({WorkItemState.ACTIVE}),
+}
+
+_WORK_ITEM_REOPEN_TARGET: Final = WorkItemState.ACTIVE
+
+_ALLOWED_ASSIGNMENT_TRANSITIONS: Final = {
+    AssignmentState.ACTIVE: frozenset({AssignmentState.REVOKED, AssignmentState.COMPLETED}),
+    AssignmentState.REVOKED: frozenset(),
+    AssignmentState.COMPLETED: frozenset(),
+}
+
+
+@dataclass(frozen=True, slots=True)
+class WorkItemStateTransition:
+    """Explicit allowed WorkItem lifecycle transition."""
+
+    from_state: WorkItemState
+    to_state: WorkItemState
+
+
+@dataclass(frozen=True, slots=True)
+class AssignmentStateTransition:
+    """Explicit allowed Assignment lifecycle transition."""
+
+    from_state: AssignmentState
+    to_state: AssignmentState
+
+
+def work_item_resource_scope(*, work_item_id: str) -> str:
+    """Deterministic MP-1 resource scope convention for one WorkItem."""
+    normalized = work_item_id.strip()
+    if not normalized:
+        raise ValueError("work_item_id must be non-empty")
+    return f"work_item:{normalized}"
+
+
+def validate_work_item_state_transition(
+    *,
+    from_state: WorkItemState,
+    to_state: WorkItemState,
+) -> WorkItemStateTransition:
+    """Validate a deterministic collaborative WorkItem lifecycle transition."""
+    if type(from_state) is not WorkItemState:
+        raise TypeError("from_state must be WorkItemState")
+    if type(to_state) is not WorkItemState:
+        raise TypeError("to_state must be WorkItemState")
+    if from_state == to_state:
+        raise CollaborativeWorkLifecycleError(
+            f"Unsupported WorkItem transition: {from_state.value} -> {to_state.value}",
+        )
+    allowed = _ALLOWED_WORK_ITEM_TRANSITIONS.get(from_state, frozenset())
+    if to_state not in allowed:
+        raise CollaborativeWorkLifecycleError(
+            f"Unsupported WorkItem transition: {from_state.value} -> {to_state.value}",
+        )
+    return WorkItemStateTransition(from_state=from_state, to_state=to_state)
+
+
+def validate_assignment_state_transition(
+    *,
+    from_state: AssignmentState,
+    to_state: AssignmentState,
+) -> AssignmentStateTransition:
+    """Validate a deterministic collaborative Assignment lifecycle transition."""
+    if type(from_state) is not AssignmentState:
+        raise TypeError("from_state must be AssignmentState")
+    if type(to_state) is not AssignmentState:
+        raise TypeError("to_state must be AssignmentState")
+    if from_state == to_state:
+        raise CollaborativeWorkLifecycleError(
+            f"Unsupported Assignment transition: {from_state.value} -> {to_state.value}",
+        )
+    allowed = _ALLOWED_ASSIGNMENT_TRANSITIONS.get(from_state, frozenset())
+    if to_state not in allowed:
+        raise CollaborativeWorkLifecycleError(
+            f"Unsupported Assignment transition: {from_state.value} -> {to_state.value}",
+        )
+    return AssignmentStateTransition(from_state=from_state, to_state=to_state)
+
+
+def is_work_item_reopen_transition(transition: WorkItemStateTransition) -> bool:
+    """Return True when transition explicitly reopens a terminal WorkItem."""
+    return (
+        transition.to_state is _WORK_ITEM_REOPEN_TARGET
+        and transition.from_state in {WorkItemState.COMPLETED, WorkItemState.CANCELLED}
+    )
+
+
+class WorkItem(BaseModel):
+    """Durable collaborative work identity — distinct from Nexus ``Task``."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["work_item.v1"] = SCHEMA_WORK_ITEM_V1
+    work_item_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    created_by_principal_id: str = _NON_EMPTY
+    state: WorkItemState = WorkItemState.OPEN
+    revision: int = Field(ge=0)
+    created_at: datetime
+    updated_at: datetime
+    title: str | None = None
+    description: str | None = None
+
+    @field_validator(
+        "work_item_id",
+        "tenant_id",
+        "workspace_id",
+        "created_by_principal_id",
+        "title",
+        "description",
+    )
+    @classmethod
+    def _strip_required_or_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_timestamp_order(self) -> WorkItem:
+        if self.updated_at < self.created_at:
+            raise ValueError("updated_at must be greater than or equal to created_at")
+        return self
+
+
+class Assignment(BaseModel):
+    """Collaborative WorkItem participation — distinct from runtime AgentAssignment."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["assignment.v1"] = SCHEMA_ASSIGNMENT_V1
+    assignment_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    principal_id: str = _NON_EMPTY
+    created_by_principal_id: str = _NON_EMPTY
+    state: AssignmentState = AssignmentState.ACTIVE
+    revision: int = Field(ge=0)
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    @field_validator(
+        "assignment_id",
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "principal_id",
+        "created_by_principal_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_timestamp_order(self) -> Assignment:
+        if self.created_at is not None and self.updated_at is not None:
+            if self.updated_at < self.created_at:
+                raise ValueError("updated_at must be greater than or equal to created_at")
+        return self
+
+
+class WorkItemTransitionRequest(BaseModel):
+    """Typed WorkItem state mutation input for future authoritative services."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["work_item_transition_request.v1"] = (
+        SCHEMA_WORK_ITEM_TRANSITION_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    expected_revision: int = Field(ge=0)
+    target_state: WorkItemState
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "acting_principal_id",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+class AssignmentTransitionRequest(BaseModel):
+    """Typed Assignment state mutation input for future authoritative services."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["assignment_transition_request.v1"] = (
+        SCHEMA_ASSIGNMENT_TRANSITION_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    assignment_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    expected_revision: int = Field(ge=0)
+    target_state: AssignmentState
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "assignment_id",
+        "work_item_id",
+        "acting_principal_id",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
+def apply_work_item_transition(
+    work_item: WorkItem,
+    request: WorkItemTransitionRequest,
+    *,
+    updated_at: datetime,
+) -> WorkItem:
+    """Apply one validated WorkItem lifecycle transition without persistence."""
+    if type(work_item) is not WorkItem:
+        raise TypeError("work_item must be WorkItem")
+    if type(request) is not WorkItemTransitionRequest:
+        raise TypeError("request must be WorkItemTransitionRequest")
+    if updated_at.tzinfo is None:
+        raise ValueError("updated_at must be timezone-aware")
+
+    if request.tenant_id != work_item.tenant_id:
+        raise CollaborativeWorkLifecycleError("transition tenant_id must match WorkItem tenant_id")
+    if request.workspace_id != work_item.workspace_id:
+        raise CollaborativeWorkLifecycleError(
+            "transition workspace_id must match WorkItem workspace_id",
+        )
+    if request.work_item_id != work_item.work_item_id:
+        raise CollaborativeWorkLifecycleError(
+            "transition work_item_id must match WorkItem work_item_id",
+        )
+    if request.expected_revision != work_item.revision:
+        raise CollaborativeWorkLifecycleError(
+            "expected_revision does not match current WorkItem revision",
+        )
+    if updated_at < work_item.updated_at:
+        raise ValueError("updated_at must be greater than or equal to WorkItem updated_at")
+
+    validate_work_item_state_transition(
+        from_state=work_item.state,
+        to_state=request.target_state,
+    )
+    return work_item.model_copy(
+        update={
+            "state": request.target_state,
+            "revision": work_item.revision + 1,
+            "updated_at": updated_at,
+        },
+    )
+
+
+def apply_assignment_transition(
+    assignment: Assignment,
+    request: AssignmentTransitionRequest,
+    *,
+    updated_at: datetime | None = None,
+) -> Assignment:
+    """Apply one validated Assignment lifecycle transition without persistence."""
+    if type(assignment) is not Assignment:
+        raise TypeError("assignment must be Assignment")
+    if type(request) is not AssignmentTransitionRequest:
+        raise TypeError("request must be AssignmentTransitionRequest")
+    if updated_at is not None and updated_at.tzinfo is None:
+        raise ValueError("updated_at must be timezone-aware when provided")
+
+    if request.tenant_id != assignment.tenant_id:
+        raise CollaborativeWorkLifecycleError(
+            "transition tenant_id must match Assignment tenant_id",
+        )
+    if request.workspace_id != assignment.workspace_id:
+        raise CollaborativeWorkLifecycleError(
+            "transition workspace_id must match Assignment workspace_id",
+        )
+    if request.assignment_id != assignment.assignment_id:
+        raise CollaborativeWorkLifecycleError(
+            "transition assignment_id must match Assignment assignment_id",
+        )
+    if request.work_item_id != assignment.work_item_id:
+        raise CollaborativeWorkLifecycleError(
+            "transition work_item_id must match Assignment work_item_id",
+        )
+    if request.expected_revision != assignment.revision:
+        raise CollaborativeWorkLifecycleError(
+            "expected_revision does not match current Assignment revision",
+        )
+    if (
+        assignment.updated_at is not None
+        and updated_at is not None
+        and updated_at < assignment.updated_at
+    ):
+        raise ValueError("updated_at must be greater than or equal to Assignment updated_at")
+
+    validate_assignment_state_transition(
+        from_state=assignment.state,
+        to_state=request.target_state,
+    )
+    updates: dict[str, object] = {
+        "state": request.target_state,
+        "revision": assignment.revision + 1,
+    }
+    if updated_at is not None:
+        updates["updated_at"] = updated_at
+    return assignment.model_copy(update=updates)
+
+
+class CollaborativeWorkAuthorizationDenied(Exception):
+    """Service mutation denied by the collaborative work enforcement gate."""
+
+    def __init__(self, *, enforcement_result: CollaborativeWorkEnforcementResult) -> None:
+        self.enforcement_result = enforcement_result
+        reason = enforcement_result.composition.decision.reason or "authorization denied"
+        super().__init__(reason)
+
+
+class CreateWorkItemRequest(BaseModel):
+    """Authoritative WorkItem create input for COLLAB-WORK-2C service mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["create_work_item_request.v1"] = SCHEMA_CREATE_WORK_ITEM_REQUEST_V1
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+    title: str | None = None
+    description: str | None = None
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "title",
+        "description",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> CreateWorkItemRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class TransitionWorkItemRequest(BaseModel):
+    """Authoritative WorkItem transition input for COLLAB-WORK-2C service mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["transition_work_item_request.v1"] = (
+        SCHEMA_TRANSITION_WORK_ITEM_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    expected_revision: int = Field(ge=0)
+    target_state: WorkItemState
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> TransitionWorkItemRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class CreateAssignmentRequest(BaseModel):
+    """Authoritative Assignment create input for COLLAB-WORK-2C service mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["create_assignment_request.v1"] = SCHEMA_CREATE_ASSIGNMENT_REQUEST_V1
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    assignment_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    principal_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "assignment_id",
+        "work_item_id",
+        "principal_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> CreateAssignmentRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class TransitionAssignmentRequest(BaseModel):
+    """Authoritative Assignment transition input for COLLAB-WORK-2C service mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["transition_assignment_request.v1"] = (
+        SCHEMA_TRANSITION_ASSIGNMENT_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    assignment_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    expected_revision: int = Field(ge=0)
+    target_state: AssignmentState
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "assignment_id",
+        "work_item_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> TransitionAssignmentRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self

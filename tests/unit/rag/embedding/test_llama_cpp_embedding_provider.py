@@ -117,9 +117,15 @@ def test_llama_cpp_api_key_resolution(
     )
 
 
-def test_default_registry_includes_llama_cpp() -> None:
-    from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_registry
+def test_llama_cpp_provider_available_via_catalog_binding() -> None:
+    from intergrax.integrations.registry.bootstrap import register_default_integrations
+    from intergrax.integrations.registry.profile import IntegrationProfile
+    from intergrax.rag.embedding.registry.profile import EmbeddingProfile
+    from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
 
-    registry = create_default_registry()
-    provider = registry.get("llama_cpp")
+    register_default_integrations(preset="full")
+    provider = bind_embedding_provider(
+        integration_profile=IntegrationProfile(embedding_provider="llama_cpp"),
+        embedding_profile=EmbeddingProfile(provider="llama_cpp", model="test-model"),
+    )
     assert provider.provider_name() == "llama_cpp"

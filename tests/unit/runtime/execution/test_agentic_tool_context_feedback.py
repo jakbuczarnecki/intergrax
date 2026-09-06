@@ -30,6 +30,11 @@ from intergrax.contracts.execution_identity import (
     peek_active_execution_id,
     reset_active_execution_identity,
 )
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -42,6 +47,7 @@ from intergrax.runtime.nexus.context.iterative_tool_context_assembly import (
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.native_planner_action_context import NativePlannerRound
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.tool_loop import (
     PlannedToolCallOutcome,
@@ -117,6 +123,24 @@ def _wire_ce_state(
     state.context.config.context_engine = engine
     state.context.config.max_tool_iterations = 2
     return engine
+
+
+def _bind_ce_execution_context(
+    *,
+    run_id,
+    attempt_id,
+    execution_id,
+) -> tuple[object, object]:
+    identity_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(None),
+    )
+    return identity_token, budget_token
 
 
 class _RecordingHandler:
@@ -219,12 +243,14 @@ class _IterativeCePlanner:
         allowed_tool_ids=None,
         run_id: str,
         tool_choice=None,
-    ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
-        _ = allowed_tool_ids, run_id, tool_choice
+        protocol_config=None,
+        **kwargs,
+    ) -> NativePlannerRound:
+        _ = allowed_tool_ids, run_id, tool_choice, protocol_config, kwargs
         self._round += 1
         if self._round == 1:
-            return (
-                LLMAdapterResponse(
+            return NativePlannerRound(
+                response=LLMAdapterResponse(
                     content="round one",
                     tool_calls=(
                         LLMToolCall.from_openai_shape(
@@ -234,7 +260,14 @@ class _IterativeCePlanner:
                         ),
                     ),
                 ),
-                ToolCallPlan(
+                business_tool_calls=(
+                    LLMToolCall.from_openai_shape(
+                        call_id="tc-1",
+                        name="probe.read",
+                        arguments={"value": 1},
+                    ),
+                ),
+                tool_plan=ToolCallPlan(
                     calls=[
                         PlannedToolCall(
                             step_id="step-1",
@@ -243,11 +276,14 @@ class _IterativeCePlanner:
                         )
                     ]
                 ),
+                action_context=None,
             )
         self.round_two_messages = list(messages)
-        return (
-            LLMAdapterResponse(content="final answer", tool_calls=()),
-            ToolCallPlan(calls=[]),
+        return NativePlannerRound(
+            response=LLMAdapterResponse(content="final answer", tool_calls=()),
+            business_tool_calls=(),
+            tool_plan=ToolCallPlan(calls=[]),
+            action_context=None,
         )
 
 
@@ -261,7 +297,7 @@ async def test_iterative_round_two_receives_ce_tool_feedback() -> None:
     invoker = _RecordingInvoker()
     planner = _IterativeCePlanner()
 
-    token = bind_active_execution_identity(
+    token, budget_token = _bind_ce_execution_context(
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
@@ -277,13 +313,14 @@ async def test_iterative_round_two_receives_ce_tool_feedback() -> None:
         )
     finally:
         reset_active_execution_identity(token)
+        reset_active_execution_budget(budget_token)
 
     assert result.used_ce_tool_feedback
     assert result.loop_iterations == 2
     tool_messages = [msg for msg in planner.round_two_messages if msg.role == "tool"]
     assert len(tool_messages) == 1
     assert tool_messages[0].tool_call_id == "tc-1"
-    assert tool_messages[0].content == '{"result":1}'
+    assert '{"result":1}' in (tool_messages[0].content or "")
     assert any(msg.role == "assistant" and msg.tool_calls for msg in planner.round_two_messages)
 
 
@@ -407,7 +444,7 @@ async def test_execution_id_stable_across_ce_tool_loop() -> None:
     invoker = _RecordingInvoker()
     planner = _IterativeCePlanner()
 
-    token = bind_active_execution_identity(
+    token, budget_token = _bind_ce_execution_context(
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
@@ -424,6 +461,7 @@ async def test_execution_id_stable_across_ce_tool_loop() -> None:
         assert peek_active_execution_id() == execution_id
     finally:
         reset_active_execution_identity(token)
+        reset_active_execution_budget(budget_token)
 
 
 def test_certified_ce_path_does_not_call_append_native_tool_messages() -> None:

@@ -14,10 +14,12 @@ from intergrax.llm_adapters.routing.context_bridge import tokens_used_from_usage
 @pytest.fixture()
 def _restore_registry_state():
     snapshot = dict(LLMAdapterRegistry._factories)
+    installed = LLMAdapterRegistry._builtin_registrations_installed
     try:
         yield snapshot
     finally:
         LLMAdapterRegistry._factories = snapshot
+        LLMAdapterRegistry._builtin_registrations_installed = installed
 
 
 class _StubCustomAdapter(LLMAdapter):

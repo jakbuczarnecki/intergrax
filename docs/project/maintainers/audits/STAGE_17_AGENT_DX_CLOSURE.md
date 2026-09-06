@@ -126,6 +126,8 @@ Documented as **namespace debt only** — not a lifecycle or public-execution by
 | Agent package `-m gate` smoke (migrated packages) | 13 passed |
 | Scenario architecture gates | Pass (run in Stage 17 verification) |
 | Dedicated ai_incident real-package conformance | PASS with zero lifecycle exemptions |
+| Aggregate initialized-scenario architecture conformance | PASS |
+| indirect_prompt_injection / verified_product_identification lifecycle | PASS — zero `AGENT_LIFECYCLE_BYPASS` |
 | Application lifecycle gates | Pass (run in Stage 17 verification) |
 | Stage 15 architecture gate | Pass (run in Stage 17 verification) |
 | Stage 15 E2E | Pass (run in Stage 17 verification) |
@@ -147,5 +149,6 @@ No new repo-wide `NexusLoop` ban gate (Tier-1 internal tests remain valid).
 - No public Tier-3 Nexus quickstart in bounded authoring surfaces
 - No public mutable `AgentRegistry` quickstart in bounded authoring surfaces
 - No scenario-owned production lifecycle (`AgentRegistry()` removed from scenario path)
+- No initialized scenario owns mutable `AgentRegistry` lifecycle
 - No second lifecycle authority introduced
 - Stage 15 proof suite re-verified in Stage 17 test budget

@@ -105,6 +105,9 @@ from intergrax.applications._shared.registry_projection import (
     ApplicationRegistryProjectionCoordinator,
     InMemoryRegistryProjectionInputStore,
 )
+from intergrax.applications._shared.registry_projection_descriptor import (
+    InMemoryRuntimeRegistryProjectionDescriptorStore,
+)
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     ExecutionId,
@@ -403,6 +406,7 @@ def _build_test_lifecycle_services(
         ),
         revision_service=RuntimeRevisionService(stores.revision_store),
         projection_input_store=projection_input_store,
+        descriptor_store=InMemoryRuntimeRegistryProjectionDescriptorStore(),
         deployment_instance_store=deployment_instance_store,
     )
 

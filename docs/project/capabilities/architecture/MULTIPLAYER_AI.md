@@ -28,7 +28,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **A. Architecture / ownership direction.** MP-0 docs and MP-1 ownership are frozen (ADR-MP-001, ADR-MP-002). [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) is the MP-1 anchor domain. MP-0…MP-9 roadmap semantics are preserved below.
 
-**B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence) - **final review pending** per domain status. Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
+**B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
 **C. Planned / not started as Multiplayer phases.** MP-2 (Shared Work) through MP-9 remain roadmap. LKW adoption (MP-7), AgentDirectory / external-agent interoperability (MP-8), and advanced collaborative UX (MP-9) are **future**. Domain ownership for MP-2+ is provisional until bounded ownership checks close.
 
@@ -45,8 +45,8 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 | Concern | Ownership / maturity |
 | -------- | --------------------- |
-| **Principal** | MP-1 - Collaborative Work; core runtime implemented, final review pending |
-| **Membership / delegation** | MP-1 - Collaborative Work; same slice boundary |
+| **Principal** | MP-1 - Collaborative Work; **CLOSED** |
+| **Membership / delegation** | MP-1 - Collaborative Work; **CLOSED** |
 | **Shared work** | MP-2 - planned; ownership to confirm |
 | **Work artifacts** | MP-3 - planned |
 | **Decision / approval** | MP-4 - collaborative primitive; HITL bridge only for execution pause |
@@ -55,7 +55,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 | **LKW relation** | MP-7 reference consumer - not owner |
 | **HITL relation** | Execution pause/resume primitive - not Decision owner |
 | **External agent interoperability** | MP-8 - future; AgentDirectory ≠ AgentRegistry |
-| **Current maturity** | Architecture / roadmap stage; MP-1 slice implemented; capability-wide proof not established |
+| **Current maturity** | Architecture / roadmap stage; MP-1 **CLOSED**; MP-2+ NOT STARTED; capability-wide proof not established |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§Purpose](#purpose) · [§Strategic position](#strategic-position) · [§Roadmap summary](#roadmap-summary) |
 
 ## Core mental model
@@ -97,12 +97,12 @@ Tier-0/Tier-1 platform Multiplayer primitives
 
 ## Engineering canon
 
-**Status:** **MP-1 - OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** - MP-1 core runtime implemented ([`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md)); final review pending - MP-2+ NOT STARTED
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001)
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-1** - core runtime implemented; final review pending (COLLAB-WORK-1H-R2 lineage)
-**Next task after MP-1 review:** **MP-2** bounded ownership check - then domain plan rows for Shared Work
+**Current active task:** **COLLAB-WORK-2D** (SQLite durability parity)
+**Next task:** COLLAB-WORK-2D — SQLite durability parity
 
 ## Cursor read scope (token budget)
 
@@ -402,19 +402,23 @@ not replace existing Evidence.
 
 **Reused (not owners):** `RequestIdentity` / run-scoped principal propagation; `MeaningfulSideEffectRequest` policy enforcement; LKW principal documentation in application layer (consumer reference only).
 
-**New required:** collaborative Principal model, WorkspaceMembership, Delegation / effective authority contracts and enforcement hooks (semantic contracts frozen; **MP-1 core runtime implemented** - final review pending per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md)).
+**New required:** collaborative Principal model, WorkspaceMembership, Delegation / effective authority contracts and enforcement hooks — **MP-1 CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md).
 
 ---
 
 ### MP-2 - Shared Work: WorkItem, Assignment, lifecycle and concurrency
 
+**Status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**.
+
 **Intent:** Platform-owned shared work units with explicit assignment, lifecycle states, and concurrency semantics independent of delivery channel.
 
-**Likely owning domains:** `ORCHESTRATION`, `UNIFIED_EXECUTION_RUNTIME`, `BACKGROUND_TASKS` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`**
+**Owning domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) — frozen by ADR-MP-003
 
-**Reused (not owners):** Nexus task/session concepts where they remain execution-runtime concerns; application workflows.
+**Reused (not owners):** `ORCHESTRATION` (graph policy; explicit WorkItem context bridge), `UNIFIED_EXECUTION_RUNTIME` / NEXUS (`Task`, `run_id`, `attempt`, outcomes), `BACKGROUND_TASKS` (may execute work associated with a WorkItem), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance consumption).
 
-**New required:** WorkItem, Assignment, shared-work lifecycle and concurrency invariants.
+**New required:** WorkItem, Assignment, shared-work lifecycle, concurrency, and idempotency invariants — **contracts via COLLAB-WORK-2A (closed); implementation via COLLAB-WORK-2B…2G**.
+
+**Next active task:** **COLLAB-WORK-2D**
 
 ---
 
@@ -548,13 +552,13 @@ Each decision is required before the relevant implementation:
 |-----|----------|
 | **ADR-MP-001** | Collaborative Work Plane ownership |
 | **ADR-MP-002** | Principal / Membership / Delegation |
-| **ADR-MP-003** | WorkItem vs Nexus Task |
+| **ADR-MP-003** | WorkItem vs Nexus Task — Shared Work ownership |
 | **ADR-MP-004** | WorkArtifact / Decision ownership |
 | **ADR-MP-005** | Workspace platformization / LKW migration |
 | **ADR-MP-006** | Principal-scoped ContextView |
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted** (MP-1A - architecture frozen; MP-1 core runtime implemented, final review pending). ADR-MP-003…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted** — MP-2 **IMPLEMENTATION IN PROGRESS**; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; active task **COLLAB-WORK-2D**. ADR-MP-004…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 

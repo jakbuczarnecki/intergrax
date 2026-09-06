@@ -18,6 +18,13 @@ from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash, t
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.registry.runtime import RegisteredTool
+from intergrax.runtime.nexus.tools.native_planner_action_context import (
+    NATIVE_PLANNER_PROTOCOL_NONE,
+    NativePlannerProtocolConfig,
+    NativePlannerRound,
+    append_planner_action_context_schema,
+    resolve_native_planner_protocol,
+)
 from intergrax.runtime.nexus.tools.native_planner_transcript import (
     canonical_native_planner_messages,
 )
@@ -222,16 +229,16 @@ class ToolPlanningService:
         allowed = frozenset(allowed_tool_ids) if allowed_tool_ids is not None else None
 
         if self._native_tools:
-            llm_result, tool_plan = self.plan_native_round(
+            planner_round = self.plan_native_round(
                 messages,
                 allowed_tool_ids=allowed_tool_ids,
                 run_id=run_id,
                 tool_choice=tool_choice,
             )
-            _ = llm_result
+            _ = planner_round
             return ToolPlanDecision(
                 final_answer=None,
-                tool_plan=tool_plan,
+                tool_plan=planner_round.tool_plan,
                 messages=[],
             )
 
@@ -317,7 +324,8 @@ class ToolPlanningService:
         prepared_tools_schema: Sequence[Mapping[str, Any]] | None = None,
         prepared_tools_schema_hash: str | None = None,
         prepared_messages_hash: str | None = None,
-    ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
+        protocol_config: NativePlannerProtocolConfig | None = None,
+    ) -> NativePlannerRound:
         """One native LLM tool round — used by TOOL-ENG-6 multi-iteration loop."""
         if not self._native_tools:
             raise ValueError("plan_native_round requires an LLM adapter with native tool support")
@@ -340,6 +348,14 @@ class ToolPlanningService:
                 self.tools,
                 allowed_tool_ids=allowed_tool_ids,
             )
+        effective_protocol = (
+            protocol_config
+            if protocol_config is not None
+            else NATIVE_PLANNER_PROTOCOL_NONE
+        )
+        provider_tools_schema = tools_schema
+        if effective_protocol.protocol_active:
+            provider_tools_schema = append_planner_action_context_schema(tools_schema)
         pruned = canonical_native_planner_messages(messages)
         if prepared_messages_hash is not None:
             computed_messages_hash = compute_model_facing_messages_hash(pruned)
@@ -357,15 +373,20 @@ class ToolPlanningService:
         )
         result = self.llm.generate_with_tools(
             provider_messages,
-            tools_schema,
+            provider_tools_schema,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_answer_tokens,
             tool_choice=effective_tool_choice,
             run_id=run_id,
         )
 
+        action_context, business_tool_calls = resolve_native_planner_protocol(
+            result.tool_calls,
+            protocol_config=effective_protocol,
+        )
+
         calls: List[PlannedToolCall] = []
-        for tc in result.tool_calls:
+        for tc in business_tool_calls:
             name = tc.name
             if allowed is not None and name not in allowed:
                 continue
@@ -385,4 +406,9 @@ class ToolPlanningService:
                 )
             )
 
-        return result, ToolCallPlan(calls=calls)
+        return NativePlannerRound(
+            response=result,
+            business_tool_calls=business_tool_calls,
+            tool_plan=ToolCallPlan(calls=calls),
+            action_context=action_context,
+        )

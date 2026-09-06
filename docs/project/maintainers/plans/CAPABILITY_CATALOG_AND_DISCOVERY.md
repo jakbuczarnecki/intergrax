@@ -96,7 +96,14 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AC-4 discovery request compatibility preserved for agent slice. |
 | **Completion criteria** | End-to-end read query returns typed candidates for all three V1 types; scope parameters mandatory for enterprise paths. |
 | **Depends on** | Stage 2. |
-| **Maturity** | **Implemented** — typed query contracts at `intergrax/contracts/capability_catalog/` (`CapabilityDiscoveryScope`, `CapabilityDiscoveryScopeMode`, `CapabilityDiscoveryQuery`, `LogicalIdentityFilter`, `SourceFilter`, `CapabilityIdentityKey`, `CapabilityDiscoveryAvailabilityEvidence`, `AvailabilityDisposition`); candidate projection at `intergrax/capability_catalog/candidate.py` (`CapabilityDiscoveryCandidate` preserves `CapabilityCatalogEntry`, source-qualified identity, provenance); deterministic filtering at `intergrax/capability_catalog/discovery.py` (`discover_capability_candidates` consumes Stage-2 `CapabilityCatalogSnapshot` only — read-only, no registry scan); enterprise scope fail-closed (`organization_id` + `tenant_id` + `application_id` mandatory; `scope_visible_keys` evidence required); explicit `GLOBAL` scope path; availability dispositions projected from caller evidence (`CATALOG_AVAILABLE`, `HOST_AVAILABLE`, `BLOCKED`, `UNAVAILABLE`, `SCOPE_UNAVAILABLE`) — competing availability disposition evidence (`host_available_keys`, `blocked_keys`, `unavailable_keys`) is mutually exclusive per identity; contradictory evidence fails closed at `CapabilityDiscoveryAvailabilityEvidence` contract validation — Stage 3 does not resolve contradictory facts; `scope_visible_keys` is visibility evidence and may coexist with any single disposition; Stage 3 does not execute governance; default query surfaces all in-scope dispositions; empty ≠ blocked distinguishable via disposition + optional `availability_constraints`; ordering preserves Stage-2 snapshot order; contract tests `tests/unit/contracts/capability_catalog/test_capability_discovery_contracts.py`; filtering tests `tests/unit/capability_catalog/test_discovery.py`; architecture gates extended in `tests/unit/capability_catalog/test_architecture_gates.py` and `tests/unit/contracts/capability_catalog/test_capability_catalog_architecture_gates.py`; regression gates `tests/unit/agent_distribution/test_federated_discovery.py`, `tests/unit/agent_distribution/test_agent_discovery.py`, `tests/unit/tools/registry/test_catalog.py`, `tests/unit/contracts/capability_catalog/`, `tests/unit/capability_catalog/`. |
+| **Maturity** | **Implemented** — typed query contracts at `intergrax/contracts/capability_catalog/` (`CapabilityDiscoveryScope`, `CapabilityDiscoveryScopeMode`, `CapabilityDiscoveryQuery`, `LogicalIdentityFilter`, `SourceFilter`, `CapabilityIdentityKey`, `CapabilityDiscoveryAvailabilityEvidence`, `AvailabilityDisposition`); candidate projection at `intergrax/capability_catalog/candidate.py` (`CapabilityDiscoveryCandidate` preserves `CapabilityCatalogEntry`, source-qualified identity, provenance); deterministic filtering at `intergrax/capability_catalog/discovery.py` (`discover_capability_candidates` consumes Stage-2 `CapabilityCatalogSnapshot` only — read-only, no registry scan); enterprise scope fail-closed (`organization_id` + `tenant_id` + `application_id` mandatory; `scope_visible_keys` evidence required); explicit `GLOBAL` scope path; availability dispositions projected from caller evidence (`CATALOG_AVAILABLE`, `HOST_AVAILABLE`, `BLOCKED`, `UNAVAILABLE`, `SCOPE_UNAVAILABLE`); Stage 3 does not execute governance; default query surfaces all in-scope dispositions; empty ≠ blocked distinguishable via disposition + optional `availability_constraints`; ordering preserves Stage-2 snapshot order; contract tests `tests/unit/contracts/capability_catalog/test_capability_discovery_contracts.py`; filtering tests `tests/unit/capability_catalog/test_discovery.py`; architecture gates extended in `tests/unit/capability_catalog/test_architecture_gates.py` and `tests/unit/contracts/capability_catalog/test_capability_catalog_architecture_gates.py`; regression gates `tests/unit/agent_distribution/test_federated_discovery.py`, `tests/unit/agent_distribution/test_agent_discovery.py`, `tests/unit/tools/registry/test_catalog.py`, `tests/unit/contracts/capability_catalog/`, `tests/unit/capability_catalog/`. |
+
+**Availability evidence consistency (Stage 3):**
+
+- HOST_AVAILABLE / BLOCKED / UNAVAILABLE evidence sets are mutually exclusive per `CapabilityIdentityKey`.
+- Contradictory evidence fails closed during contract validation.
+- Stage 3 does not resolve conflicting availability facts by precedence.
+- `scope_visible_keys` remains an orthogonal visibility dimension.
 
 ---
 
@@ -113,7 +120,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Tool selection regression suite; AC-4 selection tests. |
 | **Completion criteria** | At least one ranker per capability type or justified shared ranker; documented tie-break; ranking separated from selection stage. |
 | **Depends on** | Stage 3. |
-| **Maturity** | **Planned**. |
+| **Maturity** | **Implemented** — ranking port at `intergrax/capability_catalog/ranking.py` (`CapabilityRanker`, `StableIdentityRanker`, `rank_capability_candidates`, `identity_sort_key`); ranked output at `intergrax/capability_catalog/ranked_candidate.py` (`RankedCapabilityCandidate` delegates identity/provenance/availability to Stage-3 candidate); ranking evidence/context at `intergrax/contracts/capability_catalog/ranking.py` (`CapabilityRankingEvidence`, `CapabilityRankingContext`, `CapabilityRankingSignal`); fail-closed integrity validation at `intergrax/capability_catalog/ranking_validation.py` (`validate_ranked_output` — same identities, no duplicates, no mutation, contiguous 1..N positions); baseline `StableIdentityRanker` (`stable.identity`) — canonical `identity.sort_key` order with `original_stage3_position` evidence, no semantic scoring; Agent adapter `intergrax/capability_catalog/adapters/agent_ranking.py` (`AgentStableIdentityCapabilityRanker` — reuses AC-4 stable identity ordering primitive from `sorted_eligible_identities` / `DeterministicIdentitySelectionStrategy`, **not** `select()`); Tool adapter `intergrax/capability_catalog/adapters/tool_ranking.py` (`KeywordOverlapToolCapabilityRanker` — keyword overlap scoring via shared Tool-domain primitive `intergrax/tools/search/keyword_ranking.py`, ordering only); Tool keyword tokenization/scoring uses shared Tool-domain primitive consumed by both TOOL-ENG-5 selection and Stage-4 capability ranking. Selection semantics remain domain-owned; Skill uses shared `StableIdentityRanker` (no Skill domain ranker — `SkillResolver` has no ranking primitive); tie-break: primary signal → `identity.sort_key` → original Stage-3 position; pluginability via constructor injection (no global registry); `CapabilityRankingError` in `intergrax/capability_catalog/errors.py`; ranking ≠ selection (no `select`/`winner` API); ranking ≠ governance (availability read-only, no elevation); tests `tests/unit/capability_catalog/test_ranking.py`, `tests/unit/contracts/capability_catalog/test_capability_ranking_contracts.py`, `tests/unit/tools/search/test_keyword_ranking.py`; architecture gates updated in `tests/unit/capability_catalog/test_architecture_gates.py`, `tests/unit/contracts/capability_catalog/test_capability_catalog_architecture_gates.py` (allow `rank` only in ranking modules); regression gates `tests/unit/agent_distribution/test_agent_discovery.py`, `tests/unit/agent_distribution/test_federated_discovery.py`, `tests/unit/tools/registry/`, `tests/unit/skills/`, `tests/unit/contracts/capability_catalog/`. |
 
 ---
 
@@ -130,7 +137,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Security/Policy bootstrap STRICT tests; AC-4 trust handoff unchanged. |
 | **Completion criteria** | Governed discovery path required for production STRICT hosts; blocked candidates carry typed reasons. |
 | **Depends on** | Stage 4. |
-| **Maturity** | **Planned**. |
+| **Maturity** | **Implemented** — governance contracts at `intergrax/contracts/capability_catalog/governance.py` (`GovernanceDisposition`, `CapabilityGovernanceReasonCode`, `GovernanceDecisionEvidence`, `CapabilityGovernanceContext`, `CapabilityGovernancePosture`, `CapabilitySetConstraintMode`, domain evidence projections `CapabilityToolGovernanceEvidence`, `CapabilityAgentGovernanceEvidence`, `CapabilitySkillGovernanceEvidence`); governed output at `intergrax/capability_catalog/governed_candidate.py` (`GovernedCapabilityCandidate`, `BlockedCapabilityCandidate`) and `intergrax/capability_catalog/governed_result.py` (`GovernedDiscoveryResult`); governance port at `intergrax/capability_catalog/governance.py` (`CapabilityGovernanceEvaluator`, `AvailabilityPreservingGovernanceEvaluator`, `govern_capability_candidates` — ALL evaluators must allow, ANY block → BLOCKED); fail-closed integrity validation at `intergrax/capability_catalog/governance_validation.py` (`validate_governed_output` — total partition, no elevation, rank order preserved); **governance set constraints distinguish an unconstrained dimension from an explicitly configured set** — `UNCONSTRAINED` + empty set means no narrowing; `EXPLICIT_SET` + empty set means deny all candidates in that dimension; **production ToolProfile and SkillProfile projections always use `EXPLICIT_SET` semantics, including when the projected set is empty**; **STRICT governed discovery requires an explicitly configured non-empty evaluator pipeline** — an empty STRICT evaluator pipeline is a governance configuration error and fails closed before candidate evaluation; **evaluator IDs in one governance pipeline must be unique** for unambiguous audit provenance; **evaluator runtime failure in STRICT** → candidate `BLOCKED` / `EVALUATOR_FAILURE`; **evaluator contract violation** → `CapabilityGovernanceError` / operation fails; Tool adapter `intergrax/capability_catalog/adapters/tool_governance.py` (`ToolPolicyGovernanceEvaluator` — projects caller-supplied tool access evidence, no execution); Agent adapter `intergrax/capability_catalog/adapters/agent_governance.py` (`AgentTrustGovernanceEvaluator` — projects trust/admission evidence, no trust verification); Skill adapter `intergrax/capability_catalog/adapters/skill_governance.py` (`SkillProfileGovernanceEvaluator` — profile enablement evidence only); STRICT missing evidence fail-closed; conflicting evidence fail-closed; `CapabilityGovernanceError` in `intergrax/capability_catalog/errors.py`; governance ≠ selection (no `select`/`winner` API); governance ≠ lifecycle (no install/activate/execute); tests `tests/unit/capability_catalog/test_governance.py`, adapter tests under `tests/unit/capability_catalog/adapters/`, `tests/unit/contracts/capability_catalog/test_capability_governance_contracts.py`; regression gates `tests/unit/runtime/nexus/tools/test_tool_access_policy_scope.py`, `tests/unit/agent_distribution/test_agent_distribution_package_trust.py`, `tests/unit/runtime/governance/test_runtime_execution_policy_admission.py`, `tests/integration/platform_plugins/test_plugin_engine_cross_flow.py`; **production STRICT enforcement** at composition boundary `intergrax/applications/_shared/production_capability_discovery_composition.py` (`discover_rank_and_govern_capabilities` — discovery → ranking → governance before downstream; `resolve_capability_governance_posture` maps host `ExecutionMode.STRICT` → `CapabilityGovernancePosture.STRICT`; `consume_governed_discovery_for_downstream` accepts only `GovernedDiscoveryResult`); authority evidence projection at `intergrax/applications/_shared/production_capability_governance_evidence.py` (Tool ← host `ToolProfile` via `available_tool_ids_for_profile`; Skill ← host `SkillProfile` via `enabled_skill_ids_for_profile`; Agent evidence supplied by registry-authority caller); architecture gates `tests/unit/applications/test_production_capability_discovery_architecture_gate.py`, integration tests `tests/unit/applications/test_production_capability_discovery_composition.py`. **Production STRICT hosts are required to cross the governed-discovery boundary before any capability selection or downstream lifecycle handoff.** |
 
 ---
 
@@ -147,7 +154,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | SK-EXP skill composition suite; harness `wire_application_environment` skill checks. |
 | **Completion criteria** | Documented pinning model shipped in Skill domain; discovery read model exposes version/disposition consistently. |
 | **Depends on** | Stage 3 (candidate model); coordinates with Skills domain plan rows. |
-| **Maturity** | **Planned** — gap explicitly recorded in architecture §Version and provenance. |
+| **Maturity** | **Implemented** — canonical version model in [`SKILLS.md`](../../architecture/SKILLS.md); root PINNED + transitive MATERIALIZED semantics in `intergrax/skills/resolver.py` (`ResolvedSkillRef`, `ResolvedSkillPack.snapshot_digest`); snapshot identity via collision-safe canonical binary framing in `intergrax/skills/snapshot_digest.py` (length-prefixed UTF-8 fields, schema `resolved_skill_pack.v1`, topological order, SHA-256); immutable agent snapshots in `intergrax/runtime/registry/agent_registry.py` (`get_resolved_skill_pack`); catalog version projection in `intergrax/capability_catalog/adapters/skill.py` (`version_label`, `SkillVersionBindingDisposition.MATERIALIZED`); contracts at `intergrax/contracts/capability_catalog/skill_version_binding.py` and `intergrax/skills/core/version_binding.py`; tests `tests/unit/skills/test_version_pinning.py`, `tests/unit/skills/test_snapshot_digest.py`, `tests/unit/skills/test_architecture_gates.py`, `tests/unit/runtime/registry/test_agent_registry_skills.py`, `tests/unit/capability_catalog/adapters/test_skill_adapter.py`; regression gates `tests/unit/skills/` (SK-EXP), `tests/unit/applications/test_skill_tool_profile.py`. |
 
 ---
 
@@ -164,7 +171,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Tool/Skill plugin E2E proofs; Tier-3 composition gate. |
 | **Completion criteria** | At least one private catalog adapter each for Tool and Skill in proof; documented operator flow for profile update vs discovery. |
 | **Depends on** | Stages 2, 5; Stage 6 recommended for Skill version display. |
-| **Maturity** | **Planned**. |
+| **Maturity** | **Implemented** — `PrivateToolCapabilityCatalogSource` and `PrivateSkillCapabilityCatalogSource` at `intergrax/capability_catalog/adapters/private_tool.py` and `private_skill.py`; enterprise-private `CapabilitySourceKind.ENTERPRISE_PRIVATE` source identity; versioned provenance (`version_label`, optional package/digest/publisher); federation with built-in Tool/Skill bundle sources; air-gapped in-memory fixtures; read-only discovery (`CATALOG_AVAILABLE` without registry/profile mutation); operator flow documented in architecture §Enterprise deployment; tests `tests/unit/capability_catalog/adapters/test_private_tool_adapter.py`, `test_private_skill_adapter.py`, `test_private_catalog_stage7.py`. |
 
 ---
 
@@ -181,7 +188,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AW work orchestration tests unaffected unless explicitly integrated. |
 | **Completion criteria** | Proof that capability need at step N can differ from step N+1 with evidence; effective set respects policy ∩ profile ∩ scope. |
 | **Depends on** | Stage 5. |
-| **Maturity** | **Planned**. |
+| **Maturity** | **Implemented** — `WorkStageCapabilityNeed`, `EffectiveCapabilitySet`, `WorkStageCapabilityDiscoveryEvidence` at `intergrax/contracts/capability_catalog/work_stage.py` and `intergrax/capability_catalog/work_stage_discovery.py`; reuses Stage 3–5 pipeline; stage transition and policy ∩ profile ∩ scope proofs in `tests/unit/capability_catalog/test_work_stage_discovery.py`. |
 
 ---
 
@@ -198,7 +205,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AW-7A acceptance criteria from [`AUTONOMOUS_WORK.md`](AUTONOMOUS_WORK.md) plan. |
 | **Completion criteria** | AW-7A uses catalog/discovery plane for Tool/Skill; durable changes routed through governance; AC-4 path untouched. |
 | **Depends on** | Stages 5, 8; AW-7A domain work. |
-| **Maturity** | **In progress** (AW-7A) / federation **planned**. |
+| **Maturity** | **Implemented** — `CapabilityCatalogToolDiscoveryAdapter` / `CapabilityCatalogSkillDiscoveryAdapter` at `intergrax/autonomous_work/capability_catalog_discovery_adapters.py`; AW-7A service unchanged; tests in `tests/unit/autonomous_work/test_capability_catalog_discovery_adapters.py`. |
 
 ---
 
@@ -210,12 +217,12 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Scope** | Typed Tools load evidence; typed Skills load evidence; aggregation into `ApplicationPlatformPluginEvidence` (or successor aggregate); evidence-only semantics. |
 | **Reuse** | `DomainPluginLoadReport` pattern; Tier-3 cross-flow evidence chain from Platform Plugins. |
 | **Non-goals** | Evidence as registry authority; replacing domain admission. |
-| **Hard contracts** | `ToolsPluginLoadReport`, `SkillsPluginLoadReport` (or domain-equivalent typed reports); aggregate fields on application evidence; `critical_bootstrap_acceptable` alignment with STRICT. |
+| **Hard contracts** | `DomainPluginLoadReport` per domain (`tools`, `skills` keys); aggregate fields on `ApplicationPlatformPluginEvidence`; `critical_bootstrap_acceptable` alignment with STRICT. |
 | **Required tests** | STRICT fail-closed bootstrap tests; evidence aggregation tests; rejected plugin remains non-active. |
 | **Regression gates** | `test_plugin_engine_cross_flow.py`; application composition architecture gate. |
 | **Completion criteria** | Application evidence includes Tool and Skill typed reports; documented operator audit path. |
 | **Depends on** | Stage 7 recommended; Platform Plugins evidence patterns. |
-| **Maturity** | **Planned** (Tools/Skills reports noted as future in Platform Plugins architecture). |
+| **Maturity** | **Implemented** — `CatalogBootstrapResult.tool_plugin_load_report` / `skill_plugin_load_report` from canonical `bootstrap_catalogs()` pass; aggregated in Tier-3 `ApplicationPlatformPluginEvidence`. |
 
 ---
 
@@ -328,12 +335,12 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 | 1 | Contracts & frozen boundaries | Planned |
 | 2 | Federated catalog read model | Planned |
 | 3 | Query / filtering / candidate model | Planned |
-| 4 | Ranking | Planned |
-| 5 | Governance integration | Planned |
+| 4 | Ranking | Implemented |
+| 5 | Governance integration | Implemented |
 | 6 | Skill enterprise correctness | Planned |
 | 7 | Tool/Skill catalog maturity | Planned |
-| 8 | Adaptive Unit-of-Work discovery | Planned |
-| 9 | Autonomous Work bridge | AW-7A in progress |
+| 8 | Adaptive Unit-of-Work discovery | Implemented |
+| 9 | Autonomous Work bridge | **Implemented** |
 | 10 | Bootstrap evidence | Planned |
 | 11 | Marketplace product surface | Future |
 | 12 | Isolation / external execution | Future assessment |

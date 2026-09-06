@@ -12,10 +12,10 @@ from typing import Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.credential import CredentialResolutionMode
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.models import JsonValue
-from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
@@ -45,8 +45,16 @@ class TenantConnectionRehydrationResult(BaseModel):
 
 
 @runtime_checkable
-class TenantConnectionIntegrationFactory(Protocol):
-    def create_integration(
+class TenantConnectionIntegrationFactoryResolver(Protocol):
+    def credential_resolution_mode_for(
+        self,
+        *,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+    ) -> CredentialResolutionMode:
+        ...
+
+    def create_integration_with_resolved_credential(
         self,
         *,
         tenant_id: str,
@@ -54,10 +62,27 @@ class TenantConnectionIntegrationFactory(Protocol):
         provider_id: str,
         integration_kind: IntegrationCategory,
         credential_ref: str,
-        credential: str,
+        resolved_credential: str,
         secret_free_config: Mapping[str, JsonValue],
     ) -> object:
         ...
+
+    def create_late_bound_integration(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        secret_free_config: Mapping[str, JsonValue],
+    ) -> object:
+        ...
+
+
+@runtime_checkable
+class TenantConnectionIntegrationFactory(TenantConnectionIntegrationFactoryResolver, Protocol):
+    credential_resolution_mode: CredentialResolutionMode
 
 
 class TenantConnectionRuntimeRegistryReconciler:
@@ -138,7 +163,7 @@ class TenantConnectionRehydrator:
         *,
         repository: TenantConnectionRepository,
         secrets_store: SecretsStore,
-        integration_factory: TenantConnectionIntegrationFactory,
+        integration_factory: TenantConnectionIntegrationFactoryResolver,
         connection_registry: KnowledgeConnectionRegistry,
     ) -> None:
         self._repository = repository
@@ -202,15 +227,32 @@ class TenantConnectionRehydrator:
                 status=TenantConnectionRehydrationStatus.SKIPPED_REVOKED,
             )
 
-        credential = self._resolve_secret(connection.credential_ref)
-        if credential is None:
+        try:
+            mode = self._credential_resolution_mode_for(connection)
+        except (TypeError, ValueError):
             return TenantConnectionRehydrationResult(
                 connection=safe,
                 status=TenantConnectionRehydrationStatus.UNAVAILABLE,
-                error_code="tenant_connection_secret_unavailable",
+                error_code="tenant_connection_runtime_unavailable",
             )
 
-        integration = self._construct_integration(connection, credential)
+        if mode is CredentialResolutionMode.LATE_BOUND:
+            integration = self._construct_late_bound_integration(connection)
+        elif mode is CredentialResolutionMode.RESOLVED_MATERIAL:
+            resolved_credential = self._resolve_secret(connection.credential_ref)
+            if resolved_credential is None:
+                return TenantConnectionRehydrationResult(
+                    connection=safe,
+                    status=TenantConnectionRehydrationStatus.UNAVAILABLE,
+                    error_code="tenant_connection_secret_unavailable",
+                )
+            integration = self._construct_resolved_integration(
+                connection,
+                resolved_credential,
+            )
+        else:
+            raise ValueError(f"unsupported credential resolution mode: {mode}")
+
         if integration is None:
             return TenantConnectionRehydrationResult(
                 connection=safe,
@@ -230,6 +272,15 @@ class TenantConnectionRehydrator:
             status=TenantConnectionRehydrationStatus.REGISTERED,
         )
 
+    def _credential_resolution_mode_for(
+        self,
+        connection: TenantConnection,
+    ) -> CredentialResolutionMode:
+        return self._integration_factory.credential_resolution_mode_for(
+            provider_id=connection.provider_id,
+            integration_kind=connection.integration_kind,
+        )
+
     def _resolve_secret(self, credential_ref: str) -> str | None:
         try:
             secret = self._secrets_store.get_secret(credential_ref)
@@ -241,19 +292,35 @@ class TenantConnectionRehydrator:
             return None
         return secret
 
-    def _construct_integration(
+    def _construct_resolved_integration(
         self,
-        connection,
-        credential: str,
+        connection: TenantConnection,
+        resolved_credential: str,
     ) -> object | None:
         try:
-            return self._integration_factory.create_integration(
+            return self._integration_factory.create_integration_with_resolved_credential(
                 tenant_id=connection.tenant_id,
                 connection_ref=connection.connection_ref,
                 provider_id=connection.provider_id,
                 integration_kind=connection.integration_kind,
                 credential_ref=connection.credential_ref,
-                credential=credential,
+                resolved_credential=resolved_credential,
+                secret_free_config=connection.validated_secret_free_config,
+            )
+        except Exception:
+            return None
+
+    def _construct_late_bound_integration(
+        self,
+        connection: TenantConnection,
+    ) -> object | None:
+        try:
+            return self._integration_factory.create_late_bound_integration(
+                tenant_id=connection.tenant_id,
+                connection_ref=connection.connection_ref,
+                provider_id=connection.provider_id,
+                integration_kind=connection.integration_kind,
+                credential_ref=connection.credential_ref,
                 secret_free_config=connection.validated_secret_free_config,
             )
         except Exception:

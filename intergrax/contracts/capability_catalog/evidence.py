@@ -56,9 +56,12 @@ class CapabilityDiscoveryAvailabilityEvidence(BaseModel):
             ("host_available_keys", "unavailable_keys", host_keys, unavailable_keys),
             ("blocked_keys", "unavailable_keys", blocked_keys, unavailable_keys),
         ):
-            if left & right:
+            overlap = left & right
+            if overlap:
+                conflict_key = min(overlap)
                 raise ValueError(
-                    f"{left_label} and {right_label} must not contain "
-                    "the same identity key",
+                    "availability evidence conflict: identity "
+                    f"{conflict_key!r} appears in both {left_label} and "
+                    f"{right_label}",
                 )
         return self

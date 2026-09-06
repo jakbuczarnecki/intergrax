@@ -1,0 +1,44 @@
+{
+  "build_execution_provenance": {
+    "device": "cuda",
+    "provider_batch_size": 16
+  },
+  "checksums_path": "checksums/SHA256SUMS",
+  "content_identity": "0000000000000000000000000000000000000000000000000000000000000000",
+  "created_at_utc": "2026-09-06T00:00:00+00:00",
+  "data_pack_version": "vpi.data_pack/1.0.0",
+  "derivation_version": "v2",
+  "embedding_format": "parquet",
+  "embedding_identity": {
+    "artifact_fingerprint": null,
+    "dimension": 1024,
+    "embedding_configuration_version": "v1",
+    "input_policy_version": "v2",
+    "model": "BAAI/bge-m3",
+    "model_revision": "5617a9f61b028005a4858fdac845db406aefb181",
+    "provider": "hf"
+  },
+  "embedding_schema_version": "vpi.embedding/1.0.0",
+  "record_count": 50,
+  "relational_format": "parquet",
+  "relational_schema_version": "vpi.relational/1.0.0",
+  "sample_identity": {
+    "sample_seed": 42,
+    "sample_version": "proof-50/1.0.0",
+    "selected_record_refs": [
+      "wdc-v2-selected:offer-1"
+    ]
+  },
+  "scenario_id": "verified_product_identification",
+  "shard_count": 1,
+  "shards_index_path": "indexes/shards.json",
+  "source_dataset": {
+    "dataset_name": "offers",
+    "dataset_path": "processed/selected_offers.parquet",
+    "dataset_record_count": 50,
+    "dataset_sha256": "abc"
+  },
+  "source_record_count": 50,
+  "semantic_text_version": "v2",
+  "status": "READY"
+}

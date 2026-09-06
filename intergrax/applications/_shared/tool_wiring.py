@@ -8,7 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.core.plugins.admission import DomainPluginLoadReport
+from intergrax.core.catalog_bootstrap import CatalogBootstrapResult, bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
@@ -23,9 +26,40 @@ class ApplicationToolWiring:
     registry: ToolRegistry
 
 
+class ToolCatalogBootstrapError(ValueError):
+    """Raised when STRICT tool plugin bootstrap evidence is not acceptable."""
+
+
+def tool_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
+    errors: list[str] = []
+    for item in report.failed:
+        errors.append(f"tool plugin load failed: {item.spec.name}: {item.error}")
+    for item in report.rejected:
+        if item.fail_closed:
+            errors.append(
+                "tool plugin admission rejected: "
+                f"{item.spec.name}: {item.reason_code.value}",
+            )
+    if not errors:
+        errors.append("tool plugin bootstrap admission is not acceptable")
+    return tuple(errors)
+
+
+def assert_strict_tool_bootstrap_acceptable(
+    env: ApplicationEnvironmentProfile,
+    report: DomainPluginLoadReport,
+) -> None:
+    if env.execution_mode is not ExecutionMode.STRICT:
+        return
+    if report.critical_bootstrap_acceptable:
+        return
+    raise ToolCatalogBootstrapError("; ".join(tool_plugin_bootstrap_errors(report)))
+
+
 def build_application_tool_wiring(
     profile: ToolProfile,
     *,
+    catalog_bootstrap: CatalogBootstrapResult | None = None,
     integration_profile: IntegrationProfile | None = None,
     wiring_context: ToolWiringContext | None = None,
     vectorstore_manager: Any | None = None,
@@ -50,11 +84,12 @@ def build_application_tool_wiring(
     ``ToolProfile``.
     """
     tool_bundle_ids = tuple(profile.enabled_bundles) if profile.enabled_bundles else None
-    bootstrap_catalogs(
-        register_shipped=True,
-        tool_bundle_ids=tool_bundle_ids,
-        discover_entry_points=discover_plugins_enabled(),
-    )
+    if catalog_bootstrap is None:
+        bootstrap_catalogs(
+            register_shipped=True,
+            tool_bundle_ids=tool_bundle_ids,
+            discover_entry_points=discover_plugins_enabled(),
+        )
     ctx = wiring_context
     if ctx is None and integration_profile is not None:
         ctx = ToolWiringContext.from_integration_profile(

@@ -9,9 +9,11 @@ from collections.abc import Sequence
 from typing import Any, Optional, Protocol, Union, runtime_checkable
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.runtime.nexus.tools.native_planner_action_context import (
+    NativePlannerProtocolConfig,
+    NativePlannerRound,
+)
 from intergrax.runtime.nexus.tools.tool_planning_policy import NativeToolChoice
-from intergrax.tools.core.tool_plan import ToolCallPlan
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
 
@@ -41,5 +43,6 @@ class IterativeToolPlannerProtocol(ToolPlannerProtocol, Protocol):
         allowed_tool_ids: Sequence[str] | None = None,
         run_id: str,
         tool_choice: NativeToolChoice | None = None,
-    ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
+        protocol_config: NativePlannerProtocolConfig | None = None,
+    ) -> NativePlannerRound:
         ...

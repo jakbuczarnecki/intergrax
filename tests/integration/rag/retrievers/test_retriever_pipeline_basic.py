@@ -10,7 +10,6 @@ from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_pipeline
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import VectorSimilarityRetriever
@@ -37,16 +36,9 @@ def test_retriever_pipeline_basic() -> None:
         )
     )
 
-    embedding_registry = EmbeddingProviderRegistry()
     embedding_provider = HFEmbeddingProvider()
-    embedding_registry.register(embedding_provider)
-
-    engine = EmbeddingEngine(embedding_registry)
-
-    embedding_pipeline = EmbeddingPipeline(
-        engine=engine,
-        provider_id=embedding_provider.provider_name(),
-    )
+    engine = EmbeddingEngine(provider=embedding_provider)
+    embedding_pipeline = EmbeddingPipeline(engine=engine)
 
     embedding_manager = EmbeddingManager(pipeline=embedding_pipeline)
 

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -34,12 +35,6 @@ from intergrax.agent_distribution.control_plane_governance import (
     StaticApplicationEnvironmentTenantResolver,
 )
 from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
-from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.agent_run_enums import PrincipalType
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.runtime.governance.control_plane_mutation_authorization import (
-    ControlPlaneMutationAuthorizationBoundary,
-)
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
@@ -74,7 +69,6 @@ from intergrax.agent_distribution.in_memory_stores import (
 )
 from intergrax.agent_distribution.installation import InstallationState
 from intergrax.agent_distribution.installation_service import InstallationService
-from intergrax.agent_distribution.materialization import MaterializationOutput
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
 )
@@ -88,9 +82,18 @@ from intergrax.agent_distribution.runtime_revision import (
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
+    AgentPackageTrustPolicy,
     AgentPackageTrustRevocationState,
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
+)
+from testing_support.agent_platform_admin_harness import (
+    ADMIN_TEST_MATERIALIZATION_ARTIFACT_DIGEST,
+    AgentProjectMetadataTestProvider,
+    DeterministicAgentDistributionAdapter,
+    FakeAgentCatalog,
+    admin_test_principal,
+    allow_mutation_boundary,
 )
 from testing_support.agent_platform_dependency_resolver import (
     make_identity_dependency_resolver,
@@ -102,7 +105,13 @@ _APP = "app-a"
 _APP_B = "app-b"
 _ENV = "env-prod"
 _DIGEST = "sha256:" + ("a" * 64)
-_ARTIFACT = "sha256:" + ("d" * 64)
+_QUALIFIED_AT = datetime(2026, 8, 1, 12, 0, 0, tzinfo=UTC)
+_EVAL_AT_FRESH = datetime(2026, 8, 5, 12, 0, 0, tzinfo=UTC)
+_EVAL_AT_STALE = datetime(2026, 8, 10, 12, 0, 0, tzinfo=UTC)
+_ARTIFACT = ADMIN_TEST_MATERIALIZATION_ARTIFACT_DIGEST
+_DeterministicAdapter = DeterministicAgentDistributionAdapter
+_FakeCatalog = FakeAgentCatalog
+_MetadataProvider = AgentProjectMetadataTestProvider
 _PACKAGE_ID = "intergrax-local-search-agent"
 _META_REF = "meta://search"
 _PACKAGE = AgentPackageIdentity(
@@ -110,81 +119,18 @@ _PACKAGE = AgentPackageIdentity(
     package_version="1.0.0",
     package_digest=_DIGEST,
 )
-_TEST_PRINCIPAL = RequestIdentity(
-    tenant_id="tenant-test",
-    user_id="admin-1",
-    principal_type=PrincipalType.USER,
-    auth_subject="admin-1",
-)
 
 
-@dataclass
-class _AllowEvaluator:
-    def evaluate(self, request: object) -> PolicyDecision:
-        del request
-        return PolicyDecision(action=PolicyAction.ALLOW, reason="test_allow")
-
-
-def admin_test_principal() -> RequestIdentity:
-    return _TEST_PRINCIPAL
-
-
-def allow_mutation_boundary() -> ControlPlaneMutationAuthorizationBoundary:
-    return ControlPlaneMutationAuthorizationBoundary(evaluator=_AllowEvaluator())
-
-
-class _MetadataProvider:
-    def __init__(self, records: dict[str, AgentProjectMetadata]) -> None:
-        self._records = records
-
-    def get_metadata(self, metadata_ref: str) -> AgentProjectMetadata | None:
-        return self._records.get(metadata_ref)
-
-
-class _DeterministicAdapter:
-    topology = MaterializationTopology.OCI_IMAGE
-    materializer_id = "intergrax.admin-test"
-    materializer_version = "1.0.0"
-
-    def materialize(self, materialization_input: object) -> MaterializationOutput:
-        del materialization_input
-        return MaterializationOutput(
-            materialization_artifact_digest=_ARTIFACT,
-            artifact_locator="test://artifact",
-            health_check_evidence_ref="test://health",
-            runtime_graph_manifest_path=".intergrax-runtime-graph.json",
-            topology=self.topology,
-        )
-
-
-class _FakeCatalog:
-    def __init__(self, entries: list[AgentCatalogEntry]) -> None:
-        self._entries = entries
-
-    @property
-    def catalog_source_id(self) -> str:
-        return "builtin-1"
-
-    def list_entries(self, filters: object | None = None) -> list[AgentCatalogEntry]:
-        del filters
-        return list(self._entries)
-
-    def resolve_package(
-        self, entry: AgentCatalogEntry, *, version_selector: str
-    ) -> object:
-        del entry, version_selector
-        raise NotImplementedError
-
-    def health(self) -> None:
-        return None
-
-
-def _trust() -> AgentInstallationTrustRecord:
+def _trust(
+    *,
+    qualification_qualified_at: datetime | None = None,
+) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
         qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=_DIGEST,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
+        qualification_qualified_at=qualification_qualified_at,
         trust_evidence_refs=(
             AgentTrustEvidenceRef(
                 evidence_id="evidence:service:0",
@@ -266,6 +212,8 @@ def build_admin_stack(
     *,
     with_catalog: bool = True,
     package_trust_revocation_state_source: object | None = None,
+    package_trust_policy_source: object | None = None,
+    package_trust_evaluation_time_source: object | None = None,
 ) -> AdminStack:
     state = AgentDistributionStoreState()
     installation_store = InMemoryAgentInstallationStore(state)
@@ -343,6 +291,14 @@ def build_admin_stack(
     if package_trust_revocation_state_source is not None:
         admin_service_kwargs["package_trust_revocation_state_source"] = (
             package_trust_revocation_state_source
+        )
+    if package_trust_policy_source is not None:
+        admin_service_kwargs["package_trust_policy_source"] = (
+            package_trust_policy_source
+        )
+    if package_trust_evaluation_time_source is not None:
+        admin_service_kwargs["package_trust_evaluation_time_source"] = (
+            package_trust_evaluation_time_source
         )
     service = AgentPlatformAdminService(**admin_service_kwargs)
     return AdminStack(
@@ -889,3 +845,91 @@ def test_install_request_digest_mismatch_rejected_at_boundary() -> None:
             ),
             agent_project_metadata_ref=_META_REF,
         )
+
+
+def test_install_rejected_when_qualification_stale_before_store_mutation() -> None:
+    stack = build_admin_stack(
+        package_trust_policy_source=lambda: AgentPackageTrustPolicy(
+            max_qualification_age=timedelta(days=7),
+        ),
+        package_trust_evaluation_time_source=lambda: _EVAL_AT_STALE,
+    )
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        stack.service.install_agent(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=_install_request().model_copy(
+                update={
+                    "trust_record": _trust(qualification_qualified_at=_QUALIFIED_AT),
+                },
+            ),
+            principal=admin_test_principal(),
+        )
+    assert exc_info.value.reason_code == "qualification_expired"
+    assert "inst-1" not in stack.state.installations
+
+
+def test_build_rejected_when_installed_trust_record_stale_for_new_revision() -> None:
+    evaluation_times = {"at": _EVAL_AT_FRESH}
+    stack = build_admin_stack(
+        package_trust_policy_source=lambda: AgentPackageTrustPolicy(
+            max_qualification_age=timedelta(days=7),
+        ),
+        package_trust_evaluation_time_source=lambda: evaluation_times["at"],
+    )
+    stack.service.install_agent(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=_install_request().model_copy(
+            update={
+                "trust_record": _trust(qualification_qualified_at=_QUALIFIED_AT),
+            },
+        ),
+        principal=admin_test_principal(),
+    )
+    stack.service.bind_agent(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=_bind_request(),
+        principal=admin_test_principal(),
+    )
+    stack.service.enable_binding(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        application_binding_id="bind-search",
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable",
+            expected_revision=0,
+        ),
+        principal=admin_test_principal(),
+    )
+
+    evaluation_times["at"] = _EVAL_AT_STALE
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        _build_revision(stack, "rev-stale-trust")
+    assert exc_info.value.reason_code == "qualification_expired"
+    assert "rev-stale-trust" not in stack.state.revisions
+
+
+def test_installed_package_persists_when_qualification_becomes_stale() -> None:
+    evaluation_times = {"at": _EVAL_AT_FRESH}
+    stack = build_admin_stack(
+        package_trust_policy_source=lambda: AgentPackageTrustPolicy(
+            max_qualification_age=timedelta(days=7),
+        ),
+        package_trust_evaluation_time_source=lambda: evaluation_times["at"],
+    )
+    stack.service.install_agent(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=_install_request().model_copy(
+            update={
+                "trust_record": _trust(qualification_qualified_at=_QUALIFIED_AT),
+            },
+        ),
+        principal=admin_test_principal(),
+    )
+    assert "inst-1" in stack.state.installations
+
+    evaluation_times["at"] = _EVAL_AT_STALE
+    assert "inst-1" in stack.state.installations

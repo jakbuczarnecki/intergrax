@@ -21,10 +21,10 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
     MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
     Ms365GraphCollaborationSuiteIntegration,
 )
-from intergrax.runtime.vendor_knowledge.models import JsonValue
-from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
-    TenantConnectionIntegrationFactory,
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
 )
+from intergrax.runtime.vendor_knowledge.models import JsonValue
 
 
 Ms365GraphRuntimeBuilder = Callable[
@@ -38,7 +38,7 @@ _ALLOWED_SECRET_FREE_CONFIG_KEYS = frozenset(
 
 @dataclass(frozen=True, slots=True)
 class Ms365GraphTenantConnectionIntegrationFactory(
-    TenantConnectionIntegrationFactory
+    EagerTenantConnectionIntegrationFactoryMixin,
 ):
     """Build the existing Microsoft Graph runtime from a durable connection."""
 
@@ -55,6 +55,27 @@ class Ms365GraphTenantConnectionIntegrationFactory(
         credential: str,
         secret_free_config: Mapping[str, JsonValue],
     ) -> Ms365GraphCollaborationSuiteIntegration:
+        return self.create_integration_with_resolved_credential(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            credential_ref=credential_ref,
+            resolved_credential=credential,
+            secret_free_config=secret_free_config,
+        )
+
+    def create_integration_with_resolved_credential(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        resolved_credential: str,
+        secret_free_config: Mapping[str, JsonValue],
+    ) -> Ms365GraphCollaborationSuiteIntegration:
         _require_nonblank(tenant_id, field_name="tenant_id")
         _require_nonblank(connection_ref, field_name="connection_ref")
         _require_nonblank(credential_ref, field_name="credential_ref")
@@ -62,18 +83,18 @@ class Ms365GraphTenantConnectionIntegrationFactory(
             raise ValueError("provider_id does not match the Microsoft Graph factory")
         if integration_kind is not IntegrationCategory.COLLABORATION_SUITE:
             raise ValueError("integration_kind does not match the Microsoft Graph factory")
-        if not isinstance(credential, str) or not credential.strip():
+        if not isinstance(resolved_credential, str) or not resolved_credential.strip():
             raise ValueError("credential must be a non-empty string")
 
         config_overrides = _resolve_secret_free_config(secret_free_config)
         config_overrides.update(tenant_id=tenant_id)
-        delegated_access_token = _parse_delegated_access_token(credential)
+        delegated_access_token = _parse_delegated_access_token(resolved_credential)
         builder = self.runtime_builder or open_ms365_graph_collaboration_suite
         try:
             if delegated_access_token is not None:
                 config = resolve_ms365_graph_config(**config_overrides)
                 return builder(config, access_token=delegated_access_token)
-            config_overrides["client_secret"] = credential
+            config_overrides["client_secret"] = resolved_credential
             config = resolve_ms365_graph_config(**config_overrides)
             return builder(config)
         except IntegrationConfigurationError:

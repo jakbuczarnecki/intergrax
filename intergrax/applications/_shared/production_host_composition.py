@@ -3,8 +3,9 @@
 """Production host registry projection composition (AC-3).
 
 Host startup resolves the traffic-serving ``MaterializedRegistryProjection`` from the
-same AP-9/AP-10 store instances populated by activation/projection. Manifest-only
-registry assembly and startup-time reprojection are forbidden.
+same AP-9/AP-10 store instances populated by activation/projection or deterministic
+cold-restart rehydration from durable projection descriptors. Manifest-only registry
+assembly and startup-time reprojection from mutable desired state are forbidden.
 """
 
 from __future__ import annotations
