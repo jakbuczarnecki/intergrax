@@ -234,9 +234,11 @@ No subclassing Task, renaming Task to WorkItem, or wrapper-as-source-of-truth. *
 
 ### Assignment != AgentAssignment
 
-**Assignment** is a separate collaborative primitive (`work_item_id`, `principal_id`, assignment state, revision, authority/lifecycle provenance). Supports human↔human, human↔agent, agent↔agent, and service/external-agent principals through MP-1 `CollaborativePrincipal`.
+**Assignment** is a separate collaborative primitive (`work_item_id`, `principal_id`, assignment state, revision, authority/lifecycle provenance). Supports human↔human, human↔agent, agent↔agent, and service/external-agent principals through MP-1 `CollaborativePrincipal`. **`principal_id` is immutable** on an Assignment record — reassignment is represented by lifecycle termination of the old Assignment and creation of a new Assignment, not by mutating `principal_id` in place.
 
 Do **not** encode assignments as a single `WorkItem.assignee_id` when multi-principal or assignment history is required. **Assignment != AgentAssignment** when the latter denotes runtime/agent execution assignment elsewhere in canon.
+
+**Reassignment semantics (MP-2 / COLLAB-WORK-2C):** `reassign` = revoke existing Assignment + create a new Assignment — two independently authorized, CAS-protected repository mutations. COLLAB-WORK-2B repositories expose no transactional Unit of Work; MP-2 must not expose a combined atomic reassignment command or simulate rollback across records. Atomic multi-record orchestration requires an explicit transactional boundary (future concern, not MP-2 scope).
 
 ### Execution linkage
 
@@ -267,7 +269,7 @@ Authoritative WorkItem and Assignment state uses Collaborative Work repository p
 
 ### Authority reuse
 
-Mutations (create WorkItem, assign, reassign, state change, close/reopen, cancel) pass through MP-1 effective authority and policy composition. MP-2 defines work resource semantics; MP-1 owns collaborative authority foundation. No separate WorkItem ACL engine.
+Mutations (create WorkItem, assign, WorkItem/Assignment state transitions, close/reopen, cancel; reassignment via revoke + create-new Assignment) pass through MP-1 effective authority and policy composition. MP-2 defines work resource semantics; MP-1 owns collaborative authority foundation. No separate WorkItem ACL engine.
 
 ### Extension boundaries (MP-3+)
 

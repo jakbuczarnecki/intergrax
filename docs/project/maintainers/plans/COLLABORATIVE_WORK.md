@@ -282,10 +282,10 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | Authoritative WorkItem/Assignment mutation and validated state transitions with MP-1 authority enforcement |
 | **Dependencies** | COLLAB-WORK-2B approved; `CollaborativeWorkAuthorityResolver`; `CollaborativeWorkEnforcementGate` |
-| **Exact scope** | Transition service for create/assign/reassign/state change/close/reopen/cancel; explicit validated transitions; authority-checked mutations; no TaskState inference |
+| **Exact scope** | Transition service for create/assign; WorkItem and Assignment state transitions; close/reopen/cancel; reassignment via revoke-existing Assignment + create-new Assignment (two independently authorized, CAS-protected mutations); explicit validated transitions; authority-checked mutations; no combined atomic reassignment API without transactional Unit of Work; no TaskState inference |
 | **REUSED** | MP-1 effective authority and policy composition; COLLAB-WORK-2B repository semantics |
 | **NEW** | WorkItem/Assignment authoritative service layer |
-| **Explicit out of scope** | Durable SQL adapters; execution bridge; LKW adoption; MP-3+ |
+| **Explicit out of scope** | Combined atomic multi-record reassignment / Unit of Work; durable SQL adapters; execution bridge; LKW adoption; MP-3+ |
 | **Acceptance** | Arbitrary caller-supplied state replacement rejected; stale writes fail explicitly; authority fail-closed |
 | **Proof requirements** | Service unit tests; authority/isolation tests; lifecycle transition tests |
 | **Next step** | COLLAB-WORK-2D — SQLite durability parity |
