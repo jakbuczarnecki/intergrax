@@ -1,25 +1,58 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DS-E2E-12 — experimental typed planner action-context transport (planning layer)."""
+"""Typed native planner action-context transport (DS-E2E-12, Tool Planning ownership)."""
 
 from __future__ import annotations
 
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from enum import Enum
 from typing import TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, validate_tool_call_identities
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.tools.core.tool_plan import ToolCallPlan
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
 
+# Reserved planner protocol record — NOT a ToolContract, capability, or executable Tool.
 PLANNER_ACTION_CONTEXT_TOOL_ID = "intergrax.planner.action_context"
 
 
 class NativePlannerActionContextError(ValueError):
     """Invalid typed planner action-context transport (DS-E2E-12)."""
+
+
+class NativePlannerProtocolMode(Enum):
+    """Explicit native planner protocol transport mode."""
+
+    NONE = "none"
+    INVESTIGATION_ACTION_CONTEXT = "investigation_action_context"
+
+
+@dataclass(frozen=True, slots=True)
+class NativePlannerProtocolConfig:
+    """Whether annotation transport is active and which evidence refs are admissible."""
+
+    mode: NativePlannerProtocolMode = NativePlannerProtocolMode.NONE
+    available_evidence_references: tuple[str, ...] = ()
+    _reference_index_items: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def protocol_active(self) -> bool:
+        return self.mode == NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT
+
+    @property
+    def action_context_required(self) -> bool:
+        return self.protocol_active and bool(self.available_evidence_references)
+
+    def reference_index(self) -> dict[str, str]:
+        return dict(self._reference_index_items)
+
+
+NATIVE_PLANNER_PROTOCOL_NONE = NativePlannerProtocolConfig()
 
 
 class _PlannerActionContextInput(BaseModel):
@@ -53,7 +86,7 @@ class _PlannerActionContextInput(BaseModel):
 
 @dataclass(frozen=True, slots=True)
 class NativePlannerActionContext:
-    """Model-authored ENG-6 justification transported as a native planner annotation."""
+    """Model-authored evidence basis and public purpose for one planner round."""
 
     evidence_basis_references: tuple[str, ...]
     purpose: str
@@ -68,21 +101,13 @@ class SplitNativePlannerToolCalls:
 
 
 @dataclass(frozen=True, slots=True)
-class NativePlannerRoundTransport:
+class NativePlannerRound:
     """One atomic native planner response after protocol/business separation."""
 
     response: LLMAdapterResponse
-    action_context: NativePlannerActionContext | None
     business_tool_calls: tuple[LLMToolCall, ...]
-    annotation_call_ids: tuple[str, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class ProcessNativePlannerTransportResult:
-    """PoC outcome for one native planner round."""
-
-    transport: NativePlannerRoundTransport
-    is_executable_investigation_round: bool
+    tool_plan: ToolCallPlan
+    action_context: NativePlannerActionContext | None
 
 
 class _OpenAIFunctionSchema(TypedDict):
@@ -96,7 +121,7 @@ class _OpenAIToolSchema(TypedDict):
     function: _OpenAIFunctionSchema
 
 
-def planner_action_context_openai_tool_schema() -> _OpenAIToolSchema:
+def build_native_planner_action_context_schema() -> _OpenAIToolSchema:
     """Model-facing schema for the reserved planner protocol annotation."""
     return {
         "type": "function",
@@ -105,7 +130,8 @@ def planner_action_context_openai_tool_schema() -> _OpenAIToolSchema:
             "description": (
                 "Declare the evidence basis and public purpose for the business tool "
                 "actions selected in this same response. Required when prior evidence "
-                "exists and follow-up business tools are requested."
+                "exists and follow-up business tools are requested. Planning metadata "
+                "only — not an executable tool."
             ),
             "parameters": pydantic_parameters_schema(_PlannerActionContextInput),
         },
@@ -115,9 +141,9 @@ def planner_action_context_openai_tool_schema() -> _OpenAIToolSchema:
 def append_planner_action_context_schema(
     business_schemas: Sequence[Mapping[str, object]],
 ) -> list[dict[str, object]]:
-    """Append the reserved planner annotation schema to provider-facing business schemas."""
+    """Append reserved planner annotation schema after validated business schemas."""
     materialized = [dict(entry) for entry in business_schemas]
-    materialized.append(dict(planner_action_context_openai_tool_schema()))
+    materialized.append(dict(build_native_planner_action_context_schema()))
     return materialized
 
 
@@ -229,49 +255,38 @@ def _resolve_action_context(
     return context
 
 
-def process_native_planner_tool_response(
-    response: LLMAdapterResponse,
+def resolve_native_planner_protocol(
+    tool_calls: Sequence[LLMToolCall],
     *,
-    available_evidence_references: frozenset[str],
-    reference_index: dict[str, str],
-) -> ProcessNativePlannerTransportResult:
-    """Split, validate, and classify one native planner tool response (PoC seam)."""
-    validate_tool_call_identities(response.tool_calls)
-    split = split_native_planner_tool_calls(response.tool_calls)
+    protocol_config: NativePlannerProtocolConfig,
+) -> tuple[NativePlannerActionContext | None, tuple[LLMToolCall, ...]]:
+    """Split, validate, and classify one native planner tool response."""
+    if not protocol_config.protocol_active:
+        split = split_native_planner_tool_calls(tool_calls)
+        if split.annotation_calls:
+            raise NativePlannerActionContextError(
+                "unexpected planner annotation when protocol transport is inactive"
+            )
+        return None, split.business_tool_calls
+
+    split = split_native_planner_tool_calls(tool_calls)
     business_calls = split.business_tool_calls
-    annotation_ids = tuple(call.id for call in split.annotation_calls)
+    reference_index = protocol_config.reference_index()
+    available = frozenset(protocol_config.available_evidence_references)
 
     if split.annotation_calls and not business_calls:
-        return ProcessNativePlannerTransportResult(
-            transport=NativePlannerRoundTransport(
-                response=response,
-                action_context=_resolve_action_context(
-                    split.annotation_calls,
-                    available_evidence_references=available_evidence_references,
-                    reference_index=reference_index,
-                ),
-                business_tool_calls=(),
-                annotation_call_ids=annotation_ids,
-            ),
-            is_executable_investigation_round=False,
+        raise NativePlannerActionContextError(
+            "planner action context without business tool calls is not executable"
         )
 
-    if available_evidence_references and business_calls and not split.annotation_calls:
+    if protocol_config.action_context_required and business_calls and not split.annotation_calls:
         raise NativePlannerActionContextError(
             "follow-up tool round requires exactly one planner action context annotation"
         )
 
     action_context = _resolve_action_context(
         split.annotation_calls,
-        available_evidence_references=available_evidence_references,
+        available_evidence_references=available,
         reference_index=reference_index,
     )
-    return ProcessNativePlannerTransportResult(
-        transport=NativePlannerRoundTransport(
-            response=response,
-            action_context=action_context,
-            business_tool_calls=business_calls,
-            annotation_call_ids=annotation_ids,
-        ),
-        is_executable_investigation_round=bool(business_calls),
-    )
+    return action_context, business_calls
