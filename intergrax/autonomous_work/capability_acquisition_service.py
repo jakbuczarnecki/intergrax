@@ -163,6 +163,8 @@ class WorkerCapabilityAcquisitionDecisionService:
         all_candidates: list[WorkerCapabilityCandidate] = []
         for layer in self._layers:
             outcome = layer.port.discover(discovery_request)
+            if outcome.disposition is CapabilityDiscoveryDisposition.POLICY_BLOCKED:
+                return _policy_blocked_result(request, timestamp)
             layer_result = _handle_layer_outcome(outcome)
             if isinstance(layer_result, WorkerCapabilityAcquisitionResult):
                 if layer_result.decision is None:

@@ -52,7 +52,7 @@ class WorkerCodecraftProfileResolver(Protocol):
 
 @runtime_checkable
 class WorkerToolCapabilityDiscoveryPort(Protocol):
-    """Discover Tool candidates via canonical ToolRegistry adapter."""
+    """Discover Tool candidates through the configured canonical Tool discovery projection."""
 
     def discover(
         self,
@@ -63,7 +63,7 @@ class WorkerToolCapabilityDiscoveryPort(Protocol):
 
 @runtime_checkable
 class WorkerSkillCapabilityDiscoveryPort(Protocol):
-    """Discover Skill candidates via canonical SkillRegistry adapter."""
+    """Discover Skill candidates through the configured canonical Skill discovery projection."""
 
     def discover(
         self,

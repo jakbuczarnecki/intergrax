@@ -35,6 +35,9 @@ from intergrax.autonomous_work.capability_discovery_adapters import (
     ToolRegistryCapabilityDiscoveryAdapter,
     normalize_candidates,
 )
+from tests.unit.autonomous_work.catalog_discovery_test_support import (
+    catalog_tool_skill_adapters,
+)
 from intergrax.contracts.autonomous_work.capability_acquisition import (
     CapabilityAcquisitionDisposition,
     CapabilityAcquisitionReasonCode,
@@ -205,14 +208,24 @@ def _service(
     authority=None,
     codecraft_allowed: bool = True,
     policy=None,
+    use_legacy_registry_discovery: bool = False,
 ) -> WorkerCapabilityAcquisitionDecisionService:
     resolved_policy = policy or permissive_capability_policy(_CAPABILITY_PROFILE)
+    resolved_tool_registry = tool_registry if tool_registry is not None else ToolRegistry()
+    resolved_skill_registry = skill_registry if skill_registry is not None else SkillRegistry()
+    if tool_discovery is None and not use_legacy_registry_discovery:
+        tool_discovery, skill_discovery = catalog_tool_skill_adapters(
+            tool_registry=resolved_tool_registry,
+            skill_registry=resolved_skill_registry,
+        )
+    if tool_discovery is None:
+        tool_discovery = ToolRegistryCapabilityDiscoveryAdapter(resolved_tool_registry)
+    if skill_discovery is None:
+        skill_discovery = SkillRegistryCapabilityDiscoveryAdapter(resolved_skill_registry)
     return WorkerCapabilityAcquisitionDecisionService(
         profile_resolver=StaticWorkerCapabilityProfileResolver(resolved_policy),
-        tool_discovery=tool_discovery
-        or ToolRegistryCapabilityDiscoveryAdapter(tool_registry or ToolRegistry()),
-        skill_discovery=skill_discovery
-        or SkillRegistryCapabilityDiscoveryAdapter(skill_registry or SkillRegistry()),
+        tool_discovery=tool_discovery,
+        skill_discovery=skill_discovery,
         integration_discovery=integration_adapter
         or IntegrationCatalogCapabilityDiscoveryAdapter(),
         approved_alternate_discovery=NotConfiguredApprovedAlternateDiscovery(),

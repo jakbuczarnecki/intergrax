@@ -205,7 +205,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AW-7A acceptance criteria from [`AUTONOMOUS_WORK.md`](AUTONOMOUS_WORK.md) plan. |
 | **Completion criteria** | AW-7A uses catalog/discovery plane for Tool/Skill; durable changes routed through governance; AC-4 path untouched. |
 | **Depends on** | Stages 5, 8; AW-7A domain work. |
-| **Maturity** | **In progress** (AW-7A) / federation **planned**. |
+| **Maturity** | **Implemented** — `CapabilityCatalogToolDiscoveryAdapter` / `CapabilityCatalogSkillDiscoveryAdapter` at `intergrax/autonomous_work/capability_catalog_discovery_adapters.py`; AW-7A service unchanged; tests in `tests/unit/autonomous_work/test_capability_catalog_discovery_adapters.py`. |
 
 ---
 
@@ -340,7 +340,7 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 | 6 | Skill enterprise correctness | Planned |
 | 7 | Tool/Skill catalog maturity | Planned |
 | 8 | Adaptive Unit-of-Work discovery | Implemented |
-| 9 | Autonomous Work bridge | AW-7A in progress |
+| 9 | Autonomous Work bridge | **Implemented** |
 | 10 | Bootstrap evidence | Planned |
 | 11 | Marketplace product surface | Future |
 | 12 | Isolation / external execution | Future assessment |

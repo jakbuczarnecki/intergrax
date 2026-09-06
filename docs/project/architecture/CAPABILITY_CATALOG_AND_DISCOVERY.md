@@ -489,9 +489,27 @@ WorkStageCapabilityDiscoveryEvidence
 
 **`EffectiveCapabilitySet` is a deterministic query result — not runtime inventory authority, not lifecycle authority, not permission authority.** Catalog-only (`CATALOG_AVAILABLE`) candidates may appear in governed discovery evidence but do not become executable effective members until host/profile availability evidence classifies them as `HOST_AVAILABLE`. The public contract is self-validating: every effective member must be an exact `governed_result.allowed` candidate with `HOST_AVAILABLE` availability and unique identity; derived catalog-only and transition evidence cannot diverge from canonical result state.
 
-Capability Catalog Stage 8 provides stage-scoped adaptive discovery; it does **not** perform Autonomous Work recovery, acquisition, or registry mutation (Stage 9 bridge).
+Capability Catalog Stage 8 provides stage-scoped adaptive discovery; it does **not** perform Autonomous Work recovery, acquisition, or registry mutation.
 
-Contracts: `intergrax/contracts/capability_catalog/work_stage.py`. Resolver: `intergrax/capability_catalog/work_stage_discovery.py`.
+### Stage 9 — Autonomous Work bridge (implemented)
+
+AW-7A consumes Tool/Skill discovery through thin AW adapters over governed catalog discovery (`intergrax/autonomous_work/capability_catalog_discovery_adapters.py`):
+
+```text
+WorkerCapabilityNeed
+        ↓ map_worker_capability_need_to_discovery_query
+Stage-3 discovery → Stage-4 ranking → Stage-5 governance
+        ↓ HOST_AVAILABLE executable narrowing
+WorkerCapabilityCandidate projection
+        ↓
+WorkerCapabilityAcquisitionDecisionService (A0–A4 unchanged)
+```
+
+AW retains A0–A4 decision authority. Catalog does not execute acquisition. Stage 8 (`WorkStageCapabilityNeed`) remains for callers with real work/stage context; AW recovery uses the Stage 3–5 plane (PATH B) because `WorkerCapabilityDiscoveryRequest` does not carry canonical work/stage identity.
+
+Registry-backed Tool/Skill adapters are **not** canonical AW production discovery after Stage 9; no silent catalog→registry fallback.
+
+Contracts: `intergrax/contracts/autonomous_work/capability_acquisition.py`. Adapters: `intergrax/autonomous_work/capability_catalog_discovery_adapters.py`.
 
 ---
 

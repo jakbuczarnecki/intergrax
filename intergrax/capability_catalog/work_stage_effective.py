@@ -148,6 +148,23 @@ class WorkStageCapabilityTransitionEvidence(BaseModel):
         return removed
 
 
+def select_effective_executable_candidates(
+    allowed: tuple[GovernedCapabilityCandidate, ...],
+) -> tuple[GovernedCapabilityCandidate, ...]:
+    """Narrow governed allowed candidates to HOST_AVAILABLE executable members."""
+    executable = tuple(
+        candidate
+        for candidate in allowed
+        if candidate.availability is AvailabilityDisposition.HOST_AVAILABLE
+    )
+    return tuple(
+        sorted(
+            executable,
+            key=lambda candidate: candidate.ranked.identity.sort_key,
+        )
+    )
+
+
 def compare_work_stage_effective_capabilities(
     previous: EffectiveCapabilitySet,
     current: EffectiveCapabilitySet,

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from intergrax.capability_catalog.discovery import discover_capability_candidates
-from intergrax.capability_catalog.governed_candidate import GovernedCapabilityCandidate
 from intergrax.capability_catalog.governance import (
     CapabilityGovernanceEvaluator,
     govern_capability_candidates,
@@ -16,8 +15,8 @@ from intergrax.capability_catalog.snapshot import CapabilityCatalogSnapshot
 from intergrax.capability_catalog.work_stage_effective import (
     EffectiveCapabilitySet,
     WorkStageCapabilityDiscoveryEvidence,
+    select_effective_executable_candidates,
 )
-from intergrax.contracts.capability_catalog.availability import AvailabilityDisposition
 from intergrax.contracts.capability_catalog.evidence import (
     CapabilityDiscoveryAvailabilityEvidence,
 )
@@ -76,7 +75,7 @@ class WorkStageCapabilityDiscoveryService:
             evaluators=self._governance_evaluators,
             context=governance_context,
         )
-        effective_candidates = _select_effective_executable_candidates(
+        effective_candidates = select_effective_executable_candidates(
             governed_result.allowed,
         )
         effective_set = EffectiveCapabilitySet(
@@ -110,19 +109,4 @@ def discover_effective_capabilities_for_work_stage(
         governance_context=governance_context,
     )
 
-
-def _select_effective_executable_candidates(
-    allowed: tuple[GovernedCapabilityCandidate, ...],
-) -> tuple[GovernedCapabilityCandidate, ...]:
-    executable = tuple(
-        candidate
-        for candidate in allowed
-        if candidate.availability is AvailabilityDisposition.HOST_AVAILABLE
-    )
-    return tuple(
-        sorted(
-            executable,
-            key=lambda candidate: candidate.ranked.identity.sort_key,
-        )
-    )
 
