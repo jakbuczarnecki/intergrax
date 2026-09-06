@@ -76,9 +76,9 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Universal platform improvement** | Canonical discovery from transport/problem/execution/correlation references |
 | **Why this is not application-specific** | Any async or multi-host workload may surface correlation without explicit scope |
 | **Priority** | P1 |
-| **Status** | OPEN |
-| **Related implementation** | - |
-| **Qualification result after fix** | Pending |
+| **Status** | PARTIALLY ADDRESSED |
+| **Related implementation** | `f2198be56` — ProblemId scope discovery (Slice 1); EventId/transport/correlation pending |
+| **Qualification result after fix** | ProblemId → execution scope proven; transport/EventId/correlation paths remain |
 
 ---
 
