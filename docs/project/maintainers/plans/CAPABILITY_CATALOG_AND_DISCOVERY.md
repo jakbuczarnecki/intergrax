@@ -120,7 +120,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Tool selection regression suite; AC-4 selection tests. |
 | **Completion criteria** | At least one ranker per capability type or justified shared ranker; documented tie-break; ranking separated from selection stage. |
 | **Depends on** | Stage 3. |
-| **Maturity** | **Planned**. |
+| **Maturity** | **Implemented** — ranking port at `intergrax/capability_catalog/ranking.py` (`CapabilityRanker`, `StableIdentityRanker`, `rank_capability_candidates`, `identity_sort_key`); ranked output at `intergrax/capability_catalog/ranked_candidate.py` (`RankedCapabilityCandidate` delegates identity/provenance/availability to Stage-3 candidate); ranking evidence/context at `intergrax/contracts/capability_catalog/ranking.py` (`CapabilityRankingEvidence`, `CapabilityRankingContext`, `CapabilityRankingSignal`); fail-closed integrity validation at `intergrax/capability_catalog/ranking_validation.py` (`validate_ranked_output` — same identities, no duplicates, no mutation, contiguous 1..N positions); baseline `StableIdentityRanker` (`stable.identity`) — canonical `identity.sort_key` order with `original_stage3_position` evidence, no semantic scoring; Agent adapter `intergrax/capability_catalog/adapters/agent_ranking.py` (`AgentStableIdentityCapabilityRanker` — reuses AC-4 stable identity ordering primitive from `sorted_eligible_identities` / `DeterministicIdentitySelectionStrategy`, **not** `select()`); Tool adapter `intergrax/capability_catalog/adapters/tool_ranking.py` (`KeywordOverlapToolCapabilityRanker` — keyword overlap scoring adapted from TOOL-ENG-5 `RetrievalTopKSelectionStrategy` token/score primitive, ordering only); Skill uses shared `StableIdentityRanker` (no Skill domain ranker — `SkillResolver` has no ranking primitive); tie-break: primary signal → `identity.sort_key` → original Stage-3 position; pluginability via constructor injection (no global registry); `CapabilityRankingError` in `intergrax/capability_catalog/errors.py`; ranking ≠ selection (no `select`/`winner` API); ranking ≠ governance (availability read-only, no elevation); tests `tests/unit/capability_catalog/test_ranking.py`, `tests/unit/contracts/capability_catalog/test_capability_ranking_contracts.py`; architecture gates updated in `tests/unit/capability_catalog/test_architecture_gates.py`, `tests/unit/contracts/capability_catalog/test_capability_catalog_architecture_gates.py` (allow `rank` only in ranking modules); regression gates `tests/unit/agent_distribution/test_agent_discovery.py`, `tests/unit/agent_distribution/test_federated_discovery.py`, `tests/unit/tools/registry/`, `tests/unit/skills/`, `tests/unit/contracts/capability_catalog/`. |
 
 ---
 
@@ -335,7 +335,7 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 | 1 | Contracts & frozen boundaries | Planned |
 | 2 | Federated catalog read model | Planned |
 | 3 | Query / filtering / candidate model | Planned |
-| 4 | Ranking | Planned |
+| 4 | Ranking | Implemented |
 | 5 | Governance integration | Planned |
 | 6 | Skill enterprise correctness | Planned |
 | 7 | Tool/Skill catalog maturity | Planned |

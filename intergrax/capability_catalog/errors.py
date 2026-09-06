@@ -24,3 +24,7 @@ class CapabilityCatalogSourceFailure(CapabilityCatalogError):
 
 class CapabilityCatalogDiscoveryError(CapabilityCatalogError):
     """Invalid discovery query inputs or missing enterprise availability evidence."""
+
+
+class CapabilityRankingError(CapabilityCatalogError):
+    """Ranker contract violation — output integrity or invalid ranking metadata."""

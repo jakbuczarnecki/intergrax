@@ -41,6 +41,13 @@ from intergrax.contracts.capability_catalog.provenance import (
     SCHEMA_CAPABILITY_PROVENANCE_V1,
     CapabilityProvenance,
 )
+from intergrax.contracts.capability_catalog.ranking import (
+    SCHEMA_CAPABILITY_RANKING_CONTEXT_V1,
+    SCHEMA_CAPABILITY_RANKING_EVIDENCE_V1,
+    CapabilityRankingContext,
+    CapabilityRankingEvidence,
+    CapabilityRankingSignal,
+)
 from intergrax.contracts.capability_catalog.scope import (
     SCHEMA_CAPABILITY_DISCOVERY_SCOPE_V1,
     CapabilityDiscoveryScope,
@@ -65,6 +72,9 @@ __all__ = [
     "LogicalIdentityFilter",
     "NORMATIVE_AVAILABILITY_DISPOSITIONS",
     "CapabilityProvenance",
+    "CapabilityRankingContext",
+    "CapabilityRankingEvidence",
+    "CapabilityRankingSignal",
     "CapabilitySourceIdentity",
     "CapabilitySourceKind",
     "CapabilityStageVocabulary",
@@ -77,6 +87,8 @@ __all__ = [
     "SourceFilter",
     "SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1",
     "SCHEMA_CAPABILITY_PROVENANCE_V1",
+    "SCHEMA_CAPABILITY_RANKING_CONTEXT_V1",
+    "SCHEMA_CAPABILITY_RANKING_EVIDENCE_V1",
     "SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1",
     "V1_CAPABILITY_KINDS",
 ]

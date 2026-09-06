@@ -50,11 +50,12 @@ _FORBIDDEN_RUNTIME_MUTATION_FUNCTION_NAMES = frozenset(
         "register",
         "execute",
         "select",
-        "rank",
         "authorize",
         "grant_permission",
     },
 )
+
+_RANKING_MODULE_ALLOWLIST = frozenset({"ranking.py"})
 
 
 def _package_root(module_name: str) -> Path:
@@ -121,11 +122,18 @@ def _collect_forbidden_registry_class_defs(tree: ast.AST) -> list[str]:
     return violations
 
 
-def _collect_forbidden_runtime_mutation_defs(tree: ast.AST) -> list[str]:
+def _collect_forbidden_runtime_mutation_defs(
+    tree: ast.AST,
+    *,
+    path_name: str,
+) -> list[str]:
     violations: list[str] = []
+    allow_rank = path_name in _RANKING_MODULE_ALLOWLIST
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             if node.name in _FORBIDDEN_RUNTIME_MUTATION_FUNCTION_NAMES:
+                violations.append(f"function {node.name} at line {node.lineno}")
+            elif node.name == "rank" and not allow_rank:
                 violations.append(f"function {node.name} at line {node.lineno}")
     return violations
 
@@ -157,7 +165,10 @@ def test_capability_catalog_core_has_no_runtime_mutation_api() -> None:
     root = _package_root(_CORE_MODULE)
     for path in _iter_core_py_files():
         tree = ast.parse(path.read_text(encoding="utf-8"))
-        violations = _collect_forbidden_runtime_mutation_defs(tree)
+        violations = _collect_forbidden_runtime_mutation_defs(
+            tree,
+            path_name=path.name,
+        )
         assert not violations, (
             f"{path.relative_to(root)} exposes forbidden API: "
             + ", ".join(violations)
