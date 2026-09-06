@@ -68,7 +68,7 @@ from platform_proofs.scenarios.verified_product_identification.integrations.sear
     PlatformSearchIndexBootstrapAdapter,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.validation.embedding_gate import (
-    RegistryEmbeddingReadinessProbe,
+    EmbeddingReadinessProbe,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.validation.ready_gate import (
     evaluate_ready_gate,
@@ -664,12 +664,12 @@ def test_ready_gate_requires_all_checks() -> None:
     assert report.status is ValidationStatus.FAIL
 
 
-def test_registry_embedding_gate_with_fake_provider() -> None:
+def test_embedding_readiness_probe_with_fake_provider() -> None:
     configuration = VpiEmbeddingConfiguration(
         profile=EmbeddingProfile(provider="hf", model="fake-model"),
         expected_dimension=8,
     )
-    probe = RegistryEmbeddingReadinessProbe(
+    probe = EmbeddingReadinessProbe(
         configuration,
         provider=FakeEmbeddingProvider(dimension=8),
     )

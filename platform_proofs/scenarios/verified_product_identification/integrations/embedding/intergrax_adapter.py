@@ -15,6 +15,7 @@ from intergrax.rag.embedding.registry.execution_diagnostics import (
     EmbeddingProviderExecutionSnapshotStatus,
 )
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile
+from intergrax.rag.embedding.registry.provider_authority import validate_embedding_provider_slug
 from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
 
 from platform_proofs.scenarios.verified_product_identification.application.config.embedding_configuration import (
@@ -59,6 +60,14 @@ class IntergraxEmbeddingBootstrapAdapter:
             else None
         )
         if provider is not None:
+            configured_provider = validate_embedding_provider_slug(configuration.provider)
+            runtime_provider = provider.provider_name()
+            if runtime_provider != configured_provider:
+                raise VpiBootstrapProviderError(
+                    "injected embedding provider identity mismatch: "
+                    f"configured provider={configured_provider!r}, "
+                    f"provider.provider_name()={runtime_provider!r}"
+                )
             self._provider = provider
             return
         try:

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
@@ -10,6 +13,7 @@ from intergrax.integrations.registry.bootstrap import (
     reset_default_integrations_state,
 )
 from intergrax.integrations.registry.catalog import clear_catalog
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.registry.execution_diagnostics import (
     EmbeddingProviderExecutionSnapshot,
@@ -22,8 +26,15 @@ from platform_proofs.scenarios.verified_product_identification.application.confi
 from platform_proofs.scenarios.verified_product_identification.integrations.embedding.intergrax_adapter import (
     IntergraxEmbeddingBootstrapAdapter,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.errors import (
+    VpiBootstrapProviderError,
+)
 
 pytestmark = pytest.mark.unit
+
+ADAPTER_PATH = Path(
+    "platform_proofs/scenarios/verified_product_identification/integrations/embedding/intergrax_adapter.py"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -67,6 +78,17 @@ class _PlainProvider(EmbeddingProvider):
         return np.zeros((len(texts), 2), dtype=np.float32)
 
 
+class _MismatchedProvider(EmbeddingProvider):
+    def provider_name(self) -> str:
+        return "openai"
+
+    def dimension(self) -> int:
+        return 2
+
+    def embed(self, texts: list[str]) -> np.ndarray:
+        return np.zeros((len(texts), 2), dtype=np.float32)
+
+
 def _adapter_with_provider(provider: EmbeddingProvider) -> IntergraxEmbeddingBootstrapAdapter:
     configuration = VpiEmbeddingConfiguration(
         profile=EmbeddingProfile(provider="hf", model="test-model"),
@@ -94,3 +116,47 @@ def test_execution_snapshot_unavailable_without_diagnostics_capability() -> None
     assert result.status is EmbeddingProviderExecutionSnapshotStatus.UNAVAILABLE
     assert result.snapshot is None
     assert result.reason == "provider_does_not_expose_execution_diagnostics"
+
+
+def test_injected_provider_matching_identity_is_accepted() -> None:
+    adapter = _adapter_with_provider(_PlainProvider())
+
+    assert adapter.execution_snapshot().status is EmbeddingProviderExecutionSnapshotStatus.UNAVAILABLE
+
+
+def test_injected_provider_mismatch_raises_vpi_bootstrap_provider_error() -> None:
+    configuration = VpiEmbeddingConfiguration(
+        profile=EmbeddingProfile(provider="hf", model="test-model"),
+        expected_dimension=2,
+    )
+
+    with pytest.raises(VpiBootstrapProviderError, match="configured provider='hf'"):
+        IntergraxEmbeddingBootstrapAdapter(configuration, provider=_MismatchedProvider())
+
+
+def test_canonical_binder_path_delegates_to_bind_embedding_provider() -> None:
+    configuration = VpiEmbeddingConfiguration(
+        profile=EmbeddingProfile(provider="hf", model="test-model"),
+        expected_dimension=2,
+    )
+    sentinel = _PlainProvider()
+
+    with patch(
+        "platform_proofs.scenarios.verified_product_identification.integrations.embedding.intergrax_adapter.bind_embedding_provider",
+        return_value=sentinel,
+    ) as bind_mock:
+        adapter = IntergraxEmbeddingBootstrapAdapter(configuration)
+
+    bind_mock.assert_called_once()
+    kwargs = bind_mock.call_args.kwargs
+    assert kwargs["integration_profile"] == IntegrationProfile(embedding_provider="hf")
+    assert kwargs["embedding_profile"] == EmbeddingProfile(provider="hf", model="test-model")
+    assert adapter.execution_snapshot().status is EmbeddingProviderExecutionSnapshotStatus.UNAVAILABLE
+
+
+def test_adapter_source_has_no_registry_api() -> None:
+    source = ADAPTER_PATH.read_text(encoding="utf-8")
+
+    assert "EmbeddingProviderRegistry" not in source
+    assert "create_default_registry" not in source
+    assert "provider_factory_registration" not in source

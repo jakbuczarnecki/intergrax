@@ -20,8 +20,8 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 
 
-class RegistryEmbeddingReadinessProbe:
-    """Compatibility wrapper over ``IntergraxEmbeddingBootstrapAdapter`` for Gate 0 reports."""
+class EmbeddingReadinessProbe:
+    """Gate 0 readiness probe over ``IntergraxEmbeddingBootstrapAdapter``."""
 
     def __init__(
         self,
