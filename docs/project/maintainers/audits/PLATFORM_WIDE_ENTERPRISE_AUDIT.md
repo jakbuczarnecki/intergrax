@@ -13,7 +13,7 @@
 
 ## 1. Executive verdict
 
-Intergrax is **one platform with many mature domain slices**, not many unrelated local systems — but it is **not yet a single converged enterprise surface**. Canonical ownership is identifiable for Integrations, execution identity, Collaborative Work, provider qualification, platform plugins, diagnostics contracts, and governed continuation. The dominant residual risk is **parallel authority models for meaningful side effects** (Collaborative Work boundary vs Declarative Tool Authorization at the `RuntimeToolInvoker` boundary) without a documented, fail-closed convergence rule for all production mutation paths. Secondary risks are **intentional but unresolved provider-boundary splits** (LLM/embedding/RAG vs Integrations catalog), **partial Autonomous Work implementation** ahead of product claims, and **host-adoption gaps** (LKW durable CW, diagnostics emission at some adoption boundaries).
+Intergrax is **one platform with many mature domain slices**, not many unrelated local systems — but it is **not yet a single converged enterprise surface**. Canonical ownership is identifiable for Integrations, execution identity, Collaborative Work, provider qualification, platform plugins, diagnostics contracts, and governed continuation. The dominant residual risk is **parallel authority models for meaningful side effects** (Collaborative Work boundary vs Declarative Tool Authorization at the `RuntimeToolInvoker` boundary) without a documented, fail-closed convergence rule for all production mutation paths. Secondary risks are **intentional LLM plane separation** (embedding boundary resolved via Option C; LLM remains dedicated domain), **partial Autonomous Work implementation** ahead of product claims, and **host-adoption gaps** (LKW durable CW, diagnostics emission at some adoption boundaries).
 
 No P0 security defect was proven in audited production paths. Bounded P1/P2 findings are concrete and actionable. Several items require explicit architecture decisions before safe unification.
 
@@ -199,7 +199,7 @@ Domains **reuse** platform mechanics:
 | Tool registry | `tools/registry/runtime.py` | `catalog.py`, nexus executor | No (layers) | Low | Document |
 | Skill registry | `skills/registry/runtime.py` | `catalog.py` | No | Low | Keep |
 | Agent registry | `runtime/registry/agent_registry.py` | Host projection snapshots | No | Low | Keep |
-| LLM providers | `llm_adapters/llm_provider_registry.py` | Embedding registry in RAG | **Yes (intentional)** | Medium | ADR: Integrations vs LLM |
+| LLM providers | `llm_adapters/llm_provider_registry.py` | Embedding via Integrations catalog (`embedding_provider`) | **Resolved (Option C)** | Low | **CLOSED** (P2-002-D) |
 | Policy evaluation | `runtime/policy/runtime_policy_engine.py` | `policy_engine.py`, declarative enforcer | No (layers) | Low | Document precedence |
 | Side-effect authorization | CW `enforcement_gate` + `meaningful_side_effect_authorization` | Declarative Tool Authorization + idempotency (`RuntimeToolInvoker`) | **Parallel** | **High** | ADR: convergence |
 | Qualification engines | Provider: `core/qualification/execution.py` | Functional: `functional_qualification_runner.py` | No (semantic) | Low | Guard scope |
@@ -262,7 +262,7 @@ Domains **reuse** platform mechanics:
 | **A — Provider adapter** | `integrations/providers/**`, `llm_adapters/providers/**`, `distributed/providers/**` |
 | **B — Composition root** | `integrations/_shared/p3/factories.py` (lazy import) |
 | **C — Test / proof** | `tests/**`, `proof_infrastructure/**`, `platform_proofs/**/qdrant/*` |
-| **D — Violation** | `tools/providers/openai_vector_store/service.py` (OpenAI SDK in tool service); `rag/embedding/providers/*` (embedding SDK outside integrations adapters) |
+| **D — Violation** | `tools/providers/openai_vector_store/service.py` (OpenAI SDK in tool service) |
 
 **P2 carry:** `contract_capture.py` registration-time reflection — acceptable at registration, not at runtime dispatch.
 
@@ -569,9 +569,9 @@ No universal untyped evidence dump found.
 
 ## 32. RAG / LLM / search
 
-**RAG:** Canonical in `intergrax/rag/`; vector backends via Integrations. Embedding providers in `rag/embedding/providers/` — **parallel to LLM adapters (P2)**.
+**RAG:** Canonical in `intergrax/rag/`; vector backends via Integrations. Embedding provider catalog authority in Integrations (`embedding_provider`); RAG retains `EmbeddingProvider` runtime contract — **CLOSED** (P2-002-D).
 
-**LLM:** `llm_adapters/llm_provider_registry.py` — intentional separate plane per `LLM_ADAPTERS.md`. Builtin table requires core edit for new builtin provider.
+**LLM:** `llm_adapters/llm_provider_registry.py` — intentional separate plane per `LLM_ADAPTERS.md` and [`ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md`](../architecture/ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md). Provider-owned explicit registration; no central `_BUILTIN_ADAPTERS` map.
 
 **Silent model fallback:** `llm_routing_wiring.py` has explicit fallback profile — host-configured, not silent vendor switch.
 
@@ -718,7 +718,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 | AW "runtime not implemented" | AW-2B lifecycle + repos exist | **P2 — partial implementation** |
 | Platform plugins roadmap complete | Cross-flow tests exist | OK |
 | Activity not implemented | Confirmed | OK |
-| LLM outside Integrations | Confirmed intentional | Needs ADR clarity |
+| LLM outside Integrations; embedding via Integrations catalog | Confirmed (Option C) | **CLOSED** (P2-002-D) |
 
 ---
 
@@ -773,7 +773,7 @@ UNTRUSTED: user input, vendor responses, plugin packages
 | ID | Finding | Files | Recommendation |
 |----|---------|-------|----------------|
 | P2-001 | Dual side-effect models without documented precedence | policy + CW docs | **Closed by ADR** — multi-strategy model documented; Phase 1 fail-closed pending |
-| P2-002 | LLM/embedding outside Integrations catalog | `llm_adapters/`, `rag/embedding/` | **IMPLEMENTATION_IN_PROGRESS** ([ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md](../architecture/ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md)): Option C hybrid — LLM Adapters remain dedicated domain; embedding B1–B4 complete; **P2-002-C complete** (provider-owned LLM registration, central `_BUILTIN_ADAPTERS` removed); final independent audit pending P2-002-D. |
+| P2-002 | LLM/embedding outside Integrations catalog | `llm_adapters/`, `rag/embedding/`, `integrations/providers/embedding_provider/` | **CLOSED — final independent audit PASS** (P2-002-D @ `ec22d19980c6bc6a04b26cd2cccf92ce93cb63cd`): Option C hybrid confirmed; embedding provider authority = Integrations Catalog; legacy `EmbeddingProviderRegistry`/`create_default_registry`/central factory removed; provider-owned runtime binding via `IntegrationProfile` + catalog; LLM remains dedicated domain; central `_BUILTIN_ADAPTERS` removed; provider-owned LLM registration; no reflection-based registration; custom LLM provider pluginability verified; `ModelCatalog`/routing/failover unchanged; final independent audit passed. See [`ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md`](../architecture/ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md). |
 | P2-003 | Reflective provider discovery at registration | `integrations/registry/` (removed `contract_capture.py`) | **CLOSED — final independent audit PASS** (P2-003-D @ `cb547a0fe4e1d09a2da7e32f5422558629486f49`): 200/200 explicit provider/category keys; zero production `contract_capture`/reflective contract discovery; Catalog authority + provider-owned `IntegrationContractSpec` + `registry_v2` derived projection only; typed-category fail-closed derives from `PROVIDER_CATEGORY_CONTRACT_REGISTRY`; P2-003 suite 457 passed. |
 | P2-004 | AW docs say "not implemented" but AW-2B code exists | `autonomous_work/`, `AUTONOMOUS_WORK.md` | Align maturity statement |
 | P2-005 | LKW lacks durable CW persistence | LKW host | Planned adoption |
@@ -807,11 +807,11 @@ UNTRUSTED: user input, vendor responses, plugin packages
 
 **P1 FINDING-PLATFORM-SE-001: IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** (PLATFORM-SE-FAIL-CLOSED-1 shipped; independent SHA audit pending).
 
-### ADR-PLATFORM-LLM-INTEGRATIONS
+### ADR-PLATFORM-LLM-INTEGRATIONS — **DECIDED / CLOSED**
 
-**Question:** Should LLM/embedding providers migrate into Integrations catalog?
+**Decision record:** [`ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md`](../architecture/ADR_PLATFORM_LLM_EMBEDDING_INTEGRATION_BOUNDARY.md)
 
-**Recommendation:** Document intentional separation (`LLM_ADAPTERS.md` authority) OR plan phased migration for embedding only.
+**Decision summary:** Option C hybrid — LLM Adapters remain dedicated domain; embedding provider catalog/config migrated to Integrations (`embedding_provider`); RAG retains `EmbeddingProvider` runtime contract. **P2-002 — CLOSED — FINAL INDEPENDENT AUDIT PASS** (P2-002-D @ `ec22d19980c6bc6a04b26cd2cccf92ce93cb63cd`).
 
 ---
 
@@ -909,7 +909,7 @@ uv run pytest tests/integration/core/qualification/test_provider_qualification_e
 
 **IMPLEMENTATION_PENDING**
 
-Side-effect authorization convergence is **decided** (ADR-PLATFORM-SE-CONVERGENCE). Primary remaining platform blocker for enterprise side-effect safety is **PLATFORM-SE-FAIL-CLOSED-1** implementation. LLM/Integrations boundary ADR still required separately.
+Side-effect authorization convergence is **decided** (ADR-PLATFORM-SE-CONVERGENCE). Primary remaining platform blocker for enterprise side-effect safety is **PLATFORM-SE-FAIL-CLOSED-1** implementation. LLM/embedding Integrations boundary is **closed** (P2-002-D).
 
 ---
 
