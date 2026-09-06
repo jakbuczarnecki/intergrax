@@ -252,10 +252,10 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | WorkItem and Assignment semantic contracts plus collaborative lifecycle transition design |
 | **Dependencies** | MP-1 closed; ADR-MP-003 Accepted |
-| **Exact scope** | `WorkItem`, `WorkItemState`, `Assignment`, execution-link reference contracts in `intergrax/contracts/collaborative_work.py`; explicit transition rules; Assignment != AgentAssignment documented; no persistence |
+| **Exact scope** | `WorkItem`, `WorkItemState`, `Assignment`, `AssignmentState`, typed lifecycle transition requests/helpers in `intergrax/contracts/collaborative_work.py`; explicit transition rules; Assignment != AgentAssignment documented; no persistence; no execution linkage |
 | **REUSED** | MP-1 `CollaborativePrincipal`, tenant/workspace scoping, revision semantics direction |
 | **NEW** | WorkItem and Assignment collaborative contracts; lifecycle transition specification |
-| **Explicit out of scope** | Repositories, services, APIs, Nexus wiring, LKW/channel IDs, WorkArtifact (MP-3), Decision (MP-4), Activity (MP-6), runtime implementation |
+| **Explicit out of scope** | Repositories, services, APIs, Nexus wiring, execution linkage / Nexus bridge, LKW/channel IDs, WorkArtifact (MP-3), Decision (MP-4), Activity (MP-6), runtime implementation |
 | **Acceptance** | WorkItem != Nexus Task frozen in contracts; Assignment separate from WorkItem assignee field; semantic fields only; multi-principal assignment supported |
 | **Proof requirements** | `tests/unit/contracts/test_collaborative_work.py` extensions for MP-2 contracts |
 | **Next step** | COLLAB-WORK-2B — repository ports + in-memory reference |
