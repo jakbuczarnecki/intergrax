@@ -67,8 +67,12 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_provider import (
     DiagnosticScopeDiscoveryProvider,
     DiagnosticScopeDiscoveryProviderRegistry,
+    DiagnosticScopeProviderError,
+    DiagnosticScopeProviderIntegrityError,
     DiagnosticScopeProviderResult,
+    DiagnosticScopeProviderUnavailableError,
     assert_diagnostic_scope_discovery_provider_conformance,
+    validate_scope_provider_result,
 )
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_service import (
     DiagnosticScopeDiscoveryService,
@@ -249,7 +253,10 @@ __all__ = [
     "DiagnosticScopeDiscoveryService",
     "DiagnosticScopeDiscoveryStatus",
     "DiagnosticScopeDiscoveryValidationError",
+    "DiagnosticScopeProviderError",
+    "DiagnosticScopeProviderIntegrityError",
     "DiagnosticScopeProviderResult",
+    "DiagnosticScopeProviderUnavailableError",
     "DiagnosticScopeReferenceKind",
     "DiagnosticScopeResolutionProvenance",
     "DiagnosticSignalSubjectAnalysis",
@@ -402,6 +409,7 @@ __all__ = [
     "assert_problem_persistence_conformance",
     "assert_problem_persistence_typed_round_trip",
     "assert_diagnostic_scope_discovery_provider_conformance",
+    "validate_scope_provider_result",
     "sample_problem",
     "wire_problem_persistence",
 ]

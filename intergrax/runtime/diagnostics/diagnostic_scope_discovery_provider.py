@@ -12,11 +12,24 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticExecutionScopeCandidate,
     DiagnosticScopeDiscoveryConfigurationError,
     DiagnosticScopeDiscoveryStatus,
+    DiagnosticScopeDiscoveryValidationError,
     DiagnosticScopeReference,
     DiagnosticScopeReferenceKind,
     DiagnosticScopeResolutionProvenance,
 )
 from intergrax.runtime.diagnostics.diagnostic_subject import ExecutionDiagnosticSubjectRef
+
+
+class DiagnosticScopeProviderError(Exception):
+    """Base failure for scope discovery provider boundary."""
+
+
+class DiagnosticScopeProviderIntegrityError(DiagnosticScopeProviderError):
+    """Raised when canonical provider data violates integrity or tenant rules."""
+
+
+class DiagnosticScopeProviderUnavailableError(DiagnosticScopeProviderError):
+    """Raised when the provider backend is temporarily unavailable."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,7 +47,13 @@ class DiagnosticScopeProviderResult:
 
 @runtime_checkable
 class DiagnosticScopeDiscoveryProvider(Protocol):
-    """Read-only scope discovery provider for one reference family."""
+    """Read-only scope discovery provider for one reference family.
+
+    Hard contract:
+    - normal outcomes return ``DiagnosticScopeProviderResult``
+    - canonical-data integrity failures raise ``DiagnosticScopeProviderIntegrityError``
+    - provider/backend unavailability raises ``DiagnosticScopeProviderUnavailableError``
+    """
 
     @property
     def provider_id(self) -> str:
@@ -54,13 +73,43 @@ class DiagnosticScopeDiscoveryProvider(Protocol):
         """Resolve execution scope candidates for one tenant-scoped reference."""
 
 
+def validate_scope_provider_result(
+    result: DiagnosticScopeProviderResult,
+) -> DiagnosticScopeProviderResult:
+    """Validate normalized provider output before service projection."""
+    if type(result.status) is not DiagnosticScopeDiscoveryStatus:
+        raise TypeError("status must be DiagnosticScopeDiscoveryStatus")
+    if type(result.candidate_count) is not int or isinstance(result.candidate_count, bool):
+        raise TypeError("candidate_count must be int")
+    if type(result.candidate_count_exact) is not bool:
+        raise TypeError("candidate_count_exact must be bool")
+    if result.candidate_count < 0:
+        raise DiagnosticScopeDiscoveryValidationError("candidate_count must be non-negative")
+    if len(result.candidates) > result.candidate_count:
+        raise DiagnosticScopeDiscoveryValidationError(
+            "candidates length must not exceed candidate_count",
+        )
+    if result.candidate_count_exact and result.candidate_count < len(result.candidates):
+        raise DiagnosticScopeDiscoveryValidationError(
+            "exact candidate_count must be at least candidates length",
+        )
+    return result
+
+
 def assert_diagnostic_scope_discovery_provider_conformance(
     provider: DiagnosticScopeDiscoveryProvider,
     *,
     expected_provider_id: str,
     expected_reference_kind: DiagnosticScopeReferenceKind,
 ) -> None:
-    """Validate generic provider contract semantics."""
+    """Validate generic provider contract semantics.
+
+    Providers must translate backend-specific failures to:
+    - ``DiagnosticScopeProviderIntegrityError`` for canonical integrity violations
+    - ``DiagnosticScopeProviderUnavailableError`` for recognized availability failures
+
+    The core discovery service depends only on these generic boundary errors.
+    """
     if provider.provider_id != expected_provider_id:
         raise AssertionError(
             f"provider_id mismatch: expected {expected_provider_id!r}, "

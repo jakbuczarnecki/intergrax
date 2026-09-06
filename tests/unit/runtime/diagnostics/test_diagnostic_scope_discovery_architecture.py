@@ -16,6 +16,8 @@ _DISCOVERY_FILES = (
     _DISCOVERY_ROOT / "providers" / "problem_scope_provider.py",
 )
 
+_SERVICE_FILE = _DISCOVERY_ROOT / "diagnostic_scope_discovery_service.py"
+
 _FORBIDDEN_IMPORT_TOKENS = (
     "kafka",
     "celery",
@@ -27,6 +29,15 @@ _FORBIDDEN_IMPORT_TOKENS = (
     "applications",
 )
 
+_SERVICE_FORBIDDEN_IMPORT_TOKENS = (
+    "problem_persistence",
+    "problem_occurrence_persistence",
+    "pymongo",
+    "DocumentStore",
+    "kafka",
+    "celery",
+)
+
 
 def test_discovery_core_has_no_forbidden_imports() -> None:
     violations: list[str] = []
@@ -36,3 +47,13 @@ def test_discovery_core_has_no_forbidden_imports() -> None:
             if token in source:
                 violations.append(f"{path}: {token}")
     assert not violations, f"forbidden imports: {violations}"
+
+
+def test_discovery_service_has_no_concrete_persistence_imports() -> None:
+    source = _SERVICE_FILE.read_text(encoding="utf-8")
+    violations = [
+        token
+        for token in _SERVICE_FORBIDDEN_IMPORT_TOKENS
+        if token in source
+    ]
+    assert not violations, f"service concrete persistence imports: {violations}"

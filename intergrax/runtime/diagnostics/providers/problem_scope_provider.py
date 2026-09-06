@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticExecutionScopeCandidate,
-    DiagnosticScopeDiscoveryIntegrityError,
+    DiagnosticScopeDiscoveryResult,
     DiagnosticScopeDiscoveryStatus,
     DiagnosticScopeReferenceKind,
     DiagnosticScopeResolutionProvenance,
@@ -18,17 +18,25 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
 )
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_provider import (
     DiagnosticScopeDiscoveryProvider,
+    DiagnosticScopeProviderIntegrityError,
     DiagnosticScopeProviderResult,
+    DiagnosticScopeProviderUnavailableError,
+    validate_scope_provider_result,
 )
 from intergrax.runtime.diagnostics.diagnostic_subject import (
     ExecutionDiagnosticSubjectRef,
     validate_execution_diagnostic_subject_ref,
 )
-from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId, validate_problem_id
+from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemId, validate_problem_id
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrencePage,
     ProblemOccurrencePersistence,
+    ProblemOccurrencePersistenceIntegrityError,
 )
-from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
+from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemPersistence,
+    ProblemPersistenceIntegrityError,
+)
 
 PROBLEM_SCOPE_PROVIDER_ID = "problem_scope"
 
@@ -73,7 +81,8 @@ class ProblemScopeProvider:
         problem_id = validate_problem_id(reference.problem_id)
         provenance = _problem_provenance(problem_id=problem_id)
 
-        problem = self._problem_persistence.get(
+        problem = _get_problem(
+            self._problem_persistence,
             tenant_id=tenant_id,
             problem_id=problem_id,
         )
@@ -90,7 +99,7 @@ class ProblemScopeProvider:
             )
 
         if problem.tenant_id != tenant_id:
-            raise DiagnosticScopeDiscoveryIntegrityError(
+            raise DiagnosticScopeProviderIntegrityError(
                 "persisted Problem tenant_id does not match discovery request tenant",
             )
 
@@ -100,11 +109,51 @@ class ProblemScopeProvider:
             problem_id=problem_id,
             provenance=provenance,
         )
-        return _classify_examination(
-            examination,
-            candidate_limit=candidate_limit,
-            provenance=provenance,
+        return validate_scope_provider_result(
+            _classify_examination(
+                examination,
+                candidate_limit=candidate_limit,
+                provenance=provenance,
+            ),
         )
+
+
+def _get_problem(
+    problem_persistence: ProblemPersistence,
+    *,
+    tenant_id: str,
+    problem_id: ProblemId,
+) -> Problem | None:
+    try:
+        return problem_persistence.get(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+        )
+    except ProblemPersistenceIntegrityError as exc:
+        raise DiagnosticScopeProviderIntegrityError(str(exc)) from exc
+    except (ConnectionError, TimeoutError, OSError) as exc:
+        raise DiagnosticScopeProviderUnavailableError(str(exc)) from exc
+
+
+def _query_occurrences(
+    occurrence_persistence: ProblemOccurrencePersistence,
+    *,
+    tenant_id: str,
+    problem_id: ProblemId,
+    limit: int,
+    cursor: str | None,
+) -> ProblemOccurrencePage:
+    try:
+        return occurrence_persistence.query_occurrences(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+            limit=limit,
+            cursor=cursor,
+        )
+    except ProblemOccurrencePersistenceIntegrityError as exc:
+        raise DiagnosticScopeProviderIntegrityError(str(exc)) from exc
+    except (ConnectionError, TimeoutError, OSError) as exc:
+        raise DiagnosticScopeProviderUnavailableError(str(exc)) from exc
 
 
 def _problem_provenance(
@@ -119,14 +168,8 @@ def _problem_provenance(
 
 
 def _provider_result_from_public(
-    result: object,
+    result: DiagnosticScopeDiscoveryResult,
 ) -> DiagnosticScopeProviderResult:
-    from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
-        DiagnosticScopeDiscoveryResult,
-    )
-
-    if type(result) is not DiagnosticScopeDiscoveryResult:
-        raise TypeError("result must be DiagnosticScopeDiscoveryResult")
     return DiagnosticScopeProviderResult(
         status=result.status,
         resolved_scope=result.resolved_scope,
@@ -157,11 +200,13 @@ def _examine_occurrences(
     examination = _OccurrenceExamination()
     cursor: str | None = None
     page_size = min(_OCCURRENCE_PAGE_SIZE, _MAX_EXAMINED_OCCURRENCES)
+    page: ProblemOccurrencePage | None = None
 
     while examination.total_occurrences < _MAX_EXAMINED_OCCURRENCES:
         remaining = _MAX_EXAMINED_OCCURRENCES - examination.total_occurrences
         limit = min(page_size, remaining)
-        page = occurrence_persistence.query_occurrences(
+        page = _query_occurrences(
+            occurrence_persistence,
             tenant_id=tenant_id,
             problem_id=problem_id,
             limit=limit,
@@ -171,7 +216,7 @@ def _examine_occurrences(
             examination.total_occurrences += 1
             subject_ref = occurrence.subject_ref
             if subject_ref.tenant_id != tenant_id:
-                raise DiagnosticScopeDiscoveryIntegrityError(
+                raise DiagnosticScopeProviderIntegrityError(
                     "occurrence subject_ref tenant_id does not match discovery request tenant",
                 )
             execution_ref = subject_ref.execution()
@@ -185,20 +230,18 @@ def _examine_occurrences(
                     subject_ref=validated_execution,
                     provenance=provenance,
                 )
-            if len(examination.execution_scopes) >= 2:
-                examination.candidate_count_exact = False
 
-        if page.has_more:
-            if len(examination.execution_scopes) >= 2:
-                examination.candidate_count_exact = False
-            if examination.total_occurrences >= _MAX_EXAMINED_OCCURRENCES:
-                examination.examination_truncated = True
-                break
-            cursor = page.next_cursor
-            continue
-        break
+        if not page.has_more:
+            break
 
-    if page.has_more and examination.total_occurrences >= _MAX_EXAMINED_OCCURRENCES:
+        if examination.total_occurrences >= _MAX_EXAMINED_OCCURRENCES:
+            examination.examination_truncated = True
+            examination.candidate_count_exact = False
+            break
+
+        cursor = page.next_cursor
+
+    if page is not None and page.has_more:
         examination.examination_truncated = True
         examination.candidate_count_exact = False
 

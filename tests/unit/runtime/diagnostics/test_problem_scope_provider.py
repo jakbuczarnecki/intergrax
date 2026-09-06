@@ -29,8 +29,12 @@ from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemId
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrencePage,
     ProblemOccurrencePersistence,
+    ProblemOccurrencePersistenceIntegrityError,
 )
-from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
+from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemPersistence,
+    ProblemPersistenceIntegrityError,
+)
 from intergrax.runtime.diagnostics.providers.problem_scope_provider import (
     PROBLEM_SCOPE_PROVIDER_ID,
     ProblemScopeProvider,
@@ -319,6 +323,154 @@ def test_pagination_changes_resolved_to_ambiguous(monkeypatch: pytest.MonkeyPatc
     )
     assert result.status is DiagnosticScopeDiscoveryStatus.AMBIGUOUS
     assert result.candidate_count == 2
+    assert result.candidate_count_exact is True
+
+
+def test_two_distinct_execution_scopes_complete_history_is_exact() -> None:
+    subject_a = problem_grouping_subject_ref_for_execution(
+        tenant_id=_TENANT,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+    )
+    subject_b = problem_grouping_subject_ref_for_execution(
+        tenant_id=_TENANT,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+    )
+    problem_persistence, occurrence_persistence, problem = _seed_problem_with_occurrences(
+        subject_refs=(subject_a, subject_b),
+    )
+    result = _service(problem_persistence, occurrence_persistence).discover_scope(
+        _request(problem.problem_id),
+    )
+    assert result.status is DiagnosticScopeDiscoveryStatus.AMBIGUOUS
+    assert result.candidate_count == 2
+    assert result.candidate_count_exact is True
+
+
+def test_one_execution_scope_complete_history_is_exact() -> None:
+    subject = problem_grouping_subject_ref_for_execution(
+        tenant_id=_TENANT,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+    )
+    problem_persistence, occurrence_persistence, problem = _seed_problem_with_occurrences(
+        subject_refs=(subject,),
+    )
+    result = _service(problem_persistence, occurrence_persistence).discover_scope(
+        _request(problem.problem_id),
+    )
+    assert result.status is DiagnosticScopeDiscoveryStatus.RESOLVED
+    assert result.candidate_count == 1
+    assert result.candidate_count_exact is True
+
+
+def test_many_execution_scopes_complete_history_is_exact() -> None:
+    subjects = tuple(
+        problem_grouping_subject_ref_for_execution(
+            tenant_id=_TENANT,
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+        )
+        for _ in range(5)
+    )
+    problem_persistence, occurrence_persistence, problem = _seed_problem_with_occurrences(
+        subject_refs=subjects,
+    )
+    result = _service(problem_persistence, occurrence_persistence).discover_scope(
+        _request(problem.problem_id),
+    )
+    assert result.status is DiagnosticScopeDiscoveryStatus.AMBIGUOUS
+    assert result.candidate_count == 5
+    assert result.candidate_count_exact is True
+
+
+def test_candidate_limit_preserves_exact_truth_count() -> None:
+    subjects = tuple(
+        problem_grouping_subject_ref_for_execution(
+            tenant_id=_TENANT,
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+        )
+        for _ in range(5)
+    )
+    problem_persistence, occurrence_persistence, problem = _seed_problem_with_occurrences(
+        subject_refs=subjects,
+    )
+    request = DiagnosticScopeDiscoveryRequest(
+        tenant_id=_TENANT,
+        reference=ProblemScopeReference(problem_id=problem.problem_id),
+        candidate_limit=2,
+    )
+    result = _service(problem_persistence, occurrence_persistence).discover_scope(request)
+    assert result.status is DiagnosticScopeDiscoveryStatus.AMBIGUOUS
+    assert result.candidate_count == 5
+    assert result.candidate_count_exact is True
+    assert len(result.candidates) == 2
+
+
+def test_truncated_history_one_scope_is_insufficient_inexact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    subject = problem_grouping_subject_ref_for_execution(
+        tenant_id=_TENANT,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+    )
+    extra_subjects = tuple(
+        problem_grouping_subject_ref_for_execution(
+            tenant_id=_TENANT,
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+        )
+        for _ in range(3)
+    )
+    problem_persistence, occurrence_persistence, problem = _seed_problem_with_occurrences(
+        subject_refs=(subject, *extra_subjects),
+    )
+    monkeypatch.setattr(
+        "intergrax.runtime.diagnostics.providers.problem_scope_provider._MAX_EXAMINED_OCCURRENCES",
+        1,
+    )
+    monkeypatch.setattr(
+        "intergrax.runtime.diagnostics.providers.problem_scope_provider._OCCURRENCE_PAGE_SIZE",
+        1,
+    )
+    result = _service(problem_persistence, occurrence_persistence).discover_scope(
+        _request(problem.problem_id),
+    )
+    assert result.status is DiagnosticScopeDiscoveryStatus.INSUFFICIENT_EVIDENCE
+    assert result.candidate_count_exact is False
+
+
+def test_truncated_history_two_or_more_scopes_is_ambiguous_inexact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    subjects = tuple(
+        problem_grouping_subject_ref_for_execution(
+            tenant_id=_TENANT,
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+        )
+        for _ in range(4)
+    )
+    problem_persistence, occurrence_persistence, problem = _seed_problem_with_occurrences(
+        subject_refs=subjects,
+    )
+    monkeypatch.setattr(
+        "intergrax.runtime.diagnostics.providers.problem_scope_provider._MAX_EXAMINED_OCCURRENCES",
+        2,
+    )
+    monkeypatch.setattr(
+        "intergrax.runtime.diagnostics.providers.problem_scope_provider._OCCURRENCE_PAGE_SIZE",
+        1,
+    )
+    result = _service(problem_persistence, occurrence_persistence).discover_scope(
+        _request(problem.problem_id),
+    )
+    assert result.status is DiagnosticScopeDiscoveryStatus.AMBIGUOUS
+    assert result.candidate_count >= 2
+    assert result.candidate_count_exact is False
 
 
 def test_provider_id_is_frozen() -> None:
@@ -339,6 +491,55 @@ def test_service_provider_unavailable_on_connection_error() -> None:
         _request(ProblemId("problem_0123456789abcdef0123456789abcdef")),
     )
     assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
+
+
+def test_service_provider_unavailable_on_timeout_error() -> None:
+    problem_persistence = MagicMock(spec=ProblemPersistence)
+    problem_persistence.get.side_effect = TimeoutError("store timeout")
+    occurrence_persistence = MagicMock(spec=ProblemOccurrencePersistence)
+    result = _service(problem_persistence, occurrence_persistence).discover_scope(
+        _request(ProblemId("problem_0123456789abcdef0123456789abcdef")),
+    )
+    assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
+
+
+def test_service_problem_persistence_integrity_maps_to_discovery_integrity() -> None:
+    problem_persistence = MagicMock(spec=ProblemPersistence)
+    problem_persistence.get.side_effect = ProblemPersistenceIntegrityError("bad index")
+    occurrence_persistence = MagicMock(spec=ProblemOccurrencePersistence)
+    with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="bad index"):
+        _service(problem_persistence, occurrence_persistence).discover_scope(
+            _request(ProblemId("problem_0123456789abcdef0123456789abcdef")),
+        )
+
+
+def test_service_occurrence_persistence_integrity_maps_to_discovery_integrity() -> None:
+    subject = problem_grouping_subject_ref_for_execution(
+        tenant_id=_TENANT,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+    )
+    problem = sample_problem(tenant_id=_TENANT, subject_refs=(subject,), occurrence_count=1)
+    problem_persistence = MagicMock(spec=ProblemPersistence)
+    problem_persistence.get.return_value = problem
+    occurrence_persistence = MagicMock(spec=ProblemOccurrencePersistence)
+    occurrence_persistence.query_occurrences.side_effect = (
+        ProblemOccurrencePersistenceIntegrityError("bad occurrence page")
+    )
+    with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="bad occurrence page"):
+        _service(problem_persistence, occurrence_persistence).discover_scope(
+            _request(problem.problem_id),
+        )
+
+
+def test_service_unexpected_programming_error_propagates() -> None:
+    problem_persistence = MagicMock(spec=ProblemPersistence)
+    problem_persistence.get.side_effect = ValueError("programming bug")
+    occurrence_persistence = MagicMock(spec=ProblemOccurrencePersistence)
+    with pytest.raises(ValueError, match="programming bug"):
+        _service(problem_persistence, occurrence_persistence).discover_scope(
+            _request(ProblemId("problem_0123456789abcdef0123456789abcdef")),
+        )
 
 
 def test_service_is_deterministic() -> None:

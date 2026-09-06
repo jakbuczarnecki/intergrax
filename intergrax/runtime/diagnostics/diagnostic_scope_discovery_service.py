@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
+    DiagnosticExecutionScopeCandidate,
     DiagnosticScopeDiscoveryIntegrityError,
     DiagnosticScopeDiscoveryRequest,
     DiagnosticScopeDiscoveryResult,
@@ -19,21 +20,12 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_provider import (
     DiagnosticScopeDiscoveryProvider,
     DiagnosticScopeDiscoveryProviderRegistry,
+    DiagnosticScopeProviderIntegrityError,
     DiagnosticScopeProviderResult,
+    DiagnosticScopeProviderUnavailableError,
+    validate_scope_provider_result,
 )
 from intergrax.runtime.diagnostics.diagnostic_subject import ExecutionDiagnosticSubjectRef
-from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
-    ProblemOccurrencePersistenceIntegrityError,
-)
-from intergrax.runtime.diagnostics.problem_persistence import (
-    ProblemPersistenceIntegrityError,
-)
-
-_PERSISTENCE_UNAVAILABLE_EXCEPTIONS = (
-    ConnectionError,
-    TimeoutError,
-    OSError,
-)
 
 
 class DiagnosticScopeDiscoveryService:
@@ -60,18 +52,15 @@ class DiagnosticScopeDiscoveryService:
                 reference=validated_request.reference,
                 candidate_limit=validated_request.candidate_limit,
             )
-        except (
-            ProblemPersistenceIntegrityError,
-            ProblemOccurrencePersistenceIntegrityError,
-        ) as exc:
+        except DiagnosticScopeProviderIntegrityError as exc:
             raise DiagnosticScopeDiscoveryIntegrityError(str(exc)) from exc
-        except _PERSISTENCE_UNAVAILABLE_EXCEPTIONS as exc:
+        except DiagnosticScopeProviderUnavailableError as exc:
             return provider_unavailable_result(
                 limitations=(f"provider unavailable: {type(exc).__name__}",),
             )
 
         return _project_provider_result(
-            provider_result,
+            validate_scope_provider_result(provider_result),
             candidate_limit=validated_request.candidate_limit,
             tenant_id=validated_request.tenant_id,
         )
@@ -104,22 +93,16 @@ def _project_provider_result(
 
 
 def _deduplicate_execution_candidates(
-    candidates: tuple[object, ...],
+    candidates: tuple[DiagnosticExecutionScopeCandidate, ...],
     *,
     tenant_id: str,
-) -> tuple[object, ...]:
-    from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
-        DiagnosticExecutionScopeCandidate,
-    )
-
+) -> tuple[DiagnosticExecutionScopeCandidate, ...]:
     seen: set[tuple[str, str]] = set()
     ordered: list[DiagnosticExecutionScopeCandidate] = []
     for candidate in sorted(
         candidates,
         key=_execution_candidate_sort_key,
     ):
-        if type(candidate) is not DiagnosticExecutionScopeCandidate:
-            raise TypeError("candidate must be DiagnosticExecutionScopeCandidate")
         subject_ref = candidate.subject_ref
         _assert_execution_scope_tenant(subject_ref, tenant_id=tenant_id)
         identity = (str(subject_ref.task_id), str(subject_ref.run_id))
@@ -130,13 +113,9 @@ def _deduplicate_execution_candidates(
     return tuple(ordered)
 
 
-def _execution_candidate_sort_key(candidate: object) -> tuple[str, str]:
-    from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
-        DiagnosticExecutionScopeCandidate,
-    )
-
-    if type(candidate) is not DiagnosticExecutionScopeCandidate:
-        raise TypeError("candidate must be DiagnosticExecutionScopeCandidate")
+def _execution_candidate_sort_key(
+    candidate: DiagnosticExecutionScopeCandidate,
+) -> tuple[str, str]:
     subject_ref = candidate.subject_ref
     return (str(subject_ref.task_id), str(subject_ref.run_id))
 

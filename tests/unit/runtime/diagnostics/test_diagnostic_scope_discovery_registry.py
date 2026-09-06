@@ -8,6 +8,8 @@ import pytest
 
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticScopeDiscoveryConfigurationError,
+    DiagnosticScopeDiscoveryIntegrityError,
+    DiagnosticScopeDiscoveryRequest,
     DiagnosticScopeDiscoveryStatus,
     DiagnosticScopeReferenceKind,
     ProblemScopeReference,
@@ -15,8 +17,13 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
 )
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_provider import (
     DiagnosticScopeDiscoveryProviderRegistry,
+    DiagnosticScopeProviderIntegrityError,
     DiagnosticScopeProviderResult,
+    DiagnosticScopeProviderUnavailableError,
     assert_diagnostic_scope_discovery_provider_conformance,
+)
+from intergrax.runtime.diagnostics.diagnostic_scope_discovery_service import (
+    DiagnosticScopeDiscoveryService,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import mint_problem_id
 
@@ -85,3 +92,63 @@ def test_provider_conformance_helper() -> None:
         expected_provider_id="problem_scope",
         expected_reference_kind=DiagnosticScopeReferenceKind.PROBLEM,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _SyntheticPluginProvider:
+    provider_id: str = "synthetic_scope"
+    supported_reference_kind: DiagnosticScopeReferenceKind = DiagnosticScopeReferenceKind.PROBLEM
+    mode: str = "not_found"
+
+    def discover(
+        self,
+        *,
+        tenant_id: str,
+        reference: ProblemScopeReference,
+        candidate_limit: int,
+    ) -> DiagnosticScopeProviderResult:
+        if self.mode == "integrity":
+            raise DiagnosticScopeProviderIntegrityError("synthetic integrity failure")
+        if self.mode == "unavailable":
+            raise DiagnosticScopeProviderUnavailableError("synthetic unavailable")
+        return DiagnosticScopeProviderResult(
+            status=DiagnosticScopeDiscoveryStatus.NOT_FOUND,
+            resolved_scope=None,
+            candidates=(),
+            candidate_count=0,
+            candidate_count_exact=True,
+            provenance=(),
+        )
+
+
+def test_service_accepts_synthetic_provider_without_core_modification() -> None:
+    provider = _SyntheticPluginProvider()
+    service = DiagnosticScopeDiscoveryService(providers=(provider,))
+    request = DiagnosticScopeDiscoveryRequest(
+        tenant_id=_TENANT,
+        reference=ProblemScopeReference(problem_id=mint_problem_id()),
+    )
+    result = service.discover_scope(request)
+    assert result.status is DiagnosticScopeDiscoveryStatus.NOT_FOUND
+
+
+def test_service_maps_synthetic_provider_integrity_error() -> None:
+    provider = _SyntheticPluginProvider(mode="integrity")
+    service = DiagnosticScopeDiscoveryService(providers=(provider,))
+    request = DiagnosticScopeDiscoveryRequest(
+        tenant_id=_TENANT,
+        reference=ProblemScopeReference(problem_id=mint_problem_id()),
+    )
+    with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="synthetic integrity"):
+        service.discover_scope(request)
+
+
+def test_service_maps_synthetic_provider_unavailable_error() -> None:
+    provider = _SyntheticPluginProvider(mode="unavailable")
+    service = DiagnosticScopeDiscoveryService(providers=(provider,))
+    request = DiagnosticScopeDiscoveryRequest(
+        tenant_id=_TENANT,
+        reference=ProblemScopeReference(problem_id=mint_problem_id()),
+    )
+    result = service.discover_scope(request)
+    assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
