@@ -27,7 +27,9 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 
 **C. Implemented platform proofs (AC-3 through AC-6, reference production V1).** The canonical **install → bind → build → activate → serve** chain, **dynamic capability discovery → match → select → acquire → delegate → release** pipeline, **revision-bound canonical factory invocation** (AC-5), and **trust/certification/revocation/freshness/active emergency response** (AC-6) are **proven in reference production composition** (§34, §35, §21 AC-5, §10.7 AC-6). Evidence includes AC-3 lifecycle E2E, AC-4 Phase 9 production-composition E2E, AC-5 factory E2E, and AC-6 trust lifecycle E2E. This is **platform proof**, not a claim of public commercial marketplace rollout.
 
-**Still planned / not publicly productized:** Durable cross-process activation, horizontal host scale-out, LKW consumer proof wiring (AP-12), commercial marketplace product, remote publisher onboarding, billing/settlement, multi-instance lease recovery, and universal specialist invocation adapter. Manifest-only development assembly (migration phase M0) remains valid for lab; STRICT production hosts require an active revision-bound registry projection (§31, §34).
+**Still planned / not publicly productized:** Horizontal host scale-out, LKW consumer proof wiring (AP-12), commercial marketplace product, remote publisher onboarding, billing/settlement, multi-instance lease recovery, and universal specialist invocation adapter. Manifest-only development assembly (migration phase M0) remains valid for lab; STRICT production hosts require an active revision-bound registry projection (§31, §34).
+
+**Durable reference production lifecycle (EA-01/EA-02):** SQLite-backed store adapters behind existing Tier-0 store protocols prove **durable single-host / multi-process** install → bind → revision → activation → serving with restart recovery and CAS semantics. This is **reference durability**, not distributed multi-region HA. Evidence: `tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py`.
 
 **D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience - one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific Nexus branches are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry, or Nexus. AC-4 does **not** require a marketplace backend.
 
@@ -214,11 +216,13 @@ AgentRegistry
 Nexus
 ```
 
-### Marketplace ≠ Agent Distribution
+### Agent Manager ≠ Agent Distribution
 
-[Agent Marketplace](../overview/AGENT_MARKETPLACE.md) and Agent Manager surfaces (future / planned) are **product and discovery layers** — convenient panels for discovering, installing, uninstalling, activating, deactivating, assigning, and configuring agents. Architecturally they are **not** runtime, **not** `AgentRegistry`, **not** Nexus, and **not** lifecycle authority.
+**Agent Manager** is an **implemented** derived read/control facade over `AgentPlatformAdminService` and canonical lifecycle stores. Operators use it to inspect install/bind/enable/serving state and issue governed mutations; it does **not** own lifecycle authority.
 
-Marketplace / Agent Manager **MAY** call Tier-0 Agent Distribution services. They **MUST NOT** replace Agent Distribution, fork activation semantics, or become a second path into production runtime.
+[Agent Marketplace](../overview/AGENT_MARKETPLACE.md) remains a **future** product/discovery surface — convenient listing for discovering packages. Architecturally it is **not** runtime, **not** `AgentRegistry`, **not** Nexus, and **not** lifecycle authority.
+
+Agent Manager / Marketplace **MAY** call Tier-0 Agent Distribution services. They **MUST NOT** replace Agent Distribution, fork activation semantics, or become a second path into production runtime.
 
 **Agent Manager / Marketplace** is a control-plane and discovery surface. It **MUST NOT** own installation, binding, revision, activation, or serving authority.
 
@@ -2480,3 +2484,90 @@ Single process; process-local stores where documented; no distributed consensus;
 - [x] AC-5 canonical factory authority frozen (§21)
 - [x] AC-6 trust/certification/revocation frozen (§10.7)
 - [x] AC-1–AC-6 final architecture freeze documented (§36)
+
+## Enterprise lifecycle visual map
+
+### System context
+
+```mermaid
+flowchart TB
+  subgraph sources [Catalog sources]
+    MP[Marketplace FUTURE]
+    PC[Private catalog]
+    BC[Bundled / scenario agents]
+  end
+  AD[Agent Distribution authority]
+  RP[Runtime projection]
+  EX[Execution Nexus]
+  sources --> AD --> RP --> EX
+```
+
+### Lifecycle authority chain
+
+```mermaid
+flowchart TD
+  D[discover] --> I[install InstallationService]
+  I --> B[bind BindingService]
+  B --> R[effective roster EffectiveRosterAuthority]
+  R --> V[revision RuntimeRevisionService]
+  V --> M[materialize RuntimeMaterializationService]
+  M --> A[activate ActivationService]
+  A --> S[serve traffic_serving_revision_id]
+  S --> P[project RegistryProjectionAuthority]
+  P --> X[execute HostTaskExecution]
+```
+
+### Desired vs serving
+
+```text
+enabled (binding) != serving (traffic pointer)
+candidate revision VALIDATED != ACTIVE != serving
+```
+
+### Trust / rollback
+
+```mermaid
+flowchart LR
+  PKG[package] --> TR[trust AgentPackageTrustCoordinator]
+  TR --> ADM[admission]
+  ADM --> ACT[activate]
+  REV[revocation] --> EV[evaluate]
+  EV --> RB[rollback ActivationService]
+  RB --> PRIOR[prior revision serving]
+```
+
+### LAB vs PRODUCT
+
+```text
+LAB bootstrap (manifest assembly) != production lifecycle (revision-bound registry)
+STRICT hosts require activated serving revision — no manifest-only authority.
+```
+
+### Agent Manager
+
+```mermaid
+flowchart TB
+  OP[Operator] --> AM[Agent Manager facade]
+  AM --> Q[derived read model queries]
+  AM --> C[commands via AgentPlatformAdminService]
+  C --> AD[Agent Distribution services]
+```
+
+## Operator lifecycle (safe change)
+
+```text
+discover → inspect trust → install → bind → enable
+→ build revision → inspect candidate → activate → inspect serving
+```
+
+Emergency revocation: trust coordinator flags digest → `ActivationService` rollback to prior validated revision → serving pointer CAS → durable stores retain history.
+
+## Evidence index
+
+| Proof | Test file |
+| ----- | --------- |
+| Semantic lifecycle (Stage 15) | `tests/integration/agent_distribution/test_canonical_agent_lifecycle_e2e.py` |
+| Enterprise durable lifecycle | `tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py` |
+| Trust / revocation (AC-6) | `tests/integration/agent_distribution/test_ac6_trust_lifecycle_e2e.py` |
+| Agent Manager | `tests/unit/agent_distribution/test_agent_manager.py` |
+| Architecture gates | `tests/unit/agent_distribution/test_ac6_architecture_gates.py` |
