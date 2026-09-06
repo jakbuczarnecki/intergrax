@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from enum import StrEnum
+
 from intergrax.contracts.evidence_claims import (
     validate_claim_kind,
     validate_evidence_claim_id,
@@ -44,4 +47,36 @@ INCIDENT_EVIDENCE_IDS = IncidentEvidenceIds(
     staffing_attendance=str(STAFFING_ATTENDANCE_EVIDENCE_ID),
     comparison=str(COMPARISON_EVIDENCE_ID),
     telemetry=str(TELEMETRY_EVIDENCE_ID),
+)
+
+
+class EvidenceAcquisitionPhase(StrEnum):
+    BASELINE = "baseline"
+    PLANNER_SELECTED = "planner_selected"
+    CRITIC_FOLLOW_UP = "critic_follow_up"
+
+
+@dataclass(frozen=True, slots=True)
+class IncidentEvidenceRequirement:
+    evidence_id: str
+    tool_id: str
+    phase: EvidenceAcquisitionPhase
+
+
+BASELINE_INCIDENT_EVIDENCE_REQUIREMENTS: tuple[IncidentEvidenceRequirement, ...] = (
+    IncidentEvidenceRequirement(
+        str(WORKLOAD_EVIDENCE_ID),
+        "production.workload.read",
+        EvidenceAcquisitionPhase.BASELINE,
+    ),
+    IncidentEvidenceRequirement(
+        str(THROUGHPUT_EVIDENCE_ID),
+        "production.throughput.read",
+        EvidenceAcquisitionPhase.BASELINE,
+    ),
+    IncidentEvidenceRequirement(
+        str(STAFFING_PRELIMINARY_EVIDENCE_ID),
+        "production.staffing.schedule.read",
+        EvidenceAcquisitionPhase.BASELINE,
+    ),
 )

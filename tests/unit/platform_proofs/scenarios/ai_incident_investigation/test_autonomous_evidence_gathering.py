@@ -232,7 +232,22 @@ async def test_alternative_tool_order_executes_planner_selected_sequence(
 
 
 @pytest.mark.asyncio
-async def test_observability_correlates_decision_trace_tool_trace_and_evidence() -> None:
+async def test_observability_correlates_decision_trace_tool_trace_and_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _adaptive_llm():
+        return ScriptedIncidentInvestigationLLM(
+            initial_sequence=(TOOL_COMPARISON_READ, TOOL_TELEMETRY_READ),
+        )
+
+    monkeypatch.setattr(
+        "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _adaptive_llm(),
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        lambda *_args, **_kwargs: _adaptive_llm(),
+    )
     bundle = build_runtime_bundle()
     state, _ = _build_runtime_state(bundle)
     gathering = gather_incident_evidence(
@@ -286,14 +301,18 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
                         call_id=original.id,
-                        name=TOOL_WORKLOAD_READ,
-                        arguments={"line_id": "line_z", "window": "incident_window"},
+                        name=TOOL_COMPARISON_READ,
+                        arguments={
+                            "reference_line_id": "line_z",
+                            "comparison_line_id": "line3",
+                            "window": "comparison_window",
+                        },
                     ),
                 ),
             )
 
     def _out_of_scope_llm():
-        return _OutOfScopeLLM(initial_sequence=(TOOL_WORKLOAD_READ,))
+        return _OutOfScopeLLM(initial_sequence=(TOOL_COMPARISON_READ,))
 
     monkeypatch.setattr(
         "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
@@ -395,14 +414,18 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
                         call_id=original.id,
-                        name=TOOL_WORKLOAD_READ,
-                        arguments={"line_id": "line_z", "window": "incident_window"},
+                        name=TOOL_COMPARISON_READ,
+                        arguments={
+                            "reference_line_id": "line_z",
+                            "comparison_line_id": "line3",
+                            "window": "comparison_window",
+                        },
                     ),
                 ),
             )
 
     def _out_of_scope_llm():
-        return _OutOfScopeLLM(initial_sequence=(TOOL_WORKLOAD_READ,))
+        return _OutOfScopeLLM(initial_sequence=(TOOL_COMPARISON_READ,))
 
     monkeypatch.setattr(
         "platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition.resolve_llm_adapter",
@@ -426,9 +449,9 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
         is_revision=False,
     )
 
-    assert sentinel.invoke_count == 0
+    assert sentinel.invoke_count == 3
     assert any(event.step == "incident_scope_rejection" for event in state.trace_events)
-    assert gathering.tool_invocations >= 1
+    assert gathering.tool_invocations >= 3
 
 
 def test_tools_for_critic_feedback_maps_missing_comparison_to_comparison_read() -> None:

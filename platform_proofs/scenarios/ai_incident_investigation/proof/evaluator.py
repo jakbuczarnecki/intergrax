@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass
+from typing import Literal
 
 from intergrax.contracts.evidence_claims import (
     ChallengeDefectFamily,
@@ -56,6 +57,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario im
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     claim_id_for_hypothesis,
+    latest_active_claim_for_hypothesis,
     parse_claim_hypothesis_bindings,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
@@ -93,15 +95,18 @@ def _bindings_from_result(result: ScenarioExecutionResult):
     return parse_claim_hypothesis_bindings(result.claim_hypothesis_bindings)
 
 
-def _claims_for_hypothesis(result: ScenarioExecutionResult, hypothesis_id: str) -> list[EvidenceBackedClaim]:
+def _effective_claim_for_hypothesis(
+    result: ScenarioExecutionResult,
+    hypothesis_id: Literal["H1", "H2", "H3"],
+) -> EvidenceBackedClaim | None:
     bindings = _bindings_from_result(result)
-    claim_ids = {
-        str(binding.claim_id)
-        for binding in bindings
-        if binding.hypothesis_id == hypothesis_id
-    }
     claim_set = EvidenceClaimSet.model_validate(result.claim_set)
-    return [claim for claim in claim_set.claims if str(claim.claim_id) in claim_ids]
+    return latest_active_claim_for_hypothesis(claim_set, bindings, hypothesis_id)
+
+
+def _claims_for_hypothesis(result: ScenarioExecutionResult, hypothesis_id: Literal["H1", "H2", "H3"]) -> list[EvidenceBackedClaim]:
+    effective = _effective_claim_for_hypothesis(result, hypothesis_id)
+    return [effective] if effective is not None else []
 
 
 def _domain_payload_from_result(result: ScenarioExecutionResult) -> dict[str, object]:

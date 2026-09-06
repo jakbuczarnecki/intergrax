@@ -404,7 +404,8 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
                 trimmed = _sequence_without_gathered_tools(self._revision_sequence, gathered)
                 return trimmed or _REVISION_FOLLOW_UP_SEQUENCE
             return self._revision_sequence
-        return self._initial_sequence
+        gathered = _planner_gathered_evidence_ids(messages)
+        return _sequence_without_gathered_tools(self._initial_sequence, gathered)
 
     def _detect_reasoning_phase(self, messages: Sequence[ChatMessage]) -> str:
         for message in messages:

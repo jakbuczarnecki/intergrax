@@ -19,6 +19,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.domain_reas
     IncidentObservations,
     attendance_meets_required,
     comparison_weakens_overload,
+    derive_hypothesis_dispositions,
     h1_initially_plausible,
     observations_from_evidence_nodes,
     preliminary_suggests_shortage,
@@ -32,6 +33,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.execution_p
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     ClaimHypothesisBinding,
+    latest_active_claim_for_hypothesis,
     parse_claim_hypothesis_bindings,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
@@ -192,11 +194,7 @@ def _resolve_h1_claim(
 
 
 def _resolve_h2_claim(observations: IncidentObservations) -> ClaimResolution:
-    if _h2_claim_supported_by_evidence(observations):
-        return ClaimResolution.SUPPORTED
-    if _h2_claim_rejected_by_evidence(observations):
-        return ClaimResolution.REJECTED
-    return ClaimResolution.PENDING
+    return derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS).h2.disposition
 
 
 def _resolve_h3_claim(observations: IncidentObservations) -> ClaimResolution:
@@ -224,12 +222,8 @@ def _claims_for_hypothesis(
     bindings: tuple[ClaimHypothesisBinding, ...],
     hypothesis_id: Literal["H1", "H2", "H3"],
 ) -> list[EvidenceBackedClaim]:
-    claim_ids = {
-        binding.claim_id
-        for binding in bindings
-        if binding.hypothesis_id == hypothesis_id
-    }
-    return [claim for claim in claim_set.claims if str(claim.claim_id) in claim_ids]
+    effective = latest_active_claim_for_hypothesis(claim_set, bindings, hypothesis_id)
+    return [effective] if effective is not None else []
 
 
 def _classify_diagnosis_claim(

@@ -16,6 +16,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.claim_evide
     attribute_claim_evidence,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
+    derive_hypothesis_dispositions,
     observations_from_evidence_nodes,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
@@ -31,6 +32,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     build_reasoning_messages,
     completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
+    latest_active_claim_for_hypothesis,
     validate_reasoning_proposal,
 )
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import build_resolved_fixture
@@ -775,3 +777,158 @@ async def test_golden_contract_model_semantics_to_validator_resolved() -> None:
     assert supported
     assert str(TELEMETRY_EVIDENCE_ID) in supported[-1].get("supporting_evidence_ids", [])
     assert str(COMPARISON_EVIDENCE_ID) in supported[-1].get("supporting_evidence_ids", [])
+
+
+def _h2_evidence_nodes(
+    *,
+    scheduled_headcount: int,
+    required_headcount: int,
+    confirmed_headcount: int,
+    stale_schedule: bool,
+) -> tuple[dict[str, object], ...]:
+    fixture = build_resolved_fixture()
+    schedule_payload = {
+        "scheduled_headcount": scheduled_headcount,
+        "required_headcount": required_headcount,
+        "record_valid_from": fixture.staffing_preliminary.record_valid_for.observed_from.isoformat(),
+        "record_valid_to": fixture.staffing_preliminary.record_valid_for.observed_to.isoformat(),
+        "window_observed_from": fixture.staffing_preliminary.window.observed_from.isoformat(),
+        "window_observed_to": fixture.staffing_preliminary.window.observed_to.isoformat(),
+    }
+    if stale_schedule:
+        schedule_payload["record_valid_to"] = fixture.staffing_preliminary.window.observed_from.isoformat()
+    return (
+        {
+            "evidence_id": str(WORKLOAD_EVIDENCE_ID),
+            "payload": {
+                "order_volume_delta_pct": fixture.workload_incident.order_volume_delta_pct,
+                "admissible": True,
+            },
+        },
+        {
+            "evidence_id": str(THROUGHPUT_EVIDENCE_ID),
+            "payload": {
+                "target_attainment_pct": fixture.throughput_incident.target_attainment_pct,
+                "baseline_attainment_pct": fixture.throughput_incident.baseline_attainment_pct,
+                "admissible": True,
+            },
+        },
+        {
+            "evidence_id": str(STAFFING_PRELIMINARY_EVIDENCE_ID),
+            "payload": schedule_payload,
+        },
+        {
+            "evidence_id": str(STAFFING_ATTENDANCE_EVIDENCE_ID),
+            "payload": {"confirmed_headcount": confirmed_headcount},
+        },
+    )
+
+
+def test_h2_layers_agree_on_rejected_when_attendance_meets_required() -> None:
+    evidence_nodes = _h2_evidence_nodes(
+        scheduled_headcount=4,
+        required_headcount=6,
+        confirmed_headcount=6,
+        stale_schedule=False,
+    )
+    observations = observations_from_evidence_nodes(evidence_nodes, INCIDENT_EVIDENCE_IDS)
+    runtime = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
+    conversion = convert_proposal_to_pending_claims(
+        _sample_proposal(claim_order=("H2",)),
+        evidence_nodes=evidence_nodes,
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    resolved = apply_critic_claim_resolutions(
+        conversion.claim_set,
+        {
+            "evidence_nodes": list(evidence_nodes),
+            "claim_hypothesis_bindings": [
+                binding.model_dump(mode="json") for binding in conversion.bindings
+            ],
+        },
+        bindings=conversion.bindings,
+    )
+    h2_claim = latest_active_claim_for_hypothesis(resolved, conversion.bindings, "H2")
+    assert h2_claim is not None
+    assert h2_claim.resolution is ClaimResolution.REJECTED
+    assert runtime.h2.disposition is ClaimResolution.REJECTED
+
+
+def test_h2_layers_agree_on_supported_when_shortage_confirmed() -> None:
+    evidence_nodes = _h2_evidence_nodes(
+        scheduled_headcount=4,
+        required_headcount=6,
+        confirmed_headcount=4,
+        stale_schedule=False,
+    )
+    observations = observations_from_evidence_nodes(evidence_nodes, INCIDENT_EVIDENCE_IDS)
+    runtime = derive_hypothesis_dispositions(observations, INCIDENT_EVIDENCE_IDS)
+    conversion = convert_proposal_to_pending_claims(
+        _sample_proposal(claim_order=("H2",)),
+        evidence_nodes=evidence_nodes,
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    resolved = apply_critic_claim_resolutions(
+        conversion.claim_set,
+        {
+            "evidence_nodes": list(evidence_nodes),
+            "claim_hypothesis_bindings": [
+                binding.model_dump(mode="json") for binding in conversion.bindings
+            ],
+        },
+        bindings=conversion.bindings,
+    )
+    h2_claim = latest_active_claim_for_hypothesis(resolved, conversion.bindings, "H2")
+    assert h2_claim is not None
+    assert h2_claim.resolution is ClaimResolution.SUPPORTED
+    assert runtime.h2.disposition is ClaimResolution.SUPPORTED
+
+
+def test_latest_active_claim_follows_h2_revision_lineage() -> None:
+    evidence_nodes = _resolved_evidence_nodes()
+    initial = convert_proposal_to_pending_claims(
+        _sample_proposal(claim_order=("H2",)),
+        evidence_nodes=evidence_nodes,
+        prior_claim_set=None,
+        critic_feedback=None,
+    )
+    revised = convert_proposal_to_pending_claims(
+        _sample_proposal(claim_order=("H2",)).model_copy(
+            update={
+                "claim_proposals": (
+                    ClaimProposal(
+                        hypothesis_id="H2",
+                        statement="Revised staffing assessment.",
+                        claim_kind=str(DIAGNOSIS_KIND),
+                        replaces_prior_claim=True,
+                    ),
+                )
+            }
+        ),
+        evidence_nodes=evidence_nodes,
+        prior_claim_set=initial.claim_set,
+        prior_bindings=initial.bindings,
+        critic_feedback=["unsupported inference"],
+    )
+    stale_binding = ClaimHypothesisBinding(
+        claim_id=next(
+            binding.claim_id for binding in initial.bindings if binding.hypothesis_id == "H2"
+        ),
+        hypothesis_id="H2",
+    )
+    effective = latest_active_claim_for_hypothesis(
+        revised.claim_set,
+        (stale_binding,),
+        "H2",
+    )
+    expected = latest_active_claim_for_hypothesis(
+        revised.claim_set,
+        revised.bindings,
+        "H2",
+    )
+    assert effective is not None
+    assert expected is not None
+    assert str(effective.claim_id) == str(expected.claim_id)
+    assert effective.supersedes_claim_id == stale_binding.claim_id

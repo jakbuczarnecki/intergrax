@@ -240,6 +240,33 @@ def claim_id_for_hypothesis(
     return None
 
 
+def latest_active_claim_for_hypothesis(
+    claim_set: EvidenceClaimSet,
+    bindings: Sequence[ClaimHypothesisBinding],
+    hypothesis_id: Literal["H1", "H2", "H3"],
+) -> EvidenceBackedClaim | None:
+    """Return the effective claim for a hypothesis, following supersession revisions."""
+    by_id = {str(claim.claim_id): claim for claim in claim_set.claims}
+    current_id = claim_id_for_hypothesis(bindings, hypothesis_id)
+    if current_id is None:
+        return None
+    while True:
+        claim = by_id.get(current_id)
+        if claim is None:
+            return None
+        successor = next(
+            (
+                candidate
+                for candidate in claim_set.claims
+                if str(candidate.supersedes_claim_id) == current_id
+            ),
+            None,
+        )
+        if successor is None:
+            return claim
+        current_id = str(successor.claim_id)
+
+
 def convert_proposal_to_pending_claims(
     proposal: IncidentReasoningProposal,
     *,
