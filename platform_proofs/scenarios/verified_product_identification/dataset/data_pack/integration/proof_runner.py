@@ -15,13 +15,12 @@ from platform_proofs.scenarios.verified_product_identification.application.confi
 from platform_proofs.scenarios.verified_product_identification.application.config.embedding_execution_configuration import (
     load_vpi_embedding_provider_execution_configuration,
 )
-from platform_proofs.scenarios.verified_product_identification.arena.evaluation.metrics import (
-    mrr_at_k,
-    ndcg_at_k,
-    recall_at_k,
-)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.builder import (
     build_proof_50_data_pack,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.retrieval_metrics import (
+    SingleRelevantRetrievalMetrics,
+    evaluate_single_relevant_ranking,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.validation import (
     assert_validation_pass,
@@ -75,6 +74,26 @@ def _section_from_report(report) -> ValidationSectionResult:
     )
 
 
+def _retrieval_metric_row(
+    case: ProofQueryCase,
+    *,
+    metrics: SingleRelevantRetrievalMetrics | None,
+    passed: bool,
+    detail: str,
+) -> RetrievalMetricRow:
+    return RetrievalMetricRow(
+        query_id=case.query_id,
+        channel=case.channel,
+        recall_at_1=metrics.recall_at_1 if metrics is not None else None,
+        recall_at_5=metrics.recall_at_5 if metrics is not None else None,
+        recall_at_10=metrics.recall_at_10 if metrics is not None else None,
+        mrr_at_10=metrics.mrr_at_10 if metrics is not None else None,
+        ndcg_at_10=metrics.ndcg_at_10 if metrics is not None else None,
+        passed=passed,
+        detail=detail,
+    )
+
+
 def _evaluate_query_case(
     case: ProofQueryCase,
     *,
@@ -86,25 +105,18 @@ def _evaluate_query_case(
     if case.channel == "exact" and case.exact_query is not None:
         result = exact_lookup.lookup(case.exact_query)
         ranked_offer_ids = [candidate.offer_id.value for candidate in result.candidates]
-        relevant_index = 0
-        ranked_indices = [
-            index
-            for index, offer_id in enumerate(ranked_offer_ids)
-            if offer_id == case.expected_offer_id
-        ]
+        metrics = evaluate_single_relevant_ranking(
+            ranked_offer_ids,
+            case.expected_offer_id,
+        )
         passed = (
             not case.negative
             and ranked_offer_ids
             and ranked_offer_ids[0] == case.expected_offer_id
         )
-        return RetrievalMetricRow(
-            query_id=case.query_id,
-            channel=case.channel,
-            recall_at_1=recall_at_k([relevant_index], ranked_indices, 1) if ranked_indices else 0.0,
-            recall_at_5=recall_at_k([relevant_index], ranked_indices, 5) if ranked_indices else 0.0,
-            recall_at_10=recall_at_k([relevant_index], ranked_indices, 10) if ranked_indices else 0.0,
-            mrr_at_10=mrr_at_k([relevant_index], ranked_indices, 10) if ranked_indices else 0.0,
-            ndcg_at_10=ndcg_at_k([relevant_index], ranked_indices, 10) if ranked_indices else 0.0,
+        return _retrieval_metric_row(
+            case,
+            metrics=metrics,
             passed=passed,
             detail=f"ranked={ranked_offer_ids[:3]}",
         )
@@ -113,78 +125,54 @@ def _evaluate_query_case(
         ranked_offer_ids = [candidate.offer_id.value for candidate in result.candidates]
         if case.negative:
             passed = case.expected_offer_id not in ranked_offer_ids
-            detail = f"negative ranked={ranked_offer_ids}"
-            return RetrievalMetricRow(
-                query_id=case.query_id,
-                channel=case.channel,
-                recall_at_1=None,
-                recall_at_5=None,
-                recall_at_10=None,
-                mrr_at_10=None,
-                ndcg_at_10=None,
+            return _retrieval_metric_row(
+                case,
+                metrics=None,
                 passed=passed,
-                detail=detail,
+                detail=f"negative ranked={ranked_offer_ids}",
             )
+        metrics = evaluate_single_relevant_ranking(
+            ranked_offer_ids,
+            case.expected_offer_id,
+        )
         passed = case.expected_offer_id in ranked_offer_ids
-        ranked_indices = [
-            index
-            for index, offer_id in enumerate(ranked_offer_ids)
-            if offer_id == case.expected_offer_id
-        ]
-        return RetrievalMetricRow(
-            query_id=case.query_id,
-            channel=case.channel,
-            recall_at_1=1.0 if ranked_indices and ranked_indices[0] == 0 else 0.0,
-            recall_at_5=1.0 if ranked_indices and ranked_indices[0] < 5 else 0.0,
-            recall_at_10=1.0 if ranked_indices else 0.0,
-            mrr_at_10=mrr_at_k([0], ranked_indices, 10) if ranked_indices else 0.0,
-            ndcg_at_10=ndcg_at_k([0], ranked_indices, 10) if ranked_indices else 0.0,
+        return _retrieval_metric_row(
+            case,
+            metrics=metrics,
             passed=passed,
             detail=f"ranked={ranked_offer_ids[:5]}",
         )
     if case.channel == "structured" and case.structured_query is not None:
         result = structured_search.search(case.structured_query)
         ranked_offer_ids = [candidate.offer_id.value for candidate in result.candidates]
+        metrics = evaluate_single_relevant_ranking(
+            ranked_offer_ids,
+            case.expected_offer_id,
+        )
         passed = case.expected_offer_id in ranked_offer_ids
-        return RetrievalMetricRow(
-            query_id=case.query_id,
-            channel=case.channel,
-            recall_at_1=1.0 if ranked_offer_ids and ranked_offer_ids[0] == case.expected_offer_id else 0.0,
-            recall_at_5=1.0 if case.expected_offer_id in ranked_offer_ids[:5] else 0.0,
-            recall_at_10=1.0 if passed else 0.0,
-            mrr_at_10=1.0 if ranked_offer_ids and ranked_offer_ids[0] == case.expected_offer_id else 0.0,
-            ndcg_at_10=1.0 if passed else 0.0,
+        return _retrieval_metric_row(
+            case,
+            metrics=metrics,
             passed=passed,
             detail=f"ranked={ranked_offer_ids[:5]}",
         )
     if case.channel == "vector" and case.vector_query is not None:
         result = vector_search.search(case.vector_query)
         ranked_offer_ids = [candidate.offer_id.value for candidate in result.candidates]
-        ranked_indices = [
-            index
-            for index, offer_id in enumerate(ranked_offer_ids)
-            if offer_id == case.expected_offer_id
-        ]
-        passed = bool(ranked_indices)
-        return RetrievalMetricRow(
-            query_id=case.query_id,
-            channel=case.channel,
-            recall_at_1=recall_at_k([0], ranked_indices, 1) if ranked_indices else 0.0,
-            recall_at_5=recall_at_k([0], ranked_indices, 5) if ranked_indices else 0.0,
-            recall_at_10=recall_at_k([0], ranked_indices, 10) if ranked_indices else 0.0,
-            mrr_at_10=mrr_at_k([0], ranked_indices, 10) if ranked_indices else 0.0,
-            ndcg_at_10=ndcg_at_k([0], ranked_indices, 10) if ranked_indices else 0.0,
+        metrics = evaluate_single_relevant_ranking(
+            ranked_offer_ids,
+            case.expected_offer_id,
+        )
+        passed = case.expected_offer_id in ranked_offer_ids
+        return _retrieval_metric_row(
+            case,
+            metrics=metrics,
             passed=passed,
             detail=f"ranked={ranked_offer_ids[:5]}",
         )
-    return RetrievalMetricRow(
-        query_id=case.query_id,
-        channel=case.channel,
-        recall_at_1=None,
-        recall_at_5=None,
-        recall_at_10=None,
-        mrr_at_10=None,
-        ndcg_at_10=None,
+    return _retrieval_metric_row(
+        case,
+        metrics=None,
         passed=False,
         detail="unsupported query case",
     )
@@ -331,7 +319,10 @@ def run_proof_50(
             ),
             zero_embedding_calls=ValidationSectionResult(
                 status="PASS",
-                detail=f"embedding_calls={load_result.embedding_calls}",
+                detail=(
+                    "storage loader architecture performs zero embedding provider calls "
+                    f"(recorded_calls={load_result.embedding_calls})"
+                ),
             ),
             retrieval_metrics=tuple(metric_rows),
             mapping_validation=ValidationSectionResult(

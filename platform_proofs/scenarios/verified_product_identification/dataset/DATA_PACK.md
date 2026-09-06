@@ -40,8 +40,16 @@ All of the following must pass before VPI-IMPLEMENTATION-5C4D2 (contract freeze)
 - exact `source_record_ref` set equality
 - semantic text hash validation
 - checksum validation
-- relational + vector load with zero embedding calls during load
+- relational + vector load with zero embedding provider calls during load (storage loader architecture; not a measured provider call counter unless instrumented)
 - retrieval + mapping proof
 - provider-neutral contracts (no PostgreSQL/Qdrant imports in `dataset/data_pack/contracts/`)
+
+## READY semantics
+
+`DataPackManifest.status = READY` means the generated data-pack artifact is internally complete and valid (manifest, shards, checksums, cross-artifact identity).
+
+`DataPackProofReport.status = READY` means the artifact additionally passed the external storage/retrieval proof (load, retrieval channels, mapping, negative query gate).
+
+These statuses are intentionally separate; manifest READY does not imply proof READY.
 
 Generated parquet, vectors, manifests, and evidence under `generated/data_pack/**` are gitignored.
