@@ -134,6 +134,7 @@ class EffectiveExecutionEnvironment(BaseModel):
 
 
 class ExecutionEnvironmentResolutionFailureReason(StrEnum):
+    AUTHORITY_UNAVAILABLE = "authority_unavailable"
     AUTHORITY_VIOLATION = "authority_violation"
     REQUIREMENT_UNSATISFIED = "requirement_unsatisfied"
     PROVIDER_UNAVAILABLE = "provider_unavailable"
@@ -173,6 +174,10 @@ class ExecutionEnvironmentResolutionError(RuntimeError):
     ) -> None:
         super().__init__(message)
         self.failure = failure
+
+
+class ExecutionEnvironmentAuthorityUnavailableError(ExecutionEnvironmentResolutionError):
+    """Effective profile authority is unavailable for resolution."""
 
 
 class ExecutionEnvironmentAuthorityViolationError(ExecutionEnvironmentResolutionError):

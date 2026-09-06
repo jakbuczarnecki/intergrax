@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -22,6 +23,7 @@ from intergrax.applications.contracts.environment_profile.bundles import Isolati
 from intergrax.applications.contracts.environment_profile.sub_profiles import SandboxProfile
 from intergrax.applications.contracts.profile_resolution import EffectiveProfileRevisionScope
 from intergrax.integrations.contracts.sandbox_host import SandboxExecResult, SandboxSession as HostSession
+from intergrax.runtime.sandbox import enforcement as enforcement_module
 from intergrax.runtime.sandbox.enforcement import resolve_tool_execution_environment
 from intergrax.runtime.sandbox.execution_environment import (
     ExecutionEnvironmentProviderKind,
@@ -120,7 +122,9 @@ def test_profile_with_sandbox_reflects_configured_capability() -> None:
     authority = profile_isolation_authority(_sandbox_profile())
     assert authority.sandbox_configured is True
     assert authority.filesystem_access is FilesystemAccess.WORKSPACE_WRITE
+    assert authority.network_access is NetworkAccess.NONE
     assert authority.process_execution is ProcessExecution.SANDBOXED
+    assert authority.privilege_mode is PrivilegeMode.STANDARD
 
 
 def test_requirement_success_when_profile_provider_and_requirement_align(
@@ -248,6 +252,72 @@ def test_sandbox_exec_fail_closed_without_provider() -> None:
     assert error.error == "execution_environment_provider_unavailable"
 
 
+def test_sandbox_exec_fail_closed_provider_without_authority(
+    sandbox_session: SandboxSession,
+) -> None:
+    ctx = ToolWiringContext(sandbox_session=sandbox_session)
+    with patch.object(sandbox_session, "execute") as session_exec:
+        with patch("intergrax.runtime.sandbox.session.subprocess.run") as host_exec:
+            out = sandbox_exec(
+                ctx,
+                SandboxExecInput(operation="echo", payload={"message": "no-authority"}),
+            )
+    session_exec.assert_not_called()
+    host_exec.assert_not_called()
+    assert out.success is False
+    assert out.error == "execution_environment_authority_unavailable"
+
+
+def test_hosted_provider_fail_closed_without_authority() -> None:
+    backend = MagicMock()
+    backend.create_session.return_value = HostSession(session_id="remote-no-auth")
+    backend.exec.return_value = SandboxExecResult(exit_code=0, stdout="remote-ok", stderr="")
+    session = HostedSandboxSession.open(backend, tenant_id="tenant-a", task_id="task-a")
+    ctx = ToolWiringContext(sandbox_session=session)
+    with patch.object(session, "execute") as session_exec:
+        out = sandbox_exec(
+            ctx,
+            SandboxExecInput(operation="echo", payload={"message": "remote"}),
+        )
+    session_exec.assert_not_called()
+    backend.exec.assert_not_called()
+    assert out.success is False
+    assert out.error == "execution_environment_authority_unavailable"
+
+
+def test_pinned_revision_precedence_over_legacy_profile(
+    sandbox_session: SandboxSession,
+) -> None:
+    scope = EffectiveProfileRevisionScope(application_id="p1-8", tenant_id="tenant-a")
+    store = InMemoryEffectiveProfileRevisionStore()
+    r1_deny = materialize_effective_profile_revision(
+        resolve_profile(_no_sandbox_profile()),
+        scope=scope,
+        store=store,
+    )
+    ctx = ToolWiringContext(
+        sandbox_session=sandbox_session,
+        extras={
+            "effective_profile_revision": r1_deny,
+            "effective_environment_profile": _sandbox_profile(),
+        },
+    )
+    with patch.object(sandbox_session, "execute") as session_exec:
+        out = sandbox_exec(
+            ctx,
+            SandboxExecInput(operation="echo", payload={"message": "deny"}),
+        )
+    session_exec.assert_not_called()
+    assert out.success is False
+    assert out.error == "execution_environment_authority_violation"
+
+
+def test_enforcement_never_synthesizes_profile_authority_from_provider() -> None:
+    source = inspect.getsource(enforcement_module)
+    assert "ProfileIsolationAuthority(" not in source
+    assert "substrate_authority" not in source
+
+
 def test_sandbox_exec_no_host_subprocess_fallback_when_resolution_fails(
     sandbox_session: SandboxSession,
 ) -> None:
@@ -281,6 +351,8 @@ def test_remote_provider_adapter_conformance() -> None:
     caps = capabilities_from_host_backend(backend)
     assert caps.provider_ref.provider_kind is ExecutionEnvironmentProviderKind.HOSTED
     assert caps.supports_sandboxed_exec is True
+    assert caps.network_access is NetworkAccess.NONE
+    assert caps.supports_network_isolation is None
 
 
 def test_remote_hosted_session_exec_without_host_fallback() -> None:
@@ -406,5 +478,17 @@ def test_sandbox_configured_does_not_imply_tool_authority() -> None:
     profile = _sandbox_profile(enable_exec_tool=False)
     authority = profile_isolation_authority(profile)
     assert authority.sandbox_configured is True
+    assert authority.process_execution is ProcessExecution.SANDBOXED
     enabled = set(profile.tool_profile.enabled)
     assert "sandbox.exec" not in enabled
+
+
+def test_profile_authority_maps_only_sandbox_profile_contract_fields() -> None:
+    profile = _sandbox_profile()
+    authority = profile_isolation_authority(profile)
+    assert profile.sandbox is not None
+    assert authority.sandbox_configured is True
+    assert authority.filesystem_access is FilesystemAccess.WORKSPACE_WRITE
+    assert authority.network_access is NetworkAccess.NONE
+    assert authority.process_execution is ProcessExecution.SANDBOXED
+    assert authority.privilege_mode is PrivilegeMode.STANDARD

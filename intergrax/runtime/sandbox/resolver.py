@@ -63,9 +63,12 @@ def profile_isolation_authority(profile: ApplicationEnvironmentProfile) -> Profi
     sandbox: SandboxProfile | None = profile.sandbox
     if sandbox is None:
         return ProfileIsolationAuthority()
+    # SandboxProfile contract: session manager root/session configuration only.
+    # Configured sandbox isolation permits sandboxed process execution and workspace-scoped
+    # filesystem within the session root; it does not declare network isolation policy.
     return ProfileIsolationAuthority(
         filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
-        network_access=NetworkAccess.RESTRICTED,
+        network_access=NetworkAccess.NONE,
         process_execution=ProcessExecution.SANDBOXED,
         privilege_mode=PrivilegeMode.STANDARD,
         sandbox_configured=True,

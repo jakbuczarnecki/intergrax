@@ -667,11 +667,13 @@ secret material authority: existing SecretsStore backends only
 
 ## P1.8 Sandbox / ExecutionEnvironment convergence
 
-**Status: CLOSED**
+**Status: CLOSED (P1.8A correction — fail-closed without profile authority)**
 
 Canonical immutable `EffectiveExecutionEnvironment` projection added under `intergrax/runtime/sandbox/` with pure `resolve_effective_execution_environment` narrowing semantics (profile authority ∩ requirement ∩ provider capabilities). `ApplicationEnvironmentProfile` / `IsolationBundle.sandbox` remains sole environment authority; `SandboxProfile` is configured isolation; `SandboxSessionManager` / `SandboxHostBackend` remain runtime substrates.
 
-Real adoption: `sandbox.exec` and shared `_session.run_sandbox_operation` resolve effective environment before side effects; fail closed on authority violation, missing provider, or capability mismatch; no host subprocess fallback after resolution failure. Runtime inspection provider `execution_environment` exposes safe execution-scoped projection from pinned revision.
+P1.8A hardening: removed synthetic `ProfileIsolationAuthority` fallback when provider exists but effective profile authority is missing; missing authority → `authority_unavailable` fail-closed before side effects. Pinned `effective_profile_revision` dominates legacy `effective_environment_profile` in `ToolWiringContext`. `profile_isolation_authority()` maps conservative semantics from `SandboxProfile` contract (no network overclaim from profile; hosted provider network claims require egress proof).
+
+Real adoption: `sandbox.exec` and shared `_session.run_sandbox_operation` resolve effective environment before side effects; fail closed on authority violation, missing authority, missing provider, or capability mismatch; no host subprocess fallback after resolution failure. Runtime inspection provider `execution_environment` exposes safe execution-scoped projection from pinned revision.
 
 Provider support matrix (honest):
 

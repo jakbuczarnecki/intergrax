@@ -40,6 +40,12 @@ def _network_access_for_operations(allowed_operations: frozenset[str]) -> Networ
     return NetworkAccess.NONE
 
 
+def _network_access_from_egress_proof(network_egress_deny_enforced: bool | None) -> NetworkAccess:
+    if network_egress_deny_enforced is True:
+        return NetworkAccess.RESTRICTED
+    return NetworkAccess.NONE
+
+
 def capabilities_from_local_session(session: SandboxSession) -> SandboxProviderCapabilities:
     ops = session.allowed_operations
     security = session.security_capabilities()
@@ -66,7 +72,7 @@ def capabilities_from_hosted_session(session: HostedSandboxSession) -> SandboxPr
             provider_kind=ExecutionEnvironmentProviderKind.HOSTED,
         ),
         filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
-        network_access=NetworkAccess.RESTRICTED,
+        network_access=_network_access_from_egress_proof(security.network_egress_deny_enforced),
         process_execution=ProcessExecution.SANDBOXED,
         supports_sandboxed_exec=True,
         supports_workspace_write=True,
@@ -88,7 +94,7 @@ def capabilities_from_host_backend(backend: SandboxHostBackend) -> SandboxProvid
             provider_kind=ExecutionEnvironmentProviderKind.HOSTED,
         ),
         filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
-        network_access=NetworkAccess.RESTRICTED,
+        network_access=_network_access_from_egress_proof(network_isolation),
         process_execution=ProcessExecution.SANDBOXED,
         supports_sandboxed_exec=True,
         supports_workspace_write=True,
