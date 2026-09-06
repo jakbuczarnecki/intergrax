@@ -6,7 +6,7 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
-**Current active task:** **COLLAB-WORK-2B** (READY_FOR_REVIEW)
+**Current active task:** **COLLAB-WORK-2C** (NOT STARTED)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -264,7 +264,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2B |
 | **Priority** | P1 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | WorkItem and Assignment repository ports with optimistic concurrency and idempotency |
 | **Dependencies** | COLLAB-WORK-2A approved |
 | **Exact scope** | `WorkItemRepository`, `AssignmentRepository` ports; in-memory reference adapters; revision 0 create; `expected_revision` CAS; typed conflict; idempotent create replay |
