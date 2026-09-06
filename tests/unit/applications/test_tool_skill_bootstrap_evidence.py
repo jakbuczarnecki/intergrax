@@ -40,8 +40,14 @@ from intergrax.tools.registry.catalog import clear_tool_catalog
 from intergrax.tools.registry.catalog import ToolBundleStatus
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.skills.core.manifest import SkillBundleManifest
+from intergrax.skills.registry.catalog import SkillBundleStatus
+from intergrax.skills.registry.catalog import catalog_snapshot as skill_catalog_snapshot
+from intergrax.skills.registry.runtime import SkillRegistry
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
+from testing_support.builder import FakeLLMAdapter
+from intergrax.skills.registry.profile import SkillProfile
 
 pytestmark = [
     pytest.mark.unit,
@@ -52,6 +58,7 @@ pytestmark = [
 _TOOL_GROUP = EP_TOOLS
 _SKILL_GROUP = EP_SKILLS
 _COLLISION_BUNDLE_ID = "stage10_collision"
+_SKILL_COLLISION_BUNDLE_ID = "stage10_skill_collision"
 
 
 class _EntryPoint:
@@ -70,6 +77,10 @@ class _EntryPoints:
 
 
 class _NotATool:
+    pass
+
+
+class _NotASkill:
     pass
 
 
@@ -103,6 +114,67 @@ class _CollisionBetaTool:
         pass
 
 
+class _CollisionAlphaSkill:
+    @classmethod
+    def skill_bundle_manifest(cls) -> SkillBundleManifest:
+        return SkillBundleManifest(
+            bundle_id=_SKILL_COLLISION_BUNDLE_ID,
+            skill_ids=("stage10.skill.collision.alpha",),
+            status=SkillBundleStatus.BETA,
+            description="collision alpha",
+        )
+
+    @classmethod
+    def skill_manifests(cls) -> tuple:
+        return ()
+
+    @classmethod
+    def register_skills(cls, registry: SkillRegistry) -> None:
+        from intergrax.skills.core.contracts import SkillManifest
+
+        registry.register(
+            SkillManifest(
+                skill_id="stage10.skill.collision.alpha",
+                description="collision alpha",
+            ),
+        )
+
+
+class _CollisionBetaSkill:
+    @classmethod
+    def skill_bundle_manifest(cls) -> SkillBundleManifest:
+        return SkillBundleManifest(
+            bundle_id=_SKILL_COLLISION_BUNDLE_ID,
+            skill_ids=("stage10.skill.collision.beta",),
+            status=SkillBundleStatus.BETA,
+            description="collision beta",
+        )
+
+    @classmethod
+    def skill_manifests(cls) -> tuple:
+        return ()
+
+    @classmethod
+    def register_skills(cls, registry: SkillRegistry) -> None:
+        from intergrax.skills.core.contracts import SkillManifest
+
+        registry.register(
+            SkillManifest(
+                skill_id="stage10.skill.collision.beta",
+                description="collision beta",
+            ),
+        )
+
+
+@pytest.fixture(autouse=True)
+def _stub_environment_llm_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        environment_wiring_module,
+        "resolve_environment_llm_adapter",
+        lambda _env: FakeLLMAdapter(),
+    )
+
+
 @pytest.fixture(autouse=True)
 def _reset_catalog_state() -> None:
     clear_catalog()
@@ -134,7 +206,8 @@ def _tool_ep(name: str, value: str) -> _EntryPoint:
 
 
 def _skill_ep(name: str, value: str) -> _EntryPoint:
-    return _EntryPoint(name, value, _SKILL_GROUP)
+    resolved = value if ":" in value else f"{__name__}:{value}"
+    return _EntryPoint(name, resolved, _SKILL_GROUP)
 
 
 def _strict_env(profile_id: str) -> ApplicationEnvironmentProfile:
@@ -146,7 +219,6 @@ def _strict_env(profile_id: str) -> ApplicationEnvironmentProfile:
     )
 
 
-@pytest.mark.no_ci
 def test_wire_application_environment_exposes_tools_and_skills_domain_reports(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -182,7 +254,6 @@ def test_wire_application_environment_exposes_tools_and_skills_domain_reports(
     assert skills_report.critical_bootstrap_acceptable is True
 
 
-@pytest.mark.no_ci
 def test_tool_skill_reports_match_same_catalog_bootstrap_pass(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -211,7 +282,6 @@ def test_tool_skill_reports_match_same_catalog_bootstrap_pass(
     )
 
 
-@pytest.mark.no_ci
 def test_wire_application_environment_calls_catalog_bootstrap_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -229,7 +299,6 @@ def test_wire_application_environment_calls_catalog_bootstrap_once(
     assert len(calls) == 1
 
 
-@pytest.mark.no_ci
 def test_tool_load_failure_non_strict_isolated_in_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -246,7 +315,6 @@ def test_tool_load_failure_non_strict_isolated_in_evidence(
     assert tools_report.critical_bootstrap_acceptable is False
 
 
-@pytest.mark.no_ci
 def test_skill_load_failure_non_strict_isolated_in_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -263,7 +331,6 @@ def test_skill_load_failure_non_strict_isolated_in_evidence(
     assert skills_report.critical_bootstrap_acceptable is False
 
 
-@pytest.mark.no_ci
 def test_strict_wire_application_environment_fails_on_tool_load_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -275,7 +342,6 @@ def test_strict_wire_application_environment_fails_on_tool_load_failure(
         wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
 
 
-@pytest.mark.no_ci
 def test_strict_wire_application_environment_fails_on_skill_load_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -287,7 +353,6 @@ def test_strict_wire_application_environment_fails_on_skill_load_failure(
         wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
 
 
-@pytest.mark.no_ci
 def test_rejected_tool_plugin_remains_non_active(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -313,7 +378,6 @@ def test_rejected_tool_plugin_remains_non_active(
     assert len([bid for bid in tool_catalog_snapshot() if bid == _COLLISION_BUNDLE_ID]) == 1
 
 
-@pytest.mark.no_ci
 def test_rejected_invalid_tool_target_not_registered(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -330,7 +394,79 @@ def test_rejected_invalid_tool_target_not_registered(
     assert tools_report.rejected[0].reason_code is PluginAdmissionReasonCode.INVALID_TARGET_TYPE
 
 
-@pytest.mark.no_ci
+def test_rejected_invalid_skill_target_not_registered(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    _install_eps(monkeypatch, [_skill_ep("nope", "_NotASkill")])
+    settings = LabApplicationSettings.from_env()
+    base_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="stage10.skill-invalid")
+    env = base_env.model_copy(
+        update={
+            "capabilities": base_env.capabilities.model_copy(
+                update={
+                    "skills": SkillProfile(enabled=["stage10.skill.invalid.would-be"]),
+                },
+            ),
+        },
+    )
+    wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+    skills_report = wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_SKILLS)
+    assert skills_report is not None
+    assert skills_report.registered_count == 0
+    assert len(skills_report.rejected) == 1
+    assert skills_report.rejected[0].reason_code is PluginAdmissionReasonCode.INVALID_TARGET_TYPE
+    assert skills_report.rejected[0].spec.group == EP_SKILLS
+    assert not any(
+        "stage10.skill.invalid.would-be" in entry.skill_ids
+        for entry in skill_catalog_snapshot().values()
+    )
+    assert not wiring.skill_wiring.registry.has("stage10.skill.invalid.would-be")
+
+
+def test_rejected_skill_plugin_remains_non_active(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    _install_eps(
+        monkeypatch,
+        [
+            _skill_ep("alpha", "_CollisionAlphaSkill"),
+            _skill_ep("beta", "_CollisionBetaSkill"),
+        ],
+    )
+    settings = LabApplicationSettings.from_env()
+    base_env = ApplicationEnvironmentProfile.lab_defaults(profile_id="stage10.skill-reject")
+    env = base_env.model_copy(
+        update={
+            "capabilities": base_env.capabilities.model_copy(
+                update={
+                    "skills": SkillProfile(
+                        enabled=[
+                            "stage10.skill.collision.alpha",
+                            "stage10.skill.collision.beta",
+                        ],
+                    ),
+                },
+            ),
+        },
+    )
+    wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+    skills_report = wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_SKILLS)
+    assert skills_report is not None
+    assert skills_report.registered_count == 1
+    assert len(skills_report.accepted) == 1
+    assert len(skills_report.rejected) == 1
+    assert skills_report.rejected[0].reason_code is PluginAdmissionReasonCode.PLUGIN_ID_COLLISION
+    assert skills_report.rejected[0].spec.group == EP_SKILLS
+    assert _SKILL_COLLISION_BUNDLE_ID in skill_catalog_snapshot()
+    assert len([bid for bid in skill_catalog_snapshot() if bid == _SKILL_COLLISION_BUNDLE_ID]) == 1
+    assert wiring.skill_wiring.registry.has("stage10.skill.collision.alpha")
+    assert not wiring.skill_wiring.registry.has("stage10.skill.collision.beta")
+
+
 def test_aggregate_domain_reports_include_tools_and_skills() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="stage10.aggregate")
@@ -344,7 +480,6 @@ def test_aggregate_domain_reports_include_tools_and_skills() -> None:
     assert PLATFORM_PLUGIN_DOMAIN_SKILLS in reports
 
 
-@pytest.mark.no_ci
 def test_bootstrap_catalogs_registered_count_with_mixed_outcomes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -365,7 +500,6 @@ def test_bootstrap_catalogs_registered_count_with_mixed_outcomes(
     assert len(report.failed) == 1
 
 
-@pytest.mark.no_ci
 def test_platform_plugin_evidence_domain_reports_remain_immutable() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="stage10.immutable")

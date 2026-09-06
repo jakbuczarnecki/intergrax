@@ -23,10 +23,7 @@ from intergrax.applications._shared.integration_wiring import (
     bootstrap_application_integration_catalog,
 )
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
-from intergrax.applications._shared.rag_runtime_bridge import (
-    resolve_rag_profile_for_environment,
-    resolve_rag_stack_for_environment,
-)
+from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.policy_wiring import (
     assert_strict_policy_bootstrap_acceptable,

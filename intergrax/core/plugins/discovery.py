@@ -301,9 +301,11 @@ def register_plugins_with_report(
     on_load_failure: LoadIsolation = "isolate",
 ) -> "DomainPluginLoadReport":
     """Discover entry-point plugins and build immutable bootstrap evidence."""
-    from intergrax.core.plugins.admission import (
-        DomainPluginLoadReport,
-        PluginAdmissionRejection,
+    from intergrax.core.plugins.admission import DomainPluginLoadReport
+
+    _callback_contract_error = (
+        "registration callback must return exactly one outcome: "
+        "registered=True or a rejection"
     )
 
     if not discover_entry_points:
@@ -311,7 +313,7 @@ def register_plugins_with_report(
 
     ep_policy = _entry_point_conflict_policy(on_conflict)
     accepted: list[EntryPointSpec] = []
-    rejected: list[PluginAdmissionRejection] = []
+    rejected = []
     failed: list[EntryPointLoadResult] = []
     registered_count = 0
 
@@ -335,12 +337,15 @@ def register_plugins_with_report(
             continue
 
         registered, rejection = register_entry_point(plugin_type, result.spec)
-        if rejection is not None:
-            rejected.append(rejection)
-            continue
         if registered:
+            if rejection is not None:
+                raise ValueError(_callback_contract_error)
             registered_count += 1
             accepted.append(result.spec)
+            continue
+        if rejection is None:
+            raise ValueError(_callback_contract_error)
+        rejected.append(rejection)
 
     return DomainPluginLoadReport(
         group=group,

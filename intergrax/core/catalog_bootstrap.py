@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Sequence
+from typing import Sequence
 
 from intergrax.core.catalog_conflict import (
     catalog_registration_override,
@@ -39,9 +39,6 @@ from intergrax.skills.registry.plugin_register import register_skill_plugin
 from intergrax.tools.core.plugin import ToolPlugin, tool_bundle_manifest_for_plugin
 from intergrax.tools.registry.catalog import catalog_snapshot as tool_catalog_snapshot
 from intergrax.tools.registry.plugin_register import register_tool_plugin
-
-if TYPE_CHECKING:
-    from intergrax.integrations.registry.bootstrap import IntegrationPreset
 
 _tier0_shipped_done = False
 
