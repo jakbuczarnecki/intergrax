@@ -18,7 +18,11 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     build_state_from_json_dict,
     build_state_to_json_dict,
     read_build_state_file,
+    shard_build_state_to_json_dict,
     write_build_state_file,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.json_decode import (
+    JsonValue,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.errors import (
     VpiDataPackBuildStateError,
@@ -77,19 +81,27 @@ def _canonical_build_state(
     )
 
 
-def _build_state_payload(**overrides: object) -> dict[str, object]:
+def _build_state_payload(
+    *,
+    state_version: str | None = None,
+    shard_count: int | None = None,
+    expected_record_count: int | None = None,
+    shards: list[dict[str, JsonValue]] | None = None,
+) -> dict[str, JsonValue]:
     payload = build_state_to_json_dict(_canonical_build_state())
-    payload.update(overrides)
+    if state_version is not None:
+        payload["state_version"] = state_version
+    if shard_count is not None:
+        payload["shard_count"] = shard_count
+    if expected_record_count is not None:
+        payload["expected_record_count"] = expected_record_count
+    if shards is not None:
+        payload["shards"] = shards
     return payload
 
 
-def _shard_payloads(**shard_overrides: object) -> list[dict[str, object]]:
-    payload = _build_state_payload()
-    shards = payload["shards"]
-    assert isinstance(shards, list)
-    first = shards[0]
-    assert isinstance(first, dict)
-    return [{**first, **shard_overrides}]
+def _first_shard_payload() -> dict[str, JsonValue]:
+    return shard_build_state_to_json_dict(_canonical_build_state().shards[0])
 
 
 def test_valid_canonical_plan_passes() -> None:
@@ -342,12 +354,13 @@ def test_unsupported_version_fails_with_typed_error() -> None:
 
 
 def test_duplicate_ordinal_via_json_emits_build_state_error() -> None:
+    first_shard = _first_shard_payload()
     payload = _build_state_payload(
         shard_count=2,
         expected_record_count=50,
         shards=[
-            _shard_payloads()[0],
-            {**_shard_payloads()[0], "ordinal": 1, "start_row_index": 25, "end_row_index_exclusive": 50},
+            first_shard,
+            {**first_shard, "ordinal": 1, "start_row_index": 25, "end_row_index_exclusive": 50},
         ],
     )
     with pytest.raises(VpiDataPackBuildStateError, match="duplicate shard ordinal") as exc_info:
@@ -356,13 +369,14 @@ def test_duplicate_ordinal_via_json_emits_build_state_error() -> None:
 
 
 def test_overlap_via_json_emits_build_state_error(tmp_path: Path) -> None:
+    first_shard = _first_shard_payload()
     payload = _build_state_payload(
         shard_count=2,
         expected_record_count=45,
         shards=[
-            _shard_payloads()[0],
+            first_shard,
             {
-                **_shard_payloads()[0],
+                **first_shard,
                 "ordinal": 2,
                 "start_row_index": 20,
                 "end_row_index_exclusive": 45,
@@ -380,13 +394,14 @@ def test_overlap_via_json_emits_build_state_error(tmp_path: Path) -> None:
 
 
 def test_range_gap_via_read_file_emits_build_state_error(tmp_path: Path) -> None:
+    first_shard = _first_shard_payload()
     payload = _build_state_payload(
         shard_count=2,
         expected_record_count=55,
         shards=[
-            _shard_payloads()[0],
+            first_shard,
             {
-                **_shard_payloads()[0],
+                **first_shard,
                 "ordinal": 2,
                 "start_row_index": 30,
                 "end_row_index_exclusive": 55,
