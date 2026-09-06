@@ -81,14 +81,21 @@ class SkillResolver:
             raise SkillResolutionError(f"Unknown skill_id: {skill_id}")
         return self._skill_registry.get(skill_id).manifest
 
-    def _verify_pinned_version(self, skill_id: str, requested_version: str) -> SkillManifest:
-        manifest = self._materialized_manifest(skill_id)
+    def _verify_manifest_version(
+        self,
+        manifest: SkillManifest,
+        requested_version: str,
+    ) -> None:
         if manifest.version != requested_version:
             raise SkillResolutionError(
-                f"Skill version mismatch for '{skill_id}': "
+                f"Skill version mismatch for '{manifest.skill_id}': "
                 f"requested {requested_version}, "
                 f"registry materialized {manifest.version}",
             )
+
+    def _verify_pinned_version(self, skill_id: str, requested_version: str) -> SkillManifest:
+        manifest = self._materialized_manifest(skill_id)
+        self._verify_manifest_version(manifest, requested_version)
         return manifest
 
     def _normalize_root_manifests(
@@ -175,7 +182,7 @@ class SkillResolver:
         for skill_id in normalized_ids:
             manifest = self._materialized_manifest(skill_id)
             if skill_id in root_pins:
-                self._verify_pinned_version(skill_id, root_pins[skill_id])
+                self._verify_manifest_version(manifest, root_pins[skill_id])
                 resolution_mode = SkillVersionResolutionMode.PINNED
             else:
                 resolution_mode = SkillVersionResolutionMode.MATERIALIZED

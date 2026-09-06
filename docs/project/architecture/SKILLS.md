@@ -186,6 +186,10 @@ ResolvedSkillPack
 └── snapshot_digest    (deterministic sha256 identity over resolved evidence)
 ```
 
+`ResolvedSkillPack` snapshot identity uses collision-safe canonical binary framing
+(length-prefixed UTF-8 fields, schema prefix `resolved_skill_pack.v1`, record count,
+deterministic topological order) before SHA-256 (`sha256:<hex>`).
+
 Each `ResolvedSkillRef` records:
 
 ```text
