@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from dataclasses import dataclass
 from threading import Lock
 from typing import List, Optional
 
@@ -22,6 +23,42 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 class RuntimeEventPersistenceIntegrityError(Exception):
     """Raised when runtime event storage or derived indexes are inconsistent."""
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptedRuntimeEvent:
+    """Accepted EventId identity: persistence tenant scope + canonical positioned event."""
+
+    tenant_id: str
+    positioned: PositionedRuntimeEvent
+
+
+def resolve_persistence_scope(*, event: RuntimeEvent, tenant_id: str) -> str:
+    """Resolve accepted persistence tenant (explicit > event field > empty)."""
+    return resolve_event_tenant_id(event, tenant_id)
+
+
+def reconcile_idempotent_event_acceptance(
+    accepted: AcceptedRuntimeEvent,
+    incoming: RuntimeEvent,
+    *,
+    persistence_tenant_id: str,
+) -> PositionedRuntimeEvent:
+    """
+    Return the original positioned event when ``incoming`` is an exact idempotent duplicate.
+
+    Raises ``RuntimeEventPersistenceIntegrityError`` when the same ``event_id`` was already
+    accepted under a different persistence tenant or with different canonical content.
+    """
+    if accepted.tenant_id != persistence_tenant_id:
+        raise RuntimeEventPersistenceIntegrityError(
+            "event_id accepted under different persistence tenant",
+        )
+    if accepted.positioned.event != incoming:
+        raise RuntimeEventPersistenceIntegrityError(
+            "event_id conflicts with previously accepted runtime event",
+        )
+    return accepted.positioned
 
 
 class RuntimeEventPersistence(ABC):
@@ -111,20 +148,27 @@ class NullRuntimeEventPersistence(RuntimeEventPersistence):
 
     def __init__(self) -> None:
         self._next_position: dict[tuple[str, str], int] = defaultdict(lambda: 1)
-        self._accepted: dict[str, PositionedRuntimeEvent] = {}
+        self._accepted: dict[str, AcceptedRuntimeEvent] = {}
         self._lock = Lock()
 
     def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
-        scope = tenant_id or event.tenant_id or ""
+        scope = resolve_persistence_scope(event=event, tenant_id=tenant_id)
         with self._lock:
             existing = self._accepted.get(event.event_id)
             if existing is not None:
-                return existing
+                return reconcile_idempotent_event_acceptance(
+                    existing,
+                    event,
+                    persistence_tenant_id=scope,
+                )
             key = (scope, event.run_id)
             position = ExecutionEventPosition(self._next_position[key])
             self._next_position[key] += 1
             positioned = PositionedRuntimeEvent(event=event, position=position)
-            self._accepted[event.event_id] = positioned
+            self._accepted[event.event_id] = AcceptedRuntimeEvent(
+                tenant_id=scope,
+                positioned=positioned,
+            )
             return positioned
 
     def list_positioned_for_run(
@@ -156,12 +200,12 @@ class NullRuntimeEventPersistence(RuntimeEventPersistence):
     ) -> PositionedRuntimeEvent | None:
         validated_tenant_id = _validate_persistence_tenant_id(tenant_id)
         validated_event_id = validate_event_id(event_id)
-        positioned = self._accepted.get(str(validated_event_id))
-        if positioned is None:
+        accepted = self._accepted.get(str(validated_event_id))
+        if accepted is None:
             return None
-        if positioned.event.tenant_id != validated_tenant_id:
+        if accepted.tenant_id != validated_tenant_id:
             return None
-        return positioned
+        return accepted.positioned
 
 
 def _validate_persistence_tenant_id(tenant_id: object) -> str:

@@ -19,10 +19,13 @@ from intergrax.runtime.events.execution_position import (
     PositionedRuntimeEvent,
 )
 from intergrax.runtime.events.persistence_contract import (
+    AcceptedRuntimeEvent,
     RuntimeEventPersistence,
     RuntimeEventPersistenceIntegrityError,
     _validate_persistence_tenant_id,
     _validate_through_limit,
+    reconcile_idempotent_event_acceptance,
+    resolve_persistence_scope,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, parse_runtime_event_payload
 
@@ -37,6 +40,10 @@ def _task_partition(tenant_id: str, task_id: str) -> str:
 
 def _event_index_partition(tenant_id: str) -> str:
     return f"{tenant_id}|event"
+
+
+def _global_event_id_partition() -> str:
+    return "runtime_event|event_id"
 
 
 _SEQUENCE_ROW_KEY = "__run_sequence__"
@@ -63,22 +70,123 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
         self._store = document_store
 
     def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
-        scope = tenant_id or event.tenant_id or ""
+        scope = resolve_persistence_scope(event=event, tenant_id=tenant_id)
         run_partition = _run_partition(scope, event.run_id)
+        existing_in_run = self._get_positioned(run_partition, event.event_id)
+        if existing_in_run is not None:
+            return self._finalize_idempotent_acceptance(
+                scope,
+                event,
+                existing_in_run,
+            )
+
+        ownership = self._get_event_ownership(event.event_id)
+        if ownership is not None:
+            return self._accept_existing_event_identity(scope, event, ownership)
+
+        if not self._claim_event_ownership(scope, event.event_id, event.run_id):
+            ownership = self._get_event_ownership(event.event_id)
+            if ownership is None:
+                raise RuntimeError("event_id ownership claim conflict")
+            return self._accept_existing_event_identity(scope, event, ownership)
+
+        return self._accept_new_event(scope, event, run_partition)
+
+    def _finalize_idempotent_acceptance(
+        self,
+        scope: str,
+        event: RuntimeEvent,
+        existing: PositionedRuntimeEvent,
+    ) -> PositionedRuntimeEvent:
+        positioned = reconcile_idempotent_event_acceptance(
+            AcceptedRuntimeEvent(tenant_id=scope, positioned=existing),
+            event,
+            persistence_tenant_id=scope,
+        )
+        self._ensure_event_ownership(
+            tenant_id=scope,
+            event_id=event.event_id,
+            run_id=event.run_id,
+        )
+        self._ensure_event_index(
+            tenant_id=scope,
+            event_id=event.event_id,
+            run_id=event.run_id,
+        )
+        self._ensure_task_projection(scope, event, positioned)
+        return positioned
+
+    def _accept_existing_event_identity(
+        self,
+        scope: str,
+        event: RuntimeEvent,
+        ownership: tuple[str, str],
+    ) -> PositionedRuntimeEvent:
+        owned_tenant, owned_run = ownership
+        if owned_tenant != scope:
+            raise RuntimeEventPersistenceIntegrityError(
+                "event_id accepted under different persistence tenant",
+            )
+        if owned_run != event.run_id:
+            raise RuntimeEventPersistenceIntegrityError(
+                "event_id conflicts with previously accepted runtime event",
+            )
+        run_partition = _run_partition(owned_tenant, owned_run)
         existing = self._get_positioned(run_partition, event.event_id)
         if existing is not None:
-            self._ensure_event_index(
-                tenant_id=scope,
-                event_id=event.event_id,
-                run_id=event.run_id,
-            )
-            return existing
+            return self._finalize_idempotent_acceptance(scope, event, existing)
+        return self._write_canonical_after_ownership(scope, event, run_partition)
+
+    def _accept_new_event(
+        self,
+        scope: str,
+        event: RuntimeEvent,
+        run_partition: str,
+    ) -> PositionedRuntimeEvent:
         position = self._allocate_position(run_partition)
-        payload = event.model_dump(mode="json")
-        document_data = {
-            "event": payload,
-            "execution_position": position.value,
-        }
+        positioned = self._write_canonical_run_record(
+            scope,
+            event,
+            run_partition,
+            position,
+        )
+        self._ensure_event_index(
+            tenant_id=scope,
+            event_id=event.event_id,
+            run_id=event.run_id,
+        )
+        self._ensure_task_projection(scope, event, positioned)
+        return positioned
+
+    def _write_canonical_after_ownership(
+        self,
+        scope: str,
+        event: RuntimeEvent,
+        run_partition: str,
+    ) -> PositionedRuntimeEvent:
+        position = self._allocate_position(run_partition)
+        positioned = self._write_canonical_run_record(
+            scope,
+            event,
+            run_partition,
+            position,
+        )
+        self._ensure_event_index(
+            tenant_id=scope,
+            event_id=event.event_id,
+            run_id=event.run_id,
+        )
+        self._ensure_task_projection(scope, event, positioned)
+        return positioned
+
+    def _write_canonical_run_record(
+        self,
+        scope: str,
+        event: RuntimeEvent,
+        run_partition: str,
+        position: ExecutionEventPosition,
+    ) -> PositionedRuntimeEvent:
+        document_data = self._canonical_document_data(event, position)
         run_document = DocumentRecord(
             partition_key=run_partition,
             row_key=event.event_id,
@@ -88,27 +196,35 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
             accepted = self._get_positioned(run_partition, event.event_id)
             if accepted is None:
                 raise RuntimeError("execution_position_allocation_conflict")
-            self._ensure_event_index(
-                tenant_id=scope,
-                event_id=event.event_id,
-                run_id=event.run_id,
-            )
-            return accepted
-        self._ensure_event_index(
-            tenant_id=scope,
-            event_id=event.event_id,
-            run_id=event.run_id,
-        )
-        task_partition = _task_partition(scope, event.task_id)
-        if self._store.get(task_partition, event.event_id) is None:
-            self._store.put(
-                DocumentRecord(
-                    partition_key=task_partition,
-                    row_key=event.event_id,
-                    data=document_data,
-                )
-            )
+            return self._finalize_idempotent_acceptance(scope, event, accepted)
         return PositionedRuntimeEvent(event=event, position=position)
+
+    def _canonical_document_data(
+        self,
+        event: RuntimeEvent,
+        position: ExecutionEventPosition,
+    ) -> dict[str, object]:
+        return {
+            "event": event.model_dump(mode="json"),
+            "execution_position": position.value,
+        }
+
+    def _ensure_task_projection(
+        self,
+        tenant_id: str,
+        event: RuntimeEvent,
+        positioned: PositionedRuntimeEvent,
+    ) -> None:
+        task_partition = _task_partition(tenant_id, event.task_id)
+        if self._store.get(task_partition, event.event_id) is not None:
+            return
+        self._store.put(
+            DocumentRecord(
+                partition_key=task_partition,
+                row_key=event.event_id,
+                data=self._canonical_document_data(event, positioned.position),
+            )
+        )
 
     def list_positioned_for_run(
         self,
@@ -159,10 +275,6 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
         if positioned is None:
             raise RuntimeEventPersistenceIntegrityError(
                 "runtime event index references missing canonical run record",
-            )
-        if positioned.event.tenant_id != validated_tenant_id:
-            raise RuntimeEventPersistenceIntegrityError(
-                "runtime event tenant mismatch for indexed event_id",
             )
         if positioned.event.run_id != run_id:
             raise RuntimeEventPersistenceIntegrityError(
@@ -215,6 +327,85 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
         )
         if not self._store.put_if_absent(index_document):
             self._verify_event_index(index_document, expected_run_id=run_id)
+
+    def _ensure_event_ownership(
+        self,
+        *,
+        tenant_id: str,
+        event_id: str,
+        run_id: str,
+    ) -> None:
+        ownership_document = DocumentRecord(
+            partition_key=_global_event_id_partition(),
+            row_key=event_id,
+            data={"tenant_id": tenant_id, "run_id": run_id},
+        )
+        if not self._store.put_if_absent(ownership_document):
+            self._verify_event_ownership(
+                ownership_document,
+                expected_tenant_id=tenant_id,
+                expected_run_id=run_id,
+            )
+
+    def _claim_event_ownership(
+        self,
+        tenant_id: str,
+        event_id: str,
+        run_id: str,
+    ) -> bool:
+        ownership_document = DocumentRecord(
+            partition_key=_global_event_id_partition(),
+            row_key=event_id,
+            data={"tenant_id": tenant_id, "run_id": run_id},
+        )
+        if self._store.put_if_absent(ownership_document):
+            return True
+        self._verify_event_ownership(
+            ownership_document,
+            expected_tenant_id=tenant_id,
+            expected_run_id=run_id,
+        )
+        return False
+
+    def _get_event_ownership(self, event_id: str) -> tuple[str, str] | None:
+        record = self._store.get(_global_event_id_partition(), event_id)
+        if record is None:
+            return None
+        return self._decode_event_ownership(record)
+
+    def _decode_event_ownership(self, record: DocumentRecord) -> tuple[str, str]:
+        data = record.data
+        if not isinstance(data, dict):
+            raise RuntimeEventPersistenceIntegrityError("invalid runtime event ownership")
+        raw_tenant_id = data.get("tenant_id")
+        raw_run_id = data.get("run_id")
+        if type(raw_tenant_id) is not str or not raw_tenant_id.strip():
+            raise RuntimeEventPersistenceIntegrityError("invalid runtime event ownership tenant_id")
+        if type(raw_run_id) is not str or not raw_run_id.strip():
+            raise RuntimeEventPersistenceIntegrityError("invalid runtime event ownership run_id")
+        return raw_tenant_id, raw_run_id
+
+    def _verify_event_ownership(
+        self,
+        document: DocumentRecord,
+        *,
+        expected_tenant_id: str,
+        expected_run_id: str,
+    ) -> None:
+        existing = self._store.get(document.partition_key, document.row_key)
+        if existing is None:
+            raise RuntimeEventPersistenceIntegrityError(
+                "runtime event ownership verification failed",
+            )
+        owned_tenant_id, owned_run_id = self._decode_event_ownership(existing)
+        if owned_tenant_id != expected_tenant_id:
+            raise RuntimeEventPersistenceIntegrityError(
+                "event_id accepted under different persistence tenant",
+            )
+        if owned_run_id != expected_run_id:
+            raise RuntimeEventPersistenceIntegrityError(
+                "event_id conflicts with previously accepted runtime event",
+            )
 
     def _verify_event_index(
         self,

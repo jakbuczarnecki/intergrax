@@ -16,10 +16,13 @@ from intergrax.runtime.events.execution_position import (
     PositionedRuntimeEvent,
 )
 from intergrax.runtime.events.persistence_contract import (
+    AcceptedRuntimeEvent,
     RuntimeEventPersistence,
     RuntimeEventPersistenceIntegrityError,
     _validate_persistence_tenant_id,
     _validate_through_limit,
+    reconcile_idempotent_event_acceptance,
+    resolve_persistence_scope,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, parse_runtime_event_payload
 
@@ -162,22 +165,31 @@ class SQLiteRuntimeEventStore(RuntimeEventPersistence):
         return ExecutionEventPosition(int(row["allocated_position"]))
 
     def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
-        scope = tenant_id or event.tenant_id or ""
+        scope = resolve_persistence_scope(event=event, tenant_id=tenant_id)
         payload = event.model_dump(mode="json")
         with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 existing = conn.execute(
                     """
-                    SELECT event_json, execution_position
+                    SELECT tenant_id, event_json, execution_position
                     FROM runtime_events
                     WHERE event_id = ?
                     """,
                     (event.event_id,),
                 ).fetchone()
                 if existing is not None:
+                    accepted_tenant_id = existing["tenant_id"]
+                    positioned = self._load_positioned(existing)
                     conn.commit()
-                    return self._load_positioned(existing)
+                    return reconcile_idempotent_event_acceptance(
+                        AcceptedRuntimeEvent(
+                            tenant_id=accepted_tenant_id,
+                            positioned=positioned,
+                        ),
+                        event,
+                        persistence_tenant_id=scope,
+                    )
                 position = self._allocate_position(
                     conn,
                     tenant_id=scope,

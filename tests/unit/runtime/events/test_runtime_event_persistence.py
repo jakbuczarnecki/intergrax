@@ -134,3 +134,13 @@ def test_null_runtime_event_persistence_get_by_event_id() -> None:
     assert lookup.position == positioned.position
     assert store.get_by_event_id(tenant_id="t2", event_id=event.event_id) is None
     assert store.get_by_event_id(tenant_id="t1", event_id=mint_event_id()) is None
+
+
+def test_null_runtime_event_persistence_explicit_tenant_when_event_tenant_none() -> None:
+    store = NullRuntimeEventPersistence()
+    event = _sample_event(tenant_id=None)
+    positioned = store.append(event, tenant_id="tenant-a")
+    lookup = store.get_by_event_id(tenant_id="tenant-a", event_id=event.event_id)
+    assert lookup is not None
+    assert lookup.position == positioned.position
+    assert store.get_by_event_id(tenant_id="tenant-b", event_id=event.event_id) is None
