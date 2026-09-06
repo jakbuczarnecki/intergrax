@@ -501,16 +501,26 @@ Deferred to P1.4+:
 
 ## P1.4 Runtime Inspection / explain
 
-**Status: GAP/PARTIAL**
+**Status: CLOSED (P1.4)**
 
-Domain-specific diagnostics and evidence exist, but this audit found no canonical cross-domain read model that can consistently answer:
+Delivered in P1.4:
 
-- configured vs effective,
-- why tool available/denied,
-- why profile value won,
-- why context included/excluded,
-- execution tree/state,
-- provider health/credential dependency.
+- canonical read-only `RuntimeInspectionService` aggregator in `intergrax/applications/_shared/runtime_inspection/`,
+- typed contracts in `intergrax/applications/contracts/runtime_inspection/`,
+- explicit immutable `RuntimeInspectionProvider` extension seam (no global registry),
+- profile inspection reuses existing `ProfileResolution.decisions` evidence (no precedence recompute),
+- revision inspection/compare reuse `EffectiveProfileRevisionStore` and `diff_effective_profile_revisions`,
+- execution inspection resolves exact pinned revision via `EffectiveProfileExecutionPinningStore` (no latest fallback),
+- capability inspection reuses `CapabilityDependencyValidationResult` evidence (not operational readiness),
+- typed `InspectionCompleteness` / `InspectionInconsistency` / `InspectionExplanation` read models,
+- deterministic ordering, partial provider-failure visibility, and profile redaction helpers.
+
+Deferred to P1.5+:
+
+- cross-domain operational readiness projection (`READY` / `DEGRADED` / `UNAVAILABLE`),
+- REST/CLI/dashboard operator surfaces,
+- HOS execution-tree inspection adoption,
+- live probes / background health monitors.
 
 Add a read model only. It must not own runtime truth.
 
