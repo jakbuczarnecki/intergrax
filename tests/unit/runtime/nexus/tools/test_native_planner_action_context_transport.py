@@ -17,9 +17,11 @@ from intergrax.runtime.nexus.tools.investigation_proof import (
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     PLANNER_ACTION_CONTEXT_TOOL_ID,
     NativePlannerActionContextError,
+    NativePlannerProtocolConfig,
+    NativePlannerProtocolMode,
     append_planner_action_context_schema,
     parse_planner_action_context_call,
-    process_native_planner_tool_response,
+    resolve_native_planner_protocol,
     split_native_planner_tool_calls,
 )
 from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
@@ -107,46 +109,50 @@ def test_split_annotation_and_business_calls() -> None:
     assert split.annotation_calls[0].name == PLANNER_ACTION_CONTEXT_TOOL_ID
 
 
-def test_process_atomic_annotation_plus_business_success() -> None:
+def _protocol_config_with_prior() -> NativePlannerProtocolConfig:
     reference_index = _reference_index_with_prior()
-    processed = process_native_planner_tool_response(
-        _response(_annotation_call(basis=["obs.ref.a"]), _business_call()),
-        available_evidence_references=frozenset(reference_index),
-        reference_index=reference_index,
+    return NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+        available_evidence_references=tuple(reference_index),
+        _reference_index_items=tuple(sorted(reference_index.items())),
     )
-    assert processed.is_executable_investigation_round is True
-    assert processed.transport.action_context is not None
-    assert processed.transport.action_context.purpose
-    assert processed.transport.business_tool_calls[0].name == "probe.fetch_logs"
+
+
+def test_process_atomic_annotation_plus_business_success() -> None:
+    protocol_config = _protocol_config_with_prior()
+    action_context, business_calls = resolve_native_planner_protocol(
+        _response(_annotation_call(basis=["obs.ref.a"]), _business_call()).tool_calls,
+        protocol_config=protocol_config,
+    )
+    assert action_context is not None
+    assert action_context.purpose
+    assert business_calls[0].name == "probe.fetch_logs"
 
 
 def test_missing_annotation_with_prior_evidence_fails_closed() -> None:
-    reference_index = _reference_index_with_prior()
+    protocol_config = _protocol_config_with_prior()
     with pytest.raises(NativePlannerActionContextError, match="exactly one"):
-        process_native_planner_tool_response(
-            _response(_business_call()),
-            available_evidence_references=frozenset(reference_index),
-            reference_index=reference_index,
+        resolve_native_planner_protocol(
+            _response(_business_call()).tool_calls,
+            protocol_config=protocol_config,
         )
 
 
 def test_empty_basis_with_prior_evidence_fails_closed() -> None:
-    reference_index = _reference_index_with_prior()
+    protocol_config = _protocol_config_with_prior()
     with pytest.raises(NativePlannerActionContextError, match="explicit evidence basis"):
-        process_native_planner_tool_response(
-            _response(_annotation_call(basis=[]), _business_call()),
-            available_evidence_references=frozenset(reference_index),
-            reference_index=reference_index,
+        resolve_native_planner_protocol(
+            _response(_annotation_call(basis=[]), _business_call()).tool_calls,
+            protocol_config=protocol_config,
         )
 
 
 def test_unknown_basis_fails_closed() -> None:
-    reference_index = _reference_index_with_prior()
+    protocol_config = _protocol_config_with_prior()
     with pytest.raises(NativePlannerActionContextError, match="unknown basis"):
-        process_native_planner_tool_response(
-            _response(_annotation_call(basis=["obs.unknown"]), _business_call()),
-            available_evidence_references=frozenset(reference_index),
-            reference_index=reference_index,
+        resolve_native_planner_protocol(
+            _response(_annotation_call(basis=["obs.unknown"]), _business_call()).tool_calls,
+            protocol_config=protocol_config,
         )
 
 
@@ -166,65 +172,65 @@ def test_extra_annotation_field_rejected() -> None:
 
 
 def test_multiple_annotations_fail_closed() -> None:
-    reference_index = _reference_index_with_prior()
+    protocol_config = _protocol_config_with_prior()
     with pytest.raises(NativePlannerActionContextError, match="at most one annotation"):
-        process_native_planner_tool_response(
+        resolve_native_planner_protocol(
             _response(
                 _annotation_call(call_id="ann-1"),
                 _annotation_call(call_id="ann-2"),
                 _business_call(),
-            ),
-            available_evidence_references=frozenset(reference_index),
-            reference_index=reference_index,
+            ).tool_calls,
+            protocol_config=protocol_config,
         )
 
 
-def test_annotation_only_is_not_executable_round() -> None:
-    reference_index = _reference_index_with_prior()
-    processed = process_native_planner_tool_response(
-        _response(_annotation_call(basis=["obs.ref.a"])),
-        available_evidence_references=frozenset(reference_index),
-        reference_index=reference_index,
-    )
-    assert processed.is_executable_investigation_round is False
-    assert processed.transport.business_tool_calls == ()
+def test_annotation_only_fails_closed() -> None:
+    protocol_config = _protocol_config_with_prior()
+    with pytest.raises(
+        NativePlannerActionContextError,
+        match="without business tool calls is not executable",
+    ):
+        resolve_native_planner_protocol(
+            _response(_annotation_call(basis=["obs.ref.a"])).tool_calls,
+            protocol_config=protocol_config,
+        )
 
 
 def test_first_round_annotation_optional() -> None:
-    processed = process_native_planner_tool_response(
-        _response(_business_call()),
-        available_evidence_references=frozenset(),
-        reference_index={},
+    protocol_config = NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
     )
-    assert processed.is_executable_investigation_round is True
-    assert processed.transport.action_context is None
+    action_context, business_calls = resolve_native_planner_protocol(
+        _response(_business_call()).tool_calls,
+        protocol_config=protocol_config,
+    )
+    assert action_context is None
+    assert len(business_calls) == 1
 
 
 def test_multiple_business_calls_share_one_annotation() -> None:
-    reference_index = _reference_index_with_prior()
-    processed = process_native_planner_tool_response(
+    protocol_config = _protocol_config_with_prior()
+    action_context, business_calls = resolve_native_planner_protocol(
         _response(
             _annotation_call(basis=["obs.ref.a"]),
             _business_call(call_id="biz-1"),
             _business_call(call_id="biz-2", tool_name="probe.metrics"),
-        ),
-        available_evidence_references=frozenset(reference_index),
-        reference_index=reference_index,
+        ).tool_calls,
+        protocol_config=protocol_config,
     )
-    assert processed.transport.action_context is not None
-    assert len(processed.transport.business_tool_calls) == 2
-    next_ids = tuple(call.id for call in processed.transport.business_tool_calls)
+    assert action_context is not None
+    assert len(business_calls) == 2
+    next_ids = tuple(call.id for call in business_calls)
     assert next_ids == ("biz-1", "biz-2")
 
 
 def test_annotation_not_in_business_plan_alignment() -> None:
-    reference_index = _reference_index_with_prior()
-    processed = process_native_planner_tool_response(
-        _response(_annotation_call(basis=["obs.ref.a"]), _business_call(call_id="biz-1")),
-        available_evidence_references=frozenset(reference_index),
-        reference_index=reference_index,
+    protocol_config = _protocol_config_with_prior()
+    action_context, business_calls = resolve_native_planner_protocol(
+        _response(_annotation_call(basis=["obs.ref.a"]), _business_call(call_id="biz-1")).tool_calls,
+        protocol_config=protocol_config,
     )
-    business_calls = processed.transport.business_tool_calls
+    _ = action_context
     tool_plan = ToolCallPlan(
         calls=[
             PlannedToolCall(

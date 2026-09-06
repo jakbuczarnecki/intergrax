@@ -16,8 +16,9 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.investigation_proof import (
     InvestigationProof,
     InvestigationProofStep,
-    build_investigation_proof_step,
+    build_investigation_proof_step_from_action_context,
     collect_available_evidence_ids,
+    investigation_native_planner_protocol_config,
     prepare_native_planner_messages_with_follow_up_context,
 )
 from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
@@ -101,12 +102,19 @@ class BoundedReactPattern:
                 round_index=iterations,
                 prior_model_visible_references=prior_model_visible_references,
             )
-            llm_result, tool_plan = planner.plan_native_round(
+            protocol_config = investigation_native_planner_protocol_config(
+                messages,
+                prior_model_visible_references,
+            )
+            planner_round = planner.plan_native_round(
                 planning_messages,
                 allowed_tool_ids=allowed_tool_ids,
                 run_id=state.run_id,
                 tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
+                protocol_config=protocol_config,
             )
+            llm_result = planner_round.response
+            tool_plan = planner_round.tool_plan
 
             if llm_result.content and not tool_plan.calls:
                 stop_reason = "planner_final_answer"
@@ -116,13 +124,16 @@ class BoundedReactPattern:
                 stop_reason = "empty_tool_calls"
                 break
 
-            validate_native_tool_plan_alignment(llm_result.tool_calls, tool_plan)
+            validate_native_tool_plan_alignment(
+                planner_round.business_tool_calls,
+                tool_plan,
+            )
 
             proof_steps.append(
-                build_investigation_proof_step(
+                build_investigation_proof_step_from_action_context(
                     round_index=iterations,
-                    assistant_content=llm_result.content,
-                    tool_calls=llm_result.tool_calls,
+                    action_context=planner_round.action_context,
+                    tool_calls=planner_round.business_tool_calls,
                     messages_before_round=messages,
                     prior_model_visible_references=prior_model_visible_references,
                 )
@@ -147,7 +158,7 @@ class BoundedReactPattern:
             append_native_tool_messages(
                 messages,
                 assistant_content=llm_result.content,
-                tool_calls=llm_result.tool_calls,
+                tool_calls=planner_round.business_tool_calls,
                 outcomes=round_outcomes,
             )
             appended.extend(messages[before:])

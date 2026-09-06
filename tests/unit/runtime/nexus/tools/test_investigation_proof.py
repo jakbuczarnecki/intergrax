@@ -408,8 +408,9 @@ def test_format_investigation_follow_up_context_lists_available_refs() -> None:
     assert "ROUND: 2" in rendered
     assert "- evidence.workload.line4.incident_window" in rendered
     assert "- evidence.throughput.line4.incident_window" in rendered
+    assert "intergrax.planner.action_context" in rendered
     assert "AVAILABLE_EVIDENCE_REFS" in rendered
-    assert "An empty EVIDENCE_BASIS is invalid." in rendered
+    assert "emit exactly one intergrax.planner.action_context" in rendered
     assert "materially motivate this follow-up action" in rendered
 
 

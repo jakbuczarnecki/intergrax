@@ -11,6 +11,13 @@ from dataclasses import dataclass
 from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.runtime.nexus.tools.native_planner_action_context import (
+    NativePlannerActionContext,
+    NativePlannerProtocolConfig,
+    NativePlannerProtocolMode,
+    PLANNER_ACTION_CONTEXT_TOOL_ID,
+    validate_typed_planner_action_context,
+)
 from intergrax.runtime.nexus.tools.native_planner_transcript import (
     canonical_native_planner_messages,
 )
@@ -151,10 +158,13 @@ def format_investigation_follow_up_context(
         f"{ref_lines}\n"
         "\n"
         "CONTRACT:\n"
-        "Because prior evidence exists, EVIDENCE_BASIS MUST contain at least one "
-        "exact reference from AVAILABLE_EVIDENCE_REFS.\n"
-        "An empty EVIDENCE_BASIS is invalid.\n"
-        "EVIDENCE_BASIS expresses what already-observed facts materially motivate "
+        f"Because prior evidence exists, emit exactly one {PLANNER_ACTION_CONTEXT_TOOL_ID} "
+        "call in the same response as the business tool call(s).\n"
+        "evidence_basis_references must include at least one exact value from "
+        "AVAILABLE_EVIDENCE_REFS.\n"
+        "purpose must be a concise public justification.\n"
+        "An empty evidence_basis_references is invalid when prior evidence exists.\n"
+        "evidence_basis_references expresses what already-observed facts materially motivate "
         "this follow-up action; it does not claim those observations prove the "
         "next tool's result."
     )
@@ -186,6 +196,26 @@ def parse_follow_up_context_evidence_references(
                 break
         return tuple(refs)
     return ()
+
+
+def investigation_native_planner_protocol_config(
+    messages: Sequence[ChatMessage],
+    prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
+) -> NativePlannerProtocolConfig:
+    """Build typed planner protocol config for certified native investigation rounds."""
+    reference_index = build_completed_observation_reference_index(
+        messages,
+        prior_model_visible_references,
+    )
+    available = collect_available_evidence_ids(
+        messages,
+        prior_model_visible_references,
+    )
+    return NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+        available_evidence_references=available,
+        _reference_index_items=tuple(sorted(reference_index.items())),
+    )
 
 
 def prepare_native_planner_messages_with_follow_up_context(
@@ -264,7 +294,12 @@ def _parse_basis_value(raw: str) -> tuple[str, ...]:
 
 
 def parse_public_decision_note(content: str) -> ParsedPublicDecisionNote:
-    """Parse the strict ENG-6 two-field public decision-note envelope."""
+    """Parse the strict ENG-6 two-field public decision-note envelope.
+
+    LEGACY / COMPATIBILITY — NOT CERTIFIED NATIVE AUTHORITY.
+    Certified native paths use typed ``intergrax.planner.action_context`` transport.
+    Removal owner: DS-E2E-12 follow-up once non-native paths migrate.
+    """
     semantic_lines = tuple(
         stripped
         for line in content.splitlines()
@@ -373,6 +408,84 @@ def record_first_investigation_step(
     )
 
 
+def build_investigation_proof_step_from_action_context(
+    *,
+    round_index: int,
+    action_context: NativePlannerActionContext | None,
+    tool_calls: Sequence[LLMToolCall],
+    messages_before_round: Sequence[ChatMessage],
+    prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
+) -> InvestigationProofStep:
+    """Validate typed planner annotation and record one investigative tool round."""
+    next_tool_call_ids = tuple(tool_call.id for tool_call in tool_calls)
+    reference_index = build_completed_observation_reference_index(
+        messages_before_round,
+        prior_model_visible_references,
+    )
+    available = frozenset(reference_index)
+    if not available:
+        if action_context is not None:
+            validate_typed_planner_action_context(
+                action_context,
+                available_evidence_references=frozenset(),
+                reference_index=reference_index,
+            )
+            if action_context.evidence_basis_references:
+                bindings = _bind_declared_basis_references(
+                    action_context.evidence_basis_references,
+                    reference_index,
+                )
+                return InvestigationProofStep(
+                    round_index=round_index,
+                    declared_basis_references=action_context.evidence_basis_references,
+                    basis_bindings=bindings,
+                    basis_tool_call_ids=tuple(
+                        binding.tool_call_id for binding in bindings
+                    ),
+                    next_tool_call_ids=next_tool_call_ids,
+                    public_reason=action_context.purpose,
+                )
+            return InvestigationProofStep(
+                round_index=round_index,
+                declared_basis_references=(),
+                basis_bindings=(),
+                basis_tool_call_ids=(),
+                next_tool_call_ids=next_tool_call_ids,
+                public_reason=action_context.purpose,
+            )
+        return InvestigationProofStep(
+            round_index=round_index,
+            declared_basis_references=(),
+            basis_bindings=(),
+            basis_tool_call_ids=(),
+            next_tool_call_ids=next_tool_call_ids,
+            public_reason="",
+        )
+    if action_context is None:
+        raise InvestigationProofValidationError(
+            "follow-up tool round requires typed planner action context "
+            f"(round_index={round_index}, "
+            f"available_evidence_count={len(available)})"
+        )
+    validate_typed_planner_action_context(
+        action_context,
+        available_evidence_references=available,
+        reference_index=reference_index,
+    )
+    bindings = _bind_declared_basis_references(
+        action_context.evidence_basis_references,
+        reference_index,
+    )
+    return InvestigationProofStep(
+        round_index=round_index,
+        declared_basis_references=action_context.evidence_basis_references,
+        basis_bindings=bindings,
+        basis_tool_call_ids=tuple(binding.tool_call_id for binding in bindings),
+        next_tool_call_ids=next_tool_call_ids,
+        public_reason=action_context.purpose,
+    )
+
+
 def build_investigation_proof_step(
     *,
     round_index: int,
@@ -381,7 +494,11 @@ def build_investigation_proof_step(
     messages_before_round: Sequence[ChatMessage],
     prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
 ) -> InvestigationProofStep:
-    """Snapshot, parse, validate, and record one investigative tool round."""
+    """Snapshot, parse, validate, and record one investigative tool round.
+
+    LEGACY / COMPATIBILITY — text envelope parser path.
+    Certified native bounded-react uses ``build_investigation_proof_step_from_action_context``.
+    """
     next_tool_call_ids = tuple(tool_call.id for tool_call in tool_calls)
     reference_index = build_completed_observation_reference_index(
         messages_before_round,

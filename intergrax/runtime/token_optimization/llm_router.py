@@ -951,7 +951,7 @@ class TokenOptimizationLLMRouter:
             config=ToolPlanningConfig(temperature=0.0, max_answer_tokens=512),
         )
         try:
-            llm_result, tool_plan = planner.plan_native_round(
+            planner_round = planner.plan_native_round(
                 list(send_payload.messages),
                 allowed_tool_ids=(ROUTER_TOOL_ID,),
                 run_id=run_id,
@@ -965,6 +965,8 @@ class TokenOptimizationLLMRouter:
         except Exception:  # noqa: BLE001 — provider planning boundary maps to typed failure
             return None, TokenOptimizationRouterReason.LLM_ERROR, None
 
+        llm_result = planner_round.response
+        tool_plan = planner_round.tool_plan
         raw_calls = llm_result.tool_calls
         if not raw_calls:
             return None, TokenOptimizationRouterReason.NO_TOOL_CALL, None

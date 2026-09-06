@@ -18,8 +18,10 @@ from intergrax.runtime.nexus.tools.investigation_proof import (
 )
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     PLANNER_ACTION_CONTEXT_TOOL_ID,
+    NativePlannerProtocolConfig,
+    NativePlannerProtocolMode,
     append_planner_action_context_schema,
-    process_native_planner_tool_response,
+    resolve_native_planner_protocol,
 )
 
 _LIVE_FLAG = "INTERGRAX_DS_E2E_12_LIVE"
@@ -176,23 +178,27 @@ def run_one_planner_transport_attempt(
         tool_choice="auto",
     )
     reference_index = build_completed_observation_reference_index(messages)
-    available = frozenset(reference_index)
+    protocol_config = NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+        available_evidence_references=tuple(reference_index),
+        _reference_index_items=tuple(sorted(reference_index.items())),
+    )
     try:
-        processed = process_native_planner_tool_response(
-            response,
-            available_evidence_references=available,
-            reference_index=reference_index,
+        action_context, business_calls = resolve_native_planner_protocol(
+            response.tool_calls,
+            protocol_config=protocol_config,
         )
     except Exception:
         return _capture_from_response(response, transport_success=False)
-    context = processed.transport.action_context
-    basis_refs = context.evidence_basis_references if context is not None else ()
-    purpose_present = bool(context is not None and context.purpose.strip())
+    basis_refs = action_context.evidence_basis_references if action_context is not None else ()
+    purpose_present = bool(action_context is not None and action_context.purpose.strip())
+    annotation_count = sum(
+        1 for call in response.tool_calls if call.name == PLANNER_ACTION_CONTEXT_TOOL_ID
+    )
     success = (
-        processed.is_executable_investigation_round
-        and context is not None
-        and processed.transport.annotation_call_ids
-        and len(processed.transport.business_tool_calls) >= 1
+        action_context is not None
+        and annotation_count == 1
+        and len(business_calls) >= 1
     )
     return _capture_from_response(
         response,

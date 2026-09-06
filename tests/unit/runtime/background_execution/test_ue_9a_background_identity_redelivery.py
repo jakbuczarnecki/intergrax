@@ -55,6 +55,7 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.native_planner_action_context import NativePlannerRound
 from intergrax.runtime.nexus.tools.tool_loop import (
     execute_planned_tool_calls,
     run_bounded_tool_loop,
@@ -146,26 +147,28 @@ class _TwoRoundPlanner:
         allowed_tool_ids=None,
         run_id: str,
         tool_choice=None,
-    ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
-        _ = messages, allowed_tool_ids, run_id, tool_choice
+        protocol_config=None,
+        **kwargs,
+    ) -> NativePlannerRound:
+        _ = messages, allowed_tool_ids, run_id, tool_choice, protocol_config, kwargs
         self._round += 1
         if self._round == 1:
-            return (
-                LLMAdapterResponse(
-                    content="round-1",
-                    tool_calls=(
-                        LLMToolCall.from_openai_shape(
-                            call_id="tc-1",
-                            name="probe.read",
-                            arguments={"value": 1},
-                        ),
-                    ),
-                ),
-                ToolCallPlan(calls=[]),
+            business_call = LLMToolCall.from_openai_shape(
+                call_id="tc-1",
+                name="probe.read",
+                arguments={"value": 1},
             )
-        return (
-            LLMAdapterResponse(content="done", tool_calls=()),
-            ToolCallPlan(calls=[]),
+            return NativePlannerRound(
+                response=LLMAdapterResponse(content="round-1", tool_calls=(business_call,)),
+                business_tool_calls=(business_call,),
+                tool_plan=ToolCallPlan(calls=[]),
+                action_context=None,
+            )
+        return NativePlannerRound(
+            response=LLMAdapterResponse(content="done", tool_calls=()),
+            business_tool_calls=(),
+            tool_plan=ToolCallPlan(calls=[]),
+            action_context=None,
         )
 
 
