@@ -600,7 +600,7 @@ production durable activation store: PARTIAL — KvActiveEffectiveProfileRevisio
 
 Preserves INV-25 (atomic activation), INV-26 (in-flight pinning), INV-33 (revision immutability).
 
-**Next: P1.8 — Sandbox / ExecutionEnvironment convergence**
+**Next: P1.9 — Context provider lifecycle/provenance hardening**
 
 ---
 
@@ -661,23 +661,28 @@ CredentialRef may be durable in connection/catalog configuration: YES
 secret material authority: existing SecretsStore backends only
 ```
 
-**Next: P1.8 — Sandbox / ExecutionEnvironment convergence**
+**Next: P1.9 — Context provider lifecycle/provenance hardening**
 
 ---
 
 ## P1.8 Sandbox / ExecutionEnvironment convergence
 
-**Status: PARTIAL**
+**Status: CLOSED**
 
-Significant sandbox runtime exists. Remaining concern is convergence around execution-scoped effective environment, policy, provider inspection, credentials/network/process restrictions, and escalation.
+Canonical immutable `EffectiveExecutionEnvironment` projection added under `intergrax/runtime/sandbox/` with pure `resolve_effective_execution_environment` narrowing semantics (profile authority ∩ requirement ∩ provider capabilities). `ApplicationEnvironmentProfile` / `IsolationBundle.sandbox` remains sole environment authority; `SandboxProfile` is configured isolation; `SandboxSessionManager` / `SandboxHostBackend` remain runtime substrates.
 
-Do not rebuild sandbox session/manager/provider infrastructure.
+Real adoption: `sandbox.exec` and shared `_session.run_sandbox_operation` resolve effective environment before side effects; fail closed on authority violation, missing provider, or capability mismatch; no host subprocess fallback after resolution failure. Runtime inspection provider `execution_environment` exposes safe execution-scoped projection from pinned revision.
 
----
+Provider support matrix (honest):
 
-## P1.9 Context provider lifecycle/provenance hardening
+| Substrate | Filesystem | Process exec | Network isolation claim |
+|---|---|---|---|
+| Local `SandboxSession` | workspace-root write | subprocess in sandbox cwd | operation allowlist only; no OS network proof |
+| Hosted `SandboxHostBackend` | remote workspace ops | remote shell | provider-attested when `SandboxSecurityCapable` |
 
-**Status: CURRENT/PARTIAL**
+Known remaining convergence (not blockers): CodeCraft tier mapping still uses `substrate.py` path; not all sandbox consumers migrated; child execution environment binding at runtime admission deferred until child execution wiring exposes parent baseline.
+
+**Next: P1.9 — Context provider lifecycle/provenance hardening**
 
 ContextProvider contracts and providers already exist.
 

@@ -286,9 +286,16 @@ def wire_application_environment(
         env, producer_adapter=resolve_environment_llm_adapter(env)
     )
     wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
-    if resolved_integration is not None:
-        from dataclasses import replace
+    from dataclasses import replace
 
+    wiring_context = replace(
+        wiring_context,
+        extras={
+            **wiring_context.extras,
+            "effective_environment_profile": env,
+        },
+    )
+    if resolved_integration is not None:
         wiring_context = replace(
             wiring_context,
             extras={
