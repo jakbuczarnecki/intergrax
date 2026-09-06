@@ -44,7 +44,7 @@ def _unique_layout_categories() -> frozenset[str]:
 
 
 # P2-002-B1: typed contract registered before first-party provider layout folders (B2).
-_REGISTRY_CATEGORIES_PENDING_LAYOUT: frozenset[str] = frozenset({"embedding_provider"})
+_REGISTRY_CATEGORIES_PENDING_LAYOUT: frozenset[str] = frozenset()
 
 
 def test_every_layout_category_has_contract_or_alias() -> None:

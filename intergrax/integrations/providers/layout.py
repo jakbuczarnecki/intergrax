@@ -209,6 +209,9 @@ SLUG_CATEGORY: dict[str, str] = {
     "azure_content_safety": "llm_guardrail",
     "bedrock_guardrails": "llm_guardrail",
     "openai": "managed_retrieval",
+    "hf": "embedding_provider",
+    "vllm": "embedding_provider",
+    "llama_cpp": "embedding_provider",
 }
 
 # Extra (provider_id, category) memberships beyond the primary SLUG_CATEGORY entry.
@@ -218,6 +221,8 @@ SECONDARY_PROVIDER_CATEGORIES: dict[str, tuple[str, ...]] = {
     "teams": ("conversation_channel",),
     "discord": ("conversation_channel",),
     "telegram": ("conversation_channel",),
+    "openai": ("embedding_provider",),
+    "ollama": ("embedding_provider",),
 }
 
 

@@ -2,7 +2,13 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-"""Provider-owned factory registration for embedding providers."""
+"""Provider-owned factory registration for embedding providers.
+
+TRANSITIONAL_RUNTIME_COMPATIBILITY — RAG runtime factory map retained until B3/B4 cutover.
+This module is **not** canonical provider catalog authority after P2-002-B2; Integrations
+catalog registration under ``integrations/providers/embedding_provider/`` owns provider
+identity and contract metadata.
+"""
 
 from __future__ import annotations
 

@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Iterator
 
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
@@ -14,6 +15,9 @@ from intergrax.integrations.contracts.base import (
     UnknownIntegrationError,
     normalize_category,
 )
+
+if TYPE_CHECKING:
+    from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 
 _CATALOG: dict[str, IntegrationEntry] = {}
 
@@ -73,3 +77,64 @@ def metadata_for_slug(slug: str) -> IntegrationMetadata:
 
 def catalog_snapshot() -> dict[str, IntegrationEntry]:
     return dict(_CATALOG)
+
+
+def augment_integration_contract_specs(
+    slug: str,
+    *,
+    categories: tuple[IntegrationCategory, ...] = (),
+    contract_specs: Iterable[IntegrationContractSpec],
+) -> IntegrationEntry:
+    """Append provider-owned contract specs and categories to an existing catalog row."""
+    from intergrax.integrations.core.manifest import IntegrationManifest
+    from intergrax.integrations.registry.contract_spec import (
+        validate_contract_spec_identity,
+        validate_contract_specs_against_manifest,
+    )
+
+    normalized_slug = slug.strip().lower()
+    entry = get_entry(normalized_slug)
+    merged_categories: list[IntegrationCategory] = list(entry.categories)
+    for category in categories:
+        if category not in merged_categories:
+            merged_categories.append(category)
+
+    existing_categories = {spec.category for spec in entry.contract_specs}
+    merged_specs = list(entry.contract_specs)
+    for spec in contract_specs:
+        validate_contract_spec_identity(
+            slug=normalized_slug,
+            spec=spec,
+            observed_provider_id=spec.provider_id,
+        )
+        if spec.category in existing_categories:
+            msg = (
+                f"Integration {normalized_slug!r}: contract spec category "
+                f"{spec.category!r} is already registered"
+            )
+            raise ValueError(msg)
+        existing_categories.add(spec.category)
+        merged_specs.append(spec)
+
+    merged_manifest = IntegrationManifest(
+        slug=normalized_slug,
+        categories=tuple(merged_categories),
+        status=entry.status,
+        env_prefix=entry.env_prefix,
+        description=entry.description,
+        requires_local_container=entry.requires_local_container,
+    )
+    validate_contract_specs_against_manifest(merged_manifest, merged_specs)
+
+    updated = IntegrationEntry(
+        slug=entry.slug,
+        categories=tuple(merged_categories),
+        factory=entry.factory,
+        status=entry.status,
+        env_prefix=entry.env_prefix,
+        description=entry.description,
+        requires_local_container=entry.requires_local_container,
+        contract_specs=tuple(merged_specs),
+    )
+    register_integration(updated, override=True)
+    return updated
