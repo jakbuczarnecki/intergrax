@@ -37,7 +37,11 @@ def project_private_tool_record(
     source: CapabilitySourceIdentity,
     record: PrivateToolCatalogRecord,
 ) -> CapabilityCatalogEntry:
-    """Map one private Tool catalog row to a federated catalog entry."""
+    """Map one private Tool catalog row to a federated catalog entry.
+
+    Requires an ENTERPRISE_PRIVATE source identity.
+    """
+    validate_enterprise_private_source(source)
     logical_id = record.logical_id.strip()
     return CapabilityCatalogEntry(
         identity=CapabilityDiscoveryIdentity(

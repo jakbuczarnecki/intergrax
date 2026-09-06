@@ -37,7 +37,11 @@ def project_private_skill_package(
     source: CapabilitySourceIdentity,
     package: PrivateSkillCatalogPackage,
 ) -> CapabilityCatalogEntry:
-    """Map one private Skill catalog package to a federated catalog entry."""
+    """Map one private Skill catalog package to a federated catalog entry.
+
+    Requires an ENTERPRISE_PRIVATE source identity.
+    """
+    validate_enterprise_private_source(source)
     skill_id = package.manifest.skill_id
     return CapabilityCatalogEntry(
         identity=CapabilityDiscoveryIdentity(

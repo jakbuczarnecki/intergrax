@@ -127,3 +127,28 @@ def test_project_private_tool_record_preserves_optional_version_absence() -> Non
         PrivateToolCatalogRecord(logical_id="tool.enterprise.search"),
     )
     assert entry.provenance.version_label is None
+
+
+def test_project_private_tool_record_rejects_non_private_source_kind() -> None:
+    source = CapabilitySourceIdentity(
+        source_id="tools.catalog.builtin",
+        source_kind=CapabilitySourceKind.BUILTIN,
+    )
+    record = PrivateToolCatalogRecord(logical_id="tool.enterprise.search")
+    with pytest.raises(CapabilityCatalogConfigurationError, match="ENTERPRISE_PRIVATE"):
+        project_private_tool_record(source, record)
+
+
+def test_project_private_tool_record_projects_source_qualified_entry() -> None:
+    source = _enterprise_tool_source()
+    record = PrivateToolCatalogRecord(
+        logical_id="tool.enterprise.search",
+        version_label="3.2.1",
+        package_reference="private://tools/search/3.2.1",
+    )
+    entry = project_private_tool_record(source, record)
+    assert entry.identity.source == source
+    assert entry.provenance.source == source
+    assert entry.identity.logical.logical_id == "tool.enterprise.search"
+    assert entry.provenance.version_label == "3.2.1"
+    assert entry.provenance.package_reference == "private://tools/search/3.2.1"

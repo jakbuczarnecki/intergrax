@@ -101,3 +101,28 @@ def test_private_skill_source_read_entries_is_idempotent() -> None:
     )
     source_impl = PrivateSkillCapabilityCatalogSource(source=source, packages=packages)
     assert source_impl.read_entries() == source_impl.read_entries()
+
+
+def test_project_private_skill_package_rejects_non_private_source_kind() -> None:
+    source = CapabilitySourceIdentity(
+        source_id="skills.catalog.builtin",
+        source_kind=CapabilitySourceKind.BUILTIN,
+    )
+    package = PrivateSkillCatalogPackage(manifest=_manifest())
+    with pytest.raises(CapabilityCatalogConfigurationError, match="ENTERPRISE_PRIVATE"):
+        project_private_skill_package(source, package)
+
+
+def test_project_private_skill_package_projects_source_qualified_entry() -> None:
+    source = _enterprise_skill_source()
+    manifest = _manifest(version="4.2.0")
+    package = PrivateSkillCatalogPackage(
+        manifest=manifest,
+        package_reference="private://skills/research/4.2.0",
+    )
+    entry = project_private_skill_package(source, package)
+    assert entry.identity.source == source
+    assert entry.provenance.source == source
+    assert entry.identity.logical.logical_id == manifest.skill_id
+    assert entry.provenance.version_label == manifest.version
+    assert entry.provenance.package_reference == "private://skills/research/4.2.0"
