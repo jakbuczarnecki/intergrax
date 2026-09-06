@@ -1,8 +1,10 @@
 # ADR: LLM and Embedding Integration Boundary
 
-**Status:** Accepted — implementation pending  
+**Status:** Accepted — implementation in progress (Phase 1 foundation)
 **Date:** 2026-09-05  
 **Task:** P2-002-A · P2-002
+
+**Implementation progress:** Phase 1 catalog/category foundation (P2-002-B1) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. No embedding provider migration in B1.
 
 ## Context
 
@@ -146,7 +148,7 @@ Implementation is **out of scope** for P2-002-A. Logical blocks:
 | Phase | Scope |
 |---|---|
 | **0 (now)** | Document decision; no production code changes |
-| **1** | Embedding catalog category + first-party provider packages in Integrations |
+| **1** | Embedding catalog category + first-party provider packages in Integrations | **B1 foundation complete** (category, profile slot, typed contract, registry participation); provider packages pending B2 |
 | **2** | `IntegrationProfile` + RAG bootstrap cutover; compatibility shim for env-based embedding |
 | **3** | Remove legacy `EmbeddingProviderRegistry` bootstrap map |
 | **4** | LLM `LLMAdapterRegistry` provider-owned registration (decentralize `_BUILTIN_ADAPTERS`) |

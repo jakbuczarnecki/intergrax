@@ -82,6 +82,7 @@ class PlatformIntegrationKind(StrEnum):
     MODEL_SERVING_RUNTIME = "model_serving_runtime"
     LLM_GUARDRAIL = "llm_guardrail"
     MANAGED_RETRIEVAL = "managed_retrieval"
+    EMBEDDING_PROVIDER = "embedding_provider"
     EXTERNAL_WORK = "external_work"
 
 

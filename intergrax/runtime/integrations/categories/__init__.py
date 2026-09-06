@@ -55,6 +55,10 @@ from intergrax.runtime.integrations.categories.devops import (
     SecurityScannerIntegrationContract,
     WorkflowOrchestratorIntegrationContract,
 )
+from intergrax.runtime.integrations.categories.embedding import (
+    EMBEDDING_PROVIDER_INTEGRATION_CONTRACT_SCHEMA,
+    EmbeddingProviderIntegrationContract,
+)
 from intergrax.runtime.integrations.categories.managed_retrieval import (
     MANAGED_RETRIEVAL_INTEGRATION_CONTRACT_SCHEMA,
     ManagedRetrievalIntegrationContract,
@@ -134,6 +138,7 @@ PROVIDER_CATEGORY_CONTRACT_REGISTRY: dict[str, type[PlatformIntegrationContract]
     "model_serving_runtime": ModelServingRuntimeIntegrationContract,
     "llm_guardrail": LlmGuardrailIntegrationContract,
     "managed_retrieval": ManagedRetrievalIntegrationContract,
+    "embedding_provider": EmbeddingProviderIntegrationContract,
 }
 
 __all__ = [
@@ -145,6 +150,7 @@ __all__ = [
     "CONVERSATION_CHANNEL_INTEGRATION_CONTRACT_SCHEMA",
     "CRM_INTEGRATION_CONTRACT_SCHEMA",
     "DOCUMENT_PARSER_INTEGRATION_CONTRACT_SCHEMA",
+    "EMBEDDING_PROVIDER_INTEGRATION_CONTRACT_SCHEMA",
     "FEATURE_FLAG_INTEGRATION_CONTRACT_SCHEMA",
     "GRAPH_STORE_INTEGRATION_CONTRACT_SCHEMA",
     "IDENTITY_PROVIDER_INTEGRATION_CONTRACT_SCHEMA",
@@ -179,6 +185,7 @@ __all__ = [
     "ConversationChannelIntegrationContract",
     "CrmIntegrationContract",
     "DocumentParserIntegrationContract",
+    "EmbeddingProviderIntegrationContract",
     "FeatureFlagIntegrationContract",
     "GraphStoreIntegrationContract",
     "IdentityProviderIntegrationContract",

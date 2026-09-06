@@ -99,6 +99,7 @@ class IntegrationProfile(BaseModel):
     crm: IntegrationBinding | None = None
     llm_guardrail: IntegrationBinding | None = None
     managed_retrieval: IntegrationBinding | None = None
+    embedding_provider: IntegrationBinding | None = None
     external_work: IntegrationBinding | None = None
 
     async_task_index_slug: str | None = None
@@ -374,5 +375,6 @@ IntegrationProfile._BINDING_ACCESSORS = {
     "crm": lambda profile: profile.crm,
     "llm_guardrail": lambda profile: profile.llm_guardrail,
     "managed_retrieval": lambda profile: profile.managed_retrieval,
+    "embedding_provider": lambda profile: profile.embedding_provider,
     "external_work": lambda profile: profile.external_work,
 }
