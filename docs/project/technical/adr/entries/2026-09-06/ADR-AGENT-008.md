@@ -1,47 +1,244 @@
-﻿# ADR-AGENT-008 — Durable registry projection rehydration authority
+# ADR-AGENT-008: Durable runtime projection rehydration (EA-03)
 
-**Status:** Accepted  
-**Date:** 2026-09-06  
-**Domain:** Agent Distribution / AP-10 / EA-03
+| Field | Value |
+|-------|-------|
+| **Status** | Accepted / Implemented |
+| **Date** | 2026-09-06 |
+| **Deciders** | Agent Platform / Harness architecture |
+| **Related** | [AGENT_DISTRIBUTION.md](../../../architecture/AGENT_DISTRIBUTION.md) §18 · [ADR-AGENT-004](../2026-08-12/ADR-AGENT-004.md) · [ADR-AGENT-005](../2026-08-17/ADR-AGENT-005.md) · [ADR-AGENT-006](../2026-09-01/ADR-AGENT-006.md) · [ADR-AGENT-007](../2026-09-02/ADR-AGENT-007.md) · EA-03 · [AGENT_PLATFORM_FINAL_CLOSURE.md](../../../maintainers/audits/AGENT_PLATFORM_FINAL_CLOSURE.md) (Stage 18 historical closure) |
 
 ## Context
 
-Enterprise acceptance requires cold process restart to restore traffic-serving execution without any runtime object from the previous process. Durable SQLite stores already preserved installations, bindings, roster snapshots, runtime revisions, materializations, locks, and the serving pointer — but `MaterializedRegistryProjection` lived only in process-local `RuntimeRegistryProjectionStore`.
+The frozen production invariant **startup-time reprojection is forbidden** assumed that MaterializedRegistryProjection would remain available in the runtime projection store across process boundaries.
 
-The prior production host rule stated startup-time reprojection is forbidden. That correctly blocked rebuilding from mutable desired state, but it left no canonical path to reconstruct the traffic-serving projection after restart.
+Enterprise durable testing demonstrated a fail-closed gap:
+
+`	ext
+Process A dies
+→ lifecycle / serving state survives
+→ process-local projection disappears
+→ Process B cannot execute serving revision
+`
+
+RuntimeRevision, 	raffic_serving_revision_id, roster/lock/materialization authority, and activation CAS semantics are durable. MaterializedRegistryProjection, AgentRegistryRead, and instantiated agent runtime objects are process-local. Without an explicit rehydration contract, cold restart cannot restore traffic-serving execution.
+
+**Gap closed:** EA-03 durable runtime projection rehydration.
 
 ## Decision
 
-Adopt explicit separation:
+Separate durable runtime authority from process-local materialized runtime objects.
 
-```text
-DURABLE RUNTIME AUTHORITY ≠ PROCESS-LOCAL RUNTIME OBJECT
-```
+### Durable runtime authority
 
-1. **Persist** an immutable `RuntimeRegistryProjectionDescriptor` at activation time (before serving commit), keyed by `runtime_revision_id`.
-2. **Pin** revision-bound manifest/build-context identity in the descriptor (Option B) because release-bound manifest is not yet a standalone durable artifact.
-3. **Rehydrate** on process composition startup via `RuntimeRegistryProjectionRehydrator` using the same canonical projection builder path as activation.
-4. **Fail closed** when serving pointer exists but descriptor is missing, corrupt, or mismatched with canonical revision authority.
+| Artifact / pointer | Role |
+|--------------------|------|
+| RuntimeRevision | Immutable revision identity and authority references |
+| EffectiveRoster identity | Content-addressed roster authority for the revision |
+| MaterializedRuntimeLock identity | Revision-bound lock authority |
+| RuntimeMaterialization identity | Revision-bound materialization authority |
+| 	raffic_serving_revision_id | Durable serving pointer |
+| RuntimeRegistryProjectionDescriptor | Typed immutable reconstruction authority keyed by revision |
 
-Lifecycle ownership remains unchanged: rehydration is not activation, not install/bind, and not desired-state recomputation.
+### Process-local runtime objects
 
-## Rejected alternatives
+| Object | Role |
+|--------|------|
+| MaterializedRegistryProjection | Process-local registry projection store payload |
+| AgentRegistryRead | Execution-facing registry read surface |
+| Agent runtime instances | Instantiated agents and factories |
 
-| Alternative | Why rejected |
-|-------------|--------------|
-| Serialize live `MaterializedRegistryProjection` / agent objects | Violates tier boundaries; not revision-safe; couples execution state to durability |
-| Startup reprojection from current manifest/roster | Rebuilds from mutable desired state; breaks historical serving authority |
-| Implicit lazy rebuild on first request | Hides failure until traffic; weak operator readiness signal |
+`	ext
+DURABLE RUNTIME AUTHORITY ≠ PROCESS-LOCAL MATERIALIZED RUNTIME OBJECT
+`
+
+## Rehydration rule
+
+**Startup-time projection from current mutable desired state remains forbidden.**
+
+Allowed:
+
+`	ext
+deterministic rehydration of the already traffic-serving,
+revision-bound projection from durable immutable authority
+`
+
+Rehydration:
+
+- is **not** install,
+- is **not** bind,
+- is **not** revision build,
+- is **not** activation,
+- is **not** routing decision,
+- does **not** mutate serving pointer.
+
+Rehydration reconstructs the process-local projection for the revision already selected by 	raffic_serving_revision_id. It does not derive authority from current installation, binding, or desired roster state.
+
+## Why live projection is not persisted
+
+Persisting MaterializedRegistryProjection directly was **rejected** because it:
+
+- contains process-local runtime objects,
+- may contain instantiated agents/factories,
+- should not be serialized/pickled,
+- would couple persistence to Python runtime representation,
+- would break provider-neutral architecture.
+
+Durable persistence stores only typed reconstruction authority (RuntimeRegistryProjectionDescriptor and referenced immutable lifecycle artifacts). Process B rebuilds the projection deterministically from that authority.
+
+## Descriptor contract
+
+RuntimeRegistryProjectionDescriptor is a typed, versioned durable artifact — not a generic JSON blob. Persistence fields must not use Any or untyped dict payloads.
+
+`	ext
+RuntimeRegistryProjectionDescriptor
+├── typed ApplicationManifest
+├── typed BuildContextDescriptorSnapshot
+├── SkillProfile?
+├── ToolProfile?
+├── EnvironmentIdentitySnapshot?
+├── revision IDs
+├── roster identity
+├── lock identity/digest
+├── materialization locator/digest
+└── schema/descriptor versions
+`
+
+No generic JSON blob. No Any persistence fields.
+
+Implementation: [
+egistry_projection_descriptor.py](../../../../../../intergrax/applications/_shared/registry_projection_descriptor.py).
+
+## Activation invariant
+
+`	ext
+SERVING(N) ⇒ durable projection descriptor(N) exists
+`
+
+Ordering at activation:
+
+`	ext
+projection input validated
+→ descriptor built
+→ descriptor persisted
+→ activation CAS commit
+→ serving pointer N
+`
+
+Descriptor may exist without serving if activation fails. Serving must never exist without descriptor.
+
+## Cold start flow
+
+`	ext
+Process B starts
+        ↓
+read traffic_serving_revision_id = N
+        ↓
+load descriptor(N)
+        ↓
+resolve revision-bound authority
+        ↓
+validate roster/lock/materialization/release
+        ↓
+assemble canonical projection input
+        ↓
+build process-local MaterializedRegistryProjection
+        ↓
+AgentRegistryRead
+        ↓
+Execution
+`
+
+Implementation: [
+egistry_projection_rehydrator.py](../../../../../../intergrax/applications/_shared/registry_projection_rehydrator.py), [durable_agent_platform_runtime.py](../../../../../../intergrax/applications/_shared/durable_agent_platform_runtime.py).
+
+## Failure semantics
+
+Fail-closed — process cannot become serving-ready when any of the following occur:
+
+| Condition | Result |
+|-----------|--------|
+| missing descriptor | fail closed |
+| corrupt descriptor | fail closed |
+| schema mismatch | fail closed |
+| revision mismatch | fail closed |
+| roster mismatch | fail closed |
+| lock mismatch | fail closed |
+| artifact mismatch | fail closed |
+
+**Forbidden fallbacks:**
+
+- empty registry fallback,
+- manifest fallback,
+- desired roster fallback,
+- automatic new activation.
+
+## Artifact immutability
+
+Non-authoritative runtime caches such as __pycache__ and .pyc are excluded from content identity digests. Authoritative source mutation must change digest. Tests prove both properties.
 
 ## Consequences
 
-- `SERVING(N) ⇒ descriptor(N)` is enforced before activation commit.
-- SQLite adapter adds `projection_descriptors` table behind `RuntimeRegistryProjectionDescriptorStore`.
-- `directory_content_digest` skips non-authoritative cache dirs (e.g. `__pycache__`) so execution side effects do not invalidate immutable artifact identity.
-- Composition roots call rehydration explicitly (fail-early startup readiness).
+### Positive
 
-## References
+- cold restart works without Process A objects,
+- serving authority remains durable,
+- runtime projection remains process-local,
+- persistence is provider-neutral,
+- future PostgreSQL/distributed adapter possible,
+- replay/historical semantics remain revision-bound.
 
-- [`AGENT_DISTRIBUTION.md`](../../../architecture/AGENT_DISTRIBUTION.md) — Activation-time projection authority vs restart-time rehydration
-- `intergrax/applications/_shared/registry_projection_descriptor.py`
-- `intergrax/applications/_shared/registry_projection_rehydrator.py`
+### Trade-offs
+
+- descriptor is an additional durable artifact,
+- startup includes deterministic rehydration,
+- corrupt/missing descriptor intentionally prevents readiness.
+
+## Evidence
+
+### Integration / enterprise E2E
+
+| Test | File |
+|------|------|
+| Durable lifecycle happy path + restart | [	est_enterprise_agent_lifecycle_durable_e2e.py](../../../../../../tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py) — 	est_enterprise_durable_lifecycle_happy_path_and_restart, 	est_enterprise_restart_preserves_active_revision |
+| Enterprise projection rehydration E2E | [	est_enterprise_projection_rehydration_e2e.py](../../../../../../tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py) |
+| Durable F3 — revoked install, serving unchanged after reopen | same — 	est_enterprise_durable_f3_revoked_install_rejected_serving_unchanged_after_reopen |
+| Durable F4 — failed activation preserves serving after reopen | same — 	est_enterprise_durable_f4_failed_activation_preserves_serving_after_reopen |
+| Durable F5 — emergency rollback rehydrates prior revision | same — 	est_enterprise_durable_f5_emergency_rollback_rehydrates_prior_revision |
+
+### Unit / contract / architecture gates
+
+| Test | File |
+|------|------|
+| Descriptor contract (typed round-trip, version mismatch, no Any) | [	est_registry_projection_descriptor_contract.py](../../../../../../tests/unit/applications/test_registry_projection_descriptor_contract.py) |
+| Descriptor corruption fail-closed | [	est_registry_projection_descriptor_corruption.py](../../../../../../tests/unit/applications/test_registry_projection_descriptor_corruption.py) |
+| SQLite bounded store + descriptor reopen | [	est_sqlite_agent_distribution_bounded_store.py](../../../../../../tests/unit/agent_distribution/test_sqlite_agent_distribution_bounded_store.py) — 	est_sqlite_revision_serving_and_descriptor_reopen |
+| Rehydration architecture gates | [	est_registry_projection_rehydration_architecture_gates.py](../../../../../../tests/unit/applications/test_registry_projection_rehydration_architecture_gates.py) |
+| Digest hardening (__pycache__ exclusion, authoritative mutation) | [	est_directory_content_digest_hardening.py](../../../../../../tests/unit/agent_distribution/test_directory_content_digest_hardening.py) |
+
+### Architecture documentation
+
+| Document | Role |
+|----------|------|
+| [AGENT_DISTRIBUTION.md](../../../architecture/AGENT_DISTRIBUTION.md) §18 | EA-03 frozen semantics and cold-restart diagram |
+| [AGENT_PLATFORM_FINAL_CLOSURE.md](../../../maintainers/audits/AGENT_PLATFORM_FINAL_CLOSURE.md) | Stage 18 historical architecture closure (pre-EA-03) |
+
+### EA-03 implementation paths
+
+| Module | Responsibility |
+|--------|----------------|
+| [
+egistry_projection_descriptor.py](../../../../../../intergrax/applications/_shared/registry_projection_descriptor.py) | Typed durable descriptor contract |
+| [
+egistry_projection_rehydrator.py](../../../../../../intergrax/applications/_shared/registry_projection_rehydrator.py) | Deterministic process-local rehydration |
+| [durable_agent_platform_runtime.py](../../../../../../intergrax/applications/_shared/durable_agent_platform_runtime.py) | Durable runtime composition and cold-start wiring |
+| [
+eference_production_lifecycle.py](../../../../../../intergrax/applications/_shared/reference_production_lifecycle.py) | Activation-time descriptor persistence |
+| [sqlite_stores.py](../../../../../../intergrax/agent_distribution/sqlite_stores.py) | SQLite bounded durable store adapter |
+
+## Compliance
+
+- Tier boundaries preserved: Tier-0 durable stores and descriptors; Tier-3 hosts consume rehydrated projections
+- Supersedes implicit assumption that process-local projection survives restart
+- Extends [ADR-AGENT-005](../2026-08-17/ADR-AGENT-005.md) store ownership with descriptor persistence
+- Complements [ADR-AGENT-006](../2026-09-01/ADR-AGENT-006.md) materialization authority and [ADR-AGENT-007](../2026-09-02/ADR-AGENT-007.md) historical roster authority
+- Aligns with [AGENT_DISTRIBUTION.md](../../../architecture/AGENT_DISTRIBUTION.md) EA-03 frozen section

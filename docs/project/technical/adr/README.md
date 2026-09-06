@@ -107,6 +107,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-AGENT-005](entries/2026-08-17/ADR-AGENT-005.md) | Reference production process composition and AP-9/AP-10 store ownership (AGENT-CONSOLIDATION-3-ARCH) | Accepted (architecture only) |
 | [ADR-AGENT-006](entries/2026-09-01/ADR-AGENT-006.md) | Canonical runtime materialization authority - `RuntimeMaterializationRecord` (AC-3) | Accepted (architecture only) |
 | [ADR-AGENT-007](entries/2026-09-02/ADR-AGENT-007.md) | Immutable historical EffectiveRoster snapshot authority (AC-3 Phase 4) | Accepted (architecture only) |
+| [ADR-AGENT-008](entries/2026-09-06/ADR-AGENT-008.md) | Durable runtime projection rehydration (EA-03) | Accepted / Implemented |
 | [ADR-PLATFORM-PLUGIN-001](entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) | Declarative policy REQUIRE_HITL → canonical Nexus HITL bridge (ENTERPRISE-4-ADR-1) | Accepted / Implemented |
 | [ADR-GOVERNED-EXECUTION-001](entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) | Governance Evaluation Points and Enforcement Ownership (Governed Execution G1A) | Accepted |
 | [ADR-GOVERNED-EXECUTION-002](entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) | Policy Catalog Identity, Versioning, and Runtime Ownership (Governed Execution G2A) | Accepted |

@@ -296,3 +296,9 @@ CLOSED / ARCHITECTURE FROZEN
 ```
 
 Stage 18 confirms Agent Platform lifecycle authority is singular, fail-closed, and gate-protected. Residual P2/P3 items are documented namespace/historical/navigation debt — not architecture blockers.
+
+---
+
+## Post-Stage-18 addendum (EA-03)
+
+Enterprise durability extension: EA-03 durable projection rehydration implemented after Stage 18. See [ADR-AGENT-008](../../technical/adr/entries/2026-09-06/ADR-AGENT-008.md).

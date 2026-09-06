@@ -248,7 +248,7 @@ AVAILABLE ≠ INSTALLED ≠ BOUND_TO_APPLICATION ≠ CONFIGURED ≠ ENABLED
 
 **Status:** Canonical architecture (AGENT-PLATFORM-2 + ARCH-AGENT-ACTIVATION-1 activation semantics frozen - documentation only)
 **Plan (1:1):** [`plan/AGENT_DISTRIBUTION.md`](../maintainers/plans/AGENT_DISTRIBUTION.md)
-**ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) · [`adr/entries/2026-08-17/ADR-AGENT-005.md`](../technical/adr/entries/2026-08-17/ADR-AGENT-005.md) (AC-3 store ownership)
+**ADR:** [`adr/entries/2026-08-12/ADR-AGENT-004.md`](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) · [`adr/entries/2026-08-17/ADR-AGENT-005.md`](../technical/adr/entries/2026-08-17/ADR-AGENT-005.md) (AC-3 store ownership) · [`adr/entries/2026-09-06/ADR-AGENT-008.md`](../technical/adr/entries/2026-09-06/ADR-AGENT-008.md) (EA-03 durable projection rehydration)
 **Evidence gate:** [`audit_results/legacy/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md`](../../audit_results/legacy/AGENT_PLATFORM_COMPOSITION_AND_DISTRIBUTION_GAP_AUDIT.md) (AGENT-PLATFORM-0)
 **Execution hub (do not duplicate):** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §15–§16
 **Runtime graph:** [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md)
@@ -1592,6 +1592,8 @@ Execution
 | **Reprojection** | Recomputation from potentially current/mutable lifecycle inputs — **forbidden at startup** |
 
 **Invariant:** `SERVING(revision N) ⇒ durable rehydration descriptor for N exists and validates` before activation commit completes. Startup-time projection from mutable desired state is forbidden; startup-time deterministic rehydration of the already traffic-serving revision from durable canonical authority is allowed.
+
+**ADR:** [`ADR-AGENT-008`](../technical/adr/entries/2026-09-06/ADR-AGENT-008.md) (canonical decision record).
 
 Evidence: `intergrax/applications/_shared/registry_projection_descriptor.py`, `registry_projection_rehydrator.py`, `tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py`.
 
