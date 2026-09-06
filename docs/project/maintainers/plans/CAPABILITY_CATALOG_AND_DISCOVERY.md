@@ -188,7 +188,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AW work orchestration tests unaffected unless explicitly integrated. |
 | **Completion criteria** | Proof that capability need at step N can differ from step N+1 with evidence; effective set respects policy ∩ profile ∩ scope. |
 | **Depends on** | Stage 5. |
-| **Maturity** | **Planned**. |
+| **Maturity** | **Implemented** — `WorkStageCapabilityNeed`, `EffectiveCapabilitySet`, `WorkStageCapabilityDiscoveryEvidence` at `intergrax/contracts/capability_catalog/work_stage.py` and `intergrax/capability_catalog/work_stage_discovery.py`; reuses Stage 3–5 pipeline; stage transition and policy ∩ profile ∩ scope proofs in `tests/unit/capability_catalog/test_work_stage_discovery.py`. |
 
 ---
 
@@ -339,7 +339,7 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 | 5 | Governance integration | Implemented |
 | 6 | Skill enterprise correctness | Planned |
 | 7 | Tool/Skill catalog maturity | Planned |
-| 8 | Adaptive Unit-of-Work discovery | Planned |
+| 8 | Adaptive Unit-of-Work discovery | Implemented |
 | 9 | Autonomous Work bridge | AW-7A in progress |
 | 10 | Bootstrap evidence | Planned |
 | 11 | Marketplace product surface | Future |

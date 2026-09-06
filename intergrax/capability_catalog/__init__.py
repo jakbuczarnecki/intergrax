@@ -59,6 +59,19 @@ from intergrax.capability_catalog.snapshot import (
     CapabilityCatalogSnapshot,
 )
 from intergrax.capability_catalog.source import CapabilityCatalogSource
+from intergrax.capability_catalog.work_stage_discovery import (
+    WorkStageCapabilityDiscoveryService,
+    discover_effective_capabilities_for_work_stage,
+)
+from intergrax.capability_catalog.work_stage_effective import (
+    SCHEMA_EFFECTIVE_CAPABILITY_SET_V1,
+    SCHEMA_WORK_STAGE_CAPABILITY_DISCOVERY_EVIDENCE_V1,
+    SCHEMA_WORK_STAGE_CAPABILITY_TRANSITION_EVIDENCE_V1,
+    EffectiveCapabilitySet,
+    WorkStageCapabilityDiscoveryEvidence,
+    WorkStageCapabilityTransitionEvidence,
+    compare_work_stage_effective_capabilities,
+)
 
 __all__ = [
     "AvailabilityPreservingGovernanceEvaluator",
@@ -95,4 +108,13 @@ __all__ = [
     "govern_capability_candidates",
     "merge_capability_catalog_entries",
     "rank_capability_candidates",
+    "SCHEMA_EFFECTIVE_CAPABILITY_SET_V1",
+    "SCHEMA_WORK_STAGE_CAPABILITY_DISCOVERY_EVIDENCE_V1",
+    "SCHEMA_WORK_STAGE_CAPABILITY_TRANSITION_EVIDENCE_V1",
+    "EffectiveCapabilitySet",
+    "WorkStageCapabilityDiscoveryEvidence",
+    "WorkStageCapabilityDiscoveryService",
+    "WorkStageCapabilityTransitionEvidence",
+    "compare_work_stage_effective_capabilities",
+    "discover_effective_capabilities_for_work_stage",
 ]

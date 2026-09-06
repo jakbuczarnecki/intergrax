@@ -77,6 +77,14 @@ from intergrax.contracts.capability_catalog.vocabulary import (
     NORMATIVE_CAPABILITY_STAGE_VOCABULARY,
     CapabilityStageVocabulary,
 )
+from intergrax.contracts.capability_catalog.work_stage import (
+    SCHEMA_WORK_STAGE_CAPABILITY_NEED_V1,
+    WorkContextReference,
+    WorkStageCapabilityNeed,
+    WorkStageReference,
+    validate_work_context_reference,
+    validate_work_stage_reference,
+)
 
 __all__ = [
     "AvailabilityDisposition",
@@ -127,4 +135,10 @@ __all__ = [
     "SCHEMA_GOVERNANCE_DECISION_EVIDENCE_V1",
     "CapabilityStageVocabulary",
     "V1_CAPABILITY_KINDS",
+    "SCHEMA_WORK_STAGE_CAPABILITY_NEED_V1",
+    "WorkContextReference",
+    "WorkStageCapabilityNeed",
+    "WorkStageReference",
+    "validate_work_context_reference",
+    "validate_work_stage_reference",
 ]

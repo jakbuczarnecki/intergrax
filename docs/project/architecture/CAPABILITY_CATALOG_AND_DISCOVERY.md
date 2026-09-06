@@ -469,6 +469,30 @@ Operator flow (Tool and Skill):
 
 Discovery **must not** execute steps 2–6.
 
+### Adaptive work-stage discovery (Stage 8)
+
+Workers rediscover capabilities per work stage as goals and current steps evolve — not once at bootstrap.
+
+```text
+Goal (durable objective)
+        ↓
+Current work stage (step identity + stage objective)
+        ↓
+WorkStageCapabilityNeed (wraps CapabilityDiscoveryQuery)
+        ↓
+Stage-3 discovery → Stage-4 ranking → Stage-5 governance
+        ↓
+EffectiveCapabilitySet (HOST_AVAILABLE ∩ governed allowed)
+        ↓
+WorkStageCapabilityDiscoveryEvidence
+```
+
+**`EffectiveCapabilitySet` is a deterministic query result — not runtime inventory authority, not lifecycle authority, not permission authority.** Catalog-only (`CATALOG_AVAILABLE`) candidates may appear in governed discovery evidence but do not become executable effective members until host/profile availability evidence classifies them as `HOST_AVAILABLE`.
+
+Capability Catalog Stage 8 provides stage-scoped adaptive discovery; it does **not** perform Autonomous Work recovery, acquisition, or registry mutation (Stage 9 bridge).
+
+Contracts: `intergrax/contracts/capability_catalog/work_stage.py`. Resolver: `intergrax/capability_catalog/work_stage_discovery.py`.
+
 ---
 
 ## Security and third-party code

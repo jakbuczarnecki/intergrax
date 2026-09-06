@@ -233,6 +233,34 @@ def test_capability_catalog_core_does_not_import_adapters() -> None:
                 )
 
 
+def test_work_stage_discovery_has_no_forbidden_stage9_imports() -> None:
+    import ast
+    import importlib
+    from pathlib import Path
+
+    module = importlib.import_module("intergrax.capability_catalog.work_stage_discovery")
+    path = Path(module.__file__)
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    imported: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported.append(node.module)
+    forbidden_prefixes = (
+        "intergrax.autonomous_work",
+        "intergrax.tools.registry.runtime",
+        "intergrax.skills.registry.runtime",
+        "intergrax.applications",
+    )
+    for name in imported:
+        for prefix in forbidden_prefixes:
+            if name == prefix or name.startswith(f"{prefix}."):
+                raise AssertionError(
+                    f"work_stage_discovery imports forbidden dependency: {name}",
+                )
+
+
 def test_capability_catalog_core_has_no_private_cross_module_imports() -> None:
     root = _package_root(_CORE_MODULE)
     for path in _iter_core_py_files():
