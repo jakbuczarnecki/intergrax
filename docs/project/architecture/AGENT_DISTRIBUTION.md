@@ -29,7 +29,7 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 
 **Still planned / not publicly productized:** Horizontal host scale-out, LKW consumer proof wiring (AP-12), commercial marketplace product, remote publisher onboarding, billing/settlement, multi-instance lease recovery, and universal specialist invocation adapter. Manifest-only development assembly (migration phase M0) remains valid for lab; STRICT production hosts require an active revision-bound registry projection (§31, §34).
 
-**Durable reference production lifecycle (EA-01/EA-02):** SQLite-backed store adapters behind existing Tier-0 store protocols prove **durable single-host / multi-process** install → bind → revision → activation → serving with restart recovery and CAS semantics. This is **reference durability**, not distributed multi-region HA. Evidence: `tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py`.
+**Durable reference production lifecycle (EA-01/EA-02):** SQLite-backed store adapters behind existing Tier-0 store protocols prove **durable single-host / multi-process** install → bind → revision → activation → serving with restart recovery, **deterministic projection rehydration**, and CAS semantics. This is **reference durability**, not distributed multi-region HA. Evidence: `tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py`, `tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py`.
 
 **D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience - one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific Nexus branches are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry, or Nexus. AC-4 does **not** require a marketplace backend.
 
@@ -1550,6 +1550,50 @@ AgentRegistry != Lifecycle Manager
 **Atomic registry rule (ARCH-AGENT-ACTIVATION-1):** `AgentRegistry` is a **projection of the exact traffic-serving `RuntimeRevision`**. Registry publication and traffic switch MUST be coordinated in the same activation boundary (§20.5 step 8) so operators and concurrent users never observe a mixed revision (e.g. registry agents from N+1 while requests still route to N). Registry population is **not** an independent best-effort post-activation step.
 
 AP-10 implements the projection mechanism; AP-9 architecture **requires** this atomic relationship.
+
+### Activation-time projection authority vs restart-time rehydration (EA-03, frozen)
+
+Cold process restart MUST restore traffic-serving execution **without** any runtime object from the previous process. The durable/runtime split is explicit:
+
+```text
+DURABLE RUNTIME AUTHORITY                PROCESS-LOCAL RUNTIME OBJECT
+RuntimeRevision + roster/lock/materialization   MaterializedRegistryProjection
+        ↓                                              ↑
+RuntimeRegistryProjectionDescriptor (immutable)        |
+        ↓                                              |
+traffic_serving_revision_id (serving pointer)          |
+                                                       |
+ACTIVATION (lifecycle)                                 |
+   ↓                                                   |
+build projection from canonical authority              |
+   ↓                                                   |
+persist descriptor ───────── durable                   |
+   ↓                                                   |
+activate serving pointer ─── durable                   |
+                                                       |
+PROCESS RESTART                                        |
+   ↓                                                   |
+read serving pointer                                   |
+   ↓                                                   |
+load descriptor for serving revision                   |
+   ↓                                                   |
+validate revision authority                            |
+   ↓                                                   |
+rehydrate process-local projection ────────────────────┘
+   ↓
+Execution
+```
+
+| Term | Meaning |
+|------|---------|
+| **Projection descriptor** | Durable immutable reconstruction authority keyed by `runtime_revision_id` (includes pinned manifest/build-context identity for revision-bound rebuild) |
+| **MaterializedRegistryProjection** | Process-local runtime object in `RuntimeRegistryProjectionStore` |
+| **Rehydration** | Deterministic construction of process-local projection from durable revision-bound authority |
+| **Reprojection** | Recomputation from potentially current/mutable lifecycle inputs — **forbidden at startup** |
+
+**Invariant:** `SERVING(revision N) ⇒ durable rehydration descriptor for N exists and validates` before activation commit completes. Startup-time projection from mutable desired state is forbidden; startup-time deterministic rehydration of the already traffic-serving revision from durable canonical authority is allowed.
+
+Evidence: `intergrax/applications/_shared/registry_projection_descriptor.py`, `registry_projection_rehydrator.py`, `tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py`.
 
 ### Canonical production factory invocation (AC-5, frozen)
 
