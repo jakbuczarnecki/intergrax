@@ -35,7 +35,7 @@ from intergrax.agent_distribution.control_plane_governance import (
 )
 from intergrax.agent_distribution.dependency import RepositoryDependencyDeclaration
 from intergrax.agent_distribution.effective_roster import EffectiveRosterBuilder
-from intergrax.agent_distribution.identity import AgentPackageIdentity
+from intergrax.agent_distribution.trust import AgentPackageTrustOutcome
 from intergrax.agent_distribution.in_memory_stores import (
     InMemoryAgentInstallationStore,
     InMemoryApplicationAgentBindingStore,
@@ -55,11 +55,6 @@ from intergrax.agent_distribution.runtime_revision import MaterializationTopolog
 from intergrax.agent_distribution.task_capability_resolution import (
     build_deterministic_task_capability_resolver,
     build_task_capability_rule,
-)
-from intergrax.agent_distribution.trust import (
-    AgentInstallationTrustRecord,
-    AgentQualificationEvidenceKind,
-    AgentTrustEvidenceRef,
 )
 from intergrax.applications._shared.application_owned_tool_conformance import (
     application_owned_tool_declarations,
@@ -105,7 +100,6 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.core.qualification import QualificationStatus
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
@@ -149,8 +143,16 @@ from platform_proofs.scenarios.ai_incident_investigation.integration.package_ide
     INCIDENT_INVESTIGATOR_INSTALLATION_SLOT_ID,
     INCIDENT_INVESTIGATOR_METADATA_REF,
     INCIDENT_INVESTIGATOR_PACKAGE_DIGEST,
-    INCIDENT_INVESTIGATOR_PACKAGE_VERSION,
+    INCIDENT_INVESTIGATOR_PUBLISHER_ID,
     INCIDENT_INVESTIGATOR_RUNTIME_REVISION_ID,
+    incident_investigator_package_identity,
+)
+from platform_proofs.scenarios.ai_incident_investigation.integration.trust_fixture import (
+    AIPV_EVALUATED_AT,
+    AIPV_QUALIFIED_AT,
+    IncidentInvestigatorCanonicalTrustRecordFactory,
+    IncidentInvestigatorTrustFixture,
+    evaluate_incident_investigator_trust,
 )
 from testing_support.agent_platform_admin_harness import (
     admin_test_principal,
@@ -194,26 +196,27 @@ class _StaticCatalogProvider:
         return None
 
 
-class _IncidentTrustRecordFactory:
-    def build_trust_record(
-        self,
-        *,
-        package_digest: str,
-        package_id: str,
-    ) -> AgentInstallationTrustRecord:
-        del package_id
-        return AgentInstallationTrustRecord(
-            qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
-            package_digest=package_digest,
-            publisher_identity_ref="publisher:ai-incident-investigator",
-            source_provider_id=INCIDENT_INVESTIGATOR_CATALOG_SOURCE_ID,
-            trust_evidence_refs=(
-                AgentTrustEvidenceRef(
-                    evidence_id="evidence:aipv-1",
-                    kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
-                ),
-            ),
-        )
+def _assert_canonical_trust_record(
+    record: object,
+    *,
+    expected_policy_fingerprint: str,
+) -> None:
+    from intergrax.agent_distribution.trust import (
+        AgentInstallationTrustRecord,
+        AgentQualificationEvidenceKind,
+    )
+
+    assert isinstance(record, AgentInstallationTrustRecord)
+    assert record.package_digest == INCIDENT_INVESTIGATOR_PACKAGE_DIGEST
+    assert record.publisher_identity_ref == INCIDENT_INVESTIGATOR_PUBLISHER_ID
+    assert record.source_provider_id == INCIDENT_INVESTIGATOR_CATALOG_SOURCE_ID
+    assert record.policy_fingerprint == expected_policy_fingerprint
+    assert record.revocation_checked_at == AIPV_EVALUATED_AT
+    assert record.qualification_qualified_at == AIPV_QUALIFIED_AT
+    assert any(
+        ref.kind is AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION
+        for ref in record.trust_evidence_refs
+    )
 
 
 class _IncidentInvestigatorVenvBundleMaterializer:
@@ -326,7 +329,7 @@ def _build_application_composition(
         package_logical_agents={
             INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID: INVESTIGATOR_AGENT_ID
         },
-        trust_record_factory=_IncidentTrustRecordFactory(),
+        trust_record_factory=IncidentInvestigatorCanonicalTrustRecordFactory(),
         admin_config=ProductionAgentPlatformAdminConfig(
             metadata_provider=metadata_provider,
             materialization_service=RuntimeMaterializationService(
@@ -473,6 +476,14 @@ class IncidentInvestigatorAgentPlatformProofStack:
         )
 
     def install_from_catalog(self, *, mutation_id: str = "mut-aipv1-install") -> None:
+        trust_fixture = IncidentInvestigatorTrustFixture.build()
+        decision = evaluate_incident_investigator_trust()
+        assert decision.outcome is AgentPackageTrustOutcome.ALLOW
+        assert decision.trust_record is not None
+        _assert_canonical_trust_record(
+            decision.trust_record,
+            expected_policy_fingerprint=trust_fixture.policy.policy_fingerprint,
+        )
         principal = admin_test_principal()
         self.admin.install_agent(
             application_id=INCIDENT_INVESTIGATOR_APPLICATION_ID,
@@ -481,24 +492,9 @@ class IncidentInvestigatorAgentPlatformProofStack:
                 mutation_id=mutation_id,
                 installation_id=INCIDENT_INVESTIGATOR_INSTALLATION_ID,
                 installation_slot_id=INCIDENT_INVESTIGATOR_INSTALLATION_SLOT_ID,
-                package_identity=AgentPackageIdentity(
-                    distribution_package_id=INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID,
-                    package_version=INCIDENT_INVESTIGATOR_PACKAGE_VERSION,
-                    package_digest=INCIDENT_INVESTIGATOR_PACKAGE_DIGEST,
-                ),
+                package_identity=incident_investigator_package_identity(),
                 artifact_store_ref=f"store://artifacts/{INCIDENT_INVESTIGATOR_INSTALLATION_ID}",
-                trust_record=AgentInstallationTrustRecord(
-                    qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
-                    package_digest=INCIDENT_INVESTIGATOR_PACKAGE_DIGEST,
-                    publisher_identity_ref="publisher:ai-incident-investigator",
-                    source_provider_id=INCIDENT_INVESTIGATOR_CATALOG_SOURCE_ID,
-                    trust_evidence_refs=(
-                        AgentTrustEvidenceRef(
-                            evidence_id="evidence:aipv-1",
-                            kind=AgentQualificationEvidenceKind.SIGNATURE_VERIFICATION,
-                        ),
-                    ),
-                ),
+                trust_record=decision.trust_record,
                 agent_project_metadata_ref=INCIDENT_INVESTIGATOR_METADATA_REF,
             ),
             principal=principal,

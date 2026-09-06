@@ -8,8 +8,10 @@ import hashlib
 import json
 
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
+from intergrax.agent_distribution.identity import AgentPackageIdentity
 
 INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID = "intergrax-ai-incident-investigator"
+INCIDENT_INVESTIGATOR_PUBLISHER_ID = "publisher:ai-incident-investigator"
 INCIDENT_INVESTIGATOR_PACKAGE_VERSION = "1.0.0"
 INCIDENT_INVESTIGATOR_FACTORY_PATH = "incident_investigator_agent.factory.build_agent"
 INCIDENT_INVESTIGATOR_FACTORY_REFERENCE = AgentBindingFactoryReference(
@@ -41,3 +43,11 @@ def incident_investigator_package_digest() -> str:
 
 
 INCIDENT_INVESTIGATOR_PACKAGE_DIGEST = incident_investigator_package_digest()
+
+
+def incident_investigator_package_identity() -> AgentPackageIdentity:
+    return AgentPackageIdentity(
+        distribution_package_id=INCIDENT_INVESTIGATOR_DISTRIBUTION_PACKAGE_ID,
+        package_version=INCIDENT_INVESTIGATOR_PACKAGE_VERSION,
+        package_digest=INCIDENT_INVESTIGATOR_PACKAGE_DIGEST,
+    )
