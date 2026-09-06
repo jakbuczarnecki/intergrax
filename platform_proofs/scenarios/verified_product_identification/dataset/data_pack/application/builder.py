@@ -65,6 +65,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     SCENARIO_ID,
     semantic_text_hash,
     source_ref_key,
+    source_ref_set_sha256,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.manifest import (
     BuildExecutionProvenance,
@@ -379,6 +380,9 @@ def build_proof_50_data_pack(
         record_count=record_count,
         sha256=sha256_file(relational_path),
         source_ref_count=record_count,
+        source_ref_set_sha256=source_ref_set_sha256(
+            tuple(record.source_ref for record in relational_records)
+        ),
         schema_version=RELATIONAL_SCHEMA_VERSION,
     )
     embedding_descriptor = ShardDescriptor(
@@ -387,6 +391,9 @@ def build_proof_50_data_pack(
         record_count=record_count,
         sha256=sha256_file(embedding_path),
         source_ref_count=record_count,
+        source_ref_set_sha256=source_ref_set_sha256(
+            tuple(record.source_ref for record in embedding_tuple)
+        ),
         schema_version=EMBEDDING_SCHEMA_VERSION,
     )
     shard_index = ShardIndex(

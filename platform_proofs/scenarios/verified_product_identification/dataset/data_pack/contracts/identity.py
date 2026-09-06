@@ -42,6 +42,37 @@ def source_ref_sort_key(source_ref: SourceRecordRef) -> tuple[str, str, str]:
     return (source_ref.catalog_id, source_ref.offer_id.value, revision)
 
 
+def source_ref_canonical_line(
+    *,
+    catalog_id: str,
+    offer_id: str,
+    source_revision: str | None,
+) -> str:
+    revision = source_revision or ""
+    return f"{catalog_id}\t{offer_id}\t{revision}\n"
+
+
+def source_ref_set_sha256_from_keys(
+    keys: tuple[tuple[str, str, str | None], ...],
+) -> str:
+    ordered = sorted(keys, key=lambda key: (key[0], key[1], key[2] or ""))
+    payload = "".join(
+        source_ref_canonical_line(
+            catalog_id=catalog_id,
+            offer_id=offer_id,
+            source_revision=source_revision,
+        )
+        for catalog_id, offer_id, source_revision in ordered
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def source_ref_set_sha256(source_refs: tuple[SourceRecordRef, ...]) -> str:
+    return source_ref_set_sha256_from_keys(
+        tuple(source_ref_key(source_ref) for source_ref in source_refs)
+    )
+
+
 def source_ref_from_columns(
     *,
     catalog_id: str,

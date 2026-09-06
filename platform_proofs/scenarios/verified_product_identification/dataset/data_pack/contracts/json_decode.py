@@ -42,6 +42,14 @@ def require_int(payload: dict[str, object], key: str, *, minimum: int = 0) -> in
     return value
 
 
+def require_sha256_hex(payload: dict[str, object], key: str) -> str:
+    value = require_str(payload, key)
+    normalized = value.lower()
+    if len(normalized) != 64 or any(character not in "0123456789abcdef" for character in normalized):
+        raise VpiDataPackFormatError(f"{key} must be a 64-character lowercase sha256 hex digest")
+    return normalized
+
+
 def require_str_list(payload: dict[str, object], key: str) -> tuple[str, ...]:
     value = payload.get(key)
     if not isinstance(value, list):

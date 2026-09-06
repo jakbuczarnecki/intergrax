@@ -58,7 +58,7 @@ Canonical VPI embedding:
 - Naming: `part-000001.parquet`, `part-000002.parquet`, …
 - Ordinal starts at 1, zero-padded width 6
 - READY packs: no gaps in ordinals 1..N
-- Each shard descriptor: `ordinal`, `relative_path`, `record_count`, `sha256`, `source_ref_count`, `schema_version`
+- Each shard descriptor: `ordinal`, `relative_path`, `record_count`, `sha256`, `source_ref_count`, `source_ref_set_sha256`, `schema_version`
 - Shard index: typed `ShardIndex` in `indexes/shards.json`
 
 ### Shard pairing invariant
@@ -67,7 +67,17 @@ Canonical VPI embedding:
 set(relational_shard_N.source_refs) == set(embedding_shard_N.source_refs)
 ```
 
-Enforced via matching `record_count` and `source_ref_count` per ordinal plus cross-artifact ref validation.
+Proven per ordinal via matching:
+
+- `record_count`
+- `source_ref_count` (must equal `record_count` for READY shards)
+- `source_ref_set_sha256` — deterministic SHA-256 over canonical sorted `SourceRecordRef` lines (`catalog_id`, `offer_id`, `source_revision`)
+
+```text
+relational_N.source_ref_set_sha256 == embedding_N.source_ref_set_sha256
+```
+
+Cross-artifact ref validation and file-level digest recomputation provide additional fail-closed checks when `pack_root` is present.
 
 ### Record ordering
 

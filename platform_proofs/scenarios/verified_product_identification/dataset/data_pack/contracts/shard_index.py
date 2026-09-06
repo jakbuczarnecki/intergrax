@@ -13,6 +13,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.json_decode import (
     require_int,
     require_mapping,
+    require_sha256_hex,
     require_str,
 )
 
@@ -24,6 +25,7 @@ class ShardDescriptor:
     record_count: int
     sha256: str
     source_ref_count: int
+    source_ref_set_sha256: str
     schema_version: str
 
     def __post_init__(self) -> None:
@@ -33,10 +35,55 @@ class ShardDescriptor:
             raise ValueError("record_count must be > 0")
         if self.source_ref_count <= 0:
             raise ValueError("source_ref_count must be > 0")
-        if not self.sha256.strip():
-            raise ValueError("sha256 must be non-empty")
+        if self.source_ref_count != self.record_count:
+            raise ValueError("source_ref_count must equal record_count")
+        normalized_sha256 = self.sha256.lower()
+        if len(normalized_sha256) != 64 or any(
+            character not in "0123456789abcdef" for character in normalized_sha256
+        ):
+            raise ValueError("sha256 must be a 64-character lowercase hex digest")
+        normalized_source_ref_set_sha256 = self.source_ref_set_sha256.lower()
+        if len(normalized_source_ref_set_sha256) != 64 or any(
+            character not in "0123456789abcdef"
+            for character in normalized_source_ref_set_sha256
+        ):
+            raise ValueError("source_ref_set_sha256 must be a 64-character lowercase hex digest")
         if not self.relative_path.strip():
             raise ValueError("relative_path must be non-empty")
+
+
+def _descriptor_to_dict(descriptor: ShardDescriptor) -> dict[str, object]:
+    return {
+        "ordinal": descriptor.ordinal,
+        "relative_path": descriptor.relative_path,
+        "record_count": descriptor.record_count,
+        "sha256": descriptor.sha256,
+        "source_ref_count": descriptor.source_ref_count,
+        "source_ref_set_sha256": descriptor.source_ref_set_sha256,
+        "schema_version": descriptor.schema_version,
+    }
+
+
+def _descriptor_from_dict(payload: dict[str, object], *, field_name: str) -> ShardDescriptor:
+    return ShardDescriptor(
+        ordinal=require_int(payload, "ordinal", minimum=1),
+        relative_path=require_str(payload, "relative_path"),
+        record_count=require_int(payload, "record_count", minimum=1),
+        sha256=require_sha256_hex(payload, "sha256"),
+        source_ref_count=require_int(payload, "source_ref_count", minimum=1),
+        source_ref_set_sha256=require_sha256_hex(payload, "source_ref_set_sha256"),
+        schema_version=require_str(payload, "schema_version"),
+    )
+
+
+def _validate_unique_ordinals(
+    descriptors: tuple[ShardDescriptor, ...],
+    *,
+    field_name: str,
+) -> None:
+    ordinals = [descriptor.ordinal for descriptor in descriptors]
+    if len(set(ordinals)) != len(ordinals):
+        raise VpiDataPackFormatError(f"duplicate ordinals in {field_name}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,28 +99,6 @@ class ShardIndex:
             raise ValueError("relational_shards length must equal shard_count")
         if len(self.embedding_shards) != self.shard_count:
             raise ValueError("embedding_shards length must equal shard_count")
-
-
-def _descriptor_to_dict(descriptor: ShardDescriptor) -> dict[str, object]:
-    return {
-        "ordinal": descriptor.ordinal,
-        "relative_path": descriptor.relative_path,
-        "record_count": descriptor.record_count,
-        "sha256": descriptor.sha256,
-        "source_ref_count": descriptor.source_ref_count,
-        "schema_version": descriptor.schema_version,
-    }
-
-
-def _descriptor_from_dict(payload: dict[str, object], *, field_name: str) -> ShardDescriptor:
-    return ShardDescriptor(
-        ordinal=require_int(payload, "ordinal", minimum=1),
-        relative_path=require_str(payload, "relative_path"),
-        record_count=require_int(payload, "record_count", minimum=1),
-        sha256=require_str(payload, "sha256"),
-        source_ref_count=require_int(payload, "source_ref_count", minimum=1),
-        schema_version=require_str(payload, "schema_version"),
-    )
 
 
 def shard_index_to_json_dict(shard_index: ShardIndex) -> dict[str, object]:
@@ -104,6 +129,8 @@ def shard_index_from_json_dict(payload: dict[str, object]) -> ShardIndex:
         _descriptor_from_dict(require_mapping(item, field_name="embedding_shards[]"), field_name="embedding_shards[]")
         for item in embedding_raw
     )
+    _validate_unique_ordinals(relational_shards, field_name="relational_shards")
+    _validate_unique_ordinals(embedding_shards, field_name="embedding_shards")
     return ShardIndex(
         shard_count=shard_count,
         relational_shards=relational_shards,

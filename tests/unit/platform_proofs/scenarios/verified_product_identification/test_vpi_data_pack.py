@@ -32,6 +32,9 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.embedding import (
     EmbeddingDataPackRecord,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.errors import (
+    VpiDataPackIntegrityError,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
     DATA_PACK_VERSION,
     EMBEDDING_SCHEMA_VERSION,
@@ -221,7 +224,7 @@ def test_checksum_verification(tmp_path: Path) -> None:
     write_sha256sums(checksums, (("artifact.bin", target),))
     verify_sha256sums(checksums, tmp_path)
     target.write_bytes(b"tampered")
-    with pytest.raises(Exception):
+    with pytest.raises(VpiDataPackIntegrityError):
         verify_sha256sums(checksums, tmp_path)
 
 

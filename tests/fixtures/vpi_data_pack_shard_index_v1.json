@@ -1,0 +1,25 @@
+{
+  "embedding_shards": [
+    {
+      "ordinal": 1,
+      "record_count": 50,
+      "relative_path": "embeddings/part-000001.parquet",
+      "schema_version": "vpi.embedding/1.0.0",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_ref_count": 50,
+      "source_ref_set_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ],
+  "relational_shards": [
+    {
+      "ordinal": 1,
+      "record_count": 50,
+      "relative_path": "relational/part-000001.parquet",
+      "schema_version": "vpi.relational/1.0.0",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_ref_count": 50,
+      "source_ref_set_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ],
+  "shard_count": 1
+}

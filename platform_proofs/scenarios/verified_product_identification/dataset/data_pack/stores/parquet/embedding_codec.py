@@ -93,7 +93,7 @@ def read_embedding_parquet(
 ) -> tuple[EmbeddingDataPackRecord, ...]:
     try:
         table = pq.read_table(path)
-    except OSError as exc:
+    except (OSError, pa.ArrowException) as exc:
         raise VpiDataPackIntegrityError(f"failed to read embedding parquet: {path}") from exc
     required = (
         "logical_point_id",

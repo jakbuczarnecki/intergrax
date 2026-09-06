@@ -6,14 +6,20 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.checksums import (
-    sha256_file,
     verify_sha256sums,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.shard_integrity import (
+    validate_embedding_shard_source_identity,
+    validate_relational_shard_source_identity,
+    validate_shard_descriptor_file,
+    validate_shard_pair_identity,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.content_identity import (
     content_identity_from_manifest,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.errors import (
     VpiDataPackCompatibilityError,
+    VpiDataPackIntegrityError,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
     DATA_PACK_VERSION,
@@ -92,38 +98,19 @@ def validate_shard_index_contract(shard_index: ShardIndex) -> ValidationReport:
             "relational shard ordinals must be unique",
         )
     )
+    checks.append(
+        _check(
+            "duplicate_embedding_ordinals",
+            len(set(embedding_ordinals)) == len(embedding_ordinals),
+            "embedding shard ordinals must be unique",
+        )
+    )
     for relational, embedding in zip(
         shard_index.relational_shards,
         shard_index.embedding_shards,
         strict=True,
     ):
-        checks.append(
-            _check(
-                f"shard_pair_record_count_{relational.ordinal}",
-                relational.record_count == embedding.record_count,
-                (
-                    f"relational={relational.record_count} "
-                    f"embedding={embedding.record_count}"
-                ),
-            )
-        )
-        checks.append(
-            _check(
-                f"shard_pair_source_ref_count_{relational.ordinal}",
-                relational.source_ref_count == embedding.source_ref_count,
-                (
-                    f"relational={relational.source_ref_count} "
-                    f"embedding={embedding.source_ref_count}"
-                ),
-            )
-        )
-        checks.append(
-            _check(
-                f"shard_pair_source_ref_count_matches_records_{relational.ordinal}",
-                relational.source_ref_count == relational.record_count,
-                "source_ref_count must equal record_count",
-            )
-        )
+        checks.extend(validate_shard_pair_identity(relational, embedding))
     return ValidationReport.from_checks(tuple(checks))
 
 
@@ -229,27 +216,36 @@ def validate_data_pack_compatibility(
         try:
             verify_sha256sums(checksums_path, pack_root)
             checks.append(_check("checksum_validation", True, "SHA256SUMS verified"))
-        except Exception as exc:
+        except VpiDataPackIntegrityError as exc:
             checks.append(_check("checksum_validation", False, str(exc)))
         for descriptor in shard_index.relational_shards:
-            shard_path = pack_root / descriptor.relative_path
-            if shard_path.is_file():
-                actual = sha256_file(shard_path)
-                checks.append(
-                    _check(
-                        f"relational_shard_sha256_{descriptor.ordinal}",
-                        actual == descriptor.sha256,
-                        descriptor.relative_path,
-                    )
+            checks.extend(
+                validate_shard_descriptor_file(
+                    pack_root,
+                    descriptor,
+                    check_name_prefix="relational_shard",
                 )
-            else:
-                checks.append(
-                    _check(
-                        f"relational_shard_missing_{descriptor.ordinal}",
-                        False,
-                        descriptor.relative_path,
-                    )
+            )
+        for descriptor in shard_index.embedding_shards:
+            checks.extend(
+                validate_shard_descriptor_file(
+                    pack_root,
+                    descriptor,
+                    check_name_prefix="embedding_shard",
                 )
+            )
+        for descriptor in shard_index.relational_shards:
+            checks.extend(
+                validate_relational_shard_source_identity(pack_root, descriptor)
+            )
+        for descriptor in shard_index.embedding_shards:
+            checks.extend(
+                validate_embedding_shard_source_identity(
+                    pack_root,
+                    descriptor,
+                    expected_dimension=manifest.embedding_identity.dimension,
+                )
+            )
     return ValidationReport.from_checks(tuple(checks))
 
 

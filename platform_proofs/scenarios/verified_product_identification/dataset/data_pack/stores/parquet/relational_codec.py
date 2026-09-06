@@ -86,7 +86,7 @@ def write_relational_parquet(path: Path, records: Sequence[RelationalDataPackRec
 def read_relational_parquet(path: Path) -> tuple[RelationalDataPackRecord, ...]:
     try:
         table = pq.read_table(path)
-    except OSError as exc:
+    except (OSError, pa.ArrowException) as exc:
         raise VpiDataPackIntegrityError(f"failed to read relational parquet: {path}") from exc
     required = (
         "global_row_index",
