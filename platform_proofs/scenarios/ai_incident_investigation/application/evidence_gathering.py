@@ -23,6 +23,7 @@ from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfi
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
+from intergrax.tools.model_observation_format import parse_evidence_reference_from_tool_content
 from intergrax.tools.registry import ToolRegistry
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import (
     IncidentScope,
@@ -338,6 +339,21 @@ def _emit_planner_decision_traces(
     return tuple(decisions)
 
 
+def _tool_message_json_payload(content: str) -> dict[str, object] | None:
+    body = content
+    if parse_evidence_reference_from_tool_content(content) is not None:
+        newline = content.find("\n")
+        if newline >= 0:
+            body = content[newline + 1 :]
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(payload, dict):
+        return payload
+    return None
+
+
 def _extract_tool_outputs(
     loop_result: object,
 ) -> list[tuple[str, str, dict[str, object]]]:
@@ -352,11 +368,8 @@ def _extract_tool_outputs(
         tool_call_id = message.tool_call_id
         if not tool_call_id:
             continue
-        try:
-            payload = json.loads(message.content)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(payload, dict):
+        payload = _tool_message_json_payload(message.content or "")
+        if payload is not None:
             outputs.append((tool_call_id, tool_name, payload))
     return outputs
 

@@ -16,9 +16,11 @@ locales:
         - If available tools cannot resolve an important uncertainty, state that limitation in the final answer.
         - Stop when further tool use is unlikely to materially change the supported conclusion.
         - For follow-up native tool calls after prior tool observations exist, include a concise public decision note in assistant content before the tool calls. This is auditable action justification only, not hidden deliberation.
+        - When ENG6_FOLLOW_UP_CONTEXT is present in runtime messages, EVIDENCE_BASIS MUST contain at least one exact reference from AVAILABLE_EVIDENCE_REFS. Never emit an empty EVIDENCE_BASIS when prior evidence exists.
         - Return exactly these two fields and no other prose:
-          EVIDENCE_BASIS: <comma-separated prior model-visible evidence references from completed tool observations, empty on the first tool round>
+          EVIDENCE_BASIS: <comma-separated prior model-visible evidence references from runtime context when prior evidence exists; otherwise empty on the first action with no prior evidence>
           PURPOSE: <short user-facing purpose of the next check>
+        - EVIDENCE_BASIS expresses what already-observed facts materially motivate this follow-up action; it does not claim those observations prove the next tool's result.
         - Cite only prior model-visible evidence references from completed tool observations as explicit evidence basis. Do not cite provider/runtime tool_call_id values or upcoming tool actions in the note.
       developer: null
       user_template: null

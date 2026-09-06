@@ -18,6 +18,7 @@ from intergrax.runtime.nexus.tools.investigation_proof import (
     InvestigationProofStep,
     build_investigation_proof_step,
     collect_available_evidence_ids,
+    prepare_native_planner_messages_with_follow_up_context,
 )
 from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
     validate_native_tool_plan_alignment,
@@ -95,8 +96,13 @@ class BoundedReactPattern:
                 enforce_wall_time_budget(state)
             record_planner_iteration_and_enforce(state)
             iterations += 1
-            llm_result, tool_plan = planner.plan_native_round(
+            planning_messages = prepare_native_planner_messages_with_follow_up_context(
                 messages,
+                round_index=iterations,
+                prior_model_visible_references=prior_model_visible_references,
+            )
+            llm_result, tool_plan = planner.plan_native_round(
+                planning_messages,
                 allowed_tool_ids=allowed_tool_ids,
                 run_id=state.run_id,
                 tool_choice=tool_choice_for_mode(state.context.config.tools_mode),

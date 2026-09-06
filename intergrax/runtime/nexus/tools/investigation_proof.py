@@ -16,6 +16,8 @@ from intergrax.runtime.nexus.tools.native_planner_transcript import (
 )
 from intergrax.tools.model_observation_format import parse_evidence_reference_from_tool_content
 
+_ENG6_FOLLOW_UP_CONTEXT_HEADER = "ENG6_FOLLOW_UP_CONTEXT"
+
 _EVIDENCE_BASIS_PREFIX = "EVIDENCE_BASIS:"
 _PURPOSE_PREFIX = "PURPOSE:"
 _EVIDENCE_ID_JSON_KEY = "evidence_id"
@@ -129,6 +131,90 @@ def build_completed_observation_reference_index(
             continue
         _index_semantic_reference(index, reference, tool_call_id, allow_refresh=True)
     return index
+
+
+def format_investigation_follow_up_context(
+    *,
+    round_index: int,
+    available_evidence_references: Sequence[str],
+) -> str:
+    """Render bounded ENG-6 follow-up compliance instruction for one planner round."""
+    if not available_evidence_references:
+        raise ValueError(
+            "format_investigation_follow_up_context requires non-empty evidence references"
+        )
+    ref_lines = "\n".join(f"- {reference}" for reference in available_evidence_references)
+    return (
+        f"{_ENG6_FOLLOW_UP_CONTEXT_HEADER}\n"
+        f"ROUND: {round_index}\n"
+        "AVAILABLE_EVIDENCE_REFS:\n"
+        f"{ref_lines}\n"
+        "\n"
+        "CONTRACT:\n"
+        "Because prior evidence exists, EVIDENCE_BASIS MUST contain at least one "
+        "exact reference from AVAILABLE_EVIDENCE_REFS.\n"
+        "An empty EVIDENCE_BASIS is invalid.\n"
+        "EVIDENCE_BASIS expresses what already-observed facts materially motivate "
+        "this follow-up action; it does not claim those observations prove the "
+        "next tool's result."
+    )
+
+
+def parse_follow_up_context_evidence_references(
+    messages: Sequence[ChatMessage],
+) -> tuple[str, ...]:
+    """Extract AVAILABLE_EVIDENCE_REFS from injected ENG6_FOLLOW_UP_CONTEXT messages."""
+    for message in reversed(messages):
+        if message.role != "system":
+            continue
+        content = message.content or ""
+        if _ENG6_FOLLOW_UP_CONTEXT_HEADER not in content:
+            continue
+        refs: list[str] = []
+        in_refs = False
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped == "AVAILABLE_EVIDENCE_REFS:":
+                in_refs = True
+                continue
+            if not in_refs:
+                continue
+            if stripped.startswith("- "):
+                refs.append(stripped[2:].strip())
+                continue
+            if stripped.startswith("CONTRACT:"):
+                break
+        return tuple(refs)
+    return ()
+
+
+def prepare_native_planner_messages_with_follow_up_context(
+    messages: Sequence[ChatMessage],
+    *,
+    round_index: int,
+    prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
+) -> list[ChatMessage]:
+    """Append ENG-6 follow-up compliance context when prior model-visible evidence exists."""
+    reference_index = build_completed_observation_reference_index(
+        messages,
+        prior_model_visible_references,
+    )
+    if not reference_index:
+        return list(messages)
+    available_references = collect_available_evidence_ids(
+        messages,
+        prior_model_visible_references,
+    )
+    return [
+        *messages,
+        ChatMessage(
+            role="system",
+            content=format_investigation_follow_up_context(
+                round_index=round_index,
+                available_evidence_references=available_references,
+            ),
+        ),
+    ]
 
 
 def collect_available_evidence_ids(
@@ -251,7 +337,10 @@ def validate_follow_up_investigation_step(
     parsed = parse_public_decision_note(assistant_content)
     if available_evidence_references and not parsed.basis_evidence_references:
         raise InvestigationProofValidationError(
-            "follow-up tool round requires explicit evidence basis"
+            "follow-up tool round requires explicit evidence basis "
+            f"(round_index={round_index}, "
+            f"available_evidence_count={len(available_evidence_references)}, "
+            "basis_count=0)"
         )
     bindings = _bind_declared_basis_references(
         parsed.basis_evidence_references,
@@ -294,17 +383,30 @@ def build_investigation_proof_step(
 ) -> InvestigationProofStep:
     """Snapshot, parse, validate, and record one investigative tool round."""
     next_tool_call_ids = tuple(tool_call.id for tool_call in tool_calls)
-    if round_index <= 1:
-        return record_first_investigation_step(
-            round_index=round_index,
-            assistant_content=assistant_content,
-            next_tool_call_ids=next_tool_call_ids,
-        )
     reference_index = build_completed_observation_reference_index(
         messages_before_round,
         prior_model_visible_references,
     )
     available = frozenset(reference_index)
+    if not available:
+        try:
+            parsed_without_inventory = parse_public_decision_note(assistant_content)
+        except InvestigationProofValidationError:
+            return record_first_investigation_step(
+                round_index=round_index,
+                assistant_content=assistant_content,
+                next_tool_call_ids=next_tool_call_ids,
+            )
+        if parsed_without_inventory.basis_evidence_references:
+            _bind_declared_basis_references(
+                parsed_without_inventory.basis_evidence_references,
+                reference_index,
+            )
+        return record_first_investigation_step(
+            round_index=round_index,
+            assistant_content=assistant_content,
+            next_tool_call_ids=next_tool_call_ids,
+        )
     return validate_follow_up_investigation_step(
         round_index=round_index,
         assistant_content=assistant_content,

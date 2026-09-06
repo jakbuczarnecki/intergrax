@@ -18,8 +18,10 @@ from intergrax.runtime.nexus.tools.investigation_proof import (
     build_completed_observation_reference_index,
     build_investigation_proof_step,
     collect_available_evidence_ids,
+    format_investigation_follow_up_context,
     mint_runtime_observation_evidence_reference,
     parse_public_decision_note,
+    prepare_native_planner_messages_with_follow_up_context,
     record_first_investigation_step,
     validate_follow_up_investigation_step,
 )
@@ -376,6 +378,180 @@ def test_empty_follow_up_basis_rejected_when_prior_evidence_exists() -> None:
             reference_index={"evidence.a": "call_abc"},
             next_tool_call_ids=("call_def",),
         )
+
+
+def test_empty_follow_up_basis_diagnostic_includes_counts() -> None:
+    with pytest.raises(
+        InvestigationProofValidationError,
+        match=(
+            "round_index=2, available_evidence_count=2, basis_count=0"
+        ),
+    ):
+        validate_follow_up_investigation_step(
+            round_index=2,
+            assistant_content="EVIDENCE_BASIS:\nPURPOSE: inspect staffing",
+            available_evidence_references=frozenset({"evidence.a", "evidence.b"}),
+            reference_index={"evidence.a": "call_a", "evidence.b": "call_b"},
+            next_tool_call_ids=("call_def",),
+        )
+
+
+def test_format_investigation_follow_up_context_lists_available_refs() -> None:
+    rendered = format_investigation_follow_up_context(
+        round_index=2,
+        available_evidence_references=(
+            "evidence.workload.line4.incident_window",
+            "evidence.throughput.line4.incident_window",
+        ),
+    )
+    assert "ENG6_FOLLOW_UP_CONTEXT" in rendered
+    assert "ROUND: 2" in rendered
+    assert "- evidence.workload.line4.incident_window" in rendered
+    assert "- evidence.throughput.line4.incident_window" in rendered
+    assert "AVAILABLE_EVIDENCE_REFS" in rendered
+    assert "An empty EVIDENCE_BASIS is invalid." in rendered
+    assert "materially motivate this follow-up action" in rendered
+
+
+def test_prepare_native_planner_messages_appends_follow_up_context() -> None:
+    workload_ref = "evidence.workload.line4.incident_window"
+    messages = [
+        ChatMessage(role="user", content="investigate"),
+    ]
+    prepared = prepare_native_planner_messages_with_follow_up_context(
+        messages,
+        round_index=1,
+        prior_model_visible_references=(
+            ModelVisibleEvidenceReference(
+                evidence_reference=workload_ref,
+                acquisition_id="baseline_production_workload_read_0",
+            ),
+        ),
+    )
+    assert len(prepared) == 2
+    assert prepared[-1].role == "system"
+    assert workload_ref in prepared[-1].content
+    assert "ENG6_FOLLOW_UP_CONTEXT" in prepared[-1].content
+
+
+def test_prepare_native_planner_messages_skips_context_without_prior_evidence() -> None:
+    messages = [ChatMessage(role="user", content="investigate")]
+    prepared = prepare_native_planner_messages_with_follow_up_context(
+        messages,
+        round_index=1,
+    )
+    assert prepared == messages
+
+
+def test_available_refs_in_context_match_validator_inventory() -> None:
+    messages = [
+        _assistant_call(tool_call_id="call_a"),
+        _tool_observation(tool_call_id="call_a", evidence_reference="evidence.a"),
+        _assistant_call(tool_call_id="call_b", tool_name="probe.b"),
+        _tool_observation(tool_call_id="call_b", evidence_reference="evidence.b"),
+    ]
+    prepared = prepare_native_planner_messages_with_follow_up_context(
+        messages,
+        round_index=2,
+    )
+    index = build_completed_observation_reference_index(messages)
+    for reference in index:
+        assert f"- {reference}" in prepared[-1].content
+
+
+def test_first_native_round_with_baseline_inventory_requires_basis() -> None:
+    workload_ref = "evidence.workload.line4.incident_window"
+    with pytest.raises(
+        InvestigationProofValidationError,
+        match="follow-up tool round requires explicit evidence basis",
+    ):
+        build_investigation_proof_step(
+            round_index=1,
+            assistant_content="EVIDENCE_BASIS:\nPURPOSE: inspect staffing",
+            tool_calls=(
+                LLMToolCall.from_openai_shape(
+                    call_id="call_staffing",
+                    name="production.staffing.schedule.read",
+                    arguments={"line_id": "line4"},
+                ),
+            ),
+            messages_before_round=[
+                ChatMessage(role="user", content="investigate"),
+            ],
+            prior_model_visible_references=(
+                ModelVisibleEvidenceReference(
+                    evidence_reference=workload_ref,
+                    acquisition_id="baseline_production_workload_read_0",
+                ),
+            ),
+        )
+
+
+def test_first_native_round_without_prior_evidence_allows_empty_basis() -> None:
+    step = build_investigation_proof_step(
+        round_index=1,
+        assistant_content="PURPOSE: gather initial telemetry",
+        tool_calls=(
+            LLMToolCall.from_openai_shape(
+                call_id="call_a",
+                name="probe.a",
+                arguments={"label": "a"},
+            ),
+        ),
+        messages_before_round=[ChatMessage(role="user", content="investigate")],
+    )
+    assert step.declared_basis_references == ()
+    assert step.public_reason == "gather initial telemetry"
+
+
+def test_independent_hypothesis_with_explicit_basis_passes() -> None:
+    workload_ref = "evidence.workload.line4.incident_window"
+    step = build_investigation_proof_step(
+        round_index=2,
+        assistant_content=(
+            f"EVIDENCE_BASIS: {workload_ref}\n"
+            "PURPOSE: test staffing explanation"
+        ),
+        tool_calls=(
+            LLMToolCall.from_openai_shape(
+                call_id="call_staffing",
+                name="production.staffing.schedule.read",
+                arguments={"line_id": "line4"},
+            ),
+        ),
+        messages_before_round=[
+            _assistant_call(tool_call_id="call_a"),
+            _tool_observation(tool_call_id="call_a", evidence_reference=workload_ref),
+        ],
+    )
+    assert step.declared_basis_references == (workload_ref,)
+    assert step.public_reason == "test staffing explanation"
+
+
+def test_generic_observation_reference_in_available_inventory_passes() -> None:
+    observation_ref = mint_runtime_observation_evidence_reference(
+        tool_id="probe.a",
+        step_id="run:loop1:tool",
+    )
+    step = build_investigation_proof_step(
+        round_index=2,
+        assistant_content=(
+            f"EVIDENCE_BASIS: {observation_ref}\n"
+            "PURPOSE: confirm observation"
+        ),
+        tool_calls=(
+            LLMToolCall.from_openai_shape(
+                call_id="call_b",
+                name="probe.b",
+                arguments={"confirm": True},
+            ),
+        ),
+        messages_before_round=[
+            _assistant_call(tool_call_id="call_a"),
+            _tool_observation(tool_call_id="call_a", evidence_reference=observation_ref),
+        ],
+    )
+    assert step.declared_basis_references == (observation_ref,)
 
 
 def test_duplicate_basis_reference_rejected() -> None:

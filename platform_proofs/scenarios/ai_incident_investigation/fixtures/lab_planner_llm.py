@@ -12,7 +12,10 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.runtime.nexus.tools.investigation_proof import collect_available_evidence_ids
+from intergrax.runtime.nexus.tools.investigation_proof import (
+    collect_available_evidence_ids,
+    parse_follow_up_context_evidence_references,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     h1_initially_plausible,
     observations_from_evidence_nodes,
@@ -122,6 +125,19 @@ def _evidence_ids_from_messages(messages: Sequence[ChatMessage]) -> set[str]:
                 if candidate.startswith("evidence."):
                     ids.add(candidate)
     return ids
+
+
+def _available_basis_refs_from_messages(messages: Sequence[ChatMessage]) -> tuple[str, ...]:
+    tool_refs = collect_available_evidence_ids(messages)
+    if tool_refs:
+        return tool_refs
+    follow_up_refs = parse_follow_up_context_evidence_references(messages)
+    if follow_up_refs:
+        return follow_up_refs
+    gathered = _planner_gathered_evidence_ids(messages)
+    if gathered:
+        return tuple(sorted(gathered))
+    return ()
 
 
 def _planner_gathered_evidence_ids(messages: Sequence[ChatMessage]) -> set[str]:
@@ -443,12 +459,11 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
         call_id = f"tc-{phase}-{round_index + 1}"
         self._round_by_phase[phase] = round_index + 1
         purpose = f"gather {tool_id.split('.')[-1]} evidence for incident investigation"
-        if round_index == 0:
-            content = _decision_note(purpose=purpose)
+        available_refs = _available_basis_refs_from_messages(messages)
+        if available_refs:
+            content = _decision_note(available_refs[-1], purpose=purpose)
         else:
-            available_refs = collect_available_evidence_ids(messages)
-            basis = available_refs[-1] if available_refs else ""
-            content = _decision_note(basis, purpose=purpose) if basis else _decision_note(purpose=purpose)
+            content = _decision_note(purpose=purpose)
         self._prior_tool_call_ids.append(call_id)
         return LLMAdapterResponse(
             content=content,

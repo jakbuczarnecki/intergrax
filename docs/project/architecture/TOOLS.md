@@ -905,6 +905,10 @@ PURPOSE: <short user-facing purpose>
 
 **Binding:** `investigation_proof.py` parses declared references, resolves them against the canonical native transcript plus any explicit prior model-visible inventory (`ModelVisibleEvidenceReference`), and records both `declared_basis_references` and runtime `basis_bindings` (`InvestigationEvidenceBasis`).
 
+**Follow-up compliance context:** before each native planner round where prior model-visible evidence exists, the runtime injects bounded `ENG6_FOLLOW_UP_CONTEXT` listing `AVAILABLE_EVIDENCE_REFS` from the same inventory used by validation (`build_completed_observation_reference_index`). Any action performed after prior model-visible evidence exists must declare at least one explicit evidence basis. Evidence basis expresses motivation/dependency on already-observed facts, not proof that the prior evidence determines the next tool's result.
+
+**First action semantics:** empty `EVIDENCE_BASIS` is valid only when no prior model-visible evidence exists (no completed observations and no declared prior inventory). Baseline evidence visible before the first native tool round requires explicit basis like any follow-up.
+
 **Invariants:** one semantic identity per observation (`ToolModelObservation.evidence_reference`); domain/tool-contract identity wins over generic `observation.<tool_id>.<step_id>` fallback; scenario-known evidence IDs are not admissible until model-visible through transcript or declared prior inventory; runtime provenance (`tool_call_id` / acquisition id) stays separate from semantic identity.
 
 **Implementation:** `intergrax/runtime/nexus/tools/investigation_proof.py` · `intergrax/tools/model_observation_format.py` · observation reference minting in `tool_loop.py` · shared policy `prompts/tools_investigation_policy/`.
