@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Self
 
 from intergrax.contracts.context_assembly import ContextSummaryTier, TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
@@ -19,6 +19,11 @@ if TYPE_CHECKING:
 
 CONTEXT_CONTRACTS_SCHEMA = "context_contracts.v1"
 ASSEMBLED_CONTEXT_SCHEMA = "assembled_context.v1"
+CONTEXT_PROVIDER_DESCRIPTOR_SCHEMA = "context_provider_descriptor.v1"
+CONTEXT_PROVIDER_SET_SNAPSHOT_SCHEMA = "context_provider_set_snapshot.v1"
+BUILTIN_PROVIDER_VERSION = "1.0.0"
+
+ContextProviderCollectionStatus = Literal["success", "skipped", "failed", "degraded"]
 
 ContextAssemblyScope = Literal["uaep_turn", "graph_node", "delegation_child", "acp_step"]
 
@@ -83,6 +88,75 @@ class IterativeToolOutputBlock:
 
 
 @dataclass(frozen=True, slots=True)
+class ContextProviderDescriptor:
+    """Immutable semantic identity for one registered context source provider."""
+
+    provider_id: str
+    provider_version: str
+    supported_sources: frozenset[ContextFragmentSource]
+    origin: str = "builtin"
+    schema_version: str = CONTEXT_PROVIDER_DESCRIPTOR_SCHEMA
+
+    def __post_init__(self) -> None:
+        normalized_id = self.provider_id.strip().lower()
+        if not normalized_id:
+            raise ValueError("provider_id must be non-empty")
+        object.__setattr__(self, "provider_id", normalized_id)
+        version = self.provider_version.strip()
+        if not version:
+            raise ValueError("provider_version must be non-empty")
+        forbidden = {"unknown", "latest", "current", "0"}
+        if version.lower() in forbidden:
+            raise ValueError(f"provider_version must be explicit, got {version!r}")
+        object.__setattr__(self, "provider_version", version)
+        origin = self.origin.strip()
+        if not origin:
+            raise ValueError("origin must be non-empty")
+        object.__setattr__(self, "origin", origin)
+        if not self.supported_sources:
+            raise ValueError("supported_sources must be non-empty")
+
+
+@dataclass(frozen=True, slots=True)
+class ContextProviderProvenance:
+    """Canonical provider lineage attached to fragments and assembly provenance."""
+
+    provider_id: str
+    provider_version: str
+    origin: str = "builtin"
+    schema_version: str = "context_provider_provenance.v1"
+
+    @classmethod
+    def from_descriptor(cls, descriptor: ContextProviderDescriptor) -> Self:
+        return cls(
+            provider_id=descriptor.provider_id,
+            provider_version=descriptor.provider_version,
+            origin=descriptor.origin,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ContextProviderSetSnapshot:
+    """Deterministic provider-set identity — descriptors only, no provider objects."""
+
+    engine_id: str
+    providers: tuple[ContextProviderDescriptor, ...]
+    fingerprint: str
+    schema_version: str = CONTEXT_PROVIDER_SET_SNAPSHOT_SCHEMA
+
+
+@dataclass(frozen=True, slots=True)
+class ContextProviderCollectionOutcome:
+    """Bounded provider contribution result for assembly inspection."""
+
+    descriptor: ContextProviderDescriptor
+    status: ContextProviderCollectionStatus
+    fragment_count: int = 0
+    failure_reason: str = ""
+    reason_code: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class ContextFragment:
     fragment_id: str
     source: ContextFragmentSource
@@ -95,6 +169,7 @@ class ContextFragment:
     mandatory: bool
     metadata: dict[str, Any] = field(default_factory=dict)
     content_hash: str = ""
+    provider_provenance: ContextProviderProvenance | None = None
 
     def __post_init__(self) -> None:
         if not self.content_hash:
@@ -114,7 +189,11 @@ class ContextAssemblyProvenance:
     source_type: str
     source_id: str
     fragment_id: str = ""
-    schema_version: str = "context_assembly_provenance.v1"
+    provider_id: str = ""
+    provider_version: str = ""
+    provider_origin: str = ""
+    content_hash: str = ""
+    schema_version: str = "context_assembly_provenance.v2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,4 +263,6 @@ class AssembledContext:
     budget_tokens: int
     degradation_steps: tuple[str, ...] = ()
     context_plan: ContextPlan | None = None
+    provider_outcomes: tuple[ContextProviderCollectionOutcome, ...] = ()
+    provider_set_snapshot: ContextProviderSetSnapshot | None = None
     schema_version: str = ASSEMBLED_CONTEXT_SCHEMA

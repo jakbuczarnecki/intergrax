@@ -14,10 +14,12 @@ from intergrax.context.contracts import (
     ContextFragmentSource,
     ContextProviderContext,
 )
+from intergrax.context.provider_descriptor import build_provider_descriptor
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -91,6 +93,14 @@ class _CollectOnceProvider:
     def supported_sources(self) -> frozenset[ContextFragmentSource]:
         return frozenset({ContextFragmentSource.CUSTOM})
 
+    @property
+    def descriptor(self):
+        return build_provider_descriptor(
+            self.provider_id,
+            provider_version="1.0.0",
+            supported_sources=self.supported_sources,
+        )
+
     async def collect(
         self,
         request: ContextAssemblyRequest,
@@ -136,7 +146,11 @@ async def test_engine_emits_candidate_bus_events() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
     try:
         request = ContextAssemblyRequest(
             trace_id="t1",

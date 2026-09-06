@@ -14,6 +14,20 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextProviderContext,
 )
+from intergrax.context.errors import (
+    ContextProviderContractViolationError,
+    RequiredContextSourceUnavailableError,
+)
+from intergrax.context.provider_lifecycle import (
+    assembly_provenance_for_fragment,
+    canonicalize_fragment,
+    collection_outcome,
+    is_provider_eligible,
+    provider_covers_required_source,
+    resolve_bound_context_provider_set,
+    safe_provider_failure_reason,
+    validate_required_sources_have_eligible_providers,
+)
 from intergrax.context.planner import ContextPlanner
 from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
@@ -157,15 +171,84 @@ class DefaultNexusContextEngine:
             _record_validation_failed(event_bus, event_ctx, pre_gate.errors, stage="pre_context_policy")
             raise ValueError("; ".join(pre_gate.errors))
 
-        collected_fragments: list = []
+        collected_fragments: list[ContextFragment] = []
         fragments_excluded: list[tuple[ContextFragment, str]] = []
+        provider_outcomes: list = []
+        bound_set = resolve_bound_context_provider_set(
+            registry=self._registry,
+            engine_id=self._engine_id,
+            request=request,
+            ctx=ctx,
+        )
+        validate_required_sources_have_eligible_providers(bound_set, request)
         with context_span("context.provider.collect"):
-            for provider in self._registry.list_providers():
-                fragments = await provider.collect(request, ctx)
-                if fragments:
+            for bound in bound_set.providers:
+                descriptor = bound.descriptor
+                provider = bound.provider
+                if not is_provider_eligible(descriptor, request):
+                    provider_outcomes.append(
+                        collection_outcome(descriptor=descriptor, status="skipped"),
+                    )
+                    continue
+                required_provider = provider_covers_required_source(descriptor, request)
+                try:
+                    fragments = await provider.collect(request, ctx)
+                except RequiredContextSourceUnavailableError:
+                    raise
+                except ContextProviderContractViolationError:
+                    raise
+                except Exception as exc:
+                    reason = safe_provider_failure_reason(exc)
+                    if required_provider:
+                        source = next(
+                            iter(descriptor.supported_sources & request.required_sources),
+                        )
+                        raise RequiredContextSourceUnavailableError(
+                            source=source,
+                            reason_code="required_source.provider_failed",
+                            provider_id=descriptor.provider_id,
+                        ) from exc
+                    provider_outcomes.append(
+                        collection_outcome(
+                            descriptor=descriptor,
+                            status="failed",
+                            failure_reason=reason,
+                            reason_code="provider.collection_failed",
+                        ),
+                    )
+                    if event_bus is not None:
+                        from intergrax.runtime.events.context_skill_recording import (
+                            record_context_candidate_dropped,
+                        )
+
+                        record_context_candidate_dropped(
+                            event_bus,
+                            provider_id=descriptor.provider_id,
+                            provider_version=descriptor.provider_version,
+                            drop_reason="provider.collection_failed",
+                            engine_id=self._engine_id,
+                            **event_ctx,
+                        )
+                    continue
+                canonical_fragments: list[ContextFragment] = []
+                for fragment in fragments or []:
+                    try:
+                        canonical_fragments.append(
+                            canonicalize_fragment(fragment, descriptor=descriptor),
+                        )
+                    except ContextProviderContractViolationError:
+                        raise
+                if canonical_fragments:
                     counters = get_context_counters()
-                    counters.candidate_collected_total += len(fragments)
-                    collected_fragments.extend(fragments)
+                    counters.candidate_collected_total += len(canonical_fragments)
+                    collected_fragments.extend(canonical_fragments)
+                    provider_outcomes.append(
+                        collection_outcome(
+                            descriptor=descriptor,
+                            status="success",
+                            fragment_count=len(canonical_fragments),
+                        ),
+                    )
                     if event_bus is not None:
                         from intergrax.runtime.events.context_skill_recording import (
                             record_context_candidate_collected,
@@ -173,11 +256,25 @@ class DefaultNexusContextEngine:
 
                         record_context_candidate_collected(
                             event_bus,
-                            provider_id=provider.provider_id,
-                            fragment_count=len(fragments),
+                            provider_id=descriptor.provider_id,
+                            provider_version=descriptor.provider_version,
+                            fragment_count=len(canonical_fragments),
                             engine_id=self._engine_id,
                             **event_ctx,
                         )
+                elif required_provider:
+                    source = next(
+                        iter(descriptor.supported_sources & request.required_sources),
+                    )
+                    raise RequiredContextSourceUnavailableError(
+                        source=source,
+                        reason_code="required_source.no_fragments",
+                        provider_id=descriptor.provider_id,
+                    )
+                else:
+                    provider_outcomes.append(
+                        collection_outcome(descriptor=descriptor, status="success", fragment_count=0),
+                    )
 
         unique, dropped = dedup_fragments_by_hash(collected_fragments)
         collected_fragments = unique
@@ -193,7 +290,16 @@ class DefaultNexusContextEngine:
                 for fragment, reason in dropped:
                     record_context_candidate_dropped(
                         event_bus,
-                        provider_id=fragment.source_id or "dedup",
+                        provider_id=(
+                            fragment.provider_provenance.provider_id
+                            if fragment.provider_provenance is not None
+                            else fragment.source_id or "dedup"
+                        ),
+                        provider_version=(
+                            fragment.provider_provenance.provider_version
+                            if fragment.provider_provenance is not None
+                            else ""
+                        ),
                         drop_reason=reason,
                         engine_id=self._engine_id,
                         **event_ctx,
@@ -221,7 +327,16 @@ class DefaultNexusContextEngine:
                     for fragment, reason in quality_excluded:
                         record_context_candidate_dropped(
                             event_bus,
-                            provider_id=fragment.source_id or fragment.source.value,
+                            provider_id=(
+                                fragment.provider_provenance.provider_id
+                                if fragment.provider_provenance is not None
+                                else fragment.source_id or fragment.source.value
+                            ),
+                            provider_version=(
+                                fragment.provider_provenance.provider_version
+                                if fragment.provider_provenance is not None
+                                else ""
+                            ),
                             drop_reason=reason,
                             engine_id=self._engine_id,
                             **event_ctx,
@@ -301,11 +416,7 @@ class DefaultNexusContextEngine:
         fragments_included = ucl_resolution.fragments_included
         fragments_excluded = tuple(fragments_excluded) + ucl_resolution.fragments_excluded
         provenance = tuple(
-            ContextAssemblyProvenance(
-                source_type=fragment.source.value,
-                source_id=fragment.source_id,
-                fragment_id=fragment.fragment_id,
-            )
+            assembly_provenance_for_fragment(fragment)
             for fragment in fragments_included
         )
 
@@ -318,6 +429,8 @@ class DefaultNexusContextEngine:
             budget_tokens=compile_result.budget_tokens,
             degradation_steps=compile_result.degradation_steps,
             context_plan=context_plan,
+            provider_outcomes=tuple(provider_outcomes),
+            provider_set_snapshot=bound_set.snapshot,
         )
 
         validation = self._validator.validate(

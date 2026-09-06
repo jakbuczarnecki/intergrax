@@ -1,13 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Context plugin catalog registry (Phase CE-1.4)."""
+"""Context plugin catalog registry (Phase CE-1.4, P1.9 hardening)."""
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass, field
 from typing import Callable, Iterator
 
+from intergrax.context.contracts import ContextProviderDescriptor
+from intergrax.context.errors import ContextProviderRegistrationError
+from intergrax.context.provider_descriptor import resolve_provider_descriptor
 from intergrax.context.protocols import (
     ContextBudgetAllocator,
     ContextFormatter,
@@ -25,35 +29,100 @@ ContextPluginRegisterFn = Callable[["ContextPluginRegistry"], None]
 
 
 @dataclass
+class _RegisteredProvider:
+    descriptor: ContextProviderDescriptor
+    provider: ContextSourceProvider
+
+
+@dataclass
 class ContextPluginRegistry:
     """Mutable registry of context providers and optional pipeline overrides."""
 
-    _providers: dict[str, ContextSourceProvider] = field(default_factory=dict)
+    _providers: dict[str, _RegisteredProvider] = field(default_factory=dict)
     _ranker: ContextRanker | None = None
     _allocator: ContextBudgetAllocator | None = None
     _formatter: ContextFormatter | None = None
     _validator: ContextValidator | None = None
+    _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
 
-    def add_provider(self, provider: ContextSourceProvider, *, override: bool = False) -> None:
-        provider_id = provider.provider_id.strip()
-        if not provider_id:
-            raise ValueError("provider_id must be non-empty")
-        if provider_id in self._providers and not override:
-            raise ValueError(f"Context provider '{provider_id}' is already registered")
-        self._providers[provider_id] = provider
+    def add_provider(
+        self,
+        provider: ContextSourceProvider,
+        *,
+        override: bool = False,
+        origin: str | None = None,
+    ) -> None:
+        descriptor = resolve_provider_descriptor(provider)
+        if origin is not None and origin.strip():
+            descriptor = ContextProviderDescriptor(
+                provider_id=descriptor.provider_id,
+                provider_version=descriptor.provider_version,
+                supported_sources=descriptor.supported_sources,
+                origin=origin.strip(),
+            )
+        with self._lock:
+            existing = self._providers.get(descriptor.provider_id)
+            if existing is not None and not override:
+                raise ContextProviderRegistrationError(
+                    f"Context provider '{descriptor.provider_id}' is already registered",
+                )
+            if (
+                existing is not None
+                and existing.descriptor == descriptor
+                and existing.provider is not provider
+                and not override
+            ):
+                raise ContextProviderRegistrationError(
+                    f"Context provider '{descriptor.provider_id}' already registered "
+                    f"with same descriptor but different object",
+                )
+            self._providers[descriptor.provider_id] = _RegisteredProvider(
+                descriptor=descriptor,
+                provider=provider,
+            )
 
     def remove_provider(self, provider_id: str) -> None:
-        self._providers.pop(provider_id.strip(), None)
-
-    def list_providers(self) -> tuple[ContextSourceProvider, ...]:
-        return tuple(self._providers.values())
+        normalized = provider_id.strip().lower()
+        with self._lock:
+            self._providers.pop(normalized, None)
 
     def get_provider(self, provider_id: str) -> ContextSourceProvider:
-        normalized = provider_id.strip()
-        try:
-            return self._providers[normalized]
-        except KeyError as exc:
-            raise UnknownContextPluginError(normalized) from exc
+        normalized = provider_id.strip().lower()
+        with self._lock:
+            try:
+                return self._providers[normalized].provider
+            except KeyError as exc:
+                raise UnknownContextPluginError(normalized) from exc
+
+    def get_provider_descriptor(self, provider_id: str) -> ContextProviderDescriptor:
+        normalized = provider_id.strip().lower()
+        with self._lock:
+            try:
+                return self._providers[normalized].descriptor
+            except KeyError as exc:
+                raise UnknownContextPluginError(normalized) from exc
+
+    def list_provider_descriptors(self) -> tuple[ContextProviderDescriptor, ...]:
+        with self._lock:
+            return tuple(
+                item.descriptor
+                for item in sorted(self._providers.values(), key=lambda entry: entry.descriptor.provider_id)
+            )
+
+    def list_providers(self) -> tuple[ContextSourceProvider, ...]:
+        with self._lock:
+            return tuple(
+                item.provider
+                for item in sorted(self._providers.values(), key=lambda entry: entry.descriptor.provider_id)
+            )
+
+    def snapshot_providers(self) -> tuple[tuple[ContextProviderDescriptor, ContextSourceProvider], ...]:
+        """Immutable view of active providers for one assembly — registration order independent."""
+        with self._lock:
+            return tuple(
+                (item.descriptor, item.provider)
+                for item in sorted(self._providers.values(), key=lambda entry: entry.descriptor.provider_id)
+            )
 
     def set_ranker(self, ranker: ContextRanker | None) -> None:
         self._ranker = ranker

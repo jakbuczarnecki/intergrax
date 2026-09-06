@@ -5,12 +5,15 @@
 from __future__ import annotations
 
 from intergrax.context.contracts import (
+    BUILTIN_PROVIDER_VERSION,
     ContextAssemblyRequest,
     ContextFragment,
     ContextFragmentSource,
     ContextProviderContext,
+    ContextProviderDescriptor,
     content_hash_for_text,
 )
+from intergrax.context.provider_descriptor import build_provider_descriptor
 from intergrax.context.providers.workspace_index import WorkspaceIndexResult, build_workspace_index
 
 
@@ -18,10 +21,20 @@ class WorkspaceContextProvider:
     """Collects workspace file chunks under budget."""
 
     provider_id = "builtin.workspace"
+    _PROVIDER_VERSION = BUILTIN_PROVIDER_VERSION
 
     @property
     def supported_sources(self) -> frozenset[ContextFragmentSource]:
         return frozenset({ContextFragmentSource.WORKSPACE})
+
+    @property
+    def descriptor(self) -> ContextProviderDescriptor:
+        return build_provider_descriptor(
+            self.provider_id,
+            provider_version=self._PROVIDER_VERSION,
+            supported_sources=self.supported_sources,
+            origin="builtin",
+        )
 
     async def collect(
         self,

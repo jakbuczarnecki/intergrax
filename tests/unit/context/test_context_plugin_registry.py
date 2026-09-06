@@ -14,7 +14,9 @@ from intergrax.context.contracts import (
     ContextFragmentSource,
     ContextProviderContext,
 )
+from intergrax.context.errors import ContextProviderRegistrationError
 from intergrax.context.plugin import ContextPlugin, register_context_plugin
+from intergrax.context.provider_descriptor import build_provider_descriptor
 from intergrax.context.registry import (
     ContextPluginRegistry,
     UnknownContextPluginError,
@@ -29,7 +31,19 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 class _StubProvider:
     provider_id = "acme.stub"
-    supported_sources = frozenset({ContextFragmentSource.CUSTOM})
+
+    @property
+    def supported_sources(self) -> frozenset[ContextFragmentSource]:
+        return frozenset({ContextFragmentSource.CUSTOM})
+
+    @property
+    def descriptor(self):
+        return build_provider_descriptor(
+            self.provider_id,
+            provider_version="0.1.0",
+            supported_sources=self.supported_sources,
+            origin="plugin:acme.context",
+        )
 
     async def collect(
         self,
@@ -91,7 +105,7 @@ def test_registry_add_list_unregister_provider() -> None:
 def test_registry_rejects_duplicate_provider() -> None:
     registry = ContextPluginRegistry()
     registry.add_provider(_StubProvider())
-    with pytest.raises(ValueError, match="already registered"):
+    with pytest.raises(ContextProviderRegistrationError, match="already registered"):
         registry.add_provider(_StubProvider())
 
 

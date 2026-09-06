@@ -125,6 +125,7 @@ def record_context_candidate_collected(
     provider_id: str,
     fragment_count: int,
     engine_id: str = "",
+    provider_version: str = "",
     correlation_id: str = "",
 ) -> None:
     resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
@@ -135,6 +136,7 @@ def record_context_candidate_collected(
         provider_id=provider_id,
         fragment_count=fragment_count,
         engine_id=engine_id,
+        provider_version=provider_version,
     )
     bus.record(
         runtime_event_with_payload(
@@ -154,6 +156,7 @@ def record_context_candidate_collected(
                 "provider_id": provider_id,
                 "fragment_count": fragment_count,
                 "engine_id": engine_id,
+                "provider_version": provider_version,
             },
         )
     )
@@ -169,6 +172,7 @@ def record_context_candidate_dropped(
     provider_id: str,
     drop_reason: str,
     engine_id: str = "",
+    provider_version: str = "",
     correlation_id: str = "",
 ) -> None:
     resolved_task_id, resolved_run_id, attempt_id, execution_id = _canonical_event_identity(
@@ -180,6 +184,7 @@ def record_context_candidate_dropped(
         fragment_count=1,
         engine_id=engine_id,
         drop_reason=drop_reason,
+        provider_version=provider_version,
     )
     bus.record(
         runtime_event_with_payload(
@@ -199,6 +204,7 @@ def record_context_candidate_dropped(
                 "provider_id": provider_id,
                 "drop_reason": drop_reason,
                 "engine_id": engine_id,
+                "provider_version": provider_version,
             },
         )
     )
