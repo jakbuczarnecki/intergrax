@@ -1,9 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""P1.6A — prepare-before-publish canonical host activation ordering."""
+"""P1.6A/P1.6B — prepare-before-publish and activation baseline preservation."""
 
 from __future__ import annotations
 
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -23,6 +26,7 @@ from intergrax.applications._shared.profile_resolution import (
     require_execution_pinned_revision,
     resolve_profile,
     resolve_revision_for_execution,
+    build_effective_profile_revision_admission,
 )
 from intergrax.applications._shared.runtime_inspection.service import RuntimeInspectionService
 from intergrax.applications.contracts.capability_dependency import (
@@ -32,6 +36,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.environment_profile.sub_profiles import CostProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.applications.contracts.profile_resolution import (
+    ActivateEffectiveProfileRevisionRequest,
     EffectiveProfileActivationConflictError,
     EffectiveProfileRevisionScope,
 )
@@ -206,18 +211,20 @@ def test_prepare_occurs_before_activation_cas(monkeypatch: pytest.MonkeyPatch) -
         events.append("prepare")
         return original_wire(*args, **kwargs)
 
-    original_activate = build_harness_host_runtime.__globals__["activate_materialized_revision"]
+    original_activate = build_harness_host_runtime.__globals__[
+        "EffectiveProfileActivationService"
+    ].activate
 
-    def _tracked_activate(*args: object, **kwargs: object) -> object:
+    def _tracked_activate(self: object, request: object) -> object:
         events.append("activation_cas")
-        return original_activate(*args, **kwargs)
+        return original_activate(self, request)
 
     monkeypatch.setattr(
         "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
         _tracked_wire,
     )
     monkeypatch.setattr(
-        "intergrax.applications._shared.harness_host_runtime.activate_materialized_revision",
+        "intergrax.applications._shared.harness_host_runtime.EffectiveProfileActivationService.activate",
         _tracked_activate,
     )
 
@@ -260,44 +267,51 @@ def test_cas_conflict_after_preparation_fails_without_runtime() -> None:
             active_store=active_store,
         ),
     )
-    activate_materialized_revision(
-        activation_service,
-        scope=_SCOPE,
-        candidate_revision_id=revision_r3.revision_id,
-    )
-    r3_binding = active_store.get_active(_SCOPE)
-    assert r3_binding is not None
-    assert r3_binding.revision_id == revision_r3.revision_id
-    assert r3_binding.revision_id != r1_id
+    prepare_reached = threading.Event()
+    allow_continue = threading.Event()
+    build_error: list[BaseException] = []
 
-    from intergrax.applications.contracts.profile_resolution.activation import (
-        ActiveEffectiveProfileRevisionCasOutcome,
-        ActiveEffectiveProfileRevisionCasResult,
-    )
+    def _build_r2() -> None:
+        try:
+            with patch(
+                "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
+                _blocking_prepare_hook(
+                    prepare_reached=prepare_reached,
+                    allow_continue=allow_continue,
+                ),
+            ):
+                _build_runtime(
+                    _application(max_tool_calls=5),
+                    revision_store=revision_store,
+                    pinning_store=pinning_store,
+                    active_store=active_store,
+                )
+        except BaseException as exc:
+            build_error.append(exc)
 
-    def _conflict_cas(*args: object, **kwargs: object) -> ActiveEffectiveProfileRevisionCasResult:
-        return ActiveEffectiveProfileRevisionCasResult(
-            outcome=ActiveEffectiveProfileRevisionCasOutcome.CONFLICT,
-            current_binding=active_store.get_active(_SCOPE),
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(_build_r2)
+        assert prepare_reached.wait(timeout=5)
+        activation_service.activate(
+            ActivateEffectiveProfileRevisionRequest(
+                scope=_SCOPE,
+                candidate_revision_id=revision_r3.revision_id,
+                expected_active_revision_id=r1_id,
+            ),
         )
+        allow_continue.set()
+        future.result()
 
-    active_store.compare_and_set_active = _conflict_cas  # type: ignore[method-assign]
-
-    with pytest.raises(EffectiveProfileActivationConflictError):
-        _build_runtime(
-            _application(max_tool_calls=5),
-            revision_store=revision_store,
-            pinning_store=pinning_store,
-            active_store=active_store,
-        )
-
+    assert len(build_error) == 1
+    assert isinstance(build_error[0], EffectiveProfileActivationConflictError)
     assert active_store.get_active(_SCOPE).revision_id == revision_r3.revision_id
 
 
 def test_conflict_path_does_not_restore_previous_active() -> None:
     revision_store = InMemoryEffectiveProfileRevisionStore()
     active_store = InMemoryActiveEffectiveProfileRevisionStore()
-    _build_runtime(_application(max_tool_calls=1), revision_store=revision_store, active_store=active_store)
+    runtime_r1 = _build_runtime(_application(max_tool_calls=1), revision_store=revision_store, active_store=active_store)
+    r1_id = runtime_r1.effective_profile_revision.revision_id
     revision_r3 = _materialize(_application(max_tool_calls=99), revision_store)
     activation_service = EffectiveProfileActivationService(
         EffectiveProfileActivationDependencies(
@@ -305,34 +319,45 @@ def test_conflict_path_does_not_restore_previous_active() -> None:
             active_store=active_store,
         ),
     )
-    current = active_store.get_active(_SCOPE)
-    activate_materialized_revision(
-        activation_service,
-        scope=_SCOPE,
-        candidate_revision_id=revision_r3.revision_id,
-    )
-    r3_id = active_store.get_active(_SCOPE).revision_id
-    prior_r1_id = current.revision_id
+    prepare_reached = threading.Event()
+    allow_continue = threading.Event()
+    build_error: list[BaseException] = []
 
-    from intergrax.applications.contracts.profile_resolution.activation import (
-        ActiveEffectiveProfileRevisionCasOutcome,
-        ActiveEffectiveProfileRevisionCasResult,
-    )
+    def _build_r2() -> None:
+        try:
+            with patch(
+                "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
+                _blocking_prepare_hook(
+                    prepare_reached=prepare_reached,
+                    allow_continue=allow_continue,
+                ),
+            ):
+                _build_runtime(
+                    _application(max_tool_calls=5),
+                    revision_store=revision_store,
+                    active_store=active_store,
+                )
+        except BaseException as exc:
+            build_error.append(exc)
 
-    active_store.compare_and_set_active = lambda *a, **k: ActiveEffectiveProfileRevisionCasResult(  # type: ignore[method-assign]
-        outcome=ActiveEffectiveProfileRevisionCasOutcome.CONFLICT,
-        current_binding=active_store.get_active(_SCOPE),
-    )
-
-    with pytest.raises(EffectiveProfileActivationConflictError):
-        _build_runtime(
-            _application(max_tool_calls=5),
-            revision_store=revision_store,
-            active_store=active_store,
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(_build_r2)
+        assert prepare_reached.wait(timeout=5)
+        activation_service.activate(
+            ActivateEffectiveProfileRevisionRequest(
+                scope=_SCOPE,
+                candidate_revision_id=revision_r3.revision_id,
+                expected_active_revision_id=r1_id,
+            ),
         )
+        r3_id = active_store.get_active(_SCOPE).revision_id
+        allow_continue.set()
+        future.result()
 
+    assert len(build_error) == 1
+    assert isinstance(build_error[0], EffectiveProfileActivationConflictError)
     assert active_store.get_active(_SCOPE).revision_id == r3_id
-    assert active_store.get_active(_SCOPE).revision_id != prior_r1_id
+    assert active_store.get_active(_SCOPE).revision_id != r1_id
 
 
 def test_inactive_materialized_revision_after_preparation_failure() -> None:
@@ -557,3 +582,406 @@ def test_inspection_shows_old_active_before_cas_and_new_after() -> None:
     assert active_r2 is not None
     assert active_r2.revision_id == runtime_r2.effective_profile_revision.revision_id
     assert active_r2.revision_id != active_r1.revision_id
+
+
+def _blocking_prepare_hook(
+    *,
+    prepare_reached: threading.Event,
+    allow_continue: threading.Event,
+) -> object:
+    original_wire = build_harness_host_runtime.__globals__["wire_application_environment"]
+
+    def _blocking_wire(*args: object, **kwargs: object) -> object:
+        prepare_reached.set()
+        assert allow_continue.wait(timeout=5)
+        return original_wire(*args, **kwargs)
+
+    return _blocking_wire
+
+
+def test_prepare_race_preserves_captured_activation_baseline() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
+    active_store = InMemoryActiveEffectiveProfileRevisionStore()
+    runtime_r1 = _build_runtime(
+        _application(max_tool_calls=2),
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+        active_store=active_store,
+    )
+    r1_id = runtime_r1.effective_profile_revision.revision_id
+    revision_r3 = _materialize(_application(max_tool_calls=99), revision_store)
+    activation_service = EffectiveProfileActivationService(
+        EffectiveProfileActivationDependencies(
+            revision_store=revision_store,
+            active_store=active_store,
+        ),
+    )
+    prepare_reached = threading.Event()
+    allow_continue = threading.Event()
+    build_error: list[BaseException] = []
+
+    def _build_r2() -> None:
+        try:
+            with patch(
+                "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
+                _blocking_prepare_hook(
+                    prepare_reached=prepare_reached,
+                    allow_continue=allow_continue,
+                ),
+            ):
+                _build_runtime(
+                    _application(max_tool_calls=5),
+                    revision_store=revision_store,
+                    pinning_store=pinning_store,
+                    active_store=active_store,
+                )
+        except BaseException as exc:
+            build_error.append(exc)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(_build_r2)
+        assert prepare_reached.wait(timeout=5)
+        activation_service.activate(
+            ActivateEffectiveProfileRevisionRequest(
+                scope=_SCOPE,
+                candidate_revision_id=revision_r3.revision_id,
+                expected_active_revision_id=r1_id,
+            ),
+        )
+        allow_continue.set()
+        future.result()
+
+    assert len(build_error) == 1
+    assert isinstance(build_error[0], EffectiveProfileActivationConflictError)
+    active = active_store.get_active(_SCOPE)
+    assert active is not None
+    assert active.revision_id == revision_r3.revision_id
+    assert active.revision_id != r1_id
+
+
+def test_no_race_baseline_cas_success() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
+    active_store = InMemoryActiveEffectiveProfileRevisionStore()
+    runtime_r1 = _build_runtime(
+        _application(max_tool_calls=2),
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+        active_store=active_store,
+    )
+    r1_id = runtime_r1.effective_profile_revision.revision_id
+    runtime_r2 = _build_runtime(
+        _application(max_tool_calls=7),
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+        active_store=active_store,
+    )
+    r2_id = runtime_r2.effective_profile_revision.revision_id
+    active = active_store.get_active(_SCOPE)
+    assert active is not None
+    assert active.revision_id == r2_id
+    assert active.revision_id != r1_id
+
+
+def test_first_activation_race_conflict() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
+    active_store = InMemoryActiveEffectiveProfileRevisionStore()
+    revision_r0 = _materialize(_application(max_tool_calls=1), revision_store)
+    activation_service = EffectiveProfileActivationService(
+        EffectiveProfileActivationDependencies(
+            revision_store=revision_store,
+            active_store=active_store,
+        ),
+    )
+    prepare_reached = threading.Event()
+    allow_continue = threading.Event()
+    build_error: list[BaseException] = []
+
+    def _first_build() -> None:
+        try:
+            with patch(
+                "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
+                _blocking_prepare_hook(
+                    prepare_reached=prepare_reached,
+                    allow_continue=allow_continue,
+                ),
+            ):
+                _build_runtime(
+                    _application(max_tool_calls=3),
+                    revision_store=revision_store,
+                    pinning_store=pinning_store,
+                    active_store=active_store,
+                )
+        except BaseException as exc:
+            build_error.append(exc)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(_first_build)
+        assert prepare_reached.wait(timeout=5)
+        activate_materialized_revision(
+            activation_service,
+            scope=_SCOPE,
+            candidate_revision_id=revision_r0.revision_id,
+        )
+        allow_continue.set()
+        future.result()
+
+    assert len(build_error) == 1
+    assert isinstance(build_error[0], EffectiveProfileActivationConflictError)
+    assert active_store.get_active(_SCOPE).revision_id == revision_r0.revision_id
+
+
+def test_baseline_captured_before_prepare() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    active_store = InMemoryActiveEffectiveProfileRevisionStore()
+    runtime_r1 = _build_runtime(
+        _application(max_tool_calls=2),
+        revision_store=revision_store,
+        active_store=active_store,
+    )
+    r1_id = runtime_r1.effective_profile_revision.revision_id
+    events: list[str] = []
+    original_get_active = active_store.get_active
+
+    def _tracked_get_active(scope: object) -> object:
+        events.append("get_active")
+        return original_get_active(scope)
+
+    active_store.get_active = _tracked_get_active  # type: ignore[method-assign]
+    original_wire = build_harness_host_runtime.__globals__["wire_application_environment"]
+
+    def _mark_prepare(*args: object, **kwargs: object) -> object:
+        events.append("prepare")
+        return original_wire(*args, **kwargs)
+
+    with patch(
+        "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
+        _mark_prepare,
+    ):
+        _build_runtime(
+            _application(max_tool_calls=6),
+            revision_store=revision_store,
+            active_store=active_store,
+        )
+
+    assert "get_active" in events
+    assert "prepare" in events
+    assert events.index("get_active") < events.index("prepare")
+    assert active_store.get_active(_SCOPE).revision_id != r1_id
+
+
+def test_expected_value_does_not_drift_on_stale_intent() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
+    active_store = InMemoryActiveEffectiveProfileRevisionStore()
+    runtime_r1 = _build_runtime(
+        _application(max_tool_calls=2),
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+        active_store=active_store,
+    )
+    r1_id = runtime_r1.effective_profile_revision.revision_id
+    revision_r3 = _materialize(_application(max_tool_calls=99), revision_store)
+    activation_service = EffectiveProfileActivationService(
+        EffectiveProfileActivationDependencies(
+            revision_store=revision_store,
+            active_store=active_store,
+        ),
+    )
+    captured_requests: list[ActivateEffectiveProfileRevisionRequest] = []
+    original_activate = EffectiveProfileActivationService.activate
+
+    def _capture_activate(
+        self: EffectiveProfileActivationService,
+        request: ActivateEffectiveProfileRevisionRequest,
+    ) -> object:
+        captured_requests.append(request)
+        return original_activate(self, request)
+
+    prepare_reached = threading.Event()
+    allow_continue = threading.Event()
+
+    with patch.object(EffectiveProfileActivationService, "activate", _capture_activate):
+        with patch(
+            "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
+            _blocking_prepare_hook(
+                prepare_reached=prepare_reached,
+                allow_continue=allow_continue,
+            ),
+        ):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(
+                    lambda: _build_runtime(
+                        _application(max_tool_calls=5),
+                        revision_store=revision_store,
+                        pinning_store=pinning_store,
+                        active_store=active_store,
+                    ),
+                )
+                assert prepare_reached.wait(timeout=5)
+                activation_service.activate(
+                    ActivateEffectiveProfileRevisionRequest(
+                        scope=_SCOPE,
+                        candidate_revision_id=revision_r3.revision_id,
+                        expected_active_revision_id=r1_id,
+                    ),
+                )
+                allow_continue.set()
+                with pytest.raises(EffectiveProfileActivationConflictError):
+                    future.result()
+
+    host_requests = [
+        request
+        for request in captured_requests
+        if request.candidate_revision_id != revision_r3.revision_id
+    ]
+    assert len(host_requests) == 1
+    assert host_requests[0].expected_active_revision_id == r1_id
+    assert active_store.get_active(_SCOPE).revision_id == revision_r3.revision_id
+
+
+def test_canonical_host_does_not_use_activate_materialized_revision() -> None:
+    import intergrax.applications._shared.harness_host_runtime as host_runtime_module
+
+    module_path = host_runtime_module.__file__
+    assert module_path is not None
+    content = Path(module_path).read_text(encoding="utf-8")
+    assert "activate_materialized_revision" not in content
+
+
+def test_stale_candidate_remains_historical_after_race_conflict() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
+    active_store = InMemoryActiveEffectiveProfileRevisionStore()
+    runtime_r1 = _build_runtime(
+        _application(max_tool_calls=2),
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+        active_store=active_store,
+    )
+    r1_id = runtime_r1.effective_profile_revision.revision_id
+    revision_r3 = _materialize(_application(max_tool_calls=99), revision_store)
+    activation_service = EffectiveProfileActivationService(
+        EffectiveProfileActivationDependencies(
+            revision_store=revision_store,
+            active_store=active_store,
+        ),
+    )
+    prepare_reached = threading.Event()
+    allow_continue = threading.Event()
+
+    with patch(
+        "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
+        _blocking_prepare_hook(
+            prepare_reached=prepare_reached,
+            allow_continue=allow_continue,
+        ),
+    ):
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(
+                lambda: _build_runtime(
+                    _application(max_tool_calls=5),
+                    revision_store=revision_store,
+                    pinning_store=pinning_store,
+                    active_store=active_store,
+                ),
+            )
+            assert prepare_reached.wait(timeout=5)
+            activate_materialized_revision(
+                activation_service,
+                scope=_SCOPE,
+                candidate_revision_id=revision_r3.revision_id,
+            )
+            allow_continue.set()
+            with pytest.raises(EffectiveProfileActivationConflictError):
+                future.result()
+
+    active = active_store.get_active(_SCOPE)
+    assert active is not None
+    assert active.revision_id == revision_r3.revision_id
+    stored_ids = {revision.revision_id for revision in revision_store._revisions.values()}
+    assert len(stored_ids) >= 3
+    inactive = [rid for rid in stored_ids if rid not in {r1_id, revision_r3.revision_id}]
+    assert len(inactive) == 1
+    assert revision_store.get(inactive[0], scope=_SCOPE) is not None
+
+
+@pytest.mark.asyncio
+async def test_new_execution_after_conflict_pins_concurrent_winner() -> None:
+    revision_store = InMemoryEffectiveProfileRevisionStore()
+    pinning_store = InMemoryEffectiveProfileExecutionPinningStore()
+    active_store = InMemoryActiveEffectiveProfileRevisionStore()
+    runtime_r1 = _build_runtime(
+        _application(max_tool_calls=2),
+        revision_store=revision_store,
+        pinning_store=pinning_store,
+        active_store=active_store,
+    )
+    r1_id = runtime_r1.effective_profile_revision.revision_id
+    revision_r3 = _materialize(_application(max_tool_calls=99), revision_store)
+    activation_service = EffectiveProfileActivationService(
+        EffectiveProfileActivationDependencies(
+            revision_store=revision_store,
+            active_store=active_store,
+        ),
+    )
+    prepare_reached = threading.Event()
+    allow_continue = threading.Event()
+    build_error: list[BaseException] = []
+
+    def _build_r2() -> None:
+        try:
+            with patch(
+                "intergrax.applications._shared.harness_host_runtime.wire_application_environment",
+                _blocking_prepare_hook(
+                    prepare_reached=prepare_reached,
+                    allow_continue=allow_continue,
+                ),
+            ):
+                _build_runtime(
+                    _application(max_tool_calls=5),
+                    revision_store=revision_store,
+                    pinning_store=pinning_store,
+                    active_store=active_store,
+                )
+        except BaseException as exc:
+            build_error.append(exc)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(_build_r2)
+        assert prepare_reached.wait(timeout=5)
+        activation_service.activate(
+            ActivateEffectiveProfileRevisionRequest(
+                scope=_SCOPE,
+                candidate_revision_id=revision_r3.revision_id,
+                expected_active_revision_id=r1_id,
+            ),
+        )
+        allow_continue.set()
+        future.result()
+
+    assert len(build_error) == 1
+    assert isinstance(build_error[0], EffectiveProfileActivationConflictError)
+    admission = build_effective_profile_revision_admission(
+        EffectiveProfileExecutionPinningDependencies(
+            revision_store=revision_store,
+            pinning_store=pinning_store,
+            active_store=active_store,
+            scope=_SCOPE,
+        ),
+    )
+    execution_id = mint_execution_id()
+    admission.admit_root_execution(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        task=_echo_task(),
+    )
+    binding = require_execution_pinned_revision(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        pinning_store=pinning_store,
+    )
+    assert binding.revision_id == revision_r3.revision_id
+    assert binding.revision_id == active_store.get_active(_SCOPE).revision_id
