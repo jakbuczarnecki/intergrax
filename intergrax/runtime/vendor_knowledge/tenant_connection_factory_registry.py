@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.credential import supports_late_credential_resolution
 from intergrax.runtime.vendor_knowledge.models import JsonValue
 from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
     TenantConnectionIntegrationFactory,
@@ -54,6 +55,28 @@ class TenantConnectionIntegrationFactoryRegistry:
         if key in self._factories:
             raise ValueError("tenant connection integration factory is already registered")
         self._factories[key] = factory
+
+    def factory_for(
+        self,
+        *,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+    ) -> TenantConnectionIntegrationFactory | None:
+        return self._factories.get((provider_id.strip(), integration_kind))
+
+    def supports_late_credential_resolution(
+        self,
+        *,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+    ) -> bool:
+        factory = self.factory_for(
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+        )
+        if factory is None:
+            return False
+        return supports_late_credential_resolution(factory)
 
     def create_integration(
         self,

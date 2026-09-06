@@ -12,6 +12,7 @@ from typing import Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.credential import supports_late_credential_resolution
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.models import JsonValue
@@ -202,13 +203,17 @@ class TenantConnectionRehydrator:
                 status=TenantConnectionRehydrationStatus.SKIPPED_REVOKED,
             )
 
-        credential = self._resolve_secret(connection.credential_ref)
-        if credential is None:
-            return TenantConnectionRehydrationResult(
-                connection=safe,
-                status=TenantConnectionRehydrationStatus.UNAVAILABLE,
-                error_code="tenant_connection_secret_unavailable",
-            )
+        credential: str | None = None
+        if self._uses_late_credential_resolution(connection):
+            credential = ""
+        else:
+            credential = self._resolve_secret(connection.credential_ref)
+            if credential is None:
+                return TenantConnectionRehydrationResult(
+                    connection=safe,
+                    status=TenantConnectionRehydrationStatus.UNAVAILABLE,
+                    error_code="tenant_connection_secret_unavailable",
+                )
 
         integration = self._construct_integration(connection, credential)
         if integration is None:
@@ -230,6 +235,24 @@ class TenantConnectionRehydrator:
             status=TenantConnectionRehydrationStatus.REGISTERED,
         )
 
+    def _uses_late_credential_resolution(self, connection: TenantConnection) -> bool:
+        factory = self._resolve_integration_factory(connection)
+        if factory is None:
+            return False
+        return supports_late_credential_resolution(factory)
+
+    def _resolve_integration_factory(self, connection: TenantConnection) -> object | None:
+        factory = self._integration_factory
+        if hasattr(factory, "factory_for"):
+            resolved = factory.factory_for(
+                provider_id=connection.provider_id,
+                integration_kind=connection.integration_kind,
+            )
+            return resolved
+        if supports_late_credential_resolution(factory):
+            return factory
+        return None
+
     def _resolve_secret(self, credential_ref: str) -> str | None:
         try:
             secret = self._secrets_store.get_secret(credential_ref)
@@ -244,8 +267,10 @@ class TenantConnectionRehydrator:
     def _construct_integration(
         self,
         connection,
-        credential: str,
+        credential: str | None,
     ) -> object | None:
+        if credential is None:
+            return None
         try:
             return self._integration_factory.create_integration(
                 tenant_id=connection.tenant_id,

@@ -600,17 +600,53 @@ production durable activation store: PARTIAL — KvActiveEffectiveProfileRevisio
 
 Preserves INV-25 (atomic activation), INV-26 (in-flight pinning), INV-33 (revision immutability).
 
-**Next: P1.7 — CredentialRef / late resolution**
+**Next: P1.8 — Sandbox / ExecutionEnvironment convergence**
 
 ---
 
 ## P1.7 CredentialRef / late resolution
 
-**Status: GAP on canonical runtime contract, CURRENT/PARTIAL on secret storage**
+**Status: CLOSED**
 
-`SecretsStore` already exists. `CredentialRef`-style per-operation late resolution/execution-scoped exposure was not found as one canonical runtime contract.
+`SecretsStore` remains canonical secret-storage authority. P1.7 adds typed `CredentialRef` identity and `SecretsStoreCredentialResolver` for provider-neutral late resolution above the existing store seam.
 
-Add around existing secret/integration ownership.
+Delivered:
+
+- `intergrax/integrations/contracts/credential.py` — `CredentialRef`, `CredentialResolutionContext`, `ResolvedCredential` (safe repr), `CredentialUseEvidence`, typed errors
+- `intergrax/integrations/credentials/secrets_store_resolver.py` — `SecretsStoreCredentialResolver` delegating to `SecretsStore.get_secret(path, version=...)`
+- `intergrax/integrations/credentials/google_workspace.py` — Google Workspace operation-boundary adapter
+- Google Workspace tenant-connection factory + rehydrator late path (`late_credential_resolution=True` when `secrets_store` wired)
+- Focused P1.7 proof suite: `tests/unit/integrations/credentials/test_p1_7_credential_ref.py`
+
+Semantics:
+
+```text
+configuration stores CredentialRef (safe identity)
+        ↓
+runtime operation boundary
+        ↓
+SecretsStoreCredentialResolver
+        ↓
+SecretsStore.get_secret(...)
+        ↓
+provider-specific codec / client construction
+```
+
+- Unversioned `CredentialRef` rotation affects future operations without profile rebuild/revision activation
+- Explicit `version` pin supported when store adapter exposes version semantics
+- Tenant scope enforced via `CredentialResolutionContext.tenant_id` vs `CredentialRef.tenant_id`
+- No raw secret material in profile revision, checkpoint, or inspection serialization paths (proof tests)
+- Eager resolution during profile resolution / revision materialization / activation: **0** `get_secret` calls (proof tests)
+
+Durability statement:
+
+```text
+raw secret material persisted in profile/revision/checkpoint: NO
+CredentialRef may be durable in connection/catalog configuration: YES
+secret material authority: existing SecretsStore backends only
+```
+
+**Next: P1.8 — Sandbox / ExecutionEnvironment convergence**
 
 ---
 

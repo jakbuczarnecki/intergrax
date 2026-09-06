@@ -186,6 +186,7 @@ def build_connected_source_host_bundle(
         tenant_connection_factory_registry
         or build_default_vendor_knowledge_connection_factory_registry(
             discover_entry_points=discover_vendor_knowledge_entry_points,
+            tenant_connection_secrets_store=tenant_connection_secrets_store,
         )
     )
     tenant_connection_rehydrator: TenantConnectionRehydrator | None = None

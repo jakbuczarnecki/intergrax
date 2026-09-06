@@ -10,6 +10,17 @@ from collections.abc import Mapping
 from types import MappingProxyType
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.credential import (
+    CredentialRef,
+    CredentialResolutionContext,
+)
+from intergrax.integrations.contracts.secrets_store import SecretsStore
+from intergrax.integrations.credentials.google_workspace import (
+    GoogleWorkspaceSecretsStoreCredentialResolver,
+)
+from intergrax.integrations.credentials.secrets_store_resolver import (
+    SecretsStoreCredentialResolver,
+)
 from intergrax.integrations.providers.collaboration_suite.google_workspace.config import (
     GoogleWorkspaceCollaborationSuiteIntegrationConfig,
 )
@@ -74,10 +85,19 @@ def _parse_credential_material(credential: str) -> dict[str, str]:
 class GoogleWorkspaceTenantConnectionIntegrationFactory(TenantConnectionIntegrationFactory):
     """Compose Google Workspace integrations from durable tenant connection material."""
 
-    def __init__(self, client_factory: GoogleWorkspaceClientFactory) -> None:
+    late_credential_resolution: bool
+
+    def __init__(
+        self,
+        client_factory: GoogleWorkspaceClientFactory,
+        *,
+        secrets_store: SecretsStore | None = None,
+    ) -> None:
         if not isinstance(client_factory, GoogleWorkspaceClientFactory):
             raise TypeError("client_factory must implement GoogleWorkspaceClientFactory")
         self._client_factory = client_factory
+        self._secrets_store = secrets_store
+        self.late_credential_resolution = secrets_store is not None
 
     def create_integration(
         self,
@@ -93,6 +113,14 @@ class GoogleWorkspaceTenantConnectionIntegrationFactory(TenantConnectionIntegrat
         _require_nonblank(tenant_id, field_name="tenant_id")
         _require_nonblank(connection_ref, field_name="connection_ref")
         cleaned_credential_ref = _require_nonblank(credential_ref, field_name="credential_ref")
+        if self._secrets_store is not None:
+            return self._create_late_bound_integration(
+                tenant_id=tenant_id,
+                credential_ref=cleaned_credential_ref,
+                provider_id=provider_id,
+                integration_kind=integration_kind,
+                secret_free_config=secret_free_config,
+            )
         if not isinstance(credential, str) or not credential.strip():
             raise ValueError("credential must be a nonblank string")
         if provider_id != GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID:
@@ -112,6 +140,45 @@ class GoogleWorkspaceTenantConnectionIntegrationFactory(TenantConnectionIntegrat
             config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
                 enabled=True,
                 credential_ref=cleaned_credential_ref,
+            ),
+            credential_resolver=resolver,
+            client_factory=self._client_factory,
+        )
+
+    def _create_late_bound_integration(
+        self,
+        *,
+        tenant_id: str,
+        credential_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        secret_free_config: Mapping[str, JsonValue],
+    ) -> GoogleWorkspaceCollaborationSuiteIntegration:
+        if provider_id != GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID:
+            raise ValueError("provider_id does not match google_workspace")
+        if integration_kind is not IntegrationCategory.COLLABORATION_SUITE:
+            raise ValueError("integration_kind does not match collaboration_suite")
+        if not isinstance(secret_free_config, Mapping):
+            raise ValueError("secret_free_config must be a mapping")
+        if secret_free_config:
+            raise ValueError("secret_free_config must be empty for google_workspace")
+        secrets_store = self._secrets_store
+        if secrets_store is None:
+            raise ValueError("secrets_store is required for late credential resolution")
+        ref = CredentialRef.from_secret_path(
+            provider_id=provider_id,
+            secret_path=credential_ref,
+            tenant_id=tenant_id,
+        )
+        resolver = GoogleWorkspaceSecretsStoreCredentialResolver(
+            resolver=SecretsStoreCredentialResolver(secrets_store),
+            credential_ref=ref,
+            context=CredentialResolutionContext(tenant_id=tenant_id),
+        )
+        return GoogleWorkspaceCollaborationSuiteIntegration.compose(
+            config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+                enabled=True,
+                credential_ref=credential_ref,
             ),
             credential_resolver=resolver,
             client_factory=self._client_factory,

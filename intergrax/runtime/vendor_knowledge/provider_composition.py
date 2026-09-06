@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationDependencyError
+from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GoogleWorkspaceClientFactory,
 )
@@ -120,6 +121,7 @@ def build_default_vendor_knowledge_connection_factory_registry(
     slack_runtime_builder: SlackRuntimeBuilder | None = None,
     msgraph_runtime_builder: Ms365GraphRuntimeBuilder | None = None,
     google_client_factory: GoogleWorkspaceClientFactory | None = None,
+    tenant_connection_secrets_store: SecretsStore | None = None,
     jira_http_client_factory: Callable[[JiraIntegrationConfig], Any] | None = None,
     confluence_http_client_factory: Callable[[ConfluenceIntegrationConfig], Any] | None = None,
     project_status_http_client_factory: Callable[[ProjectStatusIntegrationConfig], Any] | None = None,
@@ -162,6 +164,7 @@ def build_default_vendor_knowledge_connection_factory_registry(
             factory=GoogleWorkspaceTenantConnectionIntegrationFactory(
                 client_factory=google_client_factory
                 or _UnavailableGoogleWorkspaceClientFactory(),
+                secrets_store=tenant_connection_secrets_store,
             ),
         ),
         (
