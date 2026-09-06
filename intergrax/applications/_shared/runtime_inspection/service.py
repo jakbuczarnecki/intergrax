@@ -66,6 +66,7 @@ from intergrax.applications.contracts.runtime_inspection.inconsistency import (
     InspectionInconsistencyKind,
 )
 from intergrax.context.provider_lifecycle import ContextProviderExecutionPinningStore
+from intergrax.skills.execution_binding import SkillExecutionPinningStore
 from intergrax.applications.contracts.runtime_inspection.results import (
     CapabilityInspectionResult,
     ExecutionInspectionResult,
@@ -143,6 +144,7 @@ class RuntimeInspectionService:
         revision_store: EffectiveProfileRevisionStore | None = None,
         pinning_store: EffectiveProfileExecutionPinningStore | None = None,
         context_provider_pinning_store: ContextProviderExecutionPinningStore | None = None,
+        skill_pinning_store: SkillExecutionPinningStore | None = None,
         active_store: ActiveEffectiveProfileRevisionStore | None = None,
         providers: Sequence[RuntimeInspectionProvider] | None = None,
         health_projector: EffectiveCapabilityHealthProjector | None = None,
@@ -150,12 +152,14 @@ class RuntimeInspectionService:
         self._revision_store = revision_store
         self._pinning_store = pinning_store
         self._context_provider_pinning_store = context_provider_pinning_store
+        self._skill_pinning_store = skill_pinning_store
         self._active_store = active_store
         self._providers = _sorted_providers(
             providers
             if providers is not None
             else default_runtime_inspection_providers(
                 context_provider_pinning_store=context_provider_pinning_store,
+                skill_pinning_store=skill_pinning_store,
             ),
         )
         self._health_projector = health_projector or EffectiveCapabilityHealthProjector(

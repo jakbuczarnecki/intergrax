@@ -135,6 +135,7 @@ from intergrax.applications.contracts.profile_resolution.activation import (
     ActiveEffectiveProfileRevisionBinding,
     ActiveEffectiveProfileRevisionStore,
 )
+from intergrax.skills.execution_binding import SkillExecutionPinningStore
 from intergrax.applications.contracts.profile_resolution.execution_binding import (
     EffectiveProfileExecutionPinningStore,
 )
@@ -193,6 +194,7 @@ class HarnessHostRuntime:
     effective_profile_revision_store: EffectiveProfileRevisionStore | None = None
     effective_profile_pinning_store: EffectiveProfileExecutionPinningStore | None = None
     effective_profile_active_store: ActiveEffectiveProfileRevisionStore | None = None
+    skill_pinning_store: SkillExecutionPinningStore | None = None
 
 
 def build_harness_host_runtime(
@@ -466,4 +468,5 @@ def build_harness_host_runtime(
         effective_profile_revision_store=profile_persistence.revision_store,
         effective_profile_pinning_store=profile_persistence.pinning_store,
         effective_profile_active_store=profile_persistence.active_store,
+        skill_pinning_store=env_wiring.build_context.skill_pinning_store,
     )

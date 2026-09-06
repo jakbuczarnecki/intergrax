@@ -21,8 +21,12 @@ from intergrax.runtime.nexus.tools.hierarchical_tool_selector import (
     select_tools_hierarchical,
 )
 from intergrax.runtime.nexus.tools.tool_catalog_embedder import ToolCatalogEmbedder
-from intergrax.skills.registry import SkillProfile, build_registry_from_profile, enabled_skill_ids_for_profile
-from intergrax.skills.resolver import SkillResolver
+from intergrax.skills.execution_binding import (
+    SkillExecutionPinningStore,
+    resolve_bound_skill_pack,
+)
+from intergrax.skills.registry import SkillProfile, build_registry_from_profile
+from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.search.keyword_ranking import (
@@ -39,6 +43,9 @@ class ToolSelectionContext:
     registry: ToolRegistry
     query: str
     skill_profile: SkillProfile | None = None
+    skill_registry: SkillRegistry | None = None
+    skill_pinning_store: SkillExecutionPinningStore | None = None
+    tenant_id: str | None = None
     plan_allowed_tool_ids: Sequence[str] | None = None
     top_k: int = 20
     max_hierarchy_passes: int = 2
@@ -81,11 +88,15 @@ class SkillPackSelectionStrategy:
     def select_tool_ids(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
         if ctx.skill_profile is None:
             return ()
-        skill_ids = enabled_skill_ids_for_profile(ctx.skill_profile)
-        if not skill_ids:
+        skill_registry = ctx.skill_registry or build_registry_from_profile(ctx.skill_profile)
+        pack = resolve_bound_skill_pack(
+            tenant_id=ctx.tenant_id or "",
+            skill_profile=ctx.skill_profile,
+            skill_registry=skill_registry,
+            pinning_store=ctx.skill_pinning_store,
+        )
+        if not pack.resolved_skills:
             return ()
-        skill_registry = build_registry_from_profile(ctx.skill_profile)
-        pack = SkillResolver(skill_registry, tool_registry=None).resolve(skill_ids)
         present = tuple(
             sorted(tool_id for tool_id in pack.tool_ids if ctx.registry.has(tool_id))
         )

@@ -20,12 +20,17 @@ from intergrax.applications._shared.runtime_inspection.providers.profile_revisio
     profile_revision_inspection_provider,
 )
 from intergrax.applications.contracts.runtime_inspection.provider import RuntimeInspectionProvider
+from intergrax.applications._shared.runtime_inspection.providers.skill_pack import (
+    skill_pack_inspection_provider,
+)
 from intergrax.context.provider_lifecycle import ContextProviderExecutionPinningStore
+from intergrax.skills.execution_binding import SkillExecutionPinningStore
 
 
 def default_runtime_inspection_providers(
     *,
     context_provider_pinning_store: ContextProviderExecutionPinningStore | None = None,
+    skill_pinning_store: SkillExecutionPinningStore | None = None,
 ) -> tuple[RuntimeInspectionProvider, ...]:
     """Explicit immutable provider set — no global mutable registry."""
     return (
@@ -34,4 +39,5 @@ def default_runtime_inspection_providers(
         execution_environment_inspection_provider(),
         capability_dependency_inspection_provider(),
         context_provider_inspection_provider(pinning_store=context_provider_pinning_store),
+        skill_pack_inspection_provider(pinning_store=skill_pinning_store),
     )

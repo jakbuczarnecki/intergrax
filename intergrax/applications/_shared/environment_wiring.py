@@ -84,6 +84,7 @@ from intergrax.applications._shared.codecraft_wiring import (
     wire_application_codecraft,
 )
 from intergrax.applications._shared.shadow_wiring import wire_shadow_workspace
+from intergrax.skills.execution_binding import InMemorySkillExecutionPinningStore
 from intergrax.applications._shared.skill_wiring import (
     ApplicationSkillWiring,
     assert_strict_skill_bootstrap_acceptable,
@@ -436,6 +437,8 @@ def wire_application_environment(
     if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:
         tool_registry = None
 
+    skill_pinning_store = InMemorySkillExecutionPinningStore()
+
     build_context = ApplicationBuildContext.for_manifest(
         manifest,
         settings=settings,
@@ -444,6 +447,7 @@ def wire_application_environment(
         tool_wiring_context=tool_wiring.wiring_context,
         skill_profile=skill_wiring.profile,
         skill_registry=skill_wiring.registry,
+        skill_pinning_store=skill_pinning_store,
         tool_registry=tool_registry,
         policy_bundle=policy_bundle,
         runtime_event_bus=runtime_event_bus or RuntimeEventBus(),

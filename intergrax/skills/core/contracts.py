@@ -10,6 +10,8 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.skills.version_validation import validate_skill_version
+
 
 class SkillRiskTier(str, Enum):
     LOW = "low"
@@ -39,6 +41,11 @@ class SkillManifest(BaseModel):
         default_factory=tuple,
         description="Other skill_ids merged before this skill (transitive).",
     )
+
+    @field_validator("version")
+    @classmethod
+    def _validate_version(cls, value: str) -> str:
+        return validate_skill_version(value)
 
     @field_validator("skill_id")
     @classmethod
