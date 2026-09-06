@@ -260,7 +260,12 @@ LLMAdapterRegistry.register("my_gateway", my_factory)
 profile = LLMProfile(provider="my_gateway", model="vendor/model")  # M-LLM-X.6
 ```
 
-Built-in enum extension still requires a harness PR for `_BUILTIN_ADAPTERS`.
+Custom providers register at runtime via `LLMAdapterRegistry.register(...)` or
+`LLMAdapterRegistry.register_from_spec(LLMAdapterRegistrationSpec(...))` — no
+`LLMProvider` enum edit and no core registry map changes are required.
+
+Official built-in providers ship explicit provider-owned registration modules under
+`intergrax/llm_adapters/providers/registrations/`.
 
 ---
 

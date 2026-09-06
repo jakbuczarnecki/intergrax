@@ -2,134 +2,32 @@
 # Integrax framework – proprietary and confidential.
 
 from __future__ import annotations
-import importlib
-from typing import Any, Callable, Dict, Tuple, Union, cast
+
+from typing import Union
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.utils import attribute_access
+from intergrax.llm_adapters.registry.registration_contract import (
+    LLMAdapterDependencyError,
+    LLMAdapterFactory,
+    LLMAdapterRegistrationError,
+    LLMAdapterRegistrationSpec,
+    OptionalDependencyRequirement,
+)
 
-
-class LLMAdapterDependencyError(RuntimeError):
-    """Raised when a selected LLM provider SDK is not installed."""
-
-
-class LLMAdapterRegistrationError(RuntimeError):
-    """Raised when a builtin LLM provider registration is invalid."""
-
-
-_BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
-    LLMProvider.OPENAI.value: (
-        "intergrax.llm_adapters.providers.openai_responses_adapter",
-        "OpenAIChatResponsesAdapter",
-    ),
-    LLMProvider.GEMINI.value: (
-        "intergrax.llm_adapters.providers.gemini_adapter",
-        "GeminiChatAdapter",
-    ),
-    LLMProvider.VERTEX_GEMINI.value: (
-        "intergrax.llm_adapters.providers.vertex_gemini_adapter",
-        "VertexGeminiChatAdapter",
-    ),
-    LLMProvider.OLLAMA.value: (
-        "intergrax.llm_adapters.providers.native_ollama_adapter",
-        "NativeOllamaAdapter",
-    ),
-    LLMProvider.CLAUDE.value: (
-        "intergrax.llm_adapters.providers.claude_adapter",
-        "ClaudeChatAdapter",
-    ),
-    LLMProvider.MISTRAL.value: (
-        "intergrax.llm_adapters.providers.mistral_adapter",
-        "MistralChatAdapter",
-    ),
-    LLMProvider.AZURE_OPENAI.value: (
-        "intergrax.llm_adapters.providers.azure_openai_adapter",
-        "AzureOpenAIChatAdapter",
-    ),
-    LLMProvider.AWS_BEDROCK.value: (
-        "intergrax.llm_adapters.providers.aws_bedrock_adapter",
-        "BedrockChatAdapter",
-    ),
-    LLMProvider.GROQ.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "GroqChatAdapter",
-    ),
-    LLMProvider.VLLM.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "VllmChatAdapter",
-    ),
-    LLMProvider.TOGETHER.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "TogetherChatAdapter",
-    ),
-    LLMProvider.FIREWORKS.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "FireworksChatAdapter",
-    ),
-    LLMProvider.OPENROUTER.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "OpenRouterChatAdapter",
-    ),
-    LLMProvider.DEEPSEEK.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "DeepSeekChatAdapter",
-    ),
-    LLMProvider.XAI.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "XaiChatAdapter",
-    ),
-    LLMProvider.LLAMA_CPP.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "LlamaCppChatAdapter",
-    ),
-    LLMProvider.COHERE.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "CohereChatAdapter",
-    ),
-    LLMProvider.COHERE_NATIVE.value: (
-        "intergrax.llm_adapters.providers.cohere_native_adapter",
-        "CohereNativeChatAdapter",
-    ),
-    LLMProvider.AZURE_AI_INFERENCE.value: (
-        "intergrax.llm_adapters.providers.openai_compat_providers",
-        "AzureAiInferenceChatAdapter",
-    ),
-}
-
-_BUILTIN_OPTIONAL_DEPENDENCIES: Dict[str, Tuple[Tuple[str, ...], str, str]] = {
-    LLMProvider.OPENAI.value: (("openai",), "openai", "llm-openai"),
-    LLMProvider.GEMINI.value: (("google", "google.genai"), "google-genai", "llm-gemini"),
-    LLMProvider.VERTEX_GEMINI.value: (
-        ("google", "google.genai"),
-        "google-genai",
-        "llm-vertex",
-    ),
-    LLMProvider.OLLAMA.value: (("ollama",), "ollama", "llm-ollama"),
-    LLMProvider.CLAUDE.value: (("anthropic",), "anthropic", "llm-anthropic"),
-    LLMProvider.MISTRAL.value: (("mistralai",), "mistralai", "llm-mistral"),
-    LLMProvider.AZURE_OPENAI.value: (("openai",), "openai", "llm-openai"),
-    LLMProvider.AWS_BEDROCK.value: (
-        ("boto3",),
-        "boto3",
-        "llm-bedrock",
-    ),
-    LLMProvider.GROQ.value: (("openai",), "openai", "llm-groq"),
-    LLMProvider.VLLM.value: (("openai",), "openai", "llm-vllm"),
-    LLMProvider.TOGETHER.value: (("openai",), "openai", "llm-compat"),
-    LLMProvider.FIREWORKS.value: (("openai",), "openai", "llm-compat"),
-    LLMProvider.OPENROUTER.value: (("openai",), "openai", "llm-compat"),
-    LLMProvider.DEEPSEEK.value: (("openai",), "openai", "llm-compat"),
-    LLMProvider.XAI.value: (("openai",), "openai", "llm-compat"),
-    LLMProvider.LLAMA_CPP.value: (("openai",), "openai", "llm-compat"),
-    LLMProvider.COHERE.value: (("openai",), "openai", "llm-compat"),
-    LLMProvider.COHERE_NATIVE.value: (("cohere",), "cohere", "llm-cohere-native"),
-    LLMProvider.AZURE_AI_INFERENCE.value: (("openai",), "openai", "llm-compat"),
-}
+__all__ = [
+    "LLMAdapterDependencyError",
+    "LLMAdapterFactory",
+    "LLMAdapterRegistrationError",
+    "LLMAdapterRegistrationSpec",
+    "LLMAdapterRegistry",
+    "OptionalDependencyRequirement",
+]
 
 
 class LLMAdapterRegistry:
-    _factories: Dict[str, Callable[..., LLMAdapter]] = {}
+    _factories: dict[str, LLMAdapterFactory] = {}
+    _builtin_registrations_installed: bool = False
 
     @staticmethod
     def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
@@ -146,61 +44,58 @@ class LLMAdapterRegistry:
         return key.lower()
 
     @classmethod
-    def _ensure_builtin(cls, key: str) -> None:
-        if key in cls._factories:
+    def ensure_builtin_registrations_installed(cls) -> None:
+        if cls._builtin_registrations_installed:
             return
-        spec = _BUILTIN_ADAPTERS.get(key)
-        if spec is None:
-            return
-        module_path, class_name = spec
-        try:
-            module = importlib.import_module(module_path)
-        except ModuleNotFoundError as exc:
-            dependency = _BUILTIN_OPTIONAL_DEPENDENCIES.get(key)
-            if dependency is None or exc.name not in dependency[0]:
-                raise
-            _, dependency_name, extra_name = dependency
-            raise LLMAdapterDependencyError(
-                f"LLM provider '{key}' requires dependency '{dependency_name}'. "
-                f"Install it with 'Intergrax-ai[{extra_name}]' before selecting "
-                "this provider."
-            ) from exc
-        except ImportError:
-            raise
+        from intergrax.llm_adapters.providers.registrations.builtin import (
+            register_builtin_llm_adapters,
+        )
 
-        try:
-            adapter_cls = cast(
-                Callable[..., LLMAdapter],
-                attribute_access.optional(module, class_name),
-            )
-        except AttributeError as exc:
+        register_builtin_llm_adapters(cls)
+        cls._builtin_registrations_installed = True
+
+    @classmethod
+    def register_from_spec(
+        cls,
+        spec: LLMAdapterRegistrationSpec,
+        *,
+        override: bool = False,
+    ) -> None:
+        key = cls._normalize_provider(spec.provider_id)
+        if key != spec.provider_id.strip().lower():
             raise LLMAdapterRegistrationError(
-                f"LLM provider '{key}' module '{module_path}' does not define "
-                f"expected adapter class '{class_name}'."
-            ) from exc
-
-        def factory(**kwargs: Any) -> LLMAdapter:
-            return adapter_cls(**kwargs)
-
-        cls._factories[key] = factory
+                f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                "must already be normalized."
+            )
+        if key in cls._factories and not override:
+            raise ValueError(f"LLM adapter already registered for provider='{key}'")
+        cls._factories[key] = spec.factory
 
     @classmethod
     def register(
         cls,
-        provider: Union[str, LLMProvider],
-        factory: Callable[..., LLMAdapter],
+        provider: Union[str, LLMProvider, LLMAdapterRegistrationSpec],
+        factory: LLMAdapterFactory | None = None,
         *,
         override: bool = False,
     ) -> None:
+        if isinstance(provider, LLMAdapterRegistrationSpec):
+            cls.register_from_spec(provider, override=override)
+            return
+        if factory is None:
+            raise TypeError(
+                "factory is required when provider is not LLMAdapterRegistrationSpec"
+            )
         key = cls._normalize_provider(provider)
-        if key in cls._factories and not override:
-            raise ValueError(f"LLM adapter already registered for provider='{key}'")
-        cls._factories[key] = factory
+        cls.register_from_spec(
+            LLMAdapterRegistrationSpec(provider_id=key, factory=factory),
+            override=override,
+        )
 
     @classmethod
-    def create(cls, provider: Union[str, LLMProvider], **kwargs) -> LLMAdapter:
+    def create(cls, provider: Union[str, LLMProvider], **kwargs: object) -> LLMAdapter:
         key = cls._normalize_provider(provider)
-        cls._ensure_builtin(key)
+        cls.ensure_builtin_registrations_installed()
 
         if key not in cls._factories:
             raise ValueError(f"LLM adapter not registered for provider='{key}'")
@@ -217,9 +112,7 @@ class LLMAdapterRegistry:
             enrich_adapter_with_catalog_capabilities,
         )
 
-        from intergrax.utils import attribute_access
-
-        model_id = kwargs.get("model") or attribute_access.optional(adapter, "model", None)
+        model_id = _resolve_adapter_model_id(adapter, kwargs)
         adapter = enrich_adapter_with_catalog_capabilities(
             adapter,
             provider=key,
@@ -231,5 +124,18 @@ class LLMAdapterRegistry:
 
     @classmethod
     def registered_providers(cls) -> list[str]:
-        keys = set(cls._factories.keys()) | set(_BUILTIN_ADAPTERS.keys())
-        return sorted(keys)
+        cls.ensure_builtin_registrations_installed()
+        return sorted(cls._factories.keys())
+
+
+def _resolve_adapter_model_id(adapter: LLMAdapter, kwargs: dict[str, object]) -> str | None:
+    model_kw = kwargs.get("model")
+    if model_kw:
+        return str(model_kw)
+    if "model" in adapter.__dict__:
+        instance_model = adapter.__dict__["model"]
+        return str(instance_model) if instance_model else None
+    class_model = type(adapter).__dict__.get("model")
+    if isinstance(class_model, str) and class_model:
+        return class_model
+    return None

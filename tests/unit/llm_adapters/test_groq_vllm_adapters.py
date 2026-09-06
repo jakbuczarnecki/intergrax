@@ -67,10 +67,13 @@ def test_llama_cpp_adapter_mocked_chat() -> None:
 
 def test_registry_lazy_groq() -> None:
     snapshot = dict(LLMAdapterRegistry._factories)
+    installed = LLMAdapterRegistry._builtin_registrations_installed
     try:
         LLMAdapterRegistry._factories.clear()
+        LLMAdapterRegistry._builtin_registrations_installed = False
         with patch.dict("os.environ", {"GROQ_API_KEY": "k"}, clear=False):
             adapter = LLMAdapterRegistry.create(LLMProvider.GROQ, client=MagicMock(), model="m")
         assert isinstance(adapter, GroqChatAdapter)
     finally:
         LLMAdapterRegistry._factories = snapshot
+        LLMAdapterRegistry._builtin_registrations_installed = installed

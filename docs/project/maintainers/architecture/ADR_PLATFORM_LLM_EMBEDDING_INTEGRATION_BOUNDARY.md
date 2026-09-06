@@ -4,7 +4,7 @@
 **Date:** 2026-09-05  
 **Task:** P2-002-A · P2-002
 
-**Implementation progress:** Phase 1 catalog/category foundation (P2-002-B1) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 first-party embedding provider catalog registration (P2-002-B2) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 runtime binding cutover (P2-002-B3) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 legacy registry removal (P2-002-B4) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** (LLM registry decentralization pending P2-002-C).
+**Implementation progress:** Phase 1 catalog/category foundation (P2-002-B1) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 first-party embedding provider catalog registration (P2-002-B2) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 runtime binding cutover (P2-002-B3) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 legacy registry removal (P2-002-B4) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 4 LLM registry decentralization (P2-002-C) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** (final audit pending P2-002-D).
 
 ## Context
 
@@ -150,7 +150,7 @@ Implementation is **out of scope** for P2-002-A. Logical blocks:
 | **1** | Embedding catalog category + first-party provider packages in Integrations | **B1 foundation complete** (category, profile slot, typed contract, registry participation). **B2 catalog registration complete** — five first-party `embedding_provider` packages registered via explicit `IntegrationContractSpec`. **B3 runtime binding complete** — canonical provider selection flows through `IntegrationProfile` + Integrations catalog runtime binders; `EmbeddingProvider` remains RAG runtime contract; env `EmbeddingProfile` retained as compatibility input |
 | **2** | `IntegrationProfile` + RAG bootstrap cutover; env-based `EmbeddingProfile` compatibility | **B3 complete** — pending independent audit |
 | **3** | Remove legacy `EmbeddingProviderRegistry` bootstrap map | **B4 complete** — legacy registry removed; runtime consumers use bound `EmbeddingProvider`; Integrations is single provider authority |
-| **4** | LLM `LLMAdapterRegistry` provider-owned registration (decentralize `_BUILTIN_ADAPTERS`) | **P2-002-C pending** |
+| **4** | LLM `LLMAdapterRegistry` provider-owned registration (decentralize `_BUILTIN_ADAPTERS`) | **P2-002-C IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** — central `_BUILTIN_ADAPTERS` removed; built-ins use explicit provider-owned registration; custom providers require no enum/core-map edit; ModelCatalog/routing/failover unchanged |
 
 ## Compatibility policy
 
