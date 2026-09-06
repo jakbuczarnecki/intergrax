@@ -25,6 +25,10 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import wir
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import ProblemOccurrencePersistence
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
+from intergrax.runtime.diagnostics.providers.causal_transport_scope_provider import (
+    CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID,
+    CausalTransportScopeProvider,
+)
 from intergrax.runtime.diagnostics.providers.problem_scope_provider import ProblemScopeProvider
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
@@ -103,12 +107,15 @@ def build_diagnostic_read_service(
 def build_diagnostic_scope_discovery_service(
     dependencies: HostDiagnosticReadDependencies,
 ) -> DiagnosticScopeDiscoveryService:
-    """Construct canonical scope discovery over shared platform Problem persistence."""
+    """Construct canonical scope discovery over shared platform diagnostic persistence."""
     return DiagnosticScopeDiscoveryService(
         providers=(
             ProblemScopeProvider(
                 problem_persistence=dependencies.problem_persistence,
                 occurrence_persistence=dependencies.occurrence_persistence,
+            ),
+            CausalTransportScopeProvider(
+                causal_evidence_persistence=dependencies.causal_evidence_persistence,
             ),
         ),
     )

@@ -13,6 +13,7 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticScopeDiscoveryStatus,
     DiagnosticScopeReferenceKind,
     ProblemScopeReference,
+    TransportScopeReference,
     unsupported_reference_result,
 )
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_provider import (
@@ -26,6 +27,22 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_service import (
     DiagnosticScopeDiscoveryService,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import mint_problem_id
+from intergrax.runtime.diagnostics.providers.causal_transport_scope_provider import (
+    CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID,
+    CausalTransportScopeProvider,
+)
+from intergrax.runtime.diagnostics.providers.problem_scope_provider import (
+    PROBLEM_SCOPE_PROVIDER_ID,
+    ProblemScopeProvider,
+)
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
+from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    document_store_occurrence_persistence_for_tests,
+    document_store_problem_persistence_for_tests,
+    in_memory_document_store_for_problem_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -152,3 +169,52 @@ def test_service_maps_synthetic_provider_unavailable_error() -> None:
     )
     result = service.discover_scope(request)
     assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
+
+
+def _production_providers() -> tuple[ProblemScopeProvider, CausalTransportScopeProvider]:
+    store = in_memory_document_store_for_problem_tests()
+    return (
+        ProblemScopeProvider(
+            problem_persistence=document_store_problem_persistence_for_tests(store),
+            occurrence_persistence=document_store_occurrence_persistence_for_tests(store),
+        ),
+        CausalTransportScopeProvider(
+            causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        ),
+    )
+
+
+def test_registry_resolves_problem_scope_provider() -> None:
+    problem_provider, transport_provider = _production_providers()
+    registry = DiagnosticScopeDiscoveryProviderRegistry(
+        (problem_provider, transport_provider),
+    )
+    reference = ProblemScopeReference(problem_id=mint_problem_id())
+    assert registry.resolve_for_reference(reference) is problem_provider
+
+
+def test_registry_resolves_causal_transport_scope_provider() -> None:
+    problem_provider, transport_provider = _production_providers()
+    registry = DiagnosticScopeDiscoveryProviderRegistry(
+        (problem_provider, transport_provider),
+    )
+    reference = TransportScopeReference(provider="celery", transport_task_id="task-1")
+    assert registry.resolve_for_reference(reference) is transport_provider
+
+
+def test_problem_scope_provider_conformance() -> None:
+    problem_provider, _ = _production_providers()
+    assert_diagnostic_scope_discovery_provider_conformance(
+        problem_provider,
+        expected_provider_id=PROBLEM_SCOPE_PROVIDER_ID,
+        expected_reference_kind=DiagnosticScopeReferenceKind.PROBLEM,
+    )
+
+
+def test_causal_transport_scope_provider_conformance() -> None:
+    _, transport_provider = _production_providers()
+    assert_diagnostic_scope_discovery_provider_conformance(
+        transport_provider,
+        expected_provider_id=CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID,
+        expected_reference_kind=DiagnosticScopeReferenceKind.TRANSPORT,
+    )

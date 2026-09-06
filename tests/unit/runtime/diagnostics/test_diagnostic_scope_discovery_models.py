@@ -13,8 +13,11 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticScopeReferenceKind,
     DiagnosticScopeResolutionProvenance,
     ProblemScopeReference,
+    TransportScopeReference,
     build_diagnostic_scope_discovery_result,
     validate_scope_discovery_request,
+    validate_transport_scope_provider,
+    validate_transport_scope_task_id,
 )
 from intergrax.runtime.diagnostics.diagnostic_subject import ExecutionDiagnosticSubjectRef
 from intergrax.runtime.diagnostics.problem_lifecycle import mint_problem_id
@@ -165,3 +168,42 @@ def test_unsupported_reference_rejects_candidates() -> None:
             candidate_count_exact=True,
             provenance=(),
         )
+
+
+def test_transport_reference_kind() -> None:
+    reference = TransportScopeReference(provider="celery", transport_task_id="task-1")
+    assert reference.kind is DiagnosticScopeReferenceKind.TRANSPORT
+
+
+def test_transport_provider_validation_rejects_empty() -> None:
+    with pytest.raises(ValueError, match="provider"):
+        validate_transport_scope_provider("   ")
+
+
+def test_transport_provider_validation_rejects_whitespace() -> None:
+    with pytest.raises(ValueError, match="whitespace"):
+        validate_transport_scope_provider(" celery")
+
+
+def test_transport_task_id_validation_rejects_empty() -> None:
+    with pytest.raises(ValueError, match="transport_task_id"):
+        validate_transport_scope_task_id("")
+
+
+def test_transport_request_validation() -> None:
+    request = DiagnosticScopeDiscoveryRequest(
+        tenant_id=_TENANT,
+        reference=TransportScopeReference(provider="celery", transport_task_id="task-1"),
+    )
+    validated = validate_scope_discovery_request(request)
+    assert validated.reference.provider == "celery"
+    assert validated.reference.transport_task_id == "task-1"
+
+
+def test_request_validation_rejects_unknown_reference_type() -> None:
+    request = DiagnosticScopeDiscoveryRequest(
+        tenant_id=_TENANT,
+        reference=object(),  # type: ignore[arg-type]
+    )
+    with pytest.raises(TypeError, match="ProblemScopeReference or TransportScopeReference"):
+        validate_scope_discovery_request(request)

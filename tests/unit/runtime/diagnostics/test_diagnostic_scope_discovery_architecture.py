@@ -14,6 +14,7 @@ _DISCOVERY_FILES = (
     _DISCOVERY_ROOT / "diagnostic_scope_discovery_provider.py",
     _DISCOVERY_ROOT / "diagnostic_scope_discovery_service.py",
     _DISCOVERY_ROOT / "providers" / "problem_scope_provider.py",
+    _DISCOVERY_ROOT / "providers" / "causal_transport_scope_provider.py",
 )
 
 _SERVICE_FILE = _DISCOVERY_ROOT / "diagnostic_scope_discovery_service.py"
@@ -27,6 +28,8 @@ _FORBIDDEN_IMPORT_TOKENS = (
     "opentelemetry",
     "platform_proofs",
     "applications",
+    "worker",
+    "background_worker_factory",
 )
 
 _SERVICE_FORBIDDEN_IMPORT_TOKENS = (

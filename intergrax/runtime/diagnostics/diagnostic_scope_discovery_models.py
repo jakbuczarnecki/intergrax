@@ -15,6 +15,7 @@ DEFAULT_SCOPE_DISCOVERY_CANDIDATE_LIMIT = 10
 MAX_SCOPE_DISCOVERY_CANDIDATE_LIMIT = 100
 
 _MAX_PROVIDER_ID_LENGTH = 64
+_MAX_TRANSPORT_TASK_ID_LENGTH = 256
 _MAX_REFERENCE_KIND_LENGTH = 64
 _MAX_CANONICAL_RECORD_REF_LENGTH = 256
 _MAX_LIMITATION_LENGTH = 512
@@ -24,6 +25,7 @@ class DiagnosticScopeReferenceKind(StrEnum):
     """Supported diagnostic scope reference discriminators."""
 
     PROBLEM = "problem"
+    TRANSPORT = "transport"
 
 
 class DiagnosticScopeDiscoveryStatus(StrEnum):
@@ -49,7 +51,19 @@ class ProblemScopeReference:
         return DiagnosticScopeReferenceKind.PROBLEM
 
 
-DiagnosticScopeReference = ProblemScopeReference
+@dataclass(frozen=True, slots=True)
+class TransportScopeReference:
+    """Opaque transport-task-backed diagnostic scope reference."""
+
+    provider: str
+    transport_task_id: str
+
+    @property
+    def kind(self) -> DiagnosticScopeReferenceKind:
+        return DiagnosticScopeReferenceKind.TRANSPORT
+
+
+DiagnosticScopeReference = ProblemScopeReference | TransportScopeReference
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,15 +138,42 @@ def validate_scope_discovery_candidate_limit(limit: int) -> int:
     return limit
 
 
+def validate_transport_scope_provider(provider: str) -> str:
+    return _require_bounded_identifier(
+        provider,
+        field_name="provider",
+        max_length=_MAX_PROVIDER_ID_LENGTH,
+    )
+
+
+def validate_transport_scope_task_id(transport_task_id: str) -> str:
+    return _require_bounded_identifier(
+        transport_task_id,
+        field_name="transport_task_id",
+        max_length=_MAX_TRANSPORT_TASK_ID_LENGTH,
+    )
+
+
 def validate_scope_discovery_request(
     request: DiagnosticScopeDiscoveryRequest,
 ) -> DiagnosticScopeDiscoveryRequest:
     tenant_id = validate_scope_discovery_tenant_id(request.tenant_id)
     candidate_limit = validate_scope_discovery_candidate_limit(request.candidate_limit)
-    if type(request.reference) is not ProblemScopeReference:
-        raise TypeError("reference must be ProblemScopeReference")
-    problem_id = validate_problem_id(request.reference.problem_id)
-    reference = ProblemScopeReference(problem_id=problem_id)
+    reference_input = request.reference
+    if type(reference_input) is ProblemScopeReference:
+        problem_id = validate_problem_id(reference_input.problem_id)
+        reference = ProblemScopeReference(problem_id=problem_id)
+    elif type(reference_input) is TransportScopeReference:
+        provider = validate_transport_scope_provider(reference_input.provider)
+        transport_task_id = validate_transport_scope_task_id(reference_input.transport_task_id)
+        reference = TransportScopeReference(
+            provider=provider,
+            transport_task_id=transport_task_id,
+        )
+    else:
+        raise TypeError(
+            "reference must be ProblemScopeReference or TransportScopeReference",
+        )
     if (
         tenant_id == request.tenant_id
         and candidate_limit == request.candidate_limit
