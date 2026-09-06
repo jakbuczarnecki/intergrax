@@ -17,31 +17,30 @@ from intergrax.contracts.capability_catalog.ranking import (
     CapabilityRankingEvidence,
     CapabilityRankingSignal,
 )
+from intergrax.tools.search.keyword_ranking import (
+    ToolKeywordSearchDocument,
+    score_tool_keyword_document,
+    tokenize_tool_search_query,
+)
 
 KEYWORD_OVERLAP_TOOL_RANKER_ID: Final = "tool.keyword_overlap"
 
 
-def _query_tokens(query: str) -> tuple[str, ...]:
-    return tuple(token for token in query.lower().split() if len(token) > 2)
-
-
-def _keyword_overlap_score(
+def _tool_keyword_search_document(
     candidate: CapabilityDiscoveryCandidate,
-    query_tokens: Sequence[str],
-) -> int:
-    if not query_tokens:
-        return 0
-    haystack = " ".join(
-        (
-            candidate.identity.logical.logical_id,
-            candidate.catalog_entry.display_label,
+) -> ToolKeywordSearchDocument:
+    return ToolKeywordSearchDocument(
+        tool_id=candidate.identity.logical.logical_id,
+        text_parts=tuple(
+            part
+            for part in (candidate.catalog_entry.display_label,)
+            if part
         ),
-    ).lower()
-    return sum(1 for token in query_tokens if token in haystack)
+    )
 
 
 class KeywordOverlapToolCapabilityRanker:
-    """Keyword overlap ranker adapted from TOOL-ENG-5 retrieval scoring — ordering only."""
+    """Keyword overlap ranker using shared Tool-domain scoring primitive — ordering only."""
 
     @property
     def ranker_id(self) -> str:
@@ -52,7 +51,7 @@ class KeywordOverlapToolCapabilityRanker:
         candidates: tuple[CapabilityDiscoveryCandidate, ...],
         context: CapabilityRankingContext,
     ) -> tuple[RankedCapabilityCandidate, ...]:
-        query_tokens = _query_tokens(context.semantic_need or "")
+        query_tokens = tokenize_tool_search_query(context.semantic_need or "")
         indexed = tuple((index, candidate) for index, candidate in enumerate(candidates))
         ordered = sorted(
             indexed,
@@ -83,4 +82,7 @@ def _tool_ranking_score(
 ) -> int:
     if candidate.identity.kind is not CapabilityKind.TOOL:
         return 0
-    return _keyword_overlap_score(candidate, query_tokens)
+    return score_tool_keyword_document(
+        _tool_keyword_search_document(candidate),
+        query_tokens,
+    )

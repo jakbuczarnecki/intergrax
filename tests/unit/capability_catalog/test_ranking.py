@@ -18,7 +18,13 @@ from intergrax.capability_catalog.adapters import (
     AgentStableIdentityCapabilityRanker,
     KeywordOverlapToolCapabilityRanker,
 )
+from intergrax.capability_catalog.adapters.tool_ranking import _tool_keyword_search_document
 from intergrax.capability_catalog.ranking import STABLE_IDENTITY_RANKER_ID
+from intergrax.tools.search.keyword_ranking import (
+    ToolKeywordSearchDocument,
+    score_tool_keyword_document,
+    tokenize_tool_search_query,
+)
 from intergrax.contracts.capability_catalog import (
     AvailabilityDisposition,
     CapabilityDiscoveryIdentity,
@@ -47,8 +53,12 @@ def _entry(
     kind: CapabilityKind = CapabilityKind.TOOL,
     logical_id: str = "tools.echo.ping",
     display_label: str | None = None,
+    use_logical_id_fallback: bool = True,
 ) -> CapabilityCatalogEntry:
     source = _source()
+    resolved_label = display_label
+    if resolved_label is None and use_logical_id_fallback:
+        resolved_label = logical_id
     return CapabilityCatalogEntry(
         identity=CapabilityDiscoveryIdentity(
             kind=kind,
@@ -56,7 +66,7 @@ def _entry(
             logical=CapabilityLogicalIdentity(kind=kind, logical_id=logical_id),
         ),
         provenance=CapabilityProvenance(source=source, version_label="1.0.0"),
-        display_label=display_label or logical_id,
+        display_label=resolved_label,
     )
 
 
@@ -145,6 +155,97 @@ def test_keyword_tool_ranker_equal_scores_use_identity_tie_break() -> None:
         "tools.alpha",
         "tools.beta",
     ]
+
+
+def test_keyword_tool_ranker_display_label_none_scores_from_logical_id() -> None:
+    candidate = _candidate(
+        _entry(
+            kind=CapabilityKind.TOOL,
+            logical_id="tools.echo.ping",
+            display_label=None,
+            use_logical_id_fallback=False,
+        ),
+    )
+    ranked = rank_capability_candidates(
+        (candidate,),
+        KeywordOverlapToolCapabilityRanker(),
+        context=CapabilityRankingContext(semantic_need="echo"),
+    )
+    assert ranked[0].evidence.score == 1.0
+
+
+def test_keyword_tool_ranker_display_label_none_unrelated_query_scores_zero() -> None:
+    candidate = _candidate(
+        _entry(
+            kind=CapabilityKind.TOOL,
+            logical_id="tools.echo.ping",
+            display_label=None,
+            use_logical_id_fallback=False,
+        ),
+    )
+    ranked = rank_capability_candidates(
+        (candidate,),
+        KeywordOverlapToolCapabilityRanker(),
+        context=CapabilityRankingContext(semantic_need="browser navigation"),
+    )
+    assert ranked[0].evidence.score == 0.0
+
+
+def test_keyword_tool_ranker_unicode_display_label() -> None:
+    candidate = _candidate(
+        _entry(
+            kind=CapabilityKind.TOOL,
+            logical_id="tools.locale.greeting",
+            display_label="Witaj świecie",
+            use_logical_id_fallback=False,
+        ),
+    )
+    ranked = rank_capability_candidates(
+        (candidate,),
+        KeywordOverlapToolCapabilityRanker(),
+        context=CapabilityRankingContext(semantic_need="witaj"),
+    )
+    assert ranked[0].evidence.score == 1.0
+
+
+def test_keyword_tool_ranker_logical_id_only_projection() -> None:
+    candidate = _candidate(
+        _entry(
+            kind=CapabilityKind.TOOL,
+            logical_id="tools.search.catalog",
+            display_label=None,
+            use_logical_id_fallback=False,
+        ),
+    )
+    document = _tool_keyword_search_document(candidate)
+    tokens = tokenize_tool_search_query("catalog search")
+    assert score_tool_keyword_document(document, tokens) == 2
+
+
+def test_display_label_empty_string_rejected_by_stage2_contract() -> None:
+    with pytest.raises(ValueError, match="display_label must be non-empty"):
+        _entry(display_label="   ", use_logical_id_fallback=False)
+
+
+def test_stage4_and_shared_primitive_parity_on_minimal_document() -> None:
+    candidate = _candidate(
+        _entry(
+            kind=CapabilityKind.TOOL,
+            logical_id="tools.search.catalog",
+            display_label="Catalog Search",
+            use_logical_id_fallback=False,
+        ),
+    )
+    tokens = tokenize_tool_search_query("catalog search")
+    stage4_score = score_tool_keyword_document(_tool_keyword_search_document(candidate), tokens)
+    shared_score = score_tool_keyword_document(
+        ToolKeywordSearchDocument(
+            tool_id="tools.search.catalog",
+            text_parts=("Catalog Search",),
+        ),
+        tokens,
+    )
+    assert stage4_score == shared_score == 2
 
 
 def test_agent_and_baseline_rankers_are_interchangeable_plugins() -> None:
