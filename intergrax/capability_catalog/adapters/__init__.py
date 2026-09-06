@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Domain adapters for federated capability catalog read model (Stage 2–4)."""
+"""Domain adapters for federated capability catalog read model (Stage 2–5)."""
 
 from __future__ import annotations
 
@@ -21,6 +21,18 @@ from intergrax.capability_catalog.adapters.tool import (
     ToolBundleCatalogSource,
     project_tool_bundle_entry,
 )
+from intergrax.capability_catalog.adapters.agent_governance import (
+    AGENT_TRUST_GOVERNANCE_EVALUATOR_ID,
+    AgentTrustGovernanceEvaluator,
+)
+from intergrax.capability_catalog.adapters.skill_governance import (
+    SKILL_PROFILE_GOVERNANCE_EVALUATOR_ID,
+    SkillProfileGovernanceEvaluator,
+)
+from intergrax.capability_catalog.adapters.tool_governance import (
+    TOOL_POLICY_GOVERNANCE_EVALUATOR_ID,
+    ToolPolicyGovernanceEvaluator,
+)
 from intergrax.capability_catalog.adapters.tool_ranking import (
     KEYWORD_OVERLAP_TOOL_RANKER_ID,
     KeywordOverlapToolCapabilityRanker,
@@ -28,6 +40,12 @@ from intergrax.capability_catalog.adapters.tool_ranking import (
 
 __all__ = [
     "AGENT_STABLE_IDENTITY_RANKER_ID",
+    "AGENT_TRUST_GOVERNANCE_EVALUATOR_ID",
+    "AgentTrustGovernanceEvaluator",
+    "SKILL_PROFILE_GOVERNANCE_EVALUATOR_ID",
+    "SkillProfileGovernanceEvaluator",
+    "TOOL_POLICY_GOVERNANCE_EVALUATOR_ID",
+    "ToolPolicyGovernanceEvaluator",
     "AgentCatalogCapabilitySource",
     "AgentStableIdentityCapabilityRanker",
     "KEYWORD_OVERLAP_TOOL_RANKER_ID",

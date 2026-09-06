@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""CAPABILITY-CATALOG-1 Stage 2 architecture boundary regression gates."""
+"""CAPABILITY-CATALOG-1 Stage 2–5 architecture boundary regression gates."""
 
 from __future__ import annotations
 
