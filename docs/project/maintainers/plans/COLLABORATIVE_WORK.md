@@ -294,7 +294,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2D |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | SQLite durable adapters for WorkItem and Assignment authoritative state |
 | **Dependencies** | COLLAB-WORK-2C approved; COLLAB-WORK-1H SQLite adapter patterns |
 | **Exact scope** | SQLite repository adapters for MP-2 ports; composition factory extension; local/dev durability parity |

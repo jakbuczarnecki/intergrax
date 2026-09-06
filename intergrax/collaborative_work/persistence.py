@@ -18,18 +18,22 @@ from intergrax.collaborative_work.postgresql_repository import (
     PostgreSQLWorkspaceMembershipRepository,
 )
 from intergrax.collaborative_work.repository import (
+    AssignmentRepository,
     AuthorityDelegationRepository,
     CollaborativeOperationPolicyProfileRepository,
     CollaborativePolicyRepository,
     PrincipalAuthorityRepository,
+    WorkItemRepository,
     WorkspaceMembershipRepository,
 )
 from intergrax.collaborative_work.sqlite_repository import (
+    SQLiteAssignmentRepository,
     SQLiteAuthorityDelegationRepository,
     SQLiteCollaborativeOperationPolicyProfileRepository,
     SQLiteCollaborativePolicyRepository,
     SQLiteCollaborativeWorkStore,
     SQLitePrincipalAuthorityRepository,
+    SQLiteWorkItemRepository,
     SQLiteWorkspaceMembershipRepository,
 )
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
@@ -47,6 +51,19 @@ class CollaborativeWorkStoreOwner(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
+class CollaborativeWorkSharedWorkRepositories:
+    """MP-2 Shared Work repository ports materialized by a persistence backend."""
+
+    work_item: WorkItemRepository
+    assignment: AssignmentRepository
+
+
+_SHARED_WORK_UNAVAILABLE = (
+    "MP-2 Shared Work repositories are not available for this persistence backend"
+)
+
+
+@dataclass(frozen=True, slots=True)
 class CollaborativeWorkRepositories:
     """Bundle of authoritative Collaborative Work repository ports."""
 
@@ -56,6 +73,19 @@ class CollaborativeWorkRepositories:
     policy: CollaborativePolicyRepository
     operation_profile: CollaborativeOperationPolicyProfileRepository
     store: CollaborativeWorkStoreOwner
+    shared_work: CollaborativeWorkSharedWorkRepositories | None = None
+
+    @property
+    def work_item(self) -> WorkItemRepository:
+        if self.shared_work is None:
+            raise RuntimeError(_SHARED_WORK_UNAVAILABLE)
+        return self.shared_work.work_item
+
+    @property
+    def assignment(self) -> AssignmentRepository:
+        if self.shared_work is None:
+            raise RuntimeError(_SHARED_WORK_UNAVAILABLE)
+        return self.shared_work.assignment
 
     def close(self) -> None:
         self.store.close()
@@ -73,6 +103,10 @@ def open_sqlite_collaborative_work_repositories(db_path: str) -> CollaborativeWo
         policy=SQLiteCollaborativePolicyRepository(store),
         operation_profile=SQLiteCollaborativeOperationPolicyProfileRepository(store),
         store=store,
+        shared_work=CollaborativeWorkSharedWorkRepositories(
+            work_item=SQLiteWorkItemRepository(store),
+            assignment=SQLiteAssignmentRepository(store),
+        ),
     )
 
 

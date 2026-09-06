@@ -9,10 +9,12 @@ from datetime import datetime
 from typing import Any
 
 from intergrax.contracts.collaborative_work import (
+    Assignment,
     AuthorityDelegation,
     CollaborativeOperationPolicyProfile,
     CollaborativePolicyRule,
     PrincipalAuthorityGrant,
+    WorkItem,
     WorkspaceMembership,
 )
 
@@ -67,6 +69,22 @@ def operation_policy_profile_to_json(record: CollaborativeOperationPolicyProfile
 
 def operation_policy_profile_from_json(payload: str) -> CollaborativeOperationPolicyProfile:
     return CollaborativeOperationPolicyProfile.model_validate_json(payload)
+
+
+def work_item_to_json(record: WorkItem) -> str:
+    return record.model_dump_json()
+
+
+def work_item_from_json(payload: str) -> WorkItem:
+    return WorkItem.model_validate_json(payload)
+
+
+def assignment_to_json(record: Assignment) -> str:
+    return record.model_dump_json()
+
+
+def assignment_from_json(payload: str) -> Assignment:
+    return Assignment.model_validate_json(payload)
 
 
 def stable_json(value: Any) -> str:

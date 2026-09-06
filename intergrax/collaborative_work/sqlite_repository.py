@@ -11,6 +11,10 @@ from pathlib import Path
 from typing import TypeVar
 
 from intergrax.collaborative_work.repository import (
+    AssignmentAlreadyExists,
+    AssignmentIdempotencyConflict,
+    AssignmentNotFound,
+    AssignmentRevisionConflict,
     AuthorityDelegationAlreadyExists,
     AuthorityDelegationIdempotencyConflict,
     AuthorityDelegationNotFound,
@@ -24,27 +28,37 @@ from intergrax.collaborative_work.repository import (
     CollaborativePolicyRuleNotFound,
     CollaborativePolicyRuleRevisionConflict,
     CollaborativeWorkRepositoryCapabilities,
+    CreateAssignmentCommand,
     CreateAuthorityDelegationCommand,
     CreateCollaborativeOperationPolicyProfileCommand,
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
+    CreateWorkItemCommand,
     CreateWorkspaceMembershipCommand,
     INITIAL_RECORD_REVISION,
     PrincipalAuthorityGrantAlreadyExists,
     PrincipalAuthorityGrantIdempotencyConflict,
     PrincipalAuthorityGrantNotFound,
     PrincipalAuthorityGrantRevisionConflict,
+    UpdateAssignmentCommand,
     UpdateAuthorityDelegationCommand,
     UpdateCollaborativeOperationPolicyProfileCommand,
     UpdateCollaborativePolicyRuleCommand,
     UpdatePrincipalAuthorityGrantCommand,
+    UpdateWorkItemCommand,
     UpdateWorkspaceMembershipCommand,
+    WorkItemAlreadyExists,
+    WorkItemIdempotencyConflict,
+    WorkItemNotFound,
+    WorkItemRevisionConflict,
     WorkspaceMembershipAlreadyExists,
     WorkspaceMembershipIdempotencyConflict,
     WorkspaceMembershipNotFound,
     WorkspaceMembershipRevisionConflict,
 )
 from intergrax.collaborative_work.serialization import (
+    assignment_from_json,
+    assignment_to_json,
     authority_delegation_from_json,
     authority_delegation_to_json,
     collaborative_policy_rule_from_json,
@@ -53,15 +67,19 @@ from intergrax.collaborative_work.serialization import (
     operation_policy_profile_to_json,
     principal_authority_grant_from_json,
     principal_authority_grant_to_json,
+    work_item_from_json,
+    work_item_to_json,
     workspace_membership_from_json,
     workspace_membership_to_json,
 )
 from intergrax.contracts.collaborative_work import (
+    Assignment,
     AuthorityDelegation,
     CollaborativeOperationPolicyProfile,
     CollaborativePolicyRule,
     PolicyCompositionLayer,
     PrincipalAuthorityGrant,
+    WorkItem,
     WorkspaceMembership,
 )
 
@@ -198,6 +216,28 @@ class SQLiteCollaborativeWorkStore:
                     result_json TEXT NOT NULL,
                     PRIMARY KEY (tenant_id, workspace_id, entity_kind, idempotency_key)
                 );
+
+                CREATE TABLE IF NOT EXISTS work_items (
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    work_item_id TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    PRIMARY KEY (tenant_id, workspace_id, work_item_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS assignments (
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    assignment_id TEXT NOT NULL,
+                    work_item_id TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    PRIMARY KEY (tenant_id, workspace_id, assignment_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_assignments_work_item
+                    ON assignments (tenant_id, workspace_id, work_item_id);
                 """
             )
             self._migrate_workspace_memberships_principal_column()
@@ -1526,4 +1566,378 @@ class SQLiteCollaborativeOperationPolicyProfileRepository(_IdempotencyMixin):
             raise CollaborativeOperationPolicyProfileIdempotencyConflict(
                 "operation policy profile idempotency key conflict"
             )
+        return record
+
+
+class SQLiteWorkItemRepository(_IdempotencyMixin):
+    _entity_kind = "work_item"
+
+    def __init__(self, store: SQLiteCollaborativeWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def create(self, command: CreateWorkItemCommand) -> WorkItem:
+        with self._store._lock:
+            self._store._ensure_open()
+            self._store.transaction().execute("BEGIN IMMEDIATE")
+            try:
+                if command.idempotency_key is not None:
+                    replay = self._replay_create(command)
+                    if replay is not None:
+                        self._store.transaction().commit()
+                        return replay
+
+                existing = self._get_in_transaction(
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_item_id=command.work_item_id,
+                )
+                if existing is not None:
+                    raise WorkItemAlreadyExists("work item already exists")
+
+                record = WorkItem(
+                    work_item_id=command.work_item_id,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    created_by_principal_id=command.created_by_principal_id,
+                    state=command.state,
+                    revision=INITIAL_RECORD_REVISION,
+                    created_at=command.created_at,
+                    updated_at=command.updated_at,
+                    title=command.title,
+                    description=command.description,
+                )
+                result_json = work_item_to_json(record)
+                self._store.transaction().execute(
+                    """
+                    INSERT INTO work_items (
+                        tenant_id, workspace_id, work_item_id, record_json, revision
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        record.tenant_id.strip(),
+                        record.workspace_id.strip(),
+                        record.work_item_id.strip(),
+                        result_json,
+                        record.revision,
+                    ),
+                )
+                if command.idempotency_key is not None:
+                    self._store_idempotency(
+                        tenant_id=command.tenant_id,
+                        workspace_id=command.workspace_id,
+                        idempotency_key=command.idempotency_key,
+                        fingerprint=command.semantic_fingerprint(),
+                        result_json=result_json,
+                    )
+                self._store.transaction().commit()
+                return record
+            except sqlite3.IntegrityError as exc:
+                self._store.transaction().rollback()
+                raise WorkItemAlreadyExists("work item already exists") from exc
+            except Exception:
+                self._store.transaction().rollback()
+                raise
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> WorkItem | None:
+        with self._store._lock:
+            self._store._ensure_open()
+            return self._get_in_transaction(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                work_item_id=work_item_id,
+            )
+
+    def update(self, command: UpdateWorkItemCommand) -> WorkItem:
+        with self._store._lock:
+            self._store._ensure_open()
+            self._store.transaction().execute("BEGIN IMMEDIATE")
+            try:
+                current = self._get_in_transaction(
+                    tenant_id=command.scope.tenant_id,
+                    workspace_id=command.scope.workspace_id,
+                    work_item_id=command.scope.work_item_id,
+                )
+                if current is None:
+                    raise WorkItemNotFound("work item was not found")
+                if current.revision != command.expected_revision:
+                    raise WorkItemRevisionConflict("work item revision conflict")
+
+                replacement = WorkItem(
+                    work_item_id=current.work_item_id,
+                    tenant_id=current.tenant_id,
+                    workspace_id=current.workspace_id,
+                    created_by_principal_id=current.created_by_principal_id,
+                    state=command.state,
+                    revision=current.revision + 1,
+                    created_at=current.created_at,
+                    updated_at=command.updated_at,
+                    title=command.title,
+                    description=command.description,
+                )
+                updated = self._store.transaction().execute(
+                    """
+                    UPDATE work_items
+                    SET record_json = ?, revision = ?
+                    WHERE tenant_id = ? AND workspace_id = ? AND work_item_id = ?
+                      AND revision = ?
+                    """,
+                    (
+                        work_item_to_json(replacement),
+                        replacement.revision,
+                        replacement.tenant_id.strip(),
+                        replacement.workspace_id.strip(),
+                        replacement.work_item_id.strip(),
+                        command.expected_revision,
+                    ),
+                )
+                if updated.rowcount != 1:
+                    raise WorkItemRevisionConflict("work item revision conflict")
+                self._store.transaction().commit()
+                return replacement
+            except (WorkItemNotFound, WorkItemRevisionConflict):
+                self._store.transaction().rollback()
+                raise
+            except Exception:
+                self._store.transaction().rollback()
+                raise
+
+    def _get_in_transaction(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> WorkItem | None:
+        row = self._store.transaction().execute(
+            """
+            SELECT record_json FROM work_items
+            WHERE tenant_id = ? AND workspace_id = ? AND work_item_id = ?
+            """,
+            (tenant_id.strip(), workspace_id.strip(), work_item_id.strip()),
+        ).fetchone()
+        if row is None:
+            return None
+        record = work_item_from_json(row["record_json"])
+        if not _scope_matches_tenant_workspace(
+            record.tenant_id,
+            record.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            return None
+        if record.work_item_id.strip() != work_item_id.strip():
+            return None
+        return record
+
+    def _replay_create(self, command: CreateWorkItemCommand) -> WorkItem | None:
+        assert command.idempotency_key is not None
+        loaded = self._load_idempotency(
+            tenant_id=command.tenant_id,
+            workspace_id=command.workspace_id,
+            idempotency_key=command.idempotency_key,
+            decode=work_item_from_json,
+        )
+        if loaded is None:
+            return None
+        fingerprint, record = loaded
+        if fingerprint != command.semantic_fingerprint():
+            raise WorkItemIdempotencyConflict("work item idempotency key conflict")
+        return record
+
+
+class SQLiteAssignmentRepository(_IdempotencyMixin):
+    _entity_kind = "assignment"
+
+    def __init__(self, store: SQLiteCollaborativeWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def create(self, command: CreateAssignmentCommand) -> Assignment:
+        with self._store._lock:
+            self._store._ensure_open()
+            self._store.transaction().execute("BEGIN IMMEDIATE")
+            try:
+                if command.idempotency_key is not None:
+                    replay = self._replay_create(command)
+                    if replay is not None:
+                        self._store.transaction().commit()
+                        return replay
+
+                existing = self._get_in_transaction(
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    assignment_id=command.assignment_id,
+                )
+                if existing is not None:
+                    raise AssignmentAlreadyExists("assignment already exists")
+
+                record = Assignment(
+                    assignment_id=command.assignment_id,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_item_id=command.work_item_id,
+                    principal_id=command.principal_id,
+                    created_by_principal_id=command.created_by_principal_id,
+                    state=command.state,
+                    revision=INITIAL_RECORD_REVISION,
+                    created_at=command.created_at,
+                    updated_at=command.updated_at,
+                )
+                result_json = assignment_to_json(record)
+                self._store.transaction().execute(
+                    """
+                    INSERT INTO assignments (
+                        tenant_id, workspace_id, assignment_id, work_item_id,
+                        record_json, revision
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        record.tenant_id.strip(),
+                        record.workspace_id.strip(),
+                        record.assignment_id.strip(),
+                        record.work_item_id.strip(),
+                        result_json,
+                        record.revision,
+                    ),
+                )
+                if command.idempotency_key is not None:
+                    self._store_idempotency(
+                        tenant_id=command.tenant_id,
+                        workspace_id=command.workspace_id,
+                        idempotency_key=command.idempotency_key,
+                        fingerprint=command.semantic_fingerprint(),
+                        result_json=result_json,
+                    )
+                self._store.transaction().commit()
+                return record
+            except sqlite3.IntegrityError as exc:
+                self._store.transaction().rollback()
+                raise AssignmentAlreadyExists("assignment already exists") from exc
+            except Exception:
+                self._store.transaction().rollback()
+                raise
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        assignment_id: str,
+    ) -> Assignment | None:
+        with self._store._lock:
+            self._store._ensure_open()
+            return self._get_in_transaction(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                assignment_id=assignment_id,
+            )
+
+    def update(self, command: UpdateAssignmentCommand) -> Assignment:
+        with self._store._lock:
+            self._store._ensure_open()
+            self._store.transaction().execute("BEGIN IMMEDIATE")
+            try:
+                current = self._get_in_transaction(
+                    tenant_id=command.scope.tenant_id,
+                    workspace_id=command.scope.workspace_id,
+                    assignment_id=command.scope.assignment_id,
+                )
+                if current is None:
+                    raise AssignmentNotFound("assignment was not found")
+                if current.revision != command.expected_revision:
+                    raise AssignmentRevisionConflict("assignment revision conflict")
+
+                replacement = Assignment(
+                    assignment_id=current.assignment_id,
+                    tenant_id=current.tenant_id,
+                    workspace_id=current.workspace_id,
+                    work_item_id=current.work_item_id,
+                    principal_id=current.principal_id,
+                    created_by_principal_id=current.created_by_principal_id,
+                    state=command.state,
+                    revision=current.revision + 1,
+                    created_at=current.created_at,
+                    updated_at=command.updated_at,
+                )
+                updated = self._store.transaction().execute(
+                    """
+                    UPDATE assignments
+                    SET record_json = ?, revision = ?
+                    WHERE tenant_id = ? AND workspace_id = ? AND assignment_id = ?
+                      AND revision = ?
+                    """,
+                    (
+                        assignment_to_json(replacement),
+                        replacement.revision,
+                        replacement.tenant_id.strip(),
+                        replacement.workspace_id.strip(),
+                        replacement.assignment_id.strip(),
+                        command.expected_revision,
+                    ),
+                )
+                if updated.rowcount != 1:
+                    raise AssignmentRevisionConflict("assignment revision conflict")
+                self._store.transaction().commit()
+                return replacement
+            except (AssignmentNotFound, AssignmentRevisionConflict):
+                self._store.transaction().rollback()
+                raise
+            except Exception:
+                self._store.transaction().rollback()
+                raise
+
+    def _get_in_transaction(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        assignment_id: str,
+    ) -> Assignment | None:
+        row = self._store.transaction().execute(
+            """
+            SELECT record_json FROM assignments
+            WHERE tenant_id = ? AND workspace_id = ? AND assignment_id = ?
+            """,
+            (tenant_id.strip(), workspace_id.strip(), assignment_id.strip()),
+        ).fetchone()
+        if row is None:
+            return None
+        record = assignment_from_json(row["record_json"])
+        if not _scope_matches_tenant_workspace(
+            record.tenant_id,
+            record.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            return None
+        if record.assignment_id.strip() != assignment_id.strip():
+            return None
+        return record
+
+    def _replay_create(self, command: CreateAssignmentCommand) -> Assignment | None:
+        assert command.idempotency_key is not None
+        loaded = self._load_idempotency(
+            tenant_id=command.tenant_id,
+            workspace_id=command.workspace_id,
+            idempotency_key=command.idempotency_key,
+            decode=assignment_from_json,
+        )
+        if loaded is None:
+            return None
+        fingerprint, record = loaded
+        if fingerprint != command.semantic_fingerprint():
+            raise AssignmentIdempotencyConflict("assignment idempotency key conflict")
         return record
