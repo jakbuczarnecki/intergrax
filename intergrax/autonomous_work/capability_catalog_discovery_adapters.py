@@ -159,7 +159,25 @@ def _operation_coverage(
 
 
 def _tool_operations(identity: CapabilityDiscoveryIdentity) -> tuple[str, ...]:
+    """Return canonical Tool operation evidence for Stage 9 exact-ID coverage.
+
+    Stage 9 Tool operation evidence currently proves exact support only when
+    required operation IDs correspond to canonical Tool logical IDs.
+    Richer Tool operation semantics remain owned by the Tools domain.
+    """
     return (identity.logical.logical_id,)
+
+
+def _tool_supports_required_operations(
+    *,
+    identity: CapabilityDiscoveryIdentity,
+    required_operations: tuple[str, ...],
+) -> tuple[tuple[str, ...], CapabilityOperationCoverage] | None:
+    offered = _tool_operations(identity)
+    coverage = _operation_coverage(required_operations, offered)
+    if coverage is not CapabilityOperationCoverage.EXACT:
+        return None
+    return offered, coverage
 
 
 def _candidate_sort_key(candidate: WorkerCapabilityCandidate) -> tuple[str, str, str]:
@@ -174,13 +192,11 @@ def _project_tool_candidate(
     governed: GovernedCapabilityCandidate,
     *,
     request: WorkerCapabilityDiscoveryRequest,
+    operations: tuple[str, ...],
+    coverage: CapabilityOperationCoverage,
 ) -> WorkerCapabilityCandidate:
     identity = governed.identity
     capability_ref = encode_source_qualified_capability_ref(identity)
-    operations = _tool_operations(identity)
-    coverage = _operation_coverage(request.need.required_operations, operations)
-    if coverage is None:
-        coverage = CapabilityOperationCoverage.EXACT
     version = governed.provenance.version_label
     return WorkerCapabilityCandidate(
         candidate_id=derive_worker_capability_candidate_id(
@@ -303,12 +319,28 @@ def _run_tool_discovery_layer(
         return WorkerCapabilityDiscoveryLayerOutcome(
             disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
         )
-    operation_relevant_count = len(discovered)
+    operation_relevant: list[
+        tuple[CapabilityDiscoveryCandidate, tuple[str, ...], CapabilityOperationCoverage]
+    ] = []
+    for candidate in discovered:
+        resolved = _tool_supports_required_operations(
+            identity=candidate.identity,
+            required_operations=request.need.required_operations,
+        )
+        if resolved is not None:
+            operations, coverage = resolved
+            operation_relevant.append((candidate, operations, coverage))
+    operation_relevant_count = len(operation_relevant)
+    if operation_relevant_count == 0:
+        return WorkerCapabilityDiscoveryLayerOutcome(
+            disposition=CapabilityDiscoveryDisposition.NO_MATCH,
+        )
+    filtered_candidates = tuple(item[0] for item in operation_relevant)
     try:
         governed_result = _discover_rank_and_govern(
             query,
             dependencies,
-            candidates=discovered,
+            candidates=filtered_candidates,
         )
     except CapabilityCatalogIdentityConflict:
         return WorkerCapabilityDiscoveryLayerOutcome(
@@ -326,9 +358,20 @@ def _run_tool_discovery_layer(
     )
     if disposition is not CapabilityDiscoveryDisposition.MATCH_FOUND:
         return WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition)
-    projected = tuple(
-        _project_tool_candidate(candidate, request=request) for candidate in executable
-    )
+    coverage_by_identity = {
+        item[0].identity.sort_key: (item[1], item[2]) for item in operation_relevant
+    }
+    projected: list[WorkerCapabilityCandidate] = []
+    for governed in executable:
+        operations, coverage = coverage_by_identity[governed.identity.sort_key]
+        projected.append(
+            _project_tool_candidate(
+                governed,
+                request=request,
+                operations=operations,
+                coverage=coverage,
+            ),
+        )
     return WorkerCapabilityDiscoveryLayerOutcome(
         disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
         candidates=tuple(sorted(projected, key=_candidate_sort_key)),

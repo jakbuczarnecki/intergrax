@@ -509,6 +509,8 @@ AW retains A0–A4 decision authority. Catalog does not execute acquisition. Sta
 
 Registry-backed Tool/Skill adapters are **not** canonical AW production discovery after Stage 9; no silent catalog→registry fallback.
 
+AW Tool A0 projection requires exact evidence-backed operation coverage; partial or unknown coverage remains `NO_MATCH`.
+
 Contracts: `intergrax/contracts/autonomous_work/capability_acquisition.py`. Adapters: `intergrax/autonomous_work/capability_catalog_discovery_adapters.py`.
 
 ---

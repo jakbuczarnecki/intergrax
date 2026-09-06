@@ -28,6 +28,7 @@ from intergrax.autonomous_work.capability_acquisition_service import (
 from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
     CapabilityCatalogDiscoveryDependencies,
     CapabilityCatalogToolDiscoveryAdapter,
+    _tool_supports_required_operations,
     encode_source_qualified_capability_ref,
     identity_key_from_entry_identity,
     map_worker_capability_need_to_discovery_query,
@@ -39,6 +40,7 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     CapabilityAcquisitionDisposition,
     CapabilityAcquisitionReasonCode,
     CapabilityDiscoveryDisposition,
+    CapabilityOperationCoverage,
     WorkerAutonomyLevel,
     WorkerCapabilityCandidateKind,
     WorkerCapabilityAuthorityCompatibility,
@@ -64,6 +66,7 @@ from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 from tests.unit.autonomous_work.catalog_discovery_test_support import (
     catalog_discovery_dependencies,
+    catalog_snapshot_from_registries,
     catalog_tool_skill_adapters,
     host_availability_for_entries,
     skill_catalog_entry,
@@ -163,6 +166,148 @@ def test_catalog_tool_a0_use_existing() -> None:
     assert result.decision.selected_candidate is not None
     assert (
         result.decision.selected_candidate.candidate_kind is WorkerCapabilityCandidateKind.TOOL
+    )
+    assert result.decision.selected_candidate.operations == (_OPERATION,)
+    assert (
+        result.decision.selected_candidate.operation_coverage
+        is CapabilityOperationCoverage.EXACT
+    )
+
+
+def test_tool_exact_single_operation_adapter_outcome() -> None:
+    tool_registry = _tool_registry(_OPERATION)
+    snapshot = catalog_snapshot_from_registries(
+        tool_registry=tool_registry,
+        skill_registry=SkillRegistry(),
+    )
+    dependencies = catalog_discovery_dependencies(
+        snapshot=snapshot,
+        availability_evidence=host_availability_for_entries(
+            *(
+                entry
+                for entry in snapshot.entries
+                if entry.identity.logical.logical_id == _OPERATION
+            ),
+        ),
+    )
+    adapter = CapabilityCatalogToolDiscoveryAdapter(dependencies)
+    outcome = adapter.discover(_request())
+
+    assert outcome.disposition is CapabilityDiscoveryDisposition.MATCH_FOUND
+    assert outcome.candidates is not None
+    assert len(outcome.candidates) == 1
+    candidate = outcome.candidates[0]
+    assert candidate.operations == (_OPERATION,)
+    assert candidate.operation_coverage is CapabilityOperationCoverage.EXACT
+
+
+def test_tool_multiple_required_operations_partial_tools_no_match() -> None:
+    logs_op = "tool.search.logs"
+    incident_op = "tool.fetch.incident"
+    tool_registry = _tool_registry(logs_op, incident_op)
+    snapshot = catalog_snapshot_from_registries(
+        tool_registry=tool_registry,
+        skill_registry=SkillRegistry(),
+    )
+    dependencies = catalog_discovery_dependencies(
+        snapshot=snapshot,
+        availability_evidence=host_availability_for_entries(*snapshot.entries),
+    )
+    adapter = CapabilityCatalogToolDiscoveryAdapter(dependencies)
+    outcome = adapter.discover(_request(required_operations=(logs_op, incident_op)))
+
+    assert outcome.disposition is CapabilityDiscoveryDisposition.NO_MATCH
+    assert outcome.candidates == ()
+
+
+def test_partial_tool_cannot_reach_aw_a0_use_existing() -> None:
+    logs_op = "tool.search.logs"
+    incident_op = "tool.fetch.incident"
+    service = _catalog_service(
+        tool_registry=_tool_registry(logs_op),
+        skill_registry=SkillRegistry(),
+    )
+    result = service.decide(_request(required_operations=(logs_op, incident_op)))
+
+    selected = result.decision.selected_candidate if result.decision else None
+    assert selected is None or selected.candidate_kind is not WorkerCapabilityCandidateKind.TOOL
+    if selected is not None:
+        assert selected.capability_ref != encode_source_qualified_capability_ref(
+            tool_catalog_entry(logs_op).identity,
+        )
+
+
+def test_tool_support_helper_rejects_none_coverage() -> None:
+    entry = tool_catalog_entry("tool.search.logs")
+    resolved = _tool_supports_required_operations(
+        identity=entry.identity,
+        required_operations=("business.operation",),
+    )
+    assert resolved is None
+
+
+def test_tool_support_helper_rejects_partial_coverage() -> None:
+    entry = tool_catalog_entry("tool.search.logs")
+    resolved = _tool_supports_required_operations(
+        identity=entry.identity,
+        required_operations=("tool.search.logs", "tool.fetch.incident"),
+    )
+    assert resolved is None
+
+
+def test_tool_partial_then_skill_exact_selected() -> None:
+    logs_op = "tool.search.logs"
+    incident_op = "tool.fetch.incident"
+    skill_id = "multi.skill"
+    skill_registry = SkillRegistry()
+    skill_registry.register(
+        SkillManifest(
+            skill_id=skill_id,
+            description="multi",
+            tool_ids=(logs_op, incident_op),
+        ),
+    )
+    service = _catalog_service(
+        tool_registry=_tool_registry(logs_op, incident_op),
+        skill_registry=skill_registry,
+        host_skill_ids=(skill_id,),
+    )
+    result = service.decide(_request(required_operations=(logs_op, incident_op)))
+
+    assert result.disposition is CapabilityAcquisitionDisposition.USE_EXISTING
+    assert result.decision is not None
+    assert result.decision.selected_candidate is not None
+    assert (
+        result.decision.selected_candidate.candidate_kind is WorkerCapabilityCandidateKind.SKILL
+    )
+
+
+def test_tool_partial_does_not_block_skill_ladder() -> None:
+    logs_op = "tool.search.logs"
+    incident_op = "tool.fetch.incident"
+    skill_id = "multi.skill"
+    skill_registry = SkillRegistry()
+    skill_registry.register(
+        SkillManifest(
+            skill_id=skill_id,
+            description="multi",
+            tool_ids=(logs_op, incident_op),
+        ),
+    )
+    service = _catalog_service(
+        tool_registry=_tool_registry(logs_op),
+        skill_registry=skill_registry,
+        host_skill_ids=(skill_id,),
+    )
+    result = service.decide(_request(required_operations=(logs_op, incident_op)))
+
+    assert result.disposition is CapabilityAcquisitionDisposition.USE_EXISTING
+    assert result.disposition is not CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
+    assert result.disposition is not CapabilityAcquisitionDisposition.UNAVAILABLE
+    assert result.decision is not None
+    assert result.decision.selected_candidate is not None
+    assert (
+        result.decision.selected_candidate.candidate_kind is WorkerCapabilityCandidateKind.SKILL
     )
 
 
