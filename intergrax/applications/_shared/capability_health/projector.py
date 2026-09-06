@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from intergrax.applications._shared.capability_health.redaction import (
     sanitize_health_provider_failure_reason,
 )
+from intergrax.applications.contracts.capability_dependency.dependency import CapabilityRef
 from intergrax.applications.contracts.capability_health import (
     CapabilityHealthFact,
     CapabilityHealthFactStatus,
@@ -20,6 +21,13 @@ from intergrax.applications.contracts.capability_health import (
     CapabilityHealthStatus,
     EffectiveCapabilityHealth,
 )
+from intergrax.applications.contracts.capability_health.fact import (
+    CapabilityHealthConditionKind,
+)
+
+_PROJECTION_SOURCE = "capability_health_projection"
+_EVIDENCE_MISSING_REASON_CODE = "capability.health.evidence_missing"
+_READINESS_EVIDENCE_REF = "readiness.evidence"
 
 
 def _fact_status_severity(status: CapabilityHealthFactStatus) -> int:
@@ -81,6 +89,9 @@ def project_status_from_facts(
     facts: Sequence[CapabilityHealthFact],
 ) -> CapabilityHealthStatus:
     """Pure projection: facts → effective status with deterministic dominance."""
+    if not facts:
+        return CapabilityHealthStatus.UNAVAILABLE
+
     if any(
         fact.blocking
         and fact.status
@@ -113,6 +124,25 @@ def project_status_from_facts(
     return CapabilityHealthStatus.READY
 
 
+def _missing_evidence_fact(capability: CapabilityRef) -> CapabilityHealthFact:
+    """Projection-owned blocking fact when no applicable canonical evidence exists."""
+    return CapabilityHealthFact(
+        capability=capability,
+        source=_PROJECTION_SOURCE,
+        condition_kind=CapabilityHealthConditionKind.READINESS_EVIDENCE,
+        condition_ref=_READINESS_EVIDENCE_REF,
+        status=CapabilityHealthFactStatus.UNKNOWN,
+        blocking=True,
+        reason=CapabilityHealthReason(
+            reason_code=_EVIDENCE_MISSING_REASON_CODE,
+            source=_PROJECTION_SOURCE,
+            subject_ref=_READINESS_EVIDENCE_REF,
+            detail="no applicable canonical readiness evidence was produced",
+        ),
+        provider_id=_PROJECTION_SOURCE,
+    )
+
+
 def project_effective_capability_health(
     *,
     capability: object,
@@ -123,8 +153,11 @@ def project_effective_capability_health(
     effective_profile_fingerprint: str | None = None,
 ) -> EffectiveCapabilityHealth:
     """Pure function for deterministic health projection."""
+    capability_ref = capability  # type: ignore[assignment]
     merged_facts = _merge_conflicting_facts(facts)
     sorted_facts = tuple(sorted(merged_facts, key=_fact_sort_key))
+    if not sorted_facts:
+        sorted_facts = (_missing_evidence_fact(capability_ref),)
     status = project_status_from_facts(sorted_facts)
     reasons = tuple(
         sorted(
@@ -207,7 +240,7 @@ class EffectiveCapabilityHealthProjector:
         scoped_facts = tuple(
             fact
             for fact in collected_facts
-            if _fact_matches_scope(fact, context)
+            if _fact_matches_context(fact, context)
         )
         return project_effective_capability_health(
             capability=context.capability,
@@ -219,10 +252,12 @@ class EffectiveCapabilityHealthProjector:
         )
 
 
-def _fact_matches_scope(
+def _fact_matches_context(
     fact: CapabilityHealthFact,
     context: CapabilityHealthProjectionContext,
 ) -> bool:
+    if fact.capability.canonical_key != context.capability.canonical_key:
+        return False
     if (
         context.scope_application_id is not None
         and fact.scope_application_id is not None
@@ -244,10 +279,6 @@ def _provider_failure_fact(
     provider: CapabilityHealthProvider,
     reason: str,
 ) -> CapabilityHealthFact:
-    from intergrax.applications.contracts.capability_health.fact import (
-        CapabilityHealthConditionKind,
-    )
-
     return CapabilityHealthFact(
         capability=context.capability,
         source=provider.source_provenance,

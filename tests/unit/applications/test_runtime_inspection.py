@@ -30,6 +30,7 @@ from intergrax.applications.contracts.capability_dependency import (
     CapabilityDependencyValidationContext,
 )
 from intergrax.applications.contracts.capability_dependency.dependency import CapabilityRef
+from intergrax.applications.contracts.capability_health import CapabilityHealthStatus
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.environment_profile.sub_profiles import CostProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
@@ -809,3 +810,21 @@ def test_internal_canonical_fields_excluded_from_serialization() -> None:
     payload = result.model_dump(mode="json")
     assert "resolution" not in payload
     assert result.resolution is resolution
+
+
+def test_inspect_capability_no_evidence_unavailable_with_safe_reason() -> None:
+    capability = CapabilityRef(kind=CapabilityDependencyKind.SKILL, capability_id="skill.orphan")
+    validation = validate_capability_dependencies(
+        CapabilityDependencyValidationContext(environment_profile=_application()),
+    )
+    result = _service().inspect_capability(capability, validation)
+    assert result.health.status is CapabilityHealthStatus.UNAVAILABLE
+    assert result.safe_health.status is CapabilityHealthStatus.UNAVAILABLE
+    assert any(
+        item.reason_code == "capability.health.evidence_missing"
+        for item in result.safe_health.reasons
+    )
+    serialized = result.model_dump_json()
+    assert "capability.health.evidence_missing" in serialized
+    payload = json.loads(serialized)
+    assert payload["safe_health"]["status"] == CapabilityHealthStatus.UNAVAILABLE.value

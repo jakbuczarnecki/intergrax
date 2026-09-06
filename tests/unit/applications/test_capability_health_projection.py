@@ -188,6 +188,49 @@ def _validation(
     )
 
 
+def test_pure_zero_facts_projects_unavailable() -> None:
+    assert project_status_from_facts(()) is CapabilityHealthStatus.UNAVAILABLE
+
+
+def test_projector_zero_facts_unavailable_with_missing_evidence_reason() -> None:
+    capability = CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.a")
+    projector = EffectiveCapabilityHealthProjector(
+        (
+            _CustomHealthProvider(
+                provider_id="empty.plugin",
+                source_provenance="empty.plugin",
+                facts=(),
+            ),
+        ),
+    )
+    health = projector.project(CapabilityHealthProjectionContext(capability=capability))
+    assert health.status is CapabilityHealthStatus.UNAVAILABLE
+    assert any(
+        item.reason_code == "capability.health.evidence_missing"
+        for item in health.reasons
+    )
+    assert any(
+        item.condition_kind is CapabilityHealthConditionKind.READINESS_EVIDENCE
+        for item in health.facts
+    )
+    assert health.facts[0].provider_id == "capability_health_projection"
+
+
+def test_unsupported_capability_kind_no_evidence_unavailable() -> None:
+    capability = CapabilityRef(kind=CapabilityDependencyKind.SKILL, capability_id="skill.orphan")
+    health = EffectiveCapabilityHealthProjector(default_capability_health_providers()).project(
+        CapabilityHealthProjectionContext(
+            capability=capability,
+            environment_profile=ApplicationEnvironmentProfile.lab_defaults(),
+        ),
+    )
+    assert health.status is CapabilityHealthStatus.UNAVAILABLE
+    assert any(
+        item.reason_code == "capability.health.evidence_missing"
+        for item in health.reasons
+    )
+
+
 def test_all_facts_satisfied_projects_ready() -> None:
     capability = CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.a")
     facts = (
@@ -639,7 +682,11 @@ def test_tenant_scope_isolation() -> None:
             scope_tenant_id="tenant-b",
         ),
     )
-    assert health_b.status is CapabilityHealthStatus.READY
+    assert health_b.status is CapabilityHealthStatus.UNAVAILABLE
+    assert any(
+        item.reason_code == "capability.health.evidence_missing"
+        for item in health_b.reasons
+    )
     health_a = projector.project(
         CapabilityHealthProjectionContext(
             capability=capability,
@@ -647,6 +694,51 @@ def test_tenant_scope_isolation() -> None:
         ),
     )
     assert health_a.status is CapabilityHealthStatus.UNAVAILABLE
+
+
+def test_provider_failure_no_duplicate_missing_evidence_reason() -> None:
+    capability = CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.a")
+    projector = EffectiveCapabilityHealthProjector(
+        (
+            _CustomHealthProvider(
+                provider_id="failing.plugin",
+                source_provenance="failing.plugin",
+                fail=True,
+            ),
+        ),
+    )
+    health = projector.project(CapabilityHealthProjectionContext(capability=capability))
+    assert health.status is CapabilityHealthStatus.UNAVAILABLE
+    reason_codes = {item.reason_code for item in health.reasons}
+    assert "provider.failure" in reason_codes
+    assert "capability.health.evidence_missing" not in reason_codes
+
+
+def test_capability_mismatch_fact_filtered_out() -> None:
+    capability = CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.a")
+    other_capability = CapabilityRef(kind=CapabilityDependencyKind.TOOL, capability_id="tool.b")
+    foreign_fact = _fact(
+        capability=other_capability,
+        condition_kind=CapabilityHealthConditionKind.TOOL_EFFECTIVE_AVAILABILITY,
+        condition_ref="tool.b",
+        status=CapabilityHealthFactStatus.SATISFIED,
+        blocking=True,
+    )
+    projector = EffectiveCapabilityHealthProjector(
+        (
+            _CustomHealthProvider(
+                provider_id="foreign.facts",
+                source_provenance="foreign.facts",
+                facts=(foreign_fact,),
+            ),
+        ),
+    )
+    health = projector.project(CapabilityHealthProjectionContext(capability=capability))
+    assert health.status is CapabilityHealthStatus.UNAVAILABLE
+    assert any(
+        item.reason_code == "capability.health.evidence_missing"
+        for item in health.reasons
+    )
 
 
 def test_conflicting_facts_unsatisfied_dominates() -> None:

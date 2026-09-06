@@ -27,6 +27,7 @@ class CapabilityHealthConditionKind(StrEnum):
     DEPENDENCY_OPTIONAL = "dependency.optional"
     TOOL_EFFECTIVE_AVAILABILITY = "tool.effective_availability"
     PROVIDER_FAILURE = "provider.failure"
+    READINESS_EVIDENCE = "readiness.evidence"
 
 
 class CapabilityHealthReason(BaseModel):

@@ -534,7 +534,7 @@ Add a read model only. It must not own runtime truth.
 
 ## P1.5 Effective capability health/readiness
 
-**Status: CLOSED (P1.5)**
+**Status: CLOSED (P1.5 + P1.5A)**
 
 Delivered in P1.5:
 
@@ -546,6 +546,12 @@ Delivered in P1.5:
 - Runtime Inspection integration on `inspect_capability(...)` (`health` + `safe_health` on `CapabilityInspectionResult`),
 - deterministic fact merge/dominance, duplicate `provider_id` fail-fast (`CapabilityHealthProviderConflictError`),
 - conservative provider-failure facts, tenant scope isolation, P1.4A-safe health serialization.
+
+P1.5A correction (fail-closed missing evidence):
+
+- no applicable canonical readiness evidence → `UNAVAILABLE` (never synthetic `READY`),
+- typed missing-evidence reason `capability.health.evidence_missing` via projection-owned `READINESS_EVIDENCE` fact,
+- decision taken after scope and capability filtering; `READY` requires at least one applicable positive canonical fact.
 
 Explicitly not adopted (honest boundary):
 
