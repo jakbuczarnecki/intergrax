@@ -13,12 +13,15 @@ from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
 )
+from intergrax.contracts.execution_identity import EventId, validate_event_id
 from intergrax.runtime.events.execution_position import (
     ExecutionEventPosition,
     PositionedRuntimeEvent,
 )
 from intergrax.runtime.events.persistence_contract import (
     RuntimeEventPersistence,
+    RuntimeEventPersistenceIntegrityError,
+    _validate_persistence_tenant_id,
     _validate_through_limit,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, parse_runtime_event_payload
@@ -30,6 +33,10 @@ def _run_partition(tenant_id: str, run_id: str) -> str:
 
 def _task_partition(tenant_id: str, task_id: str) -> str:
     return f"{tenant_id}|task|{task_id}"
+
+
+def _event_index_partition(tenant_id: str) -> str:
+    return f"{tenant_id}|event"
 
 
 _SEQUENCE_ROW_KEY = "__run_sequence__"
@@ -60,6 +67,11 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
         run_partition = _run_partition(scope, event.run_id)
         existing = self._get_positioned(run_partition, event.event_id)
         if existing is not None:
+            self._ensure_event_index(
+                tenant_id=scope,
+                event_id=event.event_id,
+                run_id=event.run_id,
+            )
             return existing
         position = self._allocate_position(run_partition)
         payload = event.model_dump(mode="json")
@@ -76,7 +88,17 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
             accepted = self._get_positioned(run_partition, event.event_id)
             if accepted is None:
                 raise RuntimeError("execution_position_allocation_conflict")
+            self._ensure_event_index(
+                tenant_id=scope,
+                event_id=event.event_id,
+                run_id=event.run_id,
+            )
             return accepted
+        self._ensure_event_index(
+            tenant_id=scope,
+            event_id=event.event_id,
+            run_id=event.run_id,
+        )
         task_partition = _task_partition(scope, event.task_id)
         if self._store.get(task_partition, event.event_id) is None:
             self._store.put(
@@ -119,6 +141,35 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
             )
         ]
 
+    def get_by_event_id(
+        self,
+        *,
+        tenant_id: str,
+        event_id: EventId,
+    ) -> PositionedRuntimeEvent | None:
+        validated_tenant_id = _validate_persistence_tenant_id(tenant_id)
+        validated_event_id = validate_event_id(event_id)
+        index_partition = _event_index_partition(validated_tenant_id)
+        index_record = self._store.get(index_partition, str(validated_event_id))
+        if index_record is None:
+            return None
+        run_id = self._decode_event_index_run_id(index_record)
+        run_partition = _run_partition(validated_tenant_id, run_id)
+        positioned = self._get_positioned(run_partition, str(validated_event_id))
+        if positioned is None:
+            raise RuntimeEventPersistenceIntegrityError(
+                "runtime event index references missing canonical run record",
+            )
+        if positioned.event.tenant_id != validated_tenant_id:
+            raise RuntimeEventPersistenceIntegrityError(
+                "runtime event tenant mismatch for indexed event_id",
+            )
+        if positioned.event.run_id != run_id:
+            raise RuntimeEventPersistenceIntegrityError(
+                "runtime event index run_id conflicts with canonical record",
+            )
+        return positioned
+
     def close(self) -> None:
         self._store.close()
 
@@ -149,6 +200,47 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
             ):
                 return position
         raise RuntimeError("execution_position_allocation_conflict")
+
+    def _ensure_event_index(
+        self,
+        *,
+        tenant_id: str,
+        event_id: str,
+        run_id: str,
+    ) -> None:
+        index_document = DocumentRecord(
+            partition_key=_event_index_partition(tenant_id),
+            row_key=event_id,
+            data={"run_id": run_id},
+        )
+        if not self._store.put_if_absent(index_document):
+            self._verify_event_index(index_document, expected_run_id=run_id)
+
+    def _verify_event_index(
+        self,
+        document: DocumentRecord,
+        *,
+        expected_run_id: str,
+    ) -> None:
+        existing = self._store.get(document.partition_key, document.row_key)
+        if existing is None:
+            raise RuntimeEventPersistenceIntegrityError(
+                "runtime event index verification failed",
+            )
+        indexed_run_id = self._decode_event_index_run_id(existing)
+        if indexed_run_id != expected_run_id:
+            raise RuntimeEventPersistenceIntegrityError(
+                "runtime event index conflicts with expected run_id",
+            )
+
+    def _decode_event_index_run_id(self, record: DocumentRecord) -> str:
+        data = record.data
+        if not isinstance(data, dict):
+            raise RuntimeEventPersistenceIntegrityError("invalid runtime event index")
+        raw_run_id = data.get("run_id")
+        if type(raw_run_id) is not str or not raw_run_id.strip():
+            raise RuntimeEventPersistenceIntegrityError("invalid runtime event index run_id")
+        return raw_run_id
 
     def _get_positioned(
         self,

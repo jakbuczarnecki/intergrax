@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import List
 
+from intergrax.contracts.execution_identity import EventId
 from intergrax.runtime.events.execution_position import (
     ExecutionEventPosition,
     PositionedRuntimeEvent,
@@ -49,6 +50,14 @@ class ValidatingRuntimeEventPersistence(RuntimeEventPersistence):
         limit: int = 1000,
     ) -> List[RuntimeEvent]:
         return self._inner.list_for_task(task_id, tenant_id=tenant_id, limit=limit)
+
+    def get_by_event_id(
+        self,
+        *,
+        tenant_id: str,
+        event_id: EventId,
+    ) -> PositionedRuntimeEvent | None:
+        return self._inner.get_by_event_id(tenant_id=tenant_id, event_id=event_id)
 
     def close(self) -> None:
         self._inner.close()

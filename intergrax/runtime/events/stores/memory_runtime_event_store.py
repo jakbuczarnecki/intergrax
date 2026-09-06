@@ -9,12 +9,14 @@ from collections import defaultdict
 from threading import Lock
 from typing import DefaultDict, List
 
+from intergrax.contracts.execution_identity import EventId, validate_event_id
 from intergrax.runtime.events.execution_position import (
     ExecutionEventPosition,
     PositionedRuntimeEvent,
 )
 from intergrax.runtime.events.persistence_contract import (
     RuntimeEventPersistence,
+    _validate_persistence_tenant_id,
     _validate_through_limit,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent
@@ -73,3 +75,18 @@ class InMemoryRuntimeEventStore(RuntimeEventPersistence):
             raise ValueError("limit must be > 0")
         rows = self._by_task.get((tenant_id, task_id), [])
         return [positioned.event for positioned in rows[:limit]]
+
+    def get_by_event_id(
+        self,
+        *,
+        tenant_id: str,
+        event_id: EventId,
+    ) -> PositionedRuntimeEvent | None:
+        validated_tenant_id = _validate_persistence_tenant_id(tenant_id)
+        validated_event_id = validate_event_id(event_id)
+        positioned = self._accepted_by_event_id.get(str(validated_event_id))
+        if positioned is None:
+            return None
+        if positioned.event.tenant_id != validated_tenant_id:
+            return None
+        return positioned

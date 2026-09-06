@@ -121,3 +121,16 @@ async def test_event_bus_persists_on_publish_and_record():
     )
     bus.record(recorded, tenant_id="t1")
     assert len(store.list_for_run(event.run_id, tenant_id="t1")) == 2
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_null_runtime_event_persistence_get_by_event_id() -> None:
+    store = NullRuntimeEventPersistence()
+    event = _sample_event()
+    positioned = store.append(event, tenant_id="t1")
+    lookup = store.get_by_event_id(tenant_id="t1", event_id=event.event_id)
+    assert lookup is not None
+    assert lookup.position == positioned.position
+    assert store.get_by_event_id(tenant_id="t2", event_id=event.event_id) is None
+    assert store.get_by_event_id(tenant_id="t1", event_id=mint_event_id()) is None

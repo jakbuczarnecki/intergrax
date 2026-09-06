@@ -10,6 +10,7 @@ from collections import defaultdict
 from threading import Lock
 from typing import List, Optional
 
+from intergrax.contracts.execution_identity import EventId, validate_event_id
 from intergrax.runtime.events.execution_position import (
     AsOfBoundary,
     ExecutionEventPosition,
@@ -17,6 +18,10 @@ from intergrax.runtime.events.execution_position import (
     validate_execution_event_position,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent
+
+
+class RuntimeEventPersistenceIntegrityError(Exception):
+    """Raised when runtime event storage or derived indexes are inconsistent."""
 
 
 class RuntimeEventPersistence(ABC):
@@ -72,6 +77,15 @@ class RuntimeEventPersistence(ABC):
         limit: int = 1000,
     ) -> List[RuntimeEvent]:
         """Return events for a task scoped by tenant (canonical execution order)."""
+
+    @abstractmethod
+    def get_by_event_id(
+        self,
+        *,
+        tenant_id: str,
+        event_id: EventId,
+    ) -> PositionedRuntimeEvent | None:
+        """Return the accepted positioned event for ``tenant_id`` + ``event_id``, or ``None``."""
 
     def list_positioned_through(
         self,
@@ -133,6 +147,31 @@ class NullRuntimeEventPersistence(RuntimeEventPersistence):
     ) -> List[RuntimeEvent]:
         _ = task_id, tenant_id, limit
         return []
+
+    def get_by_event_id(
+        self,
+        *,
+        tenant_id: str,
+        event_id: EventId,
+    ) -> PositionedRuntimeEvent | None:
+        validated_tenant_id = _validate_persistence_tenant_id(tenant_id)
+        validated_event_id = validate_event_id(event_id)
+        positioned = self._accepted.get(str(validated_event_id))
+        if positioned is None:
+            return None
+        if positioned.event.tenant_id != validated_tenant_id:
+            return None
+        return positioned
+
+
+def _validate_persistence_tenant_id(tenant_id: object) -> str:
+    if type(tenant_id) is not str:
+        raise TypeError(f"tenant_id must be str, got {type(tenant_id).__name__}")
+    if not tenant_id.strip():
+        raise ValueError("tenant_id is required")
+    if tenant_id != tenant_id.strip():
+        raise ValueError("tenant_id must not contain leading or trailing whitespace")
+    return tenant_id
 
 
 def resolve_event_tenant_id(event: RuntimeEvent, explicit: Optional[str] = None) -> str:

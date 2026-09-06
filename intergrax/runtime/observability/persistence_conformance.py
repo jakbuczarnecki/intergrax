@@ -21,6 +21,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import (
@@ -118,6 +119,54 @@ def assert_runtime_event_persistence_conformance(
     assert duplicate.position == positioned[0].position
     assert store.list_for_run(run_id, tenant_id=tenant_b) == []
     assert store.list_for_task(task_id, tenant_id=tenant_b) == []
+
+    assert_runtime_event_get_by_event_id_conformance(
+        store,
+        label=label,
+        tenant_a=tenant_a,
+        tenant_b=tenant_b,
+        first=first,
+        duplicate=duplicate,
+        positioned_first=positioned[0],
+    )
+
+
+def assert_runtime_event_get_by_event_id_conformance(
+    store: RuntimeEventPersistence,
+    *,
+    label: str,
+    tenant_a: str,
+    tenant_b: str,
+    first: RuntimeEvent,
+    duplicate: PositionedRuntimeEvent,
+    positioned_first: PositionedRuntimeEvent,
+) -> None:
+    """Shared ``get_by_event_id`` contract for every ``RuntimeEventPersistence`` backend."""
+    lookup = store.get_by_event_id(tenant_id=tenant_a, event_id=first.event_id)
+    assert lookup is not None, f"{label}: expected positioned event for accepted event_id"
+    assert lookup.event.event_id == first.event_id
+    assert lookup.position == positioned_first.position
+
+    unknown_id = mint_event_id()
+    assert store.get_by_event_id(tenant_id=tenant_a, event_id=unknown_id) is None
+
+    assert store.get_by_event_id(tenant_id=tenant_b, event_id=first.event_id) is None
+
+    duplicate_lookup = store.get_by_event_id(tenant_id=tenant_a, event_id=first.event_id)
+    assert duplicate_lookup is not None
+    assert duplicate_lookup.position == duplicate.position
+
+    repeat_lookup = store.get_by_event_id(tenant_id=tenant_a, event_id=first.event_id)
+    assert repeat_lookup == duplicate_lookup
+
+    assert lookup.position.value == positioned_first.position.value
+
+    snapshot_event_id = lookup.event.event_id
+    snapshot_position = lookup.position.value
+    after_lookup = store.get_by_event_id(tenant_id=tenant_a, event_id=first.event_id)
+    assert after_lookup is not None
+    assert after_lookup.event.event_id == snapshot_event_id
+    assert after_lookup.position.value == snapshot_position
 
 
 def sample_causal_evidence(

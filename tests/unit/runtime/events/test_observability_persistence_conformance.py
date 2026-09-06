@@ -21,6 +21,9 @@ from intergrax.runtime.events.stores.document_backed_runtime_event_store import 
 )
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.runtime.events.stores.validating_runtime_event_store import (
+    ValidatingRuntimeEventPersistence,
+)
 from intergrax.runtime.observability.persistence_conformance import (
     assert_runtime_event_persistence_conformance,
 )
@@ -65,3 +68,11 @@ def test_runtime_event_persistence_conformance_matrix(
 def test_sqlite_runtime_event_persistence_conformance(sqlite_store: SQLiteRuntimeEventStore) -> None:
     assert_runtime_event_persistence_conformance(sqlite_store, label="sqlite")
     sqlite_store.close()
+
+
+def test_validating_runtime_event_persistence_conformance() -> None:
+    store = ValidatingRuntimeEventPersistence(InMemoryRuntimeEventStore())
+    try:
+        assert_runtime_event_persistence_conformance(store, label="validating")
+    finally:
+        store.close()
