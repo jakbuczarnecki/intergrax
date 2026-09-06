@@ -15,11 +15,11 @@ from intergrax.rag.embedding.registry.embedding_provider_registry import Embeddi
 class EmbeddingEngine:
     """
     Execution engine responsible for generating embeddings
-    using a provider resolved from the EmbeddingProviderRegistry.
+    using a bound provider or a transitional EmbeddingProviderRegistry.
 
     Responsibilities
     ----------------
-    - provider resolution
+    - provider resolution (when registry-backed)
     - batching
     - retry
     - optional normalization
@@ -27,13 +27,19 @@ class EmbeddingEngine:
 
     def __init__(
         self,
-        registry: EmbeddingProviderRegistry,
+        registry: EmbeddingProviderRegistry | None = None,
         *,
+        provider: EmbeddingProvider | None = None,
         batch_size: int = 64,
         normalize: bool = False,
         max_retries: int = 2,
     ) -> None:
+        if registry is None and provider is None:
+            raise ValueError("EmbeddingEngine requires either registry or provider")
+        if registry is not None and provider is not None:
+            raise ValueError("EmbeddingEngine accepts only one of registry or provider")
         self._registry = registry
+        self._provider = provider
         self._batch_size = int(batch_size)
         self._normalize = bool(normalize)
         self._max_retries = int(max_retries)
@@ -52,7 +58,7 @@ class EmbeddingEngine:
             Text inputs.
 
         provider_id : str
-            Provider identifier registered in the registry.
+            Provider identifier registered in the registry or matching the bound provider.
 
         Returns
         -------
@@ -60,7 +66,17 @@ class EmbeddingEngine:
             Embedding matrix with shape (N, dim)
         """
 
-        provider: EmbeddingProvider = self._registry.get(provider_id)
+        provider: EmbeddingProvider
+        if self._provider is not None:
+            provider = self._provider
+            if provider.provider_name() != provider_id:
+                raise RuntimeError(
+                    "Embedding provider mismatch: engine is bound to "
+                    f"{provider.provider_name()!r}, requested {provider_id!r}"
+                )
+        else:
+            assert self._registry is not None
+            provider = self._registry.get(provider_id)
 
         if not texts:
             return np.empty((0, provider.dimension()), dtype=np.float32)

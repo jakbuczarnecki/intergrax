@@ -13,6 +13,9 @@ from intergrax.integrations.providers.embedding_provider.hf.integration import (
     HfEmbeddingProviderIntegration,
     HfEmbeddingProviderIntegrationConfig,
 )
+from intergrax.integrations.providers.embedding_provider.hf.runtime_binding import (
+    HF_EMBEDDING_PROVIDER_RUNTIME_BINDER,
+)
 from intergrax.integrations.registry.contract_spec import declare_integration_contract
 from intergrax.runtime.integrations.categories.embedding import EmbeddingProviderIntegrationContract
 from intergrax.runtime.integrations.contracts import (
@@ -34,13 +37,14 @@ CONTRACT_SPEC = declare_integration_contract(
         PlatformIntegrationCapability.HEALTH_CHECK,
     ),
     security_posture=PlatformIntegrationSecurityPosture(),
-    supports_runtime_binding=False,
+    supports_runtime_binding=True,
     supports_health_check=False,
+    embedding_runtime_binder=HF_EMBEDDING_PROVIDER_RUNTIME_BINDER,
     metadata={
         "source": "explicit_provider_declaration",
         "optional_dependency": "sentence-transformers",
         "optional_extra": "rag-local-embeddings",
-        "runtime_binding_status": "pending_b3",
+        "runtime_binding_status": "b3_canonical",
     },
 )
 

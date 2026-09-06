@@ -13,6 +13,9 @@ from intergrax.integrations.providers.embedding_provider.openai.integration impo
     OpenaiEmbeddingProviderIntegration,
     OpenaiEmbeddingProviderIntegrationConfig,
 )
+from intergrax.integrations.providers.embedding_provider.openai.runtime_binding import (
+    OPENAI_EMBEDDING_PROVIDER_RUNTIME_BINDER,
+)
 from intergrax.integrations.registry.contract_spec import declare_integration_contract
 from intergrax.runtime.integrations.categories.embedding import EmbeddingProviderIntegrationContract
 from intergrax.runtime.integrations.contracts import (
@@ -34,12 +37,13 @@ CONTRACT_SPEC = declare_integration_contract(
         PlatformIntegrationCapability.HEALTH_CHECK,
     ),
     security_posture=PlatformIntegrationSecurityPosture(),
-    supports_runtime_binding=False,
+    supports_runtime_binding=True,
     supports_health_check=False,
+    embedding_runtime_binder=OPENAI_EMBEDDING_PROVIDER_RUNTIME_BINDER,
     metadata={
         "source": "explicit_provider_declaration",
         "optional_dependency": "openai",
-        "runtime_binding_status": "pending_b3",
+        "runtime_binding_status": "b3_canonical",
     },
 )
 

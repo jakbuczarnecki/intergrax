@@ -9,9 +9,12 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from intergrax.integrations.core.manifest import IntegrationManifest
+
+if TYPE_CHECKING:
+    from intergrax.rag.embedding.contracts.runtime_binding import EmbeddingProviderRuntimeBinder
 
 IntegrationContractFactory = Callable[..., Any]
 
@@ -104,6 +107,11 @@ class IntegrationContractSpec:
     security_posture: Any = None
     supports_runtime_binding: bool = True
     supports_health_check: bool = False
+    embedding_runtime_binder: EmbeddingProviderRuntimeBinder | None = field(
+        default=None,
+        compare=False,
+        repr=False,
+    )
     metadata: Mapping[str, object] = field(default_factory=dict, compare=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -125,6 +133,7 @@ def declare_integration_contract(
     integration_kind: str | None = None,
     supports_runtime_binding: bool = True,
     supports_health_check: bool | None = None,
+    embedding_runtime_binder: EmbeddingProviderRuntimeBinder | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> IntegrationContractSpec:
     """Build an explicit provider-owned contract declaration without reflection."""
@@ -176,6 +185,7 @@ def declare_integration_contract(
         security_posture=security_posture,
         supports_runtime_binding=supports_runtime_binding,
         supports_health_check=health_supported,
+        embedding_runtime_binder=embedding_runtime_binder,
         metadata=dict(metadata or {}),
     )
 

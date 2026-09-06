@@ -4,7 +4,7 @@
 **Date:** 2026-09-05  
 **Task:** P2-002-A · P2-002
 
-**Implementation progress:** Phase 1 catalog/category foundation (P2-002-B1) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 first-party embedding provider catalog registration (P2-002-B2) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** (RAG runtime cutover pending B3; legacy registry removal pending B4).
+**Implementation progress:** Phase 1 catalog/category foundation (P2-002-B1) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 first-party embedding provider catalog registration (P2-002-B2) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 runtime binding cutover (P2-002-B3) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** (legacy registry/bootstrap removal pending B4).
 
 ## Context
 
@@ -148,8 +148,8 @@ Implementation is **out of scope** for P2-002-A. Logical blocks:
 | Phase | Scope |
 |---|---|
 | **0 (now)** | Document decision; no production code changes |
-| **1** | Embedding catalog category + first-party provider packages in Integrations | **B1 foundation complete** (category, profile slot, typed contract, registry participation). **B2 catalog registration complete** — five first-party `embedding_provider` packages registered via explicit `IntegrationContractSpec`; RAG runtime binding still pending B3 |
-| **2** | `IntegrationProfile` + RAG bootstrap cutover; compatibility shim for env-based embedding |
+| **1** | Embedding catalog category + first-party provider packages in Integrations | **B1 foundation complete** (category, profile slot, typed contract, registry participation). **B2 catalog registration complete** — five first-party `embedding_provider` packages registered via explicit `IntegrationContractSpec`. **B3 runtime binding complete** — canonical provider selection flows through `IntegrationProfile` + Integrations catalog runtime binders; `EmbeddingProvider` remains RAG runtime contract; env `EmbeddingProfile` retained as compatibility input |
+| **2** | `IntegrationProfile` + RAG bootstrap cutover; compatibility shim for env-based embedding | **B3 complete** — pending independent audit |
 | **3** | Remove legacy `EmbeddingProviderRegistry` bootstrap map |
 | **4** | LLM `LLMAdapterRegistry` provider-owned registration (decentralize `_BUILTIN_ADAPTERS`) |
 

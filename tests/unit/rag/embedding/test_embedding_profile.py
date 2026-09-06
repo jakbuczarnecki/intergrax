@@ -7,7 +7,13 @@ from unittest.mock import patch
 
 import pytest
 
+from intergrax.integrations.registry.bootstrap import (
+    register_default_integrations,
+    reset_default_integrations_state,
+)
+from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
+    create_default_embedding_engine,
     create_default_embedding_pipeline,
     create_default_registry,
 )
@@ -17,6 +23,16 @@ from intergrax.rag.embedding.registry.profile import EmbeddingProfile, embedding
 
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def _bootstrap_embedding_catalog() -> None:
+    clear_catalog()
+    reset_default_integrations_state()
+    register_default_integrations(preset="full")
+    yield
+    clear_catalog()
+    reset_default_integrations_state()
 
 
 @contextmanager

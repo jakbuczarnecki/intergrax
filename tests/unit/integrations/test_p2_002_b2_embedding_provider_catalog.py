@@ -68,7 +68,7 @@ def test_embedding_provider_catalog_entry_has_explicit_contract_spec(slug: str) 
     spec = embedding_specs[0]
     assert spec.provider_id == slug
     assert spec.contract_class is EmbeddingProviderIntegrationContract
-    assert spec.supports_runtime_binding is False
+    assert spec.supports_runtime_binding is True
 
 
 @pytest.mark.parametrize("slug", sorted(_EXPECTED_PROVIDERS))
@@ -77,7 +77,7 @@ def test_embedding_provider_registry_v2_projection(slug: str) -> None:
     assert registration.provider_id == slug
     assert registration.slug == slug
     assert registration.category == "embedding_provider"
-    assert registration.supports_runtime_binding is False
+    assert registration.supports_runtime_binding is True
 
 
 def test_embedding_provider_registry_v2_snapshot_has_five_rows() -> None:
@@ -239,6 +239,8 @@ def test_integrations_do_not_import_rag_embedding_packages() -> None:
     root = repo_root / "intergrax" / "integrations" / "providers" / "embedding_provider"
     violations: list[str] = []
     for path in root.rglob("*.py"):
+        if path.name == "runtime_binding.py":
+            continue
         text = path.read_text(encoding="utf-8")
         if "intergrax.rag.embedding" in text:
             violations.append(str(path.relative_to(repo_root)))
