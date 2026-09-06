@@ -175,6 +175,41 @@ def test_capability_catalog_core_has_no_runtime_mutation_api() -> None:
         )
 
 
+def test_private_catalog_adapters_do_not_import_runtime_registries() -> None:
+    root = _package_root(_ADAPTERS_MODULE)
+    private_modules = (
+        "private_tool.py",
+        "private_skill.py",
+        "_private_validation.py",
+    )
+    for module_name in private_modules:
+        path = root / module_name
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for imported in _collect_imports(tree):
+            for forbidden in _FORBIDDEN_ADAPTER_RUNTIME_IMPORTS:
+                if imported == forbidden or imported.startswith(f"{forbidden}."):
+                    raise AssertionError(
+                        f"{module_name} imports runtime registry: {imported}",
+                    )
+            for prefix in ("intergrax.tools.registry", "intergrax.skills.registry"):
+                if imported == prefix or imported.startswith(f"{prefix}."):
+                    raise AssertionError(
+                        f"{module_name} imports domain registry package: {imported}",
+                    )
+
+
+def test_private_catalog_adapters_do_not_define_registry_classes() -> None:
+    root = _package_root(_ADAPTERS_MODULE)
+    for module_name in ("private_tool.py", "private_skill.py"):
+        path = root / module_name
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        violations = _collect_forbidden_registry_class_defs(tree)
+        assert not violations, (
+            f"{module_name} defines forbidden registry symbols: "
+            + ", ".join(violations)
+        )
+
+
 def test_capability_catalog_adapters_do_not_import_runtime_registries() -> None:
     root = _package_root(_ADAPTERS_MODULE)
     for path in _iter_package_py_files(_ADAPTERS_MODULE):

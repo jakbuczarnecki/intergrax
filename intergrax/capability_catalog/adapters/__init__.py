@@ -33,6 +33,16 @@ from intergrax.capability_catalog.adapters.tool_governance import (
     TOOL_POLICY_GOVERNANCE_EVALUATOR_ID,
     ToolPolicyGovernanceEvaluator,
 )
+from intergrax.capability_catalog.adapters.private_skill import (
+    PrivateSkillCapabilityCatalogSource,
+    PrivateSkillCatalogPackage,
+    project_private_skill_package,
+)
+from intergrax.capability_catalog.adapters.private_tool import (
+    PrivateToolCapabilityCatalogSource,
+    PrivateToolCatalogRecord,
+    project_private_tool_record,
+)
 from intergrax.capability_catalog.adapters.tool_ranking import (
     KEYWORD_OVERLAP_TOOL_RANKER_ID,
     KeywordOverlapToolCapabilityRanker,
@@ -50,9 +60,15 @@ __all__ = [
     "AgentStableIdentityCapabilityRanker",
     "KEYWORD_OVERLAP_TOOL_RANKER_ID",
     "KeywordOverlapToolCapabilityRanker",
+    "PrivateSkillCapabilityCatalogSource",
+    "PrivateSkillCatalogPackage",
+    "PrivateToolCapabilityCatalogSource",
+    "PrivateToolCatalogRecord",
     "SkillBundleCatalogSource",
     "ToolBundleCatalogSource",
     "project_agent_catalog_entry",
+    "project_private_skill_package",
+    "project_private_tool_record",
     "project_skill_bundle_entry",
     "project_tool_bundle_entry",
 ]

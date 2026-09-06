@@ -171,7 +171,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Tool/Skill plugin E2E proofs; Tier-3 composition gate. |
 | **Completion criteria** | At least one private catalog adapter each for Tool and Skill in proof; documented operator flow for profile update vs discovery. |
 | **Depends on** | Stages 2, 5; Stage 6 recommended for Skill version display. |
-| **Maturity** | **Planned**. |
+| **Maturity** | **Implemented** — `PrivateToolCapabilityCatalogSource` and `PrivateSkillCapabilityCatalogSource` at `intergrax/capability_catalog/adapters/private_tool.py` and `private_skill.py`; enterprise-private `CapabilitySourceKind.ENTERPRISE_PRIVATE` source identity; versioned provenance (`version_label`, optional package/digest/publisher); federation with built-in Tool/Skill bundle sources; air-gapped in-memory fixtures; read-only discovery (`CATALOG_AVAILABLE` without registry/profile mutation); operator flow documented in architecture §Enterprise deployment; tests `tests/unit/capability_catalog/adapters/test_private_tool_adapter.py`, `test_private_skill_adapter.py`, `test_private_catalog_stage7.py`. |
 
 ---
 

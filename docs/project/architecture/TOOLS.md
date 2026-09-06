@@ -85,6 +85,9 @@ Integration / sandbox / RAG backend
 At a high level:
 
 1. **Bootstrap** - Tier-3 `ToolProfile` and `IntegrationProfile` build a runtime `ToolRegistry` from catalog bundles.
+
+Enterprise-private Tool catalog discovery (Capability Catalog Stage 7) exposes read-only metadata from non-public sources. **Private Tool discovery ≠ `ToolRegistry` availability** — runtime materialization still requires Platform Plugin availability, `ToolProfile` enablement, and `wire_application_environment()`.
+
 2. **Declare** - `AgentContract.allowed_tools` and resolved skill `tool_ids` declare what an agent may request.
 3. **Narrow** - `RuntimePolicyBundle.tool_access`, modality filters, and selection strategies shrink the visible schema set.
 4. **Plan** - `CatalogToolPlanner` / `ToolPlanningService` or native `generate_with_tools` proposes `tool_id` + arguments (`ToolPlanDecision`).

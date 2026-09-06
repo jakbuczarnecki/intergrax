@@ -449,6 +449,26 @@ Architecture must support:
 
 Therefore **public Marketplace is not a mandatory platform dependency**. Federated catalog must operate from local, enterprise-private, and built-in sources alone.
 
+### Private Tool and Skill catalog sources (Stage 7)
+
+Private Tool and Skill catalogs implement the same read-only `CapabilityCatalogSource` port as built-in bundle adapters. Entries use `CapabilitySourceKind.ENTERPRISE_PRIVATE` with a stable per-source `source_id` (for example `enterprise.acme.tools`, `enterprise.acme.skills`).
+
+**Catalog presence does not imply installation, profile enablement, registry materialization, entitlement, trust, or runtime routability.**
+
+Operator flow (Tool and Skill):
+
+```text
+1. discover private capability via federated catalog query
+2. operator/admin chooses acquisition path (Platform Plugin package availability)
+3. domain plugin registered through existing catalog/bootstrap paths
+4. ToolProfile or SkillProfile updated by operator
+5. wire_application_environment()
+6. ToolRegistry or SkillRegistry materializes the capability
+7. availability evidence may then classify HOST_AVAILABLE separately from CATALOG_AVAILABLE
+```
+
+Discovery **must not** execute steps 2–6.
+
 ---
 
 ## Security and third-party code

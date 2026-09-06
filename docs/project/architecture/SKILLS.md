@@ -151,6 +151,8 @@ SkillRegistry
 | **SkillProfile** | Host policy - `enabled_bundles`, `enabled`, `register_all_catalog_bundles` |
 | **SkillRegistry** | Runtime lookup used by `SkillResolver` and validation |
 
+Enterprise-private Skill catalog discovery (Capability Catalog Stage 7) lists skills from non-public sources with versioned provenance. **Private Skill discovery ≠ `SkillRegistry` availability** — registry materialization still requires `SkillPlugin` bootstrap, `SkillProfile` enablement, and `wire_application_environment()`.
+
 ## AgentContract.skills and allowed_tools
 
 - Agents declare **`SkillManifest` objects** on `AgentContract.skills[]`.
