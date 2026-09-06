@@ -13,7 +13,6 @@ from intergrax.rag.embedding.contracts.embedding_result import (
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 
 
 pytestmark = pytest.mark.unit
@@ -57,20 +56,9 @@ class FakeEmbeddingProvider(EmbeddingProvider):
 
 def create_pipeline() -> EmbeddingPipeline:
 
-    registry = EmbeddingProviderRegistry()
-
     provider = FakeEmbeddingProvider()
-
-    registry.register(provider)
-
-    engine = EmbeddingEngine(registry)
-
-    pipeline = EmbeddingPipeline(
-        engine=engine,
-        provider_id="fake",
-    )
-
-    return pipeline
+    engine = EmbeddingEngine(provider=provider)
+    return EmbeddingPipeline(engine=engine)
 
 
 def test_embed_texts() -> None:
@@ -250,14 +238,13 @@ def test_pipeline_validates_documents_and_calls_engine_once() -> None:
         calls = 0
         received_texts: list[str] = []
 
-        def embed(self, texts: list[str], *, provider_id: str) -> np.ndarray:
+        def embed(self, texts: list[str]) -> np.ndarray:
             self.calls += 1
             self.received_texts = list(texts)
-            assert provider_id == "spy"
             return np.ones((len(texts), 2), dtype=np.float32)
 
     engine = SpyEngine()
-    pipeline = EmbeddingPipeline(engine=engine, provider_id="spy")
+    pipeline = EmbeddingPipeline(engine=engine)
     documents = [make_document("one", "first"), make_document("two", "second")]
     original_documents = [document.model_dump(mode="python") for document in documents]
 
@@ -278,10 +265,10 @@ def test_pipeline_rejects_foreign_document_type() -> None:
 
 def test_pipeline_empty_input_returns_empty_result_without_engine_call() -> None:
     class FailingEngine:
-        def embed(self, texts: list[str], *, provider_id: str) -> np.ndarray:
+        def embed(self, texts: list[str]) -> np.ndarray:
             raise AssertionError("empty input must not call the engine")
 
-    pipeline = EmbeddingPipeline(engine=FailingEngine(), provider_id="unused")
+    pipeline = EmbeddingPipeline(engine=FailingEngine())
 
     result = pipeline.embed_documents([])
 
@@ -291,10 +278,10 @@ def test_pipeline_empty_input_returns_empty_result_without_engine_call() -> None
 
 def test_pipeline_propagates_engine_errors() -> None:
     class FailingEngine:
-        def embed(self, texts: list[str], *, provider_id: str) -> np.ndarray:
+        def embed(self, texts: list[str]) -> np.ndarray:
             raise RuntimeError("provider failed")
 
-    pipeline = EmbeddingPipeline(engine=FailingEngine(), provider_id="failing")
+    pipeline = EmbeddingPipeline(engine=FailingEngine())
 
     with pytest.raises(RuntimeError, match="provider failed"):
         pipeline.embed_documents([make_document("one")])
@@ -302,10 +289,10 @@ def test_pipeline_propagates_engine_errors() -> None:
 
 def test_pipeline_rejects_engine_cardinality_mismatch() -> None:
     class WrongCardinalityEngine:
-        def embed(self, texts: list[str], *, provider_id: str) -> np.ndarray:
+        def embed(self, texts: list[str]) -> np.ndarray:
             return np.ones((1, 2), dtype=np.float32)
 
-    pipeline = EmbeddingPipeline(engine=WrongCardinalityEngine(), provider_id="wrong")
+    pipeline = EmbeddingPipeline(engine=WrongCardinalityEngine())
 
     with pytest.raises(ValueError, match="expected_rows"):
         pipeline.embed_documents([make_document("one"), make_document("two")])

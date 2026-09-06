@@ -14,7 +14,6 @@ from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvid
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderExecutionConfig
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile, embedding_profile_from_env
 from intergrax.rag.embedding.runtime.resolver import (
@@ -31,68 +30,24 @@ def _ensure_embedding_catalog_registered() -> None:
     register_default_integrations(preset="full")
 
 
-def create_default_registry(
-    embedding_model: Optional[str] = None,
-    execution_config: EmbeddingProviderExecutionConfig | None = None,
-) -> EmbeddingProviderRegistry:
-    """
-    TRANSITIONAL_RUNTIME_COMPATIBILITY — registry router backed by Integrations binding.
-
-    Canonical provider construction authority is Integrations catalog + runtime binder.
-    """
-    _ensure_embedding_catalog_registered()
-
-    registry = EmbeddingProviderRegistry()
-
-    for slug in list_slugs(category=IntegrationCategory.EMBEDDING_PROVIDER):
-        profile = EmbeddingProfile(provider=slug, model=embedding_model)
-
-        def factory(
-            resolved_slug: str = slug,
-            resolved_profile: EmbeddingProfile = profile,
-        ) -> EmbeddingProvider:
-            return bind_embedding_provider(
-                integration_profile=IntegrationProfile(embedding_provider=resolved_slug),
-                embedding_profile=resolved_profile,
-                execution_config=execution_config,
-            )
-
-        registry.register_factory(slug, factory)
-
-    return registry
-
-
 def create_default_embedding_manager() -> BaseEmbeddingManager:
     pipeline = create_default_embedding_pipeline()
     return EmbeddingManager(pipeline=pipeline)
 
 
 def create_default_embedding_engine(
-    registry: EmbeddingProviderRegistry | None = None,
+    provider_id: Optional[str] = None,
     embedding_model: Optional[str] = None,
     *,
     provider: EmbeddingProvider | None = None,
+    integration_profile: IntegrationProfile | None = None,
+    embedding_profile: EmbeddingProfile | None = None,
+    execution_config: EmbeddingProviderExecutionConfig | None = None,
 ) -> EmbeddingEngine:
     """Create EmbeddingEngine with Integrations-backed provider binding."""
     if provider is not None:
         return EmbeddingEngine(provider=provider)
 
-    if registry is None:
-        registry = create_default_registry(embedding_model=embedding_model)
-
-    return EmbeddingEngine(registry=registry)
-
-
-def create_default_embedding_pipeline(
-    provider_id: Optional[str] = None,
-    registry: EmbeddingProviderRegistry | None = None,
-    embedding_model: Optional[str] = None,
-    *,
-    integration_profile: IntegrationProfile | None = None,
-    embedding_profile: EmbeddingProfile | None = None,
-    execution_config: EmbeddingProviderExecutionConfig | None = None,
-) -> EmbeddingPipeline:
-    """Create EmbeddingPipeline using canonical Integrations-backed runtime binding."""
     _ensure_embedding_catalog_registered()
 
     compat_profile = embedding_profile or embedding_profile_from_env()
@@ -105,26 +60,33 @@ def create_default_embedding_pipeline(
         ),
         model=resolved_model,
     )
-    resolved_provider = resolved_profile.provider
 
     if integration_profile is None:
-        integration_profile = IntegrationProfile(embedding_provider=resolved_provider)
+        integration_profile = IntegrationProfile(embedding_provider=resolved_profile.provider)
 
-    if registry is None:
-        bound_provider = bind_embedding_provider(
-            integration_profile=integration_profile,
-            provider_id=provider_id,
-            embedding_profile=resolved_profile,
-            execution_config=execution_config,
-        )
-        engine = EmbeddingEngine(provider=bound_provider)
-    else:
-        engine = create_default_embedding_engine(
-            registry=registry,
-            embedding_model=resolved_model,
-        )
-
-    return EmbeddingPipeline(
-        engine=engine,
-        provider_id=resolved_provider,
+    bound_provider = bind_embedding_provider(
+        integration_profile=integration_profile,
+        provider_id=provider_id,
+        embedding_profile=resolved_profile,
+        execution_config=execution_config,
     )
+    return EmbeddingEngine(provider=bound_provider)
+
+
+def create_default_embedding_pipeline(
+    provider_id: Optional[str] = None,
+    embedding_model: Optional[str] = None,
+    *,
+    integration_profile: IntegrationProfile | None = None,
+    embedding_profile: EmbeddingProfile | None = None,
+    execution_config: EmbeddingProviderExecutionConfig | None = None,
+) -> EmbeddingPipeline:
+    """Create EmbeddingPipeline using canonical Integrations-backed runtime binding."""
+    engine = create_default_embedding_engine(
+        provider_id=provider_id,
+        embedding_model=embedding_model,
+        integration_profile=integration_profile,
+        embedding_profile=embedding_profile,
+        execution_config=execution_config,
+    )
+    return EmbeddingPipeline(engine=engine)

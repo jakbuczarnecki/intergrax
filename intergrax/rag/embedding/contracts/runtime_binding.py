@@ -22,6 +22,10 @@ class EmbeddingProviderRuntimeBindingError(RuntimeError):
     """Raised when catalog runtime binding cannot produce an EmbeddingProvider."""
 
 
+class EmbeddingProviderDependencyError(RuntimeError):
+    """Raised when a selected provider cannot load its optional dependency."""
+
+
 @dataclass(frozen=True, slots=True)
 class EmbeddingProviderRuntimeBindingContext:
     """Inputs for provider-owned runtime construction at bind time."""
@@ -41,6 +45,7 @@ class EmbeddingProviderRuntimeBinder(Protocol):
 
 __all__ = [
     "EmbeddingProviderConfigurationError",
+    "EmbeddingProviderDependencyError",
     "EmbeddingProviderRuntimeBindingContext",
     "EmbeddingProviderRuntimeBinder",
     "EmbeddingProviderRuntimeBindingError",

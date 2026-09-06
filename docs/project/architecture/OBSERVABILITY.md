@@ -1218,7 +1218,7 @@ Future LLM adjudication **must** use existing `LLMAdapter` via `intergrax/llm_ad
 
 #### Embedding reuse
 
-**Unsafe** for diagnostics to depend on RAG internals (`EmbeddingEngine`, `EmbeddingProviderRegistry`, vectorstore managers) for incident grouping. `EmbeddingProvider` ABC lives under `intergrax/rag/embedding/` and is RAG-orchestrated even though the interface is small.
+**Unsafe** for diagnostics to depend on RAG internals (`EmbeddingEngine`, bound `EmbeddingProvider`, vectorstore managers) for incident grouping. `EmbeddingProvider` ABC lives under `intergrax/rag/embedding/` and is RAG-orchestrated even though the interface is small.
 
 **Smallest prerequisite (future platform slice, not DIAG-5C-A):** extract a neutral `TextEmbeddingPort` (or relocate `EmbeddingProvider` to a non-RAG contracts module) that RAG providers implement - diagnostics inject the port, not `intergrax.rag.*` retrieval stack. Vector index remains disposable/rebuildable analytical infrastructure, not canonical truth.
 

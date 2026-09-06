@@ -24,9 +24,9 @@ class EmbeddingManager(BaseEmbeddingManager):
     - delegate embedding execution to EmbeddingPipeline
 
     This class intentionally contains no embedding logic.
-    All embedding behaviour is implemented by providers
-    registered in EmbeddingProviderRegistry and executed
-    by EmbeddingEngine through EmbeddingPipeline.
+    All embedding behaviour is implemented by the bound
+    EmbeddingProvider executed through EmbeddingPipeline
+    and EmbeddingEngine.
     """
 
     def __init__(

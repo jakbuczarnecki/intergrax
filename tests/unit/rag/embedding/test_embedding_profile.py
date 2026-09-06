@@ -15,8 +15,9 @@ from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
     create_default_embedding_engine,
     create_default_embedding_pipeline,
-    create_default_registry,
 )
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
 from intergrax.rag.embedding.providers.ollama_embedding_provider import OllamaEmbeddingProvider
 from intergrax.rag.embedding.providers.openai_embedding_provider import OpenAIEmbeddingProvider
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile, embedding_profile_from_env
@@ -73,8 +74,7 @@ def test_create_default_pipeline_uses_embedding_provider_env(
     monkeypatch.setenv("INTERGRAX_EMBEDDING_MODEL", "text-embedding-3-large")
 
     class SpyEngine:
-        def embed(self, texts: list[str], *, provider_id: str) -> object:
-            assert provider_id == "openai"
+        def embed(self, texts: list[str]) -> object:
             return None
 
     pipeline = create_default_embedding_pipeline()
@@ -82,15 +82,17 @@ def test_create_default_pipeline_uses_embedding_provider_env(
     pipeline.embed_texts(["probe"])
 
 
-def test_registry_factory_passes_embedding_model_to_provider(
+def test_bind_embedding_provider_passes_embedding_model_to_openai(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("INTERGRAX_EMBEDDING_PROVIDER", "openai")
     monkeypatch.setenv("INTERGRAX_EMBEDDING_MODEL", "profile-model")
 
     with patch_openai_client():
-        registry = create_default_registry(embedding_model="profile-model")
-        provider = registry.get("openai")
+        provider = bind_embedding_provider(
+            integration_profile=IntegrationProfile(embedding_provider="openai"),
+            embedding_profile=EmbeddingProfile(provider="openai", model="profile-model"),
+        )
         assert isinstance(provider, OpenAIEmbeddingProvider)
         assert provider._model_name == "profile-model"
 
@@ -103,13 +105,18 @@ def test_ollama_provider_uses_constructor_model_not_legacy_env(
     assert provider._model_name == "canonical-model"
 
 
-def test_openai_provider_uses_same_model_variable_via_registry(
+def test_openai_provider_uses_same_model_variable_via_runtime_binding(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("INTERGRAX_DEFAULT_OPENAI_EMBED_MODEL", "legacy-model")
     with patch_openai_client():
-        registry = create_default_registry(embedding_model="canonical-openai-model")
-        provider = registry.get("openai")
+        provider = bind_embedding_provider(
+            integration_profile=IntegrationProfile(embedding_provider="openai"),
+            embedding_profile=EmbeddingProfile(
+                provider="openai",
+                model="canonical-openai-model",
+            ),
+        )
         assert provider._model_name == "canonical-openai-model"
 
 

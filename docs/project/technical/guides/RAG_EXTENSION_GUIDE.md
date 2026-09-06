@@ -167,7 +167,7 @@ second column is intentional:
 | Parser | **C** | Integration `DocumentParser`; parser output is normalized to `KnowledgeDocument` | Integration Library, category `DOCUMENT_PARSER`; external catalog plugins use `intergrax.integrations` | parser slug in `IntegrationProfile`/preset; `resolve_document_parser(slug)` | parser options; scope is supplied by the normalization/loader boundary |
 | Metadata enricher | **B** | `BaseMetadataProvider.enrich(documents, source)` | `MetadataPipeline(providers=...)` or loader/ingest callback; no public RAG EP | `DefaultMetadataProvider` | native documents and source; no authority to change routing fields |
 | Chunker | **A** | `BaseChunkingStrategy.strategy_id()` and `chunk(Sequence[KnowledgeDocument])` | `intergrax.rag.chunkers`; discovery is opt-in | built-ins plus `RagProfile.chunking_strategy_id` | no runtime infrastructure by default; constructor is no-argument for EP discovery |
-| Embedding | **B** | `EmbeddingProvider.provider_name/dimension/embed` | `EmbeddingProviderRegistry`; explicit instance/factory composition; no `intergrax.rag.embeddings` EP | built-in registry and selected provider ID | embedding engine/manager is composed by the host |
+| Embedding | **C** | `EmbeddingProvider.provider_name/dimension/embed` | Integrations catalog `embedding_provider` + `bind_embedding_provider()`; inject bound provider into `EmbeddingEngine`/`EmbeddingPipeline`; no `intergrax.rag.embeddings` EP | `IntegrationProfile.embedding_provider` / `EmbeddingProfile` env | embedding engine/manager is composed by the host |
 | Vector backend | **C** | native `VectorStore` plus `VectorStoreRecord/Hit/Scope` ABI | Integration Library, category `VECTOR_STORE`; resolved and wrapped by `VectorstoreManager` | `IntegrationProfile.vector_store` / environment / preset | scope and lifecycle stay at the native manager boundary |
 | Retriever | **A** | `BaseRetriever` or dependency-aware `BaseRetrieverPlugin`; `RetrieverQuery` → `RetrievalHit` | `intergrax.rag.retrievers`; discovery is opt-in | `RagProfile.retriever_id`, `fast_retriever_id`, `deep_retriever_id` | vector manager, embedding manager, optional TOC/graph store, profile and LLM |
 | Reranker | **A** | `BaseReranker` or `BaseRerankerPlugin`; candidates → `RerankerResult` | `intergrax.rag.rerankers`; discovery is opt-in | `RagProfile.reranker_id`; some built-ins use Integration Library rerank providers | embedding manager is supplied to `BaseRerankerPlugin.create`; cache/engine are composed |
@@ -661,11 +661,10 @@ class MyEmbeddingProvider(EmbeddingProvider):
         return array
 ```
 
-Register the instance or factory in an `EmbeddingProviderRegistry` supplied by
-the host, then build the normal `EmbeddingEngine`/`EmbeddingPipeline`. Provider
-selection is by provider ID; the default is the first registered provider.
-Built-in optional dependencies use lazy factories and raise
-`EmbeddingProviderDependencyError` when a selected dependency is absent.
+Bind the provider through Integrations (`IntegrationProfile` + `bind_embedding_provider()`)
+or inject a typed `EmbeddingProvider` instance at composition time, then build the normal
+`EmbeddingEngine`/`EmbeddingPipeline`. `EmbeddingEngine` executes the already-bound
+provider; it does not resolve providers from a registry.
 
 The provider must return exactly one vector per input, in input order, with a
 stable positive dimension and finite values. It must not mutate document

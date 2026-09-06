@@ -10,7 +10,6 @@ from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.providers.vllm_embedding_provider import VllmEmbeddingProvider
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from testing_support.builder import require_vllm_embed_reachable
 
 pytestmark = pytest.mark.integration
@@ -19,12 +18,9 @@ pytestmark = pytest.mark.integration
 def test_vllm_embedding_documents() -> None:
     require_vllm_embed_reachable()
 
-    registry = EmbeddingProviderRegistry()
     provider = VllmEmbeddingProvider()
-    registry.register(provider)
-
-    engine = EmbeddingEngine(registry)
-    pipeline = EmbeddingPipeline(engine=engine, provider_id=provider.provider_name())
+    engine = EmbeddingEngine(provider=provider)
+    pipeline = EmbeddingPipeline(engine=engine)
     manager = EmbeddingManager(pipeline=pipeline)
 
     docs = [

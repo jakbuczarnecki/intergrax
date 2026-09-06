@@ -10,16 +10,14 @@ import numpy as np
 from numpy.typing import NDArray
 
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
+
 
 class EmbeddingEngine:
     """
-    Execution engine responsible for generating embeddings
-    using a bound provider or a transitional EmbeddingProviderRegistry.
+    Execution engine responsible for generating embeddings using a bound provider.
 
     Responsibilities
     ----------------
-    - provider resolution (when registry-backed)
     - batching
     - retry
     - optional normalization
@@ -27,27 +25,24 @@ class EmbeddingEngine:
 
     def __init__(
         self,
-        registry: EmbeddingProviderRegistry | None = None,
         *,
-        provider: EmbeddingProvider | None = None,
+        provider: EmbeddingProvider,
         batch_size: int = 64,
         normalize: bool = False,
         max_retries: int = 2,
     ) -> None:
-        if registry is None and provider is None:
-            raise ValueError("EmbeddingEngine requires either registry or provider")
-        if registry is not None and provider is not None:
-            raise ValueError("EmbeddingEngine accepts only one of registry or provider")
-        self._registry = registry
         self._provider = provider
         self._batch_size = int(batch_size)
         self._normalize = bool(normalize)
         self._max_retries = int(max_retries)
 
+    @property
+    def provider(self) -> EmbeddingProvider:
+        return self._provider
+
     def embed(
         self,
         texts: Sequence[str],
-        provider_id: str,
     ) -> NDArray[np.float32]:
         """
         Generate embeddings for a batch of texts.
@@ -57,26 +52,13 @@ class EmbeddingEngine:
         texts : Sequence[str]
             Text inputs.
 
-        provider_id : str
-            Provider identifier registered in the registry or matching the bound provider.
-
         Returns
         -------
         NDArray[np.float32]
             Embedding matrix with shape (N, dim)
         """
 
-        provider: EmbeddingProvider
-        if self._provider is not None:
-            provider = self._provider
-            if provider.provider_name() != provider_id:
-                raise RuntimeError(
-                    "Embedding provider mismatch: engine is bound to "
-                    f"{provider.provider_name()!r}, requested {provider_id!r}"
-                )
-        else:
-            assert self._registry is not None
-            provider = self._registry.get(provider_id)
+        provider = self._provider
 
         if not texts:
             return np.empty((0, provider.dimension()), dtype=np.float32)

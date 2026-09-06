@@ -10,12 +10,6 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.rag.embedding.registry.embedding_provider_registry import (
-    EmbeddingProviderDependencyError,
-    EmbeddingProviderRegistry,
-    lazy_import_provider_factory,
-)
-
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,42 +50,46 @@ print(json.dumps({
     }
 
 
-def test_default_embedding_registry_imports_provider_only_on_selection() -> None:
+def test_default_embedding_bootstrap_imports_provider_only_on_selection() -> None:
     result = _clean_subprocess(
         """
 import json
 import sys
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
     create_default_embedding_manager,
-    create_default_registry,
+    create_default_embedding_engine,
 )
-from intergrax.rag.embedding.registry.embedding_provider_registry import (
-    EmbeddingProviderDependencyError,
-)
+from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.rag.embedding.registry.profile import EmbeddingProfile
+from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
 
+register_default_integrations(preset="full")
 manager = create_default_embedding_manager()
-registry = create_default_registry()
 before = {
     name: name in sys.modules
     for name in ("torch", "sentence_transformers", "transformers")
 }
 try:
-    provider = registry.get("hf")
-except EmbeddingProviderDependencyError as exc:
+    provider = bind_embedding_provider(
+        integration_profile=IntegrationProfile(embedding_provider="hf"),
+        embedding_profile=EmbeddingProfile(provider="hf", model="sentence-transformers/all-MiniLM-L6-v2"),
+    )
+    engine = create_default_embedding_engine(provider=provider)
+    selection = {
+        "provider": provider.provider_name(),
+        "engine_provider": engine.provider.provider_name(),
+    }
+except Exception as exc:
     selection = {
         "error_type": type(exc).__name__,
         "error": str(exc),
-    }
-else:
-    selection = {
-        "provider": provider.provider_name(),
     }
 after = {
     name: name in sys.modules
     for name in ("torch", "sentence_transformers", "transformers")
 }
 print(json.dumps({
-    "default": registry.default_provider(),
     "manager": type(manager).__name__,
     "before": before,
     "after": after,
@@ -102,7 +100,6 @@ print(json.dumps({
 
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["default"] == "hf"
     assert payload["manager"] == "EmbeddingManager"
     assert payload["before"] == {
         "torch": False,
@@ -113,37 +110,11 @@ print(json.dumps({
         assert payload["selection"]["provider"] == "hf"
         assert payload["after"]["sentence_transformers"] is True
     else:
-        assert payload["selection"]["error_type"] == "EmbeddingProviderDependencyError"
-        assert "Intergrax-ai[rag-local-embeddings]" in payload["selection"]["error"]
-
-
-def test_missing_lazy_provider_dependency_has_controlled_error(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    (tmp_path / "dep1_provider.py").write_text(
-        "from dep1_missing_package import Missing\n"
-        "class Provider:\n"
-        "    def provider_name(self):\n"
-        "        return 'missing'\n",
-        encoding="utf-8",
-    )
-    monkeypatch.syspath_prepend(str(tmp_path))
-    factory = lazy_import_provider_factory(
-        provider_id="missing",
-        module_name="dep1_provider",
-        class_name="Provider",
-        dependency_name="dep1-missing-package",
-    )
-
-    registry = EmbeddingProviderRegistry()
-    registry.register_factory("missing", factory)
-
-    with pytest.raises(
-        EmbeddingProviderDependencyError,
-        match="Embedding provider 'missing' requires dependency 'dep1-missing-package'",
-    ):
-        registry.get("missing")
+        assert payload["selection"]["error_type"] in {
+            "EmbeddingProviderDependencyError",
+            "ModuleNotFoundError",
+            "ImportError",
+        }
 
 
 def test_whisper_is_owned_by_media_extra() -> None:

@@ -29,7 +29,6 @@ from intergrax.integrations.registry.plugin_register import register_from_manife
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
     create_default_embedding_pipeline,
-    create_default_registry,
 )
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.contracts.runtime_binding import (
@@ -253,7 +252,7 @@ def test_pluginability_e2e_without_vendor_sdk() -> None:
         embedding_profile=EmbeddingProfile(provider=slug, model="probe-model"),
     )
     engine = EmbeddingEngine(provider=provider)
-    pipeline = EmbeddingPipeline(engine=engine, provider_id=slug)
+    pipeline = EmbeddingPipeline(engine=engine)
 
     vectors = pipeline.embed_texts(["ab", "abcd"])
     assert vectors.shape == (2, 2)

@@ -4,7 +4,7 @@
 **Date:** 2026-09-05  
 **Task:** P2-002-A · P2-002
 
-**Implementation progress:** Phase 1 catalog/category foundation (P2-002-B1) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 first-party embedding provider catalog registration (P2-002-B2) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 runtime binding cutover (P2-002-B3) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** (legacy registry/bootstrap removal pending B4).
+**Implementation progress:** Phase 1 catalog/category foundation (P2-002-B1) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 first-party embedding provider catalog registration (P2-002-B2) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 runtime binding cutover (P2-002-B3) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT**. Phase 2 legacy registry removal (P2-002-B4) — **IMPLEMENTED_PENDING_INDEPENDENT_AUDIT** (LLM registry decentralization pending P2-002-C).
 
 ## Context
 
@@ -20,7 +20,7 @@ model serving runtime, secrets store, …) with a single canonical catalog and d
 |---|---|---|
 | **Integrations** | Canonical catalog for platform backend categories; `IntegrationProfile` host selection; `registry_v2` derived projection only | Category-specific `*IntegrationContract` (e.g. `VectorStore`, `RerankProvider`) |
 | **LLM Adapters** | `LLMProvider` + `LLMAdapterRegistry` + `ModelCatalog` (model metadata) | `LLMAdapter` — generate, stream, tools, structured output, usage |
-| **Embedding** | `EmbeddingProviderRegistry` + `EmbeddingProfile` + bootstrap factory map | `EmbeddingProvider` — batch `embed()` → vectors |
+| **Embedding** | Integrations catalog (`embedding_provider`) + `EmbeddingProfile` + `bind_embedding_provider()` | `EmbeddingProvider` — batch `embed()` → vectors |
 
 Documented boundaries in `INTEGRATIONS.md` and `LLM_ADAPTERS.md` already state that
 Integrations does **not** own LLM model invocation and that LLM Adapters are a separate
@@ -65,10 +65,10 @@ Adopt **Option C (hybrid)**:
 | LLM runtime contract | `LLMAdapter` ABC | Streaming, tools, structured output, usage |
 | LLM routing / failover | `ModelRouter`, `LLMRoutingEvaluator`, `FailoverLLMAdapter` | Domain runtime router |
 | LLM provider registration | `LLMAdapterRegistry` | Evolve to provider-owned explicit registration; remove central `_BUILTIN_ADAPTERS` map |
-| Embedding provider identity | **Target:** Integrations catalog (`embedding_provider`) | **Interim:** `EmbeddingProviderRegistry` |
+| Embedding provider identity | Integrations catalog (`embedding_provider`) | `IntegrationProfile.embedding_provider` |
 | Embedding model selection | `EmbeddingProfile.model` + host/env | Model is domain config, not catalog slug |
 | Embedding runtime contract | `EmbeddingProvider` ABC in `rag/embedding/` | Batch vectors, dimensions, normalization |
-| Embedding provider registration | **Target:** Integrations `register_from_manifest` path | **Interim:** `create_default_registry()` factory map |
+| Embedding provider registration | Integrations `register_from_manifest` + provider-owned `runtime_binding.py` | No central registry or factory map |
 | Platform backends (vector store, parser, rerank, …) | Integrations catalog | Unchanged |
 | Local inference host probe | `model_serving_runtime` Integration | Health/list_models only — not LLM/embedding runtime |
 | Connection credentials | Tier-3 host + `SecretsStore` Integration | Domain profiles consume resolved secrets |
@@ -124,12 +124,11 @@ Implementation is **out of scope** for P2-002-A. Logical blocks:
    `integrations/providers/embedding_provider/<slug>/` with explicit `IntegrationContractSpec`;
    register via `register_from_manifest`.
 3. **Runtime binding** — `EmbeddingPipeline` resolves provider via `IntegrationProfile` → catalog
-   factory → `EmbeddingProvider` adapter; retain `EmbeddingProviderRegistry` as thin runtime
-   router during transition.
+   runtime binder → bound `EmbeddingProvider` adapter (**B3/B4 complete**).
 4. **LLM registry hardening** — replace `_BUILTIN_ADAPTERS` central map with provider-owned
    registration modules (same pluginability invariant as P2-003; **no** Integrations migration).
-5. **Compatibility removal** — remove `create_default_registry()` central factory map and
-   hardcoded `_REGISTERED_EMBEDDING_PROVIDERS` after host profile cutover.
+5. **Compatibility removal** — legacy `EmbeddingProviderRegistry`, `create_default_registry()`,
+   and central `provider_factory_registration` removed in B4; hosts bind one typed provider.
 6. **Tests/docs** — registry, plugin, and profile resolution tests; update RAG operator guide.
 7. **Final audit** — independent pass confirming single catalog authority for embedding providers.
 
@@ -149,15 +148,15 @@ Implementation is **out of scope** for P2-002-A. Logical blocks:
 |---|---|
 | **0 (now)** | Document decision; no production code changes |
 | **1** | Embedding catalog category + first-party provider packages in Integrations | **B1 foundation complete** (category, profile slot, typed contract, registry participation). **B2 catalog registration complete** — five first-party `embedding_provider` packages registered via explicit `IntegrationContractSpec`. **B3 runtime binding complete** — canonical provider selection flows through `IntegrationProfile` + Integrations catalog runtime binders; `EmbeddingProvider` remains RAG runtime contract; env `EmbeddingProfile` retained as compatibility input |
-| **2** | `IntegrationProfile` + RAG bootstrap cutover; compatibility shim for env-based embedding | **B3 complete** — pending independent audit |
-| **3** | Remove legacy `EmbeddingProviderRegistry` bootstrap map |
-| **4** | LLM `LLMAdapterRegistry` provider-owned registration (decentralize `_BUILTIN_ADAPTERS`) |
+| **2** | `IntegrationProfile` + RAG bootstrap cutover; env-based `EmbeddingProfile` compatibility | **B3 complete** — pending independent audit |
+| **3** | Remove legacy `EmbeddingProviderRegistry` bootstrap map | **B4 complete** — legacy registry removed; runtime consumers use bound `EmbeddingProvider`; Integrations is single provider authority |
+| **4** | LLM `LLMAdapterRegistry` provider-owned registration (decentralize `_BUILTIN_ADAPTERS`) | **P2-002-C pending** |
 
 ## Compatibility policy
 
 - **LLM:** Stable public API (`LLMAdapter`, `LLMProfile`, `LLMAdapterRegistry`) — no breaking
   changes during Option C; registry internal refactor only.
-- **Embedding:** Maintain `EmbeddingProvider` ABC and `EmbeddingProfile` through Phase 2; deprecate
-  `create_default_registry()` after profile cutover.
+- **Embedding:** Maintain `EmbeddingProvider` ABC and `EmbeddingProfile`; legacy
+  `EmbeddingProviderRegistry` and `create_default_registry()` removed in B4.
 - **Legacy paths** with no production consumers: remove rather than indefinite shim (per audit
   rule).

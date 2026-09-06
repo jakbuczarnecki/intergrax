@@ -27,7 +27,6 @@ from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvid
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
@@ -393,22 +392,10 @@ def build_in_memory_vectorstore_manager(*, tenant_id: Optional[str] = None)-> Ba
 
 
 def build_fake_embedding_manager() -> EmbeddingManager:
-    registry = EmbeddingProviderRegistry()
-
     provider = FakeEmbeddingProvider()
-
-    registry.register(provider)
-
-    engine = EmbeddingEngine(registry)
-
-    pipeline = EmbeddingPipeline(
-        engine=engine,
-        provider_id=provider.provider_name(),
-    )
-
-    manager = EmbeddingManager(pipeline=pipeline)
-
-    return manager
+    engine = EmbeddingEngine(provider=provider)
+    pipeline = EmbeddingPipeline(engine=engine)
+    return EmbeddingManager(pipeline=pipeline)
 
 
 def build_runtime_config_for_tests(

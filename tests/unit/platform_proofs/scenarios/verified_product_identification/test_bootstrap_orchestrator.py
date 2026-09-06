@@ -83,11 +83,26 @@ from intergrax.integrations.contracts.vector_index_administration import (
     VectorSearchCapability,
 )
 from intergrax.integrations.contracts.vector_store import VectorStoreScope
+from intergrax.integrations.registry.bootstrap import (
+    register_default_integrations,
+    reset_default_integrations_state,
+)
+from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def _bootstrap_embedding_catalog() -> None:
+    clear_catalog()
+    reset_default_integrations_state()
+    register_default_integrations(preset="full")
+    yield
+    clear_catalog()
+    reset_default_integrations_state()
+
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 VPI_BOOTSTRAP_ROOT = (
@@ -650,25 +665,27 @@ def test_ready_gate_requires_all_checks() -> None:
 
 
 def test_registry_embedding_gate_with_fake_provider() -> None:
-    registry = EmbeddingProviderRegistry([FakeEmbeddingProvider(dimension=8)])
     configuration = VpiEmbeddingConfiguration(
         profile=EmbeddingProfile(provider="hf", model="fake-model"),
         expected_dimension=8,
     )
-    probe = RegistryEmbeddingReadinessProbe(configuration, registry=registry)
+    probe = RegistryEmbeddingReadinessProbe(
+        configuration,
+        provider=FakeEmbeddingProvider(dimension=8),
+    )
     report = probe.probe()
     assert report.status is ValidationStatus.PASS
 
 
-def test_orchestrator_has_no_create_default_registry_import() -> None:
+def test_orchestrator_has_no_registry_embedding_import() -> None:
     source = ORCHESTRATOR_PATH.read_text(encoding="utf-8")
+    assert "EmbeddingProviderRegistry" not in source
     assert "create_default_registry" not in source
 
 
 def test_orchestrator_has_no_concrete_embedding_provider_import() -> None:
     source = ORCHESTRATOR_PATH.read_text(encoding="utf-8")
     assert "EmbeddingProvider" not in source
-    assert "EmbeddingProviderRegistry" not in source
 
 
 def test_orchestrator_has_no_embedding_execution_port_import() -> None:

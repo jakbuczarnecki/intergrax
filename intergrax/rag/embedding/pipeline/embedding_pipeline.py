@@ -28,12 +28,12 @@ class EmbeddingPipeline:
     def __init__(
         self,
         engine: EmbeddingEngine,
-        *,
-        provider_id: str,
     ) -> None:
         self._engine = engine
-        self._provider_id = provider_id
 
+    @property
+    def engine(self) -> EmbeddingEngine:
+        return self._engine
 
     def embed_texts(
         self,
@@ -45,11 +45,7 @@ class EmbeddingPipeline:
         if not texts:
             return np.empty((0, 0), dtype=np.float32)
 
-        return self._engine.embed(
-            texts,
-            provider_id=self._provider_id,
-        )
-
+        return self._engine.embed(texts)
 
     def embed_one(
         self,
@@ -64,7 +60,6 @@ class EmbeddingPipeline:
             return vecs
 
         return vecs[0:1]
-
 
     def embed_documents(
         self,

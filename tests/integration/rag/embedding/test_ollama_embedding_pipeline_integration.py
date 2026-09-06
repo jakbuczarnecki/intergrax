@@ -11,9 +11,6 @@ from langchain_core.documents import Document
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
-from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
-from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.embedding.providers.ollama_embedding_provider import OllamaEmbeddingProvider
 
 pytestmark = pytest.mark.integration
@@ -31,19 +28,9 @@ def ollama_available() -> bool:
 @pytest.mark.skipif(not ollama_available(), reason="Ollama server not available")
 def test_ollama_embedding_documents() -> None:
 
-    registry = EmbeddingProviderRegistry()
-
     provider = OllamaEmbeddingProvider()
-
-    registry.register(provider)
-
-    engine = EmbeddingEngine(registry)
-
-    pipeline = EmbeddingPipeline(
-        engine=engine,
-        provider_id=provider.provider_name(),
-    )
-
+    engine = EmbeddingEngine(provider=provider)
+    pipeline = EmbeddingPipeline(engine=engine)
     manager = EmbeddingManager(pipeline=pipeline)
 
     docs = [

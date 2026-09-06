@@ -265,7 +265,7 @@ def test_all_non_deferred_cutover_providers_are_registry_v2_compatible() -> None
         if registration.category == "conversation_channel":
             assert registration.supports_runtime_binding is (registration.slug == "slack")
         elif registration.category == "embedding_provider":
-            assert registration.supports_runtime_binding is False
+            assert registration.supports_runtime_binding is True
         else:
             assert registration.supports_runtime_binding is True
 

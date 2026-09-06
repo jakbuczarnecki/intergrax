@@ -116,9 +116,15 @@ def test_vllm_api_key_resolution(mock_openai_cls: MagicMock) -> None:
     )
 
 
-def test_default_registry_includes_vllm() -> None:
-    from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_registry
+def test_vllm_provider_available_via_catalog_binding() -> None:
+    from intergrax.integrations.registry.bootstrap import register_default_integrations
+    from intergrax.integrations.registry.profile import IntegrationProfile
+    from intergrax.rag.embedding.registry.profile import EmbeddingProfile
+    from intergrax.rag.embedding.runtime.resolver import bind_embedding_provider
 
-    registry = create_default_registry()
-    provider = registry.get("vllm")
+    register_default_integrations(preset="full")
+    provider = bind_embedding_provider(
+        integration_profile=IntegrationProfile(embedding_provider="vllm"),
+        embedding_profile=EmbeddingProfile(provider="vllm", model="test-model"),
+    )
     assert provider.provider_name() == "vllm"

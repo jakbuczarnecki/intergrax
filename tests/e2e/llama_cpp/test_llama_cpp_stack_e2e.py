@@ -26,7 +26,6 @@ from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.providers.llama_cpp_embedding_provider import LlamaCppEmbeddingProvider
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 from testing_support.builder import require_llama_cpp_embed_reachable, require_llama_cpp_reachable
 
 pytestmark = [pytest.mark.e2e, pytest.mark.no_ci, pytest.mark.network]
@@ -86,12 +85,9 @@ def test_llama_cpp_profile_create_adapter() -> None:
 def test_llama_cpp_embedding_pipeline_documents() -> None:
     require_llama_cpp_embed_reachable(base_url=_embed_base_url(), hard_fail=_VERIFY_MODE)
 
-    registry = EmbeddingProviderRegistry()
     provider = LlamaCppEmbeddingProvider()
-    registry.register(provider)
-
-    engine = EmbeddingEngine(registry)
-    pipeline = EmbeddingPipeline(engine=engine, provider_id=provider.provider_name())
+    engine = EmbeddingEngine(provider=provider)
+    pipeline = EmbeddingPipeline(engine=engine)
     manager = EmbeddingManager(pipeline=pipeline)
 
     docs = [

@@ -32,7 +32,7 @@ Typed loader: `load_vpi_embedding_configuration()` in `application/config/embedd
 
 ## Why embedding configuration is swappable
 
-- VPI reuses the platform `EmbeddingProvider` / `EmbeddingProviderRegistry` / `EmbeddingPipeline` ABI.
+- VPI reuses the platform `EmbeddingProvider` / `EmbeddingPipeline` ABI with Integrations-backed binding.
 - Scenario configuration uses `VPI_EMBEDDING_*` prefix (parallel to `embedding_profile_from_env(prefix=...)` semantics for provider/model validation).
 - Precedence follows canonical proof infrastructure: **process environment > scenario `.env` > scenario reference defaults** (`scripts/proof/intergrax_proof_environment.py`).
 - Semantic derivation (`SemanticSearchRepresentation`) stays independent of embedding vendor; only the derived text is embedded downstream.
@@ -46,9 +46,9 @@ Audited on current `development`:
 | Component | Role |
 | --- | --- |
 | `EmbeddingProvider` | `provider_name()`, `dimension()`, `embed(texts)` |
-| `EmbeddingProviderRegistry` | Lazy factory registration; `get(name)` |
+| `IntegrationProfile.embedding_provider` + `bind_embedding_provider()` | Canonical provider selection and runtime construction |
 | `EmbeddingProfile` / `embedding_profile_from_env()` | Typed provider + model from env (default prefix `INTERGRAX_EMBEDDING`) |
-| `create_default_registry()` / `create_default_embedding_pipeline()` | Bootstrap wiring |
+| `create_default_embedding_pipeline()` | Bootstrap wiring via Integrations runtime binding |
 
 **Registered providers (verified in `default_embedding_engine.py` + `EmbeddingProfile` validator):**
 

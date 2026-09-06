@@ -5,10 +5,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
-from intergrax.rag.embedding.registry.embedding_provider_registry import (
-    EmbeddingProviderRegistry,
+from intergrax.integrations.registry.bootstrap import (
+    register_default_integrations,
+    reset_default_integrations_state,
 )
+from intergrax.integrations.registry.catalog import clear_catalog
+from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.registry.execution_diagnostics import (
     EmbeddingProviderExecutionSnapshot,
     EmbeddingProviderExecutionSnapshotStatus,
@@ -22,6 +24,16 @@ from platform_proofs.scenarios.verified_product_identification.integrations.embe
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def _bootstrap_embedding_catalog() -> None:
+    clear_catalog()
+    reset_default_integrations_state()
+    register_default_integrations(preset="full")
+    yield
+    clear_catalog()
+    reset_default_integrations_state()
 
 
 class _DiagnosticsProvider(EmbeddingProvider):
@@ -60,9 +72,7 @@ def _adapter_with_provider(provider: EmbeddingProvider) -> IntergraxEmbeddingBoo
         profile=EmbeddingProfile(provider="hf", model="test-model"),
         expected_dimension=2,
     )
-    registry = EmbeddingProviderRegistry()
-    registry.register(provider)
-    return IntergraxEmbeddingBootstrapAdapter(configuration, registry=registry)
+    return IntergraxEmbeddingBootstrapAdapter(configuration, provider=provider)
 
 
 def test_execution_snapshot_available_from_diagnostics_capability() -> None:
