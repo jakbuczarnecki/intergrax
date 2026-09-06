@@ -33,13 +33,23 @@ from intergrax.runtime.observability.causal_evidence import (
     PlatformCausalEvidence,
 )
 from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePage,
     CausalEvidencePersistence,
     CausalEvidencePersistenceIntegrityError,
 )
 
 CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID = "causal_transport_scope"
 
+_CAUSAL_EVIDENCE_PAGE_SIZE = 100
+_MAX_EXAMINED_CAUSAL_EVIDENCE = 1000
 _ACCEPTED_RELATION_KIND = CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION
+_TRUNCATION_LIMITATION = (
+    "causal evidence examination reached hard bound; additional matching "
+    "causal evidence remains and execution scope uniqueness cannot be proven"
+)
+_AMBIGUOUS_TRUNCATION_LIMITATION = (
+    "candidate set may be incomplete due to causal-evidence examination budget"
+)
 
 
 class CausalTransportScopeProvider:
@@ -77,53 +87,117 @@ class CausalTransportScopeProvider:
         )
         request_provenance = _transport_request_provenance(reference=normalized_reference)
 
-        evidence_records = _list_transport_evidence(
+        scan = _scan_transport_execution_scopes(
             self._causal_evidence_persistence,
-            tenant_id=tenant_id,
-            reference=normalized_reference,
-        )
-        if not evidence_records:
-            return _provider_result_from_public(
-                build_diagnostic_scope_discovery_result(
-                    status=DiagnosticScopeDiscoveryStatus.NOT_FOUND,
-                    resolved_scope=None,
-                    candidates=(),
-                    candidate_count=0,
-                    candidate_count_exact=True,
-                    provenance=(request_provenance,),
-                ),
-            )
-
-        execution_scopes = _collect_execution_scopes(
-            evidence_records,
             tenant_id=tenant_id,
             reference=normalized_reference,
         )
         return validate_scope_provider_result(
             _classify_execution_scopes(
-                execution_scopes,
+                scan,
                 candidate_limit=candidate_limit,
                 request_provenance=request_provenance,
             ),
         )
 
 
-def _list_transport_evidence(
+class _TransportScopeScan:
+    def __init__(self) -> None:
+        self.execution_scopes: dict[tuple[str, str], DiagnosticExecutionScopeCandidate] = {}
+        self.examined_count = 0
+        self.saw_evidence = False
+        self.scan_complete = False
+
+
+def _page_transport_evidence(
     causal_evidence_persistence: CausalEvidencePersistence,
     *,
     tenant_id: str,
     reference: TransportScopeReference,
-) -> tuple[PlatformCausalEvidence, ...]:
+    limit: int,
+    cursor: str | None,
+) -> CausalEvidencePage:
     try:
-        return causal_evidence_persistence.list_for_transport_task(
+        return causal_evidence_persistence.page_for_transport_task(
             tenant_id=tenant_id,
             provider=reference.provider,
             transport_task_id=reference.transport_task_id,
+            limit=limit,
+            cursor=cursor,
         )
     except CausalEvidencePersistenceIntegrityError as exc:
         raise DiagnosticScopeProviderIntegrityError(str(exc)) from exc
     except (ConnectionError, TimeoutError, OSError) as exc:
         raise DiagnosticScopeProviderUnavailableError(str(exc)) from exc
+
+
+def _scan_transport_execution_scopes(
+    causal_evidence_persistence: CausalEvidencePersistence,
+    *,
+    tenant_id: str,
+    reference: TransportScopeReference,
+) -> _TransportScopeScan:
+    scan = _TransportScopeScan()
+    cursor: str | None = None
+    seen_cursors: set[str | None] = {None}
+
+    while scan.examined_count < _MAX_EXAMINED_CAUSAL_EVIDENCE:
+        remaining = _MAX_EXAMINED_CAUSAL_EVIDENCE - scan.examined_count
+        page_limit = min(_CAUSAL_EVIDENCE_PAGE_SIZE, remaining)
+        page = _page_transport_evidence(
+            causal_evidence_persistence,
+            tenant_id=tenant_id,
+            reference=reference,
+            limit=page_limit,
+            cursor=cursor,
+        )
+
+        if not page.items:
+            if page.next_cursor is None:
+                scan.scan_complete = True
+                break
+            raise DiagnosticScopeProviderIntegrityError(
+                "causal evidence page returned empty items with continuation cursor",
+            )
+
+        if page.next_cursor is not None:
+            if page.next_cursor == cursor:
+                raise DiagnosticScopeProviderIntegrityError(
+                    "causal evidence paging cursor did not advance",
+                )
+            if page.next_cursor in seen_cursors:
+                raise DiagnosticScopeProviderIntegrityError(
+                    "causal evidence paging cursor cycle detected",
+                )
+
+        for evidence in page.items:
+            scan.examined_count += 1
+            scan.saw_evidence = True
+            _validate_evidence_integrity(
+                evidence,
+                tenant_id=tenant_id,
+                reference=reference,
+            )
+            subject_ref = _execution_subject_from_evidence(evidence, tenant_id=tenant_id)
+            identity = (str(subject_ref.task_id), str(subject_ref.run_id))
+            if identity in scan.execution_scopes:
+                continue
+            scan.execution_scopes[identity] = DiagnosticExecutionScopeCandidate(
+                subject_ref=subject_ref,
+                provenance=_evidence_provenance(evidence),
+            )
+
+        if page.next_cursor is None:
+            scan.scan_complete = True
+            break
+
+        if scan.examined_count >= _MAX_EXAMINED_CAUSAL_EVIDENCE:
+            break
+
+        seen_cursors.add(page.next_cursor)
+        cursor = page.next_cursor
+
+    return scan
 
 
 def _transport_request_provenance(
@@ -161,30 +235,6 @@ def _provider_result_from_public(
         provenance=result.provenance,
         limitations=result.limitations,
     )
-
-
-def _collect_execution_scopes(
-    evidence_records: tuple[PlatformCausalEvidence, ...],
-    *,
-    tenant_id: str,
-    reference: TransportScopeReference,
-) -> dict[tuple[str, str], DiagnosticExecutionScopeCandidate]:
-    execution_scopes: dict[tuple[str, str], DiagnosticExecutionScopeCandidate] = {}
-    for evidence in evidence_records:
-        _validate_evidence_integrity(
-            evidence,
-            tenant_id=tenant_id,
-            reference=reference,
-        )
-        subject_ref = _execution_subject_from_evidence(evidence, tenant_id=tenant_id)
-        identity = (str(subject_ref.task_id), str(subject_ref.run_id))
-        if identity in execution_scopes:
-            continue
-        execution_scopes[identity] = DiagnosticExecutionScopeCandidate(
-            subject_ref=subject_ref,
-            provenance=_evidence_provenance(evidence),
-        )
-    return execution_scopes
 
 
 def _validate_evidence_integrity(
@@ -238,13 +288,53 @@ def _execution_subject_from_evidence(
 
 
 def _classify_execution_scopes(
-    execution_scopes: dict[tuple[str, str], DiagnosticExecutionScopeCandidate],
+    scan: _TransportScopeScan,
     *,
     candidate_limit: int,
     request_provenance: DiagnosticScopeResolutionProvenance,
 ) -> DiagnosticScopeProviderResult:
-    ordered_candidates = _ordered_execution_candidates(execution_scopes)
+    ordered_candidates = _ordered_execution_candidates(scan.execution_scopes)
     distinct_count = len(ordered_candidates)
+    limitations: list[str] = []
+
+    if not scan.saw_evidence and scan.scan_complete:
+        return _provider_result_from_public(
+            build_diagnostic_scope_discovery_result(
+                status=DiagnosticScopeDiscoveryStatus.NOT_FOUND,
+                resolved_scope=None,
+                candidates=(),
+                candidate_count=0,
+                candidate_count_exact=True,
+                provenance=(request_provenance,),
+            ),
+        )
+
+    if not scan.scan_complete and distinct_count <= 1:
+        return _provider_result_from_public(
+            build_diagnostic_scope_discovery_result(
+                status=DiagnosticScopeDiscoveryStatus.INSUFFICIENT_EVIDENCE,
+                resolved_scope=None,
+                candidates=tuple(ordered_candidates[:candidate_limit]),
+                candidate_count=distinct_count,
+                candidate_count_exact=False,
+                provenance=(request_provenance,),
+                limitations=(_TRUNCATION_LIMITATION,),
+            ),
+        )
+
+    if not scan.scan_complete and distinct_count >= 2:
+        limitations.append(_AMBIGUOUS_TRUNCATION_LIMITATION)
+        return _provider_result_from_public(
+            build_diagnostic_scope_discovery_result(
+                status=DiagnosticScopeDiscoveryStatus.AMBIGUOUS,
+                resolved_scope=None,
+                candidates=tuple(ordered_candidates[:candidate_limit]),
+                candidate_count=distinct_count,
+                candidate_count_exact=False,
+                provenance=(request_provenance,),
+                limitations=tuple(limitations),
+            ),
+        )
 
     if distinct_count == 1:
         resolved_scope = ordered_candidates[0].subject_ref
@@ -267,6 +357,7 @@ def _classify_execution_scopes(
             candidate_count=distinct_count,
             candidate_count_exact=True,
             provenance=(request_provenance,),
+            limitations=tuple(limitations),
         ),
     )
 

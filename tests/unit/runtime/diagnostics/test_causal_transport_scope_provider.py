@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -44,9 +46,14 @@ from intergrax.runtime.observability.causal_evidence import (
     PlatformCausalEvidence,
     RuntimeExecutionRef,
 )
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePage,
     CausalEvidencePersistence,
     CausalEvidencePersistenceIntegrityError,
+)
+from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
+    DocumentStoreCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
@@ -64,6 +71,10 @@ _TENANT = "tenant-a"
 _PROVIDER = "celery"
 _TRANSPORT_TASK_ID = "celery-task-1"
 _RECORDED_AT = datetime(2026, 6, 8, 12, 0, 0, tzinfo=UTC)
+
+
+def _recorded_at_for_index(index: int) -> datetime:
+    return _RECORDED_AT + timedelta(microseconds=index)
 
 
 def _transport_ref(
@@ -163,6 +174,66 @@ def _seed_evidence(
     for evidence in evidence_records:
         persistence.append(evidence)
     return persistence
+
+
+def _single_page_persistence(
+    items: tuple[PlatformCausalEvidence, ...],
+    *,
+    next_cursor: str | None = None,
+) -> MagicMock:
+    persistence = MagicMock(spec=CausalEvidencePersistence)
+    persistence.page_for_transport_task.return_value = CausalEvidencePage(
+        items=items,
+        next_cursor=next_cursor,
+    )
+    return persistence
+
+
+def _sequential_page_persistence(
+    *pages: CausalEvidencePage,
+) -> MagicMock:
+    persistence = MagicMock(spec=CausalEvidencePersistence)
+    persistence.page_for_transport_task.side_effect = list(pages)
+    return persistence
+
+
+@dataclass
+class _OffsetPagedTransportPersistence:
+    records: tuple[PlatformCausalEvidence, ...]
+    trailing_cursor: str | None = None
+    page_calls: list[dict[str, object]] = field(default_factory=list)
+    list_calls: int = 0
+
+    def page_for_transport_task(
+        self,
+        *,
+        tenant_id: str,
+        provider: str,
+        transport_task_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> CausalEvidencePage:
+        self.page_calls.append(
+            {
+                "tenant_id": tenant_id,
+                "provider": provider,
+                "transport_task_id": transport_task_id,
+                "limit": limit,
+                "cursor": cursor,
+            },
+        )
+        start = 0 if cursor is None else int(cursor)
+        end = min(start + limit, len(self.records))
+        items = self.records[start:end]
+        if end < len(self.records):
+            next_cursor = str(end)
+        else:
+            next_cursor = self.trailing_cursor
+        return CausalEvidencePage(items=tuple(items), next_cursor=next_cursor)
+
+    def list_for_transport_task(self, **kwargs: object) -> tuple[PlatformCausalEvidence, ...]:
+        self.list_calls += 1
+        return self.records
 
 
 def test_no_evidence_returns_not_found() -> None:
@@ -295,10 +366,10 @@ def test_tenant_mismatch_raises_integrity_error() -> None:
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
     )
-    persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.return_value = (evidence,)
+    persistence = _single_page_persistence((evidence,))
     with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="tenant"):
         _service(persistence).discover_scope(_transport_request())
+    persistence.list_for_transport_task.assert_not_called()
 
 
 def test_source_provider_mismatch_raises_integrity_error() -> None:
@@ -308,8 +379,7 @@ def test_source_provider_mismatch_raises_integrity_error() -> None:
         attempt_id=mint_attempt_id(),
         provider="rabbitmq",
     )
-    persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.return_value = (evidence,)
+    persistence = _single_page_persistence((evidence,))
     with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="provider"):
         _service(persistence).discover_scope(_transport_request())
 
@@ -321,8 +391,7 @@ def test_source_transport_id_mismatch_raises_integrity_error() -> None:
         attempt_id=mint_attempt_id(),
         transport_task_id="other-task",
     )
-    persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.return_value = (evidence,)
+    persistence = _single_page_persistence((evidence,))
     with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="transport_task_id"):
         _service(persistence).discover_scope(_transport_request())
 
@@ -342,15 +411,14 @@ def test_wrong_relation_kind_raises_integrity_error() -> None:
         target=evidence.target,
         recorded_at=evidence.recorded_at,
     )
-    persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.return_value = (faulty,)
+    persistence = _single_page_persistence((faulty,))
     with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="relation_kind"):
         _service(persistence).discover_scope(_transport_request())
 
 
 def test_persistence_integrity_maps_to_provider_integrity() -> None:
     persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.side_effect = CausalEvidencePersistenceIntegrityError(
+    persistence.page_for_transport_task.side_effect = CausalEvidencePersistenceIntegrityError(
         "bad causal index",
     )
     with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="bad causal index"):
@@ -359,21 +427,21 @@ def test_persistence_integrity_maps_to_provider_integrity() -> None:
 
 def test_connection_error_returns_provider_unavailable() -> None:
     persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.side_effect = ConnectionError("store down")
+    persistence.page_for_transport_task.side_effect = ConnectionError("store down")
     result = _service(persistence).discover_scope(_transport_request())
     assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
 
 
 def test_timeout_error_returns_provider_unavailable() -> None:
     persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.side_effect = TimeoutError("store timeout")
+    persistence.page_for_transport_task.side_effect = TimeoutError("store timeout")
     result = _service(persistence).discover_scope(_transport_request())
     assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
 
 
 def test_unexpected_value_error_propagates() -> None:
     persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.side_effect = ValueError("programming bug")
+    persistence.page_for_transport_task.side_effect = ValueError("programming bug")
     with pytest.raises(ValueError, match="programming bug"):
         _service(persistence).discover_scope(_transport_request())
 
@@ -497,7 +565,392 @@ def test_malformed_target_raises_integrity_error() -> None:
         target=faulty_target,
         recorded_at=evidence.recorded_at,
     )
-    persistence = MagicMock(spec=CausalEvidencePersistence)
-    persistence.list_for_transport_task.return_value = (faulty,)
+    persistence = _single_page_persistence((faulty,))
     with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="execution diagnostic scope"):
         _service(persistence).discover_scope(_transport_request())
+
+
+def test_provider_source_uses_page_api_only() -> None:
+    source = Path(
+        "intergrax/runtime/diagnostics/providers/causal_transport_scope_provider.py",
+    ).read_text(encoding="utf-8")
+    assert "page_for_transport_task(" in source
+    assert "list_for_transport_task(" not in source
+
+
+def test_page_api_only_structural_guard() -> None:
+    evidence = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+    fake = _OffsetPagedTransportPersistence(records=(evidence,))
+    _service(fake).discover_scope(_transport_request())
+    assert fake.list_calls == 0
+    assert len(fake.page_calls) == 1
+
+
+def test_hundred_one_evidence_same_scope_uses_two_pages() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    records = tuple(
+        _causal_evidence(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=mint_attempt_id(),
+            evidence_id=mint_event_id(),
+            recorded_at=_recorded_at_for_index(index),
+        )
+        for index in range(101)
+    )
+    fake = _OffsetPagedTransportPersistence(records=records)
+    result = _service(fake).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.RESOLVED
+    assert result.candidate_count == 1
+    assert result.candidate_count_exact is True
+    assert len(fake.page_calls) == 2
+
+
+def test_second_page_introduces_ambiguity(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "intergrax.runtime.diagnostics.providers.causal_transport_scope_provider._CAUSAL_EVIDENCE_PAGE_SIZE",
+        1,
+    )
+    first_scope = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        evidence_id=mint_event_id(),
+        recorded_at=datetime(2026, 6, 8, 12, 0, 0, tzinfo=UTC),
+    )
+    second_scope = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        evidence_id=mint_event_id(),
+        recorded_at=datetime(2026, 6, 8, 12, 0, 1, tzinfo=UTC),
+    )
+    fake = _OffsetPagedTransportPersistence(records=(first_scope, second_scope))
+    result = _service(fake).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.AMBIGUOUS
+    assert result.candidate_count == 2
+    assert len(fake.page_calls) == 2
+
+
+def test_duplicate_scope_across_pages_dedupes() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    first = _causal_evidence(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        evidence_id=mint_event_id(),
+        recorded_at=datetime(2026, 6, 8, 12, 0, 0, tzinfo=UTC),
+    )
+    duplicate = _causal_evidence(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        evidence_id=mint_event_id(),
+        recorded_at=datetime(2026, 6, 8, 12, 0, 1, tzinfo=UTC),
+    )
+    records = tuple([first] + [duplicate] * 100)
+    fake = _OffsetPagedTransportPersistence(records=records)
+    result = _service(fake).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.RESOLVED
+    assert result.candidate_count == 1
+    assert len(fake.page_calls) == 2
+
+
+def test_earliest_provenance_survives_duplicate_on_later_page() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    first_id = mint_event_id()
+    first = _causal_evidence(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        evidence_id=first_id,
+        recorded_at=datetime(2026, 6, 8, 12, 0, 0, tzinfo=UTC),
+    )
+    duplicate = _causal_evidence(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        evidence_id=mint_event_id(),
+        recorded_at=datetime(2026, 6, 8, 12, 0, 1, tzinfo=UTC),
+    )
+    records = tuple([first] + [duplicate] * 100)
+    fake = _OffsetPagedTransportPersistence(records=records)
+    result = _service(fake).discover_scope(_transport_request())
+    assert result.candidates[0].provenance.canonical_record_ref == f"causal_evidence:{first_id}"
+
+
+def test_exactly_thousand_evidence_complete_scan() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    records = tuple(
+        _causal_evidence(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=mint_attempt_id(),
+            evidence_id=mint_event_id(),
+            recorded_at=_recorded_at_for_index(index),
+        )
+        for index in range(1000)
+    )
+    fake = _OffsetPagedTransportPersistence(records=records)
+    result = _service(fake).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.RESOLVED
+    assert result.candidate_count_exact is True
+    assert len(fake.page_calls) == 10
+
+
+def test_truncated_one_scope_is_insufficient_inexact() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    records = tuple(
+        _causal_evidence(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=mint_attempt_id(),
+            evidence_id=mint_event_id(),
+            recorded_at=_recorded_at_for_index(index),
+        )
+        for index in range(1000)
+    )
+    fake = _OffsetPagedTransportPersistence(
+        records=records,
+        trailing_cursor="more-evidence",
+    )
+    result = _service(fake).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.INSUFFICIENT_EVIDENCE
+    assert result.candidate_count == 1
+    assert result.candidate_count_exact is False
+    assert result.limitations
+
+
+def test_truncated_two_scopes_is_ambiguous_inexact() -> None:
+    scope_a = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        evidence_id=mint_event_id(),
+        recorded_at=datetime(2026, 6, 8, 12, 0, 0, tzinfo=UTC),
+    )
+    scope_b = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        evidence_id=mint_event_id(),
+        recorded_at=datetime(2026, 6, 8, 12, 0, 1, tzinfo=UTC),
+    )
+    records = tuple([scope_a] * 500 + [scope_b] * 500)
+    fake = _OffsetPagedTransportPersistence(
+        records=records,
+        trailing_cursor="more-evidence",
+    )
+    result = _service(fake).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.AMBIGUOUS
+    assert result.candidate_count == 2
+    assert result.candidate_count_exact is False
+
+
+def test_budget_caps_page_calls_at_ten() -> None:
+    records = tuple(
+        _causal_evidence(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            evidence_id=mint_event_id(),
+            recorded_at=_recorded_at_for_index(index),
+        )
+        for index in range(12000)
+    )
+    fake = _OffsetPagedTransportPersistence(
+        records=records,
+        trailing_cursor="more-evidence",
+    )
+    _service(fake).discover_scope(_transport_request())
+    assert len(fake.page_calls) == 10
+
+
+def test_remaining_budget_uses_reduced_page_limit() -> None:
+    evidence = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+    limits_seen: list[int] = []
+
+    def page_side_effect(
+        *,
+        tenant_id: str,
+        provider: str,
+        transport_task_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> CausalEvidencePage:
+        limits_seen.append(limit)
+        if len(limits_seen) <= 9:
+            return CausalEvidencePage(
+                items=tuple([evidence] * 100),
+                next_cursor=f"page-{len(limits_seen)}",
+            )
+        if len(limits_seen) == 10:
+            return CausalEvidencePage(
+                items=tuple([evidence] * 50),
+                next_cursor="page-10",
+            )
+        return CausalEvidencePage(
+            items=tuple([evidence] * 50),
+            next_cursor="more-evidence",
+        )
+
+    persistence = MagicMock(spec=CausalEvidencePersistence)
+    persistence.page_for_transport_task.side_effect = page_side_effect
+    _service(persistence).discover_scope(_transport_request())
+    assert limits_seen[10] == 50
+
+
+def test_read_count_bound_with_large_available_history() -> None:
+    records = tuple(
+        _causal_evidence(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            evidence_id=mint_event_id(),
+            recorded_at=_recorded_at_for_index(index),
+        )
+        for index in range(15000)
+    )
+    fake = _OffsetPagedTransportPersistence(
+        records=records,
+        trailing_cursor="more-evidence",
+    )
+    _service(fake).discover_scope(_transport_request())
+    requested_limits = sum(call["limit"] for call in fake.page_calls)
+    assert requested_limits == 1000
+    assert len(fake.page_calls) == 10
+
+
+def test_integrity_on_second_page_fails_whole_discover() -> None:
+    valid = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+    persistence = _sequential_page_persistence(
+        CausalEvidencePage(items=(valid,), next_cursor="page-2"),
+        CausalEvidencePersistenceIntegrityError("bad page two"),
+    )
+    with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="bad page two"):
+        _service(persistence).discover_scope(_transport_request())
+
+
+def test_availability_on_second_page_fails_whole_discover() -> None:
+    valid = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+    persistence = _sequential_page_persistence(
+        CausalEvidencePage(items=(valid,), next_cursor="page-2"),
+        TimeoutError("store timeout"),
+    )
+    result = _service(persistence).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
+
+
+def test_os_error_maps_to_provider_unavailable() -> None:
+    persistence = MagicMock(spec=CausalEvidencePersistence)
+    persistence.page_for_transport_task.side_effect = OSError("disk unavailable")
+    result = _service(persistence).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
+
+
+def test_empty_continuation_page_raises_integrity_error() -> None:
+    persistence = _single_page_persistence((), next_cursor="stuck")
+    with pytest.raises(
+        DiagnosticScopeDiscoveryIntegrityError,
+        match="empty items with continuation cursor",
+    ):
+        _service(persistence).discover_scope(_transport_request())
+
+
+def test_repeated_cursor_raises_integrity_error() -> None:
+    evidence = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+    persistence = _sequential_page_persistence(
+        CausalEvidencePage(items=(evidence,), next_cursor="same"),
+        CausalEvidencePage(items=(evidence,), next_cursor="same"),
+    )
+    with pytest.raises(DiagnosticScopeDiscoveryIntegrityError, match="cursor"):
+        _service(persistence).discover_scope(_transport_request())
+
+
+def test_service_is_deterministic_for_paged_transport() -> None:
+    persistence = _seed_evidence(
+        InMemoryCausalEvidencePersistence(),
+        _causal_evidence(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+        ),
+        _causal_evidence(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+        ),
+    )
+    service = _service(persistence)
+    request = _transport_request()
+    first = service.discover_scope(request)
+    second = service.discover_scope(request)
+    assert first == second
+
+
+def test_in_memory_paged_integration_crosses_page_boundary() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    persistence = InMemoryCausalEvidencePersistence()
+    for index in range(101):
+        persistence.append(
+            _causal_evidence(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=mint_attempt_id(),
+                evidence_id=mint_event_id(),
+                recorded_at=_recorded_at_for_index(index),
+            ),
+        )
+    result = _service(persistence).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.RESOLVED
+    assert result.candidate_count == 1
+    assert result.candidate_count_exact is True
+
+
+def test_document_store_paged_integration_crosses_page_boundary() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    persistence = DocumentStoreCausalEvidencePersistence(
+        InMemoryDocumentStore(cursor_secret=b"causal-transport-scope-provider-test-32b"),
+        cursor_secret=b"causal-transport-scope-provider-test-32b",
+    )
+    for index in range(101):
+        persistence.append(
+            _causal_evidence(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=mint_attempt_id(),
+                evidence_id=mint_event_id(),
+                recorded_at=_recorded_at_for_index(index),
+            ),
+        )
+    result = _service(persistence).discover_scope(_transport_request())
+    assert result.status is DiagnosticScopeDiscoveryStatus.RESOLVED
+    assert result.candidate_count == 1
+    assert result.candidate_count_exact is True
