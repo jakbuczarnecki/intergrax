@@ -535,18 +535,35 @@ def _invoke_supplemental_tools(
     return outputs
 
 
-def _baseline_model_visible_references(
+def _model_visible_references_before_planner_loop(
+    *,
+    planner_gathered_evidence: Sequence[dict[str, object]],
     baseline_outputs: Sequence[tuple[str, str, dict[str, object]]],
 ) -> tuple[ModelVisibleEvidenceReference, ...]:
-    references: list[ModelVisibleEvidenceReference] = []
+    baseline_by_evidence: dict[str, str] = {}
     for call_id, tool_id, _payload in baseline_outputs:
         evidence_id = _semantic_evidence_id(tool_id)
-        if evidence_id is None:
+        if evidence_id is not None:
+            baseline_by_evidence[evidence_id] = call_id
+
+    references: list[ModelVisibleEvidenceReference] = []
+    seen: set[str] = set()
+    for node in planner_gathered_evidence:
+        evidence_id_raw = node.get("evidence_id")
+        if not evidence_id_raw:
             continue
+        evidence_id = str(evidence_id_raw)
+        if evidence_id in seen:
+            continue
+        source_tool_id = node.get("source_tool_id")
+        if not isinstance(source_tool_id, str) or _semantic_evidence_id(source_tool_id) is None:
+            continue
+        seen.add(evidence_id)
+        acquisition_id = baseline_by_evidence.get(evidence_id, f"prior:{evidence_id}")
         references.append(
             ModelVisibleEvidenceReference(
                 evidence_reference=evidence_id,
-                acquisition_id=call_id,
+                acquisition_id=acquisition_id,
             )
         )
     return tuple(references)
@@ -620,7 +637,10 @@ def gather_incident_evidence(
         critic_feedback=critic_feedback,
         gathered_evidence=planner_gathered_evidence,
     )
-    prior_model_visible_references = _baseline_model_visible_references(baseline_outputs)
+    prior_model_visible_references = _model_visible_references_before_planner_loop(
+        planner_gathered_evidence=planner_gathered_evidence,
+        baseline_outputs=baseline_outputs,
+    )
     try:
         loop_result = run_bounded_tool_loop(
             state=runtime_state,

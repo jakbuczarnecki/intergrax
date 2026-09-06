@@ -620,17 +620,15 @@ def test_duplicate_reference_with_conflicting_provenance_fails() -> None:
         match="ambiguous evidence reference provenance",
     ):
         build_completed_observation_reference_index(
-            [
-                _assistant_call(tool_call_id="call_a"),
-                _tool_observation(
-                    tool_call_id="call_a",
-                    evidence_reference="evidence.workload.line4.incident_window",
-                ),
-            ],
+            [],
             prior_references=(
                 ModelVisibleEvidenceReference(
                     evidence_reference="evidence.workload.line4.incident_window",
                     acquisition_id="baseline_production_workload_read_0",
+                ),
+                ModelVisibleEvidenceReference(
+                    evidence_reference="evidence.workload.line4.incident_window",
+                    acquisition_id="baseline_production_workload_read_1",
                 ),
             ),
         )

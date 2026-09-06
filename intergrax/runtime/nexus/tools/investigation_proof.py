@@ -93,12 +93,15 @@ def _index_semantic_reference(
     index: dict[str, str],
     reference: str,
     binding_id: str,
+    *,
+    allow_refresh: bool = False,
 ) -> None:
     existing = index.get(reference)
     if existing is not None and existing != binding_id:
-        raise InvestigationProofValidationError(
-            f"ambiguous evidence reference provenance: {reference}"
-        )
+        if not allow_refresh:
+            raise InvestigationProofValidationError(
+                f"ambiguous evidence reference provenance: {reference}"
+            )
     index[reference] = binding_id
 
 
@@ -124,7 +127,7 @@ def build_completed_observation_reference_index(
         reference = _extract_semantic_reference_from_tool_content(message.content or "")
         if reference is None:
             continue
-        _index_semantic_reference(index, reference, tool_call_id)
+        _index_semantic_reference(index, reference, tool_call_id, allow_refresh=True)
     return index
 
 
