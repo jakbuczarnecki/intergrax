@@ -278,6 +278,7 @@ An application is not an agent. It is the **product shell** - the “Cursor AI f
 |-------|----------------|
 | **Applications / domains** | Claim meaning, ``claim_kind`` vocabulary, optional ``defect_code`` values, acceptance criteria |
 | **Platform contracts** | Typed ``EvidenceBackedClaim``, ``EvidenceChallenge``, identity carriers, structural invariants |
+| **Domain / scenario attribution** *(ai_incident DS-E2E-12)* | Deterministic `supporting_evidence_ids` / `contradicting_evidence_ids` binding at claim conversion — **not** model-owned |
 | **Decision System / Verification** *(TARGET)* | May produce or evaluate challenges - does **not** own the contract - **CURRENT:** Critic |
 | **Observability** | Records execution evidence - does **not** define semantic claim truth |
 | **Attestation** | May seal exported claim artifacts - does **not** define claim semantics |

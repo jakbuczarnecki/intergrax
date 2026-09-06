@@ -206,15 +206,11 @@ def build_fixture_reasoning_proposal(
                     hypothesis_id="H1",
                     disposition=HypothesisDisposition.SUPERSEDED,
                     summary="Overload weakened by comparison evidence.",
-                    supporting_evidence_ids=(workload, throughput),
-                    contradicting_evidence_ids=(comparison,),
                 ),
                 HypothesisProposal(
                     hypothesis_id="H2",
                     disposition=HypothesisDisposition.REJECTED,
                     summary="Understaffing rejected by attendance confirmation.",
-                    supporting_evidence_ids=(schedule,),
-                    contradicting_evidence_ids=(attendance,),
                 ),
                 HypothesisProposal(
                     hypothesis_id="H3",
@@ -233,7 +229,6 @@ def build_fixture_reasoning_proposal(
                         "while throughput declined — overload hypothesis H1."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(workload, throughput),
                 ),
                 ClaimProposal(
                     hypothesis_id="H2",
@@ -243,8 +238,6 @@ def build_fixture_reasoning_proposal(
                         "incident window — hypothesis H2 rejected."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(schedule,),
-                    contradicting_evidence_ids=(attendance,),
                 ),
                 ClaimProposal(
                     hypothesis_id="H3",
@@ -269,21 +262,16 @@ def build_fixture_reasoning_proposal(
                     hypothesis_id="H1",
                     disposition=HypothesisDisposition.SUPERSEDED,
                     summary="Overload correlation weakened by peer-line comparison evidence.",
-                    supporting_evidence_ids=(workload, throughput),
-                    contradicting_evidence_ids=(comparison,),
                 ),
                 HypothesisProposal(
                     hypothesis_id="H2",
                     disposition=HypothesisDisposition.REJECTED,
                     summary="Understaffing rejected after attendance confirmation.",
-                    supporting_evidence_ids=(schedule,),
-                    contradicting_evidence_ids=(attendance,),
                 ),
                 HypothesisProposal(
                     hypothesis_id="H3",
                     disposition=HypothesisDisposition.SUPPORTED,
                     summary="Intermittent equipment degradation supported by telemetry and comparison.",
-                    supporting_evidence_ids=(workload, throughput, comparison, telemetry),
                 ),
             ),
             preferred_hypothesis_id="H3",
@@ -297,7 +285,6 @@ def build_fixture_reasoning_proposal(
                         "while throughput declined — overload hypothesis H1."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(workload, throughput),
                 ),
                 ClaimProposal(
                     hypothesis_id="H2",
@@ -307,8 +294,6 @@ def build_fixture_reasoning_proposal(
                         "incident window — hypothesis H2 rejected."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(schedule,),
-                    contradicting_evidence_ids=(attendance,),
                 ),
                 ClaimProposal(
                     hypothesis_id="H3",
@@ -319,7 +304,6 @@ def build_fixture_reasoning_proposal(
                         "workload growth plausibly amplified impact — bounded H3 diagnosis."
                     ),
                     claim_kind=str(DIAGNOSIS_KIND),
-                    supporting_evidence_ids=(workload, throughput, comparison, telemetry),
                     replaces_prior_claim=True,
                 ),
             ),
@@ -331,20 +315,17 @@ def build_fixture_reasoning_proposal(
         observations is not None
         and h1_initially_plausible(observations.workload, observations.throughput)
     )
-    initial_support = tuple(eid for eid in (workload, throughput) if eid in evidence_ids)
     return IncidentReasoningProposal(
         hypotheses=(
             HypothesisProposal(
                 hypothesis_id="H1",
                 disposition=HypothesisDisposition.PLAUSIBLE if h1_plausible else HypothesisDisposition.REJECTED,
                 summary="Workload-throughput correlation is plausible but not yet causal.",
-                supporting_evidence_ids=initial_support,
             ),
             HypothesisProposal(
                 hypothesis_id="H2",
                 disposition=HypothesisDisposition.PENDING,
                 summary="Staffing shortage requires attendance confirmation.",
-                supporting_evidence_ids=tuple(eid for eid in (schedule,) if eid in evidence_ids),
             ),
             HypothesisProposal(
                 hypothesis_id="H3",
@@ -363,10 +344,9 @@ def build_fixture_reasoning_proposal(
                     "target attainment degradation — hypothesis H1."
                 ),
                 claim_kind=str(DIAGNOSIS_KIND),
-                supporting_evidence_ids=initial_support,
             ),
         )
-        if initial_support
+        if h1_plausible
         else (
             ClaimProposal(
                 hypothesis_id="H1",

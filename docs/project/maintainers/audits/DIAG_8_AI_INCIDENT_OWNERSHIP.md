@@ -113,14 +113,17 @@ Parallel oracle path (post-run only):
 | Concept | Classification | Notes |
 |---|---|---|
 | `HypothesisDisposition` | **Legitimate provisional investigation** | Documented non-authoritative; values mirror claim vocabulary but live only on `HypothesisProposal` |
-| `HypothesisProposal` | **Legitimate scenario-domain** | Model-owned; validated against known evidence IDs only |
-| `ClaimProposal` | **Legitimate scenario-domain** | Converted to `EvidenceBackedClaim` always as `PENDING` |
+| `HypothesisProposal` | **Legitimate scenario-domain** | Model-owned provisional semantics; no evidence-ID fields |
+| `ClaimProposal` | **Model-owned semantics only** | `hypothesis_id`, `statement`, `claim_kind`, `rationale`, `replaces_prior_claim` — **no** evidence-ID fields |
+| `ClaimEvidenceAttribution` | **Domain-owned evidence binding** | Pure deterministic policy in `claim_evidence_attribution.py` |
 | `IncidentReasoningProposal` | **Legitimate scenario-domain** | Structured model output; drives gathering intent, not final authority |
 | `CompletionIntent` | **Legitimate provisional** | Maps to `completion_mode`; gated by critic + claim resolutions |
 | `ClaimHypothesisBinding` | **Legitimate scenario-local semantic** | Independent claim identity ↔ hypothesis; not a platform concept |
-| `convert_proposal_to_pending_claims` | **Correct platform contract reuse** | Mints claim IDs; forbids model resolution via `PENDING` only |
+| `convert_proposal_to_pending_claims` | **Correct platform contract reuse** | Mints claim IDs; applies domain attribution; forbids model resolution via `PENDING` only |
 
-**Downstream misuse check:** No code path treats `HypothesisDisposition.SUPPORTED` as `ClaimResolution.SUPPORTED`. Disposition is observability/prompting only. Authority path is `ClaimProposal` → `PENDING` → `apply_critic_claim_resolutions` → critic validation.
+**DS-E2E-12 ownership freeze:** Model owns semantic claim proposal. Domain attribution owns evidence relation. Critic owns resolution. Decision verification owns structural evidence verification. Lifecycle owns authority. Silent model-output repair is forbidden.
+
+**Downstream misuse check:** No code path treats `HypothesisDisposition.SUPPORTED` as `ClaimResolution.SUPPORTED`. Disposition is observability/prompting only. Authority path is `ClaimProposal` → domain attribution → `PENDING` → `apply_critic_claim_resolutions` → critic validation.
 
 `FORBIDDEN_MODEL_RESOLUTIONS` is declared in `incident_reasoning.py` but enforcement is effectively in `apply_critic_claim_resolutions` (rejects non-`PENDING`).
 
@@ -131,7 +134,8 @@ Parallel oracle path (post-run only):
 ### Authority transition chain
 
 ```text
-Model ClaimProposal
+Model ClaimProposal (semantic only)
+    → attribute_claim_evidence (domain deterministic policy)
     → convert_proposal_to_pending_claims (resolution = PENDING only)
     → apply_critic_claim_resolutions (validation.py - deterministic domain predicates)
     → IncidentInvestigationValidationEngine.validate (L0 critic via NexusValidationEngine)

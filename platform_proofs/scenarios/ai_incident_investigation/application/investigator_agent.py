@@ -173,6 +173,7 @@ class IncidentInvestigatorAgent(Agent):
         )
         pending_conversion = convert_proposal_to_pending_claims(
             proposal,
+            evidence_nodes=evidence_nodes,
             prior_claim_set=prior_state.claim_set,
             prior_bindings=prior_state.claim_hypothesis_bindings,
             critic_feedback=critic_feedback,
