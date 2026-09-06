@@ -166,21 +166,35 @@ Incomplete outputs use `.parquet.tmp` suffix; never adopted as READY. Orphan `.t
 
 ### CLI
 
+Production first run (full selected-dataset plan from manifest; default shard size `5000`):
+
 ```powershell
 uv run --group platform-proofs-vpi-dataset python `
   platform_proofs/scenarios/verified_product_identification/dataset/run_data_pack_build.py `
   --output-root platform_proofs/scenarios/verified_product_identification/dataset/generated/data_pack/canonical-v1 `
-  --shard-size 25000 `
+  --start-fresh
+```
+
+Resume after interruption (build-state authority; no row offset or shard ordinal required):
+
+```powershell
+uv run --group platform-proofs-vpi-dataset python `
+  platform_proofs/scenarios/verified_product_identification/dataset/run_data_pack_build.py `
+  --output-root platform_proofs/scenarios/verified_product_identification/dataset/generated/data_pack/canonical-v1 `
   --resume
 ```
 
 | Flag | Purpose |
 |---|---|
-| `--shard-size` | Records per shard (default `25000`) |
+| `--shard-size` | Records per shard (default `5000`; part of resume plan identity) |
+| `--start-fresh` | Required first run; clears scenario-owned build subtree only |
 | `--resume` | Required when `state/build-state.json` exists |
-| `--start-fresh` | Clear scenario-owned build subtree only |
-| `--max-shards` / `--max-records` | Qualification hooks; partial build is **not** distributable |
-| `--stop-after-shard` | Graceful stop after N shards |
+| `--max-records` | Qualification/debug only — caps plan below manifest count |
+| `--max-shards` / `--stop-after-shard` | Qualification only — stop after N shards without changing full plan |
+
+**Resume granularity:** one shard. If interrupted mid-shard, resume rebuilds that shard from its start row (no per-record checkpointing).
+
+**Artifacts:** `relational/part-*.parquet`, `embeddings/part-*.parquet`, `state/build-state.json` (partial builds are not distributable).
 
 Partial builds do not emit READY manifest, `shards.json`, or `SHA256SUMS`.
 

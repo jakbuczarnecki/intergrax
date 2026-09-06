@@ -51,11 +51,37 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=DEFAULT_PRODUCTION_SHARD_SIZE,
     )
-    parser.add_argument("--resume", action="store_true")
-    parser.add_argument("--start-fresh", action="store_true")
-    parser.add_argument("--max-shards", type=int, default=None)
-    parser.add_argument("--max-records", type=int, default=None)
-    parser.add_argument("--stop-after-shard", type=int, default=None)
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from state/build-state.json (required when build state exists)",
+    )
+    parser.add_argument(
+        "--start-fresh",
+        action="store_true",
+        help="Clear scenario-owned build subtree and start a new full-plan build",
+    )
+    parser.add_argument(
+        "--max-shards",
+        type=int,
+        default=None,
+        help="Qualification only: stop after N shard ordinals",
+    )
+    parser.add_argument(
+        "--max-records",
+        type=int,
+        default=None,
+        help=(
+            "Qualification/debug only: cap expected_record_count below manifest "
+            "(changes build plan; omit for full selected-dataset build)"
+        ),
+    )
+    parser.add_argument(
+        "--stop-after-shard",
+        type=int,
+        default=None,
+        help="Qualification only: graceful stop after shard ordinal N (full plan preserved)",
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")

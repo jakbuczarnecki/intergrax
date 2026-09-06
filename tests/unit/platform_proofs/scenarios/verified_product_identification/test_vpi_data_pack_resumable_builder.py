@@ -44,6 +44,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from tests.unit.platform_proofs.scenarios.verified_product_identification.vpi_resumable_builder_test_support import (
     FakeDataPackEmbeddingPort,
     patch_canonical_model_identity,
+    write_selected_dataset_with_manifest_count,
     write_tiny_selected_dataset,
 )
 
@@ -57,7 +58,7 @@ def _build_config(
     manifest_path: Path,
     output_root: Path,
     shard_size: int = 25,
-    max_records: int = 120,
+    max_records: int | None = 120,
     resume: bool = False,
     start_fresh: bool = False,
     max_shards: int | None = None,
@@ -459,3 +460,66 @@ def test_validating_with_only_relational_final_rebuilt_on_resume(
     )
     assert recovered.status is DataPackShardStatus.PENDING
     assert not final_shard_path(paths.relational_dir, 2).exists()
+
+
+def test_full_plan_resume_skips_ready_shard_and_builds_next(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_canonical_model_identity(monkeypatch)
+    dataset_path, manifest_path = write_selected_dataset_with_manifest_count(
+        tmp_path / "dataset",
+        parquet_row_count=10_000,
+        manifest_record_count=3_770_377,
+    )
+    output_root = tmp_path / "pack"
+    paths = resolve_data_pack_paths(output_root)
+    shard_size = 5_000
+
+    first_embedding = FakeDataPackEmbeddingPort()
+    run_resumable_data_pack_build(
+        _build_config(
+            tmp_path,
+            dataset_path=dataset_path,
+            manifest_path=manifest_path,
+            output_root=output_root,
+            shard_size=shard_size,
+            max_records=None,
+            start_fresh=True,
+            stop_after_shard=1,
+        ),
+        embedding_port=first_embedding,
+    )
+    state_after_run1 = read_build_state_file(paths.build_state_file)
+    assert state_after_run1.expected_record_count == 3_770_377
+    assert state_after_run1.shard_count == 755
+    assert state_after_run1.completed_shards == 1
+    assert state_after_run1.shards[0].status is DataPackShardStatus.READY
+    assert state_after_run1.shards[1].status is DataPackShardStatus.PENDING
+    assert not paths.manifest_file.exists()
+
+    resume_embedding = FakeDataPackEmbeddingPort()
+    report = run_resumable_data_pack_build(
+        _build_config(
+            tmp_path,
+            dataset_path=dataset_path,
+            manifest_path=manifest_path,
+            output_root=output_root,
+            shard_size=shard_size,
+            max_records=None,
+            resume=True,
+            stop_after_shard=2,
+        ),
+        embedding_port=resume_embedding,
+    )
+    state_after_run2 = read_build_state_file(paths.build_state_file)
+    assert report.finalized is False
+    assert state_after_run2.expected_record_count == 3_770_377
+    assert state_after_run2.shard_count == 755
+    assert state_after_run2.completed_shards == 2
+    assert state_after_run2.shards[0].status is DataPackShardStatus.READY
+    assert state_after_run2.shards[1].status is DataPackShardStatus.READY
+    assert state_after_run2.shards[2].status is DataPackShardStatus.PENDING
+    assert resume_embedding.embed_calls > 0
+    assert len(resume_embedding.texts_seen) == shard_size
+    assert not paths.manifest_file.exists()

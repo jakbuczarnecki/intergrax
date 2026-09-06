@@ -33,11 +33,24 @@ def write_tiny_selected_dataset(
     *,
     row_count: int,
 ) -> tuple[Path, Path]:
+    return write_selected_dataset_with_manifest_count(
+        directory,
+        parquet_row_count=row_count,
+        manifest_record_count=row_count,
+    )
+
+
+def write_selected_dataset_with_manifest_count(
+    directory: Path,
+    *,
+    parquet_row_count: int,
+    manifest_record_count: int,
+) -> tuple[Path, Path]:
     directory.mkdir(parents=True, exist_ok=True)
     dataset_path = directory / "selected_offers.parquet"
     manifest_path = directory / "selected_offers_manifest.json"
     records = []
-    for index in range(row_count):
+    for index in range(parquet_row_count):
         records.append(
             json.dumps(
                 {
@@ -56,7 +69,7 @@ def write_tiny_selected_dataset(
                 "source_dataset_name": "offers_corpus_all_v2_non_norm",
                 "output_path": str(dataset_path),
                 "output_sha256": "a" * 64,
-                "selected_record_count": row_count,
+                "selected_record_count": manifest_record_count,
             }
         ),
         encoding="utf-8",
