@@ -76,7 +76,20 @@ def test_agent_creation_guide_navigation_hygiene() -> None:
 def test_adr_agent_008_markdown_rendering_hygiene() -> None:
     assert ADR_AGENT_008.is_file()
     text = ADR_AGENT_008.read_text(encoding="utf-8")
-    for pattern in ("[\n", "[\t", _MALFORMED_PSEUDO_FENCE, "[egistry_", "[eference_"):
+    for pattern in (
+        "[\n",
+        "[\t",
+        "[\r",
+        _MALFORMED_PSEUDO_FENCE,
+        "[egistry_",
+        "[eference_",
+        r"\traffic_serving_revision_id",
+    ):
         assert pattern not in text, f"malformed markdown pattern: {pattern!r}"
     assert "\traffic_" not in text
     assert "\test_" not in text
+
+
+def test_adr_agent_008_local_links_resolve() -> None:
+    broken = _broken_links_for(ADR_AGENT_008)
+    assert not broken, broken

@@ -5,22 +5,27 @@
 | **Status** | Accepted / Implemented |
 | **Date** | 2026-09-06 |
 | **Deciders** | Agent Platform / Harness architecture |
-| **Related** | [AGENT_DISTRIBUTION.md](../../../architecture/AGENT_DISTRIBUTION.md) §18 · [ADR-AGENT-004](../2026-08-12/ADR-AGENT-004.md) · [ADR-AGENT-005](../2026-08-17/ADR-AGENT-005.md) · [ADR-AGENT-006](../2026-09-01/ADR-AGENT-006.md) · [ADR-AGENT-007](../2026-09-02/ADR-AGENT-007.md) · EA-03 · [AGENT_PLATFORM_FINAL_CLOSURE.md](../../../maintainers/audits/AGENT_PLATFORM_FINAL_CLOSURE.md) (Stage 18 historical closure) |
+| **Related** | [AGENT_DISTRIBUTION.md](../../../../architecture/AGENT_DISTRIBUTION.md) §18 · [ADR-AGENT-004](../2026-08-12/ADR-AGENT-004.md) · [ADR-AGENT-005](../2026-08-17/ADR-AGENT-005.md) · [ADR-AGENT-006](../2026-09-01/ADR-AGENT-006.md) · [ADR-AGENT-007](../2026-09-02/ADR-AGENT-007.md) · EA-03 · [AGENT_PLATFORM_FINAL_CLOSURE.md](../../../../maintainers/audits/AGENT_PLATFORM_FINAL_CLOSURE.md) (Stage 18 historical closure) |
 
 ## Context
 
 The frozen production invariant **startup-time reprojection is forbidden** assumed that MaterializedRegistryProjection would remain available in the runtime projection store across process boundaries.
 
-Enterprise durable testing demonstrated a fail-closed gap:
+Enterprise durable testing demonstrated a fail-closed gap.
+
+### Context failure
 
 ```text
 Process A dies
-→ lifecycle / serving state survives
-→ process-local projection disappears
-→ Process B cannot execute serving revision
+    ↓
+durable lifecycle survives
+    ↓
+process-local projection disappears
+    ↓
+Process B cannot serve
 ```
 
-RuntimeRevision, traffic_serving_revision_id, roster/lock/materialization authority, and activation CAS semantics are durable. MaterializedRegistryProjection, AgentRegistryRead, and instantiated agent runtime objects are process-local. Without an explicit rehydration contract, cold restart cannot restore traffic-serving execution.
+RuntimeRevision, `traffic_serving_revision_id`, roster/lock/materialization authority, and activation CAS semantics are durable. MaterializedRegistryProjection, AgentRegistryRead, and instantiated agent runtime objects are process-local. Without an explicit rehydration contract, cold restart cannot restore traffic-serving execution.
 
 **Gap closed:** EA-03 durable runtime projection rehydration.
 
@@ -36,7 +41,7 @@ Separate durable runtime authority from process-local materialized runtime objec
 | EffectiveRoster identity | Content-addressed roster authority for the revision |
 | MaterializedRuntimeLock identity | Revision-bound lock authority |
 | RuntimeMaterialization identity | Revision-bound materialization authority |
-| traffic_serving_revision_id | Durable serving pointer |
+| `traffic_serving_revision_id` | Durable serving pointer |
 | RuntimeRegistryProjectionDescriptor | Typed immutable reconstruction authority keyed by revision |
 
 ### Process-local runtime objects
@@ -49,6 +54,23 @@ Separate durable runtime authority from process-local materialized runtime objec
 
 ```text
 DURABLE RUNTIME AUTHORITY ≠ PROCESS-LOCAL MATERIALIZED RUNTIME OBJECT
+```
+
+### Authority split
+
+```text
+Durable authority
+├── RuntimeRevision
+├── EffectiveRoster
+├── RuntimeLock
+├── Materialization
+├── ProjectionDescriptor
+└── Serving Pointer
+
+Process-local
+├── MaterializedRegistryProjection
+├── AgentRegistryRead
+└── agent instances
 ```
 
 ## Rehydration rule
@@ -71,7 +93,7 @@ Rehydration:
 - is **not** routing decision,
 - does **not** mutate serving pointer.
 
-Rehydration reconstructs the process-local projection for the revision already selected by traffic_serving_revision_id. It does not derive authority from current installation, binding, or desired roster state.
+Rehydration reconstructs the process-local projection for the revision already selected by `traffic_serving_revision_id`. It does not derive authority from current installation, binding, or desired roster state.
 
 ## Why live projection is not persisted
 
@@ -126,6 +148,22 @@ projection input validated
 Descriptor may exist without serving if activation fails. Serving must never exist without descriptor.
 
 ## Cold start flow
+
+```text
+Serving Pointer=N
+      ↓
+Descriptor(N)
+      ↓
+Authority validation
+      ↓
+Projection rehydration
+      ↓
+AgentRegistryRead
+      ↓
+Execution
+```
+
+Detailed cold restart:
 
 ```text
 Process B starts
@@ -217,8 +255,8 @@ Non-authoritative runtime caches such as __pycache__ and .pyc are excluded from 
 
 | Document | Role |
 |----------|------|
-| [AGENT_DISTRIBUTION.md](../../../architecture/AGENT_DISTRIBUTION.md) §18 | EA-03 frozen semantics and cold-restart diagram |
-| [AGENT_PLATFORM_FINAL_CLOSURE.md](../../../maintainers/audits/AGENT_PLATFORM_FINAL_CLOSURE.md) | Stage 18 historical architecture closure (pre-EA-03) |
+| [AGENT_DISTRIBUTION.md](../../../../architecture/AGENT_DISTRIBUTION.md) §18 | EA-03 frozen semantics and cold-restart diagram |
+| [AGENT_PLATFORM_FINAL_CLOSURE.md](../../../../maintainers/audits/AGENT_PLATFORM_FINAL_CLOSURE.md) | Stage 18 historical architecture closure (pre-EA-03) |
 
 ### EA-03 implementation paths
 
@@ -236,4 +274,4 @@ Non-authoritative runtime caches such as __pycache__ and .pyc are excluded from 
 - Supersedes implicit assumption that process-local projection survives restart
 - Extends [ADR-AGENT-005](../2026-08-17/ADR-AGENT-005.md) store ownership with descriptor persistence
 - Complements [ADR-AGENT-006](../2026-09-01/ADR-AGENT-006.md) materialization authority and [ADR-AGENT-007](../2026-09-02/ADR-AGENT-007.md) historical roster authority
-- Aligns with [AGENT_DISTRIBUTION.md](../../../architecture/AGENT_DISTRIBUTION.md) EA-03 frozen section
+- Aligns with [AGENT_DISTRIBUTION.md](../../../../architecture/AGENT_DISTRIBUTION.md) EA-03 frozen section
