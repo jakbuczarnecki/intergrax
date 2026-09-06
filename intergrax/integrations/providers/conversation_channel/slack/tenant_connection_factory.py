@@ -12,6 +12,9 @@ from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationConfigurationError,
 )
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
+)
 from intergrax.integrations.providers.conversation_channel.slack.config import (
     SlackConversationChannelIntegrationConfig,
 )
@@ -67,7 +70,9 @@ def _resolve_timeout(secret_free_config: Mapping[str, JsonValue]) -> float:
     return float(raw_timeout)
 
 
-class SlackTenantConnectionIntegrationFactory:
+class SlackTenantConnectionIntegrationFactory(
+    EagerTenantConnectionIntegrationFactoryMixin,
+):
     """Build Slack runtime integrations from secret-ref-backed credentials."""
 
     def __init__(self, runtime_builder: SlackRuntimeBuilder | None = None) -> None:
@@ -84,6 +89,27 @@ class SlackTenantConnectionIntegrationFactory:
         credential: str,
         secret_free_config: Mapping[str, JsonValue],
     ) -> SlackConversationChannelIntegration:
+        return self.create_integration_with_resolved_credential(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            credential_ref=credential_ref,
+            resolved_credential=credential,
+            secret_free_config=secret_free_config,
+        )
+
+    def create_integration_with_resolved_credential(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        resolved_credential: str,
+        secret_free_config: Mapping[str, JsonValue],
+    ) -> SlackConversationChannelIntegration:
         _require_nonblank(tenant_id, field_name="tenant_id")
         _require_nonblank(connection_ref, field_name="connection_ref")
         _require_nonblank(
@@ -94,10 +120,10 @@ class SlackTenantConnectionIntegrationFactory:
             raise ValueError("provider_id does not match slack")
         if integration_kind is not IntegrationCategory.CONVERSATION_CHANNEL:
             raise ValueError("integration_kind does not match conversation_channel")
-        if not isinstance(credential, str) or not credential.strip():
+        if not isinstance(resolved_credential, str) or not resolved_credential.strip():
             raise ValueError("credential must be a nonblank string")
 
-        app_token, bot_token = _parse_credentials(credential)
+        app_token, bot_token = _parse_credentials(resolved_credential)
         timeout = _resolve_timeout(secret_free_config)
         config = SlackConversationChannelIntegrationConfig(
             enabled=True,

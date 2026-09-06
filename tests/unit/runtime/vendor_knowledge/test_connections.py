@@ -15,6 +15,9 @@ from intergrax.runtime.vendor_knowledge.connections import (
 from intergrax.runtime.vendor_knowledge.tenant_connection_factory_registry import (
     TenantConnectionIntegrationFactoryRegistry,
 )
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
+)
 from intergrax.runtime.vendor_knowledge.contracts import VendorIntegrationResolver
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
@@ -452,12 +455,20 @@ def test_error_messages_never_include_connection_ref() -> None:
 
 @pytest.mark.unit
 def test_factory_registry_routes_by_provider_and_category() -> None:
-    class _Factory:
+    class _Factory(EagerTenantConnectionIntegrationFactoryMixin):
         def __init__(self) -> None:
             self.calls: list[dict[str, object]] = []
 
         def create_integration(self, **kwargs: object) -> object:
-            self.calls.append(kwargs)
+            return self.create_integration_with_resolved_credential(**kwargs)
+
+        def create_integration_with_resolved_credential(
+            self,
+            *,
+            resolved_credential: str,
+            **kwargs: object,
+        ) -> object:
+            self.calls.append({**kwargs, "resolved_credential": resolved_credential})
             return "integration"
 
     factory = _Factory()
@@ -479,7 +490,7 @@ def test_factory_registry_routes_by_provider_and_category() -> None:
     )
 
     assert resolved == "integration"
-    assert factory.calls[0]["credential"] == "runtime-secret"
+    assert factory.calls[0]["resolved_credential"] == "runtime-secret"
     assert factory.calls[0]["credential_ref"] == "credentials/connection-1"
 
 

@@ -6,9 +6,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class CredentialResolutionMode(StrEnum):
+    """How a tenant-connection factory expects credential material at creation time."""
+
+    RESOLVED_MATERIAL = "resolved_material"
+    LATE_BOUND = "late_bound"
 
 
 class CredentialResolutionError(Exception):
@@ -133,20 +141,15 @@ class CredentialResolver(Protocol):
         """Resolve secret material immediately before an operation needs it."""
 
 
-def supports_late_credential_resolution(factory: object) -> bool:
-    """Return True when a tenant-connection factory resolves credentials at operation time."""
-    return bool(getattr(factory, "late_credential_resolution", False))
-
-
 __all__ = [
     "CredentialNotFoundError",
     "CredentialProviderUnavailableError",
     "CredentialRef",
     "CredentialResolutionContext",
     "CredentialResolutionError",
+    "CredentialResolutionMode",
     "CredentialResolver",
     "CredentialScopeMismatchError",
     "CredentialUseEvidence",
     "ResolvedCredential",
-    "supports_late_credential_resolution",
 ]

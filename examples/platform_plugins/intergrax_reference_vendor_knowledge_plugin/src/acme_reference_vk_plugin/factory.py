@@ -6,6 +6,9 @@ import json
 from collections.abc import Mapping
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
+)
 
 from acme_reference_vk_plugin.backend import AcmeReferenceBackend
 from acme_reference_vk_plugin.constants import ACME_REFERENCE_PROVIDER_ID
@@ -35,7 +38,9 @@ def _parse_credentials(credential: str) -> str:
     return api_key.strip()
 
 
-class AcmeReferenceTenantConnectionIntegrationFactory:
+class AcmeReferenceTenantConnectionIntegrationFactory(
+    EagerTenantConnectionIntegrationFactoryMixin,
+):
     """Build reference integrations from secret-ref-backed credentials."""
 
     def create_integration(
@@ -49,6 +54,27 @@ class AcmeReferenceTenantConnectionIntegrationFactory:
         credential: str,
         secret_free_config: Mapping[str, object],
     ) -> AcmeReferenceWikiKnowledgeIntegration:
+        return self.create_integration_with_resolved_credential(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            credential_ref=credential_ref,
+            resolved_credential=credential,
+            secret_free_config=secret_free_config,
+        )
+
+    def create_integration_with_resolved_credential(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        resolved_credential: str,
+        secret_free_config: Mapping[str, object],
+    ) -> AcmeReferenceWikiKnowledgeIntegration:
         _require_nonblank(tenant_id, field_name="tenant_id")
         _require_nonblank(connection_ref, field_name="connection_ref")
         _require_nonblank(credential_ref, field_name="credential_ref")
@@ -56,14 +82,14 @@ class AcmeReferenceTenantConnectionIntegrationFactory:
             raise ValueError("provider_id does not match acme_reference")
         if integration_kind is not IntegrationCategory.WIKI_KNOWLEDGE:
             raise ValueError("integration_kind does not match wiki_knowledge")
-        if not isinstance(credential, str) or not credential.strip():
+        if not isinstance(resolved_credential, str) or not resolved_credential.strip():
             raise ValueError("credential must be a nonblank string")
 
         endpoint = secret_free_config.get("collection_endpoint", "inmemory://collections")
         if not isinstance(endpoint, str) or not endpoint.strip():
             raise ValueError("collection_endpoint must be a nonblank string")
 
-        api_key = _parse_credentials(credential)
+        api_key = _parse_credentials(resolved_credential)
         config = AcmeReferenceIntegrationConfig(
             enabled=True,
             api_key=api_key,

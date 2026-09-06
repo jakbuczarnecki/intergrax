@@ -12,6 +12,9 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
+)
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
     DocumentStoreTenantConnectionRepository,
@@ -453,7 +456,7 @@ class _RecordingSecretsStore:
         return None
 
 
-class _CountingFactory:
+class _CountingFactory(EagerTenantConnectionIntegrationFactoryMixin):
     def __init__(self, *, integration: object | None = None, fail: bool = False) -> None:
         self.calls: list[dict[str, object]] = []
         self.integration = integration
@@ -470,6 +473,27 @@ class _CountingFactory:
         credential: str,
         secret_free_config: Mapping[str, object],
     ) -> object:
+        return self.create_integration_with_resolved_credential(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            credential_ref=credential_ref,
+            resolved_credential=credential,
+            secret_free_config=secret_free_config,
+        )
+
+    def create_integration_with_resolved_credential(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        resolved_credential: str,
+        secret_free_config: Mapping[str, object],
+    ) -> object:
         self.calls.append(
             {
                 "tenant_id": tenant_id,
@@ -477,7 +501,7 @@ class _CountingFactory:
                 "provider_id": provider_id,
                 "integration_kind": integration_kind,
                 "credential_ref": credential_ref,
-                "credential": credential,
+                "resolved_credential": resolved_credential,
                 "secret_free_config": secret_free_config,
             }
         )
@@ -549,7 +573,7 @@ def test_rehydration_opaque_credential_preserved() -> None:
     results = rehydrator.rehydrate_tenant(tenant_id="tenant-1")
     assert results[0].status is TenantConnectionRehydrationStatus.REGISTERED
     assert len(factory.calls) == 1
-    assert factory.calls[0]["credential"] == opaque
+    assert factory.calls[0]["resolved_credential"] == opaque
     dumped = results[0].model_dump()
     assert opaque not in str(dumped)
     document = store.get(

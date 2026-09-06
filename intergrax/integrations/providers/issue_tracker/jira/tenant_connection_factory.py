@@ -20,10 +20,10 @@ from intergrax.integrations.providers.issue_tracker.jira.integration import (
     JIRA_ISSUE_TRACKER_PROVIDER_ID,
     JiraIssueTrackerIntegration,
 )
-from intergrax.runtime.vendor_knowledge.models import JsonValue
-from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
-    TenantConnectionIntegrationFactory,
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
 )
+from intergrax.runtime.vendor_knowledge.models import JsonValue
 
 _ALLOWED_SECRET_FREE_CONFIG_KEYS = frozenset({"base_url", "timeout_seconds"})
 
@@ -67,7 +67,9 @@ def _parse_secret_free_config(
     return base_url, timeout
 
 
-class JiraTenantConnectionIntegrationFactory(TenantConnectionIntegrationFactory):
+class JiraTenantConnectionIntegrationFactory(
+    EagerTenantConnectionIntegrationFactoryMixin,
+):
     """Compose one Jira integration from a durable provider connection."""
 
     def __init__(
@@ -88,6 +90,27 @@ class JiraTenantConnectionIntegrationFactory(TenantConnectionIntegrationFactory)
         credential: str,
         secret_free_config: Mapping[str, JsonValue],
     ) -> JiraIssueTrackerIntegration:
+        return self.create_integration_with_resolved_credential(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            credential_ref=credential_ref,
+            resolved_credential=credential,
+            secret_free_config=secret_free_config,
+        )
+
+    def create_integration_with_resolved_credential(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        credential_ref: str,
+        resolved_credential: str,
+        secret_free_config: Mapping[str, JsonValue],
+    ) -> JiraIssueTrackerIntegration:
         _require_nonblank(tenant_id, field_name="tenant_id")
         _require_nonblank(connection_ref, field_name="connection_ref")
         _require_nonblank(credential_ref, field_name="credential_ref")
@@ -96,7 +119,7 @@ class JiraTenantConnectionIntegrationFactory(TenantConnectionIntegrationFactory)
         if integration_kind is not IntegrationCategory.ISSUE_TRACKER:
             raise ValueError("integration_kind does not match issue_tracker")
 
-        email, api_token = _parse_credential(credential)
+        email, api_token = _parse_credential(resolved_credential)
         base_url, timeout_seconds = _parse_secret_free_config(secret_free_config)
         overrides: dict[str, object] = {
             "base_url": base_url,

@@ -128,10 +128,16 @@ from intergrax.runtime.vendor_knowledge.plugin import (
 from intergrax.runtime.vendor_knowledge.plugin_composition import (
     build_default_vendor_knowledge_source_plugin_registry,
 )
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_contract import (
+    EagerTenantConnectionIntegrationFactoryMixin,
+)
 
 
-class _StubConnectionFactory:
+class _StubConnectionFactory(EagerTenantConnectionIntegrationFactoryMixin):
     def create_integration(self, **_: object) -> object:
+        return object()
+
+    def create_integration_with_resolved_credential(self, **_: object) -> object:
         return object()
 
 

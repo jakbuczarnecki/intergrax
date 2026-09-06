@@ -53,8 +53,15 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.integ
     GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
     GoogleWorkspaceCollaborationSuiteIntegration,
 )
+from intergrax.integrations.contracts.credential import CredentialResolutionMode
 from intergrax.integrations.providers.collaboration_suite.google_workspace.tenant_connection_factory import (
     GoogleWorkspaceTenantConnectionIntegrationFactory,
+)
+from intergrax.integrations.providers.conversation_channel.slack.tenant_connection_factory import (
+    SlackTenantConnectionIntegrationFactory,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_registry import (
+    TenantConnectionIntegrationFactoryRegistry,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
@@ -234,13 +241,12 @@ def test_wrong_tenant_resolution_fails_closed() -> None:
 def test_missing_secret_fails_closed_before_provider_operation() -> None:
     store = _CountingSecretsStore()
     factory = _late_google_factory(store)
-    integration = factory.create_integration(
+    integration = factory.create_late_bound_integration(
         tenant_id="tenant-a",
         connection_ref="gw-conn",
         provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
         integration_kind=IntegrationCategory.COLLABORATION_SUITE,
         credential_ref=_CREDENTIAL_REF_PATH,
-        credential="",
         secret_free_config={},
     )
     assert isinstance(integration, GoogleWorkspaceCollaborationSuiteIntegration)
@@ -253,13 +259,12 @@ def test_missing_secret_fails_closed_before_provider_operation() -> None:
 def test_malformed_credential_fails_before_external_operation() -> None:
     store = _CountingSecretsStore({_CREDENTIAL_REF_PATH: "not-json"})
     factory = _late_google_factory(store)
-    integration = factory.create_integration(
+    integration = factory.create_late_bound_integration(
         tenant_id="tenant-a",
         connection_ref="gw-conn",
         provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
         integration_kind=IntegrationCategory.COLLABORATION_SUITE,
         credential_ref=_CREDENTIAL_REF_PATH,
-        credential="",
         secret_free_config={},
     )
     with pytest.raises(Exception) as exc_info:
@@ -306,24 +311,22 @@ def test_rotation_without_profile_rebuild() -> None:
         }
     )
     factory = _late_google_factory(store)
-    integration = factory.create_integration(
+    integration = factory.create_late_bound_integration(
         tenant_id="tenant-a",
         connection_ref="gw-conn",
         provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
         integration_kind=IntegrationCategory.COLLABORATION_SUITE,
         credential_ref=_CREDENTIAL_REF_PATH,
-        credential="",
         secret_free_config={},
     )
     integration.require_client_family()
     store.values[_CREDENTIAL_REF_PATH] = _credential_json("v2-material")
-    integration_b = factory.create_integration(
+    integration_b = factory.create_late_bound_integration(
         tenant_id="tenant-a",
         connection_ref="gw-conn",
         provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
         integration_kind=IntegrationCategory.COLLABORATION_SUITE,
         credential_ref=_CREDENTIAL_REF_PATH,
-        credential="",
         secret_free_config={},
     )
     integration_b.require_client_family()
@@ -356,13 +359,12 @@ def test_two_operations_cause_two_reads() -> None:
     store = _CountingSecretsStore({_CREDENTIAL_REF_PATH: _credential_json()})
     factory = _late_google_factory(store)
     for _ in range(2):
-        integration = factory.create_integration(
+        integration = factory.create_late_bound_integration(
             tenant_id="tenant-a",
             connection_ref="gw-conn",
             provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
             integration_kind=IntegrationCategory.COLLABORATION_SUITE,
             credential_ref=_CREDENTIAL_REF_PATH,
-            credential="",
             secret_free_config={},
         )
         integration.require_client_family()
@@ -463,3 +465,98 @@ def test_credential_not_found_error_is_safe() -> None:
     with pytest.raises(CredentialNotFoundError) as exc_info:
         resolver.resolve(ref, context=CredentialResolutionContext(tenant_id="tenant-a"))
     _assert_sentinel_absent(str(exc_info.value))
+
+
+_P1_7A_DISPATCH_SOURCE_FILES = (
+    "intergrax/runtime/vendor_knowledge/tenant_connection_rehydration.py",
+    "intergrax/runtime/vendor_knowledge/tenant_connection_factory_registry.py",
+    "intergrax/integrations/contracts/credential.py",
+)
+
+
+def test_p1_7a_no_reflection_dispatch_in_canonical_sources() -> None:
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parents[4]
+    for relative_path in _P1_7A_DISPATCH_SOURCE_FILES:
+        source = (repo_root / relative_path).read_text(encoding="utf-8")
+        assert "hasattr(" not in source
+        assert "getattr(" not in source
+    repo_text = "\n".join(
+        (repo_root / relative_path).read_text(encoding="utf-8")
+        for relative_path in _P1_7A_DISPATCH_SOURCE_FILES
+    )
+    assert 'credential=""' not in repo_text
+
+
+def test_p1_7a_google_workspace_declares_late_bound_mode() -> None:
+    store = _CountingSecretsStore()
+    factory = _late_google_factory(store)
+    assert factory.credential_resolution_mode is CredentialResolutionMode.LATE_BOUND
+
+
+def test_p1_7a_slack_declares_resolved_material_mode() -> None:
+    factory = SlackTenantConnectionIntegrationFactory()
+    assert factory.credential_resolution_mode is CredentialResolutionMode.RESOLVED_MATERIAL
+
+
+def test_p1_7a_registry_forwards_factory_mode() -> None:
+    store = _CountingSecretsStore()
+    gw_factory = _late_google_factory(store)
+    slack_factory = SlackTenantConnectionIntegrationFactory()
+    registry = TenantConnectionIntegrationFactoryRegistry(
+        [
+            (
+                GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+                IntegrationCategory.COLLABORATION_SUITE,
+                gw_factory,
+            ),
+            (
+                "slack",
+                IntegrationCategory.CONVERSATION_CHANNEL,
+                slack_factory,
+            ),
+        ]
+    )
+    assert (
+        registry.credential_resolution_mode_for(
+            provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        )
+        is CredentialResolutionMode.LATE_BOUND
+    )
+    assert (
+        registry.credential_resolution_mode_for(
+            provider_id="slack",
+            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+        )
+        is CredentialResolutionMode.RESOLVED_MATERIAL
+    )
+    with pytest.raises(ValueError, match="factory is unavailable"):
+        registry.credential_resolution_mode_for(
+            provider_id="missing",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        )
+
+
+def test_p1_7a_malformed_factory_registration_fails() -> None:
+    class _BrokenFactory:
+        credential_resolution_mode = "late_bound"
+
+        def credential_resolution_mode_for(self, **_: object) -> CredentialResolutionMode:
+            return CredentialResolutionMode.LATE_BOUND
+
+        def create_integration_with_resolved_credential(self, **_: object) -> object:
+            return object()
+
+        def create_late_bound_integration(self, **_: object) -> object:
+            return object()
+
+    registry = TenantConnectionIntegrationFactoryRegistry()
+    with pytest.raises(TypeError, match="valid CredentialResolutionMode"):
+        registry.register(
+            provider_id="broken",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            factory=_BrokenFactory(),  # type: ignore[arg-type]
+        )
+

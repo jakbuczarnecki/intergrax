@@ -608,15 +608,21 @@ Preserves INV-25 (atomic activation), INV-26 (in-flight pinning), INV-33 (revisi
 
 **Status: CLOSED**
 
-`SecretsStore` remains canonical secret-storage authority. P1.7 adds typed `CredentialRef` identity and `SecretsStoreCredentialResolver` for provider-neutral late resolution above the existing store seam.
+## P1.7A Explicit late-credential factory contract
+
+**Status: CLOSED**
+
+`SecretsStore` remains canonical secret-storage authority. P1.7 adds typed `CredentialRef` identity and `SecretsStoreCredentialResolver` for provider-neutral late resolution above the existing store seam. P1.7A replaces reflection/sentinel dispatch with an explicit typed factory contract.
 
 Delivered:
 
-- `intergrax/integrations/contracts/credential.py` — `CredentialRef`, `CredentialResolutionContext`, `ResolvedCredential` (safe repr), `CredentialUseEvidence`, typed errors
+- `intergrax/integrations/contracts/credential.py` — `CredentialRef`, `CredentialResolutionContext`, `ResolvedCredential` (safe repr), `CredentialUseEvidence`, typed errors, `CredentialResolutionMode`
 - `intergrax/integrations/credentials/secrets_store_resolver.py` — `SecretsStoreCredentialResolver` delegating to `SecretsStore.get_secret(path, version=...)`
 - `intergrax/integrations/credentials/google_workspace.py` — Google Workspace operation-boundary adapter
-- Google Workspace tenant-connection factory + rehydrator late path (`late_credential_resolution=True` when `secrets_store` wired)
-- Focused P1.7 proof suite: `tests/unit/integrations/credentials/test_p1_7_credential_ref.py`
+- `intergrax/runtime/vendor_knowledge/tenant_connection_factory_contract.py` — eager factory mixin + mode validation
+- Google Workspace tenant-connection factory declares `CredentialResolutionMode.LATE_BOUND` when `secrets_store` is wired; legacy providers declare `RESOLVED_MATERIAL`
+- `TenantConnectionIntegrationFactoryRegistry` + `TenantConnectionRehydrator` deterministic dispatch via `credential_resolution_mode_for` and explicit `create_late_bound_integration` / `create_integration_with_resolved_credential` paths
+- Focused P1.7 / P1.7A proof suite: `tests/unit/integrations/credentials/test_p1_7_credential_ref.py`
 
 Semantics:
 
@@ -632,11 +638,20 @@ SecretsStore.get_secret(...)
 provider-specific codec / client construction
 ```
 
+Factory credential behavior:
+
+```text
+late/eager credential behavior is declared by typed factory contract;
+no hasattr/getattr dispatch;
+no empty-string credential sentinel.
+```
+
 - Unversioned `CredentialRef` rotation affects future operations without profile rebuild/revision activation
 - Explicit `version` pin supported when store adapter exposes version semantics
 - Tenant scope enforced via `CredentialResolutionContext.tenant_id` vs `CredentialRef.tenant_id`
 - No raw secret material in profile revision, checkpoint, or inspection serialization paths (proof tests)
 - Eager resolution during profile resolution / revision materialization / activation: **0** `get_secret` calls (proof tests)
+- Google Workspace rehydration: **0** `get_secret` calls; operation boundary: **1** read per operation
 
 Durability statement:
 
