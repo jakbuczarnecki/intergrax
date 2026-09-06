@@ -170,7 +170,7 @@ def _validate_shard_plan_integrity(
     expected_ordinals = tuple(range(1, shard_count + 1))
     if ordinals != expected_ordinals:
         raise ValueError(
-            f"shard ordinals must be contiguous 1..{shard_count}; got {ordinals}"
+            f"shard ordinals must be contiguous and ordered 1..{shard_count}; got {ordinals}"
         )
 
     first_shard = shards[0]

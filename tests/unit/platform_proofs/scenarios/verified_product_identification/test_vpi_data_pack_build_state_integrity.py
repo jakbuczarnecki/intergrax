@@ -379,6 +379,39 @@ def test_overlap_via_json_emits_build_state_error(tmp_path: Path) -> None:
         read_build_state_file(state_path)
 
 
+def test_range_gap_via_read_file_emits_build_state_error(tmp_path: Path) -> None:
+    payload = _build_state_payload(
+        shard_count=2,
+        expected_record_count=55,
+        shards=[
+            _shard_payloads()[0],
+            {
+                **_shard_payloads()[0],
+                "ordinal": 2,
+                "start_row_index": 30,
+                "end_row_index_exclusive": 55,
+                "expected_record_count": 25,
+            },
+        ],
+    )
+    with pytest.raises(VpiDataPackBuildStateError, match="shard range gap"):
+        build_state_from_json_dict(payload)
+
+    state_path = tmp_path / "build-state.json"
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(VpiDataPackBuildStateError, match="shard range gap"):
+        read_build_state_file(state_path)
+
+
+def test_valid_state_file_round_trip(tmp_path: Path) -> None:
+    state = _canonical_build_state()
+    path = tmp_path / "build-state.json"
+    write_build_state_file(path, state)
+    restored = read_build_state_file(path)
+    assert restored == state
+    assert build_state_from_json_dict(build_state_to_json_dict(restored)) == restored
+
+
 def test_semantic_invalid_state_via_read_file_emits_build_state_error(tmp_path: Path) -> None:
     state = _canonical_build_state()
     write_build_state_file(tmp_path / "build-state.json", state)

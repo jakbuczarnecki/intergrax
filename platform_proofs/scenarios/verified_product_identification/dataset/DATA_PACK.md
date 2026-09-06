@@ -134,6 +134,8 @@ generated/data_pack/<build>/
   state/build-state.json          # builder-local authority (not distributable)
 ```
 
+`state/build-state.json` is resume execution authority. On load it validates canonical shard ordinals (`1..N`), contiguous non-overlapping row ranges covering `[0, expected_record_count)`, and per-shard range lengths matching each shard's `expected_record_count`. Invalid persisted plans fail closed (`VpiDataPackBuildStateError`); they are never normalized or repaired.
+
 ### Shard atomicity
 
 - Resume unit = one shard ordinal
