@@ -1,6 +1,6 @@
 # VPI dataset reproducibility lineage (frozen)
 
-This document records the frozen semantic lineage for VPI Data Pack v1. It does not yet describe the resumable 3.77M builder (VPI-IMPLEMENTATION-5C4D3).
+This document records the frozen semantic lineage for VPI Data Pack v1, including the resumable builder stage (VPI-IMPLEMENTATION-5C4D3).
 
 ## Lineage chain
 
@@ -10,7 +10,8 @@ WDC source corpus
   → derivation version (search representation)
   → semantic text version
   → BAAI/bge-m3 immutable HF revision
-  → VPI Data Pack v1 artifacts
+  → resumable Data Pack v1 builder (state/build-state.json)
+  → VPI Data Pack v1 artifacts (manifest READY, shards.json, SHA256SUMS)
 ```
 
 ## Frozen identities

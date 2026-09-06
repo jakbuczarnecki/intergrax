@@ -8,6 +8,8 @@ from pathlib import Path
 DATASET_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_GENERATED_ROOT = DATASET_DIR / "generated" / "data_pack"
 DEFAULT_PROOF_50_ROOT = DEFAULT_GENERATED_ROOT / "proof-50"
+DEFAULT_CANONICAL_BUILD_ROOT = DEFAULT_GENERATED_ROOT / "canonical-v1"
+DEFAULT_PRODUCTION_SHARD_SIZE = 25_000
 PROOF_50_POSTGRESQL_SCHEMA = "vpi_proof_5c4d1"
 PROOF_50_QDRANT_COLLECTION = "vpi_offers_proof_5c4d1"
 
@@ -22,6 +24,8 @@ class DataPackPaths:
     indexes_dir: Path
     checksums_dir: Path
     evidence_dir: Path
+    state_dir: Path
+    build_state_file: Path
     shards_index_file: Path
     checksums_file: Path
     proof_report_file: Path
@@ -37,6 +41,8 @@ def resolve_data_pack_paths(root: Path) -> DataPackPaths:
         indexes_dir=root / "indexes",
         checksums_dir=root / "checksums",
         evidence_dir=root / "evidence",
+        state_dir=root / "state",
+        build_state_file=root / "state" / "build-state.json",
         shards_index_file=root / "indexes" / "shards.json",
         checksums_file=root / "checksums" / "SHA256SUMS",
         proof_report_file=root / "evidence" / "proof-report.json",

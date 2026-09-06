@@ -29,3 +29,19 @@ class VpiDataPackFormatError(VpiDataPackError):
 
 class EmbeddingModelIdentityError(VpiDataPackError):
     """Raised when embedding model revision or fingerprint cannot be resolved."""
+
+
+class VpiDataPackBuildStateError(VpiDataPackError):
+    """Raised when builder state is malformed or transitions are invalid."""
+
+
+class VpiDataPackResumeError(VpiDataPackError):
+    """Raised when resume preconditions fail."""
+
+
+class VpiDataPackReadyShardCorruptionError(VpiDataPackError):
+    """Raised when a READY shard fails integrity validation on resume."""
+
+
+class VpiDataPackBuildIdentityMismatchError(VpiDataPackError):
+    """Raised when build state content identity differs from expected."""

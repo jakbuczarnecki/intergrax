@@ -118,6 +118,61 @@ Records within each shard are ordered by `global_row_index` ascending (determini
 
 Distributed final manifests should be `READY` only. Builder runtime state (`BUILDING`, `VALIDATING`, `FAILED`) is builder-local.
 
+## Resumable builder (VPI-IMPLEMENTATION-5C4D3)
+
+Production-intended multi-shard builder with crash-safe resume. Builder state is **not** stored in `DataPackManifest.status`.
+
+### Layout
+
+```text
+generated/data_pack/<build>/
+  manifest/manifest.json          # READY only after full finalization
+  relational/part-000001.parquet
+  embeddings/part-000001.parquet
+  indexes/shards.json             # written at finalization
+  checksums/SHA256SUMS            # written at finalization
+  state/build-state.json          # builder-local authority (not distributable)
+```
+
+### Shard atomicity
+
+- Resume unit = one shard ordinal
+- Non-READY shards are rebuilt from scratch (no record-level resume in v1)
+- READY shards are immutable; validated before skip on resume
+- Corrupt READY shard → fail closed (`CORRUPT_READY_SHARD`), no silent rebuild
+
+### Shard lifecycle (builder-local)
+
+```text
+PENDING → DERIVING → EMBEDDING → WRITING → VALIDATING → READY
+```
+
+Incomplete outputs use `.tmp` suffix; never adopted as READY. Orphan `.tmp` for non-READY shards is removed on resume.
+
+### Content identity vs shard layout
+
+`content_identity` (frozen v1) excludes `shard_size` and binary shard checksums. Different shard sizes produce different binary releases (distinct `SHA256SUMS`) but the same semantic `content_identity` when dataset, derivation, and model identity match.
+
+### CLI
+
+```powershell
+uv run --group platform-proofs-vpi-dataset python `
+  platform_proofs/scenarios/verified_product_identification/dataset/run_data_pack_build.py `
+  --output-root platform_proofs/scenarios/verified_product_identification/dataset/generated/data_pack/canonical-v1 `
+  --shard-size 25000 `
+  --resume
+```
+
+| Flag | Purpose |
+|---|---|
+| `--shard-size` | Records per shard (default `25000`) |
+| `--resume` | Required when `state/build-state.json` exists |
+| `--start-fresh` | Clear scenario-owned build subtree only |
+| `--max-shards` / `--max-records` | Qualification hooks; partial build is **not** distributable |
+| `--stop-after-shard` | Graceful stop after N shards |
+
+Partial builds do not emit READY manifest, `shards.json`, or `SHA256SUMS`.
+
 ## Compatibility rejection
 
 `validate_data_pack_compatibility(...)` rejects before storage ingest:
