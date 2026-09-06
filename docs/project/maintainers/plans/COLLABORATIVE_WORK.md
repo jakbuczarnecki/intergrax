@@ -6,7 +6,7 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
-**Current active task:** **COLLAB-WORK-2C** (READY_FOR_REVIEW — pending independent audit)
+**Current active task:** **COLLAB-WORK-2D** (SQLite durability parity)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -279,7 +279,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2C |
 | **Priority** | P1 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Authoritative WorkItem/Assignment mutation and validated state transitions with MP-1 authority enforcement |
 | **Dependencies** | COLLAB-WORK-2B approved; `CollaborativeWorkAuthorityResolver`; `CollaborativeWorkEnforcementGate` |
 | **Exact scope** | Transition service for create/assign; WorkItem and Assignment state transitions; close/reopen/cancel; reassignment via revoke-existing Assignment + create-new Assignment (two independently authorized, CAS-protected mutations); explicit validated transitions; authority-checked mutations; no combined atomic reassignment API without transactional Unit of Work; no TaskState inference |
