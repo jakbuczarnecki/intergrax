@@ -14,6 +14,8 @@ from intergrax.applications._shared.production_capability_discovery_composition 
 )
 from intergrax.applications._shared.production_capability_governance_evidence import (
     ProductionCapabilityGovernanceEvidenceBundle,
+    project_skill_governance_evidence_from_skill_profile,
+    project_tool_governance_evidence_from_tool_profile,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
@@ -37,10 +39,13 @@ from intergrax.contracts.capability_catalog import (
     CapabilityLogicalIdentity,
     CapabilityProvenance,
     CapabilitySourceIdentity,
+    CapabilitySetConstraintMode,
     CapabilitySourceKind,
     CapabilityToolGovernanceEvidence,
     GovernanceDisposition,
 )
+from intergrax.skills.registry.profile import SkillProfile
+from intergrax.tools.registry.profile import ToolProfile
 
 pytestmark = pytest.mark.unit
 
@@ -359,3 +364,86 @@ def test_build_production_capability_governance_context_never_downgrades_strict(
     environment = _strict_environment(tool_ids=(_ALLOWED_TOOL_ID,))
     context = build_production_capability_governance_context(environment)
     assert context.posture is CapabilityGovernancePosture.STRICT
+
+
+def test_production_tool_projection_always_uses_explicit_set() -> None:
+    empty_evidence = project_tool_governance_evidence_from_tool_profile(ToolProfile())
+    assert empty_evidence.allowed_constraint_mode is CapabilitySetConstraintMode.EXPLICIT_SET
+    assert empty_evidence.allowed_keys == ()
+
+    non_empty_evidence = project_tool_governance_evidence_from_tool_profile(
+        ToolProfile(enabled=[_ALLOWED_TOOL_ID]),
+    )
+    assert non_empty_evidence.allowed_constraint_mode is CapabilitySetConstraintMode.EXPLICIT_SET
+    assert len(non_empty_evidence.allowed_keys) == 1
+
+
+def test_production_skill_projection_always_uses_explicit_set() -> None:
+    empty_evidence = project_skill_governance_evidence_from_skill_profile(SkillProfile())
+    assert empty_evidence.enabled_constraint_mode is CapabilitySetConstraintMode.EXPLICIT_SET
+    assert empty_evidence.enabled_keys == ()
+
+    non_empty_evidence = project_skill_governance_evidence_from_skill_profile(
+        SkillProfile(enabled=["skills.rag.retrieve"]),
+    )
+    assert non_empty_evidence.enabled_constraint_mode is CapabilitySetConstraintMode.EXPLICIT_SET
+    assert len(non_empty_evidence.enabled_keys) == 1
+
+
+def test_strict_production_empty_tool_profile_blocks_tool_candidate() -> None:
+    allowed_entry = _tool_entry(_ALLOWED_TOOL_ID)
+    environment = _strict_environment(tool_ids=())
+    result = discover_rank_and_govern_capabilities(
+        snapshot=_snapshot(allowed_entry),
+        query=_discovery_query(),
+        availability_evidence=_availability_evidence(allowed_entry),
+        environment=environment,
+        ranker=StableIdentityRanker(),
+    )
+    assert not result.allowed
+    assert len(result.blocked) == 1
+    assert CapabilityGovernanceReasonCode.NOT_ENTITLED in _blocked_reason_codes(
+        result.blocked,
+    )
+    downstream = consume_governed_discovery_for_downstream(result)
+    assert downstream == ()
+
+
+def test_strict_production_empty_skill_profile_blocks_skill_candidate() -> None:
+    skill_source = CapabilitySourceIdentity(
+        source_id="skills.catalog.builtin",
+        source_kind=CapabilitySourceKind.BUILTIN,
+    )
+    skill_entry = CapabilityCatalogEntry(
+        identity=CapabilityDiscoveryIdentity(
+            kind=CapabilityKind.SKILL,
+            source=skill_source,
+            logical=CapabilityLogicalIdentity(
+                kind=CapabilityKind.SKILL,
+                logical_id="skills.rag.retrieve",
+            ),
+        ),
+        provenance=CapabilityProvenance(source=skill_source),
+        display_label="skills.rag.retrieve",
+    )
+    environment = _strict_environment(tool_ids=())
+    keys = (CapabilityIdentityKey.from_discovery_identity(skill_entry.identity),)
+    result = discover_rank_and_govern_capabilities(
+        snapshot=CapabilityCatalogSnapshot(
+            source_ids=(skill_source.source_id,),
+            entries=(skill_entry,),
+        ),
+        query=_discovery_query(),
+        availability_evidence=CapabilityDiscoveryAvailabilityEvidence(
+            scope_visible_keys=keys,
+        ),
+        environment=environment,
+        ranker=StableIdentityRanker(),
+    )
+    assert not result.allowed
+    assert len(result.blocked) == 1
+    assert CapabilityGovernanceReasonCode.NOT_ENTITLED in _blocked_reason_codes(
+        result.blocked,
+    )
+    downstream = consume_governed_discovery_for_downstream(result)
+    assert downstream == ()

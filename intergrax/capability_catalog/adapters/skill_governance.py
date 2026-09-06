@@ -13,6 +13,7 @@ from intergrax.contracts.capability_catalog.governance import (
     CapabilityGovernanceContext,
     CapabilityGovernancePosture,
     CapabilityGovernanceReasonCode,
+    CapabilitySetConstraintMode,
     GovernanceDecisionEvidence,
     GovernanceDisposition,
 )
@@ -90,7 +91,11 @@ class SkillProfileGovernanceEvaluator:
                 ),
             )
 
-        if enabled and sort_key not in enabled:
+        if (
+            skill_evidence.enabled_constraint_mode
+            is CapabilitySetConstraintMode.EXPLICIT_SET
+            and sort_key not in enabled
+        ):
             return CapabilityGovernanceDecision(
                 disposition=GovernanceDisposition.BLOCKED,
                 evidence=GovernanceDecisionEvidence(

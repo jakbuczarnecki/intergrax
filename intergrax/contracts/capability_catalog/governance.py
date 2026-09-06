@@ -42,6 +42,13 @@ class CapabilityGovernancePosture(StrEnum):
     NON_STRICT = "non_strict"
 
 
+class CapabilitySetConstraintMode(StrEnum):
+    """Whether a governance key set narrows candidates."""
+
+    UNCONSTRAINED = "unconstrained"
+    EXPLICIT_SET = "explicit_set"
+
+
 class CapabilityGovernanceReasonCode(StrEnum):
     """Stable machine-readable governance reason codes."""
 
@@ -96,9 +103,12 @@ class CapabilityToolGovernanceEvidence(BaseModel):
     )
     allowed_keys: tuple[CapabilityIdentityKey, ...] = ()
     denied_keys: tuple[CapabilityIdentityKey, ...] = ()
+    allowed_constraint_mode: CapabilitySetConstraintMode = (
+        CapabilitySetConstraintMode.UNCONSTRAINED
+    )
 
     @model_validator(mode="after")
-    def _validate_disjoint_keys(
+    def _validate_constraint_consistency(
         self,
     ) -> CapabilityToolGovernanceEvidence:
         allowed = {key.sort_key for key in self.allowed_keys}
@@ -109,6 +119,14 @@ class CapabilityToolGovernanceEvidence(BaseModel):
             raise ValueError(
                 "tool governance evidence conflict: identity "
                 f"{conflict_key!r} appears in both allowed_keys and denied_keys",
+            )
+        if (
+            self.allowed_constraint_mode is CapabilitySetConstraintMode.UNCONSTRAINED
+            and self.allowed_keys
+        ):
+            raise ValueError(
+                "tool governance evidence conflict: allowed_keys must be empty when "
+                "allowed_constraint_mode is UNCONSTRAINED",
             )
         return self
 
@@ -158,9 +176,12 @@ class CapabilitySkillGovernanceEvidence(BaseModel):
     )
     enabled_keys: tuple[CapabilityIdentityKey, ...] = ()
     blocked_keys: tuple[CapabilityIdentityKey, ...] = ()
+    enabled_constraint_mode: CapabilitySetConstraintMode = (
+        CapabilitySetConstraintMode.UNCONSTRAINED
+    )
 
     @model_validator(mode="after")
-    def _validate_disjoint_keys(
+    def _validate_constraint_consistency(
         self,
     ) -> CapabilitySkillGovernanceEvidence:
         enabled = {key.sort_key for key in self.enabled_keys}
@@ -171,6 +192,14 @@ class CapabilitySkillGovernanceEvidence(BaseModel):
             raise ValueError(
                 "skill governance evidence conflict: identity "
                 f"{conflict_key!r} appears in both enabled_keys and blocked_keys",
+            )
+        if (
+            self.enabled_constraint_mode is CapabilitySetConstraintMode.UNCONSTRAINED
+            and self.enabled_keys
+        ):
+            raise ValueError(
+                "skill governance evidence conflict: enabled_keys must be empty when "
+                "enabled_constraint_mode is UNCONSTRAINED",
             )
         return self
 

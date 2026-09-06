@@ -29,6 +29,7 @@ from intergrax.contracts.capability_catalog import (
     CapabilityProvenance,
     CapabilityRankingEvidence,
     CapabilityRankingSignal,
+    CapabilitySetConstraintMode,
     CapabilitySkillGovernanceEvidence,
     CapabilitySourceIdentity,
     CapabilitySourceKind,
@@ -69,7 +70,10 @@ def test_enabled_skill_allowed() -> None:
     key = CapabilityIdentityKey.from_discovery_identity(ranked.identity)
     context = CapabilityGovernanceContext(
         posture=CapabilityGovernancePosture.STRICT,
-        skill_evidence=CapabilitySkillGovernanceEvidence(enabled_keys=(key,)),
+        skill_evidence=CapabilitySkillGovernanceEvidence(
+            enabled_keys=(key,),
+            enabled_constraint_mode=CapabilitySetConstraintMode.EXPLICIT_SET,
+        ),
     )
     result = govern_capability_candidates(
         (ranked,),
@@ -117,3 +121,70 @@ def test_missing_skill_evidence_strict_blocks() -> None:
         context=context,
     )
     assert not result.allowed
+
+
+def test_explicit_empty_enabled_set_blocks_skill_candidate() -> None:
+    ranked = _skill_ranked()
+    context = CapabilityGovernanceContext(
+        posture=CapabilityGovernancePosture.STRICT,
+        skill_evidence=CapabilitySkillGovernanceEvidence(
+            enabled_constraint_mode=CapabilitySetConstraintMode.EXPLICIT_SET,
+        ),
+    )
+    result = govern_capability_candidates(
+        (ranked,),
+        evaluators=(
+            AvailabilityPreservingGovernanceEvaluator(),
+            SkillProfileGovernanceEvaluator(),
+        ),
+        context=context,
+    )
+    assert not result.allowed
+    assert result.blocked[0].evidence[-1].reason_code is (
+        CapabilityGovernanceReasonCode.NOT_ENTITLED
+    )
+
+
+def test_explicit_non_empty_enabled_set_blocks_non_member() -> None:
+    ranked = _skill_ranked("skills.other")
+    enabled_ranked = _skill_ranked("skills.echo")
+    enabled_key = CapabilityIdentityKey.from_discovery_identity(enabled_ranked.identity)
+    context = CapabilityGovernanceContext(
+        posture=CapabilityGovernancePosture.STRICT,
+        skill_evidence=CapabilitySkillGovernanceEvidence(
+            enabled_keys=(enabled_key,),
+            enabled_constraint_mode=CapabilitySetConstraintMode.EXPLICIT_SET,
+        ),
+    )
+    result = govern_capability_candidates(
+        (ranked, enabled_ranked),
+        evaluators=(
+            AvailabilityPreservingGovernanceEvaluator(),
+            SkillProfileGovernanceEvaluator(),
+        ),
+        context=context,
+    )
+    assert len(result.allowed) == 1
+    assert result.allowed[0].identity.logical.logical_id == "skills.echo"
+    assert len(result.blocked) == 1
+    assert result.blocked[0].identity.logical.logical_id == "skills.other"
+    assert result.blocked[0].evidence[-1].reason_code is (
+        CapabilityGovernanceReasonCode.NOT_ENTITLED
+    )
+
+
+def test_unconstrained_empty_enabled_set_does_not_narrow() -> None:
+    ranked = _skill_ranked()
+    context = CapabilityGovernanceContext(
+        posture=CapabilityGovernancePosture.NON_STRICT,
+        skill_evidence=CapabilitySkillGovernanceEvidence(),
+    )
+    result = govern_capability_candidates(
+        (ranked,),
+        evaluators=(
+            AvailabilityPreservingGovernanceEvaluator(),
+            SkillProfileGovernanceEvaluator(),
+        ),
+        context=context,
+    )
+    assert len(result.allowed) == 1

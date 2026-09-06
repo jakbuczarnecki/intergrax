@@ -29,6 +29,7 @@ from intergrax.contracts.capability_catalog import (
     CapabilityProvenance,
     CapabilityRankingEvidence,
     CapabilityRankingSignal,
+    CapabilitySetConstraintMode,
     CapabilitySourceIdentity,
     CapabilitySourceKind,
     CapabilityToolGovernanceEvidence,
@@ -95,7 +96,10 @@ def test_tool_policy_allow_passes() -> None:
     key = _identity_key(ranked)
     context = CapabilityGovernanceContext(
         posture=CapabilityGovernancePosture.STRICT,
-        tool_evidence=CapabilityToolGovernanceEvidence(allowed_keys=(key,)),
+        tool_evidence=CapabilityToolGovernanceEvidence(
+            allowed_keys=(key,),
+            allowed_constraint_mode=CapabilitySetConstraintMode.EXPLICIT_SET,
+        ),
     )
     result = govern_capability_candidates(
         (ranked,),
@@ -139,3 +143,70 @@ def test_evaluator_does_not_execute_tools() -> None:
         ),
     )
     assert decision.disposition is GovernanceDisposition.ALLOWED
+
+
+def test_explicit_empty_allowed_set_blocks_tool_candidate() -> None:
+    ranked = _tool_ranked()
+    context = CapabilityGovernanceContext(
+        posture=CapabilityGovernancePosture.STRICT,
+        tool_evidence=CapabilityToolGovernanceEvidence(
+            allowed_constraint_mode=CapabilitySetConstraintMode.EXPLICIT_SET,
+        ),
+    )
+    result = govern_capability_candidates(
+        (ranked,),
+        evaluators=(
+            AvailabilityPreservingGovernanceEvaluator(),
+            ToolPolicyGovernanceEvaluator(),
+        ),
+        context=context,
+    )
+    assert not result.allowed
+    assert result.blocked[0].evidence[-1].reason_code is (
+        CapabilityGovernanceReasonCode.NOT_ENTITLED
+    )
+
+
+def test_explicit_non_empty_allowed_set_blocks_non_member() -> None:
+    ranked = _tool_ranked("tools.echo.other")
+    allowed_ranked = _tool_ranked("tools.echo.ping")
+    allowed_key = _identity_key(allowed_ranked)
+    context = CapabilityGovernanceContext(
+        posture=CapabilityGovernancePosture.STRICT,
+        tool_evidence=CapabilityToolGovernanceEvidence(
+            allowed_keys=(allowed_key,),
+            allowed_constraint_mode=CapabilitySetConstraintMode.EXPLICIT_SET,
+        ),
+    )
+    result = govern_capability_candidates(
+        (ranked, allowed_ranked),
+        evaluators=(
+            AvailabilityPreservingGovernanceEvaluator(),
+            ToolPolicyGovernanceEvaluator(),
+        ),
+        context=context,
+    )
+    assert len(result.allowed) == 1
+    assert result.allowed[0].identity.logical.logical_id == "tools.echo.ping"
+    assert len(result.blocked) == 1
+    assert result.blocked[0].identity.logical.logical_id == "tools.echo.other"
+    assert result.blocked[0].evidence[-1].reason_code is (
+        CapabilityGovernanceReasonCode.NOT_ENTITLED
+    )
+
+
+def test_unconstrained_empty_allowed_set_does_not_narrow() -> None:
+    ranked = _tool_ranked()
+    context = CapabilityGovernanceContext(
+        posture=CapabilityGovernancePosture.NON_STRICT,
+        tool_evidence=CapabilityToolGovernanceEvidence(),
+    )
+    result = govern_capability_candidates(
+        (ranked,),
+        evaluators=(
+            AvailabilityPreservingGovernanceEvaluator(),
+            ToolPolicyGovernanceEvaluator(),
+        ),
+        context=context,
+    )
+    assert len(result.allowed) == 1

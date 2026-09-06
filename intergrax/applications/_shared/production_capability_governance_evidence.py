@@ -11,6 +11,7 @@ from intergrax.capability_catalog.adapters.tool import TOOL_BUILTIN_CATALOG_SOUR
 from intergrax.capability_catalog.adapters.skill import SKILL_BUILTIN_CATALOG_SOURCE_ID
 from intergrax.contracts.capability_catalog.governance import (
     CapabilityAgentGovernanceEvidence,
+    CapabilitySetConstraintMode,
     CapabilitySkillGovernanceEvidence,
     CapabilityToolGovernanceEvidence,
 )
@@ -45,7 +46,10 @@ def project_tool_governance_evidence_from_tool_profile(
         )
         for tool_id in available_tool_ids_for_profile(tool_profile)
     )
-    return CapabilityToolGovernanceEvidence(allowed_keys=allowed_keys)
+    return CapabilityToolGovernanceEvidence(
+        allowed_keys=allowed_keys,
+        allowed_constraint_mode=CapabilitySetConstraintMode.EXPLICIT_SET,
+    )
 
 
 def project_skill_governance_evidence_from_skill_profile(
@@ -61,7 +65,10 @@ def project_skill_governance_evidence_from_skill_profile(
         )
         for skill_id in enabled_skill_ids_for_profile(skill_profile)
     )
-    return CapabilitySkillGovernanceEvidence(enabled_keys=enabled_keys)
+    return CapabilitySkillGovernanceEvidence(
+        enabled_keys=enabled_keys,
+        enabled_constraint_mode=CapabilitySetConstraintMode.EXPLICIT_SET,
+    )
 
 
 def project_production_capability_governance_evidence(
