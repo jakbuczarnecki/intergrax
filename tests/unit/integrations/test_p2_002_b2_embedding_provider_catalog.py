@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import sys
 from importlib import import_module
@@ -117,6 +118,29 @@ def test_integration_profile_accepts_registered_embedding_slugs() -> None:
     for slug in sorted(_EXPECTED_PROVIDERS):
         profile = IntegrationProfile(embedding_provider=slug)
         assert profile.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER) == slug
+
+
+def test_embedding_provider_package_has_explicit_public_exports() -> None:
+    blocked = (
+        "sentence_transformers",
+        "openai",
+        "langchain_ollama",
+    )
+    for name in blocked:
+        sys.modules.pop(name, None)
+
+    import intergrax.integrations.providers.embedding_provider as embedding_provider_package
+
+    source = inspect.getsource(embedding_provider_package)
+    assert "def __getattr__" not in source
+    assert embedding_provider_package.EMBEDDING_PROVIDER_SLUGS == EMBEDDING_PROVIDER_SLUGS
+    assert (
+        embedding_provider_package.register_embedding_provider_integrations
+        is register_embedding_provider_integrations
+    )
+
+    for name in blocked:
+        assert name not in sys.modules
 
 
 def test_catalog_registration_does_not_import_optional_vendor_sdks() -> None:

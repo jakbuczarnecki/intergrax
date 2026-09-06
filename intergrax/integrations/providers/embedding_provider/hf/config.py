@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.contracts import PlatformIntegrationConfig
 
 
-class HfEmbeddingProviderIntegrationConfig(CategoryIntegrationConfig):
+class HfEmbeddingProviderIntegrationConfig(PlatformIntegrationConfig):
     """Catalog-boundary config for HuggingFace embedding provider."""
 
     device: str | None = None

@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.contracts import PlatformIntegrationConfig
 
 
-class OpenaiEmbeddingProviderIntegrationConfig(CategoryIntegrationConfig):
+class OpenaiEmbeddingProviderIntegrationConfig(PlatformIntegrationConfig):
     """Catalog-boundary config for OpenAI embedding provider."""
 
     base_url: str | None = None

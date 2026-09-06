@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.contracts import PlatformIntegrationConfig
 
 
-class OllamaEmbeddingProviderIntegrationConfig(CategoryIntegrationConfig):
+class OllamaEmbeddingProviderIntegrationConfig(PlatformIntegrationConfig):
     """Catalog-boundary config for Ollama embedding provider."""
 
     base_url: str | None = None

@@ -5,23 +5,12 @@
 
 from __future__ import annotations
 
+from intergrax.integrations.providers.embedding_provider.register_all import (
+    EMBEDDING_PROVIDER_SLUGS,
+    register_embedding_provider_integrations,
+)
+
 __all__ = [
     "EMBEDDING_PROVIDER_SLUGS",
     "register_embedding_provider_integrations",
 ]
-
-
-def __getattr__(name: str):
-    if name == "register_embedding_provider_integrations":
-        from intergrax.integrations.providers.embedding_provider.register_all import (
-            register_embedding_provider_integrations,
-        )
-
-        return register_embedding_provider_integrations
-    if name == "EMBEDDING_PROVIDER_SLUGS":
-        from intergrax.integrations.providers.embedding_provider.register_all import (
-            EMBEDDING_PROVIDER_SLUGS,
-        )
-
-        return EMBEDDING_PROVIDER_SLUGS
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
