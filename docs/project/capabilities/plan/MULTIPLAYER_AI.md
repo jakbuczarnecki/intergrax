@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 - OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** - runtime implementation NOT STARTED
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** - MP-2+ NOT STARTED
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-1** - ownership frozen (MP-1A); awaiting review before runtime implementation
-**Next task after MP-1 review:** **COLLAB-WORK-1A** - MP-1 contract slice implementation
+**Current active task:** **MP-2** bounded ownership check
+**Next task after MP-2 gate:** domain plan rows for Shared Work (MP-2 implementation NOT STARTED)
 
 ---
 
@@ -116,7 +116,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 (after MP-0) |
-| **Status** | **OWNERSHIP / ARCHITECTURE READY_FOR_REVIEW** - runtime NOT STARTED |
+| **Status** | **CLOSED / FINAL INDEPENDENT REVIEW PASS** |
 | **Purpose** | Platform collaborative identity, workspace membership, and delegation with effective authority. |
 | **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) - frozen by ADR-MP-001 / ADR-MP-002 |
 | **Dependencies** | MP-0 accepted |
@@ -124,8 +124,8 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **REUSED EXISTING CAPABILITY** | Request-context principal propagation; LKW application principal docs (consumer reference only) |
 | **NEW CAPABILITY REQUIRED** | Principal (collaborative), WorkspaceMembership, Delegation / effective authority |
 | **Explicit out of scope** | Using `LKW-CONVERSATION-CONTEXT-*` or `CONVERSATION-CHANNEL-1` as MP-1 anchor |
-| **Architecture/ADR gate** | ADR-MP-001 and ADR-MP-002 **Accepted** (MP-1A); architecture/plan sync **Done** - runtime implementation awaits review |
-| **Pre-implementation domain-sync gate** | **Done** (MP-1A) - see [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) COLLAB-WORK-1A |
+| **Architecture/ADR gate** | ADR-MP-001 and ADR-MP-002 **Accepted**; COLLAB-WORK-1A…1J-R2 **CLOSED** per [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) |
+| **Pre-implementation domain-sync gate** | **Done** — MP-1 final independent review pass closed |
 | **User-visible outcome** | Governed multi-principal identity and authority model |
 | **Acceptance criteria** | Meaningful mutations resolve an effective Principal; membership is explicit where required; delegation cannot amplify authority; tenant/workspace identifiers alone cannot authorize; agent authority remains distinct and failures are closed |
 | **Expected proof/evidence** | Contract tests; isolation/authorization tests; fail-closed tests; delegation non-amplification tests; idempotency tests for membership/invite and delegation mutations |

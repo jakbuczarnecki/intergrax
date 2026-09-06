@@ -1,6 +1,6 @@
 # Collaborative Work
 
-**Status:** Canonical architecture (domain pair 1:1) - **MP-1 core runtime implemented; final review pending**
+**Status:** Canonical architecture (domain pair 1:1) - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
@@ -192,7 +192,9 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 | **Delegation** | delegator + delegate principals; scoped authority; optional resource/time bounds; never amplifies delegator base authority |
 | **Effective authority** | base principal authority ∩ membership ∩ delegation ∩ workspace policy ∩ resource policy ∩ runtime/tool policy |
 
-Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core; LKW/application adoption remains out of scope until MP-1 final review closes.
+Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
+
+**Current active task:** **MP-2** bounded ownership check (MP-2+ implementation NOT STARTED).
 
 ---
 
