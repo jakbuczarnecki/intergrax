@@ -4,6 +4,13 @@
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
+from intergrax.collaborative_work.service import (
+    CollaborativeWorkService,
+    TRUSTED_OPERATION_ASSIGNMENT_CREATE,
+    TRUSTED_OPERATION_ASSIGNMENT_TRANSITION,
+    TRUSTED_OPERATION_WORK_ITEM_CREATE,
+    TRUSTED_OPERATION_WORK_ITEM_TRANSITION,
+)
 from intergrax.collaborative_work.policy_composition import compose_policy_decisions
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkRepositories,
@@ -79,6 +86,11 @@ __all__ = [
     "CollaborativeWorkStoreOwner",
     "CollaborativeWorkAuthorityResolver",
     "CollaborativeWorkEnforcementGate",
+    "CollaborativeWorkService",
+    "TRUSTED_OPERATION_ASSIGNMENT_CREATE",
+    "TRUSTED_OPERATION_ASSIGNMENT_TRANSITION",
+    "TRUSTED_OPERATION_WORK_ITEM_CREATE",
+    "TRUSTED_OPERATION_WORK_ITEM_TRANSITION",
     "CollaborativePolicyEvaluator",
     "compose_policy_decisions",
     "INITIAL_RECORD_REVISION",

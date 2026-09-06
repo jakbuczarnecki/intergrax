@@ -56,6 +56,10 @@ SCHEMA_WORK_ITEM_V1: Final = "work_item.v1"
 SCHEMA_ASSIGNMENT_V1: Final = "assignment.v1"
 SCHEMA_WORK_ITEM_TRANSITION_REQUEST_V1: Final = "work_item_transition_request.v1"
 SCHEMA_ASSIGNMENT_TRANSITION_REQUEST_V1: Final = "assignment_transition_request.v1"
+SCHEMA_CREATE_WORK_ITEM_REQUEST_V1: Final = "create_work_item_request.v1"
+SCHEMA_TRANSITION_WORK_ITEM_REQUEST_V1: Final = "transition_work_item_request.v1"
+SCHEMA_CREATE_ASSIGNMENT_REQUEST_V1: Final = "create_assignment_request.v1"
+SCHEMA_TRANSITION_ASSIGNMENT_REQUEST_V1: Final = "transition_assignment_request.v1"
 
 _SUPPORTED_COLLABORATIVE_POLICY_ACTIONS: Final = frozenset(
     {
@@ -1092,3 +1096,302 @@ def apply_assignment_transition(
     if updated_at is not None:
         updates["updated_at"] = updated_at
     return assignment.model_copy(update=updates)
+
+
+class CollaborativeWorkAuthorizationDenied(Exception):
+    """Service mutation denied by the collaborative work enforcement gate."""
+
+    def __init__(self, *, enforcement_result: CollaborativeWorkEnforcementResult) -> None:
+        self.enforcement_result = enforcement_result
+        reason = enforcement_result.composition.decision.reason or "authorization denied"
+        super().__init__(reason)
+
+
+class CreateWorkItemRequest(BaseModel):
+    """Authoritative WorkItem create input for COLLAB-WORK-2C service mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["create_work_item_request.v1"] = SCHEMA_CREATE_WORK_ITEM_REQUEST_V1
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+    title: str | None = None
+    description: str | None = None
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "title",
+        "description",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> CreateWorkItemRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class TransitionWorkItemRequest(BaseModel):
+    """Authoritative WorkItem transition input for COLLAB-WORK-2C service mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["transition_work_item_request.v1"] = (
+        SCHEMA_TRANSITION_WORK_ITEM_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    expected_revision: int = Field(ge=0)
+    target_state: WorkItemState
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> TransitionWorkItemRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class CreateAssignmentRequest(BaseModel):
+    """Authoritative Assignment create input for COLLAB-WORK-2C service mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["create_assignment_request.v1"] = SCHEMA_CREATE_ASSIGNMENT_REQUEST_V1
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    assignment_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    principal_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "assignment_id",
+        "work_item_id",
+        "principal_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> CreateAssignmentRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class TransitionAssignmentRequest(BaseModel):
+    """Authoritative Assignment transition input for COLLAB-WORK-2C service mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["transition_assignment_request.v1"] = (
+        SCHEMA_TRANSITION_ASSIGNMENT_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    assignment_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    expected_revision: int = Field(ge=0)
+    target_state: AssignmentState
+    acting_principal_id: str = _NON_EMPTY
+    idempotency_key: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "assignment_id",
+        "work_item_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> TransitionAssignmentRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
