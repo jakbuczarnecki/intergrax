@@ -155,6 +155,40 @@ def test_bounded_production_surfaces_have_no_duplicate_trust_engine_names() -> N
     assert not violations, "\n".join(violations)
 
 
+TESTING_SUPPORT_DIR = REPO_ROOT / "testing_support"
+
+
+def _testing_support_imports_from_tests() -> list[str]:
+    violations: list[str] = []
+    for path in sorted(TESTING_SUPPORT_DIR.rglob("*.py")):
+        for module in _imported_modules(path):
+            if module == "tests" or module.startswith("tests."):
+                violations.append(f"{path.relative_to(REPO_ROOT)}: {module}")
+    return violations
+
+
+def test_testing_support_does_not_import_tests() -> None:
+    violations = _testing_support_imports_from_tests()
+    assert not violations, (
+        "testing_support must not import tests; violations:\n" + "\n".join(violations)
+    )
+
+
+def test_legacy_admin_test_aliases_reference_canonical_harness() -> None:
+    from testing_support.agent_platform_admin_harness import (
+        DeterministicAgentDistributionAdapter,
+        FakeAgentCatalog,
+        AgentProjectMetadataTestProvider,
+    )
+    from tests.unit.agent_distribution import (
+        test_agent_platform_admin_service as admin_tests,
+    )
+
+    assert admin_tests._DeterministicAdapter is DeterministicAgentDistributionAdapter
+    assert admin_tests._FakeCatalog is FakeAgentCatalog
+    assert admin_tests._MetadataProvider is AgentProjectMetadataTestProvider
+
+
 def test_ac6_frozen_architecture_section_present() -> None:
     text = ARCHITECTURE_DOC.read_text(encoding="utf-8")
     required_markers = (

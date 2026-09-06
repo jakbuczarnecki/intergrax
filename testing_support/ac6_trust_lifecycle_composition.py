@@ -73,10 +73,10 @@ from testing_support.agent_package_attestation import (
 from testing_support.agent_platform_dependency_resolver import (
     make_identity_dependency_resolver,
 )
-from tests.unit.agent_distribution.test_agent_platform_admin_service import (
-    _DeterministicAdapter,
-    _FakeCatalog,
-    _MetadataProvider,
+from testing_support.agent_platform_admin_harness import (
+    DeterministicAgentDistributionAdapter as _DeterministicAdapter,
+    FakeAgentCatalog as _FakeCatalog,
+    AgentProjectMetadataTestProvider as _MetadataProvider,
     admin_test_principal,
     allow_mutation_boundary,
 )

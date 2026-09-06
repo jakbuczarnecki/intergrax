@@ -23,9 +23,13 @@ from intergrax.agent_distribution.trust import (
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
 )
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.harness_host_runtime import (
+    build_harness_host_runtime,
+)
 from intergrax.core.qualification import QualificationStatus
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.canonical_agent_lifecycle_composition import (
@@ -33,7 +37,7 @@ from testing_support.canonical_agent_lifecycle_composition import (
     default_stage15_proof_config,
 )
 from testing_support.canonical_lifecycle_ping_agent import CANONICAL_PING_CAPABILITY
-from tests.unit.agent_distribution.test_agent_platform_admin_service import admin_test_principal
+from testing_support.agent_platform_admin_harness import admin_test_principal
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
@@ -179,7 +183,9 @@ def test_canonical_agent_lifecycle_reaches_serving_and_execution(
     assert manager_entry.derived_status is AgentManagerDerivedStatus.SERVING
 
 
-def test_desired_state_does_not_become_serving_before_activation(tmp_path: Path) -> None:
+def test_desired_state_does_not_become_serving_before_activation(
+    tmp_path: Path,
+) -> None:
     stack = CanonicalAgentLifecycleProofStack.build(tmp_path)
     stack.install_from_catalog()
     stack.bind_enabled_agent()
@@ -255,7 +261,9 @@ def test_historical_revision_is_not_rewritten_by_later_desired_state(
     built = stack.build_revision()
     stack.register_projection_and_activate(built)
 
-    historical_projection = stack.resolve_projection_for_revision(built.runtime_revision_id)
+    historical_projection = stack.resolve_projection_for_revision(
+        built.runtime_revision_id
+    )
     historical_entry = next(iter(historical_projection.agent_registry.list_agent_ids()))
     assert historical_entry == stack.config.logical_agent_id
 
@@ -268,7 +276,9 @@ def test_historical_revision_is_not_rewritten_by_later_desired_state(
             expected_revision=stack.admin.list_bindings(
                 application_id=stack.config.application_id,
                 application_environment_id=stack.config.environment_id,
-            ).bindings[0].binding_revision,
+            )
+            .bindings[0]
+            .binding_revision,
         ),
         principal=admin_test_principal(),
     )

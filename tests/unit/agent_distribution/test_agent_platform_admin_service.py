@@ -35,12 +35,6 @@ from intergrax.agent_distribution.control_plane_governance import (
     StaticApplicationEnvironmentTenantResolver,
 )
 from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
-from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.agent_run_enums import PrincipalType
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.runtime.governance.control_plane_mutation_authorization import (
-    ControlPlaneMutationAuthorizationBoundary,
-)
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
@@ -75,7 +69,6 @@ from intergrax.agent_distribution.in_memory_stores import (
 )
 from intergrax.agent_distribution.installation import InstallationState
 from intergrax.agent_distribution.installation_service import InstallationService
-from intergrax.agent_distribution.materialization import MaterializationOutput
 from intergrax.agent_distribution.materialization_service import (
     RuntimeMaterializationService,
 )
@@ -94,6 +87,14 @@ from intergrax.agent_distribution.trust import (
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
 )
+from testing_support.agent_platform_admin_harness import (
+    ADMIN_TEST_MATERIALIZATION_ARTIFACT_DIGEST,
+    AgentProjectMetadataTestProvider,
+    DeterministicAgentDistributionAdapter,
+    FakeAgentCatalog,
+    admin_test_principal,
+    allow_mutation_boundary,
+)
 from testing_support.agent_platform_dependency_resolver import (
     make_identity_dependency_resolver,
 )
@@ -107,7 +108,10 @@ _DIGEST = "sha256:" + ("a" * 64)
 _QUALIFIED_AT = datetime(2026, 8, 1, 12, 0, 0, tzinfo=UTC)
 _EVAL_AT_FRESH = datetime(2026, 8, 5, 12, 0, 0, tzinfo=UTC)
 _EVAL_AT_STALE = datetime(2026, 8, 10, 12, 0, 0, tzinfo=UTC)
-_ARTIFACT = "sha256:" + ("d" * 64)
+_ARTIFACT = ADMIN_TEST_MATERIALIZATION_ARTIFACT_DIGEST
+_DeterministicAdapter = DeterministicAgentDistributionAdapter
+_FakeCatalog = FakeAgentCatalog
+_MetadataProvider = AgentProjectMetadataTestProvider
 _PACKAGE_ID = "intergrax-local-search-agent"
 _META_REF = "meta://search"
 _PACKAGE = AgentPackageIdentity(
@@ -115,73 +119,6 @@ _PACKAGE = AgentPackageIdentity(
     package_version="1.0.0",
     package_digest=_DIGEST,
 )
-_TEST_PRINCIPAL = RequestIdentity(
-    tenant_id="tenant-test",
-    user_id="admin-1",
-    principal_type=PrincipalType.USER,
-    auth_subject="admin-1",
-)
-
-
-@dataclass
-class _AllowEvaluator:
-    def evaluate(self, request: object) -> PolicyDecision:
-        del request
-        return PolicyDecision(action=PolicyAction.ALLOW, reason="test_allow")
-
-
-def admin_test_principal() -> RequestIdentity:
-    return _TEST_PRINCIPAL
-
-
-def allow_mutation_boundary() -> ControlPlaneMutationAuthorizationBoundary:
-    return ControlPlaneMutationAuthorizationBoundary(evaluator=_AllowEvaluator())
-
-
-class _MetadataProvider:
-    def __init__(self, records: dict[str, AgentProjectMetadata]) -> None:
-        self._records = records
-
-    def get_metadata(self, metadata_ref: str) -> AgentProjectMetadata | None:
-        return self._records.get(metadata_ref)
-
-
-class _DeterministicAdapter:
-    topology = MaterializationTopology.OCI_IMAGE
-    materializer_id = "intergrax.admin-test"
-    materializer_version = "1.0.0"
-
-    def materialize(self, materialization_input: object) -> MaterializationOutput:
-        del materialization_input
-        return MaterializationOutput(
-            materialization_artifact_digest=_ARTIFACT,
-            artifact_locator="test://artifact",
-            health_check_evidence_ref="test://health",
-            runtime_graph_manifest_path=".intergrax-runtime-graph.json",
-            topology=self.topology,
-        )
-
-
-class _FakeCatalog:
-    def __init__(self, entries: list[AgentCatalogEntry]) -> None:
-        self._entries = entries
-
-    @property
-    def catalog_source_id(self) -> str:
-        return "builtin-1"
-
-    def list_entries(self, filters: object | None = None) -> list[AgentCatalogEntry]:
-        del filters
-        return list(self._entries)
-
-    def resolve_package(
-        self, entry: AgentCatalogEntry, *, version_selector: str
-    ) -> object:
-        del entry, version_selector
-        raise NotImplementedError
-
-    def health(self) -> None:
-        return None
 
 
 def _trust(
@@ -356,7 +293,9 @@ def build_admin_stack(
             package_trust_revocation_state_source
         )
     if package_trust_policy_source is not None:
-        admin_service_kwargs["package_trust_policy_source"] = package_trust_policy_source
+        admin_service_kwargs["package_trust_policy_source"] = (
+            package_trust_policy_source
+        )
     if package_trust_evaluation_time_source is not None:
         admin_service_kwargs["package_trust_evaluation_time_source"] = (
             package_trust_evaluation_time_source
