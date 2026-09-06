@@ -1,16 +1,17 @@
-"""Finalist qualification decision gate — BGE vs challenger on controlled sample."""
+"""Finalist qualification decision gate — baseline vs challenger on controlled sample."""
 
 from __future__ import annotations
 
-from platform_proofs.scenarios.verified_product_identification.arena.composition.candidates import (
-    BASELINE_CANDIDATE_ID,
-    QWEN_CANDIDATE_ID,
-)
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.classification import (
-    EmbeddingArenaDecision,
     EmbeddingArenaStageStatus,
     EmbeddingArenaVerdict,
     FinalistQualificationGate,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.errors import (
+    FinalistQualificationSelectionError,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.contracts.finalist_qualification import (
+    FinalistQualificationSelection,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.results import (
     CandidateArenaResult,
@@ -44,31 +45,53 @@ def _quality_metrics_ready(result: CandidateArenaResult) -> bool:
     return result.quality_metrics is not None and result.stage_c is not None
 
 
+def _resolve_candidate_result(
+    results: tuple[CandidateArenaResult, ...],
+    *,
+    candidate_id: str,
+    role: str,
+) -> CandidateArenaResult:
+    matches = tuple(item for item in results if item.candidate_id == candidate_id)
+    if len(matches) != 1:
+        msg = (
+            f"{role} candidate {candidate_id!r} not found in qualification results "
+            f"(expected exactly one match)"
+        )
+        raise FinalistQualificationSelectionError(msg)
+    return matches[0]
+
+
 def classify_finalist_qualification_gate(
     results: tuple[CandidateArenaResult, ...],
+    selection: FinalistQualificationSelection,
 ) -> tuple[FinalistQualificationGate, str]:
-    baseline = next(
-        (item for item in results if item.candidate_id == BASELINE_CANDIDATE_ID),
-        None,
+    baseline = _resolve_candidate_result(
+        results,
+        candidate_id=selection.baseline_candidate_id,
+        role="baseline",
     )
-    challenger = next(
-        (item for item in results if item.candidate_id == QWEN_CANDIDATE_ID),
-        None,
+    challenger = _resolve_candidate_result(
+        results,
+        candidate_id=selection.challenger_candidate_id,
+        role="challenger",
     )
-    if baseline is None or challenger is None:
-        return (
-            FinalistQualificationGate.RUNTIME_REJECTED,
-            "missing baseline or qwen finalist evidence",
-        )
     if _runtime_rejected(baseline) or _runtime_rejected(challenger):
         return (
             FinalistQualificationGate.RUNTIME_REJECTED,
-            "one or more finalists failed runtime qualification",
+            (
+                f"one or more finalists failed runtime qualification "
+                f"(baseline={selection.baseline_candidate_id}, "
+                f"challenger={selection.challenger_candidate_id})"
+            ),
         )
     if not _quality_metrics_ready(baseline) or not _quality_metrics_ready(challenger):
         return (
             FinalistQualificationGate.RUNTIME_REJECTED,
-            "quality metrics unavailable for finalist comparison",
+            (
+                f"quality metrics unavailable for finalist comparison "
+                f"(baseline={selection.baseline_candidate_id}, "
+                f"challenger={selection.challenger_candidate_id})"
+            ),
         )
 
     assert baseline.quality_metrics is not None
@@ -77,7 +100,11 @@ def classify_finalist_qualification_gate(
     if not quality_non_regression_gate(delta):
         return (
             FinalistQualificationGate.QUALITY_REGRESSION,
-            "challenger fails quality non-regression on recall@10 or mrr@10",
+            (
+                f"challenger {selection.challenger_candidate_id} fails quality "
+                f"non-regression vs baseline {selection.baseline_candidate_id} "
+                f"on recall@10 or mrr@10"
+            ),
         )
 
     speedup = (
@@ -99,21 +126,37 @@ def classify_finalist_qualification_gate(
     if _is_ambiguous(delta, speedup=speedup):
         return (
             FinalistQualificationGate.AMBIGUOUS,
-            "decision-critical quality metrics and throughput remain within sample-noise band",
+            (
+                f"decision-critical quality metrics and throughput remain within "
+                f"sample-noise band (baseline={selection.baseline_candidate_id}, "
+                f"challenger={selection.challenger_candidate_id})"
+            ),
         )
-    if _is_qwen_clear_win(delta, speedup=speedup, latency_ratio=latency_ratio):
+    if _is_challenger_clear_win(delta, speedup=speedup, latency_ratio=latency_ratio):
         return (
-            FinalistQualificationGate.QWEN_CLEAR_WIN,
-            "challenger matches or exceeds baseline on recall@1/mrr/ndcg with runtime advantage",
+            FinalistQualificationGate.CHALLENGER_CLEAR_WIN,
+            (
+                f"challenger {selection.challenger_candidate_id} matches or exceeds "
+                f"baseline {selection.baseline_candidate_id} on recall@1/mrr/ndcg "
+                f"with runtime advantage"
+            ),
         )
-    if _is_bge_clear_win(delta, speedup=speedup, latency_ratio=latency_ratio):
+    if _is_baseline_clear_win(delta, speedup=speedup, latency_ratio=latency_ratio):
         return (
-            FinalistQualificationGate.BGE_CLEAR_WIN,
-            "baseline leads decision-critical quality without challenger runtime advantage",
+            FinalistQualificationGate.BASELINE_CLEAR_WIN,
+            (
+                f"baseline {selection.baseline_candidate_id} leads decision-critical "
+                f"quality without challenger {selection.challenger_candidate_id} "
+                f"runtime advantage"
+            ),
         )
     return (
         FinalistQualificationGate.MORE_EVIDENCE_REQUIRED,
-        "no clear finalist winner on combined quality and runtime evidence",
+        (
+            f"no clear finalist winner on combined quality and runtime evidence "
+            f"(baseline={selection.baseline_candidate_id}, "
+            f"challenger={selection.challenger_candidate_id})"
+        ),
     )
 
 
@@ -128,7 +171,7 @@ def _is_ambiguous(delta: QualityDeltaMetrics, *, speedup: float) -> bool:
     return quality_close and throughput_close
 
 
-def _is_qwen_clear_win(
+def _is_challenger_clear_win(
     delta: QualityDeltaMetrics,
     *,
     speedup: float,
@@ -143,7 +186,7 @@ def _is_qwen_clear_win(
     return quality_ok and runtime_advantage
 
 
-def _is_bge_clear_win(
+def _is_baseline_clear_win(
     delta: QualityDeltaMetrics,
     *,
     speedup: float,
@@ -164,19 +207,3 @@ def _is_bge_clear_win(
     ) and no_runtime_advantage:
         return True
     return False
-
-
-def map_finalist_gate_to_decision(
-    gate: FinalistQualificationGate,
-) -> EmbeddingArenaDecision:
-    if gate is FinalistQualificationGate.QWEN_CLEAR_WIN:
-        return EmbeddingArenaDecision.PROMOTE_QWEN3_0_6B_CANDIDATE
-    if gate is FinalistQualificationGate.BGE_CLEAR_WIN:
-        return EmbeddingArenaDecision.KEEP_BGE_M3
-    if gate is FinalistQualificationGate.QUALITY_REGRESSION:
-        return EmbeddingArenaDecision.KEEP_BGE_M3
-    if gate is FinalistQualificationGate.RUNTIME_REJECTED:
-        return EmbeddingArenaDecision.NO_CLEAR_WINNER
-    if gate is FinalistQualificationGate.AMBIGUOUS:
-        return EmbeddingArenaDecision.MORE_EVIDENCE_REQUIRED
-    return EmbeddingArenaDecision.NO_CLEAR_WINNER

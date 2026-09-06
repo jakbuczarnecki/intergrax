@@ -34,3 +34,8 @@ class ArenaExecutionEnvironmentError(RuntimeError):
         self.snapshot = snapshot
         message = snapshot.detail or snapshot.status.value
         super().__init__(message)
+
+
+class FinalistQualificationSelectionError(ValueError):
+    """Finalist qualification selection or candidate resolution is invalid."""
+

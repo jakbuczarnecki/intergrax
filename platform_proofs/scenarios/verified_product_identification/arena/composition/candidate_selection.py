@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from platform_proofs.scenarios.verified_product_identification.arena.composition.candidates import (
-    BASELINE_CANDIDATE_ID,
-    QWEN_CANDIDATE_ID,
     build_default_arena_candidates,
+)
+from platform_proofs.scenarios.verified_product_identification.arena.composition.finalist_qualification_policy import (
+    FINALIST_BGE_QWEN_CANDIDATE_SELECTION,
 )
 from platform_proofs.scenarios.verified_product_identification.arena.contracts.candidate_selection import (
     EmbeddingArenaCandidateSelection,
@@ -14,8 +15,9 @@ from platform_proofs.scenarios.verified_product_identification.arena.contracts.c
     EmbeddingArenaCandidate,
 )
 
-FINALIST_BGE_QWEN_CANDIDATE_SELECTION = EmbeddingArenaCandidateSelection(
-    candidate_ids=(BASELINE_CANDIDATE_ID, QWEN_CANDIDATE_ID),
+__all__ = (
+    "FINALIST_BGE_QWEN_CANDIDATE_SELECTION",
+    "resolve_arena_candidates",
 )
 
 
