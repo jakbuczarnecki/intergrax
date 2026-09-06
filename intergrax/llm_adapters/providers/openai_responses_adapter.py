@@ -29,6 +29,7 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.providers._openai_schema import prepare_openai_strict_generation_schema
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 # OpenAI SDK Client(...) kwargs — must never reach responses.create/stream.
@@ -715,7 +716,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         try:
             mapped = self._map_messages_to_openai(messages)
             input_items = self._messages_to_responses_input(mapped)
-            schema = self._model_json_schema(output_model)
+            schema = prepare_openai_strict_generation_schema(output_model)
             payload: Dict[str, Any] = dict(
                 model=self.model,
                 input=input_items,
