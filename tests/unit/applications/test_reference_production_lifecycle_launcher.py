@@ -28,6 +28,9 @@ from intergrax.applications._shared.reference_production_governance_wiring impor
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
+from intergrax.applications._shared.reference_runtime_materialization import (
+    prepare_reference_runtime_materialization,
+)
 from intergrax.applications._shared.harness_host_runtime_compat import (
     resolve_harness_host_nexus_loop_legacy,
 )
@@ -65,6 +68,11 @@ def _deploy_launcher(
     *,
     principal,
 ):
+    prepare_reference_runtime_materialization(
+        launcher.process_composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
+    )
     return launcher.deploy_and_activate(
         projection_input,
         activation_request,
@@ -89,6 +97,11 @@ def _deploy_and_activate(
         settings=settings,
         application_id=application_id,
         application_environment_id=application_environment_id,
+    )
+    prepare_reference_runtime_materialization(
+        composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
     )
     return launcher.deploy_and_activate(
         projection_input,

@@ -21,6 +21,9 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
 )
+from intergrax.applications._shared.reference_runtime_materialization import (
+    build_reference_runtime_identity_digests,
+)
 from intergrax.applications._shared.registry_projection import (
     RegistryProjectionInputBundle,
 )
@@ -44,9 +47,6 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 
 _REFERENCE_DIGEST = "sha256:" + ("a" * 64)
 _REFERENCE_ROSTER_DIGEST = "sha256:" + ("e" * 64)
-_REFERENCE_LOCK_ID = "reference-lock-1"
-_REFERENCE_LOCK_DIGEST = "sha256:" + ("b" * 64)
-_REFERENCE_GRAPH_DIGEST = "sha256:" + ("c" * 64)
 _REFERENCE_ARTIFACT = "sha256:" + ("d" * 64)
 _REFERENCE_RELEASE = "reference-release-1"
 _REFERENCE_ARTIFACT_LOCATOR = "reference://process-local/venv-bundle"
@@ -227,6 +227,12 @@ def build_reference_registry_projection_input_bundle(
         manifest_release_id=application_release_id,
         entries=entries,
     ).with_revision_id()
+    identity = build_reference_runtime_identity_digests(roster)
+    installed_digests = tuple(
+        entry.package_digest
+        for entry in roster.entries
+        if entry.effective_enablement
+    )
     revision = RuntimeRevision(
         runtime_revision_id=runtime_revision_id,
         application_id=manifest.app_id,
@@ -235,10 +241,10 @@ def build_reference_registry_projection_input_bundle(
         platform_version="0.1.0",
         effective_roster_revision_id=roster.effective_roster_revision_id
         or _REFERENCE_ROSTER_DIGEST,
-        installed_agent_package_digests=(package_digest,),
-        materialized_runtime_lock_id=_REFERENCE_LOCK_ID,
-        materialized_runtime_lock_digest=_REFERENCE_LOCK_DIGEST,
-        runtime_graph_digest=_REFERENCE_GRAPH_DIGEST,
+        installed_agent_package_digests=installed_digests,
+        materialized_runtime_lock_id=identity.materialized_runtime_lock_id,
+        materialized_runtime_lock_digest=identity.materialized_runtime_lock_digest,
+        runtime_graph_digest=identity.runtime_graph_digest,
         materialization_artifact_digest=materialization_artifact_digest,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
         revision_state=RuntimeRevisionState.CANDIDATE,

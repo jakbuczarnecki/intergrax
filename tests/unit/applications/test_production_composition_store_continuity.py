@@ -40,6 +40,9 @@ from intergrax.applications._shared.reference_production_governance_wiring impor
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
+from intergrax.applications._shared.reference_runtime_materialization import (
+    prepare_reference_runtime_materialization,
+)
 from intergrax.applications._shared.harness_host_runtime_compat import (
     resolve_harness_host_nexus_loop_legacy,
 )
@@ -128,6 +131,11 @@ def _activate_projection_via_ap_lifecycle(
         tenant_id=revision.application_environment_id,
     )
     activation_request = build_reference_activation_request(bundle)
+    prepare_reference_runtime_materialization(
+        composition.agent_platform_runtime.stores,
+        bundle,
+        artifact_locator=activation_request.artifact_locator,
+    )
     result = launcher.deploy_and_activate(
         bundle,
         activation_request,

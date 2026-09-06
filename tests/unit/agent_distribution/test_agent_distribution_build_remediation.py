@@ -201,7 +201,15 @@ def _reference_deploy_and_activate(
     from intergrax.applications._shared.registry_projection_input_bundle import (
         reference_admission_mutation_id,
     )
+    from intergrax.applications._shared.reference_runtime_materialization import (
+        prepare_reference_runtime_materialization,
+    )
 
+    prepare_reference_runtime_materialization(
+        launcher.process_composition.agent_platform_runtime.stores,
+        projection_input,
+        artifact_locator=activation_request.artifact_locator,
+    )
     return launcher.deploy_and_activate(
         projection_input,
         activation_request,
