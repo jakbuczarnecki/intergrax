@@ -5,8 +5,8 @@
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
-**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — ARCHITECTURE / OWNERSHIP FROZEN** (ADR-MP-003 Accepted)
-**Current active task:** **COLLAB-WORK-2A** (MP-2 implementation NOT STARTED)
+**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
+**Current active task:** **COLLAB-WORK-2A** (READY_FOR_REVIEW — independent audit pending)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -249,7 +249,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2A |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | WorkItem and Assignment semantic contracts plus collaborative lifecycle transition design |
 | **Dependencies** | MP-1 closed; ADR-MP-003 Accepted |
 | **Exact scope** | `WorkItem`, `WorkItemState`, `Assignment`, execution-link reference contracts in `intergrax/contracts/collaborative_work.py`; explicit transition rules; Assignment != AgentAssignment documented; no persistence |
