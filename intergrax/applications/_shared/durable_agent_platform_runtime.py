@@ -40,6 +40,7 @@ class DurableAgentPlatformRuntime:
 
     db_path: Path
     distribution_store_bundle: SqliteAgentDistributionStoreBundle
+    platform_persistence: ProductionPlatformPersistence
     stores: AgentPlatformRuntimeStores
     effective_roster_authority: EffectiveRosterAuthorityService
     registry_projection_authority: RegistryProjectionAuthorityResolver
@@ -52,6 +53,7 @@ class DurableAgentPlatformRuntime:
         return ProductionAgentPlatformRuntime(
             distribution_state=self.distribution_store_bundle.installation_store.state,
             stores=self.stores,
+            platform_persistence=self.platform_persistence,
             effective_roster_authority=self.effective_roster_authority,
             registry_projection_authority=self.registry_projection_authority,
         )
@@ -75,6 +77,7 @@ def build_durable_production_agent_platform_runtime(
 ) -> DurableAgentPlatformRuntime:
     """Construct one durable AP lifecycle store bundle backed by SQLite."""
     distribution_bundle = build_sqlite_agent_distribution_store_bundle(db_path)
+    platform_persistence = build_reference_production_platform_persistence(db_path=db_path)
     effective_roster_snapshot_store = distribution_bundle.effective_roster_snapshot_store
     revision_store = distribution_bundle.revision_store
     lock_store = distribution_bundle.lock_store
@@ -107,6 +110,7 @@ def build_durable_production_agent_platform_runtime(
     return DurableAgentPlatformRuntime(
         db_path=db_path,
         distribution_store_bundle=distribution_bundle,
+        platform_persistence=platform_persistence,
         stores=stores,
         effective_roster_authority=effective_roster_authority,
         registry_projection_authority=registry_projection_authority,

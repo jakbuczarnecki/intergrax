@@ -18,6 +18,10 @@ from intergrax.applications._shared.harness_host_runtime import (
 from intergrax.applications._shared.harness_host_runtime_compat import (
     resolve_harness_host_nexus_loop_legacy,
 )
+from intergrax.applications._shared.production_platform_persistence import (
+    build_reference_production_platform_persistence,
+    resolve_reference_production_strict_host_environment,
+)
 from intergrax.agent_distribution.roster import EffectiveRosterEntry
 from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
 from intergrax.applications._shared.registry_projection import (
@@ -65,6 +69,10 @@ _HOST_TASK_PATH = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_tas
 
 @pytest.fixture(autouse=True)
 def _relax_harness_environment_assertions(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET",
+        "unit-test-diagnostic-problem-list-cursor-secret",
+    )
     monkeypatch.setattr(
         "intergrax.applications._shared.package_wiring.assert_manifest_package_closure",
         lambda *_args, **_kwargs: None,
@@ -78,6 +86,10 @@ def _relax_harness_environment_assertions(monkeypatch: pytest.MonkeyPatch) -> No
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
+        "intergrax.applications._shared.harness_host_runtime.assert_observability_assembly_valid",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
         "intergrax.applications._shared.environment_wiring.validate_capability_dependencies_for_environment",
         lambda *_args, **_kwargs: None,
     )
@@ -85,11 +97,14 @@ def _relax_harness_environment_assertions(monkeypatch: pytest.MonkeyPatch) -> No
         "intergrax.runtime.nexus.nexus_loop.validate_durable_attempt_lifecycle_for_composition",
         lambda **_kwargs: None,
     )
-    monkeypatch.setattr(
-        "intergrax.applications._shared.profile_resolution.wiring."
-        "validate_effective_profile_pinning_durability_for_composition",
-        lambda **_kwargs: None,
-    )
+
+
+def _platform_persistence_kwargs() -> dict[str, object]:
+    platform = build_reference_production_platform_persistence()
+    return {
+        "key_value_cache": platform.kv_store,
+        "document_store": platform.document_store,
+    }
 
 
 def _strict_environment():
@@ -122,27 +137,29 @@ def _build_projection(
 
 def _build_echo_runtime() -> HarnessHostRuntime:
     manifest = _manifest()
-    environment = _strict_environment()
+    environment = resolve_reference_production_strict_host_environment(_strict_environment())
     projection = _build_projection(roster_entries=(_entry("search"),))
     return build_harness_host_runtime(
         manifest,
         environment,
         registry_projection=projection,
         registry_assembly_mode=RegistryAssemblyMode.REVISION_BOUND,
-        use_in_memory_trace=True,
+        **_platform_persistence_kwargs(),
     )
 
 
 def _build_research_runtime() -> HarnessHostRuntime:
     settings = ResearchBackendSettings.from_env()
-    env = build_research_environment_profile(settings)
+    env = resolve_reference_production_strict_host_environment(
+        build_research_environment_profile(settings),
+    )
     projection = build_research_test_registry_projection(settings)
     return build_harness_host_runtime(
         RESEARCH_APPLICATION_MANIFEST.model_copy(update={"environment": env}),
         env,
         settings=settings,
         registry_projection=projection,
-        use_in_memory_trace=True,
+        **_platform_persistence_kwargs(),
     )
 
 

@@ -8,6 +8,10 @@ import pytest
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.production_platform_persistence import (
+    build_reference_production_platform_persistence,
+    resolve_reference_production_strict_host_environment,
+)
 from research_application.host.factory import create_research_backend_app
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
@@ -39,15 +43,18 @@ def test_research_factory_uses_projected_registry_not_manifest_extra_agents() ->
     manifest_stems = {_binding_stem(binding) for binding in manifest.enabled_agents()}
     projected_ids = set(projection.agent_registry.list_agent_ids())
     assert projected_ids == {"research"}
-    assert "summary" in manifest_stems
-    assert "summary" not in projected_ids
+    assert "research-summary" in manifest_stems
+    assert "research-summary" not in projected_ids
 
+    platform = build_reference_production_platform_persistence()
+    strict_env = resolve_reference_production_strict_host_environment(env)
     runtime = build_harness_host_runtime(
-        manifest.model_copy(update={"environment": env}),
-        env,
+        manifest.model_copy(update={"environment": strict_env}),
+        strict_env,
         settings=settings,
         registry_projection=projection,
-        use_in_memory_trace=True,
+        key_value_cache=platform.kv_store,
+        document_store=platform.document_store,
     )
     assert runtime.registry_projection_evidence is not None
     assert runtime.registry_projection_evidence.runtime_revision_id == "rev-research-e2e"

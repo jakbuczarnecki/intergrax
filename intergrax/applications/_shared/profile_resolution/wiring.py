@@ -64,22 +64,24 @@ def resolve_effective_profile_persistence_wiring(
         resolved_pinning_store = pinning_store
         resolved_active_store = active_store
     elif kv_store is not None or document_store is not None:
+        profile_kv_store = kv_store
+        profile_document_store = document_store if kv_store is None else None
         if revision_store is not None:
             resolved_revision_store = revision_store
         else:
             resolved_revision_store = wire_effective_profile_revision_store(
-                kv_store=kv_store,
-                document_store=document_store,
+                kv_store=profile_kv_store,
+                document_store=profile_document_store,
             )
         if pinning_store is not None:
             resolved_pinning_store = pinning_store
         else:
             resolved_pinning_store = wire_effective_profile_execution_pinning_store(
-                kv_store=kv_store,
-                document_store=document_store,
+                kv_store=profile_kv_store,
+                document_store=profile_document_store,
             )
         resolved_active_store = active_store or wire_active_effective_profile_revision_store(
-            kv_store=kv_store,
+            kv_store=profile_kv_store,
         )
     else:
         resolved_revision_store = revision_store or InMemoryEffectiveProfileRevisionStore()

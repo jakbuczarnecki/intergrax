@@ -58,6 +58,10 @@ from intergrax.applications._shared.registry_projection import (
     InMemoryRuntimeRegistryProjectionStore,
     RuntimeRegistryProjectionStore,
 )
+from intergrax.applications._shared.production_platform_persistence import (
+    ProductionPlatformPersistence,
+    build_reference_production_platform_persistence,
+)
 from intergrax.applications._shared.registry_projection_authority_resolver import (
     RegistryProjectionAuthorityResolver,
 )
@@ -81,16 +85,23 @@ class ProductionAgentPlatformRuntime:
 
     distribution_state: AgentDistributionStoreState
     stores: AgentPlatformRuntimeStores
+    platform_persistence: ProductionPlatformPersistence
     effective_roster_authority: EffectiveRosterAuthorityService
     registry_projection_authority: RegistryProjectionAuthorityResolver
 
 
-def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
+def build_production_agent_platform_runtime(
+    *,
+    platform_persistence: ProductionPlatformPersistence | None = None,
+) -> ProductionAgentPlatformRuntime:
     """Construct one new process-local AP lifecycle store bundle for a composition root.
 
     Callers MUST be the process composition root (``ProductionProcessComposition``).
     Application ``main.py`` and factories MUST NOT be canonical owners.
     """
+    resolved_platform_persistence = (
+        platform_persistence or build_reference_production_platform_persistence()
+    )
     state = AgentDistributionStoreState()
     effective_roster_snapshot_store = InMemoryEffectiveRosterSnapshotStore(state)
     revision_store = InMemoryRuntimeRevisionStore(state)
@@ -109,6 +120,7 @@ def build_production_agent_platform_runtime() -> ProductionAgentPlatformRuntime:
             materialization_store=materialization_store,
             effective_roster_snapshot_store=effective_roster_snapshot_store,
         ),
+        platform_persistence=resolved_platform_persistence,
         effective_roster_authority=effective_roster_authority,
         registry_projection_authority=RegistryProjectionAuthorityResolver(
             revision_store=revision_store,
@@ -125,6 +137,7 @@ __all__ = [
     "AgentPlatformRuntimeStores",
     "EffectiveRosterAuthorityService",
     "ProductionAgentPlatformRuntime",
+    "ProductionPlatformPersistence",
     "RegistryProjectionAuthorityResolver",
     "build_production_agent_platform_runtime",
     "create_process_local_agent_platform_runtime",
