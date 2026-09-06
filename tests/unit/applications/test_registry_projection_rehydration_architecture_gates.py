@@ -101,3 +101,42 @@ def test_architecture_doc_documents_rehydration_boundary() -> None:
     text = ARCH_DOC.read_text(encoding="utf-8")
     assert "rehydration" in text.lower()
     assert "startup-time projection from mutable desired state" in text.lower()
+
+
+def _imported_symbols(path: Path) -> list[tuple[str, str]]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    symbols: list[tuple[str, str]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                symbols.append((node.module, alias.name))
+    return symbols
+
+
+def _except_handlers(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    handlers: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ExceptHandler) and node.type is not None:
+            if isinstance(node.type, ast.Name):
+                handlers.append(node.type.id)
+            elif isinstance(node.type, ast.Tuple):
+                for element in node.type.elts:
+                    if isinstance(element, ast.Name):
+                        handlers.append(element.id)
+    return handlers
+
+
+def test_rehydrator_does_not_import_private_symbols() -> None:
+    private_imports = [
+        symbol
+        for module, symbol in _imported_symbols(REHYDRATOR)
+        if symbol.startswith("_")
+    ]
+    assert not private_imports, f"forbidden private imports: {private_imports}"
+
+
+def test_rehydrator_has_no_broad_exception_handlers() -> None:
+    forbidden = {"Exception", "BaseException"}
+    violations = sorted(set(_except_handlers(REHYDRATOR)) & forbidden)
+    assert not violations, f"forbidden broad exception handlers: {violations}"

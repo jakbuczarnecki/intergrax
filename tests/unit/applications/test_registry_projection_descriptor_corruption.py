@@ -101,6 +101,19 @@ def test_descriptor_corruption_fail_closed(tmp_path: Path) -> None:
             application_environment_id=config.environment_id,
         )
 
+    unsupported_contract = descriptor.model_dump()
+    unsupported_contract["descriptor_version"] = "projection_descriptor_contract.v99"
+    _corrupt_descriptor_json(
+        database,
+        runtime_revision_id=result.runtime_revision_id,
+        payload=unsupported_contract,
+    )
+    with pytest.raises((RegistryProjectionRehydrationError, ValueError)):
+        rehydrator.rehydrate_serving_registry_projection(
+            application_id=config.application_id,
+            application_environment_id=config.environment_id,
+        )
+
     unsupported = descriptor.model_dump()
     unsupported["schema_version"] = "unsupported.v99"
     _corrupt_descriptor_json(

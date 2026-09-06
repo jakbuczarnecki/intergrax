@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import threading
-from typing import Any, Final, Protocol
+from typing import Final, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -13,6 +13,8 @@ from intergrax.agent_distribution.runtime_revision import MaterializationTopolog
 from intergrax.applications._shared.registry_projection import RegistryProjectionInputBundle
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.skills.registry.profile import SkillProfile
+from intergrax.tools.registry.profile import ToolProfile
 
 _NON_EMPTY = Field(min_length=1)
 SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1: Final = (
@@ -32,65 +34,64 @@ class RegistryProjectionDescriptorError(ValueError):
     """Durable projection descriptor authority failed."""
 
 
+class EnvironmentIdentitySnapshot(BaseModel):
+    """Revision-bound environment identity for projection rebuild.
+
+    Registry projection validates only ``profile_id`` against
+    ``runtime_revision.application_environment_id``; richer environment
+    configuration does not participate in projection fingerprinting.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    profile_id: str = _NON_EMPTY
+
+    @field_validator("profile_id")
+    @classmethod
+    def _strip_profile_id(cls, value: str) -> str:
+        return _strip_required(value)
+
+
 class BuildContextDescriptorSnapshot(BaseModel):
     """Pinned build-context identity required for deterministic projection rebuild."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     strict_harness: bool = False
-    skill_profile_json: dict[str, Any] | None = None
-    tool_profile_json: dict[str, Any] | None = None
-    environment_profile_id: str | None = None
+    skill_profile: SkillProfile | None = None
+    tool_profile: ToolProfile | None = None
+    environment_identity: EnvironmentIdentitySnapshot | None = None
 
     @classmethod
     def from_build_context(cls, build_context: ApplicationBuildContext) -> BuildContextDescriptorSnapshot:
-        environment_profile_id = None
+        environment_identity = None
         environment = build_context.environment
         if environment is not None:
-            environment_profile_id = environment.profile_id
+            environment_identity = EnvironmentIdentitySnapshot(profile_id=environment.profile_id)
         return cls(
             strict_harness=build_context.strict_harness,
-            skill_profile_json=(
-                build_context.skill_profile.model_dump(mode="json")
-                if build_context.skill_profile is not None
-                else None
-            ),
-            tool_profile_json=(
-                build_context.tool_profile.model_dump(mode="json")
-                if build_context.tool_profile is not None
-                else None
-            ),
-            environment_profile_id=environment_profile_id,
+            skill_profile=build_context.skill_profile,
+            tool_profile=build_context.tool_profile,
+            environment_identity=environment_identity,
         )
 
     def to_build_context(self, manifest: ApplicationManifest) -> ApplicationBuildContext:
         from intergrax.applications.contracts.environment_profile import (
             ApplicationEnvironmentProfile,
         )
-        from intergrax.skills.registry.profile import SkillProfile
-        from intergrax.tools.registry.profile import ToolProfile
+        from intergrax.applications.contracts.environment_profile.bundles import HostMeta
 
-        skill_profile = (
-            SkillProfile.model_validate(self.skill_profile_json)
-            if self.skill_profile_json is not None
-            else None
-        )
-        tool_profile = (
-            ToolProfile.model_validate(self.tool_profile_json)
-            if self.tool_profile_json is not None
-            else None
-        )
         environment = None
-        if self.environment_profile_id is not None:
+        if self.environment_identity is not None:
+            profile_id = self.environment_identity.profile_id
             environment = ApplicationEnvironmentProfile(
-                profile_id=self.environment_profile_id,
-                display_name=self.environment_profile_id,
+                meta=HostMeta(profile_id=profile_id),
             )
         return ApplicationBuildContext(
             manifest=manifest,
             strict_harness=self.strict_harness,
-            skill_profile=skill_profile,
-            tool_profile=tool_profile,
+            skill_profile=self.skill_profile,
+            tool_profile=self.tool_profile,
             environment=environment,
         )
 
@@ -112,8 +113,30 @@ class RuntimeRegistryProjectionDescriptor(BaseModel):
     materialization_artifact_locator: str = _NON_EMPTY
     materialization_artifact_digest: str = _NON_EMPTY
     materialization_topology: MaterializationTopology
-    manifest_json: dict[str, Any]
+    manifest: ApplicationManifest
     build_context_snapshot: BuildContextDescriptorSnapshot
+
+    @field_validator("schema_version")
+    @classmethod
+    def _validate_schema_version(cls, value: str) -> str:
+        normalized = _strip_required(value)
+        if normalized != SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1:
+            raise ValueError(
+                f"unsupported schema version {normalized!r}; "
+                f"expected {SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1!r}"
+            )
+        return normalized
+
+    @field_validator("descriptor_version")
+    @classmethod
+    def _validate_descriptor_version(cls, value: str) -> str:
+        normalized = _strip_required(value)
+        if normalized != PROJECTION_DESCRIPTOR_CONTRACT_VERSION:
+            raise ValueError(
+                f"unsupported descriptor contract {normalized!r}; "
+                f"expected {PROJECTION_DESCRIPTOR_CONTRACT_VERSION!r}"
+            )
+        return normalized
 
     @field_validator(
         "application_id",
@@ -187,7 +210,7 @@ def build_runtime_registry_projection_descriptor(
         materialization_artifact_locator=artifact_locator,
         materialization_artifact_digest=artifact_digest,
         materialization_topology=materialization_topology,
-        manifest_json=manifest.model_dump(mode="json"),
+        manifest=manifest,
         build_context_snapshot=BuildContextDescriptorSnapshot.from_build_context(
             bundle.build_context,
         ),
@@ -234,6 +257,7 @@ class InMemoryRuntimeRegistryProjectionDescriptorStore:
 
 __all__ = [
     "BuildContextDescriptorSnapshot",
+    "EnvironmentIdentitySnapshot",
     "InMemoryRuntimeRegistryProjectionDescriptorStore",
     "PROJECTION_DESCRIPTOR_CONTRACT_VERSION",
     "RegistryProjectionDescriptorError",

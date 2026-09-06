@@ -35,6 +35,7 @@ from intergrax.applications._shared.registry_projection_descriptor import (
     RuntimeRegistryProjectionDescriptor,
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.core.qualification import QualificationStatus
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -125,7 +126,12 @@ def test_sqlite_revision_serving_and_descriptor_reopen(tmp_path: Path) -> None:
         prior_revision_id=None,
         committed_at=activated_at,
     )
-    manifest = ApplicationManifest.lab(app_id=_APP, name="SQLite Proof", agents=())
+    manifest = ApplicationManifest.lab(
+        app_id=_APP,
+        name="SQLite Proof",
+        agents=(),
+        integration_profile=IntegrationProfile(),
+    )
     descriptor = RuntimeRegistryProjectionDescriptor(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -137,7 +143,7 @@ def test_sqlite_revision_serving_and_descriptor_reopen(tmp_path: Path) -> None:
         materialization_artifact_locator="test:///tmp/artifact",
         materialization_artifact_digest=_DIGEST,
         materialization_topology=MaterializationTopology.VENV_BUNDLE,
-        manifest_json=manifest.model_dump(mode="json"),
+        manifest=manifest,
         build_context_snapshot=BuildContextDescriptorSnapshot(),
     )
     bundle.projection_descriptor_store.put(descriptor)

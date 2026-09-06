@@ -10,7 +10,7 @@ from typing import Final
 from intergrax.agent_distribution.stores import ApplicationEnvironmentServingStore
 from intergrax.applications._shared.production_registry_projection_input_bundle import (
     ProductionRegistryProjectionInputError,
-    _assemble_production_registry_projection_input_bundle,
+    assemble_production_registry_projection_input_bundle,
 )
 from intergrax.applications._shared.registry_projection import (
     MaterializedRegistryProjection,
@@ -19,6 +19,7 @@ from intergrax.applications._shared.registry_projection import (
     build_registry_projection,
 )
 from intergrax.applications._shared.registry_projection_authority_resolver import (
+    RegistryProjectionAuthorityError,
     RegistryProjectionAuthorityResolver,
 )
 from intergrax.applications._shared.registry_projection_descriptor import (
@@ -27,7 +28,6 @@ from intergrax.applications._shared.registry_projection_descriptor import (
     RuntimeRegistryProjectionDescriptor,
     RuntimeRegistryProjectionDescriptorStore,
 )
-from intergrax.applications.contracts.manifest import ApplicationManifest
 
 REHYDRATION_OUTCOME_READY: Final = "rehydration_ready"
 
@@ -169,7 +169,7 @@ class RuntimeRegistryProjectionRehydrator:
                 application_environment_id=application_environment_id,
                 runtime_revision_id=serving_revision_id,
             )
-        except Exception as exc:
+        except RegistryProjectionAuthorityError as exc:
             raise RegistryProjectionRehydrationError(str(exc)) from exc
 
         revision = resolved.runtime_revision
@@ -199,14 +199,14 @@ class RuntimeRegistryProjectionRehydrator:
                 "descriptor application_environment_id mismatch with runtime revision"
             )
 
-        manifest = ApplicationManifest.model_validate(descriptor.manifest_json)
+        manifest = descriptor.manifest
         if manifest.app_id != revision.application_id:
             raise RegistryProjectionRehydrationError(
                 "descriptor manifest application_id mismatch with runtime revision"
             )
         build_context = descriptor.build_context_snapshot.to_build_context(manifest)
         try:
-            bundle = _assemble_production_registry_projection_input_bundle(
+            bundle = assemble_production_registry_projection_input_bundle(
                 runtime_revision=revision,
                 effective_roster=resolved.effective_roster,
                 materialized_runtime_lock=lock,

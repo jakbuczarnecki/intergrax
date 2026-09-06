@@ -1586,7 +1586,7 @@ Execution
 
 | Term | Meaning |
 |------|---------|
-| **Projection descriptor** | Durable immutable reconstruction authority keyed by `runtime_revision_id` (includes pinned manifest/build-context identity for revision-bound rebuild) |
+| **Projection descriptor** | Durable immutable typed reconstruction authority keyed by `runtime_revision_id` (embeds `ApplicationManifest`, `BuildContextDescriptorSnapshot` with `SkillProfile` / `ToolProfile` / `EnvironmentIdentitySnapshot`; not a generic JSON blob) |
 | **MaterializedRegistryProjection** | Process-local runtime object in `RuntimeRegistryProjectionStore` |
 | **Rehydration** | Deterministic construction of process-local projection from durable revision-bound authority |
 | **Reprojection** | Recomputation from potentially current/mutable lifecycle inputs — **forbidden at startup** |
