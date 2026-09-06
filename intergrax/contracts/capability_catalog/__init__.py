@@ -53,6 +53,9 @@ from intergrax.contracts.capability_catalog.scope import (
     CapabilityDiscoveryScope,
     CapabilityDiscoveryScopeMode,
 )
+from intergrax.contracts.capability_catalog.skill_version_binding import (
+    SkillVersionBindingDisposition,
+)
 from intergrax.contracts.capability_catalog.governance import (
     SCHEMA_CAPABILITY_AGENT_GOVERNANCE_EVIDENCE_V1,
     SCHEMA_CAPABILITY_GOVERNANCE_CONTEXT_V1,
@@ -94,6 +97,7 @@ __all__ = [
     "CapabilityRankingSignal",
     "CapabilitySourceIdentity",
     "CapabilitySourceKind",
+    "SkillVersionBindingDisposition",
     "CapabilityAgentGovernanceEvidence",
     "CapabilityGovernanceContext",
     "CapabilityGovernancePosture",

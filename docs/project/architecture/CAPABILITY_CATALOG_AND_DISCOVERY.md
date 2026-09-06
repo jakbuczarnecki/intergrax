@@ -40,7 +40,7 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 
 **B. Existing reusable implementation.** Platform Plugins (packaging, discovery primitives, trust/qualification vocabulary), Agent Distribution discovery/acquisition (AC-4), Tool selection layers, SkillResolver, domain registries, `wire_application_environment()` Tier-3 composition, AW-7A policy adapters (in progress).
 
-**C. Missing / planned.** Federated Capability Catalog read model across Agent + Skill + Tool, cross-domain ranking utilities, Skill version pinning, Tools/Skills typed bootstrap evidence in application evidence aggregates, private enterprise catalog sources for Tool/Skill, third-party isolation beyond trusted in-process, monetization/metering product surfaces.
+**C. Missing / planned.** Federated Capability Catalog read model across Agent + Skill + Tool, cross-domain ranking utilities, Tools/Skills typed bootstrap evidence in application evidence aggregates, private enterprise catalog sources for Tool/Skill, third-party isolation beyond trusted in-process, monetization/metering product surfaces.
 
 **D. Future product surfaces.** Public/private Marketplace is a **product layer above** federated discovery — presentation, publisher metadata, pricing metadata, availability — not runtime or lifecycle authority.
 
@@ -380,9 +380,9 @@ Candidates and selections should carry, where the domain defines them:
 | **Runtime revision** | `RuntimeRevision` when active | N/A (resolver-time) | Registry bootstrap revision |
 | **Immutable artifact digest** | Required for install | Where packaged | Where packaged |
 
-### Known gap: Skill version pinning
+### Skill version pinning (Stage 6 — closed)
 
-Skill manifests carry versions, but **enterprise-grade version pinning** for resolved skill packs (immutable resolved snapshot across transitive `requires_skills`) is **not fully closed** in current production semantics. This is a **roadmap decision/work item** — do not invent an ad hoc pinning scheme in discovery; resolve in Skill domain + Stage 6 of the [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md).
+Enterprise skill version correctness is owned by the Skill domain (`SkillResolver`, `ResolvedSkillPack`, `AgentRegistry.get_resolved_skill_pack`). Root agent declarations are **PINNED**; transitive `requires_skills` are **MATERIALIZED** with exact versions captured in immutable snapshots. Capability Catalog discovery projects catalog `version_label` and `SkillVersionBindingDisposition` only — it does not resolve or override runtime bind versions. See [SKILLS.md](SKILLS.md) and Stage 6 in the [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md).
 
 ---
 
@@ -595,7 +595,7 @@ UniversalCapabilityEngine
 |-----|--------|
 | Cross-domain Capability Catalog federation | Planned |
 | Cross-domain ranking shared utilities | Planned (only if reuse proven) |
-| Skill version pinning | Planned — domain decision required |
+| Skill version pinning | **Implemented** — Skill domain + discovery projection (Stage 6) |
 | Tools/Skills typed bootstrap evidence | Planned |
 | Private enterprise catalog for Tool/Skill | Planned |
 | Third-party isolation beyond in-process | Future |
@@ -614,7 +614,7 @@ UniversalCapabilityEngine
 - [x] AC-4 and AW-7A separation documented
 - [x] Effective capability availability as logical model only
 - [x] Governance narrowing rules documented
-- [x] Skill version pinning recorded as gap
+- [x] Skill version pinning closed in Skill domain + discovery projection (Stage 6)
 - [x] Marketplace / monetization / enterprise boundaries documented
 - [x] Hard invariants and forbidden flows listed
 - [x] Maturity boundary A/B/C explicit

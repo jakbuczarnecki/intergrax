@@ -15,7 +15,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.skills.integration.contract_resolution import resolve_contract_tools
 from intergrax.skills.registry.runtime import SkillRegistry
-from intergrax.skills.resolver import SkillResolver
+from intergrax.skills.resolver import ResolvedSkillPack, SkillResolver
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.factory import build_registry_from_profile
 from intergrax.skills.registry.bootstrap import register_default_skills
@@ -38,6 +38,7 @@ class AgentRegistry:
     def __init__(self) -> None:
         self._agents: Dict[str, Agent] = {}
         self._contracts: Dict[str, AgentContract] = {}
+        self._resolved_skill_packs: Dict[str, ResolvedSkillPack] = {}
 
     def register(
         self,
@@ -53,6 +54,9 @@ class AgentRegistry:
             assert_uaep_reference_agent(agent)
         meta = contract or agent.get_contract()
         assert_agent_assembly_valid(meta)
+        if meta.id in self._agents:
+            raise ValueError(f"Agent already registered: {meta.id}")
+        resolved_pack: ResolvedSkillPack | None = None
         if meta.skills or meta.extra_tools:
             if skill_registry is None:
                 skill_registry = _bootstrap_default_skill_registry()
@@ -62,12 +66,10 @@ class AgentRegistry:
                 skill_resolver=resolver,
                 tool_registry=tool_registry,
             )
-            # Skill catalog assembly at registration is bootstrap — not a runtime execution event.
-            _ = resolved_pack
-        if meta.id in self._agents:
-            raise ValueError(f"Agent already registered: {meta.id}")
         self._agents[meta.id] = agent
         self._contracts[meta.id] = meta
+        if resolved_pack is not None:
+            self._resolved_skill_packs[meta.id] = resolved_pack
 
     def get(self, agent_id: str) -> Agent:
         try:
@@ -80,6 +82,10 @@ class AgentRegistry:
             return self._contracts[agent_id]
         except KeyError as exc:
             raise KeyError(f"Agent not registered: {agent_id}") from exc
+
+    def get_resolved_skill_pack(self, agent_id: str) -> ResolvedSkillPack | None:
+        """Return the immutable skill composition snapshot bound at registration, if any."""
+        return self._resolved_skill_packs.get(agent_id)
 
     def has(self, agent_id: str) -> bool:
         return agent_id in self._agents

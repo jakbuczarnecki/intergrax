@@ -18,7 +18,12 @@ from intergrax.memory.user_profile_memory import (
 )
 from intergrax.runtime.sandbox.sandbox_runtime import AGENT_BUILDER_SANDBOX_OPERATIONS
 from intergrax.runtime.sandbox.session import SandboxSession
-from intergrax.skills.core.contracts import SkillRiskTier
+from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
+from intergrax.skills.core.version_binding import (
+    ResolvedSkillRef,
+    ResolvedSkillRole,
+    SkillVersionResolutionMode,
+)
 from intergrax.skills.resolver import ResolvedSkillPack
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.agent.contracts import AgentGetContractInput, AgentListAgentsInput
@@ -167,12 +172,21 @@ def test_catalog_list_and_describe_tools() -> None:
 
 class _FakeSkillResolver:
     def resolve(self, skill_ids: list[str]) -> ResolvedSkillPack:
+        refs = tuple(
+            ResolvedSkillRef.from_manifest(
+                SkillManifest(skill_id=skill_id, description=skill_id),
+                resolution_mode=SkillVersionResolutionMode.MATERIALIZED,
+                role=ResolvedSkillRole.ROOT,
+            )
+            for skill_id in skill_ids
+        )
         return ResolvedSkillPack(
-            skill_ids=tuple(skill_ids),
+            resolved_skills=refs,
             tool_ids=frozenset(["rag.retrieve"]),
             prompt_instruction_ids=frozenset(),
             policy_fragment_ids=frozenset(),
             risk_tier=SkillRiskTier.LOW,
+            snapshot_digest="sha256:test",
         )
 
 

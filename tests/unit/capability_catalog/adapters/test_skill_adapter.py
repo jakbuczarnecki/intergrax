@@ -12,6 +12,11 @@ from intergrax.capability_catalog.adapters.skill import (
     project_skill_bundle_entry,
 )
 from intergrax.contracts.capability_catalog import CapabilityKind, CapabilitySourceKind
+from intergrax.contracts.capability_catalog.skill_version_binding import (
+    SkillVersionBindingDisposition,
+)
+from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
+from intergrax.skills.registry.bootstrap import register_default_skills
 from intergrax.skills.registry.catalog import SkillBundleEntry, clear_skill_catalog, register_skill_bundle
 from intergrax.skills.registry.runtime import SkillRegistry
 
@@ -44,6 +49,16 @@ def test_project_skill_bundle_entry_preserves_skill_identity_and_bundle_provenan
     assert projected.identity.source.source_id == SKILL_BUILTIN_CATALOG_SOURCE_ID
     assert projected.identity.source.source_kind is CapabilitySourceKind.BUILTIN
     assert projected.provenance.package_reference == "rag"
+
+
+def test_project_skill_bundle_entry_exposes_catalog_manifest_version_label() -> None:
+    register_default_skills(bundle_ids=["harness"])
+    projected = project_skill_bundle_entry(_bundle(), HARNESS_TOOL_SMOKE.skill_id)
+    assert projected.provenance.version_label == HARNESS_TOOL_SMOKE.version
+    assert (
+        projected.provenance.version_binding_disposition
+        is SkillVersionBindingDisposition.MATERIALIZED
+    )
 
 
 def test_skill_bundle_catalog_source_expands_bundle_to_capability_level_entries() -> None:

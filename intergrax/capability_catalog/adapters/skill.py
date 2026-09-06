@@ -16,7 +16,11 @@ from intergrax.contracts.capability_catalog.identity import (
 )
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.capability_catalog.provenance import CapabilityProvenance
+from intergrax.contracts.capability_catalog.skill_version_binding import (
+    SkillVersionBindingDisposition,
+)
 from intergrax.skills.registry.catalog import SkillBundleEntry, iter_bundles
+from intergrax.skills.registry.catalog_manifests import catalog_manifest_for_skill_id
 
 SKILL_BUILTIN_CATALOG_SOURCE_ID: Final = "skills.catalog.builtin"
 
@@ -31,6 +35,8 @@ def project_skill_bundle_entry(
     skill_id: str,
 ) -> CapabilityCatalogEntry:
     """Map one skill capability from a bundle row to a federated catalog entry."""
+    catalog_manifest = catalog_manifest_for_skill_id(skill_id)
+    version_label = catalog_manifest.version if catalog_manifest is not None else None
     return CapabilityCatalogEntry(
         identity=CapabilityDiscoveryIdentity(
             kind=CapabilityKind.SKILL,
@@ -42,6 +48,8 @@ def project_skill_bundle_entry(
         ),
         provenance=CapabilityProvenance(
             source=_BUILTIN_SOURCE,
+            version_label=version_label,
+            version_binding_disposition=SkillVersionBindingDisposition.MATERIALIZED,
             package_reference=bundle.bundle_id,
         ),
         display_label=skill_id,

@@ -73,12 +73,30 @@ def test_agent_registry_resolves_skills_into_allowed_tools() -> None:
     contract = registry.get_contract("skill_stub")
     assert "rag.retrieve" in contract.allowed_tools
     assert "extra.tool" in contract.allowed_tools
+    pack = registry.get_resolved_skill_pack("skill_stub")
+    assert pack is not None
+    assert pack.resolved_skills[0].qualified_id == _DEMO_SKILL.qualified_id
 
 
 @pytest.mark.unit
-def test_agent_registry_unknown_skill_raises() -> None:
+def test_agent_registry_unknown_skill_raises_and_leaves_no_snapshot() -> None:
     from intergrax.skills.resolver import SkillResolutionError
 
     registry = AgentRegistry()
     with pytest.raises(SkillResolutionError, match="Unknown skill_id"):
         registry.register(_SkillAgent())
+    assert registry.has("skill_stub") is False
+    assert registry.get_resolved_skill_pack("skill_stub") is None
+
+
+@pytest.mark.unit
+def test_agent_registry_version_mismatch_is_atomic() -> None:
+    from intergrax.skills.resolver import SkillResolutionError
+
+    skills = SkillRegistry()
+    skills.register(_DEMO_SKILL.with_version("2.0.0"))
+    registry = AgentRegistry()
+    with pytest.raises(SkillResolutionError, match="version mismatch"):
+        registry.register(_SkillAgent(), skill_registry=skills)
+    assert registry.has("skill_stub") is False
+    assert registry.get_resolved_skill_pack("skill_stub") is None

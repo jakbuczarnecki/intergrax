@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from typing import AbstractSet, Protocol, Sequence
 
 from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
+from intergrax.skills.core.version_binding import (
+    ResolvedSkillRef,
+    ResolvedSkillRole,
+    SkillVersionResolutionMode,
+)
 from intergrax.skills.registry.runtime import SkillRegistry
+from intergrax.skills.snapshot_digest import compute_resolved_skill_pack_digest
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry.runtime import ToolRegistry
 
@@ -19,11 +25,16 @@ class SkillResolutionError(ValueError):
 class ResolvedSkillPack:
     """Output of :class:`SkillResolver` — merged skill composition for one agent run."""
 
-    skill_ids: tuple[str, ...]
+    resolved_skills: tuple[ResolvedSkillRef, ...]
     tool_ids: frozenset[str]
     prompt_instruction_ids: frozenset[str]
     policy_fragment_ids: frozenset[str]
     risk_tier: SkillRiskTier
+    snapshot_digest: str
+
+    @property
+    def skill_ids(self) -> tuple[str, ...]:
+        return tuple(ref.skill_id for ref in self.resolved_skills)
 
     def merged_allowed_tools(self, extra_allowed: Sequence[str] = ()) -> tuple[str, ...]:
         merged = set(self.tool_ids)
@@ -65,20 +76,62 @@ class SkillResolver:
     def skill_registry(self) -> SkillRegistry:
         return self._skill_registry
 
-    def _expand_skill_dependencies(self, skill_ids: Sequence[str]) -> tuple[str, ...]:
+    def _materialized_manifest(self, skill_id: str) -> SkillManifest:
+        if not self._skill_registry.has(skill_id):
+            raise SkillResolutionError(f"Unknown skill_id: {skill_id}")
+        return self._skill_registry.get(skill_id).manifest
+
+    def _verify_pinned_version(self, skill_id: str, requested_version: str) -> SkillManifest:
+        manifest = self._materialized_manifest(skill_id)
+        if manifest.version != requested_version:
+            raise SkillResolutionError(
+                f"Skill version mismatch for '{skill_id}': "
+                f"requested {requested_version}, "
+                f"registry materialized {manifest.version}",
+            )
+        return manifest
+
+    def _normalize_root_manifests(
+        self,
+        skills: Sequence[SkillManifest],
+    ) -> tuple[SkillManifest, ...]:
+        seen_versions: dict[str, str] = {}
+        order: list[SkillManifest] = []
+        for manifest in skills:
+            skill_id = manifest.skill_id.strip()
+            if not skill_id:
+                raise SkillResolutionError("SkillManifest.skill_id must be non-empty")
+            if skill_id in seen_versions:
+                if seen_versions[skill_id] != manifest.version:
+                    raise SkillResolutionError(
+                        f"conflicting root version requirements for skill {skill_id}",
+                    )
+                continue
+            seen_versions[skill_id] = manifest.version
+            order.append(manifest)
+        return tuple(order)
+
+    def _expand_skill_dependencies(
+        self,
+        root_ids: Sequence[str],
+        root_pins: dict[str, str],
+    ) -> tuple[tuple[str, ...], dict[str, ResolvedSkillRole]]:
         order: list[str] = []
         seen: set[str] = set()
         visiting: set[str] = set()
+        roles: dict[str, ResolvedSkillRole] = {}
+        root_id_set = frozenset(root_ids)
 
         def visit(skill_id: str) -> None:
             if skill_id in seen:
                 return
             if skill_id in visiting:
                 raise SkillResolutionError(f"Cyclic requires_skills involving: {skill_id}")
-            if not self._skill_registry.has(skill_id):
-                raise SkillResolutionError(f"Unknown skill_id: {skill_id}")
             visiting.add(skill_id)
-            manifest = self._skill_registry.get(skill_id).manifest
+            if skill_id in root_pins:
+                manifest = self._verify_pinned_version(skill_id, root_pins[skill_id])
+            else:
+                manifest = self._materialized_manifest(skill_id)
             for dep in manifest.requires_skills:
                 dep_id = dep.strip()
                 if dep_id:
@@ -86,34 +139,53 @@ class SkillResolver:
             visiting.remove(skill_id)
             seen.add(skill_id)
             order.append(skill_id)
+            roles[skill_id] = (
+                ResolvedSkillRole.ROOT if skill_id in root_id_set else ResolvedSkillRole.TRANSITIVE
+            )
 
-        for skill_id in skill_ids:
+        for skill_id in root_ids:
             sid = skill_id.strip()
             if sid:
                 visit(sid)
-        return tuple(order)
+        return tuple(order), roles
 
-    def resolve(self, skill_ids: Sequence[str]) -> ResolvedSkillPack:
-        roots = tuple(dict.fromkeys(sid.strip() for sid in skill_ids if sid.strip()))
-        normalized = self._expand_skill_dependencies(roots) if roots else ()
-        if not normalized:
+    def _build_pack(
+        self,
+        normalized_ids: tuple[str, ...],
+        roles: dict[str, ResolvedSkillRole],
+        root_pins: dict[str, str],
+    ) -> ResolvedSkillPack:
+        if not normalized_ids:
             return ResolvedSkillPack(
-                skill_ids=(),
+                resolved_skills=(),
                 tool_ids=frozenset(),
                 prompt_instruction_ids=frozenset(),
                 policy_fragment_ids=frozenset(),
                 risk_tier=SkillRiskTier.LOW,
+                snapshot_digest=compute_resolved_skill_pack_digest(()),
             )
 
+        resolved_refs: list[ResolvedSkillRef] = []
         tool_ids: set[str] = set()
         prompt_ids: set[str] = set()
         policy_ids: set[str] = set()
         max_risk = SkillRiskTier.LOW
         risk_order = list(SkillRiskTier)
 
-        for skill_id in normalized:
-            registered = self._skill_registry.get(skill_id)
-            manifest: SkillManifest = registered.manifest
+        for skill_id in normalized_ids:
+            manifest = self._materialized_manifest(skill_id)
+            if skill_id in root_pins:
+                self._verify_pinned_version(skill_id, root_pins[skill_id])
+                resolution_mode = SkillVersionResolutionMode.PINNED
+            else:
+                resolution_mode = SkillVersionResolutionMode.MATERIALIZED
+            resolved_refs.append(
+                ResolvedSkillRef.from_manifest(
+                    manifest,
+                    resolution_mode=resolution_mode,
+                    role=roles[skill_id],
+                )
+            )
             tool_ids.update(manifest.tool_ids)
             prompt_ids.update(manifest.prompt_instruction_ids)
             if manifest.policy_fragment_id:
@@ -124,13 +196,20 @@ class SkillResolver:
         if self._tool_registry is not None:
             self._validate_tools_exist(tool_ids)
 
+        resolved_tuple = tuple(resolved_refs)
         return ResolvedSkillPack(
-            skill_ids=normalized,
+            resolved_skills=resolved_tuple,
             tool_ids=frozenset(tool_ids),
             prompt_instruction_ids=frozenset(prompt_ids),
             policy_fragment_ids=frozenset(policy_ids),
             risk_tier=max_risk,
+            snapshot_digest=compute_resolved_skill_pack_digest(resolved_tuple),
         )
+
+    def resolve(self, skill_ids: Sequence[str]) -> ResolvedSkillPack:
+        roots = tuple(dict.fromkeys(sid.strip() for sid in skill_ids if sid.strip()))
+        normalized, roles = self._expand_skill_dependencies(roots, {})
+        return self._build_pack(normalized, roles, {})
 
     def validate_skill_ids(self, skill_ids: AbstractSet[str] | Sequence[str]) -> None:
         for skill_id in skill_ids:
@@ -139,16 +218,15 @@ class SkillResolver:
                 raise SkillResolutionError(f"Unknown skill_id: {sid}")
 
     def validate_skills(self, skills: Sequence[SkillManifest]) -> None:
-        for manifest in skills:
-            skill_id = manifest.skill_id.strip()
-            if not skill_id:
-                raise SkillResolutionError("SkillManifest.skill_id must be non-empty")
-            if not self._skill_registry.has(skill_id):
-                raise SkillResolutionError(f"Unknown skill_id: {skill_id}")
+        for manifest in self._normalize_root_manifests(skills):
+            self._verify_pinned_version(manifest.skill_id, manifest.version)
 
     def resolve_skills(self, skills: Sequence[SkillManifest]) -> ResolvedSkillPack:
-        skill_ids = [manifest.skill_id for manifest in skills]
-        return self.resolve(skill_ids)
+        root_manifests = self._normalize_root_manifests(skills)
+        root_pins = {manifest.skill_id: manifest.version for manifest in root_manifests}
+        root_ids = tuple(manifest.skill_id for manifest in root_manifests)
+        normalized, roles = self._expand_skill_dependencies(root_ids, root_pins)
+        return self._build_pack(normalized, roles, root_pins)
 
     def validate_tool_contracts(self, tools: Sequence[ToolContract]) -> None:
         if self._tool_registry is None:
