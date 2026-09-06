@@ -260,7 +260,7 @@ class _IterativeCePlanner:
                         ),
                     ),
                 ),
-                business_tool_calls=(
+                materialized_tool_calls=(
                     LLMToolCall.from_openai_shape(
                         call_id="tc-1",
                         name="probe.read",
@@ -281,7 +281,7 @@ class _IterativeCePlanner:
         self.round_two_messages = list(messages)
         return NativePlannerRound(
             response=LLMAdapterResponse(content="final answer", tool_calls=()),
-            business_tool_calls=(),
+            materialized_tool_calls=(),
             tool_plan=ToolCallPlan(calls=[]),
             action_context=None,
         )

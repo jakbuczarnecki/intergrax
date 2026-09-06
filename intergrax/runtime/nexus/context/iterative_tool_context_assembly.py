@@ -47,7 +47,9 @@ from intergrax.runtime.nexus.tools.tool_loop import (
     tool_output_blocks_from_native_round,
     validate_identical_tool_call_repeats,
 )
-from intergrax.runtime.nexus.tools.tool_planning_policy import tool_choice_for_mode
+from intergrax.runtime.nexus.tools.tool_planning_policy import (
+    native_tool_choice_for_investigation_round,
+)
 from intergrax.runtime.nexus.tools.tool_planner_protocol import IterativeToolPlannerProtocol
 
 
@@ -133,7 +135,10 @@ async def run_ce_bounded_tool_loop(
             planning_messages,
             allowed_tool_ids=allowed_tool_ids,
             run_id=state.run_id,
-            tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
+            tool_choice=native_tool_choice_for_investigation_round(
+                protocol_config=protocol_config,
+                tools_mode=state.context.config.tools_mode,
+            ),
             protocol_config=protocol_config,
         )
         llm_result = planner_round.response
@@ -148,7 +153,7 @@ async def run_ce_bounded_tool_loop(
             break
 
         validate_native_tool_plan_alignment(
-            planner_round.business_tool_calls,
+            planner_round.materialized_tool_calls,
             tool_plan,
         )
 
@@ -156,7 +161,7 @@ async def run_ce_bounded_tool_loop(
             build_investigation_proof_step_from_action_context(
                 round_index=iterations,
                 action_context=planner_round.action_context,
-                tool_calls=planner_round.business_tool_calls,
+                tool_calls=planner_round.materialized_tool_calls,
                 messages_before_round=planner_messages,
                 prior_model_visible_references=prior_model_visible_references,
             )
@@ -179,11 +184,11 @@ async def run_ce_bounded_tool_loop(
         append_assistant_tool_call_message(
             messages,
             assistant_content=llm_result.content,
-            tool_calls=planner_round.business_tool_calls,
+            tool_calls=planner_round.materialized_tool_calls,
         )
         state.iterative_tool_output_blocks.extend(
             tool_output_blocks_from_native_round(
-                planner_round.business_tool_calls,
+                planner_round.materialized_tool_calls,
                 tool_plan.calls,
                 round_outcomes,
             )

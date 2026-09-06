@@ -8,6 +8,7 @@ import json
 from collections.abc import Sequence
 
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, validate_tool_call_identities
+from intergrax.runtime.nexus.tools.atomic_planner_round import AtomicPlannerAction
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 
 
@@ -59,4 +60,44 @@ def validate_native_tool_plan_alignment(
         if validated.model_dump() != planned_call.input.model_dump():
             raise NativeToolPlanAlignmentError(
                 f"native tool call arguments mismatch at index {index}"
+            )
+
+
+def validate_atomic_tool_plan_alignment(
+    actions: Sequence[AtomicPlannerAction],
+    tool_plan: ToolCallPlan,
+) -> None:
+    """Ensure atomic planner actions match the materialized ToolCallPlan batch."""
+    planned_calls = tool_plan.calls
+    if len(actions) != len(planned_calls):
+        raise NativeToolPlanAlignmentError(
+            "atomic action count does not match planned tool call count"
+        )
+    for index, (action, planned_call) in enumerate(
+        zip(actions, planned_calls, strict=True)
+    ):
+        if action.tool_id != planned_call.tool_id:
+            raise NativeToolPlanAlignmentError(
+                f"atomic action tool id mismatch at index {index}: "
+                f"{action.tool_id!r} != {planned_call.tool_id!r}"
+            )
+        try:
+            args = json.loads(action.arguments_json or "{}")
+        except json.JSONDecodeError as exc:
+            raise NativeToolPlanAlignmentError(
+                f"atomic action arguments JSON is malformed at index {index}"
+            ) from exc
+        if not isinstance(args, dict):
+            raise NativeToolPlanAlignmentError(
+                f"atomic action arguments must be a JSON object at index {index}"
+            )
+        try:
+            validated = type(planned_call.input).model_validate(args)
+        except Exception as exc:
+            raise NativeToolPlanAlignmentError(
+                f"atomic action arguments invalid at index {index}"
+            ) from exc
+        if validated.model_dump() != planned_call.input.model_dump():
+            raise NativeToolPlanAlignmentError(
+                f"atomic action arguments mismatch at index {index}"
             )

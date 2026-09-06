@@ -11,11 +11,11 @@ from dataclasses import dataclass
 from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.runtime.nexus.tools.atomic_planner_round import PLANNER_ROUND_TOOL_ID
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerActionContext,
     NativePlannerProtocolConfig,
     NativePlannerProtocolMode,
-    PLANNER_ACTION_CONTEXT_TOOL_ID,
     validate_typed_planner_action_context,
 )
 from intergrax.runtime.nexus.tools.native_planner_transcript import (
@@ -158,11 +158,10 @@ def format_investigation_follow_up_context(
         f"{ref_lines}\n"
         "\n"
         "CONTRACT:\n"
-        f"Because prior evidence exists, emit exactly one {PLANNER_ACTION_CONTEXT_TOOL_ID} "
-        "call in the same response as the business tool call(s).\n"
-        "evidence_basis_references must include at least one exact value from "
-        "AVAILABLE_EVIDENCE_REFS.\n"
-        "purpose must be a concise public justification.\n"
+        f"Because prior evidence exists, emit exactly one {PLANNER_ROUND_TOOL_ID} call.\n"
+        "Include action_context with evidence_basis_references (at least one exact value from "
+        "AVAILABLE_EVIDENCE_REFS) and a concise public purpose.\n"
+        "Include one or more admitted business actions inside actions[].\n"
         "An empty evidence_basis_references is invalid when prior evidence exists.\n"
         "evidence_basis_references expresses what already-observed facts materially motivate "
         "this follow-up action; it does not claim those observations prove the "
@@ -212,7 +211,7 @@ def investigation_native_planner_protocol_config(
         prior_model_visible_references,
     )
     return NativePlannerProtocolConfig(
-        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+        mode=NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
         available_evidence_references=available,
         _reference_index_items=tuple(sorted(reference_index.items())),
     )
@@ -297,7 +296,7 @@ def parse_public_decision_note(content: str) -> ParsedPublicDecisionNote:
     """Parse the strict ENG-6 two-field public decision-note envelope.
 
     LEGACY / COMPATIBILITY — NOT CERTIFIED NATIVE AUTHORITY.
-    Certified native paths use typed ``intergrax.planner.action_context`` transport.
+    Certified native paths use typed ``intergrax.planner.round`` discriminated transport.
     Removal owner: DS-E2E-12 follow-up once non-native paths migrate.
     """
     semantic_lines = tuple(

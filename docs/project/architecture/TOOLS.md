@@ -884,14 +884,16 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 
 #### ENG-6 — native investigation proof (semantic evidence basis)
 
-**Certified native transport (DS-E2E-12):** native planner action context is transported atomically through reserved non-executable function-call schema `intergrax.planner.action_context`. It is planning protocol metadata, not a `Tool`. Model owns basis and purpose. Tool Planning materializes the typed contract (`NativePlannerActionContext`, `NativePlannerRound`). ENG-6 validates evidence availability and binds refs to provenance. Tool Execution receives business calls only. Planner protocol validation ≠ tool authorization.
+**Certified native transport (DS-E2E-12):** certified ENG-6 native investigation planning uses one discriminated `intergrax.planner.round` transport record. The record atomically contains model-authored evidence basis, public purpose, and one or more typed business actions. Tool Planning materializes existing `ToolCallPlan`. Tool Execution remains unchanged. Reserved protocol id is planning metadata, not a `Tool`. Model owns basis, purpose, and actions. ENG-6 validates evidence availability and binds refs to provenance.
+
+**Legacy / non-certified transports:** sibling `intergrax.planner.action_context` + direct business provider calls; text mini-DSL two-field envelope (`parse_public_decision_note`). Do not use on certified investigation paths.
 
 **Ownership boundary (frozen):**
 
 | Owner | Responsibility |
 |-------|----------------|
-| **Model** | Public `purpose`; semantic selection of prior observations in `evidence_basis_references` via typed planner annotation |
-| **Tool Planning** | Exposes planner protocol schema; separates annotation from business tool calls; validates cardinality; materializes `NativePlannerRound` |
+| **Model** | Public `purpose`; semantic selection of prior observations in `evidence_basis_references`; business actions inside one `intergrax.planner.round` call |
+| **Tool Planning** | Derives discriminated round schema from admitted business catalog; exposes only `intergrax.planner.round` in atomic mode; validates cardinality; materializes `ToolCallPlan` and planning-owned tool-call identities |
 | **Tool execution** | Canonical `LLMToolCall.id` after adapter normalization; semantic `evidence_reference` on `ToolModelObservation` rendered via `EVIDENCE_REF:` envelope (payload stays intact) |
 | **ENG-6 runtime** | Deterministic bind declared semantic references → completed observations and optional prior model-visible inventory → `basis_tool_call_ids`; fail closed on unknown references and ambiguous provenance |
 
@@ -908,13 +910,13 @@ Layout whitespace is ignored before parsing. Non-native and legacy paths may sti
 
 **Binding:** `investigation_proof.py` validates typed annotations (certified path) or parses legacy text, resolves declared references against the canonical native transcript plus any explicit prior model-visible inventory (`ModelVisibleEvidenceReference`), and records both `declared_basis_references` and runtime `basis_bindings` (`InvestigationEvidenceBasis`).
 
-**Follow-up compliance context:** before each native planner round where prior model-visible evidence exists, the runtime injects bounded `ENG6_FOLLOW_UP_CONTEXT` listing `AVAILABLE_EVIDENCE_REFS` from the same inventory used by validation (`build_completed_observation_reference_index`). The model must emit exactly one `intergrax.planner.action_context` call together with business tool call(s) in the same response. Evidence basis expresses motivation/dependency on already-observed facts, not proof that the prior evidence determines the next tool's result.
+**Follow-up compliance context:** before each native planner round where prior model-visible evidence exists, the runtime injects bounded `ENG6_FOLLOW_UP_CONTEXT` listing `AVAILABLE_EVIDENCE_REFS` from the same inventory used by validation (`build_completed_observation_reference_index`). The model must emit exactly one `intergrax.planner.round` call with `action_context` and one or more typed `actions[]`. Evidence basis expresses motivation/dependency on already-observed facts, not proof that the prior evidence determines the next tool's result.
 
 **First action semantics:** empty `evidence_basis_references` is valid only when no prior model-visible evidence exists (no completed observations and no declared prior inventory). Baseline evidence visible before the first native tool round requires explicit typed annotation like any follow-up.
 
 **Invariants:** one semantic identity per observation (`ToolModelObservation.evidence_reference`); domain/tool-contract identity wins over generic `observation.<tool_id>.<step_id>` fallback; scenario-known evidence IDs are not admissible until model-visible through transcript or declared prior inventory; runtime provenance (`tool_call_id` / acquisition id) stays separate from semantic identity; `prepared_tools_schema_hash` remains business-catalog identity (annotation schema appended after validation).
 
-**Implementation:** `intergrax/runtime/nexus/tools/native_planner_action_context.py` · `intergrax/runtime/nexus/tools/investigation_proof.py` · `intergrax/tools/model_observation_format.py` · observation reference minting in `tool_loop.py` · shared policy `prompts/tools_investigation_policy/`.
+**Implementation:** `intergrax/runtime/nexus/tools/atomic_planner_round.py` · `intergrax/runtime/nexus/tools/native_planner_action_context.py` · `intergrax/runtime/nexus/tools/investigation_proof.py` · `intergrax/tools/model_observation_format.py` · observation reference minting in `tool_loop.py` · shared policy `prompts/tools_investigation_policy/`.
 
 | **Invocation pattern plugin** (`ToolInvocationPattern`) | **Production** | All shipped modes + `DeterministicChainPattern` (TOOL-ENG-16–24,28) |
 | **Invoker test regression** (`modality_tool_trace`) | **Done** | TOOL-ENG-TEST.1 (S0) |

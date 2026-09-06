@@ -160,13 +160,13 @@ class _TwoRoundPlanner:
             )
             return NativePlannerRound(
                 response=LLMAdapterResponse(content="round-1", tool_calls=(business_call,)),
-                business_tool_calls=(business_call,),
+                materialized_tool_calls=(business_call,),
                 tool_plan=ToolCallPlan(calls=[]),
                 action_context=None,
             )
         return NativePlannerRound(
             response=LLMAdapterResponse(content="done", tool_calls=()),
-            business_tool_calls=(),
+            materialized_tool_calls=(),
             tool_plan=ToolCallPlan(calls=[]),
             action_context=None,
         )

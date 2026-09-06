@@ -7,6 +7,8 @@ from __future__ import annotations
 import time
 from unittest.mock import MagicMock
 
+from dataclasses import replace
+
 import json
 import pytest
 from pydantic import BaseModel
@@ -27,13 +29,16 @@ from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls, 
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     PLANNER_ACTION_CONTEXT_TOOL_ID,
     NativePlannerActionContextError,
+    NativePlannerProtocolConfig,
+    NativePlannerProtocolMode,
     NativePlannerRound,
     resolve_native_planner_protocol,
 )
+from intergrax.runtime.nexus.tools.atomic_planner_round import PLANNER_ROUND_TOOL_ID
 from intergrax.runtime.nexus.tools.investigation_proof import (
     InvestigationProofValidationError,
+    build_completed_observation_reference_index,
     collect_available_evidence_ids,
-    investigation_native_planner_protocol_config,
 )
 from intergrax.runtime.nexus.tools.native_tool_plan_alignment import NativeToolPlanAlignmentError
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
@@ -131,23 +136,117 @@ def _prior_evidence_references(messages: list[ChatMessage]) -> tuple[str, ...]:
     return collect_available_evidence_ids(messages)
 
 
+def _legacy_investigation_protocol_config(
+    messages: list[ChatMessage],
+) -> NativePlannerProtocolConfig:
+    reference_index = build_completed_observation_reference_index(messages)
+    available = collect_available_evidence_ids(messages)
+    return NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+        available_evidence_references=available,
+        _reference_index_items=tuple(sorted(reference_index.items())),
+    )
+
+
 def _planner_round_from_response(
     response: LLMAdapterResponse,
     tool_plan: ToolCallPlan,
     *,
     messages: list[ChatMessage],
 ) -> NativePlannerRound:
-    protocol_config = investigation_native_planner_protocol_config(messages)
+    protocol_config = _legacy_investigation_protocol_config(messages)
     action_context, business_calls = resolve_native_planner_protocol(
         response.tool_calls,
         protocol_config=protocol_config,
     )
     return NativePlannerRound(
         response=response,
-        business_tool_calls=business_calls,
+        materialized_tool_calls=business_calls,
         tool_plan=tool_plan,
         action_context=action_context,
     )
+
+
+def _schema_is_atomic_round(tools_schema: object) -> bool:
+    if not isinstance(tools_schema, list) or len(tools_schema) != 1:
+        return False
+    entry = tools_schema[0]
+    if not isinstance(entry, dict):
+        return False
+    function = entry.get("function")
+    if not isinstance(function, dict):
+        return False
+    return function.get("name") == PLANNER_ROUND_TOOL_ID
+
+
+def _atomic_round_call(
+    *,
+    actions: list[tuple[str, dict[str, object]]],
+    action_context: dict[str, object] | None = None,
+    call_id: str = "round-1",
+) -> LLMToolCall:
+    payload: dict[str, object] = {
+        "actions": [
+            {"tool_id": tool_id, "arguments": arguments}
+            for tool_id, arguments in actions
+        ],
+    }
+    if action_context is not None:
+        payload["action_context"] = action_context
+    return LLMToolCall(
+        id=call_id,
+        name=PLANNER_ROUND_TOOL_ID,
+        arguments_json=json.dumps(payload),
+    )
+
+
+def _adapt_tool_calls_for_atomic_schema(
+    tools_schema: object,
+    tool_calls: tuple[LLMToolCall, ...],
+    messages: list[ChatMessage],
+) -> tuple[LLMToolCall, ...]:
+    if not tool_calls or not _schema_is_atomic_round(tools_schema):
+        return tool_calls
+    if any(call.name == PLANNER_ROUND_TOOL_ID for call in tool_calls):
+        return tool_calls
+    annotation_payload: dict[str, object] | None = None
+    business_calls: list[LLMToolCall] = []
+    for call in tool_calls:
+        if call.name == PLANNER_ACTION_CONTEXT_TOOL_ID:
+            annotation_payload = json.loads(call.arguments_json or "{}")
+            continue
+        business_calls.append(call)
+    actions: list[tuple[str, dict[str, object]]] = []
+    for call in business_calls:
+        parsed = json.loads(call.arguments_json or "{}")
+        if not isinstance(parsed, dict):
+            parsed = {}
+        actions.append((call.name, parsed))
+    action_context = annotation_payload
+    call_id = business_calls[0].id if business_calls else "round-1"
+    return (
+        _atomic_round_call(
+            actions=actions,
+            action_context=action_context,
+            call_id=call_id,
+        ),
+    )
+
+
+def _adapt_response_tool_calls_for_schema(
+    response: LLMAdapterResponse,
+    *,
+    tools_schema: object,
+    messages: list[ChatMessage],
+) -> LLMAdapterResponse:
+    adapted = _adapt_tool_calls_for_atomic_schema(
+        tools_schema,
+        response.tool_calls,
+        messages,
+    )
+    if adapted == response.tool_calls:
+        return response
+    return replace(response, tool_calls=adapted)
 
 
 class _InA(BaseModel):
@@ -201,10 +300,10 @@ class _TwoRoundLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = messages, tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -213,6 +312,11 @@ class _TwoRoundLLM(FakeLLMAdapter):
                         arguments={"value": 7},
                     ),
                 ),
+            )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
             )
         return LLMAdapterResponse(content="done", tool_calls=())
 
@@ -294,10 +398,10 @@ class _AlwaysToolLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -307,8 +411,13 @@ class _AlwaysToolLLM(FakeLLMAdapter):
                     ),
                 ),
             )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
+            )
         prior_basis = _prior_evidence_references(list(messages))
-        return LLMAdapterResponse(
+        response = LLMAdapterResponse(
             content="",
             tool_calls=(
                 _action_context_call(*prior_basis, purpose="continue investigation"),
@@ -318,6 +427,11 @@ class _AlwaysToolLLM(FakeLLMAdapter):
                     arguments={"value": self._round},
                 ),
             ),
+        )
+        return _adapt_response_tool_calls_for_schema(
+            response,
+            tools_schema=tools_schema,
+            messages=list(messages),
         )
 
 
@@ -334,10 +448,10 @@ class _FailAfterOneRoundLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = messages, tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -346,6 +460,11 @@ class _FailAfterOneRoundLLM(FakeLLMAdapter):
                         arguments={"value": 1},
                     ),
                 ),
+            )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
             )
         raise _PlannerExplodedError("planner exploded deterministically")
 
@@ -547,10 +666,10 @@ class _LongOutputTwoRoundLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -559,6 +678,11 @@ class _LongOutputTwoRoundLLM(FakeLLMAdapter):
                         arguments={},
                     ),
                 ),
+            )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
             )
         tool_messages = [msg for msg in messages if msg.role == "tool"]
         assert len(tool_messages) == 1
@@ -579,10 +703,10 @@ class _FailThenRecoverLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -591,6 +715,11 @@ class _FailThenRecoverLLM(FakeLLMAdapter):
                         arguments={},
                     ),
                 ),
+            )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
             )
         tool_messages = [msg for msg in messages if msg.role == "tool"]
         assert len(tool_messages) == 1
@@ -765,7 +894,7 @@ class _CustomIterativePlanner:
             )
         return NativePlannerRound(
             response=LLMAdapterResponse(content="custom done", tool_calls=()),
-            business_tool_calls=(),
+            materialized_tool_calls=(),
             tool_plan=ToolCallPlan(calls=[]),
             action_context=None,
         )
@@ -929,7 +1058,7 @@ class _MultiCallRoundPlanner:
             )
         return NativePlannerRound(
             response=LLMAdapterResponse(content="done", tool_calls=()),
-            business_tool_calls=(),
+            materialized_tool_calls=(),
             tool_plan=ToolCallPlan(calls=[]),
             action_context=None,
         )
@@ -1090,7 +1219,7 @@ class _RepeatCallPlanner:
             )
         return NativePlannerRound(
             response=LLMAdapterResponse(content="done", tool_calls=()),
-            business_tool_calls=(),
+            materialized_tool_calls=(),
             tool_plan=ToolCallPlan(calls=[]),
             action_context=None,
         )
@@ -1185,7 +1314,7 @@ class _AlternatingInputPlanner:
             )
         return NativePlannerRound(
             response=LLMAdapterResponse(content="done", tool_calls=()),
-            business_tool_calls=(),
+            materialized_tool_calls=(),
             tool_plan=ToolCallPlan(calls=[]),
             action_context=None,
         )
@@ -1295,7 +1424,7 @@ class _MixedOutcomeRoundPlanner:
         assert any('"result":5' in (msg.content or "") for msg in tool_messages)
         return NativePlannerRound(
             response=LLMAdapterResponse(content="mixed recovered", tool_calls=()),
-            business_tool_calls=(),
+            materialized_tool_calls=(),
             tool_plan=ToolCallPlan(calls=[]),
             action_context=None,
         )
@@ -1388,12 +1517,12 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         _assert_investigation_policy_provider_messages(list(messages))
 
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -1403,6 +1532,11 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
                     ),
                 ),
             )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
+            )
 
         tool_messages = [message for message in messages if message.role == "tool"]
         tool_contents = [message.content or "" for message in tool_messages]
@@ -1410,7 +1544,7 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
             assert len(tool_messages) == 1
             assert any("EVIDENCE_A" in content for content in tool_contents)
             prior_basis = _prior_evidence_references(list(messages))
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     _action_context_call(*prior_basis, purpose="confirm subgroup from first probe"),
@@ -1420,6 +1554,11 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
                         arguments={"confirm": True},
                     ),
                 ),
+            )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
             )
 
         assert self._round == 3
@@ -1538,12 +1677,12 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         _assert_investigation_policy_provider_messages(list(messages))
 
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -1553,6 +1692,11 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
                     ),
                 ),
             )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
+            )
 
         tool_messages = [message for message in messages if message.role == "tool"]
         tool_contents = [message.content or "" for message in tool_messages]
@@ -1561,7 +1705,7 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
             assert len(tool_messages) == 1
             assert any("EVIDENCE_A" in content for content in tool_contents)
             prior_basis = _prior_evidence_references(list(messages))
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     _action_context_call(*prior_basis, purpose="inspect suspected subgroup"),
@@ -1572,13 +1716,18 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
                     ),
                 ),
             )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
+            )
 
         if self._round == 3:
             assert len(tool_messages) == 2
             assert any("EVIDENCE_A" in content for content in tool_contents)
             assert any("EVIDENCE_B" in content for content in tool_contents)
             prior_basis = _prior_evidence_references(list(messages))
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     _action_context_call(*prior_basis, purpose="verify normalized effect"),
@@ -1588,6 +1737,11 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
                         arguments={"label": "c"},
                     ),
                 ),
+            )
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
             )
 
         assert self._round == 4
@@ -1637,14 +1791,17 @@ def test_bounded_react_multi_hop_investigation_proof() -> None:
     ref_c = f"observation.probe.c.{_INTEGRATION_RUN_ID}:loop3:tool"
     assert step1.round_index == 1
     assert step1.basis_tool_call_ids == ()
-    assert step1.next_tool_call_ids == ("evidence-a",)
+    assert len(step1.next_tool_call_ids) == 1
+    assert step1.next_tool_call_ids[0].startswith("toolcall-")
     assert step2.declared_basis_references == (ref_a,)
-    assert step2.basis_tool_call_ids == ("evidence-a",)
-    assert step2.next_tool_call_ids == ("evidence-b",)
+    assert step2.basis_tool_call_ids == step1.next_tool_call_ids
+    assert len(step2.next_tool_call_ids) == 1
+    assert step2.next_tool_call_ids[0].startswith("toolcall-")
     assert step2.public_reason == "inspect suspected subgroup"
     assert step3.declared_basis_references == (ref_a, ref_b)
-    assert step3.basis_tool_call_ids == ("evidence-a", "evidence-b")
-    assert step3.next_tool_call_ids == ("evidence-c",)
+    assert step3.basis_tool_call_ids == (*step1.next_tool_call_ids, *step2.next_tool_call_ids)
+    assert len(step3.next_tool_call_ids) == 1
+    assert step3.next_tool_call_ids[0].startswith("toolcall-")
     assert step3.public_reason == "verify normalized effect"
     assert proof.final_available_evidence_ids == (
         ref_a,
@@ -1671,10 +1828,10 @@ class _InvalidProofFollowUpLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -1684,7 +1841,17 @@ class _InvalidProofFollowUpLLM(FakeLLMAdapter):
                     ),
                 ),
             )
-        return LLMAdapterResponse(content="", tool_calls=self._round2_tool_calls)
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
+            )
+        response = LLMAdapterResponse(content="", tool_calls=self._round2_tool_calls)
+        return _adapt_response_tool_calls_for_schema(
+            response,
+            tools_schema=tools_schema,
+            messages=list(messages),
+        )
 
 
 def _registry_with_probe_tools() -> ToolRegistry:
@@ -1712,7 +1879,7 @@ def _registry_with_probe_tools() -> ToolRegistry:
         ),
         (
             (_probe_business_call(),),
-            "exactly one planner action context",
+            "requires action_context",
         ),
         (
             (
@@ -1744,7 +1911,7 @@ def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    with pytest.raises(NativePlannerActionContextError, match=match):
+    with pytest.raises(ValueError, match=match):
         _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
@@ -1768,10 +1935,10 @@ class _OrphanBasisFollowUpLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = messages, tools_schema, kwargs
+        _ = kwargs
         self._round += 1
         if self._round == 1:
-            return LLMAdapterResponse(
+            response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
@@ -1781,7 +1948,12 @@ class _OrphanBasisFollowUpLLM(FakeLLMAdapter):
                     ),
                 ),
             )
-        return LLMAdapterResponse(
+            return _adapt_response_tool_calls_for_schema(
+                response,
+                tools_schema=tools_schema,
+                messages=list(messages),
+            )
+        response = LLMAdapterResponse(
             content="",
             tool_calls=(
                 _action_context_call("evidence.orphan.fake", purpose="inspect orphan basis"),
@@ -1792,6 +1964,11 @@ class _OrphanBasisFollowUpLLM(FakeLLMAdapter):
                 ),
             ),
         )
+        return _adapt_response_tool_calls_for_schema(
+            response,
+            tools_schema=tools_schema,
+            messages=list(messages),
+        )
 
 
 def test_orphan_raw_evidence_basis_rejected_before_second_tool() -> None:
@@ -1801,7 +1978,7 @@ def test_orphan_raw_evidence_basis_rejected_before_second_tool() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    with pytest.raises(NativePlannerActionContextError, match="unknown basis"):
+    with pytest.raises(ValueError, match="unknown basis"):
         _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
@@ -1874,7 +2051,7 @@ class _MisalignedCustomPlanner:
             )
             return NativePlannerRound(
                 response=response,
-                business_tool_calls=(llm_call,),
+                materialized_tool_calls=(llm_call,),
                 tool_plan=tool_plan,
                 action_context=None,
             )
@@ -1891,7 +2068,7 @@ class _MisalignedCustomPlanner:
             )
             return NativePlannerRound(
                 response=response,
-                business_tool_calls=(llm_call, llm_call_b),
+                materialized_tool_calls=(llm_call, llm_call_b),
                 tool_plan=tool_plan,
                 action_context=None,
             )
@@ -1908,7 +2085,7 @@ class _MisalignedCustomPlanner:
             )
             return NativePlannerRound(
                 response=response,
-                business_tool_calls=(llm_call,),
+                materialized_tool_calls=(llm_call,),
                 tool_plan=tool_plan,
                 action_context=None,
             )
@@ -1930,7 +2107,7 @@ class _MisalignedCustomPlanner:
             )
             return NativePlannerRound(
                 response=response,
-                business_tool_calls=(malformed_call,),
+                materialized_tool_calls=(malformed_call,),
                 tool_plan=tool_plan,
                 action_context=None,
             )
