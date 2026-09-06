@@ -217,12 +217,12 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Scope** | Typed Tools load evidence; typed Skills load evidence; aggregation into `ApplicationPlatformPluginEvidence` (or successor aggregate); evidence-only semantics. |
 | **Reuse** | `DomainPluginLoadReport` pattern; Tier-3 cross-flow evidence chain from Platform Plugins. |
 | **Non-goals** | Evidence as registry authority; replacing domain admission. |
-| **Hard contracts** | `ToolsPluginLoadReport`, `SkillsPluginLoadReport` (or domain-equivalent typed reports); aggregate fields on application evidence; `critical_bootstrap_acceptable` alignment with STRICT. |
+| **Hard contracts** | `DomainPluginLoadReport` per domain (`tools`, `skills` keys); aggregate fields on `ApplicationPlatformPluginEvidence`; `critical_bootstrap_acceptable` alignment with STRICT. |
 | **Required tests** | STRICT fail-closed bootstrap tests; evidence aggregation tests; rejected plugin remains non-active. |
 | **Regression gates** | `test_plugin_engine_cross_flow.py`; application composition architecture gate. |
 | **Completion criteria** | Application evidence includes Tool and Skill typed reports; documented operator audit path. |
 | **Depends on** | Stage 7 recommended; Platform Plugins evidence patterns. |
-| **Maturity** | **Planned** (Tools/Skills reports noted as future in Platform Plugins architecture). |
+| **Maturity** | **Implemented** — `CatalogBootstrapResult.tool_plugin_load_report` / `skill_plugin_load_report` from canonical `bootstrap_catalogs()` pass; aggregated in Tier-3 `ApplicationPlatformPluginEvidence`. |
 
 ---
 

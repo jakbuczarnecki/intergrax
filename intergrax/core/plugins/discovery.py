@@ -9,7 +9,7 @@ from intergrax.utils import attribute_access
 import logging
 import threading
 from dataclasses import dataclass
-from typing import Callable, Literal, Sequence, TypeVar
+from typing import TYPE_CHECKING, Callable, Literal, Sequence, TypeVar
 
 from intergrax.core.plugins.errors import PluginConflictError, PluginLoadError
 from intergrax.core.plugins.platform_semantics import PlatformPluginConflictKind
@@ -39,6 +39,12 @@ EP_DECISION_VERIFICATION_STAGES = "intergrax.decision_verification_stages"
 EP_DECISION_ARTIFACT_KINDS = "intergrax.decision_artifact_kinds"
 
 T = TypeVar("T")
+
+if TYPE_CHECKING:
+    from intergrax.core.plugins.admission import (
+        DomainPluginLoadReport,
+        PluginAdmissionRejection,
+    )
 
 _EP_SPECS_CACHE: dict[str, tuple[EntryPointSpec, ...]] = {}
 _EP_SPECS_BY_NAME: dict[str, dict[str, EntryPointSpec]] = {}
@@ -272,6 +278,79 @@ def load_plugin_types(
         for item in load_entry_point_plugins(group, on_conflict=on_conflict, seen=seen_names):
             types.append(item.plugin_type)
     return types
+
+
+RegisterEntryPointFn = Callable[
+    [type, EntryPointSpec],
+    tuple[bool, "PluginAdmissionRejection | None"],
+]
+
+
+def _entry_point_conflict_policy(on_conflict: ConflictPolicy) -> ConflictPolicy:
+    if on_conflict == "warn_override":
+        return "override"
+    return on_conflict
+
+
+def register_plugins_with_report(
+    group: str,
+    register_entry_point: RegisterEntryPointFn,
+    *,
+    discover_entry_points: bool = False,
+    on_conflict: ConflictPolicy = "error",
+    on_load_failure: LoadIsolation = "isolate",
+) -> "DomainPluginLoadReport":
+    """Discover entry-point plugins and build immutable bootstrap evidence."""
+    from intergrax.core.plugins.admission import (
+        DomainPluginLoadReport,
+        PluginAdmissionRejection,
+    )
+
+    if not discover_entry_points:
+        return DomainPluginLoadReport.empty(group)
+
+    ep_policy = _entry_point_conflict_policy(on_conflict)
+    accepted: list[EntryPointSpec] = []
+    rejected: list[PluginAdmissionRejection] = []
+    failed: list[EntryPointLoadResult] = []
+    registered_count = 0
+
+    for result in load_entry_point_targets(
+        group,
+        on_conflict=ep_policy,
+        on_load_failure=on_load_failure,
+    ):
+        if result.error is not None:
+            failed.append(result)
+            continue
+        try:
+            plugin_type = resolve_entry_point_plugin_type(
+                result.target,
+                result.spec.value,
+            )
+        except PluginLoadError as exc:
+            if on_load_failure == "fail_fast":
+                raise
+            failed.append(EntryPointLoadResult(spec=result.spec, error=exc))
+            continue
+
+        registered, rejection = register_entry_point(plugin_type, result.spec)
+        if rejection is not None:
+            rejected.append(rejection)
+            continue
+        if registered:
+            registered_count += 1
+            accepted.append(result.spec)
+
+    return DomainPluginLoadReport(
+        group=group,
+        accepted=tuple(sorted(accepted, key=lambda spec: (spec.name, spec.value))),
+        rejected=tuple(
+            sorted(rejected, key=lambda item: (item.spec.name, item.spec.value))
+        ),
+        failed=tuple(sorted(failed, key=lambda item: (item.spec.name, item.spec.value))),
+        registered_count=registered_count,
+    )
 
 
 def register_plugins(

@@ -159,7 +159,7 @@ Policy STRICT with production qualification bundle is the strongest current refe
 | STRICT stops bootstrap | `critical_bootstrap_acceptable` on domain report |
 | Qualified package rejected | Compatibility result + qualification evidence |
 
-Tier-3 aggregate: `ApplicationEnvironmentWiring.platform_plugin_evidence` (Security, Policy, Context, Memory today).
+Tier-3 aggregate: `ApplicationEnvironmentWiring.platform_plugin_evidence` (Security, Policy, Context, Memory, Tools, Skills).
 
 ---
 

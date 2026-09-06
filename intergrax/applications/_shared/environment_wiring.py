@@ -86,6 +86,7 @@ from intergrax.applications._shared.codecraft_wiring import (
 from intergrax.applications._shared.shadow_wiring import wire_shadow_workspace
 from intergrax.applications._shared.skill_wiring import (
     ApplicationSkillWiring,
+    assert_strict_skill_bootstrap_acceptable,
     build_application_skill_wiring,
 )
 from intergrax.applications._shared.application_owned_tool_conformance import (
@@ -97,6 +98,7 @@ from intergrax.applications._shared.application_owned_tool_wiring import (
 )
 from intergrax.applications._shared.tool_wiring import (
     ApplicationToolWiring,
+    assert_strict_tool_bootstrap_acceptable,
     build_application_tool_wiring,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -107,6 +109,7 @@ from intergrax.applications.contracts.platform_plugin_evidence import (
     ApplicationPlatformPluginEvidence,
     build_application_platform_plugin_evidence,
 )
+from intergrax.core.catalog_bootstrap import bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.security_bootstrap import SecurityBootstrapResult, bootstrap_security_providers
@@ -253,8 +256,6 @@ def wire_application_environment(
         )
         assert_memory_vector_backend_available(env, rag_stack)
 
-    skill_wiring = build_application_skill_wiring(env.skill_profile)
-
     tool_profile = tool_profile_with_sandbox(env)
     env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
     tool_profile = tool_profile_with_codecraft(env_for_codecraft)
@@ -262,6 +263,25 @@ def wire_application_environment(
         tool_profile = extend_tool_profile_for_integration(
             tool_profile, resolved_integration
         )
+
+    skill_bundle_ids = (
+        tuple(env.skill_profile.enabled_bundles)
+        if env.skill_profile.enabled_bundles
+        else None
+    )
+    catalog_bootstrap = bootstrap_catalogs(
+        register_shipped=True,
+        skill_bundle_ids=skill_bundle_ids,
+        discover_entry_points=discover_plugins_enabled(),
+    )
+    assert_strict_tool_bootstrap_acceptable(env, catalog_bootstrap.tool_plugin_load_report)
+    assert_strict_skill_bootstrap_acceptable(env, catalog_bootstrap.skill_plugin_load_report)
+
+    skill_wiring = build_application_skill_wiring(
+        env.skill_profile,
+        catalog_bootstrap=catalog_bootstrap,
+    )
+
     validate_capability_dependencies_for_environment(
         env.model_copy(update={"tool_profile": tool_profile}),
         skill_registry=skill_wiring.registry,
@@ -368,6 +388,7 @@ def wire_application_environment(
 
     tool_wiring = build_application_tool_wiring(
         tool_profile,
+        catalog_bootstrap=catalog_bootstrap,
         integration_profile=resolved_integration,
         wiring_context=wiring_context,
         vectorstore_manager=rag_stack.vectorstore_manager
@@ -469,6 +490,8 @@ def wire_application_environment(
         memory_report=memory_wiring.memory_store_plugin_load_report,
         context_report=context_bootstrap.load_report,
         security_report=security_bootstrap.load_report,
+        tools_report=catalog_bootstrap.tool_plugin_load_report,
+        skills_report=catalog_bootstrap.skill_plugin_load_report,
         policy_bundle=policy_bundle,
     )
 

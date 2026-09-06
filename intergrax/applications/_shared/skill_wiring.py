@@ -6,8 +6,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.core.catalog_bootstrap import CatalogBootstrapResult, bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.skills.registry import SkillProfile, SkillRegistry, build_registry_from_profile
 
 
@@ -17,13 +20,48 @@ class ApplicationSkillWiring:
     registry: SkillRegistry
 
 
-def build_application_skill_wiring(profile: SkillProfile) -> ApplicationSkillWiring:
+class SkillCatalogBootstrapError(ValueError):
+    """Raised when STRICT skill plugin bootstrap evidence is not acceptable."""
+
+
+def skill_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
+    errors: list[str] = []
+    for item in report.failed:
+        errors.append(f"skill plugin load failed: {item.spec.name}: {item.error}")
+    for item in report.rejected:
+        if item.fail_closed:
+            errors.append(
+                "skill plugin admission rejected: "
+                f"{item.spec.name}: {item.reason_code.value}",
+            )
+    if not errors:
+        errors.append("skill plugin bootstrap admission is not acceptable")
+    return tuple(errors)
+
+
+def assert_strict_skill_bootstrap_acceptable(
+    env: ApplicationEnvironmentProfile,
+    report: DomainPluginLoadReport,
+) -> None:
+    if env.execution_mode is not ExecutionMode.STRICT:
+        return
+    if report.critical_bootstrap_acceptable:
+        return
+    raise SkillCatalogBootstrapError("; ".join(skill_plugin_bootstrap_errors(report)))
+
+
+def build_application_skill_wiring(
+    profile: SkillProfile,
+    *,
+    catalog_bootstrap: CatalogBootstrapResult | None = None,
+) -> ApplicationSkillWiring:
     skill_bundle_ids = tuple(profile.enabled_bundles) if profile.enabled_bundles else None
-    bootstrap_catalogs(
-        register_shipped=True,
-        skill_bundle_ids=skill_bundle_ids,
-        discover_entry_points=discover_plugins_enabled(),
-    )
+    if catalog_bootstrap is None:
+        bootstrap_catalogs(
+            register_shipped=True,
+            skill_bundle_ids=skill_bundle_ids,
+            discover_entry_points=discover_plugins_enabled(),
+        )
     registry = build_registry_from_profile(profile)
     return ApplicationSkillWiring(profile=profile, registry=registry)
 

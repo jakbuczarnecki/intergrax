@@ -40,7 +40,7 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 
 **B. Existing reusable implementation.** Platform Plugins (packaging, discovery primitives, trust/qualification vocabulary), Agent Distribution discovery/acquisition (AC-4), Tool selection layers, SkillResolver, domain registries, `wire_application_environment()` Tier-3 composition, AW-7A policy adapters (in progress).
 
-**C. Missing / planned.** Federated Capability Catalog read model across Agent + Skill + Tool, cross-domain ranking utilities, Tools/Skills typed bootstrap evidence in application evidence aggregates, private enterprise catalog sources for Tool/Skill, third-party isolation beyond trusted in-process, monetization/metering product surfaces.
+**C. Missing / planned.** Federated Capability Catalog read model across Agent + Skill + Tool, cross-domain ranking utilities, private enterprise catalog sources for Tool/Skill, third-party isolation beyond trusted in-process, monetization/metering product surfaces.
 
 **D. Future product surfaces.** Public/private Marketplace is a **product layer above** federated discovery — presentation, publisher metadata, pricing metadata, availability — not runtime or lifecycle authority.
 
@@ -543,7 +543,9 @@ evidence ≠ runtime source of truth
 
 Evidence supports audit and governance; registries and `RuntimeRevision` remain execution truth.
 
-**Roadmap requirement:** typed Tools and Skills bootstrap evidence aggregated into application evidence (alongside Security, Policy, Context, Memory today) — evidence only, not registry authority. See [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) observability chain.
+**Bootstrap evidence (Stage 10):** Tool/Skill package discovery → domain admission → runtime/domain wiring → immutable `DomainPluginLoadReport` → `ApplicationPlatformPluginEvidence`. Evidence describes the canonical bootstrap pass only; it is **not** registry authority, lifecycle authority, or production qualification. See [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) observability chain.
+
+**Roadmap requirement:** typed Tools and Skills bootstrap evidence aggregated into application evidence (alongside Security, Policy, Context, Memory) — **implemented** in Stage 10; evidence only, not registry authority.
 
 ---
 
@@ -660,7 +662,7 @@ UniversalCapabilityEngine
 | Cross-domain Capability Catalog federation | Planned |
 | Cross-domain ranking shared utilities | Planned (only if reuse proven) |
 | Skill version pinning | **Implemented** — Skill domain + discovery projection (Stage 6) |
-| Tools/Skills typed bootstrap evidence | Planned |
+| Tools/Skills typed bootstrap evidence | **Implemented** — Stage 10 `DomainPluginLoadReport` on `ApplicationPlatformPluginEvidence` |
 | Private enterprise catalog for Tool/Skill | Planned |
 | Third-party isolation beyond in-process | Future |
 | Monetization / metering consumer | Future |

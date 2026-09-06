@@ -149,7 +149,7 @@ flowchart TB
   BC --> E[ApplicationPlatformPluginEvidence]
 ```
 
-*Interpretation:* one composition entry coordinates domain wiring; domains are not bootstrapped identically; evidence aggregates reference domains (Security, Policy, Context, Memory) today.
+*Interpretation:* one composition entry coordinates domain wiring; domains are not bootstrapped identically; evidence aggregates reference domains (Security, Policy, Context, Memory, Tools, Skills) today.
 
 **Application discovery contract (distinct from plugin discovery):** an Intergrax application is a direct directory under `applications/` containing `manifest.py`. `manifest.py` → `ApplicationEnvironmentProfile` → `wire_application_environment()` → domain wiring → `ApplicationPlatformPluginEvidence`. Do not name applications with a `_application` suffix as a platform convention.
 
@@ -184,7 +184,7 @@ flowchart LR
   AP --> OP[Operator / audit]
 ```
 
-Minimum per-domain report fields: `accepted`, `rejected`, `failed`, `critical_bootstrap_acceptable`. Tier-3 `ApplicationPlatformPluginEvidence` aggregates reference domains (Security, Policy, Context, Memory). Tools, RAG, and Vendor Knowledge typed load reports in that aggregate are **future maturity** - do not assume them today.
+Minimum per-domain report fields: `accepted`, `rejected`, `failed`, `critical_bootstrap_acceptable`. Tier-3 `ApplicationPlatformPluginEvidence` aggregates reference domains (Security, Policy, Context, Memory, Tools, Skills). RAG and Vendor Knowledge typed load reports in that aggregate are **future maturity** - do not assume them today.
 
 ### System proof chain (D13)
 
@@ -205,7 +205,7 @@ flowchart TB
 | Proof | Path | What it establishes |
 |-------|------|---------------------|
 | Contract suite | `tests/contract/core/plugins/test_platform_plugin_contract.py` | Shared coordination contracts and admission vocabulary |
-| Cross-flow | `tests/integration/platform_plugins/test_plugin_engine_cross_flow.py` | Tier-3 host wiring across Security, Policy, Context, Memory |
+| Cross-flow | `tests/integration/platform_plugins/test_plugin_engine_cross_flow.py` | Tier-3 host wiring across Security, Policy, Context, Memory, Tools, Skills |
 | Tool EP | `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` | External wheel + host-embedded Tool discovery/registration/qualification |
 | Memory | `tests/unit/memory/test_memory_store_resolver.py::test_fixture_ep_discovery_materializes_external_stores` | Classified EP discovery → resolver materialization |
 
@@ -506,7 +506,7 @@ Runtime execution always flows through **domain contracts and host composition**
 
 **Rule:** The Platform Plugin layer **must not bypass** domain validation, policy, or security gates.
 
-**Tier-3 adoption (APP-ADOPTION-1 / APP-ADOPTION-1A):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence` (Security, Policy, Context, Memory). Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only - not `PRODUCTION_QUALIFIED` (package gate 10 remains separate). Domain-specific diagrams: [Policy](../technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md#9-registration--discovery) · [Security](../technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md#9-registration--discovery) · [Memory](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md#9-registration-and-discovery-critical) · [Context](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md#9-registration-and-discovery) · [Tools](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#16-dual-mode-developer-quickstarts-platform-plugin-8) · [Vendor Knowledge](../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md#1-purpose-and-extension-model) · [RuntimePlugin](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#8-do-not-confuse-with-nexus-runtime-plugins).
+**Tier-3 adoption (APP-ADOPTION-1 / APP-ADOPTION-1A):** `wire_application_environment()` collects per-domain `DomainPluginLoadReport` evidence from the same domain bootstrap pass into `ApplicationPlatformPluginEvidence` on `ApplicationEnvironmentWiring.platform_plugin_evidence` (Security, Policy, Context, Memory, Tools, Skills). Applications consume resolved capabilities and this bootstrap snapshot; they **must not** run duplicate discovery or maintain a global installed-plugin inventory. Evidence is discovery/admission only - not `PRODUCTION_QUALIFIED` (package gate 10 remains separate). Domain-specific diagrams: [Policy](../technical/guides/POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md#9-registration--discovery) · [Security](../technical/guides/SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md#9-registration--discovery) · [Memory](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md#9-registration-and-discovery-critical) · [Context](../technical/guides/CONTEXT_PLUGIN_AUTHOR_GUIDE.md#9-registration-and-discovery) · [Tools](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#16-dual-mode-developer-quickstarts-platform-plugin-8) · [Vendor Knowledge](../technical/guides/VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md#1-purpose-and-extension-model) · [RuntimePlugin](../technical/guides/EXTENSION_AUTHOR_GUIDE.md#8-do-not-confuse-with-nexus-runtime-plugins).
 
 ---
 
@@ -1117,7 +1117,7 @@ Accepted [`PLATFORM_EXTENSIBILITY`](../../audit_results/2026-08-18/PLATFORM_EXTE
 | `examples/platform_plugins/intergrax_reference_tool_plugin/` | PLUGIN-8 external wheel reference package |
 | `examples/platform_plugins/local_embedded_tool_extension/` | PLUGIN-8 host-embedded Tools example |
 | `tests/contract/core/plugins/test_platform_plugin_contract.py` | Platform Plugin contract suite |
-| `tests/integration/platform_plugins/test_plugin_engine_cross_flow.py` | Tier-3 cross-flow host proof (Security, Policy, Context, Memory) |
+| `tests/integration/platform_plugins/test_plugin_engine_cross_flow.py` | Tier-3 cross-flow host proof (Security, Policy, Context, Memory, Tools, Skills) |
 | `tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py` | Tool external EP + host-embedded discovery/registration/qualification proof |
 | `tests/unit/memory/test_memory_store_resolver.py::test_fixture_ep_discovery_materializes_external_stores` | Memory classified EP → materialized store proof |
 | `intergrax/core/plugins/discovery.py` | Unified EP loader (partial adoption) |
