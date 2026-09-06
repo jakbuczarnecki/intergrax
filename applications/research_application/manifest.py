@@ -7,11 +7,11 @@ from __future__ import annotations
 from intergrax.applications._shared.agent_certification_wiring import apply_roster_agent_governance
 from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
 from research.research_agent import ResearchAgent
 from research.summary_agent import SummaryAgent
+from research_application.host.environment_profile import build_research_environment_profile
 
 
 _RESEARCH_AGENTS = [
@@ -28,16 +28,8 @@ _RESEARCH_AGENTS = [
 ]
 
 
-def _research_environment() -> ApplicationEnvironmentProfile:
-    base = (
-        ApplicationEnvironmentProfile.product_defaults(
-            profile_id="research.product",
-            skill_bundles=["research"],
-        )
-        .model_copy(update={"integration_profile": IntegrationProfile.research_product()})
-        .with_harness_memory()
-        .with_reference_host_platform_defaults()
-    )
+def _research_environment():
+    base = build_research_environment_profile()
     return apply_roster_agent_governance(base, agents=_RESEARCH_AGENTS, app_id="research")
 
 

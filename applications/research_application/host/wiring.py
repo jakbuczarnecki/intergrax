@@ -4,29 +4,17 @@ from __future__ import annotations
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.wiring import build_manifest_development_registry
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
-from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
+from research_application.host.environment_profile import build_research_environment_profile
 from research_application.host.settings import ResearchBackendSettings
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
-
-def build_research_environment_profile(
-    settings: ResearchBackendSettings | None = None,
-) -> ApplicationEnvironmentProfile:
-    """Product environment for research host (DX-1.4)."""
-    settings = settings or ResearchBackendSettings.from_env()
-    manifest = RESEARCH_APPLICATION_MANIFEST
-    enabled_tools = list(settings.enabled_tool_ids)
-    for tool_id in RESEARCH_LITERATURE_SCAN.tool_ids:
-        if tool_id not in enabled_tools:
-            enabled_tools.append(tool_id)
-    return ApplicationEnvironmentProfile.product_defaults(
-        profile_id="research.product",
-        skill_bundles=["research"],
-        tool_ids=enabled_tools,
-    ).model_copy(update={"integration_profile": manifest.integration_profile}).with_harness_memory().with_reference_host_platform_defaults()
+__all__ = [
+    "build_research_environment_profile",
+    "build_research_registry",
+    "build_research_registry_for_host",
+]
 
 
 def build_research_registry(
