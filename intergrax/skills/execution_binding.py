@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import threading
-from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -15,7 +14,6 @@ from intergrax.skills.contribution_provenance import (
     SkillContributionProvenance,
     build_skill_contribution_provenance,
 )
-from intergrax.skills.core.contracts import SkillManifest
 from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -186,24 +184,6 @@ def resolve_bound_skill_pack(
     return resolve_skill_pack_from_profile(skill_profile, skill_registry=skill_registry)
 
 
-def binding_from_pack(
-    *,
-    tenant_id: str,
-    execution_id: ExecutionId,
-    skill_profile: SkillProfile,
-    pack: ResolvedSkillPack,
-    manifests: Mapping[str, SkillManifest],
-) -> SkillExecutionBinding:
-    """Construct binding evidence without registry reads (tests / explicit admission)."""
-    return SkillExecutionBinding(
-        tenant_id=tenant_id.strip(),
-        execution_id=execution_id,
-        configured_skill_ids=tuple(enabled_skill_ids_for_profile(skill_profile)),
-        resolved_pack=pack,
-        contribution_provenance=build_skill_contribution_provenance(pack, manifests),
-    )
-
-
 def binding_from_composition(
     *,
     tenant_id: str,
@@ -212,10 +192,13 @@ def binding_from_composition(
     composition: ResolvedSkillComposition,
 ) -> SkillExecutionBinding:
     """Construct binding from one coherent resolution observation."""
-    return binding_from_pack(
-        tenant_id=tenant_id,
+    return SkillExecutionBinding(
+        tenant_id=tenant_id.strip(),
         execution_id=execution_id,
-        skill_profile=skill_profile,
-        pack=composition.pack,
-        manifests=composition.manifest_by_skill_id(),
+        configured_skill_ids=tuple(enabled_skill_ids_for_profile(skill_profile)),
+        resolved_pack=composition.pack,
+        contribution_provenance=build_skill_contribution_provenance(
+            composition.pack,
+            composition.manifest_by_skill_id(),
+        ),
     )

@@ -70,12 +70,12 @@ def build_skill_contribution_provenance(
 ) -> tuple[SkillContributionProvenance, ...]:
     """Project per-contribution lineage from bound pack evidence and manifests."""
     entries: list[SkillContributionProvenance] = []
-    ref_by_skill_id = {ref.skill_id: ref for ref in pack.resolved_skills}
-    for skill_id in (ref.skill_id for ref in pack.resolved_skills):
-        manifest = manifests.get(skill_id)
+    for ref in pack.resolved_skills:
+        manifest = manifests.get(ref.skill_id)
         if manifest is None:
-            continue
-        ref = ref_by_skill_id[skill_id]
+            raise SkillResolutionError(
+                f"missing observed manifest for resolved skill: {ref.qualified_id}",
+            )
         _assert_manifest_matches_ref(ref, manifest)
         for tool_id in manifest.tool_ids:
             normalized = tool_id.strip()

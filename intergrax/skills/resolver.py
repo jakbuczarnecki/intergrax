@@ -42,12 +42,41 @@ class ResolvedSkillPack:
         return tuple(sorted(merged))
 
 
+def _validate_resolved_skill_composition(
+    pack: ResolvedSkillPack,
+    observed_manifests: tuple[SkillManifest, ...],
+) -> None:
+    manifest_by_skill_id: dict[str, SkillManifest] = {}
+    for manifest in observed_manifests:
+        skill_id = manifest.skill_id
+        if skill_id in manifest_by_skill_id:
+            raise SkillResolutionError(
+                f"duplicate observed manifest for skill_id: {skill_id}",
+            )
+        manifest_by_skill_id[skill_id] = manifest
+
+    for ref in pack.resolved_skills:
+        manifest = manifest_by_skill_id.get(ref.skill_id)
+        if manifest is None:
+            raise SkillResolutionError(
+                f"missing observed manifest for resolved skill: {ref.qualified_id}",
+            )
+        if manifest.version != ref.version:
+            raise SkillResolutionError(
+                f"manifest version mismatch for {ref.qualified_id}: "
+                f"observed {manifest.skill_id}@{manifest.version}",
+            )
+
+
 @dataclass(frozen=True, slots=True)
 class ResolvedSkillComposition:
     """Coherent resolution observation: pack plus manifests observed during traversal."""
 
     pack: ResolvedSkillPack
     observed_manifests: tuple[SkillManifest, ...]
+
+    def __post_init__(self) -> None:
+        _validate_resolved_skill_composition(self.pack, self.observed_manifests)
 
     def manifest_by_skill_id(self) -> dict[str, SkillManifest]:
         return {manifest.skill_id: manifest for manifest in self.observed_manifests}

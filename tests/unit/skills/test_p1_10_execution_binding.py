@@ -24,7 +24,6 @@ from intergrax.skills.execution_binding import (
     InMemorySkillExecutionPinningStore,
     bind_resolved_skill_pack,
     binding_from_composition,
-    binding_from_pack,
     resolve_bound_skill_pack,
 )
 from intergrax.skills.providers.harness.manifests import (
@@ -35,7 +34,11 @@ from intergrax.skills.providers.harness.manifests import (
 from intergrax.skills.registry import SkillProfile, build_registry_from_profile
 from intergrax.skills.registry.bootstrap import register_default_skills, reset_default_skills_for_tests
 from intergrax.skills.registry.runtime import SkillRegistry
-from intergrax.skills.resolver import SkillResolutionError, SkillResolver
+from intergrax.skills.resolver import (
+    ResolvedSkillComposition,
+    SkillResolutionError,
+    SkillResolver,
+)
 from intergrax.skills.snapshot_digest import compute_resolved_skill_pack_digest
 from intergrax.skills.version_validation import validate_skill_version
 from intergrax.contracts.execution_identity import (
@@ -467,6 +470,49 @@ def test_transitive_replacement_race_coherent_provenance() -> None:
         contribution_kind=SkillContributionKind.TOOL_REQUIREMENT,
         contribution_id="tool.new",
     ) == ()
+
+
+def test_composition_rejects_missing_manifest_for_ref() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    with pytest.raises(SkillResolutionError, match="missing observed manifest"):
+        ResolvedSkillComposition(
+            pack=composition.pack,
+            observed_manifests=(),
+        )
+
+
+def test_composition_rejects_version_mismatch() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    with pytest.raises(SkillResolutionError, match="manifest version mismatch"):
+        ResolvedSkillComposition(
+            pack=composition.pack,
+            observed_manifests=(_manifest("a.pack", "2.0.0"),),
+        )
+
+
+def test_composition_rejects_duplicate_manifest_for_same_skill_id() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0"))
+    registry.register(_manifest("b.pack", "1.0.0"))
+    composition = SkillResolver(registry).resolve_composition(["a.pack", "b.pack"])
+    duplicate = _manifest("a.pack", "1.0.0")
+    with pytest.raises(SkillResolutionError, match="duplicate observed manifest"):
+        ResolvedSkillComposition(
+            pack=composition.pack,
+            observed_manifests=(duplicate, duplicate),
+        )
+
+
+def test_provenance_rejects_missing_manifest() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.x",)))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    with pytest.raises(SkillResolutionError, match="missing observed manifest"):
+        build_skill_contribution_provenance(composition.pack, {})
 
 
 def test_provenance_rejects_version_mismatch() -> None:
