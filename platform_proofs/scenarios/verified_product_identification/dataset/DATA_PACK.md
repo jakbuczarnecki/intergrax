@@ -182,6 +182,25 @@ uv run --group platform-proofs-vpi-dataset python `
 
 Partial builds do not emit READY manifest, `shards.json`, or `SHA256SUMS`.
 
+### Corruption and recovery guarantees
+
+| State class | Resume behavior |
+|---|---|
+| NON-READY (`PENDING`…`VALIDATING`) | Discard incomplete outputs for the current shard; rebuild from shard start |
+| READY | Validate integrity metadata + on-disk artifacts; skip when valid |
+| Corrupt READY | Fail closed (`VpiDataPackReadyShardCorruptionError`); **no** silent rebuild or repair |
+
+Representative fail-closed conditions:
+
+- missing or SHA-mismatched READY shard file
+- `source_ref_set_sha256` mismatch between metadata and Parquet contents
+- relational/embedding pair identity mismatch (two valid files with different ref sets)
+- malformed or unsupported `state/build-state.json`
+- `content_identity`, `shard_size`, or `expected_record_count` mismatch on resume
+
+Qualification: `tests/unit/.../test_vpi_data_pack_resume_corruption.py`; real CUDA runner:
+`platform_proofs/scenarios/verified_product_identification/dataset/qualification/run_cuda_resume_corruption_qualification.py`.
+
 ## Compatibility rejection
 
 `validate_data_pack_compatibility(...)` rejects before storage ingest:
