@@ -566,7 +566,7 @@ Operational read model only — does not grant capability, activate providers, o
 
 ## P1.6 Atomic activation lifecycle
 
-**Status: CLOSED**
+**Status: CLOSED (P1.6 + P1.6A)**
 
 Canonical scoped active revision pointer with CAS semantics:
 
@@ -589,6 +589,7 @@ Delivered:
 - `KvActiveEffectiveProfileRevisionStore` — durable-capable KV adapter (production path when KV wired)
 - Host admission resolves active revision atomically; execution pinning unchanged (P1.2)
 - Runtime inspection `inspect_active_revision(scope)` — read-only active exposure
+- **P1.6A:** canonical `build_harness_host_runtime()` prepare-before-publish ordering — materialize → prepare/wire/validate → CAS activate; materialized inactive candidates remain valid historical revisions; CAS is sole publication boundary
 
 Durability statement:
 

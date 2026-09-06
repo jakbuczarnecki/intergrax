@@ -254,17 +254,6 @@ def build_harness_host_runtime(
         scope=revision_scope,
         store=profile_persistence.revision_store,
     )
-    activation_service = EffectiveProfileActivationService(
-        EffectiveProfileActivationDependencies(
-            revision_store=profile_persistence.revision_store,
-            active_store=profile_persistence.active_store,
-        ),
-    )
-    activate_materialized_revision(
-        activation_service,
-        scope=revision_scope,
-        candidate_revision_id=effective_profile_revision.revision_id,
-    )
 
     env_wiring = wire_application_environment(
         resolved_manifest,
@@ -416,6 +405,19 @@ def build_harness_host_runtime(
     control_plane_governance = build_harness_control_plane_governance(
         effective_environment,
         mutation_authorization_boundary=mutation_authorization_boundary,
+    )
+    # P1.6A: publication boundary — CAS only after required host preparation succeeds.
+    # wire_application_environment already performed P1.3 dependency validation.
+    activation_service = EffectiveProfileActivationService(
+        EffectiveProfileActivationDependencies(
+            revision_store=profile_persistence.revision_store,
+            active_store=profile_persistence.active_store,
+        ),
+    )
+    activate_materialized_revision(
+        activation_service,
+        scope=revision_scope,
+        candidate_revision_id=effective_profile_revision.revision_id,
     )
     execution = build_environment_host_task_execution(
         nexus_loop,
