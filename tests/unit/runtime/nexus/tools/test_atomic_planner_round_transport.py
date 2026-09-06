@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DS-E2E-12 — deterministic tests for atomic planner round transport PoC."""
+"""DS-E2E-12 — deterministic tests for discriminated atomic planner round transport."""
 
 from __future__ import annotations
 
@@ -13,19 +13,22 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
     AtomicPlannerRoundError,
-    AtomicPlannerRoundSchemaVariant,
     atomic_round_schema_byte_size,
     build_atomic_planner_round_parameters_schema,
     build_atomic_planner_round_schema,
     compute_atomic_planner_round_schema_hash,
     extract_business_tool_schema_entries,
     materialize_atomic_round_to_tool_plan,
+    mint_materialized_tool_calls_from_plan,
     parse_atomic_planner_round_call,
     resolve_atomic_planner_round_calls,
 )
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerProtocolConfig,
     NativePlannerProtocolMode,
+)
+from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
+    validate_atomic_tool_plan_alignment,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
 from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
@@ -75,24 +78,18 @@ class _StubHandler:
         raise NotImplementedError
 
 
-def _registry() -> ToolRegistry:
+def _registry(*extra: tuple[str, type[BaseModel], type[BaseModel]]) -> ToolRegistry:
     registry = ToolRegistry()
-    registry.register(
-        tools_agent_make_contract("production.telemetry.read", _TelemetryIn, _TelemetryOut),
-        _StubHandler(),
+    defaults = (
+        ("production.telemetry.read", _TelemetryIn, _TelemetryOut),
+        ("production.staffing.attendance.read", _AttendanceIn, _AttendanceOut),
+        ("production.metrics.query", _MetricsIn, _MetricsOut),
     )
-    registry.register(
-        tools_agent_make_contract(
-            "production.staffing.attendance.read",
-            _AttendanceIn,
-            _AttendanceOut,
-        ),
-        _StubHandler(),
-    )
-    registry.register(
-        tools_agent_make_contract("production.metrics.query", _MetricsIn, _MetricsOut),
-        _StubHandler(),
-    )
+    for tool_id, input_model, output_model in (*defaults, *extra):
+        registry.register(
+            tools_agent_make_contract(tool_id, input_model, output_model),
+            _StubHandler(),
+        )
     return registry
 
 
@@ -106,7 +103,7 @@ def _round_call(payload: dict[str, object], *, call_id: str = "round-1") -> LLMT
 
 def _protocol_with_prior() -> NativePlannerProtocolConfig:
     return NativePlannerProtocolConfig(
-        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+        mode=NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
         available_evidence_references=("obs.ref.a",),
         _reference_index_items=(("obs.ref.a", "obs.ref.a"),),
     )
@@ -119,31 +116,9 @@ def test_extract_business_tool_schema_entries_fail_closed_on_malformed() -> None
         )
 
 
-def test_variant_a_schema_has_generic_arguments() -> None:
+def test_discriminated_schema_uses_one_of_per_tool() -> None:
     schemas = poc_business_tool_schemas()
-    params = build_atomic_planner_round_parameters_schema(
-        schemas,
-        variant=AtomicPlannerRoundSchemaVariant.GENERIC_ENVELOPE,
-    )
-    properties = params["properties"]
-    assert isinstance(properties, dict)
-    actions = properties["actions"]
-    assert isinstance(actions, dict)
-    items = actions["items"]
-    assert isinstance(items, dict)
-    properties = items["properties"]
-    assert isinstance(properties, dict)
-    tool_id_schema = properties["tool_id"]
-    assert isinstance(tool_id_schema, dict)
-    assert "enum" in tool_id_schema
-
-
-def test_variant_b_schema_uses_one_of_per_tool() -> None:
-    schemas = poc_business_tool_schemas()
-    params = build_atomic_planner_round_parameters_schema(
-        schemas,
-        variant=AtomicPlannerRoundSchemaVariant.DISCRIMINATED_ACTIONS,
-    )
+    params = build_atomic_planner_round_parameters_schema(schemas)
     properties = params["properties"]
     assert isinstance(properties, dict)
     actions = properties["actions"]
@@ -155,19 +130,44 @@ def test_variant_b_schema_uses_one_of_per_tool() -> None:
     assert len(one_of) == 3
 
 
-def test_variant_b_schema_larger_than_variant_a() -> None:
+@pytest.mark.parametrize("tool_count", [1, 3, 10])
+def test_schema_branch_count_scales_linearly(tool_count: int) -> None:
+    schemas: list[dict[str, object]] = []
+    for index in range(tool_count):
+        tool_id = f"production.probe.{index:02d}.read"
+        schemas.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": tool_id,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"value": {"type": "string"}},
+                        "required": ["value"],
+                        "additionalProperties": False,
+                    },
+                },
+            }
+        )
+    params = build_atomic_planner_round_parameters_schema(schemas)
+    actions = params["properties"]["actions"]
+    assert isinstance(actions, dict)
+    items = actions["items"]
+    assert isinstance(items, dict)
+    one_of = items["oneOf"]
+    assert isinstance(one_of, list)
+    assert len(one_of) == tool_count
+
+
+def test_schema_ordering_and_hash_are_stable() -> None:
     schemas = poc_business_tool_schemas()
-    schema_a = build_atomic_planner_round_schema(
-        schemas,
-        variant=AtomicPlannerRoundSchemaVariant.GENERIC_ENVELOPE,
-        strict_provider_schema=False,
-    )
-    schema_b = build_atomic_planner_round_schema(
-        schemas,
-        variant=AtomicPlannerRoundSchemaVariant.DISCRIMINATED_ACTIONS,
-        strict_provider_schema=False,
-    )
-    assert atomic_round_schema_byte_size(schema_b) > atomic_round_schema_byte_size(schema_a)
+    first_schema = build_atomic_planner_round_schema(schemas)
+    second_schema = build_atomic_planner_round_schema(list(reversed(schemas)))
+    assert first_schema == second_schema
+    first_hash = compute_atomic_planner_round_schema_hash(first_schema)
+    second_hash = compute_atomic_planner_round_schema_hash(second_schema)
+    assert first_hash == second_hash
+    assert atomic_round_schema_byte_size(first_schema) > 0
 
 
 def test_parse_and_materialize_single_action() -> None:
@@ -187,6 +187,7 @@ def test_parse_and_materialize_single_action() -> None:
     plan = materialize_atomic_round_to_tool_plan(decision, _registry())
     assert len(plan.calls) == 1
     assert plan.calls[0].tool_id == "production.telemetry.read"
+    validate_atomic_tool_plan_alignment(decision.actions, plan)
 
 
 def test_materialize_multi_action_preserves_order() -> None:
@@ -297,13 +298,42 @@ def test_resolve_requires_action_context_with_prior_evidence() -> None:
         )
 
 
+def test_resolve_rejects_empty_actions() -> None:
+    with pytest.raises(AtomicPlannerRoundError, match="empty actions"):
+        resolve_atomic_planner_round_calls(
+            (_round_call({"actions": []}),),
+            protocol_config=_protocol_with_prior(),
+            admitted_tool_ids=frozenset({"production.telemetry.read"}),
+        )
+
+
+def test_resolve_rejects_multiple_planner_round_calls() -> None:
+    with pytest.raises(AtomicPlannerRoundError, match="cardinality"):
+        resolve_atomic_planner_round_calls(
+            (
+                _round_call({"actions": [{"tool_id": "production.telemetry.read", "arguments": {}}]}, call_id="a"),
+                _round_call({"actions": [{"tool_id": "production.telemetry.read", "arguments": {}}]}, call_id="b"),
+            ),
+            protocol_config=_protocol_with_prior(),
+            admitted_tool_ids=frozenset({"production.telemetry.read"}),
+        )
+
+
 def test_atomic_round_schema_hash_is_deterministic() -> None:
     schemas = poc_business_tool_schemas()
-    round_schema = build_atomic_planner_round_schema(
-        schemas,
-        variant=AtomicPlannerRoundSchemaVariant.GENERIC_ENVELOPE,
-        strict_provider_schema=False,
-    )
+    round_schema = build_atomic_planner_round_schema(schemas)
     first = compute_atomic_planner_round_schema_hash(round_schema)
     second = compute_atomic_planner_round_schema_hash(round_schema)
     assert first == second
+
+
+def test_mint_materialized_tool_calls_assigns_identities() -> None:
+    payload = {
+        "actions": [{"tool_id": "production.telemetry.read", "arguments": {}}],
+    }
+    decision = parse_atomic_planner_round_call(_round_call(payload))
+    plan = materialize_atomic_round_to_tool_plan(decision, _registry())
+    materialized = mint_materialized_tool_calls_from_plan(plan)
+    assert len(materialized) == 1
+    assert materialized[0].id.startswith("toolcall-")
+    assert materialized[0].name == "production.telemetry.read"

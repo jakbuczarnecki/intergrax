@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DS-E2E-12 — live atomic planner round transport qualification (Variants A/B)."""
+"""DS-E2E-12 — live discriminated atomic planner round transport qualification."""
 
 from __future__ import annotations
 
@@ -15,13 +15,15 @@ from pydantic import BaseModel, Field
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.native_tool_choice import (
+    NativeForcedFunctionChoice,
+    project_native_tool_choice_for_provider,
+)
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
-    AtomicPlannerRoundSchemaVariant,
     build_atomic_planner_round_schema,
     extract_business_tool_schema_entries,
     materialize_atomic_round_to_tool_plan,
-    planner_round_tool_choice_for_provider,
     resolve_atomic_planner_round_calls,
 )
 from intergrax.runtime.nexus.tools.investigation_proof import format_investigation_follow_up_context
@@ -48,7 +50,6 @@ class AtomicTransportOutcome(Enum):
 
 @dataclass(frozen=True, slots=True)
 class AtomicTransportCaptureRecord:
-    variant: str
     model: str | None
     provider: str | None
     outcome: str
@@ -64,7 +65,6 @@ class AtomicTransportCaptureRecord:
 @dataclass(frozen=True, slots=True)
 class AtomicTransportQualificationResult:
     provider: str
-    variant: AtomicPlannerRoundSchemaVariant
     model: str | None
     required_attempts: int
     successful_attempts: int
@@ -114,7 +114,7 @@ def live_atomic_transport_enabled() -> bool:
 
 
 def poc_business_tool_schemas() -> list[dict[str, object]]:
-    """Three materially different admitted business schemas for PoC."""
+    """Three materially different admitted business schemas for qualification."""
     return [
         {
             "type": "function",
@@ -245,7 +245,6 @@ def _follow_up_messages(
 def _capture_from_response(
     response: LLMAdapterResponse | None,
     *,
-    variant: AtomicPlannerRoundSchemaVariant,
     outcome: AtomicTransportOutcome,
     action_count: int = 0,
     basis_refs: tuple[str, ...] = (),
@@ -257,7 +256,6 @@ def _capture_from_response(
     if response is not None:
         atomic_present = any(call.name == PLANNER_ROUND_TOOL_ID for call in response.tool_calls)
     return AtomicTransportCaptureRecord(
-        variant=variant.value,
         model=response.model if response is not None else None,
         provider=response.provider if response is not None else None,
         outcome=outcome.value,
@@ -274,7 +272,6 @@ def _capture_from_response(
 def run_one_atomic_transport_attempt(
     adapter: LLMAdapter,
     *,
-    variant: AtomicPlannerRoundSchemaVariant,
     provider: str,
     available_evidence_references: Sequence[str] = ("observation.production.telemetry.read.prior",),
     require_multi_action: bool = False,
@@ -284,8 +281,11 @@ def run_one_atomic_transport_attempt(
         require_multi_action=require_multi_action,
     )
     business_schemas = poc_business_tool_schemas()
-    round_schema = build_atomic_planner_round_schema(business_schemas, variant=variant)
-    tool_choice = planner_round_tool_choice_for_provider(provider)
+    round_schema = build_atomic_planner_round_schema(business_schemas)
+    tool_choice = project_native_tool_choice_for_provider(
+        NativeForcedFunctionChoice(function_name=PLANNER_ROUND_TOOL_ID),
+        provider=provider,
+    )
     try:
         response = adapter.generate_with_tools(
             messages,
@@ -299,13 +299,11 @@ def run_one_atomic_transport_attempt(
         if "schema" in message.lower() or "tool" in message.lower():
             return _capture_from_response(
                 None,
-                variant=variant,
                 outcome=AtomicTransportOutcome.SCHEMA_REJECTED,
                 provider_error=message,
             )
         return _capture_from_response(
             None,
-            variant=variant,
             outcome=AtomicTransportOutcome.PROVIDER_ERROR,
             provider_error=message,
         )
@@ -313,7 +311,6 @@ def run_one_atomic_transport_attempt(
     if not any(call.name == PLANNER_ROUND_TOOL_ID for call in response.tool_calls):
         return _capture_from_response(
             response,
-            variant=variant,
             outcome=AtomicTransportOutcome.NO_ATOMIC_CALL,
         )
 
@@ -321,7 +318,7 @@ def run_one_atomic_transport_attempt(
         reference: reference for reference in available_evidence_references
     }
     protocol_config = NativePlannerProtocolConfig(
-        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+        mode=NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
         available_evidence_references=tuple(reference_index),
         _reference_index_items=tuple(sorted(reference_index.items())),
     )
@@ -339,7 +336,6 @@ def run_one_atomic_transport_attempt(
     except Exception as exc:
         return _capture_from_response(
             response,
-            variant=variant,
             outcome=AtomicTransportOutcome.VALIDATION_FAILED,
             provider_error=str(exc),
             action_count=len(response.tool_calls),
@@ -359,7 +355,6 @@ def run_one_atomic_transport_attempt(
     )
     return _capture_from_response(
         response,
-        variant=variant,
         outcome=AtomicTransportOutcome.SUCCESS if success else AtomicTransportOutcome.PARSE_FAILED,
         action_count=len(decision.actions),
         basis_refs=basis_refs,
@@ -372,7 +367,6 @@ def qualify_atomic_planner_transport(
     adapter: LLMAdapter,
     *,
     provider: str,
-    variant: AtomicPlannerRoundSchemaVariant,
     required_attempts: int = _REQUIRED_QWEN_ATTEMPTS,
     require_multi_action: bool = False,
 ) -> AtomicTransportQualificationResult:
@@ -381,7 +375,6 @@ def qualify_atomic_planner_transport(
     for _ in range(required_attempts):
         capture = run_one_atomic_transport_attempt(
             adapter,
-            variant=variant,
             provider=provider,
             require_multi_action=require_multi_action,
         )
@@ -390,7 +383,6 @@ def qualify_atomic_planner_transport(
             successes += 1
     return AtomicTransportQualificationResult(
         provider=provider,
-        variant=variant,
         model=captures[-1].model if captures else None,
         required_attempts=required_attempts,
         successful_attempts=successes,

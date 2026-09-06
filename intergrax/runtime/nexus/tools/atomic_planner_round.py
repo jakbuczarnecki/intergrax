@@ -1,14 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Atomic planner round transport PoC (DS-E2E-12).
-
-Architecture decision (PoC qualification):
-Sibling ``intergrax.planner.action_context`` + business tool calls: capability proven in
-isolated PoC, reliability rejected by full Qwen32 + GPT-4.1 controls. Do not invest in
-prompt-only sibling-call fixes.
+"""Discriminated atomic planner round transport (DS-E2E-12, ENG-6 certified).
 
 Reserved protocol id ``intergrax.planner.round`` is NOT a ToolContract, capability, or
-executable tool — exactly one provider-native function call represents one planner round.
+executable tool — exactly one provider-native function call represents one planner round
+with optional action context and one or more typed business actions.
 """
 
 from __future__ import annotations
@@ -17,17 +13,19 @@ import copy
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from enum import Enum
 from typing import TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.llm_adapters.providers._openai_schema import project_json_schema_for_openai_strict
+from intergrax.llm_adapters.contracts.tool_call import (
+    LLMToolCall,
+    finalize_accepted_tool_call_identities,
+)
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerActionContext,
     NativePlannerActionContextError,
     NativePlannerProtocolConfig,
+    parse_optional_planner_action_context_payload,
     validate_typed_planner_action_context,
 )
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
@@ -38,20 +36,7 @@ PLANNER_ROUND_TOOL_ID = "intergrax.planner.round"
 
 
 class AtomicPlannerRoundError(ValueError):
-    """Invalid atomic planner round transport (DS-E2E-12 PoC)."""
-
-
-class AtomicPlannerRoundSchemaVariant(Enum):
-    """Model-facing atomic envelope schema shape."""
-
-    GENERIC_ENVELOPE = "generic_envelope"
-    DISCRIMINATED_ACTIONS = "discriminated_actions"
-
-
-@dataclass(frozen=True, slots=True)
-class AtomicPlannerActionContext:
-    evidence_basis_references: tuple[str, ...]
-    purpose: str
+    """Invalid discriminated atomic planner round transport."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +47,7 @@ class AtomicPlannerAction:
 
 @dataclass(frozen=True, slots=True)
 class AtomicPlannerRoundDecision:
-    action_context: AtomicPlannerActionContext | None
+    action_context: NativePlannerActionContext | None
     actions: tuple[AtomicPlannerAction, ...]
 
 
@@ -83,36 +68,7 @@ class _OpenAIToolSchema(TypedDict):
     function: _OpenAIFunctionSchema
 
 
-class _ActionContextInput(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    evidence_basis_references: list[str] = Field(default_factory=list)
-    purpose: str
-
-    @field_validator("evidence_basis_references", mode="before")
-    @classmethod
-    def _coerce_basis_list(cls, value: object) -> list[str]:
-        if value is None:
-            return []
-        if not isinstance(value, list):
-            raise ValueError("evidence_basis_references must be an array of strings")
-        normalized: list[str] = []
-        for item in value:
-            if not isinstance(item, str):
-                raise ValueError("evidence_basis_references must contain only strings")
-            normalized.append(item)
-        return normalized
-
-    @field_validator("purpose")
-    @classmethod
-    def _non_empty_purpose(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("purpose must be non-empty")
-        return stripped
-
-
-class _GenericActionInput(BaseModel):
+class _DiscriminatedActionInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     tool_id: str
@@ -130,8 +86,8 @@ class _GenericActionInput(BaseModel):
 class _AtomicRoundInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    action_context: _ActionContextInput | None = None
-    actions: list[_GenericActionInput] = Field(default_factory=list)
+    action_context: dict[str, object] | None = None
+    actions: list[_DiscriminatedActionInput] = Field(default_factory=list)
 
 
 def extract_business_tool_schema_entries(
@@ -169,7 +125,7 @@ def extract_business_tool_schema_entries(
                 parameters=copy.deepcopy(dict(parameters)),
             )
         )
-    return tuple(entries)
+    return tuple(sorted(entries, key=lambda entry: entry.tool_id))
 
 
 def _action_context_property_schema() -> dict[str, object]:
@@ -187,30 +143,13 @@ def _action_context_property_schema() -> dict[str, object]:
     }
 
 
-def _build_variant_a_actions_schema(
-    admitted_tool_ids: Sequence[str],
-) -> dict[str, object]:
-    if not admitted_tool_ids:
-        raise AtomicPlannerRoundError("variant A requires at least one admitted business tool")
-    return {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "tool_id": {"type": "string", "enum": list(admitted_tool_ids)},
-                "arguments": {"type": "object"},
-            },
-            "required": ["tool_id", "arguments"],
-            "additionalProperties": False,
-        },
-    }
-
-
-def _build_variant_b_actions_schema(
+def _build_discriminated_actions_schema(
     entries: Sequence[_BusinessToolSchemaEntry],
 ) -> dict[str, object]:
     if not entries:
-        raise AtomicPlannerRoundError("variant B requires at least one admitted business tool")
+        raise AtomicPlannerRoundError(
+            "discriminated atomic round requires at least one admitted business tool"
+        )
     one_of: list[dict[str, object]] = []
     for entry in entries:
         one_of.append(
@@ -232,16 +171,10 @@ def _build_variant_b_actions_schema(
 
 def build_atomic_planner_round_parameters_schema(
     business_schemas: Sequence[Mapping[str, object]],
-    *,
-    variant: AtomicPlannerRoundSchemaVariant,
 ) -> dict[str, object]:
-    """Derive atomic round parameters from validated admitted business schemas."""
+    """Derive discriminated atomic round parameters from admitted business schemas."""
     entries = extract_business_tool_schema_entries(business_schemas)
-    admitted_tool_ids = tuple(entry.tool_id for entry in entries)
-    if variant == AtomicPlannerRoundSchemaVariant.GENERIC_ENVELOPE:
-        actions_schema = _build_variant_a_actions_schema(admitted_tool_ids)
-    else:
-        actions_schema = _build_variant_b_actions_schema(entries)
+    actions_schema = _build_discriminated_actions_schema(entries)
     return {
         "type": "object",
         "properties": {
@@ -255,23 +188,15 @@ def build_atomic_planner_round_parameters_schema(
 
 def build_atomic_planner_round_schema(
     business_schemas: Sequence[Mapping[str, object]],
-    *,
-    variant: AtomicPlannerRoundSchemaVariant,
-    strict_provider_schema: bool = True,
 ) -> _OpenAIToolSchema:
-    """Model-facing schema: single reserved ``intergrax.planner.round`` function."""
-    parameters = build_atomic_planner_round_parameters_schema(
-        business_schemas,
-        variant=variant,
-    )
-    if strict_provider_schema:
-        parameters = project_json_schema_for_openai_strict(parameters)
+    """Provider-neutral schema: single reserved ``intergrax.planner.round`` function."""
+    parameters = build_atomic_planner_round_parameters_schema(business_schemas)
     return {
         "type": "function",
         "function": {
             "name": PLANNER_ROUND_TOOL_ID,
             "description": (
-                "Declare one atomic planner round: optional evidence basis and purpose, "
+                "Declare one planner round: optional evidence basis and purpose, "
                 "plus one or more business tool actions to execute. Planning transport only — "
                 "not an executable business tool."
             ),
@@ -283,42 +208,8 @@ def build_atomic_planner_round_schema(
 def compute_atomic_planner_round_schema_hash(
     round_schema: Mapping[str, object],
 ) -> str:
-    """PoC fingerprint for the derived atomic wrapper (does not replace business hash)."""
+    """Fingerprint for the derived atomic wrapper (does not replace business hash)."""
     return compute_openai_tools_schema_hash([round_schema])
-
-
-def planner_round_tool_choice_for_provider(provider: str) -> str | dict[str, str]:
-    """Forceable transport selection — provider-neutral where supported."""
-    if provider == "ollama":
-        return "required"
-    return {"type": "function", "name": PLANNER_ROUND_TOOL_ID}
-
-
-def _parse_basis_references(raw_references: list[str]) -> tuple[str, ...]:
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for reference in raw_references:
-        stripped = reference.strip()
-        if not stripped:
-            raise AtomicPlannerRoundError(
-                "action context contains empty evidence_basis_references entry"
-            )
-        if stripped in seen:
-            raise AtomicPlannerRoundError(f"duplicate basis evidence reference: {stripped}")
-        seen.add(stripped)
-        ordered.append(stripped)
-    return tuple(ordered)
-
-
-def _materialize_action_context(
-    payload: _ActionContextInput | None,
-) -> AtomicPlannerActionContext | None:
-    if payload is None:
-        return None
-    return AtomicPlannerActionContext(
-        evidence_basis_references=_parse_basis_references(payload.evidence_basis_references),
-        purpose=payload.purpose,
-    )
 
 
 def parse_atomic_planner_round_payload(payload: Mapping[str, object]) -> AtomicPlannerRoundDecision:
@@ -337,8 +228,18 @@ def parse_atomic_planner_round_payload(payload: Mapping[str, object]) -> AtomicP
                 arguments_json=json.dumps(action.arguments, ensure_ascii=False),
             )
         )
+    action_context_payload = validated.action_context
+    if action_context_payload is None:
+        action_context = None
+    else:
+        try:
+            action_context = parse_optional_planner_action_context_payload(
+                action_context_payload
+            )
+        except NativePlannerActionContextError as exc:
+            raise AtomicPlannerRoundError(str(exc)) from exc
     return AtomicPlannerRoundDecision(
-        action_context=_materialize_action_context(validated.action_context),
+        action_context=action_context,
         actions=tuple(actions),
     )
 
@@ -364,21 +265,21 @@ def validate_atomic_action_context_requirement(
     """ENG-6 semantics for typed action context inside the atomic envelope."""
     if not protocol_config.protocol_active:
         return
+    if not decision.actions:
+        raise AtomicPlannerRoundError(
+            "atomic planner round with empty actions is not executable"
+        )
     reference_index = protocol_config.reference_index()
     available = frozenset(protocol_config.available_evidence_references)
-    if protocol_config.action_context_required and decision.actions:
+    if protocol_config.action_context_required:
         if decision.action_context is None:
             raise AtomicPlannerRoundError(
                 "follow-up tool round requires action_context in atomic planner round"
             )
     if decision.action_context is None:
         return
-    native_context = NativePlannerActionContext(
-        evidence_basis_references=decision.action_context.evidence_basis_references,
-        purpose=decision.action_context.purpose,
-    )
     validate_typed_planner_action_context(
-        native_context,
+        decision.action_context,
         available_evidence_references=available,
         reference_index=reference_index,
     )
@@ -404,7 +305,9 @@ def resolve_atomic_planner_round_calls(
             f"atomic mode rejects sibling business provider calls: {names}"
         )
     if not round_calls:
-        raise AtomicPlannerRoundError("atomic mode requires exactly one intergrax.planner.round call")
+        raise AtomicPlannerRoundError(
+            "atomic mode requires exactly one intergrax.planner.round call"
+        )
     if len(round_calls) > 1:
         raise AtomicPlannerRoundError(
             "atomic mode cardinality violation: expected exactly one intergrax.planner.round"
@@ -456,8 +359,27 @@ def materialize_atomic_round_to_tool_plan(
     return ToolCallPlan(calls=calls)
 
 
+def mint_materialized_tool_calls_from_plan(
+    tool_plan: ToolCallPlan,
+) -> tuple[LLMToolCall, ...]:
+    """Assign canonical accepted tool-call identities for materialized business actions."""
+    provisional: list[LLMToolCall] = []
+    for planned_call in tool_plan.calls:
+        provisional.append(
+            LLMToolCall(
+                id="",
+                name=planned_call.tool_id,
+                arguments_json=json.dumps(
+                    planned_call.input.model_dump(),
+                    ensure_ascii=False,
+                ),
+            )
+        )
+    return finalize_accepted_tool_call_identities(provisional)
+
+
 def atomic_round_schema_byte_size(schema: Mapping[str, object]) -> int:
-    """Approximate serialized schema size for PoC scorecard."""
+    """Deterministic serialized schema size diagnostic."""
     return len(
         json.dumps(schema, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
             "utf-8"

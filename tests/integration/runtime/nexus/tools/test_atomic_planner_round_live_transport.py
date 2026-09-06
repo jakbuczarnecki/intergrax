@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""DS-E2E-12 — live atomic planner round transport qualification (Variants A/B, gated)."""
+"""DS-E2E-12 — live discriminated atomic planner round transport qualification (gated)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ import os
 import pytest
 
 from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.runtime.nexus.tools.atomic_planner_round import AtomicPlannerRoundSchemaVariant
 from testing_support.atomic_planner_round_transport import (
     live_atomic_transport_enabled,
     qualify_atomic_planner_transport,
@@ -43,14 +42,7 @@ def _openai_profile() -> LLMProfile | None:
     return LLMProfile(provider="openai", model=model)
 
 
-@pytest.mark.parametrize(
-    "variant",
-    [
-        AtomicPlannerRoundSchemaVariant.GENERIC_ENVELOPE,
-        AtomicPlannerRoundSchemaVariant.DISCRIMINATED_ACTIONS,
-    ],
-)
-def test_qwen32_atomic_round_transport_gate(variant: AtomicPlannerRoundSchemaVariant) -> None:
+def test_qwen32_atomic_round_transport_gate() -> None:
     _skip_unless_live()
     profile = _ollama_profile()
     if profile is None:
@@ -61,23 +53,15 @@ def test_qwen32_atomic_round_transport_gate(variant: AtomicPlannerRoundSchemaVar
     result = qualify_atomic_planner_transport(
         adapter,
         provider="ollama",
-        variant=variant,
         required_attempts=3,
     )
     assert result.gate_passed, (
-        f"Qwen {variant.value} gate failed: {result.successful_attempts}/"
+        f"Qwen gate failed: {result.successful_attempts}/"
         f"{result.required_attempts} successes; captures={result.captures}"
     )
 
 
-@pytest.mark.parametrize(
-    "variant",
-    [
-        AtomicPlannerRoundSchemaVariant.GENERIC_ENVELOPE,
-        AtomicPlannerRoundSchemaVariant.DISCRIMINATED_ACTIONS,
-    ],
-)
-def test_openai_atomic_round_transport_diagnostic(variant: AtomicPlannerRoundSchemaVariant) -> None:
+def test_openai_atomic_round_transport_diagnostic() -> None:
     _skip_unless_live()
     profile = _openai_profile()
     if profile is None:
@@ -88,9 +72,9 @@ def test_openai_atomic_round_transport_diagnostic(variant: AtomicPlannerRoundSch
     result = qualify_atomic_planner_transport(
         adapter,
         provider="openai",
-        variant=variant,
-        required_attempts=1,
+        required_attempts=3,
     )
-    assert result.successful_attempts >= 1, (
-        f"OpenAI {variant.value} diagnostic failed: captures={result.captures}"
+    assert result.gate_passed, (
+        f"OpenAI gate failed: {result.successful_attempts}/"
+        f"{result.required_attempts} successes; captures={result.captures}"
     )
