@@ -15,7 +15,14 @@ from intergrax.llm_adapters.registry.profile import LLMProfile
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     build_scenario_environment_profile,
 )
-from testing_support.decision_e2e.provider_binding import bind_qualification_llm_profile
+from intergrax.llm_adapters.registry.catalog_capabilities import (
+    CatalogCapabilityAdapter,
+    unwrap_catalog_capability_adapter,
+)
+from intergrax.llm_adapters.registry.model_catalog import ModelRecord
+from testing_support.decision_e2e.provider_binding import (
+    bind_qualification_llm_profile,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -36,6 +43,39 @@ class _StubAdapter(LLMAdapter):
 
 def _resolver(_environment: ApplicationEnvironmentProfile) -> LLMAdapter:
     return _StubAdapter()
+
+
+def test_wrapped_adapter_identity_uses_unwrapped_llm_adapter_fields() -> None:
+    inner = _StubAdapter()
+    inner.provider = LLMProvider.OPENAI
+    inner.model = "gpt-4.1"
+    wrapped = CatalogCapabilityAdapter(
+        inner,
+        ModelRecord(model_id="gpt-4.1", context_window_tokens=128_000),
+    )
+
+    assert unwrap_catalog_capability_adapter(wrapped) is inner
+
+    environment = build_scenario_environment_profile()
+    with patch.dict(
+        "os.environ",
+        {
+            "INTERGRAX_LLM_PROVIDER": "openai",
+            "INTERGRAX_LLM_MODEL": "gpt-4.1",
+            "OPENAI_API_KEY": "test-key",
+        },
+        clear=False,
+    ):
+        with patch.object(LLMProfile, "create_adapter", return_value=wrapped):
+            binding, block_reason = bind_qualification_llm_profile(
+                environment,
+                adapter_resolver=lambda _env: wrapped,
+            )
+
+    assert block_reason is None
+    assert binding is not None
+    assert binding.resolved_provider == "openai"
+    assert binding.resolved_model == "gpt-4.1"
 
 
 def test_bind_openai_gpt41_resolves_requested_and_resolved_identity() -> None:

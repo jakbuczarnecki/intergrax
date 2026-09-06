@@ -43,17 +43,9 @@ def _provider_slug(provider: LLMProvider | str) -> str:
     return str(provider).strip().lower()
 
 
-def _adapter_identity(adapter: LLMAdapter) -> tuple[str, str | None]:
+def _adapter_identity(adapter: LLMAdapter) -> tuple[str, str]:
     inner = unwrap_catalog_capability_adapter(adapter)
-    provider = getattr(inner, "provider", None)
-    if isinstance(provider, LLMProvider):
-        provider_slug = provider.value
-    elif provider is not None:
-        provider_slug = str(provider).strip().lower()
-    else:
-        provider_slug = "unknown"
-    model = getattr(inner, "model", None)
-    return provider_slug, str(model) if model is not None else None
+    return _provider_slug(inner.provider), inner.model
 
 
 def bind_qualification_llm_profile(

@@ -38,6 +38,12 @@ class _NestedRoot(BaseModel):
     note: str | None = Field(default=None, max_length=128)
 
 
+def test_base_model_subclass_is_accepted_for_strict_projection() -> None:
+    projected = prepare_openai_strict_generation_schema(_NestedRoot)
+    assert projected["type"] == "object"
+    assert "$defs" in projected
+
+
 def test_input_schema_is_not_mutated() -> None:
     canonical = _NestedRoot.model_json_schema()
     original = copy.deepcopy(canonical)

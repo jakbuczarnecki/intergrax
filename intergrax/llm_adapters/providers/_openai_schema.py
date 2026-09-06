@@ -8,25 +8,26 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Mapping
-from typing import Any
+
+from pydantic import BaseModel
+
+from intergrax.knowledge.contracts.validation import JsonObject, JsonValue
 
 
-def prepare_openai_strict_generation_schema(output_model: type) -> dict[str, object]:
+def prepare_openai_strict_generation_schema(output_model: type[BaseModel]) -> JsonObject:
     """Build a provider-compatible strict generation schema from a Pydantic output model."""
-    if not hasattr(output_model, "model_json_schema"):
-        raise TypeError(f"{output_model!r} does not provide model_json_schema()")
-    canonical_schema = output_model.model_json_schema()  # type: ignore[attr-defined]
+    canonical_schema = output_model.model_json_schema()
     return project_json_schema_for_openai_strict(canonical_schema)
 
 
-def project_json_schema_for_openai_strict(schema: Mapping[str, object]) -> dict[str, object]:
+def project_json_schema_for_openai_strict(schema: Mapping[str, JsonValue]) -> JsonObject:
     """Return a deep-copied schema safe for OpenAI ``strict: true`` structured outputs."""
-    projected = copy.deepcopy(dict(schema))
+    projected: JsonObject = copy.deepcopy(dict(schema))
     _normalize_openai_strict_node(projected)
     return projected
 
 
-def _normalize_openai_strict_node(node: Any) -> None:
+def _normalize_openai_strict_node(node: JsonValue) -> None:
     if isinstance(node, dict):
         defs = node.get("$defs")
         if isinstance(defs, dict):
