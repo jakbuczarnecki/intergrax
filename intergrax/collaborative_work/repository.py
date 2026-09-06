@@ -1,9 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Collaborative Work membership and delegation repository contracts (COLLAB-WORK-1B).
+"""Collaborative Work repository contracts (COLLAB-WORK-1B, COLLAB-WORK-2B).
 
-Provider-neutral persistence ports for authoritative ``WorkspaceMembership`` and
-``AuthorityDelegation`` records.
+Provider-neutral persistence ports for authoritative Collaborative Work records,
+including MP-1 membership/delegation/authority/policy state and MP-2 WorkItem and
+Assignment shared-work state.
 
 Revision ownership
 ------------------
@@ -35,6 +36,8 @@ from typing import Protocol, Self, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.collaborative_work import (
+    Assignment,
+    AssignmentState,
     AuthorityDelegation,
     AuthorityGrantStatus,
     CollaborativeOperationPolicyProfile,
@@ -47,6 +50,8 @@ from intergrax.contracts.collaborative_work import (
     PolicyCompositionLayer,
     PolicyLayerApplicability,
     PrincipalAuthorityGrant,
+    WorkItem,
+    WorkItemState,
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
@@ -661,3 +666,261 @@ class CollaborativeOperationPolicyProfileRepository(Protocol):
         command: UpdateCollaborativeOperationPolicyProfileCommand,
     ) -> CollaborativeOperationPolicyProfile:
         """Replace profile semantics under optimistic concurrency."""
+
+
+class WorkItemNotFound(Exception):
+    """WorkItem was not found for the requested tenant/workspace scope."""
+
+
+class WorkItemAlreadyExists(Exception):
+    """WorkItem already exists for the requested scoped identity."""
+
+
+class WorkItemRevisionConflict(Exception):
+    """Optimistic revision conflict for WorkItem."""
+
+
+class WorkItemIdempotencyConflict(Exception):
+    """Idempotency key replayed with a different semantic command."""
+
+
+class AssignmentNotFound(Exception):
+    """Assignment was not found for the requested tenant/workspace scope."""
+
+
+class AssignmentAlreadyExists(Exception):
+    """Assignment already exists for the requested scoped identity."""
+
+
+class AssignmentRevisionConflict(Exception):
+    """Optimistic revision conflict for Assignment."""
+
+
+class AssignmentIdempotencyConflict(Exception):
+    """Idempotency key replayed with a different semantic command."""
+
+
+class WorkItemScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+
+    @field_validator("tenant_id", "workspace_id", "work_item_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
+
+
+class AssignmentScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    assignment_id: str = _NON_EMPTY
+
+    @field_validator("tenant_id", "workspace_id", "assignment_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
+
+
+class CreateWorkItemCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    created_by_principal_id: str = _NON_EMPTY
+    state: WorkItemState = WorkItemState.OPEN
+    created_at: datetime
+    updated_at: datetime
+    title: str | None = None
+    description: str | None = None
+    idempotency_key: str | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "created_by_principal_id",
+        "title",
+        "description",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_timestamp_order(self) -> Self:
+        if self.updated_at < self.created_at:
+            raise ValueError("updated_at must be greater than or equal to created_at")
+        return self
+
+    def semantic_fingerprint(self) -> str:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "work_item_id": self.work_item_id,
+            "created_by_principal_id": self.created_by_principal_id,
+            "state": self.state.value,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "title": self.title,
+            "description": self.description,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+class UpdateWorkItemCommand(_RepositoryModelBase):
+    """Low-level WorkItem replacement under CAS.
+
+    Authoritative lifecycle validation and authority enforcement belong to
+    COLLAB-WORK-2C; this command persists replacement semantics only.
+    """
+
+    scope: WorkItemScopeKey
+    expected_revision: int = Field(ge=0)
+    state: WorkItemState
+    updated_at: datetime
+    title: str | None = None
+    description: str | None = None
+
+    @field_validator("title", "description")
+    @classmethod
+    def _strip_optional_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+
+class CreateAssignmentCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    assignment_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    principal_id: str = _NON_EMPTY
+    created_by_principal_id: str = _NON_EMPTY
+    state: AssignmentState = AssignmentState.ACTIVE
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    idempotency_key: str | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "assignment_id",
+        "work_item_id",
+        "principal_id",
+        "created_by_principal_id",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_timestamp_order(self) -> Self:
+        if self.created_at is not None and self.updated_at is not None:
+            if self.updated_at < self.created_at:
+                raise ValueError("updated_at must be greater than or equal to created_at")
+        return self
+
+    def semantic_fingerprint(self) -> str:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "assignment_id": self.assignment_id,
+            "work_item_id": self.work_item_id,
+            "principal_id": self.principal_id,
+            "created_by_principal_id": self.created_by_principal_id,
+            "state": self.state.value,
+            "created_at": self.created_at.isoformat() if self.created_at is not None else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at is not None else None,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+class UpdateAssignmentCommand(_RepositoryModelBase):
+    """Low-level Assignment replacement under CAS.
+
+    Authoritative lifecycle validation and authority enforcement belong to
+    COLLAB-WORK-2C; this command persists replacement semantics only.
+    """
+
+    scope: AssignmentScopeKey
+    expected_revision: int = Field(ge=0)
+    state: AssignmentState
+    updated_at: datetime | None = None
+
+    @field_validator("updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+
+@runtime_checkable
+class WorkItemRepository(Protocol):
+    """Authoritative persistence port for WorkItem records."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def create(self, command: CreateWorkItemCommand) -> WorkItem:
+        """Create a WorkItem at ``INITIAL_RECORD_REVISION``."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> WorkItem | None:
+        """Return WorkItem for the scoped identity or ``None``."""
+
+    def update(self, command: UpdateWorkItemCommand) -> WorkItem:
+        """Replace WorkItem semantics under optimistic concurrency."""
+
+
+@runtime_checkable
+class AssignmentRepository(Protocol):
+    """Authoritative persistence port for Assignment records."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def create(self, command: CreateAssignmentCommand) -> Assignment:
+        """Create an Assignment at ``INITIAL_RECORD_REVISION``."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        assignment_id: str,
+    ) -> Assignment | None:
+        """Return Assignment for the scoped identity or ``None``."""
+
+    def update(self, command: UpdateAssignmentCommand) -> Assignment:
+        """Replace Assignment semantics under optimistic concurrency."""

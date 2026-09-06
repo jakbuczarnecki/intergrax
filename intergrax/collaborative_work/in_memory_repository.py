@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""In-memory reference repositories for Collaborative Work (COLLAB-WORK-1B)."""
+"""In-memory reference repositories for Collaborative Work (COLLAB-WORK-1B, COLLAB-WORK-2B)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,10 @@ from dataclasses import dataclass
 from typing import TypeAlias
 
 from intergrax.collaborative_work.repository import (
+    AssignmentAlreadyExists,
+    AssignmentIdempotencyConflict,
+    AssignmentNotFound,
+    AssignmentRevisionConflict,
     AuthorityDelegationAlreadyExists,
     AuthorityDelegationIdempotencyConflict,
     AuthorityDelegationNotFound,
@@ -22,32 +26,42 @@ from intergrax.collaborative_work.repository import (
     CollaborativeOperationPolicyProfileNotFound,
     CollaborativeOperationPolicyProfileRevisionConflict,
     CollaborativeWorkRepositoryCapabilities,
+    CreateAssignmentCommand,
     CreateAuthorityDelegationCommand,
     CreateCollaborativeOperationPolicyProfileCommand,
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
+    CreateWorkItemCommand,
     CreateWorkspaceMembershipCommand,
     INITIAL_RECORD_REVISION,
     PrincipalAuthorityGrantAlreadyExists,
     PrincipalAuthorityGrantIdempotencyConflict,
     PrincipalAuthorityGrantNotFound,
     PrincipalAuthorityGrantRevisionConflict,
+    UpdateAssignmentCommand,
     UpdateAuthorityDelegationCommand,
     UpdateCollaborativeOperationPolicyProfileCommand,
     UpdateCollaborativePolicyRuleCommand,
     UpdatePrincipalAuthorityGrantCommand,
+    UpdateWorkItemCommand,
     UpdateWorkspaceMembershipCommand,
+    WorkItemAlreadyExists,
+    WorkItemIdempotencyConflict,
+    WorkItemNotFound,
+    WorkItemRevisionConflict,
     WorkspaceMembershipAlreadyExists,
     WorkspaceMembershipIdempotencyConflict,
     WorkspaceMembershipNotFound,
     WorkspaceMembershipRevisionConflict,
 )
 from intergrax.contracts.collaborative_work import (
+    Assignment,
     AuthorityDelegation,
     CollaborativeOperationPolicyProfile,
     CollaborativePolicyRule,
     PolicyCompositionLayer,
     PrincipalAuthorityGrant,
+    WorkItem,
     WorkspaceMembership,
 )
 
@@ -58,6 +72,8 @@ PrincipalKey: TypeAlias = tuple[str, str, str]
 PolicyRuleKey: TypeAlias = tuple[str, str, str]
 PolicyExactKey: TypeAlias = tuple[str, str, str, str, str]
 OperationProfileKey: TypeAlias = tuple[str, str, str]
+WorkItemKey: TypeAlias = tuple[str, str, str]
+AssignmentKey: TypeAlias = tuple[str, str, str]
 IdempotencyKey: TypeAlias = tuple[str, str, str]
 
 
@@ -89,6 +105,18 @@ class _PolicyRuleIdempotencyEntry:
 class _OperationProfileIdempotencyEntry:
     fingerprint: str
     original_result: CollaborativeOperationPolicyProfile
+
+
+@dataclass(frozen=True, slots=True)
+class _WorkItemIdempotencyEntry:
+    fingerprint: str
+    original_result: WorkItem
+
+
+@dataclass(frozen=True, slots=True)
+class _AssignmentIdempotencyEntry:
+    fingerprint: str
+    original_result: Assignment
 
 
 class InMemoryWorkspaceMembershipRepository:
@@ -937,6 +965,285 @@ class InMemoryCollaborativeOperationPolicyProfileRepository:
     @staticmethod
     def _scope_matches(
         record: CollaborativeOperationPolicyProfile,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+class InMemoryWorkItemRepository:
+    """Process-local reference repository for WorkItem records."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._records: dict[WorkItemKey, WorkItem] = {}
+        self._idempotency: dict[IdempotencyKey, _WorkItemIdempotencyEntry] = {}
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.work_item.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create(self, command: CreateWorkItemCommand) -> WorkItem:
+        key = self._work_item_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.work_item_id,
+        )
+        with self._lock:
+            if command.idempotency_key is not None:
+                replay = self._replay_work_item_create(command)
+                if replay is not None:
+                    return replay
+
+            if key in self._records:
+                raise WorkItemAlreadyExists("work item already exists")
+
+            record = WorkItem(
+                work_item_id=command.work_item_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                created_by_principal_id=command.created_by_principal_id,
+                state=command.state,
+                revision=INITIAL_RECORD_REVISION,
+                created_at=command.created_at,
+                updated_at=command.updated_at,
+                title=command.title,
+                description=command.description,
+            )
+            self._records[key] = record
+            self._store_work_item_idempotency(command, record)
+            return record
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> WorkItem | None:
+        key = self._work_item_key(tenant_id, workspace_id, work_item_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def update(self, command: UpdateWorkItemCommand) -> WorkItem:
+        key = self._work_item_key(
+            command.scope.tenant_id,
+            command.scope.workspace_id,
+            command.scope.work_item_id,
+        )
+        with self._lock:
+            current = self._records.get(key)
+            if current is None or not self._scope_matches(
+                current,
+                tenant_id=command.scope.tenant_id,
+                workspace_id=command.scope.workspace_id,
+            ):
+                raise WorkItemNotFound("work item was not found")
+            if current.revision != command.expected_revision:
+                raise WorkItemRevisionConflict("work item revision conflict")
+
+            replacement = WorkItem(
+                work_item_id=current.work_item_id,
+                tenant_id=current.tenant_id,
+                workspace_id=current.workspace_id,
+                created_by_principal_id=current.created_by_principal_id,
+                state=command.state,
+                revision=current.revision + 1,
+                created_at=current.created_at,
+                updated_at=command.updated_at,
+                title=command.title,
+                description=command.description,
+            )
+            self._records[key] = replacement
+            return replacement
+
+    def _replay_work_item_create(self, command: CreateWorkItemCommand) -> WorkItem | None:
+        assert command.idempotency_key is not None
+        entry = self._idempotency.get(
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        )
+        if entry is None:
+            return None
+        if entry.fingerprint != command.semantic_fingerprint():
+            raise WorkItemIdempotencyConflict("work item idempotency key conflict")
+        return entry.original_result
+
+    def _store_work_item_idempotency(
+        self,
+        command: CreateWorkItemCommand,
+        record: WorkItem,
+    ) -> None:
+        if command.idempotency_key is None:
+            return
+        self._idempotency[
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        ] = _WorkItemIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=record,
+        )
+
+    @staticmethod
+    def _work_item_key(tenant_id: str, workspace_id: str, work_item_id: str) -> WorkItemKey:
+        return (tenant_id.strip(), workspace_id.strip(), work_item_id.strip())
+
+    @staticmethod
+    def _idempotency_key(tenant_id: str, workspace_id: str, idempotency_key: str) -> IdempotencyKey:
+        return (tenant_id.strip(), workspace_id.strip(), idempotency_key.strip())
+
+    @staticmethod
+    def _scope_matches(
+        record: WorkItem,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+class InMemoryAssignmentRepository:
+    """Process-local reference repository for Assignment records."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._records: dict[AssignmentKey, Assignment] = {}
+        self._idempotency: dict[IdempotencyKey, _AssignmentIdempotencyEntry] = {}
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.assignment.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create(self, command: CreateAssignmentCommand) -> Assignment:
+        key = self._assignment_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.assignment_id,
+        )
+        with self._lock:
+            if command.idempotency_key is not None:
+                replay = self._replay_assignment_create(command)
+                if replay is not None:
+                    return replay
+
+            if key in self._records:
+                raise AssignmentAlreadyExists("assignment already exists")
+
+            record = Assignment(
+                assignment_id=command.assignment_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                work_item_id=command.work_item_id,
+                principal_id=command.principal_id,
+                created_by_principal_id=command.created_by_principal_id,
+                state=command.state,
+                revision=INITIAL_RECORD_REVISION,
+                created_at=command.created_at,
+                updated_at=command.updated_at,
+            )
+            self._records[key] = record
+            self._store_assignment_idempotency(command, record)
+            return record
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        assignment_id: str,
+    ) -> Assignment | None:
+        key = self._assignment_key(tenant_id, workspace_id, assignment_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def update(self, command: UpdateAssignmentCommand) -> Assignment:
+        key = self._assignment_key(
+            command.scope.tenant_id,
+            command.scope.workspace_id,
+            command.scope.assignment_id,
+        )
+        with self._lock:
+            current = self._records.get(key)
+            if current is None or not self._scope_matches(
+                current,
+                tenant_id=command.scope.tenant_id,
+                workspace_id=command.scope.workspace_id,
+            ):
+                raise AssignmentNotFound("assignment was not found")
+            if current.revision != command.expected_revision:
+                raise AssignmentRevisionConflict("assignment revision conflict")
+
+            replacement = Assignment(
+                assignment_id=current.assignment_id,
+                tenant_id=current.tenant_id,
+                workspace_id=current.workspace_id,
+                work_item_id=current.work_item_id,
+                principal_id=current.principal_id,
+                created_by_principal_id=current.created_by_principal_id,
+                state=command.state,
+                revision=current.revision + 1,
+                created_at=current.created_at,
+                updated_at=command.updated_at,
+            )
+            self._records[key] = replacement
+            return replacement
+
+    def _replay_assignment_create(
+        self,
+        command: CreateAssignmentCommand,
+    ) -> Assignment | None:
+        assert command.idempotency_key is not None
+        entry = self._idempotency.get(
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        )
+        if entry is None:
+            return None
+        if entry.fingerprint != command.semantic_fingerprint():
+            raise AssignmentIdempotencyConflict("assignment idempotency key conflict")
+        return entry.original_result
+
+    def _store_assignment_idempotency(
+        self,
+        command: CreateAssignmentCommand,
+        record: Assignment,
+    ) -> None:
+        if command.idempotency_key is None:
+            return
+        self._idempotency[
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        ] = _AssignmentIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=record,
+        )
+
+    @staticmethod
+    def _assignment_key(tenant_id: str, workspace_id: str, assignment_id: str) -> AssignmentKey:
+        return (tenant_id.strip(), workspace_id.strip(), assignment_id.strip())
+
+    @staticmethod
+    def _idempotency_key(tenant_id: str, workspace_id: str, idempotency_key: str) -> IdempotencyKey:
+        return (tenant_id.strip(), workspace_id.strip(), idempotency_key.strip())
+
+    @staticmethod
+    def _scope_matches(
+        record: Assignment,
         *,
         tenant_id: str,
         workspace_id: str,
