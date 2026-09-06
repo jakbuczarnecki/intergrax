@@ -6,6 +6,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from scripts.proof.intergrax_proof_environment import load_proof_environment
+
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.paths import (
     DATASET_DIR,
     DEFAULT_PROOF_50_ROOT,
@@ -16,6 +18,12 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.integration.proof_runner import (
     run_proof_50,
 )
+from platform_proofs.scenarios.verified_product_identification.integrations.embedding.bootstrap import (
+    ensure_embedding_provider_integrations_registered,
+)
+
+_SCENARIO_DIR = Path(__file__).resolve().parents[1]
+_REPO_ROOT = _SCENARIO_DIR.parents[2]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -41,6 +49,8 @@ def main(argv: list[str] | None = None) -> int:
         help="Reuse existing proof-50 artifacts and run validation/load/retrieval only",
     )
     args = parser.parse_args(argv)
+    load_proof_environment(proof_package_dir=_SCENARIO_DIR, repository_root=_REPO_ROOT)
+    ensure_embedding_provider_integrations_registered()
     report = run_proof_50(
         output_root=args.output_root,
         dataset_path=args.dataset_path,

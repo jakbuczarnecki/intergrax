@@ -26,10 +26,16 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     validate_relational_records,
     validate_semantic_text_hashes,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.content_identity import (
+    compute_data_pack_content_identity,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.embedding import (
     EmbeddingDataPackRecord,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
+    DATA_PACK_VERSION,
+    EMBEDDING_SCHEMA_VERSION,
+    RELATIONAL_SCHEMA_VERSION,
     semantic_text_hash,
     source_ref_key,
 )
@@ -112,22 +118,44 @@ def _embedding_record(relational: RelationalDataPackRecord) -> EmbeddingDataPack
         semantic_text_hash=relational.semantic_text_hash,
         embedding_provider="hf",
         embedding_model="BAAI/bge-m3",
-        embedding_model_revision=None,
+        embedding_model_revision=_REVISION,
         embedding_dimension=1024,
         dense_embedding=vector,
     )
 
 
+_REVISION = "5617a9f61b028005a4858fdac845db406aefb181"
+
+
 def test_manifest_round_trip() -> None:
+    source_dataset = SourceDatasetIdentity(
+        dataset_name="offers",
+        dataset_path="/tmp/selected_offers.parquet",
+        dataset_sha256="abc",
+        dataset_record_count=50,
+    )
+    embedding_identity = EmbeddingPackIdentity(
+        provider="hf",
+        model="BAAI/bge-m3",
+        model_revision=_REVISION,
+        artifact_fingerprint=None,
+        dimension=1024,
+        embedding_configuration_version="v1",
+        input_policy_version="v2",
+    )
+    content_identity = compute_data_pack_content_identity(
+        source_dataset=source_dataset,
+        derivation_version="v2",
+        semantic_text_version="v2",
+        embedding_identity=embedding_identity,
+        relational_schema_version=RELATIONAL_SCHEMA_VERSION,
+        embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
+    )
     manifest = DataPackManifest(
         data_pack_version="vpi.data_pack/1.0.0",
+        content_identity=content_identity,
         scenario_id="verified_product_identification",
-        source_dataset=SourceDatasetIdentity(
-            dataset_name="offers",
-            dataset_path="/tmp/selected_offers.parquet",
-            dataset_sha256="abc",
-            dataset_record_count=50,
-        ),
+        source_dataset=source_dataset,
         source_record_count=50,
         sample_identity=SampleIdentity(
             sample_version="proof-50/1.0.0",
@@ -136,25 +164,18 @@ def test_manifest_round_trip() -> None:
         ),
         derivation_version="v2",
         semantic_text_version="v2",
-        embedding_identity=EmbeddingPackIdentity(
-            provider="hf",
-            model="BAAI/bge-m3",
-            model_revision=None,
-            dimension=1024,
-            embedding_configuration_version="v1",
-            input_policy_version="v2",
-            execution_configuration_identity="device=cuda",
-        ),
-        relational_format="parquet/v1",
-        embedding_format="parquet/v1",
+        embedding_identity=embedding_identity,
+        relational_schema_version=RELATIONAL_SCHEMA_VERSION,
+        embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
+        relational_format="parquet",
+        embedding_format="parquet",
         shard_count=1,
         record_count=50,
         created_at_utc="2026-09-06T00:00:00+00:00",
         status=DataPackStatus.READY,
         checksums_path="checksums/SHA256SUMS",
         shards_index_path="indexes/shards.json",
-        relational_shard_file="part-000001.parquet",
-        embedding_shard_file="part-000001.parquet",
+        build_execution_provenance=None,
     )
     restored = manifest_from_json_dict(manifest_to_json_dict(manifest))
     assert restored == manifest

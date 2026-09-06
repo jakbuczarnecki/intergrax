@@ -21,3 +21,11 @@ class VpiDataPackIntegrityError(VpiDataPackError):
 
 class VpiDataPackCompatibilityError(VpiDataPackError):
     """Raised when manifest or identity compatibility checks fail."""
+
+
+class VpiDataPackFormatError(VpiDataPackError):
+    """Raised when manifest or index JSON is malformed or uses invalid types."""
+
+
+class EmbeddingModelIdentityError(VpiDataPackError):
+    """Raised when embedding model revision or fingerprint cannot be resolved."""

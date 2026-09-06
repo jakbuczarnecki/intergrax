@@ -42,21 +42,32 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     validate_relational_records,
     validate_semantic_text_hashes,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.build_mode import (
+    DataPackBuildMode,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.content_identity import (
+    compute_data_pack_content_identity,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.embedding import (
     EmbeddingDataPackRecord,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.errors import (
+    EmbeddingModelIdentityError,
     VpiDataPackBuildError,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
     DATA_PACK_VERSION,
+    EMBEDDING_SCHEMA_VERSION,
+    PARQUET_FILE_FORMAT,
     PROOF_50_RECORD_COUNT,
     PROOF_50_SAMPLE_VERSION,
+    RELATIONAL_SCHEMA_VERSION,
     SCENARIO_ID,
     semantic_text_hash,
     source_ref_key,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.manifest import (
+    BuildExecutionProvenance,
     DataPackManifest,
     EmbeddingPackIdentity,
     SampleIdentity,
@@ -73,6 +84,11 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.relational import (
     RelationalDataPackRecord,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.shard_index import (
+    ShardDescriptor,
+    ShardIndex,
+    write_shard_index_file,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.status import (
     DataPackStatus,
 )
@@ -82,8 +98,14 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.stores.parquet.relational_codec import (
     write_relational_parquet,
 )
+from platform_proofs.scenarios.verified_product_identification.integrations.embedding.bootstrap import (
+    ensure_embedding_provider_integrations_registered,
+)
 from platform_proofs.scenarios.verified_product_identification.integrations.embedding.intergrax_adapter import (
     IntergraxEmbeddingBootstrapAdapter,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.embedding.model_identity import (
+    resolve_embedding_model_identity,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.deterministic_ids import (
     search_representation_point_id,
@@ -100,6 +122,23 @@ def _load_dataset_identity(dataset_manifest_path: Path) -> SourceDatasetIdentity
         dataset_sha256=str(payload.get("output_sha256", "")),
         dataset_record_count=int(payload.get("selected_record_count", 0)),
     )
+
+
+def _resolve_model_revision(
+    *,
+    provider: str,
+    model: str,
+    build_mode: DataPackBuildMode,
+) -> tuple[str, str | None]:
+    try:
+        resolved = resolve_embedding_model_identity(provider, model)
+    except EmbeddingModelIdentityError as exc:
+        if build_mode is DataPackBuildMode.CANONICAL:
+            raise VpiDataPackBuildError(str(exc)) from exc
+        raise
+    if build_mode is DataPackBuildMode.CANONICAL and not resolved.revision.strip():
+        raise VpiDataPackBuildError("canonical data pack requires non-null embedding model revision")
+    return resolved.revision, resolved.artifact_fingerprint
 
 
 def _derive_relational_record(
@@ -134,6 +173,12 @@ def _derive_relational_record(
     )
 
 
+def _sort_relational_records(
+    records: Sequence[RelationalDataPackRecord],
+) -> tuple[RelationalDataPackRecord, ...]:
+    return tuple(sorted(records, key=lambda record: record.global_row_index))
+
+
 def _write_shard_atomically(
     directory: Path,
     shard_ordinal: int,
@@ -157,6 +202,7 @@ def build_proof_50_data_pack(
     catalog_id: str = "wdc-v2-selected",
     source_revision: str | None = None,
     record_count: int = PROOF_50_RECORD_COUNT,
+    build_mode: DataPackBuildMode = DataPackBuildMode.CANONICAL,
 ) -> DataPackManifest:
     paths = resolve_data_pack_paths(output_root)
     for directory in (
@@ -171,15 +217,18 @@ def build_proof_50_data_pack(
 
     dataset_identity = _load_dataset_identity(dataset_manifest_path)
     selected_rows = select_proof_sample_rows(str(dataset_path), record_count=record_count)
-    relational_records = tuple(
-        _derive_relational_record(
-            row,
-            catalog_id=catalog_id,
-            source_revision=source_revision,
+    relational_records = _sort_relational_records(
+        tuple(
+            _derive_relational_record(
+                row,
+                catalog_id=catalog_id,
+                source_revision=source_revision,
+            )
+            for row in selected_rows
         )
-        for row in selected_rows
     )
 
+    ensure_embedding_provider_integrations_registered()
     embedding_configuration = load_vpi_embedding_configuration()
     execution_configuration = load_vpi_embedding_provider_execution_configuration()
     assert_execution_device_available(execution_configuration)
@@ -195,7 +244,11 @@ def build_proof_50_data_pack(
         configuration=embedding_configuration,
         resolved_dimension=probe.resolved_dimension,
     )
-    model_revision: str | None = None
+    model_revision, artifact_fingerprint = _resolve_model_revision(
+        provider=embedding_configuration.provider,
+        model=model,
+        build_mode=build_mode,
+    )
 
     semantic_texts = [record.semantic_text for record in relational_records]
     vectors = embedding_adapter.embed_batch(semantic_texts)
@@ -223,12 +276,11 @@ def build_proof_50_data_pack(
             )
         )
     embedding_adapter.close()
-
-    relational_tuple = tuple(relational_records)
     embedding_tuple = tuple(embedding_records)
-    expected_refs = frozenset(source_ref_key(record.source_ref) for record in relational_tuple)
+
+    expected_refs = frozenset(source_ref_key(record.source_ref) for record in relational_records)
     assert_validation_pass(
-        validate_relational_records(relational_tuple, expected_count=record_count),
+        validate_relational_records(relational_records, expected_count=record_count),
         stage="relational_validation",
     )
     assert_validation_pass(
@@ -241,14 +293,14 @@ def build_proof_50_data_pack(
     )
     assert_validation_pass(
         validate_cross_artifact_identity(
-            relational_tuple,
+            relational_records,
             embedding_tuple,
             expected_refs=expected_refs,
         ),
         stage="cross_ref_validation",
     )
     assert_validation_pass(
-        validate_semantic_text_hashes(relational_tuple, embedding_tuple),
+        validate_semantic_text_hashes(relational_records, embedding_tuple),
         stage="semantic_text_hash_validation",
     )
 
@@ -258,7 +310,7 @@ def build_proof_50_data_pack(
     relational_path = _write_shard_atomically(
         paths.relational_dir,
         shard_ordinal,
-        lambda temp_path: write_relational_parquet(temp_path, relational_tuple),
+        lambda temp_path: write_relational_parquet(temp_path, relational_records),
     )
     embedding_path = _write_shard_atomically(
         paths.embeddings_dir,
@@ -272,11 +324,29 @@ def build_proof_50_data_pack(
 
     selected_ref_labels = tuple(
         f"{record.source_ref.catalog_id}:{record.source_ref.offer_id.value}"
-        for record in sorted(relational_tuple, key=lambda item: item.source_ref.offer_id.value)
+        for record in relational_records
     )
     created_at = datetime.now(UTC).isoformat()
+    embedding_identity = EmbeddingPackIdentity(
+        provider=embedding_configuration.provider,
+        model=model,
+        model_revision=model_revision,
+        artifact_fingerprint=artifact_fingerprint,
+        dimension=embedding_configuration.expected_dimension,
+        embedding_configuration_version=EMBEDDING_CONFIGURATION_VERSION,
+        input_policy_version=SEARCH_REPRESENTATION_DERIVATION_VERSION,
+    )
+    content_identity = compute_data_pack_content_identity(
+        source_dataset=dataset_identity,
+        derivation_version=SEARCH_REPRESENTATION_DERIVATION_VERSION,
+        semantic_text_version=SEARCH_REPRESENTATION_DERIVATION_VERSION,
+        embedding_identity=embedding_identity,
+        relational_schema_version=RELATIONAL_SCHEMA_VERSION,
+        embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
+    )
     manifest_base = dict(
         data_pack_version=DATA_PACK_VERSION,
+        content_identity=content_identity,
         scenario_id=SCENARIO_ID,
         source_dataset=dataset_identity,
         source_record_count=record_count,
@@ -287,52 +357,44 @@ def build_proof_50_data_pack(
         ),
         derivation_version=SEARCH_REPRESENTATION_DERIVATION_VERSION,
         semantic_text_version=SEARCH_REPRESENTATION_DERIVATION_VERSION,
-        embedding_identity=EmbeddingPackIdentity(
-            provider=embedding_configuration.provider,
-            model=model,
-            model_revision=model_revision,
-            dimension=embedding_configuration.expected_dimension,
-            embedding_configuration_version=EMBEDDING_CONFIGURATION_VERSION,
-            input_policy_version=SEARCH_REPRESENTATION_DERIVATION_VERSION,
-            execution_configuration_identity=(
-                f"device={execution_configuration.device or 'default'};"
-                f"provider_batch_size={execution_configuration.provider_batch_size or 'default'}"
-            ),
-        ),
-        relational_format="parquet/v1",
-        embedding_format="parquet/v1",
+        embedding_identity=embedding_identity,
+        relational_schema_version=RELATIONAL_SCHEMA_VERSION,
+        embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
+        relational_format=PARQUET_FILE_FORMAT,
+        embedding_format=PARQUET_FILE_FORMAT,
         shard_count=1,
         record_count=record_count,
         created_at_utc=created_at,
         checksums_path="checksums/SHA256SUMS",
         shards_index_path="indexes/shards.json",
-        relational_shard_file=relational_file,
-        embedding_shard_file=embedding_file,
+        build_execution_provenance=BuildExecutionProvenance(
+            device=execution_configuration.device,
+            provider_batch_size=execution_configuration.provider_batch_size,
+        ),
     )
 
-    shards_index = {
-        "shard_count": 1,
-        "relational_shards": [
-            {
-                "shard_ordinal": shard_ordinal,
-                "file_name": relational_file,
-                "record_count": record_count,
-                "sha256": sha256_file(relational_path),
-            }
-        ],
-        "embedding_shards": [
-            {
-                "shard_ordinal": shard_ordinal,
-                "file_name": embedding_file,
-                "record_count": record_count,
-                "sha256": sha256_file(embedding_path),
-            }
-        ],
-    }
-    shards_index_path = paths.shards_index_file
-    shards_temp = shards_index_path.with_suffix(".json.tmp")
-    shards_temp.write_text(json.dumps(shards_index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    shards_temp.replace(shards_index_path)
+    relational_descriptor = ShardDescriptor(
+        ordinal=shard_ordinal,
+        relative_path=f"relational/{relational_file}",
+        record_count=record_count,
+        sha256=sha256_file(relational_path),
+        source_ref_count=record_count,
+        schema_version=RELATIONAL_SCHEMA_VERSION,
+    )
+    embedding_descriptor = ShardDescriptor(
+        ordinal=shard_ordinal,
+        relative_path=f"embeddings/{embedding_file}",
+        record_count=record_count,
+        sha256=sha256_file(embedding_path),
+        source_ref_count=record_count,
+        schema_version=EMBEDDING_SCHEMA_VERSION,
+    )
+    shard_index = ShardIndex(
+        shard_count=1,
+        relational_shards=(relational_descriptor,),
+        embedding_shards=(embedding_descriptor,),
+    )
+    write_shard_index_file(paths.shards_index_file, shard_index)
 
     ready_manifest = DataPackManifest(status=DataPackStatus.READY, **manifest_base)
     write_manifest_file(paths.manifest_file, ready_manifest)
@@ -341,10 +403,9 @@ def build_proof_50_data_pack(
         paths.checksums_file,
         (
             ("manifest/manifest.json", paths.manifest_file),
-            (f"relational/{relational_file}", relational_path),
-            (f"embeddings/{embedding_file}", embedding_path),
-            ("indexes/shards.json", shards_index_path),
+            (relational_descriptor.relative_path, relational_path),
+            (embedding_descriptor.relative_path, embedding_path),
+            ("indexes/shards.json", paths.shards_index_file),
         ),
     )
     return ready_manifest
-

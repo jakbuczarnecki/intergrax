@@ -4,9 +4,11 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     EmbeddingDataPackRecord,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.errors import (
+    EmbeddingModelIdentityError,
     VpiDataPackBuildError,
     VpiDataPackCompatibilityError,
     VpiDataPackError,
+    VpiDataPackFormatError,
     VpiDataPackIntegrityError,
     VpiDataPackValidationError,
 )
@@ -15,8 +17,10 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
     DATA_PACK_VERSION,
+    EMBEDDING_SCHEMA_VERSION,
     PROOF_50_RECORD_COUNT,
     PROOF_50_SAMPLE_VERSION,
+    RELATIONAL_SCHEMA_VERSION,
     SCENARIO_ID,
     semantic_text_hash,
     source_ref_key,
@@ -39,10 +43,13 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 __all__ = [
     "DATA_PACK_VERSION",
     "DEFAULT_PROOF_50_ROOT",
+    "EMBEDDING_SCHEMA_VERSION",
+    "RELATIONAL_SCHEMA_VERSION",
     "DataPackManifest",
     "DataPackPaths",
     "DataPackProofReport",
     "DataPackStatus",
+    "EmbeddingModelIdentityError",
     "EmbeddingDataPackRecord",
     "PROOF_50_RECORD_COUNT",
     "PROOF_50_SAMPLE_VERSION",
@@ -51,6 +58,7 @@ __all__ = [
     "VpiDataPackBuildError",
     "VpiDataPackCompatibilityError",
     "VpiDataPackError",
+    "VpiDataPackFormatError",
     "VpiDataPackIntegrityError",
     "VpiDataPackValidationError",
     "resolve_data_pack_paths",
