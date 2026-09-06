@@ -152,6 +152,11 @@ def _scan_transport_execution_scopes(
             cursor=cursor,
         )
 
+        if len(page.items) > page_limit:
+            raise DiagnosticScopeProviderIntegrityError(
+                "causal evidence page exceeded requested page limit",
+            )
+
         if not page.items:
             if page.next_cursor is None:
                 scan.scan_complete = True

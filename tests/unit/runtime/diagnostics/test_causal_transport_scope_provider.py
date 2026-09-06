@@ -775,6 +775,137 @@ def test_budget_caps_page_calls_at_ten() -> None:
     assert len(fake.page_calls) == 10
 
 
+def test_oversized_page_raises_integrity_error() -> None:
+    evidence = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+    persistence = _single_page_persistence(tuple([evidence] * 101))
+    with pytest.raises(
+        DiagnosticScopeDiscoveryIntegrityError,
+        match="exceeded requested page limit",
+    ):
+        _service(persistence).discover_scope(_transport_request())
+    assert persistence.page_for_transport_task.call_count == 1
+
+
+def test_oversized_first_page_raises_integrity_error() -> None:
+    evidence = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+    persistence = MagicMock(spec=CausalEvidencePersistence)
+    persistence.page_for_transport_task.return_value = CausalEvidencePage(
+        items=tuple([evidence] * 1000),
+        next_cursor=None,
+    )
+    with pytest.raises(
+        DiagnosticScopeDiscoveryIntegrityError,
+        match="exceeded requested page limit",
+    ):
+        _service(persistence).discover_scope(_transport_request())
+    assert persistence.page_for_transport_task.call_count == 1
+
+
+def test_oversized_remaining_budget_page_raises_integrity_error() -> None:
+    evidence = _causal_evidence(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+    page_calls = 0
+
+    def page_side_effect(
+        *,
+        tenant_id: str,
+        provider: str,
+        transport_task_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> CausalEvidencePage:
+        nonlocal page_calls
+        page_calls += 1
+        if page_calls <= 9:
+            return CausalEvidencePage(
+                items=tuple([evidence] * 100),
+                next_cursor=f"page-{page_calls}",
+            )
+        if page_calls == 10:
+            return CausalEvidencePage(
+                items=tuple([evidence] * 50),
+                next_cursor="page-10",
+            )
+        if page_calls == 11:
+            assert limit == 50
+            return CausalEvidencePage(
+                items=tuple([evidence] * 51),
+                next_cursor="page-11",
+            )
+        pytest.fail("unexpected additional page request after oversized page")
+
+    persistence = MagicMock(spec=CausalEvidencePersistence)
+    persistence.page_for_transport_task.side_effect = page_side_effect
+    with pytest.raises(
+        DiagnosticScopeDiscoveryIntegrityError,
+        match="exceeded requested page limit",
+    ):
+        _service(persistence).discover_scope(_transport_request())
+    assert page_calls == 11
+
+
+def test_exact_remaining_budget_page_completes_scan() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    evidence = _causal_evidence(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+    )
+    page_calls = 0
+
+    def page_side_effect(
+        *,
+        tenant_id: str,
+        provider: str,
+        transport_task_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> CausalEvidencePage:
+        nonlocal page_calls
+        page_calls += 1
+        if page_calls <= 9:
+            return CausalEvidencePage(
+                items=tuple([evidence] * 100),
+                next_cursor=f"page-{page_calls}",
+            )
+        if page_calls == 10:
+            assert limit == 100
+            return CausalEvidencePage(
+                items=tuple([evidence] * 50),
+                next_cursor="page-10",
+            )
+        if page_calls == 11:
+            assert limit == 50
+            return CausalEvidencePage(
+                items=tuple([evidence] * 50),
+                next_cursor=None,
+            )
+        pytest.fail("unexpected additional page request after final budget page")
+
+    persistence = MagicMock(spec=CausalEvidencePersistence)
+    persistence.page_for_transport_task.side_effect = page_side_effect
+    result = _service(persistence).discover_scope(_transport_request())
+    assert page_calls == 11
+    assert result.status is DiagnosticScopeDiscoveryStatus.RESOLVED
+    assert result.resolved_scope is not None
+    assert result.resolved_scope.task_id == task_id
+    assert result.resolved_scope.run_id == run_id
+    assert result.candidate_count == 1
+    assert result.candidate_count_exact is True
+
+
 def test_remaining_budget_uses_reduced_page_limit() -> None:
     evidence = _causal_evidence(
         task_id=mint_task_id(),
