@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import importlib
 import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, Optional, Sequence
@@ -24,10 +23,7 @@ from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapt
 from intergrax.llm_adapters.registry.catalog_capabilities import (
     unwrap_catalog_capability_adapter,
 )
-from intergrax.llm_adapters.registry.registration_contract import (
-    LLMAdapterRegistrationSpec,
-    OptionalDependencyRequirement,
-)
+from intergrax.llm_adapters.registry.registration_contract import LLMAdapterRegistrationSpec
 
 
 pytestmark = pytest.mark.unit
@@ -173,22 +169,47 @@ def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_st
 
 
 def test_missing_optional_llm_dependency_is_controlled(
-    _restore_registry_state: Dict[str, Any],
-    monkeypatch: pytest.MonkeyPatch,
+    _restore_registry_state: Dict[str, _Factory],
 ) -> None:
-    def missing_dependency(self: OptionalDependencyRequirement, *, provider_id: str) -> None:
-        raise LLMAdapterDependencyError(
-            "LLM provider 'claude' requires dependency 'anthropic'. "
-            "Install it with 'Intergrax-ai[llm-anthropic]' before selecting this provider."
-        )
+    import importlib.abc
+    import importlib.machinery
+    import sys
+    from typing import Sequence as _Sequence
 
-    monkeypatch.setattr(OptionalDependencyRequirement, "ensure_available", missing_dependency)
+    class _AnthropicBlocker(importlib.abc.MetaPathFinder):
+        def find_spec(
+            self,
+            fullname: str,
+            path: _Sequence[str] | None,
+            target: object | None = None,
+        ) -> importlib.machinery.ModuleSpec | None:
+            if fullname == "anthropic" or fullname.startswith("anthropic."):
+                return importlib.machinery.ModuleSpec(fullname, self)
+            return None
 
-    with pytest.raises(
-        LLMAdapterDependencyError,
-        match=r"Intergrax-ai\[llm-anthropic\]",
-    ):
-        LLMAdapterRegistry.create(LLMProvider.CLAUDE, model="claude-3")
+        def create_module(self, spec: importlib.machinery.ModuleSpec) -> None:
+            return None
+
+        def exec_module(self, module: object) -> None:
+            name = getattr(module, "__name__", "anthropic")
+            raise ModuleNotFoundError(f"No module named '{name}'", name=name)
+
+    removed = {
+        name: sys.modules.pop(name)
+        for name in list(sys.modules)
+        if name == "anthropic" or name.startswith("anthropic.")
+    }
+    blocker = _AnthropicBlocker()
+    sys.meta_path.insert(0, blocker)
+    try:
+        with pytest.raises(
+            LLMAdapterDependencyError,
+            match=r"Intergrax-ai\[llm-anthropic\]",
+        ):
+            LLMAdapterRegistry.create(LLMProvider.CLAUDE, model="claude-3")
+    finally:
+        sys.meta_path.remove(blocker)
+        sys.modules.update(removed)
 
 
 def test_register_from_spec_delegates_to_same_storage(

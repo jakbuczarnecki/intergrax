@@ -6,7 +6,10 @@ from __future__ import annotations
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.registrations._lazy_factory import register_lazy_adapter
-from intergrax.llm_adapters.registry.registration_contract import OptionalDependencyRequirement
+from intergrax.llm_adapters.registry.registration_contract import (
+    LLMAdapterRegistrationTarget,
+    OptionalDependencyRequirement,
+)
 
 _OPENAI_COMPAT_DEPENDENCY = OptionalDependencyRequirement(
     import_names=("openai",),
@@ -89,7 +92,7 @@ def _load_azure_ai_inference_adapter() -> type[LLMAdapter]:
     return AzureAiInferenceChatAdapter
 
 
-def register_groq(registry: type) -> None:
+def register_groq(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.GROQ.value,
@@ -98,7 +101,7 @@ def register_groq(registry: type) -> None:
     )
 
 
-def register_vllm(registry: type) -> None:
+def register_vllm(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.VLLM.value,
@@ -107,7 +110,7 @@ def register_vllm(registry: type) -> None:
     )
 
 
-def register_together(registry: type) -> None:
+def register_together(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.TOGETHER.value,
@@ -116,7 +119,7 @@ def register_together(registry: type) -> None:
     )
 
 
-def register_fireworks(registry: type) -> None:
+def register_fireworks(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.FIREWORKS.value,
@@ -125,7 +128,7 @@ def register_fireworks(registry: type) -> None:
     )
 
 
-def register_openrouter(registry: type) -> None:
+def register_openrouter(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.OPENROUTER.value,
@@ -134,7 +137,7 @@ def register_openrouter(registry: type) -> None:
     )
 
 
-def register_deepseek(registry: type) -> None:
+def register_deepseek(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.DEEPSEEK.value,
@@ -143,7 +146,7 @@ def register_deepseek(registry: type) -> None:
     )
 
 
-def register_xai(registry: type) -> None:
+def register_xai(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.XAI.value,
@@ -152,7 +155,7 @@ def register_xai(registry: type) -> None:
     )
 
 
-def register_llama_cpp(registry: type) -> None:
+def register_llama_cpp(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.LLAMA_CPP.value,
@@ -161,7 +164,7 @@ def register_llama_cpp(registry: type) -> None:
     )
 
 
-def register_cohere(registry: type) -> None:
+def register_cohere(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.COHERE.value,
@@ -170,7 +173,7 @@ def register_cohere(registry: type) -> None:
     )
 
 
-def register_azure_ai_inference(registry: type) -> None:
+def register_azure_ai_inference(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.AZURE_AI_INFERENCE.value,

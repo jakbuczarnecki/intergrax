@@ -6,7 +6,10 @@ from __future__ import annotations
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.registrations._lazy_factory import register_lazy_adapter
-from intergrax.llm_adapters.registry.registration_contract import OptionalDependencyRequirement
+from intergrax.llm_adapters.registry.registration_contract import (
+    LLMAdapterRegistrationTarget,
+    OptionalDependencyRequirement,
+)
 
 _GEMINI_DEPENDENCY = OptionalDependencyRequirement(
     import_names=("google", "google.genai"),
@@ -33,7 +36,7 @@ def _load_vertex_gemini_adapter() -> type[LLMAdapter]:
     return VertexGeminiChatAdapter
 
 
-def register_gemini(registry: type) -> None:
+def register_gemini(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.GEMINI.value,
@@ -42,7 +45,7 @@ def register_gemini(registry: type) -> None:
     )
 
 
-def register_vertex_gemini(registry: type) -> None:
+def register_vertex_gemini(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.VERTEX_GEMINI.value,

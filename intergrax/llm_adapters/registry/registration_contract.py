@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import importlib
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -29,26 +28,40 @@ class LLMAdapterRegistrationSpec:
     factory: LLMAdapterFactory
 
 
+@runtime_checkable
+class LLMAdapterRegistrationTarget(Protocol):
+    @classmethod
+    def register_from_spec(
+        cls,
+        spec: LLMAdapterRegistrationSpec,
+        *,
+        override: bool = False,
+    ) -> None: ...
+
+
 @dataclass(frozen=True, slots=True)
 class OptionalDependencyRequirement:
     import_names: tuple[str, ...]
     distribution_name: str
     extra_name: str
 
-    def ensure_available(self, *, provider_id: str) -> None:
-        last_exc: ModuleNotFoundError | None = None
-        for name in self.import_names:
-            try:
-                importlib.import_module(name)
-                return
-            except ModuleNotFoundError as exc:
-                if exc.name not in self.import_names:
-                    raise
-                last_exc = exc
+    def matches_missing_module(self, exc: ModuleNotFoundError) -> bool:
+        missing_name = exc.name
+        if missing_name is None:
+            return False
+        for import_name in self.import_names:
+            if missing_name == import_name or missing_name.startswith(f"{import_name}."):
+                return True
+        return False
 
-        if last_exc is not None:
-            raise LLMAdapterDependencyError(
-                f"LLM provider '{provider_id}' requires dependency "
-                f"'{self.distribution_name}'. Install it with "
-                f"'Intergrax-ai[{self.extra_name}]' before selecting this provider."
-            ) from last_exc
+    def to_dependency_error(
+        self,
+        *,
+        provider_id: str,
+        exc: ModuleNotFoundError,
+    ) -> LLMAdapterDependencyError:
+        return LLMAdapterDependencyError(
+            f"LLM provider '{provider_id}' requires dependency "
+            f"'{self.distribution_name}'. Install it with "
+            f"'Intergrax-ai[{self.extra_name}]' before selecting this provider."
+        )

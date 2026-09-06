@@ -12,6 +12,7 @@ from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterFactory,
     LLMAdapterRegistrationError,
     LLMAdapterRegistrationSpec,
+    LLMAdapterRegistrationTarget,
     OptionalDependencyRequirement,
 )
 
@@ -20,6 +21,7 @@ __all__ = [
     "LLMAdapterFactory",
     "LLMAdapterRegistrationError",
     "LLMAdapterRegistrationSpec",
+    "LLMAdapterRegistrationTarget",
     "LLMAdapterRegistry",
     "OptionalDependencyRequirement",
 ]
@@ -132,10 +134,16 @@ def _resolve_adapter_model_id(adapter: LLMAdapter, kwargs: dict[str, object]) ->
     model_kw = kwargs.get("model")
     if model_kw:
         return str(model_kw)
-    if "model" in adapter.__dict__:
-        instance_model = adapter.__dict__["model"]
-        return str(instance_model) if instance_model else None
-    class_model = type(adapter).__dict__.get("model")
-    if isinstance(class_model, str) and class_model:
-        return class_model
-    return None
+    try:
+        model = adapter.model
+    except AttributeError as exc:
+        raise LLMAdapterRegistrationError(
+            f"LLM adapter {type(adapter).__name__} violates LLMAdapter runtime "
+            "contract: required public 'model' attribute is missing."
+        ) from exc
+    if not isinstance(model, str):
+        raise TypeError(
+            f"LLM adapter {type(adapter).__name__} violates LLMAdapter runtime "
+            f"contract: 'model' must be str, got {type(model).__name__}."
+        )
+    return model if model else None

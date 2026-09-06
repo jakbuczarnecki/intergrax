@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import importlib
+import importlib.abc
+import importlib.machinery
 import sys
 from pathlib import Path
 from typing import Optional, Sequence
@@ -16,7 +17,11 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import (
     LLMAdapterDependencyError,
+    LLMAdapterRegistrationError,
     LLMAdapterRegistry,
+)
+from intergrax.llm_adapters.providers.registrations._lazy_factory import (
+    lazy_adapter_registration_spec,
 )
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterRegistrationSpec,
@@ -26,8 +31,11 @@ from intergrax.llm_adapters.registry.registration_contract import (
 
 pytestmark = pytest.mark.unit
 
-_REGISTRY_SOURCE = (
-    Path(__file__).resolve().parents[3] / "intergrax" / "llm_adapters" / "llm_provider_registry.py"
+_LLM_ADAPTERS_ROOT = Path(__file__).resolve().parents[3] / "intergrax" / "llm_adapters"
+_PRODUCTION_SCAN_ROOTS = (
+    _LLM_ADAPTERS_ROOT / "llm_provider_registry.py",
+    _LLM_ADAPTERS_ROOT / "registry" / "registration_contract.py",
+    _LLM_ADAPTERS_ROOT / "providers" / "registrations",
 )
 
 _SDK_ROOTS = (
@@ -37,17 +45,53 @@ _SDK_ROOTS = (
     "mistralai",
     "boto3",
     "cohere",
-    "google.genai",
+    "google",
 )
 
 _REPRESENTATIVE_PROVIDERS = (
     (LLMProvider.OPENAI, "openai", "llm-openai"),
-    (LLMProvider.GEMINI, "google-genai", "llm-gemini"),
+    (LLMProvider.GEMINI, "google", "llm-gemini"),
     (LLMProvider.CLAUDE, "anthropic", "llm-anthropic"),
     (LLMProvider.OLLAMA, "ollama", "llm-ollama"),
     (LLMProvider.AWS_BEDROCK, "boto3", "llm-bedrock"),
-    (LLMProvider.GROQ, "openai", "llm-groq"),
 )
+
+_STATIC_GATE_FORBIDDEN = (
+    "_BUILTIN_ADAPTERS",
+    "_BUILTIN_OPTIONAL_DEPENDENCIES",
+    "_ensure_builtin",
+    "importlib.import_module",
+    "attribute_access.optional",
+    "adapter.__dict__",
+    "type(adapter).__dict__",
+    "getattr(",
+    "setattr(",
+    "__getattr__",
+    "ensure_available",
+)
+
+
+class _SdkImportBlocker(importlib.abc.MetaPathFinder):
+    def __init__(self, blocked_roots: set[str]) -> None:
+        self._blocked_roots = blocked_roots
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: Sequence[str] | None,
+        target: object | None = None,
+    ) -> importlib.machinery.ModuleSpec | None:
+        root = fullname.split(".", 1)[0]
+        if root in self._blocked_roots:
+            return importlib.machinery.ModuleSpec(fullname, self)
+        return None
+
+    def create_module(self, spec: importlib.machinery.ModuleSpec) -> None:
+        return None
+
+    def exec_module(self, module: object) -> None:
+        name = getattr(module, "__name__", "unknown")
+        raise ModuleNotFoundError(f"No module named '{name}'", name=name)
 
 
 class _FakeEnterpriseGatewayAdapter(LLMAdapter):
@@ -97,63 +141,111 @@ def _clear_sdk_modules() -> dict[str, object]:
     return removed
 
 
-def test_registry_source_has_no_central_builtin_vendor_map() -> None:
-    source = _REGISTRY_SOURCE.read_text(encoding="utf-8")
-    forbidden = (
-        "_BUILTIN_ADAPTERS",
-        "_BUILTIN_OPTIONAL_DEPENDENCIES",
-        "_ensure_builtin",
-        "importlib.import_module",
-        "attribute_access.optional",
-    )
-    for token in forbidden:
-        assert token not in source
+def _iter_production_python_files() -> list[Path]:
+    files: list[Path] = []
+    for root in _PRODUCTION_SCAN_ROOTS:
+        if root.is_file():
+            files.append(root)
+        else:
+            files.extend(sorted(root.rglob("*.py")))
+    return files
+
+
+def test_production_registration_path_static_gate() -> None:
+    for path in _iter_production_python_files():
+        source = path.read_text(encoding="utf-8")
+        for token in _STATIC_GATE_FORBIDDEN:
+            assert token not in source, f"{token} found in {path}"
 
 
 def test_bootstrap_registration_does_not_import_vendor_sdks(
     _restore_registry_state,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     removed = _clear_sdk_modules()
     LLMAdapterRegistry._factories = {}
     LLMAdapterRegistry._builtin_registrations_installed = False
-
-    real_import_module = importlib.import_module
-
-    def _fail_sdk_import(name: str, package: str | None = None) -> object:
-        root = name.split(".", 1)[0]
-        if root in {item.split(".", 1)[0] for item in _SDK_ROOTS}:
-            raise ModuleNotFoundError(f"blocked import {name}", name=name)
-        return real_import_module(name, package)
-
-    monkeypatch.setattr(importlib, "import_module", _fail_sdk_import)
+    blocker = _SdkImportBlocker({root.split(".", 1)[0] for root in _SDK_ROOTS})
+    sys.meta_path.insert(0, blocker)
     try:
         providers = LLMAdapterRegistry.registered_providers()
         assert len(providers) == len(LLMProvider)
         for root in _SDK_ROOTS:
-            assert root not in sys.modules
+            assert not any(
+                name == root or name.startswith(f"{root}.") for name in sys.modules
+            )
     finally:
+        sys.meta_path.remove(blocker)
         sys.modules.update(removed)
 
 
-@pytest.mark.parametrize(("provider", "distribution", "extra"), _REPRESENTATIVE_PROVIDERS)
+def test_selected_provider_adapter_import_is_lazy(_restore_registry_state) -> None:
+    adapter_module = "intergrax.llm_adapters.providers.openai_responses_adapter"
+    sys.modules.pop(adapter_module, None)
+    LLMAdapterRegistry._factories = {}
+    LLMAdapterRegistry._builtin_registrations_installed = False
+
+    providers = LLMAdapterRegistry.registered_providers()
+    assert LLMProvider.OPENAI.value in providers
+    assert adapter_module not in sys.modules
+
+
+@pytest.mark.parametrize(("provider", "sdk_root", "extra"), _REPRESENTATIVE_PROVIDERS)
 def test_provider_creation_surfaces_dependency_error_without_sdk(
     provider: LLMProvider,
-    distribution: str,
+    sdk_root: str,
     extra: str,
     _restore_registry_state,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def missing_dependency(self: OptionalDependencyRequirement, *, provider_id: str) -> None:
-        raise LLMAdapterDependencyError(
-            f"LLM provider '{provider_id}' requires dependency '{distribution}'. "
-            f"Install it with 'Intergrax-ai[{extra}]' before selecting this provider."
-        )
+    removed = _clear_sdk_modules()
+    blocker = _SdkImportBlocker({sdk_root.split(".", 1)[0]})
+    sys.meta_path.insert(0, blocker)
+    try:
+        with pytest.raises(LLMAdapterDependencyError, match=extra):
+            LLMAdapterRegistry.create(provider, model="test-model")
+    finally:
+        sys.meta_path.remove(blocker)
+        sys.modules.update(removed)
 
-    monkeypatch.setattr(OptionalDependencyRequirement, "ensure_available", missing_dependency)
 
-    with pytest.raises(LLMAdapterDependencyError, match=extra):
-        LLMAdapterRegistry.create(provider, model="test-model")
+def test_unrelated_module_not_found_is_not_converted(_restore_registry_state) -> None:
+    dependency = OptionalDependencyRequirement(
+        import_names=("anthropic",),
+        distribution_name="anthropic",
+        extra_name="llm-anthropic",
+    )
+
+    def _raise_unrelated() -> type[LLMAdapter]:
+        raise ModuleNotFoundError("No module named 'unrelated_pkg'", name="unrelated_pkg")
+
+    provider = "test-unrelated-missing"
+    LLMAdapterRegistry.register_from_spec(
+        lazy_adapter_registration_spec(
+            provider_id=provider,
+            dependency=dependency,
+            load_adapter_cls=_raise_unrelated,
+        ),
+        override=True,
+    )
+
+    with pytest.raises(ModuleNotFoundError, match="unrelated_pkg"):
+        LLMAdapterRegistry.create(provider)
+
+
+def test_optional_dependency_matches_declared_roots_only() -> None:
+    dependency = OptionalDependencyRequirement(
+        import_names=("openai",),
+        distribution_name="openai",
+        extra_name="llm-openai",
+    )
+    assert dependency.matches_missing_module(
+        ModuleNotFoundError("No module named 'openai'", name="openai")
+    )
+    assert dependency.matches_missing_module(
+        ModuleNotFoundError("No module named 'openai.types'", name="openai.types")
+    )
+    assert not dependency.matches_missing_module(
+        ModuleNotFoundError("No module named 'requests'", name="requests")
+    )
 
 
 def test_fake_enterprise_gateway_pluginability(_restore_registry_state) -> None:

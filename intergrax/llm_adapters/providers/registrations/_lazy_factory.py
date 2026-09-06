@@ -10,6 +10,7 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterFactory,
     LLMAdapterRegistrationSpec,
+    LLMAdapterRegistrationTarget,
     OptionalDependencyRequirement,
 )
 
@@ -23,16 +24,22 @@ def lazy_adapter_registration_spec(
     load_adapter_cls: Callable[[], type[_AdapterCls]],
 ) -> LLMAdapterRegistrationSpec:
     def factory(**kwargs: object) -> LLMAdapter:
-        if dependency is not None:
-            dependency.ensure_available(provider_id=provider_id)
-        adapter_cls = load_adapter_cls()
+        try:
+            adapter_cls = load_adapter_cls()
+        except ModuleNotFoundError as exc:
+            if dependency is not None and dependency.matches_missing_module(exc):
+                raise dependency.to_dependency_error(
+                    provider_id=provider_id,
+                    exc=exc,
+                ) from exc
+            raise
         return adapter_cls(**kwargs)
 
     return LLMAdapterRegistrationSpec(provider_id=provider_id, factory=factory)
 
 
 def register_lazy_adapter(
-    registry: type,
+    registry: LLMAdapterRegistrationTarget,
     *,
     provider_id: str,
     dependency: OptionalDependencyRequirement | None,

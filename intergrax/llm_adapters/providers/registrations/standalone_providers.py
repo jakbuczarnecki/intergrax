@@ -6,7 +6,10 @@ from __future__ import annotations
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.registrations._lazy_factory import register_lazy_adapter
-from intergrax.llm_adapters.registry.registration_contract import OptionalDependencyRequirement
+from intergrax.llm_adapters.registry.registration_contract import (
+    LLMAdapterRegistrationTarget,
+    OptionalDependencyRequirement,
+)
 
 _CLAUDE_DEPENDENCY = OptionalDependencyRequirement(
     import_names=("anthropic",),
@@ -69,7 +72,7 @@ def _load_cohere_native_adapter() -> type[LLMAdapter]:
     return CohereNativeChatAdapter
 
 
-def register_claude(registry: type) -> None:
+def register_claude(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.CLAUDE.value,
@@ -78,7 +81,7 @@ def register_claude(registry: type) -> None:
     )
 
 
-def register_mistral(registry: type) -> None:
+def register_mistral(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.MISTRAL.value,
@@ -87,7 +90,7 @@ def register_mistral(registry: type) -> None:
     )
 
 
-def register_aws_bedrock(registry: type) -> None:
+def register_aws_bedrock(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.AWS_BEDROCK.value,
@@ -96,7 +99,7 @@ def register_aws_bedrock(registry: type) -> None:
     )
 
 
-def register_ollama(registry: type) -> None:
+def register_ollama(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.OLLAMA.value,
@@ -105,7 +108,7 @@ def register_ollama(registry: type) -> None:
     )
 
 
-def register_cohere_native(registry: type) -> None:
+def register_cohere_native(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.COHERE_NATIVE.value,

@@ -6,7 +6,10 @@ from __future__ import annotations
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.registrations._lazy_factory import register_lazy_adapter
-from intergrax.llm_adapters.registry.registration_contract import OptionalDependencyRequirement
+from intergrax.llm_adapters.registry.registration_contract import (
+    LLMAdapterRegistrationTarget,
+    OptionalDependencyRequirement,
+)
 
 _OPENAI_DEPENDENCY = OptionalDependencyRequirement(
     import_names=("openai",),
@@ -29,7 +32,7 @@ def _load_azure_openai_adapter() -> type[LLMAdapter]:
     return AzureOpenAIChatAdapter
 
 
-def register_openai(registry: type) -> None:
+def register_openai(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.OPENAI.value,
@@ -38,7 +41,7 @@ def register_openai(registry: type) -> None:
     )
 
 
-def register_azure_openai(registry: type) -> None:
+def register_azure_openai(registry: LLMAdapterRegistrationTarget) -> None:
     register_lazy_adapter(
         registry,
         provider_id=LLMProvider.AZURE_OPENAI.value,

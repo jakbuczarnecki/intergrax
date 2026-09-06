@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from intergrax.llm_adapters.registry.registration_contract import LLMAdapterRegistrationTarget
 from intergrax.llm_adapters.providers.registrations.google_providers import (
     register_gemini,
     register_vertex_gemini,
@@ -32,7 +33,7 @@ from intergrax.llm_adapters.providers.registrations.standalone_providers import 
 )
 
 
-def register_builtin_llm_adapters(registry: type) -> None:
+def register_builtin_llm_adapters(registry: LLMAdapterRegistrationTarget) -> None:
     register_openai(registry)
     register_gemini(registry)
     register_vertex_gemini(registry)
