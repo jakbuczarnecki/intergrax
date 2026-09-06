@@ -97,12 +97,12 @@ Tier-0/Tier-1 platform Multiplayer primitives
 
 ## Engineering canon
 
-**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — ARCHITECTURE / OWNERSHIP FROZEN** (ADR-MP-003); MP-2 implementation NOT STARTED
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **COLLAB-WORK-2A** (WorkItem / Assignment contracts)
-**Next task:** COLLAB-WORK-2A implementation (MP-2 architecture frozen)
+**Current active task:** **COLLAB-WORK-2B** (repository ports + in-memory reference)
+**Next task:** COLLAB-WORK-2B — repository ports + in-memory reference
 
 ## Cursor read scope (token budget)
 
@@ -408,7 +408,7 @@ not replace existing Evidence.
 
 ### MP-2 - Shared Work: WorkItem, Assignment, lifecycle and concurrency
 
-**Status:** **ARCHITECTURE / OWNERSHIP FROZEN** — ADR-MP-003 Accepted; **IMPLEMENTATION NOT STARTED**.
+**Status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**.
 
 **Intent:** Platform-owned shared work units with explicit assignment, lifecycle states, and concurrency semantics independent of delivery channel.
 
@@ -416,9 +416,9 @@ not replace existing Evidence.
 
 **Reused (not owners):** `ORCHESTRATION` (graph policy; explicit WorkItem context bridge), `UNIFIED_EXECUTION_RUNTIME` / NEXUS (`Task`, `run_id`, `attempt`, outcomes), `BACKGROUND_TASKS` (may execute work associated with a WorkItem), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance consumption).
 
-**New required:** WorkItem, Assignment, shared-work lifecycle, concurrency, and idempotency invariants — **contracts and implementation via COLLAB-WORK-2A…2G** (not started).
+**New required:** WorkItem, Assignment, shared-work lifecycle, concurrency, and idempotency invariants — **contracts via COLLAB-WORK-2A (closed); implementation via COLLAB-WORK-2B…2G**.
 
-**Next active task:** **COLLAB-WORK-2A**
+**Next active task:** **COLLAB-WORK-2B**
 
 ---
 
@@ -558,7 +558,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-006** | Principal-scoped ContextView |
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted** — MP-2 architecture/ownership frozen; implementation NOT STARTED. ADR-MP-004…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted** — MP-2 **IMPLEMENTATION IN PROGRESS**; COLLAB-WORK-2A **APPROVED / CLOSED**; active task **COLLAB-WORK-2B**. ADR-MP-004…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 

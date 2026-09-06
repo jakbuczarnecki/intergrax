@@ -194,8 +194,8 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 
 Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
 
-**MP-2 status:** **ARCHITECTURE / OWNERSHIP FROZEN** — ADR-MP-003 Accepted; implementation NOT STARTED.
-**Current active task:** **COLLAB-WORK-2A** (WorkItem / Assignment contracts + lifecycle semantics).
+**MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**.
+**Current active task:** **COLLAB-WORK-2B** (repository ports + in-memory reference).
 
 ---
 
