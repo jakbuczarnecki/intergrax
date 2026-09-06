@@ -295,13 +295,15 @@ async def test_provider_spoof_protection() -> None:
     registry = ContextPluginRegistry()
     registry.add_provider(workspace)
     engine = DefaultNexusContextEngine(registry=registry)
-    with pytest.raises(ContextProviderContractViolationError, match="forged provider provenance"):
-        await engine.assemble(
-            _assembly_request(),
-            provider_ctx=_provider_ctx(
-                extra_handles={"workspace_files": {"a.py": "x = 1\n"}},
-            ),
-        )
+    assembled = await engine.assemble(
+        _assembly_request(),
+        provider_ctx=_provider_ctx(
+            extra_handles={"workspace_files": {"a.py": "x = 1\n"}},
+        ),
+    )
+    failed = [item for item in assembled.provider_outcomes if item.status == "failed"]
+    assert failed
+    assert failed[0].reason_code == "provider.contract_violation"
 
 
 @pytest.mark.asyncio
@@ -329,8 +331,10 @@ async def test_unsupported_source_contract_violation() -> None:
     registry = ContextPluginRegistry()
     registry.add_provider(workspace)
     engine = DefaultNexusContextEngine(registry=registry)
-    with pytest.raises(ContextProviderContractViolationError):
-        await engine.assemble(_assembly_request(), provider_ctx=_provider_ctx())
+    assembled = await engine.assemble(_assembly_request(), provider_ctx=_provider_ctx())
+    failed = [item for item in assembled.provider_outcomes if item.status == "failed"]
+    assert failed
+    assert failed[0].reason_code == "provider.contract_violation"
 
 
 @pytest.mark.asyncio
@@ -479,6 +483,245 @@ def test_tenant_isolation_for_pinning_store() -> None:
     )
     assert store.get(tenant_id="tenant-a", execution_id=execution_id) is not None
     assert store.get(tenant_id="tenant-b", execution_id=execution_id) is None
+
+
+def _rag_fragment(
+    *,
+    fragment_id: str = "rag-frag-1",
+    content: str = "rag retrieval body",
+) -> ContextFragment:
+    return ContextFragment(
+        fragment_id=fragment_id,
+        source=ContextFragmentSource.RAG,
+        source_id="doc-1",
+        content=content,
+        token_estimate=10,
+        relevance_score=0.8,
+        freshness_score=0.8,
+        confidence_score=0.8,
+        mandatory=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_required_source_succeeds_when_one_of_multiple_providers_contributes() -> None:
+    async def _fail(_request, _ctx):
+        raise RuntimeError("synthetic failure")
+
+    provider_a = _RecordingProvider(
+        "a.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        version="1.0.0",
+        collect_fn=_fail,
+    )
+    provider_b = _RecordingProvider(
+        "b.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        version="2.0.0",
+        collect_fn=lambda _request, _ctx: [_rag_fragment()],
+    )
+    registry = ContextPluginRegistry()
+    registry.add_provider(provider_a)
+    registry.add_provider(provider_b)
+    engine = DefaultNexusContextEngine(registry=registry)
+    assembled = await engine.assemble(
+        _assembly_request(required_sources=frozenset({ContextFragmentSource.RAG})),
+        provider_ctx=_provider_ctx(),
+    )
+    assert provider_a.collect_calls == 1
+    assert provider_b.collect_calls == 1
+    rag_fragments = [f for f in assembled.fragments_included if f.source == ContextFragmentSource.RAG]
+    assert rag_fragments
+    fragment = rag_fragments[0]
+    assert fragment.provider_provenance is not None
+    assert fragment.provider_provenance.provider_id == "b.rag.provider"
+    assert fragment.provider_provenance.provider_version == "2.0.0"
+    assert assembled.provenance
+    assert assembled.provenance[0].provider_id == "b.rag.provider"
+    assert assembled.provenance[0].provider_version == "2.0.0"
+    failed = [item for item in assembled.provider_outcomes if item.descriptor.provider_id == "a.rag.provider"]
+    assert failed
+    assert failed[0].status == "failed"
+    assert failed[0].failure_reason == "RuntimeError"
+    contributed = [item for item in assembled.provider_outcomes if item.descriptor.provider_id == "b.rag.provider"]
+    assert contributed
+    assert contributed[0].status == "success"
+    assert contributed[0].fragment_count == 1
+
+
+@pytest.mark.asyncio
+async def test_required_source_fails_when_all_eligible_providers_fail() -> None:
+    async def _fail(_request, _ctx):
+        raise RuntimeError("synthetic failure")
+
+    provider_a = _RecordingProvider(
+        "a.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        collect_fn=_fail,
+    )
+    provider_b = _RecordingProvider(
+        "b.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        collect_fn=_fail,
+    )
+    registry = ContextPluginRegistry()
+    registry.add_provider(provider_a)
+    registry.add_provider(provider_b)
+    engine = DefaultNexusContextEngine(registry=registry)
+    with pytest.raises(RequiredContextSourceUnavailableError, match="required_source.provider_failed"):
+        await engine.assemble(
+            _assembly_request(required_sources=frozenset({ContextFragmentSource.RAG})),
+            provider_ctx=_provider_ctx(),
+        )
+    assert provider_a.collect_calls == 1
+    assert provider_b.collect_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_required_source_fails_when_provider_returns_zero_fragments() -> None:
+    rag = _RecordingProvider(
+        "builtin.rag",
+        frozenset({ContextFragmentSource.RAG}),
+        collect_fn=lambda _request, _ctx: [],
+    )
+    registry = ContextPluginRegistry()
+    registry.add_provider(rag)
+    engine = DefaultNexusContextEngine(registry=registry)
+    with pytest.raises(RequiredContextSourceUnavailableError, match="required_source.no_fragments"):
+        await engine.assemble(
+            _assembly_request(required_sources=frozenset({ContextFragmentSource.RAG})),
+            provider_ctx=_provider_ctx(),
+        )
+    assert rag.collect_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_required_source_succeeds_when_one_provider_empty_and_second_contributes() -> None:
+    provider_a = _RecordingProvider(
+        "a.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        collect_fn=lambda _request, _ctx: [],
+    )
+    provider_b = _RecordingProvider(
+        "b.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        version="2.0.0",
+        collect_fn=lambda _request, _ctx: [_rag_fragment()],
+    )
+    registry = ContextPluginRegistry()
+    registry.add_provider(provider_a)
+    registry.add_provider(provider_b)
+    engine = DefaultNexusContextEngine(registry=registry)
+    assembled = await engine.assemble(
+        _assembly_request(required_sources=frozenset({ContextFragmentSource.RAG})),
+        provider_ctx=_provider_ctx(),
+    )
+    empty = [item for item in assembled.provider_outcomes if item.descriptor.provider_id == "a.rag.provider"]
+    assert empty
+    assert empty[0].status == "success"
+    assert empty[0].fragment_count == 0
+    assert any(f.source == ContextFragmentSource.RAG for f in assembled.fragments_included)
+
+
+@pytest.mark.asyncio
+async def test_required_source_fails_when_failure_plus_empty_leave_source_unsatisfied() -> None:
+    async def _fail(_request, _ctx):
+        raise RuntimeError("synthetic failure")
+
+    provider_a = _RecordingProvider(
+        "a.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        collect_fn=_fail,
+    )
+    provider_b = _RecordingProvider(
+        "b.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        collect_fn=lambda _request, _ctx: [],
+    )
+    registry = ContextPluginRegistry()
+    registry.add_provider(provider_a)
+    registry.add_provider(provider_b)
+    engine = DefaultNexusContextEngine(registry=registry)
+    with pytest.raises(RequiredContextSourceUnavailableError, match="required_source.unsatisfied"):
+        await engine.assemble(
+            _assembly_request(required_sources=frozenset({ContextFragmentSource.RAG})),
+            provider_ctx=_provider_ctx(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_required_rag_not_satisfied_by_workspace_only() -> None:
+    workspace = _RecordingProvider(
+        "builtin.workspace",
+        frozenset({ContextFragmentSource.WORKSPACE}),
+        collect_fn=lambda _request, _ctx: [
+            ContextFragment(
+                fragment_id="ws-1",
+                source=ContextFragmentSource.WORKSPACE,
+                source_id="a.py",
+                content="workspace body",
+                token_estimate=5,
+                relevance_score=0.5,
+                freshness_score=0.5,
+                confidence_score=0.5,
+                mandatory=False,
+            ),
+        ],
+    )
+    registry = ContextPluginRegistry()
+    registry.add_provider(workspace)
+    engine = DefaultNexusContextEngine(registry=registry)
+    with pytest.raises(RequiredContextSourceUnavailableError, match="required_source.no_provider"):
+        await engine.assemble(
+            _assembly_request(required_sources=frozenset({ContextFragmentSource.RAG})),
+            provider_ctx=_provider_ctx(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_contract_violation_does_not_satisfy_required_source_when_valid_rag_follows() -> None:
+    def _bad_source(_request, _ctx):
+        return [
+            ContextFragment(
+                fragment_id="frag-1",
+                source=ContextFragmentSource.WORKSPACE,
+                source_id="ws-1",
+                content="workspace body",
+                token_estimate=1,
+                relevance_score=0.5,
+                freshness_score=0.5,
+                confidence_score=0.5,
+                mandatory=False,
+            ),
+        ]
+
+    provider_a = _RecordingProvider(
+        "a.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        collect_fn=_bad_source,
+    )
+    provider_b = _RecordingProvider(
+        "b.rag.provider",
+        frozenset({ContextFragmentSource.RAG}),
+        version="2.0.0",
+        collect_fn=lambda _request, _ctx: [_rag_fragment()],
+    )
+    registry = ContextPluginRegistry()
+    registry.add_provider(provider_a)
+    registry.add_provider(provider_b)
+    engine = DefaultNexusContextEngine(registry=registry)
+    assembled = await engine.assemble(
+        _assembly_request(required_sources=frozenset({ContextFragmentSource.RAG})),
+        provider_ctx=_provider_ctx(),
+    )
+    assert any(f.source == ContextFragmentSource.RAG for f in assembled.fragments_included)
+    rag_fragment = next(f for f in assembled.fragments_included if f.source == ContextFragmentSource.RAG)
+    assert rag_fragment.provider_provenance is not None
+    assert rag_fragment.provider_provenance.provider_id == "b.rag.provider"
+    failed_a = [item for item in assembled.provider_outcomes if item.descriptor.provider_id == "a.rag.provider"]
+    assert failed_a
+    assert failed_a[0].status == "failed"
+    assert failed_a[0].reason_code == "provider.contract_violation"
 
 
 def test_lazy_eligibility_helpers() -> None:

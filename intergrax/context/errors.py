@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 from intergrax.context.contracts import ContextFragmentSource, ContextProviderDescriptor
-from intergrax.contracts.execution_identity import ExecutionId
 
 
 class ContextProviderLifecycleError(RuntimeError):
@@ -14,31 +13,6 @@ class ContextProviderLifecycleError(RuntimeError):
 
 class ContextProviderRegistrationError(ContextProviderLifecycleError, ValueError):
     """Registry rejected provider registration."""
-
-
-class ContextProviderBindingError(ContextProviderLifecycleError):
-    """Execution provider binding is missing or inconsistent."""
-
-
-class ContextProviderBindingUnavailableError(ContextProviderBindingError):
-    """Pinned provider semantics are unavailable for an execution."""
-
-    def __init__(
-        self,
-        *,
-        tenant_id: str,
-        execution_id: ExecutionId | str,
-        provider_id: str,
-        reason_code: str = "provider.binding_unavailable",
-    ) -> None:
-        self.tenant_id = tenant_id
-        self.execution_id = str(execution_id)
-        self.provider_id = provider_id
-        self.reason_code = reason_code
-        super().__init__(
-            f"context provider binding unavailable for execution {self.execution_id}: "
-            f"{provider_id} ({reason_code})",
-        )
 
 
 class ContextProviderContractViolationError(ContextProviderLifecycleError, ValueError):

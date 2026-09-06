@@ -201,13 +201,53 @@ def is_provider_eligible(
     return bool(relevant)
 
 
-def provider_covers_required_source(
-    descriptor: ContextProviderDescriptor,
+def fulfilled_sources_from_fragments(
+    fragments: tuple[ContextFragment, ...] | list[ContextFragment],
+) -> frozenset[ContextFragmentSource]:
+    return frozenset(fragment.source for fragment in fragments)
+
+
+def _reason_code_for_unsatisfied_required_source(
+    source: ContextFragmentSource,
+    provider_outcomes: tuple[ContextProviderCollectionOutcome, ...]
+    | list[ContextProviderCollectionOutcome],
+) -> str:
+    relevant = [
+        outcome
+        for outcome in provider_outcomes
+        if source in outcome.descriptor.supported_sources
+    ]
+    if not relevant:
+        return "required_source.no_provider"
+    if all(outcome.status == "failed" for outcome in relevant):
+        return "required_source.provider_failed"
+    if all(
+        outcome.status == "success" and outcome.fragment_count == 0
+        for outcome in relevant
+    ):
+        return "required_source.no_fragments"
+    return "required_source.unsatisfied"
+
+
+def validate_required_sources_fulfilled(
+    *,
+    collected_fragments: list[ContextFragment],
+    provider_outcomes: list[ContextProviderCollectionOutcome],
     request: ContextAssemblyRequest,
-) -> bool:
+) -> None:
     if not request.required_sources:
-        return False
-    return bool(descriptor.supported_sources & request.required_sources)
+        return
+    fulfilled = fulfilled_sources_from_fragments(collected_fragments)
+    for required in request.required_sources:
+        if required in fulfilled:
+            continue
+        raise RequiredContextSourceUnavailableError(
+            source=required,
+            reason_code=_reason_code_for_unsatisfied_required_source(
+                required,
+                provider_outcomes,
+            ),
+        )
 
 
 def validate_required_sources_have_eligible_providers(
