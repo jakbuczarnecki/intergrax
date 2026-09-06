@@ -97,12 +97,12 @@ Tier-0/Tier-1 platform Multiplayer primitives
 
 ## Engineering canon
 
-**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** - MP-2+ NOT STARTED
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — ARCHITECTURE / OWNERSHIP FROZEN** (ADR-MP-003); MP-2 implementation NOT STARTED
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001)
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-2** bounded ownership check
-**Next task after MP-2 gate:** domain plan rows for Shared Work (MP-2 implementation NOT STARTED)
+**Current active task:** **COLLAB-WORK-2A** (WorkItem / Assignment contracts)
+**Next task:** COLLAB-WORK-2A implementation (MP-2 architecture frozen)
 
 ## Cursor read scope (token budget)
 
@@ -408,13 +408,17 @@ not replace existing Evidence.
 
 ### MP-2 - Shared Work: WorkItem, Assignment, lifecycle and concurrency
 
+**Status:** **ARCHITECTURE / OWNERSHIP FROZEN** — ADR-MP-003 Accepted; **IMPLEMENTATION NOT STARTED**.
+
 **Intent:** Platform-owned shared work units with explicit assignment, lifecycle states, and concurrency semantics independent of delivery channel.
 
-**Likely owning domains:** `ORCHESTRATION`, `UNIFIED_EXECUTION_RUNTIME`, `BACKGROUND_TASKS` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`**
+**Owning domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) — frozen by ADR-MP-003
 
-**Reused (not owners):** Nexus task/session concepts where they remain execution-runtime concerns; application workflows.
+**Reused (not owners):** `ORCHESTRATION` (graph policy; explicit WorkItem context bridge), `UNIFIED_EXECUTION_RUNTIME` / NEXUS (`Task`, `run_id`, `attempt`, outcomes), `BACKGROUND_TASKS` (may execute work associated with a WorkItem), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance consumption).
 
-**New required:** WorkItem, Assignment, shared-work lifecycle and concurrency invariants.
+**New required:** WorkItem, Assignment, shared-work lifecycle, concurrency, and idempotency invariants — **contracts and implementation via COLLAB-WORK-2A…2G** (not started).
+
+**Next active task:** **COLLAB-WORK-2A**
 
 ---
 
@@ -548,13 +552,13 @@ Each decision is required before the relevant implementation:
 |-----|----------|
 | **ADR-MP-001** | Collaborative Work Plane ownership |
 | **ADR-MP-002** | Principal / Membership / Delegation |
-| **ADR-MP-003** | WorkItem vs Nexus Task |
+| **ADR-MP-003** | WorkItem vs Nexus Task — Shared Work ownership |
 | **ADR-MP-004** | WorkArtifact / Decision ownership |
 | **ADR-MP-005** | Workspace platformization / LKW migration |
 | **ADR-MP-006** | Principal-scoped ContextView |
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). ADR-MP-003…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted** — MP-2 architecture/ownership frozen; implementation NOT STARTED. ADR-MP-004…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 
