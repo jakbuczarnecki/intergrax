@@ -4,15 +4,20 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from pydantic import BaseModel
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.tools.investigation_proof import (
+    InvestigationEvidenceBasis,
     InvestigationProofValidationError,
+    build_completed_observation_reference_index,
     build_investigation_proof_step,
     collect_available_evidence_ids,
+    mint_runtime_observation_evidence_reference,
     parse_public_decision_note,
     record_first_investigation_step,
     validate_follow_up_investigation_step,
@@ -30,37 +35,74 @@ class _EvidenceIn(BaseModel):
     label: str = "x"
 
 
+def _tool_observation(*, tool_call_id: str, evidence_reference: str) -> ChatMessage:
+    return ChatMessage(
+        role="tool",
+        content=json.dumps({"evidence_reference": evidence_reference, "payload": "x"}),
+        tool_call_id=tool_call_id,
+    )
+
+
+def _assistant_call(*, tool_call_id: str, tool_name: str = "probe.a") -> ChatMessage:
+    return ChatMessage(
+        role="assistant",
+        content="",
+        tool_calls=[
+            {
+                "id": tool_call_id,
+                "type": "function",
+                "function": {"name": tool_name, "arguments": "{}"},
+            }
+        ],
+    )
+
+
 def test_first_round_allows_empty_basis() -> None:
     step = record_first_investigation_step(
         round_index=1,
         assistant_content="",
-        next_tool_call_ids=("evidence-a",),
+        next_tool_call_ids=("call_abc",),
     )
+    assert step.declared_basis_references == ()
+    assert step.basis_bindings == ()
     assert step.basis_tool_call_ids == ()
-    assert step.next_tool_call_ids == ("evidence-a",)
+    assert step.next_tool_call_ids == ("call_abc",)
 
 
 def test_collect_available_evidence_ids_from_canonical_tool_messages() -> None:
     messages = [
-        ChatMessage(
-            role="assistant",
-            content="",
-            tool_calls=[
-                {
-                    "id": "evidence-a",
-                    "type": "function",
-                    "function": {"name": "probe.a", "arguments": "{}"},
-                }
-            ],
-        ),
-        ChatMessage(role="tool", content="A", tool_call_id="evidence-a"),
+        _assistant_call(tool_call_id="call_abc"),
+        _tool_observation(tool_call_id="call_abc", evidence_reference="evidence.telemetry.x"),
     ]
-    assert collect_available_evidence_ids(messages) == ("evidence-a",)
+    assert collect_available_evidence_ids(messages) == ("evidence.telemetry.x",)
+
+
+def test_collect_available_evidence_ids_prefers_domain_evidence_id() -> None:
+    messages = [
+        _assistant_call(tool_call_id="call_abc"),
+        ChatMessage(
+            role="tool",
+            content=json.dumps(
+                {
+                    "evidence_id": "evidence.workload.line4.incident_window",
+                    "evidence_reference": "observation.probe.a.step-1",
+                }
+            ),
+            tool_call_id="call_abc",
+        ),
+    ]
+    assert collect_available_evidence_ids(messages) == (
+        "evidence.workload.line4.incident_window",
+    )
 
 
 def test_collect_available_evidence_ids_ignores_orphan_tools() -> None:
     messages = [
-        ChatMessage(role="tool", content="orphan", tool_call_id="fake-x"),
+        ChatMessage(
+            role="tool",
+            content=json.dumps({"evidence_reference": "evidence.orphan"}),
+            tool_call_id="fake-x",
+        ),
         ChatMessage(role="user", content="objective"),
     ]
     assert collect_available_evidence_ids(messages) == ()
@@ -71,12 +113,26 @@ def test_collect_available_evidence_ids_ignores_incomplete_exchange() -> None:
         ChatMessage(
             role="assistant",
             content="x",
-            tool_calls=[{"id": "evidence-a"}],
+            tool_calls=[{"id": "call_abc"}],
         ),
-        ChatMessage(role="tool", content="A", tool_call_id="evidence-a"),
-        ChatMessage(role="tool", content="B", tool_call_id="evidence-b"),
+        _tool_observation(tool_call_id="call_abc", evidence_reference="evidence.a"),
+        ChatMessage(
+            role="tool",
+            content=json.dumps({"evidence_reference": "evidence.b"}),
+            tool_call_id="call_def",
+        ),
     ]
     assert collect_available_evidence_ids(messages) == ()
+
+
+def test_build_completed_observation_reference_index() -> None:
+    messages = [
+        _assistant_call(tool_call_id="call_abc"),
+        _tool_observation(tool_call_id="call_abc", evidence_reference="evidence.telemetry.x"),
+    ]
+    assert build_completed_observation_reference_index(messages) == {
+        "evidence.telemetry.x": "call_abc",
+    }
 
 
 def test_parse_public_decision_note() -> None:
@@ -84,7 +140,7 @@ def test_parse_public_decision_note() -> None:
         "EVIDENCE_BASIS: evidence-a,evidence-b\n"
         "PURPOSE: verify normalized effect"
     )
-    assert parsed.basis_tool_call_ids == ("evidence-a", "evidence-b")
+    assert parsed.basis_evidence_references == ("evidence-a", "evidence-b")
     assert parsed.public_reason == "verify normalized effect"
 
 
@@ -118,14 +174,123 @@ def test_malformed_public_decision_note_rejected(content: str, match: str) -> No
         parse_public_decision_note(content)
 
 
-def test_unknown_basis_id_rejected() -> None:
-    with pytest.raises(InvestigationProofValidationError, match="unknown basis tool_call_id"):
+def test_unknown_basis_reference_rejected() -> None:
+    with pytest.raises(
+        InvestigationProofValidationError,
+        match="unknown basis evidence reference",
+    ):
         validate_follow_up_investigation_step(
             round_index=2,
             assistant_content="EVIDENCE_BASIS: missing-id\nPURPOSE: inspect subgroup",
-            available_evidence_ids=frozenset({"evidence-a"}),
-            next_tool_call_ids=("evidence-b",),
+            available_evidence_references=frozenset({"evidence.telemetry.x"}),
+            reference_index={"evidence.telemetry.x": "call_abc"},
+            next_tool_call_ids=("call_def",),
         )
+
+
+def test_unknown_machine_alias_tool_response_0_rejected() -> None:
+    with pytest.raises(
+        InvestigationProofValidationError,
+        match="unknown basis evidence reference: tool_response_0",
+    ):
+        validate_follow_up_investigation_step(
+            round_index=2,
+            assistant_content=(
+                "EVIDENCE_BASIS: tool_response_0\n"
+                "PURPOSE: inspect equipment degradation"
+            ),
+            available_evidence_references=frozenset({"evidence.telemetry.x"}),
+            reference_index={"evidence.telemetry.x": "call_abc"},
+            next_tool_call_ids=("call_def",),
+        )
+
+
+def test_valid_semantic_basis_binds_canonical_tool_call_id() -> None:
+    step = build_investigation_proof_step(
+        round_index=2,
+        assistant_content=(
+            "EVIDENCE_BASIS: evidence.telemetry.x\n"
+            "PURPOSE: inspect equipment degradation"
+        ),
+        tool_calls=(
+            LLMToolCall.from_openai_shape(
+                call_id="call_def",
+                name="probe.b",
+                arguments={"confirm": True},
+            ),
+        ),
+        messages_before_round=[
+            _assistant_call(tool_call_id="call_abc"),
+            _tool_observation(
+                tool_call_id="call_abc",
+                evidence_reference="evidence.telemetry.x",
+            ),
+        ],
+    )
+    assert step.declared_basis_references == ("evidence.telemetry.x",)
+    assert step.basis_bindings == (
+        InvestigationEvidenceBasis(
+            declared_reference="evidence.telemetry.x",
+            tool_call_id="call_abc",
+        ),
+    )
+    assert step.basis_tool_call_ids == ("call_abc",)
+    assert step.next_tool_call_ids == ("call_def",)
+
+
+def test_multiple_basis_references_bind_in_declaration_order() -> None:
+    step = build_investigation_proof_step(
+        round_index=2,
+        assistant_content=(
+            "EVIDENCE_BASIS: evidence.workload.x,evidence.throughput.x\n"
+            "PURPOSE: compare workload and throughput"
+        ),
+        tool_calls=(
+            LLMToolCall.from_openai_shape(
+                call_id="call_c",
+                name="probe.c",
+                arguments={"confirm": True},
+            ),
+        ),
+        messages_before_round=[
+            _assistant_call(tool_call_id="call_a", tool_name="probe.a"),
+            _tool_observation(tool_call_id="call_a", evidence_reference="evidence.workload.x"),
+            _assistant_call(tool_call_id="call_b", tool_name="probe.b"),
+            _tool_observation(
+                tool_call_id="call_b",
+                evidence_reference="evidence.throughput.x",
+            ),
+        ],
+    )
+    assert step.declared_basis_references == (
+        "evidence.workload.x",
+        "evidence.throughput.x",
+    )
+    assert step.basis_tool_call_ids == ("call_a", "call_b")
+
+
+def test_available_but_not_declared_basis_is_not_auto_bound() -> None:
+    step = build_investigation_proof_step(
+        round_index=2,
+        assistant_content="EVIDENCE_BASIS: evidence.b\nPURPOSE: inspect subgroup",
+        tool_calls=(
+            LLMToolCall.from_openai_shape(
+                call_id="call_d",
+                name="probe.d",
+                arguments={"confirm": True},
+            ),
+        ),
+        messages_before_round=[
+            _assistant_call(tool_call_id="call_a"),
+            _tool_observation(tool_call_id="call_a", evidence_reference="evidence.a"),
+            _assistant_call(tool_call_id="call_b"),
+            _tool_observation(tool_call_id="call_b", evidence_reference="evidence.b"),
+            _assistant_call(tool_call_id="call_c"),
+            _tool_observation(tool_call_id="call_c", evidence_reference="evidence.c"),
+        ],
+    )
+    assert step.declared_basis_references == ("evidence.b",)
+    assert step.basis_tool_call_ids == ("call_b",)
 
 
 def test_empty_follow_up_basis_rejected_when_prior_evidence_exists() -> None:
@@ -136,49 +301,32 @@ def test_empty_follow_up_basis_rejected_when_prior_evidence_exists() -> None:
         validate_follow_up_investigation_step(
             round_index=2,
             assistant_content="EVIDENCE_BASIS:\nPURPOSE: inspect subgroup",
-            available_evidence_ids=frozenset({"evidence-a"}),
-            next_tool_call_ids=("evidence-b",),
+            available_evidence_references=frozenset({"evidence.a"}),
+            reference_index={"evidence.a": "call_abc"},
+            next_tool_call_ids=("call_def",),
         )
 
 
-def test_duplicate_basis_id_rejected() -> None:
-    with pytest.raises(InvestigationProofValidationError, match="duplicate basis tool_call_id"):
+def test_duplicate_basis_reference_rejected() -> None:
+    with pytest.raises(
+        InvestigationProofValidationError,
+        match="duplicate basis evidence reference",
+    ):
         validate_follow_up_investigation_step(
             round_index=2,
             assistant_content="EVIDENCE_BASIS: evidence-a,evidence-a\nPURPOSE: inspect subgroup",
-            available_evidence_ids=frozenset({"evidence-a"}),
-            next_tool_call_ids=("evidence-b",),
+            available_evidence_references=frozenset({"evidence-a"}),
+            reference_index={"evidence-a": "call_abc"},
+            next_tool_call_ids=("call_def",),
         )
 
 
-def test_build_investigation_proof_step_uses_tool_call_ids_for_next() -> None:
-    step = build_investigation_proof_step(
-        round_index=2,
-        assistant_content="EVIDENCE_BASIS: evidence-a\nPURPOSE: inspect subgroup",
-        tool_calls=(
-            LLMToolCall.from_openai_shape(
-                call_id="evidence-b",
-                name="probe.b",
-                arguments={"confirm": True},
-            ),
-        ),
-        messages_before_round=[
-            ChatMessage(
-                role="assistant",
-                content="",
-                tool_calls=[
-                    {
-                        "id": "evidence-a",
-                        "type": "function",
-                        "function": {"name": "probe.a", "arguments": "{}"},
-                    }
-                ],
-            ),
-            ChatMessage(role="tool", content="A", tool_call_id="evidence-a"),
-        ],
+def test_mint_runtime_observation_evidence_reference_is_stable() -> None:
+    reference = mint_runtime_observation_evidence_reference(
+        tool_id="probe.a",
+        step_id="step-1",
     )
-    assert step.basis_tool_call_ids == ("evidence-a",)
-    assert step.next_tool_call_ids == ("evidence-b",)
+    assert reference == "observation.probe.a.step-1"
 
 
 def test_validate_native_tool_plan_alignment_name_mismatch() -> None:

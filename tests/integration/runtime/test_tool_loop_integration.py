@@ -7,6 +7,7 @@ from __future__ import annotations
 import time
 from unittest.mock import MagicMock
 
+import json
 import pytest
 from pydantic import BaseModel
 
@@ -23,7 +24,10 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls, run_bounded_tool_loop
-from intergrax.runtime.nexus.tools.investigation_proof import InvestigationProofValidationError
+from intergrax.runtime.nexus.tools.investigation_proof import (
+    InvestigationProofValidationError,
+    collect_available_evidence_ids,
+)
 from intergrax.runtime.nexus.tools.native_tool_plan_alignment import NativeToolPlanAlignmentError
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
@@ -43,15 +47,51 @@ _INTEGRATION_RUN_ID = RunId("run_00000000000000000000000000000001")
 
 
 def _invoke_bounded_tool_loop(**kwargs):
+    from intergrax.contracts.execution_identity import require_active_execution_id
+    from intergrax.runtime.execution.active_execution_budget import (
+        bind_root_execution_budget,
+        peek_active_execution_budget,
+        reset_active_execution_budget,
+    )
+    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+
     state = kwargs["state"]
     with canonical_execution_identity_scope(state.run_id):
-        return run_bounded_tool_loop(**kwargs)
+        budget_token = None
+        if peek_active_execution_budget() is None:
+            budget_token = bind_root_execution_budget(
+                execution_id=require_active_execution_id(),
+                ledger=create_execution_budget_ledger(None),
+            )
+        try:
+            return run_bounded_tool_loop(**kwargs)
+        finally:
+            if budget_token is not None:
+                reset_active_execution_budget(budget_token)
 
 
 def _invoke_planned_tool_calls(**kwargs):
+    from intergrax.contracts.execution_identity import require_active_execution_id
+    from intergrax.runtime.execution.active_execution_budget import (
+        bind_root_execution_budget,
+        peek_active_execution_budget,
+        reset_active_execution_budget,
+    )
+    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+
     state = kwargs["state"]
     with canonical_execution_identity_scope(state.run_id):
-        return execute_planned_tool_calls(**kwargs)
+        budget_token = None
+        if peek_active_execution_budget() is None:
+            budget_token = bind_root_execution_budget(
+                execution_id=require_active_execution_id(),
+                ledger=create_execution_budget_ledger(None),
+            )
+        try:
+            return execute_planned_tool_calls(**kwargs)
+        finally:
+            if budget_token is not None:
+                reset_active_execution_budget(budget_token)
 
 
 _BEYOND_PREVIEW_MARKER = "ENG1_TAIL_MARKER"
@@ -61,6 +101,10 @@ _PREVIEW_BOUND = 400
 def _decision_note(*basis_ids: str, purpose: str) -> str:
     basis = ",".join(basis_ids)
     return f"EVIDENCE_BASIS: {basis}\nPURPOSE: {purpose}"
+
+
+def _prior_evidence_references(messages: list[ChatMessage]) -> tuple[str, ...]:
+    return collect_available_evidence_ids(messages)
 
 
 class _InA(BaseModel):
@@ -207,7 +251,7 @@ class _AlwaysToolLLM(FakeLLMAdapter):
         return True
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = messages, tools_schema, kwargs
+        _ = tools_schema, kwargs
         self._round += 1
         if self._round == 1:
             return LLMAdapterResponse(
@@ -220,7 +264,7 @@ class _AlwaysToolLLM(FakeLLMAdapter):
                     ),
                 ),
             )
-        prior_basis = tuple(f"tc-{index}" for index in range(1, self._round))
+        prior_basis = _prior_evidence_references(list(messages))
         return LLMAdapterResponse(
             content=_decision_note(*prior_basis, purpose="continue investigation"),
             tool_calls=(
@@ -361,9 +405,9 @@ def test_runbudget_max_tool_calls_aborts_after_second_invocation() -> None:
             max_iterations=5,
         )
 
-    assert _CountingHandler.invocations == 2
+    assert _CountingHandler.invocations == 1
     assert llm._round == 2
-    assert len(state.tool_traces) == 2
+    assert len(state.tool_traces) == 1
     budget_events = [
         event
         for event in state.trace_events
@@ -541,7 +585,11 @@ def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> Non
     assert len(trace.output_preview) <= _PREVIEW_BOUND
     assert _BEYOND_PREVIEW_MARKER not in trace.output_preview
     assert len(tool_messages) == 1
-    assert tool_messages[0].content == full_json
+    tool_payload = json.loads(tool_messages[0].content or "{}")
+    full_payload = json.loads(full_json)
+    assert tool_payload["decision_token"] == full_payload["decision_token"]
+    assert tool_payload["padding"] == full_payload["padding"]
+    assert tool_payload["evidence_reference"] == "observation.long.tool.tool"
     assert llm.second_round_saw_marker is True
     assert result.stop_reason == "planner_final_answer"
 
@@ -812,11 +860,7 @@ class _MultiCallRoundPlanner:
             if self._round == 1:
                 content = ""
             else:
-                prior_basis = [
-                    f"tc-{index}"
-                    for prior_round in range(1, self._round)
-                    for index in range(prior_round + 1)
-                ]
+                prior_basis = _prior_evidence_references(list(messages))
                 content = _decision_note(*prior_basis, purpose="continue per-round batch")
             return (
                 LLMAdapterResponse(content=content, tool_calls=tool_calls),
@@ -950,7 +994,7 @@ class _RepeatCallPlanner:
         _ = messages, allowed_tool_ids, run_id, tool_choice, kwargs
         self._round += 1
         if self._round <= self._max_rounds:
-            prior_basis = tuple(f"tc-{index}" for index in range(1, self._round))
+            prior_basis = _prior_evidence_references(list(messages))
             content = (
                 ""
                 if self._round == 1
@@ -1039,7 +1083,7 @@ class _AlternatingInputPlanner:
         self._round += 1
         if self._round <= len(self.sequence):
             value = self.sequence[self._round - 1]
-            prior_basis = tuple(f"tc-{index}" for index in range(1, self._round))
+            prior_basis = _prior_evidence_references(list(messages))
             content = (
                 ""
                 if self._round == 1
@@ -1279,8 +1323,9 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
         if self._round == 2:
             assert len(tool_messages) == 1
             assert any("EVIDENCE_A" in content for content in tool_contents)
+            prior_basis = _prior_evidence_references(list(messages))
             return LLMAdapterResponse(
-                content=_decision_note("tc-probe-a", purpose="confirm subgroup from first probe"),
+                content=_decision_note(*prior_basis, purpose="confirm subgroup from first probe"),
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
                         call_id="tc-probe-b",
@@ -1428,8 +1473,9 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
         if self._round == 2:
             assert len(tool_messages) == 1
             assert any("EVIDENCE_A" in content for content in tool_contents)
+            prior_basis = _prior_evidence_references(list(messages))
             return LLMAdapterResponse(
-                content=_decision_note("evidence-a", purpose="inspect suspected subgroup"),
+                content=_decision_note(*prior_basis, purpose="inspect suspected subgroup"),
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
                         call_id="evidence-b",
@@ -1443,10 +1489,10 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
             assert len(tool_messages) == 2
             assert any("EVIDENCE_A" in content for content in tool_contents)
             assert any("EVIDENCE_B" in content for content in tool_contents)
+            prior_basis = _prior_evidence_references(list(messages))
             return LLMAdapterResponse(
                 content=_decision_note(
-                    "evidence-a",
-                    "evidence-b",
+                    *prior_basis,
                     purpose="verify normalized effect",
                 ),
                 tool_calls=(
@@ -1500,19 +1546,24 @@ def test_bounded_react_multi_hop_investigation_proof() -> None:
     assert len(proof.steps) == 3
 
     step1, step2, step3 = proof.steps
+    ref_a = "observation.probe.a.tool"
+    ref_b = "observation.probe.b.tool"
+    ref_c = "observation.probe.c.tool"
     assert step1.round_index == 1
     assert step1.basis_tool_call_ids == ()
     assert step1.next_tool_call_ids == ("evidence-a",)
+    assert step2.declared_basis_references == (ref_a,)
     assert step2.basis_tool_call_ids == ("evidence-a",)
     assert step2.next_tool_call_ids == ("evidence-b",)
     assert step2.public_reason == "inspect suspected subgroup"
+    assert step3.declared_basis_references == (ref_a, ref_b)
     assert step3.basis_tool_call_ids == ("evidence-a", "evidence-b")
     assert step3.next_tool_call_ids == ("evidence-c",)
     assert step3.public_reason == "verify normalized effect"
     assert proof.final_available_evidence_ids == (
-        "evidence-a",
-        "evidence-b",
-        "evidence-c",
+        ref_a,
+        ref_b,
+        ref_c,
     )
 
 
@@ -1567,11 +1618,11 @@ def _registry_with_probe_tools() -> ToolRegistry:
 @pytest.mark.parametrize(
     ("round2_content", "match"),
     [
-        (_decision_note("missing-id", purpose="inspect subgroup"), "unknown basis tool_call_id"),
+        (_decision_note("missing-id", purpose="inspect subgroup"), "unknown basis evidence reference"),
         (_decision_note(purpose="inspect subgroup"), "follow-up tool round requires explicit evidence basis"),
         (
-            "EVIDENCE_BASIS: evidence-a,evidence-a\nPURPOSE: inspect subgroup",
-            "duplicate basis tool_call_id",
+            "EVIDENCE_BASIS: observation.probe.a.tool,observation.probe.a.tool\nPURPOSE: inspect subgroup",
+            "duplicate basis evidence reference",
         ),
         ("not-a-valid-note", "exactly two lines"),
     ],
@@ -1624,7 +1675,7 @@ class _OrphanBasisFollowUpLLM(FakeLLMAdapter):
                 ),
             )
         return LLMAdapterResponse(
-            content=_decision_note("fake-x", purpose="inspect orphan basis"),
+                content=_decision_note("evidence.orphan.fake", purpose="inspect orphan basis"),
             tool_calls=(
                 LLMToolCall.from_openai_shape(
                     call_id="evidence-b",
@@ -1642,7 +1693,7 @@ def test_orphan_raw_evidence_basis_rejected_before_second_tool() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    with pytest.raises(InvestigationProofValidationError, match="unknown basis tool_call_id"):
+    with pytest.raises(InvestigationProofValidationError, match="unknown basis evidence reference"):
         _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,

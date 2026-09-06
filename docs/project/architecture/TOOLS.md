@@ -881,6 +881,30 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **Pipeline tool step** (`run_bounded_tool_loop` / `ctx.invoke_tool`) | **Done** | Planner wired; bounded loop via `tool_loop_step` (TOOL-ENG-6 · ADR-TOOL-002) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
 | **Multi-tool / ReAct loop** | **Done** | `max_tool_iterations` + native `role=tool` chain (TOOL-ENG-6) |
+
+#### ENG-6 — native investigation proof (semantic evidence basis)
+
+**Ownership boundary (frozen):**
+
+| Owner | Responsibility |
+|-------|----------------|
+| **Model** | Public `PURPOSE`; semantic selection of prior observations in `EVIDENCE_BASIS` |
+| **Tool execution** | Canonical `LLMToolCall.id` after adapter normalization; stable model-visible `evidence_reference` / domain `evidence_id` in tool observations |
+| **ENG-6 runtime** | Deterministic bind declared semantic references → completed observations → `basis_tool_call_ids`; fail closed on unknown references |
+
+**Forbidden:** model-authored provider/runtime `tool_call_id` as the public basis contract; silent auto-binding of all available evidence; fuzzy or regex ID recovery from model text.
+
+**Public decision note (retained two-line envelope):**
+
+```text
+EVIDENCE_BASIS: <comma-separated prior model-visible evidence references>
+PURPOSE: <short user-facing purpose>
+```
+
+**Binding:** `investigation_proof.py` parses declared references, resolves them against the same canonical native transcript as ENG-5 (`canonical_native_planner_messages`), and records both `declared_basis_references` and runtime `basis_bindings` (`InvestigationEvidenceBasis`).
+
+**Implementation:** `intergrax/runtime/nexus/tools/investigation_proof.py` · observation reference minting in `tool_loop.py` · shared policy `prompts/tools_investigation_policy/`.
+
 | **Invocation pattern plugin** (`ToolInvocationPattern`) | **Production** | All shipped modes + `DeterministicChainPattern` (TOOL-ENG-16–24,28) |
 | **Invoker test regression** (`modality_tool_trace`) | **Done** | TOOL-ENG-TEST.1 (S0) |
 | **Deterministic tool chains** (output→input) | **Done** | `ToolChainSpec` + `DeterministicChainPattern` (TOOL-ENG-20) |

@@ -52,6 +52,9 @@ from intergrax.runtime.nexus.tools.tool_planner_protocol import (
     IterativeToolPlannerProtocol,
     ToolPlannerProtocol,
 )
+from intergrax.runtime.nexus.tools.investigation_proof import (
+    mint_runtime_observation_evidence_reference,
+)
 from intergrax.tools.core.tool_plan import PlannedToolCall
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult, ToolModelObservation
 
@@ -158,9 +161,41 @@ def _invoke_planned_call(
     else:
         state.tool_traces.append(trace)
         enforce_tool_call_budget(state)
+    step_id = call.step_id or f"tool-{index}"
     return PlannedToolCallOutcome(
         trace=trace,
-        model_observation=ToolModelObservation.from_execution_result(result),
+        model_observation=_model_observation_with_evidence_reference(
+            result,
+            tool_id=call.tool_id,
+            step_id=step_id,
+        ),
+    )
+
+
+def _model_observation_with_evidence_reference(
+    result: ToolExecutionResult[BaseModel],
+    *,
+    tool_id: str,
+    step_id: str,
+) -> ToolModelObservation:
+    """Attach a stable model-visible evidence reference when the tool output lacks one."""
+    if not result.success or result.output is None:
+        return ToolModelObservation.from_execution_result(result)
+    payload = result.output.model_dump(mode="json")
+    if not isinstance(payload, dict):
+        return ToolModelObservation.from_execution_result(result)
+    for key in ("evidence_id", "evidence_reference", "observation_reference"):
+        existing = payload.get(key)
+        if isinstance(existing, str) and existing.strip():
+            return ToolModelObservation.from_execution_result(result)
+    reference = mint_runtime_observation_evidence_reference(
+        tool_id=tool_id,
+        step_id=step_id,
+    )
+    enriched = dict(payload)
+    enriched["evidence_reference"] = reference
+    return ToolModelObservation(
+        content=json.dumps(enriched, ensure_ascii=False, separators=(",", ":"))
     )
 
 

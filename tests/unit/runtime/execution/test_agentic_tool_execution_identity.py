@@ -293,7 +293,7 @@ class _TwoRoundPlanner:
             )
         return (
             LLMAdapterResponse(
-                content=_decision_note("tc-1", purpose="probe round two"),
+                content=_decision_note("observation.probe.read.step-1", purpose="probe round two"),
                 tool_calls=(
                     LLMToolCall.from_openai_shape(
                         call_id="tc-2",

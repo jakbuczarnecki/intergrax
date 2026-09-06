@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -15,6 +16,9 @@ from intergrax.runtime.nexus.tools.native_planner_transcript import (
 
 _EVIDENCE_BASIS_PREFIX = "EVIDENCE_BASIS:"
 _PURPOSE_PREFIX = "PURPOSE:"
+_EVIDENCE_ID_JSON_KEY = "evidence_id"
+_EVIDENCE_REFERENCE_JSON_KEY = "evidence_reference"
+_OBSERVATION_REFERENCE_JSON_KEY = "observation_reference"
 
 
 class InvestigationProofValidationError(ValueError):
@@ -22,10 +26,20 @@ class InvestigationProofValidationError(ValueError):
 
 
 @dataclass(frozen=True, slots=True)
+class InvestigationEvidenceBasis:
+    """Model-declared semantic evidence reference bound to canonical runtime identity."""
+
+    declared_reference: str
+    tool_call_id: str
+
+
+@dataclass(frozen=True, slots=True)
 class InvestigationProofStep:
     """One native investigative tool round with explicit evidence dependency."""
 
     round_index: int
+    declared_basis_references: tuple[str, ...]
+    basis_bindings: tuple[InvestigationEvidenceBasis, ...]
     basis_tool_call_ids: tuple[str, ...]
     next_tool_call_ids: tuple[str, ...]
     public_reason: str
@@ -41,24 +55,68 @@ class InvestigationProof:
 
 @dataclass(frozen=True, slots=True)
 class ParsedPublicDecisionNote:
-    basis_tool_call_ids: tuple[str, ...]
+    basis_evidence_references: tuple[str, ...]
     public_reason: str
 
 
-def collect_available_evidence_ids(messages: Sequence[ChatMessage]) -> tuple[str, ...]:
-    """Return tool_call_id handles from model-visible canonical native transcript."""
+def mint_runtime_observation_evidence_reference(*, tool_id: str, step_id: str) -> str:
+    """Stable model-visible observation reference for generic tool execution paths."""
+    return f"observation.{tool_id}.{step_id}"
+
+
+def _extract_semantic_reference_from_tool_content(content: str) -> str | None:
+    stripped = content.strip()
+    if not stripped:
+        return None
+    try:
+        payload = json.loads(stripped)
+    except json.JSONDecodeError:
+        payload = None
+    if isinstance(payload, dict):
+        for key in (
+            _EVIDENCE_ID_JSON_KEY,
+            _EVIDENCE_REFERENCE_JSON_KEY,
+            _OBSERVATION_REFERENCE_JSON_KEY,
+        ):
+            candidate = payload.get(key)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+    return None
+
+
+def build_completed_observation_reference_index(
+    messages: Sequence[ChatMessage],
+) -> dict[str, str]:
+    """Map model-visible semantic evidence references to canonical tool_call_id values."""
     canonical = canonical_native_planner_messages(messages)
-    ids: list[str] = []
-    seen: set[str] = set()
+    index: dict[str, str] = {}
     for message in canonical:
         if message.role != "tool":
             continue
         tool_call_id = message.tool_call_id
-        if not tool_call_id or tool_call_id in seen:
+        if not isinstance(tool_call_id, str) or not tool_call_id:
             continue
-        seen.add(tool_call_id)
-        ids.append(tool_call_id)
-    return tuple(ids)
+        reference = _extract_semantic_reference_from_tool_content(message.content or "")
+        if reference is None:
+            continue
+        index[reference] = tool_call_id
+    return index
+
+
+def collect_available_evidence_ids(messages: Sequence[ChatMessage]) -> tuple[str, ...]:
+    """Return model-visible semantic evidence references from completed tool observations."""
+    canonical = canonical_native_planner_messages(messages)
+    references: list[str] = []
+    seen: set[str] = set()
+    for message in canonical:
+        if message.role != "tool":
+            continue
+        reference = _extract_semantic_reference_from_tool_content(message.content or "")
+        if reference is None or reference in seen:
+            continue
+        seen.add(reference)
+        references.append(reference)
+    return tuple(references)
 
 
 def _parse_basis_value(raw: str) -> tuple[str, ...]:
@@ -75,7 +133,7 @@ def _parse_basis_value(raw: str) -> tuple[str, ...]:
     for part in parts:
         if part in seen:
             raise InvestigationProofValidationError(
-                f"duplicate basis tool_call_id: {part}"
+                f"duplicate basis evidence reference: {part}"
             )
         seen.add(part)
         ordered.append(part)
@@ -105,7 +163,7 @@ def parse_public_decision_note(content: str) -> ParsedPublicDecisionNote:
             "malformed public decision note: empty PURPOSE"
         )
     return ParsedPublicDecisionNote(
-        basis_tool_call_ids=_parse_basis_value(
+        basis_evidence_references=_parse_basis_value(
             basis_line[len(_EVIDENCE_BASIS_PREFIX) :]
         ),
         public_reason=purpose,
@@ -120,31 +178,49 @@ def _try_extract_purpose(content: str) -> str:
     return ""
 
 
+def _bind_declared_basis_references(
+    declared_references: tuple[str, ...],
+    reference_index: dict[str, str],
+) -> tuple[InvestigationEvidenceBasis, ...]:
+    bindings: list[InvestigationEvidenceBasis] = []
+    for reference in declared_references:
+        tool_call_id = reference_index.get(reference)
+        if tool_call_id is None:
+            raise InvestigationProofValidationError(
+                f"unknown basis evidence reference: {reference}"
+            )
+        bindings.append(
+            InvestigationEvidenceBasis(
+                declared_reference=reference,
+                tool_call_id=tool_call_id,
+            )
+        )
+    return tuple(bindings)
+
+
 def validate_follow_up_investigation_step(
     *,
     round_index: int,
     assistant_content: str,
-    available_evidence_ids: frozenset[str],
+    available_evidence_references: frozenset[str],
+    reference_index: dict[str, str],
     next_tool_call_ids: tuple[str, ...],
 ) -> InvestigationProofStep:
     """Validate explicit evidence basis before executing follow-up native tools."""
     parsed = parse_public_decision_note(assistant_content)
-    if available_evidence_ids and not parsed.basis_tool_call_ids:
+    if available_evidence_references and not parsed.basis_evidence_references:
         raise InvestigationProofValidationError(
             "follow-up tool round requires explicit evidence basis"
         )
-    unknown = [
-        basis_id
-        for basis_id in parsed.basis_tool_call_ids
-        if basis_id not in available_evidence_ids
-    ]
-    if unknown:
-        raise InvestigationProofValidationError(
-            f"unknown basis tool_call_id: {unknown[0]}"
-        )
+    bindings = _bind_declared_basis_references(
+        parsed.basis_evidence_references,
+        reference_index,
+    )
     return InvestigationProofStep(
         round_index=round_index,
-        basis_tool_call_ids=parsed.basis_tool_call_ids,
+        declared_basis_references=parsed.basis_evidence_references,
+        basis_bindings=bindings,
+        basis_tool_call_ids=tuple(binding.tool_call_id for binding in bindings),
         next_tool_call_ids=next_tool_call_ids,
         public_reason=parsed.public_reason,
     )
@@ -159,6 +235,8 @@ def record_first_investigation_step(
     """First investigative tool round — empty basis, objective-driven."""
     return InvestigationProofStep(
         round_index=round_index,
+        declared_basis_references=(),
+        basis_bindings=(),
         basis_tool_call_ids=(),
         next_tool_call_ids=next_tool_call_ids,
         public_reason=_try_extract_purpose(assistant_content),
@@ -180,10 +258,12 @@ def build_investigation_proof_step(
             assistant_content=assistant_content,
             next_tool_call_ids=next_tool_call_ids,
         )
-    available = frozenset(collect_available_evidence_ids(messages_before_round))
+    reference_index = build_completed_observation_reference_index(messages_before_round)
+    available = frozenset(reference_index)
     return validate_follow_up_investigation_step(
         round_index=round_index,
         assistant_content=assistant_content,
-        available_evidence_ids=available,
+        available_evidence_references=available,
+        reference_index=reference_index,
         next_tool_call_ids=next_tool_call_ids,
     )

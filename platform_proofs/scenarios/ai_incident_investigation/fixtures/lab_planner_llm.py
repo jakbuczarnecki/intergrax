@@ -12,6 +12,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.runtime.nexus.tools.investigation_proof import collect_available_evidence_ids
 from platform_proofs.scenarios.ai_incident_investigation.application.domain_reasoning import (
     h1_initially_plausible,
     observations_from_evidence_nodes,
@@ -445,8 +446,9 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
         if round_index == 0:
             content = _decision_note(purpose=purpose)
         else:
-            basis = self._prior_tool_call_ids[-1]
-            content = _decision_note(basis, purpose=purpose)
+            available_refs = collect_available_evidence_ids(messages)
+            basis = available_refs[-1] if available_refs else ""
+            content = _decision_note(basis, purpose=purpose) if basis else _decision_note(purpose=purpose)
         self._prior_tool_call_ids.append(call_id)
         return LLMAdapterResponse(
             content=content,
