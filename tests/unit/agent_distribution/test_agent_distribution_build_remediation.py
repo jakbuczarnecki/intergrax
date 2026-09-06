@@ -871,6 +871,7 @@ def test_adb22_production_revision_write_bypass_inventory() -> None:
         ),
         "intergrax/agent_distribution/runtime_revision_service.py": "domain_executor",
         "intergrax/agent_distribution/in_memory_stores.py": "store_executor",
+        "intergrax/agent_distribution/sqlite_stores.py": "store_executor",
         "intergrax/agent_distribution/materialization_service.py": "materialization_executor",
         "intergrax/agent_distribution/materialization_adapters.py": "materialization_executor",
         "intergrax/agent_distribution/stores.py": "store_contract",
