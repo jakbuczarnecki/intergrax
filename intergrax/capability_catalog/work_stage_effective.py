@@ -24,6 +24,35 @@ SCHEMA_WORK_STAGE_CAPABILITY_TRANSITION_EVIDENCE_V1: Final = (
 )
 
 
+def _catalog_only_identity_keys(
+    allowed: tuple[GovernedCapabilityCandidate, ...],
+    effective: tuple[GovernedCapabilityCandidate, ...],
+) -> tuple[CapabilityIdentityKey, ...]:
+    effective_keys = frozenset(
+        candidate.ranked.identity.sort_key for candidate in effective
+    )
+    catalog_only = tuple(
+        CapabilityIdentityKey.from_discovery_identity(candidate.identity)
+        for candidate in allowed
+        if candidate.availability is AvailabilityDisposition.CATALOG_AVAILABLE
+        and candidate.ranked.identity.sort_key not in effective_keys
+    )
+    return tuple(sorted(catalog_only, key=lambda key: key.sort_key))
+
+
+def _transition_identity_diff(
+    previous_keys: tuple[CapabilityIdentityKey, ...],
+    current_keys: tuple[CapabilityIdentityKey, ...],
+) -> tuple[tuple[CapabilityIdentityKey, ...], tuple[CapabilityIdentityKey, ...]]:
+    previous_set = frozenset(key.sort_key for key in previous_keys)
+    current_set = frozenset(key.sort_key for key in current_keys)
+    added = current_set - previous_set
+    removed = previous_set - current_set
+    added_keys = tuple(key for key in current_keys if key.sort_key in added)
+    removed_keys = tuple(key for key in previous_keys if key.sort_key in removed)
+    return added_keys, removed_keys
+
+
 class EffectiveCapabilitySet(BaseModel):
     """Deterministic query result — not runtime inventory authority."""
 
@@ -36,11 +65,23 @@ class EffectiveCapabilitySet(BaseModel):
 
     @model_validator(mode="after")
     def _validate_effective_candidates(self) -> EffectiveCapabilitySet:
+        allowed = self.governed_result.allowed
+        seen_identity_keys: set[tuple[str, str, str, str]] = set()
         for candidate in self.effective_candidates:
             if candidate.availability is not AvailabilityDisposition.HOST_AVAILABLE:
                 raise ValueError(
                     "effective candidates must be HOST_AVAILABLE executable members",
                 )
+            if candidate not in allowed:
+                raise ValueError(
+                    "effective candidates must be members of governed_result.allowed",
+                )
+            identity_key = candidate.ranked.identity.sort_key
+            if identity_key in seen_identity_keys:
+                raise ValueError(
+                    "effective candidates must not contain duplicate capability identities",
+                )
+            seen_identity_keys.add(identity_key)
         return self
 
     @property
@@ -59,15 +100,18 @@ class WorkStageCapabilityDiscoveryEvidence(BaseModel):
     schema_version: Literal["work_stage_capability_discovery_evidence.v1"] = (
         SCHEMA_WORK_STAGE_CAPABILITY_DISCOVERY_EVIDENCE_V1
     )
-    need: WorkStageCapabilityNeed
     effective_set: EffectiveCapabilitySet
-    catalog_only_identity_keys: tuple[CapabilityIdentityKey, ...] = ()
 
-    @model_validator(mode="after")
-    def _validate_need_alignment(self) -> WorkStageCapabilityDiscoveryEvidence:
-        if self.need != self.effective_set.need:
-            raise ValueError("evidence need must match effective set need")
-        return self
+    @property
+    def need(self) -> WorkStageCapabilityNeed:
+        return self.effective_set.need
+
+    @property
+    def catalog_only_identity_keys(self) -> tuple[CapabilityIdentityKey, ...]:
+        return _catalog_only_identity_keys(
+            self.effective_set.governed_result.allowed,
+            self.effective_set.effective_candidates,
+        )
 
 
 class WorkStageCapabilityTransitionEvidence(BaseModel):
@@ -80,8 +124,6 @@ class WorkStageCapabilityTransitionEvidence(BaseModel):
     )
     previous: EffectiveCapabilitySet
     current: EffectiveCapabilitySet
-    added_identity_keys: tuple[CapabilityIdentityKey, ...]
-    removed_identity_keys: tuple[CapabilityIdentityKey, ...]
 
     @model_validator(mode="after")
     def _validate_work_alignment(self) -> WorkStageCapabilityTransitionEvidence:
@@ -89,29 +131,29 @@ class WorkStageCapabilityTransitionEvidence(BaseModel):
             raise ValueError("transition evidence requires the same work_reference")
         return self
 
+    @property
+    def added_identity_keys(self) -> tuple[CapabilityIdentityKey, ...]:
+        added, _ = _transition_identity_diff(
+            self.previous.effective_identity_keys,
+            self.current.effective_identity_keys,
+        )
+        return added
+
+    @property
+    def removed_identity_keys(self) -> tuple[CapabilityIdentityKey, ...]:
+        _, removed = _transition_identity_diff(
+            self.previous.effective_identity_keys,
+            self.current.effective_identity_keys,
+        )
+        return removed
+
 
 def compare_work_stage_effective_capabilities(
     previous: EffectiveCapabilitySet,
     current: EffectiveCapabilitySet,
 ) -> WorkStageCapabilityTransitionEvidence:
     """Derive added/removed identity keys between two stage results."""
-    previous_keys = frozenset(key.sort_key for key in previous.effective_identity_keys)
-    current_keys = frozenset(key.sort_key for key in current.effective_identity_keys)
-    added = current_keys - previous_keys
-    removed = previous_keys - current_keys
-    added_keys = tuple(
-        key
-        for key in current.effective_identity_keys
-        if key.sort_key in added
-    )
-    removed_keys = tuple(
-        key
-        for key in previous.effective_identity_keys
-        if key.sort_key in removed
-    )
     return WorkStageCapabilityTransitionEvidence(
         previous=previous,
         current=current,
-        added_identity_keys=added_keys,
-        removed_identity_keys=removed_keys,
     )

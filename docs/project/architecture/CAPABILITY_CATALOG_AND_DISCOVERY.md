@@ -487,7 +487,7 @@ EffectiveCapabilitySet (HOST_AVAILABLE ∩ governed allowed)
 WorkStageCapabilityDiscoveryEvidence
 ```
 
-**`EffectiveCapabilitySet` is a deterministic query result — not runtime inventory authority, not lifecycle authority, not permission authority.** Catalog-only (`CATALOG_AVAILABLE`) candidates may appear in governed discovery evidence but do not become executable effective members until host/profile availability evidence classifies them as `HOST_AVAILABLE`.
+**`EffectiveCapabilitySet` is a deterministic query result — not runtime inventory authority, not lifecycle authority, not permission authority.** Catalog-only (`CATALOG_AVAILABLE`) candidates may appear in governed discovery evidence but do not become executable effective members until host/profile availability evidence classifies them as `HOST_AVAILABLE`. The public contract is self-validating: every effective member must be an exact `governed_result.allowed` candidate with `HOST_AVAILABLE` availability and unique identity; derived catalog-only and transition evidence cannot diverge from canonical result state.
 
 Capability Catalog Stage 8 provides stage-scoped adaptive discovery; it does **not** perform Autonomous Work recovery, acquisition, or registry mutation (Stage 9 bridge).
 

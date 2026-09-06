@@ -22,7 +22,6 @@ from intergrax.contracts.capability_catalog.evidence import (
     CapabilityDiscoveryAvailabilityEvidence,
 )
 from intergrax.contracts.capability_catalog.governance import CapabilityGovernanceContext
-from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.capability_catalog.ranking import CapabilityRankingContext
 from intergrax.contracts.capability_catalog.work_stage import WorkStageCapabilityNeed
 
@@ -60,7 +59,6 @@ class WorkStageCapabilityDiscoveryService:
                 effective_candidates=(),
             )
             return WorkStageCapabilityDiscoveryEvidence(
-                need=need,
                 effective_set=effective_set,
             )
 
@@ -81,19 +79,13 @@ class WorkStageCapabilityDiscoveryService:
         effective_candidates = _select_effective_executable_candidates(
             governed_result.allowed,
         )
-        catalog_only_keys = _catalog_only_allowed_keys(
-            governed_result.allowed,
-            effective_candidates,
-        )
         effective_set = EffectiveCapabilitySet(
             need=need,
             governed_result=governed_result,
             effective_candidates=effective_candidates,
         )
         return WorkStageCapabilityDiscoveryEvidence(
-            need=need,
             effective_set=effective_set,
-            catalog_only_identity_keys=catalog_only_keys,
         )
 
 
@@ -134,18 +126,3 @@ def _select_effective_executable_candidates(
         )
     )
 
-
-def _catalog_only_allowed_keys(
-    allowed: tuple[GovernedCapabilityCandidate, ...],
-    effective: tuple[GovernedCapabilityCandidate, ...],
-) -> tuple[CapabilityIdentityKey, ...]:
-    effective_keys = frozenset(
-        candidate.ranked.identity.sort_key for candidate in effective
-    )
-    catalog_only = tuple(
-        CapabilityIdentityKey.from_discovery_identity(candidate.identity)
-        for candidate in allowed
-        if candidate.availability is AvailabilityDisposition.CATALOG_AVAILABLE
-        and candidate.ranked.identity.sort_key not in effective_keys
-    )
-    return tuple(sorted(catalog_only, key=lambda key: key.sort_key))
