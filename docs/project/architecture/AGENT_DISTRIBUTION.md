@@ -738,6 +738,24 @@ artifact digest
 - **Algorithm (V1):** `ED25519` only. Keys resolved via injected `AgentPublisherVerificationKeyProvider` or explicit pinned public key bytes — no network fetch in core verification.
 - **Non-claims (Phase 2):** Sigstore/cosign, X.509 chains, transparency logs, and key-trust registries are out of scope. Key/publisher trust remains policy/config responsibility upstream of verification.
 
+### 10.5 Qualification freshness (AC-6 Phase 3)
+
+Qualification freshness is policy-dependent and evaluated deterministically at explicit admission time:
+
+```text
+AgentPackageQualificationResult.qualified_at   # immutable snapshot timestamp (UTC)
+  + AgentPackageTrustPolicy.max_qualification_age
+  + explicit evaluated_at
+  → AgentPackageTrustCoordinator (sole ALLOW/DENY authority)
+```
+
+- **Snapshot semantics:** `AgentPackageQualificationResult` is one immutable qualification snapshot; all nested evidence corresponds to `qualified_at`.
+- **Policy:** `max_qualification_age: timedelta | None` — `None` disables age limits; positive durations enforce `age = evaluated_at - qualified_at` with exact-boundary freshness (`age <= max` is FRESH).
+- **Fail closed:** future `qualified_at`, expired qualification, and missing `qualification_qualified_at` under an age-limited policy → **DENY** with stable reason codes (`qualification_expired`, `qualification_timestamp_invalid`).
+- **Requalification:** produce a new immutable `AgentPackageQualificationResult` with a new `qualified_at`; never mutate historical snapshots or trust records.
+- **Admission:** install admission and candidate runtime revision build re-check current policy + `qualification_qualified_at` on installation trust records; historical `policy_fingerprint` explains prior ALLOW only.
+- **Non-claims (Phase 3):** no background scheduler, no automatic uninstall, no async active-runtime kill — stale qualification blocks future admission/revision only. Phase 4 owns active emergency response.
+
 ---
 
 ## 11. Installation model

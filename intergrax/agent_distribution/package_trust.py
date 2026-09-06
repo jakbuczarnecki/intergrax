@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from intergrax.agent_distribution._digest import normalize_package_digest
 from intergrax.agent_distribution.catalog import CatalogSourceIdentity
@@ -31,12 +31,50 @@ from intergrax.agent_distribution.trust import (
     AgentPublisherIdentity,
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
+    require_timezone_aware_utc_datetime,
 )
 from intergrax.core.qualification import (
     QualificationEvidence,
     QualificationStatus,
     qualification_status_satisfies,
 )
+
+
+def effective_trust_evaluation_time(evaluated_at: datetime | None) -> datetime:
+    """Resolve explicit evaluation time; default is dev/test convenience only."""
+    if evaluated_at is None:
+        return datetime.now(UTC)
+    return require_timezone_aware_utc_datetime(
+        evaluated_at,
+        field_name="evaluated_at",
+    )
+
+
+def evaluate_qualification_freshness(
+    *,
+    qualified_at: datetime | None,
+    evaluated_at: datetime,
+    max_qualification_age: timedelta | None,
+) -> AgentPackageTrustReasonCode | None:
+    """Return a freshness denial code or None when qualification age is acceptable."""
+    if max_qualification_age is None:
+        return None
+    if qualified_at is None:
+        return AgentPackageTrustReasonCode.QUALIFICATION_TIMESTAMP_INVALID
+    qualified_at_utc = require_timezone_aware_utc_datetime(
+        qualified_at,
+        field_name="qualified_at",
+    )
+    evaluated_at_utc = require_timezone_aware_utc_datetime(
+        evaluated_at,
+        field_name="evaluated_at",
+    )
+    if qualified_at_utc > evaluated_at_utc:
+        return AgentPackageTrustReasonCode.QUALIFICATION_TIMESTAMP_INVALID
+    age = evaluated_at_utc - qualified_at_utc
+    if age > max_qualification_age:
+        return AgentPackageTrustReasonCode.QUALIFICATION_EXPIRED
+    return None
 
 
 class AgentPackageTrustCoordinator:
@@ -67,7 +105,7 @@ class AgentPackageTrustCoordinator:
     ) -> AgentPackageTrustDecision:
         """Evaluate whether ``package_identity`` may be trusted under ``policy``."""
         revocation = revocation_state or AgentPackageTrustRevocationState()
-        checked_at = evaluated_at or datetime.now(UTC)
+        checked_at = effective_trust_evaluation_time(evaluated_at)
 
         digest = package_identity.package_digest
         publisher_ref = publisher.publisher_id
@@ -270,6 +308,28 @@ class AgentPackageTrustCoordinator:
                 ),
             )
 
+        freshness_denial = evaluate_qualification_freshness(
+            qualified_at=qualification.qualified_at,
+            evaluated_at=checked_at,
+            max_qualification_age=policy.max_qualification_age,
+        )
+        if freshness_denial is not None:
+            return self._deny(
+                package_identity=package_identity,
+                publisher=publisher,
+                catalog_source_id=source_id,
+                delivery_source=delivery_source,
+                policy=policy,
+                qualification=qualification,
+                reason_code=freshness_denial,
+                reason=(
+                    "qualification evidence is expired under policy"
+                    if freshness_denial
+                    is AgentPackageTrustReasonCode.QUALIFICATION_EXPIRED
+                    else "qualification timestamp is invalid"
+                ),
+            )
+
         present_kinds = {item.kind for item in qualification.evidence}
         missing_kinds = policy.required_evidence_kinds - present_kinds
         if missing_kinds:
@@ -363,6 +423,7 @@ class AgentPackageTrustCoordinator:
             source_provider_id=source_id,
             source_entry_ref=source_entry_ref,
             revocation_checked_at=checked_at,
+            qualification_qualified_at=qualification.qualified_at,
             org_policy_decision_ref=org_policy_decision_ref,
             policy_fingerprint=policy.policy_fingerprint,
         )
@@ -486,13 +547,17 @@ class AgentPackageTrustCoordinator:
         trust_record: AgentInstallationTrustRecord,
         package_identity: AgentPackageIdentity,
         revocation_state: AgentPackageTrustRevocationState | None = None,
+        policy: AgentPackageTrustPolicy | None = None,
+        evaluated_at: datetime | None = None,
     ) -> None:
-        """Fail closed when stale trust evidence cannot satisfy current revocation state."""
+        """Fail closed when stale trust evidence cannot satisfy current admission policy."""
         assert_installation_trust_record_acceptable(
             trust_record,
             package_identity=package_identity,
         )
         revocation = revocation_state or AgentPackageTrustRevocationState()
+        effective_policy = policy or AgentPackageTrustPolicy()
+        checked_at = effective_trust_evaluation_time(evaluated_at)
         digest = package_identity.package_digest
 
         if digest in revocation.revoked_package_digests:
@@ -526,6 +591,22 @@ class AgentPackageTrustCoordinator:
                     "qualification evidence is revoked at install admission",
                     reason_code=AgentPackageTrustReasonCode.EVIDENCE_REVOKED.value,
                 )
+
+        freshness_denial = evaluate_qualification_freshness(
+            qualified_at=trust_record.qualification_qualified_at,
+            evaluated_at=checked_at,
+            max_qualification_age=effective_policy.max_qualification_age,
+        )
+        if freshness_denial is not None:
+            raise AgentPackageTrustError(
+                (
+                    "qualification evidence is expired at install admission"
+                    if freshness_denial
+                    is AgentPackageTrustReasonCode.QUALIFICATION_EXPIRED
+                    else "qualification timestamp is invalid at install admission"
+                ),
+                reason_code=freshness_denial.value,
+            )
 
     def _validate_signature_verification_evidence(
         self,

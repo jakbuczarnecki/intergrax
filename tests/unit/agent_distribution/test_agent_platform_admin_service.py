@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -88,6 +89,7 @@ from intergrax.agent_distribution.runtime_revision import (
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
+    AgentPackageTrustPolicy,
     AgentPackageTrustRevocationState,
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
@@ -102,6 +104,9 @@ _APP = "app-a"
 _APP_B = "app-b"
 _ENV = "env-prod"
 _DIGEST = "sha256:" + ("a" * 64)
+_QUALIFIED_AT = datetime(2026, 8, 1, 12, 0, 0, tzinfo=UTC)
+_EVAL_AT_FRESH = datetime(2026, 8, 5, 12, 0, 0, tzinfo=UTC)
+_EVAL_AT_STALE = datetime(2026, 8, 10, 12, 0, 0, tzinfo=UTC)
 _ARTIFACT = "sha256:" + ("d" * 64)
 _PACKAGE_ID = "intergrax-local-search-agent"
 _META_REF = "meta://search"
@@ -179,12 +184,16 @@ class _FakeCatalog:
         return None
 
 
-def _trust() -> AgentInstallationTrustRecord:
+def _trust(
+    *,
+    qualification_qualified_at: datetime | None = None,
+) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
         qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=_DIGEST,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
+        qualification_qualified_at=qualification_qualified_at,
         trust_evidence_refs=(
             AgentTrustEvidenceRef(
                 evidence_id="evidence:service:0",
@@ -266,6 +275,8 @@ def build_admin_stack(
     *,
     with_catalog: bool = True,
     package_trust_revocation_state_source: object | None = None,
+    package_trust_policy_source: object | None = None,
+    package_trust_evaluation_time_source: object | None = None,
 ) -> AdminStack:
     state = AgentDistributionStoreState()
     installation_store = InMemoryAgentInstallationStore(state)
@@ -343,6 +354,12 @@ def build_admin_stack(
     if package_trust_revocation_state_source is not None:
         admin_service_kwargs["package_trust_revocation_state_source"] = (
             package_trust_revocation_state_source
+        )
+    if package_trust_policy_source is not None:
+        admin_service_kwargs["package_trust_policy_source"] = package_trust_policy_source
+    if package_trust_evaluation_time_source is not None:
+        admin_service_kwargs["package_trust_evaluation_time_source"] = (
+            package_trust_evaluation_time_source
         )
     service = AgentPlatformAdminService(**admin_service_kwargs)
     return AdminStack(
@@ -889,3 +906,91 @@ def test_install_request_digest_mismatch_rejected_at_boundary() -> None:
             ),
             agent_project_metadata_ref=_META_REF,
         )
+
+
+def test_install_rejected_when_qualification_stale_before_store_mutation() -> None:
+    stack = build_admin_stack(
+        package_trust_policy_source=lambda: AgentPackageTrustPolicy(
+            max_qualification_age=timedelta(days=7),
+        ),
+        package_trust_evaluation_time_source=lambda: _EVAL_AT_STALE,
+    )
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        stack.service.install_agent(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            request=_install_request().model_copy(
+                update={
+                    "trust_record": _trust(qualification_qualified_at=_QUALIFIED_AT),
+                },
+            ),
+            principal=admin_test_principal(),
+        )
+    assert exc_info.value.reason_code == "qualification_expired"
+    assert "inst-1" not in stack.state.installations
+
+
+def test_build_rejected_when_installed_trust_record_stale_for_new_revision() -> None:
+    evaluation_times = {"at": _EVAL_AT_FRESH}
+    stack = build_admin_stack(
+        package_trust_policy_source=lambda: AgentPackageTrustPolicy(
+            max_qualification_age=timedelta(days=7),
+        ),
+        package_trust_evaluation_time_source=lambda: evaluation_times["at"],
+    )
+    stack.service.install_agent(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=_install_request().model_copy(
+            update={
+                "trust_record": _trust(qualification_qualified_at=_QUALIFIED_AT),
+            },
+        ),
+        principal=admin_test_principal(),
+    )
+    stack.service.bind_agent(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=_bind_request(),
+        principal=admin_test_principal(),
+    )
+    stack.service.enable_binding(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        application_binding_id="bind-search",
+        request=SetAgentEnablementRequest(
+            mutation_id="mut-enable",
+            expected_revision=0,
+        ),
+        principal=admin_test_principal(),
+    )
+
+    evaluation_times["at"] = _EVAL_AT_STALE
+    with pytest.raises(AgentPackageTrustError) as exc_info:
+        _build_revision(stack, "rev-stale-trust")
+    assert exc_info.value.reason_code == "qualification_expired"
+    assert "rev-stale-trust" not in stack.state.revisions
+
+
+def test_installed_package_persists_when_qualification_becomes_stale() -> None:
+    evaluation_times = {"at": _EVAL_AT_FRESH}
+    stack = build_admin_stack(
+        package_trust_policy_source=lambda: AgentPackageTrustPolicy(
+            max_qualification_age=timedelta(days=7),
+        ),
+        package_trust_evaluation_time_source=lambda: evaluation_times["at"],
+    )
+    stack.service.install_agent(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        request=_install_request().model_copy(
+            update={
+                "trust_record": _trust(qualification_qualified_at=_QUALIFIED_AT),
+            },
+        ),
+        principal=admin_test_principal(),
+    )
+    assert "inst-1" in stack.state.installations
+
+    evaluation_times["at"] = _EVAL_AT_STALE
+    assert "inst-1" in stack.state.installations

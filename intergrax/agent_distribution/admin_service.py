@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import UTC, datetime
 
 from intergrax.agent_distribution.activation import ActivationService, RollbackResult
 from intergrax.agent_distribution.admin_models import (
@@ -134,7 +135,10 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
-from intergrax.agent_distribution.trust import AgentPackageTrustRevocationState
+from intergrax.agent_distribution.trust import (
+    AgentPackageTrustPolicy,
+    AgentPackageTrustRevocationState,
+)
 from intergrax.agent_distribution.stores import (
     AgentArtifactMetadata,
     AgentArtifactMetadataStore,
@@ -251,6 +255,8 @@ class AgentPlatformAdminService:
             [], AgentPackageTrustRevocationState
         ]
         | None = None,
+        package_trust_policy_source: Callable[[], AgentPackageTrustPolicy] | None = None,
+        package_trust_evaluation_time_source: Callable[[], datetime] | None = None,
     ) -> None:
         self._installation_store = installation_store
         self._binding_store = binding_store
@@ -288,6 +294,12 @@ class AgentPlatformAdminService:
         self._package_trust_revocation_state_source = (
             package_trust_revocation_state_source
             or (lambda: AgentPackageTrustRevocationState())
+        )
+        self._package_trust_policy_source = (
+            package_trust_policy_source or (lambda: AgentPackageTrustPolicy())
+        )
+        self._package_trust_evaluation_time_source = (
+            package_trust_evaluation_time_source or (lambda: datetime.now(UTC))
         )
 
     def list_catalog(
@@ -619,6 +631,8 @@ class AgentPlatformAdminService:
             trust_record=request.trust_record,
             package_identity=identity,
             revocation_state=self._package_trust_revocation_state_source(),
+            policy=self._package_trust_policy_source(),
+            evaluated_at=self._package_trust_evaluation_time_source(),
         )
 
         created = self._installation_service.create_candidate_installation(
@@ -891,6 +905,10 @@ class AgentPlatformAdminService:
             manifest_release_id=request.application_release_id,
         )
         canonical_roster = self._effective_roster_snapshot_store.persist(roster)
+        self._assert_runtime_revision_trust_admission(
+            roster=canonical_roster,
+            application_environment_id=application_environment_id,
+        )
         lock, graph = self._build_lock_and_graph_from_roster(
             canonical_roster=canonical_roster,
             request=request,
@@ -1291,6 +1309,34 @@ class AgentPlatformAdminService:
             rollback_result=rollback_view,
             audit_event_types=tuple(audit_events),
         )
+
+    def _assert_runtime_revision_trust_admission(
+        self,
+        *,
+        roster: EffectiveRoster,
+        application_environment_id: str,
+    ) -> None:
+        """Re-check installation trust evidence before candidate runtime revision build."""
+        policy = self._package_trust_policy_source()
+        evaluated_at = self._package_trust_evaluation_time_source()
+        revocation_state = self._package_trust_revocation_state_source()
+        for entry in roster.entries:
+            if not entry.effective_enablement:
+                continue
+            if entry.active_installation_id is None:
+                continue
+            installation = self._installation_store.get_installation(
+                entry.active_installation_id
+            )
+            if installation is None or installation.trust_record is None:
+                continue
+            self._package_trust_coordinator.assert_install_admission(
+                trust_record=installation.trust_record,
+                package_identity=installation.package_identity,
+                revocation_state=revocation_state,
+                policy=policy,
+                evaluated_at=evaluated_at,
+            )
 
     def _resolve_install_identity(
         self, request: InstallAgentRequest

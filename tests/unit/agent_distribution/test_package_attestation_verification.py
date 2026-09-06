@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 
 from intergrax.agent_distribution.catalog import (
@@ -53,6 +55,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _DIGEST_A = "sha256:" + ("a" * 64)
 _DIGEST_B = "sha256:" + ("b" * 64)
+_QUALIFIED_AT = datetime(2026, 8, 6, 12, 0, 0, tzinfo=UTC)
 _PUBLISHER_A = "publisher:acme"
 _PUBLISHER_B = "publisher:other"
 _KEY_ID = "publisher-key-1"
@@ -378,6 +381,7 @@ def test_manual_perfectly_formatted_signature_evidence_rejected_by_trust() -> No
         ),
         reason="forged",
         delivery_source=AgentDeliverySource.BUILTIN,
+        qualified_at=_QUALIFIED_AT,
     )
     decision = coordinator.evaluate(
         package_identity=_PACKAGE,
@@ -433,6 +437,7 @@ def test_real_crypto_evidence_allows_trust_but_fabricated_metadata_denies() -> N
             ),
             reason="verified",
             delivery_source=AgentDeliverySource.BUILTIN,
+            qualified_at=_QUALIFIED_AT,
         ),
         evidence_package_digest=_DIGEST_A,
     )
@@ -474,6 +479,7 @@ def test_real_crypto_evidence_allows_trust_but_fabricated_metadata_denies() -> N
             ),
             reason="forged",
             delivery_source=AgentDeliverySource.BUILTIN,
+            qualified_at=_QUALIFIED_AT,
         ),
         evidence_package_digest=_DIGEST_A,
     )
@@ -502,6 +508,7 @@ def test_forged_signature_qualification_evidence_rejected_by_trust_coordinator()
         ),
         reason="forged",
         delivery_source=AgentDeliverySource.BUILTIN,
+        qualified_at=_QUALIFIED_AT,
     )
     decision = coordinator.evaluate(
         package_identity=_PACKAGE,
@@ -542,6 +549,7 @@ def test_trust_accepts_verified_signature_evidence_when_policy_requires_it() -> 
         ),
         reason="verified",
         delivery_source=AgentDeliverySource.BUILTIN,
+        qualified_at=_QUALIFIED_AT,
     )
     decision = coordinator.evaluate(
         package_identity=_PACKAGE,
@@ -581,6 +589,7 @@ def test_valid_signature_still_denied_when_digest_revoked() -> None:
         ),
         reason="verified",
         delivery_source=AgentDeliverySource.BUILTIN,
+        qualified_at=_QUALIFIED_AT,
     )
     decision = coordinator.evaluate(
         package_identity=_PACKAGE,

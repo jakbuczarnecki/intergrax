@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -71,6 +72,7 @@ from intergrax.agent_distribution.task_capability_resolution import (
 )
 from intergrax.agent_distribution.trust import (
     AgentInstallationTrustRecord,
+    AgentPackageTrustPolicy,
     AgentQualificationEvidenceKind,
     AgentTrustEvidenceRef,
 )
@@ -95,6 +97,8 @@ _SLOT = "slot-search"
 _INSTALL_ID = "inst-1"
 _BINDING_ID = "bind-search"
 _LOGICAL_AGENT = "researcher"
+_QUALIFIED_AT = datetime(2026, 8, 1, 12, 0, 0, tzinfo=UTC)
+_EVAL_AT_STALE = datetime(2026, 8, 10, 12, 0, 0, tzinfo=UTC)
 
 
 def _source(
@@ -182,12 +186,16 @@ class _ExactCatalog:
         return None
 
 
-def _trust() -> AgentInstallationTrustRecord:
+def _trust(
+    *,
+    qualification_qualified_at: datetime | None = None,
+) -> AgentInstallationTrustRecord:
     return AgentInstallationTrustRecord(
         qualification_status=QualificationStatus.PRODUCTION_QUALIFIED,
         package_digest=_DIGEST,
         publisher_identity_ref="publisher:acme",
         source_provider_id="builtin",
+        qualification_qualified_at=qualification_qualified_at,
         trust_evidence_refs=(
             AgentTrustEvidenceRef(
                 evidence_id="evidence:service:0",
@@ -284,8 +292,14 @@ class AcquisitionHarness:
 def build_acquisition_harness(
     *,
     resolution_by_selector: dict[str, CatalogPackageResolution] | None = None,
+    package_trust_policy_source: object | None = None,
+    package_trust_evaluation_time_source: object | None = None,
 ) -> AcquisitionHarness:
-    stack = build_admin_stack(with_catalog=False)
+    stack = build_admin_stack(
+        with_catalog=False,
+        package_trust_policy_source=package_trust_policy_source,
+        package_trust_evaluation_time_source=package_trust_evaluation_time_source,
+    )
     catalog = _ExactCatalog(
         entry=_catalog_entry(),
         resolution_by_selector=resolution_by_selector or {"1.0.0": _resolution()},
@@ -510,6 +524,35 @@ def test_trust_rejection_propagates_through_install_path() -> None:
     assert "inst-trust-fail" not in harness.stack.state.installations
     assert "bind-trust-fail" not in harness.stack.state.bindings
     assert "rev-trust" not in harness.stack.state.revisions
+
+
+def test_stale_qualification_blocks_dynamic_acquisition() -> None:
+    harness = build_acquisition_harness(
+        package_trust_policy_source=lambda: AgentPackageTrustPolicy(
+            max_qualification_age=timedelta(days=7),
+        ),
+        package_trust_evaluation_time_source=lambda: _EVAL_AT_STALE,
+    )
+    request = _acquisition_request("rev-stale").model_copy(
+        update={
+            "install": _acquisition_request("rev-stale").install.model_copy(
+                update={
+                    "trust_record": _trust(qualification_qualified_at=_QUALIFIED_AT),
+                },
+            ),
+        },
+    )
+    with pytest.raises(AgentPackageTrustError):
+        harness.service.acquire(request, principal=admin_test_principal())
+
+    assert _INSTALL_ID not in harness.stack.state.installations
+    assert _BINDING_ID not in harness.stack.state.bindings
+    assert "rev-stale" not in harness.stack.state.revisions
+    serving = harness.stack.service.inspect_serving(
+        application_id=_APP,
+        application_environment_id=_ENV,
+    )
+    assert serving.traffic_serving_revision_id is None
 
 
 def _discovery_candidate(capability_ids: tuple[str, ...]) -> AgentDiscoveryCandidate:

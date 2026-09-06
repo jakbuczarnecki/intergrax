@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
@@ -31,6 +31,19 @@ def _strip_required(value: str) -> str:
     if not normalized:
         raise ValueError("must be non-empty")
     return normalized
+
+
+def require_timezone_aware_utc_datetime(
+    value: datetime,
+    *,
+    field_name: str,
+) -> datetime:
+    """Reject naive datetimes; normalize timezone-aware values to UTC."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{field_name} must be timezone-aware UTC datetime")
+    if value.utcoffset() != timedelta(0):
+        return value.astimezone(UTC)
+    return value
 
 
 class AgentDeliverySource(StrEnum):
@@ -91,13 +104,24 @@ class AgentTrustEvidenceRef(BaseModel):
 
 @dataclass(frozen=True, slots=True)
 class AgentPackageQualificationResult:
-    """Immutable qualification record for audit and later trust coordinator."""
+    """Immutable qualification snapshot for audit and later trust coordinator."""
 
     publisher: AgentPublisherIdentity
     status: QualificationStatus
     evidence: tuple[QualificationEvidence[AgentQualificationEvidenceKind], ...]
     reason: str
     delivery_source: AgentDeliverySource
+    qualified_at: datetime
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "qualified_at",
+            require_timezone_aware_utc_datetime(
+                self.qualified_at,
+                field_name="qualified_at",
+            ),
+        )
 
     @property
     def production_allowed(self) -> bool:
@@ -116,8 +140,16 @@ class AgentInstallationTrustRecord(BaseModel):
     source_provider_id: str = _NON_EMPTY
     source_entry_ref: str | None = None
     revocation_checked_at: datetime | None = None
+    qualification_qualified_at: datetime | None = None
     org_policy_decision_ref: str | None = None
     policy_fingerprint: str | None = None
+
+    @field_validator("revocation_checked_at", "qualification_qualified_at")
+    @classmethod
+    def _validate_utc_datetime(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return require_timezone_aware_utc_datetime(value, field_name="datetime")
 
     @field_validator("package_digest")
     @classmethod
@@ -176,6 +208,8 @@ class AgentPackageTrustReasonCode(StrEnum):
     UNSIGNED_FORBIDDEN = "unsigned_forbidden"
     UNQUALIFIED_FORBIDDEN = "unqualified_forbidden"
     VERSION_LABEL_WITHOUT_DIGEST = "version_label_without_digest"
+    QUALIFICATION_EXPIRED = "qualification_expired"
+    QUALIFICATION_TIMESTAMP_INVALID = "qualification_timestamp_invalid"
 
 
 class AgentPackageTrustPolicy(BaseModel):
@@ -195,6 +229,19 @@ class AgentPackageTrustPolicy(BaseModel):
     required_qualification_status: QualificationStatus | None = None
     required_evidence_kinds: frozenset[AgentQualificationEvidenceKind] = frozenset()
     forbid_unsigned_or_unqualified: bool = True
+    max_qualification_age: timedelta | None = None
+
+    @field_validator("max_qualification_age")
+    @classmethod
+    def _validate_max_qualification_age(
+        cls,
+        value: timedelta | None,
+    ) -> timedelta | None:
+        if value is None:
+            return None
+        if value <= timedelta(0):
+            raise ValueError("max_qualification_age must be positive when set")
+        return value
 
     @field_validator("trust_profile_ref")
     @classmethod
@@ -272,6 +319,22 @@ class AgentPackageTrustDecision:
             "qualification_status": (
                 self.qualification.status.value
                 if self.qualification is not None
+                else None
+            ),
+            "qualification_qualified_at": (
+                self.qualification.qualified_at.isoformat()
+                if self.qualification is not None
+                else (
+                    self.trust_record.qualification_qualified_at.isoformat()
+                    if self.trust_record is not None
+                    and self.trust_record.qualification_qualified_at is not None
+                    else None
+                )
+            ),
+            "revocation_checked_at": (
+                self.trust_record.revocation_checked_at.isoformat()
+                if self.trust_record is not None
+                and self.trust_record.revocation_checked_at is not None
                 else None
             ),
             "trust_evidence_refs": [
