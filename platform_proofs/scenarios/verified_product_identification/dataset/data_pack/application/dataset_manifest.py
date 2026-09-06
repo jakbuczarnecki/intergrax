@@ -1,4 +1,9 @@
-"""Strict decoding for selected-dataset manifest JSON."""
+"""Strict decoding for selected-dataset manifest JSON.
+
+The upstream selected-dataset manifest owns additional provenance metadata.
+This decoder validates only the identity subset consumed by VPI and ignores
+other fields.
+"""
 
 from __future__ import annotations
 
@@ -20,23 +25,9 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     SourceDatasetIdentity,
 )
 
-_DATASET_MANIFEST_KEYS = frozenset(
-    {
-        "source_dataset_name",
-        "output_path",
-        "output_sha256",
-        "selected_record_count",
-    }
-)
-
 
 def decode_dataset_manifest_payload(payload: dict[str, JsonValue]) -> SourceDatasetIdentity:
     require_mapping(payload, field_name="dataset manifest")
-    unknown = sorted(set(payload.keys()) - _DATASET_MANIFEST_KEYS)
-    if unknown:
-        raise VpiDataPackFormatError(
-            f"unexpected fields in dataset manifest: {', '.join(unknown)}"
-        )
     try:
         return SourceDatasetIdentity(
             dataset_name=require_str(payload, "source_dataset_name"),
