@@ -55,9 +55,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.tools impor
     TOOL_WORKLOAD_READ,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
-    H3_FORGED_WITHOUT_TELEMETRY_ERROR,
-    MISSING_COMPARISON_ERROR,
-    UNSUPPORTED_INFERENCE_ERROR,
+    tools_for_critic_validation_errors,
 )
 
 MAX_INCIDENT_TOOL_LOOP_ITERATIONS = 12
@@ -392,36 +390,8 @@ def _scoped_tool_args(tool_id: str, scope: IncidentScope) -> dict[str, str]:
     raise ValueError(f"unsupported supplemental tool id: {tool_id}")
 
 
-_REVISION_EVIDENCE_TOOLS: tuple[str, ...] = (
-    TOOL_WORKLOAD_READ,
-    TOOL_THROUGHPUT_READ,
-    TOOL_STAFFING_SCHEDULE_READ,
-    TOOL_COMPARISON_READ,
-    TOOL_STAFFING_ATTENDANCE_READ,
-    TOOL_TELEMETRY_READ,
-)
-
-
 def _tools_for_critic_feedback(critic_feedback: Sequence[str] | None) -> tuple[str, ...]:
-    if not critic_feedback:
-        return ()
-    joined = " ".join(str(item) for item in critic_feedback)
-    required: list[str] = []
-    if MISSING_COMPARISON_ERROR in joined:
-        required.append(TOOL_COMPARISON_READ)
-    if H3_FORGED_WITHOUT_TELEMETRY_ERROR in joined:
-        required.append(TOOL_TELEMETRY_READ)
-    if UNSUPPORTED_INFERENCE_ERROR in joined:
-        required.extend((TOOL_COMPARISON_READ, TOOL_TELEMETRY_READ))
-    if "missing_distinguishing_equipment_evidence" in joined:
-        required.extend((TOOL_COMPARISON_READ, TOOL_TELEMETRY_READ))
-    if "staffing attendance" in joined.lower() or "attendance confirmation" in joined.lower():
-        required.append(TOOL_STAFFING_ATTENDANCE_READ)
-    deduped: list[str] = []
-    for tool_id in required:
-        if tool_id not in deduped:
-            deduped.append(tool_id)
-    return tuple(deduped)
+    return tools_for_critic_validation_errors(critic_feedback)
 
 
 def _revision_supplement_tool_ids(
@@ -429,9 +399,9 @@ def _revision_supplement_tool_ids(
     is_revision: bool,
     critic_feedback: Sequence[str] | None,
 ) -> tuple[str, ...]:
-    if is_revision:
-        return _REVISION_EVIDENCE_TOOLS
-    return _tools_for_critic_feedback(critic_feedback)
+    if not is_revision:
+        return ()
+    return tools_for_critic_validation_errors(critic_feedback)
 
 
 def _invoke_supplemental_tools(

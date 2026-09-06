@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -38,6 +39,11 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
     INCIDENT_EVIDENCE_IDS,
     TELEMETRY_EVIDENCE_ID,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
+    TOOL_COMPARISON_READ,
+    TOOL_STAFFING_ATTENDANCE_READ,
+    TOOL_TELEMETRY_READ,
+)
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 
 DIAGNOSIS_CLAIM_KIND = "incident.root_cause_diagnosis"
@@ -64,6 +70,28 @@ UNRESOLVED_MISSING_TELEMETRY_UNAVAILABLE_ERROR = (
 )
 UNRESOLVED_H3_NOT_INSUFFICIENT_ERROR = "unsupported_inference:unresolved_h3_not_insufficient"
 MODEL_SELF_APPROVED_ERROR = "unsupported_inference:model_self_approved_claim_resolution"
+
+CRITIC_EVIDENCE_REQUIREMENTS: Mapping[str, tuple[str, ...]] = {
+    MISSING_COMPARISON_ERROR: (TOOL_COMPARISON_READ,),
+    H3_FORGED_WITHOUT_TELEMETRY_ERROR: (TOOL_TELEMETRY_READ,),
+    UNSUPPORTED_INFERENCE_ERROR: (TOOL_COMPARISON_READ, TOOL_TELEMETRY_READ),
+    H2_DISPOSITION_ERROR: (TOOL_STAFFING_ATTENDANCE_READ,),
+}
+
+
+def tools_for_critic_validation_errors(
+    critic_feedback: Sequence[str] | None,
+) -> tuple[str, ...]:
+    if not critic_feedback:
+        return ()
+    required: list[str] = []
+    seen: set[str] = set()
+    for item in critic_feedback:
+        for tool_id in CRITIC_EVIDENCE_REQUIREMENTS.get(str(item), ()):
+            if tool_id not in seen:
+                seen.add(tool_id)
+                required.append(tool_id)
+    return tuple(required)
 
 
 def _observable_evidence_ids(payload: dict[str, object]) -> frozenset[str]:

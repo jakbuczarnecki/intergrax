@@ -273,55 +273,6 @@ def validate_reasoning_proposal(
                 )
 
 
-def normalize_supported_diagnosis_claim_evidence(
-    proposal: IncidentReasoningProposal,
-    *,
-    evidence_nodes: Sequence[dict[str, object]],
-) -> IncidentReasoningProposal:
-    """Ensure supported-diagnosis claims cite distinguishing evidence that was gathered."""
-    if proposal.completion_intent is not CompletionIntent.SUPPORTED_DIAGNOSIS:
-        return proposal
-    known = _known_evidence_ids(evidence_nodes)
-    comparison_id = str(INCIDENT_EVIDENCE_IDS.comparison)
-    telemetry_id = str(INCIDENT_EVIDENCE_IDS.telemetry)
-    required_for_hypothesis: dict[str, tuple[str, ...]] = {
-        "H1": (comparison_id, telemetry_id),
-        "H3": (comparison_id, telemetry_id),
-    }
-
-    updated_claims: list[ClaimProposal] = []
-    changed = False
-    for claim in proposal.claim_proposals:
-        if str(claim.claim_kind) != str(DIAGNOSIS_KIND):
-            updated_claims.append(claim)
-            continue
-        required = required_for_hypothesis.get(claim.hypothesis_id, ())
-        if not required:
-            updated_claims.append(claim)
-            continue
-        missing = tuple(
-            evidence_id
-            for evidence_id in required
-            if evidence_id in known and evidence_id not in claim.supporting_evidence_ids
-        )
-        if not missing:
-            updated_claims.append(claim)
-            continue
-        changed = True
-        updated_claims.append(
-            claim.model_copy(
-                update={
-                    "supporting_evidence_ids": tuple(
-                        dict.fromkeys((*claim.supporting_evidence_ids, *missing))
-                    ),
-                },
-            ),
-        )
-    if not changed:
-        return proposal
-    return proposal.model_copy(update={"claim_proposals": tuple(updated_claims)})
-
-
 def parse_claim_hypothesis_bindings(
     raw_bindings: object,
 ) -> tuple[ClaimHypothesisBinding, ...]:
@@ -543,6 +494,9 @@ def build_reasoning_messages(
             "critic feedback, current evidence, and current allowed evidence IDs. "
             "Do not merely repeat the previous proposal. "
             "Do not cite evidence that is not in the current allowed list. "
+            "If critic feedback identifies missing evidential support, "
+            "the revised claim must explicitly cite the relevant gathered evidence IDs. "
+            "Do not assume the platform will add or repair claim citations. "
             "Perform incremental correction using all prior evidence; "
             "do not discard valid prior observations."
         )
@@ -586,10 +540,6 @@ def propose_incident_reasoning(
     )
     proposal = structured.parsed
     validate_reasoning_proposal(proposal, evidence_nodes=evidence_nodes)
-    proposal = normalize_supported_diagnosis_claim_evidence(
-        proposal,
-        evidence_nodes=evidence_nodes,
-    )
     return proposal
 
 
@@ -681,21 +631,15 @@ def build_investigation_summary(proposal: IncidentReasoningProposal, *, is_revis
             )
     if proposal.completion_intent is CompletionIntent.SUPPORTED_DIAGNOSIS:
         telemetry_id = str(INCIDENT_EVIDENCE_IDS.telemetry)
+        comparison_id = str(INCIDENT_EVIDENCE_IDS.comparison)
         h3_claim = next(
             (item for item in proposal.claim_proposals if item.hypothesis_id == "H3"),
             None,
         )
-        h3 = next(
-            (item for item in proposal.hypotheses if item.hypothesis_id == "H3"),
-            None,
-        )
         if (
-            proposal.preferred_hypothesis_id == "H3"
-            or (h3 is not None and h3.disposition is HypothesisDisposition.SUPPORTED)
-            or (
-                h3_claim is not None
-                and telemetry_id in h3_claim.supporting_evidence_ids
-            )
+            h3_claim is not None
+            and telemetry_id in h3_claim.supporting_evidence_ids
+            and comparison_id in h3_claim.supporting_evidence_ids
         ):
             bounded = (
                 "Intermittent station signal degradation on the complex-assembly step "
