@@ -32,6 +32,7 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryApplicationEnvironmentActivationStore,
     InMemoryDeploymentInstanceStore,
 )
+from intergrax.agent_distribution.sqlite_stores import SqliteAgentDistributionStoreBundle
 from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import DeploymentInstanceStore
@@ -124,6 +125,38 @@ def wire_reference_production_lifecycle_services(
         deployment_instance_store=deployment_instance_store,
         serving_store=stores.serving_store,
         activation_store=InMemoryApplicationEnvironmentActivationStore(state),
+        deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
+        projection_coordinator=projection_coordinator,
+    )
+    return ReferenceProductionLifecycleServices(
+        activation_service=activation_service,
+        projection_coordinator=projection_coordinator,
+        revision_service=RuntimeRevisionService(revision_store),
+        projection_input_store=projection_input_store,
+        deployment_instance_store=deployment_instance_store,
+    )
+
+
+def wire_durable_reference_production_lifecycle_services(
+    composition: ProductionProcessComposition,
+    *,
+    durable_store_bundle: SqliteAgentDistributionStoreBundle,
+) -> ReferenceProductionLifecycleServices:
+    """Construct AP lifecycle services from durable SQLite store bundles."""
+    stores = composition.agent_platform_runtime.stores
+    revision_store = durable_store_bundle.revision_store
+    projection_input_store = InMemoryRegistryProjectionInputStore()
+    projection_coordinator = ApplicationRegistryProjectionCoordinator(
+        revision_store=revision_store,
+        input_store=projection_input_store,
+        projection_store=stores.registry_projection_store,
+    )
+    deployment_instance_store = durable_store_bundle.deployment_instance_store
+    activation_service = ActivationService(
+        revision_store=revision_store,
+        deployment_instance_store=deployment_instance_store,
+        serving_store=durable_store_bundle.serving_store,
+        activation_store=durable_store_bundle.activation_store,
         deployment_adapter=FakeInMemoryRuntimeDeploymentAdapter(),
         projection_coordinator=projection_coordinator,
     )
