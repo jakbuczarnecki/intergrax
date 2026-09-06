@@ -5,7 +5,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
+from intergrax.applications._shared.profile_resolution.activation_store import (
+    InMemoryActiveEffectiveProfileRevisionStore,
+)
+from intergrax.applications._shared.profile_resolution.execution_pinning import (
+    InMemoryEffectiveProfileExecutionPinningStore,
+)
+from intergrax.applications._shared.profile_resolution.store import (
+    InMemoryEffectiveProfileRevisionStore,
+)
 from intergrax.agent_distribution.agent_project_metadata import AgentProjectMetadata
 from intergrax.agent_distribution.catalog import AgentCatalogEntry
 from intergrax.agent_distribution.materialization import MaterializationOutput
@@ -40,6 +50,37 @@ def admin_test_principal() -> RequestIdentity:
 
 def allow_mutation_boundary() -> ControlPlaneMutationAuthorizationBoundary:
     return ControlPlaneMutationAuthorizationBoundary(evaluator=_AllowEvaluator())
+
+
+class _LifecycleProofDurableRevisionStore(InMemoryEffectiveProfileRevisionStore):
+    @property
+    def is_durable(self) -> bool:
+        return True
+
+
+class _LifecycleProofDurablePinningStore(InMemoryEffectiveProfileExecutionPinningStore):
+    @property
+    def is_durable(self) -> bool:
+        return True
+
+
+@dataclass(frozen=True, slots=True)
+class LifecycleProofDurableProfileStores:
+    revision_store: _LifecycleProofDurableRevisionStore
+    pinning_store: _LifecycleProofDurablePinningStore
+    active_store: InMemoryActiveEffectiveProfileRevisionStore
+
+
+def lifecycle_proof_durable_profile_stores(
+    runtime_root: Path,
+) -> LifecycleProofDurableProfileStores:
+    """Process-local durable-marked profile stores for strict lifecycle execution proofs."""
+    del runtime_root
+    return LifecycleProofDurableProfileStores(
+        revision_store=_LifecycleProofDurableRevisionStore(),
+        pinning_store=_LifecycleProofDurablePinningStore(),
+        active_store=InMemoryActiveEffectiveProfileRevisionStore(),
+    )
 
 
 class AgentProjectMetadataTestProvider:

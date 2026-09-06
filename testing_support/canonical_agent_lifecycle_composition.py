@@ -124,6 +124,7 @@ from testing_support.canonical_lifecycle_ping_agent import (
 from testing_support.agent_platform_admin_harness import (
     admin_test_principal,
     allow_mutation_boundary,
+    lifecycle_proof_durable_profile_stores,
 )
 
 _DEFAULT_DIGEST = "sha256:" + ("a" * 64)
@@ -820,6 +821,7 @@ class CanonicalAgentLifecycleProofStack:
 
     async def execute_canonical(self) -> tuple[str, str]:
         projection = self.resolve_serving_projection()
+        profile_stores = lifecycle_proof_durable_profile_stores(self.runtime_root)
         host_runtime = build_harness_host_runtime(
             self.manifest,
             self.environment,
@@ -827,6 +829,9 @@ class CanonicalAgentLifecycleProofStack:
             trace_db_path=self.runtime_root / "trace.db",
             runtime_events_db_path=self.runtime_root / "runtime_events.db",
             document_store=InMemoryDocumentStore(),
+            revision_store=profile_stores.revision_store,
+            pinning_store=profile_stores.pinning_store,
+            active_store=profile_stores.active_store,
         )
         task = Task(
             tenant_id="tenant-test",
