@@ -63,6 +63,16 @@ class IncidentEvidenceRequirement:
     phase: EvidenceAcquisitionPhase
 
 
+TOOL_SEMANTIC_EVIDENCE_REFERENCES: dict[str, str] = {
+    "production.workload.read": str(WORKLOAD_EVIDENCE_ID),
+    "production.throughput.read": str(THROUGHPUT_EVIDENCE_ID),
+    "production.staffing.schedule.read": str(STAFFING_PRELIMINARY_EVIDENCE_ID),
+    "production.staffing.attendance.read": str(STAFFING_ATTENDANCE_EVIDENCE_ID),
+    "production.comparison.read": str(COMPARISON_EVIDENCE_ID),
+    "production.telemetry.read": str(TELEMETRY_EVIDENCE_ID),
+}
+
+
 BASELINE_INCIDENT_EVIDENCE_REQUIREMENTS: tuple[IncidentEvidenceRequirement, ...] = (
     IncidentEvidenceRequirement(
         str(WORKLOAD_EVIDENCE_ID),

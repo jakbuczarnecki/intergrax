@@ -55,23 +55,33 @@ class ToolModelObservation:
     """
     Model-facing serialized tool outcome for native ``role=tool`` messages.
 
+    ``content`` is the semantically intact tool payload serialization.
+    ``evidence_reference`` is the optional model-visible semantic identity
+    rendered separately via :func:`format_tool_model_observation_content`.
+
     Distinct from diagnostic trace previews (bounded observability).
     """
 
     content: str
+    evidence_reference: str | None = None
 
     @classmethod
     def from_execution_result(
         cls,
         result: "ToolExecutionResult[OutModelT]",
+        *,
+        evidence_reference: str | None = None,
     ) -> "ToolModelObservation":
         if result.success:
             if result.output is None:
                 raise ValueError("successful ToolExecutionResult requires output")
-            return cls(content=result.output.model_dump_json())
+            return cls(
+                content=result.output.model_dump_json(),
+                evidence_reference=evidence_reference,
+            )
         if result.error is None:
             raise ValueError("failed ToolExecutionResult requires error")
-        return cls(content=result.error.error_message)
+        return cls(content=result.error.error_message, evidence_reference=None)
 
 
 @dataclass(frozen=True)

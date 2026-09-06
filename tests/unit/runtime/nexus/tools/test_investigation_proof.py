@@ -9,6 +9,7 @@ import json
 import pytest
 from pydantic import BaseModel
 
+from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.tools.investigation_proof import (
@@ -26,7 +27,9 @@ from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
     NativeToolPlanAlignmentError,
     validate_native_tool_plan_alignment,
 )
+from intergrax.tools.model_observation_format import format_tool_model_observation_content
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
+from intergrax.tools.execution_models import ToolModelObservation
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -36,9 +39,13 @@ class _EvidenceIn(BaseModel):
 
 
 def _tool_observation(*, tool_call_id: str, evidence_reference: str) -> ChatMessage:
+    observation = ToolModelObservation(
+        content=json.dumps({"payload": "x"}),
+        evidence_reference=evidence_reference,
+    )
     return ChatMessage(
         role="tool",
-        content=json.dumps({"evidence_reference": evidence_reference, "payload": "x"}),
+        content=format_tool_model_observation_content(observation),
         tool_call_id=tool_call_id,
     )
 
@@ -77,16 +84,21 @@ def test_collect_available_evidence_ids_from_canonical_tool_messages() -> None:
     assert collect_available_evidence_ids(messages) == ("evidence.telemetry.x",)
 
 
-def test_collect_available_evidence_ids_prefers_domain_evidence_id() -> None:
+def test_collect_available_evidence_ids_prefers_envelope_over_legacy_json() -> None:
     messages = [
         _assistant_call(tool_call_id="call_abc"),
         ChatMessage(
             role="tool",
-            content=json.dumps(
-                {
-                    "evidence_id": "evidence.workload.line4.incident_window",
-                    "evidence_reference": "observation.probe.a.step-1",
-                }
+            content=format_tool_model_observation_content(
+                ToolModelObservation(
+                    content=json.dumps(
+                        {
+                            "evidence_id": "evidence.legacy",
+                            "evidence_reference": "observation.probe.a.step-1",
+                        }
+                    ),
+                    evidence_reference="evidence.workload.line4.incident_window",
+                )
             ),
             tool_call_id="call_abc",
         ),
@@ -383,9 +395,9 @@ def test_duplicate_basis_reference_rejected() -> None:
 def test_mint_runtime_observation_evidence_reference_is_stable() -> None:
     reference = mint_runtime_observation_evidence_reference(
         tool_id="probe.a",
-        step_id="step-1",
+        step_id="run:loop1:tool",
     )
-    assert reference == "observation.probe.a.step-1"
+    assert reference == "observation.probe.a.run:loop1:tool"
 
 
 def test_validate_native_tool_plan_alignment_name_mismatch() -> None:
@@ -546,3 +558,92 @@ def test_validate_native_tool_plan_alignment_empty_json_with_defaults_valid() ->
             ]
         ),
     )
+
+
+def test_baseline_workload_reference_binds_from_prior_inventory() -> None:
+    workload_ref = "evidence.workload.line4.incident_window"
+    step = build_investigation_proof_step(
+        round_index=2,
+        assistant_content=(
+            f"EVIDENCE_BASIS: {workload_ref}\n"
+            "PURPOSE: inspect staffing implications of workload pressure"
+        ),
+        tool_calls=(
+            LLMToolCall.from_openai_shape(
+                call_id="call_staffing",
+                name="production.staffing.schedule.read",
+                arguments={"line_id": "line4"},
+            ),
+        ),
+        messages_before_round=[
+            ChatMessage(role="system", content="Already gathered evidence IDs:\n- workload"),
+            ChatMessage(role="user", content="investigate"),
+        ],
+        prior_model_visible_references=(
+            ModelVisibleEvidenceReference(
+                evidence_reference=workload_ref,
+                acquisition_id="baseline_production_workload_read_0",
+            ),
+        ),
+    )
+    assert step.declared_basis_references == (workload_ref,)
+    assert step.basis_tool_call_ids == ("baseline_production_workload_read_0",)
+
+
+def test_evidence_known_but_not_observed_fails_closed() -> None:
+    with pytest.raises(
+        InvestigationProofValidationError,
+        match="unknown basis evidence reference",
+    ):
+        build_investigation_proof_step(
+            round_index=2,
+            assistant_content=(
+                "EVIDENCE_BASIS: evidence.workload.line4.incident_window\n"
+                "PURPOSE: inspect subgroup"
+            ),
+            tool_calls=(
+                LLMToolCall.from_openai_shape(
+                    call_id="call_next",
+                    name="probe.b",
+                    arguments={"confirm": True},
+                ),
+            ),
+            messages_before_round=[
+                ChatMessage(role="user", content="investigate"),
+            ],
+        )
+
+
+def test_duplicate_reference_with_conflicting_provenance_fails() -> None:
+    with pytest.raises(
+        InvestigationProofValidationError,
+        match="ambiguous evidence reference provenance",
+    ):
+        build_completed_observation_reference_index(
+            [
+                _assistant_call(tool_call_id="call_a"),
+                _tool_observation(
+                    tool_call_id="call_a",
+                    evidence_reference="evidence.workload.line4.incident_window",
+                ),
+            ],
+            prior_references=(
+                ModelVisibleEvidenceReference(
+                    evidence_reference="evidence.workload.line4.incident_window",
+                    acquisition_id="baseline_production_workload_read_0",
+                ),
+            ),
+        )
+
+
+def test_domain_identity_wins_over_generic_observation_fallback() -> None:
+    messages = [
+        _assistant_call(tool_call_id="call_a"),
+        _tool_observation(
+            tool_call_id="call_a",
+            evidence_reference="evidence.workload.line4.incident_window",
+        ),
+    ]
+    available = collect_available_evidence_ids(messages)
+    assert available == ("evidence.workload.line4.incident_window",)
+    assert "observation.production.workload.read" not in available

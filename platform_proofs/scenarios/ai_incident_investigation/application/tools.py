@@ -31,6 +31,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.domain_reas
     telemetry_is_unavailable,
     telemetry_supports_degradation,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
+    TOOL_SEMANTIC_EVIDENCE_REFERENCES,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
     COMPARISON_LINE_ID,
     IncidentOperationalData,
@@ -436,6 +439,7 @@ def _scenario_tool_contract(
     output_model: type[BaseModel],
     *,
     description: str,
+    semantic_evidence_reference: str | None = None,
 ) -> ToolContract:
     return ToolContract(
         tool_id=tool_id,
@@ -445,6 +449,7 @@ def _scenario_tool_contract(
         output_schema=output_model,
         error_mapping={},
         side_effects=False,
+        semantic_evidence_reference=semantic_evidence_reference,
     )
 
 
@@ -691,6 +696,7 @@ def register_scenario_tools(
             LineWindowInput,
             WorkloadOutput,
             description="Read production workload observations for a line and time window.",
+            semantic_evidence_reference=TOOL_SEMANTIC_EVIDENCE_REFERENCES[TOOL_WORKLOAD_READ],
         ),
         _WorkloadHandler(operational_data),
     )
@@ -712,6 +718,7 @@ def register_scenario_tools(
             LineWindowInput,
             ThroughputOutput,
             description="Read production throughput observations for a line and time window.",
+            semantic_evidence_reference=TOOL_SEMANTIC_EVIDENCE_REFERENCES[TOOL_THROUGHPUT_READ],
         ),
         _ThroughputHandler(operational_data),
     )
@@ -721,6 +728,9 @@ def register_scenario_tools(
             StaffingScheduleInput,
             StaffingScheduleOutput,
             description="Read preliminary staffing schedule export for a line shift window.",
+            semantic_evidence_reference=TOOL_SEMANTIC_EVIDENCE_REFERENCES[
+                TOOL_STAFFING_SCHEDULE_READ
+            ],
         ),
         _StaffingScheduleHandler(operational_data),
     )
@@ -730,6 +740,9 @@ def register_scenario_tools(
             StaffingAttendanceInput,
             StaffingAttendanceOutput,
             description="Read confirmed staffing attendance for a line shift window.",
+            semantic_evidence_reference=TOOL_SEMANTIC_EVIDENCE_REFERENCES[
+                TOOL_STAFFING_ATTENDANCE_READ
+            ],
         ),
         _StaffingAttendanceHandler(operational_data),
     )
@@ -756,6 +769,7 @@ def register_scenario_tools(
                 "comparison_line_id is the permitted peer line to contrast against it; "
                 "window must be comparison_high_load."
             ),
+            semantic_evidence_reference=TOOL_SEMANTIC_EVIDENCE_REFERENCES[TOOL_COMPARISON_READ],
         ),
         _ComparisonHandler(operational_data),
     )
@@ -777,6 +791,7 @@ def register_scenario_tools(
             TelemetryInput,
             TelemetryOutput,
             description="Read station telemetry observations for a time window.",
+            semantic_evidence_reference=TOOL_SEMANTIC_EVIDENCE_REFERENCES[TOOL_TELEMETRY_READ],
         ),
         _TelemetryHandler(operational_data),
     )

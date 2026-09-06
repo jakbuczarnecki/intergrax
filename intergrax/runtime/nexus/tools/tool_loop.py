@@ -13,6 +13,8 @@ from dataclasses import dataclass, replace
 
 from pydantic import BaseModel
 
+from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
+
 from intergrax.context.contracts import IterativeToolOutputBlock
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
@@ -55,8 +57,10 @@ from intergrax.runtime.nexus.tools.tool_planner_protocol import (
 from intergrax.runtime.nexus.tools.investigation_proof import (
     mint_runtime_observation_evidence_reference,
 )
+from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.core.tool_plan import PlannedToolCall
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult, ToolModelObservation
+from intergrax.tools.model_observation_format import format_tool_model_observation_content
 
 _TRACE_OUTPUT_PREVIEW_LIMIT = 400
 
@@ -162,12 +166,14 @@ def _invoke_planned_call(
         state.tool_traces.append(trace)
         enforce_tool_call_budget(state)
     step_id = call.step_id or f"tool-{index}"
+    scoped_step = f"{idempotency_prefix}:{step_id}"
     return PlannedToolCallOutcome(
         trace=trace,
         model_observation=_model_observation_with_evidence_reference(
             result,
+            contract=invoker.registry.get(call.tool_id).contract,
             tool_id=call.tool_id,
-            step_id=step_id,
+            step_id=scoped_step,
         ),
     )
 
@@ -175,27 +181,26 @@ def _invoke_planned_call(
 def _model_observation_with_evidence_reference(
     result: ToolExecutionResult[BaseModel],
     *,
+    contract: ToolContract,
     tool_id: str,
     step_id: str,
 ) -> ToolModelObservation:
-    """Attach a stable model-visible evidence reference when the tool output lacks one."""
+    """Attach canonical semantic evidence reference when declared on the tool contract."""
     if not result.success or result.output is None:
         return ToolModelObservation.from_execution_result(result)
-    payload = result.output.model_dump(mode="json")
-    if not isinstance(payload, dict):
-        return ToolModelObservation.from_execution_result(result)
-    for key in ("evidence_id", "evidence_reference", "observation_reference"):
-        existing = payload.get(key)
-        if isinstance(existing, str) and existing.strip():
-            return ToolModelObservation.from_execution_result(result)
+    semantic_reference = contract.semantic_evidence_reference
+    if semantic_reference is not None and semantic_reference.strip():
+        return ToolModelObservation.from_execution_result(
+            result,
+            evidence_reference=semantic_reference.strip(),
+        )
     reference = mint_runtime_observation_evidence_reference(
         tool_id=tool_id,
         step_id=step_id,
     )
-    enriched = dict(payload)
-    enriched["evidence_reference"] = reference
-    return ToolModelObservation(
-        content=json.dumps(enriched, ensure_ascii=False, separators=(",", ":"))
+    return ToolModelObservation.from_execution_result(
+        result,
+        evidence_reference=reference,
     )
 
 
@@ -406,7 +411,7 @@ def tool_output_blocks_from_native_round(
     for tool_call, planned_call, outcome in zip(tool_calls, planned_calls, outcomes, strict=False):
         blocks.append(
             IterativeToolOutputBlock(
-                content=outcome.model_observation.content,
+                content=format_tool_model_observation_content(outcome.model_observation),
                 tool_call_id=tool_call.id,
                 tool_name=tool_call.name,
                 step_id=planned_call.step_id,
@@ -431,7 +436,7 @@ def append_native_tool_messages(
         messages.append(
             ChatMessage(
                 role="tool",
-                content=outcome.model_observation.content,
+                content=format_tool_model_observation_content(outcome.model_observation),
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
             )
@@ -463,6 +468,7 @@ def run_bounded_tool_loop(
     max_iterations: int,
     invocation_mode: ToolInvocationMode | None = None,
     pattern: ToolInvocationPattern | None = None,
+    prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
 ) -> ToolInvocationResult:
     """
     Plan → invoke → observe via injected ``ToolInvocationPattern``.
@@ -476,15 +482,29 @@ def run_bounded_tool_loop(
         pattern=pattern or state.context.config.tool_invocation_pattern,
         entry_point_pattern_id=state.context.config.tool_invocation_pattern_id,
     )
-    result = resolved.execute(
-        state=state,
-        invoker=invoker,
-        planner=tool_planner,
-        plan=None,
-        allowed_tool_ids=allowed_tool_ids,
-        max_iterations=max_iterations,
-        planner_input=planner_input,
-    )
+    from intergrax.runtime.nexus.tools.patterns.bounded_react import BoundedReactPattern
+
+    if isinstance(resolved, BoundedReactPattern):
+        result = resolved.execute(
+            state=state,
+            invoker=invoker,
+            planner=tool_planner,
+            plan=None,
+            allowed_tool_ids=allowed_tool_ids,
+            max_iterations=max_iterations,
+            planner_input=planner_input,
+            prior_model_visible_references=prior_model_visible_references,
+        )
+    else:
+        result = resolved.execute(
+            state=state,
+            invoker=invoker,
+            planner=tool_planner,
+            plan=None,
+            allowed_tool_ids=allowed_tool_ids,
+            max_iterations=max_iterations,
+            planner_input=planner_input,
+        )
     pattern_id = resolved.pattern_id
     if not result.pattern_id:
         return replace(result, pattern_id=pattern_id)
@@ -501,6 +521,7 @@ async def run_bounded_tool_loop_async(
     max_iterations: int,
     invocation_mode: ToolInvocationMode | None = None,
     pattern: ToolInvocationPattern | None = None,
+    prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
 ) -> ToolInvocationResult:
     """Async bounded tool loop — routes iterative feedback through CE when wired."""
     max_iters = max(1, int(max_iterations))
@@ -522,6 +543,7 @@ async def run_bounded_tool_loop_async(
             planner_input=planner_input,
             allowed_tool_ids=allowed_tool_ids,
             max_iterations=max_iters,
+            prior_model_visible_references=prior_model_visible_references,
         )
     # TRANSITIONAL (UE-9D): sync fallback via BoundedReactPattern → append_native_tool_messages
     # when no context_engine is wired. Owner of removal: UE-9D.
@@ -534,6 +556,7 @@ async def run_bounded_tool_loop_async(
         max_iterations=max_iterations,
         invocation_mode=invocation_mode,
         pattern=pattern,
+        prior_model_visible_references=prior_model_visible_references,
     )
 
 

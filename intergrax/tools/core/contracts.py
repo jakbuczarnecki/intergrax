@@ -91,6 +91,7 @@ class ToolContract:
     category: str = ""
     tags: tuple[str, ...] = ()
     isolation_requirement: ToolIsolationRequirement = ToolIsolationRequirement.NONE
+    semantic_evidence_reference: str | None = None
 
     def __post_init__(self) -> None:
         if self.timeout_ms < 1:

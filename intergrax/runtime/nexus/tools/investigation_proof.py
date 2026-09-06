@@ -8,11 +8,13 @@ import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.tools.native_planner_transcript import (
     canonical_native_planner_messages,
 )
+from intergrax.tools.model_observation_format import parse_evidence_reference_from_tool_content
 
 _EVIDENCE_BASIS_PREFIX = "EVIDENCE_BASIS:"
 _PURPOSE_PREFIX = "PURPOSE:"
@@ -65,6 +67,9 @@ def mint_runtime_observation_evidence_reference(*, tool_id: str, step_id: str) -
 
 
 def _extract_semantic_reference_from_tool_content(content: str) -> str | None:
+    envelope_reference = parse_evidence_reference_from_tool_content(content)
+    if envelope_reference is not None:
+        return envelope_reference
     stripped = content.strip()
     if not stripped:
         return None
@@ -84,12 +89,32 @@ def _extract_semantic_reference_from_tool_content(content: str) -> str | None:
     return None
 
 
+def _index_semantic_reference(
+    index: dict[str, str],
+    reference: str,
+    binding_id: str,
+) -> None:
+    existing = index.get(reference)
+    if existing is not None and existing != binding_id:
+        raise InvestigationProofValidationError(
+            f"ambiguous evidence reference provenance: {reference}"
+        )
+    index[reference] = binding_id
+
+
 def build_completed_observation_reference_index(
     messages: Sequence[ChatMessage],
+    prior_references: Sequence[ModelVisibleEvidenceReference] = (),
 ) -> dict[str, str]:
-    """Map model-visible semantic evidence references to canonical tool_call_id values."""
-    canonical = canonical_native_planner_messages(messages)
+    """Map model-visible semantic evidence references to canonical provenance ids."""
     index: dict[str, str] = {}
+    for prior in prior_references:
+        _index_semantic_reference(
+            index,
+            prior.evidence_reference,
+            prior.binding_id(),
+        )
+    canonical = canonical_native_planner_messages(messages)
     for message in canonical:
         if message.role != "tool":
             continue
@@ -99,15 +124,24 @@ def build_completed_observation_reference_index(
         reference = _extract_semantic_reference_from_tool_content(message.content or "")
         if reference is None:
             continue
-        index[reference] = tool_call_id
+        _index_semantic_reference(index, reference, tool_call_id)
     return index
 
 
-def collect_available_evidence_ids(messages: Sequence[ChatMessage]) -> tuple[str, ...]:
-    """Return model-visible semantic evidence references from completed tool observations."""
-    canonical = canonical_native_planner_messages(messages)
+def collect_available_evidence_ids(
+    messages: Sequence[ChatMessage],
+    prior_references: Sequence[ModelVisibleEvidenceReference] = (),
+) -> tuple[str, ...]:
+    """Return model-visible semantic evidence references from completed observations."""
     references: list[str] = []
     seen: set[str] = set()
+    for prior in prior_references:
+        reference = prior.evidence_reference
+        if reference in seen:
+            continue
+        seen.add(reference)
+        references.append(reference)
+    canonical = canonical_native_planner_messages(messages)
     for message in canonical:
         if message.role != "tool":
             continue
@@ -253,6 +287,7 @@ def build_investigation_proof_step(
     assistant_content: str,
     tool_calls: Sequence[LLMToolCall],
     messages_before_round: Sequence[ChatMessage],
+    prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
 ) -> InvestigationProofStep:
     """Snapshot, parse, validate, and record one investigative tool round."""
     next_tool_call_ids = tuple(tool_call.id for tool_call in tool_calls)
@@ -262,7 +297,10 @@ def build_investigation_proof_step(
             assistant_content=assistant_content,
             next_tool_call_ids=next_tool_call_ids,
         )
-    reference_index = build_completed_observation_reference_index(messages_before_round)
+    reference_index = build_completed_observation_reference_index(
+        messages_before_round,
+        prior_model_visible_references,
+    )
     available = frozenset(reference_index)
     return validate_follow_up_investigation_step(
         round_index=round_index,

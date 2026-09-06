@@ -889,8 +889,8 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | Owner | Responsibility |
 |-------|----------------|
 | **Model** | Public `PURPOSE`; semantic selection of prior observations in `EVIDENCE_BASIS` |
-| **Tool execution** | Canonical `LLMToolCall.id` after adapter normalization; stable model-visible `evidence_reference` / domain `evidence_id` in tool observations |
-| **ENG-6 runtime** | Deterministic bind declared semantic references → completed observations → `basis_tool_call_ids`; fail closed on unknown references |
+| **Tool execution** | Canonical `LLMToolCall.id` after adapter normalization; semantic `evidence_reference` on `ToolModelObservation` rendered via `EVIDENCE_REF:` envelope (payload stays intact) |
+| **ENG-6 runtime** | Deterministic bind declared semantic references → completed observations and optional prior model-visible inventory → `basis_tool_call_ids`; fail closed on unknown references and ambiguous provenance |
 
 **Forbidden:** model-authored provider/runtime `tool_call_id` as the public basis contract; silent auto-binding of all available evidence; fuzzy or regex ID recovery from model text.
 
@@ -903,9 +903,11 @@ EVIDENCE_BASIS: <comma-separated prior model-visible evidence references>
 PURPOSE: <short user-facing purpose>
 ```
 
-**Binding:** `investigation_proof.py` parses declared references, resolves them against the same canonical native transcript as ENG-5 (`canonical_native_planner_messages`), and records both `declared_basis_references` and runtime `basis_bindings` (`InvestigationEvidenceBasis`).
+**Binding:** `investigation_proof.py` parses declared references, resolves them against the canonical native transcript plus any explicit prior model-visible inventory (`ModelVisibleEvidenceReference`), and records both `declared_basis_references` and runtime `basis_bindings` (`InvestigationEvidenceBasis`).
 
-**Implementation:** `intergrax/runtime/nexus/tools/investigation_proof.py` · observation reference minting in `tool_loop.py` · shared policy `prompts/tools_investigation_policy/`.
+**Invariants:** one semantic identity per observation (`ToolModelObservation.evidence_reference`); domain/tool-contract identity wins over generic `observation.<tool_id>.<step_id>` fallback; scenario-known evidence IDs are not admissible until model-visible through transcript or declared prior inventory; runtime provenance (`tool_call_id` / acquisition id) stays separate from semantic identity.
+
+**Implementation:** `intergrax/runtime/nexus/tools/investigation_proof.py` · `intergrax/tools/model_observation_format.py` · observation reference minting in `tool_loop.py` · shared policy `prompts/tools_investigation_policy/`.
 
 | **Invocation pattern plugin** (`ToolInvocationPattern`) | **Production** | All shipped modes + `DeterministicChainPattern` (TOOL-ENG-16–24,28) |
 | **Invoker test regression** (`modality_tool_trace`) | **Done** | TOOL-ENG-TEST.1 (S0) |

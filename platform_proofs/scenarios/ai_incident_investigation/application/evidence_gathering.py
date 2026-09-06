@@ -8,6 +8,7 @@ import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.budget.budget_enforcer import BudgetExceededError
 from intergrax.runtime.execution.budget.models import ExecutionBudgetError
@@ -35,13 +36,8 @@ from platform_proofs.scenarios.ai_incident_investigation.application.observabili
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     BASELINE_INCIDENT_EVIDENCE_REQUIREMENTS,
-    COMPARISON_EVIDENCE_ID,
     EvidenceAcquisitionPhase,
-    STAFFING_ATTENDANCE_EVIDENCE_ID,
-    STAFFING_PRELIMINARY_EVIDENCE_ID,
-    TELEMETRY_EVIDENCE_ID,
-    THROUGHPUT_EVIDENCE_ID,
-    WORKLOAD_EVIDENCE_ID,
+    TOOL_SEMANTIC_EVIDENCE_REFERENCES,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
     ANALYSIS_TOOL_IDS,
@@ -66,20 +62,18 @@ from platform_proofs.scenarios.ai_incident_investigation.application.validation 
 MAX_INCIDENT_TOOL_LOOP_ITERATIONS = 12
 INCIDENT_INVESTIGATION_POLICY_PROMPT_ID = "incident_investigation_policy"
 
-_TOOL_EVIDENCE_MAP: dict[str, tuple[str, str]] = {
-    TOOL_WORKLOAD_READ: (str(WORKLOAD_EVIDENCE_ID), "workload observation"),
-    TOOL_THROUGHPUT_READ: (str(THROUGHPUT_EVIDENCE_ID), "throughput observation"),
-    TOOL_STAFFING_SCHEDULE_READ: (
-        str(STAFFING_PRELIMINARY_EVIDENCE_ID),
-        "staffing schedule observation",
-    ),
-    TOOL_STAFFING_ATTENDANCE_READ: (
-        str(STAFFING_ATTENDANCE_EVIDENCE_ID),
-        "staffing attendance observation",
-    ),
-    TOOL_COMPARISON_READ: (str(COMPARISON_EVIDENCE_ID), "comparison line observation"),
-    TOOL_TELEMETRY_READ: (str(TELEMETRY_EVIDENCE_ID), "station telemetry observation"),
+_TOOL_EVIDENCE_LABELS: dict[str, str] = {
+    TOOL_WORKLOAD_READ: "workload observation",
+    TOOL_THROUGHPUT_READ: "throughput observation",
+    TOOL_STAFFING_SCHEDULE_READ: "staffing schedule observation",
+    TOOL_STAFFING_ATTENDANCE_READ: "staffing attendance observation",
+    TOOL_COMPARISON_READ: "comparison line observation",
+    TOOL_TELEMETRY_READ: "station telemetry observation",
 }
+
+
+def _semantic_evidence_id(tool_id: str) -> str | None:
+    return TOOL_SEMANTIC_EVIDENCE_REFERENCES.get(tool_id)
 
 _ANALYSIS_TOOL_LABELS: dict[str, str] = {
     TOOL_WORKLOAD_EVALUATE: "workload-throughput analysis",
@@ -170,9 +164,9 @@ class _IncidentScopedToolInvoker:
                 ),
             )
             return ToolExecutionResult.fail("incident_scope_violation", str(exc))
-        mapped = _TOOL_EVIDENCE_MAP.get(request.tool_id)
-        if mapped is not None and mapped[0] in self._gathered_evidence_ids:
-            cached_payload = self._cached_payload(mapped[0])
+        evidence_id = _semantic_evidence_id(request.tool_id)
+        if evidence_id is not None and evidence_id in self._gathered_evidence_ids:
+            cached_payload = self._cached_payload(evidence_id)
             if cached_payload is not None:
                 tool = self._registry.get(request.tool_id)
                 output = tool.contract.output_schema.model_validate(cached_payload)
@@ -192,10 +186,10 @@ class _IncidentScopedToolInvoker:
                     else None
                 )
                 if payload is not None:
-                    mapped = _TOOL_EVIDENCE_MAP.get(request.tool_id)
-                    if mapped is not None:
+                    evidence_id = _semantic_evidence_id(request.tool_id)
+                    if evidence_id is not None:
                         self._remember_payload(
-                            mapped[0],
+                            evidence_id,
                             payload,
                             source_tool_id=request.tool_id,
                         )
@@ -296,8 +290,7 @@ def _tool_call_id_to_evidence_id(
     tool_name = call_id_to_tool_name.get(tool_call_id)
     if tool_name is None:
         return None
-    mapped = _TOOL_EVIDENCE_MAP.get(tool_name)
-    return mapped[0] if mapped else None
+    return _semantic_evidence_id(tool_name)
 
 
 def _emit_planner_decision_traces(
@@ -374,9 +367,9 @@ def _evidence_nodes_from_tool_outputs(
     nodes: list[dict[str, object]] = []
     seen_evidence: set[str] = set()
     for _call_id, tool_name, payload in tool_outputs:
-        mapped = _TOOL_EVIDENCE_MAP.get(tool_name)
-        if mapped is not None:
-            evidence_id, label = mapped
+        evidence_id = _semantic_evidence_id(tool_name)
+        if evidence_id is not None:
+            label = _TOOL_EVIDENCE_LABELS.get(tool_name, tool_name)
             if evidence_id in seen_evidence:
                 continue
             seen_evidence.add(evidence_id)
@@ -508,8 +501,8 @@ def _invoke_supplemental_tools(
 ) -> list[tuple[str, str, dict[str, object]]]:
     outputs: list[tuple[str, str, dict[str, object]]] = []
     for index, tool_id in enumerate(tool_ids):
-        mapped = _TOOL_EVIDENCE_MAP.get(tool_id)
-        if mapped is not None and mapped[0] in existing_evidence_ids:
+        evidence_id = _semantic_evidence_id(tool_id)
+        if evidence_id is not None and evidence_id in existing_evidence_ids:
             continue
         tool = invoker.registry.get(tool_id)
         input_model = tool.contract.input_schema
@@ -537,9 +530,26 @@ def _invoke_supplemental_tools(
             continue
         call_id = f"{call_id_prefix}_{tool_id.replace('.', '_')}_{index}"
         outputs.append((call_id, tool_id, payload))
-        if mapped is not None:
-            existing_evidence_ids.add(mapped[0])
+        if evidence_id is not None:
+            existing_evidence_ids.add(evidence_id)
     return outputs
+
+
+def _baseline_model_visible_references(
+    baseline_outputs: Sequence[tuple[str, str, dict[str, object]]],
+) -> tuple[ModelVisibleEvidenceReference, ...]:
+    references: list[ModelVisibleEvidenceReference] = []
+    for call_id, tool_id, _payload in baseline_outputs:
+        evidence_id = _semantic_evidence_id(tool_id)
+        if evidence_id is None:
+            continue
+        references.append(
+            ModelVisibleEvidenceReference(
+                evidence_reference=evidence_id,
+                acquisition_id=call_id,
+            )
+        )
+    return tuple(references)
 
 
 def gather_incident_evidence(
@@ -610,6 +620,7 @@ def gather_incident_evidence(
         critic_feedback=critic_feedback,
         gathered_evidence=planner_gathered_evidence,
     )
+    prior_model_visible_references = _baseline_model_visible_references(baseline_outputs)
     try:
         loop_result = run_bounded_tool_loop(
             state=runtime_state,
@@ -619,6 +630,7 @@ def gather_incident_evidence(
             allowed_tool_ids=allowed_tool_ids,
             max_iterations=MAX_INCIDENT_TOOL_LOOP_ITERATIONS,
             invocation_mode=ToolInvocationMode.BOUNDED_REACT,
+            prior_model_visible_references=prior_model_visible_references,
         )
     except (BudgetExceededError, ExecutionBudgetError):
         raise RuntimeError("incident_evidence_gathering_budget_exceeded") from None
@@ -635,11 +647,11 @@ def gather_incident_evidence(
         invoker=invoker,
         runtime_state=runtime_state,
         scope=scope,
-        existing_evidence_ids=existing_evidence_ids
+        existing_evidence_ids=        existing_evidence_ids
         | {
-            mapped[0]
+            evidence_id
             for _call_id, tool_name, _payload in tool_outputs
-            if (mapped := _TOOL_EVIDENCE_MAP.get(tool_name)) is not None
+            if (evidence_id := _semantic_evidence_id(tool_name)) is not None
         },
     )
     tool_outputs = list(baseline_outputs) + list(tool_outputs) + supplemental_outputs

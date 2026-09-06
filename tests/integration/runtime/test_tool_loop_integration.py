@@ -585,11 +585,14 @@ def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> Non
     assert len(trace.output_preview) <= _PREVIEW_BOUND
     assert _BEYOND_PREVIEW_MARKER not in trace.output_preview
     assert len(tool_messages) == 1
-    tool_payload = json.loads(tool_messages[0].content or "{}")
+    tool_content = tool_messages[0].content or ""
+    assert "EVIDENCE_REF: observation.long.tool." in tool_content
+    assert f"{_INTEGRATION_RUN_ID}:loop1:tool" in tool_content
+    tool_payload = json.loads(tool_content.split("\n", 1)[1])
     full_payload = json.loads(full_json)
     assert tool_payload["decision_token"] == full_payload["decision_token"]
     assert tool_payload["padding"] == full_payload["padding"]
-    assert tool_payload["evidence_reference"] == "observation.long.tool.tool"
+    assert "evidence_reference" not in tool_payload
     assert llm.second_round_saw_marker is True
     assert result.stop_reason == "planner_final_answer"
 
@@ -1546,9 +1549,9 @@ def test_bounded_react_multi_hop_investigation_proof() -> None:
     assert len(proof.steps) == 3
 
     step1, step2, step3 = proof.steps
-    ref_a = "observation.probe.a.tool"
-    ref_b = "observation.probe.b.tool"
-    ref_c = "observation.probe.c.tool"
+    ref_a = f"observation.probe.a.{_INTEGRATION_RUN_ID}:loop1:tool"
+    ref_b = f"observation.probe.b.{_INTEGRATION_RUN_ID}:loop2:tool"
+    ref_c = f"observation.probe.c.{_INTEGRATION_RUN_ID}:loop3:tool"
     assert step1.round_index == 1
     assert step1.basis_tool_call_ids == ()
     assert step1.next_tool_call_ids == ("evidence-a",)
@@ -1621,7 +1624,11 @@ def _registry_with_probe_tools() -> ToolRegistry:
         (_decision_note("missing-id", purpose="inspect subgroup"), "unknown basis evidence reference"),
         (_decision_note(purpose="inspect subgroup"), "follow-up tool round requires explicit evidence basis"),
         (
-            "EVIDENCE_BASIS: observation.probe.a.tool,observation.probe.a.tool\nPURPOSE: inspect subgroup",
+            (
+                f"EVIDENCE_BASIS: observation.probe.a.{_INTEGRATION_RUN_ID}:loop1:tool,"
+                f"observation.probe.a.{_INTEGRATION_RUN_ID}:loop1:tool\n"
+                "PURPOSE: inspect subgroup"
+            ),
             "duplicate basis evidence reference",
         ),
         ("not-a-valid-note", "exactly two non-empty fields"),

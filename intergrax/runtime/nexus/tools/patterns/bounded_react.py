@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.budget.budget_ticks import (
     enforce_wall_time_budget,
@@ -59,6 +60,7 @@ class BoundedReactPattern:
         allowed_tool_ids: Sequence[str] | None,
         max_iterations: int,
         planner_input: str | list[ChatMessage],
+        prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
     ) -> ToolInvocationResult:
         max_iters = max(1, int(max_iterations))
         if max_iters == 1:
@@ -116,6 +118,7 @@ class BoundedReactPattern:
                     assistant_content=llm_result.content,
                     tool_calls=llm_result.tool_calls,
                     messages_before_round=messages,
+                    prior_model_visible_references=prior_model_visible_references,
                 )
             )
 
@@ -147,7 +150,10 @@ class BoundedReactPattern:
         if proof_steps:
             final_available_evidence_ids: tuple[str, ...] = ()
             if stop_reason == "planner_final_answer":
-                final_available_evidence_ids = collect_available_evidence_ids(messages)
+                final_available_evidence_ids = collect_available_evidence_ids(
+                    messages,
+                    prior_model_visible_references,
+                )
             investigation_proof = InvestigationProof(
                 steps=tuple(proof_steps),
                 final_available_evidence_ids=final_available_evidence_ids,

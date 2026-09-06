@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextBudgetSnapshot,
@@ -90,6 +91,7 @@ async def run_ce_bounded_tool_loop(
     planner_input: str | list[ChatMessage],
     allowed_tool_ids: Sequence[str] | None,
     max_iterations: int,
+    prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
 ) -> ToolInvocationResult:
     """Bounded ReAct with tool feedback routed through Context Engineering."""
     max_iters = max(1, int(max_iterations))
@@ -139,6 +141,7 @@ async def run_ce_bounded_tool_loop(
                 assistant_content=llm_result.content,
                 tool_calls=llm_result.tool_calls,
                 messages_before_round=planner_messages,
+                prior_model_visible_references=prior_model_visible_references,
             )
         )
 
@@ -176,7 +179,10 @@ async def run_ce_bounded_tool_loop(
             evidence_messages = list(
                 await assemble_iterative_tool_planner_messages(state, engine, messages)
             )
-            final_available_evidence_ids = collect_available_evidence_ids(evidence_messages)
+            final_available_evidence_ids = collect_available_evidence_ids(
+                evidence_messages,
+                prior_model_visible_references,
+            )
         investigation_proof = InvestigationProof(
             steps=tuple(proof_steps),
             final_available_evidence_ids=final_available_evidence_ids,
