@@ -25,14 +25,14 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 
 **B. Implemented pieces (capability-specific).** Tier-0 modules under `intergrax/agent_distribution/` and reference process-local production semantics (§34) implement parts of the chain - contracts, stores, trust, roster merge, lock production, materialization adapters, activation/projection services - under explicit scope limits. Process-local in-memory stores are **reference single-process semantics**, not general durable multi-instance production.
 
-**C. Implemented platform proofs (AC-3 + AC-4, reference production V1).** The canonical **install → bind → build → activate → serve** chain and **dynamic capability discovery → match → select → acquire → delegate → release** pipeline are **proven in reference production composition** (§34, §35). Evidence includes canonical AC-3 lifecycle E2E and AC-4 Phase 9 production-composition E2E. This is **platform proof**, not a claim of public commercial marketplace rollout.
+**C. Implemented platform proofs (AC-3 through AC-6, reference production V1).** The canonical **install → bind → build → activate → serve** chain, **dynamic capability discovery → match → select → acquire → delegate → release** pipeline, **revision-bound canonical factory invocation** (AC-5), and **trust/certification/revocation/freshness/active emergency response** (AC-6) are **proven in reference production composition** (§34, §35, §21 AC-5, §10.7 AC-6). Evidence includes AC-3 lifecycle E2E, AC-4 Phase 9 production-composition E2E, AC-5 factory E2E, and AC-6 trust lifecycle E2E. This is **platform proof**, not a claim of public commercial marketplace rollout.
 
 **Still planned / not publicly productized:** Durable cross-process activation, horizontal host scale-out, LKW consumer proof wiring (AP-12), commercial marketplace product, remote publisher onboarding, billing/settlement, multi-instance lease recovery, and universal specialist invocation adapter. Manifest-only development assembly (migration phase M0) remains valid for lab; STRICT production hosts require an active revision-bound registry projection (§31, §34).
 
 **D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience - one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific Nexus branches are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry, or Nexus. AC-4 does **not** require a marketplace backend.
 
 > [!NOTE]
-> **Maturity boundary:** AC-3 lifecycle authority and AC-4 dynamic capability plane are **implemented and frozen** for reference production V1. Public product rollout, durable multi-instance production, and commercial marketplace remain **out of scope** for this maturity tier. Frozen architecture documentation is not equivalent to universal production rollout.
+> **Maturity boundary:** AC-1–AC-6 architecture authority is **implemented and frozen** for reference production V1 (final audit: [`maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md`](../maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md)). Public product rollout, durable multi-instance production, and commercial marketplace remain **out of scope** for this maturity tier. Frozen architecture documentation is not equivalent to universal production rollout.
 
 **Primary audience:** CTOs, principal/staff engineers, software architects, and AI platform engineers evaluating how Intergrax separates agent packaging from runtime execution - after the platform overview in the root README.
 
@@ -54,7 +54,9 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 | **Marketplace relation** | Future catalog/discovery surface only - not execution fork, not second Nexus |
 | **LKW relation** | Future **consumer** via generic platform APIs - MUST NOT own stores, catalog, or materializer |
 | **AC-4 capability plane** | Task need → resolve → discover → match → select → acquire → delegate → release (§35) |
-| **Maturity** | AC-3 + AC-4 frozen for reference production V1; durable multi-instance and marketplace product deferred - see [Current reality](#current-reality--maturity-boundary), §34–§35 |
+| **AC-5 factory authority** | Revision-bound `RuntimeAgentFactoryResolver` → `invoke_canonical_agent_factory(ctx, binding)` (§21) |
+| **AC-6 trust authority** | `AgentPackageTrustCoordinator` sole ALLOW/DENY; crypto attestation + freshness + active revocation (§10.7) |
+| **Maturity** | AC-1–AC-6 frozen for reference production V1; durable multi-instance and marketplace product deferred - see [Current reality](#current-reality--maturity-boundary), [§36](#36-ac-16-final-agent-architecture-freeze) |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§3 invariants](#3-architecture-invariants) · [§35 AC-4 freeze](#35-ac-4-dynamic-capability-discovery--acquisition-architecture-freeze) · [§27 LKW](#27-lkw-proof-boundary) · [§28 marketplace](#28-marketplace-readiness) · [plan](../maintainers/plans/AGENT_DISTRIBUTION.md) |
 
 ## Core mental model
@@ -2406,6 +2408,59 @@ Marketplace may become a `CatalogSourceProvider` / discovery source. AC-4 does *
 
 ---
 
+## 36. AC-1–AC-6 Final Agent Architecture Freeze
+
+**Status:** **FROZEN — Reference Production V1** (2026-09-06 final audit)
+
+Independent audit evidence: [`maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md`](../maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md).
+
+### Frozen canonical chain
+
+```text
+DISCOVER → RESOLVE → VERIFY → TRUST → INSTALL → BIND → ENABLE
+  → SNAPSHOT → LOCK → MATERIALIZE → VALIDATE → PROJECT
+  → PREPARE → READY → COMMIT → ACTIVE → ROUTE → DRAIN/SUPERSEDE
+```
+
+Dynamic acquisition enters at **DISCOVER/RESOLVE** only — never via alternate execution.
+
+### Authority uniqueness (summary)
+
+| Concern | Sole authority |
+|---------|----------------|
+| Trust ALLOW/DENY | `AgentPackageTrustCoordinator` |
+| Installation | `InstallationService` |
+| Binding | `BindingService` |
+| Effective roster snapshot | `EffectiveRosterAuthorityService` |
+| Runtime revision | `RuntimeRevisionService` |
+| Dependency lock | deterministic resolver → `MaterializedRuntimeLock` |
+| Materialization | `RuntimeMaterializationService` |
+| Factory resolution | `RuntimeAgentFactoryResolver` |
+| Registry projection | revision-bound `build_application_registry` / projection coordinator |
+| Traffic activation | `ActivationService` |
+| Capability routing | Nexus |
+| Active revocation | `AgentEmergencyRevocationService` → `ActivationService.rollback()` |
+| Process root | `ProductionProcessComposition` |
+
+### AC closure map
+
+| AC | Scope | Status |
+|----|-------|--------|
+| AC-1 | Foundational lifecycle/domain contracts | **CLOSED** |
+| AC-2 | Distribution ↔ application binding boundaries | **CLOSED** |
+| AC-3 | Production lifecycle authority (N/N+1, rollback, historical replay) | **CLOSED** |
+| AC-4 | Capability plane (discover/match/select/acquire/delegate) | **CLOSED** |
+| AC-5 | Canonical revision-bound factory invocation | **CLOSED** |
+| AC-6 | Trust, certification, freshness, active revocation | **CLOSED** |
+
+### Reference Production V1 non-claims
+
+Single process; process-local stores where documented; no distributed consensus; no commercial marketplace product; no background revocation watcher; no Sigstore transparency; manifest-only assembly remains **lab/dev explicit** only (`build_manifest_development_registry`, scenario lab baseline).
+
+**Next program stage:** APPLICATION-INTEGRATION-AND-PROOF-VALIDATION — scenarios stress the frozen platform; platform gaps get bounded tasks, not a new AC lifecycle phase.
+
+---
+
 ## Compliance checklist
 
 - [x] Platform-neutral chain documented end-to-end
@@ -2422,3 +2477,6 @@ Marketplace may become a `CatalogSourceProvider` / discovery source. AC-4 does *
 - [x] Discovery / matching / selection separation documented
 - [x] Source-qualified candidate identity documented
 - [x] Reference Production V1 AC-4 limitations explicit
+- [x] AC-5 canonical factory authority frozen (§21)
+- [x] AC-6 trust/certification/revocation frozen (§10.7)
+- [x] AC-1–AC-6 final architecture freeze documented (§36)
