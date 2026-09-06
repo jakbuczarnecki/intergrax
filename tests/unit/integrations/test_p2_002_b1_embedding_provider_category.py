@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 
 import pytest
 from pydantic import ValidationError
@@ -20,7 +21,6 @@ from intergrax.runtime.integrations.categories import (
     PROVIDER_CATEGORY_CONTRACT_REGISTRY,
     EmbeddingProviderIntegrationContract,
 )
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.embedding import (
     EMBEDDING_PROVIDER_INTEGRATION_CONTRACT_SCHEMA,
 )
@@ -37,6 +37,11 @@ pytestmark = pytest.mark.unit
 _FAKE_EMBEDDING_SLUG = "fake_embedding_test"
 
 
+@dataclass(frozen=True)
+class _FakeEmbeddingRuntime:
+    provider_id: str
+
+
 class _FakeEmbeddingIntegration(EmbeddingProviderIntegrationContract):
     """Test-only embedding provider — no vendor semantics."""
 
@@ -49,7 +54,7 @@ def _fake_embedding_factory(*, enabled: bool = False) -> _FakeEmbeddingIntegrati
     return _FakeEmbeddingIntegration.for_provider(
         provider_id=_FAKE_EMBEDDING_SLUG,
         display_name="Fake Embedding Test",
-        config=CategoryIntegrationConfig(enabled=enabled),
+        config=PlatformIntegrationConfig(enabled=enabled),
     )
 
 
@@ -61,7 +66,7 @@ def _fake_embedding_contract_spec():
         contract_class=EmbeddingProviderIntegrationContract,
         contract_factory=_fake_embedding_factory,
         display_name="Fake Embedding Test",
-        config_class=CategoryIntegrationConfig,
+        config_class=PlatformIntegrationConfig,
         capabilities=(
             PlatformIntegrationCapability.CONNECT,
             PlatformIntegrationCapability.READ,
@@ -154,7 +159,11 @@ def test_integration_profile_embedding_provider_binding_resolution() -> None:
         env_prefix="INTERGRAX_FAKE_EMBEDDING_TEST",
         description="fake embedding provider for P2-002-B1",
     )
-    register_from_manifest(manifest, lambda **_: {"provider": "fake"}, contract_specs=(_fake_embedding_contract_spec(),))
+    register_from_manifest(
+        manifest,
+        lambda **_: _FakeEmbeddingRuntime(provider_id=_FAKE_EMBEDDING_SLUG),
+        contract_specs=(_fake_embedding_contract_spec(),),
+    )
 
     profile = IntegrationProfile(embedding_provider=_FAKE_EMBEDDING_SLUG)
     binding = profile.binding_for_field("embedding_provider")
@@ -163,7 +172,8 @@ def test_integration_profile_embedding_provider_binding_resolution() -> None:
     assert profile.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER) == _FAKE_EMBEDDING_SLUG
 
     resolved = resolve_from_profile(profile, IntegrationCategory.EMBEDDING_PROVIDER)
-    assert resolved == {"provider": "fake"}
+    assert isinstance(resolved, _FakeEmbeddingRuntime)
+    assert resolved.provider_id == _FAKE_EMBEDDING_SLUG
 
 
 def test_integration_profile_embedding_provider_accepts_prebuilt_instance() -> None:
