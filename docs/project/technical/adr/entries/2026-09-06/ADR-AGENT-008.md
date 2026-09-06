@@ -13,14 +13,14 @@ The frozen production invariant **startup-time reprojection is forbidden** assum
 
 Enterprise durable testing demonstrated a fail-closed gap:
 
-`	ext
+```text
 Process A dies
 → lifecycle / serving state survives
 → process-local projection disappears
 → Process B cannot execute serving revision
-`
+```
 
-RuntimeRevision, 	raffic_serving_revision_id, roster/lock/materialization authority, and activation CAS semantics are durable. MaterializedRegistryProjection, AgentRegistryRead, and instantiated agent runtime objects are process-local. Without an explicit rehydration contract, cold restart cannot restore traffic-serving execution.
+RuntimeRevision, traffic_serving_revision_id, roster/lock/materialization authority, and activation CAS semantics are durable. MaterializedRegistryProjection, AgentRegistryRead, and instantiated agent runtime objects are process-local. Without an explicit rehydration contract, cold restart cannot restore traffic-serving execution.
 
 **Gap closed:** EA-03 durable runtime projection rehydration.
 
@@ -36,7 +36,7 @@ Separate durable runtime authority from process-local materialized runtime objec
 | EffectiveRoster identity | Content-addressed roster authority for the revision |
 | MaterializedRuntimeLock identity | Revision-bound lock authority |
 | RuntimeMaterialization identity | Revision-bound materialization authority |
-| 	raffic_serving_revision_id | Durable serving pointer |
+| traffic_serving_revision_id | Durable serving pointer |
 | RuntimeRegistryProjectionDescriptor | Typed immutable reconstruction authority keyed by revision |
 
 ### Process-local runtime objects
@@ -47,9 +47,9 @@ Separate durable runtime authority from process-local materialized runtime objec
 | AgentRegistryRead | Execution-facing registry read surface |
 | Agent runtime instances | Instantiated agents and factories |
 
-`	ext
+```text
 DURABLE RUNTIME AUTHORITY ≠ PROCESS-LOCAL MATERIALIZED RUNTIME OBJECT
-`
+```
 
 ## Rehydration rule
 
@@ -57,10 +57,10 @@ DURABLE RUNTIME AUTHORITY ≠ PROCESS-LOCAL MATERIALIZED RUNTIME OBJECT
 
 Allowed:
 
-`	ext
+```text
 deterministic rehydration of the already traffic-serving,
 revision-bound projection from durable immutable authority
-`
+```
 
 Rehydration:
 
@@ -71,7 +71,7 @@ Rehydration:
 - is **not** routing decision,
 - does **not** mutate serving pointer.
 
-Rehydration reconstructs the process-local projection for the revision already selected by 	raffic_serving_revision_id. It does not derive authority from current installation, binding, or desired roster state.
+Rehydration reconstructs the process-local projection for the revision already selected by traffic_serving_revision_id. It does not derive authority from current installation, binding, or desired roster state.
 
 ## Why live projection is not persisted
 
@@ -89,7 +89,7 @@ Durable persistence stores only typed reconstruction authority (RuntimeRegistryP
 
 RuntimeRegistryProjectionDescriptor is a typed, versioned durable artifact — not a generic JSON blob. Persistence fields must not use Any or untyped dict payloads.
 
-`	ext
+```text
 RuntimeRegistryProjectionDescriptor
 ├── typed ApplicationManifest
 ├── typed BuildContextDescriptorSnapshot
@@ -101,34 +101,33 @@ RuntimeRegistryProjectionDescriptor
 ├── lock identity/digest
 ├── materialization locator/digest
 └── schema/descriptor versions
-`
+```
 
 No generic JSON blob. No Any persistence fields.
 
-Implementation: [
-egistry_projection_descriptor.py](../../../../../../intergrax/applications/_shared/registry_projection_descriptor.py).
+Implementation: [registry_projection_descriptor.py](../../../../../../intergrax/applications/_shared/registry_projection_descriptor.py).
 
 ## Activation invariant
 
-`	ext
+```text
 SERVING(N) ⇒ durable projection descriptor(N) exists
-`
+```
 
 Ordering at activation:
 
-`	ext
+```text
 projection input validated
 → descriptor built
 → descriptor persisted
 → activation CAS commit
 → serving pointer N
-`
+```
 
 Descriptor may exist without serving if activation fails. Serving must never exist without descriptor.
 
 ## Cold start flow
 
-`	ext
+```text
 Process B starts
         ↓
 read traffic_serving_revision_id = N
@@ -146,10 +145,9 @@ build process-local MaterializedRegistryProjection
 AgentRegistryRead
         ↓
 Execution
-`
+```
 
-Implementation: [
-egistry_projection_rehydrator.py](../../../../../../intergrax/applications/_shared/registry_projection_rehydrator.py), [durable_agent_platform_runtime.py](../../../../../../intergrax/applications/_shared/durable_agent_platform_runtime.py).
+Implementation: [registry_projection_rehydrator.py](../../../../../../intergrax/applications/_shared/registry_projection_rehydrator.py), [durable_agent_platform_runtime.py](../../../../../../intergrax/applications/_shared/durable_agent_platform_runtime.py).
 
 ## Failure semantics
 
@@ -199,21 +197,21 @@ Non-authoritative runtime caches such as __pycache__ and .pyc are excluded from 
 
 | Test | File |
 |------|------|
-| Durable lifecycle happy path + restart | [	est_enterprise_agent_lifecycle_durable_e2e.py](../../../../../../tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py) — 	est_enterprise_durable_lifecycle_happy_path_and_restart, 	est_enterprise_restart_preserves_active_revision |
-| Enterprise projection rehydration E2E | [	est_enterprise_projection_rehydration_e2e.py](../../../../../../tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py) |
-| Durable F3 — revoked install, serving unchanged after reopen | same — 	est_enterprise_durable_f3_revoked_install_rejected_serving_unchanged_after_reopen |
-| Durable F4 — failed activation preserves serving after reopen | same — 	est_enterprise_durable_f4_failed_activation_preserves_serving_after_reopen |
-| Durable F5 — emergency rollback rehydrates prior revision | same — 	est_enterprise_durable_f5_emergency_rollback_rehydrates_prior_revision |
+| Durable lifecycle happy path + restart | [test_enterprise_agent_lifecycle_durable_e2e.py](../../../../../../tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py) — test_enterprise_durable_lifecycle_happy_path_and_restart, test_enterprise_restart_preserves_active_revision |
+| Enterprise projection rehydration E2E | [test_enterprise_projection_rehydration_e2e.py](../../../../../../tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py) |
+| Durable F3 — revoked install, serving unchanged after reopen | same — test_enterprise_durable_f3_revoked_install_rejected_serving_unchanged_after_reopen |
+| Durable F4 — failed activation preserves serving after reopen | same — test_enterprise_durable_f4_failed_activation_preserves_serving_after_reopen |
+| Durable F5 — emergency rollback rehydrates prior revision | same — test_enterprise_durable_f5_emergency_rollback_rehydrates_prior_revision |
 
 ### Unit / contract / architecture gates
 
 | Test | File |
 |------|------|
-| Descriptor contract (typed round-trip, version mismatch, no Any) | [	est_registry_projection_descriptor_contract.py](../../../../../../tests/unit/applications/test_registry_projection_descriptor_contract.py) |
-| Descriptor corruption fail-closed | [	est_registry_projection_descriptor_corruption.py](../../../../../../tests/unit/applications/test_registry_projection_descriptor_corruption.py) |
-| SQLite bounded store + descriptor reopen | [	est_sqlite_agent_distribution_bounded_store.py](../../../../../../tests/unit/agent_distribution/test_sqlite_agent_distribution_bounded_store.py) — 	est_sqlite_revision_serving_and_descriptor_reopen |
-| Rehydration architecture gates | [	est_registry_projection_rehydration_architecture_gates.py](../../../../../../tests/unit/applications/test_registry_projection_rehydration_architecture_gates.py) |
-| Digest hardening (__pycache__ exclusion, authoritative mutation) | [	est_directory_content_digest_hardening.py](../../../../../../tests/unit/agent_distribution/test_directory_content_digest_hardening.py) |
+| Descriptor contract (typed round-trip, version mismatch, no Any) | [test_registry_projection_descriptor_contract.py](../../../../../../tests/unit/applications/test_registry_projection_descriptor_contract.py) |
+| Descriptor corruption fail-closed | [test_registry_projection_descriptor_corruption.py](../../../../../../tests/unit/applications/test_registry_projection_descriptor_corruption.py) |
+| SQLite bounded store + descriptor reopen | [test_sqlite_agent_distribution_bounded_store.py](../../../../../../tests/unit/agent_distribution/test_sqlite_agent_distribution_bounded_store.py) — test_sqlite_revision_serving_and_descriptor_reopen |
+| Rehydration architecture gates | [test_registry_projection_rehydration_architecture_gates.py](../../../../../../tests/unit/applications/test_registry_projection_rehydration_architecture_gates.py) |
+| Digest hardening (__pycache__ exclusion, authoritative mutation) | [test_directory_content_digest_hardening.py](../../../../../../tests/unit/agent_distribution/test_directory_content_digest_hardening.py) |
 
 ### Architecture documentation
 
@@ -226,13 +224,10 @@ Non-authoritative runtime caches such as __pycache__ and .pyc are excluded from 
 
 | Module | Responsibility |
 |--------|----------------|
-| [
-egistry_projection_descriptor.py](../../../../../../intergrax/applications/_shared/registry_projection_descriptor.py) | Typed durable descriptor contract |
-| [
-egistry_projection_rehydrator.py](../../../../../../intergrax/applications/_shared/registry_projection_rehydrator.py) | Deterministic process-local rehydration |
+| [registry_projection_descriptor.py](../../../../../../intergrax/applications/_shared/registry_projection_descriptor.py) | Typed durable descriptor contract |
+| [registry_projection_rehydrator.py](../../../../../../intergrax/applications/_shared/registry_projection_rehydrator.py) | Deterministic process-local rehydration |
 | [durable_agent_platform_runtime.py](../../../../../../intergrax/applications/_shared/durable_agent_platform_runtime.py) | Durable runtime composition and cold-start wiring |
-| [
-eference_production_lifecycle.py](../../../../../../intergrax/applications/_shared/reference_production_lifecycle.py) | Activation-time descriptor persistence |
+| [reference_production_lifecycle.py](../../../../../../intergrax/applications/_shared/reference_production_lifecycle.py) | Activation-time descriptor persistence |
 | [sqlite_stores.py](../../../../../../intergrax/agent_distribution/sqlite_stores.py) | SQLite bounded durable store adapter |
 
 ## Compliance

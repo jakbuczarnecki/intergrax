@@ -29,6 +29,12 @@ AGENT_CREATION_GUIDE = (
     REPO_ROOT / "docs/project/technical/guides/AGENT_CREATION_GUIDE.md"
 )
 
+ADR_AGENT_008 = (
+    REPO_ROOT / "docs/project/technical/adr/entries/2026-09-06/ADR-AGENT-008.md"
+)
+
+_MALFORMED_PSEUDO_FENCE = "`\text"
+
 
 def _broken_links_for(doc_path: Path) -> list[BrokenLocalLink]:
     broken: list[BrokenLocalLink] = []
@@ -65,3 +71,12 @@ def test_agent_creation_guide_navigation_hygiene() -> None:
     assert "](../../architecture/" in text or "](../../architecture/" in text.replace(
         "(../../architecture/", "(../../architecture/"
     )
+
+
+def test_adr_agent_008_markdown_rendering_hygiene() -> None:
+    assert ADR_AGENT_008.is_file()
+    text = ADR_AGENT_008.read_text(encoding="utf-8")
+    for pattern in ("[\n", "[\t", _MALFORMED_PSEUDO_FENCE, "[egistry_", "[eference_"):
+        assert pattern not in text, f"malformed markdown pattern: {pattern!r}"
+    assert "\traffic_" not in text
+    assert "\test_" not in text
