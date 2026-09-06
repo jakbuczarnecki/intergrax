@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from typing import TypeAlias
 
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
     SourceRecordRef,
@@ -20,6 +21,12 @@ SCENARIO_ID = "verified_product_identification"
 VPI_CANONICAL_EMBEDDING_PROVIDER = "hf"
 VPI_CANONICAL_EMBEDDING_MODEL = "BAAI/bge-m3"
 VPI_CANONICAL_EMBEDDING_DIMENSION = 1024
+SOURCE_REF_IDENTITY_ENCODING_VERSION = "vpi.source-ref/1"
+
+SourceRefKey: TypeAlias = tuple[str, str, str | None]
+
+_REVISION_ABSENT = b"\x00"
+_REVISION_PRESENT = b"\x01"
 
 
 def semantic_text_hash(semantic_text: str) -> str:
@@ -29,7 +36,7 @@ def semantic_text_hash(semantic_text: str) -> str:
     return hashlib.sha256(semantic_text.encode("utf-8")).hexdigest()
 
 
-def source_ref_key(source_ref: SourceRecordRef) -> tuple[str, str, str | None]:
+def source_ref_key(source_ref: SourceRecordRef) -> SourceRefKey:
     return (
         source_ref.catalog_id,
         source_ref.offer_id.value,
@@ -42,29 +49,53 @@ def source_ref_sort_key(source_ref: SourceRecordRef) -> tuple[str, str, str]:
     return (source_ref.catalog_id, source_ref.offer_id.value, revision)
 
 
-def source_ref_canonical_line(
+def _encode_length_prefixed_utf8(value: str) -> bytes:
+    encoded = value.encode("utf-8")
+    return len(encoded).to_bytes(4, "big") + encoded
+
+
+def encode_source_ref_identity(
     *,
     catalog_id: str,
     offer_id: str,
     source_revision: str | None,
-) -> str:
-    revision = source_revision or ""
-    return f"{catalog_id}\t{offer_id}\t{revision}\n"
+) -> bytes:
+    payload = bytearray()
+    payload.extend(_encode_length_prefixed_utf8(catalog_id))
+    payload.extend(_encode_length_prefixed_utf8(offer_id))
+    if source_revision is None:
+        payload.extend(_REVISION_ABSENT)
+    else:
+        payload.extend(_REVISION_PRESENT)
+        payload.extend(_encode_length_prefixed_utf8(source_revision))
+    return bytes(payload)
+
+
+def encode_source_ref_identity_from_ref(source_ref: SourceRecordRef) -> bytes:
+    return encode_source_ref_identity(
+        catalog_id=source_ref.catalog_id,
+        offer_id=source_ref.offer_id.value,
+        source_revision=source_ref.source_revision,
+    )
 
 
 def source_ref_set_sha256_from_keys(
-    keys: tuple[tuple[str, str, str | None], ...],
+    keys: tuple[SourceRefKey, ...],
 ) -> str:
-    ordered = sorted(keys, key=lambda key: (key[0], key[1], key[2] or ""))
-    payload = "".join(
-        source_ref_canonical_line(
+    encoded_records = tuple(
+        encode_source_ref_identity(
             catalog_id=catalog_id,
             offer_id=offer_id,
             source_revision=source_revision,
         )
-        for catalog_id, offer_id, source_revision in ordered
+        for catalog_id, offer_id, source_revision in keys
     )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    ordered = sorted(encoded_records)
+    digest = hashlib.sha256()
+    for encoded in ordered:
+        digest.update(len(encoded).to_bytes(4, "big"))
+        digest.update(encoded)
+    return digest.hexdigest()
 
 
 def source_ref_set_sha256(source_refs: tuple[SourceRecordRef, ...]) -> str:

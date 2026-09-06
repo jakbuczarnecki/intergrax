@@ -71,7 +71,17 @@ Proven per ordinal via matching:
 
 - `record_count`
 - `source_ref_count` (must equal `record_count` for READY shards)
-- `source_ref_set_sha256` — deterministic SHA-256 over canonical sorted `SourceRecordRef` lines (`catalog_id`, `offer_id`, `source_revision`)
+- `source_ref_set_sha256` — deterministic SHA-256 over the shard's `SourceRecordRef` identities (encoding version `vpi.source-ref/1`)
+
+#### `source_ref_set_sha256` v1 algorithm
+
+1. For each `SourceRecordRef`, compute canonical binary identity bytes via length-prefixed UTF-8 encoding:
+   - `catalog_id`: 4-byte big-endian UTF-8 byte length + UTF-8 bytes
+   - `offer_id`: 4-byte big-endian UTF-8 byte length + UTF-8 bytes
+   - `source_revision`: 1-byte presence flag (`0x00` = absent/`None`, `0x01` = present) and, when present, 4-byte big-endian UTF-8 byte length + UTF-8 bytes
+2. Sort encoded identities lexicographically by byte representation (order-independent set semantics).
+3. For each sorted encoded identity, update SHA-256 with 4-byte big-endian record length + record bytes.
+4. Digest is duplicate-sensitive: repeated identities change the digest; READY shard validation requires unique refs per shard.
 
 ```text
 relational_N.source_ref_set_sha256 == embedding_N.source_ref_set_sha256

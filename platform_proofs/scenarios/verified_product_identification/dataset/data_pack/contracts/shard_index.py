@@ -4,18 +4,62 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from typing import TypedDict
 
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.errors import (
     VpiDataPackFormatError,
     VpiDataPackIntegrityError,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.json_decode import (
+    JsonValue,
     require_int,
+    require_known_keys,
     require_mapping,
+    require_relative_path,
     require_sha256_hex,
     require_str,
 )
+
+
+class ShardDescriptorJson(TypedDict):
+    ordinal: int
+    relative_path: str
+    record_count: int
+    sha256: str
+    source_ref_count: int
+    source_ref_set_sha256: str
+    schema_version: str
+
+
+class ShardIndexJson(TypedDict):
+    shard_count: int
+    relational_shards: list[ShardDescriptorJson]
+    embedding_shards: list[ShardDescriptorJson]
+
+
+_SHARD_DESCRIPTOR_KEYS = frozenset(
+    {
+        "ordinal",
+        "relative_path",
+        "record_count",
+        "sha256",
+        "source_ref_count",
+        "source_ref_set_sha256",
+        "schema_version",
+    }
+)
+_SHARD_INDEX_KEYS = frozenset({"shard_count", "relational_shards", "embedding_shards"})
+
+
+def _validate_relative_path(relative_path: str) -> None:
+    path = PurePosixPath(relative_path)
+    if path.is_absolute() or path.drive:
+        raise ValueError("relative_path must be a relative path")
+    if ".." in path.parts:
+        raise ValueError("relative_path must not contain parent traversal")
+    if not path.parts or any(part in {"", "."} for part in path.parts):
+        raise ValueError("relative_path must be a non-empty relative path")
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,9 +94,12 @@ class ShardDescriptor:
             raise ValueError("source_ref_set_sha256 must be a 64-character lowercase hex digest")
         if not self.relative_path.strip():
             raise ValueError("relative_path must be non-empty")
+        _validate_relative_path(self.relative_path)
+        if not self.schema_version.strip():
+            raise ValueError("schema_version must be a non-empty string")
 
 
-def _descriptor_to_dict(descriptor: ShardDescriptor) -> dict[str, object]:
+def _descriptor_to_dict(descriptor: ShardDescriptor) -> ShardDescriptorJson:
     return {
         "ordinal": descriptor.ordinal,
         "relative_path": descriptor.relative_path,
@@ -64,10 +111,11 @@ def _descriptor_to_dict(descriptor: ShardDescriptor) -> dict[str, object]:
     }
 
 
-def _descriptor_from_dict(payload: dict[str, object], *, field_name: str) -> ShardDescriptor:
+def _descriptor_from_dict(payload: dict[str, JsonValue], *, field_name: str) -> ShardDescriptor:
+    require_known_keys(payload, allowed=_SHARD_DESCRIPTOR_KEYS, context=field_name)
     return ShardDescriptor(
         ordinal=require_int(payload, "ordinal", minimum=1),
-        relative_path=require_str(payload, "relative_path"),
+        relative_path=require_relative_path(payload, "relative_path"),
         record_count=require_int(payload, "record_count", minimum=1),
         sha256=require_sha256_hex(payload, "sha256"),
         source_ref_count=require_int(payload, "source_ref_count", minimum=1),
@@ -101,7 +149,7 @@ class ShardIndex:
             raise ValueError("embedding_shards length must equal shard_count")
 
 
-def shard_index_to_json_dict(shard_index: ShardIndex) -> dict[str, object]:
+def shard_index_to_json_dict(shard_index: ShardIndex) -> ShardIndexJson:
     return {
         "shard_count": shard_index.shard_count,
         "relational_shards": [
@@ -113,7 +161,14 @@ def shard_index_to_json_dict(shard_index: ShardIndex) -> dict[str, object]:
     }
 
 
-def shard_index_from_json_dict(payload: dict[str, object]) -> ShardIndex:
+def shard_index_to_json_bytes(shard_index: ShardIndex) -> bytes:
+    return (
+        json.dumps(shard_index_to_json_dict(shard_index), indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
+
+
+def shard_index_from_json_dict(payload: dict[str, JsonValue]) -> ShardIndex:
+    require_known_keys(payload, allowed=_SHARD_INDEX_KEYS, context="shard index")
     shard_count = require_int(payload, "shard_count", minimum=1)
     relational_raw = payload.get("relational_shards")
     embedding_raw = payload.get("embedding_shards")
@@ -141,10 +196,7 @@ def shard_index_from_json_dict(payload: dict[str, object]) -> ShardIndex:
 def write_shard_index_file(path: Path, shard_index: ShardIndex) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_suffix(path.suffix + ".tmp")
-    temp_path.write_text(
-        json.dumps(shard_index_to_json_dict(shard_index), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    temp_path.write_bytes(shard_index_to_json_bytes(shard_index))
     temp_path.replace(path)
 
 

@@ -40,6 +40,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
     EMBEDDING_SCHEMA_VERSION,
     RELATIONAL_SCHEMA_VERSION,
+    encode_source_ref_identity,
     source_ref_set_sha256,
     source_ref_set_sha256_from_keys,
 )
@@ -47,6 +48,8 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     ShardDescriptor,
     ShardIndex,
     shard_index_from_json_dict,
+    shard_index_to_json_bytes,
+    shard_index_to_json_dict,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.stores.parquet.embedding_codec import (
     write_embedding_parquet,
@@ -116,6 +119,63 @@ def test_source_ref_set_sha256_source_revision_difference() -> None:
 def test_source_ref_set_sha256_from_keys_is_deterministic() -> None:
     keys = (("cat", "offer-1", None), ("cat", "offer-2", "rev"))
     assert source_ref_set_sha256_from_keys(keys) == source_ref_set_sha256_from_keys(reversed(keys))
+
+
+def _legacy_delimiter_line(
+    *,
+    catalog_id: str,
+    offer_id: str,
+    source_revision: str | None,
+) -> str:
+    revision = source_revision or ""
+    return f"{catalog_id}\t{offer_id}\t{revision}\n"
+
+
+def test_legacy_delimiter_encoding_can_collide_but_canonical_bytes_do_not() -> None:
+    left = _legacy_delimiter_line(catalog_id="a\tb", offer_id="c", source_revision=None)
+    right = _legacy_delimiter_line(catalog_id="a", offer_id="b\tc", source_revision=None)
+    assert left == right
+    left_bytes = encode_source_ref_identity(catalog_id="a\tb", offer_id="c", source_revision=None)
+    right_bytes = encode_source_ref_identity(catalog_id="a", offer_id="b\tc", source_revision=None)
+    assert left_bytes != right_bytes
+
+
+def test_encode_source_ref_identity_none_vs_empty_revision_differ() -> None:
+    none_bytes = encode_source_ref_identity(catalog_id="cat", offer_id="offer", source_revision=None)
+    empty_bytes = encode_source_ref_identity(catalog_id="cat", offer_id="offer", source_revision="")
+    assert none_bytes != empty_bytes
+
+
+def test_encode_source_ref_identity_uses_utf8_byte_lengths() -> None:
+    catalog = "café"
+    offer = "o"
+    encoded = encode_source_ref_identity(catalog_id=catalog, offer_id=offer, source_revision=None)
+    catalog_len = int.from_bytes(encoded[0:4], "big")
+    assert catalog_len == len(catalog.encode("utf-8"))
+    assert catalog_len != len(catalog)
+
+
+def test_source_ref_set_sha256_unicode_and_delimiter_characters_are_stable() -> None:
+    refs = (
+        _source_ref(offer_id="offer|1"),
+        _source_ref(offer_id="offer:2", revision="rev\t\n🙂"),
+    )
+    digest_a = source_ref_set_sha256(refs)
+    digest_b = source_ref_set_sha256(tuple(reversed(refs)))
+    assert digest_a == digest_b
+    assert digest_a != source_ref_set_sha256((_source_ref(offer_id="offer|1"),))
+
+
+def test_source_ref_set_sha256_duplicate_sequence_differs_from_unique() -> None:
+    unique = source_ref_set_sha256((_source_ref(offer_id="a"), _source_ref(offer_id="b")))
+    duplicate = source_ref_set_sha256((_source_ref(offer_id="a"), _source_ref(offer_id="a")))
+    assert unique != duplicate
+
+
+def test_source_ref_set_sha256_none_vs_revision_value() -> None:
+    none_digest = source_ref_set_sha256((_source_ref(offer_id="a", revision=None),))
+    value_digest = source_ref_set_sha256((_source_ref(offer_id="a", revision="r1"),))
+    assert none_digest != value_digest
 
 
 def test_shard_pairing_same_count_different_refs_fails() -> None:
@@ -301,6 +361,122 @@ def test_golden_shard_index_fixture_parses() -> None:
         shard_index.relational_shards[0].source_ref_set_sha256
         == shard_index.embedding_shards[0].source_ref_set_sha256
     )
+
+
+def test_golden_shard_index_roundtrip_equals_original() -> None:
+    payload = json.loads((_FIXTURES / "vpi_data_pack_shard_index_v1.json").read_text(encoding="utf-8"))
+    shard_index = shard_index_from_json_dict(payload)
+    roundtrip = shard_index_from_json_dict(shard_index_to_json_dict(shard_index))
+    assert roundtrip == shard_index
+
+
+def test_shard_index_serialization_is_deterministic() -> None:
+    payload = json.loads((_FIXTURES / "vpi_data_pack_shard_index_v1.json").read_text(encoding="utf-8"))
+    shard_index = shard_index_from_json_dict(payload)
+    first = shard_index_to_json_bytes(shard_index)
+    second = shard_index_to_json_bytes(shard_index)
+    assert first == second
+
+
+def test_strict_parser_rejects_unknown_field() -> None:
+    payload = {
+        "ordinal": 1,
+        "relative_path": "relational/part-000001.parquet",
+        "record_count": 1,
+        "sha256": _DIGEST_A,
+        "source_ref_count": 1,
+        "source_ref_set_sha256": _DIGEST_C,
+        "schema_version": RELATIONAL_SCHEMA_VERSION,
+        "unexpected": "x",
+    }
+    with pytest.raises(VpiDataPackFormatError):
+        shard_index_from_json_dict(
+            {
+                "shard_count": 1,
+                "relational_shards": [payload],
+                "embedding_shards": [payload],
+            }
+        )
+
+
+def test_strict_parser_rejects_bool_as_int() -> None:
+    payload = {
+        "ordinal": True,
+        "relative_path": "relational/part-000001.parquet",
+        "record_count": 1,
+        "sha256": _DIGEST_A,
+        "source_ref_count": 1,
+        "source_ref_set_sha256": _DIGEST_C,
+        "schema_version": RELATIONAL_SCHEMA_VERSION,
+    }
+    with pytest.raises(VpiDataPackFormatError):
+        shard_index_from_json_dict(
+            {
+                "shard_count": 1,
+                "relational_shards": [payload],
+                "embedding_shards": [payload],
+            }
+        )
+
+
+def test_strict_parser_rejects_absolute_relative_path() -> None:
+    payload = {
+        "ordinal": 1,
+        "relative_path": "/relational/part-000001.parquet",
+        "record_count": 1,
+        "sha256": _DIGEST_A,
+        "source_ref_count": 1,
+        "source_ref_set_sha256": _DIGEST_C,
+        "schema_version": RELATIONAL_SCHEMA_VERSION,
+    }
+    with pytest.raises(VpiDataPackFormatError):
+        shard_index_from_json_dict(
+            {
+                "shard_count": 1,
+                "relational_shards": [payload],
+                "embedding_shards": [payload],
+            }
+        )
+
+
+def test_strict_parser_rejects_path_traversal() -> None:
+    payload = {
+        "ordinal": 1,
+        "relative_path": "../relational/part-000001.parquet",
+        "record_count": 1,
+        "sha256": _DIGEST_A,
+        "source_ref_count": 1,
+        "source_ref_set_sha256": _DIGEST_C,
+        "schema_version": RELATIONAL_SCHEMA_VERSION,
+    }
+    with pytest.raises(VpiDataPackFormatError):
+        shard_index_from_json_dict(
+            {
+                "shard_count": 1,
+                "relational_shards": [payload],
+                "embedding_shards": [payload],
+            }
+        )
+
+
+def test_strict_parser_rejects_shard_count_mismatch() -> None:
+    descriptor = {
+        "ordinal": 1,
+        "relative_path": "relational/part-000001.parquet",
+        "record_count": 1,
+        "sha256": _DIGEST_A,
+        "source_ref_count": 1,
+        "source_ref_set_sha256": _DIGEST_C,
+        "schema_version": RELATIONAL_SCHEMA_VERSION,
+    }
+    with pytest.raises(ValueError):
+        shard_index_from_json_dict(
+            {
+                "shard_count": 2,
+                "relational_shards": [descriptor],
+                "embedding_shards": [descriptor],
+            }
+        )
 
 
 def test_checksum_mismatch_is_typed_integrity_failure(tmp_path: Path) -> None:
