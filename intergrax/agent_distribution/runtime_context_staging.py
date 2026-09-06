@@ -536,6 +536,11 @@ def directory_content_digest(root: Path) -> str:
     for path in sorted(root.rglob("*")):
         if not path.is_file():
             continue
+        rel_parts = path.relative_to(root).parts
+        if any(part in _SKIP_DIR_NAMES for part in rel_parts):
+            continue
+        if path.name in _SKIP_FILE_NAMES or path.suffix in _SKIP_SUFFIXES:
+            continue
         rel = path.relative_to(root).as_posix().encode("utf-8")
         hasher.update(rel)
         hasher.update(b"\0")

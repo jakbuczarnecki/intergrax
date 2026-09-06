@@ -72,6 +72,10 @@ from intergrax.agent_distribution.stores import (
     ApplicationEnvironmentServingRecord,
     RollbackAtomicCommitResult,
 )
+from intergrax.applications._shared.registry_projection_descriptor import (
+    SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1,
+    RuntimeRegistryProjectionDescriptor,
+)
 
 SCHEMA_AGENT_DISTRIBUTION_SQLITE_V1 = "agent_distribution_sqlite.v1"
 _MODEL = TypeVar("_MODEL", bound=BaseModel)
@@ -223,6 +227,15 @@ class SqliteAgentDistributionDatabase:
                 """
                 CREATE TABLE IF NOT EXISTS serving_records (
                     scope_key TEXT PRIMARY KEY,
+                    payload_json TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS projection_descriptors (
+                    runtime_revision_id TEXT PRIMARY KEY,
+                    scope_key TEXT NOT NULL,
                     payload_json TEXT NOT NULL
                 )
                 """
@@ -853,6 +866,83 @@ class SqliteApplicationEnvironmentActivationStore(
         )
 
 
+class SqliteRuntimeRegistryProjectionDescriptorStore:
+    """SQLite-backed durable projection descriptor store."""
+
+    def __init__(self, db: SqliteAgentDistributionDatabase) -> None:
+        self._db = db
+        self._lock = threading.RLock()
+
+    def put(self, descriptor: RuntimeRegistryProjectionDescriptor) -> None:
+        scope_key = _scope_key(
+            ApplicationEnvironmentIdentity(
+                application_id=descriptor.application_id,
+                application_environment_id=descriptor.application_environment_id,
+            )
+        )
+        payload = descriptor.model_dump_json()
+        with self._lock:
+            with self._db._connect() as conn:
+                conn.execute("BEGIN IMMEDIATE")
+                existing = conn.execute(
+                    """
+                    SELECT payload_json FROM projection_descriptors
+                    WHERE runtime_revision_id = ?
+                    """,
+                    (descriptor.runtime_revision_id,),
+                ).fetchone()
+                if existing is not None:
+                    if existing["payload_json"] != payload:
+                        conn.rollback()
+                        raise ValueError(
+                            f"conflicting projection descriptor for "
+                            f"{descriptor.runtime_revision_id!r}"
+                        )
+                    conn.commit()
+                    return
+                conn.execute(
+                    """
+                    INSERT INTO projection_descriptors(
+                        runtime_revision_id, scope_key, payload_json
+                    ) VALUES (?, ?, ?)
+                    """,
+                    (descriptor.runtime_revision_id, scope_key, payload),
+                )
+                conn.commit()
+
+    def get_for_revision(
+        self,
+        application_id: str,
+        application_environment_id: str,
+        runtime_revision_id: str,
+    ) -> RuntimeRegistryProjectionDescriptor | None:
+        with self._lock:
+            with self._db._connect() as conn:
+                row = conn.execute(
+                    """
+                    SELECT payload_json FROM projection_descriptors
+                    WHERE runtime_revision_id = ?
+                    """,
+                    (runtime_revision_id,),
+                ).fetchone()
+        if row is None:
+            return None
+        descriptor = _decode(
+            RuntimeRegistryProjectionDescriptor,
+            row["payload_json"],
+            SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1,
+        )
+        if descriptor.application_id != application_id:
+            raise ValueError(
+                "projection descriptor application_id mismatch with lookup scope"
+            )
+        if descriptor.application_environment_id != application_environment_id:
+            raise ValueError(
+                "projection descriptor application_environment_id mismatch with lookup scope"
+            )
+        return descriptor
+
+
 @dataclass(frozen=True, slots=True)
 class SqliteAgentDistributionStoreBundle:
     database: SqliteAgentDistributionDatabase
@@ -866,6 +956,7 @@ class SqliteAgentDistributionStoreBundle:
     deployment_instance_store: SqliteDeploymentInstanceStore
     serving_store: SqliteApplicationEnvironmentServingStore
     activation_store: SqliteApplicationEnvironmentActivationStore
+    projection_descriptor_store: SqliteRuntimeRegistryProjectionDescriptorStore
 
 
 def build_sqlite_agent_distribution_store_bundle(
@@ -884,6 +975,9 @@ def build_sqlite_agent_distribution_store_bundle(
         deployment_instance_store=SqliteDeploymentInstanceStore(database),
         serving_store=SqliteApplicationEnvironmentServingStore(database),
         activation_store=SqliteApplicationEnvironmentActivationStore(database),
+        projection_descriptor_store=SqliteRuntimeRegistryProjectionDescriptorStore(
+            database
+        ),
     )
 
 
@@ -891,5 +985,6 @@ __all__ = [
     "SCHEMA_AGENT_DISTRIBUTION_SQLITE_V1",
     "SqliteAgentDistributionDatabase",
     "SqliteAgentDistributionStoreBundle",
+    "SqliteRuntimeRegistryProjectionDescriptorStore",
     "build_sqlite_agent_distribution_store_bundle",
 ]

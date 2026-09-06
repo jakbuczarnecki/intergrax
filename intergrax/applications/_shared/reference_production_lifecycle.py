@@ -33,7 +33,7 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryDeploymentInstanceStore,
 )
 from intergrax.agent_distribution.sqlite_stores import SqliteAgentDistributionStoreBundle
-from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState
+from intergrax.agent_distribution.runtime_revision import RuntimeRevisionState, MaterializationTopology
 from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisionService
 from intergrax.agent_distribution.stores import DeploymentInstanceStore
 from intergrax.applications._shared.production_host_composition import (
@@ -48,6 +48,11 @@ from intergrax.applications._shared.registry_projection import (
     MaterializedRegistryProjection,
     RegistryProjectionInputBundle,
     RegistryProjectionInputStore,
+)
+from intergrax.applications._shared.registry_projection_descriptor import (
+    InMemoryRuntimeRegistryProjectionDescriptorStore,
+    RuntimeRegistryProjectionDescriptorStore,
+    build_runtime_registry_projection_descriptor,
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.control_plane_mutation import (
@@ -69,6 +74,7 @@ class ReferenceProductionLifecycleServices:
     projection_coordinator: ApplicationRegistryProjectionCoordinator
     revision_service: RuntimeRevisionService
     projection_input_store: RegistryProjectionInputStore
+    descriptor_store: RuntimeRegistryProjectionDescriptorStore
     deployment_instance_store: DeploymentInstanceStore
 
 
@@ -114,6 +120,7 @@ def wire_reference_production_lifecycle_services(
     stores = composition.agent_platform_runtime.stores
     revision_store = stores.revision_store
     projection_input_store = InMemoryRegistryProjectionInputStore()
+    descriptor_store = InMemoryRuntimeRegistryProjectionDescriptorStore()
     projection_coordinator = ApplicationRegistryProjectionCoordinator(
         revision_store=revision_store,
         input_store=projection_input_store,
@@ -133,6 +140,7 @@ def wire_reference_production_lifecycle_services(
         projection_coordinator=projection_coordinator,
         revision_service=RuntimeRevisionService(revision_store),
         projection_input_store=projection_input_store,
+        descriptor_store=descriptor_store,
         deployment_instance_store=deployment_instance_store,
     )
 
@@ -146,6 +154,7 @@ def wire_durable_reference_production_lifecycle_services(
     stores = composition.agent_platform_runtime.stores
     revision_store = durable_store_bundle.revision_store
     projection_input_store = InMemoryRegistryProjectionInputStore()
+    descriptor_store = durable_store_bundle.projection_descriptor_store
     projection_coordinator = ApplicationRegistryProjectionCoordinator(
         revision_store=revision_store,
         input_store=projection_input_store,
@@ -165,6 +174,7 @@ def wire_durable_reference_production_lifecycle_services(
         projection_coordinator=projection_coordinator,
         revision_service=RuntimeRevisionService(revision_store),
         projection_input_store=projection_input_store,
+        descriptor_store=descriptor_store,
         deployment_instance_store=deployment_instance_store,
     )
 
@@ -312,6 +322,25 @@ class ReferenceProductionLifecycleLauncher:
             current_serving_pointer_revision=current_pointer_revision,
             target_runtime_revision_id=runtime_revision_id,
         )
+        materialization_store = (
+            self._composition.agent_platform_runtime.stores.materialization_store
+        )
+        materialization = materialization_store.get_by_revision(runtime_revision_id)
+        if materialization is None:
+            raise ReferenceProductionLifecycleError(
+                f"missing canonical materialization record for {runtime_revision_id!r}"
+            )
+        topology = revision.materialization_topology
+        if topology is None:
+            raise ReferenceProductionLifecycleError(
+                "runtime revision requires materialization_topology for descriptor"
+            )
+        descriptor = build_runtime_registry_projection_descriptor(
+            projection_input,
+            artifact_locator=materialization.artifact_locator,
+            materialization_topology=topology,
+        )
+        self._services.descriptor_store.put(descriptor)
         committed = activation.commit_activation(
             application_id=application_id,
             application_environment_id=application_environment_id,
@@ -455,5 +484,6 @@ __all__ = [
     "ReferenceProductionLifecycleLauncher",
     "ReferenceProductionLifecycleResult",
     "ReferenceProductionLifecycleServices",
+    "wire_durable_reference_production_lifecycle_services",
     "wire_reference_production_lifecycle_services",
 ]

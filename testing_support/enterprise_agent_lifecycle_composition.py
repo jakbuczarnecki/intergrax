@@ -41,6 +41,9 @@ from testing_support.canonical_agent_lifecycle_composition import (
     _stage15_proof_environment,
     default_stage15_proof_config,
 )
+from intergrax.applications._shared.registry_projection_rehydrator import (
+    rehydrate_serving_registry_projection,
+)
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 
 
@@ -166,11 +169,16 @@ class EnterpriseAgentLifecycleProofStack:
 
     @classmethod
     def reopen(cls, tmp_path: Path, db_path: Path, config: CanonicalLifecycleProofConfig) -> EnterpriseAgentLifecycleProofStack:
-        return cls.build(tmp_path, db_path=db_path, config=config)
+        stack = cls.build(tmp_path, db_path=db_path, config=config)
+        stack.rehydrate_serving_runtime()
+        return stack
 
-    def restore_serving_projection(self, projection) -> None:
-        self.composition.agent_platform_runtime.stores.registry_projection_store.put(
-            projection,
+    def rehydrate_serving_runtime(self) -> None:
+        """Rebuild process-local serving projection from durable revision-bound authority."""
+        rehydrate_serving_registry_projection(
+            application_id=self.config.application_id,
+            application_environment_id=self.config.environment_id,
+            rehydrator=self.durable_runtime.registry_projection_rehydrator,
         )
 
     def run_happy_path(self) -> CanonicalLifecycleProofResult:

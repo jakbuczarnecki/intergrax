@@ -24,6 +24,14 @@ from intergrax.applications._shared.registry_projection import (
 from intergrax.applications._shared.registry_projection_authority_resolver import (
     RegistryProjectionAuthorityResolver,
 )
+from intergrax.applications._shared.registry_projection_descriptor import (
+    RuntimeRegistryProjectionDescriptorStore,
+)
+from intergrax.applications._shared.registry_projection_rehydrator import (
+    RegistryProjectionRehydrationResult,
+    RuntimeRegistryProjectionRehydrator,
+    rehydrate_serving_registry_projection,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +43,8 @@ class DurableAgentPlatformRuntime:
     stores: AgentPlatformRuntimeStores
     effective_roster_authority: EffectiveRosterAuthorityService
     registry_projection_authority: RegistryProjectionAuthorityResolver
+    projection_descriptor_store: RuntimeRegistryProjectionDescriptorStore
+    registry_projection_rehydrator: RuntimeRegistryProjectionRehydrator
 
     @property
     def agent_platform_runtime(self) -> ProductionAgentPlatformRuntime:
@@ -44,6 +54,19 @@ class DurableAgentPlatformRuntime:
             stores=self.stores,
             effective_roster_authority=self.effective_roster_authority,
             registry_projection_authority=self.registry_projection_authority,
+        )
+
+    def rehydrate_serving_registry_projection(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+    ) -> RegistryProjectionRehydrationResult:
+        """Deterministically rebuild process-local serving projection from durable authority."""
+        return rehydrate_serving_registry_projection(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            rehydrator=self.registry_projection_rehydrator,
         )
 
 
@@ -59,25 +82,36 @@ def build_durable_production_agent_platform_runtime(
     effective_roster_authority = EffectiveRosterAuthorityService(
         snapshot_store=effective_roster_snapshot_store,
     )
+    projection_store = InMemoryRuntimeRegistryProjectionStore()
     stores = AgentPlatformRuntimeStores(
         serving_store=distribution_bundle.serving_store,
-        registry_projection_store=InMemoryRuntimeRegistryProjectionStore(),
+        registry_projection_store=projection_store,
         revision_store=revision_store,
         lock_store=lock_store,
         materialization_store=materialization_store,
         effective_roster_snapshot_store=effective_roster_snapshot_store,
+    )
+    registry_projection_authority = RegistryProjectionAuthorityResolver(
+        revision_store=revision_store,
+        effective_roster_authority=effective_roster_authority,
+        lock_store=lock_store,
+        materialization_store=materialization_store,
+    )
+    descriptor_store = distribution_bundle.projection_descriptor_store
+    rehydrator = RuntimeRegistryProjectionRehydrator(
+        serving_store=distribution_bundle.serving_store,
+        descriptor_store=descriptor_store,
+        authority=registry_projection_authority,
+        projection_store=projection_store,
     )
     return DurableAgentPlatformRuntime(
         db_path=db_path,
         distribution_store_bundle=distribution_bundle,
         stores=stores,
         effective_roster_authority=effective_roster_authority,
-        registry_projection_authority=RegistryProjectionAuthorityResolver(
-            revision_store=revision_store,
-            effective_roster_authority=effective_roster_authority,
-            lock_store=lock_store,
-            materialization_store=materialization_store,
-        ),
+        registry_projection_authority=registry_projection_authority,
+        projection_descriptor_store=descriptor_store,
+        registry_projection_rehydrator=rehydrator,
     )
 
 
