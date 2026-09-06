@@ -16,6 +16,7 @@ from intergrax.capability_catalog.governed_result import GovernedDiscoveryResult
 from intergrax.capability_catalog.governance_validation import validate_governed_output
 from intergrax.capability_catalog.ranked_candidate import RankedCapabilityCandidate
 from intergrax.contracts.capability_catalog.availability import AvailabilityDisposition
+from intergrax.contracts.capability_catalog._validation import require_non_empty_text
 from intergrax.contracts.capability_catalog.governance import (
     CapabilityGovernanceContext,
     CapabilityGovernancePosture,
@@ -145,6 +146,34 @@ def _evaluator_failure_decision(
     )
 
 
+def _validate_governance_pipeline_configuration(
+    evaluators: tuple[CapabilityGovernanceEvaluator, ...],
+    context: CapabilityGovernanceContext,
+) -> None:
+    if (
+        context.posture is CapabilityGovernancePosture.STRICT
+        and not evaluators
+    ):
+        raise CapabilityGovernanceError(
+            "STRICT capability governance requires at least one evaluator",
+        )
+
+    seen_evaluator_ids: set[str] = set()
+    for evaluator in evaluators:
+        try:
+            evaluator_id = require_non_empty_text(
+                evaluator.evaluator_id,
+                label="evaluator_id",
+            )
+        except (TypeError, ValueError) as exc:
+            raise CapabilityGovernanceError(str(exc)) from exc
+        if evaluator_id in seen_evaluator_ids:
+            raise CapabilityGovernanceError(
+                "governance pipeline evaluator_id values must be unique",
+            )
+        seen_evaluator_ids.add(evaluator_id)
+
+
 def _evaluate_candidate(
     candidate: RankedCapabilityCandidate,
     evaluators: tuple[CapabilityGovernanceEvaluator, ...],
@@ -193,6 +222,7 @@ def govern_capability_candidates(
 ) -> GovernedDiscoveryResult:
     """Run governance evaluators and partition ranked candidates fail-closed."""
     governance_context = context or CapabilityGovernanceContext()
+    _validate_governance_pipeline_configuration(evaluators, governance_context)
     allowed: list[GovernedCapabilityCandidate] = []
     blocked: list[BlockedCapabilityCandidate] = []
 
