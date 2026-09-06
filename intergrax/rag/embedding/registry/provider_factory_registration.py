@@ -6,7 +6,7 @@
 
 TRANSITIONAL_RUNTIME_COMPATIBILITY — legacy RAG runtime factory map retained for B4 removal.
 Canonical B3 runtime binding is owned by Integrations provider packages via
-``embedding_runtime_binder`` on ``IntegrationContractSpec``.
+``runtime_binding`` on ``IntegrationContractSpec``.
 """
 
 from __future__ import annotations

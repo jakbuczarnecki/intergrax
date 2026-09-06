@@ -9,12 +9,10 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from intergrax.integrations.core.manifest import IntegrationManifest
-
-if TYPE_CHECKING:
-    from intergrax.rag.embedding.contracts.runtime_binding import EmbeddingProviderRuntimeBinder
+from intergrax.integrations.registry.runtime_binding import IntegrationRuntimeBindingSpec
 
 IntegrationContractFactory = Callable[..., Any]
 
@@ -107,7 +105,7 @@ class IntegrationContractSpec:
     security_posture: Any = None
     supports_runtime_binding: bool = True
     supports_health_check: bool = False
-    embedding_runtime_binder: EmbeddingProviderRuntimeBinder | None = field(
+    runtime_binding: IntegrationRuntimeBindingSpec | None = field(
         default=None,
         compare=False,
         repr=False,
@@ -133,7 +131,7 @@ def declare_integration_contract(
     integration_kind: str | None = None,
     supports_runtime_binding: bool = True,
     supports_health_check: bool | None = None,
-    embedding_runtime_binder: EmbeddingProviderRuntimeBinder | None = None,
+    runtime_binding: IntegrationRuntimeBindingSpec | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> IntegrationContractSpec:
     """Build an explicit provider-owned contract declaration without reflection."""
@@ -185,7 +183,7 @@ def declare_integration_contract(
         security_posture=security_posture,
         supports_runtime_binding=supports_runtime_binding,
         supports_health_check=health_supported,
-        embedding_runtime_binder=embedding_runtime_binder,
+        runtime_binding=runtime_binding,
         metadata=dict(metadata or {}),
     )
 

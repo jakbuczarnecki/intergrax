@@ -38,14 +38,17 @@ from intergrax.rag.embedding.contracts.runtime_binding import (
     EmbeddingProviderRuntimeBindingError,
     EmbeddingProviderRuntimeBinder,
 )
+from intergrax.rag.embedding.contracts.runtime_binding_spec import (
+    EmbeddingProviderRuntimeBindingSpec,
+)
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderExecutionConfig
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile, embedding_profile_from_env
+from intergrax.rag.embedding.registry.provider_authority import validate_embedding_provider_slug
 from intergrax.rag.embedding.runtime.resolver import (
     bind_embedding_provider,
     resolve_embedding_provider_slug,
-    validate_embedding_provider_slug,
 )
 from intergrax.runtime.integrations.categories.embedding import EmbeddingProviderIntegrationContract
 from intergrax.runtime.integrations.contracts import (
@@ -113,8 +116,9 @@ def test_first_party_contract_spec_supports_runtime_binding(slug: str) -> None:
     entry = get_entry(slug)
     spec = next(item for item in entry.contract_specs if item.category == "embedding_provider")
     assert spec.supports_runtime_binding is True
-    assert spec.embedding_runtime_binder is not None
-    assert isinstance(spec.embedding_runtime_binder, EmbeddingProviderRuntimeBinder)
+    runtime_binding = spec.runtime_binding
+    assert isinstance(runtime_binding, EmbeddingProviderRuntimeBindingSpec)
+    assert isinstance(runtime_binding.binder, EmbeddingProviderRuntimeBinder)
 
 
 def test_validate_embedding_provider_slug_uses_catalog_not_hardcoded_set() -> None:
@@ -176,7 +180,7 @@ def test_bind_provider_without_runtime_binder_fails_closed() -> None:
         security_posture=PlatformIntegrationSecurityPosture(),
         supports_runtime_binding=True,
         supports_health_check=False,
-        embedding_runtime_binder=None,
+        runtime_binding=None,
     )
     manifest = IntegrationManifest(
         slug=slug,
@@ -233,7 +237,7 @@ def test_pluginability_e2e_without_vendor_sdk() -> None:
         security_posture=PlatformIntegrationSecurityPosture(),
         supports_runtime_binding=True,
         supports_health_check=False,
-        embedding_runtime_binder=_PluginBinder(),
+        runtime_binding=EmbeddingProviderRuntimeBindingSpec(binder=_PluginBinder()),
     )
     manifest = IntegrationManifest(
         slug=slug,
@@ -261,7 +265,9 @@ def test_first_party_runtime_binding_forwards_model(monkeypatch: pytest.MonkeyPa
     recorded: list[_RecordedBindCall] = []
     entry = get_entry(slug)
     spec = next(item for item in entry.contract_specs if item.category == "embedding_provider")
-    binder = spec.embedding_runtime_binder
+    runtime_binding = spec.runtime_binding
+    assert isinstance(runtime_binding, EmbeddingProviderRuntimeBindingSpec)
+    binder = runtime_binding.binder
     assert binder is not None
 
     def wrapped_bind(context: EmbeddingProviderRuntimeBindingContext) -> EmbeddingProvider:
@@ -311,7 +317,9 @@ def test_hf_runtime_binding_maps_integration_options(monkeypatch: pytest.MonkeyP
 
     entry = get_entry("hf")
     spec = next(item for item in entry.contract_specs if item.category == "embedding_provider")
-    binder = spec.embedding_runtime_binder
+    runtime_binding = spec.runtime_binding
+    assert isinstance(runtime_binding, EmbeddingProviderRuntimeBindingSpec)
+    binder = runtime_binding.binder
     assert binder is not None
 
     def _fake_bind(context: EmbeddingProviderRuntimeBindingContext) -> EmbeddingProvider:
@@ -355,7 +363,9 @@ def test_create_default_pipeline_uses_integration_profile_binding(
     def _patch_binder(slug: str) -> None:
         entry = get_entry(slug)
         spec = next(item for item in entry.contract_specs if item.category == "embedding_provider")
-        binder = spec.embedding_runtime_binder
+        runtime_binding = spec.runtime_binding
+        assert isinstance(runtime_binding, EmbeddingProviderRuntimeBindingSpec)
+        binder = runtime_binding.binder
         assert binder is not None
         monkeypatch.setattr(
             binder,
@@ -407,7 +417,7 @@ def test_runtime_binding_modules_allow_rag_contract_imports_only() -> None:
     root = repo_root / "intergrax" / "integrations" / "providers" / "embedding_provider"
     violations: list[str] = []
     for path in root.rglob("*.py"):
-        if path.name == "runtime_binding.py":
+        if path.name in {"runtime_binding.py", "contract_spec.py"}:
             continue
         text = path.read_text(encoding="utf-8")
         if "intergrax.rag.embedding" in text:

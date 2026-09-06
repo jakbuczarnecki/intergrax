@@ -20,6 +20,7 @@ from intergrax.integrations.registry.catalog import clear_catalog, get_entry
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_registry
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.contracts.runtime_binding import EmbeddingProviderRuntimeBindingContext
+from intergrax.rag.embedding.contracts.runtime_binding_spec import EmbeddingProviderRuntimeBindingSpec
 from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderExecutionConfig
 from intergrax.rag.embedding.registry.provider_factory_registration import (
     build_hf_provider_factory,
@@ -168,7 +169,9 @@ def test_create_default_registry_hf_receives_execution_config(
 
     entry = get_entry("hf")
     spec = next(item for item in entry.contract_specs if item.category == "embedding_provider")
-    binder = spec.embedding_runtime_binder
+    runtime_binding = spec.runtime_binding
+    assert isinstance(runtime_binding, EmbeddingProviderRuntimeBindingSpec)
+    binder = runtime_binding.binder
     assert binder is not None
     monkeypatch.setattr(
         binder,
@@ -198,7 +201,9 @@ def test_create_default_registry_non_hf_receives_model_only(
 
     entry = get_entry(provider_id)
     spec = next(item for item in entry.contract_specs if item.category == "embedding_provider")
-    binder = spec.embedding_runtime_binder
+    runtime_binding = spec.runtime_binding
+    assert isinstance(runtime_binding, EmbeddingProviderRuntimeBindingSpec)
+    binder = runtime_binding.binder
     assert binder is not None
     monkeypatch.setattr(
         binder,

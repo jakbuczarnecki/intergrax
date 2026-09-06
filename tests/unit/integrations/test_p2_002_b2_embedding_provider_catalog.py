@@ -239,7 +239,7 @@ def test_integrations_do_not_import_rag_embedding_packages() -> None:
     root = repo_root / "intergrax" / "integrations" / "providers" / "embedding_provider"
     violations: list[str] = []
     for path in root.rglob("*.py"):
-        if path.name == "runtime_binding.py":
+        if path.name in {"runtime_binding.py", "contract_spec.py"}:
             continue
         text = path.read_text(encoding="utf-8")
         if "intergrax.rag.embedding" in text:

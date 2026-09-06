@@ -17,6 +17,7 @@ from intergrax.integrations.providers.embedding_provider.llama_cpp.runtime_bindi
     LLAMA_CPP_EMBEDDING_PROVIDER_RUNTIME_BINDER,
 )
 from intergrax.integrations.registry.contract_spec import declare_integration_contract
+from intergrax.rag.embedding.contracts.runtime_binding_spec import EmbeddingProviderRuntimeBindingSpec
 from intergrax.runtime.integrations.categories.embedding import EmbeddingProviderIntegrationContract
 from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationCapability,
@@ -39,7 +40,9 @@ CONTRACT_SPEC = declare_integration_contract(
     security_posture=PlatformIntegrationSecurityPosture(),
     supports_runtime_binding=True,
     supports_health_check=False,
-    embedding_runtime_binder=LLAMA_CPP_EMBEDDING_PROVIDER_RUNTIME_BINDER,
+    runtime_binding=EmbeddingProviderRuntimeBindingSpec(
+        binder=LLAMA_CPP_EMBEDDING_PROVIDER_RUNTIME_BINDER,
+    ),
     metadata={
         "source": "explicit_provider_declaration",
         "optional_dependency": "openai",

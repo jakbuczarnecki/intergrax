@@ -9,7 +9,6 @@ from __future__ import annotations
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationCategoryMismatchError,
-    UnknownIntegrationError,
 )
 from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -20,6 +19,9 @@ from intergrax.rag.embedding.contracts.runtime_binding import (
     EmbeddingProviderRuntimeBinder,
     EmbeddingProviderRuntimeBindingError,
 )
+from intergrax.rag.embedding.contracts.runtime_binding_spec import (
+    EmbeddingProviderRuntimeBindingSpec,
+)
 from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderExecutionConfig
 from intergrax.rag.embedding.registry.provider_authority import (
     default_embedding_provider_slug,
@@ -28,26 +30,6 @@ from intergrax.rag.embedding.registry.provider_authority import (
 from intergrax.rag.embedding.registry.profile import EmbeddingProfile
 
 _EMBEDDING_CATEGORY = IntegrationCategory.EMBEDDING_PROVIDER
-
-
-def validate_embedding_provider_slug(slug: str) -> str:
-    """Validate provider slug against Integrations catalog authority."""
-    normalized = slug.strip().lower()
-    if not normalized:
-        raise ValueError("provider must be a non-empty string slug")
-    try:
-        entry = get_entry(normalized)
-    except UnknownIntegrationError as exc:
-        raise ValueError(
-            f"unknown embedding provider slug {normalized!r}; "
-            "slug is not registered in the Integrations catalog"
-        ) from exc
-    if _EMBEDDING_CATEGORY not in entry.categories:
-        raise ValueError(
-            f"integration slug {normalized!r} is not registered for "
-            f"category {_EMBEDDING_CATEGORY.value!r}"
-        )
-    return normalized
 
 
 def resolve_embedding_provider_slug(
@@ -110,6 +92,25 @@ def _embedding_contract_spec(slug: str):
     return specs[0]
 
 
+def _embedding_runtime_binder(slug: str, spec) -> EmbeddingProviderRuntimeBinder:
+    runtime_binding = spec.runtime_binding
+    if runtime_binding is None:
+        raise EmbeddingProviderRuntimeBindingError(
+            f"embedding provider {slug!r} has no runtime binder registered"
+        )
+    if not isinstance(runtime_binding, EmbeddingProviderRuntimeBindingSpec):
+        raise EmbeddingProviderRuntimeBindingError(
+            f"embedding provider {slug!r} supports runtime binding but runtime binding "
+            "descriptor is not compatible with embedding_provider"
+        )
+    binder = runtime_binding.binder
+    if not isinstance(binder, EmbeddingProviderRuntimeBinder):
+        raise EmbeddingProviderRuntimeBindingError(
+            f"embedding provider {slug!r} runtime binder is not typed"
+        )
+    return binder
+
+
 def bind_embedding_provider(
     *,
     integration_profile: IntegrationProfile | None = None,
@@ -136,15 +137,7 @@ def bind_embedding_provider(
             f"embedding provider {resolved_slug!r} does not support runtime binding"
         )
 
-    binder = spec.embedding_runtime_binder
-    if binder is None:
-        raise EmbeddingProviderRuntimeBindingError(
-            f"embedding provider {resolved_slug!r} has no runtime binder registered"
-        )
-    if not isinstance(binder, EmbeddingProviderRuntimeBinder):
-        raise EmbeddingProviderRuntimeBindingError(
-            f"embedding provider {resolved_slug!r} runtime binder is not typed"
-        )
+    binder = _embedding_runtime_binder(resolved_slug, spec)
 
     context = EmbeddingProviderRuntimeBindingContext(
         provider_slug=resolved_slug,
@@ -164,5 +157,4 @@ def bind_embedding_provider(
 __all__ = [
     "bind_embedding_provider",
     "resolve_embedding_provider_slug",
-    "validate_embedding_provider_slug",
 ]
