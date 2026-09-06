@@ -126,8 +126,7 @@ def _resolve_availability_disposition(
     host_available_keys: frozenset[tuple[str, str, str, str]],
     scope_visible_keys: frozenset[tuple[str, str, str, str]] | None,
 ) -> AvailabilityDisposition:
-    # Disposition evidence sets are contractually disjoint; precedence order
-    # applies only to non-conflicting facts (scope visibility vs disposition).
+    # Competing disposition evidence is contractually disjoint before resolution.
     sort_key = identity_key.sort_key
     if sort_key in blocked_keys:
         return AvailabilityDisposition.BLOCKED

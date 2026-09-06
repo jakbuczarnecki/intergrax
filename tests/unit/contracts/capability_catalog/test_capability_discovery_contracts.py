@@ -238,7 +238,10 @@ def test_availability_evidence_rejects_conflicting_disposition_pairs(
     key = _identity_key()
     with pytest.raises(
         ValidationError,
-        match=f"{left_field} and {right_field} must not contain the same identity key",
+        match=(
+            "availability evidence conflict: identity "
+            f".* appears in both {left_field} and {right_field}"
+        ),
     ):
         CapabilityDiscoveryAvailabilityEvidence(
             **{left_field: (key,), right_field: (key,)},
@@ -247,7 +250,7 @@ def test_availability_evidence_rejects_conflicting_disposition_pairs(
 
 def test_availability_evidence_rejects_triple_disposition_conflict() -> None:
     key = _identity_key()
-    with pytest.raises(ValidationError, match="must not contain the same identity key"):
+    with pytest.raises(ValidationError, match="availability evidence conflict: identity"):
         CapabilityDiscoveryAvailabilityEvidence(
             host_available_keys=(key,),
             blocked_keys=(key,),
