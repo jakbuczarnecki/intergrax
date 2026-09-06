@@ -39,6 +39,10 @@ from intergrax.applications.contracts.capability_dependency.dependency import Ca
 from intergrax.applications.contracts.capability_dependency.validation import (
     CapabilityDependencyValidationResult,
 )
+from intergrax.applications.contracts.profile_resolution.activation import (
+    ActiveEffectiveProfileRevisionBinding,
+    ActiveEffectiveProfileRevisionStore,
+)
 from intergrax.applications.contracts.profile_resolution.execution_binding import (
     EffectiveProfileExecutionBinding,
     EffectiveProfileExecutionPinningStore,
@@ -140,11 +144,13 @@ class RuntimeInspectionService:
         *,
         revision_store: EffectiveProfileRevisionStore | None = None,
         pinning_store: EffectiveProfileExecutionPinningStore | None = None,
+        active_store: ActiveEffectiveProfileRevisionStore | None = None,
         providers: Sequence[RuntimeInspectionProvider] | None = None,
         health_projector: EffectiveCapabilityHealthProjector | None = None,
     ) -> None:
         self._revision_store = revision_store
         self._pinning_store = pinning_store
+        self._active_store = active_store
         self._providers = _sorted_providers(
             providers if providers is not None else default_runtime_inspection_providers(),
         )
@@ -245,6 +251,50 @@ class RuntimeInspectionService:
             provider_failures=failures,
             extension_evidence=tuple(sanitize_extension_evidence(item) for item in extensions),
         )
+
+    def inspect_active_revision(
+        self,
+        *,
+        scope: EffectiveProfileRevisionScope,
+    ) -> RevisionInspectionResult:
+        """Expose active revision for scope — read-only, no activation authority."""
+        inactive_revision_id = EffectiveProfileRevisionId(
+            "effprof_rev_00000000000000000000000000000000",
+        )
+        inconsistencies: list[InspectionInconsistency] = []
+        if self._active_store is None:
+            inconsistencies.append(
+                InspectionInconsistency(
+                    kind=InspectionInconsistencyKind.INCOMPLETE,
+                    message="active effective profile revision store is not configured",
+                ),
+            )
+            return RevisionInspectionResult(
+                revision_id=inactive_revision_id,
+                scope=scope,
+                revision=None,
+                safe_revision=None,
+                completeness=InspectionCompleteness.UNAVAILABLE,
+                inconsistencies=tuple(inconsistencies),
+            )
+        active_binding = self._active_store.get_active(scope)
+        if active_binding is None:
+            inconsistencies.append(
+                InspectionInconsistency(
+                    kind=InspectionInconsistencyKind.NOT_FOUND,
+                    message="no active effective profile revision for scope",
+                    field="active_revision_id",
+                ),
+            )
+            return RevisionInspectionResult(
+                revision_id=inactive_revision_id,
+                scope=scope,
+                revision=None,
+                safe_revision=None,
+                completeness=InspectionCompleteness.UNAVAILABLE,
+                inconsistencies=tuple(inconsistencies),
+            )
+        return self.inspect_revision(active_binding.revision_id, scope=scope)
 
     def compare_revisions(
         self,

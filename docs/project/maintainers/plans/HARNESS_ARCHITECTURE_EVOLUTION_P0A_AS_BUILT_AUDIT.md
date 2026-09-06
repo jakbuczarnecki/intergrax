@@ -566,17 +566,39 @@ Operational read model only — does not grant capability, activate providers, o
 
 ## P1.6 Atomic activation lifecycle
 
-**Status: PARTIAL**
+**Status: CLOSED**
 
-Platform Plugins already has discovery/admission/qualification/STRICT fail-closed semantics and a closed implementation program.
-
-The missing concern is a narrower runtime-composition transaction model:
+Canonical scoped active revision pointer with CAS semantics:
 
 ```text
-resolve → validate → stage → activate → readiness → commit / rollback
+EffectiveProfileRevisionStore (immutable authority)
+        ↓
+ActiveEffectiveProfileRevisionStore (atomic pointer)
+        ↓
+EffectiveProfileActivationService (validation/orchestration)
+        ↓
+EffectiveProfileExecutionPinningDependencies (future admission read seam)
 ```
 
-Do not reopen Platform Plugins as a universal lifecycle engine.
+Delivered:
+
+- `ActiveEffectiveProfileRevisionBinding` — immutable scoped pointer/read contract
+- `ActiveEffectiveProfileRevisionStore.compare_and_set_active` — expected-current CAS, no hidden retry
+- `EffectiveProfileActivationService` — candidate existence/scope validation, P1.3 eligibility reuse hook
+- `InMemoryActiveEffectiveProfileRevisionStore` — thread-safe reference adapter
+- `KvActiveEffectiveProfileRevisionStore` — durable-capable KV adapter (production path when KV wired)
+- Host admission resolves active revision atomically; execution pinning unchanged (P1.2)
+- Runtime inspection `inspect_active_revision(scope)` — read-only active exposure
+
+Durability statement:
+
+```text
+production durable activation store: PARTIAL — KvActiveEffectiveProfileRevisionStore when DistributedKVStore wired; in-memory default for lab/harness
+```
+
+Preserves INV-25 (atomic activation), INV-26 (in-flight pinning), INV-33 (revision immutability).
+
+**Next: P1.7 — CredentialRef / late resolution**
 
 ---
 

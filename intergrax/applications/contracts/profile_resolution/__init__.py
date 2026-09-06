@@ -2,6 +2,14 @@
 
 """Tier-3 profile resolution contracts (P1.1/P1.2)."""
 
+from intergrax.applications.contracts.profile_resolution.activation import (
+    ActivateEffectiveProfileRevisionRequest,
+    ActiveEffectiveProfileRevisionBinding,
+    ActiveEffectiveProfileRevisionCasOutcome,
+    ActiveEffectiveProfileRevisionCasResult,
+    ActiveEffectiveProfileRevisionStore,
+    EffectiveProfileActivationResult,
+)
 from intergrax.applications.contracts.profile_resolution.decision import (
     DegradedCapability,
     ProfileDependencyFailure,
@@ -22,8 +30,15 @@ from intergrax.applications.contracts.profile_resolution.diff import (
     ProfileDiffProvenanceRef,
 )
 from intergrax.applications.contracts.profile_resolution.errors import (
+    EffectiveProfileActivationConflictError,
+    EffectiveProfileActivationError,
+    EffectiveProfileActivationPersistenceError,
+    EffectiveProfileActivationRejectedError,
+    EffectiveProfileActivationRevisionNotFoundError,
+    EffectiveProfileActivationScopeMismatchError,
     EffectiveProfileRevisionConflictError,
     EffectiveProfileRevisionError,
+    MissingActiveEffectiveProfileRevisionError,
     MissingPinnedEffectiveProfileRevisionError,
     ProfileLayerConflictError,
     ProfileOverrideRejectedError,
@@ -55,9 +70,21 @@ from intergrax.applications.contracts.profile_resolution.store import (
 )
 
 __all__ = [
+    "ActivateEffectiveProfileRevisionRequest",
+    "ActiveEffectiveProfileRevisionBinding",
+    "ActiveEffectiveProfileRevisionCasOutcome",
+    "ActiveEffectiveProfileRevisionCasResult",
+    "ActiveEffectiveProfileRevisionStore",
     "CANONICAL_LAYER_ORDER",
     "DegradedCapability",
     "EFFECTIVE_PROFILE_REVISION_METADATA_KEY",
+    "EffectiveProfileActivationConflictError",
+    "EffectiveProfileActivationError",
+    "EffectiveProfileActivationPersistenceError",
+    "EffectiveProfileActivationRejectedError",
+    "EffectiveProfileActivationResult",
+    "EffectiveProfileActivationRevisionNotFoundError",
+    "EffectiveProfileActivationScopeMismatchError",
     "EffectiveProfileDiff",
     "EffectiveProfileExecutionBinding",
     "EffectiveProfileExecutionPinningStore",
@@ -68,6 +95,7 @@ __all__ = [
     "EffectiveProfileRevisionId",
     "EffectiveProfileRevisionScope",
     "EffectiveProfileRevisionStore",
+    "MissingActiveEffectiveProfileRevisionError",
     "MissingPinnedEffectiveProfileRevisionError",
     "ProfileDelta",
     "ProfileDependencyFailure",

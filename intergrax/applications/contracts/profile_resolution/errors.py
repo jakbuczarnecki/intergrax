@@ -47,3 +47,46 @@ class MissingPinnedEffectiveProfileRevisionError(EffectiveProfileRevisionError):
         )
         self.tenant_id = tenant_id
         self.execution_id = execution_id
+
+
+class EffectiveProfileActivationError(EffectiveProfileRevisionError):
+    """Effective profile activation lifecycle failure."""
+
+
+class EffectiveProfileActivationConflictError(EffectiveProfileActivationError):
+    """CAS activation conflict — expected active revision does not match current."""
+
+
+class EffectiveProfileActivationRevisionNotFoundError(EffectiveProfileActivationError):
+    """Candidate revision is absent from canonical revision store."""
+
+    def __init__(self, *, revision_id: str, scope: EffectiveProfileRevisionScope) -> None:
+        super().__init__(
+            f"candidate revision {revision_id!r} not found for scope "
+            f"{scope.application_id!r}/{scope.tenant_id!r}",
+        )
+        self.revision_id = revision_id
+        self.scope = scope
+
+
+class EffectiveProfileActivationScopeMismatchError(EffectiveProfileActivationError):
+    """Candidate revision scope does not match activation scope."""
+
+
+class EffectiveProfileActivationRejectedError(EffectiveProfileActivationError):
+    """Candidate failed required activation eligibility checks."""
+
+
+class EffectiveProfileActivationPersistenceError(EffectiveProfileActivationError):
+    """Active pointer persistence failed — prior active remains authoritative."""
+
+
+class MissingActiveEffectiveProfileRevisionError(EffectiveProfileActivationError):
+    """No active revision is published for scope — fail closed for new admission."""
+
+    def __init__(self, *, scope: EffectiveProfileRevisionScope) -> None:
+        super().__init__(
+            f"no active effective profile revision for scope "
+            f"{scope.application_id!r}/{scope.tenant_id!r}",
+        )
+        self.scope = scope
