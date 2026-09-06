@@ -1624,7 +1624,7 @@ def _registry_with_probe_tools() -> ToolRegistry:
             "EVIDENCE_BASIS: observation.probe.a.tool,observation.probe.a.tool\nPURPOSE: inspect subgroup",
             "duplicate basis evidence reference",
         ),
-        ("not-a-valid-note", "exactly two lines"),
+        ("not-a-valid-note", "exactly two non-empty fields"),
     ],
 )
 def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(

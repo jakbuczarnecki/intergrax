@@ -141,14 +141,18 @@ def _parse_basis_value(raw: str) -> tuple[str, ...]:
 
 
 def parse_public_decision_note(content: str) -> ParsedPublicDecisionNote:
-    """Parse the strict ENG-6 two-line public decision-note envelope."""
-    lines = content.splitlines()
-    if len(lines) != 2:
+    """Parse the strict ENG-6 two-field public decision-note envelope."""
+    semantic_lines = tuple(
+        stripped
+        for line in content.splitlines()
+        if (stripped := line.strip())
+    )
+    if len(semantic_lines) != 2:
         raise InvestigationProofValidationError(
-            "malformed public decision note: envelope must be exactly two lines"
+            "malformed public decision note: envelope must contain exactly two non-empty fields"
         )
-    basis_line = lines[0].strip()
-    purpose_line = lines[1].strip()
+    basis_line = semantic_lines[0]
+    purpose_line = semantic_lines[1]
     if not basis_line.startswith(_EVIDENCE_BASIS_PREFIX):
         raise InvestigationProofValidationError(
             "malformed public decision note: missing EVIDENCE_BASIS"

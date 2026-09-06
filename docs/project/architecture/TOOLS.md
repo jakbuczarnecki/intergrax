@@ -894,7 +894,9 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 
 **Forbidden:** model-authored provider/runtime `tool_call_id` as the public basis contract; silent auto-binding of all available evidence; fuzzy or regex ID recovery from model text.
 
-**Public decision note (retained two-line envelope):**
+**Public decision note (strict closed two-field envelope):**
+
+Layout whitespace (blank serialization lines, leading/trailing line padding) carries no semantics and is ignored before parsing. Non-empty extra prose before, between, or after the fields is forbidden.
 
 ```text
 EVIDENCE_BASIS: <comma-separated prior model-visible evidence references>

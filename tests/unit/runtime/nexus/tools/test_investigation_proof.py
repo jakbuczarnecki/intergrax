@@ -147,21 +147,37 @@ def test_parse_public_decision_note() -> None:
 @pytest.mark.parametrize(
     ("content", "match"),
     [
-        ("PURPOSE: only purpose", "exactly two lines"),
-        ("EVIDENCE_BASIS: evidence-a", "exactly two lines"),
+        ("PURPOSE: only purpose", "exactly two non-empty fields"),
+        ("EVIDENCE_BASIS: evidence-a", "exactly two non-empty fields"),
         ("EVIDENCE_BASIS: evidence-a\nPURPOSE:", "empty PURPOSE"),
         ("EVIDENCE_BASIS: evidence-a,\nPURPOSE: x", "empty EVIDENCE_BASIS id segment"),
         (
             "commentary\nEVIDENCE_BASIS: evidence-a\nPURPOSE: inspect",
-            "exactly two lines",
+            "exactly two non-empty fields",
         ),
         (
             "EVIDENCE_BASIS: evidence-a\nPURPOSE: inspect\ncommentary",
-            "exactly two lines",
+            "exactly two non-empty fields",
         ),
         (
             "EVIDENCE_BASIS: evidence-a\nEVIDENCE_BASIS: evidence-b\nPURPOSE: inspect",
-            "exactly two lines",
+            "exactly two non-empty fields",
+        ),
+        (
+            "EVIDENCE_BASIS: evidence-a\nPURPOSE: inspect\nPURPOSE: inspect again",
+            "exactly two non-empty fields",
+        ),
+        (
+            "EVIDENCE_BASIS: evidence-a\nPURPOSE: inspect telemetry\nand compare equipment behavior",
+            "exactly two non-empty fields",
+        ),
+        (
+            "PURPOSE: inspect telemetry\nand compare equipment behavior",
+            "missing EVIDENCE_BASIS",
+        ),
+        (
+            "EVIDENCE_BASIS: evidence-a,\nevidence-b\nPURPOSE: inspect",
+            "exactly two non-empty fields",
         ),
         (
             "PURPOSE: inspect\nEVIDENCE_BASIS: evidence-a",
@@ -172,6 +188,49 @@ def test_parse_public_decision_note() -> None:
 def test_malformed_public_decision_note_rejected(content: str, match: str) -> None:
     with pytest.raises(InvestigationProofValidationError, match=match):
         parse_public_decision_note(content)
+
+
+@pytest.mark.parametrize(
+    ("content", "basis", "purpose"),
+    [
+        ("EVIDENCE_BASIS: evidence-a\n\nPURPOSE: inspect", ("evidence-a",), "inspect"),
+        (
+            "\nEVIDENCE_BASIS: evidence-a\nPURPOSE: inspect\n",
+            ("evidence-a",),
+            "inspect",
+        ),
+        (
+            "\n\nEVIDENCE_BASIS: evidence-a\n\n\nPURPOSE: inspect\n\n",
+            ("evidence-a",),
+            "inspect",
+        ),
+        (
+            "   EVIDENCE_BASIS: evidence-a   \n   PURPOSE: inspect   ",
+            ("evidence-a",),
+            "inspect",
+        ),
+        ("EVIDENCE_BASIS: evidence-a\r\nPURPOSE: inspect", ("evidence-a",), "inspect"),
+    ],
+)
+def test_parse_public_decision_note_accepts_layout_whitespace(
+    content: str,
+    basis: tuple[str, ...],
+    purpose: str,
+) -> None:
+    parsed = parse_public_decision_note(content)
+    assert parsed.basis_evidence_references == basis
+    assert parsed.public_reason == purpose
+
+
+def test_parse_public_decision_note_qwen_blank_line_fixture() -> None:
+    """Regression for Qwen-style blank serialization lines between fields."""
+    parsed = parse_public_decision_note(
+        "EVIDENCE_BASIS: observation.probe.a.step-1\n"
+        "\n"
+        "PURPOSE: inspect equipment degradation"
+    )
+    assert parsed.basis_evidence_references == ("observation.probe.a.step-1",)
+    assert parsed.public_reason == "inspect equipment degradation"
 
 
 def test_unknown_basis_reference_rejected() -> None:
