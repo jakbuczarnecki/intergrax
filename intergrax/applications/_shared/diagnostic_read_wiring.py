@@ -30,6 +30,9 @@ from intergrax.runtime.diagnostics.providers.causal_transport_scope_provider imp
     CausalTransportScopeProvider,
 )
 from intergrax.runtime.diagnostics.providers.problem_scope_provider import ProblemScopeProvider
+from intergrax.runtime.diagnostics.providers.runtime_event_scope_provider import (
+    RuntimeEventScopeProvider,
+)
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
@@ -116,6 +119,9 @@ def build_diagnostic_scope_discovery_service(
             ),
             CausalTransportScopeProvider(
                 causal_evidence_persistence=dependencies.causal_evidence_persistence,
+            ),
+            RuntimeEventScopeProvider(
+                runtime_event_persistence=dependencies.runtime_event_persistence,
             ),
         ),
     )

@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from intergrax.contracts.execution_identity import EventId, validate_event_id
 from intergrax.runtime.diagnostics.diagnostic_subject import ExecutionDiagnosticSubjectRef
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId, validate_problem_id
 
@@ -26,6 +27,7 @@ class DiagnosticScopeReferenceKind(StrEnum):
 
     PROBLEM = "problem"
     TRANSPORT = "transport"
+    EVENT = "event"
 
 
 class DiagnosticScopeDiscoveryStatus(StrEnum):
@@ -63,7 +65,20 @@ class TransportScopeReference:
         return DiagnosticScopeReferenceKind.TRANSPORT
 
 
-DiagnosticScopeReference = ProblemScopeReference | TransportScopeReference
+@dataclass(frozen=True, slots=True)
+class EventScopeReference:
+    """EventId-backed diagnostic scope reference."""
+
+    event_id: EventId
+
+    @property
+    def kind(self) -> DiagnosticScopeReferenceKind:
+        return DiagnosticScopeReferenceKind.EVENT
+
+
+DiagnosticScopeReference = (
+    ProblemScopeReference | TransportScopeReference | EventScopeReference
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,9 +185,13 @@ def validate_scope_discovery_request(
             provider=provider,
             transport_task_id=transport_task_id,
         )
+    elif type(reference_input) is EventScopeReference:
+        event_id = validate_event_id(reference_input.event_id)
+        reference = EventScopeReference(event_id=event_id)
     else:
         raise TypeError(
-            "reference must be ProblemScopeReference or TransportScopeReference",
+            "reference must be ProblemScopeReference, TransportScopeReference, "
+            "or EventScopeReference",
         )
     if (
         tenant_id == request.tenant_id

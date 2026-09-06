@@ -15,6 +15,7 @@ _DISCOVERY_FILES = (
     _DISCOVERY_ROOT / "diagnostic_scope_discovery_service.py",
     _DISCOVERY_ROOT / "providers" / "problem_scope_provider.py",
     _DISCOVERY_ROOT / "providers" / "causal_transport_scope_provider.py",
+    _DISCOVERY_ROOT / "providers" / "runtime_event_scope_provider.py",
 )
 
 _SERVICE_FILE = _DISCOVERY_ROOT / "diagnostic_scope_discovery_service.py"
@@ -35,6 +36,8 @@ _FORBIDDEN_IMPORT_TOKENS = (
 _SERVICE_FORBIDDEN_IMPORT_TOKENS = (
     "problem_persistence",
     "problem_occurrence_persistence",
+    "runtime_event_persistence",
+    "causal_evidence_persistence",
     "pymongo",
     "DocumentStore",
     "kafka",

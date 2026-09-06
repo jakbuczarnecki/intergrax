@@ -77,8 +77,8 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Why this is not application-specific** | Any async or multi-host workload may surface correlation without explicit scope |
 | **Priority** | P1 |
 | **Status** | PARTIALLY ADDRESSED |
-| **Related implementation** | `f2198be56` — ProblemId scope discovery (Slice 1); `causal_transport_scope` — transport reference scope discovery (Slice 2); EventId exact RuntimeEvent persistence lookup implemented; RuntimeEventScopeProvider pending |
-| **Qualification result after fix** | ProblemId and transport reference → execution scope proven; EventId/correlation diagnostic discovery paths remain; transport lookup bounded-scale qualification open |
+| **Related implementation** | `f2198be56` — ProblemId scope discovery (Slice 1); `causal_transport_scope` — transport reference scope discovery (Slice 2); `runtime_event_scope` — EventId exact RuntimeEvent scope discovery (Slice 3) |
+| **Qualification result after fix** | ProblemId, transport reference, and EventId → execution scope proven; correlation diagnostic discovery path remains; transport lookup bounded-scale qualification open |
 
 ---
 

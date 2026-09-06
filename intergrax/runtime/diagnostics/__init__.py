@@ -61,6 +61,7 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     MAX_SCOPE_DISCOVERY_CANDIDATE_LIMIT,
     ProblemScopeReference,
     TransportScopeReference,
+    EventScopeReference,
     build_diagnostic_scope_discovery_result,
     unsupported_reference_result,
     validate_scope_discovery_request,
@@ -82,9 +83,9 @@ from intergrax.runtime.diagnostics.providers.causal_transport_scope_provider imp
     CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID,
     CausalTransportScopeProvider,
 )
-from intergrax.runtime.diagnostics.providers.problem_scope_provider import (
-    PROBLEM_SCOPE_PROVIDER_ID,
-    ProblemScopeProvider,
+from intergrax.runtime.diagnostics.providers.runtime_event_scope_provider import (
+    RUNTIME_EVENT_SCOPE_PROVIDER_ID,
+    RuntimeEventScopeProvider,
 )
 from intergrax.runtime.diagnostics.execution_reconstruction import (
     ExecutionReconstruction,
@@ -271,10 +272,13 @@ __all__ = [
     "MAX_SCOPE_DISCOVERY_CANDIDATE_LIMIT",
     "CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID",
     "CausalTransportScopeProvider",
+    "RUNTIME_EVENT_SCOPE_PROVIDER_ID",
+    "RuntimeEventScopeProvider",
     "PROBLEM_SCOPE_PROVIDER_ID",
     "ProblemScopeProvider",
     "ProblemScopeReference",
     "TransportScopeReference",
+    "EventScopeReference",
     "ApplicationDiagnosticSubjectRef",
     "DiagnosticSubjectKind",
     "DiagnosticSubjectRef",

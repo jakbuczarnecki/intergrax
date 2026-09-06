@@ -12,9 +12,14 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticScopeDiscoveryRequest,
     DiagnosticScopeDiscoveryStatus,
     DiagnosticScopeReferenceKind,
+    EventScopeReference,
     ProblemScopeReference,
     TransportScopeReference,
     unsupported_reference_result,
+)
+from intergrax.runtime.diagnostics.providers.problem_scope_provider import (
+    PROBLEM_SCOPE_PROVIDER_ID,
+    ProblemScopeProvider,
 )
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_provider import (
     DiagnosticScopeDiscoveryProviderRegistry,
@@ -27,14 +32,16 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_service import (
     DiagnosticScopeDiscoveryService,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import mint_problem_id
+from intergrax.contracts.execution_identity import mint_event_id
 from intergrax.runtime.diagnostics.providers.causal_transport_scope_provider import (
     CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID,
     CausalTransportScopeProvider,
 )
-from intergrax.runtime.diagnostics.providers.problem_scope_provider import (
-    PROBLEM_SCOPE_PROVIDER_ID,
-    ProblemScopeProvider,
+from intergrax.runtime.diagnostics.providers.runtime_event_scope_provider import (
+    RUNTIME_EVENT_SCOPE_PROVIDER_ID,
+    RuntimeEventScopeProvider,
 )
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
@@ -171,7 +178,11 @@ def test_service_maps_synthetic_provider_unavailable_error() -> None:
     assert result.status is DiagnosticScopeDiscoveryStatus.PROVIDER_UNAVAILABLE
 
 
-def _production_providers() -> tuple[ProblemScopeProvider, CausalTransportScopeProvider]:
+def _production_providers() -> tuple[
+    ProblemScopeProvider,
+    CausalTransportScopeProvider,
+    RuntimeEventScopeProvider,
+]:
     store = in_memory_document_store_for_problem_tests()
     return (
         ProblemScopeProvider(
@@ -181,29 +192,41 @@ def _production_providers() -> tuple[ProblemScopeProvider, CausalTransportScopeP
         CausalTransportScopeProvider(
             causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
         ),
+        RuntimeEventScopeProvider(
+            runtime_event_persistence=InMemoryRuntimeEventStore(),
+        ),
     )
 
 
 def test_registry_resolves_problem_scope_provider() -> None:
-    problem_provider, transport_provider = _production_providers()
+    problem_provider, transport_provider, event_provider = _production_providers()
     registry = DiagnosticScopeDiscoveryProviderRegistry(
-        (problem_provider, transport_provider),
+        (problem_provider, transport_provider, event_provider),
     )
     reference = ProblemScopeReference(problem_id=mint_problem_id())
     assert registry.resolve_for_reference(reference) is problem_provider
 
 
 def test_registry_resolves_causal_transport_scope_provider() -> None:
-    problem_provider, transport_provider = _production_providers()
+    problem_provider, transport_provider, event_provider = _production_providers()
     registry = DiagnosticScopeDiscoveryProviderRegistry(
-        (problem_provider, transport_provider),
+        (problem_provider, transport_provider, event_provider),
     )
     reference = TransportScopeReference(provider="celery", transport_task_id="task-1")
     assert registry.resolve_for_reference(reference) is transport_provider
 
 
+def test_registry_resolves_runtime_event_scope_provider() -> None:
+    problem_provider, transport_provider, event_provider = _production_providers()
+    registry = DiagnosticScopeDiscoveryProviderRegistry(
+        (problem_provider, transport_provider, event_provider),
+    )
+    reference = EventScopeReference(event_id=mint_event_id())
+    assert registry.resolve_for_reference(reference) is event_provider
+
+
 def test_problem_scope_provider_conformance() -> None:
-    problem_provider, _ = _production_providers()
+    problem_provider, _, _ = _production_providers()
     assert_diagnostic_scope_discovery_provider_conformance(
         problem_provider,
         expected_provider_id=PROBLEM_SCOPE_PROVIDER_ID,
@@ -212,9 +235,18 @@ def test_problem_scope_provider_conformance() -> None:
 
 
 def test_causal_transport_scope_provider_conformance() -> None:
-    _, transport_provider = _production_providers()
+    _, transport_provider, _ = _production_providers()
     assert_diagnostic_scope_discovery_provider_conformance(
         transport_provider,
         expected_provider_id=CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID,
         expected_reference_kind=DiagnosticScopeReferenceKind.TRANSPORT,
+    )
+
+
+def test_runtime_event_scope_provider_conformance() -> None:
+    _, _, event_provider = _production_providers()
+    assert_diagnostic_scope_discovery_provider_conformance(
+        event_provider,
+        expected_provider_id=RUNTIME_EVENT_SCOPE_PROVIDER_ID,
+        expected_reference_kind=DiagnosticScopeReferenceKind.EVENT,
     )

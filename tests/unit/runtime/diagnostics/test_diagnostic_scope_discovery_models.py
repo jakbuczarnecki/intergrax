@@ -14,6 +14,7 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticScopeResolutionProvenance,
     ProblemScopeReference,
     TransportScopeReference,
+    EventScopeReference,
     build_diagnostic_scope_discovery_result,
     validate_scope_discovery_request,
     validate_transport_scope_provider,
@@ -22,7 +23,7 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
 from intergrax.runtime.diagnostics.diagnostic_subject import ExecutionDiagnosticSubjectRef
 from intergrax.runtime.diagnostics.problem_lifecycle import mint_problem_id
 from intergrax.runtime.diagnostics.problem_grouping import problem_grouping_subject_ref_for_execution
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import mint_event_id, mint_run_id, mint_task_id
 
 pytestmark = pytest.mark.unit
 
@@ -205,5 +206,56 @@ def test_request_validation_rejects_unknown_reference_type() -> None:
         tenant_id=_TENANT,
         reference=object(),  # type: ignore[arg-type]
     )
-    with pytest.raises(TypeError, match="ProblemScopeReference or TransportScopeReference"):
+    with pytest.raises(
+        TypeError,
+        match="ProblemScopeReference, TransportScopeReference, or EventScopeReference",
+    ):
         validate_scope_discovery_request(request)
+
+
+def test_event_scope_reference_kind() -> None:
+    event_id = mint_event_id()
+    reference = EventScopeReference(event_id=event_id)
+    assert reference.kind is DiagnosticScopeReferenceKind.EVENT
+    assert reference.event_id == event_id
+
+
+def test_invalid_event_id_rejected() -> None:
+    with pytest.raises(ValueError, match="EventId"):
+        validate_scope_discovery_request(
+            DiagnosticScopeDiscoveryRequest(
+                tenant_id=_TENANT,
+                reference=EventScopeReference(event_id="not-an-event-id"),  # type: ignore[arg-type]
+            ),
+        )
+
+
+def test_event_request_validation() -> None:
+    event_id = mint_event_id()
+    request = DiagnosticScopeDiscoveryRequest(
+        tenant_id=_TENANT,
+        reference=EventScopeReference(event_id=event_id),
+    )
+    validated = validate_scope_discovery_request(request)
+    assert validated.reference.event_id == event_id
+
+
+def test_reference_union_accepts_all_three_kinds() -> None:
+    from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
+        DiagnosticScopeReference,
+    )
+
+    references: tuple[DiagnosticScopeReference, ...] = (
+        ProblemScopeReference(problem_id=mint_problem_id()),
+        TransportScopeReference(provider="celery", transport_task_id="task-1"),
+        EventScopeReference(event_id=mint_event_id()),
+    )
+    assert len(references) == 3
+
+
+def test_no_accidental_fourth_reference_kind() -> None:
+    assert tuple(DiagnosticScopeReferenceKind) == (
+        DiagnosticScopeReferenceKind.PROBLEM,
+        DiagnosticScopeReferenceKind.TRANSPORT,
+        DiagnosticScopeReferenceKind.EVENT,
+    )
