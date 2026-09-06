@@ -493,8 +493,8 @@ P1.3A correction:
 
 Deferred to P1.4+:
 
-- Runtime Inspection / explain API,
-- cross-domain operational readiness projection (P1.5),
+- Runtime Inspection / explain API (P1.4 — CLOSED),
+- cross-domain operational readiness projection (P1.5 — CLOSED),
 - Integration → Provider / Credential chain adoption until domain contracts mature.
 
 ---
@@ -511,7 +511,7 @@ Delivered in P1.4:
 - profile inspection reuses existing `ProfileResolution.decisions` evidence (no precedence recompute),
 - revision inspection/compare reuse `EffectiveProfileRevisionStore` and `diff_effective_profile_revisions`,
 - execution inspection resolves exact pinned revision via `EffectiveProfileExecutionPinningStore` (no latest fallback),
-- capability inspection reuses `CapabilityDependencyValidationResult` evidence (not operational readiness),
+- capability inspection reuses `CapabilityDependencyValidationResult` evidence and projects effective health via P1.5 (`CapabilityInspectionResult.health`),
 - typed `InspectionCompleteness` / `InspectionInconsistency` / `InspectionExplanation` read models,
 - deterministic ordering, partial provider-failure visibility, and profile redaction helpers.
 
@@ -522,9 +522,8 @@ Delivered in P1.4A (serialization safety correction):
 - sanitized provider failure reasons and defensive extension-evidence payload redaction,
 - direct `model_dump` / `model_dump_json` proof tests for profile, revision, execution, compare, provider failure, and extension payload paths.
 
-Deferred to P1.5+:
+Deferred to post-P1.5:
 
-- cross-domain operational readiness projection (`READY` / `DEGRADED` / `UNAVAILABLE`),
 - REST/CLI/dashboard operator surfaces,
 - HOS execution-tree inspection adoption,
 - live probes / background health monitors.
@@ -535,11 +534,27 @@ Add a read model only. It must not own runtime truth.
 
 ## P1.5 Effective capability health/readiness
 
-**Status: GAP/PARTIAL**
+**Status: CLOSED (P1.5)**
 
-Provider/domain health concepts exist, but no canonical cross-domain `READY/DEGRADED/UNAVAILABLE/FAILED/DRAINING` effective capability projection was established.
+Delivered in P1.5:
 
-Build from canonical facts; do not create policy authority.
+- canonical `CapabilityHealthStatus` (`READY` / `DEGRADED` / `UNAVAILABLE`) operational projection,
+- typed `CapabilityHealthFact` / `CapabilityHealthReason` / `EffectiveCapabilityHealth` contracts in `intergrax/applications/contracts/capability_health/`,
+- provider-neutral `CapabilityHealthProvider` seam and `EffectiveCapabilityHealthProjector` in `intergrax/applications/_shared/capability_health/`,
+- real P1.3 adoption via `DependencyValidationHealthProvider` (reuses `CapabilityDependencyValidationResult` — no second validator),
+- real Tool effective availability adoption via `ToolEffectiveAvailabilityHealthProvider` (reuses `available_tool_ids_for_profile`),
+- Runtime Inspection integration on `inspect_capability(...)` (`health` + `safe_health` on `CapabilityInspectionResult`),
+- deterministic fact merge/dominance, duplicate `provider_id` fail-fast (`CapabilityHealthProviderConflictError`),
+- conservative provider-failure facts, tenant scope isolation, P1.4A-safe health serialization.
+
+Explicitly not adopted (honest boundary):
+
+- provider live operational health (`integrations.contracts.HealthStatus` exists; not wired into capability projection),
+- credential operational health (deferred to P1.7),
+- integration binding health facts,
+- background monitors / polling / automatic fallback.
+
+Operational read model only — does not grant capability, activate providers, or change governance.
 
 ---
 

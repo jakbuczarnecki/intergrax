@@ -573,7 +573,8 @@ def test_capability_optional_degradation_evidence() -> None:
     assert result.optional_degradations[0].requirement is CapabilityDependencyRequirement.OPTIONAL
     assert result.outcome is not None
     assert result.outcome.degraded is True
-    assert "readiness" not in json.dumps(result.model_dump(mode="json"))
+    assert result.health.status.value == "degraded"
+    assert result.completeness is InspectionCompleteness.COMPLETE
 
 
 def test_capability_multi_source_provenance_preserved() -> None:

@@ -6,6 +6,15 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from intergrax.applications._shared.capability_health.composition import (
+    default_capability_health_providers,
+)
+from intergrax.applications._shared.capability_health.projector import (
+    EffectiveCapabilityHealthProjector,
+)
+from intergrax.applications._shared.capability_health.redaction import (
+    safe_effective_capability_health_view,
+)
 from intergrax.applications._shared.profile_resolution.diff_engine import (
     diff_effective_profile_revisions,
 )
@@ -22,6 +31,10 @@ from intergrax.applications._shared.runtime_inspection.redaction import (
     safe_profile_resolution_view,
     sanitize_extension_evidence,
 )
+from intergrax.applications.contracts.capability_health import (
+    CapabilityHealthProjectionContext,
+)
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.capability_dependency.dependency import CapabilityRef
 from intergrax.applications.contracts.capability_dependency.validation import (
     CapabilityDependencyValidationResult,
@@ -59,6 +72,7 @@ from intergrax.applications.contracts.runtime_inspection.results import (
     RevisionInspectionResult,
 )
 from intergrax.contracts.execution_identity import ExecutionId
+from intergrax.skills.registry.runtime import SkillRegistry
 
 
 def _sorted_providers(
@@ -127,11 +141,15 @@ class RuntimeInspectionService:
         revision_store: EffectiveProfileRevisionStore | None = None,
         pinning_store: EffectiveProfileExecutionPinningStore | None = None,
         providers: Sequence[RuntimeInspectionProvider] | None = None,
+        health_projector: EffectiveCapabilityHealthProjector | None = None,
     ) -> None:
         self._revision_store = revision_store
         self._pinning_store = pinning_store
         self._providers = _sorted_providers(
             providers if providers is not None else default_runtime_inspection_providers(),
+        )
+        self._health_projector = health_projector or EffectiveCapabilityHealthProjector(
+            default_capability_health_providers(),
         )
 
     @property
@@ -338,6 +356,13 @@ class RuntimeInspectionService:
         self,
         capability: CapabilityRef,
         validation: CapabilityDependencyValidationResult,
+        *,
+        environment_profile: ApplicationEnvironmentProfile | None = None,
+        scope_application_id: str | None = None,
+        scope_tenant_id: str | None = None,
+        effective_profile_revision_id: EffectiveProfileRevisionId | None = None,
+        effective_profile_fingerprint: str | None = None,
+        skill_registry: SkillRegistry | None = None,
     ) -> CapabilityInspectionResult:
         capability_key = capability.canonical_key
         outcome = next(
@@ -384,12 +409,26 @@ class RuntimeInspectionService:
         completeness, explanations, extensions, failures = merge_provider_contributions(
             contributions,
         )
+        health = self._health_projector.project(
+            CapabilityHealthProjectionContext(
+                capability=capability,
+                validation=validation,
+                environment_profile=environment_profile,
+                scope_application_id=scope_application_id,
+                scope_tenant_id=scope_tenant_id,
+                effective_profile_revision_id=effective_profile_revision_id,
+                effective_profile_fingerprint=effective_profile_fingerprint,
+                skill_registry=skill_registry,
+            ),
+        )
         return CapabilityInspectionResult(
             capability=capability,
             validation=validation,
             outcome=outcome,
             required_failures=required_failures,
             optional_degradations=optional_degradations,
+            health=health,
+            safe_health=safe_effective_capability_health_view(health),
             completeness=completeness,
             explanations=explanations,
             provider_failures=failures,

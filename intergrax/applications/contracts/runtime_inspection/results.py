@@ -13,6 +13,10 @@ from intergrax.applications.contracts.capability_dependency.validation import (
     CapabilityDependencyOutcome,
     CapabilityDependencyValidationResult,
 )
+from intergrax.applications.contracts.capability_health.result import EffectiveCapabilityHealth
+from intergrax.applications.contracts.capability_health.safe_views import (
+    SafeEffectiveCapabilityHealthView,
+)
 from intergrax.applications.contracts.profile_resolution.diff import EffectiveProfileDiff
 from intergrax.applications.contracts.profile_resolution.execution_binding import (
     EffectiveProfileExecutionBinding,
@@ -127,7 +131,7 @@ class ExecutionInspectionResult(BaseModel):
 
 
 class CapabilityInspectionResult(BaseModel):
-    """Capability dependency validation explainability — not operational readiness."""
+    """Capability dependency validation explainability and effective health projection."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -141,6 +145,8 @@ class CapabilityInspectionResult(BaseModel):
     optional_degradations: tuple[CapabilityDependencyDegradationEvidence, ...] = Field(
         default_factory=tuple,
     )
+    health: EffectiveCapabilityHealth
+    safe_health: SafeEffectiveCapabilityHealthView
     completeness: InspectionCompleteness
     inconsistencies: tuple[InspectionInconsistency, ...] = Field(default_factory=tuple)
     explanations: tuple[InspectionExplanation, ...] = Field(default_factory=tuple)
