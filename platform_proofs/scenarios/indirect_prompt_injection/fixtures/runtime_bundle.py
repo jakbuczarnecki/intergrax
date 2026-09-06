@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.applications._shared.scenario_runtime_baseline import (
+    ScenarioLabAgentRegistration,
+    build_scenario_lab_agent_registry,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
 
@@ -56,23 +60,25 @@ def build_fixture_runtime_bundle(
         tool_registry=tool_registry,
         llm_adapter_override=llm_adapter_override,
     )
-    composition = build_scenario_runtime_composition(
-        registry=tool_registry,
-        environment=environment,
-        tenant_id=tenant_id,
-        composition=composition,
-        provider_client=resolved_client,
-    )
     agent = OrderAssistantAgent(
-        registry=composition.tool_registry,
+        registry=tool_registry,
         runtime_composition=composition,
         provider_client=resolved_client,
         workflow=workflow,
         order_id=fixture.order_id,
         user_message=fixture.user_message,
     )
-    if agent.get_contract().id not in composition.platform.registry.list_agent_ids():
-        composition.platform.registry.register(agent)
+    agent_registry = build_scenario_lab_agent_registry(
+        ScenarioLabAgentRegistration(agent=agent),
+    )
+    composition = build_scenario_runtime_composition(
+        registry=tool_registry,
+        environment=environment,
+        tenant_id=tenant_id,
+        composition=composition,
+        agent_registry=agent_registry,
+        provider_client=resolved_client,
+    )
     run_bundle = OrderAssistantRunBundle(
         workflow=workflow,
         provider_client=resolved_client,
