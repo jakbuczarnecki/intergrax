@@ -86,6 +86,11 @@ from intergrax.agent_distribution.effective_roster import (
 from intergrax.agent_distribution.effective_roster_authority import (
     EffectiveRosterAuthorityService,
 )
+from intergrax.agent_distribution.emergency_revocation_response import (
+    AgentEmergencyRevocationRequest,
+    AgentEmergencyRevocationResponse,
+    AgentEmergencyRevocationService,
+)
 from intergrax.agent_distribution.errors import (
     AgentDistributionNotFoundError,
     BindingRevisionConflict,
@@ -257,6 +262,7 @@ class AgentPlatformAdminService:
         | None = None,
         package_trust_policy_source: Callable[[], AgentPackageTrustPolicy] | None = None,
         package_trust_evaluation_time_source: Callable[[], datetime] | None = None,
+        emergency_revocation_service: AgentEmergencyRevocationService | None = None,
     ) -> None:
         self._installation_store = installation_store
         self._binding_store = binding_store
@@ -300,6 +306,17 @@ class AgentPlatformAdminService:
         )
         self._package_trust_evaluation_time_source = (
             package_trust_evaluation_time_source or (lambda: datetime.now(UTC))
+        )
+        self._emergency_revocation_service = (
+            emergency_revocation_service
+            or AgentEmergencyRevocationService(
+                serving_store=serving_store,
+                revision_store=revision_store,
+                effective_roster_authority=effective_roster_authority,
+                installation_store=installation_store,
+                package_trust_coordinator=self._package_trust_coordinator,
+                activation_service=activation_service,
+            )
         )
 
     def list_catalog(
@@ -1135,6 +1152,32 @@ class AgentPlatformAdminService:
             superseded_revision_id=superseded_id,
             authorization_evidence=authorization.evidence,
             audit_event_types=_event_types(rolled),
+        )
+
+    def respond_to_emergency_revocation(
+        self,
+        *,
+        application_id: str,
+        application_environment_id: str,
+        request: AgentEmergencyRevocationRequest | None = None,
+    ) -> AgentEmergencyRevocationResponse:
+        """One-shot active runtime revocation response using immutable revocation snapshot."""
+        effective_request = request or AgentEmergencyRevocationRequest(
+            application_id=application_id,
+            application_environment_id=application_environment_id,
+            evaluated_at=self._package_trust_evaluation_time_source(),
+            revocation_state=self._package_trust_revocation_state_source(),
+            trust_policy=self._package_trust_policy_source(),
+        )
+        if (
+            effective_request.application_id != application_id
+            or effective_request.application_environment_id != application_environment_id
+        ):
+            raise RuntimeActivationConflict(
+                "emergency revocation request environment scope mismatch"
+            )
+        return self._emergency_revocation_service.respond_to_current_revocation(
+            effective_request
         )
 
     def complete_revision_drain(

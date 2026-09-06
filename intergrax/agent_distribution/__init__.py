@@ -213,6 +213,13 @@ from intergrax.agent_distribution.effective_roster import (
     EffectiveRosterBuilder,
     InstalledAgentRequirementSetBuilder,
 )
+from intergrax.agent_distribution.emergency_revocation_response import (
+    AgentEmergencyRevocationRequest,
+    AgentEmergencyRevocationResponse,
+    AgentEmergencyRevocationService,
+    EmergencyTrustResponseAction,
+    EmergencyTrustResponseReasonCode,
+)
 from intergrax.agent_distribution.errors import (
     AgentDistributionError,
     AgentDistributionNotFoundError,
@@ -563,6 +570,11 @@ __all__ = [
     "DependencyResolver",
     "DependencyResolverInput",
     "EffectiveRosterBuilder",
+    "AgentEmergencyRevocationRequest",
+    "AgentEmergencyRevocationResponse",
+    "AgentEmergencyRevocationService",
+    "EmergencyTrustResponseAction",
+    "EmergencyTrustResponseReasonCode",
     "EffectiveRosterConflict",
     "EffectiveRoster",
     "EffectiveRosterEntry",

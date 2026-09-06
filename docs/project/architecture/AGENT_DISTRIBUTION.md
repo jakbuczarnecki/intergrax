@@ -756,6 +756,35 @@ AgentPackageQualificationResult.qualified_at   # immutable snapshot timestamp (U
 - **Admission:** install admission and candidate runtime revision build re-check current policy + `qualification_qualified_at` on installation trust records; historical `policy_fingerprint` explains prior ALLOW only.
 - **Non-claims (Phase 3):** no background scheduler, no automatic uninstall, no async active-runtime kill — stale qualification blocks future admission/revision only. Phase 4 owns active emergency response.
 
+### 10.6 Active runtime revocation response (AC-6 Phase 4)
+
+Explicit **security revocation** may require response for the **currently serving** `RuntimeRevision`. Future-admission blocking (Phases 1–3) and active emergency response are distinct concerns.
+
+```text
+traffic_serving_revision_id
+  → RuntimeRevision
+  → immutable EffectiveRoster snapshot
+  → enabled entries → installation trust records
+  → AgentPackageTrustRevocationState snapshot (single evaluation)
+  → AgentEmergencyRevocationService
+  → ActivationService.rollback() when prior revision is currently trust-admissible
+```
+
+| Revocation scope | Future admission | Active emergency response | Rationale |
+|------------------|------------------|---------------------------|-----------|
+| `revoked_package_digests` | block | **respond** | digest compromise invalidates serving bytes |
+| `revoked_publisher_ids` | block | **respond** | publisher compromise invalidates provenance |
+| `revoked_evidence_ids` | block | **respond** when evidence backs active installation | evidence invalidation is security authority |
+| `revoked_catalog_source_ids` | block | no auto-response | source revoke ≠ installed digest compromise |
+| `disabled_catalog_source_ids` | block | no auto-response | administrative disable ≠ malware emergency |
+| qualification expiry | block future | **no response** | Phase 3 freshness only |
+
+- **Revision indivisibility:** runtime revision is immutable; emergency response transitions revision (rollback), never hot-removes an agent from an active roster/registry projection.
+- **Safe rollback target:** canonical `prior_traffic_revision_id` must pass current `AgentPackageTrustCoordinator.assert_install_admission()` under the same immutable revocation snapshot; revoked or stale prior revisions are rejected (`BLOCKED_NO_SAFE_TARGET`).
+- **Canonical lifecycle:** traffic commit precedes physical drain; no direct serving-pointer mutation outside `ActivationService`; no background watcher/thread in core.
+- **No safe target:** when no prior revision exists or prior revision fails current trust, expose explicit unresolved security state — do not null the serving pointer (Reference Production V1).
+- **Process-local V1:** single revocation snapshot per invocation; concurrent activation races fail closed via expected serving pointer CAS.
+
 ---
 
 ## 11. Installation model
