@@ -23,8 +23,8 @@ from intergrax.skills.core.version_binding import (
 from intergrax.skills.execution_binding import (
     InMemorySkillExecutionPinningStore,
     bind_resolved_skill_pack,
+    binding_from_composition,
     binding_from_pack,
-    manifest_snapshot_for_pack,
     resolve_bound_skill_pack,
 )
 from intergrax.skills.providers.harness.manifests import (
@@ -101,7 +101,7 @@ def test_root_replacement_e1_stays_e2_gets_new() -> None:
     registry = SkillRegistry()
     registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.x",)))
     resolver = SkillResolver(registry)
-    e1_pack = resolver.resolve(["a.pack"])
+    e1_pack = resolver.resolve_composition(["a.pack"])
     pinning = InMemorySkillExecutionPinningStore()
     e1_id = mint_execution_id()
     e2_id = mint_execution_id()
@@ -111,17 +111,17 @@ def test_root_replacement_e1_stays_e2_gets_new() -> None:
         skill_profile=SkillProfile(enabled=["a.pack"]),
         skill_registry=registry,
         pinning_store=pinning,
-        resolved_pack=e1_pack,
+        resolved_composition=e1_pack,
     )
     registry.register_or_replace(_manifest("a.pack", "2.0.0", tool_ids=("tool.y",)))
-    e2_pack = resolver.resolve(["a.pack"])
+    e2_pack = resolver.resolve_composition(["a.pack"])
     bind_resolved_skill_pack(
         tenant_id="tenant-a",
         execution_id=e2_id,
         skill_profile=SkillProfile(enabled=["a.pack"]),
         skill_registry=registry,
         pinning_store=pinning,
-        resolved_pack=e2_pack,
+        resolved_composition=e2_pack,
     )
     assert pinning.get(tenant_id="tenant-a", execution_id=e1_id).resolved_pack.snapshot_digest != (
         pinning.get(tenant_id="tenant-a", execution_id=e2_id).resolved_pack.snapshot_digest
@@ -136,7 +136,7 @@ def test_transitive_replacement_e1_stays_b1_e2_gets_b2() -> None:
     registry.register(
         _manifest("a.pack", "1.0.0", requires_skills=("b.pack",), tool_ids=("tool.a",)),
     )
-    e1_pack = SkillResolver(registry).resolve(["a.pack"])
+    e1_composition = SkillResolver(registry).resolve_composition(["a.pack"])
     pinning = InMemorySkillExecutionPinningStore()
     e1_id = mint_execution_id()
     bind_resolved_skill_pack(
@@ -145,10 +145,10 @@ def test_transitive_replacement_e1_stays_b1_e2_gets_b2() -> None:
         skill_profile=SkillProfile(enabled=["a.pack"]),
         skill_registry=registry,
         pinning_store=pinning,
-        resolved_pack=e1_pack,
+        resolved_composition=e1_composition,
     )
     registry.register_or_replace(_manifest("b.pack", "2.0.0", tool_ids=("tool.b2",)))
-    e2_pack = SkillResolver(registry).resolve(["a.pack"])
+    e2_composition = SkillResolver(registry).resolve_composition(["a.pack"])
     e2_id = mint_execution_id()
     bind_resolved_skill_pack(
         tenant_id="tenant-a",
@@ -156,7 +156,7 @@ def test_transitive_replacement_e1_stays_b1_e2_gets_b2() -> None:
         skill_profile=SkillProfile(enabled=["a.pack"]),
         skill_registry=registry,
         pinning_store=pinning,
-        resolved_pack=e2_pack,
+        resolved_composition=e2_composition,
     )
     e1_refs = pinning.get(tenant_id="tenant-a", execution_id=e1_id).resolved_pack.resolved_skills
     e2_refs = pinning.get(tenant_id="tenant-a", execution_id=e2_id).resolved_pack.resolved_skills
@@ -169,7 +169,7 @@ def test_transitive_replacement_e1_stays_b1_e2_gets_b2() -> None:
 def test_unregister_does_not_alter_e1_new_resolve_fails() -> None:
     registry = SkillRegistry()
     registry.register(_manifest("a.pack", "1.0.0"))
-    pack = SkillResolver(registry).resolve(["a.pack"])
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
     pinning = InMemorySkillExecutionPinningStore()
     e1_id = mint_execution_id()
     bind_resolved_skill_pack(
@@ -178,7 +178,7 @@ def test_unregister_does_not_alter_e1_new_resolve_fails() -> None:
         skill_profile=SkillProfile(enabled=["a.pack"]),
         skill_registry=registry,
         pinning_store=pinning,
-        resolved_pack=pack,
+        resolved_composition=composition,
     )
     registry.unregister("a.pack")
     assert pinning.get(tenant_id="tenant-a", execution_id=e1_id) is not None
@@ -251,9 +251,9 @@ def test_contribution_lineage_exact_qualified_ids() -> None:
             tool_ids=("tool.a",),
         ),
     )
-    pack = SkillResolver(registry).resolve(["a.pack"])
-    manifests = manifest_snapshot_for_pack(pack, registry)
-    provenance = build_skill_contribution_provenance(pack, manifests)
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    manifests = composition.manifest_by_skill_id()
+    provenance = build_skill_contribution_provenance(composition.pack, manifests)
     assert contributors_for(
         provenance,
         contribution_kind=SkillContributionKind.TOOL_REQUIREMENT,
@@ -275,8 +275,11 @@ def test_duplicate_tool_lineage_retains_both_skills() -> None:
     registry = SkillRegistry()
     registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.x",)))
     registry.register(_manifest("b.pack", "1.0.0", tool_ids=("tool.x",)))
-    pack = SkillResolver(registry).resolve(["a.pack", "b.pack"])
-    provenance = build_skill_contribution_provenance(pack, manifest_snapshot_for_pack(pack, registry))
+    composition = SkillResolver(registry).resolve_composition(["a.pack", "b.pack"])
+    provenance = build_skill_contribution_provenance(
+        composition.pack,
+        composition.manifest_by_skill_id(),
+    )
     assert set(
         contributors_for(
             provenance,
@@ -339,10 +342,10 @@ def test_real_harness_stack_demo_transitive_adoption() -> None:
 
 def test_real_harness_policy_fragment_provenance() -> None:
     registry = _harness_registry()
-    pack = SkillResolver(registry).resolve([HARNESS_POLICY_SMOKE.skill_id])
+    composition = SkillResolver(registry).resolve_composition([HARNESS_POLICY_SMOKE.skill_id])
     provenance = build_skill_contribution_provenance(
-        pack,
-        manifest_snapshot_for_pack(pack, registry),
+        composition.pack,
+        composition.manifest_by_skill_id(),
     )
     assert contributors_for(
         provenance,
@@ -354,7 +357,7 @@ def test_real_harness_policy_fragment_provenance() -> None:
 def test_inspection_stable_after_registry_mutation() -> None:
     registry = SkillRegistry()
     registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.x",)))
-    pack = SkillResolver(registry).resolve(["a.pack"])
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
     pinning = InMemorySkillExecutionPinningStore()
     e1_id = mint_execution_id()
     e2_id = mint_execution_id()
@@ -364,19 +367,19 @@ def test_inspection_stable_after_registry_mutation() -> None:
         skill_profile=SkillProfile(enabled=["a.pack"]),
         skill_registry=registry,
         pinning_store=pinning,
-        resolved_pack=pack,
+        resolved_composition=composition,
     )
     service = RuntimeInspectionService(skill_pinning_store=pinning)
     before = service.inspect_execution(tenant_id="tenant-a", execution_id=e1_id, scope_application_id="app")
     registry.register_or_replace(_manifest("a.pack", "9.9.9", tool_ids=("tool.z",)))
-    e2_pack = SkillResolver(registry).resolve(["a.pack"])
+    e2_composition = SkillResolver(registry).resolve_composition(["a.pack"])
     bind_resolved_skill_pack(
         tenant_id="tenant-a",
         execution_id=e2_id,
         skill_profile=SkillProfile(enabled=["a.pack"]),
         skill_registry=registry,
         pinning_store=pinning,
-        resolved_pack=e2_pack,
+        resolved_composition=e2_composition,
     )
     after_e1 = service.inspect_execution(tenant_id="tenant-a", execution_id=e1_id, scope_application_id="app")
     after_e2 = service.inspect_execution(tenant_id="tenant-a", execution_id=e2_id, scope_application_id="app")
@@ -403,13 +406,138 @@ def test_configured_vs_effective_distinction_in_binding() -> None:
     registry = SkillRegistry()
     registry.register(_manifest("b.pack", "1.0.0"))
     registry.register(_manifest("a.pack", "1.0.0", requires_skills=("b.pack",)))
-    pack = SkillResolver(registry).resolve(["a.pack"])
-    binding = binding_from_pack(
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    binding = binding_from_composition(
         tenant_id="tenant-a",
         execution_id=mint_execution_id(),
         skill_profile=SkillProfile(enabled=["a.pack"]),
-        pack=pack,
-        manifests=manifest_snapshot_for_pack(pack, registry),
+        composition=composition,
     )
     assert binding.configured_skill_ids == ("a.pack",)
     assert set(binding.resolved_pack.skill_ids) == {"a.pack", "b.pack"}
+
+
+def test_root_replacement_race_coherent_provenance() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.old",)))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    registry.register_or_replace(_manifest("a.pack", "2.0.0", tool_ids=("tool.new",)))
+    binding = binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+    )
+    assert binding.resolved_pack.resolved_skills[0].version == "1.0.0"
+    assert contributors_for(
+        binding.contribution_provenance,
+        contribution_kind=SkillContributionKind.TOOL_REQUIREMENT,
+        contribution_id="tool.old",
+    ) == ("a.pack@1.0.0",)
+    assert contributors_for(
+        binding.contribution_provenance,
+        contribution_kind=SkillContributionKind.TOOL_REQUIREMENT,
+        contribution_id="tool.new",
+    ) == ()
+
+
+def test_transitive_replacement_race_coherent_provenance() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("b.pack", "1.0.0", tool_ids=("tool.old",)))
+    registry.register(
+        _manifest("a.pack", "1.0.0", requires_skills=("b.pack",), tool_ids=("tool.a",)),
+    )
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    registry.register_or_replace(_manifest("b.pack", "2.0.0", tool_ids=("tool.new",)))
+    binding = binding_from_composition(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        composition=composition,
+    )
+    b_ref = next(ref for ref in binding.resolved_pack.resolved_skills if ref.skill_id == "b.pack")
+    assert b_ref.version == "1.0.0"
+    assert contributors_for(
+        binding.contribution_provenance,
+        contribution_kind=SkillContributionKind.TOOL_REQUIREMENT,
+        contribution_id="tool.old",
+    ) == ("b.pack@1.0.0",)
+    assert contributors_for(
+        binding.contribution_provenance,
+        contribution_kind=SkillContributionKind.TOOL_REQUIREMENT,
+        contribution_id="tool.new",
+    ) == ()
+
+
+def test_provenance_rejects_version_mismatch() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.x",)))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    mismatched = {
+        "a.pack": _manifest("a.pack", "2.0.0", tool_ids=("tool.y",)),
+    }
+    with pytest.raises(SkillResolutionError, match="manifest identity mismatch"):
+        build_skill_contribution_provenance(composition.pack, mismatched)
+
+
+def test_execution_binding_rejects_rebind_with_different_pack() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.x",)))
+    pinning = InMemorySkillExecutionPinningStore()
+    execution_id = mint_execution_id()
+    profile = SkillProfile(enabled=["a.pack"])
+    first = SkillResolver(registry).resolve_composition(["a.pack"])
+    bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=execution_id,
+        skill_profile=profile,
+        skill_registry=registry,
+        pinning_store=pinning,
+        resolved_composition=first,
+    )
+    registry.register_or_replace(_manifest("a.pack", "2.0.0", tool_ids=("tool.y",)))
+    second = SkillResolver(registry).resolve_composition(["a.pack"])
+    with pytest.raises(SkillResolutionError, match="already pinned"):
+        bind_resolved_skill_pack(
+            tenant_id="tenant-a",
+            execution_id=execution_id,
+            skill_profile=profile,
+            skill_registry=registry,
+            pinning_store=pinning,
+            resolved_composition=second,
+        )
+
+
+def test_bind_does_not_reread_registry_for_provenance() -> None:
+    registry = SkillRegistry()
+    registry.register(_manifest("a.pack", "1.0.0", tool_ids=("tool.old",)))
+    composition = SkillResolver(registry).resolve_composition(["a.pack"])
+    registry.register_or_replace(_manifest("a.pack", "2.0.0", tool_ids=("tool.new",)))
+    get_calls = 0
+    original_get = registry.get
+
+    def counting_get(skill_id: str):
+        nonlocal get_calls
+        get_calls += 1
+        return original_get(skill_id)
+
+    spy_registry = MagicMock(wraps=registry)
+    spy_registry.get = counting_get
+    spy_registry.has = registry.has
+    spy_registry.skill_ids = registry.skill_ids
+    spy_registry.list = registry.list
+    pinning = InMemorySkillExecutionPinningStore()
+    binding = bind_resolved_skill_pack(
+        tenant_id="tenant-a",
+        execution_id=mint_execution_id(),
+        skill_profile=SkillProfile(enabled=["a.pack"]),
+        skill_registry=spy_registry,
+        pinning_store=pinning,
+        resolved_composition=composition,
+    )
+    assert get_calls == 0
+    assert contributors_for(
+        binding.contribution_provenance,
+        contribution_kind=SkillContributionKind.TOOL_REQUIREMENT,
+        contribution_id="tool.old",
+    ) == ("a.pack@1.0.0",)

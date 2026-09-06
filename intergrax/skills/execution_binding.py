@@ -19,7 +19,12 @@ from intergrax.skills.core.contracts import SkillManifest
 from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
-from intergrax.skills.resolver import ResolvedSkillPack, SkillResolutionError, SkillResolver
+from intergrax.skills.resolver import (
+    ResolvedSkillComposition,
+    ResolvedSkillPack,
+    SkillResolutionError,
+    SkillResolver,
+)
 
 SKILL_EXECUTION_BINDING_HANDLE = "skill_execution_binding"
 SKILL_EXECUTION_PINNING_STORE_HANDLE = "skill_execution_pinning_store"
@@ -77,16 +82,16 @@ class InMemorySkillExecutionPinningStore:
             return self._bindings.get((tenant_id, str(execution_id)))
 
 
-def manifest_snapshot_for_pack(
-    pack: ResolvedSkillPack,
-    registry: SkillRegistry,
-) -> dict[str, SkillManifest]:
-    """Capture manifests for resolved refs while registry still materializes them."""
-    manifests: dict[str, SkillManifest] = {}
-    for ref in pack.resolved_skills:
-        if registry.has(ref.skill_id):
-            manifests[ref.skill_id] = registry.get(ref.skill_id).manifest
-    return manifests
+def resolve_skill_composition_from_profile(
+    skill_profile: SkillProfile,
+    *,
+    skill_registry: SkillRegistry,
+) -> ResolvedSkillComposition:
+    """Initial materialization for configured host skill selection."""
+    skill_ids = enabled_skill_ids_for_profile(skill_profile)
+    if not skill_ids:
+        return SkillResolver(skill_registry).resolve_composition(())
+    return SkillResolver(skill_registry).resolve_composition(skill_ids)
 
 
 def resolve_skill_pack_from_profile(
@@ -95,10 +100,10 @@ def resolve_skill_pack_from_profile(
     skill_registry: SkillRegistry,
 ) -> ResolvedSkillPack:
     """Initial materialization for configured host skill selection."""
-    skill_ids = enabled_skill_ids_for_profile(skill_profile)
-    if not skill_ids:
-        return SkillResolver(skill_registry).resolve(())
-    return SkillResolver(skill_registry).resolve(skill_ids)
+    return resolve_skill_composition_from_profile(
+        skill_profile,
+        skill_registry=skill_registry,
+    ).pack
 
 
 def bind_resolved_skill_pack(
@@ -108,24 +113,26 @@ def bind_resolved_skill_pack(
     skill_profile: SkillProfile,
     skill_registry: SkillRegistry,
     pinning_store: SkillExecutionPinningStore,
-    resolved_pack: ResolvedSkillPack | None = None,
+    resolved_composition: ResolvedSkillComposition | None = None,
 ) -> SkillExecutionBinding:
     """Pin one immutable resolved skill pack for an execution."""
     normalized_tenant = tenant_id.strip()
     if not normalized_tenant:
         raise SkillResolutionError("tenant_id must be non-empty")
     configured_skill_ids = tuple(enabled_skill_ids_for_profile(skill_profile))
-    pack = resolved_pack or resolve_skill_pack_from_profile(
+    composition = resolved_composition or resolve_skill_composition_from_profile(
         skill_profile,
         skill_registry=skill_registry,
     )
-    manifests = manifest_snapshot_for_pack(pack, skill_registry)
     binding = SkillExecutionBinding(
         tenant_id=normalized_tenant,
         execution_id=execution_id,
         configured_skill_ids=configured_skill_ids,
-        resolved_pack=pack,
-        contribution_provenance=build_skill_contribution_provenance(pack, manifests),
+        resolved_pack=composition.pack,
+        contribution_provenance=build_skill_contribution_provenance(
+            composition.pack,
+            composition.manifest_by_skill_id(),
+        ),
     )
     pinning_store.pin(binding)
     return binding
@@ -194,4 +201,21 @@ def binding_from_pack(
         configured_skill_ids=tuple(enabled_skill_ids_for_profile(skill_profile)),
         resolved_pack=pack,
         contribution_provenance=build_skill_contribution_provenance(pack, manifests),
+    )
+
+
+def binding_from_composition(
+    *,
+    tenant_id: str,
+    execution_id: ExecutionId,
+    skill_profile: SkillProfile,
+    composition: ResolvedSkillComposition,
+) -> SkillExecutionBinding:
+    """Construct binding from one coherent resolution observation."""
+    return binding_from_pack(
+        tenant_id=tenant_id,
+        execution_id=execution_id,
+        skill_profile=skill_profile,
+        pack=composition.pack,
+        manifests=composition.manifest_by_skill_id(),
     )

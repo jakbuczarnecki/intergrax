@@ -42,6 +42,17 @@ class ResolvedSkillPack:
         return tuple(sorted(merged))
 
 
+@dataclass(frozen=True, slots=True)
+class ResolvedSkillComposition:
+    """Coherent resolution observation: pack plus manifests observed during traversal."""
+
+    pack: ResolvedSkillPack
+    observed_manifests: tuple[SkillManifest, ...]
+
+    def manifest_by_skill_id(self) -> dict[str, SkillManifest]:
+        return {manifest.skill_id: manifest for manifest in self.observed_manifests}
+
+
 class SkillResolverProtocol(Protocol):
     """Typed contract for skill composition resolution (Phase TS-3)."""
 
@@ -50,11 +61,18 @@ class SkillResolverProtocol(Protocol):
 
     def resolve(self, skill_ids: Sequence[str]) -> ResolvedSkillPack: ...
 
+    def resolve_composition(self, skill_ids: Sequence[str]) -> ResolvedSkillComposition: ...
+
     def validate_skill_ids(self, skill_ids: AbstractSet[str] | Sequence[str]) -> None: ...
 
     def validate_skills(self, skills: Sequence[SkillManifest]) -> None: ...
 
     def resolve_skills(self, skills: Sequence[SkillManifest]) -> ResolvedSkillPack: ...
+
+    def resolve_skills_composition(
+        self,
+        skills: Sequence[SkillManifest],
+    ) -> ResolvedSkillComposition: ...
 
 
 class SkillResolver:
@@ -122,11 +140,12 @@ class SkillResolver:
         self,
         root_ids: Sequence[str],
         root_pins: dict[str, str],
-    ) -> tuple[tuple[str, ...], dict[str, ResolvedSkillRole]]:
+    ) -> tuple[tuple[str, ...], dict[str, ResolvedSkillRole], dict[str, SkillManifest]]:
         order: list[str] = []
         seen: set[str] = set()
         visiting: set[str] = set()
         roles: dict[str, ResolvedSkillRole] = {}
+        observed_manifests: dict[str, SkillManifest] = {}
         root_id_set = frozenset(root_ids)
 
         def visit(skill_id: str) -> None:
@@ -139,6 +158,7 @@ class SkillResolver:
                 manifest = self._verify_pinned_version(skill_id, root_pins[skill_id])
             else:
                 manifest = self._materialized_manifest(skill_id)
+            observed_manifests[skill_id] = manifest
             for dep in manifest.requires_skills:
                 dep_id = dep.strip()
                 if dep_id:
@@ -154,16 +174,17 @@ class SkillResolver:
             sid = skill_id.strip()
             if sid:
                 visit(sid)
-        return tuple(order), roles
+        return tuple(order), roles, observed_manifests
 
-    def _build_pack(
+    def _build_composition(
         self,
         normalized_ids: tuple[str, ...],
         roles: dict[str, ResolvedSkillRole],
         root_pins: dict[str, str],
-    ) -> ResolvedSkillPack:
+        observed_manifests: dict[str, SkillManifest],
+    ) -> ResolvedSkillComposition:
         if not normalized_ids:
-            return ResolvedSkillPack(
+            pack = ResolvedSkillPack(
                 resolved_skills=(),
                 tool_ids=frozenset(),
                 prompt_instruction_ids=frozenset(),
@@ -171,8 +192,10 @@ class SkillResolver:
                 risk_tier=SkillRiskTier.LOW,
                 snapshot_digest=compute_resolved_skill_pack_digest(()),
             )
+            return ResolvedSkillComposition(pack=pack, observed_manifests=())
 
         resolved_refs: list[ResolvedSkillRef] = []
+        observed_in_order: list[SkillManifest] = []
         tool_ids: set[str] = set()
         prompt_ids: set[str] = set()
         policy_ids: set[str] = set()
@@ -180,19 +203,19 @@ class SkillResolver:
         risk_order = list(SkillRiskTier)
 
         for skill_id in normalized_ids:
-            manifest = self._materialized_manifest(skill_id)
+            manifest = observed_manifests[skill_id]
             if skill_id in root_pins:
                 self._verify_manifest_version(manifest, root_pins[skill_id])
                 resolution_mode = SkillVersionResolutionMode.PINNED
             else:
                 resolution_mode = SkillVersionResolutionMode.MATERIALIZED
-            resolved_refs.append(
-                ResolvedSkillRef.from_manifest(
-                    manifest,
-                    resolution_mode=resolution_mode,
-                    role=roles[skill_id],
-                )
+            ref = ResolvedSkillRef.from_manifest(
+                manifest,
+                resolution_mode=resolution_mode,
+                role=roles[skill_id],
             )
+            resolved_refs.append(ref)
+            observed_in_order.append(manifest)
             tool_ids.update(manifest.tool_ids)
             prompt_ids.update(manifest.prompt_instruction_ids)
             if manifest.policy_fragment_id:
@@ -204,7 +227,7 @@ class SkillResolver:
             self._validate_tools_exist(tool_ids)
 
         resolved_tuple = tuple(resolved_refs)
-        return ResolvedSkillPack(
+        pack = ResolvedSkillPack(
             resolved_skills=resolved_tuple,
             tool_ids=frozenset(tool_ids),
             prompt_instruction_ids=frozenset(prompt_ids),
@@ -212,11 +235,25 @@ class SkillResolver:
             risk_tier=max_risk,
             snapshot_digest=compute_resolved_skill_pack_digest(resolved_tuple),
         )
+        return ResolvedSkillComposition(
+            pack=pack,
+            observed_manifests=tuple(observed_in_order),
+        )
+
+    def _resolve_composition(
+        self,
+        root_ids: Sequence[str],
+        root_pins: dict[str, str],
+    ) -> ResolvedSkillComposition:
+        normalized, roles, observed_manifests = self._expand_skill_dependencies(root_ids, root_pins)
+        return self._build_composition(normalized, roles, root_pins, observed_manifests)
+
+    def resolve_composition(self, skill_ids: Sequence[str]) -> ResolvedSkillComposition:
+        roots = tuple(dict.fromkeys(sid.strip() for sid in skill_ids if sid.strip()))
+        return self._resolve_composition(roots, {})
 
     def resolve(self, skill_ids: Sequence[str]) -> ResolvedSkillPack:
-        roots = tuple(dict.fromkeys(sid.strip() for sid in skill_ids if sid.strip()))
-        normalized, roles = self._expand_skill_dependencies(roots, {})
-        return self._build_pack(normalized, roles, {})
+        return self.resolve_composition(skill_ids).pack
 
     def validate_skill_ids(self, skill_ids: AbstractSet[str] | Sequence[str]) -> None:
         for skill_id in skill_ids:
@@ -228,12 +265,14 @@ class SkillResolver:
         for manifest in self._normalize_root_manifests(skills):
             self._verify_pinned_version(manifest.skill_id, manifest.version)
 
-    def resolve_skills(self, skills: Sequence[SkillManifest]) -> ResolvedSkillPack:
+    def resolve_skills_composition(self, skills: Sequence[SkillManifest]) -> ResolvedSkillComposition:
         root_manifests = self._normalize_root_manifests(skills)
         root_pins = {manifest.skill_id: manifest.version for manifest in root_manifests}
         root_ids = tuple(manifest.skill_id for manifest in root_manifests)
-        normalized, roles = self._expand_skill_dependencies(root_ids, root_pins)
-        return self._build_pack(normalized, roles, root_pins)
+        return self._resolve_composition(root_ids, root_pins)
+
+    def resolve_skills(self, skills: Sequence[SkillManifest]) -> ResolvedSkillPack:
+        return self.resolve_skills_composition(skills).pack
 
     def validate_tool_contracts(self, tools: Sequence[ToolContract]) -> None:
         if self._tool_registry is None:
