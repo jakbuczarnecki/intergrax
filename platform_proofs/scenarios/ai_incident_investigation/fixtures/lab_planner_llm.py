@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 
 from intergrax.llm.messages import ChatMessage
@@ -12,6 +13,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.runtime.nexus.tools.atomic_planner_round import PLANNER_ROUND_TOOL_ID
 from intergrax.runtime.nexus.tools.investigation_proof import (
     collect_available_evidence_ids,
     parse_follow_up_context_evidence_references,
@@ -110,6 +112,29 @@ def _tool_args(tool_id: str, *, station_id: str = STATION_ID) -> dict[str, str]:
 def _decision_note(*basis_ids: str, purpose: str) -> str:
     basis = ",".join(basis_ids)
     return f"EVIDENCE_BASIS: {basis}\nPURPOSE: {purpose}"
+
+
+def _atomic_round_call(
+    *,
+    tool_id: str,
+    arguments: dict[str, str],
+    call_id: str,
+    available_refs: tuple[str, ...],
+    purpose: str,
+) -> LLMToolCall:
+    payload: dict[str, object] = {
+        "actions": [{"tool_id": tool_id, "arguments": arguments}],
+    }
+    if available_refs:
+        payload["action_context"] = {
+            "evidence_basis_references": [available_refs[-1]],
+            "purpose": purpose,
+        }
+    return LLMToolCall(
+        id=call_id,
+        name=PLANNER_ROUND_TOOL_ID,
+        arguments_json=json.dumps(payload),
+    )
 
 
 def _evidence_ids_from_messages(messages: Sequence[ChatMessage]) -> set[str]:
@@ -460,18 +485,16 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
         self._round_by_phase[phase] = round_index + 1
         purpose = f"gather {tool_id.split('.')[-1]} evidence for incident investigation"
         available_refs = _available_basis_refs_from_messages(messages)
-        if available_refs:
-            content = _decision_note(available_refs[-1], purpose=purpose)
-        else:
-            content = _decision_note(purpose=purpose)
         self._prior_tool_call_ids.append(call_id)
         return LLMAdapterResponse(
-            content=content,
+            content="",
             tool_calls=(
-                LLMToolCall.from_openai_shape(
-                    call_id=call_id,
-                    name=tool_id,
+                _atomic_round_call(
+                    tool_id=tool_id,
                     arguments=_tool_args(tool_id, station_id=self._station_id),
+                    call_id=call_id,
+                    available_refs=available_refs,
+                    purpose=purpose,
                 ),
             ),
         )

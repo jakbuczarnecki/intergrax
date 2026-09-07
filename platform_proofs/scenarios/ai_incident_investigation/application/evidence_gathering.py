@@ -20,6 +20,9 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocation
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
+from intergrax.runtime.nexus.tools.tool_planning_prompts import (
+    composed_investigation_policy_prompt,
+)
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
@@ -220,7 +223,18 @@ def build_catalog_tool_planner(
     config = ToolPlanningConfig.default(
         registry=prompt_registry,
         catalog_path=catalog_path,
-        investigation_prompt_id=INCIDENT_INVESTIGATION_POLICY_PROMPT_ID,
+    )
+    config = ToolPlanningConfig(
+        temperature=config.temperature,
+        max_answer_tokens=config.max_answer_tokens,
+        system_instructions=config.system_instructions,
+        system_context_template=config.system_context_template,
+        planner_instructions=config.planner_instructions,
+        investigation_instructions=composed_investigation_policy_prompt(
+            overlay_prompt_id=INCIDENT_INVESTIGATION_POLICY_PROMPT_ID,
+            registry=prompt_registry,
+            catalog_path=catalog_path,
+        ),
     )
     return CatalogToolPlanner(
         _service=ToolPlanningService(llm=llm, tools=registry, config=config)

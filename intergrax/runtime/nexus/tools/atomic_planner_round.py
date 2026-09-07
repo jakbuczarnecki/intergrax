@@ -34,6 +34,17 @@ from intergrax.tools.registry.runtime import ToolRegistry
 
 PLANNER_ROUND_TOOL_ID = "intergrax.planner.round"
 
+ATOMIC_PLANNER_ROUND_SCHEMA_FIELD_NAMES: frozenset[str] = frozenset(
+    {
+        "action_context",
+        "evidence_basis_references",
+        "purpose",
+        "actions",
+        "tool_id",
+        "arguments",
+    }
+)
+
 
 class AtomicPlannerRoundError(ValueError):
     """Invalid discriminated atomic planner round transport."""
