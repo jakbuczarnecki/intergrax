@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -21,12 +20,16 @@ from intergrax.applications._shared.hosted_application_failure_projection import
     hosted_application_failure_to_problem_signal,
 )
 from intergrax.hosting import (
+    BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE,
     HostedApplicationEventType,
     HostedApplicationLifecycleState,
     HostedApplicationProfile,
+    HostedProcessBootstrapContext,
+    HostedProcessBootstrapPhase,
     InstancePolicy,
     RestartPolicy,
     resolve_hosted_application_definition,
+    run_guarded_hosted_process_bootstrap,
 )
 from intergrax.hosting.contracts.context import (
     HostedApplicationContext,
@@ -49,6 +52,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
 )
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
+from intergrax.runtime.diagnostics.diagnostic_subject import DiagnosticSubjectKind
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
@@ -56,7 +60,6 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
     ProblemGroupingStrategyRegistry,
 )
-from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.observability.export_boundary import (
     ExportRecordKind,
@@ -82,7 +85,6 @@ from tests.unit.hosting.engine._fakes import (
     FakeRuntime,
     FixedClock,
     NoopLogger,
-    build_engine_paths,
     build_process_identity,
 )
 
@@ -91,6 +93,7 @@ pytestmark = pytest.mark.unit
 _TENANT_A = "tenant-a"
 _TENANT_B = "tenant-b"
 _APP_ID = "host_diag_test_app"
+_BOOTSTRAP_APP_ID = "bootstrap_diag_test_app"
 _OBSERVED_AT = datetime(2026, 8, 26, 10, 0, tzinfo=UTC)
 
 
@@ -557,3 +560,306 @@ def test_build_hosted_application_diagnostic_event_publisher_factory() -> None:
         observability_exporter=InMemoryObservabilityExporter(),
     )
     assert isinstance(publisher, HostedApplicationDiagnosticEventPublisher)
+
+
+@dataclass
+class _BootstrapDiagnosticHarness:
+    orchestrator: DiagnosticOrchestrator
+    persistence: InMemoryProblemPersistence
+    read_service: DiagnosticReadService
+    occurrence_persistence: object
+    exporter: InMemoryObservabilityExporter
+    tenant_binding: HostedDiagnosticTenantBinding
+    publisher: HostedApplicationEventPublisher
+    published_events: list[HostedApplicationEvent]
+
+
+def _build_bootstrap_diagnostic_harness() -> _BootstrapDiagnosticHarness:
+    orchestrator, persistence, read_service, occurrence_persistence = (
+        _build_orchestrator_stack()
+    )
+    exporter = InMemoryObservabilityExporter()
+    tenant_binding = HostedDiagnosticTenantBinding(tenant_id=_TENANT_A)
+    published_events: list[HostedApplicationEvent] = []
+
+    class _RecordingDiagnosticPublisher(HostedApplicationDiagnosticEventPublisher):
+        async def publish(self, event: HostedApplicationEvent) -> None:
+            published_events.append(event)
+            await super().publish(event)
+
+    publisher = _RecordingDiagnosticPublisher(
+        observability_publisher=ObservabilityHostedApplicationEventPublisher(
+            exporter,
+            policy=ObservabilityExportPolicy(enabled=True),
+        ),
+        tenant_binding=tenant_binding,
+        orchestrator=orchestrator,
+    )
+    return _BootstrapDiagnosticHarness(
+        orchestrator=orchestrator,
+        persistence=persistence,
+        read_service=read_service,
+        occurrence_persistence=occurrence_persistence,
+        exporter=exporter,
+        tenant_binding=tenant_binding,
+        publisher=publisher,
+        published_events=published_events,
+    )
+
+
+def _bootstrap_failure_event(
+    *,
+    application_id: str,
+    instance_id: str,
+    phase: HostedProcessBootstrapPhase = HostedProcessBootstrapPhase.WORKER_CONSTRUCTION,
+    process_role: str = "background_worker",
+    exception_type: str = "RuntimeError",
+) -> HostedApplicationEvent:
+    return HostedApplicationEvent(
+        event_type=HostedApplicationEventType.APPLICATION_FAILED,
+        occurred_at=_OBSERVED_AT,
+        application_id=application_id,
+        instance_id=instance_id,
+        lifecycle_state=HostedApplicationLifecycleState.FAILED,
+        payload={
+            "phase": phase.value,
+            "reason_code": BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE,
+            "exception_type": exception_type,
+            "process_role": process_role,
+        },
+    )
+
+
+def test_bootstrap_application_failed_maps_to_platform_problem_signal() -> None:
+    event = _bootstrap_failure_event(
+        application_id=_BOOTSTRAP_APP_ID,
+        instance_id="bootstrap-instance-1",
+    )
+    signal = hosted_application_failure_to_problem_signal(event)
+    assert signal is not None
+    assert signal.problem_kind == PROBLEM_KIND_PLATFORM_APPLICATION_FAILURE
+    assert signal.source_component == HostedProcessBootstrapPhase.WORKER_CONSTRUCTION.value
+    assert signal.error_code == BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE
+    assert signal.exception_type == "RuntimeError"
+    assert signal.task_id == ""
+    assert signal.run_id == ""
+    assert signal.application_attributes is not None
+    assert signal.application_attributes.application_id == _BOOTSTRAP_APP_ID
+    assert signal.application_attributes.instance_id == "bootstrap-instance-1"
+    assert signal.application_attributes.lifecycle_state == "failed"
+
+
+@pytest.mark.asyncio
+async def test_bootstrap_failure_creates_problem_via_guarded_primitive() -> None:
+    harness = _build_bootstrap_diagnostic_harness()
+    context = HostedProcessBootstrapContext.create(
+        application_id=_BOOTSTRAP_APP_ID,
+        process_role="background_worker",
+    )
+    with pytest.raises(RuntimeError, match="bootstrap dependency missing"):
+        await run_guarded_hosted_process_bootstrap(
+            context=context,
+            phase=HostedProcessBootstrapPhase.WORKER_CONSTRUCTION,
+            event_publisher=harness.publisher,
+            bootstrap=lambda: (_ for _ in ()).throw(
+                RuntimeError("bootstrap dependency missing")
+            ),
+        )
+
+    failed_events = [
+        event
+        for event in harness.published_events
+        if event.event_type is HostedApplicationEventType.APPLICATION_FAILED
+    ]
+    assert len(failed_events) == 1
+    assert failed_events[0].application_id == context.application_id
+    assert failed_events[0].instance_id == context.instance_id
+    assert failed_events[0].payload.get("phase") == (
+        HostedProcessBootstrapPhase.WORKER_CONSTRUCTION.value
+    )
+
+    platform_exports = [
+        envelope
+        for envelope in harness.exporter.envelopes
+        if envelope.record_kind is ExportRecordKind.PLATFORM_SIGNAL
+    ]
+    assert len(platform_exports) >= 1
+
+    problems = harness.read_service.list_problems(tenant_id=_TENANT_A)
+    assert problems.total_count == 1
+    stored = query_all_problems_for_tenant(harness.persistence, _TENANT_A)[0]
+    occurrences = query_all_occurrences_for_problem(
+        harness.occurrence_persistence,
+        tenant_id=_TENANT_A,
+        problem_id=stored.problem_id,
+    )
+    app_ref = occurrences[0].subject_ref.application_instance()
+    assert app_ref is not None
+    assert app_ref.kind is DiagnosticSubjectKind.APPLICATION_INSTANCE
+    assert app_ref.application_id == context.application_id
+    assert app_ref.instance_id == context.instance_id
+    assert app_ref.tenant_id == harness.tenant_binding.tenant_id
+    assert occurrences[0].subject_ref.execution() is None
+
+
+@pytest.mark.asyncio
+async def test_bootstrap_observability_export_before_diagnostics() -> None:
+    exporter = InMemoryObservabilityExporter()
+    orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
+    observability_count_at_diagnostic: list[int] = []
+
+    class _RecordingDiagnosticPublisher(HostedApplicationDiagnosticEventPublisher):
+        async def publish(self, event: HostedApplicationEvent) -> None:
+            await self._observability_publisher.publish(event)
+            if event.event_type is HostedApplicationEventType.APPLICATION_FAILED:
+                observability_count_at_diagnostic.append(len(exporter.envelopes))
+            if event.event_type is not HostedApplicationEventType.APPLICATION_FAILED:
+                return
+            signal = hosted_application_failure_to_problem_signal(event)
+            if signal is None:
+                return
+            scope = DiagnosticSignalSubjectScope(
+                tenant_id=_TENANT_A,
+                application_id=event.application_id,
+                instance_id=event.instance_id,
+                problem_signals=(signal,),
+            )
+            request = DiagnosticOrchestrationRequest(
+                tenant_id=_TENANT_A,
+                grouping_strategy_id=STRATEGY_ID,
+                observed_at=event.occurred_at,
+                signal_subjects=(scope,),
+            )
+            orchestrator.run(request)
+
+    publisher = _RecordingDiagnosticPublisher(
+        observability_publisher=ObservabilityHostedApplicationEventPublisher(
+            exporter,
+            policy=ObservabilityExportPolicy(enabled=True),
+        ),
+        tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
+        orchestrator=orchestrator,
+    )
+    context = HostedProcessBootstrapContext.create(
+        application_id=_BOOTSTRAP_APP_ID,
+        process_role="background_worker",
+    )
+    with pytest.raises(ValueError):
+        await run_guarded_hosted_process_bootstrap(
+            context=context,
+            phase=HostedProcessBootstrapPhase.STARTUP,
+            event_publisher=publisher,
+            bootstrap=lambda: (_ for _ in ()).throw(ValueError("startup failed")),
+        )
+
+    assert observability_count_at_diagnostic == [len(exporter.envelopes)]
+    assert observability_count_at_diagnostic[0] >= 1
+    assert read_service.list_problems(tenant_id=_TENANT_A).total_count == 1
+
+
+@pytest.mark.asyncio
+async def test_bootstrap_diagnostic_projection_failure_isolated() -> None:
+    harness = _build_bootstrap_diagnostic_harness()
+
+    def _failing_run(request: DiagnosticOrchestrationRequest) -> object:
+        raise RuntimeError("diagnostic orchestrator projection failed")
+
+    harness.orchestrator.run = _failing_run  # type: ignore[method-assign]
+    context = HostedProcessBootstrapContext.create(
+        application_id=_BOOTSTRAP_APP_ID,
+        process_role="background_worker",
+    )
+    original = OSError("bootstrap configuration failed")
+    with pytest.raises(OSError) as caught:
+        await run_guarded_hosted_process_bootstrap(
+            context=context,
+            phase=HostedProcessBootstrapPhase.CONFIGURATION,
+            event_publisher=harness.publisher,
+            bootstrap=lambda: (_ for _ in ()).throw(original),
+        )
+    assert caught.value is original
+    platform_exports = [
+        envelope
+        for envelope in harness.exporter.envelopes
+        if envelope.record_kind is ExportRecordKind.PLATFORM_SIGNAL
+    ]
+    assert len(platform_exports) >= 1
+    assert harness.read_service.list_problems(tenant_id=_TENANT_A).total_count == 0
+
+
+@pytest.mark.asyncio
+async def test_bootstrap_preserves_original_exception_through_r2_and_r3() -> None:
+    harness = _build_bootstrap_diagnostic_harness()
+    context = HostedProcessBootstrapContext.create(
+        application_id=_BOOTSTRAP_APP_ID,
+        process_role="background_worker",
+    )
+    original = ValueError("classified bootstrap failure")
+    with pytest.raises(ValueError) as caught:
+        await run_guarded_hosted_process_bootstrap(
+            context=context,
+            phase=HostedProcessBootstrapPhase.COMPOSITION,
+            event_publisher=harness.publisher,
+            bootstrap=lambda: (_ for _ in ()).throw(original),
+        )
+    assert caught.value is original
+    assert harness.read_service.list_problems(tenant_id=_TENANT_A).total_count == 1
+
+
+@pytest.mark.asyncio
+async def test_bootstrap_sensitive_exception_not_in_problem_read() -> None:
+    harness = _build_bootstrap_diagnostic_harness()
+    context = HostedProcessBootstrapContext.create(
+        application_id=_BOOTSTRAP_APP_ID,
+        process_role="background_worker",
+    )
+    secret = "secret-token-123"
+    with pytest.raises(RuntimeError):
+        await run_guarded_hosted_process_bootstrap(
+            context=context,
+            phase=HostedProcessBootstrapPhase.DEPENDENCY_RESOLUTION,
+            event_publisher=harness.publisher,
+            bootstrap=lambda: (_ for _ in ()).throw(RuntimeError(secret)),
+        )
+
+    signal = hosted_application_failure_to_problem_signal(harness.published_events[0])
+    assert signal is not None
+    signal_serialized = signal.model_dump_json()
+    assert secret not in signal_serialized
+
+    problems = harness.read_service.list_problems(tenant_id=_TENANT_A)
+    assert problems.total_count == 1
+    problem = problems.problems[0]
+    problem_serialized = repr(problem)
+
+    stored = query_all_problems_for_tenant(harness.persistence, _TENANT_A)[0]
+    occurrences = query_all_occurrences_for_problem(
+        harness.occurrence_persistence,
+        tenant_id=_TENANT_A,
+        problem_id=stored.problem_id,
+    )
+    occurrence_serialized = repr(occurrences[0])
+    assert secret not in signal_serialized
+    assert secret not in problem_serialized
+    assert secret not in occurrence_serialized
+
+
+@pytest.mark.asyncio
+async def test_bootstrap_recurrence_groups_across_instances() -> None:
+    harness = _build_bootstrap_diagnostic_harness()
+    for _ in range(2):
+        context = HostedProcessBootstrapContext.create(
+            application_id=_BOOTSTRAP_APP_ID,
+            process_role="background_worker",
+        )
+        with pytest.raises(RuntimeError):
+            await run_guarded_hosted_process_bootstrap(
+                context=context,
+                phase=HostedProcessBootstrapPhase.WORKER_CONSTRUCTION,
+                event_publisher=harness.publisher,
+                bootstrap=lambda: (_ for _ in ()).throw(RuntimeError("boom")),
+            )
+
+    problems = harness.read_service.list_problems(tenant_id=_TENANT_A)
+    assert problems.total_count == 1
+    assert problems.problems[0].occurrence_count == 2
