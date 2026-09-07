@@ -499,7 +499,7 @@ Accepted Protocol v2 audit layer [`CODE_CRAFT`](../../audit_results/2026-08-18/C
 6. **Isolation anti-downgrade** - required `cloud`/`container` tier fails closed when eligible substrate cannot resolve; no silent local downgrade unless explicit trusted downgrade policy ([`AUDIT-20260818-CODE_CRAFT-06`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** on harness path (AW-7B-GATE, 2026-09).
 7. **Runtime egress enforcement** - `network_egress` is substrate-enforced capability; `deny` requires trusted capability evidence (`network_egress_deny_enforced`) before exec; hosted substrate type alone is not proof; unknown capability fails closed ([`AUDIT-20260818-CODE_CRAFT-07`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** for operation-level local proof and hosted provider-attested path (AW-7B-GATE, 2026-09); universal OS-network egress proof not claimed.
 
-CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOrchestrator` remains canonical lifecycle owner. Remediation tracks **CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY** (01–03), **CODECRAFT-VERIFICATION-INTEGRITY** (04–05), **CODECRAFT-ISOLATION-INTEGRITY** (06–07) in [plan](../maintainers/plans/CODE_CRAFT.md). Historical Protocol v2 audit records pre-remediation defects; AW-7B-GATE implementation on `development` addresses 01–07 on the harness path pending independent audit acceptance.
+CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOrchestrator` remains canonical lifecycle owner. Remediation tracks **CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY** (01–03), **CODECRAFT-VERIFICATION-INTEGRITY** (04–05), **CODECRAFT-ISOLATION-INTEGRITY** (06–07) in [plan](../maintainers/plans/CODE_CRAFT.md). Historical Protocol v2 audit records pre-remediation defects; AW-7B-GATE on `development` independently verified (qualification SHA `2f8bc019a11de01f21498f952343e70f0cf3e369`) addresses 01–07 on the harness path.
 
 ## Evidence / proof
 
@@ -548,7 +548,7 @@ CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOr
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
 **Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`  
-**Last updated:** 2026-09-05 - AW-7B-GATE corrective: anti-downgrade truth reconciliation, authority/HITL current-state sync, substrate coherence documentation
+**Last updated:** 2026-09-07 - AW-7B-GATE independent verification closure (qualification SHA `2f8bc019a11de01f21498f952343e70f0cf3e369`)
 
 ### Cursor read scope (token budget)
 
