@@ -77,15 +77,24 @@ class HostedProcessBootstrapContext:
     process_role: str
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "application_id", normalize_application_id(self.application_id)
+        normalized_application_id = normalize_application_id(self.application_id)
+        if normalized_application_id != self.application_id:
+            raise ValueError(
+                "application_id must be canonical (already normalized before construction)"
+            )
+        validated_instance_id = validate_instance_id(self.instance_id)
+        if validated_instance_id != self.instance_id:
+            raise ValueError(
+                "instance_id must be canonical (already normalized before construction)"
+            )
+        validated_process_role = validate_bounded_identifier(
+            self.process_role,
+            field_name="process_role",
         )
-        object.__setattr__(self, "instance_id", validate_instance_id(self.instance_id))
-        object.__setattr__(
-            self,
-            "process_role",
-            validate_bounded_identifier(self.process_role, field_name="process_role"),
-        )
+        if validated_process_role != self.process_role:
+            raise ValueError(
+                "process_role must be canonical (already normalized before construction)"
+            )
 
     @classmethod
     def create(
@@ -96,9 +105,12 @@ class HostedProcessBootstrapContext:
     ) -> HostedProcessBootstrapContext:
         """Mint a new instance_id once before bootstrap callback execution."""
         return cls(
-            application_id=application_id,
+            application_id=normalize_application_id(application_id),
             instance_id=validate_instance_id(str(uuid4())),
-            process_role=process_role,
+            process_role=validate_bounded_identifier(
+                process_role,
+                field_name="process_role",
+            ),
         )
 
 

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import ast
+from dataclasses import FrozenInstanceError
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -258,6 +260,59 @@ def test_invalid_instance_id_rejected_on_direct_construction() -> None:
             instance_id="   ",
             process_role="worker",
         )
+
+
+def test_direct_constructor_rejects_non_canonical_application_id() -> None:
+    with pytest.raises(ValueError, match="application_id must be canonical"):
+        HostedProcessBootstrapContext(
+            application_id=" my_application ",
+            instance_id=str(uuid4()),
+            process_role="worker",
+        )
+
+
+def test_direct_constructor_rejects_non_canonical_process_role() -> None:
+    with pytest.raises(ValueError, match="process_role must be canonical"):
+        HostedProcessBootstrapContext(
+            application_id="my_application",
+            instance_id=str(uuid4()),
+            process_role=" worker ",
+        )
+
+
+def test_create_returns_canonical_identity_fields() -> None:
+    context = HostedProcessBootstrapContext.create(
+        application_id=" MY_APPLICATION ",
+        process_role=" background_worker ",
+    )
+    assert context.application_id == "my_application"
+    assert context.process_role == "background_worker"
+    assert context.instance_id == context.instance_id.strip()
+
+
+def test_frozen_context_cannot_be_mutated() -> None:
+    context = _context()
+    with pytest.raises(FrozenInstanceError):
+        context.application_id = "other_application"
+
+
+def test_process_bootstrap_source_has_no_reflection_builtins() -> None:
+    module_path = (
+        Path(__file__).resolve().parents[3]
+        / "intergrax"
+        / "hosting"
+        / "process_bootstrap.py"
+    )
+    tree = ast.parse(module_path.read_text(encoding="utf-8"), filename=str(module_path))
+    forbidden_calls = {"setattr", "getattr", "hasattr"}
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr == "__setattr__":
+            violations.append("__setattr__")
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id in forbidden_calls:
+                violations.append(node.func.id)
+    assert violations == []
 
 
 @pytest.mark.asyncio
