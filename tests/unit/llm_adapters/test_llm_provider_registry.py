@@ -58,12 +58,10 @@ class _TestAdapter(LLMAdapter):
 @pytest.fixture()
 def _restore_registry_state() -> Iterator[Dict[str, _Factory]]:
     snapshot: Dict[str, _Factory] = dict(LLMAdapterRegistry._factories)
-    installed = LLMAdapterRegistry._builtin_registrations_installed
     try:
         yield snapshot
     finally:
         LLMAdapterRegistry._factories = snapshot
-        LLMAdapterRegistry._builtin_registrations_installed = installed
 
 
 def test_normalize_provider_accepts_enum_values(_restore_registry_state: Dict[str, Any]) -> None:
@@ -109,8 +107,7 @@ def test_register_overwrites_existing_factory(_restore_registry_state: Dict[str,
 
 
 def test_create_raises_for_unregistered_provider(_restore_registry_state: Dict[str, Any]) -> None:
-    LLMAdapterRegistry._factories = {}
-    LLMAdapterRegistry._builtin_registrations_installed = True
+    LLMAdapterRegistry.reset_for_testing()
     with pytest.raises(ValueError) as exc:
         LLMAdapterRegistry.create("missing-provider")
 
@@ -225,3 +222,60 @@ def test_register_from_spec_delegates_to_same_storage(
     )
     out = LLMAdapterRegistry.create(provider)
     assert isinstance(out, _TestAdapter)
+
+
+def test_ensure_builtin_registrations_installs_ollama_and_groq(
+    _restore_registry_state: Dict[str, Any],
+) -> None:
+    LLMAdapterRegistry.reset_for_testing()
+    LLMAdapterRegistry.ensure_builtin_registrations_installed()
+    providers = set(LLMAdapterRegistry.registered_providers())
+    assert LLMProvider.OLLAMA.value in providers
+    assert LLMProvider.GROQ.value in providers
+
+
+def test_repeated_builtin_bootstrap_is_idempotent(_restore_registry_state: Dict[str, Any]) -> None:
+    LLMAdapterRegistry.reset_for_testing()
+    LLMAdapterRegistry.ensure_builtin_registrations_installed()
+    first = dict(LLMAdapterRegistry._factories)
+    LLMAdapterRegistry.ensure_builtin_registrations_installed()
+    assert dict(LLMAdapterRegistry._factories) == first
+
+
+def test_registry_reset_restores_builtins_on_next_create(
+    _restore_registry_state: Dict[str, Any],
+) -> None:
+    LLMAdapterRegistry.reset_for_testing()
+    LLMAdapterRegistry.ensure_builtin_registrations_installed()
+    LLMAdapterRegistry.reset_for_testing()
+    providers = LLMAdapterRegistry.registered_providers()
+    assert LLMProvider.OLLAMA.value in providers
+    assert LLMProvider.GROQ.value in providers
+
+
+def test_custom_provider_retained_after_builtin_bootstrap(
+    _restore_registry_state: Dict[str, Any],
+) -> None:
+    def custom_factory(**kwargs: object) -> LLMAdapter:
+        return _TestAdapter(**kwargs)
+
+    LLMAdapterRegistry.register("custom-retained-provider", custom_factory)
+    LLMAdapterRegistry.ensure_builtin_registrations_installed()
+    assert "custom-retained-provider" in LLMAdapterRegistry.registered_providers()
+    adapter = LLMAdapterRegistry.create("custom-retained-provider")
+    assert isinstance(adapter, _TestAdapter)
+
+
+def test_explicit_override_not_silently_replaced_by_bootstrap(
+    _restore_registry_state: Dict[str, Any],
+) -> None:
+    provider = "openai"
+
+    def overridden_factory(**kwargs: object) -> LLMAdapter:
+        return _TestAdapter(version="override")
+
+    LLMAdapterRegistry.register(provider, overridden_factory, override=True)
+    LLMAdapterRegistry.ensure_builtin_registrations_installed()
+    adapter = LLMAdapterRegistry.create(provider)
+    assert isinstance(adapter, _TestAdapter)
+    assert adapter.kwargs.get("version") == "override"
