@@ -161,6 +161,27 @@ def test_unknown_preset_fail_closed() -> None:
         GovernanceBundle(permission_preset="ultra_open")
 
 
+def test_trusted_preset_cannot_liberalize_critical_hitl_authority() -> None:
+    """Same upstream profile: TRUSTED must not widen HITL vs no preset."""
+    shared_kwargs = {
+        "approval_required": False,
+        "autonomy": AutonomyLevel.AUTONOMOUS,
+    }
+    profile_no_preset = _profile_with_preset(None, **shared_kwargs)
+    profile_trusted = _profile_with_preset(
+        GovernancePermissionPreset.TRUSTED,
+        **shared_kwargs,
+    )
+
+    bundle_no_preset = wire_policy_bundle(profile_no_preset)
+    bundle_trusted = wire_policy_bundle(
+        expand_governance_permission_preset(profile_trusted),
+    )
+
+    assert bundle_no_preset.require_human_on_critical is True
+    assert bundle_trusted.require_human_on_critical is True
+
+
 def test_effective_revision_digest_stability() -> None:
     profile = _profile_with_preset(
         GovernancePermissionPreset.RESTRICTED,

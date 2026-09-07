@@ -100,8 +100,6 @@ def resolve_require_human_on_critical(env: ApplicationEnvironmentProfile) -> boo
     preset = env.governance.permission_preset
     if preset is GovernancePermissionPreset.RESTRICTED:
         return True
-    if preset is GovernancePermissionPreset.TRUSTED:
-        return False
     return True
 
 
