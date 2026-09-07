@@ -606,6 +606,19 @@ Discovery ≠ Selection ≠ Acquisition ≠ Execution
 
 AW-7A is a read/decision layer only — it does not invoke Tools, Skills, Agents, or CodeCraft during discovery.
 
+AW-7B is the bounded A1 execution boundary — it consumes `EPHEMERAL_GENERATION_CANDIDATE` decisions only, validates A1 eligibility and correlation fail-closed, and delegates to `WorkerEphemeralCapabilityExecutionPort`. The CodeCraft adapter (`CodeCraftEphemeralCapabilityExecutionAdapter`) owns canonical craft lifecycle via public `CodeCraftOrchestrator` APIs. AW-7B does not mint authority, mutate ToolRegistry, or perform durable publication.
+
+```text
+AW-7A decision (EPHEMERAL_GENERATION_CANDIDATE)
+  → WorkerEphemeralCapabilityExecutionService
+  → WorkerEphemeralCapabilityExecutionPort
+  → CodeCraftEphemeralCapabilityExecutionAdapter
+  → CodeCraftOrchestrator (start → bounded iterate → promote → dispose)
+  → verified ephemeral result (session-scoped craft_id / ephemeral tool ref)
+```
+
+Hard separation preserved: `decision ≠ execution`. A1 result ≠ ToolRegistry entry ≠ durable production capability.
+
 ### Canonical reuse ladder (frozen)
 
 Ordered by least authority expansion, least operational risk, least lifecycle complexity, and reuse over creation:
