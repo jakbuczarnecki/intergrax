@@ -6,11 +6,11 @@
 
 **Branch:** `development`
 
-**Start HEAD:** `2104e4b463bd3d2c9b108037825d72bfde3339e8`
+**Start HEAD:** `001f708123b680ddf5ba1107d6fd8ff1bea7874b`
 
-**Review HEAD (pre-docs):** `2104e4b463bd3d2c9b108037825d72bfde3339e8`
+**Review HEAD (pre-docs):** `001f708123b680ddf5ba1107d6fd8ff1bea7874b`
 
-**Task:** AW-7C qualification-first audit — no A2 production implementation.
+**Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching; physical provider qualification still blocked.
 
 ---
 
@@ -24,9 +24,9 @@ AW-7 remains **IN PROGRESS**. AW-7C is **not** READY FOR IMPLEMENTATION.
 
 Critical blockers:
 
-1. **Host-scoped egress allowlist** — `CodeCraftProfile.network_egress` includes `"allowlist"` but substrate enforcement implements **deny-only** proof; no canonical sandbox/provider path enforces exact host allowlists for generated execution.
+1. **Host-scoped egress allowlist** — typed contract + fail-closed substrate matching **implemented** (P0-1); **physical** exact-host enforcement at a real hosted provider **still blocked** (no qualifying substrate in repo).
 2. **Purpose-scoped secret brokering** — `SecretsStore` + `SecretsStoreCredentialResolver` resolve opaque refs with **tenant scope only**; `operation`, `execution_id`, host/integration binding, and bounded lifetime are not enforced at resolution time.
-3. **Allowlist egress tests** — no qualification test proves a non-approved destination is **physically denied** at sandbox/substrate level under host-scoped policy (only deny-all / `browser_fetch` operation gating exists).
+3. **Allowlist egress physical qualification** — contract tests prove fail-closed resolver behavior; no test proves non-approved destination **physically denied** at enforced substrate under host-scoped policy (provider qualification blocked).
 
 ---
 
@@ -34,15 +34,15 @@ Critical blockers:
 
 | AW-7C prerequisite | Verdict |
 | --- | --- |
-| runtime egress enforcement | **BLOCKED** (deny-only; no host allowlist substrate proof) |
-| host allowlist enforcement | **BLOCKED** |
-| fail-closed substrate | **PASS** (deny mode + isolation tier) |
+| runtime egress enforcement | **PARTIALLY REMEDIATED** (typed deny + allowlist contract; deny proof retained; allowlist requires substrate evidence) |
+| host allowlist enforcement | **PARTIALLY REMEDIATED** (contract + fail-closed resolver; physical provider proof **BLOCKED**) |
+| fail-closed substrate | **PASS** (deny + allowlist modes) |
 | opaque secret storage | **PASS** |
 | purpose-scoped secret brokering | **BLOCKED** |
 | tenant secret isolation | **PASS** |
 | integration runtime owner | **PASS** |
 | governance/HITL owner | **PASS** |
-| runtime enforcement evidence | **BLOCKED** (no allowlist/secret-scope correlation evidence) |
+| runtime enforcement evidence | **PARTIALLY REMEDIATED** (`network_egress_allowlist_enforced`, `enforced_network_hosts`; no physical provider qualification) |
 | public execution boundary | **PASS** |
 | Nexus isolation | **PASS** (production AW paths; doc debt flagged) |
 
@@ -94,9 +94,10 @@ No ARCHITECTURE BLOCKER on public execution boundary — consumers need not impo
 
 | Layer | Owner |
 | --- | --- |
-| Policy shape | `CodeCraftProfile.network_egress` (`deny` \| `allowlist`) |
+| Policy shape | `CodeCraftProfile.network_egress` (`deny` \| `allowlist`) + `network_egress_allowlist` (`NetworkEgressHost`) |
 | Substrate resolution | `intergrax/runtime/codecraft/substrate.py` |
-| Security evidence | `SandboxSecurityCapable.security_capabilities()` → `SandboxSecurityCapabilities` |
+| Security evidence | `SandboxSecurityCapable.security_capabilities()` → `SandboxSecurityCapabilities` (`network_egress_deny_enforced`, `network_egress_allowlist_enforced`, `enforced_network_hosts`) |
+| Typed host scope | `intergrax/runtime/sandbox/network_egress.py` |
 | Operation-level network surface | `SandboxSession` (`browser_fetch` allowlist) |
 | Integration-layer HTTP allowlist | `AllowlistHttpClient` (not sandbox-enforced) |
 
@@ -105,21 +106,21 @@ No ARCHITECTURE BLOCKER on public execution boundary — consumers need not impo
 | Requirement | Owner | Implemented? | Runtime enforced? | Evidence |
 | --- | --- | ---: | ---: | --- |
 | deny all network | Sandbox / CodeCraft substrate | yes | **partial** | `network_egress_deny_enforced`; local session ties deny to absence of `browser_fetch` |
-| allow exact hosts | — | **no** | **no** | `allowlist` enum value exists; no host list field or substrate proof |
-| block non-approved host | — | **no** | **no** | `AllowlistHttpClient` is integration-only; not wired to A2 sandbox path |
+| allow exact hosts | Sandbox / CodeCraft substrate | **yes (contract)** | **fail-closed without proof** | `network_egress_allowlist_enforced` + `enforced_network_hosts`; local sandbox never attests allowlist |
+| block non-approved host | Hosted provider substrate | **contract only** | **no physical proof** | Resolver rejects superset/missing proof; no enforceable hosted provider in repo |
 | DNS/IP bypass protection | partial (web URL policy) | partial | partial | `test_web_url_intake.py` blocks localhost/IP at app URL policy; not sandbox egress |
-| sandbox/provider proof | SandboxSecurityCapable | yes (deny) | yes (deny) | `test_aw_7b_gate.py` |
-| fail closed if enforcement unavailable | CodeCraft substrate | yes | yes | `network_egress_requirement_unsatisfied` |
+| sandbox/provider proof | SandboxSecurityCapable | yes (deny + allowlist fields) | yes (deny); allowlist **contract-only** | `test_aw_7b_gate.py`, `test_network_egress_allowlist_substrate.py` |
+| fail closed if enforcement unavailable | CodeCraft substrate | yes | yes | `network_egress_requirement_unsatisfied` / `network_egress_allowlist_requirement_unsatisfied` |
 
-### Key substrate gap
+### Key substrate gap (post P0-1)
 
-`substrate._egress_deny_proven()` returns `True` for any `network_egress != "deny"`, so **`allowlist` is treated as satisfied without proof**. `resolve_craft_sandbox()` only fail-closes on `network_egress == "deny"`.
+Allowlist **contract and fail-closed resolver matching** are implemented. Remaining gap: no hosted provider in repo attests **physical** exact-host enforcement on the same execution channel as A2 generated code (`test_physical_allowlist_qualification_blocked`).
 
-`SandboxSecurityCapabilities` exposes only `network_egress_deny_enforced` — no host allowlist evidence field.
+`SandboxSecurityCapabilities.enforced_network_hosts` is substrate enforcement evidence — providers must not echo requested profile scope.
 
 ### Egress verdict
 
-**BLOCKED** — binary deny/restricted-operation enforcement exists; **exact host allowlist enforcement at sandbox/provider substrate does not**.
+**PARTIALLY REMEDIATED** — typed host scope + mode-aware fail-closed substrate matching implemented; **physical** exact host allowlist enforcement at a real provider substrate **still blocked**.
 
 ---
 
@@ -166,7 +167,7 @@ No ARCHITECTURE BLOCKER on public execution boundary — consumers need not impo
 | Integration runtime | Provider integrations, `TenantConnectionIntegrationFactoryRegistry`, `intergrax/runtime/vendor_knowledge/` | yes (durable path); ephemeral A2 adapter path **not implemented** |
 | Governance | `MeaningfulSideEffectAuthorizationBoundary.authorize_and_execute` | yes |
 | HITL | `GovernedContinuationGrantCoordinator`, CodeCraft HITL notes | yes |
-| Sandbox | `SandboxSecurityCapable`, `resolve_craft_sandbox` | deny-only |
+| Sandbox | `SandboxSecurityCapable`, `resolve_craft_sandbox` | deny + allowlist contract (physical allowlist **blocked**) |
 | Execution public boundary | `CanonicalExecutionIntakePort` / `ExecutionRuntime` | yes |
 
 A2 input eligibility (AW-7A) is **defined** in contracts:
@@ -184,10 +185,10 @@ No A2 execution port or service exists yet (by design for this task).
 | Requirement | Status |
 | --- | --- |
 | Contract tests for HTTP adapter against local/mock endpoint | partial — `AllowlistHttpClient` exists; no A2 adapter contract suite |
-| Physical deny of non-approved network destination at substrate | **missing** for host allowlist |
-| Runtime evidence fields for A2 | **missing** — AW-7B evidence covers substrate deny/isolation only; no `allowed_hosts`, secret scope correlation, or purpose-bound credential evidence |
+| Physical deny of non-approved network destination at substrate | **blocked** — no enforceable hosted provider; contract tests only |
+| Runtime evidence fields for A2 | **partial** — allowlist scope fingerprint + enforced host evidence fields; secret scope correlation still missing |
 
-Existing evidence (AW-7B / CodeCraft): `CraftSubstrateCapabilities` (`provider_id`, `resolved_tier`, `network_egress_enforced`).
+Existing evidence (AW-7B / CodeCraft): `CraftSubstrateCapabilities` (`provider_id`, `resolved_tier`, `network_egress_enforced`, `network_egress_deny_enforced`, `network_egress_allowlist_enforced`, `enforced_network_hosts`).
 
 ---
 
@@ -195,7 +196,10 @@ Existing evidence (AW-7B / CodeCraft): `CraftSubstrateCapabilities` (`provider_i
 
 | Suite | Result |
 | --- | --- |
-| `tests/unit/runtime/codecraft/test_aw_7b_gate.py` | 28 passed |
+| `tests/unit/runtime/codecraft/test_aw_7b_gate.py` | passed |
+| `tests/unit/runtime/codecraft/test_network_egress_allowlist_substrate.py` | 10 passed, 1 skipped (physical provider blocked) |
+| `tests/unit/runtime/sandbox/test_network_egress_contract.py` | passed |
+| `tests/unit/codecraft/test_profile_network_egress.py` | passed |
 | `tests/unit/integrations/credentials/test_p1_7_credential_ref.py` | passed (in batch) |
 | `tests/unit/autonomous_work/test_worker_execution_dispatch_architecture_gates.py` | passed |
 | `tests/unit/autonomous_work/test_ephemeral_capability_execution_architecture_gates.py` | passed |
@@ -221,7 +225,7 @@ uv run pytest tests/unit/runtime/codecraft/test_aw_7b_gate.py `
 
 ## 10. Recommended prerequisite hardening (platform tasks, not AW-7C)
 
-1. **Sandbox / CodeCraft substrate** — implement and prove `network_egress=allowlist` with typed host scope, substrate evidence field(s), and fail-closed when provider cannot enforce.
+1. **Sandbox / CodeCraft substrate** — **DONE (contract P0-1)** typed host scope + fail-closed matching; **remaining:** real hosted provider with physical exact-host enforcement qualification.
 2. **Integration / credential domain** — purpose-scoped secret broker: tenant + credential_ref + integration identity + operation/purpose + allowed target scope; enforce at resolution; bounded lifetime.
 3. **Qualification tests** — at least one test where approved host succeeds and unapproved host is **physically denied** at enforced substrate (not metadata-only).
 
@@ -232,6 +236,7 @@ Do **not** implement `WorkerSecretBroker`, `AWSecretStore`, or host filtering in
 ## 11. Status
 
 ```text
+AW-7C EGRESS PREREQUISITE: PARTIALLY REMEDIATED / PROVIDER QUALIFICATION BLOCKED
 AW-7C: BLOCKED BY PREREQUISITE
 AW-7:  IN PROGRESS
 ```

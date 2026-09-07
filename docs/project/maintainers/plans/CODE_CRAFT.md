@@ -122,7 +122,7 @@ Load **only** the satellite matching your task or cited gap ID.
 **Deliverable intent:**
 
 - isolation tier as minimum security requirement - required `cloud`/`container` fails closed when eligible hosted substrate cannot resolve; no silent local downgrade unless explicit trusted downgrade policy defines allowed downgrade; regulated preset must not silently downgrade
-- `network_egress` becomes runtime-enforced substrate capability - `deny` binds to substrate/network policy with provable outbound denial before generated code executes; fail closed when substrate cannot satisfy requested egress posture
+- `network_egress` is runtime-enforced substrate capability — `deny` and `allowlist` both require trusted substrate proof before exec; fail closed when substrate cannot satisfy requested egress posture (**contract implemented AW-7C P0-1**; physical hosted allowlist qualification still blocked pending real provider)
 - bind enforcement evidence to substrate capability - do not claim universal sandbox security
 
 **Remediation rules:**

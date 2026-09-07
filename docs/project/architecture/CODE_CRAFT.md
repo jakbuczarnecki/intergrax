@@ -384,7 +384,14 @@ Not every CodeCraft execution uses HITL.
 
 `CodeCraftProfile.network_egress`: `deny` | `allowlist`.
 
-**Enforcement (AW-7B-GATE):** when `deny`, `resolve_craft_sandbox` requires explicit trusted substrate capability evidence before exec. Local `SandboxSession` proves operation-level denial only (`browser_fetch` unavailable) — not universal OS-network isolation. Hosted substrate type alone is not proof; provider backends must attest `network_egress_deny_enforced` through the public Sandbox security-capability contract. Unknown capability fails closed with `network_egress_requirement_unsatisfied`.
+`CodeCraftProfile.network_egress_allowlist`: typed exact host scopes (`NetworkEgressHost`: scheme, hostname, port). Profile validation rejects `deny` + non-empty allowlist and `allowlist` + empty allowlist. Host scopes are canonicalized deterministically (lowercase hostname, explicit scheme/port, dedupe, stable order); wildcards, localhost/private/metadata targets, and URL fragments are rejected.
+
+**Enforcement (AW-7B-GATE + AW-7C P0-1):** substrate resolution is mode-aware and fail-closed.
+
+- **`deny`:** `resolve_craft_sandbox` requires `SandboxSecurityCapabilities.network_egress_deny_enforced is True`. Local `SandboxSession` proves operation-level denial only (`browser_fetch` unavailable) — not universal OS-network isolation. Hosted substrate type alone is not proof; provider backends must attest deny through `SandboxSecurityCapable`. Unknown capability → `network_egress_requirement_unsatisfied`.
+- **`allowlist`:** requires `network_egress_allowlist_enforced is True` and substrate `enforced_network_hosts` that is at least as restrictive as the requested scope (V1: exact match or provider-enforced subset; never superset). Local workspace sandbox does **not** attest allowlist enforcement (`run_python` / `run_script` remain network-capable). Missing or mismatched proof → `network_egress_allowlist_requirement_unsatisfied`.
+
+Evidence types: `SandboxSecurityCapabilities`, optional aggregate `SandboxNetworkEgressEvidence`, request seam `SandboxSecurityRequirements`. Allowlist fingerprint: `sha256` over canonical sorted host-scope forms (governance correlation only; not a substitute for enforced scope proof).
 
 ## Forbidden imports and security scan
 
@@ -732,7 +739,8 @@ Typed profile on `ApplicationEnvironmentProfile`:
 | `max_total_exec_time_s` | Cumulative sandbox CPU time |
 | `require_tests` | Mandate test command before promotion |
 | `test_command_template` | e.g. `pytest {path}` |
-| `network_egress` | `deny` \| `allowlist` (substrate-proven operation-level enforcement before exec; fail closed when proof missing) |
+| `network_egress` | `deny` \| `allowlist` (substrate-proven enforcement before exec; fail closed when proof missing) |
+| `network_egress_allowlist` | Typed exact host scopes when `network_egress=allowlist` (`NetworkEgressHost` tuple; canonicalized; no wildcards in V1) |
 | `promotion_schema_ref` | Pydantic model id for L0 output validation |
 | `codegen_llm_profile_ref` | Separate LLM for generation |
 | `require_hitl_before_exec` | Force human gate (supervised default) |

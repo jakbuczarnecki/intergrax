@@ -32,6 +32,7 @@ _UNAVAILABLE_ERRORS: frozenset[str] = frozenset(
         "sandbox_session_not_configured",
         "isolation_requirement_unsatisfied",
         "network_egress_requirement_unsatisfied",
+        "network_egress_allowlist_requirement_unsatisfied",
         "hosted_substrate_unavailable",
     },
 )

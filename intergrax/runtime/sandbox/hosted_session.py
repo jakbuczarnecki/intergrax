@@ -71,6 +71,8 @@ class HostedSandboxSession:
             isolation_tier="cloud",
             provider_id=f"hosted:{self.session_id}",
             network_egress_deny_enforced=None,
+            network_egress_allowlist_enforced=None,
+            enforced_network_hosts=None,
         )
 
     def cancel(self) -> None:

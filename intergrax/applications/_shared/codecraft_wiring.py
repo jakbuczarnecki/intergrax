@@ -70,6 +70,7 @@ def wire_application_codecraft(
             "isolation_tier": cc.isolation_tier,
             "require_hitl_before_exec": cc.require_hitl_before_exec,
             "network_egress": cc.network_egress,
+            "network_egress_allowlist_fingerprint": cc.network_egress_allowlist_scope.fingerprint(),
             "max_iterations": cc.max_iterations,
             "codegen_llm_profile_ref": cc.codegen_llm_profile_ref,
         }
