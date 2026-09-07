@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import ast
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -189,7 +190,7 @@ class _ObservabilityOrderingOrchestrator(DiagnosticOrchestrator):
 
 
 def _ordering_orchestrator_from_stack(
-    orchestrator: DiagnosticOrchestrator,
+    stack: _DiagnosticTestStack,
     *,
     envelope_count: Callable[[], int],
     recorded: list[int],
@@ -197,23 +198,23 @@ def _ordering_orchestrator_from_stack(
     return _ObservabilityOrderingOrchestrator(
         envelope_count=envelope_count,
         recorded=recorded,
-        execution_reconstructor=orchestrator._execution_reconstructor,
-        lifecycle_analyzer=orchestrator._lifecycle_analyzer,
-        assessment_builder=orchestrator._assessment_builder,
-        grouping_engine=orchestrator._grouping_engine,
-        problem_lifecycle_engine=orchestrator._problem_lifecycle_engine,
+        execution_reconstructor=stack.execution_reconstructor,
+        lifecycle_analyzer=stack.lifecycle_analyzer,
+        assessment_builder=stack.assessment_builder,
+        grouping_engine=stack.grouping_engine,
+        problem_lifecycle_engine=stack.problem_lifecycle_engine,
     )
 
 
 def _failing_orchestrator_from_stack(
-    orchestrator: DiagnosticOrchestrator,
+    stack: _DiagnosticTestStack,
 ) -> _FailingDiagnosticOrchestrator:
     return _FailingDiagnosticOrchestrator(
-        execution_reconstructor=orchestrator._execution_reconstructor,
-        lifecycle_analyzer=orchestrator._lifecycle_analyzer,
-        assessment_builder=orchestrator._assessment_builder,
-        grouping_engine=orchestrator._grouping_engine,
-        problem_lifecycle_engine=orchestrator._problem_lifecycle_engine,
+        execution_reconstructor=stack.execution_reconstructor,
+        lifecycle_analyzer=stack.lifecycle_analyzer,
+        assessment_builder=stack.assessment_builder,
+        grouping_engine=stack.grouping_engine,
+        problem_lifecycle_engine=stack.problem_lifecycle_engine,
     )
 
 
@@ -258,17 +259,78 @@ class _SequenceInstanceIds:
         return f"instance-extra-{self._extra:04d}"
 
 
+@dataclass(frozen=True, slots=True)
+class _DiagnosticTestStack:
+    execution_reconstructor: ExecutionReconstructor
+    lifecycle_analyzer: LifecycleAnomalyAnalyzer
+    assessment_builder: DiagnosticAssessmentBuilder
+    grouping_engine: ProblemGroupingEngine
+    problem_lifecycle_engine: ProblemLifecycleEngine
+    orchestrator: DiagnosticOrchestrator
+    problem_persistence: InMemoryProblemPersistence
+    occurrence_persistence: ProblemOccurrencePersistence
+    read_service: DiagnosticReadService
+
+
+def _build_diagnostic_test_stack() -> _DiagnosticTestStack:
+    problem_persistence = InMemoryProblemPersistence()
+    occurrence_store = in_memory_document_store_for_problem_tests()
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(
+        occurrence_store
+    )
+    execution_reconstructor = ExecutionReconstructor(
+        runtime_events=InMemoryRuntimeEventStore(),
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    )
+    lifecycle_analyzer = LifecycleAnomalyAnalyzer()
+    assessment_builder = DiagnosticAssessmentBuilder()
+    grouping_registry = ProblemGroupingStrategyRegistry()
+    grouping_registry.register(DeterministicProblemGroupingStrategy())
+    grouping_engine = ProblemGroupingEngine(grouping_registry)
+    problem_lifecycle_engine = lifecycle_engine_for_tests(
+        problem_persistence,
+        occurrence_persistence,
+        document_store=occurrence_store,
+    )
+    orchestrator = DiagnosticOrchestrator(
+        execution_reconstructor=execution_reconstructor,
+        lifecycle_analyzer=lifecycle_analyzer,
+        assessment_builder=assessment_builder,
+        grouping_engine=grouping_engine,
+        problem_lifecycle_engine=problem_lifecycle_engine,
+    )
+    read_service = read_service_for_tests(
+        problem_persistence,
+        execution_reconstructor,
+        occurrence_persistence=occurrence_persistence,
+        document_store=occurrence_store,
+    )
+    return _DiagnosticTestStack(
+        execution_reconstructor=execution_reconstructor,
+        lifecycle_analyzer=lifecycle_analyzer,
+        assessment_builder=assessment_builder,
+        grouping_engine=grouping_engine,
+        problem_lifecycle_engine=problem_lifecycle_engine,
+        orchestrator=orchestrator,
+        problem_persistence=problem_persistence,
+        occurrence_persistence=occurrence_persistence,
+        read_service=read_service,
+    )
+
+
 def _build_orchestrator_stack() -> tuple[
     DiagnosticOrchestrator,
     InMemoryProblemPersistence,
     DiagnosticReadService,
     ProblemOccurrencePersistence,
 ]:
-    from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
-        build_diagnostic_orchestrator_stack_for_tests,
+    stack = _build_diagnostic_test_stack()
+    return (
+        stack.orchestrator,
+        stack.problem_persistence,
+        stack.read_service,
+        stack.occurrence_persistence,
     )
-
-    return build_diagnostic_orchestrator_stack_for_tests()
 
 
 @dataclass
@@ -437,16 +499,16 @@ async def test_application_failure_creates_problem(tmp_path: Path) -> None:
 async def test_observability_export_before_diagnostics(tmp_path: Path) -> None:
     exporter = InMemoryObservabilityExporter()
     observability_count_at_diagnostic: list[int] = []
-    base_orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
+    stack = _build_diagnostic_test_stack()
     ordering_orchestrator = _ordering_orchestrator_from_stack(
-        base_orchestrator,
+        stack,
         envelope_count=lambda: len(exporter.envelopes),
         recorded=observability_count_at_diagnostic,
     )
     harness = _HostedHarness(
         orchestrator=ordering_orchestrator,
-        persistence=persistence,
-        read_service=read_service,
+        persistence=stack.problem_persistence,
+        read_service=stack.read_service,
         exporter=exporter,
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
     )
@@ -802,9 +864,9 @@ async def test_bootstrap_failure_creates_problem_via_guarded_primitive() -> None
 async def test_bootstrap_observability_export_before_diagnostics() -> None:
     exporter = InMemoryObservabilityExporter()
     observability_count_at_diagnostic: list[int] = []
-    base_orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
+    stack = _build_diagnostic_test_stack()
     ordering_orchestrator = _ordering_orchestrator_from_stack(
-        base_orchestrator,
+        stack,
         envelope_count=lambda: len(exporter.envelopes),
         recorded=observability_count_at_diagnostic,
     )
@@ -830,14 +892,14 @@ async def test_bootstrap_observability_export_before_diagnostics() -> None:
 
     assert observability_count_at_diagnostic == [len(exporter.envelopes)]
     assert observability_count_at_diagnostic[0] >= 1
-    assert read_service.list_problems(tenant_id=_TENANT_A).total_count == 1
+    assert stack.read_service.list_problems(tenant_id=_TENANT_A).total_count == 1
 
 
 @pytest.mark.asyncio
 async def test_bootstrap_diagnostic_projection_failure_isolated() -> None:
-    base_orchestrator, _, _, _ = _build_orchestrator_stack()
+    stack = _build_diagnostic_test_stack()
     harness = _build_bootstrap_diagnostic_harness(
-        orchestrator=_failing_orchestrator_from_stack(base_orchestrator),
+        orchestrator=_failing_orchestrator_from_stack(stack),
     )
     context = HostedProcessBootstrapContext.create(
         application_id=_BOOTSTRAP_APP_ID,
@@ -937,3 +999,25 @@ async def test_bootstrap_recurrence_groups_across_instances() -> None:
     problems = harness.read_service.list_problems(tenant_id=_TENANT_A)
     assert problems.total_count == 1
     assert problems.problems[0].occurrence_count == 2
+
+
+_FORBIDDEN_DIAGNOSTIC_ORCHESTRATOR_PRIVATE_ATTRS = frozenset({
+    "_execution_reconstructor",
+    "_lifecycle_analyzer",
+    "_assessment_builder",
+    "_grouping_engine",
+    "_problem_lifecycle_engine",
+})
+
+
+def test_r3_harness_has_no_diagnostic_orchestrator_private_coupling() -> None:
+    module_path = Path(__file__)
+    tree = ast.parse(module_path.read_text(encoding="utf-8"), filename=str(module_path))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Attribute):
+            continue
+        if node.attr not in _FORBIDDEN_DIAGNOSTIC_ORCHESTRATOR_PRIVATE_ATTRS:
+            continue
+        violations.append(f"line {node.lineno}: .{node.attr}")
+    assert violations == []
