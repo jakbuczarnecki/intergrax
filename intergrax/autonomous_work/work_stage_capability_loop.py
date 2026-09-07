@@ -41,13 +41,12 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
 )
 from intergrax.contracts.capability_catalog.work_stage_loop import (
-    WorkStageCapabilityExecutionEvidenceRef,
+    WorkStageCapabilityExecutionCorrelation,
     WorkStageCapabilityLoopDisposition,
     WorkStageCapabilityLoopIterationEvidence,
     WorkStageCapabilityLoopResult,
     WorkStageCapabilityObservation,
     WorkStageDomainAuthorityKind,
-    derive_work_stage_capability_execution_evidence_ref,
 )
 
 
@@ -87,6 +86,8 @@ class WorkStageToolExecutionResult:
     tool_id: str
     success: bool
     output_summary: str
+    run_id: str
+    step_id: str
 
 
 @runtime_checkable
@@ -128,24 +129,28 @@ def _iteration_evidence(
     need: WorkStageCapabilityNeed,
     discovery: WorkStageCapabilityDiscoveryEvidence,
     selected: GovernedCapabilityCandidate | None,
-    execution_ref: str | None,
+    execution: WorkStageToolExecutionResult | None,
     observation: WorkStageCapabilityObservation | None,
 ) -> WorkStageCapabilityLoopIterationEvidence:
     selected_key: CapabilityIdentityKey | None = None
     authority: WorkStageDomainAuthorityKind | None = None
-    evidence_ref: WorkStageCapabilityExecutionEvidenceRef | None = None
+    correlation: WorkStageCapabilityExecutionCorrelation | None = None
     if selected is not None:
         selected_key = CapabilityIdentityKey.from_discovery_identity(selected.identity)
         authority = _domain_authority_kind(selected)
-        if execution_ref is not None:
-            evidence_ref = WorkStageCapabilityExecutionEvidenceRef(reference=execution_ref)
+        if execution is not None:
+            correlation = WorkStageCapabilityExecutionCorrelation(
+                run_id=execution.run_id,
+                step_id=execution.step_id,
+                tool_id=execution.tool_id,
+            )
     return WorkStageCapabilityLoopIterationEvidence(
         iteration_index=iteration_index,
         need=need,
         discovery_evidence_schema=SCHEMA_WORK_STAGE_CAPABILITY_DISCOVERY_EVIDENCE_V1,
         selected_identity_key=selected_key,
         domain_authority_kind=authority,
-        execution_evidence_ref=evidence_ref,
+        execution_correlation=correlation,
         observation=observation,
     )
 
@@ -239,7 +244,7 @@ class WorkStageCapabilityDiscoveryLoopCoordinator:
                     need=current_need,
                     discovery=discovery,
                     selected=None,
-                    execution_ref=None,
+                    execution=None,
                     observation=self._observation_provider.observe(
                         iteration_index=iteration_index,
                         need=current_need,
@@ -264,7 +269,7 @@ class WorkStageCapabilityDiscoveryLoopCoordinator:
                     need=current_need,
                     discovery=discovery,
                     selected=selected,
-                    execution_ref=None,
+                    execution=None,
                     observation=self._observation_provider.observe(
                         iteration_index=iteration_index,
                         need=current_need,
@@ -289,12 +294,6 @@ class WorkStageCapabilityDiscoveryLoopCoordinator:
                     step_id=str(iteration_index),
                 ),
             )
-            evidence_ref = derive_work_stage_capability_execution_evidence_ref(
-                work_reference=current_need.work_reference,
-                stage_reference=current_need.stage_reference,
-                iteration_index=iteration_index,
-                logical_id=selected.identity.logical.logical_id,
-            ).reference
             observation = self._observation_provider.observe(
                 iteration_index=iteration_index,
                 need=current_need,
@@ -302,20 +301,42 @@ class WorkStageCapabilityDiscoveryLoopCoordinator:
                 execution=execution,
                 discovery=discovery,
             )
+            if observation.execution_succeeded != execution.success:
+                iteration = _iteration_evidence(
+                    iteration_index=iteration_index,
+                    need=current_need,
+                    discovery=discovery,
+                    selected=selected,
+                    execution=execution,
+                    observation=observation,
+                )
+                iterations.append(iteration)
+                return WorkStageCapabilityLoopRunOutcome(
+                    result=WorkStageCapabilityLoopResult(
+                        disposition=WorkStageCapabilityLoopDisposition.ESCALATED,
+                        iterations=tuple(iterations),
+                    ),
+                    discovery_records=tuple(discovery_records),
+                )
             iteration = _iteration_evidence(
                 iteration_index=iteration_index,
                 need=current_need,
                 discovery=discovery,
                 selected=selected,
-                execution_ref=evidence_ref,
+                execution=execution,
                 observation=observation,
             )
             iterations.append(iteration)
 
             if observation.next_need is None:
+                terminal_disposition = (
+                    WorkStageCapabilityLoopDisposition.COMPLETED
+                    if observation.execution_succeeded
+                    else WorkStageCapabilityLoopDisposition.ESCALATED
+                )
                 return WorkStageCapabilityLoopRunOutcome(
                     result=WorkStageCapabilityLoopResult(
-                        disposition=WorkStageCapabilityLoopDisposition.COMPLETED,
+                        disposition=terminal_disposition,
                         iterations=tuple(iterations),
                     ),
                     discovery_records=tuple(discovery_records),

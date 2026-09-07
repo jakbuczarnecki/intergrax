@@ -89,13 +89,12 @@ from intergrax.contracts.capability_catalog.work_stage_loop import (
     SCHEMA_WORK_STAGE_CAPABILITY_LOOP_ITERATION_EVIDENCE_V1,
     SCHEMA_WORK_STAGE_CAPABILITY_LOOP_RESULT_V1,
     SCHEMA_WORK_STAGE_CAPABILITY_OBSERVATION_V1,
-    WorkStageCapabilityExecutionEvidenceRef,
+    WorkStageCapabilityExecutionCorrelation,
     WorkStageCapabilityLoopDisposition,
     WorkStageCapabilityLoopIterationEvidence,
     WorkStageCapabilityLoopResult,
     WorkStageCapabilityObservation,
     WorkStageDomainAuthorityKind,
-    derive_work_stage_capability_execution_evidence_ref,
 )
 
 __all__ = [
@@ -156,11 +155,10 @@ __all__ = [
     "SCHEMA_WORK_STAGE_CAPABILITY_OBSERVATION_V1",
     "SCHEMA_WORK_STAGE_CAPABILITY_LOOP_ITERATION_EVIDENCE_V1",
     "SCHEMA_WORK_STAGE_CAPABILITY_LOOP_RESULT_V1",
-    "WorkStageCapabilityExecutionEvidenceRef",
+    "WorkStageCapabilityExecutionCorrelation",
     "WorkStageCapabilityLoopDisposition",
     "WorkStageCapabilityLoopIterationEvidence",
     "WorkStageCapabilityLoopResult",
     "WorkStageCapabilityObservation",
     "WorkStageDomainAuthorityKind",
-    "derive_work_stage_capability_execution_evidence_ref",
 ]

@@ -40,40 +40,24 @@ class WorkStageDomainAuthorityKind(StrEnum):
     SKILL = "SKILL"
 
 
-class WorkStageCapabilityExecutionEvidenceRef(BaseModel):
-    """Stable reference to domain execution evidence — not a live lookup handle."""
+class WorkStageCapabilityExecutionCorrelation(BaseModel):
+    """Correlation fields from canonical Tool execution authority — not audit evidence."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["work_stage_capability_execution_evidence_ref.v1"] = (
-        "work_stage_capability_execution_evidence_ref.v1"
+    schema_version: Literal["work_stage_capability_execution_correlation.v1"] = (
+        "work_stage_capability_execution_correlation.v1"
     )
-    reference: str = _NON_EMPTY
+    run_id: str = _NON_EMPTY
+    step_id: str = _NON_EMPTY
+    tool_id: str = _NON_EMPTY
 
     @model_validator(mode="after")
-    def _validate_reference(self) -> WorkStageCapabilityExecutionEvidenceRef:
-        require_non_empty_text(self.reference, label="reference")
+    def _validate_correlation(self) -> WorkStageCapabilityExecutionCorrelation:
+        require_non_empty_text(self.run_id, label="run_id")
+        require_non_empty_text(self.step_id, label="step_id")
+        require_non_empty_text(self.tool_id, label="tool_id")
         return self
-
-
-def derive_work_stage_capability_execution_evidence_ref(
-    *,
-    work_reference: str,
-    stage_reference: str,
-    iteration_index: int,
-    logical_id: str,
-) -> WorkStageCapabilityExecutionEvidenceRef:
-    """Deterministic execution evidence reference for loop audit trails."""
-    if iteration_index < 0:
-        raise ValueError("iteration_index must be >= 0")
-    work = require_non_empty_text(work_reference, label="work_reference")
-    stage = require_non_empty_text(stage_reference, label="stage_reference")
-    logical = require_non_empty_text(logical_id, label="logical_id")
-    return WorkStageCapabilityExecutionEvidenceRef(
-        reference=(
-            f"work_stage_loop/{work}/{stage}/{iteration_index}/{logical}"
-        ),
-    )
 
 
 class WorkStageCapabilityObservation(BaseModel):
@@ -107,7 +91,7 @@ class WorkStageCapabilityLoopIterationEvidence(BaseModel):
     discovery_evidence_schema: str = _NON_EMPTY
     selected_identity_key: CapabilityIdentityKey | None = None
     domain_authority_kind: WorkStageDomainAuthorityKind | None = None
-    execution_evidence_ref: WorkStageCapabilityExecutionEvidenceRef | None = None
+    execution_correlation: WorkStageCapabilityExecutionCorrelation | None = None
     observation: WorkStageCapabilityObservation | None = None
 
     @model_validator(mode="after")
@@ -121,10 +105,24 @@ class WorkStageCapabilityLoopIterationEvidence(BaseModel):
                 raise ValueError(
                     "domain_authority_kind is required when selected_identity_key is set",
                 )
-        if self.execution_evidence_ref is not None and self.selected_identity_key is None:
-            raise ValueError(
-                "execution_evidence_ref requires selected_identity_key",
-            )
+        if self.execution_correlation is not None:
+            if self.selected_identity_key is None:
+                raise ValueError(
+                    "execution_correlation requires selected_identity_key",
+                )
+            if self.domain_authority_kind is None:
+                raise ValueError(
+                    "execution_correlation requires domain_authority_kind",
+                )
+            if self.observation is None:
+                raise ValueError("execution_correlation requires observation")
+            if (
+                self.domain_authority_kind is WorkStageDomainAuthorityKind.TOOL
+                and self.execution_correlation.tool_id != self.selected_identity_key.logical_id
+            ):
+                raise ValueError(
+                    "execution_correlation.tool_id must match selected_identity_key.logical_id",
+                )
         return self
 
 

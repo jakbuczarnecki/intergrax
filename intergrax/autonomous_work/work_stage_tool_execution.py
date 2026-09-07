@@ -5,20 +5,15 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
-
 from intergrax.autonomous_work.work_stage_capability_loop import (
     WorkStageToolExecutionPort,
     WorkStageToolExecutionRequest,
     WorkStageToolExecutionResult,
 )
+from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.execution_models import ToolExecutionRequest
-
-
-class _EmptyToolInput(BaseModel):
-    """Deterministic empty input for reference-loop Tool invocations."""
 
 
 class RuntimeToolInvokerWorkStagePort(WorkStageToolExecutionPort):
@@ -29,14 +24,21 @@ class RuntimeToolInvokerWorkStagePort(WorkStageToolExecutionPort):
         self._state = state
 
     def execute(self, request: WorkStageToolExecutionRequest) -> WorkStageToolExecutionResult:
+        canonical_request_run_id = validate_run_id(request.run_id)
+        state_run_id = self._state.run_id
+        if canonical_request_run_id != state_run_id:
+            raise ValueError(
+                "WorkStageToolExecutionRequest.run_id "
+                f"({canonical_request_run_id!r}) does not match "
+                f"RuntimeState.run_id ({state_run_id!r})",
+            )
         tool_id = request.candidate.identity.logical.logical_id
-        run_id = self._state.run_id
-        self._state._observability_emitter = None
+        contract = self._invoker.registry.get(tool_id).contract
         tool_request = ToolExecutionRequest(
-            run_id=run_id,
+            run_id=canonical_request_run_id,
             tool_id=tool_id,
             step_id=request.step_id,
-            input=_EmptyToolInput(),
+            input=contract.input_schema(),
         )
         result = self._invoker.invoke(
             state=self._state,
@@ -48,4 +50,6 @@ class RuntimeToolInvokerWorkStagePort(WorkStageToolExecutionPort):
             tool_id=tool_id,
             success=result.success,
             output_summary=output_summary,
+            run_id=canonical_request_run_id,
+            step_id=request.step_id,
         )

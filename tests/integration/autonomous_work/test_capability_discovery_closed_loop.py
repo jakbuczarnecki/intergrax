@@ -103,6 +103,24 @@ class _OkToolHandler:
         return _EmptyToolOutput()
 
 
+class _FailingToolHandler:
+    def execute(self, request: ToolExecutionRequest[_EmptyToolInput]) -> _EmptyToolOutput:
+        _ = request
+        raise RuntimeError("intentional tool failure")
+
+
+class _FailOnceToolHandler:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def execute(self, request: ToolExecutionRequest[_EmptyToolInput]) -> _EmptyToolOutput:
+        _ = request
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("intentional first-call failure")
+        return _EmptyToolOutput()
+
+
 class _StaticSource:
     def __init__(self, source_id: str, entries: tuple[CapabilityCatalogEntry, ...]) -> None:
         self._source_id = source_id
@@ -266,6 +284,24 @@ def _tool_registry(*tool_ids: str) -> ToolRegistry:
     return registry
 
 
+def _tool_registry_with_handlers(
+    handlers: dict[str, object],
+) -> ToolRegistry:
+    registry = ToolRegistry()
+    for tool_id, handler in handlers.items():
+        contract = ToolContract(
+            tool_id=tool_id,
+            name=tool_id,
+            description=tool_id,
+            input_schema=_EmptyToolInput,
+            output_schema=_EmptyToolOutput,
+            side_effects=False,
+            error_mapping={},
+        )
+        registry.register(contract, handler)
+    return registry
+
+
 class _AllowAllScopePolicy:
     def is_allowed(self, *, agent_id: str, tool_id: str) -> bool:
         _ = agent_id, tool_id
@@ -378,7 +414,13 @@ def _semantic_outcome(
                 item.selected_identity_key.logical_id if item.selected_identity_key else None,
                 item.selected_identity_key.source_id if item.selected_identity_key else None,
                 item.domain_authority_kind,
-                item.execution_evidence_ref.reference if item.execution_evidence_ref else None,
+                (
+                    item.execution_correlation.run_id,
+                    item.execution_correlation.step_id,
+                    item.execution_correlation.tool_id,
+                )
+                if item.execution_correlation
+                else None,
                 item.observation.outcome_summary if item.observation else None,
                 item.observation.next_need.stage_reference
                 if item.observation and item.observation.next_need
@@ -495,7 +537,7 @@ def test_governance_deny_mid_loop_prevents_second_execution() -> None:
     assert len(outcome.result.iterations) == 2
     assert counting.calls == 1
     assert outcome.result.iterations[1].selected_identity_key is None
-    assert outcome.result.iterations[1].execution_evidence_ref is None
+    assert outcome.result.iterations[1].execution_correlation is None
     assert outcome.discovery_records[1].effective_set.governed_result.blocked
 
 
@@ -521,15 +563,21 @@ def test_observe_rediscover_determinism() -> None:
         governance_by_iteration={},
         default_governance=_governance_context(allowed_tool_ids=(_TOOL_A, _TOOL_B)),
     )
-    coordinator, _ = _build_coordinator(
+    coordinator_a, _ = _build_coordinator(
+        federated=federated,
+        registry=registry,
+        observation=observation,
+        context_provider=context_provider,
+    )
+    coordinator_b, _ = _build_coordinator(
         federated=federated,
         registry=registry,
         observation=observation,
         context_provider=context_provider,
     )
 
-    first = _semantic_outcome(coordinator.run(need_a))
-    second = _semantic_outcome(coordinator.run(need_a))
+    first = _semantic_outcome(coordinator_a.run(need_a))
+    second = _semantic_outcome(coordinator_b.run(need_a))
     assert first == second
 
 
@@ -880,19 +928,217 @@ def test_stage14_architecture_forbidden_abstractions() -> None:
         "CapabilityDiscoveryPort",
     )
     forbidden_imports = ("pip", "subprocess")
+    forbidden_private_attrs = ("_observability_emitter",)
     for path in targets:
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for name in forbidden:
             assert name not in source, f"{path.name} must not define or reference {name}"
+        for private_attr in forbidden_private_attrs:
+            assert private_attr not in source, (
+                f"{path.name} must not access private runtime attribute {private_attr}"
+            )
         imported: list[str] = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 imported.extend(alias.name for alias in node.names)
             elif isinstance(node, ast.ImportFrom) and node.module:
                 imported.append(node.module)
+            elif isinstance(node, ast.Attribute) and isinstance(node.attr, str):
+                if node.attr.startswith("_"):
+                    if isinstance(node.value, ast.Name) and node.value.id == "self":
+                        continue
+                    raise AssertionError(
+                        f"{path.name} must not access private attribute {node.attr!r}",
+                    )
         for module in imported:
             for forbidden_import in forbidden_imports:
                 assert not (
                     module == forbidden_import or module.startswith(f"{forbidden_import}.")
                 ), f"{path.name} imports forbidden installer dependency: {module}"
+
+
+def test_failed_terminal_execution_not_completed() -> None:
+    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    source = _StaticSource("official.catalog", (tool_a,))
+    federated = FederatedCapabilityCatalog((source,))
+    registry = _tool_registry_with_handlers({_TOOL_A: _FailingToolHandler()})
+    need_a = _need(
+        stage_reference="stage.collect",
+        stage_objective="collect evidence",
+        logical_ids=(_TOOL_A,),
+    )
+    coordinator, counting = _build_coordinator(
+        federated=federated,
+        registry=registry,
+        observation=_ScriptedObservationProvider(),
+        context_provider=_IterationGovernanceProvider(
+            availability=_availability(tool_a),
+            governance_by_iteration={},
+            default_governance=_governance_context(allowed_tool_ids=(_TOOL_A,)),
+        ),
+    )
+
+    outcome = coordinator.run(need_a)
+
+    assert outcome.result.disposition is WorkStageCapabilityLoopDisposition.ESCALATED
+    assert outcome.result.disposition is not WorkStageCapabilityLoopDisposition.COMPLETED
+    assert len(outcome.result.iterations) == 1
+    assert counting.calls == 1
+    iteration = outcome.result.iterations[0]
+    assert iteration.observation is not None
+    assert iteration.observation.execution_succeeded is False
+    assert iteration.observation.next_need is None
+
+
+def test_failed_execution_then_rediscover() -> None:
+    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE)
+    source = _StaticSource("official.catalog", (tool_a, tool_b))
+    federated = FederatedCapabilityCatalog((source,))
+    registry = _tool_registry_with_handlers(
+        {_TOOL_A: _FailOnceToolHandler(), _TOOL_B: _OkToolHandler()},
+    )
+    need_a = _need(
+        stage_reference="stage.collect",
+        stage_objective="collect evidence",
+        logical_ids=(_TOOL_A,),
+    )
+    need_b = _need(
+        stage_reference="stage.summarize",
+        stage_objective="summarize evidence",
+        logical_ids=(_TOOL_B,),
+    )
+    observation = _ScriptedObservationProvider(next_needs={0: need_b, 1: None})
+    coordinator, counting = _build_coordinator(
+        federated=federated,
+        registry=registry,
+        observation=observation,
+        context_provider=_IterationGovernanceProvider(
+            availability=_availability(tool_a, tool_b),
+            governance_by_iteration={},
+            default_governance=_governance_context(allowed_tool_ids=(_TOOL_A, _TOOL_B)),
+        ),
+    )
+
+    outcome = coordinator.run(need_a)
+
+    assert outcome.result.disposition is WorkStageCapabilityLoopDisposition.COMPLETED
+    assert len(outcome.result.iterations) == 2
+    assert counting.calls == 2
+    assert outcome.result.iterations[0].observation is not None
+    assert outcome.result.iterations[0].observation.execution_succeeded is False
+    assert outcome.result.iterations[0].observation.next_need is not None
+    assert outcome.result.iterations[1].observation is not None
+    assert outcome.result.iterations[1].observation.execution_succeeded is True
+
+
+def test_run_id_mismatch_fails_before_tool_execution() -> None:
+    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    source = _StaticSource("official.catalog", (tool_a,))
+    federated = FederatedCapabilityCatalog((source,))
+    registry = _tool_registry(_TOOL_A)
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=RegistryToolExecutor(registry),
+        scope_policy=_AllowAllScopePolicy(),
+    )
+    state = build_runtime_state_for_tests(run_id=_RUN_ID)
+    inner = RuntimeToolInvokerWorkStagePort(invoker, state)
+    counting = _CountingToolExecution(inner=inner)
+    mismatched_run_id = canonical_run_id_for_tests("run-stage14-mismatch-seed")
+    coordinator = WorkStageCapabilityDiscoveryLoopCoordinator(
+        discovery_service=WorkStageCapabilityDiscoveryService(governance_evaluators=_evaluators()),
+        federated_catalog=federated,
+        context_provider=_IterationGovernanceProvider(
+            availability=_availability(tool_a),
+            governance_by_iteration={},
+            default_governance=_governance_context(allowed_tool_ids=(_TOOL_A,)),
+        ),
+        tool_execution=counting,
+        observation_provider=_ScriptedObservationProvider(),
+        run_id=mismatched_run_id,
+        max_iterations=10,
+    )
+
+    with pytest.raises(ValueError, match="does not match RuntimeState.run_id"):
+        coordinator.run(
+            _need(
+                stage_reference="stage.collect",
+                stage_objective="collect evidence",
+                logical_ids=(_TOOL_A,),
+            ),
+        )
+    assert not any(event.step == "tool_invocation_start" for event in state.trace_events)
+
+
+def test_execution_correlation_matches_canonical_tool_path() -> None:
+    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    source = _StaticSource("official.catalog", (tool_a,))
+    federated = FederatedCapabilityCatalog((source,))
+    registry = _tool_registry(_TOOL_A)
+    need_a = _need(
+        stage_reference="stage.collect",
+        stage_objective="collect evidence",
+        logical_ids=(_TOOL_A,),
+    )
+    coordinator, _ = _build_coordinator(
+        federated=federated,
+        registry=registry,
+        observation=_ScriptedObservationProvider(next_needs={0: None}),
+        context_provider=_IterationGovernanceProvider(
+            availability=_availability(tool_a),
+            governance_by_iteration={},
+            default_governance=_governance_context(allowed_tool_ids=(_TOOL_A,)),
+        ),
+    )
+
+    outcome = coordinator.run(need_a)
+    iteration = outcome.result.iterations[0]
+    assert iteration.execution_correlation is not None
+    assert iteration.execution_correlation.tool_id == _TOOL_A
+    assert iteration.execution_correlation.step_id == "0"
+    assert iteration.execution_correlation.run_id == canonical_run_id_for_tests(_RUN_ID)
+    assert iteration.execution_correlation.tool_id == iteration.selected_identity_key.logical_id
+
+
+def test_happy_closed_loop_records_execution_correlation() -> None:
+    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_PRIVATE_SOURCE)
+    official = _StaticSource("official.catalog", (tool_a,))
+    private = _StaticSource("enterprise.private.catalog", (tool_b,))
+    federated = FederatedCapabilityCatalog((official, private))
+    registry = _tool_registry(_TOOL_A, _TOOL_B)
+    need_a = _need(
+        stage_reference="stage.collect",
+        stage_objective="collect evidence",
+        logical_ids=(_TOOL_A,),
+    )
+    need_b = _need(
+        stage_reference="stage.summarize",
+        stage_objective="summarize evidence",
+        logical_ids=(_TOOL_B,),
+    )
+    coordinator, _ = _build_coordinator(
+        federated=federated,
+        registry=registry,
+        observation=_ScriptedObservationProvider(next_needs={0: need_b, 1: None}),
+        context_provider=_IterationGovernanceProvider(
+            availability=_availability(tool_a, tool_b),
+            governance_by_iteration={
+                0: _governance_context(allowed_tool_ids=(_TOOL_A,), source=_OFFICIAL_SOURCE),
+                1: _governance_context(
+                    allowed_tool_ids=(_TOOL_B,),
+                    source=_PRIVATE_SOURCE,
+                ),
+            },
+            default_governance=_governance_context(),
+        ),
+    )
+
+    outcome = coordinator.run(need_a)
+
+    for index, iteration in enumerate(outcome.result.iterations):
+        assert iteration.execution_correlation is not None
+        assert iteration.execution_correlation.step_id == str(index)
+        assert iteration.execution_correlation.run_id == canonical_run_id_for_tests(_RUN_ID)
