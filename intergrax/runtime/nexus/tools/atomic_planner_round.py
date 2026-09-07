@@ -13,8 +13,6 @@ import copy
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import TypedDict
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.llm_adapters.contracts.tool_call import (
@@ -23,6 +21,7 @@ from intergrax.llm_adapters.contracts.tool_call import (
 )
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
+    CanonicalFunctionToolWireSchema,
     ToolArgumentConformance,
     ToolDispatchRequirements,
 )
@@ -71,17 +70,6 @@ class AtomicPlannerRoundDecision:
 class _BusinessToolSchemaEntry:
     tool_id: str
     parameters: dict[str, object]
-
-
-class _OpenAIFunctionSchema(TypedDict):
-    name: str
-    description: str
-    parameters: dict[str, object]
-
-
-class _OpenAIToolSchema(TypedDict):
-    type: str
-    function: _OpenAIFunctionSchema
 
 
 class _DiscriminatedActionInput(BaseModel):
@@ -208,7 +196,7 @@ def build_atomic_planner_round_tool_definition(
 ) -> CanonicalFunctionToolDefinition:
     """Canonical atomic planner round tool: wire schema plus strict dispatch requirements."""
     parameters = build_atomic_planner_round_parameters_schema(business_schemas)
-    wire_schema: _OpenAIToolSchema = {
+    wire_schema: CanonicalFunctionToolWireSchema = {
         "type": "function",
         "function": {
             "name": PLANNER_ROUND_TOOL_ID,
@@ -221,7 +209,7 @@ def build_atomic_planner_round_tool_definition(
         },
     }
     return CanonicalFunctionToolDefinition(
-        wire_schema=dict(wire_schema),
+        wire_schema=wire_schema,
         dispatch_requirements=ToolDispatchRequirements(
             argument_conformance=ToolArgumentConformance.STRICT,
         ),
@@ -230,10 +218,9 @@ def build_atomic_planner_round_tool_definition(
 
 def build_atomic_planner_round_schema(
     business_schemas: Sequence[Mapping[str, object]],
-) -> _OpenAIToolSchema:
+) -> CanonicalFunctionToolWireSchema:
     """Provider-neutral wire schema for the reserved ``intergrax.planner.round`` function."""
-    wire_schema = build_atomic_planner_round_tool_definition(business_schemas).wire_schema
-    return wire_schema  # type: ignore[return-value]
+    return build_atomic_planner_round_tool_definition(business_schemas).wire_schema
 
 
 def compute_atomic_planner_round_schema_hash(

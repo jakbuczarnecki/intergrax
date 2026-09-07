@@ -7,9 +7,24 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, TypedDict
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+
+
+class CanonicalFunctionToolFunctionSchema(TypedDict):
+    """Provider-neutral OpenAI-style function tool payload."""
+
+    name: str
+    description: str
+    parameters: dict[str, object]
+
+
+class CanonicalFunctionToolWireSchema(TypedDict):
+    """Provider-neutral function-tool wire schema shared across adapters."""
+
+    type: str
+    function: CanonicalFunctionToolFunctionSchema
 
 
 class ToolArgumentConformance(Enum):
@@ -34,7 +49,7 @@ class ToolDispatchRequirements:
 class CanonicalFunctionToolDefinition:
     """Canonical tool definition: wire schema plus typed dispatch requirements."""
 
-    wire_schema: dict[str, Any]
+    wire_schema: CanonicalFunctionToolWireSchema
     dispatch_requirements: ToolDispatchRequirements
 
     @property
