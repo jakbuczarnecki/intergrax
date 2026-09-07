@@ -117,7 +117,7 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Observed terminal symptom (post DG-A)** | Fresh background execution exists; RuntimeEvents exist; `DiagnosticOrchestrator` reaches **DQ-2** but `has_transport_evidence=false` |
 | **What Diagnostic Engine could prove (post-fix)** | Execution timeline reconstructable; transport causal continuity **absent** from reconstruction/result |
 | **Last proven canonical boundary** | Background execution admission + runtime event history (post DG-A) |
-| **First failed/unknown boundary** | Transport → execution causal continuity in diagnostic reconstruction |
+| **First failed/unknown boundary** | Transport → execution causal continuity in diagnostic reconstruction (symptom: empty `ExecutionReconstruction.causal_evidence`; upstream producer/persistence cause **not yet proven** — see R1 audit) |
 | **Root cause automatically proven** | NO |
 | **Missing canonical evidence** | Transport causal evidence visible to `ExecutionReconstructor` / orchestrator result for fresh watcher execution |
 | **Missing diagnostic capability** | Async continuity proof across MessageBus and background execution in central diagnosis |
@@ -125,9 +125,9 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Universal platform improvement** | Prove async causal continuity across MessageBus and background execution |
 | **Why this is not application-specific** | Any queue-backed async host path shares this continuity requirement |
 | **Priority** | P1 |
-| **Status** | OPEN / PROVEN GAP (partial qualification) |
-| **Related implementation** | DG-A fix `24506c3c14e30984d78b7b22c5cd4c42e711d125`; APP-DIAG baseline program (see OBSERVABILITY plan § Phase APP-DIAG) |
-| **Qualification result after fix** | Worker assembly defect cleared (DG-A **REVALIDATED**). Fresh run proves execution + runtime history but **not** transport causal continuity. Cause layer (producer vs persistence vs identity mapping vs lookup vs reconstructor consumption) **NOT YET PROVEN**. Current LKW state: **DQ-2**, not DQ-3. |
+| **Status** | OPEN / QUALIFICATION REQUIRED |
+| **Related implementation** | DG-A fix `24506c3c14e30984d78b7b22c5cd4c42e711d125`; APP-DIAG baseline program (see OBSERVABILITY plan § Phase APP-DIAG); **R1 root-cause audit** — [`DG_004_ASYNC_CAUSAL_CONTINUITY_ROOT_CAUSE_AUDIT.md`](DG_004_ASYNC_CAUSAL_CONTINUITY_ROOT_CAUSE_AUDIT.md) |
+| **Qualification result after fix** | Worker assembly defect cleared (DG-A **REVALIDATED**). Fresh run proves execution + runtime history but **not** transport causal continuity. **R1 audit (2026-09-07):** static root cause **NOT PROVEN**; historical symptom localizes to empty causal read at `ExecutionReconstructor`; LKW worker **does** reach canonical admission in current code; reconstructor/projection defects **disproven**; **DG-004-R2** real qualification (E0–E6 single execution) required before remediation. Current LKW state: **DQ-2**, not DQ-3. |
 
 ---
 
