@@ -988,7 +988,6 @@ class CreateWorkItemExecutionLinkCommand(_RepositoryModelBase):
                 "attempt_id": str(self.execution.attempt_id),
                 "execution_id": str(self.execution.execution_id),
             },
-            "linked_at": self.linked_at.isoformat(),
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()

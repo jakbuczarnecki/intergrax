@@ -119,8 +119,15 @@ def test_duplicate_identity_raises(execution_link_repo: WorkItemExecutionLinkRep
 def test_idempotency_replay_and_conflict(execution_link_repo: WorkItemExecutionLinkRepository) -> None:
     command = _command(idempotency_key="idem-key")
     created = execution_link_repo.create(command)
-    replay = execution_link_repo.create(command)
+    replay = execution_link_repo.create(
+        _command(
+            idempotency_key="idem-key",
+            linked_at=_LATER,
+            execution=command.execution,
+        ),
+    )
     assert replay == created
+    assert replay.linked_at == created.linked_at
     with pytest.raises(WorkItemExecutionLinkIdempotencyConflict):
         execution_link_repo.create(
             _command(

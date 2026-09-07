@@ -627,8 +627,20 @@ def _run_shared_work_repository_contract_checks(
             idempotency_key="qual-execution-link-idem",
         )
         created = execution_link_repo.create(command)
-        if execution_link_repo.create(command) != created:
+        replay_command = _execution_link_command(
+            execution_link_id="qual-execution-link-2",
+            work_item_id="qual-work-item-exec-2",
+            idempotency_key="qual-execution-link-idem",
+            linked_at=_UPDATED_AT,
+            execution=command.execution,
+        )
+        replayed = execution_link_repo.create(replay_command)
+        if replayed != created:
             raise _RepositorySemanticCheckFailure("execution link idempotency replay mismatch")
+        if replayed.linked_at != created.linked_at:
+            raise _RepositorySemanticCheckFailure(
+                "execution link idempotency replay must preserve original linked_at",
+            )
         try:
             execution_link_repo.create(
                 _execution_link_command(
