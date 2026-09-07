@@ -26,9 +26,6 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     ToolArgumentConformance,
     ToolDispatchRequirements,
 )
-from intergrax.llm_adapters.providers._openai_schema import (
-    project_json_schema_for_openai_strict_tool_parameters,
-)
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerActionContext,
     NativePlannerActionContextError,
@@ -182,7 +179,7 @@ def _build_discriminated_actions_schema(
     }
 
 
-def _extract_admitted_tool_ids_from_discriminated_actions_schema(
+def extract_admitted_tool_ids_from_discriminated_actions_schema(
     actions_schema: Mapping[str, object],
 ) -> tuple[str, ...]:
     items = actions_schema.get("items")
@@ -218,61 +215,10 @@ def _extract_admitted_tool_ids_from_discriminated_actions_schema(
     return tuple(sorted(tool_ids))
 
 
-def _openai_strict_action_item_schema(tool_ids: Sequence[str]) -> dict[str, object]:
-    if not tool_ids:
-        raise AtomicPlannerRoundProjectionError(
-            "atomic planner strict projection requires at least one admitted tool id"
-        )
-    return {
-        "type": "object",
-        "properties": {
-            "tool_id": {"type": "string", "enum": list(tool_ids)},
-            "arguments_json": {"type": "string"},
-        },
-        "required": ["tool_id", "arguments_json"],
-        "additionalProperties": False,
-    }
-
-
-def project_atomic_planner_round_parameters_for_openai_strict(
-    canonical_parameters: Mapping[str, object],
-) -> dict[str, object]:
-    """Project canonical discriminated actions to OpenAI strict-compatible transport."""
-    properties = canonical_parameters.get("properties")
-    if not isinstance(properties, Mapping):
-        raise AtomicPlannerRoundProjectionError("canonical parameters missing properties")
-    actions_schema = properties.get("actions")
-    if not isinstance(actions_schema, Mapping):
-        raise AtomicPlannerRoundProjectionError("canonical parameters missing actions")
-    min_items = actions_schema.get("minItems")
-    if not isinstance(min_items, int) or min_items < 1:
-        raise AtomicPlannerRoundProjectionError(
-            "canonical actions must retain minItems >= 1 during projection"
-        )
-    admitted_tool_ids = _extract_admitted_tool_ids_from_discriminated_actions_schema(
-        actions_schema
-    )
-    projected_properties = {
-        key: copy.deepcopy(value) for key, value in properties.items() if key != "actions"
-    }
-    projected_properties["actions"] = {
-        "type": "array",
-        "minItems": min_items,
-        "items": _openai_strict_action_item_schema(admitted_tool_ids),
-    }
-    projected: dict[str, object] = {
-        "type": "object",
-        "properties": projected_properties,
-        "required": list(canonical_parameters.get("required") or []),
-        "additionalProperties": canonical_parameters.get("additionalProperties", False),
-    }
-    return project_json_schema_for_openai_strict_tool_parameters(projected)
-
-
-def encode_atomic_planner_round_canonical_payload_for_openai_strict(
+def encode_atomic_planner_round_arguments_json_envelope(
     canonical_payload: Mapping[str, object],
 ) -> dict[str, object]:
-    """Encode canonical planner payload into provider strict transport representation."""
+    """Encode canonical planner payload into arguments_json wire envelope."""
     encoded = copy.deepcopy(dict(canonical_payload))
     actions = encoded.get("actions")
     if not isinstance(actions, list):
@@ -305,11 +251,11 @@ def encode_atomic_planner_round_canonical_payload_for_openai_strict(
     return encoded
 
 
-def normalize_atomic_planner_round_provider_payload(
-    provider_payload: Mapping[str, object],
+def decode_atomic_planner_round_arguments_json_envelope(
+    wire_payload: Mapping[str, object],
 ) -> dict[str, object]:
-    """Decode provider strict transport payload back to canonical planner semantics."""
-    normalized = copy.deepcopy(dict(provider_payload))
+    """Decode arguments_json wire envelope back to canonical planner semantics."""
+    normalized = copy.deepcopy(dict(wire_payload))
     actions = normalized.get("actions")
     if not isinstance(actions, list):
         raise AtomicPlannerRoundError("atomic planner round actions must be a list")
@@ -390,7 +336,7 @@ def build_atomic_planner_round_tool_definition(
         wire_schema=wire_schema,
         dispatch_requirements=ToolDispatchRequirements(
             argument_conformance=ToolArgumentConformance.STRICT,
-            strict_wire_projection=StrictWireProjectionKind.OPENAI_ATOMIC_PLANNER_ROUND,
+            strict_wire_projection=StrictWireProjectionKind.ATOMIC_PLANNER_DISCRIMINATED_ACTIONS,
         ),
     )
 

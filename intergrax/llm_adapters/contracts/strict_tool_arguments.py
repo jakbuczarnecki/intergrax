@@ -35,9 +35,9 @@ class ToolArgumentConformance(Enum):
 
 
 class StrictWireProjectionKind(Enum):
-    """Typed provider strict-wire projection selected by dispatch metadata."""
+    """Provider-neutral strict-wire projection semantics for dispatch metadata."""
 
-    OPENAI_ATOMIC_PLANNER_ROUND = "openai_atomic_planner_round"
+    ATOMIC_PLANNER_DISCRIMINATED_ACTIONS = "atomic_planner_discriminated_actions"
 
 
 @dataclass(frozen=True, slots=True)

@@ -12,14 +12,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.llm_adapters.providers._openai_schema import (
     prepare_openai_strict_generation_schema,
+    project_atomic_planner_round_parameters_for_openai_strict,
     project_json_schema_for_openai_strict,
     project_json_schema_for_openai_strict_tool_parameters,
 )
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     build_atomic_planner_round_parameters_schema,
-    encode_atomic_planner_round_canonical_payload_for_openai_strict,
-    normalize_atomic_planner_round_provider_payload,
-    project_atomic_planner_round_parameters_for_openai_strict,
 )
 from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (

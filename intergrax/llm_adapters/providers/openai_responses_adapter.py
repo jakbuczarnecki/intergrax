@@ -31,6 +31,7 @@ from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 from intergrax.llm_adapters.providers._openai_schema import (
     prepare_openai_strict_generation_schema,
+    project_atomic_planner_round_parameters_for_openai_strict,
     project_json_schema_for_openai_strict_tool_parameters,
 )
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
@@ -41,8 +42,7 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
 )
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     AtomicPlannerRoundProjectionError,
-    normalize_atomic_planner_round_provider_payload,
-    project_atomic_planner_round_parameters_for_openai_strict,
+    decode_atomic_planner_round_arguments_json_envelope,
 )
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
@@ -396,7 +396,7 @@ def _project_strict_tool_parameters(
     dispatch_requirements: ToolDispatchRequirements,
 ) -> dict[str, Any]:
     projection = dispatch_requirements.strict_wire_projection
-    if projection == StrictWireProjectionKind.OPENAI_ATOMIC_PLANNER_ROUND:
+    if projection == StrictWireProjectionKind.ATOMIC_PLANNER_DISCRIMINATED_ACTIONS:
         try:
             return project_atomic_planner_round_parameters_for_openai_strict(parameters)
         except AtomicPlannerRoundProjectionError as exc:
@@ -412,7 +412,7 @@ def _normalize_strict_tool_call_arguments(
     dispatch_requirements: ToolDispatchRequirements,
 ) -> str:
     projection = dispatch_requirements.strict_wire_projection
-    if projection != StrictWireProjectionKind.OPENAI_ATOMIC_PLANNER_ROUND:
+    if projection != StrictWireProjectionKind.ATOMIC_PLANNER_DISCRIMINATED_ACTIONS:
         return arguments_json
     try:
         payload = json.loads(arguments_json)
@@ -420,7 +420,7 @@ def _normalize_strict_tool_call_arguments(
         return arguments_json
     if not isinstance(payload, dict):
         return arguments_json
-    normalized = normalize_atomic_planner_round_provider_payload(payload)
+    normalized = decode_atomic_planner_round_arguments_json_envelope(payload)
     return json.dumps(normalized, ensure_ascii=False)
 
 

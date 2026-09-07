@@ -7,11 +7,15 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from pydantic import BaseModel
 
 from intergrax.knowledge.contracts.validation import JsonObject, JsonValue
+from intergrax.runtime.nexus.tools.atomic_planner_round import (
+    AtomicPlannerRoundProjectionError,
+    extract_admitted_tool_ids_from_discriminated_actions_schema,
+)
 
 
 def prepare_openai_strict_generation_schema(output_model: type[BaseModel]) -> JsonObject:
@@ -35,6 +39,59 @@ def project_json_schema_for_openai_strict_tool_parameters(
     _promote_optional_properties_for_openai_strict(projected)
     _normalize_openai_strict_node(projected)
     return projected
+
+
+def _openai_strict_atomic_planner_action_item_schema(
+    tool_ids: Sequence[str],
+) -> JsonObject:
+    if not tool_ids:
+        raise AtomicPlannerRoundProjectionError(
+            "atomic planner strict projection requires at least one admitted tool id"
+        )
+    return {
+        "type": "object",
+        "properties": {
+            "tool_id": {"type": "string", "enum": list(tool_ids)},
+            "arguments_json": {"type": "string"},
+        },
+        "required": ["tool_id", "arguments_json"],
+        "additionalProperties": False,
+    }
+
+
+def project_atomic_planner_round_parameters_for_openai_strict(
+    canonical_parameters: Mapping[str, object],
+) -> JsonObject:
+    """Project canonical discriminated actions to OpenAI strict-compatible transport."""
+    properties = canonical_parameters.get("properties")
+    if not isinstance(properties, Mapping):
+        raise AtomicPlannerRoundProjectionError("canonical parameters missing properties")
+    actions_schema = properties.get("actions")
+    if not isinstance(actions_schema, Mapping):
+        raise AtomicPlannerRoundProjectionError("canonical parameters missing actions")
+    min_items = actions_schema.get("minItems")
+    if not isinstance(min_items, int) or min_items < 1:
+        raise AtomicPlannerRoundProjectionError(
+            "canonical actions must retain minItems >= 1 during projection"
+        )
+    admitted_tool_ids = extract_admitted_tool_ids_from_discriminated_actions_schema(
+        actions_schema
+    )
+    projected_properties = {
+        key: copy.deepcopy(value) for key, value in properties.items() if key != "actions"
+    }
+    projected_properties["actions"] = {
+        "type": "array",
+        "minItems": min_items,
+        "items": _openai_strict_atomic_planner_action_item_schema(admitted_tool_ids),
+    }
+    projected: JsonObject = {
+        "type": "object",
+        "properties": projected_properties,
+        "required": list(canonical_parameters.get("required") or []),
+        "additionalProperties": canonical_parameters.get("additionalProperties", False),
+    }
+    return project_json_schema_for_openai_strict_tool_parameters(projected)
 
 
 def _promote_optional_properties_for_openai_strict(node: JsonValue) -> None:
