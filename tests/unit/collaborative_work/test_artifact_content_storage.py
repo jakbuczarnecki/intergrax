@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Mapping, Optional
@@ -59,7 +60,15 @@ from intergrax.contracts.collaborative_work import (
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.contracts.validation import compute_sha256_content_digest
-from intergrax.integrations.contracts.object_storage import ObjectStorage, StoredObject
+from intergrax.integrations._shared.conformance import (
+    assert_conditional_object_storage,
+    assert_object_storage,
+)
+from intergrax.integrations.contracts.object_storage import (
+    ConditionalObjectStorage,
+    ObjectStorage,
+    StoredObject,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -91,10 +100,14 @@ class _UnusedRuntimeEvaluator:
 
 
 class InMemoryObjectStorage:
-    """Strict in-memory ``ObjectStorage`` test double."""
+    """Strict in-memory ``ConditionalObjectStorage`` test double."""
 
     def __init__(self) -> None:
         self._objects: dict[str, StoredObject] = {}
+        self._lock = threading.Lock()
+        self.create_attempts = 0
+        self.successful_creates = 0
+        self.overwrites = 0
 
     def put(
         self,
@@ -104,19 +117,46 @@ class InMemoryObjectStorage:
         content_type: str = "application/octet-stream",
         metadata: Optional[Mapping[str, str]] = None,
     ) -> None:
-        self._objects[key] = StoredObject(
-            key=key,
-            body=body,
-            content_type=content_type,
-            metadata=dict(metadata or {}),
-            size_bytes=len(body),
-        )
+        with self._lock:
+            if key in self._objects:
+                self.overwrites += 1
+            self._objects[key] = StoredObject(
+                key=key,
+                body=body,
+                content_type=content_type,
+                metadata=dict(metadata or {}),
+                size_bytes=len(body),
+            )
+
+    def put_if_absent(
+        self,
+        key: str,
+        body: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+        metadata: Optional[Mapping[str, str]] = None,
+    ) -> bool:
+        with self._lock:
+            self.create_attempts += 1
+            if key in self._objects:
+                return False
+            self._objects[key] = StoredObject(
+                key=key,
+                body=body,
+                content_type=content_type,
+                metadata=dict(metadata or {}),
+                size_bytes=len(body),
+            )
+            self.successful_creates += 1
+            return True
 
     def get(self, key: str) -> StoredObject | None:
-        return self._objects.get(key)
+        with self._lock:
+            return self._objects.get(key)
 
     def delete(self, key: str) -> None:
-        self._objects.pop(key, None)
+        with self._lock:
+            self._objects.pop(key, None)
 
     def presigned_url(self, key: str, *, expires_in_seconds: int = 3600, method: str = "GET") -> str:
         return f"https://example.test/{key}?method={method}&exp={expires_in_seconds}"
@@ -125,16 +165,17 @@ class InMemoryObjectStorage:
         return None
 
     def corrupt(self, key: str, body: bytes) -> None:
-        existing = self._objects.get(key)
-        if existing is None:
-            raise KeyError(key)
-        self._objects[key] = StoredObject(
-            key=key,
-            body=body,
-            content_type=existing.content_type,
-            metadata=existing.metadata,
-            size_bytes=len(body),
-        )
+        with self._lock:
+            existing = self._objects.get(key)
+            if existing is None:
+                raise KeyError(key)
+            self._objects[key] = StoredObject(
+                key=key,
+                body=body,
+                content_type=existing.content_type,
+                metadata=existing.metadata,
+                size_bytes=len(body),
+            )
 
 
 def _store_request(
@@ -330,7 +371,11 @@ def test_artifact_content_store_runtime_protocol() -> None:
 
 
 def test_object_storage_runtime_protocol() -> None:
-    assert isinstance(InMemoryObjectStorage(), ObjectStorage)
+    backend = InMemoryObjectStorage()
+    assert isinstance(backend, ObjectStorage)
+    assert isinstance(backend, ConditionalObjectStorage)
+    assert_object_storage(backend)
+    assert_conditional_object_storage(backend)
 
 
 # --- PUT ---
@@ -576,18 +621,159 @@ def test_mp3_publication_round_trip_without_raw_body_in_metadata() -> None:
 
 
 def test_put_persistence_failure_when_unreadable_after_write() -> None:
-    class _UnreadableAfterPut(InMemoryObjectStorage):
-        def put(
+    class _UnreadableAfterPutIfAbsent(InMemoryObjectStorage):
+        def put_if_absent(
             self,
             key: str,
             body: bytes,
             *,
             content_type: str = "application/octet-stream",
             metadata: Optional[Mapping[str, str]] = None,
-        ) -> None:
-            super().put(key, body, content_type=content_type, metadata=metadata)
-            self._objects.pop(key, None)
+        ) -> bool:
+            created = super().put_if_absent(
+                key,
+                body,
+                content_type=content_type,
+                metadata=metadata,
+            )
+            if created:
+                with self._lock:
+                    self._objects.pop(key, None)
+            return created
 
-    store = ObjectStorageArtifactContentStore(_UnreadableAfterPut())
+    store = ObjectStorageArtifactContentStore(_UnreadableAfterPutIfAbsent())
     with pytest.raises(ArtifactContentPersistenceError):
         store.put(_store_request())
+
+
+# --- CONCURRENT CREATE ---
+
+
+def test_concurrent_put_creates_single_physical_object() -> None:
+    backend = InMemoryObjectStorage()
+    store_a = ObjectStorageArtifactContentStore(backend)
+    store_b = ObjectStorageArtifactContentStore(backend)
+    request = _store_request()
+    barrier = threading.Barrier(2)
+    results: list[ArtifactContentRef] = []
+    errors: list[BaseException] = []
+    lock = threading.Lock()
+
+    def _worker(store: ObjectStorageArtifactContentStore) -> None:
+        try:
+            barrier.wait()
+            content_ref = store.put(request)
+            with lock:
+                results.append(content_ref)
+        except BaseException as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [
+        threading.Thread(target=_worker, args=(store_a,)),
+        threading.Thread(target=_worker, args=(store_b,)),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert not errors
+    assert len(results) == 2
+    assert results[0] == results[1]
+    assert backend.successful_creates == 1
+    assert backend.overwrites == 0
+    assert backend.create_attempts >= 1
+
+
+def test_concurrent_put_different_media_type_single_physical_object() -> None:
+    backend = InMemoryObjectStorage()
+    store_a = ObjectStorageArtifactContentStore(backend)
+    store_b = ObjectStorageArtifactContentStore(backend)
+    request_json = _store_request(media_type="application/json")
+    request_text = _store_request(media_type="text/plain")
+    barrier = threading.Barrier(2)
+    results: list[ArtifactContentRef] = []
+    errors: list[BaseException] = []
+    lock = threading.Lock()
+
+    def _worker(
+        store: ObjectStorageArtifactContentStore,
+        request: StoreArtifactContentRequest,
+    ) -> None:
+        try:
+            barrier.wait()
+            content_ref = store.put(request)
+            with lock:
+                results.append(content_ref)
+        except BaseException as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [
+        threading.Thread(target=_worker, args=(store_a, request_json)),
+        threading.Thread(target=_worker, args=(store_b, request_text)),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert not errors
+    assert len(results) == 2
+    assert results[0].content_ref == results[1].content_ref
+    assert results[0].integrity_digest == results[1].integrity_digest
+    assert results[0].size_bytes == results[1].size_bytes
+    media_types = {results[0].media_type, results[1].media_type}
+    assert media_types == {"application/json", "text/plain"}
+    assert backend.successful_creates == 1
+    assert backend.overwrites == 0
+
+
+def test_concurrent_put_corrupt_winner_fails_closed() -> None:
+    class _CorruptingWinnerStorage(InMemoryObjectStorage):
+        def put_if_absent(
+            self,
+            key: str,
+            body: bytes,
+            *,
+            content_type: str = "application/octet-stream",
+            metadata: Optional[Mapping[str, str]] = None,
+        ) -> bool:
+            created = super().put_if_absent(
+                key,
+                b"corrupted-by-race",
+                content_type=content_type,
+                metadata=metadata,
+            )
+            return created
+
+    backend = _CorruptingWinnerStorage()
+    store_a = ObjectStorageArtifactContentStore(backend)
+    store_b = ObjectStorageArtifactContentStore(backend)
+    request = _store_request()
+    barrier = threading.Barrier(2)
+    errors: list[BaseException] = []
+    lock = threading.Lock()
+
+    def _worker(store: ObjectStorageArtifactContentStore) -> None:
+        try:
+            barrier.wait()
+            store.put(request)
+        except BaseException as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [
+        threading.Thread(target=_worker, args=(store_a,)),
+        threading.Thread(target=_worker, args=(store_b,)),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(errors) == 2
+    assert all(isinstance(error, ArtifactContentIntegrityError) for error in errors)
+    assert backend.successful_creates == 1
+    assert backend.overwrites == 0

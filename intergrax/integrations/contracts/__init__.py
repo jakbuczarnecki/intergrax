@@ -62,6 +62,7 @@ from intergrax.integrations.contracts.message_bus import (
     TaskStatus,
 )
 from intergrax.integrations.contracts.object_storage import (
+    ConditionalObjectStorage,
     ObjectStorage,
     PresignedUrlMethod,
     StoredObject,
@@ -145,6 +146,7 @@ __all__ = [
     "KeyValueCache",
     "MessageBus",
     "ObjectStorage",
+    "ConditionalObjectStorage",
     "PresignedUrlMethod",
     "StoredObject",
     "NotificationAdapter",

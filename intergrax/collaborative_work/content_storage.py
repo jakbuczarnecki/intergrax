@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.contracts.collaborative_work import ArtifactContentRef
 from intergrax.contracts.validation import compute_sha256_content_digest
-from intergrax.integrations.contracts.object_storage import ObjectStorage
+from intergrax.integrations.contracts.object_storage import ConditionalObjectStorage
 
 SCHEMA_STORE_ARTIFACT_CONTENT_REQUEST_V1: Final = "store_artifact_content_request.v1"
 SCHEMA_GET_ARTIFACT_CONTENT_REQUEST_V1: Final = "get_artifact_content_request.v1"
@@ -178,7 +178,7 @@ def _verify_body_matches_descriptor(body: bytes, content_ref: ArtifactContentRef
 class ObjectStorageArtifactContentStore:
     """Object-storage-backed ``ArtifactContentStore`` implementation."""
 
-    def __init__(self, object_storage: ObjectStorage) -> None:
+    def __init__(self, object_storage: ConditionalObjectStorage) -> None:
         self._object_storage = object_storage
 
     def put(self, request: StoreArtifactContentRequest) -> ArtifactContentRef:
@@ -209,19 +209,32 @@ class ObjectStorageArtifactContentStore:
             "schema_version": SCHEMA_STORED_ARTIFACT_CONTENT_V1,
             "size_bytes": str(len(request.body)),
         }
-        self._object_storage.put(
+        created = self._object_storage.put_if_absent(
             physical_key,
             request.body,
             content_type=request.media_type,
             metadata=metadata,
         )
-        persisted = self._object_storage.get(physical_key)
-        if persisted is None:
+        if created:
+            persisted = self._object_storage.get(physical_key)
+            if persisted is None:
+                raise ArtifactContentPersistenceError(
+                    "object storage reported success but content is not readable",
+                )
+            self._verify_existing_object(
+                body=persisted.body,
+                expected_digest=digest,
+                expected_size=len(request.body),
+            )
+            return content_ref
+
+        winner = self._object_storage.get(physical_key)
+        if winner is None:
             raise ArtifactContentPersistenceError(
-                "object storage reported success but content is not readable",
+                "object storage reported conflict but content is not readable",
             )
         self._verify_existing_object(
-            body=persisted.body,
+            body=winner.body,
             expected_digest=digest,
             expected_size=len(request.body),
         )

@@ -7,6 +7,7 @@ from __future__ import annotations
 import ast
 import inspect
 from pathlib import Path
+from typing import get_type_hints
 
 import pytest
 
@@ -14,6 +15,7 @@ from intergrax.collaborative_work.content_storage import (
     ArtifactContentStore,
     ObjectStorageArtifactContentStore,
 )
+from intergrax.integrations.contracts.object_storage import ConditionalObjectStorage
 
 pytestmark = pytest.mark.unit
 
@@ -112,6 +114,23 @@ def test_mp3f_module_does_not_import_metadata_repository() -> None:
     assert "persistence" not in source
     assert "ExecutionProvenanceRef" not in source
     assert "ProofReceipt" not in source
+
+
+def test_mp3f_adapter_requires_conditional_object_storage() -> None:
+    hints = get_type_hints(ObjectStorageArtifactContentStore.__init__)
+    assert hints["object_storage"] is ConditionalObjectStorage
+
+
+def test_mp3f_adapter_put_does_not_call_overwrite_capable_put() -> None:
+    source = inspect.getsource(ObjectStorageArtifactContentStore.put)
+    assert "put_if_absent" in source
+    assert "self._object_storage.put(" not in source.replace("put_if_absent", "")
+
+
+def test_mp3f_adapter_put_does_not_use_threading_lock() -> None:
+    source = _CONTENT_STORAGE_PATH.read_text(encoding="utf-8")
+    assert "threading" not in source
+    assert "Lock" not in source
 
 
 def test_mp3f_module_does_not_define_plugin_registry() -> None:
