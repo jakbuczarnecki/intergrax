@@ -424,6 +424,8 @@ Marketplace is a **product** built on top of federated catalog sources.
 
 **Stage 11 (implemented):** read-only product surface at `intergrax/marketplace/` with typed `MarketplaceCapabilityListing` wrapping canonical `CapabilityCatalogEntry`, `MarketplaceCapabilityCatalogSource` implementing `CapabilityCatalogSource`, and `MarketplaceCatalogService` joining Stage-3 discovery with product metadata. Commercial metadata is **display-only** and **must not** affect governance, ranking, or runtime selection.
 
+**Marketplace ≠ execution trust:** A public or official marketplace listing does not grant permission to execute third-party code in-process. Host isolation/trust policy may refuse execution while the capability remains catalog-discoverable. See [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md) (Stage 12).
+
 Public Marketplace is **optional** for platform operation (see Enterprise deployment).
 
 ---
@@ -521,7 +523,31 @@ Contracts: `intergrax/contracts/autonomous_work/capability_acquisition.py`. Adap
 
 **Current fact:** Platform Plugins use a **trusted in-process** Python extension model ([`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md)). Installing third-party packages deploys code into the host process; Platform Plugins provide admission and qualification controls, not arbitrary-code sandboxing.
 
-Public marketplace growth may require **stronger isolation** (remote execution, isolation providers). That is **future roadmap work** — do not design a new execution engine in Capability Catalog V1. Record as Stage 12 in the [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md).
+Public marketplace growth may require **stronger isolation** (remote execution, isolation providers). That is **future roadmap work** — do not design a new execution engine in Capability Catalog V1.
+
+### Stage 12 — Isolation assessment (implemented)
+
+Stage 12 is an **assessment and ADR** stage — not isolation runtime shipment. Canonical decision: [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md).
+
+```text
+execution_posture metadata ≠ execution enforcement proof
+catalog discovery ≠ sandbox decision authority
+marketplace source ≠ trust authority
+```
+
+| Boundary | Rule |
+|----------|------|
+| Execution posture metadata | **May** be descriptive in future catalog projections (`TRUSTED_IN_PROCESS`, `HOST_ISOLATION_REQUIRED`, `REMOTE_EXECUTION_REQUIRED`, `UNKNOWN`) |
+| Catalog enforcement | Capability Catalog **MUST NOT** enforce isolation, choose isolation provider, launch sandbox, or mutate registries |
+| Marketplace | Listing (`CATALOG_AVAILABLE`) **≠** execution permission (`HOST_AVAILABLE`); marketplace source **≠** trust authority |
+| Skill | Not a direct execution unit — isolation applies to Tool/Agent domain paths only |
+| Default bootstrap | `wire_application_environment()` unchanged; trusted in-process remains default |
+
+**Two isolation planes (frozen):** package loading/import risk (third-party code imported at EP load) is separate from runtime capability execution risk (Tool/Agent after bootstrap). Remote execution of runtime calls does not solve unsafe plugin import if the package was already imported into the trusted host.
+
+**Future fail-closed rule (not wired):** when effective posture requires isolation and no qualifying provider exists → **no implicit fallback** to trusted in-process.
+
+Plan tracker: [Stage 12 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-12--isolation-and-external-execution-maturity).
 
 ---
 
@@ -666,7 +692,7 @@ UniversalCapabilityEngine
 | Skill version pinning | **Implemented** — Skill domain + discovery projection (Stage 6) |
 | Tools/Skills typed bootstrap evidence | **Implemented** — Stage 10 `DomainPluginLoadReport` on `ApplicationPlatformPluginEvidence` |
 | Private enterprise catalog for Tool/Skill | Planned |
-| Third-party isolation beyond in-process | Future |
+| Third-party isolation beyond in-process | **Assessment complete** — [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md); runtime provider not shipped |
 | Monetization / metering consumer | Future |
 | Marketplace product surface | **Implemented** — read-only contracts at `intergrax/contracts/marketplace/` and product layer at `intergrax/marketplace/`; federation via existing `FederatedCapabilityCatalog`; no billing, install, or registry mutation |
 

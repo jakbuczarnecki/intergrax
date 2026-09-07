@@ -779,6 +779,10 @@ plugin capability (consumes explicit bindings only)
 
 Future isolated execution (subprocess, WASM, remote worker) would be a **separate architecture program** and must not be implied by current loaders.
 
+**Stage 12 assessment (2026-09-07):** Current security posture remains **trusted in-process** — **not sandbox**, **not hostile-code containment**, **not signing-verified supply chain**. Capability Catalog discovery may describe execution posture metadata in future stages but **must not** enforce isolation. Isolation decision authority belongs to host security profile + governance + qualification evidence + domain execution paths — not catalog or marketplace. See [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md).
+
+**Package loading vs runtime execution:** Entry-point load paths import third-party Python into the host process; manifest validation does not prevent malicious import side effects. Remote Tool execution does not remediate unsafe plugin import if the package was already loaded in-process.
+
 ---
 
 ## 17. Conflict semantics

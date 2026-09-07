@@ -256,7 +256,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | No change to default in-process bootstrap without explicit host profile opt-in. |
 | **Completion criteria** | Published assessment + go/no-go criteria for isolation providers; roadmap item with explicit dependencies. |
 | **Depends on** | Stage 11 optional (public third-party growth). |
-| **Maturity** | **Future** — assessment stage. |
+| **Maturity** | **Implemented assessment — awaiting independent audit** — threat model and isolation boundary frozen in [ADR-SEC-002](../../technical/adr/entries/2026-09-07/ADR-SEC-002.md); go/no-go criteria for future isolation providers; two-plane model (package loading vs runtime execution); catalog/marketplace explicitly not enforcement authority; no runtime/bootstrap change; no `execution_posture` schema until reuse threshold met. |
 
 ---
 
