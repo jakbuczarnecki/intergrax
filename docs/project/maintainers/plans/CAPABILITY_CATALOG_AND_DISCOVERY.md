@@ -273,7 +273,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Runtime execution tests without billing side effects. |
 | **Completion criteria** | Metering consumer can attribute usage to source-qualified capability identity; billing subsystem remains separate. |
 | **Depends on** | Stages 2, 5; optional Stage 11 for publisher metadata richness. |
-| **Maturity** | **Future** — AC-4 notes billing not implemented. |
+| **Maturity** | **Implemented — awaiting independent audit** — typed `CapabilityUsageEvent`, explicit attribution recorder/consumer substrate, no registry prices, no billing subsystem; runtime automatic emission not wired (execution boundary lacks canonical provenance handoff). |
 
 ---
 

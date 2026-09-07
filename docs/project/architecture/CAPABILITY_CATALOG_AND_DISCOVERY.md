@@ -549,6 +549,36 @@ marketplace source ≠ trust authority
 
 Plan tracker: [Stage 12 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-12--isolation-and-external-execution-maturity).
 
+### Stage 13 — Usage metering (implemented)
+
+Stage 13 delivers enterprise-grade **metering substrate** — not billing, not pricing, not checkout.
+
+```text
+discovery/selection provenance snapshot
+→ immutable usage attribution
+→ domain/runtime recording (explicit caller)
+→ CapabilityUsageEvent
+→ pluggable CapabilityUsageConsumer
+→ attribution/reporting projection
+```
+
+| Boundary | Rule |
+|----------|------|
+| Discovery | Read-only — **never** emits usage |
+| Selection | Evidence only — selection **≠** usage |
+| Usage event | Typed `CapabilityUsageEvent` with `CapabilityIdentityKey` + `CapabilityProvenance` snapshot |
+| Publisher attribution | From `CapabilityProvenance.publisher` only — no Marketplace live lookup |
+| Skill | Not a direct metered execution subject |
+| Registries | No price/billing fields on `ToolRegistry` / `SkillRegistry` / `AgentRegistry` |
+| Runtime default | Unchanged unless caller injects recorder with explicit attribution |
+| Billing | Future consumer downstream of usage evidence — out of Stage 13 scope |
+
+**Runtime integration decision:** `RuntimeToolInvoker` currently receives `tool_id` and registry lookup only — no canonical source-qualified provenance in the public invoke contract. Stage 13 therefore ships typed event + `CapabilityUsageRecorder` requiring explicit attribution; **automatic runtime emission is intentionally not fabricated** from `tool_id` or registry lookup.
+
+**Observability distinction:** `CostDashboardMetrics` (`total_cost_usd`, token totals) remains an observability/dashboard projection — not Stage-13 usage authority. `CapabilityUsageEvent` is source-qualified capability usage evidence for downstream metering.
+
+Plan tracker: [Stage 13 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-13--usage-metering).
+
 ---
 
 ## Observability and evidence
