@@ -141,6 +141,9 @@ class LLMAdapter(ABC):
     def supports_tools(self) -> bool:
         return False
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        """Whether provider-enforced strict tool argument schemas are supported."""
+        return False
 
     def generate_with_tools(
         self,

@@ -825,3 +825,57 @@ def test_apply_tool_name_mapping_to_responses_input_preserves_function_call_outp
     mapped = _apply_tool_name_mapping_to_responses_input(input_items, mapping)
     assert mapped[0]["name"] == "catalog_lookup_item"
     assert mapped[1] == {"type": "function_call_output", "call_id": "c1", "output": "{}"}
+
+
+def test_map_tools_projects_strict_atomic_planner_round() -> None:
+    from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+        REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD,
+    )
+    from intergrax.runtime.nexus.tools.atomic_planner_round import (
+        build_atomic_planner_round_schema,
+    )
+    from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
+
+    canonical = build_atomic_planner_round_schema(poc_business_tool_schemas())
+    mapped = _map_tools_to_responses_api([canonical])[0]
+
+    assert mapped["strict"] is True
+    assert mapped["name"] == "intergrax.planner.round"
+    assert canonical["function"][REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD] is True
+    actions = mapped["parameters"]["properties"]["actions"]
+    assert actions["minItems"] == 1
+    one_of = actions["items"]["oneOf"]
+    assert len(one_of) == 3
+    assert one_of[0]["properties"]["tool_id"]["const"] in {
+        "production.metrics.query",
+        "production.staffing.attendance.read",
+        "production.telemetry.read",
+    }
+
+
+def test_map_tools_does_not_apply_strict_to_regular_function_tools() -> None:
+    mapped = _map_tools_to_responses_api(_CANONICAL_SQL_TOOL)[0]
+    assert "strict" not in mapped
+    assert mapped["parameters"] == _CANONICAL_SQL_TOOL[0]["function"]["parameters"]
+
+
+def test_generate_with_tools_sends_strict_projected_atomic_round_schema() -> None:
+    from intergrax.runtime.nexus.tools.atomic_planner_round import (
+        build_atomic_planner_round_schema,
+    )
+    from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
+
+    client = MagicMock()
+    client.responses.create.return_value = _mock_create_response(output_text="planned")
+    adapter = _capture_create_client(client)
+    round_schema = build_atomic_planner_round_schema(poc_business_tool_schemas())
+
+    adapter.generate_with_tools(
+        [ChatMessage(role="user", content="plan")],
+        [round_schema],
+        run_id="r-strict-round",
+    )
+
+    sent_tool = client.responses.create.call_args.kwargs["tools"][0]
+    assert sent_tool["strict"] is True
+    assert sent_tool["parameters"]["properties"]["actions"]["minItems"] == 1

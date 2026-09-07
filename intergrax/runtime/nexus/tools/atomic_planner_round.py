@@ -21,6 +21,9 @@ from intergrax.llm_adapters.contracts.tool_call import (
     LLMToolCall,
     finalize_accepted_tool_call_identities,
 )
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD,
+)
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerActionContext,
     NativePlannerActionContextError,
@@ -213,6 +216,7 @@ def build_atomic_planner_round_schema(
                 "not an executable business tool."
             ),
             "parameters": parameters,
+            REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD: True,
         },
     }
 

@@ -50,6 +50,9 @@ class CatalogCapabilityAdapter(LLMAdapter):
     def supports_tools(self) -> bool:
         return self._record.supports_tools and self._inner.supports_tools()
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return self._inner.supports_strict_tool_argument_conformance()
+
     def supports_structured_output(self) -> bool:
         return self._record.supports_structured_output or self._inner.supports_structured_output()
 

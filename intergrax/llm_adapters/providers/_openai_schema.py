@@ -27,6 +27,62 @@ def project_json_schema_for_openai_strict(schema: Mapping[str, JsonValue]) -> Js
     return projected
 
 
+def project_json_schema_for_openai_strict_tool_parameters(
+    schema: Mapping[str, JsonValue],
+) -> JsonObject:
+    """Return strict-compatible tool ``parameters`` preserving optional-field semantics."""
+    projected: JsonObject = copy.deepcopy(dict(schema))
+    _promote_optional_properties_for_openai_strict(projected)
+    _normalize_openai_strict_node(projected)
+    return projected
+
+
+def _promote_optional_properties_for_openai_strict(node: JsonValue) -> None:
+    if isinstance(node, dict):
+        defs = node.get("$defs")
+        if isinstance(defs, dict):
+            for value in defs.values():
+                _promote_optional_properties_for_openai_strict(value)
+
+        for key in ("properties", "patternProperties", "definitions"):
+            properties = node.get(key)
+            if isinstance(properties, dict):
+                for value in properties.values():
+                    _promote_optional_properties_for_openai_strict(value)
+
+        for key in ("items", "additionalItems", "not"):
+            child = node.get(key)
+            if child is not None:
+                _promote_optional_properties_for_openai_strict(child)
+
+        for key in ("prefixItems", "allOf", "anyOf", "oneOf"):
+            children = node.get(key)
+            if isinstance(children, list):
+                for child in children:
+                    _promote_optional_properties_for_openai_strict(child)
+
+        properties = node.get("properties")
+        if isinstance(properties, dict) and properties:
+            required = list(node.get("required") or [])
+            required_set = set(required)
+            for prop_name, prop_schema in properties.items():
+                if prop_name in required_set:
+                    continue
+                if isinstance(prop_schema, dict) and "anyOf" in prop_schema:
+                    required_set.add(prop_name)
+                    continue
+                required_set.add(prop_name)
+                properties[prop_name] = {
+                    "anyOf": [copy.deepcopy(prop_schema), {"type": "null"}],
+                }
+            node["required"] = sorted(required_set)
+        return
+
+    if isinstance(node, list):
+        for item in node:
+            _promote_optional_properties_for_openai_strict(item)
+
+
 def _normalize_openai_strict_node(node: JsonValue) -> None:
     if isinstance(node, dict):
         defs = node.get("$defs")

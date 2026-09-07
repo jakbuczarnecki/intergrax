@@ -13,6 +13,9 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD,
+)
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
     AtomicPlannerRoundError,
@@ -124,6 +127,8 @@ def test_extract_business_tool_schema_entries_fail_closed_on_malformed() -> None
 def test_discriminated_schema_uses_one_of_per_tool() -> None:
     schemas = poc_business_tool_schemas()
     params = build_atomic_planner_round_parameters_schema(schemas)
+    round_schema = build_atomic_planner_round_schema(schemas)
+    assert round_schema["function"][REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD] is True
     properties = params["properties"]
     assert isinstance(properties, dict)
     actions = properties["actions"]
@@ -354,6 +359,9 @@ class _TerminationCapturingAdapter(LLMAdapter):
     def supports_tools(self) -> bool:
         return True
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return True
+
     def supports_structured_output(self) -> bool:
         return False
 
@@ -379,6 +387,27 @@ class _TerminationCapturingAdapter(LLMAdapter):
     ):
         self.received_tool_choice = tool_choice
         return build_adapter_response(content=self._content)
+
+
+def test_atomic_round_fails_closed_when_adapter_lacks_strict_capability() -> None:
+    class _StrictlessAdapter(_TerminationCapturingAdapter):
+        def supports_strict_tool_argument_conformance(self) -> bool:
+            return False
+
+    adapter = _StrictlessAdapter(content="unused")
+    planner = ToolPlanningService(adapter, _registry())
+    protocol = NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
+    )
+    from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+        StrictToolArgumentConformanceError,
+    )
+
+    with pytest.raises(StrictToolArgumentConformanceError, match="does not support"):
+        planner.plan_native_round(
+            [ChatMessage(role="user", content="Plan one round.")],
+            protocol_config=protocol,
+        )
 
 
 def test_atomic_round_termination_without_tool_calls() -> None:

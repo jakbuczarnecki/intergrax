@@ -17,6 +17,9 @@ from intergrax.llm_adapters.contracts.native_tool_choice import (
     NativeToolChoice,
     project_native_tool_choice_for_provider,
 )
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    assert_strict_tool_argument_conformance_supported,
+)
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash, to_openai_tools
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
@@ -394,6 +397,10 @@ class ToolPlanningService:
         _sync_routing_before_tool_planner_llm(
             self._routing_runtime_config,
             run_id=run_id,
+        )
+        assert_strict_tool_argument_conformance_supported(
+            self.llm,
+            provider_tools_schema,
         )
         result = self.llm.generate_with_tools(
             provider_messages,

@@ -201,6 +201,12 @@ class FailoverLLMAdapter(LLMAdapter):
     def supports_structured_output(self) -> bool:
         return any(adapter.supports_structured_output() for adapter in self._adapters)
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return any(
+            adapter.supports_strict_tool_argument_conformance()
+            for adapter in self._adapters
+        )
+
     def supports_vision(self) -> bool:
         return any(adapter.supports_vision() for adapter in self._adapters)
 

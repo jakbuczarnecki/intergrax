@@ -138,6 +138,9 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
     def supports_tools(self) -> bool:
         return self._delegate.supports_tools()
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return self._delegate.supports_strict_tool_argument_conformance()
+
     def supports_structured_output(self) -> bool:
         return self._delegate.supports_structured_output()
 

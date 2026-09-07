@@ -13,7 +13,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from intergrax.llm_adapters.providers._openai_schema import (
     prepare_openai_strict_generation_schema,
     project_json_schema_for_openai_strict,
+    project_json_schema_for_openai_strict_tool_parameters,
 )
+from intergrax.runtime.nexus.tools.atomic_planner_round import (
+    build_atomic_planner_round_parameters_schema,
+)
+from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     ClaimProposal,
     IncidentReasoningProposal,
@@ -139,3 +144,21 @@ def test_defs_references_are_normalized_recursively() -> None:
     assert branch_a["required"] == ["detail", "kind"]
     assert branch_b["required"] == ["count", "kind"]
     assert "default" not in branch_a["properties"]["detail"]
+
+
+def test_atomic_planner_tool_parameters_projection_preserves_discriminator_semantics() -> None:
+    canonical = build_atomic_planner_round_parameters_schema(poc_business_tool_schemas())
+    projected = project_json_schema_for_openai_strict_tool_parameters(canonical)
+
+    actions = projected["properties"]["actions"]
+    assert actions["minItems"] == 1
+    one_of = actions["items"]["oneOf"]
+    assert len(one_of) == 3
+    for branch in one_of:
+        assert branch["additionalProperties"] is False
+        assert "const" in branch["properties"]["tool_id"]
+
+    action_context = projected["properties"]["action_context"]
+    assert "anyOf" in action_context
+    assert "action_context" in projected["required"]
+    assert projected["additionalProperties"] is False

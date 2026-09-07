@@ -29,7 +29,13 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
-from intergrax.llm_adapters.providers._openai_schema import prepare_openai_strict_generation_schema
+from intergrax.llm_adapters.providers._openai_schema import (
+    prepare_openai_strict_generation_schema,
+    project_json_schema_for_openai_strict_tool_parameters,
+)
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    function_tool_requires_strict_argument_conformance,
+)
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 # OpenAI SDK Client(...) kwargs — must never reach responses.create/stream.
@@ -376,10 +382,19 @@ def _map_tools_to_responses_api(
         out: Dict[str, Any] = {"type": "function", "name": name}
         if "description" in fn:
             out["description"] = fn["description"]
-        if "parameters" in fn:
+        requires_strict = function_tool_requires_strict_argument_conformance(tool)
+        if requires_strict:
+            if "parameters" in fn:
+                parameters = fn["parameters"]
+                if isinstance(parameters, dict):
+                    out["parameters"] = project_json_schema_for_openai_strict_tool_parameters(
+                        parameters
+                    )
+                else:
+                    out["parameters"] = parameters
+            out["strict"] = True
+        elif "parameters" in fn:
             out["parameters"] = fn["parameters"]
-        if "strict" in fn:
-            out["strict"] = fn["strict"]
         mapped.append(out)
     return mapped
 
@@ -642,6 +657,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         """
         Signal to higher-level orchestration that this adapter supports tools.
         """
+        return True
+
+    def supports_strict_tool_argument_conformance(self) -> bool:
         return True
 
     def supports_vision(self) -> bool:
