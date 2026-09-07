@@ -101,8 +101,8 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **COLLAB-WORK-2F** (execution linkage / Nexus bridge)
-**Next task:** COLLAB-WORK-2F — execution linkage / Nexus bridge
+**Current active task:** **COLLAB-WORK-2F** (Unified Execution linkage; architecture/identity granularity **FROZEN**, implementation **NOT STARTED**)
+**Next task:** COLLAB-WORK-2F — Unified Execution linkage
 
 ## Cursor read scope (token budget)
 
@@ -297,11 +297,15 @@ WorkItemState != TaskState
 ```
 
 A WorkItem is durable collaborative work: it may outlive a task or run,
-contain multiple Nexus Tasks/runs, involve humans and agents, and produce
-multiple artifacts and decisions. A Nexus Task remains an execution unit.
-Nexus remains the execution/orchestration plane and does not own
-collaborative membership or WorkItem lifecycle. Real `task_id` and `run_id`
-remain execution identities; collaborative identity does not replace them.
+contain multiple Unified Executions, involve humans and agents, and produce
+multiple artifacts and decisions. A Nexus Task remains an execution unit when
+orchestration strategy applies. Nexus is an internal orchestration control
+plane — not the Collaborative Work contract boundary — and does not own
+collaborative membership or WorkItem lifecycle. Canonical
+`TaskId`/`RunId`/`AttemptId`/`ExecutionId` remain execution identities;
+collaborative identity does not replace them. WorkItem execution links use
+neutral `ExecutionProvenanceRef` (all four IDs required; `EventId` out of
+scope) — provenance only, no lifecycle substitution.
 
 ### Artifacts and decisions
 
@@ -414,11 +418,11 @@ not replace existing Evidence.
 
 **Owning domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) — frozen by ADR-MP-003
 
-**Reused (not owners):** `ORCHESTRATION` (graph policy; explicit WorkItem context bridge), `UNIFIED_EXECUTION_RUNTIME` / NEXUS (`Task`, `run_id`, `attempt`, outcomes), `BACKGROUND_TASKS` (may execute work associated with a WorkItem), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance consumption).
+**Reused (not owners):** `ORCHESTRATION` (graph policy; explicit WorkItem context consumption), `UNIFIED_EXECUTION_RUNTIME` (`TaskId`, `RunId`, `AttemptId`, `ExecutionId`, outcomes), `NEXUS` (internal orchestration consumer/producer of Executions — not a Collaborative Work contract dependency), `BACKGROUND_TASKS` (may execute work associated with a WorkItem), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance consumption).
 
-**New required:** WorkItem, Assignment, shared-work lifecycle, concurrency, and idempotency invariants — **contracts via COLLAB-WORK-2A (closed); implementation via COLLAB-WORK-2B…2G**.
+**New required:** WorkItem, Assignment, shared-work lifecycle, concurrency, idempotency, and `WorkItemExecutionLink` provenance — **contracts via COLLAB-WORK-2A (closed); implementation via COLLAB-WORK-2B…2G**.
 
-**Next active task:** **COLLAB-WORK-2F**
+**Next active task:** **COLLAB-WORK-2F** (NOT STARTED; architecture/identity granularity **FROZEN**)
 
 ---
 
@@ -536,7 +540,7 @@ and implementation planning.
 | **MP-INV-21** | Meaningful side-effecting commands are idempotent. |
 | **MP-INV-22** | Meaningful external side effects remain policy-gated. |
 | **MP-INV-23** | Approval/evidence does not itself authorize execution. |
-| **MP-INV-24** | `task_id`/`run_id` remain real execution identities. |
+| **MP-INV-24** | `TaskId`/`RunId`/`AttemptId`/`ExecutionId` remain real execution identities; WorkItem links use full four-part `ExecutionProvenanceRef`. |
 | **MP-INV-25** | Collaborative Activity != Runtime Trace. |
 | **MP-INV-26** | Projections/indexes/activity feeds never become authority sources. |
 | **MP-INV-27** | A2A/provider transports do not leak into canonical Multiplayer contracts. |
@@ -558,7 +562,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-006** | Principal-scoped ContextView |
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted** — MP-2 **IMPLEMENTATION IN PROGRESS**; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**; COLLAB-WORK-2E **APPROVED / CLOSED**; active task **COLLAB-WORK-2F** (NOT STARTED). ADR-MP-004…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted** — MP-2 **IMPLEMENTATION IN PROGRESS**; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**; COLLAB-WORK-2E **APPROVED / CLOSED**; active task **COLLAB-WORK-2F** (NOT STARTED; architecture/identity granularity **FROZEN**). ADR-MP-004…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 

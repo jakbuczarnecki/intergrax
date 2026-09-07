@@ -6,7 +6,7 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
-**Current active task:** **COLLAB-WORK-2F** (execution linkage / Nexus bridge)
+**Current active task:** **COLLAB-WORK-2F** (Unified Execution linkage; architecture/identity granularity **FROZEN**, implementation **NOT STARTED**)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -255,7 +255,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Exact scope** | `WorkItem`, `WorkItemState`, `Assignment`, `AssignmentState`, typed lifecycle transition requests/helpers in `intergrax/contracts/collaborative_work.py`; explicit transition rules; Assignment != AgentAssignment documented; no persistence; no execution linkage |
 | **REUSED** | MP-1 `CollaborativePrincipal`, tenant/workspace scoping, revision semantics direction |
 | **NEW** | WorkItem and Assignment collaborative contracts; lifecycle transition specification |
-| **Explicit out of scope** | Repositories, services, APIs, Nexus wiring, execution linkage / Nexus bridge, LKW/channel IDs, WorkArtifact (MP-3), Decision (MP-4), Activity (MP-6), runtime implementation |
+| **Explicit out of scope** | Repositories, services, APIs, Nexus wiring, Unified Execution linkage (COLLAB-WORK-2F), LKW/channel IDs, WorkArtifact (MP-3), Decision (MP-4), Activity (MP-6), runtime implementation |
 | **Acceptance** | WorkItem != Nexus Task frozen in contracts; Assignment separate from WorkItem assignee field; semantic fields only; multi-principal assignment supported |
 | **Proof requirements** | `tests/unit/contracts/test_collaborative_work.py` extensions for MP-2 contracts |
 | **Next step** | COLLAB-WORK-2B — repository ports + in-memory reference |
@@ -315,24 +315,24 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Exact scope** | PostgreSQL typed repositories for MP-2 ports; `open_postgresql_collaborative_work_repositories` extension; qualification evidence |
 | **REUSED** | Platform PostgreSQL integration; `CollaborativeWorkRepositoryQualificationBinding` |
 | **NEW** | MP-2 PostgreSQL adapters and qualification proof |
-| **Explicit out of scope** | LKW adoption; execution bridge; MP-3+ |
+| **Explicit out of scope** | LKW adoption; Unified Execution linkage persistence (COLLAB-WORK-2F); MP-3+ |
 | **Acceptance** | Cross-process transactional concurrency proven; provider qualification evidence persisted |
 | **Proof requirements** | `tests/integration/collaborative_work/test_postgresql_repository.py` MP-2 extensions; provider qualification run |
-| **Next step** | COLLAB-WORK-2F — execution linkage / Nexus bridge |
+| **Next step** | COLLAB-WORK-2F — Unified Execution linkage |
 
 | Field | Value |
 |-------|-------|
 | **ID** | COLLAB-WORK-2F |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
-| **Purpose** | Explicit execution linkage from WorkItem to Nexus/UER identities without lifecycle substitution |
+| **Status** | **NOT STARTED** (architecture/identity granularity **FROZEN**) |
+| **Purpose** | Explicit provenance linkage from WorkItem to canonical Unified Execution identity without lifecycle substitution |
 | **Dependencies** | COLLAB-WORK-2C approved (may ship after 2D/2E per rollout) |
-| **Exact scope** | Neutral execution-link contracts; zero..N links referencing `task_id`/`run_id`/`attempt_id`; explicit bridge — no WorkItemState from TaskState |
-| **REUSED** | UER/Nexus execution identity contracts; ORCHESTRATION explicit context consumption |
-| **NEW** | WorkItem execution-link persistence and bridge semantics |
-| **Explicit out of scope** | Renaming Task; subclassing Task; background task ownership of WorkItem; implicit workflow propagation |
-| **Acceptance** | Run end/delete does not delete WorkItem; links are provenance only; tier boundaries preserved |
-| **Proof requirements** | Link contract tests; bridge integration proof with real `task_id`/`run_id` |
+| **Exact scope** | Neutral `ExecutionProvenanceRef` using canonical `TaskId`/`RunId`/`AttemptId`/`ExecutionId`; zero..N WorkItem execution associations; explicit Unified Execution boundary; no runtime lifecycle propagation |
+| **REUSED** | Canonical execution identity contracts / UER identity semantics |
+| **NEW** | `WorkItemExecutionLink` association identity; association persistence; WorkItem-side lookup of associations |
+| **Explicit out of scope** | Nexus as Collaborative Work contract dependency; `EventId` in links; renaming Task; subclassing Task; background task ownership of WorkItem; implicit workflow propagation |
+| **Acceptance** | Run/execution end/delete does not delete WorkItem; links are provenance only; tier boundaries preserved; production consumes neutral contracts only |
+| **Proof requirements** | Link contract tests; provenance integration proof with real four-part `ExecutionProvenanceRef` |
 | **Next step** | COLLAB-WORK-2G — final MP-2 review |
 
 | Field | Value |

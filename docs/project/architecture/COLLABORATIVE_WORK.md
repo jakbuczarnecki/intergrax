@@ -195,7 +195,7 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
 
 **MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**; COLLAB-WORK-2E **APPROVED / CLOSED**.
-**Current active task:** **COLLAB-WORK-2F** (execution linkage / Nexus bridge).
+**Current active task:** **COLLAB-WORK-2F** (Unified Execution linkage; architecture/identity granularity **FROZEN**, implementation **NOT STARTED**).
 
 ---
 
@@ -213,11 +213,11 @@ Collaborative Work owns MP-2 Shared Work:
 - collaborative optimistic concurrency and idempotency,
 - work-level `tenant_id` + `workspace_id` isolation,
 - work-level authority requirements (via MP-1 enforcement),
-- zero..N **execution links** to Nexus/UER identities.
+- zero..N **execution links** to canonical Unified Execution identities (`ExecutionProvenanceRef`).
 
-Collaborative Work does **not** own: Nexus Task lifecycle, run/attempt lifecycle, execution scheduling/retries, workflow graph execution, worker/process scheduling, or background task runtime ownership.
+Collaborative Work does **not** own: Task/Run/Attempt/Execution lifecycle, execution scheduling/retries, workflow graph execution, worker/process scheduling, background task runtime ownership, or Nexus orchestration control-plane internals.
 
-**Reused (non-owners):** ORCHESTRATION (graph policy; may consume WorkItem context), UNIFIED_EXECUTION_RUNTIME / NEXUS (`Task`, `run_id`, `attempt`, outcomes), BACKGROUND_TASKS (may execute work associated with a WorkItem), OBSERVABILITY / PROOF_RECEIPTS (provenance consumption).
+**Reused (non-owners):** ORCHESTRATION (graph policy; may consume WorkItem context), UNIFIED_EXECUTION_RUNTIME (`TaskId`, `RunId`, `AttemptId`, `ExecutionId`, outcomes), NEXUS (internal orchestration consumer/producer of Executions when strategy = orchestration — **not** a Collaborative Work contract dependency), BACKGROUND_TASKS (may execute work associated with a WorkItem), OBSERVABILITY / PROOF_RECEIPTS (provenance consumption).
 
 ### WorkItem != Nexus Task
 
@@ -240,14 +240,46 @@ Do **not** encode assignments as a single `WorkItem.assignee_id` when multi-prin
 
 **Reassignment semantics (MP-2 / COLLAB-WORK-2C):** `reassign` = revoke existing Assignment + create a new Assignment — two independently authorized, CAS-protected repository mutations. COLLAB-WORK-2B repositories expose no transactional Unit of Work; MP-2 must not expose a combined atomic reassignment command or simulate rollback across records. Atomic multi-record orchestration requires an explicit transactional boundary (future concern, not MP-2 scope).
 
-### Execution linkage
+### Unified Execution linkage
 
 ```text
 WorkItem → zero..N execution links
-  → optional task_id, run_id, attempt_id (provenance references)
+  → each link references exactly one ExecutionProvenanceRef
 ```
 
-Deleting or ending a run must not delete WorkItem. Any orchestration bridge must be explicit — no incidental workflow status propagation into WorkItemState.
+**ExecutionProvenanceRef** (neutral Tier-0 composite; future location e.g. `intergrax/contracts/execution_provenance.py`):
+
+```text
+ExecutionProvenanceRef
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
+```
+
+All four IDs are **required** for a WorkItem execution link. UEA canonical hierarchy is `TaskId → RunId → AttemptId → ExecutionId → EventId`; a WorkItem link points to a concrete **Execution**, not an individual event (`EventId` is out of scope). One Attempt may contain multiple Executions; Task/Run/Attempt alone cannot identify one concrete Execution.
+
+**Link semantics (provenance only):**
+
+- no lifecycle substitution; no `TaskState → WorkItemState` mapping; no Run completion → WorkItem completion
+- no cascade delete; WorkItem survives execution completion/deletion/archive
+- WorkItem may have zero links; may link to many Executions
+- multiple Executions may belong to the same Run/Attempt; multiple Tasks/Runs may advance one WorkItem
+- no 1:1 WorkItem ↔ Task assumption
+
+**Ownership:** Collaborative Work owns `WorkItemExecutionLink` association identity, association persistence, and WorkItem-side lookup of associations. Unified Execution / UER owns `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, runtime lifecycle, and Execution Tree. Nexus owns orchestration runtime control only (readiness/scheduling/fan-out/fan-in for orchestration strategy) — **not** Collaborative Work contract boundary.
+
+**Dependency direction (production):**
+
+```text
+Collaborative Work → neutral contracts → execution_identity / ExecutionProvenanceRef
+```
+
+Forbidden production dependencies: `intergrax.runtime.nexus.*`, `NexusLoop`, `GraphExecutor`, `TaskState`, `TaskResult`, `RuntimeExecutionContext` as the stored contract, `EmitContext`, runtime observability implementation types. Runtime/test adapters may extract neutral IDs from runtime objects.
+
+Deleting or ending a run/execution must not delete WorkItem. No incidental workflow status propagation into WorkItemState.
+
+**ADR-MP-003 reconciliation:** ADR-MP-003 accepted execution linkage without freezing concrete persistence schema or `ExecutionId` granularity. Later frozen Unified Execution architecture establishes `ExecutionId` as the concrete runtime execution unit; COLLAB-WORK-2F therefore resolves the previously open execution-link granularity to full `TaskId`/`RunId`/`AttemptId`/`ExecutionId` provenance via neutral `ExecutionProvenanceRef`.
 
 ### Contract direction (semantic categories only)
 
