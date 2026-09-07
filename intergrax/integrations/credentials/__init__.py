@@ -3,6 +3,7 @@
 
 """Late-bound credential resolution over existing SecretsStore."""
 
+from intergrax.integrations.credentials.broker import ScopedCredentialBroker
 from intergrax.integrations.credentials.errors import sanitize_credential_error_message
 from intergrax.integrations.credentials.google_workspace import (
     GoogleWorkspaceSecretsStoreCredentialResolver,
@@ -13,6 +14,7 @@ from intergrax.integrations.credentials.secrets_store_resolver import (
 
 __all__ = [
     "GoogleWorkspaceSecretsStoreCredentialResolver",
+    "ScopedCredentialBroker",
     "SecretsStoreCredentialResolver",
     "sanitize_credential_error_message",
 ]

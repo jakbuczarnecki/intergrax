@@ -6,11 +6,11 @@
 
 **Branch:** `development`
 
-**Start HEAD:** `001f708123b680ddf5ba1107d6fd8ff1bea7874b`
+**Start HEAD:** `aac75b8e8dfc82192595eaacd0a561249f47f171`
 
-**Review HEAD (pre-docs):** `001f708123b680ddf5ba1107d6fd8ff1bea7874b`
+**Review HEAD (pre-docs):** `aac75b8e8dfc82192595eaacd0a561249f47f171`
 
-**Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching; physical provider qualification still blocked.
+**Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching; physical provider qualification still blocked. **P0-2 secret broker remediation** (2026-09-07): purpose-scoped grant/broker contracts + enforcement at resolution boundary.
 
 ---
 
@@ -25,7 +25,7 @@ AW-7 remains **IN PROGRESS**. AW-7C is **not** READY FOR IMPLEMENTATION.
 Critical blockers:
 
 1. **Host-scoped egress allowlist** — typed contract + fail-closed substrate matching **implemented** (P0-1); **physical** exact-host enforcement at a real hosted provider **still blocked** (no qualifying substrate in repo).
-2. **Purpose-scoped secret brokering** — `SecretsStore` + `SecretsStoreCredentialResolver` resolve opaque refs with **tenant scope only**; `operation`, `execution_id`, host/integration binding, and bounded lifetime are not enforced at resolution time.
+2. **Purpose-scoped secret brokering** — **implemented** (P0-2): `ScopedCredentialBroker` + `CredentialUseGrant` enforce tenant, execution, operation, integration, and target host scope at resolution; legacy `SecretsStoreCredentialResolver` tenant-only path preserved for P1.7.
 3. **Allowlist egress physical qualification** — contract tests prove fail-closed resolver behavior; no test proves non-approved destination **physically denied** at enforced substrate under host-scoped policy (provider qualification blocked).
 
 ---
@@ -38,7 +38,7 @@ Critical blockers:
 | host allowlist enforcement | **PARTIALLY REMEDIATED** (contract + fail-closed resolver; physical provider proof **BLOCKED**) |
 | fail-closed substrate | **PASS** (deny + allowlist modes) |
 | opaque secret storage | **PASS** |
-| purpose-scoped secret brokering | **BLOCKED** |
+| purpose-scoped secret brokering | **PASS** (P0-2 contract + broker enforcement; admission port pluggable) |
 | tenant secret isolation | **PASS** |
 | integration runtime owner | **PASS** |
 | governance/HITL owner | **PASS** |
@@ -142,21 +142,21 @@ Allowlist **contract and fail-closed resolver matching** are implemented. Remain
 | opaque secret reference | `CredentialRef` | yes | yes |
 | secret material not in AW contract | AW contracts | yes | yes |
 | tenant-scoped resolution | `SecretsStoreCredentialResolver._assert_tenant_scope` | yes | yes |
-| purpose/operation scoped resolution | `CredentialResolutionContext.operation` | **declared only** | **no** |
-| host/integration binding | — | **no** | **no** |
-| bounded lifetime | — | **no** | **no** |
-| no environment inheritance | partial (profile policy) | partial | **no** for dynamic A2 |
-| audit/correlation without secret exposure | `CredentialUseEvidence` | **type only** | **no** (not enforced in resolver) |
+| purpose/operation scoped resolution | `ScopedCredentialBroker` + `CredentialUseGrant.operation` | **yes** | **yes** |
+| host/integration binding | `CredentialUseGrant` + `CredentialUseScope` + `NetworkEgressAllowlist` | **yes** | **yes** |
+| bounded lifetime | `CredentialUseGrant.expires_at` + `TimeProvider` | **yes** | **yes** |
+| no environment inheritance | scoped broker path | **yes** (no env fallback) | **yes** for scoped path |
+| audit/correlation without secret exposure | `CredentialUseEvidence` via broker result | **yes** | **yes** |
 
 ### Secret broker answer
 
 > Does the current public runtime provide purpose-scoped, tenant-bound, execution-bound secret brokering suitable for generated A2 code?
 
-**NO.** Resolution is `store.get_secret(path)` after tenant check. `operation` and `execution_id` on `CredentialResolutionContext` are not authorization gates.
+**YES (contract path).** `ScopedCredentialBroker` validates `CredentialUseGrant` against `CredentialUseScope` (tenant, execution, operation, integration, target host scope, expiry), requires `CredentialScopeAdmissionPort` ALLOW, then resolves via `SecretsStoreCredentialResolver`. Legacy P1.7 tenant-only resolution remains for durable integration flows that do not opt into scoped grants.
 
 ### Secret verdict
 
-**BLOCKED** — persistence ≠ brokering.
+**PASS (P0-2)** — persistence ≠ brokering; scoped path enforced at resolution boundary.
 
 ---
 
@@ -186,7 +186,7 @@ No A2 execution port or service exists yet (by design for this task).
 | --- | --- |
 | Contract tests for HTTP adapter against local/mock endpoint | partial — `AllowlistHttpClient` exists; no A2 adapter contract suite |
 | Physical deny of non-approved network destination at substrate | **blocked** — no enforceable hosted provider; contract tests only |
-| Runtime evidence fields for A2 | **partial** — allowlist scope fingerprint + enforced host evidence fields; secret scope correlation still missing |
+| Runtime evidence fields for A2 | **partial** — allowlist scope fingerprint + enforced host evidence fields; secret scope correlation via `CredentialUseEvidence` |
 
 Existing evidence (AW-7B / CodeCraft): `CraftSubstrateCapabilities` (`provider_id`, `resolved_tier`, `network_egress_enforced`, `network_egress_deny_enforced`, `network_egress_allowlist_enforced`, `enforced_network_hosts`).
 
@@ -200,7 +200,9 @@ Existing evidence (AW-7B / CodeCraft): `CraftSubstrateCapabilities` (`provider_i
 | `tests/unit/runtime/codecraft/test_network_egress_allowlist_substrate.py` | 10 passed, 1 skipped (physical provider blocked) |
 | `tests/unit/runtime/sandbox/test_network_egress_contract.py` | passed |
 | `tests/unit/codecraft/test_profile_network_egress.py` | passed |
-| `tests/unit/integrations/credentials/test_p1_7_credential_ref.py` | passed (in batch) |
+| `tests/unit/integrations/credentials/test_p1_7_credential_ref.py` | passed |
+| `tests/unit/integrations/credentials/test_scoped_credential_broker.py` | passed (P0-2) |
+| `tests/unit/integrations/credentials/test_credential_domain_architecture_gates.py` | passed (P0-2) |
 | `tests/unit/autonomous_work/test_worker_execution_dispatch_architecture_gates.py` | passed |
 | `tests/unit/autonomous_work/test_ephemeral_capability_execution_architecture_gates.py` | passed |
 | `tests/unit/autonomous_work/test_worker_capability_acquisition_architecture_gates.py` | passed |
@@ -226,7 +228,7 @@ uv run pytest tests/unit/runtime/codecraft/test_aw_7b_gate.py `
 ## 10. Recommended prerequisite hardening (platform tasks, not AW-7C)
 
 1. **Sandbox / CodeCraft substrate** — **DONE (contract P0-1)** typed host scope + fail-closed matching; **remaining:** real hosted provider with physical exact-host enforcement qualification.
-2. **Integration / credential domain** — purpose-scoped secret broker: tenant + credential_ref + integration identity + operation/purpose + allowed target scope; enforce at resolution; bounded lifetime.
+2. **Integration / credential domain** — **DONE (P0-2)** purpose-scoped secret broker: tenant + credential_ref + integration identity + operation/purpose + allowed target scope; enforce at resolution; bounded lifetime.
 3. **Qualification tests** — at least one test where approved host succeeds and unapproved host is **physically denied** at enforced substrate (not metadata-only).
 
 Do **not** implement `WorkerSecretBroker`, `AWSecretStore`, or host filtering inside AW core.
@@ -236,6 +238,7 @@ Do **not** implement `WorkerSecretBroker`, `AWSecretStore`, or host filtering in
 ## 11. Status
 
 ```text
+AW-7C SECRET BROKER PREREQUISITE: PASS
 AW-7C EGRESS PREREQUISITE: PARTIALLY REMEDIATED / PROVIDER QUALIFICATION BLOCKED
 AW-7C: BLOCKED BY PREREQUISITE
 AW-7:  IN PROGRESS

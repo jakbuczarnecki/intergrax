@@ -837,6 +837,23 @@ Same contract; different delivery. `pip install` ≠ discovered ≠ enabled ≠ 
 - **Secrets:** host-owned - never in manifest, EP values, or plugin metadata.
 - **`IntegrationManifest.env_prefix`:** domain-specific exception - factory may read env vars under that prefix. Do **not** generalize to Tool/Skill plugins.
 
+#### Purpose-scoped credential brokering (P0-2 · AW-7C prerequisite)
+
+**Code:** `intergrax/integrations/contracts/credential.py` · `intergrax/integrations/credentials/`
+
+Secret **persistence** (`SecretsStore`) and secret **brokering** are separate concerns:
+
+| Layer | Role |
+| --- | --- |
+| `CredentialRef` | Opaque secret identity — never material |
+| `SecretsStore` + `SecretsStoreCredentialResolver` | Legacy/general late resolution (tenant scope) |
+| `CredentialUseGrant` + `CredentialUseScope` | Immutable, secret-free bounded-use authority |
+| `CredentialScopeAdmissionPort` | Governance/admission seam (constructor-injected; fail closed when unavailable) |
+| `ScopedCredentialBroker` | Validates grant/scope dimensions, admits, then resolves immediately before use |
+| `CredentialUseEvidence` | Safe audit correlation (no secret material) |
+
+Scoped broker enforces **tenant**, **execution**, **operation/purpose**, **integration identity**, and **target host scope** (`NetworkEgressAllowlist` from sandbox contract) before `SecretsStore.get_secret()`. `CredentialRef` locates secrets; it does **not** authorize use. Future A2 adapters receive `credential_ref` + grant/scope reference only — resolution stays on the integration/runtime side. Nexus is **not** a credential authority.
+
 #### Runtime resolution
 
 ```python
