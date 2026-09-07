@@ -3,10 +3,10 @@
 **Architecture (1:1):** [`architecture/COLLABORATIVE_WORK.md`](../../architecture/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/plan/MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
-**ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
+**ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../../technical/adr/entries/2026-09-07/ADR-MP-004.md)
 
-**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**)
-**Current active task:** **MP-3 bounded ownership check** (architecture gate only — **NOT** MP-3 implementation)
+**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ownership gate FROZEN / ACCEPTED** (ADR-MP-004 Accepted; implementation **NOT STARTED**)
+**Current active task:** **MP-3 architecture/contract roadmap decomposition** (planning only — **NOT** MP-3 implementation)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -51,6 +51,7 @@ Delivery order: **platform architecture/contract slice → platform implementati
 | COLLAB-WORK-0C | Domain architecture + plan pair registration | **Done** (MP-1A) |
 | COLLAB-WORK-0D | Multiplayer hub ownership synchronization | **Done** (MP-1A) |
 | COLLAB-WORK-0E | ADR-MP-003 WorkItem vs Nexus Task — Shared Work ownership | **Done** (MP-2 ownership freeze) |
+| COLLAB-WORK-0F | ADR-MP-004 WorkArtifact collaborative ownership and version authority | **Done** (MP-3 ownership freeze) |
 
 COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB-WORK-1A** after MP-1 review acceptance.
 
@@ -348,7 +349,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Explicit out of scope** | MP-3+ implementation |
 | **Acceptance** | All MP-2 acceptance criteria met; no contradictory ownership statements; implementation proof complete |
 | **Proof requirements** | Focused regression suite; documentation link integrity; `check_docs_domain_pairs.py`; live SQLite qualification v`3.0.0` |
-| **Next step** | MP-3 bounded ownership check |
+| **Next step** | MP-3 architecture/contract roadmap decomposition |
 
 ### MP-2 final closure evidence (COLLAB-WORK-2G)
 
@@ -369,10 +370,35 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **SQLite (`cw.sqlite.repository.v1`)** | **QUALIFIED** — version `3.0.0`; evidence: `suite.passed`, `backend.live`, `shared_work.mp2`, `shared_work.execution_link` |
 | **Provider qualification evidence integration** | **SATISFIED** — `CollaborativeWorkRepositoryQualificationBinding` / `CollaborativeWorkRepositoryQualificationSuite` via canonical `execute_provider_qualification` → `ProviderQualificationRun` / `ProofReceipt` ([`PROVIDER-QUAL-3`](PLATFORM_PLUGINS.md#provider-qual-track-post-plugin-9)); no CW-specific parallel evidence system |
 
+### MP-3 ownership freeze (COLLAB-WORK-0F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | **FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; MP-3 runtime implementation **NOT STARTED** |
+| **Owning domain** | Collaborative Work — single semantic owner of WorkArtifact and WorkArtifactVersion |
+| **Hard invariants** | `WorkArtifact != UCL OptimizationArtifact`; `WorkArtifactVersion` immutable; current-version pointer CAS-protected; content metadata separated from storage reference |
+| **Reuse-only** | UCL, Memory, Proof Receipts, Execution (`ExecutionProvenanceRef` optional), LKW (consumer) |
+| **Explicit out of scope** | Runtime contracts, repositories, publication service, persistence adapters, content-storage providers, MP-4 Decision encoding, MP-6 Activity projection |
+| **Next step** | MP-3A — architecture/contract roadmap decomposition (planning row registration) |
+
+### MP-3 implementation roadmap (architectural slices — NOT STARTED)
+
+| Slice | Scope | Status |
+|-------|-------|--------|
+| MP-3A | WorkArtifact / WorkArtifactVersion contracts + invariants | NOT STARTED |
+| MP-3B | Repository ports + in-memory adapter | NOT STARTED |
+| MP-3C | Authoritative artifact publication service + MP-1 authority | NOT STARTED |
+| MP-3D | SQLite persistence | NOT STARTED |
+| MP-3E | PostgreSQL + production qualification | NOT STARTED |
+| MP-3F | Content-storage reference/provider integration | NOT STARTED |
+| MP-3G | Execution/evidence lineage integration | NOT STARTED |
+| MP-3H | Final independent review / closure | NOT STARTED |
+
 ---
 
 ## 4. Out of scope (current phase)
 
-- MP-3…MP-6 architecture or implementation rows (except bounded ownership checks when gated)
+- MP-3 runtime implementation (slices MP-3A…MP-3H remain NOT STARTED until roadmap decomposition accepted)
+- MP-4…MP-6 architecture or implementation rows (except bounded ownership checks when gated)
 - LKW product adoption (MP-7)
-- Runtime Python models beyond contract stubs until COLLAB-WORK-2A opens
+- Runtime Python models beyond contract stubs until the relevant COLLAB-WORK-* row opens
