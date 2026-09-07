@@ -344,9 +344,9 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7C |
 | **Priority** | P0/P1 |
-| **Status** | NOT STARTED |
+| **Status** | BLOCKED BY PREREQUISITE |
 | **Purpose** | A2 scoped adaptive integration path |
-| **Dependencies** | enforceable egress + scoped secret brokering |
+| **Dependencies** | enforceable egress + scoped secret brokering — see [`AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md`](../qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md) |
 | **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls |
 | **Next step** | AW-7D |
 
