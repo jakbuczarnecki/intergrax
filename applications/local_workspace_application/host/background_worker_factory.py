@@ -17,7 +17,6 @@ from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.background_tasks.definition import TaskDefinition
 from intergrax.background_tasks.registry import TaskRegistry
 from intergrax.contracts.execution_identity import AttemptId, RunId
@@ -35,10 +34,6 @@ from local_workspace_application.background_ingest.contracts import (
 from local_workspace_application.background_ingest.worker_handler import (
     make_background_ingest_worker_handler,
 )
-from local_workspace_application.host.environment_profile import (
-    build_local_workspace_environment_profile,
-)
-from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_lkw_runtime_document_store,
