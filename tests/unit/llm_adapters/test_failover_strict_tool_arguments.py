@@ -13,7 +13,6 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     StrictToolArgumentConformanceError,
-    ToolDispatchRequirements,
 )
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
@@ -51,13 +50,12 @@ class _StrictToolsAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages,
-        tools_schema,
+        tools,
         *,
         temperature=None,
         max_tokens=None,
         tool_choice=None,
         run_id=None,
-        tool_dispatch_requirements=None,
     ) -> LLMAdapterResponse:
         self.dispatched = True
         if self._fail:
@@ -99,13 +97,12 @@ class _StrictlessToolsAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages,
-        tools_schema,
+        tools,
         *,
         temperature=None,
         max_tokens=None,
         tool_choice=None,
         run_id=None,
-        tool_dispatch_requirements=None,
     ) -> LLMAdapterResponse:
         self.dispatched = True
         return LLMAdapterResponse(
@@ -116,9 +113,8 @@ class _StrictlessToolsAdapter(LLMAdapter):
         )
 
 
-def _strict_round_schema() -> tuple[list[dict[str, object]], list[ToolDispatchRequirements]]:
-    definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
-    return [dict(definition.wire_schema)], [definition.dispatch_requirements]
+def _strict_round_definition():
+    return build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
 
 
 def test_failover_supports_strict_reflects_primary_only() -> None:
@@ -133,11 +129,9 @@ def test_failover_unsupported_primary_fails_closed_before_dispatch() -> None:
     secondary = _StrictToolsAdapter(label="secondary")
     adapter = FailoverLLMAdapter([primary, secondary])
     with pytest.raises(StrictToolArgumentConformanceError, match="does not support"):
-        wire_schema, dispatch_requirements = _strict_round_schema()
         adapter.generate_with_tools(
             [ChatMessage(role="user", content="plan")],
-            wire_schema,
-            tool_dispatch_requirements=dispatch_requirements,
+            [_strict_round_definition()],
         )
     assert primary.dispatched is False
     assert secondary.dispatched is False
@@ -147,12 +141,10 @@ def test_failover_supported_primary_does_not_fallback_to_unsupported() -> None:
     primary = _StrictToolsAdapter(fail=True, label="primary")
     secondary = _StrictlessToolsAdapter(label="secondary")
     adapter = FailoverLLMAdapter([primary, secondary], profile_ids=("primary", "secondary"))
-    wire_schema, dispatch_requirements = _strict_round_schema()
     with pytest.raises(RuntimeError, match="rate limited"):
         adapter.generate_with_tools(
             [ChatMessage(role="user", content="plan")],
-            wire_schema,
-            tool_dispatch_requirements=dispatch_requirements,
+            [_strict_round_definition()],
         )
     assert primary.dispatched is True
     assert secondary.dispatched is False
@@ -163,11 +155,9 @@ def test_failover_both_supported_allows_fallback() -> None:
     primary = _StrictToolsAdapter(fail=True, label="primary")
     secondary = _StrictToolsAdapter(label="secondary")
     adapter = FailoverLLMAdapter([primary, secondary], profile_ids=("primary", "secondary"))
-    wire_schema, dispatch_requirements = _strict_round_schema()
     response = adapter.generate_with_tools(
         [ChatMessage(role="user", content="plan")],
-        wire_schema,
-        tool_dispatch_requirements=dispatch_requirements,
+        [_strict_round_definition()],
     )
     assert response.content == "ok-secondary"
     assert len(adapter.routing_attempts) == 1
@@ -178,9 +168,7 @@ def test_failover_both_unsupported_fails_closed() -> None:
     secondary = _StrictlessToolsAdapter(label="secondary")
     adapter = FailoverLLMAdapter([primary, secondary])
     with pytest.raises(StrictToolArgumentConformanceError, match="does not support"):
-        wire_schema, dispatch_requirements = _strict_round_schema()
         adapter.generate_with_tools(
             [ChatMessage(role="user", content="plan")],
-            wire_schema,
-            tool_dispatch_requirements=dispatch_requirements,
+            [_strict_round_definition()],
         )

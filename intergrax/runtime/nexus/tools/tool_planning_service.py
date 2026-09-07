@@ -18,7 +18,7 @@ from intergrax.llm_adapters.contracts.native_tool_choice import (
     project_native_tool_choice_for_provider,
 )
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    ToolDispatchRequirements,
+    CanonicalFunctionToolDefinition,
     assert_strict_tool_argument_conformance_supported,
 )
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
@@ -370,17 +370,14 @@ class ToolPlanningService:
             if protocol_config is not None
             else NATIVE_PLANNER_PROTOCOL_NONE
         )
-        provider_tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None
-        provider_tool_argument_guidance: Sequence[str | None] | None = None
+        provider_tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]]
         if effective_protocol.atomic_round_active:
             round_definition = build_atomic_planner_round_tool_definition(tools_schema)
-            provider_tools_schema = [dict(round_definition.wire_schema)]
-            provider_tool_dispatch_requirements = [round_definition.dispatch_requirements]
-            provider_tool_argument_guidance = [round_definition.argument_guidance_text]
+            provider_tools = (round_definition,)
         elif effective_protocol.protocol_active:
-            provider_tools_schema = append_planner_action_context_schema(tools_schema)
+            provider_tools = append_planner_action_context_schema(tools_schema)
         else:
-            provider_tools_schema = tools_schema
+            provider_tools = tools_schema
         pruned = canonical_native_planner_messages(messages)
         if prepared_messages_hash is not None:
             computed_messages_hash = compute_model_facing_messages_hash(pruned)
@@ -404,18 +401,15 @@ class ToolPlanningService:
         )
         assert_strict_tool_argument_conformance_supported(
             self.llm,
-            provider_tools_schema,
-            tool_dispatch_requirements=provider_tool_dispatch_requirements,
+            provider_tools,
         )
         result = self.llm.generate_with_tools(
             provider_messages,
-            provider_tools_schema,
+            provider_tools,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_answer_tokens,
             tool_choice=projected_tool_choice,
             run_id=run_id,
-            tool_dispatch_requirements=provider_tool_dispatch_requirements,
-            tool_argument_guidance=provider_tool_argument_guidance,
         )
 
         if effective_protocol.atomic_round_active:

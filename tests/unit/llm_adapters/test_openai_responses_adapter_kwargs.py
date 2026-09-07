@@ -13,6 +13,11 @@ from pydantic import BaseModel, ConfigDict
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+    ToolDispatchRequirements,
+    coerce_canonical_tool_definitions,
+)
 from intergrax.llm_adapters.providers.openai_responses_adapter import (
     OpenAIChatResponsesAdapter,
     _OpenAIToolNameMapping,
@@ -226,7 +231,7 @@ def test_model_is_not_duplicated_through_request_defaults() -> None:
 
 
 def test_map_tools_to_responses_api_maps_canonical_function_tool() -> None:
-    mapped = _map_tools_to_responses_api(_CANONICAL_SQL_TOOL)
+    mapped = _map_tools_to_responses_api(coerce_canonical_tool_definitions(_CANONICAL_SQL_TOOL))
     assert mapped == [
         {
             "type": "function",
@@ -327,13 +332,22 @@ def test_map_tools_to_responses_api_rejects_malformed_function_tools(
     bad_tools: list[dict[str, Any]],
     match: str,
 ) -> None:
+    definitions = [
+        CanonicalFunctionToolDefinition(
+            wire_schema=bad_tool,  # type: ignore[arg-type]
+            dispatch_requirements=ToolDispatchRequirements(),
+        )
+        for bad_tool in bad_tools
+    ]
     with pytest.raises(ValueError, match=match):
-        _map_tools_to_responses_api(bad_tools)
+        _map_tools_to_responses_api(definitions)
 
 
 def test_map_tools_to_responses_api_allows_optional_description() -> None:
     mapped = _map_tools_to_responses_api(
-        [{"type": "function", "function": {"name": "noop", "parameters": {"type": "object"}}}]
+        coerce_canonical_tool_definitions(
+            [{"type": "function", "function": {"name": "noop", "parameters": {"type": "object"}}}]
+        )
     )
     assert mapped == [{"type": "function", "name": "noop", "parameters": {"type": "object"}}]
     assert "description" not in mapped[0]
@@ -344,7 +358,7 @@ def test_map_tools_to_responses_api_preserves_multiple_tools_order() -> None:
         {"type": "function", "function": {"name": "first", "parameters": {"type": "object"}}},
         {"type": "function", "function": {"name": "second", "parameters": {"type": "object"}}},
     ]
-    mapped = _map_tools_to_responses_api(tools)
+    mapped = _map_tools_to_responses_api(coerce_canonical_tool_definitions(tools))
     assert [item["name"] for item in mapped] == ["first", "second"]
 
 
@@ -393,7 +407,9 @@ def test_tool_choice_string_values_pass_through_unchanged() -> None:
 
 
 def test_dotted_canonical_tool_name_maps_to_provider_safe_alias() -> None:
-    provider_tools, mapping = _prepare_responses_tools_and_mapping(_PLATFORM_PROOF_SQL_TOOL)
+    provider_tools, mapping = _prepare_responses_tools_and_mapping(
+        coerce_canonical_tool_definitions(_PLATFORM_PROOF_SQL_TOOL)
+    )
     assert provider_tools[0]["name"] == "platform_proof_sql_query"
     assert mapping.to_provider("platform_proof.sql.query") == "platform_proof_sql_query"
     assert "." not in provider_tools[0]["name"]
@@ -430,7 +446,9 @@ def test_collision_produces_unique_provider_names_and_reverse_maps() -> None:
         {"type": "function", "function": {"name": "a.b", "parameters": {"type": "object"}}},
         {"type": "function", "function": {"name": "a_b", "parameters": {"type": "object"}}},
     ]
-    provider_tools, mapping = _prepare_responses_tools_and_mapping(tools)
+    provider_tools, mapping = _prepare_responses_tools_and_mapping(
+        coerce_canonical_tool_definitions(tools)
+    )
     provider_names = [tool["name"] for tool in provider_tools]
     assert len(set(provider_names)) == 2
     assert mapping.to_provider("a_b") == "a_b"
@@ -444,8 +462,12 @@ def test_tool_name_mapping_is_deterministic_for_same_tool_set() -> None:
         {"type": "function", "function": {"name": "a.b", "parameters": {"type": "object"}}},
         {"type": "function", "function": {"name": "a_b", "parameters": {"type": "object"}}},
     ]
-    first_tools, first_mapping = _prepare_responses_tools_and_mapping(tools)
-    second_tools, second_mapping = _prepare_responses_tools_and_mapping(tools)
+    first_tools, first_mapping = _prepare_responses_tools_and_mapping(
+        coerce_canonical_tool_definitions(tools)
+    )
+    second_tools, second_mapping = _prepare_responses_tools_and_mapping(
+        coerce_canonical_tool_definitions(tools)
+    )
     assert [tool["name"] for tool in first_tools] == [tool["name"] for tool in second_tools]
     assert first_mapping.canonical_to_provider == second_mapping.canonical_to_provider
 
@@ -731,7 +753,7 @@ def test_current_and_history_sanitization_collision_maps_reversibly() -> None:
         {"type": "function_call", "call_id": "c1", "name": "a_b", "arguments": "{}"},
     ]
     provider_tools, mapping = _prepare_responses_tools_and_mapping(
-        current_tools,
+        coerce_canonical_tool_definitions(current_tools),
         input_items=input_items,
     )
     assert mapping.to_provider("a_b") == "a_b"
@@ -775,7 +797,10 @@ def test_same_name_in_current_and_history_has_single_mapping_entry() -> None:
     input_items = [
         {"type": "function_call", "call_id": "c1", "name": "catalog.lookup.item", "arguments": "{}"},
     ]
-    _, mapping = _prepare_responses_tools_and_mapping(tools, input_items=input_items)
+    _, mapping = _prepare_responses_tools_and_mapping(
+        coerce_canonical_tool_definitions(tools),
+        input_items=input_items,
+    )
     assert list(mapping.canonical_to_provider.keys()).count("catalog.lookup.item") == 1
     assert mapping.to_provider("catalog.lookup.item") == "catalog_lookup_item"
 
@@ -837,12 +862,7 @@ def test_map_tools_projects_strict_atomic_planner_round() -> None:
     from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
 
     definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
-    canonical = definition.wire_schema
-    mapped = _map_tools_to_responses_api(
-        [canonical],
-        tool_dispatch_requirements=[definition.dispatch_requirements],
-        tool_argument_guidance=[definition.argument_guidance_text],
-    )[0]
+    mapped = _map_tools_to_responses_api([definition])[0]
 
     assert mapped["strict"] is True
     assert mapped["name"] == "intergrax.planner.round"
@@ -850,7 +870,7 @@ def test_map_tools_projects_strict_atomic_planner_round() -> None:
         definition.dispatch_requirements.argument_conformance
         is ToolArgumentConformance.STRICT
     )
-    assert "requires_strict_argument_conformance" not in canonical["function"]
+    assert "requires_strict_argument_conformance" not in definition.wire_schema["function"]
     actions = mapped["parameters"]["properties"]["actions"]
     assert actions["minItems"] == 1
     action_item = actions["items"]
@@ -868,7 +888,7 @@ def test_map_tools_projects_strict_atomic_planner_round() -> None:
 
 
 def test_map_tools_does_not_apply_strict_to_regular_function_tools() -> None:
-    mapped = _map_tools_to_responses_api(_CANONICAL_SQL_TOOL)[0]
+    mapped = _map_tools_to_responses_api(coerce_canonical_tool_definitions(_CANONICAL_SQL_TOOL))[0]
     assert "strict" not in mapped
     assert mapped["parameters"] == _CANONICAL_SQL_TOOL[0]["function"]["parameters"]
 
@@ -886,9 +906,8 @@ def test_generate_with_tools_sends_strict_projected_atomic_round_schema() -> Non
 
     adapter.generate_with_tools(
         [ChatMessage(role="user", content="plan")],
-        [round_definition.wire_schema],
+        [round_definition],
         run_id="r-strict-round",
-        tool_dispatch_requirements=[round_definition.dispatch_requirements],
     )
 
     sent_tool = client.responses.create.call_args.kwargs["tools"][0]

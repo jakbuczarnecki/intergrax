@@ -5,6 +5,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Callable, Sequence, Iterable, Optional, Any, Dict, Union, List, TypeVar, Generic
 
 T = TypeVar("T")
@@ -21,6 +22,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 
 
 
@@ -148,28 +150,24 @@ class LLMAdapter(ABC):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-        tool_dispatch_requirements: Optional[Sequence["ToolDispatchRequirements"]] = None,
-        tool_argument_guidance: Optional[Sequence[str | None]] = None,
     ) -> LLMAdapterResponse:
         raise NotImplementedError("Tools are not supported by this adapter.")
 
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-        tool_dispatch_requirements: Optional[Sequence["ToolDispatchRequirements"]] = None,
-        tool_argument_guidance: Optional[Sequence[str | None]] = None,
     ) -> Iterable[LLMStreamEvent]:
         raise NotImplementedError("Tools streaming is not supported by this adapter.")
 

@@ -7,9 +7,10 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+if TYPE_CHECKING:
+    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 
 class CanonicalFunctionToolFunctionSchema(TypedDict):
@@ -54,7 +55,7 @@ class ToolDispatchRequirements:
 
 @dataclass(frozen=True, slots=True)
 class CanonicalFunctionToolDefinition:
-    """Canonical tool definition: wire schema plus typed dispatch requirements."""
+    """Canonical tool binding: wire schema plus typed dispatch metadata."""
 
     wire_schema: CanonicalFunctionToolWireSchema
     dispatch_requirements: ToolDispatchRequirements
@@ -69,62 +70,73 @@ class StrictToolArgumentConformanceError(RuntimeError):
     """Tool schema requires provider-enforced argument conformance that the adapter lacks."""
 
 
-def aligned_tool_dispatch_requirements(
-    tools_schema: Sequence[Mapping[str, Any]],
-    *,
-    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
-) -> tuple[ToolDispatchRequirements, ...]:
-    """Return per-tool dispatch requirements aligned with ``tools_schema`` indices."""
-    if tool_dispatch_requirements is None:
-        return tuple(ToolDispatchRequirements() for _ in tools_schema)
-    if len(tool_dispatch_requirements) != len(tools_schema):
+_CANONICAL_BINDING_KEYS = frozenset(
+    {"wire_schema", "dispatch_requirements", "argument_guidance_text"}
+)
+
+
+def _coerce_wire_schema(
+    tool: Mapping[str, Any],
+    index: int,
+) -> CanonicalFunctionToolWireSchema:
+    if tool.get("type") != "function":
         raise ValueError(
-            "tool_dispatch_requirements length must match tools_schema length"
+            f"tools[{index}] must be a function tool wire schema, got type={tool.get('type')!r}"
         )
-    return tuple(tool_dispatch_requirements)
+    function = tool.get("function")
+    if not isinstance(function, Mapping):
+        raise ValueError(f"tools[{index}] function tool missing nested 'function' object")
+    name = function.get("name")
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"tools[{index}] function tool missing canonical name")
+    return dict(tool)  # type: ignore[return-value]
 
 
-def aligned_tool_argument_guidance(
-    tools_schema: Sequence[Mapping[str, Any]],
-    *,
-    tool_argument_guidance: Sequence[str | None] | None = None,
-) -> tuple[str | None, ...]:
-    """Return per-tool provider-neutral argument guidance aligned with ``tools_schema``."""
-    if tool_argument_guidance is None:
-        return tuple(None for _ in tools_schema)
-    if len(tool_argument_guidance) != len(tools_schema):
-        raise ValueError(
-            "tool_argument_guidance length must match tools_schema length"
+def coerce_canonical_tool_definitions(
+    tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+) -> tuple[CanonicalFunctionToolDefinition, ...]:
+    """Normalize request tools into immutable canonical bindings."""
+    definitions: list[CanonicalFunctionToolDefinition] = []
+    for index, tool in enumerate(tools):
+        if isinstance(tool, CanonicalFunctionToolDefinition):
+            definitions.append(tool)
+            continue
+        if not isinstance(tool, Mapping):
+            raise TypeError(
+                f"tools[{index}] must be CanonicalFunctionToolDefinition or wire schema mapping, "
+                f"got {type(tool).__name__}"
+            )
+        binding_keys = _CANONICAL_BINDING_KEYS.intersection(tool.keys())
+        if binding_keys:
+            raise ValueError(
+                f"tools[{index}] looks like a partial canonical binding "
+                f"({sorted(binding_keys)}); pass CanonicalFunctionToolDefinition "
+                "or a raw wire schema"
+            )
+        definitions.append(
+            CanonicalFunctionToolDefinition(
+                wire_schema=_coerce_wire_schema(tool, index),
+                dispatch_requirements=ToolDispatchRequirements(),
+                argument_guidance_text=None,
+            )
         )
-    return tuple(tool_argument_guidance)
+    return tuple(definitions)
 
 
-def tools_schema_requires_strict_argument_conformance(
-    tools_schema: Sequence[Mapping[str, Any]],
-    *,
-    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+def tool_definitions_require_strict_argument_conformance(
+    definitions: Sequence[CanonicalFunctionToolDefinition],
 ) -> bool:
-    """Return whether any tool in the schema list requires strict argument conformance."""
-    aligned = aligned_tool_dispatch_requirements(
-        tools_schema,
-        tool_dispatch_requirements=tool_dispatch_requirements,
-    )
-    return any(
-        requirements.requires_strict_argument_conformance for requirements in aligned
-    )
+    """Return whether any canonical binding requires strict argument conformance."""
+    return any(definition.requires_strict_argument_conformance for definition in definitions)
 
 
 def assert_strict_tool_argument_conformance_supported(
-    adapter: LLMAdapter,
-    tools_schema: Sequence[Mapping[str, Any]],
-    *,
-    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+    adapter: "LLMAdapter",
+    tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
 ) -> None:
     """Fail closed when strict tools are dispatched to an adapter without capability."""
-    if not tools_schema_requires_strict_argument_conformance(
-        tools_schema,
-        tool_dispatch_requirements=tool_dispatch_requirements,
-    ):
+    definitions = coerce_canonical_tool_definitions(tools)
+    if not tool_definitions_require_strict_argument_conformance(definitions):
         return
     if adapter.supports_strict_tool_argument_conformance():
         return

@@ -5,18 +5,19 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Iterable, Sequence, TypeVar
+from typing import Any, Iterable, Sequence, TypeVar
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.retry import is_retriable_provider_error
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
     StrictToolArgumentConformanceError,
-    ToolDispatchRequirements,
-    tools_schema_requires_strict_argument_conformance,
+    coerce_canonical_tool_definitions,
+    tool_definitions_require_strict_argument_conformance,
 )
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -82,15 +83,13 @@ class FailoverLLMAdapter(LLMAdapter):
 
     def _eligible_adapter_chain(
         self,
-        tools_schema: Sequence[dict] | None = None,
-        *,
-        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]] | None = None,
     ) -> tuple[tuple[LLMAdapter, ...], tuple[str, ...]]:
         """Return adapters eligible for dispatch; filter strict-ineligible children."""
-        if tools_schema is None or not tools_schema_requires_strict_argument_conformance(
-            tools_schema,
-            tool_dispatch_requirements=tool_dispatch_requirements,
-        ):
+        if tools is None:
+            return self._adapters, self._profile_ids
+        definitions = coerce_canonical_tool_definitions(tools)
+        if not tool_definitions_require_strict_argument_conformance(definitions):
             return self._adapters, self._profile_ids
         if not self._adapters[0].supports_strict_tool_argument_conformance():
             raise StrictToolArgumentConformanceError(
@@ -162,27 +161,22 @@ class FailoverLLMAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[dict],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
-        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
-        tool_argument_guidance: Sequence[str | None] | None = None,
     ) -> LLMAdapterResponse:
-        adapters, profile_ids = self._eligible_adapter_chain(
-            tools,
-            tool_dispatch_requirements=tool_dispatch_requirements,
-        )
+        adapters, profile_ids = self._eligible_adapter_chain(tools)
         return self._execute_with_failover(
             lambda adapter: adapter.generate_with_tools(
                 messages,
                 tools,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                tool_choice=tool_choice,
                 run_id=run_id,
-                tool_dispatch_requirements=tool_dispatch_requirements,
-                tool_argument_guidance=tool_argument_guidance,
             ),
             adapters=adapters,
             profile_ids=profile_ids,
@@ -207,27 +201,22 @@ class FailoverLLMAdapter(LLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[dict],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
-        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
-        tool_argument_guidance: Sequence[str | None] | None = None,
     ) -> Iterable[LLMStreamEvent]:
-        adapters, _profile_ids = self._eligible_adapter_chain(
-            tools,
-            tool_dispatch_requirements=tool_dispatch_requirements,
-        )
+        adapters, _profile_ids = self._eligible_adapter_chain(tools)
         adapter = self._select_streaming_adapter_from(adapters)
         return adapter.stream_with_tools(
             messages,
             tools,
             temperature=temperature,
             max_tokens=max_tokens,
+            tool_choice=tool_choice,
             run_id=run_id,
-            tool_dispatch_requirements=tool_dispatch_requirements,
-            tool_argument_guidance=tool_argument_guidance,
         )
 
     def generate_structured(

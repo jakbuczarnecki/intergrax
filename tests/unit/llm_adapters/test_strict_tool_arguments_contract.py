@@ -8,11 +8,13 @@ import pytest
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
     StrictToolArgumentConformanceError,
     ToolArgumentConformance,
     ToolDispatchRequirements,
     assert_strict_tool_argument_conformance_supported,
-    tools_schema_requires_strict_argument_conformance,
+    coerce_canonical_tool_definitions,
+    tool_definitions_require_strict_argument_conformance,
 )
 from intergrax.llm_adapters.providers.openai_responses_adapter import (
     _map_tools_to_responses_api,
@@ -93,26 +95,27 @@ def test_regular_tool_schema_does_not_require_strict_conformance() -> None:
             "parameters": {"type": "object", "properties": {}},
         },
     }
-    assert tools_schema_requires_strict_argument_conformance([tool]) is False
+    (definition,) = coerce_canonical_tool_definitions([tool])
+    assert tool_definitions_require_strict_argument_conformance([definition]) is False
 
 
 def test_request_scoped_requirements_do_not_leak_across_same_name_tools() -> None:
     wire_schema = _same_name_wire_schema()
-    strict_requirements = [
-        ToolDispatchRequirements(argument_conformance=ToolArgumentConformance.STRICT)
-    ]
-    default_requirements = [
-        ToolDispatchRequirements(argument_conformance=ToolArgumentConformance.DEFAULT)
-    ]
+    strict_definition = CanonicalFunctionToolDefinition(
+        wire_schema=wire_schema,  # type: ignore[arg-type]
+        dispatch_requirements=ToolDispatchRequirements(
+            argument_conformance=ToolArgumentConformance.STRICT
+        ),
+    )
+    default_definition = CanonicalFunctionToolDefinition(
+        wire_schema=wire_schema,  # type: ignore[arg-type]
+        dispatch_requirements=ToolDispatchRequirements(
+            argument_conformance=ToolArgumentConformance.DEFAULT
+        ),
+    )
 
-    strict_mapped = _map_tools_to_responses_api(
-        [wire_schema],
-        tool_dispatch_requirements=strict_requirements,
-    )[0]
-    default_mapped = _map_tools_to_responses_api(
-        [wire_schema],
-        tool_dispatch_requirements=default_requirements,
-    )[0]
+    strict_mapped = _map_tools_to_responses_api([strict_definition])[0]
+    default_mapped = _map_tools_to_responses_api([default_definition])[0]
 
     assert strict_mapped.get("strict") is True
     assert "strict" not in default_mapped
@@ -122,8 +125,7 @@ def test_assert_strict_support_passes_for_capable_adapter() -> None:
     definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
     assert_strict_tool_argument_conformance_supported(
         _StrictCapableAdapter(),
-        [definition.wire_schema],
-        tool_dispatch_requirements=[definition.dispatch_requirements],
+        [definition],
     )
 
 
@@ -132,8 +134,7 @@ def test_assert_strict_support_fails_closed_for_unsupported_adapter() -> None:
     with pytest.raises(StrictToolArgumentConformanceError, match="does not support"):
         assert_strict_tool_argument_conformance_supported(
             _ToolsOnlyAdapter(),
-            [definition.wire_schema],
-            tool_dispatch_requirements=[definition.dispatch_requirements],
+            [definition],
         )
 
 
@@ -143,14 +144,11 @@ def test_tools_schema_requires_strict_detects_request_scoped_member() -> None:
         "type": "function",
         "function": {"name": "noop", "parameters": {"type": "object"}},
     }
-    assert tools_schema_requires_strict_argument_conformance([plain_tool]) is False
+    plain_definition = coerce_canonical_tool_definitions([plain_tool])[0]
+    assert tool_definitions_require_strict_argument_conformance([plain_definition]) is False
     assert (
-        tools_schema_requires_strict_argument_conformance(
-            [definition.wire_schema, plain_tool],
-            tool_dispatch_requirements=[
-                definition.dispatch_requirements,
-                ToolDispatchRequirements(),
-            ],
+        tool_definitions_require_strict_argument_conformance(
+            [definition, plain_definition],
         )
         is True
     )
@@ -162,3 +160,21 @@ def test_atomic_round_min_items_unchanged_in_canonical_schema() -> None:
     actions = parameters["properties"]["actions"]
     assert actions["minItems"] == 1
     assert schema["function"]["name"] == PLANNER_ROUND_TOOL_ID
+
+
+def test_canonical_binding_keeps_schema_requirements_and_guidance_together() -> None:
+    definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
+    (coerced,) = coerce_canonical_tool_definitions([definition])
+    assert coerced is definition
+    mapped = _map_tools_to_responses_api([coerced])[0]
+    assert mapped["strict"] is True
+    assert coerced.argument_guidance_text is not None
+    assert "production.staffing.attendance.read:" in mapped["parameters"]["properties"]["actions"]["items"]["properties"]["arguments_json"]["description"]
+
+
+def test_partial_canonical_binding_dict_fails_closed() -> None:
+    definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
+    with pytest.raises(ValueError, match="partial canonical binding"):
+        coerce_canonical_tool_definitions(
+            [{"wire_schema": definition.wire_schema, "dispatch_requirements": definition.dispatch_requirements}]
+        )
