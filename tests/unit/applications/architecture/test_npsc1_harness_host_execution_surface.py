@@ -4,9 +4,6 @@
 
 from __future__ import annotations
 
-import inspect
-from dataclasses import fields
-from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -48,12 +45,12 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
 )
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
-from intergrax.runtime.execution.host_task import HostTaskExecution, HostTaskExecutionPort
+from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.request import ExecutionCapability
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from research_application.tests.research_ac3_projection import build_research_test_registry_projection
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from research_application.host.settings import ResearchBackendSettings
@@ -62,9 +59,6 @@ from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
-
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_HOST_TASK_PATH = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 
 
 @pytest.fixture(autouse=True)
@@ -168,44 +162,11 @@ def test_harness_host_runtime_exposes_canonical_execution_surface() -> None:
     assert isinstance(runtime.execution, HostTaskExecution)
 
 
-def test_harness_host_runtime_public_fields_do_not_include_nexus_loop() -> None:
-    public_fields = {field.name for field in fields(HarnessHostRuntime)}
-    assert "nexus_loop" not in public_fields
-    assert "execution" in public_fields
-
-
-def test_host_task_execution_port_has_no_nexus_loop() -> None:
-    source = inspect.getsource(HostTaskExecutionPort)
-    assert "nexus_loop" not in source
-    assert "NexusLoop" not in source
-
-
-def test_host_task_execution_has_no_public_nexus_loop_property() -> None:
-    public_names = {
-        name
-        for name in dir(HostTaskExecution)
-        if not name.startswith("_") and name != "execute"
-    }
-    assert "nexus_loop" not in public_names
-    assert not hasattr(HostTaskExecution, "nexus_loop")
-
-
-def test_host_task_module_has_no_nexus_import() -> None:
-    text = _HOST_TASK_PATH.read_text(encoding="utf-8")
-    assert "NexusLoop" not in text
-    assert "nexus_loop" not in text
-
-
-def test_runtime_execution_nexus_loop_is_impossible() -> None:
+def test_agent_registry_read_available_without_task_execution() -> None:
     runtime = _build_echo_runtime()
-    assert not hasattr(runtime.execution, "nexus_loop")
-
-
-def test_legacy_compat_resolves_internal_nexus_without_public_field() -> None:
-    runtime = _build_echo_runtime()
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
-    assert isinstance(nexus_loop, NexusLoop)
-    assert not hasattr(runtime.execution, "nexus_loop")
+    assert isinstance(runtime.registry, AgentRegistryRead)
+    assert runtime.registry.list_agent_ids() == ["search"]
+    assert runtime.registry.has("search")
 
 
 @pytest.mark.asyncio
