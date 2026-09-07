@@ -16,6 +16,10 @@ from intergrax.contracts.capability_catalog.evidence import (
 )
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.capability_catalog.query import CapabilityDiscoveryQuery
+from intergrax.contracts.marketplace import (
+    MarketplaceCommercialMetadata,
+    MarketplacePublisherMetadata,
+)
 from intergrax.marketplace.errors import MarketplaceCatalogConfigurationError
 from intergrax.marketplace.listing import (
     MarketplaceCapabilityListing,
@@ -27,8 +31,8 @@ from intergrax.marketplace.source import MarketplaceCapabilityCatalogSource
 @dataclass(frozen=True, slots=True)
 class _ListingProductMetadata:
     listing_id: str | None
-    publisher_metadata: object | None
-    commercial_metadata: object | None
+    publisher_metadata: MarketplacePublisherMetadata | None
+    commercial_metadata: MarketplaceCommercialMetadata | None
 
 
 class MarketplaceCatalogService:
@@ -44,7 +48,6 @@ class MarketplaceCatalogService:
         snapshot = catalog.snapshot()
         _validate_marketplace_sources_in_catalog(catalog, marketplace_sources)
         self._listing_index = _build_listing_index(snapshot, marketplace_sources)
-        self._canonical_by_identity = _index_canonical_entries(snapshot)
 
     def list_listings(
         self,
@@ -88,7 +91,8 @@ class MarketplaceCatalogService:
         metadata = self._listing_index.get(identity_key.sort_key)
         if metadata is None:
             return None
-        canonical = self._canonical_by_identity.get(identity_key.sort_key)
+        snapshot = self._catalog.snapshot()
+        canonical = _index_canonical_entries(snapshot).get(identity_key.sort_key)
         if canonical is None:
             return None
         return _build_listing(canonical, metadata)

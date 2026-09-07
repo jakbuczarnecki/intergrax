@@ -114,6 +114,26 @@ class _DuplicateListingSource(MarketplaceCapabilityCatalogSource):
         return (listing, listing)
 
 
+class _MutableFederationSource(MarketplaceCapabilityCatalogSource):
+    """Federation entries that can change after service construction."""
+
+    def __init__(
+        self,
+        *,
+        source: CapabilitySourceIdentity,
+        records: tuple[MarketplaceListingRecord, ...],
+        entries: tuple[CapabilityCatalogEntry, ...],
+    ) -> None:
+        super().__init__(source=source, records=records)
+        self._entries = entries
+
+    def read_entries(self) -> tuple[CapabilityCatalogEntry, ...]:
+        return self._entries
+
+    def set_entries(self, entries: tuple[CapabilityCatalogEntry, ...]) -> None:
+        self._entries = entries
+
+
 def _marketplace_record(
     *,
     version_label: str | None = None,
@@ -278,3 +298,80 @@ def test_duplicate_identity_across_product_sources_fails_closed() -> None:
             catalog=catalog,
             marketplace_sources=(marketplace_source,),
         )
+
+
+def test_get_listing_returns_none_after_federation_removes_capability() -> None:
+    canonical = _canonical_entry()
+    marketplace_source = _MutableFederationSource(
+        source=_SOURCE,
+        records=(
+            _marketplace_record(
+                version_label="1.0",
+                content_digest="AAA",
+                publisher="intergrax",
+            ),
+        ),
+        entries=(canonical,),
+    )
+    catalog = FederatedCapabilityCatalog((marketplace_source,))
+    service = MarketplaceCatalogService(
+        catalog=catalog,
+        marketplace_sources=(marketplace_source,),
+    )
+    assert service.get_listing(_IDENTITY_KEY) is not None
+
+    marketplace_source.set_entries(())
+    assert service.get_listing(_IDENTITY_KEY) is None
+
+
+def test_get_listing_reflects_updated_canonical_facts() -> None:
+    canonical_v1 = _canonical_entry(version_label="1.0", content_digest="AAA")
+    marketplace_source = _MutableFederationSource(
+        source=_SOURCE,
+        records=(
+            _marketplace_record(
+                version_label="1.0",
+                content_digest="AAA",
+                publisher="intergrax",
+            ),
+        ),
+        entries=(canonical_v1,),
+    )
+    catalog = FederatedCapabilityCatalog((marketplace_source,))
+    service = MarketplaceCatalogService(
+        catalog=catalog,
+        marketplace_sources=(marketplace_source,),
+    )
+
+    canonical_v2 = _canonical_entry(version_label="2.0", content_digest="BBB")
+    marketplace_source.set_entries((canonical_v2,))
+    listing = service.get_listing(_IDENTITY_KEY)
+    assert listing is not None
+    assert listing.capability.provenance.version_label == "2.0"
+    assert listing.capability.provenance.content_digest == "BBB"
+    assert listing.publisher_metadata is not None
+    assert listing.publisher_metadata.publisher_id == "intergrax"
+
+
+def test_list_listings_uses_fresh_federation_snapshot() -> None:
+    canonical = _canonical_entry()
+    marketplace_source = _MutableFederationSource(
+        source=_SOURCE,
+        records=(
+            _marketplace_record(
+                version_label="1.0",
+                content_digest="AAA",
+                publisher="intergrax",
+            ),
+        ),
+        entries=(canonical,),
+    )
+    catalog = FederatedCapabilityCatalog((marketplace_source,))
+    service = MarketplaceCatalogService(
+        catalog=catalog,
+        marketplace_sources=(marketplace_source,),
+    )
+    assert len(service.list_listings(_discovery_query(kinds=(CapabilityKind.TOOL,)))) == 1
+
+    marketplace_source.set_entries(())
+    assert service.list_listings(_discovery_query(kinds=(CapabilityKind.TOOL,))) == ()
