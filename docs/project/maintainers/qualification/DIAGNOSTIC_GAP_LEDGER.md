@@ -52,9 +52,9 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Universal platform improvement** | Represent critical host/application/worker/public-proof bootstrap failure before Task/Run/Attempt exists |
 | **Why this is not application-specific** | Any queue-enabled Tier-3 host or public proof launcher can fail before execution identity is minted |
 | **Priority** | P1 |
-| **Status** | PARTIALLY ADDRESSED / DESIGN REQUIRED |
-| **Related implementation** | HOST-DIAG-2 typed `DiagnosticSubjectRef` + `signal_subjects` on `DiagnosticOrchestrationRequest`; HOST-DIAG-3 `HostedApplicationDiagnosticEventPublisher` for bounded `APPLICATION_FAILED` projection when product composition supplies tenant binding |
-| **Qualification result after fix** | **Partial.** Subject model + orchestrator non-execution input exist. Missing: canonical producer at real worker/host bootstrap and at public proof launcher bootstrap; operator entrypoint does not discover bootstrap `ModuleNotFoundError`. Public Windows proof bootstrap failure is a concrete qualification fixture under this gap (not a separate DG). |
+| **Status** | PARTIALLY ADDRESSED / ROOT CAUSE LOCALIZED |
+| **Related implementation** | HOST-DIAG-2 typed `DiagnosticSubjectRef` + `signal_subjects` on `DiagnosticOrchestrationRequest`; HOST-DIAG-3 `HostedApplicationDiagnosticEventPublisher` for bounded `APPLICATION_FAILED` projection when product composition supplies tenant binding; **R1 audit** — [`DG_001_PRE_EXECUTION_STARTUP_FAILURE_VISIBILITY_AUDIT.md`](DG_001_PRE_EXECUTION_STARTUP_FAILURE_VISIBILITY_AUDIT.md) |
+| **Qualification result after fix** | **Partial (R1).** HOST-DIAG-2/3 spine proven for hosted engine `APPLICATION_FAILED` when product wires diagnostic publisher + tenant. **Missing surfaces:** (1) default LKW/production hosted path — observability-only publisher; (2) worker bootstrap composition root — no canonical event/producer; (3) public proof PYTHON-BOOTSTRAP — no platform producer; (4) supervisor pre-engine / host pre-publisher composition — no `APPLICATION_FAILED`. Operator `list_problems` proven only when HOST-DIAG-3 wired. Historical `ModuleNotFoundError: local_workspace_application` remains qualification fixture (launcher remediated; diagnostics not). |
 
 ---
 
