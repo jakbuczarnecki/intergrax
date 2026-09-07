@@ -23,6 +23,10 @@ from intergrax.runtime.observability.operator_wiring import (
     SentryExportOperatorConfig,
     parse_observability_export_backend_id,
 )
+from local_workspace_application.host.worker_construction_fault import (
+    WorkerConstructionFaultMode,
+    parse_worker_construction_fault_mode,
+)
 
 
 LocalWorkspaceIdentitySource = Literal["body_or_context", "context_only"]
@@ -141,6 +145,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_sentry_flush_after_capture: bool = False
     data_home: str = _DEFAULT_DATA_HOME
     document_store_backend: Literal["auto", "mongodb", "inmemory"] = "auto"
+    worker_construction_fault: WorkerConstructionFaultMode = "none"
     file_watcher_enabled: bool = False
     file_watcher_tenant_id: str = ""
     file_watcher_workspace_id: str = ""
@@ -716,6 +721,12 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             raise ValueError(
                 "LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND must be one of: auto, mongodb, inmemory."
             )
+        worker_construction_fault = parse_worker_construction_fault_mode(
+            env.str(
+                "WORKER_CONSTRUCTION_FAULT",
+                default=cls._field_default("worker_construction_fault"),  # type: ignore[arg-type]
+            ),
+        )
 
         managed_staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
         web_url_staging_root = _data_home_path(data_home, "run", "web_url_staging")
@@ -762,6 +773,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "observability_sentry_debug": observability_sentry_debug,
             "observability_sentry_flush_after_capture": observability_sentry_flush_after_capture,
             "document_store_backend": document_store_backend,
+            "worker_construction_fault": worker_construction_fault,
             "file_watcher_enabled": file_watcher_enabled,
             "file_watcher_tenant_id": file_watcher_tenant_id,
             "file_watcher_workspace_id": file_watcher_workspace_id,

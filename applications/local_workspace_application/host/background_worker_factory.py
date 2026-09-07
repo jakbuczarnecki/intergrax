@@ -35,6 +35,9 @@ from local_workspace_application.background_ingest.worker_handler import (
     make_background_ingest_worker_handler,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.host.worker_construction_fault import (
+    maybe_raise_worker_construction_fault,
+)
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_lkw_runtime_document_store,
 )
@@ -77,16 +80,18 @@ def build_local_workspace_background_worker_wiring(
     settings: LocalWorkspaceBackendSettings | None = None,
     document_store: DocumentStore | None = None,
 ) -> LocalWorkspaceBackgroundWorkerWiring:
-    settings = settings or LocalWorkspaceBackendSettings.from_env()
+    resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
     environment = manifest.resolved_environment()
     lkw_document_store = (
-        document_store if document_store is not None else resolve_lkw_runtime_document_store(settings)
+        document_store
+        if document_store is not None
+        else resolve_lkw_runtime_document_store(resolved_settings)
     )
     runtime = build_harness_host_runtime(
         manifest,
         environment,
-        settings=settings,
-        idempotency_db_path=Path(settings.idempotency_db_path),
+        settings=resolved_settings,
+        idempotency_db_path=Path(resolved_settings.idempotency_db_path),
         document_store=lkw_document_store,
         registry_projection=registry_projection,
     )
@@ -116,6 +121,7 @@ def build_local_workspace_background_worker_wiring(
     task_registry.bind_execution_registry(registry)
 
     queue_dependencies = resolve_host_queue_execution_dependencies(runtime)
+    maybe_raise_worker_construction_fault(resolved_settings.worker_construction_fault)
     worker = create_kafka_worker(
         kv_store=queue_dependencies.kv_store,
         execution_registry=registry,
