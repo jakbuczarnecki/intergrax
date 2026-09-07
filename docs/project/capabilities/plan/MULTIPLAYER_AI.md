@@ -6,11 +6,11 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**) — **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — APPROVED / CLOSED**; MP-3 runtime **NOT STARTED**
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**) — **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — pending final independent audit**; MP-3 runtime **NOT STARTED**
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **CLOSED**)
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **pending final independent audit**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-3A** — WorkArtifact / WorkArtifactVersion contracts + invariants (**NOT STARTED / READY TO OPEN**)
+**Current active task:** none — **MP-3A** remains **NOT STARTED** (do not open until decomposition audit closes)
 **Next task:** Open MP-3A implementation when scheduled
 
 ---
@@ -160,30 +160,30 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition APPROVED / CLOSED**; runtime **NOT STARTED** |
+| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition — pending final independent audit**; runtime **NOT STARTED** |
 | **Purpose** | Durable collaborative outputs with versioning and provenance. |
 | **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-004; full slice rows § COLLAB-WORK-3 |
 | **Reused domain capabilities** | UCL (consumption only); Memory indexing/retrieval; Proof Receipts attestation; MP-1 authority; MP-2 repository/CAS/idempotency patterns; optional `ExecutionProvenanceRef` |
 | **Dependencies** | MP-2 accepted (MP-1 authority on artifacts) |
-| **Exact scope** | WorkArtifact; authoritative immutable WorkArtifactVersion; publication; CAS-protected current-version pointer; `ArtifactPublicationRepository` transactional boundary; lineage; principal provenance; optional execution provenance; neutral `ArtifactContentRef` |
+| **Exact scope** | WorkArtifact; authoritative immutable WorkArtifactVersion; publication; CAS-protected current-version pointer; `ArtifactPublicationRepository` transactional boundary for **both** atomic initial creation (`create_artifact_with_initial_version(...)`) and subsequent publication (`publish_version(...)`); lineage; principal provenance; optional execution provenance; neutral `ArtifactContentRef` |
 | **REUSED EXISTING CAPABILITY** | MP-1 effective authority; MP-2 persistence/concurrency patterns; neutral execution provenance contracts |
 | **NEW CAPABILITY REQUIRED** | WorkArtifact, WorkArtifactVersion runtime contracts and services (slices MP-3A…MP-3H) |
 | **Explicit out of scope** | `LKW-HYBRID-ASK-*` as WorkArtifact owner; UCL/Memory/Proof Receipts as owners; MP-4 Decision state; MP-6 Activity projection; runtime implementation until MP-3A opens |
 | **Architecture/ADR gate** | **Done** — WorkArtifact separated from UCL OptimizationArtifact; immutable version + CAS current pointer accepted; **ADR-MP-004 Accepted** |
-| **Pre-implementation domain-sync gate** | **Done** — MP-3 bounded ownership check closed; decomposition **APPROVED / CLOSED**; MP-3A…MP-3H rows registered |
+| **Pre-implementation domain-sync gate** | **Done** — MP-3 bounded ownership check closed; decomposition updated — **pending final independent audit**; MP-3A…MP-3H rows registered |
 | **User-visible outcome** | Versioned collaborative artifacts with lineage |
-| **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes; publication atomicity via dedicated port |
-| **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent publication tests; cross-process publication proof (MP-3E); provenance/evidence integration proof (MP-3G) |
-| **Next implementation row** | **MP-3A** — WorkArtifact / WorkArtifactVersion contracts + invariants (**NOT STARTED / READY TO OPEN**) |
+| **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes; atomic initial creation and subsequent publication via dedicated port (no dangling `current_version_id`, no orphan initial version) |
+| **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent initial create tests; idempotent publication tests; cross-process publication proof (MP-3E); provenance/evidence integration proof (MP-3G) |
+| **Next implementation row** | **MP-3A** — WorkArtifact / WorkArtifactVersion contracts + invariants (**NOT STARTED**)
 
 ### MP-3 architectural implementation slices
 
-Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) § COLLAB-WORK-3.
+Decomposition updated — **pending final independent audit** — canonical rows in [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) § COLLAB-WORK-3.
 
 | Slice | Scope | Status |
 |-------|-------|--------|
-| MP-3A | Contracts + invariants + `ArtifactContentRef` | NOT STARTED / READY |
-| MP-3B | Ports + in-memory + `ArtifactPublicationRepository` | NOT STARTED |
+| MP-3A | Contracts + invariants + `ArtifactContentRef` | NOT STARTED |
+| MP-3B | Ports + in-memory + `ArtifactPublicationRepository` (atomic initial create + publish) | NOT STARTED |
 | MP-3C | Publication service + MP-1 authority | NOT STARTED |
 | MP-3D | SQLite transactional persistence | NOT STARTED |
 | MP-3E | PostgreSQL + qualification | NOT STARTED |

@@ -195,8 +195,8 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
 
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
-**MP-3 status:** **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition APPROVED / CLOSED**; MP-3 runtime implementation **NOT STARTED**.
-**Current active task:** **MP-3A** — WorkArtifact / WorkArtifactVersion contracts + invariants (**NOT STARTED / READY TO OPEN**).
+**MP-3 status:** **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition — pending final independent audit**; MP-3 runtime implementation **NOT STARTED**.
+**Current active task:** none — **MP-3A** remains **NOT STARTED** (do not open until decomposition audit closes).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -376,7 +376,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 
 ### Creation semantics (frozen)
 
-First `WorkArtifactVersion` is created **atomically at domain-operation semantics** with initial `WorkArtifact` creation — no persisted authoritative `WorkArtifact` with dangling `current_version_id`. Repository implementations may use multiple writes; architecture distinguishes **domain-operation atomicity** from **repository transaction capability** (no database atomicity claim until persistence supports it).
+First `WorkArtifactVersion` is created **atomically** with initial `WorkArtifact` creation — one authoritative domain operation; no persisted authoritative `WorkArtifact` with dangling `current_version_id`. Persistence atomicity is enforced by `ArtifactPublicationRepository.create_artifact_with_initial_version(...)` (MP-3B+); failure exposes neither half as a successful authoritative operation. Same idempotency key + same semantic request → original artifact + initial version; same key + changed semantic intent → typed idempotency conflict; server-generated timestamps do not pollute the semantic fingerprint.
 
 ### Publication semantics (frozen)
 
@@ -395,7 +395,12 @@ No in-place version modification; no silent LWW; no implicit WorkItem state tran
 
 ### Atomic publication boundary (frozen)
 
-Independent artifact and version repository ports cannot alone guarantee that version append and current-pointer CAS succeed or fail together. MP-3B introduces a narrowly scoped **`ArtifactPublicationRepository`** with `publish_version(...)` enforcing both writes in one store-critical section. In-memory: atomic critical section. SQLite/PostgreSQL: single transaction. **No generic UnitOfWork**; no service-level fake rollback.
+Independent `WorkArtifactRepository` and `WorkArtifactVersionRepository` ports cannot alone guarantee that multi-write authoritative operations succeed or fail together. MP-3B introduces a narrowly scoped **`ArtifactPublicationRepository`** covering both authoritative write paths:
+
+- **`create_artifact_with_initial_version(...)`** — atomically persist `WorkArtifact`, first immutable `WorkArtifactVersion`, `current_version_id` referencing that version, initial `revision`, and idempotency result.
+- **`publish_version(...)`** — verify `expected_revision`; append immutable version; CAS `current_version_id`; increment `revision`; preserve history; idempotent replay; exactly one store transaction/critical section.
+
+`WorkArtifactRepository` and `WorkArtifactVersionRepository` remain typed read/direct-persistence ports; **authoritative create/publish commands go through `ArtifactPublicationRepository` only** — the service must not coordinate two repository writes manually. No generic `Repository[T]`; no generic UnitOfWork; no service-level compensating rollback. In-memory: atomic critical section per operation. SQLite/PostgreSQL: single transaction per operation.
 
 ### Idempotency and concurrency (frozen)
 
@@ -469,12 +474,12 @@ MP-2-only compositions remain valid until MP-3 composition gate opens. Reuse MP-
 
 ### Implementation roadmap
 
-Decomposition **APPROVED / CLOSED** — full slice rows in [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md) § COLLAB-WORK-3. Runtime **NOT STARTED**; **MP-3A** is **READY TO OPEN**.
+Decomposition updated — **pending final independent audit** — full slice rows in [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md) § COLLAB-WORK-3. Runtime **NOT STARTED**; **MP-3A** **NOT STARTED** (do not open until audit closes).
 
 | Slice | Scope | Status |
 |-------|-------|--------|
-| MP-3A | Contracts + invariants + `ArtifactContentRef` | NOT STARTED / READY |
-| MP-3B | Ports + in-memory + `ArtifactPublicationRepository` | NOT STARTED |
+| MP-3A | Contracts + invariants + `ArtifactContentRef` | NOT STARTED |
+| MP-3B | Ports + in-memory + `ArtifactPublicationRepository` (atomic initial create + publish) | NOT STARTED |
 | MP-3C | Publication service + MP-1 authority | NOT STARTED |
 | MP-3D | SQLite transactional persistence | NOT STARTED |
 | MP-3E | PostgreSQL + qualification | NOT STARTED |

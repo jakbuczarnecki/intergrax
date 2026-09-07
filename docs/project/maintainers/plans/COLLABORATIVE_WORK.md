@@ -5,8 +5,8 @@
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../../technical/adr/entries/2026-09-07/ADR-MP-004.md)
 
-**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — APPROVED / CLOSED**; MP-3 runtime implementation **NOT STARTED**
-**Current active task:** **MP-3A** — WorkArtifact / WorkArtifactVersion contracts + invariants (**NOT STARTED / READY TO OPEN**)
+**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — pending final independent audit**; MP-3 runtime implementation **NOT STARTED**
+**Current active task:** none — **MP-3A** remains **NOT STARTED** (do not open until decomposition audit closes)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -393,11 +393,16 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 - **WorkArtifactVersion** is immutable authoritative history; does **not** carry mutable `revision` or status machine.
 - **WorkItem** does **not** embed WorkArtifact bodies; no cascading lifecycle substitution.
 
-**Creation semantics (frozen):** first `WorkArtifactVersion` is created **atomically at domain-operation semantics** together with initial `WorkArtifact` creation — no persisted authoritative `WorkArtifact` with dangling `current_version_id`. Repository implementations may require multiple writes; distinguish **domain-operation atomicity** from **repository transaction capability** (no claim of database atomicity until persistence supports it).
+**Creation semantics (frozen):** first `WorkArtifactVersion` is created **atomically** with initial `WorkArtifact` creation — one authoritative domain operation; no persisted authoritative `WorkArtifact` with dangling `current_version_id`. Persistence atomicity is enforced by `ArtifactPublicationRepository.create_artifact_with_initial_version(...)` (MP-3B+); failure exposes neither half as a successful authoritative operation.
 
 **Publication semantics (frozen):** `publish new artifact version` — (1) authorize acting principal; (2) verify tenant/workspace/work_item scope; (3) verify expected artifact `revision`; (4) append immutable `WorkArtifactVersion`; (5) move `WorkArtifact.current_version_id`; (6) increment `WorkArtifact.revision`; (7) preserve prior versions; (8) return authoritative updated aggregate + new version via typed publication result (e.g. `PublishedWorkArtifactVersion` containing `WorkArtifact` + `WorkArtifactVersion` — exact name at implementation). No in-place version mutation; no silent LWW; no implicit WorkItem state transition.
 
-**Atomic publication boundary (frozen — required):** independent `WorkArtifactRepository` + `WorkArtifactVersionRepository` ports alone cannot guarantee that append + CAS pointer update succeed or fail together. MP-3B introduces a narrowly scoped **`ArtifactPublicationRepository`** (or equivalent publication persistence port) with one operation `publish_version(...)` enforcing append + CAS in one store-critical section. In-memory: atomic critical section. SQLite/PostgreSQL: single transaction. **No generic UnitOfWork**; no service-level fake rollback.
+**Atomic publication boundary (frozen — required):** independent `WorkArtifactRepository` + `WorkArtifactVersionRepository` ports alone cannot guarantee that multi-write authoritative operations succeed or fail together. MP-3B introduces a narrowly scoped **`ArtifactPublicationRepository`** covering both authoritative write paths:
+
+- **`create_artifact_with_initial_version(...)`** — atomically persist `WorkArtifact`, first immutable `WorkArtifactVersion`, `current_version_id` referencing that version, initial `revision`, and idempotency result; failure exposes neither half as authoritative; same idempotency key + same semantic request → original artifact + initial version; same key + changed semantic intent → typed idempotency conflict; server-generated timestamps do not pollute the semantic fingerprint.
+- **`publish_version(...)`** — append version + CAS pointer atomically per store capability (existing frozen semantics unchanged).
+
+`WorkArtifactRepository` and `WorkArtifactVersionRepository` remain typed read/direct-persistence ports; **authoritative create/publish commands go through `ArtifactPublicationRepository` only** — the service must not coordinate two repository writes manually. In-memory: atomic critical section per operation. SQLite/PostgreSQL: single transaction per operation. **No generic UnitOfWork**; no service-level compensating rollback; no generic `Repository[T]`.
 
 **Idempotency (frozen):** separate semantic idempotency for (A) create artifact + first version and (B) publish subsequent version. Fingerprint includes semantic request intent; excludes server-generated `created_at` / `published_at` / `updated_at` unless caller-supplied and authoritative. Same key + changed semantic content → typed idempotency conflict; no duplicate `WorkArtifactVersion` on retry.
 
@@ -417,9 +422,9 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3A |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED / READY TO OPEN** |
+| **Status** | **NOT STARTED** |
 | **Purpose** | WorkArtifact and WorkArtifactVersion semantic contracts, neutral `ArtifactContentRef`, and pure invariant helpers |
-| **Dependencies** | MP-3 architecture decomposition **APPROVED / CLOSED**; ADR-MP-004 Accepted; MP-2 closed |
+| **Dependencies** | MP-3 architecture decomposition audit closed; ADR-MP-004 Accepted; MP-2 closed |
 | **Exact scope** | `WorkArtifactId`, `WorkArtifactVersionId`; `WorkArtifact` (`schema_version`, `work_artifact_id`, `tenant_id`, `workspace_id`, `work_item_id`, `created_by_principal_id`, `current_version_id`, `revision`, `created_at`, `updated_at`); `WorkArtifactVersion` (`schema_version`, `work_artifact_version_id`, `work_artifact_id`, `tenant_id`, `workspace_id`, `work_item_id`, `created_by_principal_id`, `published_by_principal_id`, `content_ref`, `created_at`, `published_at`, optional `execution: ExecutionProvenanceRef | None`); neutral `ArtifactContentRef` (stable content identity / location semantics, media type, integrity digest, optional size — provider identity must not become version identity); create/publication request contracts only if semantically required for pure contract/lifecycle testing; pure invariant helpers (current-pointer validity, scope consistency, immutability rules); Pydantic `BaseModel`, `ConfigDict(extra="forbid", frozen=True)`, `schema_version` Literal, timezone-aware datetimes |
 | **REUSED** | MP-1 `CollaborativePrincipal` / tenant/workspace scoping; MP-2 contract conventions; neutral `ExecutionProvenanceRef` from `intergrax/contracts/execution_provenance.py` |
 | **NEW** | WorkArtifact / WorkArtifactVersion contracts; `ArtifactContentRef`; publication/create request contracts as needed; pure invariant module |
@@ -435,11 +440,11 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Status** | **NOT STARTED** |
 | **Purpose** | Typed repository ports, in-memory reference adapters, and publication consistency boundary |
 | **Dependencies** | MP-3A approved |
-| **Exact scope** | `WorkArtifactRepository` (create, get, CAS update current-version pointer, idempotent create); `WorkArtifactVersionRepository` (append-only create, get, list_for_artifact — no update/delete/replace); **`ArtifactPublicationRepository`** with `publish_version(...)` (append version + CAS pointer atomically per store capability); in-memory reference implementations; repository semantic tests proving publication cannot succeed with version persisted but pointer update failed (and vice versa) |
+| **Exact scope** | `WorkArtifactRepository` (get, direct persistence primitives — read/direct port only; not authoritative create/publish path for service); `WorkArtifactVersionRepository` (append-only create, get, list_for_artifact — no update/delete/replace; not authoritative create/publish path for service); **`ArtifactPublicationRepository`** with **`create_artifact_with_initial_version(...)`** (atomic initial `WorkArtifact` + first `WorkArtifactVersion` + `current_version_id` + initial `revision` + idempotency) and **`publish_version(...)`** (append version + CAS pointer atomically per store capability); in-memory reference implementations; repository semantic tests proving initial creation cannot succeed with artifact persisted but version/pointer missing (and vice versa); publication partial-write rejection tests |
 | **REUSED** | COLLAB-WORK-2B repository/exception/idempotency patterns; MP-1 revision semantics |
-| **NEW** | MP-3 repository ports; in-memory adapters; publication persistence port |
-| **Explicit out of scope** | Authoritative service; authority enforcement; SQLite/PostgreSQL; content storage providers; generic `Repository[T]`; service-level manual rollback/UoW |
-| **Acceptance** | Typed ports exist; in-memory reference exists; artifact CAS proven; append-only versions proven; idempotency proven (create + publish); publication consistency proven; tenant/workspace isolation proven; no generic repository abstraction |
+| **NEW** | MP-3 repository ports; in-memory adapters; publication persistence port (both authoritative write operations) |
+| **Explicit out of scope** | Authoritative service; authority enforcement; SQLite/PostgreSQL; content storage providers; generic `Repository[T]`; service-level manual two-repository create/publish; compensating rollback/UoW |
+| **Acceptance** | Typed ports exist; in-memory reference exists; atomic initial creation proven (no dangling `current_version_id`, no orphan initial version); idempotent initial create proven; artifact CAS proven; append-only versions proven; idempotency proven (create + publish); publication consistency proven; tenant/workspace isolation proven; no generic repository abstraction; service cannot simulate cross-repository transactionality via separate ports |
 | **Proof requirements** | `tests/unit/collaborative_work/test_in_memory_artifact_repository.py` (or equivalent); publication partial-write rejection tests |
 | **Next step** | MP-3C — authoritative publication service + MP-1 authority |
 
@@ -450,11 +455,11 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Status** | **NOT STARTED** |
 | **Purpose** | Authoritative artifact create/publish domain service with MP-1 authority enforcement |
 | **Dependencies** | MP-3B approved; `CollaborativeWorkEnforcementGate`; MP-3A contracts |
-| **Exact scope** | Domain service for atomic create (artifact + first version) and `publish new artifact version`; trusted operation IDs for artifact create/publish; `expected_revision` CAS via publication port; typed `WorkArtifactRevisionConflict`; idempotent replay for create and publish; typed publication result boundary; reuse `CollaborativeWorkEnforcementGate` — no `ArtifactAuthorizationService`, no artifact ACL |
-| **REUSED** | MP-1 effective authority and policy composition; MP-3B publication repository semantics |
+| **Exact scope** | Domain service for authoritative create (artifact + first version) and `publish new artifact version`; **create** delegates to `ArtifactPublicationRepository.create_artifact_with_initial_version(...)`; **publish** delegates to `ArtifactPublicationRepository.publish_version(...)`; trusted operation IDs for artifact create/publish; `expected_revision` CAS via publication port only; typed `WorkArtifactRevisionConflict`; idempotent replay for create and publish; typed publication result boundary; reuse `CollaborativeWorkEnforcementGate` — no `ArtifactAuthorizationService`, no artifact ACL; service must **not** coordinate `WorkArtifactRepository` + `WorkArtifactVersionRepository` writes manually |
+| **REUSED** | MP-1 effective authority and policy composition; MP-3B publication repository semantics (both atomic write operations) |
 | **NEW** | Authoritative WorkArtifact publication service layer |
-| **Explicit out of scope** | Fake transaction rollback/UoW in service; storage-provider coupling; SQLite/PostgreSQL; content adapters; MP-4/MP-6 |
-| **Acceptance** | Service uses MP-1 enforcement gate; create/publish authorized; stale revision typed conflict; idempotent replay; no fake rollback; no storage-provider coupling |
+| **Explicit out of scope** | Manual two-repository create/publish; compensating rollback/UoW in service; storage-provider coupling; SQLite/PostgreSQL; content adapters; MP-4/MP-6 |
+| **Acceptance** | Service uses MP-1 enforcement gate; create/publish authorized via publication port only; stale revision typed conflict; idempotent replay; no manual two-repository writes; no compensating rollback; no storage-provider coupling |
 | **Proof requirements** | Service unit tests; authority/isolation tests; idempotency replay tests; publication semantics tests |
 | **Next step** | MP-3D — SQLite durability parity |
 
@@ -465,11 +470,11 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Status** | **NOT STARTED** |
 | **Purpose** | SQLite durable adapters for WorkArtifact, WorkArtifactVersion, and transactional publication |
 | **Dependencies** | MP-3C approved; COLLAB-WORK-2D SQLite patterns; MP-3B publication boundary |
-| **Exact scope** | Extend existing Collaborative Work SQLite materialization (no separate artifact DB); same typed repository shape; tenant/workspace isolation; append-only versions; CAS artifact pointer; idempotency persistence; restart durability; `ArtifactPublicationRepository` implemented transactionally in SQLite |
+| **Exact scope** | Extend existing Collaborative Work SQLite materialization (no separate artifact DB); same typed repository shape; tenant/workspace isolation; append-only versions; CAS artifact pointer; idempotency persistence; restart durability; `ArtifactPublicationRepository` implements **`create_artifact_with_initial_version(...)`** and **`publish_version(...)`** transactionally in SQLite |
 | **REUSED** | `open_sqlite_collaborative_work_repositories` extension pattern; MP-2 SQLite store layout |
 | **NEW** | MP-3 SQLite persistence adapters |
 | **Explicit out of scope** | PostgreSQL; content storage providers; MP-3E qualification version bump |
-| **Acceptance** | Durable restart proof; publication transaction consistency; CAS; idempotency durability; historical versions preserved; backend parity with in-memory |
+| **Acceptance** | Durable restart proof; atomic initial creation (no dangling `current_version_id`, no orphan initial version); idempotent initial create durability; publication transaction consistency; CAS; idempotency durability; historical versions preserved; backend parity with in-memory |
 | **Proof requirements** | SQLite repository unit/integration tests; restart durability tests |
 | **Next step** | MP-3E — PostgreSQL + production qualification |
 
@@ -480,11 +485,11 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Status** | **NOT STARTED** |
 | **Purpose** | PostgreSQL production-qualified artifact/version persistence and qualification |
 | **Dependencies** | MP-3D approved; COLLAB-WORK-2E PostgreSQL patterns; provider qualification binding |
-| **Exact scope** | Extend existing Collaborative Work PostgreSQL provider (no separate provider family); same typed ports; transactional `ArtifactPublicationRepository`; cross-process concurrent publication proof (exactly one winner per revision); evolve `CollaborativeWorkRepositoryQualificationSuite` **only when artifact semantics are actually included** (version number owned by this slice — not preselected in decomposition) |
+| **Exact scope** | Extend existing Collaborative Work PostgreSQL provider (no separate provider family); same typed ports; transactional `ArtifactPublicationRepository` (**both** `create_artifact_with_initial_version(...)` and `publish_version(...)`); cross-process concurrent publication proof (exactly one winner per revision); qualification must eventually cover atomic initial creation, no dangling `current_version_id`, no orphan initial version, idempotent initial create, subsequent publish CAS, and cross-process publication contention; evolve `CollaborativeWorkRepositoryQualificationSuite` **only when artifact semantics are actually included** (version number owned by this slice — not preselected in decomposition) |
 | **REUSED** | Platform PostgreSQL integration; `CollaborativeWorkRepositoryQualificationBinding`; `execute_provider_qualification` evidence path |
 | **NEW** | MP-3 PostgreSQL adapters; artifact qualification extensions |
 | **Explicit out of scope** | Content storage provider integration (MP-3F); execution/evidence integration (MP-3G); LKW adoption |
-| **Acceptance** | Live PostgreSQL; production qualification; all artifact repository semantics; real cross-process concurrent publication; 1 winner / typed losers; final pointer/revision correct; no skipped mandatory qualification evidence |
+| **Acceptance** | Live PostgreSQL; production qualification; all artifact repository semantics including atomic initial creation; real cross-process concurrent publication; 1 winner / typed losers; final pointer/revision correct; no skipped mandatory qualification evidence |
 | **Proof requirements** | `tests/integration/collaborative_work/test_postgresql_repository.py` MP-3 extensions; provider qualification run; cross-process CAS proof analogous to MP-2 |
 | **Next step** | MP-3F — content storage boundary integration |
 
@@ -537,13 +542,13 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 
 | Field | Value |
 |-------|-------|
-| **Status** | **APPROVED / CLOSED** — implementation-ready roadmap frozen; MP-3 runtime **NOT STARTED** |
+| **Status** | **UPDATED — pending final independent audit** — implementation-ready roadmap frozen; MP-3 runtime **NOT STARTED** |
 | **ADR-MP-004** | **Accepted** — no contradiction discovered; ownership not reopened |
 | **Aggregate model** | WorkItem → WorkArtifact → WorkArtifactVersion; no body embedding; no lifecycle substitution |
-| **Publication atomicity** | `ArtifactPublicationRepository` required; no generic UoW |
+| **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **MP-3A** — contracts + invariants (**NOT STARTED / READY TO OPEN**) |
+| **Next step** | Final independent decomposition audit; then **MP-3A** — contracts + invariants (**NOT STARTED**) |
 
 ---
 
