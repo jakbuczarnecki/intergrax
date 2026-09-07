@@ -718,13 +718,15 @@ Do not redesign the Skill system.
 
 ## P1.11 Governance permission presets
 
-**Status: PARTIAL**
+**Status: CLOSED**
 
-Governance, HITL, RuntimePolicyBundle, ToolRuntime and sandbox policy surfaces exist.
+Governance permission presets are configuration shorthand on
+``ApplicationEnvironmentProfile.governance.permission_preset``. Expansion runs
+before canonical profile resolution and maps only into existing profile and
+``RuntimePolicyBundle`` fields. Presets may narrow but never widen upstream
+authority (tool access, sandbox isolation, HITL posture).
 
-Need one ergonomic preset UX that expands only into canonical policies and can never grant authority beyond upstream configuration.
-
-Presets are configuration shorthand, not a policy engine.
+Preset ≠ policy engine. Preset ≠ authority.
 
 ---
 

@@ -162,6 +162,21 @@ def _resolve_tool_profile_authority(
     return effective, allowed_ids, rejected_ids
 
 
+def intersect_tool_profiles(
+    *,
+    upstream: ToolProfile,
+    requested: ToolProfile,
+    upstream_expressed: bool = True,
+) -> ToolProfile:
+    """Monotonic tool authority intersection for preset and overlay composition."""
+    effective, _, _ = _resolve_tool_profile_authority(
+        upstream=upstream,
+        requested=requested,
+        upstream_expressed=upstream_expressed,
+    )
+    return effective
+
+
 class ToolProfileFieldResolver:
     path = "capabilities.tools"
 

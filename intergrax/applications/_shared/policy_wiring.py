@@ -9,6 +9,9 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from intergrax.applications._shared.governance_permission_preset import (
+    resolve_require_human_on_critical,
+)
 from intergrax.applications._shared.cost_wiring import wire_application_cost
 from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
 from intergrax.applications.contracts.environment_profile import (
@@ -157,6 +160,7 @@ def wire_policy_bundle(
         else None
     )
     base = build_runtime_policy_bundle(
+        require_human_on_critical=resolve_require_human_on_critical(env),
         domain_fragments={
             **env.domain_policy_fragments,
             **cost_wiring.domain_fragments,
