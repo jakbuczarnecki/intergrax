@@ -38,7 +38,10 @@ from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from research_application.host.settings import ResearchBackendSettings
-from research_application.host.wiring import build_research_environment_profile
+from research_application.host.environment_profile import (
+    build_research_environment_profile,
+    require_research_orchestration_llm_profile,
+)
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 from research_application.serving.fastapi_router import mount_research_routes
 
@@ -60,7 +63,8 @@ def create_research_backend_app(
     app = create_app(ApiConfig(environment=ApiEnvironment.DEV))
 
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
+    env = build_research_environment_profile(settings)
+    require_research_orchestration_llm_profile(settings, env)
     production_mode = env.execution_mode.value == "strict"
     if production_mode:
         env = resolve_reference_production_strict_host_environment(env)

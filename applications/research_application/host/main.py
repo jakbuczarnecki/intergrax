@@ -27,7 +27,8 @@ from intergrax.applications._shared.reference_runtime_materialization import (
 )
 from research_application.host.factory import create_research_backend_app
 from research_application.host.reference_lifecycle_input import build_research_reference_lifecycle_input
-from research_application.host.wiring import build_research_environment_profile
+from research_application.host.environment_profile import build_research_environment_profile
+from research_application.host.settings import ResearchBackendSettings
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
 load_dotenv()
@@ -46,8 +47,10 @@ def create_research_process_app(
 ) -> FastAPI:
     """Build the Research STRICT production host from an activated process composition."""
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile()
+    settings = ResearchBackendSettings.from_env()
+    env = build_research_environment_profile(settings)
     return create_research_backend_app(
+        settings=settings,
         registry_projection=bootstrap_production_registry_projection(
             application_id=manifest.app_id,
             application_environment_id=env.profile_id,
@@ -77,7 +80,8 @@ def run_reference_production() -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request = build_research_reference_lifecycle_input()
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile()
+    settings = ResearchBackendSettings.from_env()
+    env = build_research_environment_profile(settings)
     launcher, governance = wire_governed_reference_production_launcher(composition, env)
     prepare_reference_runtime_materialization(
         composition.agent_platform_runtime.stores,

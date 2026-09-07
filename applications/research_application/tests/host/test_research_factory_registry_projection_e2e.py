@@ -24,7 +24,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 def test_research_factory_uses_projected_registry_not_manifest_extra_agents() -> None:
     settings = ResearchBackendSettings(use_nexus_loop=True)
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
+    env = build_research_environment_profile(settings)
     projection = build_research_test_registry_projection(
         settings,
         revision_id="rev-research-e2e",

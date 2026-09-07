@@ -24,6 +24,8 @@ class ResearchBackendSettings(IntergraxApplicationSettingsBase):
     enable_rag_ingest: bool = False
     extra_enabled_tool_ids: tuple[str, ...] = ()
     websearch_executor: object | None = None
+    llm_provider: str | None = None
+    llm_model: str | None = None
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -54,4 +56,6 @@ class ResearchBackendSettings(IntergraxApplicationSettingsBase):
             "enable_rag": env.bool("ENABLE_RAG", default=False),
             "enable_rag_ingest": env.bool("ENABLE_RAG_INGEST", default=False),
             "extra_enabled_tool_ids": extra_tools,
+            "llm_provider": env.optional_str("LLM_PROVIDER"),
+            "llm_model": env.optional_str("LLM_MODEL"),
         }

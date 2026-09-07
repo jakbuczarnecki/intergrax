@@ -25,7 +25,7 @@ def build_research_reference_lifecycle_input(
     """Explicit deploy input for reference Research production (not host startup)."""
     resolved_settings = settings or ResearchBackendSettings.from_env()
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(resolved_settings)
+    env = build_research_environment_profile(resolved_settings)
     projection_input = build_reference_registry_projection_input_bundle(
         manifest,
         env,
