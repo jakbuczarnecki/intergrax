@@ -852,9 +852,10 @@ def test_map_tools_projects_strict_atomic_planner_round() -> None:
     assert "requires_strict_argument_conformance" not in canonical["function"]
     actions = mapped["parameters"]["properties"]["actions"]
     assert actions["minItems"] == 1
-    one_of = actions["items"]["oneOf"]
-    assert len(one_of) == 3
-    assert one_of[0]["properties"]["tool_id"]["const"] in {
+    action_item = actions["items"]
+    assert "oneOf" not in action_item
+    assert action_item["properties"]["arguments_json"] == {"type": "string"}
+    assert set(action_item["properties"]["tool_id"]["enum"]) == {
         "production.metrics.query",
         "production.staffing.attendance.read",
         "production.telemetry.read",
@@ -888,3 +889,4 @@ def test_generate_with_tools_sends_strict_projected_atomic_round_schema() -> Non
     sent_tool = client.responses.create.call_args.kwargs["tools"][0]
     assert sent_tool["strict"] is True
     assert sent_tool["parameters"]["properties"]["actions"]["minItems"] == 1
+    assert "oneOf" not in sent_tool["parameters"]["properties"]["actions"]["items"]

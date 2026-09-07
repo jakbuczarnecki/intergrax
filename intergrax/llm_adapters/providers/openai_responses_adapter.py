@@ -9,7 +9,7 @@ import hashlib
 import json
 import os
 import re
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 
 from openai import Client
 from openai.types.responses import Response
@@ -34,8 +34,15 @@ from intergrax.llm_adapters.providers._openai_schema import (
     project_json_schema_for_openai_strict_tool_parameters,
 )
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    StrictToolArgumentConformanceError,
+    StrictWireProjectionKind,
     ToolDispatchRequirements,
     aligned_tool_dispatch_requirements,
+)
+from intergrax.runtime.nexus.tools.atomic_planner_round import (
+    AtomicPlannerRoundProjectionError,
+    normalize_atomic_planner_round_provider_payload,
+    project_atomic_planner_round_parameters_for_openai_strict,
 )
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
@@ -343,6 +350,80 @@ def _partition_openai_responses_options(
     return client_kwargs, request_defaults
 
 
+def _canonical_function_tool_name(
+    tool: Mapping[str, Any],
+    index: int,
+) -> str:
+    if tool.get("type") != "function":
+        raise ValueError(
+            "OpenAI Responses adapter: "
+            f"tools_schema[{index}] is not a function tool"
+        )
+    fn = tool.get("function")
+    if isinstance(fn, Mapping):
+        name = fn.get("name")
+        if isinstance(name, str) and name:
+            return name
+    top_level_name = tool.get("name")
+    if isinstance(top_level_name, str) and top_level_name:
+        return top_level_name
+    raise ValueError(
+        "OpenAI Responses adapter: "
+        f"tools_schema[{index}] function tool missing canonical name"
+    )
+
+
+def _tool_dispatch_requirements_by_canonical_name(
+    tools_schema: Sequence[Mapping[str, Any]],
+    *,
+    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None,
+) -> dict[str, ToolDispatchRequirements]:
+    aligned = aligned_tool_dispatch_requirements(
+        tools_schema,
+        tool_dispatch_requirements=tool_dispatch_requirements,
+    )
+    by_name: dict[str, ToolDispatchRequirements] = {}
+    for index, tool in enumerate(tools_schema):
+        if not isinstance(tool, Mapping):
+            continue
+        by_name[_canonical_function_tool_name(tool, index)] = aligned[index]
+    return by_name
+
+
+def _project_strict_tool_parameters(
+    parameters: Mapping[str, Any],
+    *,
+    dispatch_requirements: ToolDispatchRequirements,
+) -> dict[str, Any]:
+    projection = dispatch_requirements.strict_wire_projection
+    if projection == StrictWireProjectionKind.OPENAI_ATOMIC_PLANNER_ROUND:
+        try:
+            return project_atomic_planner_round_parameters_for_openai_strict(parameters)
+        except AtomicPlannerRoundProjectionError as exc:
+            raise StrictToolArgumentConformanceError(
+                "atomic planner round strict wire projection failed"
+            ) from exc
+    return project_json_schema_for_openai_strict_tool_parameters(parameters)
+
+
+def _normalize_strict_tool_call_arguments(
+    arguments_json: str,
+    *,
+    dispatch_requirements: ToolDispatchRequirements,
+) -> str:
+    projection = dispatch_requirements.strict_wire_projection
+    if projection != StrictWireProjectionKind.OPENAI_ATOMIC_PLANNER_ROUND:
+        return arguments_json
+    try:
+        payload = json.loads(arguments_json)
+    except json.JSONDecodeError:
+        return arguments_json
+    if not isinstance(payload, dict):
+        return arguments_json
+    normalized = normalize_atomic_planner_round_provider_payload(payload)
+    return json.dumps(normalized, ensure_ascii=False)
+
+
 def _map_tools_to_responses_api(
     tools_schema: Sequence[Dict[str, Any]],
     *,
@@ -400,8 +481,9 @@ def _map_tools_to_responses_api(
             if "parameters" in fn:
                 parameters = fn["parameters"]
                 if isinstance(parameters, dict):
-                    out["parameters"] = project_json_schema_for_openai_strict_tool_parameters(
-                        parameters
+                    out["parameters"] = _project_strict_tool_parameters(
+                        parameters,
+                        dispatch_requirements=aligned_requirements[index],
                     )
                 else:
                     out["parameters"] = parameters
@@ -744,7 +826,10 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                     raise RuntimeError("OpenAI responses stream did not return a final response")
 
                 native_tool_calls = self._extract_tool_calls_from_response(
-                    resp, tool_name_mapping
+                    resp,
+                    tool_name_mapping,
+                    tools_schema=tools_schema,
+                    tool_dispatch_requirements=tool_dispatch_requirements,
                 )
                 final_content = self._collect_output_text(resp) or "".join(buf)
                 final_response = adapter_response_from_openai_responses(
@@ -782,7 +867,16 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         self,
         response: Response,
         tool_name_mapping: _OpenAIToolNameMapping,
+        *,
+        tools_schema: Sequence[Mapping[str, Any]] | None = None,
+        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
     ) -> List[Dict[str, Any]]:
+        requirements_by_name: dict[str, ToolDispatchRequirements] = {}
+        if tools_schema is not None:
+            requirements_by_name = _tool_dispatch_requirements_by_canonical_name(
+                tools_schema,
+                tool_dispatch_requirements=tool_dispatch_requirements,
+            )
         native_tool_calls: List[Dict[str, Any]] = []
         for item in response.output or []:
             if item.type != "function_call":
@@ -791,6 +885,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if not isinstance(args, str):
                 args = json.dumps(args, ensure_ascii=False)
             canonical_name = tool_name_mapping.to_canonical(item.name)
+            dispatch_requirements = requirements_by_name.get(canonical_name)
+            if dispatch_requirements is not None:
+                args = _normalize_strict_tool_call_arguments(
+                    args,
+                    dispatch_requirements=dispatch_requirements,
+                )
             native_tool_calls.append(
                 {
                     "id": item.call_id,
@@ -918,7 +1018,10 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
             content = self._collect_output_text(api_response)
             native_tool_calls = self._extract_tool_calls_from_response(
-                api_response, tool_name_mapping
+                api_response,
+                tool_name_mapping,
+                tools_schema=tools_schema,
+                tool_dispatch_requirements=tool_dispatch_requirements,
             )
             response = adapter_response_from_openai_responses(
                 api_response,

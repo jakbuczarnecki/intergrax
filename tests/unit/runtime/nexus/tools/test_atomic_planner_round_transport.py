@@ -9,6 +9,10 @@ import json
 import pytest
 from pydantic import BaseModel, Field
 
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    StrictWireProjectionKind,
+    ToolArgumentConformance,
+)
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
@@ -21,11 +25,14 @@ from intergrax.runtime.nexus.tools.atomic_planner_round import (
     build_atomic_planner_round_schema,
     build_atomic_planner_round_tool_definition,
     compute_atomic_planner_round_schema_hash,
+    encode_atomic_planner_round_canonical_payload_for_openai_strict,
     extract_business_tool_schema_entries,
     materialize_atomic_round_to_tool_plan,
     mint_materialized_tool_calls_from_plan,
+    normalize_atomic_planner_round_provider_payload,
     parse_atomic_planner_round_call,
     parse_atomic_planner_round_payload,
+    project_atomic_planner_round_parameters_for_openai_strict,
     resolve_atomic_planner_round_calls,
 )
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
@@ -129,6 +136,10 @@ def test_discriminated_schema_uses_one_of_per_tool() -> None:
     round_schema = round_definition.wire_schema
     assert "requires_strict_argument_conformance" not in round_schema["function"]
     assert round_definition.requires_strict_argument_conformance is True
+    assert (
+        round_definition.dispatch_requirements.strict_wire_projection
+        is StrictWireProjectionKind.OPENAI_ATOMIC_PLANNER_ROUND
+    )
     properties = params["properties"]
     assert isinstance(properties, dict)
     actions = properties["actions"]
@@ -168,6 +179,108 @@ def test_schema_branch_count_scales_linearly(tool_count: int) -> None:
     one_of = items["oneOf"]
     assert isinstance(one_of, list)
     assert len(one_of) == tool_count
+
+
+@pytest.mark.parametrize("tool_count", [1, 3, 10])
+def test_openai_strict_projection_scales_linearly_without_one_of(tool_count: int) -> None:
+    schemas: list[dict[str, object]] = []
+    for index in range(tool_count):
+        tool_id = f"production.probe.{index:02d}.read"
+        schemas.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": tool_id,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"value": {"type": "string"}},
+                        "required": ["value"],
+                        "additionalProperties": False,
+                    },
+                },
+            }
+        )
+    canonical = build_atomic_planner_round_parameters_schema(schemas)
+    projected = project_atomic_planner_round_parameters_for_openai_strict(canonical)
+    action_item = projected["properties"]["actions"]["items"]
+    assert "oneOf" not in action_item
+    assert len(action_item["properties"]["tool_id"]["enum"]) == tool_count
+
+
+def test_provider_roundtrip_preserves_canonical_semantics_for_three_tools() -> None:
+    canonical_payloads = [
+        {
+            "actions": [
+                {"tool_id": "production.telemetry.read", "arguments": {}},
+            ],
+        },
+        {
+            "actions": [
+                {
+                    "tool_id": "production.staffing.attendance.read",
+                    "arguments": {"line_id": "L1", "window": "last_hour"},
+                },
+            ],
+        },
+        {
+            "actions": [
+                {
+                    "tool_id": "production.metrics.query",
+                    "arguments": {
+                        "metric_name": "error_rate",
+                        "filters": [
+                            {"field": "service", "operator": "eq", "value": "checkout"},
+                        ],
+                    },
+                },
+            ],
+        },
+    ]
+    for canonical_payload in canonical_payloads:
+        provider_payload = encode_atomic_planner_round_canonical_payload_for_openai_strict(
+            canonical_payload
+        )
+        recovered = normalize_atomic_planner_round_provider_payload(provider_payload)
+        decision = parse_atomic_planner_round_payload(recovered)
+        materialize_atomic_round_to_tool_plan(decision, _registry())
+        assert recovered == canonical_payload
+
+
+def test_provider_decode_rejects_malformed_arguments_json() -> None:
+    with pytest.raises(AtomicPlannerRoundError, match="arguments_json is malformed"):
+        normalize_atomic_planner_round_provider_payload(
+            {
+                "actions": [
+                    {
+                        "tool_id": "production.telemetry.read",
+                        "arguments_json": "{not-json",
+                    }
+                ],
+            }
+        )
+
+
+def test_provider_decode_rejects_missing_arguments_payload() -> None:
+    with pytest.raises(AtomicPlannerRoundError, match="missing arguments_json"):
+        normalize_atomic_planner_round_provider_payload(
+            {
+                "actions": [
+                    {"tool_id": "production.telemetry.read"},
+                ],
+            }
+        )
+
+
+def test_strict_dispatch_metadata_declares_openai_projection() -> None:
+    definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
+    assert (
+        definition.dispatch_requirements.argument_conformance
+        is ToolArgumentConformance.STRICT
+    )
+    assert (
+        definition.dispatch_requirements.strict_wire_projection
+        is StrictWireProjectionKind.OPENAI_ATOMIC_PLANNER_ROUND
+    )
 
 
 def test_schema_ordering_and_hash_are_stable() -> None:

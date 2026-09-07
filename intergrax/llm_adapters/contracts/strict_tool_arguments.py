@@ -34,11 +34,18 @@ class ToolArgumentConformance(Enum):
     STRICT = "strict"
 
 
+class StrictWireProjectionKind(Enum):
+    """Typed provider strict-wire projection selected by dispatch metadata."""
+
+    OPENAI_ATOMIC_PLANNER_ROUND = "openai_atomic_planner_round"
+
+
 @dataclass(frozen=True, slots=True)
 class ToolDispatchRequirements:
     """Typed platform dispatch metadata — not part of provider wire schema."""
 
     argument_conformance: ToolArgumentConformance = ToolArgumentConformance.DEFAULT
+    strict_wire_projection: StrictWireProjectionKind | None = None
 
     @property
     def requires_strict_argument_conformance(self) -> bool:
