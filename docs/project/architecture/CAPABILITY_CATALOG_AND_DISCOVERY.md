@@ -589,8 +589,9 @@ WorkStageCapabilityNeed (typed)
 WorkStageCapabilityDiscoveryService (Stage 8)
         ↓ discover → rank → govern → effective narrow
 selected source-qualified GovernedCapabilityCandidate
-        ↓ domain authority only (Tool → RuntimeToolInvoker; Agent → AC-4 / Nexus)
+        ↓ domain authority only (Tool → WorkStageToolExecutionPort; Agent → AC-4 / Nexus)
 WorkStageToolExecutionPort / Agent path (never catalog.execute)
+        ↓ integration qualification routes Tool port → RuntimeToolInvoker (not AW core)
         ↓
 WorkStageCapabilityObservation (typed execution + optional next need)
         ↓ rediscovery only when next WorkStageCapabilityNeed exists
@@ -606,7 +607,7 @@ WorkStageCapabilityLoopIterationEvidence (immutable ordered chain)
 | Evidence | `WorkStageCapabilityLoopResult` + Stage-8 `WorkStageCapabilityDiscoveryEvidence` records per iteration |
 | AW-8/9/10 | Out of scope — Stage 14 proves catalog participation; does not ship worker control plane |
 
-Contracts: `intergrax/contracts/capability_catalog/work_stage_loop.py`. Coordinator: `intergrax/autonomous_work/work_stage_capability_loop.py`. Tool port: `intergrax/autonomous_work/work_stage_tool_execution.py`. Proof: `tests/integration/autonomous_work/test_capability_discovery_closed_loop.py`.
+Contracts: `intergrax/contracts/capability_catalog/work_stage_loop.py`. Coordinator: `intergrax/autonomous_work/work_stage_capability_loop.py`. Tool port: provider-neutral `WorkStageToolExecutionPort` on the coordinator. Reference qualification routes that port to `RuntimeToolInvoker` in `tests/integration/autonomous_work/runtime_tool_invoker_work_stage_port.py`. Proof: `tests/integration/autonomous_work/test_capability_discovery_closed_loop.py`.
 
 Plan tracker: [Stage 14 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-14--full-autonomous-worker-integration).
 

@@ -1,6 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Stage-14 proof-only RuntimeToolInvoker adapter for WorkStageToolExecutionPort."""
+"""Stage-14 proof-only RuntimeToolInvoker adapter for WorkStageToolExecutionPort.
+
+The Stage-14 proof uses zero-input deterministic Tools (``input_schema()`` with no
+required fields). This is not a general production Tool-input generation strategy.
+"""
 
 from __future__ import annotations
 
