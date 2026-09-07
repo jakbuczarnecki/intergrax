@@ -153,6 +153,9 @@ intergrax = "intergrax.cli.main:main"
 [project.entry-points."intergrax.context"]
 builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
 
+[project.entry-points.pytest11]
+intergrax_pytest_temp = "testing_support.pytest_temp_plugin"
+
 [project.optional-dependencies]
 integrations-neo4j = [
   "neo4j>=5.26,<6",
@@ -327,13 +330,13 @@ testpaths = ["tests", "applications", "agents"]
 pythonpath = [".", "agents", "applications"]
 asyncio_mode = "auto"
 # Windows: avoid PermissionError on %TEMP%/pytest-of-* (AV/ACL locks). ``build/`` is gitignored.
-cache_dir = "build/pytest-cache"
+# Invocation-scoped basetemp under ``build/pytest/<id>/`` and cache under
+# ``build/pytest/<id>/pytest-cache/`` are assigned by ``testing_support.pytest_temp_plugin``.
 
 addopts = [
   "-ra",
   "--strict-markers",
   "--strict-config",
-  "--basetemp=build/pytest-basetemp",
   "--import-mode=importlib",
 ]
 
