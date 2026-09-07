@@ -6,8 +6,8 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../../technical/adr/entries/2026-09-07/ADR-MP-004.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — APPROVED / CLOSED**; MP-3 runtime implementation **IN PROGRESS**
-**Current active task:** **MP-3C** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
-**Next task:** Independent MP-3C audit — **MP-3D NOT STARTED**
+**Current active task:** **MP-3F** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
+**Next task:** Independent MP-3F audit — **MP-3G NOT STARTED**
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -452,7 +452,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3C |
 | **Priority** | P1 |
-| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Authoritative artifact create/publish domain service with MP-1 authority enforcement |
 | **Dependencies** | MP-3B approved; `CollaborativeWorkEnforcementGate`; MP-3A contracts |
 | **Exact scope** | Domain service for authoritative create (artifact + first version) and `publish new artifact version`; **create** delegates to `ArtifactPublicationRepository.create_artifact_with_initial_version(...)`; **publish** delegates to `ArtifactPublicationRepository.publish_version(...)`; trusted operation IDs for artifact create/publish; `expected_revision` CAS via publication port only; typed `WorkArtifactRevisionConflict`; idempotent replay for create and publish; typed publication result boundary; reuse `CollaborativeWorkEnforcementGate` — no `ArtifactAuthorizationService`, no artifact ACL; service must **not** coordinate `WorkArtifactRepository` + `WorkArtifactVersionRepository` writes manually |
@@ -467,7 +467,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3D |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | SQLite durable adapters for WorkArtifact, WorkArtifactVersion, and transactional publication |
 | **Dependencies** | MP-3C approved; COLLAB-WORK-2D SQLite patterns; MP-3B publication boundary |
 | **Exact scope** | Extend existing Collaborative Work SQLite materialization (no separate artifact DB); same typed repository shape; tenant/workspace isolation; append-only versions; CAS artifact pointer; idempotency persistence; restart durability; `ArtifactPublicationRepository` implements **`create_artifact_with_initial_version(...)`** and **`publish_version(...)`** transactionally in SQLite |
@@ -482,7 +482,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3E |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | PostgreSQL production-qualified artifact/version persistence and qualification |
 | **Dependencies** | MP-3D approved; COLLAB-WORK-2E PostgreSQL patterns; provider qualification binding |
 | **Exact scope** | Extend existing Collaborative Work PostgreSQL provider (no separate provider family); same typed ports; transactional `ArtifactPublicationRepository` (**both** `create_artifact_with_initial_version(...)` and `publish_version(...)`); cross-process concurrent publication proof (exactly one winner per revision); qualification must eventually cover atomic initial creation, no dangling `current_version_id`, no orphan initial version, idempotent initial create, subsequent publish CAS, and cross-process publication contention; evolve `CollaborativeWorkRepositoryQualificationSuite` **only when artifact semantics are actually included** (version number owned by this slice — not preselected in decomposition) |
@@ -497,7 +497,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3F |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
 | **Purpose** | Provider-neutral content storage adapter integration behind MP-3A `ArtifactContentRef` |
 | **Dependencies** | MP-3E approved; MP-3A `ArtifactContentRef` contract (must not redefine) |
 | **Exact scope** | Typed content storage boundary port; adapter(s) justified by existing platform capability (DocumentStore, blob/object storage, external resource); provider-neutral round trip; content integrity/immutability verification (digest / immutable content identifier); no provider key leaks into artifact/version identity |
@@ -548,7 +548,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **Independent MP-3C audit** — MP-3D **NOT STARTED** |
+| **Next step** | **Independent MP-3F audit** — MP-3G **NOT STARTED** |
 
 ---
 

@@ -9,6 +9,17 @@ from intergrax.collaborative_work.artifact_service import (
     TRUSTED_OPERATION_WORK_ARTIFACT_CREATE,
     TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH,
 )
+from intergrax.collaborative_work.content_storage import (
+    ArtifactContentIntegrityError,
+    ArtifactContentPersistenceError,
+    ArtifactContentReferenceUnsupported,
+    ArtifactContentStorageError,
+    ArtifactContentStore,
+    GetArtifactContentRequest,
+    ObjectStorageArtifactContentStore,
+    StoredArtifactContent,
+    StoreArtifactContentRequest,
+)
 from intergrax.collaborative_work.service import (
     CollaborativeWorkService,
     TRUSTED_OPERATION_ASSIGNMENT_CREATE,
@@ -105,6 +116,15 @@ __all__ = [
     "CollaborativeWorkArtifactService",
     "TRUSTED_OPERATION_WORK_ARTIFACT_CREATE",
     "TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH",
+    "ArtifactContentIntegrityError",
+    "ArtifactContentPersistenceError",
+    "ArtifactContentReferenceUnsupported",
+    "ArtifactContentStorageError",
+    "ArtifactContentStore",
+    "GetArtifactContentRequest",
+    "ObjectStorageArtifactContentStore",
+    "StoredArtifactContent",
+    "StoreArtifactContentRequest",
     "CollaborativeWorkService",
     "TRUSTED_OPERATION_ASSIGNMENT_CREATE",
     "TRUSTED_OPERATION_ASSIGNMENT_TRANSITION",
