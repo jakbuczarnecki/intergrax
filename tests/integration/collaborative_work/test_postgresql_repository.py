@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 import threading
 
 import pytest
@@ -11,6 +12,9 @@ import pytest
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkRepositoriesWithSharedWork,
     open_postgresql_collaborative_work_repositories,
+)
+from intergrax.collaborative_work.postgresql_cross_process_cas_proof import (
+    run_postgresql_work_item_cross_process_cas_proof,
 )
 from intergrax.collaborative_work.repository import (
     CreateWorkspaceMembershipCommand,
@@ -324,6 +328,7 @@ def test_postgresql_work_item_idempotency_replay_after_update(work_item_repo: ob
 def test_postgresql_work_item_concurrent_update_one_wins(
     postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
 ) -> None:
+    """Cheaper same-process cross-connection CAS proof (not cross-process acceptance)."""
     bundle_a = postgresql_collaborative_work_bundle
     bundle_b = open_postgresql_collaborative_work_repositories(
         config=bundle_a.store.config,
@@ -385,6 +390,33 @@ def test_postgresql_work_item_concurrent_update_one_wins(
         assert final.revision == created.revision + 1
     finally:
         bundle_b.close()
+
+
+def test_postgresql_work_item_cross_process_cas_one_wins(
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+) -> None:
+    bundle = postgresql_collaborative_work_bundle
+    work_item_id = "work-item-cross-process"
+    created = bundle.work_item.create(
+        shared_work_suite._create_work_item_command(work_item_id=work_item_id),
+    )
+    parent_pid = os.getpid()
+    result = run_postgresql_work_item_cross_process_cas_proof(
+        config=bundle.store.config,
+        schema_name=bundle.store.schema_name,
+        tenant_id=shared_work_suite._TENANT_A,
+        workspace_id=shared_work_suite._WORKSPACE_A,
+        work_item_id=work_item_id,
+        expected_revision=created.revision,
+        updated_at=shared_work_suite._UPDATED_AT,
+    )
+
+    assert result.successes == 1
+    assert result.conflicts == 1
+    assert result.final_revision == created.revision + 1
+    assert len(result.worker_pids) == 2
+    assert len(set(result.worker_pids)) == 2
+    assert all(pid != parent_pid for pid in result.worker_pids)
 
 
 def test_postgresql_work_item_idempotency_survives_rematerialization(

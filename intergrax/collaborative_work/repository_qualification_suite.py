@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -12,7 +11,10 @@ from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
     CollaborativeWorkRepositories,
     CollaborativeWorkRepositoriesWithSharedWork,
-    open_postgresql_collaborative_work_repositories,
+)
+from intergrax.collaborative_work.postgresql_cross_process_cas_proof import (
+    CrossProcessCasProofFailure,
+    run_postgresql_work_item_cross_process_cas_proof,
 )
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
@@ -569,80 +571,29 @@ def _run_shared_work_repository_contract_checks(
     return passed, failed
 
 
-def _run_shared_work_cross_connection_concurrency_check(
+def _run_shared_work_cross_process_concurrency_check(
     bundle: CollaborativeWorkRepositoriesWithSharedWork,
 ) -> tuple[int, int]:
     store = bundle.store
     if not isinstance(store, PostgreSQLCollaborativeWorkStore):
         raise _RepositorySemanticCheckFailure(
-            "cross-connection concurrency requires PostgreSQLCollaborativeWorkStore",
+            "cross-process concurrency requires PostgreSQLCollaborativeWorkStore",
         )
 
-    work_item_repo = bundle.work_item
-    created = work_item_repo.create(_work_item_command(work_item_id="qual-work-item-concurrency"))
-    bundle_b = open_postgresql_collaborative_work_repositories(
-        config=store.config,
-        schema_name=store.schema_name,
-    )
+    work_item_id = "qual-work-item-concurrency"
+    created = bundle.work_item.create(_work_item_command(work_item_id=work_item_id))
     try:
-        read_a = work_item_repo.get(
+        run_postgresql_work_item_cross_process_cas_proof(
+            config=store.config,
+            schema_name=store.schema_name,
             tenant_id=_TENANT_A,
             workspace_id=_WORKSPACE_A,
-            work_item_id="qual-work-item-concurrency",
+            work_item_id=work_item_id,
+            expected_revision=created.revision,
+            updated_at=_UPDATED_AT,
         )
-        read_b = bundle_b.work_item.get(
-            tenant_id=_TENANT_A,
-            workspace_id=_WORKSPACE_A,
-            work_item_id="qual-work-item-concurrency",
-        )
-        if read_a is None or read_b is None:
-            raise _RepositorySemanticCheckFailure("concurrency pre-read missing work item")
-        if read_a.revision != read_b.revision != created.revision:
-            raise _RepositorySemanticCheckFailure("concurrency revision baseline mismatch")
-
-        errors: list[BaseException] = []
-        barrier = threading.Barrier(2)
-
-        def attempt(target: CollaborativeWorkRepositoriesWithSharedWork) -> None:
-            try:
-                barrier.wait(timeout=5)
-                target.work_item.update(
-                    UpdateWorkItemCommand(
-                        scope=WorkItemScopeKey(
-                            tenant_id=_TENANT_A,
-                            workspace_id=_WORKSPACE_A,
-                            work_item_id="qual-work-item-concurrency",
-                        ),
-                        expected_revision=created.revision,
-                        state=WorkItemState.ACTIVE,
-                        updated_at=_UPDATED_AT,
-                    ),
-                )
-            except BaseException as exc:  # noqa: BLE001
-                errors.append(exc)
-
-        threads = [
-            threading.Thread(target=attempt, args=(bundle,)),
-            threading.Thread(target=attempt, args=(bundle_b,)),
-        ]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
-
-        if len(errors) != 1:
-            raise _RepositorySemanticCheckFailure("expected exactly one revision conflict")
-        if not isinstance(errors[0], WorkItemRevisionConflict):
-            raise _RepositorySemanticCheckFailure("expected WorkItemRevisionConflict")
-        final = work_item_repo.get(
-            tenant_id=_TENANT_A,
-            workspace_id=_WORKSPACE_A,
-            work_item_id="qual-work-item-concurrency",
-        )
-        if final is None or final.revision != created.revision + 1:
-            raise _RepositorySemanticCheckFailure("concurrency final revision mismatch")
-    finally:
-        bundle_b.close()
+    except CrossProcessCasProofFailure as exc:
+        raise _RepositorySemanticCheckFailure(str(exc)) from exc
 
     return 1, 0
 
@@ -672,7 +623,7 @@ class CollaborativeWorkRepositoryQualificationSuite:
             concurrency_evidence: tuple[QualificationEvidence, ...] = ()
             if self._requires_concurrency_proof:
                 try:
-                    conc_passed, conc_failed = _run_shared_work_cross_connection_concurrency_check(
+                    conc_passed, conc_failed = _run_shared_work_cross_process_concurrency_check(
                         capability,
                     )
                 except _RepositorySemanticCheckFailure:
@@ -682,7 +633,7 @@ class CollaborativeWorkRepositoryQualificationSuite:
                 concurrency_evidence = (
                     QualificationEvidence(
                         kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
-                        code="shared_work.concurrency.cross_connection",
+                        code="shared_work.concurrency.cross_process",
                         label="transactional_cas",
                     ),
                 )

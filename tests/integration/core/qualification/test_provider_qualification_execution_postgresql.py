@@ -148,6 +148,15 @@ def test_real_postgresql_provider_qualification_execution_and_persistence() -> N
     else:
         assert run.qualification_run_id == run_id
         assert run.status is QualificationStatus.PRODUCTION_QUALIFIED
+        assert run.result_summary.failed == 0
+        assert run.result_summary.skipped == 0
+        assert run.result_summary.passed > 0
+        cross_process_codes = [
+            item.code
+            for item in run.evidence
+            if item.code == "shared_work.concurrency.cross_process"
+        ]
+        assert cross_process_codes == ["shared_work.concurrency.cross_process"]
         assert run.environment_metadata.real_backend is True
         assert run.environment_metadata.mocks is False
         assert run.environment_metadata.sqlite_substitution is False
