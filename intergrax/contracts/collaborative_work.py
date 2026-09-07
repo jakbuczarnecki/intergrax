@@ -33,8 +33,8 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
-
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
+from intergrax.contracts.validation import validate_content_digest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
 SCHEMA_COLLABORATIVE_PRINCIPAL_V1: Final = "collaborative_principal.v1"
@@ -66,6 +66,9 @@ SCHEMA_CREATE_ASSIGNMENT_REQUEST_V1: Final = "create_assignment_request.v1"
 SCHEMA_TRANSITION_ASSIGNMENT_REQUEST_V1: Final = "transition_assignment_request.v1"
 SCHEMA_WORK_ITEM_EXECUTION_LINK_V1: Final = "work_item_execution_link.v1"
 SCHEMA_LINK_WORK_ITEM_EXECUTION_REQUEST_V1: Final = "link_work_item_execution_request.v1"
+SCHEMA_WORK_ARTIFACT_V1: Final = "work_artifact.v1"
+SCHEMA_WORK_ARTIFACT_VERSION_V1: Final = "work_artifact_version.v1"
+SCHEMA_ARTIFACT_CONTENT_REF_V1: Final = "artifact_content_ref.v1"
 
 _EXECUTION_LINK_ID_PREFIX: Final = "execution_link_"
 
@@ -740,6 +743,10 @@ class CollaborativeWorkLifecycleError(ValueError):
     """Invalid collaborative WorkItem or Assignment lifecycle transition."""
 
 
+class CollaborativeWorkArtifactInvariantError(ValueError):
+    """Violation of WorkArtifact / WorkArtifactVersion scope or pointer invariants."""
+
+
 class WorkItemState(StrEnum):
     """Conservative collaborative WorkItem lifecycle — not Nexus ``TaskState``."""
 
@@ -1192,6 +1199,184 @@ class LinkWorkItemExecutionRequest(BaseModel):
         if type(value) is ExecutionProvenanceRef:
             return value
         raise TypeError("execution must be ExecutionProvenanceRef")
+
+
+class ArtifactContentRef(BaseModel):
+    """Provider-neutral immutable content reference for one WorkArtifactVersion."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["artifact_content_ref.v1"] = SCHEMA_ARTIFACT_CONTENT_REF_V1
+    content_ref: str = _NON_EMPTY
+    media_type: str = _NON_EMPTY
+    integrity_digest: str = _NON_EMPTY
+    size_bytes: int | None = Field(default=None, ge=0)
+
+    @field_validator("content_ref", "media_type")
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("integrity_digest")
+    @classmethod
+    def _validate_integrity_digest(cls, value: str) -> str:
+        return validate_content_digest(value)
+
+
+class WorkArtifact(BaseModel):
+    """Mutable collaborative artifact aggregate snapshot — distinct from WorkItem."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["work_artifact.v1"] = SCHEMA_WORK_ARTIFACT_V1
+    work_artifact_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    created_by_principal_id: str = _NON_EMPTY
+    current_version_id: str = _NON_EMPTY
+    revision: int = Field(ge=0)
+    created_at: datetime
+    updated_at: datetime
+
+    @field_validator(
+        "work_artifact_id",
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "created_by_principal_id",
+        "current_version_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_timestamp_order(self) -> WorkArtifact:
+        if self.updated_at < self.created_at:
+            raise ValueError("updated_at must be greater than or equal to created_at")
+        return self
+
+
+class WorkArtifactVersion(BaseModel):
+    """Immutable collaborative artifact version — append-only authoritative history."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    schema_version: Literal["work_artifact_version.v1"] = SCHEMA_WORK_ARTIFACT_VERSION_V1
+    work_artifact_version_id: str = _NON_EMPTY
+    work_artifact_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    created_by_principal_id: str = _NON_EMPTY
+    published_by_principal_id: str = _NON_EMPTY
+    content_ref: ArtifactContentRef
+    created_at: datetime
+    published_at: datetime
+    execution: ExecutionProvenanceRef | None = None
+
+    @field_validator(
+        "work_artifact_version_id",
+        "work_artifact_id",
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "created_by_principal_id",
+        "published_by_principal_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("created_at", "published_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+    @field_validator("execution", mode="before")
+    @classmethod
+    def _validate_execution(cls, value: object) -> ExecutionProvenanceRef | None:
+        if value is None:
+            return None
+        if type(value) is ExecutionProvenanceRef:
+            return value
+        if isinstance(value, dict):
+            required = ("task_id", "run_id", "attempt_id", "execution_id")
+            if not all(key in value for key in required):
+                raise ValueError("execution must be ExecutionProvenanceRef or None")
+            return ExecutionProvenanceRef(
+                task_id=value["task_id"],
+                run_id=value["run_id"],
+                attempt_id=value["attempt_id"],
+                execution_id=value["execution_id"],
+            )
+        raise ValueError("execution must be ExecutionProvenanceRef or None")
+
+    @model_validator(mode="after")
+    def _validate_timestamp_order(self) -> WorkArtifactVersion:
+        if self.published_at < self.created_at:
+            raise ValueError("published_at must be greater than or equal to created_at")
+        return self
+
+
+def validate_work_artifact_version_scope(
+    *,
+    artifact: WorkArtifact,
+    version: WorkArtifactVersion,
+) -> None:
+    """Verify tenant/workspace/work-item/artifact identity alignment."""
+    if type(artifact) is not WorkArtifact:
+        raise TypeError("artifact must be WorkArtifact")
+    if type(version) is not WorkArtifactVersion:
+        raise TypeError("version must be WorkArtifactVersion")
+    if artifact.tenant_id != version.tenant_id:
+        raise CollaborativeWorkArtifactInvariantError(
+            "version tenant_id must match WorkArtifact tenant_id",
+        )
+    if artifact.workspace_id != version.workspace_id:
+        raise CollaborativeWorkArtifactInvariantError(
+            "version workspace_id must match WorkArtifact workspace_id",
+        )
+    if artifact.work_item_id != version.work_item_id:
+        raise CollaborativeWorkArtifactInvariantError(
+            "version work_item_id must match WorkArtifact work_item_id",
+        )
+    if artifact.work_artifact_id != version.work_artifact_id:
+        raise CollaborativeWorkArtifactInvariantError(
+            "version work_artifact_id must match WorkArtifact work_artifact_id",
+        )
+
+
+def validate_work_artifact_current_version(
+    *,
+    artifact: WorkArtifact,
+    version: WorkArtifactVersion,
+) -> None:
+    """Verify version scope and current-version pointer alignment."""
+    validate_work_artifact_version_scope(artifact=artifact, version=version)
+    if artifact.current_version_id != version.work_artifact_version_id:
+        raise CollaborativeWorkArtifactInvariantError(
+            "WorkArtifact current_version_id must match WorkArtifactVersion identity",
+        )
 
 
 class CollaborativeWorkAuthorizationDenied(Exception):

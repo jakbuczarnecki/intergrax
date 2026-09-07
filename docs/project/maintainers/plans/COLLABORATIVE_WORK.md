@@ -5,8 +5,8 @@
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../../technical/adr/entries/2026-09-07/ADR-MP-004.md)
 
-**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — pending final independent audit**; MP-3 runtime implementation **NOT STARTED**
-**Current active task:** none — **MP-3A** remains **NOT STARTED** (do not open until decomposition audit closes)
+**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — APPROVED / CLOSED**; MP-3 runtime implementation **IN PROGRESS**
+**Current active task:** **MP-3B** — repository ports + in-memory + `ArtifactPublicationRepository` (not started)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -374,12 +374,12 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 
 | Field | Value |
 |-------|-------|
-| **Status** | **FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; MP-3 runtime implementation **NOT STARTED** |
+| **Status** | **FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; MP-3 runtime implementation **IN PROGRESS** |
 | **Owning domain** | Collaborative Work — single semantic owner of WorkArtifact and WorkArtifactVersion |
 | **Hard invariants** | `WorkArtifact != UCL OptimizationArtifact`; `WorkArtifactVersion` immutable; current-version pointer CAS-protected; content metadata separated from storage reference |
 | **Reuse-only** | UCL, Memory, Proof Receipts, Execution (`ExecutionProvenanceRef` optional), LKW (consumer) |
 | **Explicit out of scope** | Runtime contracts, repositories, publication service, persistence adapters, content-storage providers, MP-4 Decision encoding, MP-6 Activity projection |
-| **Next step** | MP-3A — WorkArtifact / WorkArtifactVersion contracts + invariants |
+| **Next step** | MP-3B — repository ports + in-memory reference + publication boundary |
 
 ### COLLAB-WORK-3 — MP-3 WorkArtifact (architecture decomposition frozen — ADR-MP-004)
 
@@ -422,10 +422,9 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3A |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | WorkArtifact and WorkArtifactVersion semantic contracts, neutral `ArtifactContentRef`, and pure invariant helpers |
-| **Dependencies** | MP-3 architecture decomposition audit closed; ADR-MP-004 Accepted; MP-2 closed |
-| **Exact scope** | `WorkArtifactId`, `WorkArtifactVersionId`; `WorkArtifact` (`schema_version`, `work_artifact_id`, `tenant_id`, `workspace_id`, `work_item_id`, `created_by_principal_id`, `current_version_id`, `revision`, `created_at`, `updated_at`); `WorkArtifactVersion` (`schema_version`, `work_artifact_version_id`, `work_artifact_id`, `tenant_id`, `workspace_id`, `work_item_id`, `created_by_principal_id`, `published_by_principal_id`, `content_ref`, `created_at`, `published_at`, optional `execution: ExecutionProvenanceRef | None`); neutral `ArtifactContentRef` (stable content identity / location semantics, media type, integrity digest, optional size — provider identity must not become version identity); create/publication request contracts only if semantically required for pure contract/lifecycle testing; pure invariant helpers (current-pointer validity, scope consistency, immutability rules); Pydantic `BaseModel`, `ConfigDict(extra="forbid", frozen=True)`, `schema_version` Literal, timezone-aware datetimes |
+| **Dependencies** | MP-3 architecture decomposition audit closed; ADR-MP-004 Accepted; MP-2 closed | `WorkArtifactId`, `WorkArtifactVersionId`; `WorkArtifact` (`schema_version`, `work_artifact_id`, `tenant_id`, `workspace_id`, `work_item_id`, `created_by_principal_id`, `current_version_id`, `revision`, `created_at`, `updated_at`); `WorkArtifactVersion` (`schema_version`, `work_artifact_version_id`, `work_artifact_id`, `tenant_id`, `workspace_id`, `work_item_id`, `created_by_principal_id`, `published_by_principal_id`, `content_ref`, `created_at`, `published_at`, optional `execution: ExecutionProvenanceRef | None`); neutral `ArtifactContentRef` (stable content identity / location semantics, media type, integrity digest, optional size — provider identity must not become version identity); create/publication request contracts only if semantically required for pure contract/lifecycle testing; pure invariant helpers (current-pointer validity, scope consistency, immutability rules); Pydantic `BaseModel`, `ConfigDict(extra="forbid", frozen=True)`, `schema_version` Literal, timezone-aware datetimes |
 | **REUSED** | MP-1 `CollaborativePrincipal` / tenant/workspace scoping; MP-2 contract conventions; neutral `ExecutionProvenanceRef` from `intergrax/contracts/execution_provenance.py` |
 | **NEW** | WorkArtifact / WorkArtifactVersion contracts; `ArtifactContentRef`; publication/create request contracts as needed; pure invariant module |
 | **Explicit out of scope** | Repositories, services, storage, authority enforcement, SQLite/PostgreSQL, content-provider adapters, `title`/`artifact_kind` unless concrete invariant requires them, generic `metadata`/`payload` bags, MP-4 Decision fields, MP-6 Activity, runtime implementation beyond contracts |
@@ -542,19 +541,19 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 
 | Field | Value |
 |-------|-------|
-| **Status** | **UPDATED — pending final independent audit** — implementation-ready roadmap frozen; MP-3 runtime **NOT STARTED** |
+| **Status** | **APPROVED / CLOSED** — implementation-ready roadmap frozen; MP-3 runtime **IN PROGRESS** |
 | **ADR-MP-004** | **Accepted** — no contradiction discovered; ownership not reopened |
 | **Aggregate model** | WorkItem → WorkArtifact → WorkArtifactVersion; no body embedding; no lifecycle substitution |
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | Final independent decomposition audit; then **MP-3A** — contracts + invariants (**NOT STARTED**) |
+| **Next step** | **MP-3B** — repository ports + in-memory reference + publication boundary (**NOT STARTED**) |
 
 ---
 
 ## 4. Out of scope (current phase)
 
-- MP-3B…MP-3H runtime implementation (MP-3A is the only slice ready to open)
+- MP-3B…MP-3H runtime implementation (MP-3A **APPROVED / CLOSED**)
 - MP-4…MP-6 architecture or implementation rows (except bounded ownership checks when gated)
 - LKW product adoption (MP-7)
 - Runtime Python models beyond contract stubs until the relevant COLLAB-WORK-* row opens
