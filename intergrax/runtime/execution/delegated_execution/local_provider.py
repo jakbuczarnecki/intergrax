@@ -6,9 +6,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from typing import Generic, Protocol, TypeVar
 from uuid import uuid4
+
+from pydantic import BaseModel
 
 from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionCapabilities,
@@ -33,6 +36,9 @@ ResultT = TypeVar("ResultT")
 
 _LOCAL_PROVIDER_ID = "local_delegated_execution"
 _LOCAL_PROVIDER_VERSION = "1.0.0"
+_PROVIDER_EXECUTION_FAILED_MESSAGE = "delegated execution provider failed"
+_TRANSPORT_TIMEOUT_MESSAGE = "delegated execution transport timed out"
+_TRANSPORT_IO_MESSAGE = "delegated execution transport I/O failed"
 
 
 class LocalDelegatedExecutionDelegate(Protocol[RequestT, ResultT]):
@@ -114,11 +120,11 @@ class LocalDelegatedExecutionProvider(
             result = await self._delegate.execute(request)
         except DelegatedExecutionContractError:
             raise
-        except TimeoutError as exc:
+        except TimeoutError:
             return delegated_failure_outcome(
                 category=DelegatedExecutionOutcomeCategory.TRANSPORT_FAILURE,
                 failure_code="TRANSPORT_TIMEOUT",
-                failure_message=str(exc),
+                failure_message=_TRANSPORT_TIMEOUT_MESSAGE,
                 provider_invocation=invocation,
                 provider_outcome=_failed_outcome(
                     invocation_id=invocation_id,
@@ -128,11 +134,11 @@ class LocalDelegatedExecutionProvider(
                     provider_operation_id=invocation.provider_operation_id,
                 ),
             )
-        except OSError as exc:
+        except OSError:
             return delegated_failure_outcome(
                 category=DelegatedExecutionOutcomeCategory.TRANSPORT_FAILURE,
                 failure_code="TRANSPORT_IO",
-                failure_message=str(exc),
+                failure_message=_TRANSPORT_IO_MESSAGE,
                 provider_invocation=invocation,
                 provider_outcome=_failed_outcome(
                     invocation_id=invocation_id,
@@ -142,11 +148,11 @@ class LocalDelegatedExecutionProvider(
                     provider_operation_id=invocation.provider_operation_id,
                 ),
             )
-        except Exception as exc:
+        except Exception:
             return delegated_failure_outcome(
                 category=DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
                 failure_code="PROVIDER_EXECUTION_FAILED",
-                failure_message=str(exc),
+                failure_message=_PROVIDER_EXECUTION_FAILED_MESSAGE,
                 provider_invocation=invocation,
                 provider_outcome=_failed_outcome(
                     invocation_id=invocation_id,
@@ -155,7 +161,6 @@ class LocalDelegatedExecutionProvider(
                     provider_request_id=invocation.provider_request_id,
                     provider_operation_id=invocation.provider_operation_id,
                 ),
-                provider_status=type(exc).__name__,
             )
 
         completed_at = datetime.now(timezone.utc)
@@ -175,14 +180,37 @@ class LocalDelegatedExecutionProvider(
 
 
 def _digest_payload(payload: object) -> str:
-    encoded = json.dumps(payload, sort_keys=True, default=_json_default)
+    coerced = _coerce_payload_value(payload)
+    try:
+        encoded = json.dumps(coerced, sort_keys=True)
+    except (TypeError, ValueError) as exc:
+        raise DelegatedExecutionContractError(
+            "payload is not serializable for delegated execution digest",
+        ) from exc
     return "sha256:" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-def _json_default(value: object) -> object:
-    if hasattr(value, "__dict__"):
-        return value.__dict__
-    raise TypeError(f"payload type {type(value).__name__} is not JSON-serializable")
+def _coerce_payload_value(value: object) -> object:
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, dict):
+        coerced: dict[str, object] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise DelegatedExecutionContractError(
+                    "payload map keys must be strings for delegated execution digest",
+                )
+            coerced[key] = _coerce_payload_value(item)
+        return coerced
+    if isinstance(value, (list, tuple)):
+        return [_coerce_payload_value(item) for item in value]
+    if isinstance(value, BaseModel):
+        return value.model_dump(mode="json")
+    if is_dataclass(value):
+        return _coerce_payload_value(asdict(value))
+    raise DelegatedExecutionContractError(
+        f"payload type {type(value).__name__} is not supported for delegated execution digest",
+    )
 
 
 def _failed_outcome(

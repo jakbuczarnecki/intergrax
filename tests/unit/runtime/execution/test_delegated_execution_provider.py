@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import pytest
+from pydantic import BaseModel, ConfigDict
 
 from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionBudgetBounds,
@@ -54,6 +55,7 @@ from intergrax.runtime.execution.delegated_execution.context_projection import (
 )
 from intergrax.runtime.execution.delegated_execution.local_provider import (
     LocalDelegatedExecutionProvider,
+    _digest_payload,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
@@ -179,6 +181,25 @@ class _TransportDelegate:
         request: DelegatedExecutionRequest[EchoPayload],
     ) -> EchoResult:
         raise TimeoutError("connect timed out")
+
+
+class _IOErrorDelegate:
+    async def execute(
+        self,
+        request: DelegatedExecutionRequest[EchoPayload],
+    ) -> EchoResult:
+        raise OSError("connection reset by peer")
+
+
+class _ArbitraryPayload:
+    def __init__(self) -> None:
+        self.secret = "must-not-digest"
+
+
+class PydanticPayload(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    value: str
 
 
 def test_contract_models_are_immutable() -> None:
@@ -330,6 +351,8 @@ async def test_provider_failure_mapping() -> None:
     assert outcome.category is DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE
     assert outcome.result is None
     assert outcome.failure_code == "PROVIDER_EXECUTION_FAILED"
+    assert outcome.failure_message == "delegated execution provider failed"
+    assert outcome.provider_status is None
     assert isinstance(outcome, DelegatedExecutionOutcome)
 
 
@@ -339,6 +362,8 @@ async def test_transport_failure_mapping() -> None:
     outcome = await provider.execute(_request())
     assert outcome.category is DelegatedExecutionOutcomeCategory.TRANSPORT_FAILURE
     assert outcome.failure_code == "TRANSPORT_TIMEOUT"
+    assert outcome.failure_message == "delegated execution transport timed out"
+    assert "connect timed out" not in (outcome.failure_message or "")
 
 
 @pytest.mark.asyncio
@@ -346,7 +371,69 @@ async def test_vendor_exception_does_not_leak_as_public_abi() -> None:
     provider = LocalDelegatedExecutionProvider(_RaisingDelegate())
     outcome = await provider.execute(_request())
     assert not isinstance(outcome, RuntimeError)
-    assert outcome.failure_message is not None
+    assert outcome.failure_code == "PROVIDER_EXECUTION_FAILED"
+    assert outcome.failure_message == "delegated execution provider failed"
+    assert "vendor-native boom" not in (outcome.failure_message or "")
+    assert "RuntimeError" not in (outcome.provider_status or "")
+    assert outcome.provider_status is None
+
+
+@pytest.mark.asyncio
+async def test_transport_timeout_does_not_leak_raw_message() -> None:
+    provider = LocalDelegatedExecutionProvider(_TransportDelegate())
+    outcome = await provider.execute(_request())
+    assert outcome.failure_code == "TRANSPORT_TIMEOUT"
+    assert outcome.failure_message == "delegated execution transport timed out"
+    assert "connect timed out" not in (outcome.failure_message or "")
+    assert outcome.provider_status is None
+
+
+@pytest.mark.asyncio
+async def test_transport_io_does_not_leak_raw_message() -> None:
+    provider = LocalDelegatedExecutionProvider(_IOErrorDelegate())
+    outcome = await provider.execute(_request())
+    assert outcome.failure_code == "TRANSPORT_IO"
+    assert outcome.failure_message == "delegated execution transport I/O failed"
+    assert "connection reset by peer" not in (outcome.failure_message or "")
+    assert outcome.provider_status is None
+
+
+def test_pydantic_payload_digest_is_deterministic() -> None:
+    first = _digest_payload(PydanticPayload(value="stable"))
+    second = _digest_payload(PydanticPayload(value="stable"))
+    assert first == second
+    assert first.startswith("sha256:")
+
+
+def test_dataclass_payload_digest_is_deterministic() -> None:
+    first = _digest_payload(EchoPayload(value="stable"))
+    second = _digest_payload(EchoPayload(value="stable"))
+    assert first == second
+    assert first.startswith("sha256:")
+
+
+@pytest.mark.asyncio
+async def test_unsupported_payload_fails_closed() -> None:
+    provider = LocalDelegatedExecutionProvider(_EchoDelegate())
+    request = DelegatedExecutionRequest(
+        context=_context(),
+        payload=_ArbitraryPayload(),  # type: ignore[arg-type]
+        operation=_operation(),
+    )
+    with pytest.raises(DelegatedExecutionContractError, match="not supported"):
+        await provider.execute(request)
+
+
+@pytest.mark.asyncio
+async def test_arbitrary_object_with_dict_does_not_use_reflection_fallback() -> None:
+    provider = LocalDelegatedExecutionProvider(_EchoDelegate())
+    request = DelegatedExecutionRequest(
+        context=_context(),
+        payload=_ArbitraryPayload(),  # type: ignore[arg-type]
+        operation=_operation(),
+    )
+    with pytest.raises(DelegatedExecutionContractError):
+        await provider.execute(request)
 
 
 @pytest.mark.asyncio
