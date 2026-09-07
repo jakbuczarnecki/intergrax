@@ -68,6 +68,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
     completion_intent_from_completion_mode,
+    normalize_evidence_gathering_stop_reason,
     reconcile_investigation_completion,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
@@ -498,7 +499,9 @@ async def execute_resolved_skeleton(
         critic_verdict_passed=critic_verdict_passed,
         has_supported_diagnosis=has_supported_diagnosis,
         validation_errors=tuple(final_validation.errors),
-        evidence_gathering_stop_reason=evidence_gathering_stop_reason,
+        evidence_gathering_stop_reason=normalize_evidence_gathering_stop_reason(
+            evidence_gathering_stop_reason
+        ),
     )
     outcome = derive_terminal_outcome(
         critic_verdict_passed=critic_verdict_passed,

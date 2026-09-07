@@ -18,12 +18,18 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
     CompletionMode,
 )
 
-_TERMINAL_EVIDENCE_GATHERING_STOP_REASONS: frozenset[str] = frozenset(
+_KNOWN_EVIDENCE_GATHERING_STOP_REASONS: frozenset[ToolInvocationStopReason] = frozenset(
+    {
+        "empty_tool_calls",
+        "max_iterations",
+        "planner_final_answer",
+        "legacy_single_pass",
+    }
+)
+
+_RECONCILABLE_EVIDENCE_GATHERING_STOP_REASONS: frozenset[ToolInvocationStopReason] = frozenset(
     {
         "planner_final_answer",
-        "max_iterations",
-        "empty_tool_calls",
-        "legacy_single_pass",
     }
 )
 
@@ -47,10 +53,18 @@ class ReconciledCompletion:
     reason: CompletionReconciliationReason
 
 
-def is_evidence_gathering_terminal(
-    stop_reason: ToolInvocationStopReason | str,
+def normalize_evidence_gathering_stop_reason(raw: str) -> ToolInvocationStopReason:
+    """Normalize persisted domain payload stop reason at reconciliation boundary."""
+    if raw not in _KNOWN_EVIDENCE_GATHERING_STOP_REASONS:
+        raise CompletionReconciliationError("unknown_evidence_gathering_stop_reason")
+    return raw
+
+
+def is_reconcilable_evidence_termination(
+    stop_reason: ToolInvocationStopReason,
 ) -> bool:
-    return str(stop_reason) in _TERMINAL_EVIDENCE_GATHERING_STOP_REASONS
+    """Whether evidence gathering ended in a way that permits completion reconciliation."""
+    return stop_reason in _RECONCILABLE_EVIDENCE_GATHERING_STOP_REASONS
 
 
 def completion_intent_from_completion_mode(completion_mode: str) -> CompletionIntent:
@@ -69,7 +83,7 @@ def reconcile_investigation_completion(
     critic_verdict_passed: bool,
     has_supported_diagnosis: bool,
     validation_errors: tuple[str, ...],
-    evidence_gathering_stop_reason: ToolInvocationStopReason | str,
+    evidence_gathering_stop_reason: ToolInvocationStopReason,
 ) -> ReconciledCompletion:
     """Reconcile model completion intent with validated investigation state."""
     if validation_errors:
@@ -98,7 +112,9 @@ def reconcile_investigation_completion(
         )
 
     if model_intent is CompletionIntent.NEED_MORE_EVIDENCE:
-        if not is_evidence_gathering_terminal(evidence_gathering_stop_reason):
+        if evidence_gathering_stop_reason == "max_iterations":
+            raise CompletionReconciliationError("evidence_gathering_safety_limit_reached")
+        if not is_reconcilable_evidence_termination(evidence_gathering_stop_reason):
             raise CompletionReconciliationError("evidence_gathering_not_terminal")
         if has_supported_diagnosis:
             return ReconciledCompletion(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationStopReason
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
     CompletionReconciliationError,
     CompletionReconciliationReason,
@@ -29,7 +30,7 @@ def _reconcile(
     critic_verdict_passed: bool = True,
     has_supported_diagnosis: bool = True,
     validation_errors: tuple[str, ...] = (),
-    evidence_gathering_stop_reason: str = "planner_final_answer",
+    evidence_gathering_stop_reason: ToolInvocationStopReason = "planner_final_answer",
 ):
     return reconcile_investigation_completion(
         model_intent=model_intent,
@@ -71,6 +72,42 @@ def test_t4_stale_need_more_evidence_reconciles_to_supported() -> None:
     assert reconciled.reason is (
         CompletionReconciliationReason.VALIDATED_SUPPORTED_OVERRIDES_STALE_NEED_MORE_EVIDENCE
     )
+
+
+def test_t4_max_iterations_fails_closed() -> None:
+    with pytest.raises(
+        CompletionReconciliationError,
+        match="evidence_gathering_safety_limit_reached",
+    ):
+        _reconcile(
+            model_intent=CompletionIntent.NEED_MORE_EVIDENCE,
+            critic_verdict_passed=True,
+            has_supported_diagnosis=True,
+            validation_errors=(),
+            evidence_gathering_stop_reason="max_iterations",
+        )
+
+
+def test_empty_tool_calls_not_reconcilable_for_t4() -> None:
+    with pytest.raises(CompletionReconciliationError, match="evidence_gathering_not_terminal"):
+        _reconcile(
+            model_intent=CompletionIntent.NEED_MORE_EVIDENCE,
+            critic_verdict_passed=True,
+            has_supported_diagnosis=True,
+            validation_errors=(),
+            evidence_gathering_stop_reason="empty_tool_calls",
+        )
+
+
+def test_legacy_single_pass_not_reconcilable_for_t4() -> None:
+    with pytest.raises(CompletionReconciliationError, match="evidence_gathering_not_terminal"):
+        _reconcile(
+            model_intent=CompletionIntent.NEED_MORE_EVIDENCE,
+            critic_verdict_passed=True,
+            has_supported_diagnosis=True,
+            validation_errors=(),
+            evidence_gathering_stop_reason="legacy_single_pass",
+        )
 
 
 def test_supported_intent_without_supported_state_fails() -> None:
@@ -150,7 +187,7 @@ def test_t4_reconciled_state_passes_terminal_gate() -> None:
         (
             CompletionIntent.UNRESOLVED,
             False,
-            "max_iterations",
+            "planner_final_answer",
             CompletionMode.UNRESOLVED,
             CompletionReconciliationReason.ALIGNED_UNRESOLVED,
         ),
@@ -166,7 +203,7 @@ def test_t4_reconciled_state_passes_terminal_gate() -> None:
 def test_truth_table_aligned_and_t4_cases(
     model_intent: CompletionIntent,
     has_supported_diagnosis: bool,
-    stop_reason: str,
+    stop_reason: ToolInvocationStopReason,
     expected_mode: CompletionMode,
     expected_reason: CompletionReconciliationReason,
 ) -> None:
