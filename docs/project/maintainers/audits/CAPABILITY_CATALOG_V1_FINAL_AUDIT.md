@@ -22,12 +22,12 @@ APPROVED_FOR_FINAL_INDEPENDENT_AUDIT
 
 No Stage 1–14 code/architecture blocker was found. Stale documentation in the architecture hub was reconciled in this audit commit. Repository-health findings unrelated to V1 are listed separately and do not block program qualification.
 
-**Program status (not closure):**
+**Program status:**
 
 ```text
 Capability Catalog & Discovery V1
-implementation and program qualification complete
-— awaiting final independent program audit
+Stages 1–14 independently verified
+Program CLOSED
 ```
 
 ---
@@ -194,8 +194,8 @@ Verified terminal semantics:
 
 Updated in audit commit:
 
-- `docs/project/architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md` — maturity boundary reflects Stages 1–14 implementation; program awaits final independent audit (not V1 CLOSED)
-- `docs/project/maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md` — Stages 11–14 marked independently verified; program qualification status updated
+- `docs/project/architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md` — maturity boundary reflects V1 CLOSED; Stages 1–14 independently verified
+- `docs/project/maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md` — Stages 1–14 marked independently verified; program CLOSED
 
 ---
 
@@ -254,3 +254,18 @@ agent_distribution / skills / tools / platform_plugins / runtime
 | 21 | Canonical docs agree with code | PASS (after reconciliation) |
 | 22 | Status metadata truthful | PASS (after reconciliation) |
 | 23 | V1-specific gates green | PASS |
+
+---
+
+## Independent program closure
+
+Independent review result:
+APPROVED
+
+Capability Catalog & Discovery V1:
+CLOSED
+
+Audited qualification SHA:
+e707d0b6de99ed87eb8805a8b5377867dc62a3a0
+
+`e707d0b6de99ed87eb8805a8b5377867dc62a3a0` remains ancestor of `development`; later commits have no Capability Catalog V1 semantic overlap.

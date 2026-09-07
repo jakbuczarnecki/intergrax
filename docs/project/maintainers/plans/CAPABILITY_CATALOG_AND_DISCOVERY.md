@@ -332,19 +332,34 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 
 | Stage | Name | Maturity |
 |-------|------|----------|
-| 1 | Contracts & frozen boundaries | Implemented |
-| 2 | Federated catalog read model | Implemented |
-| 3 | Query / filtering / candidate model | Implemented |
-| 4 | Ranking | Implemented |
-| 5 | Governance integration | Implemented |
-| 6 | Skill enterprise correctness | Implemented |
-| 7 | Tool/Skill catalog maturity | Implemented |
-| 8 | Adaptive Unit-of-Work discovery | Implemented |
-| 9 | Autonomous Work bridge | **Implemented** |
-| 10 | Bootstrap evidence | Implemented |
+| 1 | Contracts & frozen boundaries | Implemented / independently verified |
+| 2 | Federated catalog read model | Implemented / independently verified |
+| 3 | Query / filtering / candidate model | Implemented / independently verified |
+| 4 | Ranking | Implemented / independently verified |
+| 5 | Governance integration | Implemented / independently verified |
+| 6 | Skill enterprise correctness | Implemented / independently verified |
+| 7 | Tool/Skill catalog maturity | Implemented / independently verified |
+| 8 | Adaptive Unit-of-Work discovery | Implemented / independently verified |
+| 9 | Autonomous Work bridge | Implemented / independently verified |
+| 10 | Bootstrap evidence | Implemented / independently verified |
 | 11 | Marketplace product surface | Implemented / independently verified |
 | 12 | Isolation / external execution | Implemented / independently verified |
 | 13 | Usage metering | Implemented / independently verified |
-| 14 | Full autonomous worker integration | **Implemented / independently verified** |
+| 14 | Full autonomous worker integration | Implemented / independently verified |
 
-**Capability Catalog & Discovery V1 program:** Stages 1–14 implemented and program-qualified on `development` — **awaiting final independent program audit** (not V1 CLOSED). See [CAPABILITY_CATALOG_V1_FINAL_AUDIT.md](../audits/CAPABILITY_CATALOG_V1_FINAL_AUDIT.md).
+**Capability Catalog & Discovery V1:** Stages 1–14 **independently verified**; **Program CLOSED**. See [CAPABILITY_CATALOG_V1_FINAL_AUDIT.md](../audits/CAPABILITY_CATALOG_V1_FINAL_AUDIT.md).
+
+---
+
+## Future work (post–V1 closure)
+
+**Capability Catalog V1 closure** is complete. The items below are **separate programs** — not Stages 15+ of this roadmap:
+
+| Program / surface | Relation to V1 |
+| --- | --- |
+| AW-8 Worker observability | Independent Autonomous Work program |
+| AW-9 Worker control plane | Independent Autonomous Work program |
+| AW-10 Virtual Workforce | Independent Autonomous Work program |
+| Third-party sandbox / external execution provider | Future isolation provider — assessed in Stage 12; runtime not shipped |
+| Billing / checkout / settlement | Downstream consumer of Stage 13 metering substrate |
+| Future capability types beyond Agent/Skill/Tool | Out of V1 scope — requires new program charter |

@@ -45,7 +45,13 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 **D. Product surfaces above catalog.** Public/private Marketplace remains a **product layer above** federated discovery — presentation, publisher metadata, pricing metadata (display-only), availability — not runtime or lifecycle authority.
 
 > [!NOTE]
-> **Maturity boundary:** Capability Catalog & Discovery V1 Stages 1–14 are **implemented and program-qualified** on `development` — see [final program audit](../maintainers/audits/CAPABILITY_CATALOG_V1_FINAL_AUDIT.md). This is **not** final independent program closure. AC-4 agent discovery/acquisition remains **implemented and frozen** under Agent Distribution as a **separate** authority from AW-7A.
+> **Maturity boundary:** Capability Catalog & Discovery V1 — **CLOSED**. Stages 1–14 implemented and independently verified — see [final program audit](../maintainers/audits/CAPABILITY_CATALOG_V1_FINAL_AUDIT.md). AC-4 agent discovery/acquisition remains **implemented and frozen** under Agent Distribution as a **separate** authority from AW-7A.
+>
+> **V1 closure does NOT mean:**
+> - third-party sandbox runtime shipped,
+> - billing/settlement shipped,
+> - AW-8/9/10 shipped,
+> - Universal Capability Engine exists.
 
 **Primary audience:** CTOs, principal/staff engineers, software architects, and AI platform engineers evaluating how Intergrax separates capability discovery from domain lifecycle and execution.
 
@@ -66,7 +72,7 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 | **AC-4** | Agent acquisition discovery plane — **separate from AW-7A** |
 | **AW-7A** | Worker obstacle → tool/skill discovery → bounded decision — **separate from AC-4** |
 | **Marketplace** | Product surface above catalog — **not runtime** |
-| **Maturity** | Stages 1–14 **implemented**; program qualification complete — **awaiting final independent program audit** — see [Current reality](#current-reality--maturity-boundary) |
+| **Maturity** | Capability Catalog & Discovery V1 Stages 1–14 **independently verified**; **Program CLOSED** — see [Current reality](#current-reality--maturity-boundary) |
 | **Go deeper** | [Core mental model](#core-mental-model) · [§Hard invariants](#hard-invariants-normative) · [§Forbidden flows](#forbidden-flows) · [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
 
 ## Core mental model
