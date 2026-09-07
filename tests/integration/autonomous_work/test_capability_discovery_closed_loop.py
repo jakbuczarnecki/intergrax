@@ -21,7 +21,9 @@ from intergrax.autonomous_work.work_stage_capability_loop import (
     WorkStageToolExecutionRequest,
     WorkStageToolExecutionResult,
 )
-from intergrax.autonomous_work.work_stage_tool_execution import RuntimeToolInvokerWorkStagePort
+from tests.integration.autonomous_work.runtime_tool_invoker_work_stage_port import (
+    RuntimeToolInvokerWorkStagePort,
+)
 from intergrax.capability_catalog import (
     AvailabilityPreservingGovernanceEvaluator,
     CapabilityCatalogEntry,
@@ -916,10 +918,7 @@ def test_a4_recovery_never_self_executes() -> None:
 
 def test_stage14_architecture_forbidden_abstractions() -> None:
     root = Path(importlib.import_module("intergrax.autonomous_work").__path__[0])
-    targets = (
-        root / "work_stage_capability_loop.py",
-        root / "work_stage_tool_execution.py",
-    )
+    targets = (root / "work_stage_capability_loop.py",)
     forbidden = (
         "UniversalCapabilityEngine",
         "UniversalCapabilityRuntime",

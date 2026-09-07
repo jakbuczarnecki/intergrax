@@ -1,7 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
 
-"""RuntimeToolInvoker-backed Tool execution port for Stage-14 reference loop."""
+"""Stage-14 proof-only RuntimeToolInvoker adapter for WorkStageToolExecutionPort."""
 
 from __future__ import annotations
 
@@ -17,7 +16,7 @@ from intergrax.tools.execution_models import ToolExecutionRequest
 
 
 class RuntimeToolInvokerWorkStagePort(WorkStageToolExecutionPort):
-    """Route governed Tool candidates through canonical RuntimeToolInvoker."""
+    """Route governed Tool candidates through canonical RuntimeToolInvoker (proof fixture)."""
 
     def __init__(self, invoker: RuntimeToolInvoker, state: RuntimeState) -> None:
         self._invoker = invoker
@@ -33,12 +32,12 @@ class RuntimeToolInvokerWorkStagePort(WorkStageToolExecutionPort):
                 f"RuntimeState.run_id ({state_run_id!r})",
             )
         tool_id = request.candidate.identity.logical.logical_id
-        contract = self._invoker.registry.get(tool_id).contract
+        registered = self._invoker.registry.get(tool_id)
         tool_request = ToolExecutionRequest(
             run_id=canonical_request_run_id,
             tool_id=tool_id,
             step_id=request.step_id,
-            input=contract.input_schema(),
+            input=registered.contract.input_schema(),
         )
         result = self._invoker.invoke(
             state=self._state,
