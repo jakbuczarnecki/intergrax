@@ -170,7 +170,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **NEW CAPABILITY REQUIRED** | WorkArtifact, WorkArtifactVersion runtime contracts and services (slices MP-3A…MP-3H) |
 | **Explicit out of scope** | `LKW-HYBRID-ASK-*` as WorkArtifact owner; UCL/Memory/Proof Receipts as owners; MP-4 Decision state; MP-6 Activity projection; runtime implementation in ownership gate |
 | **Architecture/ADR gate** | **Done** — WorkArtifact separated from UCL OptimizationArtifact; immutable version + CAS current pointer accepted; **ADR-MP-004 Accepted** |
-| **Pre-implementation domain-sync gate** | **Done** — bounded ownership check closed; COLLAB-WORK-0F registered |
+| **Pre-implementation domain-sync gate** | **Done** — MP-3 bounded ownership check closed; ADR-MP-004 Accepted; MP-3A…MP-3H architectural slices registered |
 | **User-visible outcome** | Versioned collaborative artifacts with lineage |
 | **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes |
 | **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent publication tests; provenance/evidence integration proof |
