@@ -52,7 +52,9 @@ from intergrax.hosting.engine.health import (
     HostedApplicationHealthSnapshot,
     HostedApplicationReadinessService,
 )
-from intergrax.hosting.instance.contracts import HostedApplicationInstanceAcquisitionResult
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceAcquisitionResult,
+)
 from intergrax.hosting.engine.ports import HostedApplicationRuntime
 from intergrax.hosting.errors import (
     HostedApplicationComponentError,
@@ -77,6 +79,14 @@ from intergrax.hosting.eventing import (
     CompositeHostedApplicationEventPublisher,
     ObservabilityHostedApplicationEventPublisher,
 )
+from intergrax.hosting.process_bootstrap import (
+    BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE,
+    HostedProcessBootstrapContext,
+    HostedProcessBootstrapFailureFacts,
+    HostedProcessBootstrapPhase,
+    hosted_process_bootstrap_failure_payload,
+    run_guarded_hosted_process_bootstrap,
+)
 from intergrax.hosting.services import HostedApplicationServiceRegistry
 from intergrax.hosting.control import (
     HostedApplicationControlCoordinator,
@@ -84,9 +94,13 @@ from intergrax.hosting.control import (
     HostedApplicationControlSnapshot,
     HostedApplicationRestartRequestSnapshot,
 )
-from intergrax.hosting.contracts.lifecycle import HostedApplicationEffectiveControlRequest
+from intergrax.hosting.contracts.lifecycle import (
+    HostedApplicationEffectiveControlRequest,
+)
 from intergrax.hosting.instance import FileHostedApplicationInstanceGuard
-from intergrax.hosting.instance.contracts import HostedApplicationInstanceLeasePublicView
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceLeasePublicView,
+)
 from intergrax.hosting.shutdown import (
     HostedApplicationActiveWorkController,
     HostedApplicationFlushService,
@@ -106,6 +120,7 @@ from intergrax.hosting.supervisor import (
 )
 
 __all__ = [
+    "BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE",
     "HOSTED_APPLICATION_PROFILE_SPEC_VERSION",
     "ComponentFailurePolicy",
     "HookFailurePolicy",
@@ -162,6 +177,9 @@ __all__ = [
     "HostedApplicationEventPublisher",
     "HostedApplicationEventSubscription",
     "HostedApplicationEventType",
+    "HostedProcessBootstrapContext",
+    "HostedProcessBootstrapFailureFacts",
+    "HostedProcessBootstrapPhase",
     "HostedApplicationFailurePhase",
     "HostedApplicationFailureRecord",
     "HostedApplicationHealthSnapshot",
@@ -188,6 +206,8 @@ __all__ = [
     "RestartPolicy",
     "ObservabilityHostedApplicationEventPublisher",
     "CompositeHostedApplicationEventPublisher",
+    "hosted_process_bootstrap_failure_payload",
+    "run_guarded_hosted_process_bootstrap",
     "ShutdownPolicy",
     "resolve_hosted_application_definition",
     "run_hosted_application",
