@@ -8,15 +8,17 @@ import pytest
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD,
     StrictToolArgumentConformanceError,
+    ToolArgumentConformance,
     assert_strict_tool_argument_conformance_supported,
+    function_tool_dispatch_requirements,
     function_tool_requires_strict_argument_conformance,
     tools_schema_requires_strict_argument_conformance,
 )
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
     build_atomic_planner_round_schema,
+    build_atomic_planner_round_tool_definition,
 )
 from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
 
@@ -53,10 +55,23 @@ class _ToolsOnlyAdapter(LLMAdapter):
         raise NotImplementedError
 
 
-def test_planner_round_schema_declares_strict_argument_conformance() -> None:
+def test_planner_round_tool_definition_declares_strict_dispatch_requirements() -> None:
+    definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
+    assert definition.requires_strict_argument_conformance is True
+    assert (
+        definition.dispatch_requirements.argument_conformance
+        is ToolArgumentConformance.STRICT
+    )
+    assert (
+        "requires_strict_argument_conformance"
+        not in definition.wire_schema["function"]
+    )
+    assert function_tool_requires_strict_argument_conformance(definition.wire_schema) is True
+
+
+def test_planner_round_wire_schema_has_no_magic_strict_field() -> None:
     schema = build_atomic_planner_round_schema(poc_business_tool_schemas())
-    fn = schema["function"]
-    assert fn[REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD] is True
+    assert "requires_strict_argument_conformance" not in schema["function"]
     assert function_tool_requires_strict_argument_conformance(schema) is True
 
 
@@ -69,6 +84,10 @@ def test_regular_tool_schema_does_not_require_strict_conformance() -> None:
         },
     }
     assert function_tool_requires_strict_argument_conformance(tool) is False
+    assert (
+        function_tool_dispatch_requirements(tool).argument_conformance
+        is ToolArgumentConformance.DEFAULT
+    )
 
 
 def test_assert_strict_support_passes_for_capable_adapter() -> None:

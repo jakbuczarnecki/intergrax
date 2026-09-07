@@ -829,19 +829,26 @@ def test_apply_tool_name_mapping_to_responses_input_preserves_function_call_outp
 
 def test_map_tools_projects_strict_atomic_planner_round() -> None:
     from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-        REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD,
+        ToolArgumentConformance,
+        function_tool_dispatch_requirements,
     )
     from intergrax.runtime.nexus.tools.atomic_planner_round import (
         build_atomic_planner_round_schema,
+        build_atomic_planner_round_tool_definition,
     )
     from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
 
-    canonical = build_atomic_planner_round_schema(poc_business_tool_schemas())
+    definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
+    canonical = definition.wire_schema
     mapped = _map_tools_to_responses_api([canonical])[0]
 
     assert mapped["strict"] is True
     assert mapped["name"] == "intergrax.planner.round"
-    assert canonical["function"][REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD] is True
+    assert (
+        function_tool_dispatch_requirements(canonical).argument_conformance
+        is ToolArgumentConformance.STRICT
+    )
+    assert "requires_strict_argument_conformance" not in canonical["function"]
     actions = mapped["parameters"]["properties"]["actions"]
     assert actions["minItems"] == 1
     one_of = actions["items"]["oneOf"]

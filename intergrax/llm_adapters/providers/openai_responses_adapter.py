@@ -34,7 +34,7 @@ from intergrax.llm_adapters.providers._openai_schema import (
     project_json_schema_for_openai_strict_tool_parameters,
 )
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    function_tool_requires_strict_argument_conformance,
+    function_tool_dispatch_requirements,
 )
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
@@ -382,7 +382,9 @@ def _map_tools_to_responses_api(
         out: Dict[str, Any] = {"type": "function", "name": name}
         if "description" in fn:
             out["description"] = fn["description"]
-        requires_strict = function_tool_requires_strict_argument_conformance(tool)
+        requires_strict = function_tool_dispatch_requirements(
+            tool
+        ).requires_strict_argument_conformance
         if requires_strict:
             if "parameters" in fn:
                 parameters = fn["parameters"]

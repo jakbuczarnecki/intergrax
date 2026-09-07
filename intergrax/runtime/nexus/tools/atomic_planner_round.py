@@ -22,7 +22,10 @@ from intergrax.llm_adapters.contracts.tool_call import (
     finalize_accepted_tool_call_identities,
 )
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD,
+    CanonicalFunctionToolDefinition,
+    ToolArgumentConformance,
+    ToolDispatchRequirements,
+    register_strict_function_tool_name,
 )
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerActionContext,
@@ -201,12 +204,12 @@ def build_atomic_planner_round_parameters_schema(
     }
 
 
-def build_atomic_planner_round_schema(
+def build_atomic_planner_round_tool_definition(
     business_schemas: Sequence[Mapping[str, object]],
-) -> _OpenAIToolSchema:
-    """Provider-neutral schema: single reserved ``intergrax.planner.round`` function."""
+) -> CanonicalFunctionToolDefinition:
+    """Canonical atomic planner round tool: wire schema plus strict dispatch requirements."""
     parameters = build_atomic_planner_round_parameters_schema(business_schemas)
-    return {
+    wire_schema: _OpenAIToolSchema = {
         "type": "function",
         "function": {
             "name": PLANNER_ROUND_TOOL_ID,
@@ -216,9 +219,24 @@ def build_atomic_planner_round_schema(
                 "not an executable business tool."
             ),
             "parameters": parameters,
-            REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD: True,
         },
     }
+    return CanonicalFunctionToolDefinition(
+        wire_schema=dict(wire_schema),
+        dispatch_requirements=ToolDispatchRequirements(
+            argument_conformance=ToolArgumentConformance.STRICT,
+        ),
+    )
+
+
+def build_atomic_planner_round_schema(
+    business_schemas: Sequence[Mapping[str, object]],
+) -> _OpenAIToolSchema:
+    """Provider-neutral wire schema for the reserved ``intergrax.planner.round`` function."""
+    return build_atomic_planner_round_tool_definition(business_schemas).wire_schema  # type: ignore[return-value]
+
+
+register_strict_function_tool_name(PLANNER_ROUND_TOOL_ID)
 
 
 def compute_atomic_planner_round_schema_hash(

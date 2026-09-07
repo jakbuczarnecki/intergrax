@@ -14,7 +14,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD,
+    function_tool_requires_strict_argument_conformance,
 )
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
@@ -128,7 +128,8 @@ def test_discriminated_schema_uses_one_of_per_tool() -> None:
     schemas = poc_business_tool_schemas()
     params = build_atomic_planner_round_parameters_schema(schemas)
     round_schema = build_atomic_planner_round_schema(schemas)
-    assert round_schema["function"][REQUIRES_STRICT_ARGUMENT_CONFORMANCE_FIELD] is True
+    assert "requires_strict_argument_conformance" not in round_schema["function"]
+    assert function_tool_requires_strict_argument_conformance(round_schema) is True
     properties = params["properties"]
     assert isinstance(properties, dict)
     actions = properties["actions"]
