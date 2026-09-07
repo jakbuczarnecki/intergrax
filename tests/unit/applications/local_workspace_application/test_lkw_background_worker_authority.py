@@ -166,6 +166,15 @@ def test_authority_assembly_order_before_worker_start(
             ),
         ),
         patch(
+            "local_workspace_application.host.background_worker_main.build_harness_host_runtime",
+            side_effect=lambda *args, **kwargs: _track(
+                "build_runtime_diag",
+                build_harness_host_runtime,
+                *args,
+                **kwargs,
+            ),
+        ),
+        patch(
             "local_workspace_application.host.background_worker_factory.build_harness_host_runtime",
             side_effect=lambda *args, **kwargs: _track(
                 "build_runtime",
@@ -192,6 +201,7 @@ def test_authority_assembly_order_before_worker_start(
         "create_composition",
         "deploy_activate",
         "bootstrap_projection",
+        "build_runtime_diag",
         "build_runtime",
         "create_worker",
         "start_worker",
