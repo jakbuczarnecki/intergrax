@@ -15,6 +15,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     StrictToolArgumentConformanceError,
+    ToolDispatchRequirements,
     tools_schema_requires_strict_argument_conformance,
 )
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
@@ -82,10 +83,13 @@ class FailoverLLMAdapter(LLMAdapter):
     def _eligible_adapter_chain(
         self,
         tools_schema: Sequence[dict] | None = None,
+        *,
+        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
     ) -> tuple[tuple[LLMAdapter, ...], tuple[str, ...]]:
         """Return adapters eligible for dispatch; filter strict-ineligible children."""
         if tools_schema is None or not tools_schema_requires_strict_argument_conformance(
-            tools_schema
+            tools_schema,
+            tool_dispatch_requirements=tool_dispatch_requirements,
         ):
             return self._adapters, self._profile_ids
         if not self._adapters[0].supports_strict_tool_argument_conformance():
@@ -163,8 +167,12 @@ class FailoverLLMAdapter(LLMAdapter):
         temperature: float | None = None,
         max_tokens: int | None = None,
         run_id: str | None = None,
+        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
     ) -> LLMAdapterResponse:
-        adapters, profile_ids = self._eligible_adapter_chain(tools)
+        adapters, profile_ids = self._eligible_adapter_chain(
+            tools,
+            tool_dispatch_requirements=tool_dispatch_requirements,
+        )
         return self._execute_with_failover(
             lambda adapter: adapter.generate_with_tools(
                 messages,
@@ -172,6 +180,7 @@ class FailoverLLMAdapter(LLMAdapter):
                 temperature=temperature,
                 max_tokens=max_tokens,
                 run_id=run_id,
+                tool_dispatch_requirements=tool_dispatch_requirements,
             ),
             adapters=adapters,
             profile_ids=profile_ids,
@@ -201,8 +210,12 @@ class FailoverLLMAdapter(LLMAdapter):
         temperature: float | None = None,
         max_tokens: int | None = None,
         run_id: str | None = None,
+        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
     ) -> Iterable[LLMStreamEvent]:
-        adapters, _profile_ids = self._eligible_adapter_chain(tools)
+        adapters, _profile_ids = self._eligible_adapter_chain(
+            tools,
+            tool_dispatch_requirements=tool_dispatch_requirements,
+        )
         adapter = self._select_streaming_adapter_from(adapters)
         return adapter.stream_with_tools(
             messages,
@@ -210,6 +223,7 @@ class FailoverLLMAdapter(LLMAdapter):
             temperature=temperature,
             max_tokens=max_tokens,
             run_id=run_id,
+            tool_dispatch_requirements=tool_dispatch_requirements,
         )
 
     def generate_structured(

@@ -25,7 +25,6 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     ToolArgumentConformance,
     ToolDispatchRequirements,
-    register_strict_function_tool_name,
 )
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerActionContext,
@@ -233,10 +232,8 @@ def build_atomic_planner_round_schema(
     business_schemas: Sequence[Mapping[str, object]],
 ) -> _OpenAIToolSchema:
     """Provider-neutral wire schema for the reserved ``intergrax.planner.round`` function."""
-    return build_atomic_planner_round_tool_definition(business_schemas).wire_schema  # type: ignore[return-value]
-
-
-register_strict_function_tool_name(PLANNER_ROUND_TOOL_ID)
+    wire_schema = build_atomic_planner_round_tool_definition(business_schemas).wire_schema
+    return wire_schema  # type: ignore[return-value]
 
 
 def compute_atomic_planner_round_schema_hash(

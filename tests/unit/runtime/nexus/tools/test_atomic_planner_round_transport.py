@@ -13,15 +13,13 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    function_tool_requires_strict_argument_conformance,
-)
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
     AtomicPlannerRoundError,
     atomic_round_schema_byte_size,
     build_atomic_planner_round_parameters_schema,
     build_atomic_planner_round_schema,
+    build_atomic_planner_round_tool_definition,
     compute_atomic_planner_round_schema_hash,
     extract_business_tool_schema_entries,
     materialize_atomic_round_to_tool_plan,
@@ -127,9 +125,10 @@ def test_extract_business_tool_schema_entries_fail_closed_on_malformed() -> None
 def test_discriminated_schema_uses_one_of_per_tool() -> None:
     schemas = poc_business_tool_schemas()
     params = build_atomic_planner_round_parameters_schema(schemas)
-    round_schema = build_atomic_planner_round_schema(schemas)
+    round_definition = build_atomic_planner_round_tool_definition(schemas)
+    round_schema = round_definition.wire_schema
     assert "requires_strict_argument_conformance" not in round_schema["function"]
-    assert function_tool_requires_strict_argument_conformance(round_schema) is True
+    assert round_definition.requires_strict_argument_conformance is True
     properties = params["properties"]
     assert isinstance(properties, dict)
     actions = properties["actions"]
@@ -385,6 +384,7 @@ class _TerminationCapturingAdapter(LLMAdapter):
         max_tokens=None,
         tool_choice=None,
         run_id=None,
+        tool_dispatch_requirements=None,
     ):
         self.received_tool_choice = tool_choice
         return build_adapter_response(content=self._content)

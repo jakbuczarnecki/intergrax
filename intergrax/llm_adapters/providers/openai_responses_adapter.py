@@ -34,7 +34,8 @@ from intergrax.llm_adapters.providers._openai_schema import (
     project_json_schema_for_openai_strict_tool_parameters,
 )
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
-    function_tool_dispatch_requirements,
+    ToolDispatchRequirements,
+    aligned_tool_dispatch_requirements,
 )
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
@@ -310,8 +311,12 @@ def _prepare_responses_tools_and_mapping(
     *,
     input_items: Sequence[Dict[str, Any]] | None = None,
     tool_choice: Union[str, Dict[str, Any]] | None = None,
+    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
 ) -> tuple[List[Dict[str, Any]], _OpenAIToolNameMapping]:
-    mapped_tools = _map_tools_to_responses_api(tools_schema)
+    mapped_tools = _map_tools_to_responses_api(
+        tools_schema,
+        tool_dispatch_requirements=tool_dispatch_requirements,
+    )
     canonical_names = _build_request_canonical_tool_names(
         tools_schema,
         input_items or [],
@@ -340,8 +345,14 @@ def _partition_openai_responses_options(
 
 def _map_tools_to_responses_api(
     tools_schema: Sequence[Dict[str, Any]],
+    *,
+    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
 ) -> List[Dict[str, Any]]:
     """Map canonical Chat-Completions-style tool schema to Responses API shape."""
+    aligned_requirements = aligned_tool_dispatch_requirements(
+        tools_schema,
+        tool_dispatch_requirements=tool_dispatch_requirements,
+    )
     mapped: List[Dict[str, Any]] = []
     for index, tool in enumerate(tools_schema):
         if not isinstance(tool, dict):
@@ -382,9 +393,9 @@ def _map_tools_to_responses_api(
         out: Dict[str, Any] = {"type": "function", "name": name}
         if "description" in fn:
             out["description"] = fn["description"]
-        requires_strict = function_tool_dispatch_requirements(
-            tool
-        ).requires_strict_argument_conformance
+        requires_strict = aligned_requirements[
+            index
+        ].requires_strict_argument_conformance
         if requires_strict:
             if "parameters" in fn:
                 parameters = fn["parameters"]
@@ -676,6 +687,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
+        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
     ) -> Iterable[LLMStreamEvent]:
         """
         Stream assistant text deltas, then yield the final typed response.
@@ -699,6 +711,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 tools_schema,
                 input_items=input_items_raw,
                 tool_choice=tool_choice,
+                tool_dispatch_requirements=tool_dispatch_requirements,
             )
             input_items = _apply_tool_name_mapping_to_responses_input(
                 input_items_raw,
@@ -861,6 +874,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
+        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
     ) -> LLMAdapterResponse:
         """
         Generate a response with potential function/tool calls.
@@ -877,6 +891,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 tools_schema,
                 input_items=input_items_raw,
                 tool_choice=tool_choice,
+                tool_dispatch_requirements=tool_dispatch_requirements,
             )
             input_items = _apply_tool_name_mapping_to_responses_input(
                 input_items_raw,

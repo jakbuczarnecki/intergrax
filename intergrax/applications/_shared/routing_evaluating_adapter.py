@@ -12,6 +12,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.strict_tool_arguments import ToolDispatchRequirements
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEvaluation
@@ -195,6 +196,7 @@ class RoutingEvaluatingLLMAdapter(LLMAdapter):
         max_tokens: int | None = None,
         tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
+        tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
     ) -> LLMAdapterResponse:
         self._refresh_inner_adapter()
         return self._inner.generate_with_tools(
@@ -204,6 +206,7 @@ class RoutingEvaluatingLLMAdapter(LLMAdapter):
             max_tokens=max_tokens,
             tool_choice=tool_choice,
             run_id=run_id,
+            tool_dispatch_requirements=tool_dispatch_requirements,
         )
 
     def generate_structured(

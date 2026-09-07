@@ -42,65 +42,51 @@ class CanonicalFunctionToolDefinition:
         return self.dispatch_requirements.requires_strict_argument_conformance
 
 
-_STRICT_FUNCTION_TOOL_NAMES: frozenset[str] = frozenset()
-
-
 class StrictToolArgumentConformanceError(RuntimeError):
     """Tool schema requires provider-enforced argument conformance that the adapter lacks."""
 
 
-def register_strict_function_tool_name(name: str) -> None:
-    """Register a platform function tool name that requires strict argument conformance."""
-    global _STRICT_FUNCTION_TOOL_NAMES
-    _STRICT_FUNCTION_TOOL_NAMES = _STRICT_FUNCTION_TOOL_NAMES | frozenset({name})
-
-
-def _function_tool_name(tool: Mapping[str, Any]) -> str | None:
-    if tool.get("type") != "function":
-        return None
-    fn = tool.get("function")
-    if not isinstance(fn, Mapping):
-        return None
-    name = fn.get("name")
-    if not isinstance(name, str) or not name:
-        return None
-    return name
-
-
-def function_tool_dispatch_requirements(
-    tool: Mapping[str, Any],
-) -> ToolDispatchRequirements:
-    """Resolve typed dispatch requirements for a canonical function tool wire schema."""
-    name = _function_tool_name(tool)
-    if name is not None and name in _STRICT_FUNCTION_TOOL_NAMES:
-        return ToolDispatchRequirements(
-            argument_conformance=ToolArgumentConformance.STRICT,
+def aligned_tool_dispatch_requirements(
+    tools_schema: Sequence[Mapping[str, Any]],
+    *,
+    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+) -> tuple[ToolDispatchRequirements, ...]:
+    """Return per-tool dispatch requirements aligned with ``tools_schema`` indices."""
+    if tool_dispatch_requirements is None:
+        return tuple(ToolDispatchRequirements() for _ in tools_schema)
+    if len(tool_dispatch_requirements) != len(tools_schema):
+        raise ValueError(
+            "tool_dispatch_requirements length must match tools_schema length"
         )
-    return ToolDispatchRequirements()
-
-
-def function_tool_requires_strict_argument_conformance(
-    tool: Mapping[str, Any],
-) -> bool:
-    """Return whether a canonical function tool requires provider-side strict conformance."""
-    return function_tool_dispatch_requirements(tool).requires_strict_argument_conformance
+    return tuple(tool_dispatch_requirements)
 
 
 def tools_schema_requires_strict_argument_conformance(
     tools_schema: Sequence[Mapping[str, Any]],
+    *,
+    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
 ) -> bool:
     """Return whether any tool in the schema list requires strict argument conformance."""
+    aligned = aligned_tool_dispatch_requirements(
+        tools_schema,
+        tool_dispatch_requirements=tool_dispatch_requirements,
+    )
     return any(
-        function_tool_requires_strict_argument_conformance(tool) for tool in tools_schema
+        requirements.requires_strict_argument_conformance for requirements in aligned
     )
 
 
 def assert_strict_tool_argument_conformance_supported(
     adapter: LLMAdapter,
     tools_schema: Sequence[Mapping[str, Any]],
+    *,
+    tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
 ) -> None:
     """Fail closed when strict tools are dispatched to an adapter without capability."""
-    if not tools_schema_requires_strict_argument_conformance(tools_schema):
+    if not tools_schema_requires_strict_argument_conformance(
+        tools_schema,
+        tool_dispatch_requirements=tool_dispatch_requirements,
+    ):
         return
     if adapter.supports_strict_tool_argument_conformance():
         return

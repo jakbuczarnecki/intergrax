@@ -18,6 +18,7 @@ from intergrax.llm_adapters.contracts.native_tool_choice import (
     project_native_tool_choice_for_provider,
 )
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    ToolDispatchRequirements,
     assert_strict_tool_argument_conformance_supported,
 )
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
@@ -27,7 +28,7 @@ from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.registry.runtime import RegisteredTool
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     AtomicPlannerRoundError,
-    build_atomic_planner_round_schema,
+    build_atomic_planner_round_tool_definition,
     materialize_atomic_round_to_tool_plan,
     mint_materialized_tool_calls_from_plan,
     resolve_atomic_planner_round_calls,
@@ -369,10 +370,11 @@ class ToolPlanningService:
             if protocol_config is not None
             else NATIVE_PLANNER_PROTOCOL_NONE
         )
+        provider_tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None
         if effective_protocol.atomic_round_active:
-            provider_tools_schema = [
-                dict(build_atomic_planner_round_schema(tools_schema))
-            ]
+            round_definition = build_atomic_planner_round_tool_definition(tools_schema)
+            provider_tools_schema = [dict(round_definition.wire_schema)]
+            provider_tool_dispatch_requirements = [round_definition.dispatch_requirements]
         elif effective_protocol.protocol_active:
             provider_tools_schema = append_planner_action_context_schema(tools_schema)
         else:
@@ -401,6 +403,7 @@ class ToolPlanningService:
         assert_strict_tool_argument_conformance_supported(
             self.llm,
             provider_tools_schema,
+            tool_dispatch_requirements=provider_tool_dispatch_requirements,
         )
         result = self.llm.generate_with_tools(
             provider_messages,
@@ -409,6 +412,7 @@ class ToolPlanningService:
             max_tokens=self.cfg.max_answer_tokens,
             tool_choice=projected_tool_choice,
             run_id=run_id,
+            tool_dispatch_requirements=provider_tool_dispatch_requirements,
         )
 
         if effective_protocol.atomic_round_active:

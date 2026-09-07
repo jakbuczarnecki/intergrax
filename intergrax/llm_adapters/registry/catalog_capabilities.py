@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.strict_tool_arguments import ToolDispatchRequirements
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -104,6 +105,7 @@ class CatalogCapabilityAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
+        tool_dispatch_requirements: Optional[Sequence[ToolDispatchRequirements]] = None,
     ) -> LLMAdapterResponse:
         return self._inner.generate_with_tools(
             messages,
@@ -112,6 +114,7 @@ class CatalogCapabilityAdapter(LLMAdapter):
             max_tokens=max_tokens,
             tool_choice=tool_choice,
             run_id=run_id,
+            tool_dispatch_requirements=tool_dispatch_requirements,
         )
 
     def generate_structured(

@@ -830,22 +830,23 @@ def test_apply_tool_name_mapping_to_responses_input_preserves_function_call_outp
 def test_map_tools_projects_strict_atomic_planner_round() -> None:
     from intergrax.llm_adapters.contracts.strict_tool_arguments import (
         ToolArgumentConformance,
-        function_tool_dispatch_requirements,
     )
     from intergrax.runtime.nexus.tools.atomic_planner_round import (
-        build_atomic_planner_round_schema,
         build_atomic_planner_round_tool_definition,
     )
     from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
 
     definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
     canonical = definition.wire_schema
-    mapped = _map_tools_to_responses_api([canonical])[0]
+    mapped = _map_tools_to_responses_api(
+        [canonical],
+        tool_dispatch_requirements=[definition.dispatch_requirements],
+    )[0]
 
     assert mapped["strict"] is True
     assert mapped["name"] == "intergrax.planner.round"
     assert (
-        function_tool_dispatch_requirements(canonical).argument_conformance
+        definition.dispatch_requirements.argument_conformance
         is ToolArgumentConformance.STRICT
     )
     assert "requires_strict_argument_conformance" not in canonical["function"]
@@ -868,19 +869,20 @@ def test_map_tools_does_not_apply_strict_to_regular_function_tools() -> None:
 
 def test_generate_with_tools_sends_strict_projected_atomic_round_schema() -> None:
     from intergrax.runtime.nexus.tools.atomic_planner_round import (
-        build_atomic_planner_round_schema,
+        build_atomic_planner_round_tool_definition,
     )
     from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
 
     client = MagicMock()
     client.responses.create.return_value = _mock_create_response(output_text="planned")
     adapter = _capture_create_client(client)
-    round_schema = build_atomic_planner_round_schema(poc_business_tool_schemas())
+    round_definition = build_atomic_planner_round_tool_definition(poc_business_tool_schemas())
 
     adapter.generate_with_tools(
         [ChatMessage(role="user", content="plan")],
-        [round_schema],
+        [round_definition.wire_schema],
         run_id="r-strict-round",
+        tool_dispatch_requirements=[round_definition.dispatch_requirements],
     )
 
     sent_tool = client.responses.create.call_args.kwargs["tools"][0]
