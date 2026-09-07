@@ -6,10 +6,8 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeForcedFunctionChoice
 from intergrax.runtime.nexus.config_types import ToolChoiceMode
 from intergrax.runtime.nexus.errors.tools_required_error import ToolsRequiredError
-from intergrax.runtime.nexus.tools.atomic_planner_round import PLANNER_ROUND_TOOL_ID
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerProtocolConfig,
     NativePlannerProtocolMode,
@@ -45,7 +43,7 @@ def test_investigation_round_without_prior_evidence_allows_auto() -> None:
     ) == "auto"
 
 
-def test_investigation_round_with_prior_evidence_forces_planner_round() -> None:
+def test_investigation_round_with_prior_evidence_allows_auto_in_final_capable_round() -> None:
     protocol = NativePlannerProtocolConfig(
         mode=NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
         available_evidence_references=("obs.ref.a",),
@@ -53,4 +51,15 @@ def test_investigation_round_with_prior_evidence_forces_planner_round() -> None:
     assert native_tool_choice_for_investigation_round(
         protocol_config=protocol,
         tools_mode="auto",
-    ) == NativeForcedFunctionChoice(function_name=PLANNER_ROUND_TOOL_ID)
+    ) == "auto"
+
+
+def test_investigation_round_with_prior_evidence_still_requires_tool_when_tools_mode_required() -> None:
+    protocol = NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
+        available_evidence_references=("obs.ref.a",),
+    )
+    assert native_tool_choice_for_investigation_round(
+        protocol_config=protocol,
+        tools_mode="required",
+    ) == "required"
