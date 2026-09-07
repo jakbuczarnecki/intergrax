@@ -425,6 +425,29 @@ at-most-once authorization
 
 # 6. P1 — Composition, inspection, credentials, sandbox, health classification
 
+**P1 PROGRAM STATUS: CLOSED**
+
+Closeout audit date: 2026-09-07  
+Closeout HEAD: `376c2086fa82107e08e95898332a5850aa9a1e71` (`development`)
+
+| Item | Closeout status |
+|---|---|
+| P1.1 | CLOSED |
+| P1.2 | CLOSED |
+| P1.3 | CLOSED |
+| P1.4 | CLOSED |
+| P1.5 | CLOSED |
+| P1.6 | CLOSED_WITH_DEFERRED_NON_BLOCKERS |
+| P1.7 / P1.7A | CLOSED |
+| P1.8 / P1.8A | CLOSED_WITH_DEFERRED_NON_BLOCKERS |
+| P1.9 | CLOSED_WITH_DEFERRED_NON_BLOCKERS |
+| P1.10 / P1.10A | CLOSED |
+| P1.11 | CLOSED |
+
+Program closure rule: every deferred item below is explicitly non-blocking for P1 runtime invariants. No P1.12 is introduced.
+
+---
+
 ## P1.1 Full ProfileResolution layering and provenance
 
 **Status: CLOSED (P1.1)**
@@ -600,7 +623,9 @@ production durable activation store: PARTIAL — KvActiveEffectiveProfileRevisio
 
 Preserves INV-25 (atomic activation), INV-26 (in-flight pinning), INV-33 (revision immutability).
 
-**Next: P1.9 — Context provider lifecycle/provenance hardening**
+Deferred non-blockers:
+
+- production durable activation store remains KV-wired when `DistributedKVStore` is available; in-memory default for lab/harness.
 
 ---
 
@@ -661,8 +686,6 @@ CredentialRef may be durable in connection/catalog configuration: YES
 secret material authority: existing SecretsStore backends only
 ```
 
-**Next: P1.9 — Context provider lifecycle/provenance hardening**
-
 ---
 
 ## P1.8 Sandbox / ExecutionEnvironment convergence
@@ -682,35 +705,64 @@ Provider support matrix (honest):
 | Local `SandboxSession` | workspace-root write | subprocess in sandbox cwd | operation allowlist only; no OS network proof |
 | Hosted `SandboxHostBackend` | remote workspace ops | remote shell | provider-attested when `SandboxSecurityCapable` |
 
-Known remaining convergence (not blockers): CodeCraft tier mapping still uses `substrate.py` path; not all sandbox consumers migrated; child execution environment binding at runtime admission deferred until child execution wiring exposes parent baseline.
+Deferred non-blockers (not P1 runtime blockers):
 
-**Next: P1.9 — Context provider lifecycle/provenance hardening**
+- CodeCraft tier mapping still uses `substrate.py` path,
+- not all sandbox consumers migrated,
+- child execution environment binding at runtime admission deferred until child execution wiring exposes parent baseline.
 
-ContextProvider contracts and providers already exist.
+---
 
-Remaining:
+## P1.9 Context provider lifecycle/provenance hardening
 
-- provider registration/lifecycle convergence,
-- fragment lifetime/replacement semantics,
-- lazy activation,
+**Status: CLOSED (P1.9)**
+
+ContextProvider contracts remain canonical. P1.9 hardens registration/lifecycle, provenance/version identity, execution pinning, lazy eligibility, and CE admission without creating a second context architecture.
+
+Delivered:
+
+- `intergrax/context/provider_lifecycle.py` — `BoundContextProvider` / `BoundContextProviderSet`, `bind_context_provider_set_from_registry`, `pin_context_provider_set_for_execution`, `resolve_bound_context_provider_set`, `InMemoryContextProviderExecutionPinningStore`
+- `intergrax/context/provider_descriptor.py` — deterministic provider descriptors and `compute_provider_set_fingerprint`
+- registry lifecycle: empty-version rejection, deterministic `list_providers`, provider spoof protection
+- fragment/assembly provenance via `ContextProviderProvenance` on assembled fragments
+- execution pinning: registry replace/remove does not rebind pinned execution E1; tenant isolation on pinning store
+- CE admission: required-source fail-closed, optional provider failure visibility, contract-violation handling, workspace/session provider adoption
+- lazy activation eligibility via `is_provider_eligible` (excluded/irrelevant providers collect zero)
+- runtime inspection shows bound provider set, not current registry mutation
+- focused proof suite: `tests/unit/context/test_p1_9_provider_lifecycle.py`
+
+Deferred non-blockers:
+
 - workspace instruction refresh semantics,
-- exact provenance/version binding,
 - cache/cost attribution,
-- universal CE admission for all model-visible context.
+- universal CE admission audit across every peripheral model-visible path beyond canonical Nexus CE.
 
 ---
 
 ## P1.10 Skill version/provenance bridge hardening
 
-**Status: CURRENT/PARTIAL**
+**Status: CLOSED (P1.10 + P1.10A)**
 
-Skills are mature. Remaining gaps are specific:
+Skills remain mature. P1.10 closes bounded version/provenance gaps without redesigning the Skill system.
 
-- declared vs resolved version identity,
-- retain canonical `ResolvedSkillPack` provenance,
-- non-expanding host ToolProfile authority,
-- prompt bridge production adoption,
-- policy bridge production adoption.
+Delivered:
+
+- `ResolvedSkillComposition` — single coherent resolution observation with `observed_manifests`
+- `SkillExecutionBinding` / `InMemorySkillExecutionPinningStore` — execution-scoped immutable pack pinning
+- `bind_resolved_skill_pack` / `resolve_bound_skill_pack` / `binding_from_composition`
+- `build_skill_contribution_provenance` — contribution lineage with exact qualified ids; no registry re-read after bind
+- `SkillPackSelectionStrategy` in `intergrax/runtime/nexus/tools/tool_selection.py` — canonical runtime consumer of bound pack
+- exact version pinning with sentinel rejection (`latest` / `unknown` fail-closed)
+- root and transitive replacement safety (E1 stays pinned; E2 gets new composition)
+- missing manifest / version mismatch / duplicate manifest fail-closed at composition and provenance layers
+- same `ExecutionId` cannot be rebound with a different pack
+- skill tool requirements cannot widen host `ToolProfile` authority
+- configured vs effective distinction retained in binding evidence
+- focused proof suite: `tests/unit/skills/test_p1_10_execution_binding.py`
+
+Deferred non-blockers:
+
+- broader prompt/policy bridge production adoption beyond harness proof paths (bridges exist; full product surface convergence is post-P1).
 
 Do not redesign the Skill system.
 
@@ -718,7 +770,7 @@ Do not redesign the Skill system.
 
 ## P1.11 Governance permission presets
 
-**Status: CLOSED**
+**Status: CLOSED (P1.11)**
 
 Governance permission presets are configuration shorthand on
 ``ApplicationEnvironmentProfile.governance.permission_preset``. Expansion runs
@@ -727,6 +779,14 @@ before canonical profile resolution and maps only into existing profile and
 authority (tool access, sandbox isolation, HITL posture).
 
 Preset ≠ policy engine. Preset ≠ authority.
+
+Delivered:
+
+- `intergrax/applications/_shared/governance_permission_preset.py` — `expand_governance_permission_preset` monotonic expansion
+- `intergrax/applications/contracts/environment_profile/governance_permission_preset.py` — typed preset contract
+- unknown preset fail-closed; no-preset compatibility preserved
+- TRUSTED cannot liberalize critical HITL authority
+- focused proof suite: `tests/unit/applications/test_governance_permission_preset.py`
 
 ---
 
