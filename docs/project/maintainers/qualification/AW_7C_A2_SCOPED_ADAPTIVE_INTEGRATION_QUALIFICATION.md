@@ -6,11 +6,11 @@
 
 **Branch:** `development`
 
-**Start HEAD:** `aac75b8e8dfc82192595eaacd0a561249f47f171`
+**Start HEAD:** `4dff9d136085fe46fbffc342d1bfc690ce7a8d85`
 
-**Review HEAD (pre-docs):** `aac75b8e8dfc82192595eaacd0a561249f47f171`
+**Review HEAD (pre-P0-3):** `4dff9d136085fe46fbffc342d1bfc690ce7a8d85`
 
-**Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching; physical provider qualification still blocked. **P0-2 secret broker remediation** (2026-09-07): purpose-scoped grant/broker contracts + enforcement at resolution boundary.
+**Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching. **P0-2 secret broker remediation** (2026-09-07): purpose-scoped grant/broker contracts + enforcement at resolution boundary. **P0-3 hosted provider inventory** (2026-09-07): canonical sandbox-host audit + `SandboxSecurityConfigurable` admission seam; no qualifying in-repo provider adapter.
 
 **P0-2 independent audit correction:** unenforced `max_uses` field removed. V1 bounded credential authority is time-bounded via `expires_at` only. Use-count restrictions require a future concurrency-safe lifecycle authority.
 
@@ -26,7 +26,7 @@ AW-7 remains **IN PROGRESS**. AW-7C is **not** READY FOR IMPLEMENTATION.
 
 Critical blockers:
 
-1. **Host-scoped egress allowlist** — typed contract + fail-closed substrate matching **implemented** (P0-1); **physical** exact-host enforcement at a real hosted provider **still blocked** (no qualifying substrate in repo).
+1. **Host-scoped egress allowlist** — typed contract + fail-closed substrate matching **implemented** (P0-1); `SandboxSecurityConfigurable` admission seam **implemented** (P0-3); **physical** exact-host enforcement at a real hosted provider **blocked** — no in-repo provider adapter implements configurable + attestable allowlist (P0-3).
 2. **Purpose-scoped secret brokering** — **implemented** (P0-2): `ScopedCredentialBroker` + `CredentialUseGrant` enforce tenant, execution, operation, integration, and target host scope at resolution; legacy `SecretsStoreCredentialResolver` tenant-only path preserved for P1.7.
 3. **Allowlist egress physical qualification** — contract tests prove fail-closed resolver behavior; no test proves non-approved destination **physically denied** at enforced substrate under host-scoped policy (provider qualification blocked).
 
@@ -37,7 +37,7 @@ Critical blockers:
 | AW-7C prerequisite | Verdict |
 | --- | --- |
 | runtime egress enforcement | **PARTIALLY REMEDIATED** (typed deny + allowlist contract; deny proof retained; allowlist requires substrate evidence) |
-| host allowlist enforcement | **PARTIALLY REMEDIATED** (contract + fail-closed resolver; physical provider proof **BLOCKED**) |
+| host allowlist enforcement | **PARTIALLY REMEDIATED** (contract + fail-closed resolver + configurable admission seam; physical provider proof **IMPLEMENTATION REQUIRED**) |
 | fail-closed substrate | **PASS** (deny + allowlist modes) |
 | opaque secret storage | **PASS** |
 | purpose-scoped secret brokering | **PASS** (P0-2 contract + broker enforcement; admission port pluggable) |
@@ -208,7 +208,7 @@ Existing evidence (AW-7B / CodeCraft): `CraftSubstrateCapabilities` (`provider_i
 | `tests/unit/autonomous_work/test_worker_execution_dispatch_architecture_gates.py` | passed |
 | `tests/unit/autonomous_work/test_ephemeral_capability_execution_architecture_gates.py` | passed |
 | `tests/unit/autonomous_work/test_worker_capability_acquisition_architecture_gates.py` | passed |
-| `tests/unit/autonomous_work/test_aw_7c_prerequisite_architecture_gates.py` | 4 passed (new) |
+| `tests/unit/runtime/sandbox/test_sandbox_security_configurable_conformance.py` | passed (P0-3) |
 | `tests/unit/runtime/security/test_p0_safety_7_sandbox_isolation_fail_closed.py` | **1 failed** (pre-existing: `execution_environment_authority_unavailable` in `test_valid_sandbox_reaches_provider`; unrelated to AW-7C gate scope) |
 
 **Batch command:**
@@ -229,7 +229,7 @@ uv run pytest tests/unit/runtime/codecraft/test_aw_7b_gate.py `
 
 ## 10. Recommended prerequisite hardening (platform tasks, not AW-7C)
 
-1. **Sandbox / CodeCraft substrate** — **DONE (contract P0-1)** typed host scope + fail-closed matching; **remaining:** real hosted provider with physical exact-host enforcement qualification.
+1. **Sandbox / CodeCraft substrate** — **DONE (contract P0-1)** typed host scope + fail-closed matching; **DONE (P0-3 seam)** `SandboxSecurityConfigurable` + pre-admission fail-closed for allowlist profiles; **remaining:** provider-specific adapter hardening + physical qualification (E2B preferred).
 2. **Integration / credential domain** — **DONE (P0-2)** purpose-scoped secret broker: tenant + credential_ref + integration identity + operation/purpose + allowed target scope; enforce at resolution; bounded lifetime.
 3. **Qualification tests** — at least one test where approved host succeeds and unapproved host is **physically denied** at enforced substrate (not metadata-only).
 
@@ -240,8 +240,118 @@ Do **not** implement `WorkerSecretBroker`, `AWSecretStore`, or host filtering in
 ## 11. Status
 
 ```text
-AW-7C SECRET BROKER PREREQUISITE: IMPLEMENTED / AWAITING INDEPENDENT RE-AUDIT
-AW-7C EGRESS PREREQUISITE: PARTIALLY REMEDIATED / PROVIDER QUALIFICATION BLOCKED
+AW-7C SECRET BROKER PREREQUISITE: PASSED / independently verified
+AW-7C EGRESS PREREQUISITE: IMPLEMENTATION REQUIRED — e2b (primary), modal, daytona
 AW-7C: BLOCKED BY PREREQUISITE
 AW-7:  IN PROGRESS
+```
+
+---
+
+## 12. P0-3 — Hosted provider inventory (physical allowlist qualification)
+
+**P0-3 verdict:**
+
+```text
+AW-7C P0-3: IMPLEMENTATION REQUIRED — e2b (primary), modal, daytona
+```
+
+**Qualified provider:** `NONE` (no in-repo adapter satisfies configurable + attestable + physical enforcement).
+
+### Provider matrix
+
+| Provider | Real SDK/API adapter? | Session creation supports egress policy? | Exact host allowlist? | Same exec channel? | Can attest? | Verdict |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| **E2B** | **NO** — `HttpSandboxHostBackend` + generic `POST /sessions` (`intergrax/integrations/_shared/p7/factories.py`) | **NO** — no `network` / `allowOut` payload | **NO** in repo | **YES** (would be `HostedSandboxSession.execute` → `backend.exec`) | **NO** — not `SandboxSecurityCapable` | **IMPLEMENTATION REQUIRED** — external API documents `network.allowOut` / `network.denyOut` domain egress ([E2B network docs](https://docs.e2b.dev/network/internet-access)) |
+| **Modal** | **NO** — same HTTP placeholder | **NO** | **NO** in repo | **YES** | **NO** | **IMPLEMENTATION REQUIRED** — external SDK documents `outbound_domain_allowlist` / `outbound_cidr_allowlist` ([Modal sandbox networking](https://modal.com/docs/guide/sandbox-networking)) |
+| **Daytona** | **NO** — same HTTP placeholder | **NO** | **NO** in repo | **YES** | **NO** | **IMPLEMENTATION REQUIRED** — external API documents `domainAllowList` / `networkAllowList` ([Daytona network limits](https://www.daytona.io/docs/en/network-limits/)) |
+| **Generic HTTP** (`HttpSandboxHostBackend`) | HTTP shim only | **NO** | **NO** — must not attest allowlist | **YES** | **NO** | **UNSUPPORTED** — contract tests only |
+| **Other** | — | — | — | — | — | none registered |
+
+### Canonical contract (post P0-3 seam)
+
+| Surface | Status |
+| --- | --- |
+| `SandboxHostBackend` | unchanged — legacy `create_session()` preserved |
+| `SandboxSecurityRequirements` + `NetworkEgressAllowlist` | **PASS** (P0-1) |
+| `SandboxSecurityConfigurable.create_session_with_security()` | **added** (P0-3) — required for allowlist admission |
+| `SandboxSecurityCapable.security_capabilities()` | **PASS** — attestation seam; `enforced_network_hosts` must not echo request |
+| Breaking changes | **none** for legacy providers; allowlist profiles fail closed without `SandboxSecurityConfigurable` |
+
+Configuration flow (target):
+
+```text
+CodeCraftProfile
+  → SandboxSecurityRequirements
+  → HostedSandboxSession.open(security_requirements=…)
+  → SandboxSecurityConfigurable.create_session_with_security()
+  → [missing] provider SDK/API session configuration
+  → [missing] provider runtime + attestation
+```
+
+### External capability notes (not in-repo proof)
+
+| Provider | Documented egress API | Exact-host semantics | Redirect / DNS caveats |
+| --- | --- | --- | --- |
+| E2B | `network.allowOut` domains + `denyOut` default-deny | domain filter on HTTP:80 (Host) and TLS:443 (SNI); wildcards supported externally — Intergrax V1 is exact-host only | redirect destination evaluated by provider policy; QUIC/HTTP3 not domain-filtered per vendor docs |
+| Modal | `outbound_domain_allowlist` (TLS:443 SNI) + `outbound_cidr_allowlist` | domain allowlist beta; non-TLS blocked unless CIDR allowlisted | runtime `updateNetworkPolicy` replaces policy atomically |
+| Daytona | `domainAllowList` XOR `networkAllowList` (CIDR) at create | domain list for web ports; CIDR list IPv4-only | runtime `POST /sandbox/{id}/network-settings` behind feature flag |
+
+### Physical test
+
+```text
+NOT RUN — NO QUALIFYING IN-REPO PROVIDER
+```
+
+Planned qualification (next task, one canonical provider — E2B preferred):
+
+| Check | Plan |
+| --- | --- |
+| Approved endpoint A | deterministic public HTTPS endpoint (e.g. `https://httpbin.org/get` or vendor test infra) |
+| Unapproved endpoint B | second deterministic public HTTPS endpoint |
+| Execution channel | `HostedSandboxSession.execute("run_python", …)` network call inside sandbox |
+| Redirect escape | allowed A returning redirect to B must be denied by substrate |
+| Markers | `@pytest.mark.integration`, `@pytest.mark.external`, `@pytest.mark.sandbox_provider` |
+
+Contract placeholder: `test_physical_allowlist_qualification_blocked` remains **skipped**.
+
+### Fail-closed (verified)
+
+| Scenario | Result |
+| --- | --- |
+| Unsupported provider (`HttpSandboxHostBackend`, plain `SandboxHostBackend`) + allowlist profile | **denied** — `network_egress_allowlist_requirement_unsatisfied`; `create_session()` not called |
+| Policy rejection at provider | not exercised — no real adapter |
+| Missing attestation (`SandboxSecurityCapable` absent or `network_egress_allowlist_enforced != True`) | **denied** |
+| Scope mismatch (`enforced ⊄ requested`) | **denied** |
+
+### Nexus (P0-3)
+
+```text
+Nexus touched: NO
+Nexus public contract: NO
+Sandbox → Nexus: NO
+AW → Nexus: NO
+```
+
+### P0-3 tests
+
+```powershell
+uv run pytest tests/unit/runtime/codecraft/test_network_egress_allowlist_substrate.py `
+  tests/unit/runtime/sandbox/test_sandbox_security_configurable_conformance.py `
+  tests/unit/runtime/sandbox/test_network_egress_contract.py `
+  tests/unit/runtime/codecraft/test_aw_7b_gate.py -q
+```
+
+**Counts:** 50 passed, 1 skipped (`test_physical_allowlist_qualification_blocked`).
+
+### P0-3 files
+
+```text
+intergrax/runtime/sandbox/contracts.py
+intergrax/runtime/sandbox/hosted_session.py
+intergrax/runtime/sandbox/hosted_resolver.py
+intergrax/runtime/codecraft/substrate.py
+tests/unit/runtime/sandbox/test_sandbox_security_configurable_conformance.py
+tests/unit/runtime/codecraft/test_network_egress_allowlist_substrate.py
+docs/project/maintainers/qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md
 ```
