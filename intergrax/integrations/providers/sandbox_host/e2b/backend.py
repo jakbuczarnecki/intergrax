@@ -99,6 +99,11 @@ class E2bSandboxHostBackend:
             )
         return capabilities
 
+    def destroy_session(self, session_id: str) -> None:
+        """Terminate a provider sandbox and drop session-bound security evidence."""
+        self._client.destroy_sandbox(session_id)
+        self._session_security.pop(session_id, None)
+
     def exec(self, session_id: str, command: str) -> SandboxExecResult:
         return self._client.exec_command(session_id, command)
 

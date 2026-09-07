@@ -367,6 +367,8 @@ docs/project/maintainers/qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUAL
 AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION BLOCKED
 ```
 
+**P0-3A-01 (2026-09-07):** SDK `exit_code` mapping corrected — numeric zero preserved at E2B transport boundary (`SdkE2bSandboxApiClient` / legacy payload helper). Physical qualification remains pending if credentials unavailable.
+
 **SDK/API source of truth:** `e2b` Python SDK (installed for dev session; optional extra `integrations-e2b`); control plane `POST https://api.e2b.app/sandboxes` with `network.allowOut` / `network.denyOut`; attestation via `GET /sandboxes/{sandboxID}` → `network.allowOut` / `network.denyOut` (SDK: `sandbox.get_info().network`).
 
 **Mapping (V1 qualified scope):**

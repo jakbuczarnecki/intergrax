@@ -74,6 +74,34 @@ def _network_payload_to_sdk(network: E2bNetworkCreatePayload) -> dict[str, objec
     }
 
 
+def _normalize_sdk_exit_code(result: Any, *, missing_fallback: int = 1) -> int:
+    """Map provider command result to canonical exit code; preserve numeric zero."""
+    raw_exit_code = getattr(result, "exit_code", None)
+    if raw_exit_code is None:
+        return missing_fallback
+    try:
+        return int(raw_exit_code)
+    except (TypeError, ValueError) as exc:
+        raise E2bSandboxHostError("E2B sandbox command returned invalid exit code") from exc
+
+
+def _normalize_legacy_exit_code_payload(
+    data: Mapping[str, Any],
+    *,
+    missing_fallback: int = 0,
+) -> int:
+    """Extract snake/camel exit code from legacy payloads; preserve numeric zero."""
+    raw_exit_code = data.get("exit_code")
+    if raw_exit_code is None:
+        raw_exit_code = data.get("exitCode")
+    if raw_exit_code is None:
+        return missing_fallback
+    try:
+        return int(raw_exit_code)
+    except (TypeError, ValueError) as exc:
+        raise E2bSandboxHostError("E2B sandbox command returned invalid exit code") from exc
+
+
 def _network_info_to_state(network: Any) -> E2bProviderNetworkState:
     if network is None:
         raise E2bSandboxHostError("provider sandbox info missing network state")
@@ -138,7 +166,7 @@ class SdkE2bSandboxApiClient:
             result = sandbox.commands.run(command)
         except Exception as exc:  # noqa: BLE001 — provider boundary
             raise E2bSandboxHostError("E2B sandbox command execution failed") from exc
-        exit_code = int(getattr(result, "exit_code", 1) or 1)
+        exit_code = _normalize_sdk_exit_code(result)
         stdout = str(getattr(result, "stdout", "") or "")
         stderr = str(getattr(result, "stderr", "") or "")
         return SandboxExecResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
@@ -214,7 +242,7 @@ class LegacyInjectedE2bSandboxApiClient:
             return payload
         data = dict(payload or {})
         return SandboxExecResult(
-            exit_code=int(data.get("exit_code") or data.get("exitCode") or 0),
+            exit_code=_normalize_legacy_exit_code_payload(data),
             stdout=str(data.get("stdout") or ""),
             stderr=str(data.get("stderr") or ""),
         )

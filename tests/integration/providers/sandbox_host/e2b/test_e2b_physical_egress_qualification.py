@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import textwrap
+import warnings
 
 import pytest
 
@@ -67,7 +68,6 @@ def qualified_backend():
     except Exception as exc:
         pytest.skip(f"E2B backend unavailable: {type(exc).__name__}")
     yield backend
-    # Provider sandboxes are destroyed by E2B TTL; no persistent cleanup hook required here.
 
 
 @pytest.fixture(scope="module")
@@ -87,7 +87,20 @@ def qualified_session(qualified_backend):
     )
     if session is None:
         pytest.fail("qualified E2B session was not admitted")
-    return session
+    try:
+        yield session
+    finally:
+        cleanup_error: Exception | None = None
+        try:
+            qualified_backend.destroy_session(session.session_id)
+        except Exception as exc:  # noqa: BLE001 — qualification cleanup boundary
+            cleanup_error = exc
+        if cleanup_error is not None:
+            warnings.warn(
+                f"E2B physical qualification sandbox cleanup failed: {cleanup_error}",
+                UserWarning,
+                stacklevel=1,
+            )
 
 
 def test_physical_allowed_host_reachable(qualified_session: HostedSandboxSession) -> None:
