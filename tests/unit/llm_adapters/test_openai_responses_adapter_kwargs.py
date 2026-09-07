@@ -16,6 +16,9 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.openai_responses_adapter import (
     OpenAIChatResponsesAdapter,
     _OpenAIToolNameMapping,
+    _apply_tool_name_mapping_to_responses_input,
+    _build_request_canonical_tool_names,
+    _extract_canonical_tool_names_from_responses_input,
     _map_tools_to_responses_api,
     _prepare_responses_tools_and_mapping,
 )
@@ -572,3 +575,253 @@ def test_openai_tool_name_mapping_direct_collision_behavior() -> None:
     assert mapping.to_provider("a_b") == "a_b"
     assert mapping.to_provider("a.b") != "a_b"
     assert mapping.to_canonical(mapping.to_provider("a.b")) == "a.b"
+
+
+_PLANNER_ROUND_TOOL = [
+    {
+        "type": "function",
+        "function": {
+            "name": "intergrax.planner.round",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    }
+]
+_CATALOG_LOOKUP_TOOL = [
+    {
+        "type": "function",
+        "function": {
+            "name": "catalog.lookup.item",
+            "parameters": {"type": "object", "properties": {"id": {"type": "string"}}},
+        },
+    }
+]
+
+
+def _history_with_function_call(canonical_name: str, *, call_id: str = "call_hist_1") -> list[ChatMessage]:
+    return [
+        ChatMessage(role="user", content="investigate"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": call_id,
+                    "type": "function",
+                    "function": {
+                        "name": canonical_name,
+                        "arguments": '{"limit": 1}',
+                    },
+                }
+            ],
+        ),
+        ChatMessage(
+            role="tool",
+            content='{"ok": true}',
+            tool_call_id=call_id,
+            name=canonical_name,
+        ),
+        ChatMessage(role="user", content="continue planning"),
+    ]
+
+
+def test_build_request_canonical_tool_names_orders_current_then_history() -> None:
+    input_items = [
+        {"type": "function_call", "call_id": "c1", "name": "catalog.lookup.item", "arguments": "{}"},
+        {"type": "function_call", "call_id": "c2", "name": "catalog.telemetry.read", "arguments": "{}"},
+    ]
+    names = _build_request_canonical_tool_names(_PLANNER_ROUND_TOOL, input_items)
+    assert names == [
+        "intergrax.planner.round",
+        "catalog.lookup.item",
+        "catalog.telemetry.read",
+    ]
+
+
+def test_extract_canonical_tool_names_from_responses_input_ignores_other_items() -> None:
+    input_items = [
+        {"type": "message", "role": "user", "content": "hi"},
+        {"type": "function_call", "call_id": "c1", "name": "catalog.lookup.item", "arguments": "{}"},
+        {"type": "function_call_output", "call_id": "c1", "output": "{}"},
+        {"type": "function_call", "call_id": "c2", "name": "", "arguments": "{}"},
+    ]
+    assert _extract_canonical_tool_names_from_responses_input(input_items) == ["catalog.lookup.item"]
+
+
+def test_historical_only_function_name_included_in_mapping() -> None:
+    input_items = [
+        {"type": "function_call", "call_id": "c1", "name": "catalog.lookup.item", "arguments": "{}"},
+    ]
+    _, mapping = _prepare_responses_tools_and_mapping([], input_items=input_items)
+    assert mapping.to_provider("catalog.lookup.item") == "catalog_lookup_item"
+
+
+def test_current_planner_round_with_historical_business_tool_serializes() -> None:
+    client = MagicMock()
+    client.responses.create.return_value = _mock_create_response(output_text="ok")
+    adapter = _capture_create_client(client)
+
+    adapter.generate_with_tools(
+        _history_with_function_call("catalog.lookup.item"),
+        _PLANNER_ROUND_TOOL,
+        run_id="r-multi-1",
+    )
+
+    create_kwargs = client.responses.create.call_args.kwargs
+    assert [tool["name"] for tool in create_kwargs["tools"]] == ["intergrax_planner_round"]
+    function_calls = [item for item in create_kwargs["input"] if item.get("type") == "function_call"]
+    assert len(function_calls) == 1
+    assert function_calls[0]["name"] == "catalog_lookup_item"
+
+
+def test_multiple_historical_tools_all_map_while_current_stays_planner_only() -> None:
+    client = MagicMock()
+    client.responses.create.return_value = _mock_create_response(output_text="ok")
+    adapter = _capture_create_client(client)
+
+    history = [
+        ChatMessage(role="user", content="investigate"),
+        ChatMessage(
+            role="assistant",
+            content="",
+            tool_calls=[
+                {
+                    "id": "call_w",
+                    "type": "function",
+                    "function": {"name": "catalog.workload.read", "arguments": "{}"},
+                },
+                {
+                    "id": "call_a",
+                    "type": "function",
+                    "function": {"name": "catalog.staffing.attendance.read", "arguments": "{}"},
+                },
+                {
+                    "id": "call_t",
+                    "type": "function",
+                    "function": {"name": "catalog.telemetry.read", "arguments": "{}"},
+                },
+            ],
+        ),
+        ChatMessage(role="tool", content="{}", tool_call_id="call_w", name="catalog.workload.read"),
+        ChatMessage(role="tool", content="{}", tool_call_id="call_a", name="catalog.staffing.attendance.read"),
+        ChatMessage(role="tool", content="{}", tool_call_id="call_t", name="catalog.telemetry.read"),
+        ChatMessage(role="user", content="plan next"),
+    ]
+
+    adapter.generate_with_tools(history, _PLANNER_ROUND_TOOL, run_id="r-multi-2")
+
+    create_kwargs = client.responses.create.call_args.kwargs
+    assert [tool["name"] for tool in create_kwargs["tools"]] == ["intergrax_planner_round"]
+    mapped_names = [
+        item["name"]
+        for item in create_kwargs["input"]
+        if item.get("type") == "function_call"
+    ]
+    assert mapped_names == [
+        "catalog_workload_read",
+        "catalog_staffing_attendance_read",
+        "catalog_telemetry_read",
+    ]
+
+
+def test_current_and_history_sanitization_collision_maps_reversibly() -> None:
+    current_tools = [
+        {"type": "function", "function": {"name": "a.b", "parameters": {"type": "object"}}},
+    ]
+    input_items = [
+        {"type": "function_call", "call_id": "c1", "name": "a_b", "arguments": "{}"},
+    ]
+    provider_tools, mapping = _prepare_responses_tools_and_mapping(
+        current_tools,
+        input_items=input_items,
+    )
+    assert mapping.to_provider("a_b") == "a_b"
+    assert mapping.to_provider("a.b") != "a_b"
+    assert provider_tools[0]["name"] == mapping.to_provider("a.b")
+    assert mapping.to_canonical(mapping.to_provider("a.b")) == "a.b"
+    assert mapping.to_canonical("a_b") == "a_b"
+
+
+def test_historical_long_canonical_name_uses_same_truncation_algorithm() -> None:
+    long_name = "catalog." + ("segment." * 20) + "read"
+    assert len(long_name) > 64
+    input_items = [
+        {"type": "function_call", "call_id": "c1", "name": long_name, "arguments": "{}"},
+    ]
+    _, mapping = _prepare_responses_tools_and_mapping([], input_items=input_items)
+    provider_name = mapping.to_provider(long_name)
+    assert len(provider_name) <= 64
+    assert mapping.to_canonical(provider_name) == long_name
+
+
+def test_empty_current_tools_still_maps_historical_function_calls() -> None:
+    client = MagicMock()
+    client.responses.create.return_value = _mock_create_response(output_text="final")
+    adapter = _capture_create_client(client)
+
+    adapter.generate_with_tools(
+        _history_with_function_call("catalog.lookup.item"),
+        [],
+        run_id="r-empty-tools",
+    )
+
+    create_kwargs = client.responses.create.call_args.kwargs
+    assert create_kwargs["tools"] == []
+    function_calls = [item for item in create_kwargs["input"] if item.get("type") == "function_call"]
+    assert function_calls[0]["name"] == "catalog_lookup_item"
+
+
+def test_same_name_in_current_and_history_has_single_mapping_entry() -> None:
+    tools = _CATALOG_LOOKUP_TOOL
+    input_items = [
+        {"type": "function_call", "call_id": "c1", "name": "catalog.lookup.item", "arguments": "{}"},
+    ]
+    _, mapping = _prepare_responses_tools_and_mapping(tools, input_items=input_items)
+    assert list(mapping.canonical_to_provider.keys()).count("catalog.lookup.item") == 1
+    assert mapping.to_provider("catalog.lookup.item") == "catalog_lookup_item"
+
+
+def test_tool_name_mapping_has_no_state_leakage_between_requests() -> None:
+    first_input = [
+        {"type": "function_call", "call_id": "c1", "name": "catalog.lookup.item", "arguments": "{}"},
+    ]
+    second_input = [
+        {"type": "function_call", "call_id": "c2", "name": "catalog.telemetry.read", "arguments": "{}"},
+    ]
+    _, first_mapping = _prepare_responses_tools_and_mapping([], input_items=first_input)
+    _, second_mapping = _prepare_responses_tools_and_mapping([], input_items=second_input)
+
+    assert "catalog.telemetry.read" not in first_mapping.canonical_to_provider
+    assert "catalog.lookup.item" not in second_mapping.canonical_to_provider
+
+
+def test_multi_turn_round_two_reaches_responses_create_without_mapping_error() -> None:
+    """Integration-style fake client reproducing DS-E2E-12 round-2 schema shrink."""
+    client = MagicMock()
+    client.responses.create.return_value = _mock_create_response(output_text="planned")
+
+    adapter = _capture_create_client(client)
+
+    adapter.generate_with_tools(
+        _history_with_function_call("production.staffing.attendance.read"),
+        _PLANNER_ROUND_TOOL,
+        run_id="r-round-2",
+    )
+
+    assert client.responses.create.called
+    create_kwargs = client.responses.create.call_args.kwargs
+    assert create_kwargs["tools"][0]["name"] == "intergrax_planner_round"
+    historical_call = next(
+        item for item in create_kwargs["input"] if item.get("type") == "function_call"
+    )
+    assert historical_call["name"] == "production_staffing_attendance_read"
+
+
+def test_apply_tool_name_mapping_to_responses_input_preserves_function_call_output() -> None:
+    mapping = _OpenAIToolNameMapping(["catalog.lookup.item"])
+    input_items = [
+        {"type": "function_call", "call_id": "c1", "name": "catalog.lookup.item", "arguments": "{}"},
+        {"type": "function_call_output", "call_id": "c1", "output": "{}"},
+    ]
+    mapped = _apply_tool_name_mapping_to_responses_input(input_items, mapping)
+    assert mapped[0]["name"] == "catalog_lookup_item"
+    assert mapped[1] == {"type": "function_call_output", "call_id": "c1", "output": "{}"}

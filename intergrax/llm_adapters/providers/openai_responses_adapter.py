@@ -183,6 +183,67 @@ def _extract_canonical_tool_names(tools_schema: Sequence[Dict[str, Any]]) -> Lis
     return names
 
 
+def _extract_canonical_tool_names_from_responses_input(
+    input_items: Sequence[Dict[str, Any]],
+) -> List[str]:
+    """Deterministic first-seen canonical names from function_call input items."""
+    seen: set[str] = set()
+    names: List[str] = []
+    for item in input_items:
+        if (
+            isinstance(item, dict)
+            and item.get("type") == "function_call"
+            and isinstance(item.get("name"), str)
+            and item["name"]
+        ):
+            name = item["name"]
+            if name not in seen:
+                seen.add(name)
+                names.append(name)
+    return names
+
+
+def _extract_tool_choice_canonical_name(
+    tool_choice: Union[str, Dict[str, Any]] | None,
+) -> str | None:
+    if tool_choice is None or isinstance(tool_choice, str):
+        return None
+    if (
+        isinstance(tool_choice, dict)
+        and tool_choice.get("type") == "function"
+        and isinstance(tool_choice.get("name"), str)
+        and tool_choice["name"]
+    ):
+        return tool_choice["name"]
+    return None
+
+
+def _build_request_canonical_tool_names(
+    tools_schema: Sequence[Dict[str, Any]],
+    input_items: Sequence[Dict[str, Any]],
+    tool_choice: Union[str, Dict[str, Any]] | None = None,
+) -> List[str]:
+    """Union of current callable, historical function_call, and forced-choice names."""
+    names: List[str] = []
+    seen: set[str] = set()
+
+    for name in _extract_canonical_tool_names(tools_schema):
+        if name not in seen:
+            seen.add(name)
+            names.append(name)
+
+    for name in _extract_canonical_tool_names_from_responses_input(input_items):
+        if name not in seen:
+            seen.add(name)
+            names.append(name)
+
+    forced_name = _extract_tool_choice_canonical_name(tool_choice)
+    if forced_name is not None and forced_name not in seen:
+        names.append(forced_name)
+
+    return names
+
+
 def _apply_tool_name_mapping_to_responses_tools(
     mapped_tools: Sequence[Dict[str, Any]],
     name_mapping: _OpenAIToolNameMapping,
@@ -240,9 +301,17 @@ def _apply_tool_name_mapping_to_responses_input(
 
 def _prepare_responses_tools_and_mapping(
     tools_schema: Sequence[Dict[str, Any]],
+    *,
+    input_items: Sequence[Dict[str, Any]] | None = None,
+    tool_choice: Union[str, Dict[str, Any]] | None = None,
 ) -> tuple[List[Dict[str, Any]], _OpenAIToolNameMapping]:
     mapped_tools = _map_tools_to_responses_api(tools_schema)
-    name_mapping = _OpenAIToolNameMapping(_extract_canonical_tool_names(tools_schema))
+    canonical_names = _build_request_canonical_tool_names(
+        tools_schema,
+        input_items or [],
+        tool_choice,
+    )
+    name_mapping = _OpenAIToolNameMapping(canonical_names)
     provider_tools = _apply_tool_name_mapping_to_responses_tools(mapped_tools, name_mapping)
     return provider_tools, name_mapping
 
@@ -605,11 +674,14 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 in_tok = 0
 
             mapped = self._map_messages_to_openai(messages)
+            input_items_raw = self._messages_to_responses_input(mapped)
             responses_tools, tool_name_mapping = _prepare_responses_tools_and_mapping(
-                tools_schema
+                tools_schema,
+                input_items=input_items_raw,
+                tool_choice=tool_choice,
             )
             input_items = _apply_tool_name_mapping_to_responses_input(
-                self._messages_to_responses_input(mapped),
+                input_items_raw,
                 tool_name_mapping,
             )
             payload: Dict[str, Any] = dict(
@@ -780,11 +852,14 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
         try:
             mapped = self._map_messages_to_openai(messages)
+            input_items_raw = self._messages_to_responses_input(mapped)
             responses_tools, tool_name_mapping = _prepare_responses_tools_and_mapping(
-                tools_schema
+                tools_schema,
+                input_items=input_items_raw,
+                tool_choice=tool_choice,
             )
             input_items = _apply_tool_name_mapping_to_responses_input(
-                self._messages_to_responses_input(mapped),
+                input_items_raw,
                 tool_name_mapping,
             )
 
