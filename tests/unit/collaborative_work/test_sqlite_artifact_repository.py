@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import threading
 from datetime import UTC, datetime, timedelta
@@ -36,6 +37,7 @@ from intergrax.collaborative_work.repository import (
 from intergrax.collaborative_work.serialization import (
     published_work_artifact_version_from_json,
     published_work_artifact_version_to_json,
+    work_artifact_version_from_json,
     work_artifact_version_to_json,
 )
 from intergrax.collaborative_work.sqlite_repository import SQLiteArtifactPublicationRepository
@@ -43,6 +45,13 @@ from intergrax.contracts.collaborative_work import (
     ArtifactContentRef,
     CollaborativeWorkArtifactInvariantError,
 )
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
+from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 
 pytestmark = pytest.mark.unit
 
@@ -99,6 +108,17 @@ def _content_ref(**overrides: object) -> ArtifactContentRef:
     }
     payload.update(overrides)
     return ArtifactContentRef.model_validate(payload)
+
+
+def _execution(**overrides: object) -> ExecutionProvenanceRef:
+    payload = {
+        "task_id": mint_task_id(),
+        "run_id": mint_run_id(),
+        "attempt_id": mint_attempt_id(),
+        "execution_id": mint_execution_id(),
+    }
+    payload.update(overrides)
+    return ExecutionProvenanceRef(**payload)
 
 
 def _create_command(**overrides: object) -> CreateArtifactWithInitialVersionCommand:
@@ -645,6 +665,220 @@ def test_publication_result_serialization_round_trip() -> None:
     encoded = published_work_artifact_version_to_json(result)
     decoded = published_work_artifact_version_from_json(encoded)
     assert decoded == result
+
+
+def test_work_artifact_version_from_json_rejects_unknown_top_level_field(
+    publication_repo: ArtifactPublicationRepository,
+) -> None:
+    created = publication_repo.create_artifact_with_initial_version(_create_command())
+    payload = json.loads(work_artifact_version_to_json(created.version))
+    payload["unexpected"] = True
+    with pytest.raises(ValidationError):
+        work_artifact_version_from_json(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+
+
+def test_published_work_artifact_version_from_json_rejects_unknown_top_level_field(
+    publication_repo: ArtifactPublicationRepository,
+) -> None:
+    created = publication_repo.create_artifact_with_initial_version(_create_command())
+    payload = json.loads(published_work_artifact_version_to_json(created))
+    payload["unexpected"] = True
+    with pytest.raises(ValidationError):
+        published_work_artifact_version_from_json(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")),
+        )
+
+
+def test_published_work_artifact_version_from_json_rejects_nested_extra_field(
+    publication_repo: ArtifactPublicationRepository,
+) -> None:
+    created = publication_repo.create_artifact_with_initial_version(_create_command())
+    payload = json.loads(published_work_artifact_version_to_json(created))
+    payload["version"]["unexpected"] = True
+    with pytest.raises(ValidationError):
+        published_work_artifact_version_from_json(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")),
+        )
+
+
+def test_execution_provenance_sqlite_round_trip_and_strict_read(
+    publication_repo: ArtifactPublicationRepository,
+    version_repo: WorkArtifactVersionRepository,
+    db_path: str,
+) -> None:
+    execution = _execution()
+    created = publication_repo.create_artifact_with_initial_version(_create_command(execution=execution))
+    loaded = version_repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        work_artifact_version_id=_VERSION_1,
+    )
+    assert loaded == created.version
+    assert loaded is not None and loaded.execution == execution
+
+    connection = sqlite3.connect(db_path)
+    row = connection.execute(
+        """
+        SELECT record_json FROM work_artifact_versions
+        WHERE tenant_id = ? AND workspace_id = ? AND work_artifact_version_id = ?
+        """,
+        (_TENANT_A, _WORKSPACE_A, _VERSION_1),
+    ).fetchone()
+    assert row is not None
+    corrupted = json.loads(row[0])
+    assert corrupted["execution"] is not None
+    corrupted["execution"]["unexpected"] = "value"
+    connection.execute(
+        """
+        UPDATE work_artifact_versions
+        SET record_json = ?
+        WHERE tenant_id = ? AND workspace_id = ? AND work_artifact_version_id = ?
+        """,
+        (
+            json.dumps(corrupted, sort_keys=True, separators=(",", ":")),
+            _TENANT_A,
+            _WORKSPACE_A,
+            _VERSION_1,
+        ),
+    )
+    connection.commit()
+    connection.close()
+
+    with pytest.raises(ValidationError):
+        version_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_version_id=_VERSION_1,
+        )
+
+
+def test_sqlite_corrupt_version_record_json_fails_closed_on_get(
+    publication_repo: ArtifactPublicationRepository,
+    version_repo: WorkArtifactVersionRepository,
+    db_path: str,
+) -> None:
+    publication_repo.create_artifact_with_initial_version(_create_command())
+
+    connection = sqlite3.connect(db_path)
+    row = connection.execute(
+        """
+        SELECT record_json FROM work_artifact_versions
+        WHERE tenant_id = ? AND workspace_id = ? AND work_artifact_version_id = ?
+        """,
+        (_TENANT_A, _WORKSPACE_A, _VERSION_1),
+    ).fetchone()
+    assert row is not None
+    corrupted = json.loads(row[0])
+    corrupted["unexpected"] = True
+    connection.execute(
+        """
+        UPDATE work_artifact_versions
+        SET record_json = ?
+        WHERE tenant_id = ? AND workspace_id = ? AND work_artifact_version_id = ?
+        """,
+        (
+            json.dumps(corrupted, sort_keys=True, separators=(",", ":")),
+            _TENANT_A,
+            _WORKSPACE_A,
+            _VERSION_1,
+        ),
+    )
+    connection.commit()
+    connection.close()
+
+    with pytest.raises(ValidationError):
+        version_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_version_id=_VERSION_1,
+        )
+
+
+def test_sqlite_corrupt_idempotency_result_json_fails_closed_on_replay(
+    publication_repo: ArtifactPublicationRepository,
+    db_path: str,
+) -> None:
+    command = _create_command(idempotency_key="create-idem")
+    publication_repo.create_artifact_with_initial_version(command)
+
+    connection = sqlite3.connect(db_path)
+    row = connection.execute(
+        """
+        SELECT result_json FROM collaborative_idempotency
+        WHERE tenant_id = ? AND workspace_id = ? AND entity_kind = ? AND idempotency_key = ?
+        """,
+        (_TENANT_A, _WORKSPACE_A, "artifact.create", "create-idem"),
+    ).fetchone()
+    assert row is not None
+    corrupted = json.loads(row[0])
+    corrupted["unexpected"] = True
+    connection.execute(
+        """
+        UPDATE collaborative_idempotency
+        SET result_json = ?
+        WHERE tenant_id = ? AND workspace_id = ? AND entity_kind = ? AND idempotency_key = ?
+        """,
+        (
+            json.dumps(corrupted, sort_keys=True, separators=(",", ":")),
+            _TENANT_A,
+            _WORKSPACE_A,
+            "artifact.create",
+            "create-idem",
+        ),
+    )
+    connection.commit()
+    connection.close()
+
+    reopened = _reopen(db_path)
+    try:
+        with pytest.raises(ValidationError):
+            reopened.publication.create_artifact_with_initial_version(command)
+    finally:
+        reopened.close()
+
+
+def test_sqlite_corrupt_publish_idempotency_nested_field_fails_closed_on_replay(
+    publication_repo: ArtifactPublicationRepository,
+    db_path: str,
+) -> None:
+    _seed_initial(publication_repo)
+    command = _publish_command(idempotency_key="publish-idem")
+    publication_repo.publish_version(command)
+
+    connection = sqlite3.connect(db_path)
+    row = connection.execute(
+        """
+        SELECT result_json FROM collaborative_idempotency
+        WHERE tenant_id = ? AND workspace_id = ? AND entity_kind = ? AND idempotency_key = ?
+        """,
+        (_TENANT_A, _WORKSPACE_A, "artifact.publish", "publish-idem"),
+    ).fetchone()
+    assert row is not None
+    corrupted = json.loads(row[0])
+    corrupted["artifact"]["unexpected"] = True
+    connection.execute(
+        """
+        UPDATE collaborative_idempotency
+        SET result_json = ?
+        WHERE tenant_id = ? AND workspace_id = ? AND entity_kind = ? AND idempotency_key = ?
+        """,
+        (
+            json.dumps(corrupted, sort_keys=True, separators=(",", ":")),
+            _TENANT_A,
+            _WORKSPACE_A,
+            "artifact.publish",
+            "publish-idem",
+        ),
+    )
+    connection.commit()
+    connection.close()
+
+    reopened = _reopen(db_path)
+    try:
+        with pytest.raises(ValidationError):
+            reopened.publication.publish_version(command)
+    finally:
+        reopened.close()
 
 
 def test_publish_idempotency_conflict(publication_repo: ArtifactPublicationRepository) -> None:
