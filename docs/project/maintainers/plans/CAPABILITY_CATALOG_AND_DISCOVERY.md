@@ -239,7 +239,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AC-4 marketplace-not-required tests; air-gapped deployment without marketplace. |
 | **Completion criteria** | Marketplace lists capabilities via federated sources; lifecycle operations route to domain authorities only. |
 | **Depends on** | Stages 2, 5. |
-| **Maturity** | **Implemented — awaiting independent audit** — typed product contracts at `intergrax/contracts/marketplace/` and read-only product layer at `intergrax/marketplace/` (`MarketplaceCapabilityListing`, `MarketplaceCapabilityCatalogSource`, `MarketplaceCatalogService`); official (`OFFICIAL`) and enterprise-private (`ENTERPRISE_PRIVATE`) marketplace sources; federation through existing `FederatedCapabilityCatalog`; commercial metadata display-only; architecture gates for Forbidden flows 1 and 3; no billing, checkout, install, or registry mutation. |
+| **Maturity** | **Implemented / independently verified** — typed product contracts at `intergrax/contracts/marketplace/` and read-only product layer at `intergrax/marketplace/` (`MarketplaceCapabilityListing`, `MarketplaceCapabilityCatalogSource`, `MarketplaceCatalogService`); official (`OFFICIAL`) and enterprise-private (`ENTERPRISE_PRIVATE`) marketplace sources; federation through existing `FederatedCapabilityCatalog`; commercial metadata display-only; architecture gates for Forbidden flows 1 and 3; no billing, checkout, install, or registry mutation. |
 
 ---
 
@@ -256,7 +256,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | No change to default in-process bootstrap without explicit host profile opt-in. |
 | **Completion criteria** | Published assessment + go/no-go criteria for isolation providers; roadmap item with explicit dependencies. |
 | **Depends on** | Stage 11 optional (public third-party growth). |
-| **Maturity** | **Implemented assessment — awaiting independent audit** — threat model and isolation boundary frozen in [ADR-SEC-002](../../technical/adr/entries/2026-09-07/ADR-SEC-002.md); go/no-go criteria for future isolation providers; two-plane model (package loading vs runtime execution); catalog/marketplace explicitly not enforcement authority; no runtime/bootstrap change; no `execution_posture` schema until reuse threshold met. |
+| **Maturity** | **Implemented / independently verified** — threat model and isolation boundary frozen in [ADR-SEC-002](../../technical/adr/entries/2026-09-07/ADR-SEC-002.md); go/no-go criteria for future isolation providers; two-plane model (package loading vs runtime execution); catalog/marketplace explicitly not enforcement authority; no runtime/bootstrap change; no `execution_posture` schema until reuse threshold met. |
 
 ---
 
@@ -273,7 +273,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Runtime execution tests without billing side effects. |
 | **Completion criteria** | Metering consumer can attribute usage to source-qualified capability identity; billing subsystem remains separate. |
 | **Depends on** | Stages 2, 5; optional Stage 11 for publisher metadata richness. |
-| **Maturity** | **Implemented — awaiting independent audit** — typed `CapabilityUsageEvent`, explicit attribution recorder/consumer substrate, no registry prices, no billing subsystem; runtime automatic emission not wired (execution boundary lacks canonical provenance handoff). |
+| **Maturity** | **Implemented / independently verified** — typed `CapabilityUsageEvent`, explicit attribution recorder/consumer substrate, no registry prices, no billing subsystem; runtime automatic emission not wired (execution boundary lacks canonical provenance handoff). |
 
 ---
 
@@ -290,7 +290,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Full AW acceptance suite; AC-4 E2E; Tier-3 composition gate. |
 | **Completion criteria** | Reference proof demonstrating full loop on harness with federated catalog; no forbidden flows in trace. |
 | **Depends on** | Stages 5, 8, 9, 10 (minimum). |
-| **Maturity** | **Implemented — awaiting independent audit** — reference proof demonstrating full loop on harness with federated catalog; no forbidden flows in trace. |
+| **Maturity** | **Implemented / independently verified** — reference proof demonstrating full loop on harness with federated catalog; no forbidden flows in trace. |
 
 ---
 
@@ -342,9 +342,9 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 | 8 | Adaptive Unit-of-Work discovery | Implemented |
 | 9 | Autonomous Work bridge | **Implemented** |
 | 10 | Bootstrap evidence | Implemented |
-| 11 | Marketplace product surface | Implemented — awaiting independent audit |
-| 12 | Isolation / external execution | Implemented — awaiting independent audit |
-| 13 | Usage metering | Implemented — awaiting independent audit |
-| 14 | Full autonomous worker integration | **Implemented — awaiting independent audit** |
+| 11 | Marketplace product surface | Implemented / independently verified |
+| 12 | Isolation / external execution | Implemented / independently verified |
+| 13 | Usage metering | Implemented / independently verified |
+| 14 | Full autonomous worker integration | **Implemented / independently verified** |
 
-**Capability Catalog & Discovery V1 program:** Stages 1–14 implemented — awaiting independent audit on exact SHA (Stages 1–13 remain closed per prior acceptance).
+**Capability Catalog & Discovery V1 program:** Stages 1–14 implemented and program-qualified on `development` — **awaiting final independent program audit** (not V1 CLOSED). See [CAPABILITY_CATALOG_V1_FINAL_AUDIT.md](../audits/CAPABILITY_CATALOG_V1_FINAL_AUDIT.md).

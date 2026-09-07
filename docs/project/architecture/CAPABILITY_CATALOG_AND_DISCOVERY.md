@@ -38,14 +38,14 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 
 **A. Frozen architecture (this document).** Capability Catalog is a **pure federating consumer**. AC-4 (agent acquisition) and AW-7A (worker capability recovery) remain **separate mechanisms** that may share lower-level primitives only where reuse is real. No `UniversalCapabilityEngine`, no `UniversalRegistry`, no merged `AgentRegistry` / `SkillRegistry` / `ToolRegistry`.
 
-**B. Existing reusable implementation.** Platform Plugins (packaging, discovery primitives, trust/qualification vocabulary), Agent Distribution discovery/acquisition (AC-4), Tool selection layers, SkillResolver, domain registries, `wire_application_environment()` Tier-3 composition, AW-7A policy adapters (in progress).
+**B. Existing reusable implementation.** Platform Plugins (packaging, discovery primitives, trust/qualification vocabulary), Agent Distribution discovery/acquisition (AC-4), Tool selection layers, SkillResolver, domain registries, `wire_application_environment()` Tier-3 composition, AW-7A policy adapters, federated Capability Catalog (Stages 1–8), Marketplace product surface (Stage 11), usage metering substrate (Stage 13), and Stage-14 reference closed-loop proof.
 
-**C. Missing / planned.** Federated Capability Catalog read model across Agent + Skill + Tool, cross-domain ranking utilities, private enterprise catalog sources for Tool/Skill, third-party isolation beyond trusted in-process, monetization/metering product surfaces.
+**C. Implemented V1 program (Stages 1–14).** Federated catalog read model across Agent + Skill + Tool, cross-domain ranking and governance, private enterprise catalog sources for Tool/Skill, usage metering contracts/substrate, and Marketplace read surface — all implemented under domain-owned lifecycle authorities. Third-party isolation beyond trusted in-process remains **future roadmap** per [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md).
 
-**D. Future product surfaces.** Public/private Marketplace is a **product layer above** federated discovery — presentation, publisher metadata, pricing metadata, availability — not runtime or lifecycle authority.
+**D. Product surfaces above catalog.** Public/private Marketplace remains a **product layer above** federated discovery — presentation, publisher metadata, pricing metadata (display-only), availability — not runtime or lifecycle authority.
 
 > [!NOTE]
-> **Maturity boundary:** Frozen architecture documentation is **not** equivalent to shipped federated catalog federation or Marketplace product rollout. AC-4 agent discovery/acquisition is **implemented and frozen** for reference production V1 under Agent Distribution; cross-domain Capability Catalog federation is **planned**.
+> **Maturity boundary:** Capability Catalog & Discovery V1 Stages 1–14 are **implemented and program-qualified** on `development` — see [final program audit](../maintainers/audits/CAPABILITY_CATALOG_V1_FINAL_AUDIT.md). This is **not** final independent program closure. AC-4 agent discovery/acquisition remains **implemented and frozen** under Agent Distribution as a **separate** authority from AW-7A.
 
 **Primary audience:** CTOs, principal/staff engineers, software architects, and AI platform engineers evaluating how Intergrax separates capability discovery from domain lifecycle and execution.
 
@@ -66,7 +66,7 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 | **AC-4** | Agent acquisition discovery plane — **separate from AW-7A** |
 | **AW-7A** | Worker obstacle → tool/skill discovery → bounded decision — **separate from AC-4** |
 | **Marketplace** | Product surface above catalog — **not runtime** |
-| **Maturity** | Architecture frozen; federation and cross-domain maturity **planned** — see [Current reality](#current-reality--maturity-boundary) |
+| **Maturity** | Stages 1–14 **implemented**; program qualification complete — **awaiting final independent program audit** — see [Current reality](#current-reality--maturity-boundary) |
 | **Go deeper** | [Core mental model](#core-mental-model) · [§Hard invariants](#hard-invariants-normative) · [§Forbidden flows](#forbidden-flows) · [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
 
 ## Core mental model
@@ -305,7 +305,7 @@ bounded decision (A0–A4)
 governed downstream action
 ```
 
-AW-7A is **in progress** under Autonomous Work. It may discover Tools and Skills (and related surfaces per AW plan) but **cannot** directly install, mutate registries, or elevate authority. Durable change:
+AW-7A is **implemented** for V1 reference under Autonomous Work (Stage 9). It may discover Tools and Skills (and related surfaces per AW plan) but **cannot** directly install, mutate registries, or elevate authority. Durable change:
 
 ```text
 AW decision
@@ -438,7 +438,7 @@ Billing and metering are **separate subsystems**.
 - **Do not** embed prices in `ToolRegistry`, `SkillRegistry`, or `AgentRegistry`.
 - **Skill is not** a direct executable invocation surface for metering — tools and agent delegations carry execution semantics.
 
-Selection evidence from AC-4 already anticipates future usage accounting; implementation is **planned**, not shipped.
+Selection evidence from AC-4 already anticipates usage accounting; Stage 13 metering substrate is **implemented** (usage events and attribution — not billing).
 
 ---
 
@@ -742,21 +742,22 @@ UniversalCapabilityEngine
 | Agent Distribution | `CatalogSourceProvider`, trust, AC-3 lifecycle |
 | Tools | `ToolProfile`, selection layers, semantic/hierarchical selection |
 | Skills | `SkillProfile`, `SkillRegistry`, `SkillResolver` |
-| AW-7A | Capability need classification, ordered search policy (in progress) |
+| AW-7A | Capability need classification, ordered search policy (Stage 9 implemented) |
 | Tier-3 | `wire_application_environment()` |
 
-### C. Missing / planned
+### C. Implemented vs future
 
 | Gap | Status |
 |-----|--------|
-| Cross-domain Capability Catalog federation | Planned |
-| Cross-domain ranking shared utilities | Planned (only if reuse proven) |
+| Cross-domain Capability Catalog federation | **Implemented** — Stages 1–2 (`FederatedCapabilityCatalog`) |
+| Cross-domain ranking shared utilities | **Implemented** — Stage 4 (`rank_capability_candidates`) |
 | Skill version pinning | **Implemented** — Skill domain + discovery projection (Stage 6) |
 | Tools/Skills typed bootstrap evidence | **Implemented** — Stage 10 `DomainPluginLoadReport` on `ApplicationPlatformPluginEvidence` |
-| Private enterprise catalog for Tool/Skill | Planned |
+| Private enterprise catalog for Tool/Skill | **Implemented** — Stage 7 private adapters |
 | Third-party isolation beyond in-process | **Assessment complete** — [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md); runtime provider not shipped |
-| Monetization / metering consumer | Future |
+| Monetization / billing consumer | **Future** — Stage 13 metering substrate only (usage ≠ pricing) |
 | Marketplace product surface | **Implemented** — read-only contracts at `intergrax/contracts/marketplace/` and product layer at `intergrax/marketplace/`; federation via existing `FederatedCapabilityCatalog`; no billing, install, or registry mutation |
+| Full AW closed-loop reference proof | **Implemented** — Stage 14 (`WorkStageCapabilityDiscoveryLoopCoordinator`) |
 
 ---
 
