@@ -1320,8 +1320,13 @@ class WorkArtifactVersion(BaseModel):
         if type(value) is ExecutionProvenanceRef:
             return value
         if isinstance(value, dict):
-            required = ("task_id", "run_id", "attempt_id", "execution_id")
-            if not all(key in value for key in required):
+            required_keys = {
+                "task_id",
+                "run_id",
+                "attempt_id",
+                "execution_id",
+            }
+            if set(value.keys()) != required_keys:
                 raise ValueError("execution must be ExecutionProvenanceRef or None")
             return ExecutionProvenanceRef(
                 task_id=value["task_id"],

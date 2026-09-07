@@ -264,22 +264,76 @@ def test_work_artifact_version_execution_created_path() -> None:
     assert version.execution is provenance
 
 
+def _canonical_execution_dict(**overrides: object) -> dict[str, object]:
+    payload = {
+        "task_id": mint_task_id(),
+        "run_id": mint_run_id(),
+        "attempt_id": mint_attempt_id(),
+        "execution_id": mint_execution_id(),
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _version_payload(**overrides: object) -> dict[str, object]:
+    return {
+        **_work_artifact_version().model_dump(mode="python"),
+        **overrides,
+    }
+
+
 @pytest.mark.unit
 def test_work_artifact_version_execution_rejects_invalid_type() -> None:
     with pytest.raises(ValidationError):
         WorkArtifactVersion.model_validate(
-            {
-                **_work_artifact_version().model_dump(mode="python"),
-                "execution": {"task_id": "bad"},
-            },
+            _version_payload(execution={"task_id": "bad"}),
         )
     with pytest.raises(ValidationError):
         WorkArtifactVersion.model_validate(
-            {
-                **_work_artifact_version().model_dump(mode="python"),
-                "execution": "not-provenance",
-            },
+            _version_payload(execution="not-provenance"),
         )
+
+
+@pytest.mark.unit
+def test_work_artifact_version_execution_accepts_canonical_dict() -> None:
+    provenance = _execution()
+    dumped = {
+        "task_id": provenance.task_id,
+        "run_id": provenance.run_id,
+        "attempt_id": provenance.attempt_id,
+        "execution_id": provenance.execution_id,
+    }
+    version = WorkArtifactVersion.model_validate(_version_payload(execution=dumped))
+    assert version.execution == provenance
+
+
+@pytest.mark.unit
+def test_work_artifact_version_execution_rejects_missing_key() -> None:
+    execution = _canonical_execution_dict()
+    del execution["execution_id"]
+    with pytest.raises(ValidationError):
+        WorkArtifactVersion.model_validate(_version_payload(execution=execution))
+
+
+@pytest.mark.unit
+def test_work_artifact_version_execution_rejects_extra_key() -> None:
+    execution = _canonical_execution_dict(unexpected="value")
+    with pytest.raises(ValidationError):
+        WorkArtifactVersion.model_validate(_version_payload(execution=execution))
+
+
+@pytest.mark.unit
+def test_work_artifact_version_execution_rejects_multiple_extra_keys() -> None:
+    execution = _canonical_execution_dict(extra_one="a", extra_two="b")
+    with pytest.raises(ValidationError):
+        WorkArtifactVersion.model_validate(_version_payload(execution=execution))
+
+
+@pytest.mark.unit
+def test_work_artifact_version_execution_wrong_field_value_reaches_provenance_validation() -> None:
+    execution = _canonical_execution_dict(task_id="not-a-valid-task-id")
+    with pytest.raises(ValidationError):
+        WorkArtifactVersion.model_validate(_version_payload(execution=execution))
 
 
 @pytest.mark.unit
