@@ -194,8 +194,8 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 
 Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
 
-**MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**.
-**Current active task:** **COLLAB-WORK-2D** (SQLite durability parity).
+**MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**.
+**Current active task:** **COLLAB-WORK-2E** (PostgreSQL/provider qualification parity).
 
 ---
 
