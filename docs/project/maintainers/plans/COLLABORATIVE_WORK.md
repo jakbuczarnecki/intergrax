@@ -6,7 +6,7 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
-**Current active task:** **COLLAB-WORK-2E** (PostgreSQL/provider qualification parity)
+**Current active task:** **COLLAB-WORK-2F** (execution linkage / Nexus bridge)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -309,7 +309,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2E |
 | **Priority** | P1 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | PostgreSQL/production-qualified repository materialization for WorkItem and Assignment |
 | **Dependencies** | COLLAB-WORK-2D approved; COLLAB-WORK-1J PostgreSQL patterns; provider qualification binding |
 | **Exact scope** | PostgreSQL typed repositories for MP-2 ports; `open_postgresql_collaborative_work_repositories` extension; qualification evidence |
