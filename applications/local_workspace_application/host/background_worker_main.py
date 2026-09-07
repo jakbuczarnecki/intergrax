@@ -7,8 +7,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
+
+from intergrax.integrations.contracts.document_store import DocumentStore
 
 from intergrax.applications._shared.diagnostic_read_wiring import (
     resolve_host_diagnostic_read_dependencies,
@@ -56,6 +59,9 @@ from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
 from local_workspace_application.host.message_bus_wiring import local_workspace_message_bus_enabled
+from local_workspace_application.host.observability_wiring import (
+    resolve_local_workspace_observability_exporter,
+)
 from local_workspace_application.host.reference_lifecycle_input import (
     build_local_workspace_reference_lifecycle_input,
 )
@@ -68,6 +74,12 @@ from local_workspace_application.workspaces.document_store_factory import (
 logger = logging.getLogger(__name__)
 
 _BACKGROUND_WORKER_PROCESS_ROLE = "background_worker"
+
+
+@dataclass(frozen=True, slots=True)
+class LocalWorkspaceWorkerBootstrapDiagnostics:
+    event_publisher: HostedApplicationEventPublisher
+    diagnostic_tenant: HostedDiagnosticTenantBinding
 
 
 @runtime_checkable
@@ -124,6 +136,7 @@ def _build_worker_diagnostic_runtime(
     *,
     registry_projection: MaterializedRegistryProjection,
     settings: LocalWorkspaceBackendSettings,
+    document_store: DocumentStore,
 ) -> HarnessHostRuntime:
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
     return build_harness_host_runtime(
@@ -131,26 +144,37 @@ def _build_worker_diagnostic_runtime(
         manifest.resolved_environment(),
         settings=settings,
         idempotency_db_path=Path(settings.idempotency_db_path),
-        document_store=resolve_lkw_runtime_document_store(settings),
+        document_store=document_store,
         registry_projection=registry_projection,
     )
 
 
-def _build_worker_diagnostic_event_publisher(
+def build_local_workspace_worker_bootstrap_diagnostics(
     *,
     registry_projection: MaterializedRegistryProjection,
     settings: LocalWorkspaceBackendSettings,
-    tenant_binding: HostedDiagnosticTenantBinding,
-) -> HostedApplicationEventPublisher:
+    environment_profile: ApplicationEnvironmentProfile,
+    document_store: DocumentStore,
+) -> LocalWorkspaceWorkerBootstrapDiagnostics:
+    tenant_binding = HostedDiagnosticTenantBinding(
+        tenant_id=environment_profile.profile_id,
+    )
     runtime = _build_worker_diagnostic_runtime(
         registry_projection=registry_projection,
         settings=settings,
+        document_store=document_store,
     )
     dependencies = resolve_host_diagnostic_read_dependencies(runtime)
     orchestrator = build_diagnostic_orchestrator(dependencies)
-    return build_hosted_application_diagnostic_event_publisher(
+    observability_exporter = resolve_local_workspace_observability_exporter(settings)
+    event_publisher = build_hosted_application_diagnostic_event_publisher(
         tenant_binding=tenant_binding,
         orchestrator=orchestrator,
+        observability_exporter=observability_exporter,
+    )
+    return LocalWorkspaceWorkerBootstrapDiagnostics(
+        event_publisher=event_publisher,
+        diagnostic_tenant=tenant_binding,
     )
 
 
@@ -160,6 +184,7 @@ async def _run_guarded_worker_bootstrap(
     event_publisher: HostedApplicationEventPublisher,
     settings: LocalWorkspaceBackendSettings,
     registry_projection: MaterializedRegistryProjection,
+    document_store: DocumentStore,
 ) -> LocalWorkspaceBackgroundWorkerWiring:
     wiring = await run_guarded_hosted_process_bootstrap(
         context=bootstrap_context,
@@ -169,6 +194,7 @@ async def _run_guarded_worker_bootstrap(
             manifest=LOCAL_WORKSPACE_APPLICATION_MANIFEST,
             registry_projection=registry_projection,
             settings=settings,
+            document_store=document_store,
         ),
     )
     logger.info("Starting LKW Kafka background worker for lkw.background_ingest.v1")
@@ -196,24 +222,24 @@ def main() -> int:
         settings,
         environment_profile=environment_profile,
     )
-    tenant_binding = HostedDiagnosticTenantBinding(
-        tenant_id=environment_profile.profile_id,
+    document_store = resolve_lkw_runtime_document_store(settings)
+    bootstrap_diagnostics = build_local_workspace_worker_bootstrap_diagnostics(
+        registry_projection=registry_projection,
+        settings=settings,
+        environment_profile=environment_profile,
+        document_store=document_store,
     )
     bootstrap_context = HostedProcessBootstrapContext.create(
         application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
         process_role=_BACKGROUND_WORKER_PROCESS_ROLE,
     )
-    event_publisher = _build_worker_diagnostic_event_publisher(
-        registry_projection=registry_projection,
-        settings=settings,
-        tenant_binding=tenant_binding,
-    )
     asyncio.run(
         _run_guarded_worker_bootstrap(
             bootstrap_context=bootstrap_context,
-            event_publisher=event_publisher,
+            event_publisher=bootstrap_diagnostics.event_publisher,
             settings=settings,
             registry_projection=registry_projection,
+            document_store=document_store,
         ),
     )
     return 0

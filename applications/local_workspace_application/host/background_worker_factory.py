@@ -23,6 +23,7 @@ from intergrax.background_tasks.registry import TaskRegistry
 from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_worker
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.execution.host_task import HostTaskExecution
@@ -79,10 +80,13 @@ def build_local_workspace_background_worker_wiring(
     manifest: ApplicationManifest,
     registry_projection: MaterializedRegistryProjection,
     settings: LocalWorkspaceBackendSettings | None = None,
+    document_store: DocumentStore | None = None,
 ) -> LocalWorkspaceBackgroundWorkerWiring:
     settings = settings or LocalWorkspaceBackendSettings.from_env()
     environment = manifest.resolved_environment()
-    lkw_document_store = resolve_lkw_runtime_document_store(settings)
+    lkw_document_store = (
+        document_store if document_store is not None else resolve_lkw_runtime_document_store(settings)
+    )
     runtime = build_harness_host_runtime(
         manifest,
         environment,

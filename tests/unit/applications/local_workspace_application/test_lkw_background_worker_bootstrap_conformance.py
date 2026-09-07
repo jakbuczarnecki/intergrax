@@ -11,6 +11,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from intergrax.applications._shared.diagnostic_read_wiring import (
+    build_diagnostic_read_service,
+    resolve_host_diagnostic_read_dependencies,
+)
 from intergrax.applications._shared.hosted_application_diagnostic_wiring import (
     HostedApplicationDiagnosticEventPublisher,
     HostedDiagnosticTenantBinding,
@@ -27,23 +31,36 @@ from intergrax.hosting.contracts.context import HostedApplicationEventPublisher
 from intergrax.hosting.contracts.events import HostedApplicationEvent
 from intergrax.hosting.eventing import ObservabilityHostedApplicationEventPublisher
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
+from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
+    DiagnosticOrchestrationRequest,
+    DiagnosticOrchestrationResult,
+)
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import ProblemOccurrencePersistence
-from intergrax.runtime.observability.export_boundary import InMemoryObservabilityExporter
+from intergrax.runtime.observability.export_boundary import (
+    InMemoryObservabilityExporter,
+    ObservabilityExportEnvelope,
+    ObservabilityExporter,
+)
 from intergrax.runtime.observability.export_policy import ObservabilityExportPolicy
 from local_workspace_application.host.background_worker_factory import (
     LocalWorkspaceBackgroundWorkerWiring,
 )
 from local_workspace_application.host.background_worker_main import (
+    _build_worker_diagnostic_runtime,
     _run_guarded_worker_bootstrap,
     activate_local_workspace_reference_production_authority,
+    build_local_workspace_worker_bootstrap_diagnostics,
 )
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
+from local_workspace_application.workspaces.document_store_factory import (
+    resolve_lkw_runtime_document_store,
+)
 from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
     build_diagnostic_orchestrator_stack_for_tests,
     query_all_problems_for_tenant,
@@ -66,12 +83,21 @@ _FORBIDDEN_IMPORT_SYMBOLS = frozenset(
         "ProblemLifecycleEngine",
         "DeterministicProblemGroupingStrategy",
         "InMemoryProblemPersistence",
+        "NoOpObservabilityExporter",
     },
 )
 _FORBIDDEN_IMPORT_PREFIXES = (
     "intergrax.integrations.providers.message_bus.kafka",
     "intergrax.runtime.diagnostics.problem_lifecycle",
     "intergrax.runtime.diagnostics.deterministic_problem_grouping",
+    "intergrax.runtime.observability.otlp_exporter",
+    "intergrax.runtime.observability.sentry_export_wiring",
+    "intergrax.runtime.observability.elasticsearch_export_wiring",
+)
+_FORBIDDEN_SOURCE_TOKENS = (
+    "OtlpObservabilityExporter",
+    "build_otlp_observability_exporter",
+    "sentry_sdk",
 )
 
 
@@ -153,6 +179,12 @@ def _activated_projection(monkeypatch: pytest.MonkeyPatch):
     return settings, environment_profile, projection
 
 
+def _canonical_document_store(
+    settings: LocalWorkspaceBackendSettings,
+):
+    return resolve_lkw_runtime_document_store(settings)
+
+
 @pytest.mark.asyncio
 async def test_worker_bootstrap_reuses_same_context_for_construction_and_startup(
     monkeypatch: pytest.MonkeyPatch,
@@ -185,6 +217,7 @@ async def test_worker_bootstrap_reuses_same_context_for_construction_and_startup
                 event_publisher=harness.publisher,
                 settings=settings,
                 registry_projection=projection,
+                document_store=_canonical_document_store(settings),
             )
 
     failed_events = _failure_events(harness.published_events)
@@ -217,6 +250,7 @@ async def test_worker_construction_failure_emits_application_failed_with_worker_
                 event_publisher=harness.publisher,
                 settings=settings,
                 registry_projection=projection,
+                document_store=_canonical_document_store(settings),
             )
 
     failed_events = _failure_events(harness.published_events)
@@ -271,6 +305,7 @@ async def test_worker_startup_failure_emits_application_failed_with_startup_phas
                 event_publisher=harness.publisher,
                 settings=settings,
                 registry_projection=projection,
+                document_store=_canonical_document_store(settings),
             )
 
     failed_events = _failure_events(harness.published_events)
@@ -302,6 +337,7 @@ async def test_worker_bootstrap_uses_manifest_application_id_and_product_tenant(
                 event_publisher=harness.publisher,
                 settings=settings,
                 registry_projection=projection,
+                document_store=_canonical_document_store(settings),
             )
 
     failed_events = _failure_events(harness.published_events)
@@ -337,6 +373,7 @@ async def test_worker_bootstrap_preserves_original_exception(
                 event_publisher=harness.publisher,
                 settings=settings,
                 registry_projection=projection,
+                document_store=_canonical_document_store(settings),
             )
 
     assert exc_info.value is original
@@ -373,6 +410,7 @@ async def test_worker_bootstrap_diagnostic_projection_failure_does_not_replace_o
                 event_publisher=harness.publisher,
                 settings=settings,
                 registry_projection=projection,
+                document_store=_canonical_document_store(settings),
             )
 
     assert exc_info.value is original
@@ -410,6 +448,7 @@ async def test_successful_worker_bootstrap_emits_no_failure_event(
             event_publisher=harness.publisher,
             settings=settings,
             registry_projection=projection,
+            document_store=_canonical_document_store(settings),
         )
 
     assert _failure_events(harness.published_events) == []
@@ -421,6 +460,9 @@ def test_worker_main_has_no_execution_identity_imports() -> None:
     tree = ast.parse(source, filename=str(_WORKER_MAIN_PATH))
     rel = _WORKER_MAIN_PATH.relative_to(_REPO_ROOT).as_posix()
     violations: list[str] = []
+    for token in _FORBIDDEN_SOURCE_TOKENS:
+        if token in source:
+            violations.append(f"{rel} references forbidden token {token}")
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
             for prefix in _FORBIDDEN_IMPORT_PREFIXES:
@@ -441,12 +483,205 @@ def test_worker_main_uses_canonical_diagnostic_composition_surface() -> None:
     source = _WORKER_MAIN_PATH.read_text(encoding="utf-8")
     assert "build_hosted_application_diagnostic_event_publisher" in source
     assert "build_diagnostic_orchestrator" in source
+    assert "resolve_local_workspace_observability_exporter" in source
+    assert "build_local_workspace_worker_bootstrap_diagnostics" in source
+    assert "resolve_lkw_runtime_document_store" in source
     assert "run_guarded_hosted_process_bootstrap" in source
     assert "HostedProcessBootstrapPhase.WORKER_CONSTRUCTION" in source
     assert "HostedProcessBootstrapPhase.STARTUP" in source
     assert "LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id" in source
     assert "WorkerDiagnosticPublisher" not in source
     assert "LkwWorkerDiagnosticPublisher" not in source
+
+
+class _OrderRecordingObservabilityExporter(InMemoryObservabilityExporter):
+    def __init__(self, order: list[str]) -> None:
+        super().__init__()
+        self._order = order
+
+    async def export(self, envelope: ObservabilityExportEnvelope) -> None:
+        self._order.append("observability")
+        await super().export(envelope)
+
+
+class _OrderRecordingDiagnosticOrchestrator:
+    def __init__(self, order: list[str], orchestrator: DiagnosticOrchestrator) -> None:
+        self._order = order
+        self._orchestrator = orchestrator
+
+    def run(self, request: DiagnosticOrchestrationRequest) -> DiagnosticOrchestrationResult:
+        self._order.append("diagnostics")
+        return self._orchestrator.run(request)
+
+
+def test_worker_bootstrap_diagnostics_passes_explicit_observability_exporter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings, environment_profile, projection = _activated_projection(monkeypatch)
+    document_store = _canonical_document_store(settings)
+    recording_exporter = InMemoryObservabilityExporter()
+    captured: list[ObservabilityExporter | None] = []
+
+    def _capture_build(
+        *,
+        tenant_binding: HostedDiagnosticTenantBinding,
+        orchestrator: DiagnosticOrchestrator,
+        observability_exporter: ObservabilityExporter | None = None,
+        observability_policy: ObservabilityExportPolicy | None = None,
+    ) -> HostedApplicationEventPublisher:
+        captured.append(observability_exporter)
+        return build_hosted_application_diagnostic_event_publisher(
+            tenant_binding=tenant_binding,
+            orchestrator=orchestrator,
+            observability_exporter=observability_exporter,
+            observability_policy=observability_policy,
+        )
+
+    monkeypatch.setattr(
+        "local_workspace_application.host.background_worker_main.build_hosted_application_diagnostic_event_publisher",
+        _capture_build,
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.host.background_worker_main.resolve_local_workspace_observability_exporter",
+        lambda _settings: recording_exporter,
+    )
+
+    bootstrap = build_local_workspace_worker_bootstrap_diagnostics(
+        registry_projection=projection,
+        settings=settings,
+        environment_profile=environment_profile,
+        document_store=document_store,
+    )
+
+    assert captured == [recording_exporter]
+    assert isinstance(bootstrap.event_publisher, HostedApplicationDiagnosticEventPublisher)
+
+
+@pytest.mark.asyncio
+async def test_worker_bootstrap_observability_export_precedes_diagnostic_orchestration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings, environment_profile, projection = _activated_projection(monkeypatch)
+    document_store = _canonical_document_store(settings)
+    order: list[str] = []
+    built_orchestrator, _, _, _ = build_diagnostic_orchestrator_stack_for_tests()
+    recording_orchestrator = _OrderRecordingDiagnosticOrchestrator(order, built_orchestrator)
+    recording_exporter = _OrderRecordingObservabilityExporter(order)
+
+    monkeypatch.setattr(
+        "local_workspace_application.host.background_worker_main.build_diagnostic_orchestrator",
+        lambda _dependencies: recording_orchestrator,
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.host.background_worker_main.resolve_local_workspace_observability_exporter",
+        lambda _settings: recording_exporter,
+    )
+
+    publisher = build_local_workspace_worker_bootstrap_diagnostics(
+        registry_projection=projection,
+        settings=settings,
+        environment_profile=environment_profile,
+        document_store=document_store,
+    ).event_publisher
+    bootstrap_context = HostedProcessBootstrapContext.create(
+        application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
+        process_role=_PROCESS_ROLE,
+    )
+
+    with patch(
+        "local_workspace_application.host.background_worker_main.build_local_workspace_background_worker_wiring",
+        side_effect=TypeError("create_kafka_worker composition failure"),
+    ):
+        with pytest.raises(TypeError, match="create_kafka_worker composition failure"):
+            await _run_guarded_worker_bootstrap(
+                bootstrap_context=bootstrap_context,
+                event_publisher=publisher,
+                settings=settings,
+                registry_projection=projection,
+                document_store=document_store,
+            )
+
+    assert order[:2] == ["observability", "diagnostics"]
+    assert len(recording_exporter.envelopes) == 1
+
+
+def test_worker_bootstrap_diagnostic_and_worker_runtime_share_canonical_document_store(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings, environment_profile, projection = _activated_projection(monkeypatch)
+    resolved_once = _canonical_document_store(settings)
+    resolved_again = _canonical_document_store(settings)
+    assert resolved_once is not resolved_again
+
+    diagnostic_runtime = _build_worker_diagnostic_runtime(
+        registry_projection=projection,
+        settings=settings,
+        document_store=resolved_once,
+    )
+    worker_runtime = _build_worker_diagnostic_runtime(
+        registry_projection=projection,
+        settings=settings,
+        document_store=resolved_once,
+    )
+
+    diagnostic_read = build_diagnostic_read_service(
+        resolve_host_diagnostic_read_dependencies(diagnostic_runtime),
+    )
+    worker_read = build_diagnostic_read_service(
+        resolve_host_diagnostic_read_dependencies(worker_runtime),
+    )
+
+    assert diagnostic_read is not worker_read
+    assert diagnostic_runtime is not worker_runtime
+    assert environment_profile.profile_id
+
+
+@pytest.mark.asyncio
+async def test_worker_bootstrap_b6_failure_problem_visible_via_worker_read_side(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings, environment_profile, projection = _activated_projection(monkeypatch)
+    document_store = _canonical_document_store(settings)
+    recording_exporter = InMemoryObservabilityExporter()
+    monkeypatch.setattr(
+        "local_workspace_application.host.background_worker_main.resolve_local_workspace_observability_exporter",
+        lambda _settings: recording_exporter,
+    )
+    publisher = build_local_workspace_worker_bootstrap_diagnostics(
+        registry_projection=projection,
+        settings=settings,
+        environment_profile=environment_profile,
+        document_store=document_store,
+    ).event_publisher
+    bootstrap_context = HostedProcessBootstrapContext.create(
+        application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
+        process_role=_PROCESS_ROLE,
+    )
+
+    with patch(
+        "local_workspace_application.host.background_worker_main.build_local_workspace_background_worker_wiring",
+        side_effect=TypeError("create_kafka_worker composition failure"),
+    ):
+        with pytest.raises(TypeError, match="create_kafka_worker composition failure"):
+            await _run_guarded_worker_bootstrap(
+                bootstrap_context=bootstrap_context,
+                event_publisher=publisher,
+                settings=settings,
+                registry_projection=projection,
+                document_store=document_store,
+            )
+
+    assert len(recording_exporter.envelopes) == 1
+    worker_runtime = _build_worker_diagnostic_runtime(
+        registry_projection=projection,
+        settings=settings,
+        document_store=document_store,
+    )
+    read_service = build_diagnostic_read_service(
+        resolve_host_diagnostic_read_dependencies(worker_runtime),
+    )
+    listed = read_service.list_problems(tenant_id=environment_profile.profile_id)
+    assert listed.total_count == 1
 
 
 def test_worker_main_publisher_factory_is_host_diag_3() -> None:
