@@ -19,6 +19,7 @@ from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
+from intergrax.applications._shared.harness_host_auxiliary_wiring import HostTaskExecutionExecutor
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
@@ -161,8 +162,8 @@ def create_dispute_sim_backend_app(
 
     if settings.include_interaction_routes:
         interaction_service = wire_interaction_intake_service(
-            nexus_loop,
             interaction_surface=settings.interaction_surface,
+            task_executor=HostTaskExecutionExecutor(host_execution),
             task_enricher=task_enricher,
         )
         app.include_router(

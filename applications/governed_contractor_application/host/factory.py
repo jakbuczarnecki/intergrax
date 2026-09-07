@@ -14,6 +14,7 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
+from intergrax.applications._shared.harness_host_auxiliary_wiring import HostTaskExecutionExecutor
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
@@ -101,8 +102,8 @@ def create_governed_contractor_backend_app(
         enabled=settings.include_scheduler,
     )
     interaction_service = wire_interaction_intake_service(
-        nexus_loop,
         interaction_surface=settings.interaction_surface,
+        task_executor=HostTaskExecutionExecutor(host_execution),
         task_enricher=task_enricher,
     )
 

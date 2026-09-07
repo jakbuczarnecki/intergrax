@@ -160,10 +160,14 @@ def test_debug_interaction_intake_with_verifier():
     secret = "test_signing_secret"
     verifier = SlackSignatureVerifier(signing_secret=secret, enabled=True)
     from intergrax.debug.interaction_service import DebugInteractionIntakeService
+    from intergrax.runtime.interactions.task_executor import NexusLoopTaskExecutor
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
     loop = NexusLoop(registry)
-    service = DebugInteractionIntakeService(nexus_loop=loop, verifier=verifier)
+    service = DebugInteractionIntakeService(
+        task_executor=NexusLoopTaskExecutor(loop),
+        verifier=verifier,
+    )
     app = create_debug_app(registry=registry, interaction_service=service, nexus_loop=loop)
 
     payload = {

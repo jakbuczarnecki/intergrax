@@ -24,6 +24,7 @@ from intergrax.runtime.adaptive.proposal_store import ProposalStore
 from intergrax.runtime.adaptive.signal_store import SignalStore
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.interactions.task_executor import NexusLoopTaskExecutor
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
@@ -84,7 +85,9 @@ def create_debug_app(
     resolved_interaction = interaction_service
     if resolved_interaction is None and registry is not None:
         resolved_interaction = DebugInteractionIntakeService(
-            nexus_loop=resolved_loop,
+            task_executor=(
+                NexusLoopTaskExecutor(resolved_loop) if resolved_loop is not None else None
+            ),
             verifier=create_inbound_verifier(),
         )
 

@@ -11,6 +11,7 @@ from typing import Callable, Optional
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.runtime.interactions.task_executor import NexusLoopTaskExecutor
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.metadata_keys import INTERACTION_CHANNEL_KEY
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
@@ -84,7 +85,7 @@ def create_organization_worker_lab_app(
         notification_adapter=notification_adapter,
     )
     interaction_service = DebugInteractionIntakeService(
-        nexus_loop=nexus_loop,
+        task_executor=NexusLoopTaskExecutor(nexus_loop),
         verifier=create_inbound_verifier(),
         task_enricher=task_enricher,
     )

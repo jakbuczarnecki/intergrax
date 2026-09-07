@@ -13,6 +13,7 @@ from intergrax.debug.app import create_debug_app
 from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_routes
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.runtime.interactions.task_executor import NexusLoopTaskExecutor
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
@@ -136,7 +137,7 @@ def create_lab_application(
         enabled=settings.include_scheduler,
     )
     interaction_service = DebugInteractionIntakeService(
-        nexus_loop=nexus_loop,
+        task_executor=NexusLoopTaskExecutor(nexus_loop),
         adapter=integrations.interaction_adapter,
         verifier=create_inbound_verifier(),
         task_enricher=task_enricher,
