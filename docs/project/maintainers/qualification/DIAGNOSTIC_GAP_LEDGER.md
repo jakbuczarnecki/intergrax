@@ -125,9 +125,9 @@ Required fields per entry: ID, discovered by, failure scenario, terminal symptom
 | **Universal platform improvement** | Prove async causal continuity across MessageBus and background execution |
 | **Why this is not application-specific** | Any queue-backed async host path shares this continuity requirement |
 | **Priority** | P1 |
-| **Status** | OPEN / QUALIFICATION REQUIRED |
-| **Related implementation** | DG-A fix `24506c3c14e30984d78b7b22c5cd4c42e711d125`; APP-DIAG baseline program (see OBSERVABILITY plan § Phase APP-DIAG); **R1 root-cause audit** — [`DG_004_ASYNC_CAUSAL_CONTINUITY_ROOT_CAUSE_AUDIT.md`](DG_004_ASYNC_CAUSAL_CONTINUITY_ROOT_CAUSE_AUDIT.md) |
-| **Qualification result after fix** | Worker assembly defect cleared (DG-A **REVALIDATED**). Fresh run proves execution + runtime history but **not** transport causal continuity. **R1 audit (2026-09-07):** static root cause **NOT PROVEN**; historical symptom localizes to empty causal read at `ExecutionReconstructor`; LKW worker **does** reach canonical admission in current code; reconstructor/projection defects **disproven**; **DG-004-R2** real qualification (E0–E6 single execution) required before remediation. Current LKW state: **DQ-2**, not DQ-3. |
+| **Status** | REVALIDATED / CURRENT CANONICAL PATH PASS (closure review pending R3) |
+| **Related implementation** | DG-A fix `24506c3c14e30984d78b7b22c5cd4c42e711d125`; APP-DIAG baseline program (see OBSERVABILITY plan § Phase APP-DIAG); **R1 root-cause audit** — [`DG_004_ASYNC_CAUSAL_CONTINUITY_ROOT_CAUSE_AUDIT.md`](DG_004_ASYNC_CAUSAL_CONTINUITY_ROOT_CAUSE_AUDIT.md); **R2 real qualification** — [`DG_004_REAL_ASYNC_CAUSAL_CONTINUITY_R2_QUALIFICATION.md`](DG_004_REAL_ASYNC_CAUSAL_CONTINUITY_R2_QUALIFICATION.md) |
+| **Qualification result after fix** | **R2 (2026-09-07):** Real E0–E6 continuity **PASS** on LKW Kafka `lkw.background_ingest.v1` path (`lkw-core-platform-proof` stack). Transport causal evidence built, persisted, read-by-execution, reconstructed, and orchestrated with `has_transport_evidence=true`. Historical `has_transport_evidence=false` **not reproduced**. Cross-process causal read (worker write → `local_workspace` diagnostic read) **proven**. **Not** File Watcher topology; **not** universal all-queue closure. See R2 doc. |
 
 ---
 
