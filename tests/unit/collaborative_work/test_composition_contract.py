@@ -13,7 +13,9 @@ from unittest.mock import patch
 import pytest
 
 from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkArtifactRepositories,
     CollaborativeWorkRepositories,
+    CollaborativeWorkRepositoriesWithArtifacts,
     CollaborativeWorkRepositoriesWithSharedWork,
     CollaborativeWorkSharedWorkRepositories,
     collaborative_work_core_repositories,
@@ -23,7 +25,14 @@ from intergrax.collaborative_work.persistence import (
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
 )
-from intergrax.collaborative_work.repository import AssignmentRepository, WorkItemExecutionLinkRepository, WorkItemRepository
+from intergrax.collaborative_work.repository import (
+    ArtifactPublicationRepository,
+    AssignmentRepository,
+    WorkArtifactRepository,
+    WorkArtifactVersionRepository,
+    WorkItemExecutionLinkRepository,
+    WorkItemRepository,
+)
 from intergrax.integrations.providers.relational_store.postgresql.register import (
     register_postgresql_integration,
 )
@@ -47,14 +56,16 @@ def _clean_catalog() -> None:
     clear_catalog()
 
 
-def test_sqlite_factory_returns_full_shared_work_bundle(tmp_path: Path) -> None:
+def test_sqlite_factory_returns_full_artifact_bundle(tmp_path: Path) -> None:
     bundle = open_sqlite_collaborative_work_repositories(str(tmp_path / "sqlite.sqlite"))
     try:
-        assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
+        assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
         assert isinstance(bundle.shared_work, CollaborativeWorkSharedWorkRepositories)
+        assert isinstance(bundle.artifacts, CollaborativeWorkArtifactRepositories)
         assert isinstance(bundle.work_item, WorkItemRepository)
-        assert isinstance(bundle.assignment, AssignmentRepository)
-        assert isinstance(bundle.execution_link, WorkItemExecutionLinkRepository)
+        assert isinstance(bundle.artifact, WorkArtifactRepository)
+        assert isinstance(bundle.version, WorkArtifactVersionRepository)
+        assert isinstance(bundle.publication, ArtifactPublicationRepository)
         assert isinstance(bundle.core, CollaborativeWorkRepositories)
         assert collaborative_work_core_repositories(bundle) is bundle.core
     finally:
@@ -126,7 +137,7 @@ def test_persistence_module_has_no_runtime_error_capability_discovery() -> None:
                 )
 
 
-def test_sqlite_profile_materializes_full_shared_work_bundle(tmp_path: Path) -> None:
+def test_sqlite_profile_materializes_full_artifact_bundle(tmp_path: Path) -> None:
     register_sqlite_integration()
     profile = IntegrationProfile(
         relational_store=SQLITE,
@@ -134,10 +145,10 @@ def test_sqlite_profile_materializes_full_shared_work_bundle(tmp_path: Path) -> 
     )
     bundle = resolve_collaborative_work_repositories(profile)
     try:
-        assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
+        assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
         assert isinstance(bundle.work_item, WorkItemRepository)
-        assert isinstance(bundle.assignment, AssignmentRepository)
-        assert isinstance(bundle.execution_link, WorkItemExecutionLinkRepository)
+        assert isinstance(bundle.artifact, WorkArtifactRepository)
+        assert isinstance(bundle.publication, ArtifactPublicationRepository)
     finally:
         bundle.close()
 
@@ -182,6 +193,6 @@ def test_mp1_callers_use_core_from_sqlite_bundle(tmp_path: Path) -> None:
         bundle.close()
 
 
-def test_sqlite_open_return_annotation_guarantees_shared_work() -> None:
+def test_sqlite_open_return_annotation_guarantees_artifacts() -> None:
     hints = get_type_hints(open_sqlite_collaborative_work_repositories)
-    assert hints["return"] is CollaborativeWorkRepositoriesWithSharedWork
+    assert hints["return"] is CollaborativeWorkRepositoriesWithArtifacts

@@ -20,7 +20,9 @@ from intergrax.collaborative_work.policy_composition import compose_policy_decis
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
     CollaborativeWorkRepositories,
+    CollaborativeWorkRepositoriesWithArtifacts,
     CollaborativeWorkRepositoriesWithSharedWork,
+    CollaborativeWorkArtifactRepositories,
     CollaborativeWorkSharedWorkRepositories,
     CollaborativeWorkStoreOwner,
     collaborative_work_core_repositories,
@@ -94,6 +96,8 @@ __all__ = [
     "CollaborativeWorkMaterializedRepositories",
     "CollaborativeWorkRepositories",
     "CollaborativeWorkRepositoriesWithSharedWork",
+    "CollaborativeWorkRepositoriesWithArtifacts",
+    "CollaborativeWorkArtifactRepositories",
     "CollaborativeWorkSharedWorkRepositories",
     "CollaborativeWorkStoreOwner",
     "CollaborativeWorkAuthorityResolver",

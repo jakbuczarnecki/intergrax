@@ -8,12 +8,16 @@ import json
 from datetime import datetime
 from typing import Any
 
+from intergrax.collaborative_work.repository import PublishedWorkArtifactVersion
 from intergrax.contracts.collaborative_work import (
     Assignment,
     AuthorityDelegation,
+    ArtifactContentRef,
     CollaborativeOperationPolicyProfile,
     CollaborativePolicyRule,
     PrincipalAuthorityGrant,
+    WorkArtifact,
+    WorkArtifactVersion,
     WorkItem,
     WorkItemExecutionLink,
     WorkspaceMembership,
@@ -128,3 +132,71 @@ def work_item_execution_link_from_json(payload: str) -> WorkItemExecutionLink:
 
 def stable_json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def work_artifact_to_json(record: WorkArtifact) -> str:
+    return record.model_dump_json()
+
+
+def work_artifact_from_json(payload: str) -> WorkArtifact:
+    return WorkArtifact.model_validate_json(payload)
+
+
+def work_artifact_version_to_json(record: WorkArtifactVersion) -> str:
+    payload = record.model_dump(mode="json")
+    if record.execution is None:
+        payload["execution"] = None
+    else:
+        payload["execution"] = {
+            "task_id": str(record.execution.task_id),
+            "run_id": str(record.execution.run_id),
+            "attempt_id": str(record.execution.attempt_id),
+            "execution_id": str(record.execution.execution_id),
+        }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
+def work_artifact_version_from_json(payload: str) -> WorkArtifactVersion:
+    raw = json.loads(payload)
+    execution_raw = raw.get("execution")
+    execution = None
+    if execution_raw is not None:
+        execution = ExecutionProvenanceRef(
+            task_id=validate_task_id(execution_raw["task_id"]),
+            run_id=validate_run_id(execution_raw["run_id"]),
+            attempt_id=validate_attempt_id(execution_raw["attempt_id"]),
+            execution_id=validate_execution_id(execution_raw["execution_id"]),
+        )
+    content_raw = raw["content_ref"]
+    content_ref = ArtifactContentRef.model_validate(content_raw)
+    return WorkArtifactVersion(
+        schema_version=raw["schema_version"],
+        work_artifact_version_id=raw["work_artifact_version_id"],
+        work_artifact_id=raw["work_artifact_id"],
+        tenant_id=raw["tenant_id"],
+        workspace_id=raw["workspace_id"],
+        work_item_id=raw["work_item_id"],
+        created_by_principal_id=raw["created_by_principal_id"],
+        published_by_principal_id=raw["published_by_principal_id"],
+        content_ref=content_ref,
+        created_at=datetime.fromisoformat(raw["created_at"]),
+        published_at=datetime.fromisoformat(raw["published_at"]),
+        execution=execution,
+    )
+
+
+def published_work_artifact_version_to_json(record: PublishedWorkArtifactVersion) -> str:
+    payload = {
+        "artifact": json.loads(work_artifact_to_json(record.artifact)),
+        "version": json.loads(work_artifact_version_to_json(record.version)),
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
+def published_work_artifact_version_from_json(payload: str) -> PublishedWorkArtifactVersion:
+    raw = json.loads(payload)
+    artifact = work_artifact_from_json(json.dumps(raw["artifact"], sort_keys=True, separators=(",", ":")))
+    version = work_artifact_version_from_json(
+        json.dumps(raw["version"], sort_keys=True, separators=(",", ":")),
+    )
+    return PublishedWorkArtifactVersion(artifact=artifact, version=version)

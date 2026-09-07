@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
     CollaborativeWorkRepositories,
+    CollaborativeWorkRepositoriesWithArtifacts,
     CollaborativeWorkRepositoriesWithSharedWork,
 )
 from intergrax.collaborative_work.postgresql_cross_process_cas_proof import (
@@ -783,6 +784,12 @@ class CollaborativeWorkRepositoryQualificationSuite:
                         label="transactional_cas",
                     ),
                 )
+        elif isinstance(capability, CollaborativeWorkRepositoriesWithArtifacts):
+            core_passed, core_failed = _run_core_repository_contract_checks(capability.core)
+            shared_passed, shared_failed = _run_shared_work_repository_contract_checks(capability)
+            passed = core_passed + shared_passed
+            failed = core_failed + shared_failed
+            concurrency_evidence = ()
         elif isinstance(capability, CollaborativeWorkRepositories):
             if self._requires_shared_work:
                 raise ProviderQualificationSuiteInfrastructureError(
@@ -792,8 +799,9 @@ class CollaborativeWorkRepositoryQualificationSuite:
             concurrency_evidence = ()
         else:
             raise ProviderQualificationSuiteInfrastructureError(
-                "capability must be CollaborativeWorkRepositories "
-                "or CollaborativeWorkRepositoriesWithSharedWork",
+                "capability must be CollaborativeWorkRepositories, "
+                "CollaborativeWorkRepositoriesWithSharedWork, "
+                "or CollaborativeWorkRepositoriesWithArtifacts",
             )
 
         skipped = 0

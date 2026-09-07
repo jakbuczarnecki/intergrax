@@ -21,6 +21,7 @@ from intergrax.collaborative_work.in_memory_repository import (
 )
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkRepositories,
+    CollaborativeWorkRepositoriesWithArtifacts,
     CollaborativeWorkRepositoriesWithSharedWork,
 )
 from intergrax.collaborative_work.repository import AssignmentRepository, WorkItemRepository
@@ -484,7 +485,7 @@ def test_sqlite_profile_materializes_collaborative_work_repositories(tmp_path: P
         bundle = resolve_collaborative_work_repositories(profile)
 
     generic_connect.assert_not_called()
-    assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
     assert isinstance(bundle.work_item, WorkItemRepository)
     assert isinstance(bundle.assignment, AssignmentRepository)
     assert bundle.membership.capabilities.durable is True
