@@ -20,6 +20,7 @@ from intergrax.tools.registry.factory import build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from testing_support.codecraft_execution_environment import codecraft_sandbox_execution_profile
 from intergrax.runtime.codecraft.trace import (
     CODECRAFT_STEP_DISPOSED,
     CODECRAFT_STEP_EXEC,
@@ -87,15 +88,39 @@ def test_codecraft_run_static_gate_blocks_forbidden_import(sandbox_session: Sand
 
 def test_codecraft_run_denied_without_sandbox_in_autonomous_mode() -> None:
     profile = CodeCraftProfile(mode="autonomous")
-    ctx = ToolWiringContext(extras={"codecraft_profile": profile})
+    ctx = ToolWiringContext(
+        extras={
+            "codecraft_profile": profile,
+            "effective_environment_profile": codecraft_sandbox_execution_profile(),
+        },
+    )
     out = codecraft_run(ctx, CodeCraftRunToolInput(code="print('ok')\n"))
     assert out.result.success is False
     assert out.result.error == "codecraft_execution_scope_unavailable"
 
 
-def test_codecraft_run_executes_in_sandbox(sandbox_session: SandboxSession) -> None:
+def test_codecraft_run_denied_without_execution_environment_authority(
+    sandbox_session: SandboxSession,
+) -> None:
     profile = CodeCraftProfile(mode="autonomous", forbidden_imports=["os", "subprocess"])
     ctx = ToolWiringContext(sandbox_session=sandbox_session, extras={"codecraft_profile": profile})
+    out = codecraft_run(
+        ctx,
+        CodeCraftRunToolInput(code="print('blocked')\n", tenant_id="tenant-1", task_id="task-1"),
+    )
+    assert out.result.success is False
+    assert out.result.error == "execution_environment_authority_unavailable"
+
+
+def test_codecraft_run_executes_in_sandbox(sandbox_session: SandboxSession) -> None:
+    profile = CodeCraftProfile(mode="autonomous", forbidden_imports=["os", "subprocess"])
+    ctx = ToolWiringContext(
+        sandbox_session=sandbox_session,
+        extras={
+            "codecraft_profile": profile,
+            "effective_environment_profile": codecraft_sandbox_execution_profile(),
+        },
+    )
     out = codecraft_run(
         ctx,
         CodeCraftRunToolInput(code="print('crafted')\n", tenant_id="tenant-1", task_id="task-1"),

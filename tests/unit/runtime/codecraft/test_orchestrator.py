@@ -37,7 +37,9 @@ from intergrax.tools.providers.codecraft.contracts import (
     CodeCraftListEphemeralToolsInput,
     CodeCraftStartToolInput,
 )
+from intergrax.tools.registry.bootstrap import register_default_tools
 from intergrax.tools.registry.wiring import ToolWiringContext
+from testing_support.codecraft_execution_environment import codecraft_sandbox_execution_profile
 
 pytestmark = pytest.mark.unit
 
@@ -63,6 +65,7 @@ def craft_ctx(sandbox_session: SandboxSession) -> ToolWiringContext:
         extras={
             "codecraft_profile": profile,
             "codecraft_session_manager": manager,
+            "effective_environment_profile": codecraft_sandbox_execution_profile(),
         },
     )
 
@@ -112,6 +115,7 @@ def test_supervised_mode_requires_hitl(craft_ctx: ToolWiringContext) -> None:
         extras={
             "codecraft_profile": profile,
             "codecraft_session_manager": CodeCraftSessionManager(),
+            "effective_environment_profile": codecraft_sandbox_execution_profile(),
         },
     )
     run_id = mint_run_id()
@@ -152,6 +156,7 @@ def test_supervised_mode_requires_hitl(craft_ctx: ToolWiringContext) -> None:
 
 
 def test_wire_application_codecraft_enables_tools() -> None:
+    register_default_tools()
     env = ApplicationEnvironmentProfile.lab_defaults()
     assert env.codecraft_profile is not None
     wiring = wire_application_codecraft(env)

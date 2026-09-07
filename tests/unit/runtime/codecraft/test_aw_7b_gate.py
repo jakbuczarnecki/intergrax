@@ -32,9 +32,7 @@ from intergrax.integrations.contracts.sandbox_host import (
 from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities, SandboxSecurityCapable
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from intergrax.runtime.sandbox.session import SandboxSession
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.environment_profile.bundles import IsolationBundle
-from intergrax.applications.contracts.environment_profile.sub_profiles import SandboxProfile
+from testing_support.codecraft_execution_environment import codecraft_sandbox_execution_profile
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.tools.providers.codecraft.contracts import (
     CodeCraftIterateToolInput,
@@ -122,17 +120,6 @@ def _sandbox(tmp_path: Path) -> SandboxSession:
     )
 
 
-def _sandbox_env_profile() -> ApplicationEnvironmentProfile:
-    profile = ApplicationEnvironmentProfile.lab_defaults(profile_id="codecraft-test")
-    return profile.model_copy(
-        update={
-            "isolation": IsolationBundle(
-                sandbox=SandboxProfile(enable_exec_tool=True),
-            ),
-        },
-    )
-
-
 def _ctx(
     sandbox: SandboxSession,
     *,
@@ -144,7 +131,7 @@ def _ctx(
     extras: dict[str, object] = {
         "codecraft_session_manager": manager or CodeCraftSessionManager(),
         "codecraft_ephemeral_registry": registry or EphemeralToolRegistryStore(),
-        "effective_environment_profile": _sandbox_env_profile(),
+        "effective_environment_profile": codecraft_sandbox_execution_profile(),
     }
     if profile is not None:
         extras["codecraft_profile"] = profile
