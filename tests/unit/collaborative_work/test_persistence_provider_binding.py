@@ -22,7 +22,7 @@ from intergrax.collaborative_work.in_memory_repository import (
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkRepositories,
     CollaborativeWorkRepositoriesWithArtifacts,
-    CollaborativeWorkRepositoriesWithSharedWork,
+    CollaborativeWorkRepositoriesWithArtifacts,
 )
 from intergrax.collaborative_work.repository import AssignmentRepository, WorkItemRepository
 from intergrax.collaborative_work.materialization_factory import (
@@ -711,7 +711,7 @@ def test_prebuilt_postgresql_instance_transfers_connection_ownership(_mock_psyco
 
     bundle = resolve_collaborative_work_repositories(profile)
 
-    assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
     bundle.close()
     assert connection.closed is True
 

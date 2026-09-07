@@ -6,12 +6,16 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
     CollaborativeWorkRepositories,
     CollaborativeWorkRepositoriesWithArtifacts,
     CollaborativeWorkRepositoriesWithSharedWork,
+)
+from intergrax.collaborative_work.postgresql_artifact_cross_process_cas_proof import (
+    CrossProcessArtifactPublicationProofFailure,
+    run_postgresql_artifact_cross_process_cas_proof,
 )
 from intergrax.collaborative_work.postgresql_cross_process_cas_proof import (
     CrossProcessCasProofFailure,
@@ -21,6 +25,10 @@ from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
 )
 from intergrax.collaborative_work.postgresql_repository import PostgreSQLCollaborativeWorkStore
+from intergrax.collaborative_work.serialization import (
+    published_work_artifact_version_to_json,
+    work_artifact_version_to_json,
+)
 from intergrax.collaborative_work.repository import (
     AssignmentAlreadyExists,
     AssignmentIdempotencyConflict,
@@ -36,6 +44,15 @@ from intergrax.collaborative_work.repository import (
     CreateWorkItemCommand,
     CreateWorkItemExecutionLinkCommand,
     CreateWorkspaceMembershipCommand,
+    CreateArtifactWithInitialVersionCommand,
+    PublishWorkArtifactVersionCommand,
+    ArtifactPublicationIdempotencyConflict,
+    WorkArtifactAlreadyExists,
+    WorkArtifactIdempotencyConflict,
+    WorkArtifactNotFound,
+    WorkArtifactRevisionConflict,
+    WorkArtifactTemporalConflict,
+    WorkArtifactVersionAlreadyExists,
     INITIAL_RECORD_REVISION,
     PrincipalAuthorityGrantAlreadyExists,
     UpdateAssignmentCommand,
@@ -56,6 +73,7 @@ from intergrax.collaborative_work.repository import (
     CollaborativeOperationPolicyProfileRevisionConflict,
 )
 from intergrax.contracts.collaborative_work import (
+    ArtifactContentRef,
     AssignmentState,
     AuthorityGrantStatus,
     CollaborativeOperationPolicyProfileStatus,
@@ -101,7 +119,7 @@ COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY = "collaborative_work.persistence.v1"
 
 CW_POSTGRESQL_REPOSITORY_SUITE_ID = "cw.postgresql.repository.v1"
 CW_SQLITE_REPOSITORY_SUITE_ID = "cw.sqlite.repository.v1"
-CW_REPOSITORY_SUITE_VERSION = "3.0.0"
+CW_REPOSITORY_SUITE_VERSION = "4.0.0"
 
 _TENANT_A = "qual-tenant-a"
 _TENANT_B = "qual-tenant-b"
@@ -111,6 +129,9 @@ _VALID_FROM = datetime(2026, 1, 1, tzinfo=UTC)
 _VALID_UNTIL = datetime(2026, 12, 31, tzinfo=UTC)
 _CREATED_AT = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 _UPDATED_AT = datetime(2026, 1, 1, 12, 30, tzinfo=UTC)
+_PUBLISHED_AT = datetime(2026, 1, 1, 12, 45, tzinfo=UTC)
+_LATER_PUBLISHED = datetime(2026, 1, 1, 13, 0, tzinfo=UTC)
+_ARTIFACT_DIGEST = "sha256:" + ("a" * 64)
 
 
 class _RepositorySemanticCheckFailure(Exception):
@@ -413,8 +434,296 @@ def _execution_link_command(**overrides: object) -> CreateWorkItemExecutionLinkC
     return CreateWorkItemExecutionLinkCommand(**payload)
 
 
+def _artifact_content_ref(**overrides: object) -> ArtifactContentRef:
+    payload = {
+        "content_ref": "content://qual-tenant-a/qual-workspace-a/body-1",
+        "media_type": "application/json",
+        "integrity_digest": _ARTIFACT_DIGEST,
+    }
+    payload.update(overrides)
+    return ArtifactContentRef.model_validate(payload)
+
+
+def _artifact_create_command(**overrides: object) -> CreateArtifactWithInitialVersionCommand:
+    payload = {
+        "tenant_id": _TENANT_A,
+        "workspace_id": _WORKSPACE_A,
+        "work_item_id": "qual-work-item-artifact",
+        "work_artifact_id": "qual-artifact-1",
+        "work_artifact_version_id": "qual-artifact-version-1",
+        "created_by_principal_id": "qual-principal-creator",
+        "published_by_principal_id": "qual-principal-publisher",
+        "content_ref": _artifact_content_ref(),
+        "artifact_created_at": _CREATED_AT,
+        "artifact_updated_at": _UPDATED_AT,
+        "version_created_at": _CREATED_AT,
+        "version_published_at": _PUBLISHED_AT,
+        "execution": None,
+    }
+    payload.update(overrides)
+    return CreateArtifactWithInitialVersionCommand(**payload)
+
+
+def _artifact_publish_command(**overrides: object) -> PublishWorkArtifactVersionCommand:
+    payload = {
+        "tenant_id": _TENANT_A,
+        "workspace_id": _WORKSPACE_A,
+        "work_item_id": "qual-work-item-artifact",
+        "work_artifact_id": "qual-artifact-1",
+        "work_artifact_version_id": "qual-artifact-version-2",
+        "expected_revision": INITIAL_RECORD_REVISION,
+        "created_by_principal_id": "qual-principal-creator",
+        "published_by_principal_id": "qual-principal-publisher",
+        "content_ref": _artifact_content_ref(content_ref="content://qual-tenant-a/qual-workspace-a/body-2"),
+        "created_at": _UPDATED_AT,
+        "published_at": _LATER_PUBLISHED,
+        "artifact_updated_at": _LATER_PUBLISHED,
+        "execution": None,
+    }
+    payload.update(overrides)
+    return PublishWorkArtifactVersionCommand(**payload)
+
+
+def _run_artifact_repository_contract_checks(
+    bundle: CollaborativeWorkRepositoriesWithArtifacts,
+) -> tuple[int, int]:
+    passed = 0
+    failed = 0
+
+    def _record_success() -> None:
+        nonlocal passed
+        passed += 1
+
+    def _record_failure() -> None:
+        nonlocal failed
+        failed += 1
+
+    def _run_check(check: Callable[[], None]) -> None:
+        try:
+            check()
+            _record_success()
+        except _RepositorySemanticCheckFailure:
+            _record_failure()
+
+    artifact_repo = bundle.artifact
+    version_repo = bundle.version
+    publication_repo = bundle.publication
+
+    def _artifact_create_read_history_isolation() -> None:
+        created = publication_repo.create_artifact_with_initial_version(_artifact_create_command())
+        if created.artifact.revision != INITIAL_RECORD_REVISION:
+            raise _RepositorySemanticCheckFailure("artifact revision mismatch")
+        if created.artifact.current_version_id != "qual-artifact-version-1":
+            raise _RepositorySemanticCheckFailure("artifact pointer mismatch")
+        loaded_artifact = artifact_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_id="qual-artifact-1",
+        )
+        loaded_version = version_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_version_id="qual-artifact-version-1",
+        )
+        if loaded_artifact != created.artifact or loaded_version != created.version:
+            raise _RepositorySemanticCheckFailure("artifact round-trip mismatch")
+        history = version_repo.list_for_artifact(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_id="qual-artifact-1",
+        )
+        if history != (created.version,):
+            raise _RepositorySemanticCheckFailure("artifact history mismatch")
+        if (
+            artifact_repo.get(
+                tenant_id=_TENANT_B,
+                workspace_id=_WORKSPACE_B,
+                work_artifact_id="qual-artifact-1",
+            )
+            is not None
+        ):
+            raise _RepositorySemanticCheckFailure("artifact tenant isolation failed")
+
+    def _artifact_duplicate_and_idempotency() -> None:
+        command = _artifact_create_command(
+            work_artifact_id="qual-artifact-2",
+            work_artifact_version_id="qual-artifact-version-2a",
+            idempotency_key="qual-artifact-create-idem",
+        )
+        created = publication_repo.create_artifact_with_initial_version(command)
+        try:
+            publication_repo.create_artifact_with_initial_version(
+                _artifact_create_command(
+                    work_artifact_id="qual-artifact-2",
+                    work_artifact_version_id="qual-artifact-version-2b",
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkArtifactAlreadyExists")
+        except WorkArtifactAlreadyExists:
+            pass
+        try:
+            publication_repo.create_artifact_with_initial_version(
+                _artifact_create_command(
+                    work_artifact_id="qual-artifact-3",
+                    work_artifact_version_id="qual-artifact-version-2a",
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkArtifactVersionAlreadyExists")
+        except WorkArtifactVersionAlreadyExists:
+            pass
+        replay = publication_repo.create_artifact_with_initial_version(command)
+        if replay != created:
+            raise _RepositorySemanticCheckFailure("artifact create idempotency replay mismatch")
+        changed_replay = publication_repo.create_artifact_with_initial_version(
+            _artifact_create_command(
+                work_artifact_id="qual-artifact-2",
+                work_artifact_version_id="qual-artifact-version-2a",
+                idempotency_key="qual-artifact-create-idem",
+                artifact_updated_at=_LATER_PUBLISHED,
+                version_published_at=_LATER_PUBLISHED,
+            ),
+        )
+        if changed_replay != created:
+            raise _RepositorySemanticCheckFailure("artifact create idempotency timestamp drift")
+        try:
+            publication_repo.create_artifact_with_initial_version(
+                _artifact_create_command(
+                    work_artifact_id="qual-artifact-4",
+                    idempotency_key="qual-artifact-create-idem",
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkArtifactIdempotencyConflict")
+        except WorkArtifactIdempotencyConflict:
+            pass
+
+    def _artifact_publish_revision_temporal_idempotency() -> None:
+        publication_repo.create_artifact_with_initial_version(
+            _artifact_create_command(
+                work_artifact_id="qual-artifact-3",
+                work_artifact_version_id="qual-artifact-version-3a",
+            ),
+        )
+        published = publication_repo.publish_version(
+            _artifact_publish_command(
+                work_artifact_id="qual-artifact-3",
+                work_artifact_version_id="qual-artifact-version-3b",
+                expected_revision=INITIAL_RECORD_REVISION,
+            ),
+        )
+        if published.artifact.revision != INITIAL_RECORD_REVISION + 1:
+            raise _RepositorySemanticCheckFailure("artifact publish revision increment mismatch")
+        history = version_repo.list_for_artifact(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_id="qual-artifact-3",
+        )
+        if len(history) != 2:
+            raise _RepositorySemanticCheckFailure("artifact append-only history mismatch")
+        try:
+            publication_repo.publish_version(
+                _artifact_publish_command(
+                    work_artifact_id="qual-artifact-3",
+                    work_artifact_version_id="qual-artifact-version-3c",
+                    expected_revision=INITIAL_RECORD_REVISION,
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkArtifactRevisionConflict")
+        except WorkArtifactRevisionConflict:
+            pass
+        try:
+            publication_repo.publish_version(
+                _artifact_publish_command(
+                    work_artifact_id="qual-artifact-3",
+                    work_artifact_version_id="qual-artifact-version-3d",
+                    expected_revision=INITIAL_RECORD_REVISION + 1,
+                    artifact_updated_at=_CREATED_AT - timedelta(minutes=1),
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkArtifactTemporalConflict")
+        except WorkArtifactTemporalConflict:
+            pass
+        first_publish = publication_repo.publish_version(
+            _artifact_publish_command(
+                work_artifact_id="qual-artifact-3",
+                work_artifact_version_id="qual-artifact-version-3e",
+                expected_revision=INITIAL_RECORD_REVISION + 1,
+                idempotency_key="qual-artifact-publish-idem",
+            ),
+        )
+        publication_repo.publish_version(
+            _artifact_publish_command(
+                work_artifact_id="qual-artifact-3",
+                work_artifact_version_id="qual-artifact-version-3f",
+                expected_revision=first_publish.artifact.revision,
+            ),
+        )
+        replay = publication_repo.publish_version(
+            _artifact_publish_command(
+                work_artifact_id="qual-artifact-3",
+                work_artifact_version_id="qual-artifact-version-3e",
+                expected_revision=INITIAL_RECORD_REVISION + 1,
+                idempotency_key="qual-artifact-publish-idem",
+            ),
+        )
+        if replay != first_publish:
+            raise _RepositorySemanticCheckFailure("artifact publish idempotency replay mismatch")
+        try:
+            publication_repo.publish_version(
+                _artifact_publish_command(
+                    work_artifact_id="qual-artifact-3",
+                    work_artifact_version_id="qual-artifact-version-3g",
+                    expected_revision=first_publish.artifact.revision + 1,
+                    idempotency_key="qual-artifact-publish-idem",
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected ArtifactPublicationIdempotencyConflict")
+        except ArtifactPublicationIdempotencyConflict:
+            pass
+        try:
+            publication_repo.publish_version(
+                _artifact_publish_command(
+                    tenant_id=_TENANT_B,
+                    workspace_id=_WORKSPACE_B,
+                    work_artifact_id="qual-artifact-3",
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkArtifactNotFound")
+        except WorkArtifactNotFound:
+            pass
+
+    def _artifact_execution_serialization_round_trip() -> None:
+        execution = _execution_provenance()
+        created = publication_repo.create_artifact_with_initial_version(
+            _artifact_create_command(
+                work_artifact_id="qual-artifact-4",
+                work_artifact_version_id="qual-artifact-version-4a",
+                execution=execution,
+            ),
+        )
+        loaded = version_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_version_id="qual-artifact-version-4a",
+        )
+        if loaded is None or loaded.execution != execution:
+            raise _RepositorySemanticCheckFailure("artifact execution round-trip mismatch")
+        encoded = published_work_artifact_version_to_json(created)
+        if work_artifact_version_to_json(created.version) not in encoded:
+            raise _RepositorySemanticCheckFailure("artifact serialization mismatch")
+
+    for check in (
+        _artifact_create_read_history_isolation,
+        _artifact_duplicate_and_idempotency,
+        _artifact_publish_revision_temporal_idempotency,
+        _artifact_execution_serialization_round_trip,
+    ):
+        _run_check(check)
+
+    return passed, failed
+
+
 def _run_shared_work_repository_contract_checks(
-    bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    bundle: CollaborativeWorkRepositoriesWithSharedWork | CollaborativeWorkRepositoriesWithArtifacts,
 ) -> tuple[int, int]:
     passed = 0
     failed = 0
@@ -719,7 +1028,7 @@ def _run_shared_work_repository_contract_checks(
 
 
 def _run_shared_work_cross_process_concurrency_check(
-    bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    bundle: CollaborativeWorkRepositoriesWithSharedWork | CollaborativeWorkRepositoriesWithArtifacts,
 ) -> tuple[int, int]:
     store = bundle.store
     if not isinstance(store, PostgreSQLCollaborativeWorkStore):
@@ -745,6 +1054,46 @@ def _run_shared_work_cross_process_concurrency_check(
     return 1, 0
 
 
+def _run_artifact_cross_process_concurrency_check(
+    bundle: CollaborativeWorkRepositoriesWithArtifacts,
+) -> tuple[int, int]:
+    store = bundle.store
+    if not isinstance(store, PostgreSQLCollaborativeWorkStore):
+        raise _RepositorySemanticCheckFailure(
+            "artifact cross-process concurrency requires PostgreSQLCollaborativeWorkStore",
+        )
+
+    initial = bundle.publication.create_artifact_with_initial_version(
+        _artifact_create_command(
+            work_artifact_id="qual-artifact-concurrency",
+            work_artifact_version_id="qual-artifact-version-concurrency-initial",
+            work_item_id="qual-work-item-artifact-concurrency",
+        ),
+    )
+    try:
+        run_postgresql_artifact_cross_process_cas_proof(
+            config=store.config,
+            schema_name=store.schema_name,
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_item_id="qual-work-item-artifact-concurrency",
+            work_artifact_id="qual-artifact-concurrency",
+            initial_version_id="qual-artifact-version-concurrency-initial",
+            winning_version_id="qual-artifact-version-concurrency-win",
+            losing_version_id="qual-artifact-version-concurrency-lose",
+            expected_revision=initial.artifact.revision,
+            published_at=_LATER_PUBLISHED,
+            artifact_updated_at=_LATER_PUBLISHED,
+            content_ref=_artifact_content_ref(
+                content_ref="content://qual-tenant-a/qual-workspace-a/concurrency-body",
+            ),
+        )
+    except CrossProcessArtifactPublicationProofFailure as exc:
+        raise _RepositorySemanticCheckFailure(str(exc)) from exc
+
+    return 1, 0
+
+
 @dataclass(frozen=True, slots=True)
 class CollaborativeWorkRepositoryQualificationSuite:
     """Domain-owned repository qualification suite for Collaborative Work persistence."""
@@ -755,19 +1104,76 @@ class CollaborativeWorkRepositoryQualificationSuite:
     _limitations: tuple[str, ...]
     _reproducibility: str
     _requires_shared_work: bool = True
+    _requires_artifacts: bool = False
     _requires_concurrency_proof: bool = False
+    _requires_artifact_concurrency_proof: bool = False
 
     @property
     def identity(self) -> ProviderQualificationSuiteIdentity:
         return self._identity
 
     def execute(self, capability: object) -> ProviderQualificationSuiteOutcome:
-        if isinstance(capability, CollaborativeWorkRepositoriesWithSharedWork):
+        concurrency_evidence: tuple[QualificationEvidence, ...] = ()
+        artifact_evidence: tuple[QualificationEvidence, ...] = ()
+
+        if isinstance(capability, CollaborativeWorkRepositoriesWithArtifacts):
             core_passed, core_failed = _run_core_repository_contract_checks(capability.core)
             shared_passed, shared_failed = _run_shared_work_repository_contract_checks(capability)
             passed = core_passed + shared_passed
             failed = core_failed + shared_failed
-            concurrency_evidence: tuple[QualificationEvidence, ...] = ()
+            if self._requires_artifacts:
+                art_passed, art_failed = _run_artifact_repository_contract_checks(capability)
+                passed += art_passed
+                failed += art_failed
+                artifact_evidence = (
+                    QualificationEvidence(
+                        kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
+                        code="shared_work.artifacts",
+                        label="work_artifact,work_artifact_version,publication",
+                    ),
+                    QualificationEvidence(
+                        kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
+                        code="shared_work.artifact.atomic_publication",
+                        label="initial_create,publish,cas,idempotency",
+                    ),
+                )
+            if self._requires_concurrency_proof:
+                try:
+                    conc_passed, conc_failed = _run_shared_work_cross_process_concurrency_check(
+                        capability,
+                    )
+                except _RepositorySemanticCheckFailure:
+                    conc_passed, conc_failed = 0, 1
+                passed += conc_passed
+                failed += conc_failed
+                concurrency_evidence = concurrency_evidence + (
+                    QualificationEvidence(
+                        kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
+                        code="shared_work.concurrency.cross_process",
+                        label="transactional_cas",
+                    ),
+                )
+            if self._requires_artifact_concurrency_proof:
+                try:
+                    art_conc_passed, art_conc_failed = _run_artifact_cross_process_concurrency_check(
+                        capability,
+                    )
+                except _RepositorySemanticCheckFailure:
+                    art_conc_passed, art_conc_failed = 0, 1
+                passed += art_conc_passed
+                failed += art_conc_failed
+                artifact_evidence = artifact_evidence + (
+                    QualificationEvidence(
+                        kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
+                        code="shared_work.artifact.concurrency.cross_process",
+                        label="transactional_publication_cas",
+                    ),
+                )
+        elif isinstance(capability, CollaborativeWorkRepositoriesWithSharedWork):
+            core_passed, core_failed = _run_core_repository_contract_checks(capability.core)
+            shared_passed, shared_failed = _run_shared_work_repository_contract_checks(capability)
+            passed = core_passed + shared_passed
+            failed = core_failed + shared_failed
             if self._requires_concurrency_proof:
                 try:
                     conc_passed, conc_failed = _run_shared_work_cross_process_concurrency_check(
@@ -784,19 +1190,12 @@ class CollaborativeWorkRepositoryQualificationSuite:
                         label="transactional_cas",
                     ),
                 )
-        elif isinstance(capability, CollaborativeWorkRepositoriesWithArtifacts):
-            core_passed, core_failed = _run_core_repository_contract_checks(capability.core)
-            shared_passed, shared_failed = _run_shared_work_repository_contract_checks(capability)
-            passed = core_passed + shared_passed
-            failed = core_failed + shared_failed
-            concurrency_evidence = ()
         elif isinstance(capability, CollaborativeWorkRepositories):
             if self._requires_shared_work:
                 raise ProviderQualificationSuiteInfrastructureError(
                     "capability must include MP-2 Shared Work repositories",
                 )
             passed, failed = _run_core_repository_contract_checks(capability)
-            concurrency_evidence = ()
         else:
             raise ProviderQualificationSuiteInfrastructureError(
                 "capability must be CollaborativeWorkRepositories, "
@@ -828,6 +1227,7 @@ class CollaborativeWorkRepositoryQualificationSuite:
                 code="shared_work.execution_link",
                 label="append_only_provenance",
             ),
+            *artifact_evidence,
             *concurrency_evidence,
         )
         return ProviderQualificationSuiteOutcome(
@@ -870,7 +1270,9 @@ def collaborative_work_postgresql_repository_qualification_suite() -> (
             "test_provider_qualification_execution_postgresql.py"
         ),
         _requires_shared_work=True,
+        _requires_artifacts=True,
         _requires_concurrency_proof=True,
+        _requires_artifact_concurrency_proof=True,
     )
 
 
@@ -898,6 +1300,7 @@ def collaborative_work_sqlite_repository_qualification_suite() -> (
             "test_provider_qualification_execution_runner.py::test_sqlite_provider_execution"
         ),
         _requires_shared_work=True,
+        _requires_artifacts=True,
         _requires_concurrency_proof=False,
     )
 

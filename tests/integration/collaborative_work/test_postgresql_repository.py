@@ -10,8 +10,11 @@ import threading
 import pytest
 
 from intergrax.collaborative_work.persistence import (
-    CollaborativeWorkRepositoriesWithSharedWork,
+    CollaborativeWorkRepositoriesWithArtifacts,
     open_postgresql_collaborative_work_repositories,
+)
+from intergrax.collaborative_work.postgresql_artifact_cross_process_cas_proof import (
+    run_postgresql_artifact_cross_process_cas_proof,
 )
 from intergrax.collaborative_work.postgresql_cross_process_cas_proof import (
     run_postgresql_work_item_cross_process_cas_proof,
@@ -39,37 +42,37 @@ pytestmark = [pytest.mark.integration, pytest.mark.network]
 
 
 @pytest.fixture
-def membership_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork):
+def membership_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
     return postgresql_collaborative_work_bundle.membership
 
 
 @pytest.fixture
-def delegation_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork):
+def delegation_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
     return postgresql_collaborative_work_bundle.delegation
 
 
 @pytest.fixture
-def authority_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork):
+def authority_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
     return postgresql_collaborative_work_bundle.principal_authority
 
 
 @pytest.fixture
-def policy_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork):
+def policy_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
     return postgresql_collaborative_work_bundle.policy
 
 
 @pytest.fixture
-def profile_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork):
+def profile_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
     return postgresql_collaborative_work_bundle.operation_profile
 
 
 @pytest.fixture
-def work_item_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork):
+def work_item_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
     return postgresql_collaborative_work_bundle.work_item
 
 
 @pytest.fixture
-def assignment_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork):
+def assignment_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
     return postgresql_collaborative_work_bundle.assignment
 
 
@@ -101,7 +104,7 @@ def test_postgresql_profile_revision_increment(profile_repo: object) -> None:
     contract_suite.test_profile_revision_increment(profile_repo)
 
 
-def test_postgresql_capabilities(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork) -> None:
+def test_postgresql_capabilities(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts) -> None:
     caps = postgresql_collaborative_work_bundle.membership.capabilities
     assert caps.durable is True
     assert caps.reference_only is False
@@ -112,7 +115,7 @@ def test_postgresql_capabilities(postgresql_collaborative_work_bundle: Collabora
 
 
 def test_postgresql_concurrent_update_one_wins(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     created = postgresql_collaborative_work_bundle.membership.create(
         contract_suite._membership_command()
@@ -162,7 +165,7 @@ def test_postgresql_concurrent_update_one_wins(
 
 
 def test_postgresql_unique_membership_create_race(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     errors: list[BaseException] = []
     barrier = threading.Barrier(2)
@@ -202,7 +205,7 @@ def test_postgresql_unique_membership_create_race(
 
 
 def test_postgresql_idempotent_create_race(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     command = contract_suite._membership_command(idempotency_key="idem-race")
     results: list[object] = []
@@ -240,7 +243,7 @@ def test_postgresql_idempotent_create_race(
 
 
 def test_postgresql_conflicting_idempotency_key(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     first = contract_suite._membership_command(
         membership_id="membership-1",
@@ -258,7 +261,7 @@ def test_postgresql_conflicting_idempotency_key(
 
 
 def test_postgresql_multi_bundle_visibility(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     bundle_a = postgresql_collaborative_work_bundle
     bundle_b = open_postgresql_collaborative_work_repositories(
@@ -286,13 +289,13 @@ def test_postgresql_unavailable_connection_fails_explicitly() -> None:
 
 
 def test_postgresql_factory_has_no_sqlite_fallback(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     assert isinstance(postgresql_collaborative_work_bundle.store.schema_name, str)
     assert postgresql_collaborative_work_bundle.membership.capabilities.backend_id.endswith(
         "postgresql"
     )
-    assert isinstance(postgresql_collaborative_work_bundle, CollaborativeWorkRepositoriesWithSharedWork)
+    assert isinstance(postgresql_collaborative_work_bundle, CollaborativeWorkRepositoriesWithArtifacts)
 
 
 def test_postgresql_work_item_create_and_get(work_item_repo: object) -> None:
@@ -326,7 +329,7 @@ def test_postgresql_work_item_idempotency_replay_after_update(work_item_repo: ob
 
 
 def test_postgresql_work_item_concurrent_update_one_wins(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     """Cheaper same-process cross-connection CAS proof (not cross-process acceptance)."""
     bundle_a = postgresql_collaborative_work_bundle
@@ -352,7 +355,7 @@ def test_postgresql_work_item_concurrent_update_one_wins(
         errors: list[BaseException] = []
         barrier = threading.Barrier(2)
 
-        def attempt(bundle: CollaborativeWorkRepositoriesWithSharedWork) -> None:
+        def attempt(bundle: CollaborativeWorkRepositoriesWithArtifacts) -> None:
             try:
                 barrier.wait(timeout=5)
                 bundle.work_item.update(
@@ -393,7 +396,7 @@ def test_postgresql_work_item_concurrent_update_one_wins(
 
 
 def test_postgresql_work_item_cross_process_cas_one_wins(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     bundle = postgresql_collaborative_work_bundle
     work_item_id = "work-item-cross-process"
@@ -420,7 +423,7 @@ def test_postgresql_work_item_cross_process_cas_one_wins(
 
 
 def test_postgresql_work_item_idempotency_survives_rematerialization(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     bundle_a = postgresql_collaborative_work_bundle
     command = shared_work_suite._create_work_item_command(idempotency_key="pg-idem-remat")
@@ -460,7 +463,7 @@ def test_postgresql_assignment_idempotency_replay_and_conflict(assignment_repo: 
 
 
 def test_postgresql_mp2_schema_additive_preserves_mp1_data(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     bundle = postgresql_collaborative_work_bundle
     membership = WorkspaceMembership(
@@ -521,3 +524,334 @@ def test_postgresql_mp2_schema_additive_preserves_mp1_data(
         workspace_id=shared_work_suite._WORKSPACE_A,
         work_item_id="mp2-after-legacy",
     ) == created
+
+
+def test_postgresql_factory_returns_with_artifacts(
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
+) -> None:
+    bundle = postgresql_collaborative_work_bundle
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
+    assert bundle.artifact is bundle.artifacts.artifact
+    assert bundle.version is bundle.artifacts.version
+    assert bundle.publication is bundle.artifacts.publication
+    assert bundle.core.store is bundle.store
+    caps = bundle.artifact.capabilities
+    assert caps.backend_id == "collaborative_work.postgresql"
+    assert caps.durable is True
+    assert caps.reference_only is False
+
+
+def test_postgresql_artifact_initial_create_and_read(
+    publication_repo: object,
+    artifact_repo: object,
+    version_repo: object,
+) -> None:
+    from tests.unit.collaborative_work.test_sqlite_artifact_repository import (
+        test_initial_create_sets_revision_and_pointer,
+    )
+
+    test_initial_create_sets_revision_and_pointer(
+        publication_repo,  # type: ignore[arg-type]
+        artifact_repo,  # type: ignore[arg-type]
+        version_repo,  # type: ignore[arg-type]
+    )
+
+
+def test_postgresql_artifact_duplicate_and_idempotency(publication_repo: object) -> None:
+    from tests.unit.collaborative_work.test_sqlite_artifact_repository import _create_command
+    import pytest
+    from intergrax.collaborative_work.repository import (
+        WorkArtifactAlreadyExists,
+        WorkArtifactIdempotencyConflict,
+        WorkArtifactVersionAlreadyExists,
+    )
+
+    repo = publication_repo  # type: ignore[assignment]
+    repo.create_artifact_with_initial_version(
+        _create_command(
+            work_artifact_id="pg-artifact-dup-1",
+            work_artifact_version_id="pg-artifact-version-dup-1a",
+        ),
+    )
+    with pytest.raises(WorkArtifactAlreadyExists):
+        repo.create_artifact_with_initial_version(
+            _create_command(
+                work_artifact_id="pg-artifact-dup-1",
+                work_artifact_version_id="pg-artifact-version-dup-1b",
+            ),
+        )
+    repo.create_artifact_with_initial_version(
+        _create_command(
+            work_artifact_id="pg-artifact-dup-2",
+            work_artifact_version_id="pg-artifact-version-dup-2a",
+        ),
+    )
+    with pytest.raises(WorkArtifactVersionAlreadyExists):
+        repo.create_artifact_with_initial_version(
+            _create_command(
+                work_artifact_id="pg-artifact-dup-3",
+                work_artifact_version_id="pg-artifact-version-dup-2a",
+            ),
+        )
+    command = _create_command(
+        work_artifact_id="pg-artifact-dup-4",
+        work_artifact_version_id="pg-artifact-version-dup-4a",
+        idempotency_key="pg-create-idem",
+    )
+    created = repo.create_artifact_with_initial_version(command)
+    assert repo.create_artifact_with_initial_version(command) == created
+    with pytest.raises(WorkArtifactIdempotencyConflict):
+        repo.create_artifact_with_initial_version(
+            _create_command(
+                work_artifact_id="pg-artifact-dup-5",
+                idempotency_key="pg-create-idem",
+            ),
+        )
+
+
+def test_postgresql_artifact_publish_cas_and_history(
+    publication_repo: object,
+    version_repo: object,
+    artifact_repo: object,
+) -> None:
+    from datetime import timedelta
+
+    import pytest
+    from tests.unit.collaborative_work.test_sqlite_artifact_repository import (
+        _create_command,
+        _publish_command,
+    )
+    from intergrax.collaborative_work.repository import (
+        WorkArtifactRevisionConflict,
+        WorkArtifactTemporalConflict,
+    )
+
+    pub = publication_repo  # type: ignore[assignment]
+    ver = version_repo  # type: ignore[assignment]
+    art = artifact_repo  # type: ignore[assignment]
+    initial = pub.create_artifact_with_initial_version(
+        _create_command(
+            work_artifact_id="pg-artifact-pub-1",
+            work_artifact_version_id="pg-artifact-version-pub-1a",
+        ),
+    )
+    published = pub.publish_version(
+        _publish_command(
+            work_artifact_id="pg-artifact-pub-1",
+            work_artifact_version_id="pg-artifact-version-pub-1b",
+            expected_revision=initial.artifact.revision,
+        ),
+    )
+    assert published.artifact.revision == initial.artifact.revision + 1
+    history = ver.list_for_artifact(
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        work_artifact_id="pg-artifact-pub-1",
+    )
+    assert history == (initial.version, published.version)
+
+    pub.create_artifact_with_initial_version(
+        _create_command(
+            work_artifact_id="pg-artifact-pub-2",
+            work_artifact_version_id="pg-artifact-version-pub-2a",
+        ),
+    )
+    pub.publish_version(
+        _publish_command(
+            work_artifact_id="pg-artifact-pub-2",
+            work_artifact_version_id="pg-artifact-version-pub-2b",
+            expected_revision=0,
+        ),
+    )
+    with pytest.raises(WorkArtifactRevisionConflict):
+        pub.publish_version(
+            _publish_command(
+                work_artifact_id="pg-artifact-pub-2",
+                work_artifact_version_id="pg-artifact-version-pub-2c",
+                expected_revision=0,
+            ),
+        )
+
+    pub.create_artifact_with_initial_version(
+        _create_command(
+            work_artifact_id="pg-artifact-pub-3",
+            work_artifact_version_id="pg-artifact-version-pub-3a",
+        ),
+    )
+    seeded = art.get(
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        work_artifact_id="pg-artifact-pub-3",
+    )
+    assert seeded is not None
+    with pytest.raises(WorkArtifactTemporalConflict):
+        pub.publish_version(
+            _publish_command(
+                work_artifact_id="pg-artifact-pub-3",
+                work_artifact_version_id="pg-artifact-version-pub-3b",
+                artifact_updated_at=seeded.updated_at - timedelta(seconds=1),
+            ),
+        )
+
+    pub.create_artifact_with_initial_version(
+        _create_command(
+            work_artifact_id="pg-artifact-pub-4",
+            work_artifact_version_id="pg-artifact-version-pub-4a",
+        ),
+    )
+    first_publish = pub.publish_version(
+        _publish_command(
+            work_artifact_id="pg-artifact-pub-4",
+            work_artifact_version_id="pg-artifact-version-pub-4b",
+            idempotency_key="pg-publish-idem",
+        ),
+    )
+    pub.publish_version(
+        _publish_command(
+            work_artifact_id="pg-artifact-pub-4",
+            work_artifact_version_id="pg-artifact-version-pub-4c",
+            expected_revision=1,
+            published_at=first_publish.version.published_at + timedelta(minutes=10),
+            artifact_updated_at=first_publish.version.published_at + timedelta(minutes=10),
+        ),
+    )
+    replay = pub.publish_version(
+        _publish_command(
+            work_artifact_id="pg-artifact-pub-4",
+            work_artifact_version_id="pg-artifact-version-pub-4b",
+            idempotency_key="pg-publish-idem",
+        ),
+    )
+    assert replay == first_publish
+    assert replay.artifact.revision == 1
+
+
+def test_postgresql_artifact_concurrent_publish_one_wins_cross_connection(
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
+) -> None:
+    from tests.unit.collaborative_work.test_sqlite_artifact_repository import (
+        _create_command,
+        _publish_command,
+        _seed_initial,
+    )
+    from intergrax.collaborative_work.repository import WorkArtifactRevisionConflict
+
+    bundle_a = postgresql_collaborative_work_bundle
+    bundle_b = open_postgresql_collaborative_work_repositories(
+        config=bundle_a.store.config,
+        schema_name=bundle_a.store.schema_name,
+    )
+    try:
+        initial = bundle_a.publication.create_artifact_with_initial_version(_create_command())
+        read_a = bundle_a.artifact.get(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            work_artifact_id="artifact-1",
+        )
+        read_b = bundle_b.artifact.get(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            work_artifact_id="artifact-1",
+        )
+        assert read_a is not None and read_b is not None
+        assert read_a.revision == read_b.revision == initial.artifact.revision
+
+        errors: list[BaseException] = []
+        barrier = threading.Barrier(2)
+
+        def attempt(bundle: CollaborativeWorkRepositoriesWithArtifacts, version_id: str) -> None:
+            try:
+                barrier.wait(timeout=5)
+                bundle.publication.publish_version(
+                    _publish_command(
+                        work_artifact_version_id=version_id,
+                        expected_revision=initial.artifact.revision,
+                    ),
+                )
+            except BaseException as exc:  # noqa: BLE001
+                errors.append(exc)
+
+        threads = [
+            threading.Thread(target=attempt, args=(bundle_a, "artifact-version-2")),
+            threading.Thread(target=attempt, args=(bundle_b, "artifact-version-3")),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert len(errors) == 1
+        assert isinstance(errors[0], WorkArtifactRevisionConflict)
+        final = bundle_a.artifact.get(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            work_artifact_id="artifact-1",
+        )
+        assert final is not None
+        assert final.revision == initial.artifact.revision + 1
+        history = bundle_a.version.list_for_artifact(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            work_artifact_id="artifact-1",
+        )
+        assert len(history) == 2
+        loser_id = "artifact-version-3" if final.current_version_id == "artifact-version-2" else "artifact-version-2"
+        assert (
+            bundle_a.version.get(
+                tenant_id="tenant-a",
+                workspace_id="workspace-a",
+                work_artifact_version_id=loser_id,
+            )
+            is None
+        )
+    finally:
+        bundle_b.close()
+
+
+def test_postgresql_artifact_cross_process_cas_one_wins(
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
+) -> None:
+    from tests.unit.collaborative_work.test_sqlite_artifact_repository import (
+        _content_ref,
+        _create_command,
+    )
+
+    bundle = postgresql_collaborative_work_bundle
+    initial = bundle.publication.create_artifact_with_initial_version(
+        _create_command(
+            work_artifact_id="artifact-cross-process",
+            work_artifact_version_id="artifact-version-cross-initial",
+        ),
+    )
+    parent_pid = os.getpid()
+    result = run_postgresql_artifact_cross_process_cas_proof(
+        config=bundle.store.config,
+        schema_name=bundle.store.schema_name,
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        work_item_id="work-item-1",
+        work_artifact_id="artifact-cross-process",
+        initial_version_id="artifact-version-cross-initial",
+        winning_version_id="artifact-version-cross-win",
+        losing_version_id="artifact-version-cross-lose",
+        expected_revision=initial.artifact.revision,
+        published_at=initial.version.published_at,
+        artifact_updated_at=initial.version.published_at,
+        content_ref=_content_ref(content_ref="content://tenant-a/workspace-a/cross-body"),
+    )
+
+    assert result.successes == 1
+    assert result.conflicts == 1
+    assert result.final_revision == initial.artifact.revision + 1
+    assert len(result.worker_pids) == 2
+    assert len(set(result.worker_pids)) == 2
+    assert all(pid != parent_pid for pid in result.worker_pids)
+    assert result.winning_version_id in {"artifact-version-cross-win", "artifact-version-cross-lose"}
+    assert (
+        bundle.version.get(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            work_artifact_version_id=result.losing_version_id,
+        )
+        is None
+    )

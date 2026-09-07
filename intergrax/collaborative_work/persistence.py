@@ -10,12 +10,15 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from intergrax.collaborative_work.postgresql_repository import (
+    PostgreSQLArtifactPublicationRepository,
     PostgreSQLAssignmentRepository,
     PostgreSQLAuthorityDelegationRepository,
     PostgreSQLCollaborativeOperationPolicyProfileRepository,
     PostgreSQLCollaborativePolicyRepository,
     PostgreSQLCollaborativeWorkStore,
     PostgreSQLPrincipalAuthorityRepository,
+    PostgreSQLWorkArtifactRepository,
+    PostgreSQLWorkArtifactVersionRepository,
     PostgreSQLWorkItemExecutionLinkRepository,
     PostgreSQLWorkItemRepository,
     PostgreSQLWorkspaceMembershipRepository,
@@ -265,7 +268,7 @@ def open_postgresql_collaborative_work_repositories(
     config: PostgreSQLIntegrationConfig | None = None,
     connection_factory: Callable[[], Any] | None = None,
     schema_name: str | None = None,
-) -> CollaborativeWorkRepositoriesWithSharedWork:
+) -> CollaborativeWorkRepositoriesWithArtifacts:
     """Open production-grade Collaborative Work repositories backed by PostgreSQL."""
     resolved = config or PostgreSQLIntegrationConfig.from_env()
     try:
@@ -288,11 +291,16 @@ def open_postgresql_collaborative_work_repositories(
         operation_profile=PostgreSQLCollaborativeOperationPolicyProfileRepository(store),
         store=store,
     )
-    return CollaborativeWorkRepositoriesWithSharedWork(
+    return CollaborativeWorkRepositoriesWithArtifacts(
         core=core,
         shared_work=CollaborativeWorkSharedWorkRepositories(
             work_item=PostgreSQLWorkItemRepository(store),
             assignment=PostgreSQLAssignmentRepository(store),
             execution_link=PostgreSQLWorkItemExecutionLinkRepository(store),
+        ),
+        artifacts=CollaborativeWorkArtifactRepositories(
+            artifact=PostgreSQLWorkArtifactRepository(store),
+            version=PostgreSQLWorkArtifactVersionRepository(store),
+            publication=PostgreSQLArtifactPublicationRepository(store),
         ),
     )

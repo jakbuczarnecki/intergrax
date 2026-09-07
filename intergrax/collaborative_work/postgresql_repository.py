@@ -21,6 +21,7 @@ from intergrax.integrations.providers.relational_store.postgresql.session import
     is_postgresql_unique_violation,
 )
 from intergrax.collaborative_work.repository import (
+    ArtifactPublicationIdempotencyConflict,
     AssignmentAlreadyExists,
     AssignmentIdempotencyConflict,
     AssignmentNotFound,
@@ -38,6 +39,7 @@ from intergrax.collaborative_work.repository import (
     CollaborativePolicyRuleNotFound,
     CollaborativePolicyRuleRevisionConflict,
     CollaborativeWorkRepositoryCapabilities,
+    CreateArtifactWithInitialVersionCommand,
     CreateAssignmentCommand,
     CreateAuthorityDelegationCommand,
     CreateCollaborativeOperationPolicyProfileCommand,
@@ -51,6 +53,8 @@ from intergrax.collaborative_work.repository import (
     PrincipalAuthorityGrantIdempotencyConflict,
     PrincipalAuthorityGrantNotFound,
     PrincipalAuthorityGrantRevisionConflict,
+    PublishWorkArtifactVersionCommand,
+    PublishedWorkArtifactVersion,
     UpdateAssignmentCommand,
     UpdateAuthorityDelegationCommand,
     UpdateCollaborativeOperationPolicyProfileCommand,
@@ -58,6 +62,12 @@ from intergrax.collaborative_work.repository import (
     UpdatePrincipalAuthorityGrantCommand,
     UpdateWorkItemCommand,
     UpdateWorkspaceMembershipCommand,
+    WorkArtifactAlreadyExists,
+    WorkArtifactIdempotencyConflict,
+    WorkArtifactNotFound,
+    WorkArtifactRevisionConflict,
+    WorkArtifactTemporalConflict,
+    WorkArtifactVersionAlreadyExists,
     WorkItemAlreadyExists,
     WorkItemExecutionLinkAlreadyExists,
     WorkItemExecutionLinkIdempotencyConflict,
@@ -68,6 +78,8 @@ from intergrax.collaborative_work.repository import (
     WorkspaceMembershipIdempotencyConflict,
     WorkspaceMembershipNotFound,
     WorkspaceMembershipRevisionConflict,
+    _ARTIFACT_CREATE_IDEMPOTENCY_NAMESPACE,
+    _ARTIFACT_PUBLISH_IDEMPOTENCY_NAMESPACE,
 )
 from intergrax.collaborative_work.serialization import (
     assignment_from_json,
@@ -84,6 +96,12 @@ from intergrax.collaborative_work.serialization import (
     work_item_to_json,
     work_item_execution_link_from_json,
     work_item_execution_link_to_json,
+    published_work_artifact_version_from_json,
+    published_work_artifact_version_to_json,
+    work_artifact_from_json,
+    work_artifact_to_json,
+    work_artifact_version_from_json,
+    work_artifact_version_to_json,
     workspace_membership_from_json,
     workspace_membership_to_json,
 )
@@ -94,9 +112,12 @@ from intergrax.contracts.collaborative_work import (
     CollaborativePolicyRule,
     PolicyCompositionLayer,
     PrincipalAuthorityGrant,
+    WorkArtifact,
+    WorkArtifactVersion,
     WorkItem,
     WorkItemExecutionLink,
     WorkspaceMembership,
+    validate_work_artifact_current_version,
 )
 
 _CLOSED_ERROR = "Collaborative Work repository store is closed"
@@ -299,6 +320,40 @@ class PostgreSQLCollaborativeWorkStore:
 
                 CREATE INDEX IF NOT EXISTS idx_execution_links_work_item
                     ON work_item_execution_links (tenant_id, workspace_id, work_item_id);
+
+                CREATE TABLE IF NOT EXISTS work_artifacts (
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    work_artifact_id TEXT NOT NULL,
+                    work_item_id TEXT NOT NULL,
+                    current_version_id TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    PRIMARY KEY (tenant_id, workspace_id, work_artifact_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_work_artifacts_work_item
+                    ON work_artifacts (tenant_id, workspace_id, work_item_id);
+
+                CREATE TABLE IF NOT EXISTS work_artifact_versions (
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    work_artifact_version_id TEXT NOT NULL,
+                    work_artifact_id TEXT NOT NULL,
+                    work_item_id TEXT NOT NULL,
+                    published_at TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    PRIMARY KEY (tenant_id, workspace_id, work_artifact_version_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_work_artifact_versions_history
+                    ON work_artifact_versions (
+                        tenant_id,
+                        workspace_id,
+                        work_artifact_id,
+                        published_at,
+                        work_artifact_version_id
+                    );
                 """
             )
             self._schema_ready = True
@@ -2036,3 +2091,568 @@ class PostgreSQLWorkItemExecutionLinkRepository(_IdempotencyMixin):
         if fingerprint != command.semantic_fingerprint():
             raise WorkItemExecutionLinkIdempotencyConflict("execution link idempotency key conflict")
         return record
+
+
+def _work_artifact_version_sort_key(record: WorkArtifactVersion) -> tuple[str, str]:
+    return (record.published_at.isoformat(), record.work_artifact_version_id)
+
+
+class _ArtifactPublicationIdempotencyMixin:
+    _store: PostgreSQLCollaborativeWorkStore
+
+    def _load_publication_idempotency(
+        self,
+        conn: Any,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        entity_kind: str,
+        idempotency_key: str,
+    ) -> tuple[str, PublishedWorkArtifactVersion] | None:
+        row = conn.execute(
+            """
+            SELECT semantic_fingerprint, result_json
+            FROM collaborative_idempotency
+            WHERE tenant_id = %s AND workspace_id = %s AND entity_kind = %s AND idempotency_key = %s
+            """,
+            (
+                tenant_id.strip(),
+                workspace_id.strip(),
+                entity_kind,
+                idempotency_key.strip(),
+            ),
+        ).fetchone()
+        if row is None:
+            return None
+        return row["semantic_fingerprint"], published_work_artifact_version_from_json(row["result_json"])
+
+    def _store_publication_idempotency(
+        self,
+        conn: Any,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        entity_kind: str,
+        idempotency_key: str,
+        fingerprint: str,
+        result: PublishedWorkArtifactVersion,
+    ) -> None:
+        conn.execute(
+            """
+            INSERT INTO collaborative_idempotency (
+                tenant_id, workspace_id, entity_kind, idempotency_key,
+                semantic_fingerprint, result_json
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                tenant_id.strip(),
+                workspace_id.strip(),
+                entity_kind,
+                idempotency_key.strip(),
+                fingerprint,
+                published_work_artifact_version_to_json(result),
+            ),
+        )
+
+
+class PostgreSQLWorkArtifactRepository:
+    """Durable read port for WorkArtifact aggregate snapshots."""
+
+    def __init__(self, store: PostgreSQLCollaborativeWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_id: str,
+    ) -> WorkArtifact | None:
+        with self._store.transaction() as conn:
+            return self._get_in_transaction(
+                conn,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                work_artifact_id=work_artifact_id,
+            )
+
+    def _get_in_transaction(
+        self,
+        conn: Any,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_id: str,
+    ) -> WorkArtifact | None:
+        row = conn.execute(
+            """
+            SELECT record_json FROM work_artifacts
+            WHERE tenant_id = %s AND workspace_id = %s AND work_artifact_id = %s
+            """,
+            (tenant_id.strip(), workspace_id.strip(), work_artifact_id.strip()),
+        ).fetchone()
+        if row is None:
+            return None
+        record = work_artifact_from_json(row["record_json"])
+        if not _scope_matches_tenant_workspace(
+            record.tenant_id,
+            record.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            return None
+        if record.work_artifact_id.strip() != work_artifact_id.strip():
+            return None
+        return record
+
+
+class PostgreSQLWorkArtifactVersionRepository:
+    """Durable read port for immutable WorkArtifactVersion history."""
+
+    def __init__(self, store: PostgreSQLCollaborativeWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_version_id: str,
+    ) -> WorkArtifactVersion | None:
+        with self._store.transaction() as conn:
+            return self._get_in_transaction(
+                conn,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                work_artifact_version_id=work_artifact_version_id,
+            )
+
+    def list_for_artifact(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_id: str,
+    ) -> tuple[WorkArtifactVersion, ...]:
+        with self._store.transaction() as conn:
+            rows = conn.execute(
+                """
+                SELECT record_json FROM work_artifact_versions
+                WHERE tenant_id = %s AND workspace_id = %s AND work_artifact_id = %s
+                ORDER BY published_at ASC, work_artifact_version_id ASC
+                """,
+                (
+                    tenant_id.strip(),
+                    workspace_id.strip(),
+                    work_artifact_id.strip(),
+                ),
+            ).fetchall()
+        records = [work_artifact_version_from_json(row["record_json"]) for row in rows]
+        normalized_tenant = tenant_id.strip()
+        normalized_workspace = workspace_id.strip()
+        normalized_artifact = work_artifact_id.strip()
+        scoped = [
+            record
+            for record in records
+            if record.tenant_id == normalized_tenant
+            and record.workspace_id == normalized_workspace
+            and record.work_artifact_id == normalized_artifact
+        ]
+        return tuple(sorted(scoped, key=_work_artifact_version_sort_key))
+
+    def _get_in_transaction(
+        self,
+        conn: Any,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_version_id: str,
+    ) -> WorkArtifactVersion | None:
+        row = conn.execute(
+            """
+            SELECT record_json FROM work_artifact_versions
+            WHERE tenant_id = %s AND workspace_id = %s AND work_artifact_version_id = %s
+            """,
+            (
+                tenant_id.strip(),
+                workspace_id.strip(),
+                work_artifact_version_id.strip(),
+            ),
+        ).fetchone()
+        if row is None:
+            return None
+        record = work_artifact_version_from_json(row["record_json"])
+        if not _scope_matches_tenant_workspace(
+            record.tenant_id,
+            record.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            return None
+        if record.work_artifact_version_id.strip() != work_artifact_version_id.strip():
+            return None
+        return record
+
+
+class PostgreSQLArtifactPublicationRepository(_ArtifactPublicationIdempotencyMixin):
+    """Durable authoritative publication boundary for WorkArtifact writes."""
+
+    def __init__(self, store: PostgreSQLCollaborativeWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def create_artifact_with_initial_version(
+        self,
+        command: CreateArtifactWithInitialVersionCommand,
+    ) -> PublishedWorkArtifactVersion:
+        with self._store.transaction() as conn:
+            try:
+                if command.idempotency_key is not None:
+                    replay = self._replay_create(conn, command)
+                    if replay is not None:
+                        return replay
+
+                existing_artifact = self._get_artifact_in_transaction(
+                    conn,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_artifact_id=command.work_artifact_id,
+                )
+                if existing_artifact is not None:
+                    raise WorkArtifactAlreadyExists("work artifact already exists")
+
+                existing_version = self._get_version_in_transaction(
+                    conn,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_artifact_version_id=command.work_artifact_version_id,
+                )
+                if existing_version is not None:
+                    raise WorkArtifactVersionAlreadyExists("work artifact version already exists")
+
+                artifact = WorkArtifact(
+                    work_artifact_id=command.work_artifact_id,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_item_id=command.work_item_id,
+                    created_by_principal_id=command.created_by_principal_id,
+                    current_version_id=command.work_artifact_version_id,
+                    revision=INITIAL_RECORD_REVISION,
+                    created_at=command.artifact_created_at,
+                    updated_at=command.artifact_updated_at,
+                )
+                version = WorkArtifactVersion(
+                    work_artifact_version_id=command.work_artifact_version_id,
+                    work_artifact_id=command.work_artifact_id,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_item_id=command.work_item_id,
+                    created_by_principal_id=command.created_by_principal_id,
+                    published_by_principal_id=command.published_by_principal_id,
+                    content_ref=command.content_ref,
+                    created_at=command.version_created_at,
+                    published_at=command.version_published_at,
+                    execution=command.execution,
+                )
+                validate_work_artifact_current_version(artifact=artifact, version=version)
+
+                artifact_json = work_artifact_to_json(artifact)
+                version_json = work_artifact_version_to_json(version)
+                conn.execute(
+                    """
+                    INSERT INTO work_artifacts (
+                        tenant_id, workspace_id, work_artifact_id, work_item_id,
+                        current_version_id, record_json, revision
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        artifact.tenant_id.strip(),
+                        artifact.workspace_id.strip(),
+                        artifact.work_artifact_id.strip(),
+                        artifact.work_item_id.strip(),
+                        artifact.current_version_id.strip(),
+                        artifact_json,
+                        artifact.revision,
+                    ),
+                )
+                conn.execute(
+                    """
+                    INSERT INTO work_artifact_versions (
+                        tenant_id, workspace_id, work_artifact_version_id,
+                        work_artifact_id, work_item_id, published_at, record_json
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        version.tenant_id.strip(),
+                        version.workspace_id.strip(),
+                        version.work_artifact_version_id.strip(),
+                        version.work_artifact_id.strip(),
+                        version.work_item_id.strip(),
+                        version.published_at.isoformat(),
+                        version_json,
+                    ),
+                )
+                result = PublishedWorkArtifactVersion(artifact=artifact, version=version)
+                if command.idempotency_key is not None:
+                    self._store_publication_idempotency(
+                        conn,
+                        tenant_id=command.tenant_id,
+                        workspace_id=command.workspace_id,
+                        entity_kind=_ARTIFACT_CREATE_IDEMPOTENCY_NAMESPACE,
+                        idempotency_key=command.idempotency_key,
+                        fingerprint=command.semantic_fingerprint(),
+                        result=result,
+                    )
+                return result
+            except Exception as exc:
+                if _unique_violation(exc):
+                    if command.idempotency_key is not None:
+                        with self._store.transaction() as replay_conn:
+                            replay = self._replay_create(replay_conn, command)
+                            if replay is not None:
+                                return replay
+                    raise self._classify_create_unique_violation(command) from exc
+                raise
+
+    def publish_version(
+        self,
+        command: PublishWorkArtifactVersionCommand,
+    ) -> PublishedWorkArtifactVersion:
+        with self._store.transaction() as conn:
+            try:
+                if command.idempotency_key is not None:
+                    replay = self._replay_publish(conn, command)
+                    if replay is not None:
+                        return replay
+
+                current = self._get_artifact_in_transaction(
+                    conn,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_artifact_id=command.work_artifact_id,
+                )
+                if current is None or not _scope_matches_tenant_workspace(
+                    current.tenant_id,
+                    current.workspace_id,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                ):
+                    raise WorkArtifactNotFound("work artifact was not found")
+                if current.work_item_id != command.work_item_id:
+                    raise WorkArtifactNotFound("work artifact was not found")
+                if current.revision != command.expected_revision:
+                    raise WorkArtifactRevisionConflict("work artifact revision conflict")
+                if command.artifact_updated_at < current.updated_at:
+                    raise WorkArtifactTemporalConflict("work artifact temporal conflict")
+
+                existing_version = self._get_version_in_transaction(
+                    conn,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_artifact_version_id=command.work_artifact_version_id,
+                )
+                if existing_version is not None:
+                    raise WorkArtifactVersionAlreadyExists("work artifact version already exists")
+
+                version = WorkArtifactVersion(
+                    work_artifact_version_id=command.work_artifact_version_id,
+                    work_artifact_id=command.work_artifact_id,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_item_id=command.work_item_id,
+                    created_by_principal_id=command.created_by_principal_id,
+                    published_by_principal_id=command.published_by_principal_id,
+                    content_ref=command.content_ref,
+                    created_at=command.created_at,
+                    published_at=command.published_at,
+                    execution=command.execution,
+                )
+                updated_artifact = WorkArtifact(
+                    work_artifact_id=current.work_artifact_id,
+                    tenant_id=current.tenant_id,
+                    workspace_id=current.workspace_id,
+                    work_item_id=current.work_item_id,
+                    created_by_principal_id=current.created_by_principal_id,
+                    current_version_id=command.work_artifact_version_id,
+                    revision=current.revision + 1,
+                    created_at=current.created_at,
+                    updated_at=command.artifact_updated_at,
+                )
+                validate_work_artifact_current_version(artifact=updated_artifact, version=version)
+
+                version_json = work_artifact_version_to_json(version)
+                conn.execute(
+                    """
+                    INSERT INTO work_artifact_versions (
+                        tenant_id, workspace_id, work_artifact_version_id,
+                        work_artifact_id, work_item_id, published_at, record_json
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        version.tenant_id.strip(),
+                        version.workspace_id.strip(),
+                        version.work_artifact_version_id.strip(),
+                        version.work_artifact_id.strip(),
+                        version.work_item_id.strip(),
+                        version.published_at.isoformat(),
+                        version_json,
+                    ),
+                )
+                updated = conn.execute(
+                    """
+                    UPDATE work_artifacts
+                    SET record_json = %s, revision = %s, current_version_id = %s
+                    WHERE tenant_id = %s AND workspace_id = %s AND work_artifact_id = %s
+                      AND revision = %s
+                    """,
+                    (
+                        work_artifact_to_json(updated_artifact),
+                        updated_artifact.revision,
+                        updated_artifact.current_version_id.strip(),
+                        updated_artifact.tenant_id.strip(),
+                        updated_artifact.workspace_id.strip(),
+                        updated_artifact.work_artifact_id.strip(),
+                        command.expected_revision,
+                    ),
+                )
+                if updated.rowcount != 1:
+                    raise WorkArtifactRevisionConflict("work artifact revision conflict")
+
+                result = PublishedWorkArtifactVersion(artifact=updated_artifact, version=version)
+                if command.idempotency_key is not None:
+                    self._store_publication_idempotency(
+                        conn,
+                        tenant_id=command.tenant_id,
+                        workspace_id=command.workspace_id,
+                        entity_kind=_ARTIFACT_PUBLISH_IDEMPOTENCY_NAMESPACE,
+                        idempotency_key=command.idempotency_key,
+                        fingerprint=command.semantic_fingerprint(),
+                        result=result,
+                    )
+                return result
+            except (
+                WorkArtifactNotFound,
+                WorkArtifactRevisionConflict,
+                WorkArtifactTemporalConflict,
+                WorkArtifactVersionAlreadyExists,
+                ArtifactPublicationIdempotencyConflict,
+            ):
+                raise
+            except Exception as exc:
+                if _unique_violation(exc):
+                    with self._store.transaction() as classify_conn:
+                        if self._get_version_in_transaction(
+                            classify_conn,
+                            tenant_id=command.tenant_id,
+                            workspace_id=command.workspace_id,
+                            work_artifact_version_id=command.work_artifact_version_id,
+                        ) is not None:
+                            raise WorkArtifactVersionAlreadyExists(
+                                "work artifact version already exists",
+                            ) from exc
+                    raise WorkArtifactRevisionConflict("work artifact revision conflict") from exc
+                raise
+
+    def _get_artifact_in_transaction(
+        self,
+        conn: Any,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_id: str,
+    ) -> WorkArtifact | None:
+        return PostgreSQLWorkArtifactRepository(self._store)._get_in_transaction(
+            conn,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            work_artifact_id=work_artifact_id,
+        )
+
+    def _get_version_in_transaction(
+        self,
+        conn: Any,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_version_id: str,
+    ) -> WorkArtifactVersion | None:
+        return PostgreSQLWorkArtifactVersionRepository(self._store)._get_in_transaction(
+            conn,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            work_artifact_version_id=work_artifact_version_id,
+        )
+
+    def _replay_create(
+        self,
+        conn: Any,
+        command: CreateArtifactWithInitialVersionCommand,
+    ) -> PublishedWorkArtifactVersion | None:
+        assert command.idempotency_key is not None
+        loaded = self._load_publication_idempotency(
+            conn,
+            tenant_id=command.tenant_id,
+            workspace_id=command.workspace_id,
+            entity_kind=_ARTIFACT_CREATE_IDEMPOTENCY_NAMESPACE,
+            idempotency_key=command.idempotency_key,
+        )
+        if loaded is None:
+            return None
+        fingerprint, record = loaded
+        if fingerprint != command.semantic_fingerprint():
+            raise WorkArtifactIdempotencyConflict("work artifact idempotency key conflict")
+        return record
+
+    def _replay_publish(
+        self,
+        conn: Any,
+        command: PublishWorkArtifactVersionCommand,
+    ) -> PublishedWorkArtifactVersion | None:
+        assert command.idempotency_key is not None
+        loaded = self._load_publication_idempotency(
+            conn,
+            tenant_id=command.tenant_id,
+            workspace_id=command.workspace_id,
+            entity_kind=_ARTIFACT_PUBLISH_IDEMPOTENCY_NAMESPACE,
+            idempotency_key=command.idempotency_key,
+        )
+        if loaded is None:
+            return None
+        fingerprint, record = loaded
+        if fingerprint != command.semantic_fingerprint():
+            raise ArtifactPublicationIdempotencyConflict(
+                "artifact publication idempotency key conflict",
+            )
+        return record
+
+    def _classify_create_unique_violation(
+        self,
+        command: CreateArtifactWithInitialVersionCommand,
+    ) -> Exception:
+        with self._store.transaction() as conn:
+            if self._get_artifact_in_transaction(
+                conn,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                work_artifact_id=command.work_artifact_id,
+            ) is not None:
+                return WorkArtifactAlreadyExists("work artifact already exists")
+            if self._get_version_in_transaction(
+                conn,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                work_artifact_version_id=command.work_artifact_version_id,
+            ) is not None:
+                return WorkArtifactVersionAlreadyExists("work artifact version already exists")
+        return WorkArtifactAlreadyExists("work artifact already exists")

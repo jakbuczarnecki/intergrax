@@ -10,7 +10,7 @@ import pytest
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
-from intergrax.collaborative_work.persistence import CollaborativeWorkRepositoriesWithSharedWork
+from intergrax.collaborative_work.persistence import CollaborativeWorkRepositoriesWithArtifacts
 from intergrax.collaborative_work.policy_source import CollaborativePolicyEvaluator
 from intergrax.collaborative_work.repository import (
     CreateCollaborativeOperationPolicyProfileCommand,
@@ -63,7 +63,7 @@ class _UnusedRuntimeEvaluator:
 
 
 def _seed_postgresql_bundle(
-    bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> CollaborativeWorkService:
     bundle.membership.create(
         CreateWorkspaceMembershipCommand(
@@ -123,7 +123,7 @@ def _seed_postgresql_bundle(
 
 
 def test_postgresql_service_work_item_create_and_transition(
-    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithSharedWork,
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     bundle = postgresql_collaborative_work_bundle
     service = _seed_postgresql_bundle(bundle)

@@ -72,7 +72,7 @@ def test_sqlite_factory_returns_full_artifact_bundle(tmp_path: Path) -> None:
         bundle.close()
 
 
-def test_postgresql_factory_returns_full_shared_work_bundle() -> None:
+def test_postgresql_factory_returns_full_artifact_bundle() -> None:
     from intergrax.integrations.providers.relational_store.postgresql.config import (
         PostgreSQLIntegrationConfig,
     )
@@ -85,9 +85,13 @@ def test_postgresql_factory_returns_full_shared_work_bundle() -> None:
             config=PostgreSQLIntegrationConfig(dsn="postgresql://localhost/test"),
         )
     try:
-        assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
+        assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
         assert isinstance(bundle.shared_work, CollaborativeWorkSharedWorkRepositories)
+        assert isinstance(bundle.artifacts, CollaborativeWorkArtifactRepositories)
         assert isinstance(bundle.work_item, WorkItemRepository)
+        assert isinstance(bundle.artifact, WorkArtifactRepository)
+        assert isinstance(bundle.version, WorkArtifactVersionRepository)
+        assert isinstance(bundle.publication, ArtifactPublicationRepository)
         assert isinstance(bundle.assignment, AssignmentRepository)
         assert isinstance(bundle.execution_link, WorkItemExecutionLinkRepository)
         assert isinstance(bundle.core, CollaborativeWorkRepositories)
@@ -97,9 +101,9 @@ def test_postgresql_factory_returns_full_shared_work_bundle() -> None:
         store.close.assert_called_once()
 
 
-def test_postgresql_open_return_annotation_guarantees_shared_work() -> None:
+def test_postgresql_open_return_annotation_guarantees_artifacts() -> None:
     hints = get_type_hints(open_postgresql_collaborative_work_repositories)
-    assert hints["return"] is CollaborativeWorkRepositoriesWithSharedWork
+    assert hints["return"] is CollaborativeWorkRepositoriesWithArtifacts
 
 
 def test_core_bundle_has_no_optional_shared_work_fields() -> None:
@@ -153,7 +157,7 @@ def test_sqlite_profile_materializes_full_artifact_bundle(tmp_path: Path) -> Non
         bundle.close()
 
 
-def test_postgresql_profile_materializes_full_shared_work_bundle() -> None:
+def test_postgresql_profile_materializes_full_artifact_bundle() -> None:
     register_postgresql_integration()
     profile = IntegrationProfile(
         relational_store=POSTGRESQL,
@@ -162,7 +166,7 @@ def test_postgresql_profile_materializes_full_shared_work_bundle() -> None:
     with patch(
         "intergrax.collaborative_work.persistence.open_postgresql_collaborative_work_repositories",
     ) as open_fn:
-        open_fn.return_value = CollaborativeWorkRepositoriesWithSharedWork(
+        open_fn.return_value = CollaborativeWorkRepositoriesWithArtifacts(
             core=CollaborativeWorkRepositories(
                 membership=object(),  # type: ignore[arg-type]
                 delegation=object(),  # type: ignore[arg-type]
@@ -176,9 +180,14 @@ def test_postgresql_profile_materializes_full_shared_work_bundle() -> None:
                 assignment=object(),  # type: ignore[arg-type]
                 execution_link=object(),  # type: ignore[arg-type]
             ),
+            artifacts=CollaborativeWorkArtifactRepositories(
+                artifact=object(),  # type: ignore[arg-type]
+                version=object(),  # type: ignore[arg-type]
+                publication=object(),  # type: ignore[arg-type]
+            ),
         )
         bundle = resolve_collaborative_work_repositories(profile)
-    assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
     bundle.close()
 
 

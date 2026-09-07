@@ -151,12 +151,12 @@ def test_real_postgresql_provider_qualification_execution_and_persistence() -> N
         assert run.result_summary.failed == 0
         assert run.result_summary.skipped == 0
         assert run.result_summary.passed > 0
-        cross_process_codes = [
-            item.code
-            for item in run.evidence
-            if item.code == "shared_work.concurrency.cross_process"
-        ]
-        assert cross_process_codes == ["shared_work.concurrency.cross_process"]
+        cross_process_codes = [item.code for item in run.evidence if "cross_process" in item.code]
+        assert "shared_work.concurrency.cross_process" in cross_process_codes
+        assert "shared_work.artifact.concurrency.cross_process" in cross_process_codes
+        artifact_codes = [item.code for item in run.evidence if item.code.startswith("shared_work.artifact")]
+        assert "shared_work.artifacts" in artifact_codes
+        assert "shared_work.artifact.atomic_publication" in artifact_codes
         assert run.environment_metadata.real_backend is True
         assert run.environment_metadata.mocks is False
         assert run.environment_metadata.sqlite_substitution is False
