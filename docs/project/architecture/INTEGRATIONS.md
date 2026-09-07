@@ -847,7 +847,7 @@ Secret **persistence** (`SecretsStore`) and secret **brokering** are separate co
 | --- | --- |
 | `CredentialRef` | Opaque secret identity — never material |
 | `SecretsStore` + `SecretsStoreCredentialResolver` | Legacy/general late resolution (tenant scope) |
-| `CredentialUseGrant` + `CredentialUseScope` | Immutable, secret-free bounded-use authority |
+| `CredentialUseGrant` + `CredentialUseScope` | Immutable, secret-free time-bounded authority (`expires_at`) |
 | `CredentialScopeAdmissionPort` | Governance/admission seam (constructor-injected; fail closed when unavailable) |
 | `ScopedCredentialBroker` | Validates grant/scope dimensions, admits, then resolves immediately before use |
 | `CredentialUseEvidence` | Safe audit correlation (no secret material) |

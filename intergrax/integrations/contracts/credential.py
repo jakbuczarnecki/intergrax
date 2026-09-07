@@ -137,7 +137,6 @@ class CredentialUseGrant:
     execution_id: str
     target_scope: NetworkEgressAllowlist
     expires_at: datetime
-    max_uses: int | None = None
 
 
 @dataclass(slots=True)

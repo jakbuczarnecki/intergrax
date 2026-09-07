@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.integrations.contracts.credential import CredentialUseGrant
+
 pytestmark = pytest.mark.unit
 
 _FORBIDDEN_IMPORT_PREFIXES = (
@@ -53,3 +55,7 @@ def test_credential_contract_forbidden_imports() -> None:
     repo_root = Path(__file__).resolve().parents[4]
     path = repo_root / "intergrax" / "integrations" / "contracts" / "credential.py"
     _assert_no_forbidden_imports(path)
+
+
+def test_credential_use_grant_has_no_unenforced_use_count_semantics() -> None:
+    assert "max_uses" not in CredentialUseGrant.__dataclass_fields__

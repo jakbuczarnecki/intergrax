@@ -12,6 +12,8 @@
 
 **Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching; physical provider qualification still blocked. **P0-2 secret broker remediation** (2026-09-07): purpose-scoped grant/broker contracts + enforcement at resolution boundary.
 
+**P0-2 independent audit correction:** unenforced `max_uses` field removed. V1 bounded credential authority is time-bounded via `expires_at` only. Use-count restrictions require a future concurrency-safe lifecycle authority.
+
 ---
 
 ## 1. Verdict
@@ -238,7 +240,7 @@ Do **not** implement `WorkerSecretBroker`, `AWSecretStore`, or host filtering in
 ## 11. Status
 
 ```text
-AW-7C SECRET BROKER PREREQUISITE: PASS
+AW-7C SECRET BROKER PREREQUISITE: IMPLEMENTED / AWAITING INDEPENDENT RE-AUDIT
 AW-7C EGRESS PREREQUISITE: PARTIALLY REMEDIATED / PROVIDER QUALIFICATION BLOCKED
 AW-7C: BLOCKED BY PREREQUISITE
 AW-7:  IN PROGRESS
