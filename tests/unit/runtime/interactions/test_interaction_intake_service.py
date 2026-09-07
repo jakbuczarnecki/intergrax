@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
-
 import pytest
 
-from intergrax.runtime.nexus.nexus_loop import NexusLoop  # noqa: F401 — preload to avoid interactions import cycle
 from intergrax.runtime.interactions.intake_service import InteractionIntakeService
-from intergrax.runtime.interactions.task_executor import NexusLoopTaskExecutor
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 
@@ -65,34 +61,6 @@ async def test_interaction_intake_does_not_execute_when_execute_false() -> None:
     assert intake.result is None
     assert executor.execute_calls == 0
     assert executor.prepare_calls == 1
-
-
-@pytest.mark.asyncio
-async def test_interaction_intake_nexus_loop_backward_compat() -> None:
-    loop = AsyncMock()
-    loop.handle_task.return_value = TaskResult(
-        task_id="task-1",
-        state=TaskState.COMPLETED,
-        answer="legacy",
-    )
-    enricher_calls = 0
-
-    def enricher(task: Task) -> Task:
-        nonlocal enricher_calls
-        enricher_calls += 1
-        return task
-
-    service = InteractionIntakeService(nexus_loop=loop, task_enricher=enricher)
-    intake = await service.intake_payload(
-        {"message": "hello", "capability": "echo.basic", "user_id": "u1"},
-        tenant_id="t1",
-        execute=True,
-    )
-    assert isinstance(service._resolve_executor(), NexusLoopTaskExecutor)
-    assert enricher_calls == 1
-    loop.handle_task.assert_awaited_once()
-    assert intake.result is not None
-    assert intake.result.answer == "legacy"
 
 
 @pytest.mark.asyncio
