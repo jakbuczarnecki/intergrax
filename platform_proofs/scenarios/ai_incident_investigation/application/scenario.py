@@ -136,7 +136,6 @@ def derive_terminal_outcome(
 
 
 TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH_ENV = "INTERGRAX_TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH"
-_last_terminal_acceptance_diagnostic: "TerminalAcceptanceDiagnostic | None" = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,11 +158,7 @@ class TerminalAcceptanceDiagnostic:
         }
 
 
-def peek_last_terminal_acceptance_diagnostic() -> TerminalAcceptanceDiagnostic | None:
-    return _last_terminal_acceptance_diagnostic
-
-
-def capture_terminal_acceptance_diagnostic(
+def build_terminal_acceptance_diagnostic(
     *,
     critic_verdict_passed: bool,
     has_supported_diagnosis: bool,
@@ -172,8 +167,7 @@ def capture_terminal_acceptance_diagnostic(
     revision_pass: bool,
     evidence_gathering_stop_reason: str,
 ) -> TerminalAcceptanceDiagnostic:
-    global _last_terminal_acceptance_diagnostic
-    diagnostic = TerminalAcceptanceDiagnostic(
+    return TerminalAcceptanceDiagnostic(
         critic_verdict_passed=critic_verdict_passed,
         has_supported_diagnosis=has_supported_diagnosis,
         completion_mode=completion_mode,
@@ -181,12 +175,9 @@ def capture_terminal_acceptance_diagnostic(
         revision_pass=revision_pass,
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
-    _last_terminal_acceptance_diagnostic = diagnostic
-    _persist_terminal_acceptance_diagnostic(diagnostic)
-    return diagnostic
 
 
-def _persist_terminal_acceptance_diagnostic(diagnostic: TerminalAcceptanceDiagnostic) -> None:
+def persist_terminal_acceptance_diagnostic(diagnostic: TerminalAcceptanceDiagnostic) -> None:
     path_raw = os.environ.get(TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH_ENV, "").strip()
     if not path_raw:
         return
@@ -489,7 +480,7 @@ async def execute_resolved_skeleton(
     if task_result.state.value != "completed" and critic_verdict_passed:
         raise RuntimeError(f"investigator task not completed: {task_result.state}")
 
-    capture_terminal_acceptance_diagnostic(
+    diagnostic = build_terminal_acceptance_diagnostic(
         critic_verdict_passed=critic_verdict_passed,
         has_supported_diagnosis=has_supported_diagnosis,
         completion_mode=completion_mode,
@@ -497,6 +488,7 @@ async def execute_resolved_skeleton(
         revision_pass=revision_pass,
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
+    persist_terminal_acceptance_diagnostic(diagnostic)
     outcome = derive_terminal_outcome(
         critic_verdict_passed=critic_verdict_passed,
         has_supported_diagnosis=has_supported_diagnosis,
