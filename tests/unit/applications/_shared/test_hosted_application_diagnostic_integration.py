@@ -32,35 +32,53 @@ from intergrax.hosting import (
     run_guarded_hosted_process_bootstrap,
 )
 from intergrax.hosting.contracts.context import (
+    HostedApplicationClock,
     HostedApplicationContext,
     HostedApplicationEventPublisher,
     HostedApplicationPaths,
+    HostedApplicationProcessIdentity,
 )
 from intergrax.hosting.contracts.events import HostedApplicationEvent
 from intergrax.hosting.contracts.policies import InstanceExclusivityMode, RestartMode
 from intergrax.hosting.engine.ports import HostedApplicationRuntime
-from intergrax.hosting.eventing import ObservabilityHostedApplicationEventPublisher
+from intergrax.hosting.eventing import (
+    HostingObservabilityAttributes,
+    ObservabilityHostedApplicationEventPublisher,
+)
 from intergrax.hosting.runner import _RunnerFactories, _run_resolved_hosted_application
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     STRATEGY_ID,
     DeterministicProblemGroupingStrategy,
 )
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
+from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessmentBuilder,
+)
 from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticOrchestrationRequest,
+    DiagnosticOrchestrationResult,
     DiagnosticSignalSubjectScope,
+)
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrencePersistence,
 )
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
 from intergrax.runtime.diagnostics.diagnostic_subject import DiagnosticSubjectKind
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
-from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
+from intergrax.runtime.diagnostics.execution_reconstruction import (
+    ExecutionReconstructor,
+)
+from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
+    InMemoryProblemPersistence,
+)
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
     ProblemGroupingStrategyRegistry,
 )
-from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
+from intergrax.runtime.events.stores.memory_runtime_event_store import (
+    InMemoryRuntimeEventStore,
+)
 from intergrax.runtime.observability.export_boundary import (
     ExportRecordKind,
     InMemoryObservabilityExporter,
@@ -85,7 +103,7 @@ from tests.unit.hosting.engine._fakes import (
     FakeRuntime,
     FixedClock,
     NoopLogger,
-    build_process_identity,
+    runtime_factory,
 )
 
 pytestmark = pytest.mark.unit
@@ -108,6 +126,97 @@ class _ShutdownOnStartRuntime:
         return True
 
 
+def _shutdown_on_start_runtime() -> HostedApplicationRuntime:
+    return _ShutdownOnStartRuntime()
+
+
+def _failing_runtime() -> HostedApplicationRuntime:
+    return runtime_factory(FakeRuntime(fail_start=True))
+
+
+class _NoopSignalAdapter:
+    def install(self) -> None:
+        return None
+
+    def restore(self) -> None:
+        return None
+
+
+def _create_process_identity(
+    clock: HostedApplicationClock,
+) -> HostedApplicationProcessIdentity:
+    return HostedApplicationProcessIdentity(
+        process_id=1000,
+        host_id="host-test",
+        started_at=clock.now(),
+    )
+
+
+class _FailingDiagnosticOrchestrator(DiagnosticOrchestrator):
+    def run(
+        self, request: DiagnosticOrchestrationRequest
+    ) -> DiagnosticOrchestrationResult:
+        raise RuntimeError("diagnostic orchestrator projection failed")
+
+
+class _ObservabilityOrderingOrchestrator(DiagnosticOrchestrator):
+    def __init__(
+        self,
+        *,
+        envelope_count: Callable[[], int],
+        recorded: list[int],
+        execution_reconstructor: ExecutionReconstructor,
+        lifecycle_analyzer: LifecycleAnomalyAnalyzer,
+        assessment_builder: DiagnosticAssessmentBuilder,
+        grouping_engine: ProblemGroupingEngine,
+        problem_lifecycle_engine: ProblemLifecycleEngine,
+    ) -> None:
+        super().__init__(
+            execution_reconstructor=execution_reconstructor,
+            lifecycle_analyzer=lifecycle_analyzer,
+            assessment_builder=assessment_builder,
+            grouping_engine=grouping_engine,
+            problem_lifecycle_engine=problem_lifecycle_engine,
+        )
+        self._envelope_count = envelope_count
+        self._recorded = recorded
+
+    def run(
+        self, request: DiagnosticOrchestrationRequest
+    ) -> DiagnosticOrchestrationResult:
+        self._recorded.append(self._envelope_count())
+        return super().run(request)
+
+
+def _ordering_orchestrator_from_stack(
+    orchestrator: DiagnosticOrchestrator,
+    *,
+    envelope_count: Callable[[], int],
+    recorded: list[int],
+) -> _ObservabilityOrderingOrchestrator:
+    return _ObservabilityOrderingOrchestrator(
+        envelope_count=envelope_count,
+        recorded=recorded,
+        execution_reconstructor=orchestrator._execution_reconstructor,
+        lifecycle_analyzer=orchestrator._lifecycle_analyzer,
+        assessment_builder=orchestrator._assessment_builder,
+        grouping_engine=orchestrator._grouping_engine,
+        problem_lifecycle_engine=orchestrator._problem_lifecycle_engine,
+    )
+
+
+def _failing_orchestrator_from_stack(
+    orchestrator: DiagnosticOrchestrator,
+) -> _FailingDiagnosticOrchestrator:
+    return _FailingDiagnosticOrchestrator(
+        execution_reconstructor=orchestrator._execution_reconstructor,
+        lifecycle_analyzer=orchestrator._lifecycle_analyzer,
+        assessment_builder=orchestrator._assessment_builder,
+        grouping_engine=orchestrator._grouping_engine,
+        problem_lifecycle_engine=orchestrator._problem_lifecycle_engine,
+    )
+
+
 def _profile_with_runtime(
     runtime_factory: Callable[[], HostedApplicationRuntime],
     *,
@@ -118,7 +227,9 @@ def _profile_with_runtime(
         application_factory=runtime_factory,
         application_factory_id="tests.hosted_application_diagnostic_integration",
         restart=restart or RestartPolicy.never(),
-        instance=InstancePolicy(exclusivity_mode=InstanceExclusivityMode.MULTI_INSTANCE),
+        instance=InstancePolicy(
+            exclusivity_mode=InstanceExclusivityMode.MULTI_INSTANCE
+        ),
     )
 
 
@@ -151,7 +262,7 @@ def _build_orchestrator_stack() -> tuple[
     DiagnosticOrchestrator,
     InMemoryProblemPersistence,
     DiagnosticReadService,
-    object,
+    ProblemOccurrencePersistence,
 ]:
     from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
         build_diagnostic_orchestrator_stack_for_tests,
@@ -168,7 +279,9 @@ class _HostedHarness:
     exporter: InMemoryObservabilityExporter
     tenant_binding: HostedDiagnosticTenantBinding
     published_events: list[HostedApplicationEvent] = field(default_factory=list)
-    custom_publisher_factory: Callable[[], HostedApplicationEventPublisher] | None = None
+    custom_publisher_factory: Callable[[], HostedApplicationEventPublisher] | None = (
+        None
+    )
 
     def event_publisher_factory(
         self,
@@ -215,13 +328,11 @@ def _runner_factories(
         ).SystemMonotonicClock(),
         create_logger=lambda _application_id: NoopLogger(),
         create_event_publisher=harness.event_publisher_factory(),
-        create_process_identity=lambda clock: build_process_identity(clock),
-        create_instance_guard=lambda definition, paths, process_identity, clock: FakeInstanceGuard(),
-        create_signal_adapter=lambda control: type(
-            "SignalAdapter",
-            (),
-            {"install": lambda self: None, "restore": lambda self: None},
-        )(),
+        create_process_identity=_create_process_identity,
+        create_instance_guard=lambda definition, paths, process_identity, clock: (
+            FakeInstanceGuard()
+        ),
+        create_signal_adapter=lambda control: _NoopSignalAdapter(),
         instance_id_generator=instance_id_generator,
     )
 
@@ -269,7 +380,9 @@ def test_projector_maps_bounded_failure_facts() -> None:
 
 @pytest.mark.asyncio
 async def test_application_failure_creates_problem(tmp_path: Path) -> None:
-    orchestrator, persistence, read_service, occurrence_persistence = _build_orchestrator_stack()
+    orchestrator, persistence, read_service, occurrence_persistence = (
+        _build_orchestrator_stack()
+    )
     harness = _HostedHarness(
         orchestrator=orchestrator,
         persistence=persistence,
@@ -277,7 +390,7 @@ async def test_application_failure_creates_problem(tmp_path: Path) -> None:
         exporter=InMemoryObservabilityExporter(),
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
     )
-    profile = _profile_with_runtime(lambda: FakeRuntime(fail_start=True))  # type: ignore[return-value]
+    profile = _profile_with_runtime(_failing_runtime)
     instance_ids = _SequenceInstanceIds(["instance-i1"])
 
     await _run_failure_profile(
@@ -324,49 +437,21 @@ async def test_application_failure_creates_problem(tmp_path: Path) -> None:
 async def test_observability_export_before_diagnostics(tmp_path: Path) -> None:
     exporter = InMemoryObservabilityExporter()
     observability_count_at_diagnostic: list[int] = []
-    orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
-
-    class _RecordingDiagnosticPublisher(HostedApplicationDiagnosticEventPublisher):
-        async def publish(self, event: HostedApplicationEvent) -> None:
-            await self._observability_publisher.publish(event)
-            if event.event_type is HostedApplicationEventType.APPLICATION_FAILED:
-                observability_count_at_diagnostic.append(len(exporter.envelopes))
-            if event.event_type is not HostedApplicationEventType.APPLICATION_FAILED:
-                return
-            signal = hosted_application_failure_to_problem_signal(event)
-            if signal is None:
-                return
-            scope = DiagnosticSignalSubjectScope(
-                tenant_id=_TENANT_A,
-                application_id=event.application_id,
-                instance_id=event.instance_id,
-                problem_signals=(signal,),
-            )
-            request = DiagnosticOrchestrationRequest(
-                tenant_id=_TENANT_A,
-                grouping_strategy_id=STRATEGY_ID,
-                observed_at=event.occurred_at,
-                signal_subjects=(scope,),
-            )
-            orchestrator.run(request)
-
+    base_orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
+    ordering_orchestrator = _ordering_orchestrator_from_stack(
+        base_orchestrator,
+        envelope_count=lambda: len(exporter.envelopes),
+        recorded=observability_count_at_diagnostic,
+    )
     harness = _HostedHarness(
-        orchestrator=orchestrator,
+        orchestrator=ordering_orchestrator,
         persistence=persistence,
         read_service=read_service,
         exporter=exporter,
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
     )
-    harness.custom_publisher_factory = lambda: _RecordingDiagnosticPublisher(
-        observability_publisher=ObservabilityHostedApplicationEventPublisher(
-            exporter,
-            policy=ObservabilityExportPolicy(enabled=True),
-        ),
-        tenant_binding=harness.tenant_binding,
-        orchestrator=orchestrator,
-    )
 
-    profile = _profile_with_runtime(lambda: FakeRuntime(fail_start=True))  # type: ignore[return-value]
+    profile = _profile_with_runtime(_failing_runtime)
     instance_ids = _SequenceInstanceIds(["instance-i1"])
 
     await _run_failure_profile(
@@ -391,7 +476,7 @@ async def test_recurrence_across_instances_and_replay(tmp_path: Path) -> None:
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
     )
     profile = _profile_with_runtime(
-        lambda: FakeRuntime(fail_start=True),  # type: ignore[return-value]
+        _failing_runtime,
         restart=_fast_restart_policy(max_attempts=1),
     )
     instance_ids = _SequenceInstanceIds(["instance-i1", "instance-i2"])
@@ -407,31 +492,30 @@ async def test_recurrence_across_instances_and_replay(tmp_path: Path) -> None:
     problem = problems.problems[0]
     assert problem.occurrence_count == 2
 
+    replay_signal = hosted_application_failure_to_problem_signal(
+        HostedApplicationEvent(
+            event_type=HostedApplicationEventType.APPLICATION_FAILED,
+            occurred_at=_OBSERVED_AT + timedelta(hours=2),
+            application_id=_APP_ID,
+            instance_id="instance-i1",
+            lifecycle_state=HostedApplicationLifecycleState.FAILED,
+            payload={
+                "failure_id": "failure-replay",
+                "reason_code": "runtime_start_failed",
+                "phase": "runtime_start",
+                "source_kind": "runtime",
+                "source_id": "start",
+                "exception_type": "RuntimeError",
+            },
+        ),
+    )
+    assert replay_signal is not None
     replay_scope = DiagnosticSignalSubjectScope(
         tenant_id=_TENANT_A,
         application_id=_APP_ID,
         instance_id="instance-i1",
-        problem_signals=(
-            hosted_application_failure_to_problem_signal(
-                HostedApplicationEvent(
-                    event_type=HostedApplicationEventType.APPLICATION_FAILED,
-                    occurred_at=_OBSERVED_AT + timedelta(hours=2),
-                    application_id=_APP_ID,
-                    instance_id="instance-i1",
-                    lifecycle_state=HostedApplicationLifecycleState.FAILED,
-                    payload={
-                        "failure_id": "failure-replay",
-                        "reason_code": "runtime_start_failed",
-                        "phase": "runtime_start",
-                        "source_kind": "runtime",
-                        "source_id": "start",
-                        "exception_type": "RuntimeError",
-                    },
-                ),
-            ),
-        ),
+        problem_signals=(replay_signal,),
     )
-    assert replay_scope.problem_signals[0] is not None
     orchestrator.run(
         DiagnosticOrchestrationRequest(
             tenant_id=_TENANT_A,
@@ -454,7 +538,7 @@ async def test_clean_lifecycle_creates_no_problems(tmp_path: Path) -> None:
         exporter=InMemoryObservabilityExporter(),
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
     )
-    profile = _profile_with_runtime(lambda: _ShutdownOnStartRuntime())  # type: ignore[return-value]
+    profile = _profile_with_runtime(_shutdown_on_start_runtime)
     await _run_failure_profile(tmp_path, harness, profile)
 
     lifecycle_types = {event.event_type for event in harness.published_events}
@@ -480,7 +564,7 @@ async def test_different_failure_signature_isolation(tmp_path: Path) -> None:
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
     )
 
-    profile_start = _profile_with_runtime(lambda: FakeRuntime(fail_start=True))  # type: ignore[return-value]
+    profile_start = _profile_with_runtime(_failing_runtime)
     await _run_failure_profile(tmp_path, harness, profile_start)
 
     profile_factory = HostedApplicationProfile(
@@ -488,7 +572,9 @@ async def test_different_failure_signature_isolation(tmp_path: Path) -> None:
         application_factory=lambda _ctx: _raise_factory_error(),
         application_factory_id="tests.hosted_application_diagnostic_integration.factory_fail",
         restart=RestartPolicy.never(),
-        instance=InstancePolicy(exclusivity_mode=InstanceExclusivityMode.MULTI_INSTANCE),
+        instance=InstancePolicy(
+            exclusivity_mode=InstanceExclusivityMode.MULTI_INSTANCE
+        ),
     )
     await _run_failure_profile(tmp_path, harness, profile_factory)
 
@@ -500,7 +586,9 @@ async def test_different_failure_signature_isolation(tmp_path: Path) -> None:
 async def test_tenant_isolation(tmp_path: Path) -> None:
     persistence = InMemoryProblemPersistence()
     occurrence_store = in_memory_document_store_for_problem_tests()
-    occurrence_persistence = document_store_occurrence_persistence_for_tests(occurrence_store)
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(
+        occurrence_store
+    )
     registry = ProblemGroupingStrategyRegistry()
     registry.register(DeterministicProblemGroupingStrategy())
     reconstructor = ExecutionReconstructor(
@@ -543,7 +631,7 @@ async def test_tenant_isolation(tmp_path: Path) -> None:
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_B),
     )
 
-    profile = _profile_with_runtime(lambda: FakeRuntime(fail_start=True))  # type: ignore[return-value]
+    profile = _profile_with_runtime(_failing_runtime)
     await _run_failure_profile(tmp_path, harness_a, profile)
     await _run_failure_profile(tmp_path, harness_b, profile)
 
@@ -567,17 +655,21 @@ class _BootstrapDiagnosticHarness:
     orchestrator: DiagnosticOrchestrator
     persistence: InMemoryProblemPersistence
     read_service: DiagnosticReadService
-    occurrence_persistence: object
+    occurrence_persistence: ProblemOccurrencePersistence
     exporter: InMemoryObservabilityExporter
     tenant_binding: HostedDiagnosticTenantBinding
     publisher: HostedApplicationEventPublisher
     published_events: list[HostedApplicationEvent]
 
 
-def _build_bootstrap_diagnostic_harness() -> _BootstrapDiagnosticHarness:
-    orchestrator, persistence, read_service, occurrence_persistence = (
+def _build_bootstrap_diagnostic_harness(
+    *,
+    orchestrator: DiagnosticOrchestrator | None = None,
+) -> _BootstrapDiagnosticHarness:
+    built_orchestrator, persistence, read_service, occurrence_persistence = (
         _build_orchestrator_stack()
     )
+    resolved_orchestrator = orchestrator or built_orchestrator
     exporter = InMemoryObservabilityExporter()
     tenant_binding = HostedDiagnosticTenantBinding(tenant_id=_TENANT_A)
     published_events: list[HostedApplicationEvent] = []
@@ -593,10 +685,10 @@ def _build_bootstrap_diagnostic_harness() -> _BootstrapDiagnosticHarness:
             policy=ObservabilityExportPolicy(enabled=True),
         ),
         tenant_binding=tenant_binding,
-        orchestrator=orchestrator,
+        orchestrator=resolved_orchestrator,
     )
     return _BootstrapDiagnosticHarness(
-        orchestrator=orchestrator,
+        orchestrator=resolved_orchestrator,
         persistence=persistence,
         read_service=read_service,
         occurrence_persistence=occurrence_persistence,
@@ -638,15 +730,19 @@ def test_bootstrap_application_failed_maps_to_platform_problem_signal() -> None:
     signal = hosted_application_failure_to_problem_signal(event)
     assert signal is not None
     assert signal.problem_kind == PROBLEM_KIND_PLATFORM_APPLICATION_FAILURE
-    assert signal.source_component == HostedProcessBootstrapPhase.WORKER_CONSTRUCTION.value
+    assert (
+        signal.source_component == HostedProcessBootstrapPhase.WORKER_CONSTRUCTION.value
+    )
     assert signal.error_code == BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE
     assert signal.exception_type == "RuntimeError"
     assert signal.task_id == ""
     assert signal.run_id == ""
     assert signal.application_attributes is not None
-    assert signal.application_attributes.application_id == _BOOTSTRAP_APP_ID
-    assert signal.application_attributes.instance_id == "bootstrap-instance-1"
-    assert signal.application_attributes.lifecycle_state == "failed"
+    assert isinstance(signal.application_attributes, HostingObservabilityAttributes)
+    application_attributes = signal.application_attributes
+    assert application_attributes.application_id == _BOOTSTRAP_APP_ID
+    assert application_attributes.instance_id == "bootstrap-instance-1"
+    assert application_attributes.lifecycle_state == "failed"
 
 
 @pytest.mark.asyncio
@@ -705,40 +801,20 @@ async def test_bootstrap_failure_creates_problem_via_guarded_primitive() -> None
 @pytest.mark.asyncio
 async def test_bootstrap_observability_export_before_diagnostics() -> None:
     exporter = InMemoryObservabilityExporter()
-    orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
     observability_count_at_diagnostic: list[int] = []
-
-    class _RecordingDiagnosticPublisher(HostedApplicationDiagnosticEventPublisher):
-        async def publish(self, event: HostedApplicationEvent) -> None:
-            await self._observability_publisher.publish(event)
-            if event.event_type is HostedApplicationEventType.APPLICATION_FAILED:
-                observability_count_at_diagnostic.append(len(exporter.envelopes))
-            if event.event_type is not HostedApplicationEventType.APPLICATION_FAILED:
-                return
-            signal = hosted_application_failure_to_problem_signal(event)
-            if signal is None:
-                return
-            scope = DiagnosticSignalSubjectScope(
-                tenant_id=_TENANT_A,
-                application_id=event.application_id,
-                instance_id=event.instance_id,
-                problem_signals=(signal,),
-            )
-            request = DiagnosticOrchestrationRequest(
-                tenant_id=_TENANT_A,
-                grouping_strategy_id=STRATEGY_ID,
-                observed_at=event.occurred_at,
-                signal_subjects=(scope,),
-            )
-            orchestrator.run(request)
-
-    publisher = _RecordingDiagnosticPublisher(
+    base_orchestrator, persistence, read_service, _ = _build_orchestrator_stack()
+    ordering_orchestrator = _ordering_orchestrator_from_stack(
+        base_orchestrator,
+        envelope_count=lambda: len(exporter.envelopes),
+        recorded=observability_count_at_diagnostic,
+    )
+    publisher = HostedApplicationDiagnosticEventPublisher(
         observability_publisher=ObservabilityHostedApplicationEventPublisher(
             exporter,
             policy=ObservabilityExportPolicy(enabled=True),
         ),
         tenant_binding=HostedDiagnosticTenantBinding(tenant_id=_TENANT_A),
-        orchestrator=orchestrator,
+        orchestrator=ordering_orchestrator,
     )
     context = HostedProcessBootstrapContext.create(
         application_id=_BOOTSTRAP_APP_ID,
@@ -759,12 +835,10 @@ async def test_bootstrap_observability_export_before_diagnostics() -> None:
 
 @pytest.mark.asyncio
 async def test_bootstrap_diagnostic_projection_failure_isolated() -> None:
-    harness = _build_bootstrap_diagnostic_harness()
-
-    def _failing_run(request: DiagnosticOrchestrationRequest) -> object:
-        raise RuntimeError("diagnostic orchestrator projection failed")
-
-    harness.orchestrator.run = _failing_run  # type: ignore[method-assign]
+    base_orchestrator, _, _, _ = _build_orchestrator_stack()
+    harness = _build_bootstrap_diagnostic_harness(
+        orchestrator=_failing_orchestrator_from_stack(base_orchestrator),
+    )
     context = HostedProcessBootstrapContext.create(
         application_id=_BOOTSTRAP_APP_ID,
         process_role="background_worker",
