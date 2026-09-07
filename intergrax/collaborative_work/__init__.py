@@ -13,8 +13,12 @@ from intergrax.collaborative_work.service import (
 )
 from intergrax.collaborative_work.policy_composition import compose_policy_decisions
 from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
     CollaborativeWorkRepositories,
+    CollaborativeWorkRepositoriesWithSharedWork,
+    CollaborativeWorkSharedWorkRepositories,
     CollaborativeWorkStoreOwner,
+    collaborative_work_core_repositories,
     open_sqlite_collaborative_work_repositories,
 )
 from intergrax.collaborative_work.materialization_factory import (
@@ -82,7 +86,10 @@ __all__ = [
     "CollaborativeWorkMaterializationBinder",
     "CollaborativeWorkPersistenceFactory",
     "CollaborativeWorkPersistenceProvider",
+    "CollaborativeWorkMaterializedRepositories",
     "CollaborativeWorkRepositories",
+    "CollaborativeWorkRepositoriesWithSharedWork",
+    "CollaborativeWorkSharedWorkRepositories",
     "CollaborativeWorkStoreOwner",
     "CollaborativeWorkAuthorityResolver",
     "CollaborativeWorkEnforcementGate",
@@ -118,6 +125,7 @@ __all__ = [
     "CreateCollaborativePolicyRuleCommand",
     "CreatePrincipalAuthorityGrantCommand",
     "CreateWorkspaceMembershipCommand",
+    "collaborative_work_core_repositories",
     "resolve_collaborative_work_repositories",
     "open_sqlite_collaborative_work_repositories",
     "InMemoryAuthorityDelegationRepository",

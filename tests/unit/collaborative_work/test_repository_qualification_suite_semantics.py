@@ -13,7 +13,7 @@ from intergrax.collaborative_work.repository_qualification_suite import (
     collaborative_work_sqlite_repository_qualification_binding,
     collaborative_work_sqlite_repository_qualification_suite,
 )
-from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.collaborative_work.persistence import CollaborativeWorkRepositoriesWithSharedWork
 from intergrax.core.qualification.execution import ProviderQualificationSuiteInfrastructureError
 from intergrax.core.qualification.status import QualificationStatus
 from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
@@ -42,7 +42,7 @@ def test_semantic_repository_failure_maps_to_rejected(tmp_path: Path) -> None:
         profile,
         resolved_provider_id="sqlite",
     )[0]
-    assert isinstance(bundle, CollaborativeWorkRepositories)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
 
     with patch(
         "intergrax.collaborative_work.repository_qualification_suite._run_repository_contract_checks",
@@ -66,7 +66,7 @@ def test_suite_infrastructure_failure_is_not_semantic_rejection(tmp_path: Path) 
         profile,
         resolved_provider_id="sqlite",
     )[0]
-    assert isinstance(bundle, CollaborativeWorkRepositories)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
 
     with patch(
         "intergrax.collaborative_work.repository_qualification_suite._run_repository_contract_checks",

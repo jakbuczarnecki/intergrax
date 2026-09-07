@@ -51,21 +51,8 @@ class CollaborativeWorkStoreOwner(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class CollaborativeWorkSharedWorkRepositories:
-    """MP-2 Shared Work repository ports materialized by a persistence backend."""
-
-    work_item: WorkItemRepository
-    assignment: AssignmentRepository
-
-
-_SHARED_WORK_UNAVAILABLE = (
-    "MP-2 Shared Work repositories are not available for this persistence backend"
-)
-
-
-@dataclass(frozen=True, slots=True)
 class CollaborativeWorkRepositories:
-    """Bundle of authoritative Collaborative Work repository ports."""
+    """Bundle of authoritative Collaborative Work repository ports (MP-1 core)."""
 
     membership: WorkspaceMembershipRepository
     delegation: AuthorityDelegationRepository
@@ -73,36 +60,93 @@ class CollaborativeWorkRepositories:
     policy: CollaborativePolicyRepository
     operation_profile: CollaborativeOperationPolicyProfileRepository
     store: CollaborativeWorkStoreOwner
-    shared_work: CollaborativeWorkSharedWorkRepositories | None = None
-
-    @property
-    def work_item(self) -> WorkItemRepository:
-        if self.shared_work is None:
-            raise RuntimeError(_SHARED_WORK_UNAVAILABLE)
-        return self.shared_work.work_item
-
-    @property
-    def assignment(self) -> AssignmentRepository:
-        if self.shared_work is None:
-            raise RuntimeError(_SHARED_WORK_UNAVAILABLE)
-        return self.shared_work.assignment
 
     def close(self) -> None:
         self.store.close()
 
 
-def open_sqlite_collaborative_work_repositories(db_path: str) -> CollaborativeWorkRepositories:
+@dataclass(frozen=True, slots=True)
+class CollaborativeWorkSharedWorkRepositories:
+    """MP-2 Shared Work repository ports materialized by a persistence backend."""
+
+    work_item: WorkItemRepository
+    assignment: AssignmentRepository
+
+
+@dataclass(frozen=True, slots=True)
+class CollaborativeWorkRepositoriesWithSharedWork:
+    """Full Collaborative Work persistence bundle with MP-2 Shared Work ports."""
+
+    core: CollaborativeWorkRepositories
+    shared_work: CollaborativeWorkSharedWorkRepositories
+
+    @property
+    def membership(self) -> WorkspaceMembershipRepository:
+        return self.core.membership
+
+    @property
+    def delegation(self) -> AuthorityDelegationRepository:
+        return self.core.delegation
+
+    @property
+    def principal_authority(self) -> PrincipalAuthorityRepository:
+        return self.core.principal_authority
+
+    @property
+    def policy(self) -> CollaborativePolicyRepository:
+        return self.core.policy
+
+    @property
+    def operation_profile(self) -> CollaborativeOperationPolicyProfileRepository:
+        return self.core.operation_profile
+
+    @property
+    def store(self) -> CollaborativeWorkStoreOwner:
+        return self.core.store
+
+    @property
+    def work_item(self) -> WorkItemRepository:
+        return self.shared_work.work_item
+
+    @property
+    def assignment(self) -> AssignmentRepository:
+        return self.shared_work.assignment
+
+    def close(self) -> None:
+        self.core.close()
+
+
+CollaborativeWorkMaterializedRepositories = (
+    CollaborativeWorkRepositories | CollaborativeWorkRepositoriesWithSharedWork
+)
+
+
+def collaborative_work_core_repositories(
+    bundle: CollaborativeWorkMaterializedRepositories,
+) -> CollaborativeWorkRepositories:
+    """Return the MP-1 core bundle from any materialized persistence composition."""
+    if isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork):
+        return bundle.core
+    return bundle
+
+
+def open_sqlite_collaborative_work_repositories(
+    db_path: str,
+) -> CollaborativeWorkRepositoriesWithSharedWork:
     """Open durable Collaborative Work repositories backed by configured SQL storage."""
     path = Path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     store = SQLiteCollaborativeWorkStore(str(path))
-    return CollaborativeWorkRepositories(
+    core = CollaborativeWorkRepositories(
         membership=SQLiteWorkspaceMembershipRepository(store),
         delegation=SQLiteAuthorityDelegationRepository(store),
         principal_authority=SQLitePrincipalAuthorityRepository(store),
         policy=SQLiteCollaborativePolicyRepository(store),
         operation_profile=SQLiteCollaborativeOperationPolicyProfileRepository(store),
         store=store,
+    )
+    return CollaborativeWorkRepositoriesWithSharedWork(
+        core=core,
         shared_work=CollaborativeWorkSharedWorkRepositories(
             work_item=SQLiteWorkItemRepository(store),
             assignment=SQLiteAssignmentRepository(store),

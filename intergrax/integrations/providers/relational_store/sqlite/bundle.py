@@ -20,7 +20,7 @@ from intergrax.collaborative_work.materialization_factory import (
     CollaborativeWorkMaterializationBinder,
     CollaborativeWorkPersistenceFactory,
 )
-from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.collaborative_work.persistence import CollaborativeWorkRepositoriesWithSharedWork
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.sqlite.adapter import _SQLiteRelationalStore
 from intergrax.integrations.providers.relational_store.sqlite.config import SQLiteIntegrationConfig
@@ -130,7 +130,7 @@ class _SQLiteCollaborativeWorkMaterializer:
 
     def materialize_collaborative_work_repositories(
         self,
-    ) -> CollaborativeWorkRepositories:
+    ) -> CollaborativeWorkRepositoriesWithSharedWork:
         from intergrax.collaborative_work.persistence import (
             open_sqlite_collaborative_work_repositories,
         )

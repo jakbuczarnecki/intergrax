@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Protocol, runtime_checkable
 
-from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
 
 
 @runtime_checkable
@@ -16,7 +16,7 @@ class CollaborativeWorkPersistenceFactory(Protocol):
 
     def materialize_collaborative_work_repositories(
         self,
-    ) -> CollaborativeWorkRepositories:
+    ) -> CollaborativeWorkMaterializedRepositories:
         """Materialize the authoritative Collaborative Work repository bundle."""
 
 

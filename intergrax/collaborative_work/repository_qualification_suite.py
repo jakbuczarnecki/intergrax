@@ -7,7 +7,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
+    CollaborativeWorkRepositories,
+    CollaborativeWorkRepositoriesWithSharedWork,
+)
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
 )
@@ -83,7 +87,7 @@ class _RepositorySemanticCheckFailure(Exception):
 
 @dataclass(frozen=True, slots=True)
 class _CollaborativeWorkMaterializationHandle:
-    _bundle: CollaborativeWorkRepositories
+    _bundle: CollaborativeWorkMaterializedRepositories
 
     def close(self) -> None:
         self._bundle.close()
@@ -336,12 +340,17 @@ class CollaborativeWorkRepositoryQualificationSuite:
         return self._identity
 
     def execute(self, capability: object) -> ProviderQualificationSuiteOutcome:
-        if not isinstance(capability, CollaborativeWorkRepositories):
+        if isinstance(capability, CollaborativeWorkRepositoriesWithSharedWork):
+            bundle = capability.core
+        elif isinstance(capability, CollaborativeWorkRepositories):
+            bundle = capability
+        else:
             raise ProviderQualificationSuiteInfrastructureError(
-                "capability must be CollaborativeWorkRepositories",
+                "capability must be CollaborativeWorkRepositories "
+                "or CollaborativeWorkRepositoriesWithSharedWork",
             )
 
-        passed, failed = _run_repository_contract_checks(capability)
+        passed, failed = _run_repository_contract_checks(bundle)
         skipped = 0
         status = self._qualified_status if failed == 0 else QualificationStatus.REJECTED
         evidence = (
