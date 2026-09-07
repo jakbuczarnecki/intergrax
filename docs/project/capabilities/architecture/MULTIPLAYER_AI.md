@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** MP-2 (Shared Work) through MP-9 remain roadmap. LKW adoption (MP-7), AgentDirectory / external-agent interoperability (MP-8), and advanced collaborative UX (MP-9) are **future**. Domain ownership for MP-2+ is provisional until bounded ownership checks close.
+**C. Planned / not started as Multiplayer phases.** MP-3 (WorkArtifact) through MP-9 remain roadmap. **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). LKW adoption (MP-7), AgentDirectory / external-agent interoperability (MP-8), and advanced collaborative UX (MP-9) are **future**. Domain ownership for MP-3+ is provisional until bounded ownership checks close.
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -47,7 +47,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 | -------- | --------------------- |
 | **Principal** | MP-1 - Collaborative Work; **CLOSED** |
 | **Membership / delegation** | MP-1 - Collaborative Work; **CLOSED** |
-| **Shared work** | MP-2 - planned; ownership to confirm |
+| **Shared work** | MP-2 - Collaborative Work; **CLOSED** |
 | **Work artifacts** | MP-3 - planned |
 | **Decision / approval** | MP-4 - collaborative primitive; HITL bridge only for execution pause |
 | **Context view** | MP-5 - principal-scoped; composes UCL/CE/Memory/Knowledge |
@@ -55,7 +55,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 | **LKW relation** | MP-7 reference consumer - not owner |
 | **HITL relation** | Execution pause/resume primitive - not Decision owner |
 | **External agent interoperability** | MP-8 - future; AgentDirectory ≠ AgentRegistry |
-| **Current maturity** | Architecture / roadmap stage; MP-1 **CLOSED**; MP-2+ NOT STARTED; capability-wide proof not established |
+| **Current maturity** | Architecture / roadmap stage; MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3+ NOT STARTED; capability-wide proof not established |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§Purpose](#purpose) · [§Strategic position](#strategic-position) · [§Roadmap summary](#roadmap-summary) |
 
 ## Core mental model
@@ -97,12 +97,12 @@ Tier-0/Tier-1 platform Multiplayer primitives
 
 ## Engineering canon
 
-**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**)
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003)
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **COLLAB-WORK-2G** (final MP-2 independent review and closure gate; **NOT STARTED**)
-**Next task:** COLLAB-WORK-2G — final MP-2 review
+**Current active task:** **MP-3 bounded ownership check** (architecture gate only — **NOT** MP-3 implementation)
+**Next task:** MP-3 bounded ownership check
 
 ## Cursor read scope (token budget)
 
@@ -412,7 +412,7 @@ not replace existing Evidence.
 
 ### MP-2 - Shared Work: WorkItem, Assignment, lifecycle and concurrency
 
-**Status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**; COLLAB-WORK-2E **APPROVED / CLOSED**; COLLAB-WORK-2F **APPROVED / CLOSED**.
+**Status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 
 **Intent:** Platform-owned shared work units with explicit assignment, lifecycle states, and concurrency semantics independent of delivery channel.
 
@@ -420,9 +420,9 @@ not replace existing Evidence.
 
 **Reused (not owners):** `ORCHESTRATION` (graph policy; explicit WorkItem context consumption), `UNIFIED_EXECUTION_RUNTIME` (`TaskId`, `RunId`, `AttemptId`, `ExecutionId`, outcomes), `NEXUS` (internal orchestration consumer/producer of Executions — not a Collaborative Work contract dependency), `BACKGROUND_TASKS` (may execute work associated with a WorkItem), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance consumption).
 
-**New required:** WorkItem, Assignment, shared-work lifecycle, concurrency, idempotency, and `WorkItemExecutionLink` provenance — **contracts via COLLAB-WORK-2A (closed); implementation via COLLAB-WORK-2B…2G**.
+**Delivered:** WorkItem, Assignment, shared-work lifecycle, concurrency, idempotency, and `WorkItemExecutionLink` provenance — contracts (2A) and implementation (2B…2G).
 
-**Next active task:** **COLLAB-WORK-2G** (NOT STARTED)
+**Next active task:** **MP-3 bounded ownership check** (NOT STARTED)
 
 ---
 
@@ -562,7 +562,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-006** | Principal-scoped ContextView |
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted** — MP-2 **IMPLEMENTATION IN PROGRESS**; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**; COLLAB-WORK-2E **APPROVED / CLOSED**; COLLAB-WORK-2F **APPROVED / CLOSED**; active task **COLLAB-WORK-2G** (**NOT STARTED**). ADR-MP-004…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**. ADR-MP-004…007 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 

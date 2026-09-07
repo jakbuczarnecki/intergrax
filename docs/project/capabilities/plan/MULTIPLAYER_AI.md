@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**)
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001)
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **COLLAB-WORK-2G** (final MP-2 independent review and closure gate; **NOT STARTED**)
-**Next task after MP-2 gate:** COLLAB-WORK-2G — final MP-2 review
+**Current active task:** **MP-3 bounded ownership check** (architecture gate only — **NOT** MP-3 implementation)
+**Next task after MP-2 gate:** MP-3 bounded ownership check
 
 ---
 
@@ -137,7 +137,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **IMPLEMENTATION IN PROGRESS** — COLLAB-WORK-2A APPROVED / CLOSED; COLLAB-WORK-2B APPROVED / CLOSED; COLLAB-WORK-2C APPROVED / CLOSED; COLLAB-WORK-2D APPROVED / CLOSED; COLLAB-WORK-2E APPROVED / CLOSED; COLLAB-WORK-2F APPROVED / CLOSED |
+| **Status** | **APPROVED / CLOSED** — COLLAB-WORK-2A…2G APPROVED / CLOSED; ADR-MP-003 implementation **COMPLETE** |
 | **Purpose** | Platform-owned shared work primitives with lifecycle and concurrency semantics. |
 | **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-003 |
 | **Reused domain capabilities** | `ORCHESTRATION` (explicit WorkItem context consumption), `UNIFIED_EXECUTION_RUNTIME` (canonical execution identities), `NEXUS` (internal orchestration only — not Collaborative Work contract dependency), `BACKGROUND_TASKS` (associated execution), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance) |
@@ -151,7 +151,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
 | **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real four-part `ExecutionProvenanceRef` |
-| **Next implementation row** | **COLLAB-WORK-2G** (NOT STARTED) |
+| **Next implementation row** | **MP-3 bounded ownership check** (NOT STARTED) |
 
 ---
 

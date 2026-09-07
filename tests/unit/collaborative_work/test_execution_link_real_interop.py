@@ -22,6 +22,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.task.task import Task
 
 pytestmark = pytest.mark.unit

@@ -5,8 +5,8 @@
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
-**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
-**Current active task:** **COLLAB-WORK-2G** (final MP-2 independent review and closure gate; **NOT STARTED**)
+**Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**)
+**Current active task:** **MP-3 bounded ownership check** (architecture gate only — **NOT** MP-3 implementation)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -339,7 +339,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2G |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Final MP-2 independent review and closure gate |
 | **Dependencies** | COLLAB-WORK-2A…2F approved per rollout policy |
 | **Exact scope** | Architecture/plan/doc sync verification; ADR-MP-003 compliance; anti-substitution audit |
@@ -347,8 +347,17 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **NEW** | MP-2 closure evidence |
 | **Explicit out of scope** | MP-3+ implementation |
 | **Acceptance** | All MP-2 acceptance criteria met; no contradictory ownership statements; implementation proof complete |
-| **Proof requirements** | Focused regression suite; documentation link integrity; `check_harness_adr.py` |
+| **Proof requirements** | Focused regression suite; documentation link integrity; `check_docs_domain_pairs.py`; live SQLite qualification v`3.0.0` |
 | **Next step** | MP-3 bounded ownership check |
+
+### MP-2 final closure evidence (COLLAB-WORK-2G)
+
+| Field | Value |
+|-------|-------|
+| **Independent review** | **CLOSED** — ownership, anti-substitution, lifecycle, assignment, authority, execution linkage, Nexus boundary, persistence parity, tenant/workspace isolation, qualification v3, MP-3+ leakage — all gates pass |
+| **ADR-MP-003** | **Accepted; implementation COMPLETE** (historical decision text preserved; `ExecutionId` granularity reconciled at COLLAB-WORK-2F) |
+| **Live SQLite qualification (`cw.sqlite.repository.v1`)** | **QUALIFIED** v`3.0.0` — `suite.passed`, `backend.live`, `shared_work.mp2`, `shared_work.execution_link`; failed=`0`, skipped=`0` |
+| **Live PostgreSQL qualification (`cw.postgresql.repository.v1`)** | **PRODUCTION_QUALIFIED** v`3.0.0` — canonical recorded evidence from COLLAB-WORK-2E/2F (`suite.passed`, `backend.live`, `shared_work.mp2`, `shared_work.execution_link`, `shared_work.concurrency.cross_process`); live rerun unavailable in 2G environment (no `psycopg` backend); production code unchanged since qualification |
 
 ### MP-2 execution linkage closure and repository qualification (COLLAB-WORK-2F)
 

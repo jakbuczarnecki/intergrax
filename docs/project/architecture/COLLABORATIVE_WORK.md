@@ -194,8 +194,12 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 
 Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
 
-**MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**; COLLAB-WORK-2E **APPROVED / CLOSED**; COLLAB-WORK-2F **APPROVED / CLOSED**.
-**Current active task:** **COLLAB-WORK-2G** (final MP-2 independent review and closure gate; **NOT STARTED**).
+**MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
+**Current active task:** **MP-3 bounded ownership check** (architecture gate only — **NOT** MP-3 implementation).
+
+### MP-2 final closure summary (COLLAB-WORK-2G)
+
+MP-2 delivered: WorkItem; explicit collaborative lifecycle (`OPEN`/`ACTIVE`/`COMPLETED`/`CANCELLED`); Assignment; multi-principal participation; MP-1 authority enforcement reuse; optimistic concurrency (`revision` from `0`, expected-revision CAS); idempotency; in-memory reference persistence; SQLite durable persistence (**QUALIFIED** `cw.sqlite.repository.v1` v`3.0.0`); PostgreSQL production-qualified persistence (**PRODUCTION_QUALIFIED** `cw.postgresql.repository.v1` v`3.0.0`); cross-process CAS proof; zero..N Unified Execution provenance links via full `ExecutionProvenanceRef` (`TaskId`/`RunId`/`AttemptId`/`ExecutionId`); no Nexus lifecycle ownership; no `TaskState` substitution.
 
 ---
 
