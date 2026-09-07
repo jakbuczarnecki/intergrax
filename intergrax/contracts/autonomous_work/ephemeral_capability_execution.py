@@ -210,7 +210,13 @@ class WorkerEphemeralCapabilityExecutionRequest:
 
 @dataclass(frozen=True, slots=True)
 class WorkerEphemeralCapabilityExecutionResult:
-    """Immutable A1 execution result — ephemeral, not ToolRegistry publication."""
+    """Immutable A1 execution result — ephemeral, not ToolRegistry publication.
+
+    On ``SUCCEEDED``, ``ephemeral_capability`` remains live under CodeCraft
+    session/registry ownership for the returned ``craft_correlation``. Bounded-use
+    cleanup responsibility transfers to the integration/recovery consumer; lifecycle
+    disposal still occurs only through canonical CodeCraft public APIs — not AW core.
+    """
 
     status: WorkerEphemeralCapabilityExecutionStatus
     reason_code: WorkerEphemeralCapabilityExecutionReasonCode

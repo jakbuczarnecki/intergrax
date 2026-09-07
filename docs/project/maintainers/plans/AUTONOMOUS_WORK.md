@@ -56,7 +56,7 @@ Delivery rule:
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
 | AW-5 | Worker → execution composition and budgets | **DONE** (AW-5A DONE, AW-5B DONE) |
 | AW-6 | Recovery Controller and obstacle taxonomy | **DONE** (AW-6A DONE, AW-6B DONE) |
-| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A DONE, AW-7B-GATE PASSED / independently verified, AW-7B IMPLEMENTED / awaiting independent audit) |
+| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A DONE, AW-7B-GATE PASSED / independently verified, AW-7B IMPLEMENTED / CORRECTION REQUIRED) |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
 | AW-9 | Worker control plane | NOT STARTED |
 | AW-10 | Virtual Workforce reference application | NOT STARTED |
@@ -290,7 +290,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7 |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** (AW-7A **DONE**; AW-7B-GATE **PASSED / independently verified**; AW-7B **IMPLEMENTED / awaiting independent audit**) |
+| **Status** | **IN PROGRESS** (AW-7A **DONE**; AW-7B-GATE **PASSED / independently verified**; AW-7B **IMPLEMENTED / CORRECTION REQUIRED**) |
 | **Purpose** | Capability discovery/acquisition policy and A0–A4 classification |
 | **Next step** | AW-7C |
 
@@ -331,7 +331,7 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7B |
 | **Priority** | P0 |
-| **Status** | **IMPLEMENTED / awaiting independent audit** |
+| **Status** | **IMPLEMENTED / CORRECTION REQUIRED** |
 | **Purpose** | A1 ephemeral generated capability path |
 | **Dependencies** | AW-7A **DONE**; AW-7B-GATE **PASSED / independently verified** |
 | **As-built** | `WorkerEphemeralCapabilityExecutionService` + `WorkerEphemeralCapabilityExecutionPort` in AW core; `CodeCraftEphemeralCapabilityExecutionAdapter` in `intergrax/runtime/codecraft/`; contracts in `intergrax/contracts/autonomous_work/ephemeral_capability_execution.py` |

@@ -167,7 +167,6 @@ def _map_iterate_progress(
                 trace_correlation=trace_correlation,
             )
         ephemeral_ref = _resolve_ephemeral_reference(ctx, craft_id)
-        dispose()
         return _provider_result(
             request,
             status=WorkerEphemeralCapabilityExecutionStatus.SUCCEEDED,
