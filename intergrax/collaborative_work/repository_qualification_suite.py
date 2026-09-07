@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -11,23 +12,37 @@ from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
     CollaborativeWorkRepositories,
     CollaborativeWorkRepositoriesWithSharedWork,
+    open_postgresql_collaborative_work_repositories,
 )
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
 )
+from intergrax.collaborative_work.postgresql_repository import PostgreSQLCollaborativeWorkStore
 from intergrax.collaborative_work.repository import (
+    AssignmentAlreadyExists,
+    AssignmentIdempotencyConflict,
+    AssignmentRevisionConflict,
+    AssignmentScopeKey,
     AuthorityDelegationScopeKey,
     CollaborativeOperationPolicyProfileScopeKey,
+    CreateAssignmentCommand,
     CreateAuthorityDelegationCommand,
     CreateCollaborativeOperationPolicyProfileCommand,
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
+    CreateWorkItemCommand,
     CreateWorkspaceMembershipCommand,
     INITIAL_RECORD_REVISION,
     PrincipalAuthorityGrantAlreadyExists,
+    UpdateAssignmentCommand,
     UpdateAuthorityDelegationCommand,
     UpdateCollaborativeOperationPolicyProfileCommand,
+    UpdateWorkItemCommand,
     UpdateWorkspaceMembershipCommand,
+    WorkItemAlreadyExists,
+    WorkItemIdempotencyConflict,
+    WorkItemRevisionConflict,
+    WorkItemScopeKey,
     WorkspaceMembershipAlreadyExists,
     WorkspaceMembershipRevisionConflict,
     WorkspaceMembershipScopeKey,
@@ -35,6 +50,7 @@ from intergrax.collaborative_work.repository import (
     CollaborativeOperationPolicyProfileRevisionConflict,
 )
 from intergrax.contracts.collaborative_work import (
+    AssignmentState,
     AuthorityGrantStatus,
     CollaborativeOperationPolicyProfileStatus,
     CollaborativePolicyRuleStatus,
@@ -43,6 +59,7 @@ from intergrax.contracts.collaborative_work import (
     OperationPolicyRequirement,
     PolicyCompositionLayer,
     PolicyLayerApplicability,
+    WorkItemState,
     WorkspaceMembershipRole,
 )
 from intergrax.contracts.runtime_policy import PolicyAction
@@ -71,7 +88,7 @@ COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY = "collaborative_work.persistence.v1"
 
 CW_POSTGRESQL_REPOSITORY_SUITE_ID = "cw.postgresql.repository.v1"
 CW_SQLITE_REPOSITORY_SUITE_ID = "cw.sqlite.repository.v1"
-CW_REPOSITORY_SUITE_VERSION = "1.0.0"
+CW_REPOSITORY_SUITE_VERSION = "2.0.0"
 
 _TENANT_A = "qual-tenant-a"
 _TENANT_B = "qual-tenant-b"
@@ -79,6 +96,8 @@ _WORKSPACE_A = "qual-workspace-a"
 _WORKSPACE_B = "qual-workspace-b"
 _VALID_FROM = datetime(2026, 1, 1, tzinfo=UTC)
 _VALID_UNTIL = datetime(2026, 12, 31, tzinfo=UTC)
+_CREATED_AT = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+_UPDATED_AT = datetime(2026, 1, 1, 12, 30, tzinfo=UTC)
 
 
 class _RepositorySemanticCheckFailure(Exception):
@@ -106,7 +125,7 @@ def _membership_command(**overrides: object) -> CreateWorkspaceMembershipCommand
     return CreateWorkspaceMembershipCommand(**payload)
 
 
-def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tuple[int, int]:
+def _run_core_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tuple[int, int]:
     passed = 0
     failed = 0
 
@@ -325,6 +344,309 @@ def _run_repository_contract_checks(bundle: CollaborativeWorkRepositories) -> tu
     return passed, failed
 
 
+def _work_item_command(**overrides: object) -> CreateWorkItemCommand:
+    payload = {
+        "tenant_id": _TENANT_A,
+        "workspace_id": _WORKSPACE_A,
+        "work_item_id": "qual-work-item-1",
+        "created_by_principal_id": "qual-principal-creator",
+        "state": WorkItemState.OPEN,
+        "created_at": _CREATED_AT,
+        "updated_at": _CREATED_AT,
+        "title": "Qualification WorkItem",
+        "description": "MP-2 qualification proof",
+    }
+    payload.update(overrides)
+    return CreateWorkItemCommand(**payload)
+
+
+def _assignment_command(**overrides: object) -> CreateAssignmentCommand:
+    payload = {
+        "tenant_id": _TENANT_A,
+        "workspace_id": _WORKSPACE_A,
+        "assignment_id": "qual-assignment-1",
+        "work_item_id": "qual-work-item-1",
+        "principal_id": "qual-principal-1",
+        "created_by_principal_id": "qual-principal-creator",
+        "state": AssignmentState.ACTIVE,
+        "created_at": _CREATED_AT,
+        "updated_at": _CREATED_AT,
+    }
+    payload.update(overrides)
+    return CreateAssignmentCommand(**payload)
+
+
+def _run_shared_work_repository_contract_checks(
+    bundle: CollaborativeWorkRepositoriesWithSharedWork,
+) -> tuple[int, int]:
+    passed = 0
+    failed = 0
+
+    def _record_success() -> None:
+        nonlocal passed
+        passed += 1
+
+    def _record_failure() -> None:
+        nonlocal failed
+        failed += 1
+
+    def _run_check(check: Callable[[], None]) -> None:
+        try:
+            check()
+            _record_success()
+        except _RepositorySemanticCheckFailure:
+            _record_failure()
+
+    work_item_repo = bundle.work_item
+    assignment_repo = bundle.assignment
+
+    def _work_item_create_get_isolation() -> None:
+        created = work_item_repo.create(_work_item_command())
+        if created.revision != INITIAL_RECORD_REVISION:
+            raise _RepositorySemanticCheckFailure("work item revision mismatch")
+        loaded = work_item_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_item_id="qual-work-item-1",
+        )
+        if loaded != created:
+            raise _RepositorySemanticCheckFailure("work item round-trip mismatch")
+        if (
+            work_item_repo.get(
+                tenant_id=_TENANT_B,
+                workspace_id=_WORKSPACE_B,
+                work_item_id="qual-work-item-1",
+            )
+            is not None
+        ):
+            raise _RepositorySemanticCheckFailure("work item tenant isolation failed")
+
+    def _work_item_duplicate_stale_and_idempotency() -> None:
+        created = work_item_repo.create(
+            _work_item_command(
+                work_item_id="qual-work-item-2",
+                idempotency_key="qual-work-item-idem",
+            ),
+        )
+        try:
+            work_item_repo.create(_work_item_command(work_item_id="qual-work-item-2"))
+            raise _RepositorySemanticCheckFailure("expected WorkItemAlreadyExists")
+        except WorkItemAlreadyExists:
+            pass
+        if work_item_repo.create(
+            _work_item_command(
+                work_item_id="qual-work-item-2",
+                idempotency_key="qual-work-item-idem",
+            ),
+        ) != created:
+            raise _RepositorySemanticCheckFailure("work item idempotency replay mismatch")
+        updated = work_item_repo.update(
+            UpdateWorkItemCommand(
+                scope=WorkItemScopeKey(
+                    tenant_id=_TENANT_A,
+                    workspace_id=_WORKSPACE_A,
+                    work_item_id="qual-work-item-2",
+                ),
+                expected_revision=created.revision,
+                state=WorkItemState.ACTIVE,
+                updated_at=_UPDATED_AT,
+            ),
+        )
+        if updated.revision != created.revision + 1:
+            raise _RepositorySemanticCheckFailure("work item revision increment mismatch")
+        if work_item_repo.create(
+            _work_item_command(
+                work_item_id="qual-work-item-2",
+                idempotency_key="qual-work-item-idem",
+            ),
+        ) != created:
+            raise _RepositorySemanticCheckFailure(
+                "work item idempotency replay after update failed",
+            )
+        try:
+            work_item_repo.update(
+                UpdateWorkItemCommand(
+                    scope=WorkItemScopeKey(
+                        tenant_id=_TENANT_A,
+                        workspace_id=_WORKSPACE_A,
+                        work_item_id="qual-work-item-2",
+                    ),
+                    expected_revision=created.revision,
+                        state=WorkItemState.CANCELLED,
+                    updated_at=_UPDATED_AT,
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkItemRevisionConflict")
+        except WorkItemRevisionConflict:
+            pass
+        try:
+            work_item_repo.create(
+                _work_item_command(
+                    work_item_id="qual-work-item-3",
+                    idempotency_key="qual-work-item-idem",
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkItemIdempotencyConflict")
+        except WorkItemIdempotencyConflict:
+            pass
+
+    def _assignment_create_update_idempotency() -> None:
+        command = _assignment_command(
+            assignment_id="qual-assignment-2",
+            idempotency_key="qual-assignment-idem",
+        )
+        created = assignment_repo.create(command)
+        if assignment_repo.create(command) != created:
+            raise _RepositorySemanticCheckFailure("assignment idempotency mismatch")
+        second = assignment_repo.create(
+            _assignment_command(
+                assignment_id="qual-assignment-3",
+                principal_id="qual-principal-2",
+            ),
+        )
+        if second.work_item_id != created.work_item_id:
+            raise _RepositorySemanticCheckFailure("assignment work_item linkage mismatch")
+        updated = assignment_repo.update(
+            UpdateAssignmentCommand(
+                scope=AssignmentScopeKey(
+                    tenant_id=_TENANT_A,
+                    workspace_id=_WORKSPACE_A,
+                    assignment_id="qual-assignment-2",
+                ),
+                expected_revision=created.revision,
+                state=AssignmentState.REVOKED,
+                updated_at=_UPDATED_AT,
+            ),
+        )
+        if updated.revision != created.revision + 1:
+            raise _RepositorySemanticCheckFailure("assignment revision increment mismatch")
+        if updated.principal_id != created.principal_id:
+            raise _RepositorySemanticCheckFailure("assignment principal_id mutated")
+        if updated.work_item_id != created.work_item_id:
+            raise _RepositorySemanticCheckFailure("assignment work_item_id mutated")
+        if assignment_repo.create(command) != created:
+            raise _RepositorySemanticCheckFailure("assignment idempotency after update failed")
+        try:
+            assignment_repo.create(_assignment_command(assignment_id="qual-assignment-2"))
+            raise _RepositorySemanticCheckFailure("expected AssignmentAlreadyExists")
+        except AssignmentAlreadyExists:
+            pass
+        try:
+            assignment_repo.update(
+                UpdateAssignmentCommand(
+                    scope=AssignmentScopeKey(
+                        tenant_id=_TENANT_A,
+                        workspace_id=_WORKSPACE_A,
+                        assignment_id="qual-assignment-2",
+                    ),
+                    expected_revision=created.revision,
+                    state=AssignmentState.ACTIVE,
+                    updated_at=_UPDATED_AT,
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected AssignmentRevisionConflict")
+        except AssignmentRevisionConflict:
+            pass
+        try:
+            assignment_repo.create(
+                _assignment_command(
+                    assignment_id="qual-assignment-4",
+                    idempotency_key="qual-assignment-idem",
+                    principal_id="qual-principal-3",
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected AssignmentIdempotencyConflict")
+        except AssignmentIdempotencyConflict:
+            pass
+
+    for check in (
+        _work_item_create_get_isolation,
+        _work_item_duplicate_stale_and_idempotency,
+        _assignment_create_update_idempotency,
+    ):
+        _run_check(check)
+
+    return passed, failed
+
+
+def _run_shared_work_cross_connection_concurrency_check(
+    bundle: CollaborativeWorkRepositoriesWithSharedWork,
+) -> tuple[int, int]:
+    store = bundle.store
+    if not isinstance(store, PostgreSQLCollaborativeWorkStore):
+        raise _RepositorySemanticCheckFailure(
+            "cross-connection concurrency requires PostgreSQLCollaborativeWorkStore",
+        )
+
+    work_item_repo = bundle.work_item
+    created = work_item_repo.create(_work_item_command(work_item_id="qual-work-item-concurrency"))
+    bundle_b = open_postgresql_collaborative_work_repositories(
+        config=store.config,
+        schema_name=store.schema_name,
+    )
+    try:
+        read_a = work_item_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_item_id="qual-work-item-concurrency",
+        )
+        read_b = bundle_b.work_item.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_item_id="qual-work-item-concurrency",
+        )
+        if read_a is None or read_b is None:
+            raise _RepositorySemanticCheckFailure("concurrency pre-read missing work item")
+        if read_a.revision != read_b.revision != created.revision:
+            raise _RepositorySemanticCheckFailure("concurrency revision baseline mismatch")
+
+        errors: list[BaseException] = []
+        barrier = threading.Barrier(2)
+
+        def attempt(target: CollaborativeWorkRepositoriesWithSharedWork) -> None:
+            try:
+                barrier.wait(timeout=5)
+                target.work_item.update(
+                    UpdateWorkItemCommand(
+                        scope=WorkItemScopeKey(
+                            tenant_id=_TENANT_A,
+                            workspace_id=_WORKSPACE_A,
+                            work_item_id="qual-work-item-concurrency",
+                        ),
+                        expected_revision=created.revision,
+                        state=WorkItemState.ACTIVE,
+                        updated_at=_UPDATED_AT,
+                    ),
+                )
+            except BaseException as exc:  # noqa: BLE001
+                errors.append(exc)
+
+        threads = [
+            threading.Thread(target=attempt, args=(bundle,)),
+            threading.Thread(target=attempt, args=(bundle_b,)),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        if len(errors) != 1:
+            raise _RepositorySemanticCheckFailure("expected exactly one revision conflict")
+        if not isinstance(errors[0], WorkItemRevisionConflict):
+            raise _RepositorySemanticCheckFailure("expected WorkItemRevisionConflict")
+        final = work_item_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_item_id="qual-work-item-concurrency",
+        )
+        if final is None or final.revision != created.revision + 1:
+            raise _RepositorySemanticCheckFailure("concurrency final revision mismatch")
+    finally:
+        bundle_b.close()
+
+    return 1, 0
+
+
 @dataclass(frozen=True, slots=True)
 class CollaborativeWorkRepositoryQualificationSuite:
     """Domain-owned repository qualification suite for Collaborative Work persistence."""
@@ -334,6 +656,8 @@ class CollaborativeWorkRepositoryQualificationSuite:
     _environment_metadata: ProviderQualificationEnvironmentMetadata
     _limitations: tuple[str, ...]
     _reproducibility: str
+    _requires_shared_work: bool = True
+    _requires_concurrency_proof: bool = False
 
     @property
     def identity(self) -> ProviderQualificationSuiteIdentity:
@@ -341,16 +665,40 @@ class CollaborativeWorkRepositoryQualificationSuite:
 
     def execute(self, capability: object) -> ProviderQualificationSuiteOutcome:
         if isinstance(capability, CollaborativeWorkRepositoriesWithSharedWork):
-            bundle = capability.core
+            core_passed, core_failed = _run_core_repository_contract_checks(capability.core)
+            shared_passed, shared_failed = _run_shared_work_repository_contract_checks(capability)
+            passed = core_passed + shared_passed
+            failed = core_failed + shared_failed
+            concurrency_evidence: tuple[QualificationEvidence, ...] = ()
+            if self._requires_concurrency_proof:
+                try:
+                    conc_passed, conc_failed = _run_shared_work_cross_connection_concurrency_check(
+                        capability,
+                    )
+                except _RepositorySemanticCheckFailure:
+                    conc_passed, conc_failed = 0, 1
+                passed += conc_passed
+                failed += conc_failed
+                concurrency_evidence = (
+                    QualificationEvidence(
+                        kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
+                        code="shared_work.concurrency.cross_connection",
+                        label="transactional_cas",
+                    ),
+                )
         elif isinstance(capability, CollaborativeWorkRepositories):
-            bundle = capability
+            if self._requires_shared_work:
+                raise ProviderQualificationSuiteInfrastructureError(
+                    "capability must include MP-2 Shared Work repositories",
+                )
+            passed, failed = _run_core_repository_contract_checks(capability)
+            concurrency_evidence = ()
         else:
             raise ProviderQualificationSuiteInfrastructureError(
                 "capability must be CollaborativeWorkRepositories "
                 "or CollaborativeWorkRepositoriesWithSharedWork",
             )
 
-        passed, failed = _run_repository_contract_checks(bundle)
         skipped = 0
         status = self._qualified_status if failed == 0 else QualificationStatus.REJECTED
         evidence = (
@@ -365,6 +713,12 @@ class CollaborativeWorkRepositoryQualificationSuite:
                 code="backend.live",
                 label=self._identity.qualification_suite_id,
             ),
+            QualificationEvidence(
+                kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
+                code="shared_work.mp2",
+                label="work_item,assignment",
+            ),
+            *concurrency_evidence,
         )
         return ProviderQualificationSuiteOutcome(
             status=status,
@@ -405,6 +759,8 @@ def collaborative_work_postgresql_repository_qualification_suite() -> (
             "tests/integration/core/qualification/"
             "test_provider_qualification_execution_postgresql.py"
         ),
+        _requires_shared_work=True,
+        _requires_concurrency_proof=True,
     )
 
 
@@ -431,6 +787,8 @@ def collaborative_work_sqlite_repository_qualification_suite() -> (
             "uv run pytest tests/unit/core/qualification/"
             "test_provider_qualification_execution_runner.py::test_sqlite_provider_execution"
         ),
+        _requires_shared_work=True,
+        _requires_concurrency_proof=False,
     )
 
 

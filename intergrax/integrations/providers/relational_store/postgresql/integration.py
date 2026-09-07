@@ -15,7 +15,7 @@ from intergrax.runtime.integrations.categories.data import RelationalStoreIntegr
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
 if TYPE_CHECKING:
-    from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+    from intergrax.collaborative_work.persistence import CollaborativeWorkRepositoriesWithSharedWork
 
 POSTGRESQL_RELATIONAL_STORE_PROVIDER_ID = "postgresql"
 
@@ -80,7 +80,7 @@ class PostgresqlRelationalStoreIntegration(RelationalStoreIntegrationContract):
     def client(self) -> PostgresqlRelationalStoreClient | None:
         return self._client
 
-    def materialize_collaborative_work_repositories(self) -> CollaborativeWorkRepositories:
+    def materialize_collaborative_work_repositories(self) -> CollaborativeWorkRepositoriesWithSharedWork:
         from intergrax.collaborative_work.persistence import (
             open_postgresql_collaborative_work_repositories,
         )

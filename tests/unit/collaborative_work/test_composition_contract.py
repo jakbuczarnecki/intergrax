@@ -60,7 +60,7 @@ def test_sqlite_factory_returns_full_shared_work_bundle(tmp_path: Path) -> None:
         bundle.close()
 
 
-def test_postgresql_factory_returns_core_bundle_only() -> None:
+def test_postgresql_factory_returns_full_shared_work_bundle() -> None:
     from intergrax.integrations.providers.relational_store.postgresql.config import (
         PostgreSQLIntegrationConfig,
     )
@@ -73,14 +73,20 @@ def test_postgresql_factory_returns_core_bundle_only() -> None:
             config=PostgreSQLIntegrationConfig(dsn="postgresql://localhost/test"),
         )
     try:
-        assert isinstance(bundle, CollaborativeWorkRepositories)
-        assert not isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
-        assert not hasattr(bundle, "shared_work")
-        assert not hasattr(bundle, "work_item")
-        assert not hasattr(bundle, "assignment")
+        assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
+        assert isinstance(bundle.shared_work, CollaborativeWorkSharedWorkRepositories)
+        assert isinstance(bundle.work_item, WorkItemRepository)
+        assert isinstance(bundle.assignment, AssignmentRepository)
+        assert isinstance(bundle.core, CollaborativeWorkRepositories)
+        assert collaborative_work_core_repositories(bundle) is bundle.core
     finally:
         bundle.close()
         store.close.assert_called_once()
+
+
+def test_postgresql_open_return_annotation_guarantees_shared_work() -> None:
+    hints = get_type_hints(open_postgresql_collaborative_work_repositories)
+    assert hints["return"] is CollaborativeWorkRepositoriesWithSharedWork
 
 
 def test_core_bundle_has_no_optional_shared_work_fields() -> None:
@@ -126,7 +132,7 @@ def test_sqlite_profile_materializes_full_shared_work_bundle(tmp_path: Path) -> 
         bundle.close()
 
 
-def test_postgresql_profile_materializes_core_bundle_only() -> None:
+def test_postgresql_profile_materializes_full_shared_work_bundle() -> None:
     register_postgresql_integration()
     profile = IntegrationProfile(
         relational_store=POSTGRESQL,
@@ -134,18 +140,23 @@ def test_postgresql_profile_materializes_core_bundle_only() -> None:
     )
     with patch(
         "intergrax.collaborative_work.persistence.open_postgresql_collaborative_work_repositories",
-        return_value=CollaborativeWorkRepositories(
-            membership=object(),  # type: ignore[arg-type]
-            delegation=object(),  # type: ignore[arg-type]
-            principal_authority=object(),  # type: ignore[arg-type]
-            policy=object(),  # type: ignore[arg-type]
-            operation_profile=object(),  # type: ignore[arg-type]
-            store=type("Store", (), {"close": lambda self: None})(),
-        ),
-    ):
+    ) as open_fn:
+        open_fn.return_value = CollaborativeWorkRepositoriesWithSharedWork(
+            core=CollaborativeWorkRepositories(
+                membership=object(),  # type: ignore[arg-type]
+                delegation=object(),  # type: ignore[arg-type]
+                principal_authority=object(),  # type: ignore[arg-type]
+                policy=object(),  # type: ignore[arg-type]
+                operation_profile=object(),  # type: ignore[arg-type]
+                store=type("Store", (), {"close": lambda self: None})(),
+            ),
+            shared_work=CollaborativeWorkSharedWorkRepositories(
+                work_item=object(),  # type: ignore[arg-type]
+                assignment=object(),  # type: ignore[arg-type]
+            ),
+        )
         bundle = resolve_collaborative_work_repositories(profile)
-    assert isinstance(bundle, CollaborativeWorkRepositories)
-    assert not isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
     bundle.close()
 
 

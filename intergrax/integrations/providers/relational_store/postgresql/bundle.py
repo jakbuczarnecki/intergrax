@@ -24,7 +24,7 @@ from intergrax.collaborative_work.materialization_factory import (
     CollaborativeWorkMaterializationBinder,
     CollaborativeWorkPersistenceFactory,
 )
-from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.collaborative_work.persistence import CollaborativeWorkRepositoriesWithSharedWork
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.providers.relational_store.postgresql.config import (
@@ -94,7 +94,7 @@ class _PostgreSQLCollaborativeWorkMaterializer:
 
     def materialize_collaborative_work_repositories(
         self,
-    ) -> CollaborativeWorkRepositories:
+    ) -> CollaborativeWorkRepositoriesWithSharedWork:
         from intergrax.collaborative_work.persistence import (
             open_postgresql_collaborative_work_repositories,
         )

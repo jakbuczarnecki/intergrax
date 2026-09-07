@@ -309,7 +309,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2E |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | PostgreSQL/production-qualified repository materialization for WorkItem and Assignment |
 | **Dependencies** | COLLAB-WORK-2D approved; COLLAB-WORK-1J PostgreSQL patterns; provider qualification binding |
 | **Exact scope** | PostgreSQL typed repositories for MP-2 ports; `open_postgresql_collaborative_work_repositories` extension; qualification evidence |

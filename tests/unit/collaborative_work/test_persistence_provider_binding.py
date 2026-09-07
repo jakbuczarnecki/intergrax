@@ -710,7 +710,7 @@ def test_prebuilt_postgresql_instance_transfers_connection_ownership(_mock_psyco
 
     bundle = resolve_collaborative_work_repositories(profile)
 
-    assert isinstance(bundle, CollaborativeWorkRepositories)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
     bundle.close()
     assert connection.closed is True
 

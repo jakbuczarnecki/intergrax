@@ -10,11 +10,13 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from intergrax.collaborative_work.postgresql_repository import (
+    PostgreSQLAssignmentRepository,
     PostgreSQLAuthorityDelegationRepository,
     PostgreSQLCollaborativeOperationPolicyProfileRepository,
     PostgreSQLCollaborativePolicyRepository,
     PostgreSQLCollaborativeWorkStore,
     PostgreSQLPrincipalAuthorityRepository,
+    PostgreSQLWorkItemRepository,
     PostgreSQLWorkspaceMembershipRepository,
 )
 from intergrax.collaborative_work.repository import (
@@ -159,7 +161,7 @@ def open_postgresql_collaborative_work_repositories(
     config: PostgreSQLIntegrationConfig | None = None,
     connection_factory: Callable[[], Any] | None = None,
     schema_name: str | None = None,
-) -> CollaborativeWorkRepositories:
+) -> CollaborativeWorkRepositoriesWithSharedWork:
     """Open production-grade Collaborative Work repositories backed by PostgreSQL."""
     resolved = config or PostgreSQLIntegrationConfig.from_env()
     try:
@@ -174,11 +176,18 @@ def open_postgresql_collaborative_work_repositories(
         raise IntegrationConfigurationError(
             "PostgreSQL Collaborative Work repositories could not be opened"
         ) from exc
-    return CollaborativeWorkRepositories(
+    core = CollaborativeWorkRepositories(
         membership=PostgreSQLWorkspaceMembershipRepository(store),
         delegation=PostgreSQLAuthorityDelegationRepository(store),
         principal_authority=PostgreSQLPrincipalAuthorityRepository(store),
         policy=PostgreSQLCollaborativePolicyRepository(store),
         operation_profile=PostgreSQLCollaborativeOperationPolicyProfileRepository(store),
         store=store,
+    )
+    return CollaborativeWorkRepositoriesWithSharedWork(
+        core=core,
+        shared_work=CollaborativeWorkSharedWorkRepositories(
+            work_item=PostgreSQLWorkItemRepository(store),
+            assignment=PostgreSQLAssignmentRepository(store),
+        ),
     )
