@@ -258,7 +258,7 @@ def test_adr6_require_human_zero_commits_preserves_scope() -> None:
     assert exc.value.authorization_scope.mutation_id == "mut-adr6"
 
 
-def test_adr7_reference_production_allow_commits() -> None:
+def test_adr7_reference_production_allow_commits(configured_research_llm: None) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr7")
     manifest = RESEARCH_APPLICATION_MANIFEST
@@ -273,7 +273,7 @@ def test_adr7_reference_production_allow_commits() -> None:
     assert result.serving_pointer_revision == 1
 
 
-def test_adr8_reference_production_deny_zero_commit() -> None:
+def test_adr8_reference_production_deny_zero_commit(configured_research_llm: None) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr8")
     manifest = RESEARCH_APPLICATION_MANIFEST
@@ -303,7 +303,9 @@ def test_adr8_reference_production_deny_zero_commit() -> None:
     assert serving is None or serving.traffic_serving_revision_id is None
 
 
-def test_adr9_reference_production_missing_boundary_fails_closed() -> None:
+def test_adr9_reference_production_missing_boundary_fails_closed(
+    configured_research_llm: None,
+) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr9")
     manifest = RESEARCH_APPLICATION_MANIFEST
@@ -321,7 +323,9 @@ def test_adr9_reference_production_missing_boundary_fails_closed() -> None:
         )
 
 
-def test_adr10_reference_production_wrong_tenant_zero_commit() -> None:
+def test_adr10_reference_production_wrong_tenant_zero_commit(
+    configured_research_llm: None,
+) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr10")
     manifest = RESEARCH_APPLICATION_MANIFEST
@@ -341,7 +345,9 @@ def test_adr10_reference_production_wrong_tenant_zero_commit() -> None:
         )
 
 
-def test_adr11_reference_production_require_human_zero_commit() -> None:
+def test_adr11_reference_production_require_human_zero_commit(
+    configured_research_llm: None,
+) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr11")
     manifest = RESEARCH_APPLICATION_MANIFEST
@@ -366,7 +372,9 @@ def test_adr11_reference_production_require_human_zero_commit() -> None:
     assert exc.value.authorization_scope is not None
 
 
-def test_adr12_reference_path_uses_distinct_admission_and_activation_mutation_ids() -> None:
+def test_adr12_reference_path_uses_distinct_admission_and_activation_mutation_ids(
+    configured_research_llm: None,
+) -> None:
     composition = create_reference_production_process_composition()
     projection_input, activation_request, env = _research_reference_input("rev-adr12")
     activation_request = activation_request.model_copy(update={"mutation_id": "mut-adr12-exact"})

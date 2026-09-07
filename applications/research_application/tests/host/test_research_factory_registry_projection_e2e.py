@@ -21,7 +21,9 @@ from research_application.tests.research_ac3_projection import build_research_te
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-def test_research_factory_uses_projected_registry_not_manifest_extra_agents() -> None:
+def test_research_factory_uses_projected_registry_not_manifest_extra_agents(
+    configured_research_llm: None,
+) -> None:
     settings = ResearchBackendSettings(use_nexus_loop=True)
     manifest = RESEARCH_APPLICATION_MANIFEST
     env = build_research_environment_profile(settings)
