@@ -1043,6 +1043,10 @@ class WorkArtifactRevisionConflict(Exception):
     """Optimistic revision conflict for WorkArtifact publication."""
 
 
+class WorkArtifactTemporalConflict(Exception):
+    """Publication command artifact_updated_at regresses below the current aggregate timestamp."""
+
+
 class WorkArtifactIdempotencyConflict(Exception):
     """Initial artifact create idempotency key replayed with a different semantic command."""
 

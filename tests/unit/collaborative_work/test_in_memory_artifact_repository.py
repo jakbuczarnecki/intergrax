@@ -29,6 +29,7 @@ from intergrax.collaborative_work.repository import (
     WorkArtifactNotFound,
     WorkArtifactRepository,
     WorkArtifactRevisionConflict,
+    WorkArtifactTemporalConflict,
     WorkArtifactVersionAlreadyExists,
     WorkArtifactVersionRepository,
 )
@@ -288,6 +289,72 @@ def test_publish_advances_revision_and_preserves_history(
     assert listed == (initial.version, published.version)
 
 
+def test_publish_temporal_regression_rejected_without_state_change(
+    publication_repo: ArtifactPublicationRepository,
+    artifact_repo: WorkArtifactRepository,
+    version_repo: WorkArtifactVersionRepository,
+) -> None:
+    initial = _seed_initial(publication_repo)
+    t1 = initial.artifact.updated_at
+    with pytest.raises(WorkArtifactTemporalConflict):
+        publication_repo.publish_version(
+            _publish_command(
+                expected_revision=0,
+                artifact_updated_at=t1 - timedelta(seconds=1),
+                idempotency_key="temporal-regression",
+            ),
+        )
+    unchanged = artifact_repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        work_artifact_id=_ARTIFACT,
+    )
+    assert unchanged == initial.artifact
+    assert unchanged is not None
+    assert unchanged.revision == initial.artifact.revision
+    assert unchanged.current_version_id == initial.artifact.current_version_id
+    assert (
+        version_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_version_id=_VERSION_2,
+        )
+        is None
+    )
+    history = version_repo.list_for_artifact(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        work_artifact_id=_ARTIFACT,
+    )
+    assert history == (initial.version,)
+    store = publication_repo._store
+    assert not any(
+        key[3] == "temporal-regression"
+        for key in store._idempotency
+        if key[2] == "artifact.publish"
+    )
+
+
+def test_publish_temporal_equality_accepted(
+    publication_repo: ArtifactPublicationRepository,
+    artifact_repo: WorkArtifactRepository,
+) -> None:
+    initial = _seed_initial(publication_repo)
+    published = publication_repo.publish_version(
+        _publish_command(
+            expected_revision=0,
+            artifact_updated_at=initial.artifact.updated_at,
+        ),
+    )
+    assert published.artifact.updated_at == initial.artifact.updated_at
+    loaded = artifact_repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        work_artifact_id=_ARTIFACT,
+    )
+    assert loaded == published.artifact
+
+
 def test_publish_stale_revision_conflicts_without_new_version(
     publication_repo: ArtifactPublicationRepository,
     version_repo: WorkArtifactVersionRepository,
@@ -395,8 +462,12 @@ def test_create_and_publish_idempotency_namespaces_do_not_collide(
     assert published.version.work_artifact_version_id == _VERSION_2
 
 
-def test_concurrent_publish_one_wins(publication_repo: ArtifactPublicationRepository) -> None:
-    _seed_initial(publication_repo)
+def test_concurrent_publish_one_wins(
+    publication_repo: ArtifactPublicationRepository,
+    artifact_repo: WorkArtifactRepository,
+    version_repo: WorkArtifactVersionRepository,
+) -> None:
+    initial = _seed_initial(publication_repo)
     errors: list[BaseException] = []
     results: list[PublishedWorkArtifactVersion] = []
     barrier = threading.Barrier(2)
@@ -427,8 +498,42 @@ def test_concurrent_publish_one_wins(publication_repo: ArtifactPublicationReposi
     assert len(errors) == 1
     assert isinstance(errors[0], WorkArtifactRevisionConflict)
     winner = results[0]
-    assert winner.artifact.revision == 1
-    assert winner.artifact.current_version_id in {_VERSION_2, _VERSION_3}
+    loser_version_id = (
+        _VERSION_3
+        if winner.version.work_artifact_version_id == _VERSION_2
+        else _VERSION_2
+    )
+
+    final_artifact = artifact_repo.get(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        work_artifact_id=_ARTIFACT,
+    )
+    assert final_artifact is not None
+    assert final_artifact.revision == initial.artifact.revision + 1
+    assert final_artifact.current_version_id == winner.version.work_artifact_version_id
+    assert (
+        version_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_version_id=winner.version.work_artifact_version_id,
+        )
+        == winner.version
+    )
+    assert (
+        version_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_version_id=loser_version_id,
+        )
+        is None
+    )
+    history = version_repo.list_for_artifact(
+        tenant_id=_TENANT_A,
+        workspace_id=_WORKSPACE_A,
+        work_artifact_id=_ARTIFACT,
+    )
+    assert history == (initial.version, winner.version)
 
 
 def test_read_ports_scope_isolation(

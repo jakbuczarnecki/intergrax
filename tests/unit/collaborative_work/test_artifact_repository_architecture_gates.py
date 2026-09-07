@@ -110,6 +110,7 @@ def test_mp3b_repository_surface_defines_artifact_ports() -> None:
         "class PublishWorkArtifactVersionCommand",
         "class PublishedWorkArtifactVersion",
         "class WorkArtifactRevisionConflict",
+        "class WorkArtifactTemporalConflict",
         "class ArtifactPublicationIdempotencyConflict",
     ):
         assert symbol in source

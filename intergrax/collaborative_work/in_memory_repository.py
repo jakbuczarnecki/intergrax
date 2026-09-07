@@ -55,6 +55,7 @@ from intergrax.collaborative_work.repository import (
     WorkArtifactIdempotencyConflict,
     WorkArtifactNotFound,
     WorkArtifactRevisionConflict,
+    WorkArtifactTemporalConflict,
     WorkArtifactVersionAlreadyExists,
     WorkItemAlreadyExists,
     WorkItemExecutionLinkAlreadyExists,
@@ -1647,6 +1648,8 @@ class InMemoryArtifactPublicationRepository:
                 raise WorkArtifactNotFound("work artifact was not found")
             if current.revision != command.expected_revision:
                 raise WorkArtifactRevisionConflict("work artifact revision conflict")
+            if command.artifact_updated_at < current.updated_at:
+                raise WorkArtifactTemporalConflict("work artifact temporal conflict")
             if version_key in self._store._versions:
                 raise WorkArtifactVersionAlreadyExists("work artifact version already exists")
 
