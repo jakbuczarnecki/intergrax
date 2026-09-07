@@ -66,6 +66,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     prepare_incident_execution_runtime,
     trace_reader_from_composition,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    completion_intent_from_completion_mode,
+    reconcile_investigation_completion,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
@@ -489,10 +493,17 @@ async def execute_resolved_skeleton(
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
     persist_terminal_acceptance_diagnostic(diagnostic)
+    reconciled = reconcile_investigation_completion(
+        model_intent=completion_intent_from_completion_mode(completion_mode),
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        validation_errors=tuple(final_validation.errors),
+        evidence_gathering_stop_reason=evidence_gathering_stop_reason,
+    )
     outcome = derive_terminal_outcome(
         critic_verdict_passed=critic_verdict_passed,
         has_supported_diagnosis=has_supported_diagnosis,
-        completion_mode=completion_mode,
+        completion_mode=reconciled.completion_mode.value,
     )
     leak_blob = _leak_scan_blob(claim_set, evidence_nodes)
     investigation_conclusion = build_investigation_conclusion(
