@@ -10,6 +10,9 @@ import pytest
 from pydantic import BaseModel, Field
 
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
     AtomicPlannerRoundError,
@@ -21,8 +24,10 @@ from intergrax.runtime.nexus.tools.atomic_planner_round import (
     materialize_atomic_round_to_tool_plan,
     mint_materialized_tool_calls_from_plan,
     parse_atomic_planner_round_call,
+    parse_atomic_planner_round_payload,
     resolve_atomic_planner_round_calls,
 )
+from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NativePlannerProtocolConfig,
     NativePlannerProtocolMode,
@@ -123,6 +128,7 @@ def test_discriminated_schema_uses_one_of_per_tool() -> None:
     assert isinstance(properties, dict)
     actions = properties["actions"]
     assert isinstance(actions, dict)
+    assert actions["minItems"] == 1
     items = actions["items"]
     assert isinstance(items, dict)
     one_of = items["oneOf"]
@@ -298,8 +304,13 @@ def test_resolve_requires_action_context_with_prior_evidence() -> None:
         )
 
 
+def test_parse_rejects_empty_actions() -> None:
+    with pytest.raises(AtomicPlannerRoundError, match="schema validation failed"):
+        parse_atomic_planner_round_payload({"actions": []})
+
+
 def test_resolve_rejects_empty_actions() -> None:
-    with pytest.raises(AtomicPlannerRoundError, match="empty actions"):
+    with pytest.raises(AtomicPlannerRoundError, match="schema validation failed"):
         resolve_atomic_planner_round_calls(
             (_round_call({"actions": []}),),
             protocol_config=_protocol_with_prior(),
@@ -325,6 +336,64 @@ def test_atomic_round_schema_hash_is_deterministic() -> None:
     first = compute_atomic_planner_round_schema_hash(round_schema)
     second = compute_atomic_planner_round_schema_hash(round_schema)
     assert first == second
+
+
+class _TerminationCapturingAdapter(LLMAdapter):
+    provider = "fake-termination"
+    model = "fake-termination"
+
+    def __init__(self, *, content: str) -> None:
+        super().__init__()
+        self._content = content
+        self.received_tool_choice: object | None = None
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 8192
+
+    def supports_tools(self) -> bool:
+        return True
+
+    def supports_structured_output(self) -> bool:
+        return False
+
+    def generate_messages(
+        self,
+        messages,
+        *,
+        temperature=None,
+        max_tokens=None,
+        run_id=None,
+    ):
+        return build_adapter_response(content="unused")
+
+    def generate_with_tools(
+        self,
+        messages,
+        tools_schema,
+        *,
+        temperature=None,
+        max_tokens=None,
+        tool_choice=None,
+        run_id=None,
+    ):
+        self.received_tool_choice = tool_choice
+        return build_adapter_response(content=self._content)
+
+
+def test_atomic_round_termination_without_tool_calls() -> None:
+    adapter = _TerminationCapturingAdapter(content="Final investigation summary.")
+    planner = ToolPlanningService(adapter, _registry())
+    protocol = NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
+    )
+    round_result = planner.plan_native_round(
+        [ChatMessage(role="user", content="Summarize findings.")],
+        protocol_config=protocol,
+    )
+    assert round_result.response.content == "Final investigation summary."
+    assert round_result.tool_plan.calls == []
+    assert round_result.materialized_tool_calls == ()
 
 
 def test_mint_materialized_tool_calls_assigns_identities() -> None:

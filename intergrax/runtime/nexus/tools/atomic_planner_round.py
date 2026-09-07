@@ -98,7 +98,7 @@ class _AtomicRoundInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     action_context: dict[str, object] | None = None
-    actions: list[_DiscriminatedActionInput] = Field(default_factory=list)
+    actions: list[_DiscriminatedActionInput] = Field(min_length=1)
 
 
 def extract_business_tool_schema_entries(
@@ -176,6 +176,7 @@ def _build_discriminated_actions_schema(
         )
     return {
         "type": "array",
+        "minItems": 1,
         "items": {"oneOf": one_of},
     }
 
