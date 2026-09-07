@@ -10,9 +10,14 @@ from pathlib import Path
 
 import pytest
 
+from scripts.proof.intergrax_platform_proof_execution import (
+    LoadedManifestBundle,
+    ProofExecutionSpec,
+)
 from scripts.proof.intergrax_proof_contracts import (
     EnvRequirement,
     EnvRequirementKind,
+    IntergraxProofManifest,
     ProofArgvCommand,
     ProofManifestEntry,
     ProofProfile,
@@ -653,6 +658,106 @@ def test_process_environment_wins_over_proof_dotenv_for_child_execution(
         base_environment=base_environment,
     )
     assert value == "operator"
+
+
+def _env_isolation_manifest_bundle(
+    *,
+    proof_a: Path,
+    proof_b: Path,
+) -> LoadedManifestBundle:
+    entry_a = _entry("ENV-ISOLATION-A")
+    entry_b = _entry("ENV-ISOLATION-B")
+    execution_specs = {
+        entry_a.proof_id: ProofExecutionSpec(
+            manifest_entry=entry_a,
+            package_root=proof_a,
+        ),
+        entry_b.proof_id: ProofExecutionSpec(
+            manifest_entry=entry_b,
+            package_root=proof_b,
+        ),
+    }
+    manifest = IntergraxProofManifest(entries=(entry_a, entry_b))
+    return LoadedManifestBundle(manifest=manifest, execution_specs=execution_specs)
+
+
+def _run_suite_env_isolation_capture(
+    *,
+    repo_root: Path,
+    proof_a: Path,
+    proof_b: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    proof_id: str | None = None,
+) -> list[str | None]:
+    monkeypatch.setattr(
+        "scripts.proof.intergrax_proof_runner.load_manifest_bundle",
+        lambda *, repo_root: _env_isolation_manifest_bundle(
+            proof_a=proof_a,
+            proof_b=proof_b,
+        ),
+    )
+    captured: list[str | None] = []
+
+    def _runner(command, **kwargs):
+        env = kwargs.get("env")
+        if isinstance(env, dict):
+            captured.append(env.get("INTERGRAX_TEST_PROOF_VALUE"))
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    receipt, _ = run_suite(
+        RunnerConfig(
+            profile=ProofProfile.QUICK,
+            repo_root=repo_root,
+            proof_id=proof_id,
+        ),
+        subprocess_runner=_runner,
+    )
+    assert all(result.status == ProofStatus.PASS for result in receipt.results)
+    return captured
+
+
+def test_run_suite_proof_environments_do_not_leak_between_proofs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    proof_a = repo_root / "platform_proofs" / "proof_a"
+    proof_b = repo_root / "platform_proofs" / "proof_b"
+    proof_a.mkdir(parents=True)
+    proof_b.mkdir(parents=True)
+    (proof_a / ".env").write_text("INTERGRAX_TEST_PROOF_VALUE=A\n", encoding="utf-8")
+    (proof_b / ".env").write_text("INTERGRAX_TEST_PROOF_VALUE=B\n", encoding="utf-8")
+
+    monkeypatch.delenv("INTERGRAX_TEST_PROOF_VALUE", raising=False)
+
+    captured = _run_suite_env_isolation_capture(
+        repo_root=repo_root,
+        proof_a=proof_a,
+        proof_b=proof_b,
+        monkeypatch=monkeypatch,
+    )
+    assert os.environ.get("INTERGRAX_TEST_PROOF_VALUE") is None
+    assert captured == ["A", "B"]
+
+    reverse = _run_suite_env_isolation_capture(
+        repo_root=repo_root,
+        proof_a=proof_a,
+        proof_b=proof_b,
+        monkeypatch=monkeypatch,
+        proof_id="ENV-ISOLATION-B",
+    )
+    assert os.environ.get("INTERGRAX_TEST_PROOF_VALUE") is None
+    assert reverse == ["B"]
+
+    forward_single = _run_suite_env_isolation_capture(
+        repo_root=repo_root,
+        proof_a=proof_a,
+        proof_b=proof_b,
+        monkeypatch=monkeypatch,
+        proof_id="ENV-ISOLATION-A",
+    )
+    assert os.environ.get("INTERGRAX_TEST_PROOF_VALUE") is None
+    assert forward_single == ["A"]
 
 
 def test_evaluate_environment_uses_resolved_environment_not_process_env(
