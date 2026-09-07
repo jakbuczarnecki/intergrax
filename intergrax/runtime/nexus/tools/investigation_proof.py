@@ -163,7 +163,7 @@ def format_investigation_follow_up_context(
         "AVAILABLE_EVIDENCE_REFS) and purpose.\n"
         "Use the exact field name purpose; do not use public_purpose or other aliases.\n"
         "Include one or more admitted business actions inside actions[]. Each action must contain "
-        "tool_id and arguments.\n"
+        "tool_id and arguments for the selected tool matching the provided argument contract.\n"
         "Do not call business tools directly; place them inside actions[].\n"
         "An empty evidence_basis_references is invalid when prior evidence exists.\n"
         "evidence_basis_references expresses what already-observed facts materially motivate "

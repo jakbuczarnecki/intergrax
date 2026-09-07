@@ -43,16 +43,21 @@ def project_json_schema_for_openai_strict_tool_parameters(
 
 def _openai_strict_atomic_planner_action_item_schema(
     tool_ids: Sequence[str],
+    *,
+    argument_guidance_description: str | None = None,
 ) -> JsonObject:
     if not tool_ids:
         raise AtomicPlannerRoundProjectionError(
             "atomic planner strict projection requires at least one admitted tool id"
         )
+    arguments_json_schema: JsonObject = {"type": "string"}
+    if argument_guidance_description:
+        arguments_json_schema["description"] = argument_guidance_description
     return {
         "type": "object",
         "properties": {
             "tool_id": {"type": "string", "enum": list(tool_ids)},
-            "arguments_json": {"type": "string"},
+            "arguments_json": arguments_json_schema,
         },
         "required": ["tool_id", "arguments_json"],
         "additionalProperties": False,
@@ -61,6 +66,8 @@ def _openai_strict_atomic_planner_action_item_schema(
 
 def project_atomic_planner_round_parameters_for_openai_strict(
     canonical_parameters: Mapping[str, object],
+    *,
+    argument_guidance_description: str | None = None,
 ) -> JsonObject:
     """Project canonical discriminated actions to OpenAI strict-compatible transport."""
     properties = canonical_parameters.get("properties")
@@ -83,7 +90,10 @@ def project_atomic_planner_round_parameters_for_openai_strict(
     projected_properties["actions"] = {
         "type": "array",
         "minItems": min_items,
-        "items": _openai_strict_atomic_planner_action_item_schema(admitted_tool_ids),
+        "items": _openai_strict_atomic_planner_action_item_schema(
+            admitted_tool_ids,
+            argument_guidance_description=argument_guidance_description,
+        ),
     }
     projected: JsonObject = {
         "type": "object",

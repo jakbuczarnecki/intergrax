@@ -106,6 +106,7 @@ class CatalogCapabilityAdapter(LLMAdapter):
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
         tool_dispatch_requirements: Optional[Sequence[ToolDispatchRequirements]] = None,
+        tool_argument_guidance: Optional[Sequence[str | None]] = None,
     ) -> LLMAdapterResponse:
         return self._inner.generate_with_tools(
             messages,
@@ -115,6 +116,7 @@ class CatalogCapabilityAdapter(LLMAdapter):
             tool_choice=tool_choice,
             run_id=run_id,
             tool_dispatch_requirements=tool_dispatch_requirements,
+            tool_argument_guidance=tool_argument_guidance,
         )
 
     def generate_structured(

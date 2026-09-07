@@ -168,6 +168,7 @@ class FailoverLLMAdapter(LLMAdapter):
         max_tokens: int | None = None,
         run_id: str | None = None,
         tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+        tool_argument_guidance: Sequence[str | None] | None = None,
     ) -> LLMAdapterResponse:
         adapters, profile_ids = self._eligible_adapter_chain(
             tools,
@@ -181,6 +182,7 @@ class FailoverLLMAdapter(LLMAdapter):
                 max_tokens=max_tokens,
                 run_id=run_id,
                 tool_dispatch_requirements=tool_dispatch_requirements,
+                tool_argument_guidance=tool_argument_guidance,
             ),
             adapters=adapters,
             profile_ids=profile_ids,
@@ -211,6 +213,7 @@ class FailoverLLMAdapter(LLMAdapter):
         max_tokens: int | None = None,
         run_id: str | None = None,
         tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+        tool_argument_guidance: Sequence[str | None] | None = None,
     ) -> Iterable[LLMStreamEvent]:
         adapters, _profile_ids = self._eligible_adapter_chain(
             tools,
@@ -224,6 +227,7 @@ class FailoverLLMAdapter(LLMAdapter):
             max_tokens=max_tokens,
             run_id=run_id,
             tool_dispatch_requirements=tool_dispatch_requirements,
+            tool_argument_guidance=tool_argument_guidance,
         )
 
     def generate_structured(

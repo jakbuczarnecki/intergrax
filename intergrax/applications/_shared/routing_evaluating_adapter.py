@@ -197,6 +197,7 @@ class RoutingEvaluatingLLMAdapter(LLMAdapter):
         tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
         tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+        tool_argument_guidance: Sequence[str | None] | None = None,
     ) -> LLMAdapterResponse:
         self._refresh_inner_adapter()
         return self._inner.generate_with_tools(
@@ -207,6 +208,7 @@ class RoutingEvaluatingLLMAdapter(LLMAdapter):
             tool_choice=tool_choice,
             run_id=run_id,
             tool_dispatch_requirements=tool_dispatch_requirements,
+            tool_argument_guidance=tool_argument_guidance,
         )
 
     def generate_structured(

@@ -841,6 +841,7 @@ def test_map_tools_projects_strict_atomic_planner_round() -> None:
     mapped = _map_tools_to_responses_api(
         [canonical],
         tool_dispatch_requirements=[definition.dispatch_requirements],
+        tool_argument_guidance=[definition.argument_guidance_text],
     )[0]
 
     assert mapped["strict"] is True
@@ -854,7 +855,11 @@ def test_map_tools_projects_strict_atomic_planner_round() -> None:
     assert actions["minItems"] == 1
     action_item = actions["items"]
     assert "oneOf" not in action_item
-    assert action_item["properties"]["arguments_json"] == {"type": "string"}
+    arguments_json = action_item["properties"]["arguments_json"]
+    assert arguments_json["type"] == "string"
+    assert "description" in arguments_json
+    assert definition.argument_guidance_text is not None
+    assert "production.staffing.attendance.read:" in arguments_json["description"]
     assert set(action_item["properties"]["tool_id"]["enum"]) == {
         "production.metrics.query",
         "production.staffing.attendance.read",

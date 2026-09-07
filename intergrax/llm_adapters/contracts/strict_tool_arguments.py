@@ -58,6 +58,7 @@ class CanonicalFunctionToolDefinition:
 
     wire_schema: CanonicalFunctionToolWireSchema
     dispatch_requirements: ToolDispatchRequirements
+    argument_guidance_text: str | None = None
 
     @property
     def requires_strict_argument_conformance(self) -> bool:
@@ -81,6 +82,21 @@ def aligned_tool_dispatch_requirements(
             "tool_dispatch_requirements length must match tools_schema length"
         )
     return tuple(tool_dispatch_requirements)
+
+
+def aligned_tool_argument_guidance(
+    tools_schema: Sequence[Mapping[str, Any]],
+    *,
+    tool_argument_guidance: Sequence[str | None] | None = None,
+) -> tuple[str | None, ...]:
+    """Return per-tool provider-neutral argument guidance aligned with ``tools_schema``."""
+    if tool_argument_guidance is None:
+        return tuple(None for _ in tools_schema)
+    if len(tool_argument_guidance) != len(tools_schema):
+        raise ValueError(
+            "tool_argument_guidance length must match tools_schema length"
+        )
+    return tuple(tool_argument_guidance)
 
 
 def tools_schema_requires_strict_argument_conformance(

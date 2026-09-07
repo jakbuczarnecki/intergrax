@@ -22,7 +22,7 @@ locales:
           - `purpose`: concise public justification for the action round
           actions:
           - one or more admitted business actions
-          - each action must contain `tool_id` and arguments matching the embedded discriminated tool schema
+          - each action must contain `tool_id` and arguments for the selected tool matching the provided argument contract
         - When prior model-visible evidence exists:
           - `action_context` is required
           - `evidence_basis_references` must contain at least one exact available reference

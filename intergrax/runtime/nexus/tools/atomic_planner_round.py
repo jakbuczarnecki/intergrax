@@ -33,6 +33,10 @@ from intergrax.runtime.nexus.tools.native_planner_action_context import (
     parse_optional_planner_action_context_payload,
     validate_typed_planner_action_context,
 )
+from intergrax.runtime.nexus.tools.tool_argument_guidance import (
+    build_atomic_planner_argument_guidance,
+    render_atomic_planner_argument_guidance,
+)
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -315,11 +319,26 @@ def build_atomic_planner_round_parameters_schema(
     }
 
 
+def build_atomic_planner_argument_guidance_text(
+    business_schemas: Sequence[Mapping[str, object]],
+) -> str:
+    """Derive provider-neutral per-tool argument guidance for one atomic planner round."""
+    entries = extract_business_tool_schema_entries(business_schemas)
+    guidance = build_atomic_planner_argument_guidance(
+        tool_ids=tuple(entry.tool_id for entry in entries),
+        parameters_by_tool_id={
+            entry.tool_id: entry.parameters for entry in entries
+        },
+    )
+    return render_atomic_planner_argument_guidance(guidance)
+
+
 def build_atomic_planner_round_tool_definition(
     business_schemas: Sequence[Mapping[str, object]],
 ) -> CanonicalFunctionToolDefinition:
     """Canonical atomic planner round tool: wire schema plus strict dispatch requirements."""
     parameters = build_atomic_planner_round_parameters_schema(business_schemas)
+    argument_guidance_text = build_atomic_planner_argument_guidance_text(business_schemas)
     wire_schema: CanonicalFunctionToolWireSchema = {
         "type": "function",
         "function": {
@@ -338,6 +357,7 @@ def build_atomic_planner_round_tool_definition(
             argument_conformance=ToolArgumentConformance.STRICT,
             strict_wire_projection=StrictWireProjectionKind.ATOMIC_PLANNER_DISCRIMINATED_ACTIONS,
         ),
+        argument_guidance_text=argument_guidance_text,
     )
 
 

@@ -371,10 +371,12 @@ class ToolPlanningService:
             else NATIVE_PLANNER_PROTOCOL_NONE
         )
         provider_tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None
+        provider_tool_argument_guidance: Sequence[str | None] | None = None
         if effective_protocol.atomic_round_active:
             round_definition = build_atomic_planner_round_tool_definition(tools_schema)
             provider_tools_schema = [dict(round_definition.wire_schema)]
             provider_tool_dispatch_requirements = [round_definition.dispatch_requirements]
+            provider_tool_argument_guidance = [round_definition.argument_guidance_text]
         elif effective_protocol.protocol_active:
             provider_tools_schema = append_planner_action_context_schema(tools_schema)
         else:
@@ -413,6 +415,7 @@ class ToolPlanningService:
             tool_choice=projected_tool_choice,
             run_id=run_id,
             tool_dispatch_requirements=provider_tool_dispatch_requirements,
+            tool_argument_guidance=provider_tool_argument_guidance,
         )
 
         if effective_protocol.atomic_round_active:

@@ -293,6 +293,7 @@ class _CapturingAdapter(LLMAdapter):
         tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
         tool_dispatch_requirements=None,
+        tool_argument_guidance=None,
     ) -> LLMAdapterResponse:
         self.generate_with_tools_calls += 1
         self.received_schema = tools_schema

@@ -38,6 +38,7 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     StrictToolArgumentConformanceError,
     StrictWireProjectionKind,
     ToolDispatchRequirements,
+    aligned_tool_argument_guidance,
     aligned_tool_dispatch_requirements,
 )
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
@@ -319,10 +320,12 @@ def _prepare_responses_tools_and_mapping(
     input_items: Sequence[Dict[str, Any]] | None = None,
     tool_choice: Union[str, Dict[str, Any]] | None = None,
     tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+    tool_argument_guidance: Sequence[str | None] | None = None,
 ) -> tuple[List[Dict[str, Any]], _OpenAIToolNameMapping]:
     mapped_tools = _map_tools_to_responses_api(
         tools_schema,
         tool_dispatch_requirements=tool_dispatch_requirements,
+        tool_argument_guidance=tool_argument_guidance,
     )
     canonical_names = _build_request_canonical_tool_names(
         tools_schema,
@@ -394,11 +397,15 @@ def _project_strict_tool_parameters(
     parameters: Mapping[str, Any],
     *,
     dispatch_requirements: ToolDispatchRequirements,
+    argument_guidance_description: str | None = None,
 ) -> dict[str, Any]:
     projection = dispatch_requirements.strict_wire_projection
     if projection == StrictWireProjectionKind.ATOMIC_PLANNER_DISCRIMINATED_ACTIONS:
         try:
-            return project_atomic_planner_round_parameters_for_openai_strict(parameters)
+            return project_atomic_planner_round_parameters_for_openai_strict(
+                parameters,
+                argument_guidance_description=argument_guidance_description,
+            )
         except AtomicPlannerRoundProjectionError as exc:
             raise StrictToolArgumentConformanceError(
                 "atomic planner round strict wire projection failed"
@@ -428,11 +435,16 @@ def _map_tools_to_responses_api(
     tools_schema: Sequence[Dict[str, Any]],
     *,
     tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+    tool_argument_guidance: Sequence[str | None] | None = None,
 ) -> List[Dict[str, Any]]:
     """Map canonical Chat-Completions-style tool schema to Responses API shape."""
     aligned_requirements = aligned_tool_dispatch_requirements(
         tools_schema,
         tool_dispatch_requirements=tool_dispatch_requirements,
+    )
+    aligned_guidance = aligned_tool_argument_guidance(
+        tools_schema,
+        tool_argument_guidance=tool_argument_guidance,
     )
     mapped: List[Dict[str, Any]] = []
     for index, tool in enumerate(tools_schema):
@@ -484,6 +496,7 @@ def _map_tools_to_responses_api(
                     out["parameters"] = _project_strict_tool_parameters(
                         parameters,
                         dispatch_requirements=aligned_requirements[index],
+                        argument_guidance_description=aligned_guidance[index],
                     )
                 else:
                     out["parameters"] = parameters
@@ -770,6 +783,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
         tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+        tool_argument_guidance: Sequence[str | None] | None = None,
     ) -> Iterable[LLMStreamEvent]:
         """
         Stream assistant text deltas, then yield the final typed response.
@@ -794,6 +808,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 input_items=input_items_raw,
                 tool_choice=tool_choice,
                 tool_dispatch_requirements=tool_dispatch_requirements,
+                tool_argument_guidance=tool_argument_guidance,
             )
             input_items = _apply_tool_name_mapping_to_responses_input(
                 input_items_raw,
@@ -975,6 +990,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
         tool_dispatch_requirements: Sequence[ToolDispatchRequirements] | None = None,
+        tool_argument_guidance: Sequence[str | None] | None = None,
     ) -> LLMAdapterResponse:
         """
         Generate a response with potential function/tool calls.
@@ -992,6 +1008,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 input_items=input_items_raw,
                 tool_choice=tool_choice,
                 tool_dispatch_requirements=tool_dispatch_requirements,
+                tool_argument_guidance=tool_argument_guidance,
             )
             input_items = _apply_tool_name_mapping_to_responses_input(
                 input_items_raw,

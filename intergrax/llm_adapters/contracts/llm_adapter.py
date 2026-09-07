@@ -155,6 +155,7 @@ class LLMAdapter(ABC):
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
         tool_dispatch_requirements: Optional[Sequence["ToolDispatchRequirements"]] = None,
+        tool_argument_guidance: Optional[Sequence[str | None]] = None,
     ) -> LLMAdapterResponse:
         raise NotImplementedError("Tools are not supported by this adapter.")
 
@@ -168,6 +169,7 @@ class LLMAdapter(ABC):
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
         tool_dispatch_requirements: Optional[Sequence["ToolDispatchRequirements"]] = None,
+        tool_argument_guidance: Optional[Sequence[str | None]] = None,
     ) -> Iterable[LLMStreamEvent]:
         raise NotImplementedError("Tools streaming is not supported by this adapter.")
 

@@ -500,6 +500,7 @@ class _TerminationCapturingAdapter(LLMAdapter):
         tool_choice=None,
         run_id=None,
         tool_dispatch_requirements=None,
+        tool_argument_guidance=None,
     ):
         self.received_tool_choice = tool_choice
         return build_adapter_response(content=self._content)

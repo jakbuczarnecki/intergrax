@@ -164,7 +164,9 @@ def test_atomic_planner_tool_parameters_projection_preserves_semantics() -> None
         "production.staffing.attendance.read",
         "production.telemetry.read",
     }
-    assert action_item["properties"]["arguments_json"] == {"type": "string"}
+    arguments_json = action_item["properties"]["arguments_json"]
+    assert arguments_json["type"] == "string"
+    assert "description" not in arguments_json
 
     action_context = projected["properties"]["action_context"]
     assert "anyOf" in action_context
