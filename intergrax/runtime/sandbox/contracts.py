@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from intergrax.runtime.sandbox.models import SandboxExecutionResult
-from intergrax.runtime.sandbox.network_egress import NetworkEgressAllowlist, NetworkEgressHost
+from intergrax.runtime.sandbox.network_egress import NetworkEgressAllowlist
 
 if TYPE_CHECKING:
     from intergrax.integrations.contracts.sandbox_host import SandboxSession
@@ -76,6 +76,15 @@ class SandboxSecurityConfigurable(Protocol):
         requirements: SandboxSecurityRequirements,
     ) -> SandboxSession:
         """Provision a sandbox session with provider-enforced security configuration."""
+        ...
+
+
+@runtime_checkable
+class SandboxSessionSecurityEvidenceProvider(Protocol):
+    """Hosted backends that expose session-scoped security attestation evidence."""
+
+    def session_security_capabilities(self, session_id: str) -> SandboxSecurityCapabilities:
+        """Return trusted security evidence for one admitted sandbox session."""
         ...
 
 

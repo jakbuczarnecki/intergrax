@@ -15,6 +15,7 @@ from intergrax.runtime.sandbox.contracts import (
     SandboxSecurityCapable,
     SandboxSecurityConfigurable,
     SandboxSecurityRequirements,
+    SandboxSessionSecurityEvidenceProvider,
 )
 from intergrax.runtime.sandbox.models import SandboxAuditEntry, SandboxExecutionResult
 from intergrax.runtime.sandbox.sandbox_runtime import DEFAULT_SANDBOX_OPERATIONS
@@ -36,12 +37,14 @@ class HostedSandboxSession:
         tenant_id: str,
         task_id: str,
         allowed_operations: frozenset[str] | None = None,
+        security_capabilities: SandboxSecurityCapabilities | None = None,
     ) -> None:
         self.session_id = session_id
         self.tenant_id = tenant_id
         self.task_id = task_id
         self._backend = backend
         self._allowed_operations = allowed_operations or DEFAULT_SANDBOX_OPERATIONS
+        self._security_capabilities = security_capabilities
         self._audit: list[SandboxAuditEntry] = []
         self._cancelled = False
 
@@ -56,10 +59,13 @@ class HostedSandboxSession:
         security_requirements: SandboxSecurityRequirements | None = None,
     ) -> HostedSandboxSession | None:
         """Open a hosted session; return ``None`` when allowlist policy cannot be admitted."""
+        security_capabilities: SandboxSecurityCapabilities | None = None
         if security_requirements is not None and security_requirements.network_egress == "allowlist":
             if not isinstance(backend, SandboxSecurityConfigurable):
                 return None
             session = backend.create_session_with_security(security_requirements)
+            if isinstance(backend, SandboxSessionSecurityEvidenceProvider):
+                security_capabilities = backend.session_security_capabilities(session.session_id)
         else:
             session = backend.create_session()
         return cls(
@@ -68,6 +74,7 @@ class HostedSandboxSession:
             tenant_id=tenant_id,
             task_id=task_id,
             allowed_operations=allowed_operations,
+            security_capabilities=security_capabilities,
         )
 
     @property
@@ -76,6 +83,8 @@ class HostedSandboxSession:
 
     def security_capabilities(self) -> SandboxSecurityCapabilities:
         """Return trusted substrate security capability evidence."""
+        if self._security_capabilities is not None:
+            return self._security_capabilities
         backend = self._backend
         if isinstance(backend, SandboxSecurityCapable):
             return backend.security_capabilities()
@@ -174,4 +183,10 @@ class HostedSandboxSession:
             return f"cat {shlex.quote(rel)}"
         if operation == "list_files":
             return "find . -type f | sort"
+        if operation == "run_python":
+            code = str(payload.get("code", ""))
+            return f"python3 -c {shlex.quote(code)}"
+        if operation == "run_script":
+            script = str(payload.get("script", ""))
+            return f"python3 -c {shlex.quote(script)}"
         raise ValueError(f"unsupported operation: {operation}")
