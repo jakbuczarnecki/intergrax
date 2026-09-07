@@ -49,7 +49,6 @@ def test_investigation_round_with_prior_evidence_forces_planner_round() -> None:
     protocol = NativePlannerProtocolConfig(
         mode=NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
         available_evidence_references=("obs.ref.a",),
-        _reference_index_items=(("obs.ref.a", "obs.ref.a"),),
     )
     assert native_tool_choice_for_investigation_round(
         protocol_config=protocol,
