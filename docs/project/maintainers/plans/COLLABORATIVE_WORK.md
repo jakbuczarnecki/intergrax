@@ -324,7 +324,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2F |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** (architecture/identity granularity **FROZEN**) |
+| **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | Explicit provenance linkage from WorkItem to canonical Unified Execution identity without lifecycle substitution |
 | **Dependencies** | COLLAB-WORK-2C approved (may ship after 2D/2E per rollout) |
 | **Exact scope** | Neutral `ExecutionProvenanceRef` using canonical `TaskId`/`RunId`/`AttemptId`/`ExecutionId`; zero..N WorkItem execution associations; explicit Unified Execution boundary; no runtime lifecycle propagation |

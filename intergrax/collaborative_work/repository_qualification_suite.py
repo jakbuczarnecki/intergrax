@@ -33,6 +33,7 @@ from intergrax.collaborative_work.repository import (
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
     CreateWorkItemCommand,
+    CreateWorkItemExecutionLinkCommand,
     CreateWorkspaceMembershipCommand,
     INITIAL_RECORD_REVISION,
     PrincipalAuthorityGrantAlreadyExists,
@@ -42,6 +43,8 @@ from intergrax.collaborative_work.repository import (
     UpdateWorkItemCommand,
     UpdateWorkspaceMembershipCommand,
     WorkItemAlreadyExists,
+    WorkItemExecutionLinkAlreadyExists,
+    WorkItemExecutionLinkIdempotencyConflict,
     WorkItemIdempotencyConflict,
     WorkItemRevisionConflict,
     WorkItemScopeKey,
@@ -64,6 +67,13 @@ from intergrax.contracts.collaborative_work import (
     WorkItemState,
     WorkspaceMembershipRole,
 )
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
+from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.core.qualification.evidence import QualificationEvidence
 from intergrax.core.qualification.execution import (
@@ -90,7 +100,7 @@ COLLABORATIVE_WORK_PERSISTENCE_CAPABILITY = "collaborative_work.persistence.v1"
 
 CW_POSTGRESQL_REPOSITORY_SUITE_ID = "cw.postgresql.repository.v1"
 CW_SQLITE_REPOSITORY_SUITE_ID = "cw.sqlite.repository.v1"
-CW_REPOSITORY_SUITE_VERSION = "2.0.0"
+CW_REPOSITORY_SUITE_VERSION = "3.0.0"
 
 _TENANT_A = "qual-tenant-a"
 _TENANT_B = "qual-tenant-b"
@@ -378,6 +388,30 @@ def _assignment_command(**overrides: object) -> CreateAssignmentCommand:
     return CreateAssignmentCommand(**payload)
 
 
+def _execution_provenance(**overrides: object) -> ExecutionProvenanceRef:
+    payload = {
+        "task_id": mint_task_id(),
+        "run_id": mint_run_id(),
+        "attempt_id": mint_attempt_id(),
+        "execution_id": mint_execution_id(),
+    }
+    payload.update(overrides)
+    return ExecutionProvenanceRef(**payload)
+
+
+def _execution_link_command(**overrides: object) -> CreateWorkItemExecutionLinkCommand:
+    payload = {
+        "tenant_id": _TENANT_A,
+        "workspace_id": _WORKSPACE_A,
+        "execution_link_id": "qual-execution-link-1",
+        "work_item_id": "qual-work-item-1",
+        "execution": _execution_provenance(),
+        "linked_at": _CREATED_AT,
+    }
+    payload.update(overrides)
+    return CreateWorkItemExecutionLinkCommand(**payload)
+
+
 def _run_shared_work_repository_contract_checks(
     bundle: CollaborativeWorkRepositoriesWithSharedWork,
 ) -> tuple[int, int]:
@@ -401,6 +435,7 @@ def _run_shared_work_repository_contract_checks(
 
     work_item_repo = bundle.work_item
     assignment_repo = bundle.assignment
+    execution_link_repo = bundle.execution_link
 
     def _work_item_create_get_isolation() -> None:
         created = work_item_repo.create(_work_item_command())
@@ -561,10 +596,109 @@ def _run_shared_work_repository_contract_checks(
         except AssignmentIdempotencyConflict:
             pass
 
+    def _execution_link_create_get_isolation_and_provenance() -> None:
+        created = execution_link_repo.create(
+            _execution_link_command(work_item_id="qual-work-item-1"),
+        )
+        if str(created.execution.task_id).startswith("task_") is False:
+            raise _RepositorySemanticCheckFailure("execution provenance task_id invalid")
+        loaded = execution_link_repo.get(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            execution_link_id="qual-execution-link-1",
+        )
+        if loaded != created:
+            raise _RepositorySemanticCheckFailure("execution link round-trip mismatch")
+        if (
+            execution_link_repo.get(
+                tenant_id=_TENANT_B,
+                workspace_id=_WORKSPACE_B,
+                execution_link_id="qual-execution-link-1",
+            )
+            is not None
+        ):
+            raise _RepositorySemanticCheckFailure("execution link tenant isolation failed")
+
+    def _execution_link_idempotency_duplicate_and_conflict() -> None:
+        work_item_repo.create(_work_item_command(work_item_id="qual-work-item-exec-2"))
+        command = _execution_link_command(
+            execution_link_id="qual-execution-link-2",
+            work_item_id="qual-work-item-exec-2",
+            idempotency_key="qual-execution-link-idem",
+        )
+        created = execution_link_repo.create(command)
+        if execution_link_repo.create(command) != created:
+            raise _RepositorySemanticCheckFailure("execution link idempotency replay mismatch")
+        try:
+            execution_link_repo.create(
+                _execution_link_command(
+                    execution_link_id="qual-execution-link-2",
+                    work_item_id="qual-work-item-exec-2",
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkItemExecutionLinkAlreadyExists")
+        except WorkItemExecutionLinkAlreadyExists:
+            pass
+        try:
+            execution_link_repo.create(
+                _execution_link_command(
+                    execution_link_id="qual-execution-link-3",
+                    work_item_id="qual-work-item-exec-2",
+                    idempotency_key="qual-execution-link-idem",
+                    execution=_execution_provenance(),
+                ),
+            )
+            raise _RepositorySemanticCheckFailure("expected WorkItemExecutionLinkIdempotencyConflict")
+        except WorkItemExecutionLinkIdempotencyConflict:
+            pass
+
+    def _execution_link_list_multiple_and_ordering() -> None:
+        work_item_repo.create(_work_item_command(work_item_id="qual-work-item-exec-3"))
+        first = execution_link_repo.create(
+            _execution_link_command(
+                execution_link_id="qual-execution-link-a",
+                work_item_id="qual-work-item-exec-3",
+                linked_at=_CREATED_AT,
+                execution=_execution_provenance(),
+            ),
+        )
+        second = execution_link_repo.create(
+            _execution_link_command(
+                execution_link_id="qual-execution-link-b",
+                work_item_id="qual-work-item-exec-3",
+                linked_at=_UPDATED_AT,
+                execution=_execution_provenance(),
+            ),
+        )
+        third = execution_link_repo.create(
+            _execution_link_command(
+                execution_link_id="qual-execution-link-c",
+                work_item_id="qual-work-item-exec-3",
+                linked_at=_CREATED_AT,
+                execution=_execution_provenance(),
+            ),
+        )
+        listed = execution_link_repo.list_for_work_item(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_item_id="qual-work-item-exec-3",
+        )
+        if len(listed) != 3:
+            raise _RepositorySemanticCheckFailure("execution link list count mismatch")
+        expected_order = sorted(
+            (first, second, third),
+            key=lambda record: (record.linked_at, record.execution_link_id),
+        )
+        if listed != tuple(expected_order):
+            raise _RepositorySemanticCheckFailure("execution link ordering mismatch")
+
     for check in (
         _work_item_create_get_isolation,
         _work_item_duplicate_stale_and_idempotency,
         _assignment_create_update_idempotency,
+        _execution_link_create_get_isolation_and_provenance,
+        _execution_link_idempotency_duplicate_and_conflict,
+        _execution_link_list_multiple_and_ordering,
     ):
         _run_check(check)
 
@@ -667,7 +801,12 @@ class CollaborativeWorkRepositoryQualificationSuite:
             QualificationEvidence(
                 kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
                 code="shared_work.mp2",
-                label="work_item,assignment",
+                label="work_item,assignment,execution_link",
+            ),
+            QualificationEvidence(
+                kind=ProviderQualificationEvidenceKind.SUITE_EXECUTION,
+                code="shared_work.execution_link",
+                label="append_only_provenance",
             ),
             *concurrency_evidence,
         )

@@ -45,8 +45,11 @@ def test_semantic_repository_failure_maps_to_rejected(tmp_path: Path) -> None:
     assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
 
     with patch(
-        "intergrax.collaborative_work.repository_qualification_suite._run_repository_contract_checks",
+        "intergrax.collaborative_work.repository_qualification_suite._run_core_repository_contract_checks",
         return_value=(4, 2),
+    ), patch(
+        "intergrax.collaborative_work.repository_qualification_suite._run_shared_work_repository_contract_checks",
+        return_value=(0, 0),
     ):
         outcome = suite.execute(bundle)
     bundle.close()
@@ -69,8 +72,11 @@ def test_suite_infrastructure_failure_is_not_semantic_rejection(tmp_path: Path) 
     assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
 
     with patch(
-        "intergrax.collaborative_work.repository_qualification_suite._run_repository_contract_checks",
+        "intergrax.collaborative_work.repository_qualification_suite._run_core_repository_contract_checks",
         side_effect=RuntimeError("database host unavailable"),
+    ), patch(
+        "intergrax.collaborative_work.repository_qualification_suite._run_shared_work_repository_contract_checks",
+        return_value=(0, 0),
     ):
         with pytest.raises(RuntimeError, match="database host unavailable"):
             suite.execute(bundle)

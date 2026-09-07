@@ -23,12 +23,16 @@ Effective authority intersection (resolver implementation is out of scope):
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from typing import Final, Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
@@ -60,6 +64,10 @@ SCHEMA_CREATE_WORK_ITEM_REQUEST_V1: Final = "create_work_item_request.v1"
 SCHEMA_TRANSITION_WORK_ITEM_REQUEST_V1: Final = "transition_work_item_request.v1"
 SCHEMA_CREATE_ASSIGNMENT_REQUEST_V1: Final = "create_assignment_request.v1"
 SCHEMA_TRANSITION_ASSIGNMENT_REQUEST_V1: Final = "transition_assignment_request.v1"
+SCHEMA_WORK_ITEM_EXECUTION_LINK_V1: Final = "work_item_execution_link.v1"
+SCHEMA_LINK_WORK_ITEM_EXECUTION_REQUEST_V1: Final = "link_work_item_execution_request.v1"
+
+_EXECUTION_LINK_ID_PREFIX: Final = "execution_link_"
 
 _SUPPORTED_COLLABORATIVE_POLICY_ACTIONS: Final = frozenset(
     {
@@ -1096,6 +1104,94 @@ def apply_assignment_transition(
     if updated_at is not None:
         updates["updated_at"] = updated_at
     return assignment.model_copy(update=updates)
+
+
+def mint_execution_link_id(*, idempotency_key: str | None = None) -> str:
+    """Mint an independent execution-link association identity.
+
+    When ``idempotency_key`` is provided the identity is deterministic so
+    repository idempotency replay preserves the original link identity.
+    """
+    if idempotency_key is not None:
+        normalized = idempotency_key.strip()
+        if not normalized:
+            raise ValueError("idempotency_key must be non-empty when provided")
+        digest = hashlib.sha256(f"execution_link:{normalized}".encode()).hexdigest()[:32]
+        return f"{_EXECUTION_LINK_ID_PREFIX}{digest}"
+    return f"{_EXECUTION_LINK_ID_PREFIX}{uuid4().hex}"
+
+
+class WorkItemExecutionLink(BaseModel):
+    """Append-only provenance association between WorkItem and Unified Execution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    schema_version: Literal["work_item_execution_link.v1"] = SCHEMA_WORK_ITEM_EXECUTION_LINK_V1
+    execution_link_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    execution: ExecutionProvenanceRef
+    linked_at: datetime
+
+    @field_validator(
+        "execution_link_id",
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("execution", mode="before")
+    @classmethod
+    def _validate_execution(cls, value: object) -> ExecutionProvenanceRef:
+        if type(value) is ExecutionProvenanceRef:
+            return value
+        raise TypeError("execution must be ExecutionProvenanceRef")
+
+    @field_validator("linked_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("linked_at must be timezone-aware")
+        return value
+
+
+class LinkWorkItemExecutionRequest(BaseModel):
+    """Trusted internal input for associating WorkItem with execution provenance."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    schema_version: Literal["link_work_item_execution_request.v1"] = (
+        SCHEMA_LINK_WORK_ITEM_EXECUTION_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    execution: ExecutionProvenanceRef
+    idempotency_key: str | None = None
+
+    @field_validator("tenant_id", "workspace_id", "work_item_id", "idempotency_key")
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("execution", mode="before")
+    @classmethod
+    def _validate_execution(cls, value: object) -> ExecutionProvenanceRef:
+        if type(value) is ExecutionProvenanceRef:
+            return value
+        raise TypeError("execution must be ExecutionProvenanceRef")
 
 
 class CollaborativeWorkAuthorizationDenied(Exception):

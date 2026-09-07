@@ -23,7 +23,7 @@ from intergrax.collaborative_work.persistence import (
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
 )
-from intergrax.collaborative_work.repository import AssignmentRepository, WorkItemRepository
+from intergrax.collaborative_work.repository import AssignmentRepository, WorkItemExecutionLinkRepository, WorkItemRepository
 from intergrax.integrations.providers.relational_store.postgresql.register import (
     register_postgresql_integration,
 )
@@ -54,6 +54,7 @@ def test_sqlite_factory_returns_full_shared_work_bundle(tmp_path: Path) -> None:
         assert isinstance(bundle.shared_work, CollaborativeWorkSharedWorkRepositories)
         assert isinstance(bundle.work_item, WorkItemRepository)
         assert isinstance(bundle.assignment, AssignmentRepository)
+        assert isinstance(bundle.execution_link, WorkItemExecutionLinkRepository)
         assert isinstance(bundle.core, CollaborativeWorkRepositories)
         assert collaborative_work_core_repositories(bundle) is bundle.core
     finally:
@@ -77,6 +78,7 @@ def test_postgresql_factory_returns_full_shared_work_bundle() -> None:
         assert isinstance(bundle.shared_work, CollaborativeWorkSharedWorkRepositories)
         assert isinstance(bundle.work_item, WorkItemRepository)
         assert isinstance(bundle.assignment, AssignmentRepository)
+        assert isinstance(bundle.execution_link, WorkItemExecutionLinkRepository)
         assert isinstance(bundle.core, CollaborativeWorkRepositories)
         assert collaborative_work_core_repositories(bundle) is bundle.core
     finally:
@@ -95,6 +97,7 @@ def test_core_bundle_has_no_optional_shared_work_fields() -> None:
     assert "shared_work" not in field_names
     assert "work_item" not in field_names
     assert "assignment" not in field_names
+    assert "execution_link" not in field_names
     for field in fields:
         assert field.type is not None
         assert "None" not in str(field.type)
@@ -104,6 +107,12 @@ def test_shared_work_bundle_has_required_shared_work_field() -> None:
     fields = dataclasses.fields(CollaborativeWorkRepositoriesWithSharedWork)
     shared_work_field = next(field for field in fields if field.name == "shared_work")
     assert "None" not in str(shared_work_field.type)
+
+
+def test_shared_work_bundle_has_required_execution_link_field() -> None:
+    fields = dataclasses.fields(CollaborativeWorkSharedWorkRepositories)
+    execution_link_field = next(field for field in fields if field.name == "execution_link")
+    assert "None" not in str(execution_link_field.type)
 
 
 def test_persistence_module_has_no_runtime_error_capability_discovery() -> None:
@@ -128,6 +137,7 @@ def test_sqlite_profile_materializes_full_shared_work_bundle(tmp_path: Path) -> 
         assert isinstance(bundle, CollaborativeWorkRepositoriesWithSharedWork)
         assert isinstance(bundle.work_item, WorkItemRepository)
         assert isinstance(bundle.assignment, AssignmentRepository)
+        assert isinstance(bundle.execution_link, WorkItemExecutionLinkRepository)
     finally:
         bundle.close()
 
@@ -153,6 +163,7 @@ def test_postgresql_profile_materializes_full_shared_work_bundle() -> None:
             shared_work=CollaborativeWorkSharedWorkRepositories(
                 work_item=object(),  # type: ignore[arg-type]
                 assignment=object(),  # type: ignore[arg-type]
+                execution_link=object(),  # type: ignore[arg-type]
             ),
         )
         bundle = resolve_collaborative_work_repositories(profile)

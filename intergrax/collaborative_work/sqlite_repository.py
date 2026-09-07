@@ -34,6 +34,7 @@ from intergrax.collaborative_work.repository import (
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
     CreateWorkItemCommand,
+    CreateWorkItemExecutionLinkCommand,
     CreateWorkspaceMembershipCommand,
     INITIAL_RECORD_REVISION,
     PrincipalAuthorityGrantAlreadyExists,
@@ -48,6 +49,8 @@ from intergrax.collaborative_work.repository import (
     UpdateWorkItemCommand,
     UpdateWorkspaceMembershipCommand,
     WorkItemAlreadyExists,
+    WorkItemExecutionLinkAlreadyExists,
+    WorkItemExecutionLinkIdempotencyConflict,
     WorkItemIdempotencyConflict,
     WorkItemNotFound,
     WorkItemRevisionConflict,
@@ -69,6 +72,8 @@ from intergrax.collaborative_work.serialization import (
     principal_authority_grant_to_json,
     work_item_from_json,
     work_item_to_json,
+    work_item_execution_link_from_json,
+    work_item_execution_link_to_json,
     workspace_membership_from_json,
     workspace_membership_to_json,
 )
@@ -80,6 +85,7 @@ from intergrax.contracts.collaborative_work import (
     PolicyCompositionLayer,
     PrincipalAuthorityGrant,
     WorkItem,
+    WorkItemExecutionLink,
     WorkspaceMembership,
 )
 
@@ -238,6 +244,22 @@ class SQLiteCollaborativeWorkStore:
 
                 CREATE INDEX IF NOT EXISTS idx_assignments_work_item
                     ON assignments (tenant_id, workspace_id, work_item_id);
+
+                CREATE TABLE IF NOT EXISTS work_item_execution_links (
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    execution_link_id TEXT NOT NULL,
+                    work_item_id TEXT NOT NULL,
+                    task_id TEXT NOT NULL,
+                    run_id TEXT NOT NULL,
+                    attempt_id TEXT NOT NULL,
+                    execution_id TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    PRIMARY KEY (tenant_id, workspace_id, execution_link_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_execution_links_work_item
+                    ON work_item_execution_links (tenant_id, workspace_id, work_item_id);
                 """
             )
             self._migrate_workspace_memberships_principal_column()
@@ -1940,4 +1962,160 @@ class SQLiteAssignmentRepository(_IdempotencyMixin):
         fingerprint, record = loaded
         if fingerprint != command.semantic_fingerprint():
             raise AssignmentIdempotencyConflict("assignment idempotency key conflict")
+        return record
+
+
+def _execution_link_sort_key(record: WorkItemExecutionLink) -> tuple[object, str]:
+    return (record.linked_at, record.execution_link_id)
+
+
+class SQLiteWorkItemExecutionLinkRepository(_IdempotencyMixin):
+    _entity_kind = "work_item_execution_link"
+
+    def __init__(self, store: SQLiteCollaborativeWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def create(self, command: CreateWorkItemExecutionLinkCommand) -> WorkItemExecutionLink:
+        with self._store._lock:
+            self._store._ensure_open()
+            self._store.transaction().execute("BEGIN IMMEDIATE")
+            try:
+                if command.idempotency_key is not None:
+                    replay = self._replay_create(command)
+                    if replay is not None:
+                        self._store.transaction().commit()
+                        return replay
+
+                existing = self._get_in_transaction(
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    execution_link_id=command.execution_link_id,
+                )
+                if existing is not None:
+                    raise WorkItemExecutionLinkAlreadyExists("execution link already exists")
+
+                record = WorkItemExecutionLink(
+                    execution_link_id=command.execution_link_id,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_item_id=command.work_item_id,
+                    execution=command.execution,
+                    linked_at=command.linked_at,
+                )
+                result_json = work_item_execution_link_to_json(record)
+                self._store.transaction().execute(
+                    """
+                    INSERT INTO work_item_execution_links (
+                        tenant_id, workspace_id, execution_link_id, work_item_id,
+                        task_id, run_id, attempt_id, execution_id, record_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        record.tenant_id.strip(),
+                        record.workspace_id.strip(),
+                        record.execution_link_id.strip(),
+                        record.work_item_id.strip(),
+                        str(record.execution.task_id),
+                        str(record.execution.run_id),
+                        str(record.execution.attempt_id),
+                        str(record.execution.execution_id),
+                        result_json,
+                    ),
+                )
+                if command.idempotency_key is not None:
+                    self._store_idempotency(
+                        tenant_id=command.tenant_id,
+                        workspace_id=command.workspace_id,
+                        idempotency_key=command.idempotency_key,
+                        fingerprint=command.semantic_fingerprint(),
+                        result_json=result_json,
+                    )
+                self._store.transaction().commit()
+                return record
+            except sqlite3.IntegrityError as exc:
+                self._store.transaction().rollback()
+                raise WorkItemExecutionLinkAlreadyExists("execution link already exists") from exc
+            except Exception:
+                self._store.transaction().rollback()
+                raise
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        execution_link_id: str,
+    ) -> WorkItemExecutionLink | None:
+        with self._store._lock:
+            self._store._ensure_open()
+            return self._get_in_transaction(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                execution_link_id=execution_link_id,
+            )
+
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[WorkItemExecutionLink, ...]:
+        with self._store._lock:
+            self._store._ensure_open()
+            rows = self._store.transaction().execute(
+                """
+                SELECT record_json FROM work_item_execution_links
+                WHERE tenant_id = ? AND workspace_id = ? AND work_item_id = ?
+                """,
+                (tenant_id.strip(), workspace_id.strip(), work_item_id.strip()),
+            ).fetchall()
+        records = [work_item_execution_link_from_json(row["record_json"]) for row in rows]
+        return tuple(sorted(records, key=_execution_link_sort_key))
+
+    def _get_in_transaction(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        execution_link_id: str,
+    ) -> WorkItemExecutionLink | None:
+        row = self._store.transaction().execute(
+            """
+            SELECT record_json FROM work_item_execution_links
+            WHERE tenant_id = ? AND workspace_id = ? AND execution_link_id = ?
+            """,
+            (tenant_id.strip(), workspace_id.strip(), execution_link_id.strip()),
+        ).fetchone()
+        if row is None:
+            return None
+        record = work_item_execution_link_from_json(row["record_json"])
+        if not _scope_matches_tenant_workspace(
+            record.tenant_id,
+            record.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            return None
+        if record.execution_link_id.strip() != execution_link_id.strip():
+            return None
+        return record
+
+    def _replay_create(self, command: CreateWorkItemExecutionLinkCommand) -> WorkItemExecutionLink | None:
+        assert command.idempotency_key is not None
+        loaded = self._load_idempotency(
+            tenant_id=command.tenant_id,
+            workspace_id=command.workspace_id,
+            idempotency_key=command.idempotency_key,
+            decode=work_item_execution_link_from_json,
+        )
+        if loaded is None:
+            return None
+        fingerprint, record = loaded
+        if fingerprint != command.semantic_fingerprint():
+            raise WorkItemExecutionLinkIdempotencyConflict("execution link idempotency key conflict")
         return record

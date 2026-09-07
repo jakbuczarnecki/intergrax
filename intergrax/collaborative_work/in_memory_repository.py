@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
+from datetime import datetime
 from typing import TypeAlias
 
 from intergrax.collaborative_work.repository import (
@@ -32,6 +33,7 @@ from intergrax.collaborative_work.repository import (
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
     CreateWorkItemCommand,
+    CreateWorkItemExecutionLinkCommand,
     CreateWorkspaceMembershipCommand,
     INITIAL_RECORD_REVISION,
     PrincipalAuthorityGrantAlreadyExists,
@@ -46,6 +48,8 @@ from intergrax.collaborative_work.repository import (
     UpdateWorkItemCommand,
     UpdateWorkspaceMembershipCommand,
     WorkItemAlreadyExists,
+    WorkItemExecutionLinkAlreadyExists,
+    WorkItemExecutionLinkIdempotencyConflict,
     WorkItemIdempotencyConflict,
     WorkItemNotFound,
     WorkItemRevisionConflict,
@@ -62,6 +66,7 @@ from intergrax.contracts.collaborative_work import (
     PolicyCompositionLayer,
     PrincipalAuthorityGrant,
     WorkItem,
+    WorkItemExecutionLink,
     WorkspaceMembership,
 )
 
@@ -74,6 +79,7 @@ PolicyExactKey: TypeAlias = tuple[str, str, str, str, str]
 OperationProfileKey: TypeAlias = tuple[str, str, str]
 WorkItemKey: TypeAlias = tuple[str, str, str]
 AssignmentKey: TypeAlias = tuple[str, str, str]
+ExecutionLinkKey: TypeAlias = tuple[str, str, str]
 IdempotencyKey: TypeAlias = tuple[str, str, str]
 
 
@@ -117,6 +123,12 @@ class _WorkItemIdempotencyEntry:
 class _AssignmentIdempotencyEntry:
     fingerprint: str
     original_result: Assignment
+
+
+@dataclass(frozen=True, slots=True)
+class _ExecutionLinkIdempotencyEntry:
+    fingerprint: str
+    original_result: WorkItemExecutionLink
 
 
 class InMemoryWorkspaceMembershipRepository:
@@ -1244,6 +1256,139 @@ class InMemoryAssignmentRepository:
     @staticmethod
     def _scope_matches(
         record: Assignment,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+def _execution_link_sort_key(record: WorkItemExecutionLink) -> tuple[datetime, str]:
+    return (record.linked_at, record.execution_link_id)
+
+
+class InMemoryWorkItemExecutionLinkRepository:
+    """Process-local reference repository for WorkItem execution link records."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._records: dict[ExecutionLinkKey, WorkItemExecutionLink] = {}
+        self._idempotency: dict[IdempotencyKey, _ExecutionLinkIdempotencyEntry] = {}
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.execution_link.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create(self, command: CreateWorkItemExecutionLinkCommand) -> WorkItemExecutionLink:
+        key = self._execution_link_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.execution_link_id,
+        )
+        with self._lock:
+            if command.idempotency_key is not None:
+                replay = self._replay_execution_link_create(command)
+                if replay is not None:
+                    return replay
+
+            if key in self._records:
+                raise WorkItemExecutionLinkAlreadyExists("execution link already exists")
+
+            record = WorkItemExecutionLink(
+                execution_link_id=command.execution_link_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                work_item_id=command.work_item_id,
+                execution=command.execution,
+                linked_at=command.linked_at,
+            )
+            self._records[key] = record
+            self._store_execution_link_idempotency(command, record)
+            return record
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        execution_link_id: str,
+    ) -> WorkItemExecutionLink | None:
+        key = self._execution_link_key(tenant_id, workspace_id, execution_link_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[WorkItemExecutionLink, ...]:
+        normalized_tenant = tenant_id.strip()
+        normalized_workspace = workspace_id.strip()
+        normalized_work_item = work_item_id.strip()
+        with self._lock:
+            matches = [
+                record
+                for record in self._records.values()
+                if record.tenant_id == normalized_tenant
+                and record.workspace_id == normalized_workspace
+                and record.work_item_id == normalized_work_item
+            ]
+        return tuple(sorted(matches, key=_execution_link_sort_key))
+
+    def _replay_execution_link_create(
+        self,
+        command: CreateWorkItemExecutionLinkCommand,
+    ) -> WorkItemExecutionLink | None:
+        assert command.idempotency_key is not None
+        entry = self._idempotency.get(
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        )
+        if entry is None:
+            return None
+        if entry.fingerprint != command.semantic_fingerprint():
+            raise WorkItemExecutionLinkIdempotencyConflict("execution link idempotency key conflict")
+        return entry.original_result
+
+    def _store_execution_link_idempotency(
+        self,
+        command: CreateWorkItemExecutionLinkCommand,
+        record: WorkItemExecutionLink,
+    ) -> None:
+        if command.idempotency_key is None:
+            return
+        self._idempotency[
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        ] = _ExecutionLinkIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=record,
+        )
+
+    @staticmethod
+    def _execution_link_key(
+        tenant_id: str,
+        workspace_id: str,
+        execution_link_id: str,
+    ) -> ExecutionLinkKey:
+        return (tenant_id.strip(), workspace_id.strip(), execution_link_id.strip())
+
+    @staticmethod
+    def _idempotency_key(tenant_id: str, workspace_id: str, idempotency_key: str) -> IdempotencyKey:
+        return (tenant_id.strip(), workspace_id.strip(), idempotency_key.strip())
+
+    @staticmethod
+    def _scope_matches(
+        record: WorkItemExecutionLink,
         *,
         tenant_id: str,
         workspace_id: str,

@@ -51,10 +51,12 @@ from intergrax.contracts.collaborative_work import (
     PolicyLayerApplicability,
     PrincipalAuthorityGrant,
     WorkItem,
+    WorkItemExecutionLink,
     WorkItemState,
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
+from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 from intergrax.contracts.runtime_policy import PolicyAction
 
 INITIAL_RECORD_REVISION: int = 0
@@ -924,3 +926,99 @@ class AssignmentRepository(Protocol):
 
     def update(self, command: UpdateAssignmentCommand) -> Assignment:
         """Replace Assignment semantics under optimistic concurrency."""
+
+
+class WorkItemExecutionLinkNotFound(Exception):
+    """Execution link was not found for the requested tenant/workspace scope."""
+
+
+class WorkItemExecutionLinkAlreadyExists(Exception):
+    """Execution link already exists for the requested scoped identity."""
+
+
+class WorkItemExecutionLinkIdempotencyConflict(Exception):
+    """Idempotency key replayed with a different semantic command."""
+
+
+class CreateWorkItemExecutionLinkCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    execution_link_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    execution: ExecutionProvenanceRef
+    linked_at: datetime
+    idempotency_key: str | None = None
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "execution_link_id",
+        "work_item_id",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("execution", mode="before")
+    @classmethod
+    def _validate_execution(cls, value: object) -> ExecutionProvenanceRef:
+        if type(value) is ExecutionProvenanceRef:
+            return value
+        raise TypeError("execution must be ExecutionProvenanceRef")
+
+    @field_validator("linked_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("linked_at must be timezone-aware")
+        return value
+
+    def semantic_fingerprint(self) -> str:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "execution_link_id": self.execution_link_id,
+            "work_item_id": self.work_item_id,
+            "execution": {
+                "task_id": str(self.execution.task_id),
+                "run_id": str(self.execution.run_id),
+                "attempt_id": str(self.execution.attempt_id),
+                "execution_id": str(self.execution.execution_id),
+            },
+            "linked_at": self.linked_at.isoformat(),
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+@runtime_checkable
+class WorkItemExecutionLinkRepository(Protocol):
+    """Append-only persistence port for WorkItem execution provenance links."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def create(self, command: CreateWorkItemExecutionLinkCommand) -> WorkItemExecutionLink:
+        """Create an immutable execution link record."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        execution_link_id: str,
+    ) -> WorkItemExecutionLink | None:
+        """Return execution link for the scoped identity or ``None``."""
+
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[WorkItemExecutionLink, ...]:
+        """Return execution links for one WorkItem ordered by ``(linked_at, execution_link_id)``."""

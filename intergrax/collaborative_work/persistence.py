@@ -16,6 +16,7 @@ from intergrax.collaborative_work.postgresql_repository import (
     PostgreSQLCollaborativePolicyRepository,
     PostgreSQLCollaborativeWorkStore,
     PostgreSQLPrincipalAuthorityRepository,
+    PostgreSQLWorkItemExecutionLinkRepository,
     PostgreSQLWorkItemRepository,
     PostgreSQLWorkspaceMembershipRepository,
 )
@@ -25,6 +26,7 @@ from intergrax.collaborative_work.repository import (
     CollaborativeOperationPolicyProfileRepository,
     CollaborativePolicyRepository,
     PrincipalAuthorityRepository,
+    WorkItemExecutionLinkRepository,
     WorkItemRepository,
     WorkspaceMembershipRepository,
 )
@@ -35,6 +37,7 @@ from intergrax.collaborative_work.sqlite_repository import (
     SQLiteCollaborativePolicyRepository,
     SQLiteCollaborativeWorkStore,
     SQLitePrincipalAuthorityRepository,
+    SQLiteWorkItemExecutionLinkRepository,
     SQLiteWorkItemRepository,
     SQLiteWorkspaceMembershipRepository,
 )
@@ -73,6 +76,7 @@ class CollaborativeWorkSharedWorkRepositories:
 
     work_item: WorkItemRepository
     assignment: AssignmentRepository
+    execution_link: WorkItemExecutionLinkRepository
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +118,10 @@ class CollaborativeWorkRepositoriesWithSharedWork:
     def assignment(self) -> AssignmentRepository:
         return self.shared_work.assignment
 
+    @property
+    def execution_link(self) -> WorkItemExecutionLinkRepository:
+        return self.shared_work.execution_link
+
     def close(self) -> None:
         self.core.close()
 
@@ -152,6 +160,7 @@ def open_sqlite_collaborative_work_repositories(
         shared_work=CollaborativeWorkSharedWorkRepositories(
             work_item=SQLiteWorkItemRepository(store),
             assignment=SQLiteAssignmentRepository(store),
+            execution_link=SQLiteWorkItemExecutionLinkRepository(store),
         ),
     )
 
@@ -189,5 +198,6 @@ def open_postgresql_collaborative_work_repositories(
         shared_work=CollaborativeWorkSharedWorkRepositories(
             work_item=PostgreSQLWorkItemRepository(store),
             assignment=PostgreSQLAssignmentRepository(store),
+            execution_link=PostgreSQLWorkItemExecutionLinkRepository(store),
         ),
     )
