@@ -4,6 +4,11 @@
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
+from intergrax.collaborative_work.artifact_service import (
+    CollaborativeWorkArtifactService,
+    TRUSTED_OPERATION_WORK_ARTIFACT_CREATE,
+    TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH,
+)
 from intergrax.collaborative_work.service import (
     CollaborativeWorkService,
     TRUSTED_OPERATION_ASSIGNMENT_CREATE,
@@ -93,6 +98,9 @@ __all__ = [
     "CollaborativeWorkStoreOwner",
     "CollaborativeWorkAuthorityResolver",
     "CollaborativeWorkEnforcementGate",
+    "CollaborativeWorkArtifactService",
+    "TRUSTED_OPERATION_WORK_ARTIFACT_CREATE",
+    "TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH",
     "CollaborativeWorkService",
     "TRUSTED_OPERATION_ASSIGNMENT_CREATE",
     "TRUSTED_OPERATION_ASSIGNMENT_TRANSITION",

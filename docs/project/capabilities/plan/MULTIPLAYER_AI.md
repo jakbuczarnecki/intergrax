@@ -10,8 +10,8 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-3B** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
-**Next task:** Independent MP-3B audit — **MP-3C NOT STARTED**
+**Current active task:** **MP-3C** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
+**Next task:** Independent MP-3C audit — **MP-3D NOT STARTED**
 
 ---
 
@@ -151,7 +151,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
 | **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real four-part `ExecutionProvenanceRef` |
-| **Next implementation row** | **Independent MP-3B audit** — MP-3C **NOT STARTED** |
+| **Next implementation row** | **Independent MP-3C audit** — MP-3D **NOT STARTED** |
 
 ---
 
@@ -174,7 +174,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Versioned collaborative artifacts with lineage |
 | **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes; atomic initial creation and subsequent publication via dedicated port (no dangling `current_version_id`, no orphan initial version) |
 | **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent initial create tests; idempotent publication tests; cross-process publication proof (MP-3E); provenance/evidence integration proof (MP-3G) |
-| **Next implementation row** | **Independent MP-3B audit** — MP-3C **NOT STARTED** |
+| **Next implementation row** | **Independent MP-3C audit** — MP-3D **NOT STARTED** |
 
 ### MP-3 architectural implementation slices
 
@@ -183,8 +183,8 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Slice | Scope | Status |
 |-------|-------|--------|
 | MP-3A | Contracts + invariants + `ArtifactContentRef` | APPROVED / CLOSED |
-| MP-3B | Ports + in-memory + `ArtifactPublicationRepository` (atomic initial create + publish) | READY_FOR_INDEPENDENT_AUDIT |
-| MP-3C | Publication service + MP-1 authority | NOT STARTED |
+| MP-3B | Ports + in-memory + `ArtifactPublicationRepository` (atomic initial create + publish) | APPROVED / CLOSED |
+| MP-3C | Publication service + MP-1 authority | READY_FOR_INDEPENDENT_AUDIT |
 | MP-3D | SQLite transactional persistence | NOT STARTED |
 | MP-3E | PostgreSQL + qualification | NOT STARTED |
 | MP-3F | Content storage adapters (after 3E) | NOT STARTED |

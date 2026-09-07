@@ -1181,10 +1181,6 @@ class CreateArtifactWithInitialVersionCommand(_RepositoryModelBase):
             "created_by_principal_id": self.created_by_principal_id,
             "published_by_principal_id": self.published_by_principal_id,
             "content_ref": _serialize_artifact_content_ref(self.content_ref),
-            "artifact_created_at": self.artifact_created_at.isoformat(),
-            "artifact_updated_at": self.artifact_updated_at.isoformat(),
-            "version_created_at": self.version_created_at.isoformat(),
-            "version_published_at": self.version_published_at.isoformat(),
             "execution": _serialize_execution_provenance(self.execution),
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -1258,9 +1254,6 @@ class PublishWorkArtifactVersionCommand(_RepositoryModelBase):
             "created_by_principal_id": self.created_by_principal_id,
             "published_by_principal_id": self.published_by_principal_id,
             "content_ref": _serialize_artifact_content_ref(self.content_ref),
-            "created_at": self.created_at.isoformat(),
-            "published_at": self.published_at.isoformat(),
-            "artifact_updated_at": self.artifact_updated_at.isoformat(),
             "execution": _serialize_execution_provenance(self.execution),
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))

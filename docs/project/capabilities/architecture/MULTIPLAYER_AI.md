@@ -101,8 +101,8 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-3B** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
-**Next task:** Independent MP-3B audit — **MP-3C NOT STARTED**
+**Current active task:** **MP-3C** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
+**Next task:** Independent MP-3C audit — **MP-3D NOT STARTED**
 
 ## Cursor read scope (token budget)
 
@@ -422,7 +422,7 @@ not replace existing Evidence.
 
 **Delivered:** WorkItem, Assignment, shared-work lifecycle, concurrency, idempotency, and `WorkItemExecutionLink` provenance — contracts (2A) and implementation (2B…2G).
 
-**Next active task:** **Independent MP-3B audit** — MP-3C **NOT STARTED**
+**Next active task:** **Independent MP-3C audit** — MP-3D **NOT STARTED**
 
 ---
 
@@ -442,7 +442,7 @@ not replace existing Evidence.
 
 **New required (implementation):** MP-3A…MP-3H slices per [`COLLABORATIVE_WORK` plan](../../maintainers/plans/COLLABORATIVE_WORK.md) § COLLAB-WORK-3.
 
-**Next active task:** **Independent MP-3B audit** — MP-3C **NOT STARTED**
+**Next active task:** **Independent MP-3C audit** — MP-3D **NOT STARTED**
 
 **Architectural implementation slices:** MP-3A contracts → MP-3B ports/publication port (atomic initial create + publish) → MP-3C service + authority → MP-3D SQLite → MP-3E PostgreSQL → MP-3F content adapters → MP-3G execution/evidence → MP-3H closure. MP-3F follows MP-3E (metadata/content-ref qualification does not require live content provider).
 

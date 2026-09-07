@@ -223,6 +223,65 @@ def test_cross_tenant_and_workspace_isolation(publication_repo: ArtifactPublicat
     )
 
 
+def test_initial_create_idempotency_replay_preserves_timestamps_with_different_server_times(
+    publication_repo: ArtifactPublicationRepository,
+    version_repo: WorkArtifactVersionRepository,
+) -> None:
+    first_command = _create_command(
+        idempotency_key="create-idem",
+        artifact_created_at=_CREATED_AT,
+        artifact_updated_at=_UPDATED_AT,
+        version_created_at=_CREATED_AT,
+        version_published_at=_PUBLISHED_AT,
+    )
+    created = publication_repo.create_artifact_with_initial_version(first_command)
+    replay_command = _create_command(
+        idempotency_key="create-idem",
+        artifact_created_at=_LATER_PUBLISHED,
+        artifact_updated_at=_LATER_PUBLISHED + timedelta(minutes=1),
+        version_created_at=_LATER_PUBLISHED,
+        version_published_at=_LATER_PUBLISHED + timedelta(minutes=2),
+    )
+    replay = publication_repo.create_artifact_with_initial_version(replay_command)
+    assert replay == created
+    assert replay.artifact.created_at == created.artifact.created_at
+    assert replay.artifact.updated_at == created.artifact.updated_at
+    assert replay.version.created_at == created.version.created_at
+    assert replay.version.published_at == created.version.published_at
+    assert (
+        version_repo.list_for_artifact(
+            tenant_id=_TENANT_A,
+            workspace_id=_WORKSPACE_A,
+            work_artifact_id=_ARTIFACT,
+        )
+        == (created.version,)
+    )
+
+
+def test_publish_idempotency_replay_preserves_timestamps_with_different_server_times(
+    publication_repo: ArtifactPublicationRepository,
+) -> None:
+    _seed_initial(publication_repo)
+    first_command = _publish_command(
+        idempotency_key="publish-idem",
+        created_at=_UPDATED_AT,
+        published_at=_LATER_PUBLISHED,
+        artifact_updated_at=_LATER_PUBLISHED,
+    )
+    published = publication_repo.publish_version(first_command)
+    replay_command = _publish_command(
+        idempotency_key="publish-idem",
+        created_at=_LATER_PUBLISHED + timedelta(minutes=10),
+        published_at=_LATER_PUBLISHED + timedelta(minutes=11),
+        artifact_updated_at=_LATER_PUBLISHED + timedelta(minutes=12),
+    )
+    replay = publication_repo.publish_version(replay_command)
+    assert replay == published
+    assert replay.version.created_at == published.version.created_at
+    assert replay.version.published_at == published.version.published_at
+    assert replay.artifact.updated_at == published.artifact.updated_at
+
+
 def test_initial_create_idempotency_replay_and_conflict(
     publication_repo: ArtifactPublicationRepository,
     version_repo: WorkArtifactVersionRepository,
