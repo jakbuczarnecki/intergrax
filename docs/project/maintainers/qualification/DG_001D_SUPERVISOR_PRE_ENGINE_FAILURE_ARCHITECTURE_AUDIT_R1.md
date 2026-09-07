@@ -29,7 +29,22 @@
 | Diagnostics core changes | **NONE** |
 | DG-001D vs DG-001A | **Separate** — producer vs default composition coverage |
 
-**DG-001 remains `PARTIALLY ADDRESSED`.** DG-001D implementation not yet shipped.
+**DG-001 remains `PARTIALLY ADDRESSED`.** DG-001D R2 producer shipped; HOST-DIAG-3 conformance and real qualification pending.
+
+---
+
+## Implementation status (R2)
+
+| Slice | Status |
+|-------|--------|
+| R1 architecture audit | **PASS** — frozen |
+| R2 producer (`APPLICATION_FAILED` for pre-engine supervisor failures) | **SHIPPED** |
+| R3 HOST-DIAG-3 conformance | **PENDING** |
+| R4 real qualification | **PENDING** |
+
+**R2 shipped:** typed `HostedApplicationSupervisorFailureReason`, `HostedProcessBootstrapPhase` extension (`engine_construction`, `engine_contract_validation`), `supervisor_pre_engine_failure_to_hosted_event`, supervisor catch-path publication with isolated publisher failure handling. Supervisor truth (`HostedApplicationExitRecord`) and restart semantics unchanged.
+
+**Not yet qualified:** DG-001D remains open — producer implemented / qualification pending.
 
 ---
 
@@ -524,7 +539,7 @@ Platform hosting-level proof preferred over LKW-specific path.
 | Diagnostics core | **NONE** |
 | Queue | **NONE** |
 | DG-001D vs DG-001A | **Separate concerns** |
-| Next task | `DG-001D-SUPERVISOR-PRE-ENGINE-FAILURE-PRODUCER-R2` |
+| Next task | `DG-001D-SUPERVISOR-HOST-DIAG-3-CONFORMANCE-R3` |
 
 ---
 

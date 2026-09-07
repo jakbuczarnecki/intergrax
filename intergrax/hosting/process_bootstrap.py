@@ -46,6 +46,8 @@ class HostedProcessBootstrapPhase(str, Enum):
     DEPENDENCY_RESOLUTION = "dependency_resolution"
     WORKER_CONSTRUCTION = "worker_construction"
     STARTUP = "startup"
+    ENGINE_CONSTRUCTION = "engine_construction"
+    ENGINE_CONTRACT_VALIDATION = "engine_contract_validation"
 
 
 @dataclass(frozen=True, slots=True)
