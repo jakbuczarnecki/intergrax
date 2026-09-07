@@ -6,7 +6,7 @@
 
 **Branch:** `development`
 
-**Start HEAD:** `73d023d0a34102ec35e7f01ceae56129ea72ff5e`
+**Start HEAD:** `70c342d4ccd0d65299bf433fbf7b74818e9f1b45` (R3 canonical commit; session ancestry verified against `development`)
 
 **Task:** `DG-001D-SUPERVISOR-HOST-DIAG-3-CONFORMANCE-R3` — conformance qualification only; no production or diagnostics-core changes.
 
@@ -28,7 +28,7 @@ PRODUCER + HOST-DIAG-3 CONFORMANCE QUALIFIED / REAL INTEGRATION QUALIFICATION PE
 
 **DG-001 overall:** `PARTIALLY ADDRESSED` (unchanged).
 
-**Next task:** `DG-001D-REAL-SUPERVISOR-PRE-ENGINE-FAILURE-QUALIFICATION-R4`
+**Next task:** `DG-001D-REAL-SUPERVISOR-PRE-ENGINE-FAILURE-QUALIFICATION-R4` — **completed**; see [`DG_001D_REAL_SUPERVISOR_PRE_ENGINE_FAILURE_QUALIFICATION_R4.md`](DG_001D_REAL_SUPERVISOR_PRE_ENGINE_FAILURE_QUALIFICATION_R4.md).
 
 ---
 
