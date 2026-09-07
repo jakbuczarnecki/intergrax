@@ -20,16 +20,16 @@ SCHEMA_CAPABILITY_USAGE_SUMMARY_V1: Final = "capability_usage_summary.v1"
 
 
 class CapabilityUsageIdentityRollup(BaseModel):
-    """Usage counts keyed by source-qualified capability identity."""
+    """Metered usage quantities keyed by source-qualified capability identity."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     identity: CapabilityIdentityKey
-    total_count: int = Field(ge=0)
-    succeeded_count: int = Field(ge=0)
-    failed_count: int = Field(ge=0)
-    cancelled_count: int = Field(ge=0)
-    timeout_count: int = Field(ge=0)
+    total_quantity: int = Field(ge=0)
+    succeeded_quantity: int = Field(ge=0)
+    failed_quantity: int = Field(ge=0)
+    cancelled_quantity: int = Field(ge=0)
+    timeout_quantity: int = Field(ge=0)
 
 
 class CapabilityUsagePublisherRollup(BaseModel):
@@ -38,7 +38,7 @@ class CapabilityUsagePublisherRollup(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     publisher: str | None
-    total_count: int = Field(ge=0)
+    total_quantity: int = Field(ge=0)
 
 
 class CapabilityUsageSummaryReport(BaseModel):
@@ -63,14 +63,22 @@ class CapabilityUsageSummaryReport(BaseModel):
         return value
 
 
-def _rollup_outcome_counts(
+def _rollup_outcome_quantities(
     events: tuple[CapabilityUsageEvent, ...],
 ) -> tuple[int, int, int, int, int]:
-    total = len(events)
-    succeeded = sum(1 for event in events if event.outcome is CapabilityUsageOutcome.SUCCEEDED)
-    failed = sum(1 for event in events if event.outcome is CapabilityUsageOutcome.FAILED)
-    cancelled = sum(1 for event in events if event.outcome is CapabilityUsageOutcome.CANCELLED)
-    timeout = sum(1 for event in events if event.outcome is CapabilityUsageOutcome.TIMEOUT)
+    total = sum(event.quantity for event in events)
+    succeeded = sum(
+        event.quantity for event in events if event.outcome is CapabilityUsageOutcome.SUCCEEDED
+    )
+    failed = sum(
+        event.quantity for event in events if event.outcome is CapabilityUsageOutcome.FAILED
+    )
+    cancelled = sum(
+        event.quantity for event in events if event.outcome is CapabilityUsageOutcome.CANCELLED
+    )
+    timeout = sum(
+        event.quantity for event in events if event.outcome is CapabilityUsageOutcome.TIMEOUT
+    )
     return total, succeeded, failed, cancelled, timeout
 
 
@@ -79,7 +87,12 @@ def project_capability_usage_summary(
     *,
     tenant_id: str,
 ) -> CapabilityUsageSummaryReport:
-    """Aggregate usage for one tenant from a reference consumer snapshot."""
+    """Aggregate metered usage for one tenant from a reference consumer snapshot.
+
+    ``InMemoryCapabilityUsageConsumer`` is the Stage-13 reference consumer; this
+    projection is intentionally coupled to its snapshot contract. A future
+    persistent consumer may expose its own query or projection surface.
+    """
     tenant_events = tuple(
         event for event in consumer.snapshot() if event.tenant_id == tenant_id
     )
@@ -92,15 +105,15 @@ def project_capability_usage_summary(
     identity_rollups: list[CapabilityUsageIdentityRollup] = []
     for key in sorted(identity_groups):
         grouped = tuple(identity_groups[key])
-        total, succeeded, failed, cancelled, timeout = _rollup_outcome_counts(grouped)
+        total, succeeded, failed, cancelled, timeout = _rollup_outcome_quantities(grouped)
         identity_rollups.append(
             CapabilityUsageIdentityRollup(
                 identity=grouped[0].identity,
-                total_count=total,
-                succeeded_count=succeeded,
-                failed_count=failed,
-                cancelled_count=cancelled,
-                timeout_count=timeout,
+                total_quantity=total,
+                succeeded_quantity=succeeded,
+                failed_quantity=failed,
+                cancelled_quantity=cancelled,
+                timeout_quantity=timeout,
             ),
         )
 
@@ -116,7 +129,7 @@ def project_capability_usage_summary(
         publisher_rollups.append(
             CapabilityUsagePublisherRollup(
                 publisher=publisher,
-                total_count=len(publisher_groups[publisher]),
+                total_quantity=sum(event.quantity for event in publisher_groups[publisher]),
             ),
         )
 
