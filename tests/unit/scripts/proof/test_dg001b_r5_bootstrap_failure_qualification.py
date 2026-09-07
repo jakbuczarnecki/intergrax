@@ -1,63 +1,52 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Unit tests for DG-001B R5 qualification helpers."""
+"""Unit tests for DG-001B R5-R1 qualification helpers."""
 
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
-from local_workspace_application.host.worker_construction_fault import (
-    maybe_raise_worker_construction_fault,
-    parse_worker_construction_fault_mode,
+from scripts.proof.dg001b_r5_qualification_contracts import (
+    ControlledFailingBackgroundWorkerConstructor,
     qualification_secret_sentinel,
 )
 from scripts.proof.dg001b_r5_qualification_support import (
     build_qualification_environment,
     evaluate_prerequisites,
+    spawn_worker_child,
 )
 
 
-def test_parse_worker_construction_fault_mode_defaults_to_none() -> None:
-    assert parse_worker_construction_fault_mode("") == "none"
-    assert parse_worker_construction_fault_mode("none") == "none"
-
-
-def test_parse_worker_construction_fault_mode_accepts_typed_bootstrap_exception() -> None:
-    assert (
-        parse_worker_construction_fault_mode("typed_bootstrap_exception")
-        == "typed_bootstrap_exception"
-    )
-
-
-def test_parse_worker_construction_fault_mode_rejects_unknown() -> None:
-    with pytest.raises(ValueError, match="LOCAL_WORKSPACE_WORKER_CONSTRUCTION_FAULT"):
-        parse_worker_construction_fault_mode("unexpected")
-
-
-def test_maybe_raise_worker_construction_fault_is_noop_by_default() -> None:
-    maybe_raise_worker_construction_fault("none")
-
-
-def test_maybe_raise_worker_construction_fault_raises_type_error_with_sentinel() -> None:
+def test_controlled_failing_constructor_raises_type_error_with_sentinel() -> None:
+    constructor = ControlledFailingBackgroundWorkerConstructor()
     with pytest.raises(TypeError) as exc_info:
-        maybe_raise_worker_construction_fault("typed_bootstrap_exception")
+        constructor(
+            kv_store=MagicMock(),
+            execution_registry=MagicMock(),
+            idempotency_store=None,
+            causal_evidence_persistence=MagicMock(),
+        )
     assert qualification_secret_sentinel() in str(exc_info.value)
 
 
-def test_build_qualification_environment_sets_fault_and_observability(tmp_path: Path) -> None:
+def test_build_qualification_environment_sets_observability_without_fault_flag(
+    tmp_path: Path,
+) -> None:
     environment = build_qualification_environment(
-        marker="dg001b-r5-test",
+        marker="dg001b-r5-r1-test",
         attempt_data_home=tmp_path,
         base_environment={},
     )
-    assert environment["LOCAL_WORKSPACE_WORKER_CONSTRUCTION_FAULT"] == "typed_bootstrap_exception"
+    assert "LOCAL_WORKSPACE_WORKER_CONSTRUCTION_FAULT" not in environment
     assert environment["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] == "true"
     assert environment["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] == "elasticsearch"
     assert environment["LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND"] == "mongodb"
-    assert environment["LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT"] == "dg001b-r5-test"
+    assert environment["LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT"] == "dg001b-r5-r1-test"
 
 
 def test_evaluate_prerequisites_reports_backend_classes() -> None:
@@ -77,9 +66,34 @@ def test_evaluate_prerequisites_reports_backend_classes() -> None:
 
 def test_qualification_environment_json_is_secret_free(tmp_path: Path) -> None:
     environment = build_qualification_environment(
-        marker="dg001b-r5-test",
+        marker="dg001b-r5-r1-test",
         attempt_data_home=tmp_path,
         base_environment={},
     )
     serialized = json.dumps(environment)
     assert qualification_secret_sentinel() not in serialized
+
+
+def test_spawn_worker_child_uses_qualification_child_script(tmp_path: Path) -> None:
+    captured_command: list[str] = []
+
+    def _runner(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        captured_command.extend(command)
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=1,
+            stdout="",
+            stderr="TypeError: create_kafka_worker composition failure",
+        )
+
+    evidence = spawn_worker_child(
+        build_qualification_environment(
+            marker="dg001b-r5-r1-test",
+            attempt_data_home=tmp_path,
+            base_environment={},
+        ),
+        subprocess_runner=_runner,
+    )
+    assert captured_command
+    assert captured_command[1].replace("\\", "/").endswith("scripts/proof/dg001b_r5_worker_child.py")
+    assert evidence.exit_code == 1

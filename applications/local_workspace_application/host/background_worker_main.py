@@ -9,8 +9,6 @@ import logging
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, runtime_checkable
-
 from intergrax.integrations.contracts.document_store import DocumentStore
 
 from intergrax.applications._shared.diagnostic_read_wiring import (
@@ -51,6 +49,10 @@ from intergrax.hosting import (
     run_guarded_hosted_process_bootstrap,
 )
 from intergrax.hosting.contracts.context import HostedApplicationEventPublisher
+from local_workspace_application.host.background_worker_constructor import (
+    BackgroundWorkerConstructor,
+    BlockingBackgroundWorker,
+)
 from local_workspace_application.host.background_worker_factory import (
     LocalWorkspaceBackgroundWorkerWiring,
     build_local_workspace_background_worker_wiring,
@@ -80,11 +82,6 @@ _BACKGROUND_WORKER_PROCESS_ROLE = "background_worker"
 class LocalWorkspaceWorkerBootstrapDiagnostics:
     event_publisher: HostedApplicationEventPublisher
     diagnostic_tenant: HostedDiagnosticTenantBinding
-
-
-@runtime_checkable
-class _BlockingWorker(Protocol):
-    def start(self) -> None: ...
 
 
 def _resolve_settings(
@@ -185,6 +182,7 @@ async def _run_guarded_worker_bootstrap(
     settings: LocalWorkspaceBackendSettings,
     registry_projection: MaterializedRegistryProjection,
     document_store: DocumentStore,
+    worker_constructor: BackgroundWorkerConstructor | None = None,
 ) -> LocalWorkspaceBackgroundWorkerWiring:
     wiring = await run_guarded_hosted_process_bootstrap(
         context=bootstrap_context,
@@ -195,11 +193,12 @@ async def _run_guarded_worker_bootstrap(
             registry_projection=registry_projection,
             settings=settings,
             document_store=document_store,
+            worker_constructor=worker_constructor,
         ),
     )
     logger.info("Starting LKW Kafka background worker for lkw.background_ingest.v1")
     worker = wiring.worker
-    if not isinstance(worker, _BlockingWorker):
+    if not isinstance(worker, BlockingBackgroundWorker):
         raise TypeError("background worker wiring returned an invalid worker type")
     await run_guarded_hosted_process_bootstrap(
         context=bootstrap_context,

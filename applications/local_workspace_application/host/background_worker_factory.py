@@ -23,7 +23,6 @@ from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_worker
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.task.task import Task, TaskResult as RuntimeTaskResult
@@ -34,10 +33,11 @@ from local_workspace_application.background_ingest.contracts import (
 from local_workspace_application.background_ingest.worker_handler import (
     make_background_ingest_worker_handler,
 )
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.host.worker_construction_fault import (
-    maybe_raise_worker_construction_fault,
+from local_workspace_application.host.background_worker_constructor import (
+    BackgroundWorkerConstructor,
+    create_default_background_worker,
 )
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_lkw_runtime_document_store,
 )
@@ -79,6 +79,7 @@ def build_local_workspace_background_worker_wiring(
     registry_projection: MaterializedRegistryProjection,
     settings: LocalWorkspaceBackendSettings | None = None,
     document_store: DocumentStore | None = None,
+    worker_constructor: BackgroundWorkerConstructor | None = None,
 ) -> LocalWorkspaceBackgroundWorkerWiring:
     resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
     environment = manifest.resolved_environment()
@@ -121,8 +122,8 @@ def build_local_workspace_background_worker_wiring(
     task_registry.bind_execution_registry(registry)
 
     queue_dependencies = resolve_host_queue_execution_dependencies(runtime)
-    maybe_raise_worker_construction_fault(resolved_settings.worker_construction_fault)
-    worker = create_kafka_worker(
+    resolved_worker_constructor = worker_constructor or create_default_background_worker
+    worker = resolved_worker_constructor(
         kv_store=queue_dependencies.kv_store,
         execution_registry=registry,
         idempotency_store=runtime.reliability.idempotency_store,

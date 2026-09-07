@@ -50,7 +50,7 @@ from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.host.worker_construction_fault import qualification_secret_sentinel
+from scripts.proof.dg001b_r5_qualification_contracts import qualification_secret_sentinel
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_lkw_runtime_document_store,
@@ -65,7 +65,7 @@ _MONGO_REPLICA_SET_COMPOSE = _REPO_ROOT / "infra" / "docker" / "mongodb" / "dock
 _MONGO_REPLICA_SET_PROJECT = "dg001b-r5-mongo-replica"
 _MONGO_REPLICA_SET_URI = "mongodb://127.0.0.1:27017/?replicaSet=rs0&directConnection=true"
 _SECRET_SENTINEL = qualification_secret_sentinel()
-_WORKER_MODULE = "local_workspace_application.host.background_worker_main"
+_WORKER_CHILD_SCRIPT = _REPO_ROOT / "scripts" / "proof" / "dg001b_r5_worker_child.py"
 
 
 class QualificationGate(StrEnum):
@@ -357,7 +357,6 @@ def build_qualification_environment(
         "LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND": "mongodb",
         "LKW_MANAGED_WORKSPACE_COLLECTION": mongo_collection,
         "DATA_HOME": attempt_data_home.as_posix(),
-        "LOCAL_WORKSPACE_WORKER_CONSTRUCTION_FAULT": "typed_bootstrap_exception",
         "LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED": "true",
         "LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND": "elasticsearch",
         "LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL": elasticsearch_url,
@@ -428,8 +427,7 @@ def spawn_worker_child(
     completed = subprocess_runner(
         [
             sys.executable,
-            "-m",
-            _WORKER_MODULE,
+            str(_WORKER_CHILD_SCRIPT),
         ],
         cwd=str(_REPO_ROOT),
         env=dict(environment),

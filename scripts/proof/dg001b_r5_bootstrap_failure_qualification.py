@@ -25,7 +25,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from intergrax.runtime.diagnostics.diagnostic_subject import DiagnosticSubjectKind
-from local_workspace_application.host.worker_construction_fault import qualification_secret_sentinel
+from scripts.proof.dg001b_r5_qualification_contracts import qualification_secret_sentinel
 from scripts.proof.dg001b_r5_qualification_support import (
     DiagnosticReadEvidence,
     ObservabilityExportEvidence,
