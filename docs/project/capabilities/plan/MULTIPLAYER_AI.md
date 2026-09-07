@@ -10,8 +10,8 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **COLLAB-WORK-2F** (Unified Execution linkage; architecture/identity granularity **FROZEN**, implementation **NOT STARTED**)
-**Next task after MP-2 gate:** COLLAB-WORK-2F — Unified Execution linkage
+**Current active task:** **COLLAB-WORK-2G** (final MP-2 independent review and closure gate; **NOT STARTED**)
+**Next task after MP-2 gate:** COLLAB-WORK-2G — final MP-2 review
 
 ---
 
@@ -137,7 +137,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **IMPLEMENTATION IN PROGRESS** — COLLAB-WORK-2A APPROVED / CLOSED; COLLAB-WORK-2B APPROVED / CLOSED; COLLAB-WORK-2C APPROVED / CLOSED; COLLAB-WORK-2D APPROVED / CLOSED; COLLAB-WORK-2E APPROVED / CLOSED |
+| **Status** | **IMPLEMENTATION IN PROGRESS** — COLLAB-WORK-2A APPROVED / CLOSED; COLLAB-WORK-2B APPROVED / CLOSED; COLLAB-WORK-2C APPROVED / CLOSED; COLLAB-WORK-2D APPROVED / CLOSED; COLLAB-WORK-2E APPROVED / CLOSED; COLLAB-WORK-2F APPROVED / CLOSED |
 | **Purpose** | Platform-owned shared work primitives with lifecycle and concurrency semantics. |
 | **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-003 |
 | **Reused domain capabilities** | `ORCHESTRATION` (explicit WorkItem context consumption), `UNIFIED_EXECUTION_RUNTIME` (canonical execution identities), `NEXUS` (internal orchestration only — not Collaborative Work contract dependency), `BACKGROUND_TASKS` (associated execution), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance) |
@@ -151,7 +151,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
 | **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real four-part `ExecutionProvenanceRef` |
-| **Next implementation row** | **COLLAB-WORK-2F** (NOT STARTED; architecture/identity granularity **FROZEN**) |
+| **Next implementation row** | **COLLAB-WORK-2G** (NOT STARTED) |
 
 ---
 

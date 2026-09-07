@@ -194,8 +194,8 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 
 Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
 
-**MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**; COLLAB-WORK-2E **APPROVED / CLOSED**.
-**Current active task:** **COLLAB-WORK-2F** (Unified Execution linkage; **READY_FOR_REVIEW** pending independent audit).
+**MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**; COLLAB-WORK-2D **APPROVED / CLOSED**; COLLAB-WORK-2E **APPROVED / CLOSED**; COLLAB-WORK-2F **APPROVED / CLOSED**.
+**Current active task:** **COLLAB-WORK-2G** (final MP-2 independent review and closure gate; **NOT STARTED**).
 
 ---
 
@@ -297,7 +297,7 @@ Reuse MP-1 repository semantics: revision 0 create, `expected_revision` CAS, typ
 
 ### Persistence direction
 
-Authoritative WorkItem and Assignment state uses Collaborative Work repository ports → in-memory reference → SQLite (local/dev) → production-qualified relational adapter (PostgreSQL first). No separate SharedWork database subsystem. Storage selection remains composition-root concern — no provider string switches in core contracts.
+Authoritative Shared Work persistence bundle (`WorkItem` + `Assignment` + append-only `WorkItemExecutionLink`) uses Collaborative Work repository ports → in-memory reference → SQLite (local/dev) → production-qualified relational adapter (PostgreSQL first). `WorkItemExecutionLink` records are append-only — no update/delete/revision. No separate SharedWork database subsystem. Storage selection remains composition-root concern — no provider string switches in core contracts.
 
 ### Authority reuse
 

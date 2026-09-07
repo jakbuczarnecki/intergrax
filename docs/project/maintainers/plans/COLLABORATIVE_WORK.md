@@ -6,7 +6,7 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
-**Current active task:** **COLLAB-WORK-2F** (Unified Execution linkage; architecture/identity granularity **FROZEN**, implementation **NOT STARTED**)
+**Current active task:** **COLLAB-WORK-2G** (final MP-2 independent review and closure gate; **NOT STARTED**)
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -324,7 +324,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 |-------|-------|
 | **ID** | COLLAB-WORK-2F |
 | **Priority** | P1 |
-| **Status** | **READY_FOR_REVIEW** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Explicit provenance linkage from WorkItem to canonical Unified Execution identity without lifecycle substitution |
 | **Dependencies** | COLLAB-WORK-2C approved (may ship after 2D/2E per rollout) |
 | **Exact scope** | Neutral `ExecutionProvenanceRef` using canonical `TaskId`/`RunId`/`AttemptId`/`ExecutionId`; zero..N WorkItem execution associations; explicit Unified Execution boundary; no runtime lifecycle propagation |
@@ -349,6 +349,16 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Acceptance** | All MP-2 acceptance criteria met; no contradictory ownership statements; implementation proof complete |
 | **Proof requirements** | Focused regression suite; documentation link integrity; `check_harness_adr.py` |
 | **Next step** | MP-3 bounded ownership check |
+
+### MP-2 execution linkage closure and repository qualification (COLLAB-WORK-2F)
+
+| Field | Value |
+|-------|-------|
+| **COLLAB-WORK-2F independent audit** | **CLOSED** — unified execution linkage approved; frozen semantics preserved (`ExecutionProvenanceRef` = `TaskId` + `RunId` + `AttemptId` + `ExecutionId`; provenance only; no lifecycle substitution; no Nexus production dependency) |
+| **Repository qualification suite** | `3.0.0` — full Shared Work persistence bundle (`WorkItem` + `Assignment` + `WorkItemExecutionLink`) |
+| **PostgreSQL (`cw.postgresql.repository.v1`)** | **PRODUCTION_QUALIFIED** — version `3.0.0`; evidence: `suite.passed`, `backend.live`, `shared_work.mp2`, `shared_work.execution_link`, `shared_work.concurrency.cross_process` |
+| **SQLite (`cw.sqlite.repository.v1`)** | **QUALIFIED** — version `3.0.0`; evidence: `suite.passed`, `backend.live`, `shared_work.mp2`, `shared_work.execution_link` |
+| **Provider qualification evidence integration** | **SATISFIED** — `CollaborativeWorkRepositoryQualificationBinding` / `CollaborativeWorkRepositoryQualificationSuite` via canonical `execute_provider_qualification` → `ProviderQualificationRun` / `ProofReceipt` ([`PROVIDER-QUAL-3`](PLATFORM_PLUGINS.md#provider-qual-track-post-plugin-9)); no CW-specific parallel evidence system |
 
 ---
 
