@@ -6,10 +6,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 from intergrax.runtime.sandbox.models import SandboxExecutionResult
 from intergrax.runtime.sandbox.network_egress import NetworkEgressAllowlist, NetworkEgressHost
+
+if TYPE_CHECKING:
+    from intergrax.integrations.contracts.sandbox_host import SandboxSession
 
 IsolationTierEvidence = Literal["local", "container", "cloud"]
 NetworkEgressPolicy = Literal["deny", "allowlist"]
@@ -61,6 +64,18 @@ class SandboxSecurityCapable(Protocol):
 
     def security_capabilities(self) -> SandboxSecurityCapabilities:
         """Return trusted substrate security capability evidence."""
+        ...
+
+
+@runtime_checkable
+class SandboxSecurityConfigurable(Protocol):
+    """Hosted backends that accept typed security requirements at session creation."""
+
+    def create_session_with_security(
+        self,
+        requirements: SandboxSecurityRequirements,
+    ) -> SandboxSession:
+        """Provision a sandbox session with provider-enforced security configuration."""
         ...
 
 

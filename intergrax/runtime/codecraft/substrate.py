@@ -8,8 +8,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.codecraft.profile import CodeCraftProfile, IsolationTier, NetworkEgress
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.sandbox.contracts import SandboxExecCapable, SandboxSecurityCapable
+from intergrax.runtime.sandbox.contracts import (
+    SandboxExecCapable,
+    SandboxSecurityCapable,
+    SandboxSecurityRequirements,
+)
 from intergrax.runtime.sandbox.hosted_resolver import resolve_hosted_sandbox_session
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from intergrax.runtime.sandbox.network_egress import (
@@ -158,6 +164,35 @@ def _network_egress_requirement_satisfied(
     return False
 
 
+def _security_requirements_from_profile(profile: CodeCraftProfile) -> SandboxSecurityRequirements | None:
+    if profile.network_egress == "allowlist":
+        return SandboxSecurityRequirements(
+            isolation_tier="cloud" if profile.isolation_tier == "cloud" else "container",
+            network_egress="allowlist",
+            network_egress_allowlist=profile.network_egress_allowlist_scope,
+        )
+    if profile.network_egress == "deny" and profile.isolation_tier in ("cloud", "container"):
+        return SandboxSecurityRequirements(
+            isolation_tier="cloud" if profile.isolation_tier == "cloud" else "container",
+            network_egress="deny",
+        )
+    return None
+
+
+def _resolve_integration_sandbox_host(
+    integration_profile: IntegrationProfile,
+) -> SandboxHostBackend | None:
+    backend = integration_profile.instance_for_category(IntegrationCategory.SANDBOX_HOST)
+    if backend is None:
+        slug = integration_profile.slug_for_category(IntegrationCategory.SANDBOX_HOST)
+        if slug is None:
+            return None
+        backend = integration_profile.resolve(IntegrationCategory.SANDBOX_HOST)
+    if not isinstance(backend, SandboxHostBackend):
+        return None
+    return backend
+
+
 def resolve_craft_sandbox(
     ctx: ToolWiringContext,
     profile: CodeCraftProfile,
@@ -168,15 +203,23 @@ def resolve_craft_sandbox(
     """Resolve execution substrate per isolation tier without silent downgrade."""
     requested = profile.isolation_tier
     requested_allowlist = profile.network_egress_allowlist_scope
+    security_requirements = _security_requirements_from_profile(profile)
 
     if requested in ("cloud", "container"):
         integration_raw = ctx.extras.get("integration_profile")
         if isinstance(integration_raw, IntegrationProfile):
+            integration_host = _resolve_integration_sandbox_host(integration_raw)
             hosted = resolve_hosted_sandbox_session(
                 integration_raw,
                 tenant_id=tenant_id,
                 task_id=task_id,
+                security_requirements=security_requirements,
             )
+            if hosted is None and integration_host is not None:
+                return CraftSandboxResolution(
+                    session=None,
+                    error=_network_egress_resolution_error(profile.network_egress),
+                )
             if hosted is not None:
                 capabilities = probe_substrate_capabilities(
                     hosted,
@@ -196,7 +239,13 @@ def resolve_craft_sandbox(
                 ctx.sandbox_host,
                 tenant_id=tenant_id,
                 task_id=task_id,
+                security_requirements=security_requirements,
             )
+            if hosted is None:
+                return CraftSandboxResolution(
+                    session=None,
+                    error=_network_egress_resolution_error(profile.network_egress),
+                )
             capabilities = probe_substrate_capabilities(
                 hosted,
                 requested_tier=requested,

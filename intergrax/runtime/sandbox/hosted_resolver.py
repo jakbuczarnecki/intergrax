@@ -7,7 +7,7 @@ from __future__ import annotations
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.sandbox.contracts import SandboxExecCapable
+from intergrax.runtime.sandbox.contracts import SandboxExecCapable, SandboxSecurityRequirements
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 
 
@@ -16,6 +16,7 @@ def resolve_hosted_sandbox_session(
     *,
     tenant_id: str,
     task_id: str,
+    security_requirements: SandboxSecurityRequirements | None = None,
 ) -> SandboxExecCapable | None:
     """Open a cloud sandbox session when ``sandbox_host`` is configured."""
     backend = integration_profile.instance_for_category(IntegrationCategory.SANDBOX_HOST)
@@ -30,4 +31,5 @@ def resolve_hosted_sandbox_session(
         backend,
         tenant_id=tenant_id,
         task_id=task_id,
+        security_requirements=security_requirements,
     )

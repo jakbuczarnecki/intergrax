@@ -10,7 +10,12 @@ import time
 from uuid import uuid4
 
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
-from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities, SandboxSecurityCapable
+from intergrax.runtime.sandbox.contracts import (
+    SandboxSecurityCapabilities,
+    SandboxSecurityCapable,
+    SandboxSecurityConfigurable,
+    SandboxSecurityRequirements,
+)
 from intergrax.runtime.sandbox.models import SandboxAuditEntry, SandboxExecutionResult
 from intergrax.runtime.sandbox.sandbox_runtime import DEFAULT_SANDBOX_OPERATIONS
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -48,8 +53,15 @@ class HostedSandboxSession:
         tenant_id: str,
         task_id: str,
         allowed_operations: frozenset[str] | None = None,
-    ) -> HostedSandboxSession:
-        session = backend.create_session()
+        security_requirements: SandboxSecurityRequirements | None = None,
+    ) -> HostedSandboxSession | None:
+        """Open a hosted session; return ``None`` when allowlist policy cannot be admitted."""
+        if security_requirements is not None and security_requirements.network_egress == "allowlist":
+            if not isinstance(backend, SandboxSecurityConfigurable):
+                return None
+            session = backend.create_session_with_security(security_requirements)
+        else:
+            session = backend.create_session()
         return cls(
             session_id=session.session_id,
             backend=backend,

@@ -12,7 +12,12 @@ import pytest
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.integrations.contracts.sandbox_host import SandboxArtifact, SandboxHostBackend
 from intergrax.runtime.codecraft.substrate import resolve_craft_sandbox
-from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities, SandboxSecurityCapable
+from intergrax.runtime.sandbox.contracts import (
+    SandboxSecurityCapabilities,
+    SandboxSecurityCapable,
+    SandboxSecurityConfigurable,
+    SandboxSecurityRequirements,
+)
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from intergrax.runtime.sandbox.network_egress import canonicalize_network_egress_allowlist, parse_network_egress_host
 from intergrax.runtime.sandbox.session import SandboxSession
@@ -32,7 +37,11 @@ _CODECRAFT_OPS = frozenset(
 
 
 class _PlainSandboxHostBackend:
+    def __init__(self) -> None:
+        self.create_session_calls = 0
+
     def create_session(self):
+        self.create_session_calls += 1
         return MagicMock(session_id="hosted-plain")
 
     def exec(self, session_id: str, command: str):
@@ -55,8 +64,14 @@ class _HostedSecurityBackend:
         self._network_egress_deny_enforced = network_egress_deny_enforced
         self._network_egress_allowlist_enforced = network_egress_allowlist_enforced
         self._enforced_network_hosts = enforced_network_hosts
+        self.create_session_calls = 0
 
     def create_session(self):
+        self.create_session_calls += 1
+        return MagicMock(session_id="hosted-1")
+
+    def create_session_with_security(self, requirements: SandboxSecurityRequirements):
+        self.create_session_calls += 1
         return MagicMock(session_id="hosted-1")
 
     def exec(self, session_id: str, command: str):
@@ -139,6 +154,19 @@ def test_missing_allowlist_proof_rejected() -> None:
     )
     assert resolution.session is None
     assert resolution.error == "network_egress_allowlist_requirement_unsatisfied"
+
+
+def test_allowlist_profile_does_not_open_plain_backend_session() -> None:
+    backend = _PlainSandboxHostBackend()
+    resolution = resolve_craft_sandbox(
+        ToolWiringContext(sandbox_host=backend, extras={"codecraft_profile": _allowlist_profile()}),
+        _allowlist_profile(),
+        tenant_id=TENANT,
+        task_id=TASK,
+    )
+    assert resolution.session is None
+    assert resolution.error == "network_egress_allowlist_requirement_unsatisfied"
+    assert backend.create_session_calls == 0
 
 
 def test_wrong_host_set_rejected() -> None:
