@@ -141,6 +141,43 @@ def test_child_output_not_persisted_in_result(tmp_path: Path) -> None:
     assert "stderr_tail" not in serialized
 
 
+def test_child_subprocess_inherits_proof_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / ".env").write_text(
+        "INTERGRAX_TEST_ENV_VALUE=from-dotenv\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("INTERGRAX_TEST_ENV_VALUE", raising=False)
+
+    from scripts.proof.intergrax_proof_environment import bootstrap_process_environment
+
+    bootstrap_process_environment(
+        proof_package_dir=repo_root,
+        repository_root=repo_root,
+    )
+
+    captured_env: dict[str, str] = {}
+
+    def _runner(command, **kwargs):
+        env = kwargs.get("env")
+        if isinstance(env, dict):
+            captured_env.update(env)
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    entry = _entry(
+        "ENV-CHILD",
+        argv=("-c", "import os; print(os.environ.get('INTERGRAX_TEST_ENV_VALUE'))"),
+    )
+    result = execute_proof(entry, repo_root=repo_root, subprocess_runner=_runner)
+
+    assert result.status == ProofStatus.PASS
+    assert captured_env.get("INTERGRAX_TEST_ENV_VALUE") == "from-dotenv"
+
+
 # Deliberately fake secret-shaped values — not real credentials; avoid live token formats
 # so push protection does not block commits while still proving no child output is persisted.
 _SECRET_CANARY = "SECRET_CANARY_do_not_persist_this_value_7f3a9b"

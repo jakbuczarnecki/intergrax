@@ -82,3 +82,19 @@ def load_proof_environment(
         return ProofEnvironmentLoadResult(dotenv_path=None, loaded=False)
     load_dotenv(dotenv_path=dotenv_path, override=False)
     return ProofEnvironmentLoadResult(dotenv_path=dotenv_path, loaded=True)
+
+
+def bootstrap_process_environment(
+    *,
+    proof_package_dir: Path,
+    repository_root: Path,
+) -> ProofEnvironmentLoadResult:
+    """Load canonical proof environment into the running process before profile resolution.
+
+    Shared entry point for proof runners and qualification harnesses. Safe to call
+    multiple times: ``override=False`` preserves variables already set in the process.
+    """
+    return load_proof_environment(
+        proof_package_dir=proof_package_dir,
+        repository_root=repository_root,
+    )

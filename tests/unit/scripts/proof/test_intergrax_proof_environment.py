@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from scripts.proof.intergrax_proof_environment import (
+    bootstrap_process_environment,
     find_proof_dotenv,
     load_proof_environment,
 )
@@ -223,3 +224,39 @@ def test_only_nearest_dotenv_file_is_loaded(
     assert os.environ.get("PROOF_ONLY") == "1"
     assert os.environ.get("SHARED") == "proof"
     assert "ROOT_ONLY" not in os.environ
+
+
+def test_repo_root_dotenv_loads_intergrax_test_env_value(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    _write_env(repo_root / ".env", "INTERGRAX_TEST_ENV_VALUE=file\n")
+    monkeypatch.delenv("INTERGRAX_TEST_ENV_VALUE", raising=False)
+
+    result = bootstrap_process_environment(
+        proof_package_dir=repo_root,
+        repository_root=repo_root,
+    )
+
+    assert result.loaded is True
+    assert os.environ["INTERGRAX_TEST_ENV_VALUE"] == "file"
+
+
+def test_process_environment_wins_for_intergrax_test_env_value(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    _write_env(repo_root / ".env", "INTERGRAX_TEST_ENV_VALUE=file\n")
+    monkeypatch.setenv("INTERGRAX_TEST_ENV_VALUE", "process")
+
+    result = bootstrap_process_environment(
+        proof_package_dir=repo_root,
+        repository_root=repo_root,
+    )
+
+    assert result.loaded is True
+    assert os.environ["INTERGRAX_TEST_ENV_VALUE"] == "process"

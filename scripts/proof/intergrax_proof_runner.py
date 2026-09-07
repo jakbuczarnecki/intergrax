@@ -51,6 +51,7 @@ from scripts.proof.intergrax_platform_proof_execution import (
     proof_run_artifact_directory,
     suite_run_artifact_directory,
 )
+from scripts.proof.intergrax_proof_environment import bootstrap_process_environment
 from scripts.proof.intergrax_proof_manifest import (
     ManifestLoadError,
     expanded_profiles,
@@ -575,6 +576,15 @@ def run_suite(
             )
             continue
 
+        execution_spec = execution_specs.get(entry.proof_id)
+        proof_package_dir = config.repo_root
+        if execution_spec is not None and execution_spec.package_root is not None:
+            proof_package_dir = execution_spec.package_root
+        bootstrap_process_environment(
+            proof_package_dir=proof_package_dir,
+            repository_root=config.repo_root,
+        )
+
         env_results, env_ok = evaluate_environment(entry)
         if not env_ok:
             results.append(
@@ -596,7 +606,7 @@ def run_suite(
         child_result = execute_proof(
             entry,
             repo_root=config.repo_root,
-            execution_spec=execution_specs.get(entry.proof_id),
+            execution_spec=execution_spec,
             proof_artifact_directory=proof_artifact_dir,
             git_commit_sha=git.commit_sha,
             subprocess_runner=subprocess_runner,

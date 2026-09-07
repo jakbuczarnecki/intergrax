@@ -29,8 +29,18 @@ from testing_support.decision_e2e.environment import (
     resolve_qualification_environment,
 )
 from testing_support.decision_e2e.reporting import QualificationReportCollector
+from scripts.proof.intergrax_proof_environment import bootstrap_process_environment
 
 _OUTPUT_DIR = Path(".tmp/decision_e2e_qualification")
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _bootstrap_decision_e2e_process_environment() -> None:
+    bootstrap_process_environment(
+        proof_package_dir=_REPO_ROOT,
+        repository_root=_REPO_ROOT,
+    )
 
 
 @pytest.fixture(scope="session")

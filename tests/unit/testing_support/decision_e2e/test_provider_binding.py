@@ -222,3 +222,14 @@ def test_missing_explicit_qualification_env_uses_documented_default_provider() -
     assert binding.requested_provider is None
     assert binding.requested_model is None
     assert binding.resolved_provider == "ollama"
+
+
+def test_bind_qualification_llm_profile_does_not_own_dotenv_loading() -> None:
+    from pathlib import Path
+
+    source = Path(__import__("testing_support.decision_e2e.provider_binding").__file__).read_text(
+        encoding="utf-8",
+    )
+    assert "load_dotenv" not in source
+    assert "load_proof_environment" not in source
+    assert "bootstrap_process_environment" not in source
