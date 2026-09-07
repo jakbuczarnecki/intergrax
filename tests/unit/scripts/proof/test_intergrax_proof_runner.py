@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -153,11 +154,12 @@ def test_child_subprocess_inherits_proof_environment(
     )
     monkeypatch.delenv("INTERGRAX_TEST_ENV_VALUE", raising=False)
 
-    from scripts.proof.intergrax_proof_environment import bootstrap_process_environment
+    from scripts.proof.intergrax_proof_environment import resolve_proof_environment
 
-    bootstrap_process_environment(
+    resolved = resolve_proof_environment(
         proof_package_dir=repo_root,
         repository_root=repo_root,
+        base_environment=dict(os.environ),
     )
 
     captured_env: dict[str, str] = {}
@@ -172,7 +174,12 @@ def test_child_subprocess_inherits_proof_environment(
         "ENV-CHILD",
         argv=("-c", "import os; print(os.environ.get('INTERGRAX_TEST_ENV_VALUE'))"),
     )
-    result = execute_proof(entry, repo_root=repo_root, subprocess_runner=_runner)
+    result = execute_proof(
+        entry,
+        repo_root=repo_root,
+        environment=resolved.environment,
+        subprocess_runner=_runner,
+    )
 
     assert result.status == ProofStatus.PASS
     assert captured_env.get("INTERGRAX_TEST_ENV_VALUE") == "from-dotenv"
@@ -514,3 +521,151 @@ def test_render_console_summary_includes_artifact_directories() -> None:
         "SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON: "
         ".artifacts/proof/artifact-test-run/proofs/SCENARIO-AI-INCIDENT-INVESTIGATION-SKELETON"
     ) in text
+
+
+def _run_proof_with_resolved_environment(
+    *,
+    proof_dir: Path,
+    repo_root: Path,
+    base_environment: dict[str, str],
+) -> str | None:
+    from scripts.proof.intergrax_proof_environment import resolve_proof_environment
+
+    resolved = resolve_proof_environment(
+        proof_package_dir=proof_dir,
+        repository_root=repo_root,
+        base_environment=base_environment,
+    )
+    captured_env: dict[str, str] = {}
+
+    def _runner(command, **kwargs):
+        env = kwargs.get("env")
+        if isinstance(env, dict):
+            captured_env.update(env)
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    entry = _entry(
+        f"PROOF-{proof_dir.name}",
+        argv=("-c", "import os; print(os.environ.get('INTERGRAX_TEST_PROOF_VALUE'))"),
+    )
+    result = execute_proof(
+        entry,
+        repo_root=repo_root,
+        environment=resolved.environment,
+        subprocess_runner=_runner,
+    )
+    assert result.status == ProofStatus.PASS
+    return captured_env.get("INTERGRAX_TEST_PROOF_VALUE")
+
+
+def test_suite_proof_environments_do_not_leak_between_proofs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    proof_a = repo_root / "platform_proofs" / "proof_a"
+    proof_b = repo_root / "platform_proofs" / "proof_b"
+    proof_a.mkdir(parents=True)
+    proof_b.mkdir(parents=True)
+    (proof_a / ".env").write_text("INTERGRAX_TEST_PROOF_VALUE=A\n", encoding="utf-8")
+    (proof_b / ".env").write_text("INTERGRAX_TEST_PROOF_VALUE=B\n", encoding="utf-8")
+
+    monkeypatch.setenv("SHARED_OPERATOR", "operator")
+    monkeypatch.delenv("INTERGRAX_TEST_PROOF_VALUE", raising=False)
+    base_environment = dict(os.environ)
+
+    value_a = _run_proof_with_resolved_environment(
+        proof_dir=proof_a,
+        repo_root=repo_root,
+        base_environment=base_environment,
+    )
+    assert os.environ.get("INTERGRAX_TEST_PROOF_VALUE") is None
+    value_b = _run_proof_with_resolved_environment(
+        proof_dir=proof_b,
+        repo_root=repo_root,
+        base_environment=base_environment,
+    )
+
+    assert value_a == "A"
+    assert value_b == "B"
+
+
+def test_suite_proof_environment_order_independence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    proof_a = repo_root / "platform_proofs" / "proof_a"
+    proof_b = repo_root / "platform_proofs" / "proof_b"
+    proof_a.mkdir(parents=True)
+    proof_b.mkdir(parents=True)
+    (proof_a / ".env").write_text("INTERGRAX_TEST_PROOF_VALUE=A\n", encoding="utf-8")
+    (proof_b / ".env").write_text("INTERGRAX_TEST_PROOF_VALUE=B\n", encoding="utf-8")
+
+    monkeypatch.setenv("SHARED_OPERATOR", "operator")
+    monkeypatch.delenv("INTERGRAX_TEST_PROOF_VALUE", raising=False)
+    base_environment = dict(os.environ)
+
+    forward = (
+        _run_proof_with_resolved_environment(
+            proof_dir=proof_a,
+            repo_root=repo_root,
+            base_environment=base_environment,
+        ),
+        _run_proof_with_resolved_environment(
+            proof_dir=proof_b,
+            repo_root=repo_root,
+            base_environment=base_environment,
+        ),
+    )
+    reverse = (
+        _run_proof_with_resolved_environment(
+            proof_dir=proof_b,
+            repo_root=repo_root,
+            base_environment=base_environment,
+        ),
+        _run_proof_with_resolved_environment(
+            proof_dir=proof_a,
+            repo_root=repo_root,
+            base_environment=base_environment,
+        ),
+    )
+
+    assert forward == ("A", "B")
+    assert reverse == ("B", "A")
+
+
+def test_process_environment_wins_over_proof_dotenv_for_child_execution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = tmp_path / "repo"
+    proof_dir = repo_root / "platform_proofs" / "proof_a"
+    proof_dir.mkdir(parents=True)
+    (proof_dir / ".env").write_text("INTERGRAX_TEST_PROOF_VALUE=A\n", encoding="utf-8")
+
+    monkeypatch.setenv("INTERGRAX_TEST_PROOF_VALUE", "operator")
+    base_environment = dict(os.environ)
+
+    value = _run_proof_with_resolved_environment(
+        proof_dir=proof_dir,
+        repo_root=repo_root,
+        base_environment=base_environment,
+    )
+    assert value == "operator"
+
+
+def test_evaluate_environment_uses_resolved_environment_not_process_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entry = _entry(
+        "ENV-TEST",
+        env=(EnvRequirement(kind=EnvRequirementKind.ENV_PRESENT, name="SECRET_TEST_VAR"),),
+    )
+    monkeypatch.delenv("SECRET_TEST_VAR", raising=False)
+    resolved_env = {"SECRET_TEST_VAR": "present-in-resolved"}
+
+    results, ok = evaluate_environment(entry, environment=resolved_env)
+
+    assert ok is True
+    assert results[0].satisfied is True

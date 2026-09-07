@@ -199,37 +199,25 @@ def test_invalid_explicit_adapter_resolution_fails_closed() -> None:
     assert "explicit qualification provider/model could not be resolved" in block_reason
 
 
-def test_missing_explicit_qualification_env_uses_documented_default_provider() -> None:
+def test_bind_qualification_llm_profile_consumes_prepared_environment() -> None:
+    """Binding reads caller-prepared ``os.environ``; it does not bootstrap dotenv."""
     environment = build_scenario_environment_profile()
-    adapter = _StubAdapter()
-    adapter.provider = LLMProvider.OLLAMA
-    adapter.model = None
-
-    env = {
-        key: value
-        for key, value in __import__("os").environ.items()
-        if not key.startswith("INTERGRAX_LLM_")
-    }
-    with patch.dict("os.environ", env, clear=True):
-        with patch.object(LLMProfile, "create_adapter", return_value=adapter):
+    with patch.dict(
+        "os.environ",
+        {
+            "INTERGRAX_LLM_PROVIDER": "openai",
+            "INTERGRAX_LLM_MODEL": "gpt-4.1",
+            "OPENAI_API_KEY": "test-key",
+        },
+        clear=True,
+    ):
+        with patch.object(LLMProfile, "create_adapter", return_value=_StubAdapter()):
             binding, block_reason = bind_qualification_llm_profile(
                 environment,
-                adapter_resolver=lambda _env: adapter,
+                adapter_resolver=_resolver,
             )
 
     assert block_reason is None
     assert binding is not None
-    assert binding.requested_provider is None
-    assert binding.requested_model is None
-    assert binding.resolved_provider == "ollama"
-
-
-def test_bind_qualification_llm_profile_does_not_own_dotenv_loading() -> None:
-    from pathlib import Path
-
-    source = Path(__import__("testing_support.decision_e2e.provider_binding").__file__).read_text(
-        encoding="utf-8",
-    )
-    assert "load_dotenv" not in source
-    assert "load_proof_environment" not in source
-    assert "bootstrap_process_environment" not in source
+    assert binding.resolved_provider == "openai"
+    assert binding.resolved_model == "gpt-4.1"
