@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -17,8 +17,8 @@ class CanonicalFunctionToolFunctionSchema(TypedDict):
     """Provider-neutral OpenAI-style function tool payload."""
 
     name: str
-    description: str
-    parameters: dict[str, object]
+    description: NotRequired[str]
+    parameters: NotRequired[dict[str, object]]
 
 
 class CanonicalFunctionToolWireSchema(TypedDict):
@@ -89,7 +89,18 @@ def _coerce_wire_schema(
     name = function.get("name")
     if not isinstance(name, str) or not name:
         raise ValueError(f"tools[{index}] function tool missing canonical name")
-    return dict(tool)  # type: ignore[return-value]
+    function_schema: CanonicalFunctionToolFunctionSchema = {"name": name}
+    description = function.get("description")
+    if isinstance(description, str):
+        function_schema["description"] = description
+    parameters = function.get("parameters")
+    if isinstance(parameters, dict):
+        function_schema["parameters"] = parameters
+    wire_schema: CanonicalFunctionToolWireSchema = {
+        "type": "function",
+        "function": function_schema,
+    }
+    return wire_schema
 
 
 def coerce_canonical_tool_definitions(
