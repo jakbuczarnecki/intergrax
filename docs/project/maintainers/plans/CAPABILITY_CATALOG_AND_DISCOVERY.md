@@ -239,7 +239,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AC-4 marketplace-not-required tests; air-gapped deployment without marketplace. |
 | **Completion criteria** | Marketplace lists capabilities via federated sources; lifecycle operations route to domain authorities only. |
 | **Depends on** | Stages 2, 5. |
-| **Maturity** | **Future product** — Agent Marketplace architecture already marks product as future. |
+| **Maturity** | **Implemented — awaiting independent audit** — typed product contracts at `intergrax/contracts/marketplace/` and read-only product layer at `intergrax/marketplace/` (`MarketplaceCapabilityListing`, `MarketplaceCapabilityCatalogSource`, `MarketplaceCatalogService`); official (`OFFICIAL`) and enterprise-private (`ENTERPRISE_PRIVATE`) marketplace sources; federation through existing `FederatedCapabilityCatalog`; commercial metadata display-only; architecture gates for Forbidden flows 1 and 3; no billing, checkout, install, or registry mutation. |
 
 ---
 
@@ -342,7 +342,7 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 | 8 | Adaptive Unit-of-Work discovery | Implemented |
 | 9 | Autonomous Work bridge | **Implemented** |
 | 10 | Bootstrap evidence | Planned |
-| 11 | Marketplace product surface | Future |
+| 11 | Marketplace product surface | Implemented — awaiting independent audit |
 | 12 | Isolation / external execution | Future assessment |
 | 13 | Usage metering | Future |
 | 14 | Full autonomous worker integration | Planned |

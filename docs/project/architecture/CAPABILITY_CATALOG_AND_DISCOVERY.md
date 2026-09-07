@@ -422,6 +422,8 @@ Marketplace is a **product** built on top of federated catalog sources.
 
 **Marketplace must not:** install, activate, mutate registries, execute tools/skills/agents, or become lifecycle authority.
 
+**Stage 11 (implemented):** read-only product surface at `intergrax/marketplace/` with typed `MarketplaceCapabilityListing` wrapping canonical `CapabilityCatalogEntry`, `MarketplaceCapabilityCatalogSource` implementing `CapabilityCatalogSource`, and `MarketplaceCatalogService` joining Stage-3 discovery with product metadata. Commercial metadata is **display-only** and **must not** affect governance, ranking, or runtime selection.
+
 Public Marketplace is **optional** for platform operation (see Enterprise deployment).
 
 ---
@@ -666,7 +668,7 @@ UniversalCapabilityEngine
 | Private enterprise catalog for Tool/Skill | Planned |
 | Third-party isolation beyond in-process | Future |
 | Monetization / metering consumer | Future |
-| Marketplace product surface | Future |
+| Marketplace product surface | **Implemented** — read-only contracts at `intergrax/contracts/marketplace/` and product layer at `intergrax/marketplace/`; federation via existing `FederatedCapabilityCatalog`; no billing, install, or registry mutation |
 
 ---
 
