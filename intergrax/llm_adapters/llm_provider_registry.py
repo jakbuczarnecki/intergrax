@@ -9,6 +9,7 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterDependencyError,
+    LLMProviderNotConfiguredError,
     LLMAdapterFactory,
     LLMAdapterRegistrationError,
     LLMAdapterRegistrationSpec,
@@ -18,6 +19,7 @@ from intergrax.llm_adapters.registry.registration_contract import (
 
 __all__ = [
     "LLMAdapterDependencyError",
+    "LLMProviderNotConfiguredError",
     "LLMAdapterFactory",
     "LLMAdapterRegistrationError",
     "LLMAdapterRegistrationSpec",

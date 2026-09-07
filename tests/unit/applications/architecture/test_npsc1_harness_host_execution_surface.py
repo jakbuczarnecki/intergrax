@@ -57,6 +57,7 @@ from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
 
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
+from testing_support.builder import FakeLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -148,13 +149,17 @@ def _build_research_runtime() -> HarnessHostRuntime:
         build_research_environment_profile(settings),
     )
     projection = build_research_test_registry_projection(settings)
-    return build_harness_host_runtime(
-        RESEARCH_APPLICATION_MANIFEST.model_copy(update={"environment": env}),
-        env,
-        settings=settings,
-        registry_projection=projection,
-        **_platform_persistence_kwargs(),
-    )
+    with patch(
+        "intergrax.applications._shared.nexus_factory.resolve_environment_llm_adapter",
+        return_value=FakeLLMAdapter(),
+    ):
+        return build_harness_host_runtime(
+            RESEARCH_APPLICATION_MANIFEST.model_copy(update={"environment": env}),
+            env,
+            settings=settings,
+            registry_projection=projection,
+            **_platform_persistence_kwargs(),
+        )
 
 
 def test_harness_host_runtime_exposes_canonical_execution_surface() -> None:

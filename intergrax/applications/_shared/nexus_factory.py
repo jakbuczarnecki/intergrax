@@ -25,6 +25,7 @@ from intergrax.applications._shared.context_wiring import resolve_context_manage
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
+    orchestration_requires_llm_adapter,
     resolve_nexus_task_classifier,
     resolve_nexus_task_planner,
     resolve_orchestration_runtime_settings,
@@ -126,8 +127,14 @@ def build_nexus_loop_from_environment(
     if orch.retry_policy_name == "strict":
         retry_policy = RetryPolicy(max_retries=1)
 
-    producer_llm = resolve_environment_llm_adapter(env, agent_override=llm_adapter)
-    planner_llm = resolve_planner_llm_adapter(env, producer_adapter=producer_llm)
+    producer_llm = llm_adapter
+    if producer_llm is None and orchestration_requires_llm_adapter(env):
+        producer_llm = resolve_environment_llm_adapter(env)
+    planner_llm = (
+        resolve_planner_llm_adapter(env, producer_adapter=producer_llm)
+        if producer_llm is not None
+        else None
+    )
     wiring_context = OrchestrationWiringContext(
         llm_adapter=producer_llm,
         planner_llm_adapter=planner_llm,
