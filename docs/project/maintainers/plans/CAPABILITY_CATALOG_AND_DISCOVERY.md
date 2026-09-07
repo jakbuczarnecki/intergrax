@@ -2,7 +2,7 @@
 
 **Status:** Active (architecture frozen — CAPABILITY-CATALOG-1)  
 **Architecture (1:1):** [`architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md`](../../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md)  
-**Last updated:** 2026-09-05
+**Last updated:** 2026-09-07
 
 ---
 
@@ -290,7 +290,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Full AW acceptance suite; AC-4 E2E; Tier-3 composition gate. |
 | **Completion criteria** | Reference proof demonstrating full loop on harness with federated catalog; no forbidden flows in trace. |
 | **Depends on** | Stages 5, 8, 9, 10 (minimum). |
-| **Maturity** | **Planned** — target end-state for V1 discovery program. |
+| **Maturity** | **Implemented — awaiting independent audit** — reference proof demonstrating full loop on harness with federated catalog; no forbidden flows in trace. |
 
 ---
 
@@ -343,8 +343,8 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 | 9 | Autonomous Work bridge | **Implemented** |
 | 10 | Bootstrap evidence | Implemented |
 | 11 | Marketplace product surface | Implemented — awaiting independent audit |
-| 12 | Isolation / external execution | Future assessment |
-| 13 | Usage metering | Future |
-| 14 | Full autonomous worker integration | Planned |
+| 12 | Isolation / external execution | Implemented — awaiting independent audit |
+| 13 | Usage metering | Implemented — awaiting independent audit |
+| 14 | Full autonomous worker integration | **Implemented — awaiting independent audit** |
 
-**Architecture delivery (CAPABILITY-CATALOG-1):** canonical architecture + plan pair — **done** (this commit).
+**Capability Catalog & Discovery V1 program:** Stages 1–14 implemented — awaiting independent audit on exact SHA (Stages 1–13 remain closed per prior acceptance).

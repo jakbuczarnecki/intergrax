@@ -665,6 +665,8 @@ See [extended depth — Capability acquisition](satellites/AUTONOMOUS_WORK_exten
 
 **Related canon:** [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) federation (catalog plane); AC-4 agent acquisition remains separate from AW-7A worker recovery.
 
+**Stage-14 integration seam (Capability Catalog V1):** routine work-stage capability rediscovery uses `WorkStageCapabilityDiscoveryLoopCoordinator` (`intergrax/autonomous_work/work_stage_capability_loop.py`) over Stage-8 discovery with fresh federation snapshots per typed `WorkStageCapabilityNeed`. AW worker orchestration, observability (AW-8), control plane (AW-9), and virtual workforce (AW-10) remain **not started** — Stage 14 is reference proof only.
+
 ---
 
 ## Capability autonomy tiers

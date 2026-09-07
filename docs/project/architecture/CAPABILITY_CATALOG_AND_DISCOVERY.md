@@ -579,6 +579,37 @@ discovery/selection provenance snapshot
 
 Plan tracker: [Stage 13 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-13--usage-metering).
 
+### Stage 14 — Full autonomous worker integration (implemented)
+
+Stage 14 closes the **reference governed rediscovery loop** for Capability Catalog V1. Capability Catalog participates in an autonomous work loop but does **not** own worker orchestration, scheduling, or domain execution.
+
+```text
+WorkStageCapabilityNeed (typed)
+        ↓ fresh FederatedCapabilityCatalog.snapshot() per iteration
+WorkStageCapabilityDiscoveryService (Stage 8)
+        ↓ discover → rank → govern → effective narrow
+selected source-qualified GovernedCapabilityCandidate
+        ↓ domain authority only (Tool → RuntimeToolInvoker; Agent → AC-4 / Nexus)
+WorkStageToolExecutionPort / Agent path (never catalog.execute)
+        ↓
+WorkStageCapabilityObservation (typed execution + optional next need)
+        ↓ rediscovery only when next WorkStageCapabilityNeed exists
+WorkStageCapabilityLoopIterationEvidence (immutable ordered chain)
+```
+
+| Boundary | Rule |
+|----------|------|
+| Loop coordinator | `WorkStageCapabilityDiscoveryLoopCoordinator` — bounded reference composition only; not a universal worker orchestrator |
+| Rediscovery trigger | Typed `WorkStageCapabilityNeed` only — never hidden heuristics or registry mutation |
+| Stage 8 vs Stage 9 | Routine stage discovery ≠ AW recovery; Stage 9 invoked only for real obstacle/recovery conditions |
+| Skill | Not a direct execution unit — loop blocks Skill-only selection without generic executor |
+| Evidence | `WorkStageCapabilityLoopResult` + Stage-8 `WorkStageCapabilityDiscoveryEvidence` records per iteration |
+| AW-8/9/10 | Out of scope — Stage 14 proves catalog participation; does not ship worker control plane |
+
+Contracts: `intergrax/contracts/capability_catalog/work_stage_loop.py`. Coordinator: `intergrax/autonomous_work/work_stage_capability_loop.py`. Tool port: `intergrax/autonomous_work/work_stage_tool_execution.py`. Proof: `tests/integration/autonomous_work/test_capability_discovery_closed_loop.py`.
+
+Plan tracker: [Stage 14 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-14--full-autonomous-worker-integration).
+
 ---
 
 ## Observability and evidence
