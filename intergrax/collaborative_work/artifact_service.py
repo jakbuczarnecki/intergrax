@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Authoritative WorkArtifact publication service (MP-3C).
+"""Authoritative WorkArtifact publication service (MP-3C / MP-3G).
 
 Owns WorkArtifact + WorkArtifactVersion publication with fresh MP-1 authority
 enforcement and MP-3B atomic publication repository delegation.
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Final
+from typing import Final, Protocol, runtime_checkable
 
 from intergrax.collaborative_work._authority_enforcement import _require_collaborative_allow
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
@@ -25,13 +25,50 @@ from intergrax.collaborative_work.repository import (
     WorkItemRepository,
 )
 from intergrax.contracts.collaborative_work import (
+    ArtifactContentRef,
+    CreateWorkArtifactFromExecutionRequest,
     CreateWorkArtifactRequest,
+    PublishWorkArtifactVersionFromExecutionRequest,
     PublishWorkArtifactVersionRequest,
     work_item_resource_scope,
 )
+from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 
 TRUSTED_OPERATION_WORK_ARTIFACT_CREATE: Final = "collaborative_work.work_artifact.create"
 TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH: Final = "collaborative_work.work_artifact.publish"
+
+
+@runtime_checkable
+class _CreateArtifactPublicationRequest(Protocol):
+    tenant_id: str
+    workspace_id: str
+    work_item_id: str
+    work_artifact_id: str
+    work_artifact_version_id: str
+    acting_principal_id: str
+    content_ref: ArtifactContentRef
+    idempotency_key: str
+    delegator_principal_id: str | None
+    membership: object | None
+    membership_resolution_mode: object
+    delegation: object | None
+
+
+@runtime_checkable
+class _PublishArtifactVersionRequest(Protocol):
+    tenant_id: str
+    workspace_id: str
+    work_item_id: str
+    work_artifact_id: str
+    work_artifact_version_id: str
+    expected_revision: int
+    acting_principal_id: str
+    content_ref: ArtifactContentRef
+    idempotency_key: str
+    delegator_principal_id: str | None
+    membership: object | None
+    membership_resolution_mode: object
+    delegation: object | None
 
 
 class CollaborativeWorkArtifactService:
@@ -53,6 +90,32 @@ class CollaborativeWorkArtifactService:
         self._clock = clock or (lambda: datetime.now(UTC))
 
     def create_artifact(self, request: CreateWorkArtifactRequest) -> PublishedWorkArtifactVersion:
+        return self._create_artifact(request, execution=None)
+
+    def create_artifact_from_execution(
+        self,
+        request: CreateWorkArtifactFromExecutionRequest,
+    ) -> PublishedWorkArtifactVersion:
+        return self._create_artifact(request, execution=request.execution)
+
+    def publish_version(
+        self,
+        request: PublishWorkArtifactVersionRequest,
+    ) -> PublishedWorkArtifactVersion:
+        return self._publish_version(request, execution=None)
+
+    def publish_version_from_execution(
+        self,
+        request: PublishWorkArtifactVersionFromExecutionRequest,
+    ) -> PublishedWorkArtifactVersion:
+        return self._publish_version(request, execution=request.execution)
+
+    def _create_artifact(
+        self,
+        request: _CreateArtifactPublicationRequest,
+        *,
+        execution: ExecutionProvenanceRef | None,
+    ) -> PublishedWorkArtifactVersion:
         work_item = self._work_item_repository.get(
             tenant_id=request.tenant_id,
             workspace_id=request.workspace_id,
@@ -82,14 +145,16 @@ class CollaborativeWorkArtifactService:
                 artifact_updated_at=now,
                 version_created_at=now,
                 version_published_at=now,
-                execution=None,
+                execution=execution,
                 idempotency_key=request.idempotency_key,
             ),
         )
 
-    def publish_version(
+    def _publish_version(
         self,
-        request: PublishWorkArtifactVersionRequest,
+        request: _PublishArtifactVersionRequest,
+        *,
+        execution: ExecutionProvenanceRef | None,
     ) -> PublishedWorkArtifactVersion:
         artifact = self._work_artifact_repository.get(
             tenant_id=request.tenant_id,
@@ -120,7 +185,7 @@ class CollaborativeWorkArtifactService:
                 created_at=now,
                 published_at=now,
                 artifact_updated_at=now,
-                execution=None,
+                execution=execution,
                 idempotency_key=request.idempotency_key,
             ),
         )

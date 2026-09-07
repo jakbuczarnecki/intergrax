@@ -196,8 +196,8 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 status:** **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; MP-3 runtime implementation **IN PROGRESS**.
-**Current active task:** **MP-3F** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit).
-**Next task:** Independent MP-3F audit — **MP-3G NOT STARTED**.
+**Current active task:** **MP-3G** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit).
+**Next task:** Independent MP-3G audit — **MP-3H NOT STARTED**.
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -484,8 +484,8 @@ Decomposition **APPROVED / CLOSED** — full slice rows in [`plan/COLLABORATIVE_
 | MP-3C | Publication service + MP-1 authority | APPROVED / CLOSED |
 | MP-3D | SQLite transactional persistence | APPROVED / CLOSED |
 | MP-3E | PostgreSQL + qualification | APPROVED / CLOSED |
-| MP-3F | Content storage adapters | READY_FOR_INDEPENDENT_AUDIT |
-| MP-3G | Execution/evidence integration | NOT STARTED |
+| MP-3F | Content storage adapters | APPROVED / CLOSED |
+| MP-3G | Execution/evidence integration | READY_FOR_INDEPENDENT_AUDIT |
 | MP-3H | Final independent review | NOT STARTED |
 
 ---

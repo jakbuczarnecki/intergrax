@@ -188,7 +188,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-3D | SQLite transactional persistence | NOT STARTED |
 | MP-3E | PostgreSQL + qualification | NOT STARTED |
 | MP-3F | Content storage adapters (after 3E) | NOT STARTED |
-| MP-3G | Execution/evidence integration | NOT STARTED |
+| MP-3G | Execution/evidence integration | READY_FOR_INDEPENDENT_AUDIT |
 | MP-3H | Final independent review | NOT STARTED |
 
 ---

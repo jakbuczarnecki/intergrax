@@ -66,6 +66,13 @@ SCHEMA_CREATE_ASSIGNMENT_REQUEST_V1: Final = "create_assignment_request.v1"
 SCHEMA_TRANSITION_ASSIGNMENT_REQUEST_V1: Final = "transition_assignment_request.v1"
 SCHEMA_CREATE_WORK_ARTIFACT_REQUEST_V1: Final = "create_work_artifact_request.v1"
 SCHEMA_PUBLISH_WORK_ARTIFACT_VERSION_REQUEST_V1: Final = "publish_work_artifact_version_request.v1"
+SCHEMA_CREATE_WORK_ARTIFACT_FROM_EXECUTION_REQUEST_V1: Final = (
+    "create_work_artifact_from_execution_request.v1"
+)
+SCHEMA_PUBLISH_WORK_ARTIFACT_VERSION_FROM_EXECUTION_REQUEST_V1: Final = (
+    "publish_work_artifact_version_from_execution_request.v1"
+)
+SCHEMA_WORK_ARTIFACT_VERSION_REF_V1: Final = "work_artifact_version_ref.v1"
 SCHEMA_WORK_ITEM_EXECUTION_LINK_V1: Final = "work_item_execution_link.v1"
 SCHEMA_LINK_WORK_ITEM_EXECUTION_REQUEST_V1: Final = "link_work_item_execution_request.v1"
 SCHEMA_WORK_ARTIFACT_V1: Final = "work_artifact.v1"
@@ -1345,6 +1352,33 @@ class WorkArtifactVersion(BaseModel):
         return self
 
 
+class WorkArtifactVersionRef(BaseModel):
+    """Pure immutable locator for one WorkArtifactVersion — no evidence semantics."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["work_artifact_version_ref.v1"] = SCHEMA_WORK_ARTIFACT_VERSION_REF_V1
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    work_artifact_id: str = _NON_EMPTY
+    work_artifact_version_id: str = _NON_EMPTY
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "work_artifact_id",
+        "work_artifact_version_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+
 def validate_work_artifact_version_scope(
     *,
     artifact: WorkArtifact,
@@ -1801,6 +1835,173 @@ class PublishWorkArtifactVersionRequest(BaseModel):
 
     @model_validator(mode="after")
     def _validate_authority_locators(self) -> PublishWorkArtifactVersionRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class CreateWorkArtifactFromExecutionRequest(BaseModel):
+    """Trusted internal WorkArtifact create input for execution bridge publication."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    schema_version: Literal["create_work_artifact_from_execution_request.v1"] = (
+        SCHEMA_CREATE_WORK_ARTIFACT_FROM_EXECUTION_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    work_artifact_id: str = _NON_EMPTY
+    work_artifact_version_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    content_ref: ArtifactContentRef
+    execution: ExecutionProvenanceRef
+    idempotency_key: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "work_artifact_id",
+        "work_artifact_version_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("execution", mode="before")
+    @classmethod
+    def _validate_execution(cls, value: object) -> ExecutionProvenanceRef:
+        if type(value) is ExecutionProvenanceRef:
+            return value
+        raise TypeError("execution must be ExecutionProvenanceRef")
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> CreateWorkArtifactFromExecutionRequest:
+        if (
+            self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError("membership workspace_id must match request workspace_id")
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError("membership principal_id must match request acting_principal_id")
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError("delegation workspace_id must match request workspace_id")
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class PublishWorkArtifactVersionFromExecutionRequest(BaseModel):
+    """Trusted internal WorkArtifactVersion publish input for execution bridge publication."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    schema_version: Literal["publish_work_artifact_version_from_execution_request.v1"] = (
+        SCHEMA_PUBLISH_WORK_ARTIFACT_VERSION_FROM_EXECUTION_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    work_artifact_id: str = _NON_EMPTY
+    work_artifact_version_id: str = _NON_EMPTY
+    expected_revision: int = Field(ge=0)
+    acting_principal_id: str = _NON_EMPTY
+    content_ref: ArtifactContentRef
+    execution: ExecutionProvenanceRef
+    idempotency_key: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = MembershipResolutionMode.LOCATOR
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "work_artifact_id",
+        "work_artifact_version_id",
+        "acting_principal_id",
+        "idempotency_key",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("execution", mode="before")
+    @classmethod
+    def _validate_execution(cls, value: object) -> ExecutionProvenanceRef:
+        if type(value) is ExecutionProvenanceRef:
+            return value
+        raise TypeError("execution must be ExecutionProvenanceRef")
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> PublishWorkArtifactVersionFromExecutionRequest:
         if (
             self.membership_resolution_mode is MembershipResolutionMode.CANONICAL_PRINCIPAL
             and self.membership is not None

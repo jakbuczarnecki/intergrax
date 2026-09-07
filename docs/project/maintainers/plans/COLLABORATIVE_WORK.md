@@ -6,8 +6,8 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../../technical/adr/entries/2026-09-07/ADR-MP-004.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — APPROVED / CLOSED**; MP-3 runtime implementation **IN PROGRESS**
-**Current active task:** **MP-3F** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
-**Next task:** Independent MP-3F audit — **MP-3G NOT STARTED**
+**Current active task:** **MP-3G** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
+**Next task:** Independent MP-3G audit — **MP-3H NOT STARTED**
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -497,7 +497,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3F |
 | **Priority** | P1 |
-| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
+| **Status** | **APPROVED / CLOSED** |
 | **Purpose** | Provider-neutral content storage adapter integration behind MP-3A `ArtifactContentRef` |
 | **Dependencies** | MP-3E approved; MP-3A `ArtifactContentRef` contract (must not redefine) |
 | **Exact scope** | Typed content storage boundary port; adapter(s) justified by existing platform capability (DocumentStore, blob/object storage, external resource); provider-neutral round trip; content integrity/immutability verification (digest / immutable content identifier); no provider key leaks into artifact/version identity |
@@ -512,7 +512,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3G |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
 | **Purpose** | Optional execution provenance and evidence reference integration without ownership transfer |
 | **Dependencies** | MP-3F approved (or MP-3E if content ref-only path sufficient for lineage proof — prefer after MP-3E per ordering freeze) |
 | **Exact scope** | `ExecutionProvenanceRef` optional at version creation; human-created path (`execution=None`); execution-created path (full four-part provenance); ProofReceipt references `WorkArtifactVersion` externally — **not** owned by Collaborative Work contracts; no mutable post-publication lineage; no runtime Nexus production dependency |
@@ -548,7 +548,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **Independent MP-3F audit** — MP-3G **NOT STARTED** |
+| **Next step** | **Independent MP-3G audit** — MP-3H **NOT STARTED** |
 
 ---
 
