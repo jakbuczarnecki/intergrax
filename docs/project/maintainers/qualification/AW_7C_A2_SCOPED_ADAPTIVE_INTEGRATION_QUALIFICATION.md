@@ -8,9 +8,9 @@
 
 **Start HEAD:** `4dff9d136085fe46fbffc342d1bfc690ce7a8d85`
 
-**Review HEAD (pre-P0-3):** `4dff9d136085fe46fbffc342d1bfc690ce7a8d85`
+**Review HEAD (pre-P0-3A):** `73d023d0a34102ec35e7f01ceae56129ea72ff5e`
 
-**Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching. **P0-2 secret broker remediation** (2026-09-07): purpose-scoped grant/broker contracts + enforcement at resolution boundary. **P0-3 hosted provider inventory** (2026-09-07): canonical sandbox-host audit + `SandboxSecurityConfigurable` admission seam; no qualifying in-repo provider adapter.
+**Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching. **P0-2 secret broker remediation** (2026-09-07): purpose-scoped grant/broker contracts + enforcement at resolution boundary. **P0-3 hosted provider inventory** (2026-09-07): canonical sandbox-host audit + `SandboxSecurityConfigurable` admission seam. **P0-3A E2B adapter** (2026-09-07): security-qualified `E2bSandboxHostBackend` + provider-state attestation; physical qualification pending operator credentials.
 
 **P0-2 independent audit correction:** unenforced `max_uses` field removed. V1 bounded credential authority is time-bounded via `expires_at` only. Use-count restrictions require a future concurrency-safe lifecycle authority.
 
@@ -26,7 +26,7 @@ AW-7 remains **IN PROGRESS**. AW-7C is **not** READY FOR IMPLEMENTATION.
 
 Critical blockers:
 
-1. **Host-scoped egress allowlist** — typed contract + fail-closed substrate matching **implemented** (P0-1); `SandboxSecurityConfigurable` admission seam **implemented** (P0-3); **physical** exact-host enforcement at a real hosted provider **blocked** — no in-repo provider adapter implements configurable + attestable allowlist (P0-3).
+1. **Host-scoped egress allowlist** — typed contract + fail-closed substrate matching **implemented** (P0-1); `SandboxSecurityConfigurable` admission seam **implemented** (P0-3); E2B provider adapter **implemented** (P0-3A); **physical** exact-host enforcement **not yet executed** in this session (credential unavailable).
 2. **Purpose-scoped secret brokering** — **implemented** (P0-2): `ScopedCredentialBroker` + `CredentialUseGrant` enforce tenant, execution, operation, integration, and target host scope at resolution; legacy `SecretsStoreCredentialResolver` tenant-only path preserved for P1.7.
 3. **Allowlist egress physical qualification** — contract tests prove fail-closed resolver behavior; no test proves non-approved destination **physically denied** at enforced substrate under host-scoped policy (provider qualification blocked).
 
@@ -37,7 +37,7 @@ Critical blockers:
 | AW-7C prerequisite | Verdict |
 | --- | --- |
 | runtime egress enforcement | **PARTIALLY REMEDIATED** (typed deny + allowlist contract; deny proof retained; allowlist requires substrate evidence) |
-| host allowlist enforcement | **PARTIALLY REMEDIATED** (contract + fail-closed resolver + configurable admission seam; physical provider proof **IMPLEMENTATION REQUIRED**) |
+| host allowlist enforcement | **PARTIALLY REMEDIATED** (contract + fail-closed resolver + E2B adapter; physical provider proof **PENDING CREDENTIAL**) |
 | fail-closed substrate | **PASS** (deny + allowlist modes) |
 | opaque secret storage | **PASS** |
 | purpose-scoped secret brokering | **PASS** (P0-2 contract + broker enforcement; admission port pluggable) |
@@ -241,7 +241,8 @@ Do **not** implement `WorkerSecretBroker`, `AWSecretStore`, or host filtering in
 
 ```text
 AW-7C SECRET BROKER PREREQUISITE: PASSED / independently verified
-AW-7C EGRESS PREREQUISITE: IMPLEMENTATION REQUIRED — e2b (primary), modal, daytona
+AW-7C EGRESS PREREQUISITE: IMPLEMENTED / PHYSICAL QUALIFICATION BLOCKED (E2B adapter in-repo; credential not available in qualification session)
+AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION BLOCKED
 AW-7C: BLOCKED BY PREREQUISITE
 AW-7:  IN PROGRESS
 ```
@@ -355,3 +356,41 @@ tests/unit/runtime/sandbox/test_sandbox_security_configurable_conformance.py
 tests/unit/runtime/codecraft/test_network_egress_allowlist_substrate.py
 docs/project/maintainers/qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md
 ```
+
+---
+
+## 13. P0-3A — E2B exact-host allowlist adapter
+
+**P0-3A verdict:**
+
+```text
+AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION BLOCKED
+```
+
+**SDK/API source of truth:** `e2b` Python SDK (installed for dev session; optional extra `integrations-e2b`); control plane `POST https://api.e2b.app/sandboxes` with `network.allowOut` / `network.denyOut`; attestation via `GET /sandboxes/{sandboxID}` → `network.allowOut` / `network.denyOut` (SDK: `sandbox.get_info().network`).
+
+**Mapping (V1 qualified scope):**
+
+| Intergrax | E2B |
+| --- | --- |
+| `NetworkEgressHost` exact `https` host | `network.allowOut` domain entry (`hostname` only) |
+| default deny | `network.denyOut: ["0.0.0.0/0"]` at create time |
+| unsupported | `http`, non-443 ports, wildcards, CIDR in Intergrax authority |
+| scheme semantics | E2B filters TLS:443 (SNI) and HTTP:80 (Host); adapter documents HTTPS:443-only qualification |
+
+**Attestation:** provider `get_info().network` only — **no request echo**. Session-bound evidence via `SandboxSessionSecurityEvidenceProvider.session_security_capabilities(session_id)`.
+
+**Physical test command:**
+
+```powershell
+uv run pytest tests/integration/providers/sandbox_host/e2b/test_e2b_physical_egress_qualification.py `
+  -m "integration and network and sandbox_provider" -vv
+```
+
+**Physical session result:** `SKIPPED` — `E2B_API_KEY` / `INTERGRAX_E2B_API_KEY` unavailable in qualification session.
+
+**Unit tests:** `tests/unit/integrations/providers/sandbox_host/e2b/` — 18 passed.
+
+**Known limitations:** domain filter is routing control per E2B docs (shared CDN/SNI caveats); UDP/QUIC not domain-filtered; DNS rebinding not verified; E2B may inject `8.8.8.8` DNS helper IP in raw `allowOut` (excluded from canonical enforced host evidence).
+
+**Nexus:** untouched.
