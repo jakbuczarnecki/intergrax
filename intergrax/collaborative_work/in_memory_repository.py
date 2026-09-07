@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import TypeAlias
 
 from intergrax.collaborative_work.repository import (
+    ArtifactPublicationIdempotencyConflict,
     AssignmentAlreadyExists,
     AssignmentIdempotencyConflict,
     AssignmentNotFound,
@@ -27,6 +28,7 @@ from intergrax.collaborative_work.repository import (
     CollaborativeOperationPolicyProfileNotFound,
     CollaborativeOperationPolicyProfileRevisionConflict,
     CollaborativeWorkRepositoryCapabilities,
+    CreateArtifactWithInitialVersionCommand,
     CreateAssignmentCommand,
     CreateAuthorityDelegationCommand,
     CreateCollaborativeOperationPolicyProfileCommand,
@@ -40,6 +42,8 @@ from intergrax.collaborative_work.repository import (
     PrincipalAuthorityGrantIdempotencyConflict,
     PrincipalAuthorityGrantNotFound,
     PrincipalAuthorityGrantRevisionConflict,
+    PublishWorkArtifactVersionCommand,
+    PublishedWorkArtifactVersion,
     UpdateAssignmentCommand,
     UpdateAuthorityDelegationCommand,
     UpdateCollaborativeOperationPolicyProfileCommand,
@@ -47,6 +51,11 @@ from intergrax.collaborative_work.repository import (
     UpdatePrincipalAuthorityGrantCommand,
     UpdateWorkItemCommand,
     UpdateWorkspaceMembershipCommand,
+    WorkArtifactAlreadyExists,
+    WorkArtifactIdempotencyConflict,
+    WorkArtifactNotFound,
+    WorkArtifactRevisionConflict,
+    WorkArtifactVersionAlreadyExists,
     WorkItemAlreadyExists,
     WorkItemExecutionLinkAlreadyExists,
     WorkItemExecutionLinkIdempotencyConflict,
@@ -57,6 +66,8 @@ from intergrax.collaborative_work.repository import (
     WorkspaceMembershipIdempotencyConflict,
     WorkspaceMembershipNotFound,
     WorkspaceMembershipRevisionConflict,
+    _ARTIFACT_CREATE_IDEMPOTENCY_NAMESPACE,
+    _ARTIFACT_PUBLISH_IDEMPOTENCY_NAMESPACE,
 )
 from intergrax.contracts.collaborative_work import (
     Assignment,
@@ -65,9 +76,12 @@ from intergrax.contracts.collaborative_work import (
     CollaborativePolicyRule,
     PolicyCompositionLayer,
     PrincipalAuthorityGrant,
+    WorkArtifact,
+    WorkArtifactVersion,
     WorkItem,
     WorkItemExecutionLink,
     WorkspaceMembership,
+    validate_work_artifact_current_version,
 )
 
 MembershipKey: TypeAlias = tuple[str, str, str]
@@ -80,6 +94,9 @@ OperationProfileKey: TypeAlias = tuple[str, str, str]
 WorkItemKey: TypeAlias = tuple[str, str, str]
 AssignmentKey: TypeAlias = tuple[str, str, str]
 ExecutionLinkKey: TypeAlias = tuple[str, str, str]
+WorkArtifactKey: TypeAlias = tuple[str, str, str]
+WorkArtifactVersionKey: TypeAlias = tuple[str, str, str]
+ArtifactPublicationIdempotencyKey: TypeAlias = tuple[str, str, str, str]
 IdempotencyKey: TypeAlias = tuple[str, str, str]
 
 
@@ -1394,3 +1411,382 @@ class InMemoryWorkItemExecutionLinkRepository:
         workspace_id: str,
     ) -> bool:
         return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+@dataclass(frozen=True, slots=True)
+class _ArtifactPublicationIdempotencyEntry:
+    fingerprint: str
+    original_result: PublishedWorkArtifactVersion
+
+
+def _work_artifact_version_sort_key(record: WorkArtifactVersion) -> tuple[datetime, str]:
+    return (record.published_at, record.work_artifact_version_id)
+
+
+class _InMemoryCollaborativeWorkArtifactStore:
+    """Shared authoritative artifact state for in-memory MP-3B ports."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._artifacts: dict[WorkArtifactKey, WorkArtifact] = {}
+        self._versions: dict[WorkArtifactVersionKey, WorkArtifactVersion] = {}
+        self._idempotency: dict[ArtifactPublicationIdempotencyKey, _ArtifactPublicationIdempotencyEntry] = {}
+
+
+class InMemoryWorkArtifactRepository:
+    """Process-local read port for WorkArtifact aggregate snapshots."""
+
+    def __init__(self, store: _InMemoryCollaborativeWorkArtifactStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.work_artifact.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_id: str,
+    ) -> WorkArtifact | None:
+        key = self._artifact_key(tenant_id, workspace_id, work_artifact_id)
+        with self._store._lock:
+            record = self._store._artifacts.get(key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    @staticmethod
+    def _artifact_key(tenant_id: str, workspace_id: str, work_artifact_id: str) -> WorkArtifactKey:
+        return (tenant_id.strip(), workspace_id.strip(), work_artifact_id.strip())
+
+    @staticmethod
+    def _scope_matches(
+        record: WorkArtifact,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+class InMemoryWorkArtifactVersionRepository:
+    """Process-local read port for immutable WorkArtifactVersion history."""
+
+    def __init__(self, store: _InMemoryCollaborativeWorkArtifactStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.work_artifact_version.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_version_id: str,
+    ) -> WorkArtifactVersion | None:
+        key = self._version_key(tenant_id, workspace_id, work_artifact_version_id)
+        with self._store._lock:
+            record = self._store._versions.get(key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def list_for_artifact(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_id: str,
+    ) -> tuple[WorkArtifactVersion, ...]:
+        normalized_tenant = tenant_id.strip()
+        normalized_workspace = workspace_id.strip()
+        normalized_artifact = work_artifact_id.strip()
+        with self._store._lock:
+            matches = [
+                record
+                for record in self._store._versions.values()
+                if record.tenant_id == normalized_tenant
+                and record.workspace_id == normalized_workspace
+                and record.work_artifact_id == normalized_artifact
+            ]
+        return tuple(sorted(matches, key=_work_artifact_version_sort_key))
+
+    @staticmethod
+    def _version_key(
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_version_id: str,
+    ) -> WorkArtifactVersionKey:
+        return (tenant_id.strip(), workspace_id.strip(), work_artifact_version_id.strip())
+
+    @staticmethod
+    def _scope_matches(
+        record: WorkArtifactVersion,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+class InMemoryArtifactPublicationRepository:
+    """Process-local authoritative publication boundary for WorkArtifact writes."""
+
+    def __init__(self, store: _InMemoryCollaborativeWorkArtifactStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.artifact_publication.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create_artifact_with_initial_version(
+        self,
+        command: CreateArtifactWithInitialVersionCommand,
+    ) -> PublishedWorkArtifactVersion:
+        artifact_key = InMemoryWorkArtifactRepository._artifact_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.work_artifact_id,
+        )
+        version_key = InMemoryWorkArtifactVersionRepository._version_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.work_artifact_version_id,
+        )
+        with self._store._lock:
+            if command.idempotency_key is not None:
+                replay = self._replay_create(command)
+                if replay is not None:
+                    return replay
+
+            if artifact_key in self._store._artifacts:
+                raise WorkArtifactAlreadyExists("work artifact already exists")
+            if version_key in self._store._versions:
+                raise WorkArtifactVersionAlreadyExists("work artifact version already exists")
+
+            artifact = WorkArtifact(
+                work_artifact_id=command.work_artifact_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                work_item_id=command.work_item_id,
+                created_by_principal_id=command.created_by_principal_id,
+                current_version_id=command.work_artifact_version_id,
+                revision=INITIAL_RECORD_REVISION,
+                created_at=command.artifact_created_at,
+                updated_at=command.artifact_updated_at,
+            )
+            version = WorkArtifactVersion(
+                work_artifact_version_id=command.work_artifact_version_id,
+                work_artifact_id=command.work_artifact_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                work_item_id=command.work_item_id,
+                created_by_principal_id=command.created_by_principal_id,
+                published_by_principal_id=command.published_by_principal_id,
+                content_ref=command.content_ref,
+                created_at=command.version_created_at,
+                published_at=command.version_published_at,
+                execution=command.execution,
+            )
+            validate_work_artifact_current_version(artifact=artifact, version=version)
+
+            self._store._artifacts[artifact_key] = artifact
+            self._store._versions[version_key] = version
+            result = PublishedWorkArtifactVersion(artifact=artifact, version=version)
+            self._store_create_idempotency(command, result)
+            return result
+
+    def publish_version(
+        self,
+        command: PublishWorkArtifactVersionCommand,
+    ) -> PublishedWorkArtifactVersion:
+        artifact_key = InMemoryWorkArtifactRepository._artifact_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.work_artifact_id,
+        )
+        version_key = InMemoryWorkArtifactVersionRepository._version_key(
+            command.tenant_id,
+            command.workspace_id,
+            command.work_artifact_version_id,
+        )
+        with self._store._lock:
+            if command.idempotency_key is not None:
+                replay = self._replay_publish(command)
+                if replay is not None:
+                    return replay
+
+            current = self._store._artifacts.get(artifact_key)
+            if current is None or not InMemoryWorkArtifactRepository._scope_matches(
+                current,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+            ):
+                raise WorkArtifactNotFound("work artifact was not found")
+            if current.work_item_id != command.work_item_id:
+                raise WorkArtifactNotFound("work artifact was not found")
+            if current.revision != command.expected_revision:
+                raise WorkArtifactRevisionConflict("work artifact revision conflict")
+            if version_key in self._store._versions:
+                raise WorkArtifactVersionAlreadyExists("work artifact version already exists")
+
+            version = WorkArtifactVersion(
+                work_artifact_version_id=command.work_artifact_version_id,
+                work_artifact_id=command.work_artifact_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                work_item_id=command.work_item_id,
+                created_by_principal_id=command.created_by_principal_id,
+                published_by_principal_id=command.published_by_principal_id,
+                content_ref=command.content_ref,
+                created_at=command.created_at,
+                published_at=command.published_at,
+                execution=command.execution,
+            )
+            updated_artifact = WorkArtifact(
+                work_artifact_id=current.work_artifact_id,
+                tenant_id=current.tenant_id,
+                workspace_id=current.workspace_id,
+                work_item_id=current.work_item_id,
+                created_by_principal_id=current.created_by_principal_id,
+                current_version_id=command.work_artifact_version_id,
+                revision=current.revision + 1,
+                created_at=current.created_at,
+                updated_at=command.artifact_updated_at,
+            )
+            validate_work_artifact_current_version(artifact=updated_artifact, version=version)
+
+            self._store._versions[version_key] = version
+            self._store._artifacts[artifact_key] = updated_artifact
+            result = PublishedWorkArtifactVersion(artifact=updated_artifact, version=version)
+            self._store_publish_idempotency(command, result)
+            return result
+
+    def _replay_create(
+        self,
+        command: CreateArtifactWithInitialVersionCommand,
+    ) -> PublishedWorkArtifactVersion | None:
+        assert command.idempotency_key is not None
+        entry = self._store._idempotency.get(
+            self._publication_idempotency_key(
+                command.tenant_id,
+                command.workspace_id,
+                _ARTIFACT_CREATE_IDEMPOTENCY_NAMESPACE,
+                command.idempotency_key,
+            )
+        )
+        if entry is None:
+            return None
+        if entry.fingerprint != command.semantic_fingerprint():
+            raise WorkArtifactIdempotencyConflict("work artifact idempotency key conflict")
+        return entry.original_result
+
+    def _replay_publish(
+        self,
+        command: PublishWorkArtifactVersionCommand,
+    ) -> PublishedWorkArtifactVersion | None:
+        assert command.idempotency_key is not None
+        entry = self._store._idempotency.get(
+            self._publication_idempotency_key(
+                command.tenant_id,
+                command.workspace_id,
+                _ARTIFACT_PUBLISH_IDEMPOTENCY_NAMESPACE,
+                command.idempotency_key,
+            )
+        )
+        if entry is None:
+            return None
+        if entry.fingerprint != command.semantic_fingerprint():
+            raise ArtifactPublicationIdempotencyConflict("artifact publication idempotency key conflict")
+        return entry.original_result
+
+    def _store_create_idempotency(
+        self,
+        command: CreateArtifactWithInitialVersionCommand,
+        result: PublishedWorkArtifactVersion,
+    ) -> None:
+        if command.idempotency_key is None:
+            return
+        self._store._idempotency[
+            self._publication_idempotency_key(
+                command.tenant_id,
+                command.workspace_id,
+                _ARTIFACT_CREATE_IDEMPOTENCY_NAMESPACE,
+                command.idempotency_key,
+            )
+        ] = _ArtifactPublicationIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=result,
+        )
+
+    def _store_publish_idempotency(
+        self,
+        command: PublishWorkArtifactVersionCommand,
+        result: PublishedWorkArtifactVersion,
+    ) -> None:
+        if command.idempotency_key is None:
+            return
+        self._store._idempotency[
+            self._publication_idempotency_key(
+                command.tenant_id,
+                command.workspace_id,
+                _ARTIFACT_PUBLISH_IDEMPOTENCY_NAMESPACE,
+                command.idempotency_key,
+            )
+        ] = _ArtifactPublicationIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=result,
+        )
+
+    @staticmethod
+    def _publication_idempotency_key(
+        tenant_id: str,
+        workspace_id: str,
+        operation_namespace: str,
+        idempotency_key: str,
+    ) -> ArtifactPublicationIdempotencyKey:
+        return (
+            tenant_id.strip(),
+            workspace_id.strip(),
+            operation_namespace.strip(),
+            idempotency_key.strip(),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class InMemoryArtifactRepositories:
+    """Bundle of in-memory artifact ports sharing one authoritative store."""
+
+    artifact: InMemoryWorkArtifactRepository
+    version: InMemoryWorkArtifactVersionRepository
+    publication: InMemoryArtifactPublicationRepository
+
+
+def open_in_memory_artifact_repositories() -> InMemoryArtifactRepositories:
+    """Create in-memory artifact repositories backed by one shared store."""
+    store = _InMemoryCollaborativeWorkArtifactStore()
+    return InMemoryArtifactRepositories(
+        artifact=InMemoryWorkArtifactRepository(store),
+        version=InMemoryWorkArtifactVersionRepository(store),
+        publication=InMemoryArtifactPublicationRepository(store),
+    )

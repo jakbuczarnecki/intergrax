@@ -6,7 +6,8 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../../technical/adr/entries/2026-09-07/ADR-MP-004.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — APPROVED / CLOSED**; MP-3 runtime implementation **IN PROGRESS**
-**Current active task:** **MP-3B** — repository ports + in-memory + `ArtifactPublicationRepository` (not started)
+**Current active task:** **MP-3B** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
+**Next task:** Independent MP-3B audit — **MP-3C NOT STARTED**
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -436,7 +437,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-3B |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
 | **Purpose** | Typed repository ports, in-memory reference adapters, and publication consistency boundary |
 | **Dependencies** | MP-3A approved |
 | **Exact scope** | `WorkArtifactRepository` (get, direct persistence primitives — read/direct port only; not authoritative create/publish path for service); `WorkArtifactVersionRepository` (append-only create, get, list_for_artifact — no update/delete/replace; not authoritative create/publish path for service); **`ArtifactPublicationRepository`** with **`create_artifact_with_initial_version(...)`** (atomic initial `WorkArtifact` + first `WorkArtifactVersion` + `current_version_id` + initial `revision` + idempotency) and **`publish_version(...)`** (append version + CAS pointer atomically per store capability); in-memory reference implementations; repository semantic tests proving initial creation cannot succeed with artifact persisted but version/pointer missing (and vice versa); publication partial-write rejection tests |
@@ -547,7 +548,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **MP-3B** — repository ports + in-memory reference + publication boundary (**NOT STARTED**) |
+| **Next step** | **Independent MP-3B audit** — MP-3C **NOT STARTED** |
 
 ---
 

@@ -36,6 +36,7 @@ from typing import Protocol, Self, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.collaborative_work import (
+    ArtifactContentRef,
     Assignment,
     AssignmentState,
     AuthorityDelegation,
@@ -50,11 +51,14 @@ from intergrax.contracts.collaborative_work import (
     PolicyCompositionLayer,
     PolicyLayerApplicability,
     PrincipalAuthorityGrant,
+    WorkArtifact,
+    WorkArtifactVersion,
     WorkItem,
     WorkItemExecutionLink,
     WorkItemState,
     WorkspaceMembership,
     WorkspaceMembershipRole,
+    validate_work_artifact_current_version,
 )
 from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 from intergrax.contracts.runtime_policy import PolicyAction
@@ -1021,3 +1025,312 @@ class WorkItemExecutionLinkRepository(Protocol):
         work_item_id: str,
     ) -> tuple[WorkItemExecutionLink, ...]:
         """Return execution links for one WorkItem ordered by ``(linked_at, execution_link_id)``."""
+
+
+_ARTIFACT_CREATE_IDEMPOTENCY_NAMESPACE = "artifact.create"
+_ARTIFACT_PUBLISH_IDEMPOTENCY_NAMESPACE = "artifact.publish"
+
+
+class WorkArtifactNotFound(Exception):
+    """WorkArtifact was not found for the requested tenant/workspace scope."""
+
+
+class WorkArtifactAlreadyExists(Exception):
+    """WorkArtifact already exists for the requested scoped identity."""
+
+
+class WorkArtifactRevisionConflict(Exception):
+    """Optimistic revision conflict for WorkArtifact publication."""
+
+
+class WorkArtifactIdempotencyConflict(Exception):
+    """Initial artifact create idempotency key replayed with a different semantic command."""
+
+
+class WorkArtifactVersionNotFound(Exception):
+    """WorkArtifactVersion was not found for the requested tenant/workspace scope."""
+
+
+class WorkArtifactVersionAlreadyExists(Exception):
+    """WorkArtifactVersion already exists for the requested scoped identity."""
+
+
+class ArtifactPublicationIdempotencyConflict(Exception):
+    """Artifact publish idempotency key replayed with a different semantic command."""
+
+
+class WorkArtifactScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_artifact_id: str = _NON_EMPTY
+
+    @field_validator("tenant_id", "workspace_id", "work_artifact_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
+
+
+class WorkArtifactVersionScopeKey(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_artifact_version_id: str = _NON_EMPTY
+
+    @field_validator("tenant_id", "workspace_id", "work_artifact_version_id")
+    @classmethod
+    def _strip_scope_fields(cls, value: str) -> str:
+        return cls._strip_required(value)
+
+
+def _serialize_execution_provenance(
+    execution: ExecutionProvenanceRef | None,
+) -> dict[str, str] | None:
+    if execution is None:
+        return None
+    return {
+        "task_id": str(execution.task_id),
+        "run_id": str(execution.run_id),
+        "attempt_id": str(execution.attempt_id),
+        "execution_id": str(execution.execution_id),
+    }
+
+
+def _serialize_artifact_content_ref(content_ref: ArtifactContentRef) -> dict[str, object]:
+    return {
+        "schema_version": content_ref.schema_version,
+        "content_ref": content_ref.content_ref,
+        "media_type": content_ref.media_type,
+        "integrity_digest": content_ref.integrity_digest,
+        "size_bytes": content_ref.size_bytes,
+    }
+
+
+class CreateArtifactWithInitialVersionCommand(_RepositoryModelBase):
+    """Authoritative atomic initial WorkArtifact + first WorkArtifactVersion create."""
+
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    work_artifact_id: str = _NON_EMPTY
+    work_artifact_version_id: str = _NON_EMPTY
+    created_by_principal_id: str = _NON_EMPTY
+    published_by_principal_id: str = _NON_EMPTY
+    content_ref: ArtifactContentRef
+    artifact_created_at: datetime
+    artifact_updated_at: datetime
+    version_created_at: datetime
+    version_published_at: datetime
+    execution: ExecutionProvenanceRef | None = None
+    idempotency_key: str | None = None
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "work_artifact_id",
+        "work_artifact_version_id",
+        "created_by_principal_id",
+        "published_by_principal_id",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("execution", mode="before")
+    @classmethod
+    def _validate_execution(cls, value: object) -> ExecutionProvenanceRef | None:
+        if value is None:
+            return None
+        if type(value) is ExecutionProvenanceRef:
+            return value
+        raise TypeError("execution must be ExecutionProvenanceRef or None")
+
+    @field_validator(
+        "artifact_created_at",
+        "artifact_updated_at",
+        "version_created_at",
+        "version_published_at",
+    )
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_timestamp_order(self) -> Self:
+        if self.artifact_updated_at < self.artifact_created_at:
+            raise ValueError("artifact_updated_at must be greater than or equal to artifact_created_at")
+        if self.version_published_at < self.version_created_at:
+            raise ValueError("version_published_at must be greater than or equal to version_created_at")
+        return self
+
+    def semantic_fingerprint(self) -> str:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "work_item_id": self.work_item_id,
+            "work_artifact_id": self.work_artifact_id,
+            "work_artifact_version_id": self.work_artifact_version_id,
+            "created_by_principal_id": self.created_by_principal_id,
+            "published_by_principal_id": self.published_by_principal_id,
+            "content_ref": _serialize_artifact_content_ref(self.content_ref),
+            "artifact_created_at": self.artifact_created_at.isoformat(),
+            "artifact_updated_at": self.artifact_updated_at.isoformat(),
+            "version_created_at": self.version_created_at.isoformat(),
+            "version_published_at": self.version_published_at.isoformat(),
+            "execution": _serialize_execution_provenance(self.execution),
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+class PublishWorkArtifactVersionCommand(_RepositoryModelBase):
+    """Authoritative atomic WorkArtifactVersion append + CAS pointer advance."""
+
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    work_artifact_id: str = _NON_EMPTY
+    work_artifact_version_id: str = _NON_EMPTY
+    expected_revision: int = Field(ge=0)
+    created_by_principal_id: str = _NON_EMPTY
+    published_by_principal_id: str = _NON_EMPTY
+    content_ref: ArtifactContentRef
+    created_at: datetime
+    published_at: datetime
+    artifact_updated_at: datetime
+    execution: ExecutionProvenanceRef | None = None
+    idempotency_key: str | None = None
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "work_item_id",
+        "work_artifact_id",
+        "work_artifact_version_id",
+        "created_by_principal_id",
+        "published_by_principal_id",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("execution", mode="before")
+    @classmethod
+    def _validate_execution(cls, value: object) -> ExecutionProvenanceRef | None:
+        if value is None:
+            return None
+        if type(value) is ExecutionProvenanceRef:
+            return value
+        raise TypeError("execution must be ExecutionProvenanceRef or None")
+
+    @field_validator("created_at", "published_at", "artifact_updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("timestamps must be timezone-aware")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_timestamp_order(self) -> Self:
+        if self.published_at < self.created_at:
+            raise ValueError("published_at must be greater than or equal to created_at")
+        return self
+
+    def semantic_fingerprint(self) -> str:
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "work_item_id": self.work_item_id,
+            "work_artifact_id": self.work_artifact_id,
+            "work_artifact_version_id": self.work_artifact_version_id,
+            "expected_revision": self.expected_revision,
+            "created_by_principal_id": self.created_by_principal_id,
+            "published_by_principal_id": self.published_by_principal_id,
+            "content_ref": _serialize_artifact_content_ref(self.content_ref),
+            "created_at": self.created_at.isoformat(),
+            "published_at": self.published_at.isoformat(),
+            "artifact_updated_at": self.artifact_updated_at.isoformat(),
+            "execution": _serialize_execution_provenance(self.execution),
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+class PublishedWorkArtifactVersion(_RepositoryModelBase):
+    """Typed authoritative publication result for create and publish operations."""
+
+    artifact: WorkArtifact
+    version: WorkArtifactVersion
+
+
+@runtime_checkable
+class WorkArtifactRepository(Protocol):
+    """Read-focused persistence port for WorkArtifact aggregate snapshots."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_id: str,
+    ) -> WorkArtifact | None:
+        """Return WorkArtifact for the scoped identity or ``None``."""
+
+
+@runtime_checkable
+class WorkArtifactVersionRepository(Protocol):
+    """Read-focused persistence port for immutable WorkArtifactVersion history."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_version_id: str,
+    ) -> WorkArtifactVersion | None:
+        """Return WorkArtifactVersion for the scoped identity or ``None``."""
+
+    def list_for_artifact(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_artifact_id: str,
+    ) -> tuple[WorkArtifactVersion, ...]:
+        """Return versions for one artifact ordered by ``(published_at, work_artifact_version_id)``."""
+
+
+@runtime_checkable
+class ArtifactPublicationRepository(Protocol):
+    """Authoritative atomic publication boundary for WorkArtifact lifecycle writes."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def create_artifact_with_initial_version(
+        self,
+        command: CreateArtifactWithInitialVersionCommand,
+    ) -> PublishedWorkArtifactVersion:
+        """Atomically create WorkArtifact and its initial WorkArtifactVersion."""
+
+    def publish_version(
+        self,
+        command: PublishWorkArtifactVersionCommand,
+    ) -> PublishedWorkArtifactVersion:
+        """Atomically append a version and advance the WorkArtifact CAS pointer."""
