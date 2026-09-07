@@ -332,16 +332,16 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 
 | Stage | Name | Maturity |
 |-------|------|----------|
-| 1 | Contracts & frozen boundaries | Planned |
-| 2 | Federated catalog read model | Planned |
-| 3 | Query / filtering / candidate model | Planned |
+| 1 | Contracts & frozen boundaries | Implemented |
+| 2 | Federated catalog read model | Implemented |
+| 3 | Query / filtering / candidate model | Implemented |
 | 4 | Ranking | Implemented |
 | 5 | Governance integration | Implemented |
-| 6 | Skill enterprise correctness | Planned |
-| 7 | Tool/Skill catalog maturity | Planned |
+| 6 | Skill enterprise correctness | Implemented |
+| 7 | Tool/Skill catalog maturity | Implemented |
 | 8 | Adaptive Unit-of-Work discovery | Implemented |
 | 9 | Autonomous Work bridge | **Implemented** |
-| 10 | Bootstrap evidence | Planned |
+| 10 | Bootstrap evidence | Implemented |
 | 11 | Marketplace product surface | Implemented — awaiting independent audit |
 | 12 | Isolation / external execution | Future assessment |
 | 13 | Usage metering | Future |
