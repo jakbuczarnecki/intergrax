@@ -15,7 +15,6 @@ for _bootstrap_entry in (str(_APPLICATIONS_BOOTSTRAP_ROOT), str(_REPO_BOOTSTRAP_
         sys.path.insert(0, _bootstrap_entry)
 
 import json
-import socket
 import subprocess
 import sys
 import time
@@ -55,6 +54,7 @@ from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MAN
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_lkw_runtime_document_store,
 )
+from scripts.proof.intergrax_proof_reachability import http_reachable, tcp_reachable
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_MONGODB_HOST_PORT = "27018"
@@ -219,7 +219,7 @@ def _resolve_replica_set_container_id() -> str | None:
 
 
 def _mongo_replica_set_ready() -> bool:
-    if not _tcp_reachable("127.0.0.1", 27017):
+    if not tcp_reachable("127.0.0.1", 27017):
         return False
     container_id = _resolve_replica_set_container_id()
     if container_id is None:
@@ -262,23 +262,6 @@ def default_mongodb_uri() -> str:
     )
 
 
-def _tcp_reachable(host: str, port: int, timeout_seconds: float = 2.0) -> bool:
-    try:
-        with socket.create_connection((host, port), timeout=timeout_seconds):
-            return True
-    except OSError:
-        return False
-
-
-def _http_reachable(url: str, timeout_seconds: float = 3.0) -> bool:
-    request = urllib.request.Request(url, method="GET")
-    try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-            return 200 <= int(response.status) < 500
-    except (urllib.error.URLError, TimeoutError, ValueError):
-        return False
-
-
 def evaluate_prerequisites(
     *,
     mongodb_uri: str,
@@ -300,9 +283,9 @@ def evaluate_prerequisites(
             redis_port = int(redis_port_text)
 
     return PrerequisiteStatus(
-        mongodb_reachable=_tcp_reachable(mongo_host, mongo_port),
-        elasticsearch_reachable=_http_reachable(f"{elasticsearch_url.rstrip('/')}/"),
-        redis_reachable=_tcp_reachable(redis_host, redis_port),
+        mongodb_reachable=tcp_reachable(mongo_host, mongo_port),
+        elasticsearch_reachable=http_reachable(f"{elasticsearch_url.rstrip('/')}/"),
+        redis_reachable=tcp_reachable(redis_host, redis_port),
         mongodb_uri_class="mongodb+srv_or_standard_local",
         mongodb_database=mongodb_database,
         mongodb_collection_authority=mongodb_collection,

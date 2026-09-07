@@ -57,8 +57,6 @@ from local_workspace_application.workspaces.document_store_factory import (
     resolve_lkw_runtime_document_store,
 )
 from scripts.proof.dg001b_r5_qualification_support import (
-    _http_reachable,
-    _tcp_reachable,
     default_mongodb_uri,
     ensure_mongodb_replica_set_for_qualification,
     os_environ_get,
@@ -66,6 +64,7 @@ from scripts.proof.dg001b_r5_qualification_support import (
     os_environ_set,
     os_pathsep_join,
 )
+from scripts.proof.intergrax_proof_reachability import http_reachable, tcp_reachable
 from scripts.proof.dg001d_r4_qualification_contracts import qualification_secret_sentinel
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -196,9 +195,9 @@ def evaluate_prerequisites(
             redis_port = int(redis_port_text)
 
     return PrerequisiteStatus(
-        mongodb_reachable=_tcp_reachable(mongo_host, mongo_port),
-        elasticsearch_reachable=_http_reachable(f"{elasticsearch_url.rstrip('/')}/"),
-        redis_reachable=_tcp_reachable(redis_host, redis_port),
+        mongodb_reachable=tcp_reachable(mongo_host, mongo_port),
+        elasticsearch_reachable=http_reachable(f"{elasticsearch_url.rstrip('/')}/"),
+        redis_reachable=tcp_reachable(redis_host, redis_port),
         mongodb_uri_class="mongodb+srv_or_standard_local",
         mongodb_database=mongodb_database,
         mongodb_collection_authority=mongodb_collection,

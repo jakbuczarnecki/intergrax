@@ -24,6 +24,7 @@ import asyncio
 import logging
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
 
@@ -56,7 +57,7 @@ class _SystemWallClock:
         return datetime.now(UTC)
 
 
-def _resolve_instance_id_generator() -> object:
+def _resolve_instance_id_generator() -> Callable[[], str] | None:
     configured = os.environ.get("DG001D_R4_INSTANCE_ID", "").strip()
     if not configured:
         return None
@@ -86,18 +87,24 @@ async def _run_supervisor() -> int:
     clock = _SystemWallClock()
     control = HostedApplicationControlCoordinator(clock=clock)
     engine_factory = controlled_failing_hosted_application_engine_factory()
-    supervisor_kwargs: dict[str, object] = {}
     instance_id_generator = _resolve_instance_id_generator()
     if instance_id_generator is not None:
-        supervisor_kwargs["instance_id_generator"] = instance_id_generator
-    supervisor = HostedApplicationSupervisor(
-        definition=definition,
-        engine_factory=engine_factory,
-        control=control,
-        event_publisher=bootstrap_diagnostics.event_publisher,
-        clock=clock,
-        **supervisor_kwargs,
-    )
+        supervisor = HostedApplicationSupervisor(
+            definition=definition,
+            engine_factory=engine_factory,
+            control=control,
+            event_publisher=bootstrap_diagnostics.event_publisher,
+            clock=clock,
+            instance_id_generator=instance_id_generator,
+        )
+    else:
+        supervisor = HostedApplicationSupervisor(
+            definition=definition,
+            engine_factory=engine_factory,
+            control=control,
+            event_publisher=bootstrap_diagnostics.event_publisher,
+            clock=clock,
+        )
     result = await supervisor.run()
     print(f"SUPERVISOR_EXIT_KIND={result.final_exit.exit_kind.value}")
     print(f"SUPERVISOR_REASON_CODE={result.final_exit.reason_code}")
