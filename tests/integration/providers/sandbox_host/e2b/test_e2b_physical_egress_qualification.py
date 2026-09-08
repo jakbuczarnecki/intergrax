@@ -66,7 +66,7 @@ def qualification_runner(qualification_backend) -> QualificationRunner:
     return QualificationRunner(provider, default_e2b_physical_egress_scenario())
 
 
-def test_control_phase_requires_baseline_connectivity(qualification_runner: QualificationRunner) -> None:
+def test_control_environment_proves_baseline_connectivity(qualification_runner: QualificationRunner) -> None:
     cleanup: list = []
     control = qualification_runner.run_control_phase(cleanup)
     assert control.baseline_valid is True
@@ -76,7 +76,7 @@ def test_control_phase_requires_baseline_connectivity(qualification_runner: Qual
     assert cleanup[0].destroyed is True
 
 
-def test_qualified_phase_allows_declared_host(qualification_runner: QualificationRunner) -> None:
+def test_allowlisted_host_is_reachable(qualification_runner: QualificationRunner) -> None:
     cleanup: list = []
     qualified = qualification_runner.run_qualified_phase(cleanup)
     assert qualified.allowed_host.result.reachable is True
@@ -87,7 +87,7 @@ def test_qualified_phase_allows_declared_host(qualification_runner: Qualificatio
     assert cleanup[0].destroyed is True
 
 
-def test_qualified_phase_blocks_undeclared_host(qualification_runner: QualificationRunner) -> None:
+def test_non_allowlisted_host_is_blocked(qualification_runner: QualificationRunner) -> None:
     cleanup: list = []
     qualified = qualification_runner.run_qualified_phase(cleanup)
     assert qualified.denied_host.result.reachable is False
@@ -113,6 +113,8 @@ class _RecordingProbe:
         return NetworkProbeResult(
             reachable=self._reachable,
             status_code=200 if self._reachable else None,
+            redirect_target=None,
+            latency_ms=0.0,
             redirected=False,
         )
 
@@ -139,7 +141,7 @@ class _FakeQualificationBackend:
         return SandboxExecResult(stdout="", stderr="", exit_code=0)
 
 
-def test_cleanup_runs_after_success() -> None:
+def test_cleanup_after_success() -> None:
     backend = _FakeQualificationBackend()
     provider = QualificationSandboxProvider(backend)
     runner = QualificationRunner(
@@ -152,7 +154,7 @@ def test_cleanup_runs_after_success() -> None:
     assert backend.destroy_calls == ["fake-1"]
 
 
-def test_cleanup_runs_after_failure() -> None:
+def test_cleanup_after_failure() -> None:
     backend = _FakeQualificationBackend()
     provider = QualificationSandboxProvider(backend)
     scenario = default_e2b_physical_egress_scenario()
@@ -169,11 +171,19 @@ def test_cleanup_runs_after_failure() -> None:
     assert cleanup[0].destroyed is True
     failing_evidence = PhysicalEgressQualificationEvidence(
         scenario_id=scenario.scenario_id,
-        provider=scenario.provider,
+        provider_identity=scenario.provider,
+        execution_reference="test-execution-ref",
+        timestamp_utc="2026-09-08T00:00:00+00:00",
         control_phase=control,
         qualified_phase=QualifiedPhaseEvidence(
-            allowed_host=HostProbeEvidence(scenario.allowed_host, NetworkProbeResult(True, 200, False)),
-            denied_host=HostProbeEvidence(scenario.denied_host, NetworkProbeResult(False, None, False)),
+            allowed_host=HostProbeEvidence(
+                scenario.allowed_host,
+                NetworkProbeResult(True, 200, None, 0.0, False),
+            ),
+            denied_host=HostProbeEvidence(
+                scenario.denied_host,
+                NetworkProbeResult(False, None, None, 0.0, False),
+            ),
             provider_attestation=None,
         ),
         redirect_phase=RedirectPhaseEvidence(
@@ -181,7 +191,7 @@ def test_cleanup_runs_after_failure() -> None:
                 attempted=True,
                 escaped=False,
                 redirect_url=scenario.redirect_url,
-                result=NetworkProbeResult(False, None, False),
+                result=NetworkProbeResult(False, None, None, 0.0, False),
             ),
         ),
         cleanup_phases=tuple(cleanup),
@@ -205,7 +215,7 @@ def test_cleanup_runs_after_failure_records_cleanup_error() -> None:
     assert cleanup[0].error is not None
 
 
-def test_missing_credentials_skip_safely(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_credentials_skip_without_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         f"{__name__}._credential_available",
         lambda: False,

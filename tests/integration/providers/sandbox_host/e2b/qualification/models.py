@@ -14,6 +14,8 @@ class NetworkProbeResult:
 
     reachable: bool
     status_code: int | None
+    redirect_target: str | None
+    latency_ms: float | None
     redirected: bool
 
 
@@ -83,7 +85,9 @@ class PhysicalEgressQualificationEvidence:
     """Complete causal-proof evidence bundle for one qualification scenario."""
 
     scenario_id: str
-    provider: str
+    provider_identity: str
+    execution_reference: str
+    timestamp_utc: str
     control_phase: ControlPhaseEvidence
     qualified_phase: QualifiedPhaseEvidence
     redirect_phase: RedirectPhaseEvidence

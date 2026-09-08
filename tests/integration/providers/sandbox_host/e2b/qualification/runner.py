@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from typing import Iterator
+from uuid import uuid4
 
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.runtime.sandbox.contracts import (
@@ -170,12 +172,16 @@ class QualificationRunner:
 
     def run(self) -> PhysicalEgressQualificationEvidence:
         cleanup_records: list[CleanupEvidence] = []
+        execution_reference = f"{self._scenario.scenario_id}:{uuid4()}"
+        timestamp_utc = datetime.now(UTC).replace(microsecond=0).isoformat()
         control = self.run_control_phase(cleanup_records)
         qualified = self.run_qualified_phase(cleanup_records)
         redirect = self.run_redirect_phase(cleanup_records)
         return PhysicalEgressQualificationEvidence(
             scenario_id=self._scenario.scenario_id,
-            provider=self._scenario.provider,
+            provider_identity=self._scenario.provider,
+            execution_reference=execution_reference,
+            timestamp_utc=timestamp_utc,
             control_phase=control,
             qualified_phase=qualified,
             redirect_phase=redirect,
