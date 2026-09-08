@@ -196,7 +196,7 @@ def test_a4_build_task_checkpoint_is_provider_neutral() -> None:
 def test_a5_worker_runtime_accepts_fake_port() -> None:
     fake = _FakeCheckpointStore()
     runtime = NexusWorkerRuntime.from_registry(AgentRegistry(), checkpoint_store=fake)
-    assert runtime.task_runner is not None
+    assert runtime.host_execution is not None
 
 
 def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:

@@ -94,11 +94,11 @@ def _diagnostic_cursor_secret(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def _stub_queue_worker_wiring(monkeypatch: pytest.MonkeyPatch) -> None:
     from intergrax.applications._shared.queue_worker_wiring import QueueWorkerWiring
-    from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
+    from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
 
-    def _wire_optional_queue_execution(*, task_runner, **kwargs: object) -> QueueWorkerWiring:
+    def _wire_optional_queue_execution(*, host_execution, **kwargs: object) -> QueueWorkerWiring:
         del kwargs
-        return QueueWorkerWiring(execution_adapter=NexusTaskExecutionAdapter(task_runner))
+        return QueueWorkerWiring(execution_adapter=HostTaskExecutionRunAdapter(host_execution))
 
     monkeypatch.setattr(
         "legal_application.host.factory.wire_optional_queue_execution",

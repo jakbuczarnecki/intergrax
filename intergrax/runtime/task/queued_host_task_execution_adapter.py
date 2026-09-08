@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""RunService adapter that dispatches Nexus tasks through a TaskQueue (§41, J.3)."""
+"""RunService adapter that dispatches host task execution through a TaskQueue (NPSC-3G)."""
 
 from __future__ import annotations
 
@@ -24,9 +24,9 @@ from intergrax.runtime.task.worker_payload import (
 from intergrax.tools.execution_models import ToolExecutionResult
 
 
-class QueuedNexusExecutionAdapter(ExecutionAdapter):
+class QueuedHostTaskExecutionAdapter(ExecutionAdapter):
     """
-    Enqueue Nexus Task v2 execution via Tier-0 TaskQueue (Celery).
+    Enqueue host task execution via Tier-0 TaskQueue (Celery).
 
     In laboratory/eager mode (``wait_for_result=True``) the adapter blocks until
     the worker returns and then updates RunService — suitable for gate tests and
@@ -146,3 +146,6 @@ class QueuedNexusExecutionAdapter(ExecutionAdapter):
 
     def shutdown(self, wait: bool = True) -> None:
         return
+
+
+__all__ = ["QueuedHostTaskExecutionAdapter"]

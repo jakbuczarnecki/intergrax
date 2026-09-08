@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskResult
 
@@ -34,10 +35,24 @@ class HostTaskExecutionExecutor:
         self._host_execution = host_execution
         self._task_enricher = task_enricher
 
-    async def execute(self, task: Task) -> TaskResult:
+    @property
+    def host_execution(self) -> HostTaskExecutionPort:
+        return self._host_execution
+
+    async def execute(
+        self,
+        task: Task,
+        *,
+        run_id: RunId | None = None,
+        attempt_id: AttemptId | None = None,
+    ) -> TaskResult:
         if self._task_enricher is not None:
             task = self._task_enricher(task)
-        return await self._host_execution.execute(task)
+        return await self._host_execution.execute(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
 
 
 __all__ = ["HostTaskExecutionExecutor", "TaskEnricher", "TaskExecutor"]

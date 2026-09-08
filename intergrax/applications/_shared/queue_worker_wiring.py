@@ -11,15 +11,17 @@ from intergrax.applications._shared.production_queue_resolver import (
     production_queue_requires_worker,
     resolve_production_queue_backend,
 )
+from intergrax.applications._shared.task_control_wiring import TaskEnricher
 from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
-from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
+from intergrax.runtime.task.queued_host_task_execution_adapter import QueuedHostTaskExecutionAdapter
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,23 +35,30 @@ class QueueWorkerWiring:
 def wire_optional_queue_execution(
     *,
     enabled: bool,
+    host_execution: HostTaskExecutionPort,
     registry: AgentRegistry,
-    task_runner: UnifiedTaskRunner,
     run_service: DefaultRunService,
+    task_enricher: TaskEnricher | None = None,
     wait_for_result: bool = True,
-    app_name: str = "tier3_nexus_worker",
+    app_name: str = "tier3_host_task_worker",
     queue_backend: ProductionQueueBackend | None = None,
     kv_store: DistributedKVStore | None = None,
     causal_evidence_persistence: CausalEvidencePersistence | None = None,
+    orchestration_triggers: frozenset[str] = frozenset(),
+    pipeline_capability_suffix: str = ".pipeline",
 ) -> QueueWorkerWiring:
     """
-    Return inline Nexus adapter or Celery queue adapter.
+    Return inline host-task adapter or Celery queue adapter.
 
     ``wait_for_result=True`` uses eager Celery — suitable for gate tests and single-process deploys.
     """
     backend = queue_backend or resolve_production_queue_backend()
     if not enabled and not production_queue_requires_worker(backend):
-        adapter: ExecutionAdapter = NexusTaskExecutionAdapter(task_runner)
+        adapter: ExecutionAdapter = HostTaskExecutionRunAdapter(
+            host_execution,
+            task_enricher=task_enricher,
+        )
+        adapter.bind_run_service(run_service)
         return QueueWorkerWiring(execution_adapter=adapter)
 
     if backend in (ProductionQueueBackend.RABBITMQ, ProductionQueueBackend.KAFKA):
@@ -57,7 +66,6 @@ def wire_optional_queue_execution(
         backend = ProductionQueueBackend.CELERY
 
     from intergrax.queueing.providers.celery.celery_task_queue import CeleryTaskQueue
-    from intergrax.runtime.task.queued_nexus_execution_adapter import QueuedNexusExecutionAdapter
     from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app
 
     if kv_store is None:
@@ -78,9 +86,12 @@ def wire_optional_queue_execution(
         task_always_eager=True,
         kv_store=kv_store,
         causal_evidence_persistence=causal_evidence_persistence,
+        orchestration_triggers=orchestration_triggers,
+        pipeline_capability_suffix=pipeline_capability_suffix,
+        task_enricher=task_enricher,
     )
     queue = CeleryTaskQueue(worker_app)
-    adapter = QueuedNexusExecutionAdapter(
+    adapter = QueuedHostTaskExecutionAdapter(
         queue,
         run_service,
         wait_for_result=wait_for_result,

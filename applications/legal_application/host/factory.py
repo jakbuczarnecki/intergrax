@@ -19,7 +19,8 @@ from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
+from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
+from intergrax.runtime.nexus.orchestration_capabilities import orchestration_capabilities_from_triggers
 
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
@@ -40,7 +41,6 @@ from intergrax.applications._shared.harness_host_auxiliary_wiring import (
 )
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
     wire_harness_task_control,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
@@ -102,7 +102,13 @@ def create_legal_backend_app(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
-    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
+    graph_spec = env.graph_spec
+    orchestration_triggers = orchestration_capabilities_from_triggers(
+        graph_spec.trigger_capabilities if graph_spec is not None else None,
+    )
+    pipeline_capability_suffix = (
+        graph_spec.pipeline_capability_suffix if graph_spec is not None else ".pipeline"
+    )
     scheduler_wiring = wire_harness_host_long_running_scheduler(
         runtime,
         checkpoint_store=checkpoint_store,
@@ -114,19 +120,22 @@ def create_legal_backend_app(
     )
 
     run_store = InMemoryRunStore()
-    inline_adapter = NexusTaskExecutionAdapter(task_runner)
+    inline_adapter = HostTaskExecutionRunAdapter(host_execution, task_enricher=task_enricher)
     run_service = DefaultRunService(run_store, inline_adapter)
     inline_adapter.bind_run_service(run_service)
     if settings.include_queue_worker:
         queue_dependencies = resolve_host_queue_execution_dependencies(runtime)
         queue_wiring = wire_optional_queue_execution(
             enabled=True,
+            host_execution=host_execution,
             registry=registry,
-            task_runner=task_runner,
             run_service=run_service,
+            task_enricher=task_enricher,
             app_name="legal_nexus_worker",
             kv_store=queue_dependencies.kv_store,
             causal_evidence_persistence=queue_dependencies.causal_evidence_persistence,
+            orchestration_triggers=orchestration_triggers,
+            pipeline_capability_suffix=pipeline_capability_suffix,
         )
         run_service._execution_adapter = queue_wiring.execution_adapter
 
