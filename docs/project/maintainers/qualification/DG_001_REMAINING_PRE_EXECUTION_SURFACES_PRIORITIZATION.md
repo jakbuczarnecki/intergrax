@@ -25,7 +25,7 @@ Closure ancestor check: `git merge-base --is-ancestor aac75b8e8dfc82192595eaacd0
 
 | ID | Surface | Status |
 |----|---------|--------|
-| **DG-001A** | Hosted/default production wiring — HOST-DIAG-3 publisher coverage | Open |
+| **DG-001A** | Hosted/default production wiring — HOST-DIAG-3 publisher coverage | **CLOSED / QUALIFIED** — [`DG_001A_HOSTED_DEFAULT_HOST_DIAG_3_QUALIFICATION.md`](DG_001A_HOSTED_DEFAULT_HOST_DIAG_3_QUALIFICATION.md) |
 | **DG-001C** | Public proof / launcher PYTHON-BOOTSTRAP before host publisher | Open |
 | **DG-001D** | Supervisor / pre-engine failure before `HostedApplicationEngine` | **CLOSED / QUALIFIED** (final closure; table is historical pre-R2 audit) |
 | **B0–B5** | Bootstrap failures before diagnostic prerequisites exist | Open |
