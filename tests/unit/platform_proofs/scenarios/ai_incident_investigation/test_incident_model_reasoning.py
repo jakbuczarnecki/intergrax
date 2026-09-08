@@ -19,6 +19,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.domain_reas
     derive_hypothesis_dispositions,
     observations_from_evidence_nodes,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
+    derive_evidence_phase_context,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     ClaimHypothesisBinding,
     ClaimProposal,
@@ -58,6 +61,8 @@ from platform_proofs.scenarios.ai_incident_investigation.application.validation 
 )
 
 pytestmark = pytest.mark.unit
+
+_PLANNER_FINAL_PHASE = derive_evidence_phase_context("planner_final_answer")
 
 
 def _resolved_evidence_nodes() -> tuple[dict[str, object], ...]:
@@ -316,6 +321,7 @@ def test_reasoning_prompt_excludes_evidence_id_copy_contract() -> None:
         ),
         critic_feedback=None,
         is_revision=False,
+        evidence_phase_context=_PLANNER_FINAL_PHASE,
     )
     system_prompt = messages[0].content or ""
     user_prompt = messages[1].content or ""
@@ -339,6 +345,7 @@ def test_reasoning_prompt_empty_evidence_instructs_no_invention() -> None:
         ),
         critic_feedback=None,
         is_revision=False,
+        evidence_phase_context=_PLANNER_FINAL_PHASE,
     )
     system_prompt = messages[0].content or ""
     assert "Gathered evidence IDs: none yet." in system_prompt
@@ -357,6 +364,7 @@ def test_workload_example_id_absent_from_prompt_without_evidence() -> None:
         ),
         critic_feedback=None,
         is_revision=False,
+        evidence_phase_context=_PLANNER_FINAL_PHASE,
     )
     prompt = (messages[0].content or "") + (messages[1].content or "")
     assert str(WORKLOAD_EVIDENCE_ID) not in prompt
@@ -588,6 +596,7 @@ def test_revision_prompt_does_not_require_model_evidence_citations() -> None:
         ),
         critic_feedback=("unsupported inference",),
         is_revision=True,
+        evidence_phase_context=_PLANNER_FINAL_PHASE,
     )
     prompt = messages[0].content or ""
     assert "Revision contract:" in prompt
@@ -628,6 +637,7 @@ def test_reasoning_prompt_requires_unresolved_fields_and_claim_proposals() -> No
         ),
         critic_feedback=None,
         is_revision=False,
+        evidence_phase_context=_PLANNER_FINAL_PHASE,
     )
     prompt = (messages[0].content or "") + (messages[1].content or "")
     assert "unresolved_reason" in prompt
