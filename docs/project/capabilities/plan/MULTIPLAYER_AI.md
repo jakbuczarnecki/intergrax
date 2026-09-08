@@ -10,8 +10,8 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4C** — Approval / HITL contracts (**READY_FOR_REVIEW**)
-**Next task:** MP-4D — Authority integration (after MP-4C review)
+**Current active task:** **MP-4D** — Authority integration (**READY_FOR_REVIEW**)
+**Next task:** MP-4E — Persistence boundary (after MP-4D review)
 
 ---
 
@@ -221,7 +221,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-4A | Ownership + contracts freeze | **APPROVED / CLOSED** |
 | MP-4B | Decision contracts | **READY_FOR_REVIEW** |
 | MP-4C | Approval / HITL contracts | **READY_FOR_REVIEW** |
-| MP-4D | Authority integration | NOT STARTED |
+| MP-4D | Authority integration | **READY_FOR_REVIEW** |
 | MP-4E | Persistence boundary | NOT STARTED |
 | MP-4F | Evidence / provenance integration | NOT STARTED |
 | MP-4G | Qualification | NOT STARTED |

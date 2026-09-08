@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4)
 
-**Status:** **MP-4A — APPROVED / CLOSED** · **MP-4B — READY_FOR_REVIEW** · **MP-4C — READY_FOR_REVIEW** · MP-4D…MP-4H **NOT STARTED**
+**Status:** **MP-4A — APPROVED / CLOSED** · **MP-4B — READY_FOR_REVIEW** · **MP-4C — READY_FOR_REVIEW** · **MP-4D — READY_FOR_REVIEW** · MP-4E…MP-4H **NOT STARTED**
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -94,14 +94,14 @@ Implementation rows below are **architecture/contract gates** until the relevant
 |-------|-------|
 | **ID** | MP-4D |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | Wire Decision/Approval mutations through MP-1 effective authority and platform policy composition |
 | **Dependencies** | MP-4C approved |
-| **Exact scope** | Authority gates for decision creation, outcome recording, approval actions; reuse `EffectiveAuthorityRequest` / `PolicyDecision` |
-| **REUSED** | MP-1 authority resolver; `RuntimePolicyEngine` meaningful-side-effect path where applicable |
-| **NEW** | Decision/Approval resource semantics for authority evaluation only |
-| **Explicit out of scope** | Second ACL engine; artifact publication authority redefinition |
-| **Acceptance** | All meaningful Decision/Approval mutations pass MP-1 authority; no duplicate Principal types |
+| **Exact scope** | Authority gates for approval create and human action mutations; reuse `EffectiveAuthorityRequest` / `PolicyDecision` via `CollaborativeWorkEnforcementGate`; `intergrax/approval/service.py` |
+| **REUSED** | MP-1 authority resolver; `CollaborativeWorkEnforcementGate`; `EffectiveAuthorityRequest` |
+| **NEW** | `approval.request.create` / `approval.action.execute` trusted operations; `ApprovalService`; `ApprovalAuthorizationDenied`; `approval_resource_scope` |
+| **Explicit out of scope** | Second ACL engine; artifact publication authority redefinition; persistence |
+| **Acceptance** | All meaningful Approval mutations pass MP-1 authority; no duplicate Principal types; static architecture gates pass |
 | **Next step** | MP-4E |
 
 ---

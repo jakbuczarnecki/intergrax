@@ -24,7 +24,12 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from intergrax.contracts.collaborative_work import WorkArtifactVersionRef
+from intergrax.contracts.collaborative_work import (
+    AuthorityDelegation,
+    MembershipResolutionMode,
+    WorkArtifactVersionRef,
+    WorkspaceMembership,
+)
 from intergrax.contracts.decision import DecisionId, validate_decision_id
 from intergrax.contracts.execution_identity import (
     validate_attempt_id,
@@ -38,6 +43,10 @@ SCHEMA_APPROVAL_REQUEST_V1: Final = "approval_request.v1"
 SCHEMA_APPROVAL_REFERENCES_V1: Final = "approval_references.v1"
 SCHEMA_HUMAN_APPROVAL_ACTION_V1: Final = "human_approval_action.v1"
 SCHEMA_APPROVAL_OUTCOME_V1: Final = "approval_outcome.v1"
+SCHEMA_CREATE_APPROVAL_REQUEST_V1: Final = "create_approval_request.v1"
+SCHEMA_EXECUTE_HUMAN_APPROVAL_ACTION_REQUEST_V1: Final = (
+    "execute_human_approval_action_request.v1"
+)
 
 ApprovalId = NewType("ApprovalId", str)
 
@@ -203,7 +212,9 @@ def validate_approval_scope(
     normalized_workspace = _strip_scope_field(workspace_id, "workspace_id")
     validated_decision_id = validate_decision_id(decision_id)
     if reference_tenant_id is not None:
-        reference_tenant = _strip_scope_field(reference_tenant_id, "reference_tenant_id")
+        reference_tenant = _strip_scope_field(
+            reference_tenant_id, "reference_tenant_id"
+        )
         if reference_tenant != normalized_tenant:
             raise ApprovalScopeInvariantError(
                 "reference tenant_id must match approval tenant_id",
@@ -370,7 +381,9 @@ class HumanApprovalAction(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["human_approval_action.v1"] = SCHEMA_HUMAN_APPROVAL_ACTION_V1
+    schema_version: Literal["human_approval_action.v1"] = (
+        SCHEMA_HUMAN_APPROVAL_ACTION_V1
+    )
     approval_id: str = _NON_EMPTY
     acting_principal_id: str = _NON_EMPTY
     action: HumanApprovalActionType
@@ -524,3 +537,218 @@ class ApprovalRequest(BaseModel):
     @classmethod
     def from_json(cls, payload: str) -> Self:
         return cls.model_validate_json(payload)
+
+
+def approval_resource_scope(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    decision_id: DecisionId | str | None = None,
+    approval_id: ApprovalId | str | None = None,
+) -> str:
+    """Deterministic MP-1 resource scope for Approval create or action mutations."""
+    normalized_tenant = _strip_scope_field(tenant_id, "tenant_id")
+    normalized_workspace = _strip_scope_field(workspace_id, "workspace_id")
+    has_decision = decision_id is not None
+    has_approval = approval_id is not None
+    if has_decision == has_approval:
+        raise ApprovalScopeInvariantError(
+            "exactly one of decision_id or approval_id must be provided for approval resource scope",
+        )
+    if has_decision:
+        validated_decision_id = validate_decision_id(decision_id)
+        return (
+            f"approval_request:{normalized_tenant}:{normalized_workspace}:"
+            f"decision:{validated_decision_id}"
+        )
+    validated_approval_id = validate_approval_id(approval_id)
+    return (
+        f"approval_action:{normalized_tenant}:{normalized_workspace}:"
+        f"approval:{validated_approval_id}"
+    )
+
+
+class CreateApprovalRequest(BaseModel):
+    """Authoritative Approval create input for MP-4D authority-gated mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["create_approval_request.v1"] = (
+        SCHEMA_CREATE_APPROVAL_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    decision_id: str = _NON_EMPTY
+    approval_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    requested_by_principal_id: str | None = None
+    references: ApprovalReferences | None = None
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = (
+        MembershipResolutionMode.LOCATOR
+    )
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "decision_id",
+        "approval_id",
+        "acting_principal_id",
+        "requested_by_principal_id",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("approval_id")
+    @classmethod
+    def _validate_approval_id_field(cls, value: str) -> str:
+        return str(validate_approval_id(value))
+
+    @field_validator("decision_id")
+    @classmethod
+    def _validate_decision_id_field(cls, value: str) -> str:
+        return str(validate_decision_id(value))
+
+    @model_validator(mode="after")
+    def _validate_scope_and_authority_locators(self) -> CreateApprovalRequest:
+        validate_approval_scope(
+            tenant_id=self.tenant_id,
+            workspace_id=self.workspace_id,
+            decision_id=self.decision_id,
+        )
+        if self.references is not None:
+            validate_approval_references(references=self.references)
+        if (
+            self.membership_resolution_mode
+            is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError(
+                    "membership workspace_id must match request workspace_id"
+                )
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "membership principal_id must match request acting_principal_id"
+                )
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError(
+                    "delegation workspace_id must match request workspace_id"
+                )
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id
+                != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
+
+
+class ExecuteHumanApprovalActionRequest(BaseModel):
+    """Authoritative human approval action input for MP-4D authority-gated mutations."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["execute_human_approval_action_request.v1"] = (
+        SCHEMA_EXECUTE_HUMAN_APPROVAL_ACTION_REQUEST_V1
+    )
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    approval_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    action: HumanApprovalActionType
+    comment_reference: str | None = None
+    delegator_principal_id: str | None = None
+    membership: WorkspaceMembership | None = None
+    membership_resolution_mode: MembershipResolutionMode = (
+        MembershipResolutionMode.LOCATOR
+    )
+    delegation: AuthorityDelegation | None = None
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "approval_id",
+        "acting_principal_id",
+        "comment_reference",
+        "delegator_principal_id",
+    )
+    @classmethod
+    def _strip_required(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @field_validator("approval_id")
+    @classmethod
+    def _validate_approval_id_field(cls, value: str) -> str:
+        return str(validate_approval_id(value))
+
+    @model_validator(mode="after")
+    def _validate_authority_locators(self) -> ExecuteHumanApprovalActionRequest:
+        if (
+            self.membership_resolution_mode
+            is MembershipResolutionMode.CANONICAL_PRINCIPAL
+            and self.membership is not None
+        ):
+            raise ValueError(
+                "canonical_principal membership resolution must not include an embedded membership locator",
+            )
+        if self.membership is not None:
+            if self.membership.tenant_id != self.tenant_id:
+                raise ValueError("membership tenant_id must match request tenant_id")
+            if self.membership.workspace_id != self.workspace_id:
+                raise ValueError(
+                    "membership workspace_id must match request workspace_id"
+                )
+            if self.membership.principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "membership principal_id must match request acting_principal_id"
+                )
+        if self.delegation is not None:
+            if self.delegation.tenant_id != self.tenant_id:
+                raise ValueError("delegation tenant_id must match request tenant_id")
+            if self.delegation.workspace_id != self.workspace_id:
+                raise ValueError(
+                    "delegation workspace_id must match request workspace_id"
+                )
+            if self.delegation.delegate_principal_id != self.acting_principal_id:
+                raise ValueError(
+                    "delegation delegate_principal_id must match request acting_principal_id",
+                )
+            if (
+                self.delegator_principal_id is not None
+                and self.delegation.delegator_principal_id
+                != self.delegator_principal_id
+            ):
+                raise ValueError(
+                    "delegation delegator_principal_id must match request delegator_principal_id",
+                )
+        return self
