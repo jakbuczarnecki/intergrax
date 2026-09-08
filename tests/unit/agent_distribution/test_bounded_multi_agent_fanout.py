@@ -9,30 +9,37 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from intergrax.agent_distribution.delegated_subtasks import (
-    DelegatedSubtaskLifecyclePlan,
-    DelegationId,
-)
-from intergrax.agent_distribution.bounded_multi_agent_fanout import (
-    BoundedMultiAgentFanOutService,
-    FanOutId,
-    FanOutItem,
-    FanOutItemId,
-    FanOutItemStatus,
-    FanOutRequest,
-    InvalidFanOutError,
-    MAX_FAN_OUT_CONCURRENCY,
-    validate_fan_out_id,
-    validate_fan_out_item_id,
-)
 from intergrax.agent_distribution.multi_agent_coordination import (
     ChildExecutionFailedError,
     CoordinationDelegation,
     CoordinationFailureCode,
     CoordinationId,
     CoordinationRequest,
+    CoordinationResult,
     MultiAgentCoordinationService,
     NoEligibleSpecialistError,
+)
+from intergrax.agent_distribution.delegated_subtasks import (
+    DelegatedSubtaskLifecyclePlan,
+    DelegationId,
+)
+from intergrax.agent_distribution.bounded_multi_agent_fanout import (
+    BoundedFanOutExecutor,
+    BoundedMultiAgentFanOutService,
+    FanOutExecutorContractError,
+    FanOutId,
+    FanOutItem,
+    FanOutItemFailure,
+    FanOutItemId,
+    FanOutItemOutcome,
+    FanOutItemStatus,
+    FanOutRequest,
+    InvalidFanOutError,
+    MAX_FAN_OUT_CONCURRENCY,
+    MAX_FAN_OUT_ITEMS,
+    validate_fan_out_id,
+    validate_fan_out_item_id,
+    validate_fan_out_request,
 )
 from intergrax.agent_distribution.task_capability_resolution import (
     build_task_capability_resolution_request,
@@ -127,14 +134,12 @@ class _FanOutAcquisitionPlanFactory:
 
 
 def build_fan_out_harness(*, candidates, specialist_delegate=None):
-    harness = build_delegated_harness(
+    factory = _FanOutAcquisitionPlanFactory()
+    return build_delegated_harness(
         candidates=candidates,
         specialist_delegate=specialist_delegate,
+        acquisition_plan_factory=factory,
     )
-    factory = _FanOutAcquisitionPlanFactory()
-    harness.service._acquisition_plan_factory = factory
-    factory.bind_harness(harness)
-    return harness
 
 
 def _fan_out_item(
@@ -406,6 +411,260 @@ def test_fan_out_request_rejects_concurrency_above_platform_limit() -> None:
                 principal=admin_test_principal(),
             ),
         )
+
+
+def _fan_out_items_at_count(
+    *,
+    task_scope,
+    count: int,
+) -> tuple[FanOutItem[OcrRequest], ...]:
+    return tuple(
+        _fan_out_item(
+            item_id=f"item-{index}",
+            task_scope=task_scope,
+            coordination_id=f"coord-{index}",
+            delegation_id=f"delegation-{index}",
+            lease_id=f"lease-{index}",
+            document_ref=f"doc-{index}",
+        )
+        for index in range(count)
+    )
+
+
+def test_validate_fan_out_request_accepts_at_item_limit() -> None:
+    task_scope = mint_task_id()
+    validate_fan_out_request(
+        FanOutRequest(
+            fan_out_id=FanOutId("fan-out-items-limit"),
+            items=_fan_out_items_at_count(task_scope=task_scope, count=MAX_FAN_OUT_ITEMS),
+            max_concurrency=1,
+        ),
+    )
+
+
+def test_fan_out_request_rejects_item_count_above_platform_limit() -> None:
+    task_scope = mint_task_id()
+    service = BoundedMultiAgentFanOutService(
+        coordination=_build_coordination_service(
+            build_delegated_harness(
+                candidates=(
+                    _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+                ),
+            ),
+        ),
+    )
+    with pytest.raises(InvalidFanOutError, match=str(MAX_FAN_OUT_ITEMS)):
+        asyncio.run(
+            service.fan_out(
+                FanOutRequest(
+                    fan_out_id=FanOutId("fan-out-items-over"),
+                    items=_fan_out_items_at_count(
+                        task_scope=task_scope,
+                        count=MAX_FAN_OUT_ITEMS + 1,
+                    ),
+                    max_concurrency=1,
+                ),
+                principal=admin_test_principal(),
+            ),
+        )
+
+
+@pytest.mark.asyncio
+async def test_fan_out_rejects_item_count_above_limit_before_execution() -> None:
+    harness = build_fan_out_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+    )
+    inner = _build_coordination_service(harness)
+    tracker = _TrackingCoordinationService(inner=inner)
+    fan_out = BoundedMultiAgentFanOutService(coordination=tracker)
+    task_scope = mint_task_id()
+    with pytest.raises(InvalidFanOutError, match=str(MAX_FAN_OUT_ITEMS)):
+        await fan_out.fan_out(
+            FanOutRequest(
+                fan_out_id=FanOutId("fan-out-items-over"),
+                items=_fan_out_items_at_count(
+                    task_scope=task_scope,
+                    count=MAX_FAN_OUT_ITEMS + 1,
+                ),
+                max_concurrency=1,
+            ),
+            principal=admin_test_principal(),
+        )
+    assert tracker.calls == 0
+
+
+@pytest.mark.parametrize(
+    ("status", "result", "failure"),
+    [
+        (FanOutItemStatus.SUCCESS, None, None),
+        (
+            FanOutItemStatus.SUCCESS,
+            None,
+            FanOutItemFailure(failure_code=CoordinationFailureCode.INVALID_COORDINATION, message="x"),
+        ),
+        (FanOutItemStatus.FAILURE, object(), None),
+        (FanOutItemStatus.FAILURE, None, None),
+    ],
+)
+def test_fan_out_item_outcome_rejects_invalid_combinations(
+    status: FanOutItemStatus,
+    result: object | None,
+    failure: FanOutItemFailure[OcrResult] | None,
+) -> None:
+    with pytest.raises(ValueError):
+        FanOutItemOutcome(
+            item_id=FanOutItemId("item-a"),
+            status=status,
+            result=result,
+            failure=failure,
+        )
+
+
+class _StaticOutcomeExecutor(BoundedFanOutExecutor[OcrRequest, OcrResult]):
+    def __init__(self, outcomes: tuple[FanOutItemOutcome[OcrResult], ...]) -> None:
+        self._outcomes = outcomes
+        self.execute_calls = 0
+
+    async def execute(
+        self,
+        *,
+        items: tuple[FanOutItem[OcrRequest], ...],
+        max_concurrency: int,
+        coordination: MultiAgentCoordinationService[OcrRequest, OcrResult],
+        principal,
+    ) -> tuple[FanOutItemOutcome[OcrResult], ...]:
+        del items, max_concurrency, coordination, principal
+        self.execute_calls += 1
+        return self._outcomes
+
+
+def _contract_outcome(item_id: str) -> FanOutItemOutcome[OcrResult]:
+    return FanOutItemOutcome(
+        item_id=FanOutItemId(item_id),
+        status=FanOutItemStatus.FAILURE,
+        failure=FanOutItemFailure(
+            failure_code=CoordinationFailureCode.NO_ELIGIBLE_SPECIALIST,
+            message="contract-test",
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_fan_out_reorders_executor_outcomes_to_request_order() -> None:
+    harness = build_fan_out_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+    )
+    task_scope = mint_task_id()
+    items = (
+        _fan_out_item(
+            item_id="item-a",
+            task_scope=task_scope,
+            coordination_id="coord-a",
+            delegation_id="delegation-a",
+            lease_id="lease-a",
+        ),
+        _fan_out_item(
+            item_id="item-b",
+            task_scope=task_scope,
+            coordination_id="coord-b",
+            delegation_id="delegation-b",
+            lease_id="lease-b",
+        ),
+        _fan_out_item(
+            item_id="item-c",
+            task_scope=task_scope,
+            coordination_id="coord-c",
+            delegation_id="delegation-c",
+            lease_id="lease-c",
+        ),
+    )
+    executor = _StaticOutcomeExecutor(
+        (
+            _contract_outcome("item-c"),
+            _contract_outcome("item-a"),
+            _contract_outcome("item-b"),
+        ),
+    )
+    fan_out = BoundedMultiAgentFanOutService(
+        coordination=_build_coordination_service(harness),
+        executor=executor,
+    )
+    result = await fan_out.fan_out(
+        FanOutRequest(
+            fan_out_id=FanOutId("fan-out-reorder"),
+            items=items,
+            max_concurrency=3,
+        ),
+        principal=admin_test_principal(),
+    )
+    assert [item.item_id for item in result.items] == [
+        FanOutItemId("item-a"),
+        FanOutItemId("item-b"),
+        FanOutItemId("item-c"),
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "outcomes",
+    [
+        (_contract_outcome("item-a"),),
+        (
+            _contract_outcome("item-a"),
+            _contract_outcome("item-a"),
+            _contract_outcome("item-b"),
+        ),
+        (
+            _contract_outcome("item-a"),
+            _contract_outcome("item-b"),
+            _contract_outcome("item-x"),
+        ),
+    ],
+)
+async def test_fan_out_rejects_invalid_executor_outcomes(
+    outcomes: tuple[FanOutItemOutcome[OcrResult], ...],
+) -> None:
+    harness = build_fan_out_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+    )
+    task_scope = mint_task_id()
+    items = (
+        _fan_out_item(
+            item_id="item-a",
+            task_scope=task_scope,
+            coordination_id="coord-a",
+            delegation_id="delegation-a",
+            lease_id="lease-a",
+        ),
+        _fan_out_item(
+            item_id="item-b",
+            task_scope=task_scope,
+            coordination_id="coord-b",
+            delegation_id="delegation-b",
+            lease_id="lease-b",
+        ),
+    )
+    executor = _StaticOutcomeExecutor(outcomes)
+    fan_out = BoundedMultiAgentFanOutService(
+        coordination=_build_coordination_service(harness),
+        executor=executor,
+    )
+    with pytest.raises(FanOutExecutorContractError):
+        await fan_out.fan_out(
+            FanOutRequest(
+                fan_out_id=FanOutId("fan-out-contract"),
+                items=items,
+                max_concurrency=2,
+            ),
+            principal=admin_test_principal(),
+        )
+    assert executor.execute_calls == 1
 
 
 @dataclass

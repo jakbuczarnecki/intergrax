@@ -95,6 +95,21 @@ def _instantiation_calls(path: Path, class_names: tuple[str, ...]) -> list[str]:
 
 
 @pytest.mark.gate
+def test_npsc5b_enforces_total_fan_out_item_limit() -> None:
+    source = _NPSC5B_MODULE.read_text(encoding="utf-8")
+    assert "MAX_FAN_OUT_ITEMS" in source
+    assert "fan-out item count exceeds platform limit" in source
+
+
+@pytest.mark.gate
+def test_npsc5b_validates_executor_outcomes() -> None:
+    source = _NPSC5B_MODULE.read_text(encoding="utf-8")
+    assert "_normalize_executor_outcomes" in source
+    assert "FanOutExecutorContractError" in source
+    assert "EXECUTOR_CONTRACT_VIOLATION" in source
+
+
+@pytest.mark.gate
 def test_npsc5b_no_legacy_supervisor_imports() -> None:
     modules = _imported_modules(_NPSC5B_MODULE)
     violations = sorted(module for module in modules if module in _FORBIDDEN_SUPERVISOR_IMPORTS)

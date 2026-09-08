@@ -23,6 +23,7 @@ from intergrax.agent_distribution.multi_agent_coordination import (
 from intergrax.contracts.agent_run import RequestIdentity
 
 MAX_FAN_OUT_CONCURRENCY: Final = 64
+MAX_FAN_OUT_ITEMS: Final = 256
 
 FanOutId = NewType("FanOutId", str)
 FanOutItemId = NewType("FanOutItemId", str)
@@ -54,6 +55,7 @@ class FanOutFailureCode(StrEnum):
     """Bounded semantic categories for fan-out boundary violations."""
 
     INVALID_FAN_OUT = "invalid_fan_out"
+    EXECUTOR_CONTRACT_VIOLATION = "executor_contract_violation"
 
 
 class FanOutError(AgentDistributionError):
@@ -78,6 +80,16 @@ class InvalidFanOutError(FanOutError):
         super().__init__(
             message,
             failure_code=FanOutFailureCode.INVALID_FAN_OUT,
+        )
+
+
+class FanOutExecutorContractError(FanOutError):
+    """Executor returned outcomes that violate the fan-out contract."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(
+            message,
+            failure_code=FanOutFailureCode.EXECUTOR_CONTRACT_VIOLATION,
         )
 
 
@@ -124,6 +136,21 @@ class FanOutItemOutcome(Generic[ResultT]):
     result: CoordinationResult[ResultT] | None = None
     failure: FanOutItemFailure[ResultT] | None = None
 
+    def __post_init__(self) -> None:
+        if self.status is FanOutItemStatus.SUCCESS:
+            if self.result is None or self.failure is not None:
+                raise ValueError(
+                    "SUCCESS outcome requires result and forbids failure",
+                )
+            return
+        if self.status is FanOutItemStatus.FAILURE:
+            if self.result is not None or self.failure is None:
+                raise ValueError(
+                    "FAILURE outcome requires failure and forbids result",
+                )
+            return
+        raise ValueError(f"unsupported fan-out item status: {self.status}")
+
 
 @dataclass(frozen=True, slots=True)
 class FanOutResult(Generic[ResultT]):
@@ -157,6 +184,11 @@ def validate_fan_out_request(request: FanOutRequest[object]) -> None:
     if request.max_concurrency > MAX_FAN_OUT_CONCURRENCY:
         raise InvalidFanOutError(
             f"max_concurrency exceeds platform limit {MAX_FAN_OUT_CONCURRENCY}",
+        )
+
+    if len(request.items) > MAX_FAN_OUT_ITEMS:
+        raise InvalidFanOutError(
+            f"fan-out item count exceeds platform limit {MAX_FAN_OUT_ITEMS}",
         )
 
     seen_item_ids: set[FanOutItemId] = set()
@@ -208,6 +240,36 @@ async def _coordinate_item(
         status=FanOutItemStatus.SUCCESS,
         result=coordination_result,
     )
+
+
+def _normalize_executor_outcomes(
+    request_items: tuple[FanOutItem[RequestT], ...],
+    outcomes: tuple[FanOutItemOutcome[ResultT], ...],
+) -> tuple[FanOutItemOutcome[ResultT], ...]:
+    """Validate executor output and project outcomes in request order."""
+    if len(outcomes) != len(request_items):
+        raise FanOutExecutorContractError(
+            "executor outcome count must match request item count",
+        )
+
+    outcome_by_id: dict[FanOutItemId, FanOutItemOutcome[ResultT]] = {}
+    for outcome in outcomes:
+        if outcome.item_id in outcome_by_id:
+            raise FanOutExecutorContractError(
+                f"duplicate executor outcome item_id: {outcome.item_id}",
+            )
+        outcome_by_id[outcome.item_id] = outcome
+
+    ordered: list[FanOutItemOutcome[ResultT]] = []
+    for item in request_items:
+        outcome = outcome_by_id.get(item.item_id)
+        if outcome is None:
+            raise FanOutExecutorContractError(
+                f"missing executor outcome for item_id: {item.item_id}",
+            )
+        ordered.append(outcome)
+
+    return tuple(ordered)
 
 
 class BoundedFanOutExecutor(Protocol[RequestT, ResultT]):
@@ -275,12 +337,13 @@ class BoundedMultiAgentFanOutService(Generic[RequestT, ResultT]):
         principal: RequestIdentity,
     ) -> FanOutResult[ResultT]:
         validate_fan_out_request(request)
-        outcomes = await self._executor.execute(
+        raw_outcomes = await self._executor.execute(
             items=request.items,
             max_concurrency=request.max_concurrency,
             coordination=self._coordination,
             principal=principal,
         )
+        outcomes = _normalize_executor_outcomes(request.items, raw_outcomes)
         return FanOutResult(
             fan_out_id=request.fan_out_id,
             items=outcomes,
@@ -292,6 +355,7 @@ __all__ = [
     "BoundedFanOutExecutor",
     "BoundedMultiAgentFanOutService",
     "FanOutError",
+    "FanOutExecutorContractError",
     "FanOutFailureCode",
     "FanOutId",
     "FanOutItem",
@@ -303,6 +367,7 @@ __all__ = [
     "FanOutResult",
     "InvalidFanOutError",
     "MAX_FAN_OUT_CONCURRENCY",
+    "MAX_FAN_OUT_ITEMS",
     "validate_fan_out_id",
     "validate_fan_out_item_id",
     "validate_fan_out_request",

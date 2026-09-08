@@ -36,6 +36,7 @@ from intergrax.agent_distribution.catalog import (
 )
 from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskAcquisitionError,
+    DelegatedSubtaskAcquisitionPlanFactory,
     DelegatedSubtaskCleanupError,
     DelegatedSubtaskContractError,
     DelegatedSubtaskDelegate,
@@ -344,6 +345,7 @@ def build_delegated_harness(
     revision_id: str = "rev-delegate-1",
     specialist_delegate: DelegatedSubtaskDelegate[OcrRequest, OcrResult] | None = None,
     acquisition_kwargs: dict | None = None,
+    acquisition_plan_factory: DelegatedSubtaskAcquisitionPlanFactory | None = None,
     task_scope: TaskId | None = None,
     task_scope_authority: _FixedTaskScopeAuthority | None = None,
 ) -> DelegatedHarness:
@@ -351,7 +353,7 @@ def build_delegated_harness(
     delegate = specialist_delegate or _EchoOcrDelegate()
     resolved_task_scope = task_scope or mint_task_id()
     authority = task_scope_authority or _FixedTaskScopeAuthority(resolved_task_scope)
-    acquisition_factory = _TestAcquisitionPlanFactory(
+    acquisition_factory = acquisition_plan_factory or _TestAcquisitionPlanFactory(
         revision_id=revision_id,
         **(acquisition_kwargs or {}),
     )
