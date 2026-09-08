@@ -18,7 +18,6 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.resumable_builder import (
     DataPackBuildConfig,
     ShardBuildSeams,
-    run_resumable_data_pack_build,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.build_execution_profiles import (
     PRODUCTION_LOCAL_GPU_PROFILE_ID,
@@ -43,6 +42,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from tests.unit.platform_proofs.scenarios.verified_product_identification.vpi_resumable_builder_test_support import (
     FakeDataPackEmbeddingPort,
     patch_canonical_model_identity,
+    run_resumable_data_pack_build_with_fake_policy,
     write_tiny_selected_dataset,
 )
 
@@ -166,7 +166,7 @@ def test_three_shard_interrupt_resume_skips_ready_shard(
     shard_size = DEFAULT_PRODUCTION_SHARD_SIZE
 
     first_embedding = FakeDataPackEmbeddingPort()
-    run_resumable_data_pack_build(
+    run_resumable_data_pack_build_with_fake_policy(
         _build_config(
             tmp_path,
             dataset_path=dataset_path,
@@ -187,7 +187,7 @@ def test_three_shard_interrupt_resume_skips_ready_shard(
     paths.build_state_file.write_text(json.dumps(payload), encoding="utf-8")
 
     resume_embedding = FakeDataPackEmbeddingPort()
-    report = run_resumable_data_pack_build(
+    report = run_resumable_data_pack_build_with_fake_policy(
         _build_config(
             tmp_path,
             dataset_path=dataset_path,
@@ -222,7 +222,7 @@ def test_sigterm_interrupt_persists_non_ready_state(tmp_path: Path, monkeypatch:
         signal.raise_signal(signal.SIGTERM)
 
     with pytest.raises(DataPackBuildInterrupted):
-        run_resumable_data_pack_build(
+        run_resumable_data_pack_build_with_fake_policy(
             _build_config(
                 tmp_path,
                 dataset_path=dataset_path,

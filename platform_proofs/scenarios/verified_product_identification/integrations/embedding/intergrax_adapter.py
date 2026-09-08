@@ -142,6 +142,9 @@ class IntergraxEmbeddingBootstrapAdapter:
     def close(self) -> None:
         return None
 
+    def embedding_provider(self) -> EmbeddingProvider:
+        return self._provider
+
     def execution_snapshot(self) -> EmbeddingProviderExecutionSnapshotResult:
         if isinstance(self._provider, EmbeddingProviderExecutionDiagnostics):
             self._provider.dimension()

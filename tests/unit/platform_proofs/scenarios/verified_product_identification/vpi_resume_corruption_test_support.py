@@ -61,6 +61,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 from tests.unit.platform_proofs.scenarios.verified_product_identification.vpi_resumable_builder_test_support import (
     FakeDataPackEmbeddingPort,
+    canonical_fake_document_embedding_input_policy,
     patch_canonical_model_identity,
     write_tiny_selected_dataset,
 )
@@ -153,6 +154,7 @@ def run_build(
             max_records=max_records,
         ),
         embedding_port=embedding_port,
+        document_embedding_input_policy=canonical_fake_document_embedding_input_policy(),
         build_seams=build_seams,
     )
 

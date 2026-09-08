@@ -48,6 +48,10 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.content_identity import (
     compute_data_pack_content_identity,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.embedding_input_policy import (
+    VPI_BGE_M3_DOCUMENT_TOKEN_BUDGET_768_POLICY_VERSION,
+    DataPackDocumentEmbeddingInputPolicyPort,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.embedding import (
     EmbeddingDataPackRecord,
 )
@@ -101,6 +105,9 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 )
 from platform_proofs.scenarios.verified_product_identification.integrations.embedding.bootstrap import (
     ensure_embedding_provider_integrations_registered,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.embedding.canonical_document_embedding_input_policy import (
+    resolve_canonical_document_embedding_input_policy,
 )
 from platform_proofs.scenarios.verified_product_identification.integrations.embedding.intergrax_adapter import (
     IntergraxEmbeddingBootstrapAdapter,
@@ -204,6 +211,7 @@ def build_proof_50_data_pack(
     source_revision: str | None = None,
     record_count: int = PROOF_50_RECORD_COUNT,
     build_mode: DataPackBuildMode = DataPackBuildMode.CANONICAL,
+    document_embedding_input_policy: DataPackDocumentEmbeddingInputPolicyPort | None = None,
 ) -> DataPackManifest:
     paths = resolve_data_pack_paths(output_root)
     for directory in (
@@ -251,8 +259,23 @@ def build_proof_50_data_pack(
         build_mode=build_mode,
     )
 
-    semantic_texts = [record.semantic_text for record in relational_records]
-    vectors = embedding_adapter.embed_batch(semantic_texts)
+    document_input_policy = (
+        document_embedding_input_policy
+        if document_embedding_input_policy is not None
+        else resolve_canonical_document_embedding_input_policy(embedding_adapter)
+    )
+    if build_mode is DataPackBuildMode.CANONICAL:
+        if document_input_policy.policy_version != VPI_BGE_M3_DOCUMENT_TOKEN_BUDGET_768_POLICY_VERSION:
+            raise VpiDataPackBuildError(
+                "canonical build requires document embedding input policy "
+                f"{VPI_BGE_M3_DOCUMENT_TOKEN_BUDGET_768_POLICY_VERSION}"
+            )
+
+    canonical_semantic_texts = [record.semantic_text for record in relational_records]
+    embedding_input_texts = [
+        document_input_policy.apply_document(text) for text in canonical_semantic_texts
+    ]
+    vectors = embedding_adapter.embed_batch(embedding_input_texts)
     if len(vectors) != len(relational_records):
         raise VpiDataPackBuildError("embedding batch size mismatch")
 
@@ -335,7 +358,7 @@ def build_proof_50_data_pack(
         artifact_fingerprint=artifact_fingerprint,
         dimension=embedding_configuration.expected_dimension,
         embedding_configuration_version=EMBEDDING_CONFIGURATION_VERSION,
-        input_policy_version=SEARCH_REPRESENTATION_DERIVATION_VERSION,
+        input_policy_version=document_input_policy.policy_version,
     )
     content_identity = compute_data_pack_content_identity(
         source_dataset=dataset_identity,

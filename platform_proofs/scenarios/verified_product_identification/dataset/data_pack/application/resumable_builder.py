@@ -109,6 +109,10 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.content_identity import (
     compute_data_pack_content_identity,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.embedding_input_policy import (
+    VPI_BGE_M3_DOCUMENT_TOKEN_BUDGET_768_POLICY_VERSION,
+    DataPackDocumentEmbeddingInputPolicyPort,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.embedding import (
     EmbeddingDataPackRecord,
 )
@@ -440,6 +444,37 @@ def assert_sufficient_disk_space(path: Path, required_bytes: int | None) -> None
         )
 
 
+def _assert_canonical_document_embedding_input_policy(
+    policy: DataPackDocumentEmbeddingInputPolicyPort,
+) -> None:
+    if policy.policy_version != VPI_BGE_M3_DOCUMENT_TOKEN_BUDGET_768_POLICY_VERSION:
+        raise VpiDataPackBuildError(
+            "canonical build requires document embedding input policy "
+            f"{VPI_BGE_M3_DOCUMENT_TOKEN_BUDGET_768_POLICY_VERSION}, "
+            f"got {policy.policy_version}"
+        )
+
+
+def _resolve_document_embedding_input_policy(
+    embedding_port: DataPackEmbeddingPort,
+    *,
+    injected: DataPackDocumentEmbeddingInputPolicyPort | None,
+    build_mode: DataPackBuildMode,
+) -> DataPackDocumentEmbeddingInputPolicyPort:
+    if injected is not None:
+        if build_mode is DataPackBuildMode.CANONICAL:
+            _assert_canonical_document_embedding_input_policy(injected)
+        return injected
+    from platform_proofs.scenarios.verified_product_identification.integrations.embedding.canonical_document_embedding_input_policy import (
+        resolve_canonical_document_embedding_input_policy,
+    )
+
+    policy = resolve_canonical_document_embedding_input_policy(embedding_port)
+    if build_mode is DataPackBuildMode.CANONICAL:
+        _assert_canonical_document_embedding_input_policy(policy)
+    return policy
+
+
 def _create_default_embedding_port() -> DataPackEmbeddingPort:
     ensure_embedding_provider_integrations_registered()
     embedding_configuration = load_vpi_embedding_configuration()
@@ -625,6 +660,7 @@ def run_resumable_data_pack_build(
     config: DataPackBuildConfig,
     *,
     embedding_port: DataPackEmbeddingPort | None = None,
+    document_embedding_input_policy: DataPackDocumentEmbeddingInputPolicyPort | None = None,
     build_seams: ShardBuildSeams | None = None,
 ) -> DataPackBuildReport:
     paths = resolve_data_pack_paths(config.output_root)
@@ -644,6 +680,13 @@ def run_resumable_data_pack_build(
     if embedding_configuration.expected_dimension != VPI_CANONICAL_EMBEDDING_DIMENSION:
         raise VpiDataPackBuildError("canonical build requires embedding dimension 1024")
 
+    if document_embedding_input_policy is not None:
+        if config.build_mode is DataPackBuildMode.CANONICAL:
+            _assert_canonical_document_embedding_input_policy(document_embedding_input_policy)
+        input_policy_version = document_embedding_input_policy.policy_version
+    else:
+        input_policy_version = VPI_BGE_M3_DOCUMENT_TOKEN_BUDGET_768_POLICY_VERSION
+
     model_revision, artifact_fingerprint = _resolve_model_revision(
         provider=embedding_configuration.provider,
         model=model,
@@ -656,7 +699,7 @@ def run_resumable_data_pack_build(
         artifact_fingerprint=artifact_fingerprint,
         dimension=embedding_configuration.expected_dimension,
         embedding_configuration_version=EMBEDDING_CONFIGURATION_VERSION,
-        input_policy_version=SEARCH_REPRESENTATION_DERIVATION_VERSION,
+        input_policy_version=input_policy_version,
     )
     expected_content_identity = compute_data_pack_content_identity(
         source_dataset=dataset_identity,
@@ -739,6 +782,14 @@ def run_resumable_data_pack_build(
     else:
         active_embedding_port = base_embedding_port
 
+    document_input_policy = _resolve_document_embedding_input_policy(
+        base_embedding_port,
+        injected=document_embedding_input_policy,
+        build_mode=config.build_mode,
+    )
+    if document_input_policy.policy_version != input_policy_version:
+        raise VpiDataPackBuildError("resolved document embedding input policy version mismatch")
+
     started = time.perf_counter()
     embedding_started = time.perf_counter()
     records_embedded = 0
@@ -819,10 +870,14 @@ def run_resumable_data_pack_build(
                         state = replace_shard(state, current)
                         state = _persist_state_profiled(paths, state, profiler)
 
-                        semantic_texts = [record.semantic_text for record in relational_records]
+                        canonical_semantic_texts = [record.semantic_text for record in relational_records]
+                        embedding_input_texts = [
+                            document_input_policy.apply_document(text)
+                            for text in canonical_semantic_texts
+                        ]
                         vectors = _embed_shard_texts(
                             active_embedding_port,
-                            semantic_texts=semantic_texts,
+                            semantic_texts=embedding_input_texts,
                             provider_batch_size=provider_batch_size,
                             profiler=profiler,
                         )

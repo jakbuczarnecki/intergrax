@@ -5,6 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.token_budget_truncation import (
+    truncate_to_token_limit,
+)
 from platform_proofs.scenarios.verified_product_identification.qualification.bounded_representation.contracts import (
     RepresentationVariant,
 )
@@ -35,19 +38,3 @@ class ProductRepresentationVariantPort:
         return self.count_tokens(text)
 
 
-def truncate_to_token_limit(
-    text: str,
-    *,
-    token_limit: int,
-    encode: Callable[[str], list[int]],
-    decode: Callable[[list[int]], str],
-) -> str:
-    if token_limit <= 0:
-        msg = "token_limit must be > 0"
-        raise ValueError(msg)
-    if not text:
-        return text
-    token_ids = encode(text)
-    if len(token_ids) <= token_limit:
-        return text
-    return decode(token_ids[:token_limit])

@@ -96,6 +96,16 @@ class HFEmbeddingProvider(EmbeddingProvider):
         self._resolve_dim()
         return self._dim
 
+    def encode_text_tokens(self, text: str) -> tuple[int, ...]:
+        self._ensure_model()
+        tokenizer = self._model.tokenizer
+        return tuple(tokenizer.encode(text, add_special_tokens=True))
+
+    def decode_text_tokens(self, token_ids: Sequence[int]) -> str:
+        self._ensure_model()
+        tokenizer = self._model.tokenizer
+        return tokenizer.decode(list(token_ids), skip_special_tokens=False)
+
     def embed(self, texts: Sequence[str]) -> NDArray[np.float32]:
 
         if not texts:

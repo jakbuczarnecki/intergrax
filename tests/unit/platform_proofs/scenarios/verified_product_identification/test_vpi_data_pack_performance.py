@@ -24,7 +24,6 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.resumable_builder import (
     DataPackBuildConfig,
-    run_resumable_data_pack_build,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.paths import (
     resolve_data_pack_paths,
@@ -35,6 +34,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from tests.unit.platform_proofs.scenarios.verified_product_identification.vpi_resumable_builder_test_support import (
     FakeDataPackEmbeddingPort,
     patch_canonical_model_identity,
+    run_resumable_data_pack_build_with_fake_policy,
     write_tiny_selected_dataset,
 )
 
@@ -115,7 +115,7 @@ def test_resumable_build_with_performance_profile_emits_evidence(
     dataset_path, manifest_path = write_tiny_selected_dataset(tmp_path / "dataset", row_count=50)
     output_root = tmp_path / "pack"
     evidence_dir = tmp_path / "performance"
-    report = run_resumable_data_pack_build(
+    report = run_resumable_data_pack_build_with_fake_policy(
         DataPackBuildConfig(
             output_root=output_root,
             dataset_path=dataset_path,
@@ -144,7 +144,7 @@ def test_performance_profile_disabled_preserves_default_behavior(
     patch_canonical_model_identity(monkeypatch)
     dataset_path, manifest_path = write_tiny_selected_dataset(tmp_path / "dataset", row_count=10)
     output_root = tmp_path / "pack"
-    report = run_resumable_data_pack_build(
+    report = run_resumable_data_pack_build_with_fake_policy(
         DataPackBuildConfig(
             output_root=output_root,
             dataset_path=dataset_path,
