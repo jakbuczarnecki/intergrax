@@ -166,7 +166,7 @@ Incomplete outputs use `.parquet.tmp` suffix; never adopted as READY. Orphan `.t
 
 ### CLI
 
-Production first run (full selected-dataset plan from manifest; default shard size `5000`):
+Production first run (full selected-dataset plan from manifest; default shard size `1000`):
 
 ```powershell
 uv run --group platform-proofs-vpi-dataset python `
@@ -186,13 +186,15 @@ uv run --group platform-proofs-vpi-dataset python `
 
 | Flag | Purpose |
 |---|---|
-| `--shard-size` | Records per shard (default `5000`; part of resume plan identity) |
+| `--shard-size` | Records per shard (default `1000`; part of resume plan identity) |
 | `--start-fresh` | Required first run; clears scenario-owned build subtree only |
 | `--resume` | Required when `state/build-state.json` exists |
 | `--max-records` | Qualification/debug only — caps plan below manifest count |
 | `--max-shards` / `--stop-after-shard` | Qualification only — stop after N shards without changing full plan |
 
-**Resume granularity:** one shard. If interrupted mid-shard, resume rebuilds that shard from its start row (no per-record checkpointing).
+**Resume granularity:** one shard. If interrupted mid-shard, resume rebuilds that shard from its start row (no per-record checkpointing). Maximum rework is the current non-READY shard only.
+
+Production default shard size is `1000` (reduced from earlier larger values for safer local long-running builds: lower memory/GPU pressure and smaller restart-loss window).
 
 **Artifacts:** `relational/part-*.parquet`, `embeddings/part-*.parquet`, `state/build-state.json` (partial builds are not distributable).
 

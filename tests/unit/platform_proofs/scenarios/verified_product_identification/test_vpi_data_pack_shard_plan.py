@@ -18,8 +18,8 @@ pytestmark = pytest.mark.unit
 FULL_DATASET_RECORD_COUNT = 3_770_377
 
 
-def test_default_production_shard_size_is_5000() -> None:
-    assert DEFAULT_PRODUCTION_SHARD_SIZE == 5_000
+def test_default_production_shard_size_is_1000() -> None:
+    assert DEFAULT_PRODUCTION_SHARD_SIZE == 1_000
 
 
 def test_zero_records_invalid() -> None:
@@ -61,24 +61,30 @@ def test_ranges_have_no_gaps_or_overlap() -> None:
     assert expected_start == record_count
 
 
-def test_full_production_dataset_plan_shard_size_5000() -> None:
+def test_full_production_dataset_plan_shard_size_1000() -> None:
     record_count = FULL_DATASET_RECORD_COUNT
     shard_size = DEFAULT_PRODUCTION_SHARD_SIZE
     plan = plan_data_pack_shards(record_count=record_count, shard_size=shard_size)
 
-    assert len(plan) == 755
+    assert len(plan) == 3_771
     assert plan[0].ordinal == 1
     assert plan[0].start_row_index == 0
-    assert plan[0].end_row_index_exclusive == 5_000
-    assert plan[0].expected_record_count == 5_000
+    assert plan[0].end_row_index_exclusive == 1_000
+    assert plan[0].expected_record_count == 1_000
 
     assert plan[1].ordinal == 2
-    assert plan[1].start_row_index == 5_000
-    assert plan[1].end_row_index_exclusive == 10_000
-    assert plan[1].expected_record_count == 5_000
+    assert plan[1].start_row_index == 1_000
+    assert plan[1].end_row_index_exclusive == 2_000
+    assert plan[1].expected_record_count == 1_000
+
+    penultimate = plan[-2]
+    assert penultimate.ordinal == 3_770
+    assert penultimate.start_row_index == 3_769_000
+    assert penultimate.end_row_index_exclusive == 3_770_000
+    assert penultimate.expected_record_count == 1_000
 
     final = plan[-1]
-    assert final.ordinal == 755
+    assert final.ordinal == 3_771
     assert final.start_row_index == 3_770_000
     assert final.end_row_index_exclusive == record_count
     assert final.expected_record_count == 377

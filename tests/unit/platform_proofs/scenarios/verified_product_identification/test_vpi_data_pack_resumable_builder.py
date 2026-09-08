@@ -34,6 +34,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     RELATIONAL_SCHEMA_VERSION,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.paths import (
+    DEFAULT_PRODUCTION_SHARD_SIZE,
     final_shard_path,
     resolve_data_pack_paths,
     temp_shard_path,
@@ -474,7 +475,7 @@ def test_full_plan_resume_skips_ready_shard_and_builds_next(
     )
     output_root = tmp_path / "pack"
     paths = resolve_data_pack_paths(output_root)
-    shard_size = 5_000
+    shard_size = DEFAULT_PRODUCTION_SHARD_SIZE
 
     first_embedding = FakeDataPackEmbeddingPort()
     run_resumable_data_pack_build(
@@ -492,7 +493,7 @@ def test_full_plan_resume_skips_ready_shard_and_builds_next(
     )
     state_after_run1 = read_build_state_file(paths.build_state_file)
     assert state_after_run1.expected_record_count == 3_770_377
-    assert state_after_run1.shard_count == 755
+    assert state_after_run1.shard_count == 3_771
     assert state_after_run1.completed_shards == 1
     assert state_after_run1.shards[0].status is DataPackShardStatus.READY
     assert state_after_run1.shards[1].status is DataPackShardStatus.PENDING
@@ -515,7 +516,7 @@ def test_full_plan_resume_skips_ready_shard_and_builds_next(
     state_after_run2 = read_build_state_file(paths.build_state_file)
     assert report.finalized is False
     assert state_after_run2.expected_record_count == 3_770_377
-    assert state_after_run2.shard_count == 755
+    assert state_after_run2.shard_count == 3_771
     assert state_after_run2.completed_shards == 2
     assert state_after_run2.shards[0].status is DataPackShardStatus.READY
     assert state_after_run2.shards[1].status is DataPackShardStatus.READY
