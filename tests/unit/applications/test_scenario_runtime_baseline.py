@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
+from unittest.mock import patch
+
 import pytest
 
 from echo.echo_agent import EchoAgent
@@ -26,14 +28,24 @@ from intergrax.applications.contracts.environment_profile import (
     DecisionVerificationProfile,
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.applications.contracts.graph_spec import (
+    ApplicationGraphSpec,
+    EvaluatorLoopGraphBinding,
+    GraphNode,
+)
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.strategy import StrategyResolver
+from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.execution.task_adapter import TaskExecutionInput
+from intergrax.runtime.nexus.execution.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.decision_flow import DecisionFlowScope
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
-from intergrax.runtime.task.task import TaskState
+from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.contracts.validation import ValidationResult
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
@@ -87,10 +99,13 @@ def _build_composition(
     document_store: InMemoryDocumentStore | None = None,
     use_in_memory_trace: bool = True,
     tenant_id: str = _TENANT,
+    environment: ApplicationEnvironmentProfile | None = None,
 ) -> object:
-    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.baseline.lab")
+    resolved_environment = environment or ApplicationEnvironmentProfile.lab_defaults(
+        profile_id="scenario.baseline.lab",
+    )
     return build_scenario_runtime_from_environment(
-        environment=environment,
+        environment=resolved_environment,
         registry=_echo_registry(),
         tenant_id=tenant_id,
         manifest=_scenario_manifest(),
@@ -99,6 +114,31 @@ def _build_composition(
         document_store=document_store,
         use_in_memory_trace=use_in_memory_trace,
     )
+
+
+def _echo_orchestration_environment(
+    *,
+    trigger_capabilities: list[str],
+    pipeline_capability_suffix: str = ".pipeline",
+) -> ApplicationEnvironmentProfile:
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.baseline.orch")
+    echo_node_id = "node_echo"
+    environment.graph_spec = ApplicationGraphSpec(
+        nodes=[GraphNode(agent_id="echo")],
+        trigger_capabilities=trigger_capabilities,
+        pipeline_capability_suffix=pipeline_capability_suffix,
+        evaluator_loop=EvaluatorLoopGraphBinding(
+            producer_agent_id="echo",
+            evaluator_agent_id="echo",
+            revise_agent_id="echo",
+            spec=EvaluatorLoopSpec(
+                max_iterations=1,
+                revise_node_id=echo_node_id,
+                escalate_on_exhaustion=False,
+            ),
+        ),
+    )
+    return environment
 
 
 @pytest.fixture
@@ -425,3 +465,145 @@ def test_scenario_runtime_baseline_does_not_bind_active_identity() -> None:
     source = path.read_text(encoding="utf-8")
     assert "bind_active_execution_identity" not in source
     assert "mint_attempt_id" not in source
+
+
+@pytest.mark.asyncio
+async def test_execute_scenario_task_routes_trigger_capability_to_orchestration(
+    tmp_path: Path,
+    _stub_scenario_llm: None,
+) -> None:
+    orchestration_capability = "incident.investigate"
+    environment = _echo_orchestration_environment(
+        trigger_capabilities=[orchestration_capability],
+    )
+    composition = _build_composition(tmp_path, environment=environment)
+    captured: dict[str, object] = {}
+
+    async def _capture_execute(
+        self: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],
+        request: ExecutionRequest[TaskExecutionInput, TaskResult],
+    ) -> TaskResult:
+        captured["strategy"] = StrategyResolver().resolve(request)
+        captured["capabilities"] = request.capabilities
+        return TaskResult(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            state=TaskState.COMPLETED,
+            answer="routed",
+        )
+
+    with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
+        await execute_scenario_task(
+            composition,
+            ScenarioExecutionRequest(
+                tenant_id=_TENANT,
+                message="orchestration routing proof",
+                capability=orchestration_capability,
+            ),
+        )
+
+    assert captured["capabilities"] == frozenset({ExecutionCapability.ORCHESTRATION})
+
+
+@pytest.mark.asyncio
+async def test_execute_scenario_task_keeps_non_trigger_capability_on_agent_path(
+    tmp_path: Path,
+    _stub_scenario_llm: None,
+) -> None:
+    composition = _build_composition(tmp_path)
+    captured: dict[str, object] = {}
+
+    async def _capture_execute(
+        self: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],
+        request: ExecutionRequest[TaskExecutionInput, TaskResult],
+    ) -> TaskResult:
+        captured["capabilities"] = request.capabilities
+        return TaskResult(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            state=TaskState.COMPLETED,
+            answer="agent",
+        )
+
+    with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
+        await execute_scenario_task(
+            composition,
+            ScenarioExecutionRequest(
+                tenant_id=_TENANT,
+                message="agent routing proof",
+                capability="echo.basic",
+            ),
+        )
+
+    assert captured["capabilities"] == frozenset({ExecutionCapability.AGENT})
+
+
+@pytest.mark.asyncio
+async def test_execute_scenario_task_honors_pipeline_capability_suffix(
+    tmp_path: Path,
+    _stub_scenario_llm: None,
+) -> None:
+    pipeline_suffix = ".custom_pipeline"
+    orchestration_capability = f"research{pipeline_suffix}"
+    environment = _echo_orchestration_environment(
+        trigger_capabilities=[],
+        pipeline_capability_suffix=pipeline_suffix,
+    )
+    composition = _build_composition(tmp_path, environment=environment)
+    captured: dict[str, object] = {}
+
+    async def _capture_execute(
+        self: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],
+        request: ExecutionRequest[TaskExecutionInput, TaskResult],
+    ) -> TaskResult:
+        captured["capabilities"] = request.capabilities
+        return TaskResult(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            state=TaskState.COMPLETED,
+            answer="pipeline",
+        )
+
+    with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
+        await execute_scenario_task(
+            composition,
+            ScenarioExecutionRequest(
+                tenant_id=_TENANT,
+                message="pipeline suffix proof",
+                capability=orchestration_capability,
+            ),
+        )
+
+    assert captured["capabilities"] == frozenset({ExecutionCapability.ORCHESTRATION})
+
+
+@pytest.mark.asyncio
+async def test_execute_scenario_task_persists_finalized_trace_for_orchestration(
+    tmp_path: Path,
+    _stub_scenario_llm: None,
+) -> None:
+    orchestration_capability = "echo.basic"
+    environment = _echo_orchestration_environment(
+        trigger_capabilities=[orchestration_capability],
+    )
+    composition = _build_composition(
+        tmp_path,
+        environment=environment,
+        use_in_memory_trace=False,
+    )
+    trace_store = composition.observability.trace_store
+    assert trace_store is not None
+
+    result = await execute_scenario_task(
+        composition,
+        ScenarioExecutionRequest(
+            tenant_id=_TENANT,
+            message="trace finalization proof",
+            capability=orchestration_capability,
+        ),
+    )
+
+    persisted = trace_store.read_run(result.run_id, _TENANT)
+    assert persisted.metadata.run_id == result.run_id
+    assert persisted.metadata.tenant_id == _TENANT
+    assert persisted.events

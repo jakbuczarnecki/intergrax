@@ -36,6 +36,7 @@ from intergrax.runtime.execution.runtime import (
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
+from intergrax.runtime.execution.decision_lifecycle_host import CanonicalDecisionLifecycleHost
 from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
 )
@@ -237,6 +238,7 @@ class HostTaskExecution:
             delegate,
             ledger_factory=self._ledger_factory,
             run_budget=self._run_budget,
+            decision_lifecycle_host=CanonicalDecisionLifecycleHost(),
         )
 
     async def execute(
