@@ -85,7 +85,7 @@ def create_intergrax_assistant_application(
         task_enricher=task_enricher,
     )
     hitl_service = DebugHitlResumeService(
-        resolved_registry,
+        host_execution=host_execution,
         checkpoint_store=checkpoint_store,
     )
     app = create_debug_app(

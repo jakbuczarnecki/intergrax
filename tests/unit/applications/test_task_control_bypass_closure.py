@@ -482,27 +482,26 @@ async def test_taskcpm_b8_debug_hitl_resume_service_is_debug_lab_only() -> None:
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
     checkpoint = _checkpoint()
+    host_execution = MagicMock()
+    host_execution.execute = AsyncMock(
+        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+    )
     service = DebugHitlResumeService(
-        AgentRegistry(),
+        host_execution=host_execution,
         checkpoint_store=_StaticCheckpointStore(checkpoint),
     )
     with patch(
         "intergrax.applications._shared.task_control.governed_resume_checkpoint_task",
         new_callable=AsyncMock,
     ) as governed_resume:
-        with patch(
-            "intergrax.debug.hitl_service.NexusLoop.handle_task",
-            new_callable=AsyncMock,
-            return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
-        ) as handle_task:
-            await service.resume_with_human_response(
-                str(_TASK_ID),
-                _TENANT,
-                verdict=HumanResponseVerdict.APPROVE,
-                resume_token=_RESUME_TOKEN,
-            )
+        await service.resume_with_human_response(
+            str(_TASK_ID),
+            _TENANT,
+            verdict=HumanResponseVerdict.APPROVE,
+            resume_token=_RESUME_TOKEN,
+        )
     governed_resume.assert_not_awaited()
-    handle_task.assert_awaited_once()
+    host_execution.execute.assert_awaited_once()
 
 
 @pytest.mark.asyncio

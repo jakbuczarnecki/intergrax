@@ -54,6 +54,7 @@ __all__ = [
     "TaskCheckpointPersistence",
     "TaskCheckpointReader",
     "TaskResumeExecutor",
+    "HostTaskResumeExecutor",
     "UnifiedTaskResumeExecutor",
     "build_task_progress_view",
     "partial_result_from_checkpoint",
@@ -67,7 +68,7 @@ def __getattr__(name: str):
         from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 
         return LongRunningCoordinator
-    if name in {"LongRunningScheduler", "TaskResumeExecutor", "UnifiedTaskResumeExecutor"}:
+    if name in {"LongRunningScheduler", "TaskResumeExecutor", "HostTaskResumeExecutor", "UnifiedTaskResumeExecutor"}:
         from intergrax.runtime.long_running import scheduler as _scheduler
 
         return attribute_access.optional(_scheduler, name)

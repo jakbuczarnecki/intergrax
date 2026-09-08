@@ -532,7 +532,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 task_enricher=task_enricher,
             )
             hitl_service = DebugHitlResumeService(
-                resolved_registry,
+                host_execution=host_execution,
                 checkpoint_store=checkpoint_store,
             )
             app = create_harness_host_debug_app(

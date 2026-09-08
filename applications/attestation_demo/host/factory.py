@@ -82,7 +82,7 @@ def create_attestation_demo_application(
     )
     task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
     hitl_service = DebugHitlResumeService(
-        resolved_registry,
+        host_execution=host_execution,
         checkpoint_store=checkpoint_store,
     )
     app = create_debug_app(

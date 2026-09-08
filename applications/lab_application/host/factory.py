@@ -16,7 +16,6 @@ from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
-from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -41,10 +40,9 @@ from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, defau
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
 from lab_application.serving.fastapi_router import mount_lab_routes
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
-from intergrax.applications._shared.task_control_wiring import (
-    build_reliability_task_enricher,
-    build_task_runner_with_enricher,
-    wire_harness_task_control,
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    wire_harness_host_long_running_scheduler,
+    wire_harness_host_task_control,
 )
 from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
 from intergrax.applications._shared.replay_routes import create_replay_router
@@ -127,22 +125,23 @@ def create_lab_application(
             task = lab_notify_enricher(task)
         return task
 
-    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
-    scheduler_wiring = wire_long_running_scheduler(
+    scheduler_wiring = wire_harness_host_long_running_scheduler(
+        runtime,
         checkpoint_store=integrations.checkpoint_store,
-        task_runner=task_runner,
+        host_execution=host_execution,
+        task_enricher=task_enricher,
         notification_adapter=integrations.notification_adapter,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
     interaction_service = DebugInteractionIntakeService(
-        task_executor=HostTaskExecutionExecutor(host_execution),
+        task_executor=HostTaskExecutionExecutor(host_execution, task_enricher=task_enricher),
         adapter=integrations.interaction_adapter,
         verifier=create_inbound_verifier(),
         task_enricher=task_enricher,
     )
     hitl_service = DebugHitlResumeService(
-        resolved_registry,
+        host_execution=host_execution,
         checkpoint_store=integrations.checkpoint_store,
     )
 
@@ -176,10 +175,10 @@ def create_lab_application(
         prefix=settings.route_prefix,
         task_enricher=task_enricher,
     )
-    wire_harness_task_control(
+    wire_harness_host_task_control(
         app,
         enabled=True,
-        task_runner=task_runner,
+        host_execution=host_execution,
         env=lab_env,
         checkpoint_store=integrations.checkpoint_store,
         task_enricher=task_enricher,

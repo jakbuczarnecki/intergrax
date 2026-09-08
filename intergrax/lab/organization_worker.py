@@ -96,7 +96,10 @@ def create_organization_worker_lab_app(
         task_enricher=task_enricher,
     )
     hitl_service = DebugHitlResumeService(
-        resolved_registry,
+        host_execution=build_host_task_execution(
+            nexus_loop,
+            orchestration_triggers=frozenset({ORG_WORKER_CAPABILITY}),
+        ),
         checkpoint_store=checkpoint_store,
     )
     return create_debug_app(

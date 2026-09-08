@@ -66,14 +66,6 @@ def create_debug_app(
         db_path=runtime_events_db_path,
         implementation=runtime_event_store,
     )
-    resolved_hitl = hitl_service
-    if resolved_hitl is None and registry is not None:
-        resolved_hitl = DebugHitlResumeService(
-            registry,
-            checkpoint_store=resolved_checkpoint_store,
-            runtime_event_store=resolved_runtime_store,
-        )
-
     resolved_loop = nexus_loop
     if resolved_loop is None and registry is not None:
         resolved_loop = NexusLoop(
@@ -81,6 +73,15 @@ def create_debug_app(
             checkpoint_store=resolved_checkpoint_store,
             trace_store=trace_store,
             runtime_event_store=resolved_runtime_store,
+        )
+    resolved_hitl = hitl_service
+    if resolved_hitl is None and registry is not None and resolved_loop is not None:
+        resolved_hitl = DebugHitlResumeService(
+            host_execution=build_host_task_execution(
+                resolved_loop,
+                orchestration_triggers=frozenset(),
+            ),
+            checkpoint_store=resolved_checkpoint_store,
         )
 
     resolved_interaction = interaction_service
