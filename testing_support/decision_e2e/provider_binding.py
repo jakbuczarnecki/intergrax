@@ -13,6 +13,7 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_capability_adapter
 from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from testing_support.strict_tool_contract_validator import STRICT_CAPABILITY_BLOCK_REASON
 
 _BINDING_SOURCE = "application_environment_profile.llm_profile"
 
@@ -101,6 +102,9 @@ def bind_qualification_llm_profile(
     resolved_provider, resolved_model = _adapter_identity(adapter)
     profile_provider = _provider_slug(profile.provider)
     profile_model = profile.model
+
+    if not adapter.supports_strict_tool_argument_conformance():
+        return None, STRICT_CAPABILITY_BLOCK_REASON
 
     if profile_provider != resolved_provider or profile_model != resolved_model:
         return None, (

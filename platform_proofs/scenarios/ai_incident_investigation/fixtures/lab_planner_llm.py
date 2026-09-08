@@ -11,8 +11,15 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+)
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from testing_support.strict_tool_contract_validator import (
+    StrictToolContractValidationError,
+    validate_tool_calls_against_canonical_definitions,
+)
 from intergrax.runtime.nexus.tools.atomic_planner_round import PLANNER_ROUND_TOOL_ID
 from intergrax.runtime.nexus.tools.investigation_proof import (
     collect_available_evidence_ids,
@@ -433,6 +440,9 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
     def supports_tools(self) -> bool:
         return True
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return True
+
     def _detect_phase(self, messages: Sequence[ChatMessage]) -> str:
         for message in messages:
             if message.role == "system" and "Investigation phase: revision" in (message.content or ""):
@@ -468,8 +478,13 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
         )
         return LLMStructuredResult(parsed=proposal, response=build_adapter_response(content=""))
 
-    def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
-        _ = tools_schema, kwargs
+    def generate_with_tools(
+        self,
+        messages,
+        tools_schema: Sequence[CanonicalFunctionToolDefinition | dict[str, object]],
+        **kwargs,
+    ):  # type: ignore[no-untyped-def]
+        _ = kwargs
         phase = self._detect_phase(messages)
         has_tool_messages = any(message.role == "tool" for message in messages)
         if not has_tool_messages:
@@ -486,15 +501,17 @@ class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
         purpose = f"gather {tool_id.split('.')[-1]} evidence for incident investigation"
         available_refs = _available_basis_refs_from_messages(messages)
         self._prior_tool_call_ids.append(call_id)
-        return LLMAdapterResponse(
-            content="",
-            tool_calls=(
-                _atomic_round_call(
-                    tool_id=tool_id,
-                    arguments=_tool_args(tool_id, station_id=self._station_id),
-                    call_id=call_id,
-                    available_refs=available_refs,
-                    purpose=purpose,
-                ),
+        tool_calls = (
+            _atomic_round_call(
+                tool_id=tool_id,
+                arguments=_tool_args(tool_id, station_id=self._station_id),
+                call_id=call_id,
+                available_refs=available_refs,
+                purpose=purpose,
             ),
         )
+        try:
+            validate_tool_calls_against_canonical_definitions(tool_calls, tools_schema)
+        except StrictToolContractValidationError:
+            raise
+        return LLMAdapterResponse(content="", tool_calls=tool_calls)
