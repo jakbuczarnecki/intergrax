@@ -181,7 +181,7 @@ async def test_taskcpm_h2_allow_through_host_composition_reaches_cooperative_can
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )
@@ -231,7 +231,7 @@ async def test_taskcpm_h3_deny_through_host_composed_boundary_zero_cancel_effect
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )

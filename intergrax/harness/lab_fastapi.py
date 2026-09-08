@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from fastapi import APIRouter, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
@@ -14,10 +14,11 @@ from intergrax.applications._shared.identity_wiring import wire_application_iden
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class HarnessRunRequestV1(BaseModel):
@@ -41,10 +42,12 @@ class HarnessRunResponseV1(BaseModel):
 def mount_harness_routes(
     app: FastAPI,
     *,
+    host_execution: HostTaskExecutionPort,
     nexus_loop: NexusLoop,
     prefix: str,
-) -> UnifiedTaskRunner:
-    task_runner = UnifiedTaskRunner(nexus_loop)
+    task_enricher: Callable[[Task], Task] | None = None,
+) -> None:
+    task_executor = HostTaskExecutionExecutor(host_execution, task_enricher=task_enricher)
     router = APIRouter(prefix=prefix, tags=["harness"])
 
     @router.post("/run", response_model=HarnessRunResponseV1)
@@ -60,7 +63,7 @@ def mount_harness_routes(
             metadata=dict(body.metadata),
         )
         try:
-            result = await task_runner.run_task(task)
+            result = await task_executor.execute(task)
         except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -90,7 +93,6 @@ def mount_harness_routes(
         return {"agents": agents}
 
     app.include_router(router)
-    return task_runner
 
 
 def create_lab_fastapi_from_runtime(
@@ -105,7 +107,12 @@ def create_lab_fastapi_from_runtime(
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
     if mount_routes:
-        mount_harness_routes(app, nexus_loop=resolve_harness_host_nexus_loop_legacy(runtime), prefix=route_prefix)
+        mount_harness_routes(
+            app,
+            host_execution=runtime.execution,
+            nexus_loop=resolve_harness_host_nexus_loop_legacy(runtime),
+            prefix=route_prefix,
+        )
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
     wire_application_identity(
         app,

@@ -24,18 +24,19 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     build_factory_lifespans,
 )
 from intergrax.applications._shared.identity_wiring import wire_application_identity
-from intergrax.applications._shared.harness_host_auxiliary_wiring import HostTaskExecutionExecutor
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    HostTaskExecutionExecutor,
+    wire_harness_host_long_running_scheduler,
+)
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
     wire_harness_task_control,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from research_application.host.settings import ResearchBackendSettings
@@ -105,10 +106,11 @@ def create_research_backend_app(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
-    task_runner = build_task_runner_with_enricher(nexus, task_enricher)
-    scheduler_wiring = wire_long_running_scheduler(
+    scheduler_wiring = wire_harness_host_long_running_scheduler(
+        runtime,
         checkpoint_store=checkpoint_store,
-        task_runner=task_runner,
+        host_execution=host_execution,
+        task_enricher=task_enricher,
         notification_adapter=None,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
@@ -124,7 +126,7 @@ def create_research_backend_app(
         wire_harness_task_control(
             app,
             enabled=True,
-            task_runner=task_runner,
+            host_execution=host_execution,
             env=env,
             checkpoint_store=checkpoint_store,
             task_route_prefix=settings.task_control_route_prefix,

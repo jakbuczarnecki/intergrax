@@ -288,7 +288,7 @@ async def test_taskcpm_b1_supported_cancel_route_reaches_coordinator_only_after_
     wire_harness_task_control(
         app_allow,
         enabled=True,
-        task_runner=UnifiedTaskRunner(runtime_allow.nexus_loop),  # type: ignore[arg-type]
+        host_execution=runtime_allow.execution,
         env=runtime_allow.environment,
         runtime=runtime_allow,
     )
@@ -522,7 +522,7 @@ async def test_taskcpm_b9_supported_cancel_route_does_not_invoke_taskqueue_cance
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )
@@ -548,7 +548,7 @@ def test_taskcpm_b10_product_scaffold_wiring_uses_shared_governed_task_control(
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )

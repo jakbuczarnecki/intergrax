@@ -227,7 +227,7 @@ async def test_taskcpm_p2b_unmatched_cancel_zero_side_effect(_stub_host_llm: Non
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )
@@ -272,7 +272,7 @@ async def test_taskcpm_p3_explicit_deny_zero_cancel_effect(_stub_host_llm: None)
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )
@@ -317,7 +317,7 @@ async def test_taskcpm_p4_require_human_zero_cancel_with_evidence(_stub_host_llm
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )

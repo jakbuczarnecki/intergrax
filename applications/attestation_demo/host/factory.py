@@ -19,7 +19,6 @@ from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platf
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
     wire_harness_task_control,
 )
 from intergrax.debug.app import create_debug_app
@@ -80,7 +79,6 @@ def create_attestation_demo_application(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
-    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
     hitl_service = DebugHitlResumeService(
         host_execution=host_execution,
         checkpoint_store=checkpoint_store,
@@ -108,7 +106,7 @@ def create_attestation_demo_application(
         wire_harness_task_control(
             app,
             enabled=True,
-            task_runner=task_runner,
+            host_execution=host_execution,
             env=env,
             checkpoint_store=checkpoint_store,
             task_route_prefix=settings.task_control_route_prefix,

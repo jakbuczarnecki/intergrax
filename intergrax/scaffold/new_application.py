@@ -469,13 +469,12 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.debug.store import open_default_task_checkpoint_persistence
         from intergrax.applications._shared.harness_host_auxiliary_wiring import (
             bootstrap_harness_host_platform,
-            build_harness_host_task_runner,
             create_harness_host_debug_app,
             wire_harness_host_interaction_intake,
+            wire_harness_host_long_running_scheduler,
         )
         from intergrax.runtime.interactions.router import create_interaction_intake_router
         from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-        from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
         from intergrax.runtime.registry.agent_registry import AgentRegistry
         from intergrax.applications._shared.task_control_wiring import (
             build_reliability_task_enricher,
@@ -517,10 +516,11 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
             platform = bootstrap_harness_host_platform(runtime)
             checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
             task_enricher = build_reliability_task_enricher(env)
-            task_runner = build_harness_host_task_runner(runtime, enricher=task_enricher)
-            scheduler_wiring = wire_long_running_scheduler(
+            scheduler_wiring = wire_harness_host_long_running_scheduler(
+                runtime,
                 checkpoint_store=checkpoint_store,
-                task_runner=task_runner,
+                host_execution=host_execution,
+                task_enricher=task_enricher,
                 notification_adapter=None,
                 poll_interval_seconds=settings.scheduler_poll_seconds,
                 enabled=settings.include_scheduler,
@@ -555,7 +555,7 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 wire_harness_task_control(
                     app,
                     enabled=True,
-                    task_runner=task_runner,
+                    host_execution=host_execution,
                     env=env,
                     checkpoint_store=checkpoint_store,
                     task_route_prefix=settings.task_control_route_prefix,
