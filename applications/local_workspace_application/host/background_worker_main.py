@@ -44,8 +44,15 @@ from intergrax.applications._shared.reference_runtime_materialization import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.hosting import (
+    BootstrapIdentitySnapshot,
+    BootstrapReadinessLevel,
+    BootstrapSurfaceKind,
+    HostedBootstrapFailureProducer,
     HostedProcessBootstrapContext,
     HostedProcessBootstrapPhase,
+    LoggingBootstrapFailureReporter,
+    mint_bootstrap_attempt_id,
+    run_guarded_hosted_bootstrap_segment,
     run_guarded_hosted_process_bootstrap,
 )
 from intergrax.hosting.contracts.context import HostedApplicationEventPublisher
@@ -76,6 +83,10 @@ from local_workspace_application.workspaces.document_store_factory import (
 logger = logging.getLogger(__name__)
 
 _BACKGROUND_WORKER_PROCESS_ROLE = "background_worker"
+
+_BOOTSTRAP_FAILURE_PRODUCER = HostedBootstrapFailureProducer(
+    reporters=[LoggingBootstrapFailureReporter()],
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -215,6 +226,7 @@ def main() -> int:
         logger.error("LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS must be true for the background worker")
         return 1
 
+    bootstrap_attempt_id = mint_bootstrap_attempt_id()
     settings = _resolve_settings(None)
     environment_profile = build_local_workspace_environment_profile(settings)
     _, registry_projection = activate_local_workspace_reference_production_authority(
@@ -222,11 +234,23 @@ def main() -> int:
         environment_profile=environment_profile,
     )
     document_store = resolve_lkw_runtime_document_store(settings)
-    bootstrap_diagnostics = build_local_workspace_worker_bootstrap_diagnostics(
-        registry_projection=registry_projection,
-        settings=settings,
-        environment_profile=environment_profile,
-        document_store=document_store,
+    bootstrap_identity = BootstrapIdentitySnapshot(
+        bootstrap_attempt_id=bootstrap_attempt_id,
+        application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,
+        process_role=_BACKGROUND_WORKER_PROCESS_ROLE,
+    )
+    bootstrap_diagnostics = run_guarded_hosted_bootstrap_segment(
+        producer=_BOOTSTRAP_FAILURE_PRODUCER,
+        readiness_at_failure=BootstrapReadinessLevel.B3_TENANT_BINDING,
+        stage=HostedProcessBootstrapPhase.DEPENDENCY_RESOLUTION,
+        identity=bootstrap_identity,
+        surface_kind=BootstrapSurfaceKind.WORKER_BACKGROUND,
+        segment=lambda: build_local_workspace_worker_bootstrap_diagnostics(
+            registry_projection=registry_projection,
+            settings=settings,
+            environment_profile=environment_profile,
+            document_store=document_store,
+        ),
     )
     bootstrap_context = HostedProcessBootstrapContext.create(
         application_id=LOCAL_WORKSPACE_APPLICATION_MANIFEST.app_id,

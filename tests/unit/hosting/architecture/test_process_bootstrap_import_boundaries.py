@@ -48,6 +48,12 @@ _MODULE_PATH = (
     / "hosting"
     / "process_bootstrap.py"
 )
+_BOOTSTRAP_FAILURE_MODULE_PATH = (
+    Path(__file__).resolve().parents[4]
+    / "intergrax"
+    / "hosting"
+    / "bootstrap_failure.py"
+)
 
 
 def _annotation_uses_forbidden_container(node: ast.expr) -> bool:
@@ -130,3 +136,11 @@ def test_process_bootstrap_import_boundaries() -> None:
 
 def test_process_bootstrap_hard_contract() -> None:
     assert _collect_hard_contract_violations(_MODULE_PATH) == []
+
+
+def test_bootstrap_failure_import_boundaries() -> None:
+    assert _collect_import_boundary_violations(_BOOTSTRAP_FAILURE_MODULE_PATH) == []
+
+
+def test_bootstrap_failure_hard_contract() -> None:
+    assert _collect_hard_contract_violations(_BOOTSTRAP_FAILURE_MODULE_PATH) == []

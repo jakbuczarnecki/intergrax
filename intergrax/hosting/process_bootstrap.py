@@ -41,6 +41,8 @@ def _mint_hosted_application_event_id() -> str:
 
 
 class HostedProcessBootstrapPhase(str, Enum):
+    PROCESS_ENTRY = "process_entry"
+    ENVIRONMENT_GATE = "environment_gate"
     CONFIGURATION = "configuration"
     COMPOSITION = "composition"
     DEPENDENCY_RESOLUTION = "dependency_resolution"

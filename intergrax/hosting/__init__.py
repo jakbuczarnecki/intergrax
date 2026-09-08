@@ -79,6 +79,15 @@ from intergrax.hosting.eventing import (
     CompositeHostedApplicationEventPublisher,
     ObservabilityHostedApplicationEventPublisher,
 )
+from intergrax.hosting.bootstrap_failure import (
+    BootstrapIdentitySnapshot,
+    BootstrapReadinessLevel,
+    BootstrapSurfaceKind,
+    HostedBootstrapFailureProducer,
+    LoggingBootstrapFailureReporter,
+    mint_bootstrap_attempt_id,
+    run_guarded_hosted_bootstrap_segment,
+)
 from intergrax.hosting.process_bootstrap import (
     BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE,
     HostedProcessBootstrapContext,
@@ -121,6 +130,9 @@ from intergrax.hosting.supervisor import (
 
 __all__ = [
     "BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE",
+    "BootstrapIdentitySnapshot",
+    "BootstrapReadinessLevel",
+    "BootstrapSurfaceKind",
     "HOSTED_APPLICATION_PROFILE_SPEC_VERSION",
     "ComponentFailurePolicy",
     "HookFailurePolicy",
@@ -181,8 +193,10 @@ __all__ = [
     "HostedProcessBootstrapFailureFacts",
     "HostedProcessBootstrapPhase",
     "HostedApplicationFailurePhase",
+    "HostedBootstrapFailureProducer",
     "HostedApplicationFailureRecord",
     "HostedApplicationHealthSnapshot",
+    "LoggingBootstrapFailureReporter",
     "HostedApplicationHook",
     "HostedApplicationHookMode",
     "HostedApplicationHookPoint",
@@ -204,9 +218,11 @@ __all__ = [
     "InstancePolicy",
     "LifecyclePolicy",
     "RestartPolicy",
+    "mint_bootstrap_attempt_id",
     "ObservabilityHostedApplicationEventPublisher",
     "CompositeHostedApplicationEventPublisher",
     "hosted_process_bootstrap_failure_payload",
+    "run_guarded_hosted_bootstrap_segment",
     "run_guarded_hosted_process_bootstrap",
     "ShutdownPolicy",
     "resolve_hosted_application_definition",
