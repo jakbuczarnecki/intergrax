@@ -244,6 +244,7 @@ AW-7C SECRET BROKER PREREQUISITE: PASSED / independently verified
 AW-7C EGRESS PREREQUISITE: IMPLEMENTED / PHYSICAL QUALIFICATION HARNESS READY — WAITING FOR REAL PROVIDER EXECUTION
 AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION HARNESS READY — WAITING FOR REAL PROVIDER EXECUTION
 AW-7C P0-3A-02A: IMPLEMENTED / HARNESS READY — WAITING FOR REAL PROVIDER EXECUTION
+AW-7C P0-3A-03A: IMPLEMENTED / HARNESS READY — WAITING FOR REAL PROVIDER EXECUTION
 AW-7C: BLOCKED BY PREREQUISITE
 AW-7:  IN PROGRESS
 ```
@@ -390,6 +391,8 @@ uv run pytest tests/integration/providers/sandbox_host/e2b/ -q
 ```
 
 **Harness (P0-3A-02A):** `tests/integration/providers/sandbox_host/e2b/qualification/` — causal-proof runner with C0 control, C3 qualified, and redirect-escape phases. Immutable evidence models; `SandboxNetworkProbe` abstraction; cleanup guaranteed via `try/finally` per phase.
+
+**Attestation correlation (P0-3A-03A):** `ProviderAttestationCorrelation` evaluates `requested_scope == attested_scope == observed execution` via immutable `ProviderAttestationCorrelationEvidence`. Provider metadata alone is not qualification proof — correlation requires attestation **and** runtime probe evidence. Evaluator is provider-neutral (no E2B branching). Status remains **IMPLEMENTED / HARNESS READY** — not physically qualified without real provider execution.
 
 **Physical session result:** harness tests **skip safely** when `E2B_API_KEY` / `INTERGRAX_E2B_API_KEY` unavailable — **not PASS**. Real provider execution required for egress qualification verdict.
 

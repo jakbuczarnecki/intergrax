@@ -2,6 +2,7 @@
 
 """E2B physical egress causal-proof qualification harness."""
 
+from .attestation_correlation import ProviderAttestationCorrelation
 from .errors import (
     QualificationAssertionError,
     QualificationBaselineError,
@@ -14,7 +15,9 @@ from .models import (
     ControlPhaseEvidence,
     HostProbeEvidence,
     NetworkProbeResult,
+    ObservedNetworkScope,
     PhysicalEgressQualificationEvidence,
+    ProviderAttestationCorrelationEvidence,
     ProviderAttestationEvidence,
     QualifiedPhaseEvidence,
     RedirectEvidence,
@@ -31,7 +34,10 @@ __all__ = [
     "HostedPythonNetworkProbe",
     "HostProbeEvidence",
     "NetworkProbeResult",
+    "ObservedNetworkScope",
     "PhysicalEgressQualificationEvidence",
+    "ProviderAttestationCorrelation",
+    "ProviderAttestationCorrelationEvidence",
     "ProviderAttestationEvidence",
     "QualificationAssertionError",
     "QualificationBaselineError",

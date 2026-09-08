@@ -31,6 +31,7 @@ from .models import (
     RedirectEvidence,
     RedirectPhaseEvidence,
 )
+from .attestation_correlation import ProviderAttestationCorrelation
 from .probes import HostedPythonNetworkProbe, SandboxNetworkProbe
 from .scenarios import E2bPhysicalEgressScenario
 
@@ -143,10 +144,19 @@ class QualificationRunner:
             allowed = self._probe.execute(session, self._scenario.allowed_host)
             denied = self._probe.execute(session, self._scenario.denied_host)
             attestation = _attestation_from_capabilities(session.security_capabilities())
-        return QualifiedPhaseEvidence(
-            allowed_host=HostProbeEvidence(self._scenario.allowed_host, allowed),
-            denied_host=HostProbeEvidence(self._scenario.denied_host, denied),
+        allowed_evidence = HostProbeEvidence(self._scenario.allowed_host, allowed)
+        denied_evidence = HostProbeEvidence(self._scenario.denied_host, denied)
+        correlation = ProviderAttestationCorrelation.evaluate(
+            requested_allowlist=self._scenario.allowlist,
             provider_attestation=attestation,
+            allowed_probe=allowed_evidence,
+            denied_probe=denied_evidence,
+        )
+        return QualifiedPhaseEvidence(
+            allowed_host=allowed_evidence,
+            denied_host=denied_evidence,
+            provider_attestation=attestation,
+            attestation_correlation=correlation,
         )
 
     def run_redirect_phase(
