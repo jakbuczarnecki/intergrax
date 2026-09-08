@@ -82,10 +82,7 @@ def create_governed_contractor_backend_app(
     )
     host_execution = runtime.execution
     registry = runtime.registry
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
     if observability_export is not None and observability_export.enabled:
         export_plugin = build_observability_export_runtime_plugin(observability_export)
         if export_plugin is not None:

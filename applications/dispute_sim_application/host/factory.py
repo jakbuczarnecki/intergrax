@@ -82,10 +82,7 @@ def create_dispute_sim_backend_app(
         key_value_cache=key_value_cache,
     )
     host_execution = runtime.execution
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
 
     checkpoint_store = open_default_task_checkpoint_persistence()
     task_enricher = build_reliability_task_enricher(

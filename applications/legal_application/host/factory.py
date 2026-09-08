@@ -96,10 +96,7 @@ def create_legal_backend_app(
     host_execution = runtime.execution
     registry = runtime.registry
     observability = runtime.observability
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
     checkpoint_store = open_default_task_checkpoint_persistence()
     task_enricher = build_reliability_task_enricher(
         env,

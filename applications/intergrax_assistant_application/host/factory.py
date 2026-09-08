@@ -66,10 +66,7 @@ def create_intergrax_assistant_application(
     )
     host_execution = runtime.execution
     resolved_registry = runtime.registry
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
     checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
     task_enricher = build_reliability_task_enricher(
         env,

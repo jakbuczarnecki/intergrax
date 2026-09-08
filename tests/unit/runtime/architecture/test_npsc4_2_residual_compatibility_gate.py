@@ -86,6 +86,58 @@ def _imported_modules(path: Path) -> set[str]:
     return modules
 
 
+_FORBIDDEN_TIER3_FACTORY_BOOTSTRAP_IMPORTS = frozenset(
+    {
+        "intergrax.applications._shared.platform_wiring",
+    }
+)
+
+_FORBIDDEN_TIER3_FACTORY_TOKENS = (
+    "bootstrap_nexus_platform",
+    "resolve_harness_host_nexus_loop_legacy",
+    "_internal_composition",
+    "_orchestration_backend",
+)
+
+
+def _tier3_factory_bootstrap_violations(path: Path) -> list[str]:
+    if path.name != "factory.py":
+        return []
+    rel = _relative(path)
+    source = path.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(path))
+    violations: list[str] = []
+
+    for token in _FORBIDDEN_TIER3_FACTORY_TOKENS:
+        if token in source:
+            violations.append(f"{rel}: forbidden token {token!r}")
+
+    modules = _imported_modules(path)
+    for module in _FORBIDDEN_TIER3_FACTORY_BOOTSTRAP_IMPORTS:
+        if module in modules:
+            violations.append(f"{rel}: forbidden import {module!r}")
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "bootstrap_application_plugins":
+            for keyword in node.keywords:
+                if keyword.arg == "nexus_loop":
+                    violations.append(f"{rel}: bootstrap_application_plugins(nexus_loop=...) forbidden")
+        if isinstance(func, ast.Attribute) and func.attr == "bootstrap_application_plugins":
+            for keyword in node.keywords:
+                if keyword.arg == "nexus_loop":
+                    violations.append(
+                        f"{rel}: bootstrap_application_plugins(..., nexus_loop=...) forbidden"
+                    )
+
+    if "from intergrax.runtime.nexus.nexus_loop import NexusLoop" in source:
+        violations.append(f"{rel}: raw NexusLoop import forbidden")
+
+    return violations
+
+
 @pytest.mark.gate
 def test_npsc42_retired_legacy_compat_tokens_absent_from_production() -> None:
     violations: list[str] = []
@@ -114,6 +166,17 @@ def test_npsc42_tier3_host_factories_have_no_legacy_compat_imports(host_root: Pa
         modules = _imported_modules(path)
         if "intergrax.applications._shared.harness_host_runtime_compat" in modules:
             violations.append(f"{_relative(path)}: imports harness_host_runtime_compat")
+    assert violations == [], "\n".join(violations)
+
+
+@pytest.mark.gate
+@pytest.mark.parametrize("host_root", _TIER3_HOST_ROOTS, ids=lambda p: p.parent.name)
+def test_npsc42f1_tier3_host_factories_use_canonical_harness_bootstrap(host_root: Path) -> None:
+    violations: list[str] = []
+    for path in host_root.rglob("*.py"):
+        if "docker" in path.parts or "runtime-context" in path.parts:
+            continue
+        violations.extend(_tier3_factory_bootstrap_violations(path))
     assert violations == [], "\n".join(violations)
 
 

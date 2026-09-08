@@ -111,10 +111,7 @@ def create_lab_application(
     )
     host_execution = runtime.execution
     resolved_registry = runtime.registry
-    plugin_bootstrap = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=integrations.trace_store,  # type: ignore[arg-type]
-    )
+    plugin_bootstrap = bootstrap_harness_host_platform(runtime)
     lab_notify_enricher = make_lab_harness_task_enricher(
         default_notify_channel=integrations.default_long_running_notify_channel,
         harness=settings.harness,
