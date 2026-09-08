@@ -102,12 +102,14 @@ class RuntimeToolInvoker:
         scope_policy: Optional[ToolScopePolicy] = None,
         pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
         sandbox_availability: Optional["SandboxAvailabilityProvider"] = None,
+        agent_runtime_governance: Optional[object] = None,
     ) -> None:
         self._registry = registry
         self._executor = executor
         self._scope_policy = scope_policy
         self._pre_effect_coordinator = pre_effect_coordinator
         self._sandbox_availability = sandbox_availability
+        self._agent_runtime_governance = agent_runtime_governance
         # Shared pool for timeout-isolated tool execution; default worker count
         # preserves concurrent independent invocations (not max_workers=1).
         self._execution_pool = ThreadPoolExecutor()
@@ -283,6 +285,13 @@ class RuntimeToolInvoker:
         request: ToolExecutionRequest[BaseModel],
     ) -> None:
         """Attempt-scoped authorization before each physical tool execution."""
+        self._require_agent_runtime_governance(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+
         if self._scope_policy is not None:
             allowed = self._scope_policy.is_allowed(
                 agent_id=agent_id,
@@ -424,6 +433,73 @@ class RuntimeToolInvoker:
                     matched_rule_ids=decision.matched_rule_ids,
                     reasons=decision.reasons,
                 )
+
+    def _require_agent_runtime_governance(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> None:
+        """NPSC-4 governance boundary — evaluated before tool execution when configured."""
+        governance = self._agent_runtime_governance
+        if governance is None:
+            return
+
+        from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
+        from intergrax.runtime.agent_governance.request_builder import (
+            build_tool_authorization_request,
+        )
+        from intergrax.runtime.agent_governance.errors import (
+            ToolGovernanceApprovalRequiredError,
+            ToolGovernanceDeniedError,
+        )
+        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
+            ToolInvocationErrorDiagV1,
+        )
+        from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
+
+        if not isinstance(governance, AgentRuntimeGovernancePort):
+            raise RuntimeError("agent_runtime_governance_invalid_type")
+
+        auth_request = build_tool_authorization_request(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+        try:
+            governance.authorize_tool(auth_request)
+        except ToolGovernanceDeniedError as exc:
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="agent_runtime_governance_denied",
+                message="Agent runtime governance denied tool invocation.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=exc.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                    error_message=str(exc),
+                ),
+            )
+            raise
+        except ToolGovernanceApprovalRequiredError as exc:
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="agent_runtime_governance_approval_required",
+                message="Agent runtime governance requires human approval.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=exc.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                    error_message=str(exc),
+                ),
+            )
+            raise
 
     @staticmethod
     def _requires_idempotency_coordination(
