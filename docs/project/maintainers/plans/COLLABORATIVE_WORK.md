@@ -555,6 +555,6 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 ## 4. Out of scope (current phase)
 
 - MP-3B…MP-3H runtime implementation (MP-3A **APPROVED / CLOSED**)
-- MP-4…MP-6 architecture or implementation rows (except bounded ownership checks when gated)
+- MP-4…MP-6 architecture or implementation rows (except bounded ownership checks when gated — MP-4 ownership **FROZEN** via ADR-MP-005; see [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md))
 - LKW product adoption (MP-7)
 - Runtime Python models beyond contract stubs until the relevant COLLAB-WORK-* row opens

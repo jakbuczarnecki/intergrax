@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); **architecture decomposition — APPROVED / CLOSED**; MP-3 runtime implementation is **IN PROGRESS** (MP-3A **APPROVED / CLOSED**). MP-4 (Decision) through MP-9 remain roadmap. **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). LKW adoption (MP-7), AgentDirectory / external-agent interoperability (MP-8), and advanced collaborative UX (MP-9) are **future**. Domain ownership for MP-4+ is provisional until bounded ownership checks close.
+**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4 ownership is FROZEN** (ADR-MP-005); **MP-4A — APPROVED / CLOSED**; MP-4B…MP-4H **NOT STARTED** — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap. LKW adoption (MP-7), AgentDirectory / external-agent interoperability (MP-8), and advanced collaborative UX (MP-9) are **future**.
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -448,15 +448,21 @@ not replace existing Evidence.
 
 ---
 
-### MP-4 - Decision / DecisionResponse or Approval semantics + HITL bridge
+### MP-4 - Decision / Approval / Governance + HITL bridge
 
-**Intent:** Collaborative decision and approval semantics for multi-principal workflows. Where execution must pause until a human or policy gate responds, bridge to existing Nexus HITL pause/resume - without conflating Decision records with HITL machinery.
+**Status:** **Ownership FROZEN / ACCEPTED** — ADR-MP-005 **Accepted**; **MP-4A — APPROVED / CLOSED**; MP-4B…MP-4H **NOT STARTED**.
 
-**Likely owning domains:** `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `UNIFIED_EXECUTION_RUNTIME` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`**
+**Intent:** Collaborative Decision, Approval, and Governance semantics for multi-principal workflows. Where execution must pause until a human or policy gate responds, bridge to existing Governed Execution HITL pause/resume — without conflating Decision records with HITL machinery or artifact lifecycle.
 
-**Reused (not owners):** Nexus HITL, policy evaluation surfaces, channel presentation of approval UX.
+**Owning domain:** [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) — frozen by ADR-MP-005 (Decision Domain · Approval Domain · Governance Domain collaborative semantics).
 
-**New required:** Decision / DecisionResponse (or Approval) collaborative primitive and explicit HITL bridge contract.
+**Frozen semantics:** Decision identity/lifecycle/outcome; Approval request/lifecycle/human actions; collaborative governance policies/controls/evidence linkage; anti-substitution (Decision ≠ Artifact; Approval ≠ Artifact state; HITL ≠ Approval store); MP-1 Principal/authority reuse; neutral `ExecutionProvenanceRef`; evidence reference only.
+
+**Reused (not owners):** Governed Execution HITL + policy evaluation; MP-1 Principal/membership/delegation; Proof Receipts / observability evidence handles; Collaborative Work WorkItem/WorkArtifact **references only**; channel presentation of approval UX.
+
+**New required (implementation):** MP-4B…MP-4H slices per [`DECISION_APPROVAL_GOVERNANCE` plan](../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md).
+
+**Next active task:** **MP-4B** — Decision contracts.
 
 ---
 
@@ -568,11 +574,12 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-002** | Principal / Membership / Delegation |
 | **ADR-MP-003** | WorkItem vs Nexus Task — Shared Work ownership |
 | **ADR-MP-004** | WorkArtifact collaborative ownership and version authority |
-| **ADR-MP-005** | Workspace platformization / LKW migration |
+| **ADR-MP-005** | Decision / Approval / Governance collaborative ownership (MP-4) |
 | **ADR-MP-006** | Principal-scoped ContextView |
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
+| **ADR-MP-008** | Workspace platformization / LKW migration |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED** (final independent review pass). **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; **architecture decomposition — APPROVED / CLOSED**; MP-3 runtime **IN PROGRESS** (MP-3A **APPROVED / CLOSED**). ADR-MP-005…007 and Decision ownership ADR (MP-4 gate) remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; MP-3 runtime **IN PROGRESS**. **ADR-MP-005 Accepted** — MP-4 ownership **FROZEN**; **MP-4A APPROVED / CLOSED**. ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 

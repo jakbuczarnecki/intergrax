@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**) — **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — APPROVED / CLOSED**; MP-3 runtime **IN PROGRESS**
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4 — ownership FROZEN / ACCEPTED** (ADR-MP-005); **MP-4A — APPROVED / CLOSED**
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
-**Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-3C** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
-**Next task:** Independent MP-3C audit — **MP-3D NOT STARTED**
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4)
+**Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
+**Current active task:** **MP-4B** — Decision contracts
+**Next task:** MP-4C — Approval / HITL contracts (after MP-4B)
 
 ---
 
@@ -193,24 +193,39 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 
 ---
 
-## MP-4 - Decision / DecisionResponse or Approval semantics + HITL bridge
+## MP-4 - Decision / Approval / Governance + HITL bridge
+
+**Domain plan (1:1):** [`DECISION_APPROVAL_GOVERNANCE.md`](../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md) · **ADR:** [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md)
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED / NOT STARTED |
-| **Purpose** | Collaborative decision and approval semantics with explicit bridge to Nexus HITL when execution must pause. |
-| **Likely owning domain plans** | `RELIABILITY_FAILURE_AND_HITL.md`, `NEXUS_EXECUTION_FLOW.md`, `UNIFIED_EXECUTION_RUNTIME.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
-| **Dependencies** | MP-1 accepted; MP-2 recommended |
-| **Exact scope** | Decision; DecisionResponse/Approval semantics; policy-gated response; explicit bridge to existing Nexus HITL pause/resume |
-| **REUSED EXISTING CAPABILITY** | Nexus HITL pause/resume; policy evaluation hooks |
-| **NEW CAPABILITY REQUIRED** | Decision / DecisionResponse (or Approval) collaborative primitive; HITL bridge contract |
-| **Explicit out of scope** | Slack vertical rows as Decision owner; conflating Decision records with HITL machinery |
-| **Architecture/ADR gate** | Decision/HITL separation, approval non-authorization, and explicit bridge semantics accepted; Decision ownership ADR required at MP-4 bounded gate |
-| **Pre-implementation domain-sync gate** | Bounded ownership check → domain architecture/plan sync with MP-4 rows |
+| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-005 **Accepted**; **MP-4A APPROVED / CLOSED**; MP-4B…MP-4H **NOT STARTED** |
+| **Purpose** | Collaborative Decision, Approval, and Governance semantics with explicit bridge to Governed Execution HITL when execution must pause. |
+| **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) |
+| **Dependencies** | MP-1 **CLOSED**; MP-2 **APPROVED / CLOSED**; MP-3 ownership **FROZEN** |
+| **Exact scope** | MP-4A ownership freeze; MP-4B…H decomposition — see domain plan |
+| **REUSED EXISTING CAPABILITY** | MP-1 Principal/authority; Governed Execution HITL + policy; `ExecutionProvenanceRef`; evidence references |
+| **NEW CAPABILITY REQUIRED** | Decision/Approval/Governance contracts (MP-4B+); HITL bridge contract (MP-4C) |
+| **Explicit out of scope** | Runtime orchestration; artifact lifecycle ownership; execution ownership; ACL duplication; persistence in MP-4A |
+| **Architecture/ADR gate** | ADR-MP-005 **Accepted** at MP-4A |
+| **Pre-implementation domain-sync gate** | MP-4A closure → MP-4B opens |
 | **User-visible outcome** | Explicit collaborative approvals that can pause and resume governed execution |
-| **Acceptance criteria** | A Decision can exist without an active task; a pause bridge uses existing HITL only; responses are principal- and policy-authorized; approval/evidence alone does not authorize execution; decision responses are idempotent |
-| **Expected proof/evidence** | Contract tests; authorization/isolation tests; HITL bridge integration proof; decision concurrency tests; idempotency tests; provenance/evidence linkage |
+| **Acceptance criteria** | Anti-substitution rules frozen; dependency direction frozen; reuse audit complete; no CW/UER leakage |
+| **Expected proof/evidence** | `check_docs_domain_pairs.py`; leakage greps; ADR compliance |
+
+### MP-4 slice status
+
+| Slice | Scope | Status |
+|-------|-------|--------|
+| MP-4A | Ownership + contracts freeze | **APPROVED / CLOSED** |
+| MP-4B | Decision contracts | NOT STARTED |
+| MP-4C | Approval / HITL contracts | NOT STARTED |
+| MP-4D | Authority integration | NOT STARTED |
+| MP-4E | Persistence boundary | NOT STARTED |
+| MP-4F | Evidence / provenance integration | NOT STARTED |
+| MP-4G | Qualification | NOT STARTED |
+| MP-4H | Final closure audit | NOT STARTED |
 
 ---
 
@@ -269,7 +284,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | **REUSED EXISTING CAPABILITY** | Prior LKW conversation, Ask, channel capabilities until explicitly integrated |
 | **NEW CAPABILITY REQUIRED** | LKW integration rows per adopted primitive (consumer-side only) |
 | **Explicit out of scope** | Transferring platform primitive ownership to LKW |
-| **Architecture/ADR gate** | Platform ownership and non-migration of current LKW Workspace are accepted; ADR-MP-005 completed |
+| **Architecture/ADR gate** | Platform ownership and non-migration of current LKW Workspace are accepted; ADR-MP-008 completed |
 | **Pre-implementation domain-sync gate** | Bounded ownership check → LKW plan sync; no substitution of LKW-local rows for missing primitives |
 | **User-visible outcome** | LKW demonstrates end-to-end Multiplayer on platform contracts |
 | **Acceptance criteria** | LKW consumes the selected platform contracts without redefining them; current LKW Workspace is not moved by this phase; ownership and authority boundaries remain enforceable end to end |

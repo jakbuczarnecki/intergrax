@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
-**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md)
+**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md) · MP-4 → [DECISION_APPROVAL_GOVERNANCE](DECISION_APPROVAL_GOVERNANCE.md) / [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md)
 
 ---
 
@@ -314,7 +314,7 @@ Mutations (create WorkItem, assign, WorkItem/Assignment state transitions, close
 | Phase | Boundary |
 |-------|----------|
 | MP-3 | WorkArtifact / WorkArtifactVersion — not WorkItem payload |
-| MP-4 | Decision / Approval — distinct primitive; not WorkItem state machine |
+| MP-4 | Decision / Approval / Governance — distinct primitives; not WorkItem or WorkArtifact lifecycle — see [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
 | MP-6 | Activity projection — hooks via stable identity/revision only |
 | MP-7 | LKW/channel IDs — adapter reference mappings only |
 
@@ -490,6 +490,22 @@ Decomposition **APPROVED / CLOSED** — full slice rows in [`plan/COLLABORATIVE_
 
 ---
 
+## MP-4 boundary (Collaborative Work — reference only)
+
+**Owning domain:** [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) — **ADR-MP-005 Accepted**; MP-4A **APPROVED / CLOSED**.
+
+Collaborative Work **does not own** Decision, Approval, HumanReviewState, or GovernanceStatus. WorkItem, WorkArtifact, and WorkArtifactVersion remain artifact/work primitives only.
+
+**Frozen non-leakage:**
+
+- No `Decision`, `Approval`, or governance fields on WorkItem / WorkArtifact / WorkArtifactVersion.
+- No `DRAFT` / `REVIEW` / `APPROVED` / `ARCHIVED` on WorkArtifactVersion — Approval references `WorkArtifactVersionId` externally.
+- Execution links remain neutral `ExecutionProvenanceRef` references only.
+
+Full ownership, anti-substitution, and dependency rules: [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md).
+
+---
+
 ## Future extension boundary (MP-2…MP-6)
 
 Future Multiplayer phases that belong on the collaborative work plane extend **this domain**, governed by their respective ADR/MP gates:
@@ -498,7 +514,7 @@ Future Multiplayer phases that belong on the collaborative work plane extend **t
 |-------|-------------------|
 | MP-2 | WorkItem, Assignment, shared-work lifecycle |
 | MP-3 | WorkArtifact, WorkArtifactVersion collaborative ownership |
-| MP-4 | Decision / DecisionResponse collaborative semantics |
+| MP-4 | Decision / Approval / Governance collaborative semantics — [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
 | MP-5 | Principal-scoped ContextView boundary (composition with UCL/Memory) |
 | MP-6 | Collaborative Activity + provenance linkage |
 
@@ -524,6 +540,7 @@ Collaborative Work (identity + authority semantics)
 
 | Document | Role |
 |----------|------|
+| [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md) | MP-4 Decision / Approval / Governance ownership |
 | [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) | Multi-layer feature coordination |
 | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Hosting boundary |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | Execution boundary |
