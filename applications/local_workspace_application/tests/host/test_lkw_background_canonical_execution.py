@@ -93,7 +93,7 @@ def _build_worker_handler(monkeypatch: pytest.MonkeyPatch, projection: object):
             ),
         ),
         patch(
-            "local_workspace_application.host.background_worker_factory.create_kafka_worker",
+            "local_workspace_application.host.background_worker_factory.create_default_background_worker",
             return_value=MagicMock(),
         ),
     ):

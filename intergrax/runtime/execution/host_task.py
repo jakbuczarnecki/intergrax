@@ -14,8 +14,6 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
-    mint_attempt_id,
-    mint_run_id,
     require_active_execution_identity,
 )
 from intergrax.runtime.execution.agentic import AgentEnginePort
@@ -32,7 +30,7 @@ from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRe
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionOptions,
-    mint_root_execution_identity,
+    resolve_root_execution_context,
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
@@ -213,32 +211,33 @@ class HostTaskExecution:
             capabilities=capabilities,
             output_type=TaskResult,
         )
-        resolved_run_id = run_id or mint_run_id()
-        resolved_attempt_id = attempt_id or mint_attempt_id()
-        root_identity = mint_root_execution_identity(
-            run_id=resolved_run_id,
-            attempt_id=resolved_attempt_id,
+        options = RootExecutionOptions(
+            authority=resolve_root_parent_execution_authority(task.execution_authority),
+            tenant_id=task.tenant_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
             execution_id=execution_id,
+        )
+        root_context = resolve_root_execution_context(options)
+        resolved_options = RootExecutionOptions(
+            authority=options.authority,
+            tenant_id=options.tenant_id,
+            run_id=root_context.run_id,
+            attempt_id=root_context.attempt_id,
+            execution_id=root_context.execution_id,
         )
         if self._revision_admission is not None:
             task = self._revision_admission.admit_root_execution(
                 tenant_id=task.tenant_id,
-                execution_id=root_identity.execution_id,
+                execution_id=root_context.execution_id,
                 task=task,
                 resume_checkpoint=resume_checkpoint,
                 restore_existing_execution=restore_existing_execution,
             )
-        options = RootExecutionOptions(
-            authority=resolve_root_parent_execution_authority(task.execution_authority),
-            tenant_id=task.tenant_id,
-            run_id=root_identity.run_id,
-            attempt_id=root_identity.attempt_id,
-            execution_id=root_identity.execution_id,
-        )
-        await ActiveTaskRegistry.register(task, root_identity.run_id)
+        await ActiveTaskRegistry.register(task, root_context.run_id)
         try:
             execution = Execution(self._execution_runtime_for_task(task))
-            result = await execution.execute(request, options=options)
+            result = await execution.execute(request, options=resolved_options)
             if (
                 self._terminal_publisher is not None
                 and terminal_outcome_from_task_state(result.state) is not None
@@ -251,10 +250,10 @@ class HostTaskExecution:
                 )
                 await self._terminal_publisher.publish_terminal(
                     terminal_task,
-                    run_id=root_identity.run_id,
-                    attempt_id=root_identity.attempt_id,
-                    execution_id=root_identity.execution_id,
+                    run_id=root_context.run_id,
+                    attempt_id=root_context.attempt_id,
+                    execution_id=root_context.execution_id,
                 )
             return result
         finally:
-            await ActiveTaskRegistry.unregister(task.task_id, root_identity.run_id)
+            await ActiveTaskRegistry.unregister(task.task_id, root_context.run_id)

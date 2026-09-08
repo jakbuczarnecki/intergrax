@@ -114,9 +114,19 @@ def test_llm_profile_lab_remains_explicit_ollama() -> None:
     assert profile.model == "llama3.1:latest"
 
 
-def test_explicit_ollama_missing_sdk_raises_dependency_error() -> None:
+def test_explicit_ollama_missing_sdk_raises_dependency_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    import builtins
+
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="test.ollama")
     env = env.model_copy(update={"llm_profile": LLMProfile.lab()})
+    original_import = builtins.__import__
+
+    def _block_ollama(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "ollama":
+            raise ModuleNotFoundError("No module named 'ollama'", name="ollama")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", _block_ollama)
     with patch.dict("os.environ", {}, clear=True):
         with pytest.raises(LLMAdapterDependencyError, match="provider 'ollama'"):
             resolve_environment_llm_adapter(env)
