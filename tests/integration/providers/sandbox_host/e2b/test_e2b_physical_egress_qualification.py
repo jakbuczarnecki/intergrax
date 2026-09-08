@@ -5,15 +5,18 @@
 from __future__ import annotations
 
 import ast
+import hashlib
+import json
+import re
 from pathlib import Path
 
 import pytest
 
 from intergrax.integrations.contracts.sandbox_host import SandboxExecResult, SandboxSession
 from intergrax.integrations.providers.sandbox_host.e2b.bundle import create_e2b_sandbox_host
-from intergrax.integrations.providers.sandbox_host.e2b.config import E2bSandboxHostConfig
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from tests.integration.providers.sandbox_host.e2b.qualification import (
+    E2bCredentialStatus,
     HostProbeEvidence,
     NetworkProbeResult,
     PhysicalEgressQualificationEvidence,
@@ -23,6 +26,7 @@ from tests.integration.providers.sandbox_host.e2b.qualification import (
     QualifiedPhaseEvidence,
     RedirectPhaseEvidence,
     default_e2b_physical_egress_scenario,
+    resolve_e2b_credentials,
 )
 from tests.integration.providers.sandbox_host.e2b.qualification.models import RedirectEvidence
 
@@ -34,19 +38,35 @@ pytestmark = [
 ]
 
 _QUALIFICATION_ROOT = Path(__file__).resolve().parent / "qualification"
-
-
-def _credential_available() -> bool:
-    try:
-        E2bSandboxHostConfig.from_env().resolved_api_key()
-    except Exception:
-        return False
-    return True
+_EVIDENCE_ROOT = Path(".tmp/session/e2b-physical-egress-qualification")
+_CREDENTIAL_SKIP_REASON = "E2B credentials unavailable from environment"
+_SECRET_PATTERNS = (
+    re.compile(r"sk-[a-zA-Z0-9]{8,}"),
+    re.compile(r"E2B_API_KEY", re.IGNORECASE),
+    re.compile(r"INTERGRAX_E2B_API_KEY", re.IGNORECASE),
+    re.compile(r"Bearer\s+[A-Za-z0-9._-]{8,}"),
+)
 
 
 def _require_credentials() -> None:
-    if not _credential_available():
-        pytest.skip("E2B_API_KEY / INTERGRAX_E2B_API_KEY unavailable for physical qualification")
+    if resolve_e2b_credentials() is not E2bCredentialStatus.AVAILABLE:
+        pytest.skip(_CREDENTIAL_SKIP_REASON)
+
+
+def _write_qualification_evidence(evidence: PhysicalEgressQualificationEvidence) -> Path:
+    _EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
+    safe_ref = evidence.execution_reference.replace(":", "-")
+    evidence_path = _EVIDENCE_ROOT / f"{safe_ref}.json"
+    payload = evidence.to_mapping()
+    payload["session_identifier_hashes"] = [
+        hashlib.sha256(cleanup.session_id.encode("utf-8")).hexdigest()[:16]
+        for cleanup in evidence.cleanup_phases
+    ]
+    serialized = json.dumps(payload, indent=2, sort_keys=True)
+    for pattern in _SECRET_PATTERNS:
+        assert pattern.search(serialized) is None
+    evidence_path.write_text(serialized, encoding="utf-8")
+    return evidence_path
 
 
 @pytest.fixture(scope="module")
@@ -103,6 +123,27 @@ def test_redirect_escape_is_blocked(qualification_runner: QualificationRunner) -
     assert evidence.escaped is False
     assert len(cleanup) == 1
     assert cleanup[0].destroyed is True
+
+
+def test_attestation_correlation_passes(qualification_runner: QualificationRunner) -> None:
+    cleanup: list = []
+    qualified = qualification_runner.run_qualified_phase(cleanup)
+    correlation = qualified.attestation_correlation
+    assert correlation is not None
+    assert correlation.passes() is True
+    assert correlation.attestation_verified is True
+    assert correlation.execution_verified is True
+    assert len(cleanup) == 1
+    assert cleanup[0].destroyed is True
+
+
+def test_physical_egress_causal_proof_end_to_end(
+    qualification_runner: QualificationRunner,
+) -> None:
+    evidence = qualification_runner.run_and_assert()
+    assert evidence.passes_causal_proof() is True
+    evidence_path = _write_qualification_evidence(evidence)
+    assert evidence_path.is_file()
 
 
 class _RecordingProbe:
@@ -217,11 +258,12 @@ def test_cleanup_runs_after_failure_records_cleanup_error() -> None:
 
 def test_missing_credentials_skip_without_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        f"{__name__}._credential_available",
-        lambda: False,
+        "tests.integration.providers.sandbox_host.e2b.qualification.credentials.resolve_e2b_credentials",
+        lambda: E2bCredentialStatus.UNAVAILABLE,
     )
-    with pytest.raises(pytest.skip.Exception):  # type: ignore[attr-defined]
+    with pytest.raises(pytest.skip.Exception) as exc_info:  # type: ignore[attr-defined]
         _require_credentials()
+    assert _CREDENTIAL_SKIP_REASON in str(exc_info.value)
 
 
 _FORBIDDEN_IMPORT_PREFIXES = (

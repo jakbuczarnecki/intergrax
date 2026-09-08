@@ -218,3 +218,13 @@ class QualificationRunner:
         redirect = evidence.redirect_phase.redirect
         if redirect.escaped:
             raise QualificationAssertionError("redirect phase: escape to blocked host succeeded")
+        correlation = qualified.attestation_correlation
+        if correlation is None or not correlation.passes():
+            raise QualificationAssertionError(
+                "attestation correlation: requested, attested, and observed scope mismatch",
+            )
+        for cleanup in evidence.cleanup_phases:
+            if not cleanup.destroyed:
+                raise QualificationAssertionError(
+                    f"cleanup phase: sandbox session not destroyed ({cleanup.session_id})",
+                )
