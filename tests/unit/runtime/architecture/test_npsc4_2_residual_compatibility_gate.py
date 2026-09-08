@@ -145,3 +145,48 @@ def test_npsc42_raw_nexus_imports_remain_composition_owner_allowlist() -> None:
     assert violations == [], (
         "unexpected NexusLoop imports in shared application wiring:\n" + "\n".join(violations)
     )
+
+
+_ALLOWED_ORCHESTRATION_BACKEND_ACCESSORS = frozenset(
+    {
+        "intergrax/applications/_shared/harness_host_composition.py",
+        "applications/local_workspace_application/model_runtime_proof/runtime.py",
+        "scripts/maintenance/check_harness_security_wiring.py",
+        "scripts/maintenance/check_harness_reliability_wiring.py",
+    }
+)
+
+
+def _source_references_orchestration_backend(path: Path) -> bool:
+    return "_orchestration_backend" in path.read_text(encoding="utf-8-sig")
+
+
+@pytest.mark.gate
+def test_npsc42_orchestration_backend_access_confined_to_allowlist() -> None:
+    violations: list[str] = []
+    scan_roots = (
+        _REPO_ROOT / "intergrax",
+        _REPO_ROOT / "applications",
+        _REPO_ROOT / "scripts",
+        _REPO_ROOT / "proof_infrastructure",
+    )
+    for root in scan_roots:
+        for path in _python_files(root):
+            if path.name.startswith("test_") or "/tests/" in _relative(path):
+                continue
+            if not _source_references_orchestration_backend(path):
+                continue
+            rel = _relative(path)
+            if rel not in _ALLOWED_ORCHESTRATION_BACKEND_ACCESSORS:
+                violations.append(rel)
+    assert violations == [], (
+        "unexpected production _orchestration_backend access:\n" + "\n".join(violations)
+    )
+
+
+@pytest.mark.gate
+def test_npsc42_harness_host_platform_bootstrap_has_no_trace_type_suppression() -> None:
+    source = _COMPOSITION_PATH.read_text(encoding="utf-8-sig")
+    assert "bootstrap_harness_host_platform" in source
+    assert "# type: ignore[arg-type]" not in source
+    assert "cast(" not in source

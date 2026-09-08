@@ -10,14 +10,13 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
     PersistedRun,
     RunMetadata,
     RunSummary,
-    RunTraceReader,
-    RunTraceWriter,
+    RunTraceStore,
     SerializedTraceEvent,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 
 
-class InMemoryRunTraceStore(RunTraceWriter, RunTraceReader):
+class InMemoryRunTraceStore(RunTraceStore):
     """
     Minimal, deterministic trace store for tests and local runs.
     Stores serialized TraceEvents per run_id.

@@ -129,7 +129,7 @@ def bootstrap_harness_host_platform(
     resolved_trace = trace_store or runtime.observability.trace_store
     return bootstrap_nexus_platform(
         composition._orchestration_backend,
-        trace_store=resolved_trace,  # type: ignore[arg-type]
+        trace_store=resolved_trace,
         metrics_store=metrics_store,
     )
 

@@ -14,8 +14,7 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
     RunError,
     RunStats,
     RunSummary,
-    RunTraceWriter,
-    RunTraceReader,
+    RunTraceStore,
     PersistedRun,
     RunMetadata,
     SerializedTraceEvent,
@@ -23,7 +22,7 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 
 
-class SQLiteRunTraceStore(RunTraceWriter, RunTraceReader):
+class SQLiteRunTraceStore(RunTraceStore):
     """
     Minimal production-grade SQLite-backed trace store.
 

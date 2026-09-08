@@ -17,7 +17,7 @@ from intergrax.runtime.events.store import (
     resolve_runtime_events_db_path,
 )
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.runtime.nexus.tracing.persistence_models import RunTraceStore
 from intergrax.runtime.nexus.tracing.store import open_run_trace_store, resolve_trace_db_path
 from intergrax.runtime.persistence.integration_profile_wiring import (
     open_runtime_event_store_from_profile,
@@ -29,7 +29,7 @@ from intergrax.runtime.persistence.integration_profile_wiring import (
 class NexusObservabilityStores:
     """Trace + runtime event backends wired into ``NexusLoop`` and debug API."""
 
-    trace_store: RunTraceWriter
+    trace_store: RunTraceStore
     runtime_event_store: RuntimeEventPersistence | None
     trace_db_path: Path | None
     runtime_events_db_path: Path | None
@@ -39,7 +39,7 @@ def wire_nexus_observability(
     *,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
-    trace_store: RunTraceWriter | None = None,
+    trace_store: RunTraceStore | None = None,
     runtime_event_store: RuntimeEventPersistence | None = None,
     use_in_memory_trace: bool = False,
     enable_runtime_events: bool = True,
