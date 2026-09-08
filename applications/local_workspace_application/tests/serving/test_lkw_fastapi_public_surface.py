@@ -121,7 +121,7 @@ def test_fastapi_router_has_no_nexus_registry_dependency() -> None:
     router_source = (
         Path(__file__).resolve().parents[2] / "serving" / "fastapi_router.py"
     ).read_text(encoding="utf-8")
-    forbidden = ("NexusLoop", "nexus_loop", "resolve_harness_host_nexus_loop_legacy")
+    forbidden = ("NexusLoop", "nexus_loop", "resolve_harness_host_execution_terminal")
     for token in forbidden:
         assert token not in router_source
 

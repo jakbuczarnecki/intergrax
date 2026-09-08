@@ -30,7 +30,6 @@ from intergrax.applications._shared.identity_wiring import wire_application_iden
 from intergrax.applications._shared.harness_host_auxiliary_wiring import HostTaskExecutionExecutor
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.host_queue_execution_wiring import (
     apply_queue_worker_environment_profile,
     resolve_host_queue_execution_dependencies,
@@ -46,7 +45,14 @@ from intergrax.applications._shared.task_control_wiring import (
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_environment_profile, build_legal_manifest
 
@@ -88,7 +94,6 @@ def create_legal_backend_app(
         key_value_cache=key_value_cache,
     )
     host_execution = runtime.execution
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     registry = runtime.registry
     observability = runtime.observability
     platform = bootstrap_nexus_platform(

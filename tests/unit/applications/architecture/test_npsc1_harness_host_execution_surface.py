@@ -12,8 +12,13 @@ from intergrax.applications._shared.harness_host_runtime import (
     HarnessHostRuntime,
     build_harness_host_runtime,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.applications._shared.production_platform_persistence import (
     build_reference_production_platform_persistence,
@@ -185,7 +190,7 @@ async def test_agentic_execution_does_not_require_caller_nexus() -> None:
         context=TaskContext(capability="echo.basic"),
         agent_id="search",
     )
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
+    nexus_loop = runtime._internal_composition._orchestration_backend  # noqa: SLF001
 
     with patch.object(nexus_loop, "handle_task", new_callable=AsyncMock) as handle_task_mock:
         with patch(
@@ -213,7 +218,7 @@ async def test_orchestration_execution_reaches_internal_nexus_backend() -> None:
         message="orchestration proof",
         context=TaskContext(capability="research.pipeline"),
     )
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
+    nexus_loop = runtime._internal_composition._orchestration_backend  # noqa: SLF001
 
     with patch.object(
         nexus_loop,

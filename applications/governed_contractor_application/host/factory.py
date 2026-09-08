@@ -21,10 +21,8 @@ from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import (
     attach_plugin_shutdown,
-    bootstrap_application_plugins,
 )
 from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
@@ -38,8 +36,13 @@ from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     wire_harness_product_observability_dashboard,
@@ -78,7 +81,6 @@ def create_governed_contractor_backend_app(
         document_store=document_store,
     )
     host_execution = runtime.execution
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     registry = runtime.registry
     platform = bootstrap_nexus_platform(
         nexus_loop,
@@ -87,9 +89,9 @@ def create_governed_contractor_backend_app(
     if observability_export is not None and observability_export.enabled:
         export_plugin = build_observability_export_runtime_plugin(observability_export)
         if export_plugin is not None:
-            export_bootstrap = bootstrap_application_plugins(
+            export_bootstrap = bootstrap_harness_host_application_plugins(
+                runtime,
                 [export_plugin],
-                nexus_loop=nexus_loop,
             )
             platform.shutdown_callbacks.extend(export_bootstrap.shutdown_callbacks)
     checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)

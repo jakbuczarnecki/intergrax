@@ -9,7 +9,14 @@ from unittest.mock import patch
 import pytest
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
 from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (
@@ -40,7 +47,7 @@ def test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requi
         )
 
     resolve_mock.assert_not_called()
-    assert resolve_harness_host_nexus_loop_legacy(runtime) is not None
+    assert runtime._internal_composition is not None
     assert runtime.execution is not None
     assert runtime.env_wiring.build_context.tool_profile is not None
 
@@ -67,6 +74,6 @@ def test_build_harness_host_runtime_default_planner_without_engine_kind() -> Non
         use_in_memory_trace=True,
     )
 
-    assert resolve_harness_host_nexus_loop_legacy(runtime) is not None
+    assert runtime._internal_composition is not None
     assert runtime.execution is not None
     assert runtime.env_wiring.build_context.tool_profile is not None

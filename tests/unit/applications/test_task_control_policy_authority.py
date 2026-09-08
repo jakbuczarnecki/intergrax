@@ -33,7 +33,14 @@ from intergrax.applications._shared.task_control_governance import (
 from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from governed_contractor_application.tests.governed_contractor_ac3_projection import (
     build_governed_contractor_test_registry_projection,
 )

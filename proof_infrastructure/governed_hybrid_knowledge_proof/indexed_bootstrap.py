@@ -18,7 +18,14 @@ from intergrax.applications._shared.registry_projection import build_registry_pr
 from intergrax.applications._shared.registry_projection_input_bundle import (
     build_reference_registry_projection_input_bundle,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.host.agent_builders import LOCAL_WORKSPACE_AGENT_BUILDERS
 from local_workspace_application.host.environment_profile import (
@@ -221,7 +228,7 @@ async def bootstrap_indexed_proof_stack(
     idempotency_store=harness_runtime.reliability.idempotency_store,
   )
   inner_executor = LocalWorkspaceTaskExecutor(
-    build_lkw_host_task_execution(resolve_harness_host_nexus_loop_legacy(harness_runtime), env),
+    harness_runtime.execution,
     task_enricher=task_enricher,
     readiness=lifecycle,
   )

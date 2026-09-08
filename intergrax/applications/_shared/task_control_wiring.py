@@ -14,8 +14,8 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
 )
 from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    resolve_harness_host_execution_terminal,
 )
 from intergrax.applications._shared.harness_task_routes import mount_canonical_harness_task_routes
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
@@ -55,7 +55,7 @@ def resolve_harness_task_control_execution_terminal(
         return execution_terminal
     if runtime is None:
         return None
-    return resolve_harness_host_nexus_loop_legacy(runtime).execution_terminal
+    return resolve_harness_host_execution_terminal(runtime)
 
 
 def build_reliability_task_enricher(

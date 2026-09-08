@@ -24,7 +24,6 @@ from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     wire_harness_host_long_running_scheduler,
 )
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.host_queue_execution_wiring import (
     apply_queue_worker_environment_profile,
@@ -42,7 +41,14 @@ from intergrax.runtime.interactions.router import create_interaction_intake_rout
 from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
 from intergrax.runtime.nexus.orchestration_capabilities import orchestration_capabilities_from_triggers
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from dispute_sim_application.host.settings import DisputeSimBackendSettings
 from dispute_sim_application.host.environment_profile import build_dispute_sim_environment_profile
 from dispute_sim_application.manifest import build_dispute_sim_manifest
@@ -76,7 +82,6 @@ def create_dispute_sim_backend_app(
         key_value_cache=key_value_cache,
     )
     host_execution = runtime.execution
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     platform = bootstrap_nexus_platform(
         nexus_loop,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]

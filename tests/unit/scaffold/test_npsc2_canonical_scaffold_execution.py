@@ -49,11 +49,11 @@ _FORBIDDEN_GENERATED_TOKENS = (
     "runtime.nexus_loop",
     ".execution.nexus_loop",
     "host_execution.nexus_loop",
-    "resolve_harness_host_nexus_loop_legacy",
+    "resolve_harness_host_execution_terminal",
     "build_environment_host_task_execution",
     "build_host_task_execution",
-    "harness_host_runtime_compat",
-    "HarnessHostLegacyComposition",
+    "harness_host_composition",
+    "HarnessHostInternalComposition",
     "from intergrax.runtime.nexus.nexus_loop import NexusLoop",
 )
 
@@ -236,7 +236,7 @@ def test_scaffold_template_sources_gate_forbidden_execution_tokens() -> None:
         for token in (
             "runtime.nexus_loop",
             "host_execution.nexus_loop",
-            "resolve_harness_host_nexus_loop_legacy",
+            "resolve_harness_host_execution_terminal",
             "build_environment_host_task_execution",
         ):
             assert token not in text, f"{rel} must not reference forbidden token: {token}"

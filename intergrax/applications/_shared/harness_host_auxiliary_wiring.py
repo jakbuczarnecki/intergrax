@@ -4,8 +4,8 @@
 """Runtime-scoped auxiliary wiring for Tier-3 harness hosts (NPSC-2).
 
 Author-facing application code should depend on ``HarnessHostRuntime.execution``.
-Internal platform subsystems (plugins, scheduler, debug API) still
-compose through legacy Nexus handles resolved here — not in generated Tier-3 hosts.
+Internal platform subsystems (plugins, scheduler, debug API) compose through
+typed harness host capabilities — not in generated Tier-3 hosts.
 """
 
 from __future__ import annotations
@@ -15,39 +15,30 @@ from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_platform,
+    resolve_harness_host_execution_terminal,
 )
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
-from intergrax.applications._shared.plugin_bootstrap import PluginBootstrapResult
 from intergrax.applications._shared.task_control_wiring import (
     TaskEnricher,
     wire_harness_task_control,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.debug.app import create_debug_app
+from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.interactions.intake_service import InteractionIntakeService
+from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.wiring import (
     LongRunningSchedulerWiring,
     wire_long_running_scheduler_with_host_execution,
 )
-from intergrax.debug.app import create_debug_app
-from intergrax.debug.hitl_service import DebugHitlResumeService
-from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
-from intergrax.runtime.interactions.intake_service import InteractionIntakeService
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
-
-
-def bootstrap_harness_host_platform(runtime: HarnessHostRuntime) -> PluginBootstrapResult:
-    """Register default runtime plugins for a composed harness host."""
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
-    return bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=runtime.observability.trace_store,
-    )
 
 
 def wire_harness_host_long_running_scheduler(
@@ -61,11 +52,10 @@ def wire_harness_host_long_running_scheduler(
     enabled: bool = True,
 ) -> LongRunningSchedulerWiring | None:
     """Long-running scheduler wired to canonical host execution."""
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     return wire_long_running_scheduler_with_host_execution(
         checkpoint_store=checkpoint_store,
         host_execution=host_execution,
-        execution_terminal=nexus_loop.execution_terminal,
+        execution_terminal=resolve_harness_host_execution_terminal(runtime),
         task_enricher=task_enricher,
         notification_adapter=notification_adapter,
         poll_interval_seconds=poll_interval_seconds,
@@ -132,7 +122,7 @@ def create_harness_host_debug_app(
         runtime_events_db_path=runtime.observability.runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry=registry,
-        nexus_loop=resolve_harness_host_nexus_loop_legacy(runtime),
+        host_execution=runtime.execution,
         interaction_service=interaction_service,
         hitl_service=hitl_service,
         checkpoint_store=checkpoint_store,

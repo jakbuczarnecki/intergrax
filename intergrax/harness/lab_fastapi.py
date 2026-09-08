@@ -1,22 +1,22 @@
 # © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
 """Minimal lab FastAPI surface for :class:`~intergrax.harness.app.HarnessApplication`."""
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 from fastapi import APIRouter, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
+from intergrax.applications._shared.harness_host_composition import bootstrap_harness_host_platform
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.identity_wiring import wire_application_identity
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 
@@ -43,7 +43,7 @@ def mount_harness_routes(
     app: FastAPI,
     *,
     host_execution: HostTaskExecutionPort,
-    nexus_loop: NexusLoop,
+    registry: AgentRegistryRead,
     prefix: str,
     task_enricher: Callable[[Task], Task] | None = None,
 ) -> None:
@@ -81,8 +81,8 @@ def mount_harness_routes(
     @router.get("/agents")
     async def list_agents() -> dict[str, list[dict[str, object]]]:
         agents: list[dict[str, object]] = []
-        for agent_id in nexus_loop.registry.list_agent_ids():
-            contract = nexus_loop.registry.get(agent_id).get_contract()
+        for agent_id in registry.list_agent_ids():
+            contract = registry.get(agent_id).get_contract()
             agents.append(
                 {
                     "agent_id": contract.id,
@@ -102,15 +102,15 @@ def create_lab_fastapi_from_runtime(
     mount_routes: bool = True,
 ) -> FastAPI:
     app = FastAPI(title=runtime.manifest.name)
-    platform = bootstrap_nexus_platform(
-        resolve_harness_host_nexus_loop_legacy(runtime),
+    platform = bootstrap_harness_host_platform(
+        runtime,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
     if mount_routes:
         mount_harness_routes(
             app,
             host_execution=runtime.execution,
-            nexus_loop=resolve_harness_host_nexus_loop_legacy(runtime),
+            registry=runtime.registry,
             prefix=route_prefix,
         )
     attach_plugin_shutdown(app, platform.shutdown_callbacks)

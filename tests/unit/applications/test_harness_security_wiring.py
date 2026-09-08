@@ -23,8 +23,13 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationSecurityProfile,
     IdentityProfile,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -111,7 +116,7 @@ def test_build_harness_host_runtime_wires_security_middleware() -> None:
     env = manifest.environment
     assert env is not None
     runtime = build_harness_host_runtime(manifest, env, settings=settings)
-    pipeline = resolve_harness_host_nexus_loop_legacy(runtime)._middleware  # noqa: SLF001
+    pipeline = resolve_harness_host_middleware_pipeline(runtime)  # noqa: SLF001
     assert isinstance(pipeline, MiddlewarePipeline)
     names = {middleware.name for middleware in pipeline._middleware}  # noqa: SLF001
     for middleware_name in runtime.security.enabled_middleware:

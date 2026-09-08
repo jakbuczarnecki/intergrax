@@ -76,7 +76,14 @@ from applications.local_workspace_application.tests.workspaces.rag_e2e_support i
     _NOW,
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.live.bootstrap import (
@@ -190,7 +197,7 @@ def acme_reference_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
     task_executor = LocalWorkspaceTaskExecutor(
-        resolve_harness_host_nexus_loop_legacy(harness_runtime),
+        harness_runtime._internal_composition._orchestration_backend  # noqa: SLF001,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )
@@ -459,7 +466,7 @@ def test_acme_reference_restart_rehydration_search_ask(acme_reference_e2e_env) -
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
     task_executor = LocalWorkspaceTaskExecutor(
-        resolve_harness_host_nexus_loop_legacy(harness_runtime),
+        harness_runtime._internal_composition._orchestration_backend  # noqa: SLF001,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

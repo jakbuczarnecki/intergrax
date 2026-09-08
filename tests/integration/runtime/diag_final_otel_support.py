@@ -30,7 +30,14 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
 )
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.plugin_bootstrap import bootstrap_application_plugins
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.diagnostics.problem_lifecycle import (
@@ -489,7 +496,7 @@ def attach_retry_violation_injector(
             tenant_id=event.tenant_id,
         )
 
-    resolve_harness_host_nexus_loop_legacy(runtime).event_bus.subscribe(
+    resolve_harness_host_event_bus(runtime).subscribe(
         _handler,
         event_types={RuntimeEventType.TASK_COMPLETED},
         priority=10,
@@ -525,7 +532,7 @@ def build_diag_final_product_host(
         if export_plugin is not None:
             bootstrap_application_plugins(
                 [export_plugin],
-                nexus_loop=resolve_harness_host_nexus_loop_legacy(runtime),
+                nexus_loop=runtime._internal_composition._orchestration_backend,  # noqa: SLF001
             )
     if inject_violation:
         attach_retry_violation_injector(runtime, tenant_id=tenant_id)

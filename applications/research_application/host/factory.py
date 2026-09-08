@@ -30,7 +30,6 @@ from intergrax.applications._shared.harness_host_auxiliary_wiring import (
 )
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
@@ -38,7 +37,14 @@ from intergrax.applications._shared.task_control_wiring import (
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.environment_profile import (
     build_research_environment_profile,
@@ -93,9 +99,8 @@ def create_research_backend_app(
         **profile_persistence_kwargs,
     )
     host_execution = runtime.execution
-    nexus = resolve_harness_host_nexus_loop_legacy(runtime)
-    platform = bootstrap_nexus_platform(
-        nexus,
+    platform = bootstrap_harness_host_platform(
+        runtime,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
 

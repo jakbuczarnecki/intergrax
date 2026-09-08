@@ -25,7 +25,6 @@ from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import bootstrap_lab_integration_wiring
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.acp_checkpoint_task_enricher import make_acp_checkpoint_task_enricher
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
@@ -47,7 +46,14 @@ from intergrax.applications._shared.harness_host_auxiliary_wiring import (
 from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
 from intergrax.applications._shared.replay_routes import create_replay_router
 from intergrax.applications._shared.scaling_wiring import wire_application_scaling
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 
 
 def create_lab_application(
@@ -104,7 +110,6 @@ def create_lab_application(
         notification_adapter=integrations.notification_adapter,
     )
     host_execution = runtime.execution
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     resolved_registry = runtime.registry
     plugin_bootstrap = bootstrap_nexus_platform(
         nexus_loop,
@@ -151,7 +156,6 @@ def create_lab_application(
         runtime_events_db_path=integrations.runtime_events_db_path,
         checkpoints_db_path=integrations.checkpoints_db_path,
         registry=resolved_registry,
-        nexus_loop=nexus_loop,
         interaction_service=interaction_service,
         hitl_service=hitl_service,
         checkpoint_store=integrations.checkpoint_store,
@@ -196,7 +200,7 @@ def create_lab_application(
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     scaling_wiring = wire_application_scaling(
         lab_env,
-        event_bus=resolve_harness_host_nexus_loop_legacy(runtime).event_bus,
+        event_bus=resolve_harness_host_event_bus(runtime),
     )
     factory_schedulers = [s for s in (scheduler, scaling_wiring.scheduler) if s is not None]
     if settings.include_mcp:

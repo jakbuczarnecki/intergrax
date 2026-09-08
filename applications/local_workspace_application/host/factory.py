@@ -27,16 +27,19 @@ from intergrax.applications._shared.registry_projection import MaterializedRegis
 from intergrax.applications._shared.interaction_wiring import (
     wire_interaction_intake_service,
 )
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import (
     attach_plugin_shutdown,
-    bootstrap_application_plugins,
 )
 from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     wire_harness_host_long_running_scheduler,
@@ -153,18 +156,17 @@ def create_local_workspace_backend_app(
     runtime.env_wiring.tool_wiring.wiring_context.extras[
         functional_evidence_wiring_extra_key()
     ] = functional_evidence_wiring
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
+    platform = bootstrap_harness_host_platform(
+        runtime,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
     lkw_observability_plugins = build_local_workspace_observability_plugins(
         observability_export
     )
     if lkw_observability_plugins:
-        lkw_plugin_bootstrap = bootstrap_application_plugins(
+        lkw_plugin_bootstrap = bootstrap_harness_host_application_plugins(
+            runtime,
             list(lkw_observability_plugins),
-            nexus_loop=nexus_loop,
         )
         platform.shutdown_callbacks.extend(lkw_plugin_bootstrap.shutdown_callbacks)
 
