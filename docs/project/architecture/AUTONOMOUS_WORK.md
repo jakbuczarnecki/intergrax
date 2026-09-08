@@ -606,6 +606,19 @@ Discovery ≠ Selection ≠ Acquisition ≠ Execution
 
 AW-7A is a read/decision layer only — it does not invoke Tools, Skills, Agents, or CodeCraft during discovery.
 
+AW-7B is the bounded A1 execution boundary — it consumes `EPHEMERAL_GENERATION_CANDIDATE` decisions only, validates A1 eligibility and correlation fail-closed, and delegates to `WorkerEphemeralCapabilityExecutionPort`. The CodeCraft adapter (`CodeCraftEphemeralCapabilityExecutionAdapter`) owns canonical craft lifecycle via public `CodeCraftOrchestrator` APIs. AW-7B does not mint authority, mutate ToolRegistry, or perform durable publication.
+
+```text
+AW-7A decision (EPHEMERAL_GENERATION_CANDIDATE)
+  → WorkerEphemeralCapabilityExecutionService
+  → WorkerEphemeralCapabilityExecutionPort
+  → CodeCraftEphemeralCapabilityExecutionAdapter
+  → CodeCraftOrchestrator (start → bounded iterate → promote → dispose)
+  → verified ephemeral result (session-scoped craft_id / ephemeral tool ref)
+```
+
+Hard separation preserved: `decision ≠ execution`. A1 result ≠ ToolRegistry entry ≠ durable production capability.
+
 ### Canonical reuse ladder (frozen)
 
 Ordered by least authority expansion, least operational risk, least lifecycle complexity, and reuse over creation:
@@ -664,6 +677,8 @@ AW projection retains domain evidence (`ProblemReference`, canonical candidate i
 See [extended depth — Capability acquisition](satellites/AUTONOMOUS_WORK_extended_depth.md#capability-acquisition) for the full nine-step ladder and missing-capability vs missing-authority rules.
 
 **Related canon:** [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) federation (catalog plane); AC-4 agent acquisition remains separate from AW-7A worker recovery.
+
+**Stage-14 integration seam (Capability Catalog V1):** routine work-stage capability rediscovery uses `WorkStageCapabilityDiscoveryLoopCoordinator` (`intergrax/autonomous_work/work_stage_capability_loop.py`) over Stage-8 discovery with fresh federation snapshots per typed `WorkStageCapabilityNeed`. Stage-14 reference composition is provider-neutral (`WorkStageToolExecutionPort`); `RuntimeToolInvoker` is exercised by integration qualification, not imported by AW core. AW worker orchestration, observability (AW-8), control plane (AW-9), and virtual workforce (AW-10) remain **not started** — Stage 14 is reference proof only.
 
 ---
 

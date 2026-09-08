@@ -14,7 +14,6 @@ from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
 
 
 class AttestationPocRunRequestV1(BaseModel):
@@ -52,7 +51,6 @@ class AttestationPocRunService:
     boundary_event_buffer: BoundaryEventBuffer
 
     async def run_task(self, body: AttestationPocRunRequestV1) -> AttestationPocRunResponseV1:
-        run_id = new_run_id()
         metadata = dict(body.metadata)
         metadata["partition_key"] = body.partition_key
         if body.row_key:
@@ -60,7 +58,6 @@ class AttestationPocRunService:
         if body.record_data is not None:
             metadata["record_data"] = body.record_data
         task = Task(
-            task_id=run_id,
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             session_id=body.session_id,
@@ -69,7 +66,9 @@ class AttestationPocRunService:
             metadata=metadata,
         )
         result = await self.host_execution.execute(task)
-        resolved_run_id = result.run_id or run_id
+        resolved_run_id = result.run_id
+        if resolved_run_id is None:
+            raise ValueError("host execution did not return run_id")
         boundary_events = self.boundary_event_buffer.snapshot_for_run(resolved_run_id)
         host_signed = any(event.get("signed") is True for event in boundary_events)
         trust_model = {

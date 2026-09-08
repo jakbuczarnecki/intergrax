@@ -72,6 +72,39 @@ def require_int(payload: dict[str, JsonValue], key: str, *, minimum: int = 0) ->
     return value
 
 
+def require_optional_int(
+    payload: dict[str, JsonValue],
+    key: str,
+    *,
+    minimum: int = 0,
+) -> int | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise VpiDataPackFormatError(f"{key} must be an integer or null")
+    if value < minimum:
+        raise VpiDataPackFormatError(f"{key} must be >= {minimum}")
+    return value
+
+
+def require_optional_float(
+    payload: dict[str, JsonValue],
+    key: str,
+    *,
+    minimum: float = 0.0,
+) -> float | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise VpiDataPackFormatError(f"{key} must be a number or null")
+    parsed = float(value)
+    if parsed < minimum:
+        raise VpiDataPackFormatError(f"{key} must be >= {minimum}")
+    return parsed
+
+
 def require_sha256_hex(payload: dict[str, JsonValue], key: str) -> str:
     value = require_str(payload, key)
     normalized = value.lower()

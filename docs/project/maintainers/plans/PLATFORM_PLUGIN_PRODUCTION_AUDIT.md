@@ -618,6 +618,7 @@ None for trusted-host production at audited SHA.
 
 ## 24. References
 
+- [ADR-SEC-002](../../technical/adr/entries/2026-09-07/ADR-SEC-002.md) — Stage 12 third-party isolation and external execution boundary (assessment; trusted in-process remains default)
 - [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 - [`PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md`](PLATFORM_PLUGIN_1_EXTENSION_SURFACE_AUDIT.md)
 - [`PLATFORM_PLUGIN_9_CLOSEOUT.md`](PLATFORM_PLUGIN_9_CLOSEOUT.md)

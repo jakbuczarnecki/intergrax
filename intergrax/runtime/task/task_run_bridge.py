@@ -22,13 +22,8 @@ TASK_PAYLOAD_VERSION = 1
 
 
 def new_run_id() -> RunId:
-    """Mint a canonical RunId (legacy alias for run lifecycle helpers)."""
+    """Mint a canonical RunId (harness/eval legacy alias — not for HTTP/MCP intake)."""
     return mint_run_id()
-
-
-def mint_intake_execution_identity() -> tuple[TaskId, RunId]:
-    """Mint independent task_id and run_id at HTTP/MCP execute intake."""
-    return mint_task_id(), mint_run_id()
 
 
 def task_from_runtime_request(

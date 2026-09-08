@@ -21,7 +21,7 @@ from intergrax.tools.core.tool_plan import ToolCallPlan
 def _empty_native_round() -> NativePlannerRound:
     return NativePlannerRound(
         response=LLMAdapterResponse(content="done", tool_calls=()),
-        business_tool_calls=(),
+        materialized_tool_calls=(),
         tool_plan=ToolCallPlan(calls=[]),
         action_context=None,
     )

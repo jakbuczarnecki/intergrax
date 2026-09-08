@@ -7,7 +7,16 @@ from __future__ import annotations
 import pytest
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+from intergrax.runtime.nexus.tools.atomic_planner_round import (
+    ATOMIC_PLANNER_ROUND_SCHEMA_FIELD_NAMES,
+    PLANNER_ROUND_TOOL_ID,
+)
+from intergrax.runtime.nexus.tools.investigation_proof import (
+    format_investigation_follow_up_context,
+)
 from intergrax.runtime.nexus.tools.tool_planning_prompts import (
+    GENERIC_INVESTIGATION_POLICY_PROMPT_ID,
+    composed_investigation_policy_prompt,
     investigation_policy_prompt,
     planner_prompt,
     system_context_template,
@@ -79,3 +88,57 @@ def test_tools_investigation_policy_yaml_contract() -> None:
     assert "stop when" in lowered or "unlikely to materially change" in lowered
     assert "chain-of-thought" not in lowered
     assert "private reasoning" not in lowered
+
+
+_LEGACY_TRANSPORT_MARKERS = (
+    "EVIDENCE_BASIS:",
+    "PURPOSE:",
+    "public decision note in assistant content",
+)
+
+
+def test_tools_investigation_policy_atomic_transport_contract() -> None:
+    text = investigation_policy_prompt()
+    for field_name in ATOMIC_PLANNER_ROUND_SCHEMA_FIELD_NAMES:
+        assert field_name in text
+    assert PLANNER_ROUND_TOOL_ID in text
+    for marker in _LEGACY_TRANSPORT_MARKERS:
+        assert marker not in text
+    assert "`purpose`" in text or "field name `purpose`" in text
+    assert "public_purpose" in text
+    assert "Do not use `public_purpose`" in text
+    assert "Do not call business tools directly" in text
+    assert "planning protocol metadata" in text
+
+
+def test_atomic_planner_prompt_schema_field_parity() -> None:
+    text = investigation_policy_prompt()
+    for field_name in sorted(ATOMIC_PLANNER_ROUND_SCHEMA_FIELD_NAMES):
+        assert field_name in text
+
+
+def test_certified_planner_context_uses_purpose_not_public_purpose() -> None:
+    generic = investigation_policy_prompt()
+    follow_up = format_investigation_follow_up_context(
+        round_index=2,
+        available_evidence_references=("evidence.a",),
+    )
+    assert "Use the exact field name `purpose`" in generic
+    assert "Do not use `public_purpose`" in generic
+    assert "and purpose" in follow_up
+    assert "do not use public_purpose" in follow_up.lower()
+
+
+def test_incident_composed_planner_prompt_single_atomic_transport_owner() -> None:
+    composed = composed_investigation_policy_prompt(
+        overlay_prompt_id="incident_investigation_policy",
+    )
+    generic = investigation_policy_prompt()
+    overlay = investigation_policy_prompt(prompt_id="incident_investigation_policy")
+    assert composed.startswith(generic.strip())
+    assert overlay.strip() in composed
+    assert composed.count(PLANNER_ROUND_TOOL_ID) == generic.count(PLANNER_ROUND_TOOL_ID)
+    for marker in _LEGACY_TRANSPORT_MARKERS:
+        assert marker not in composed
+    assert "production.comparison.read" in composed
+    assert "incident_window" in composed

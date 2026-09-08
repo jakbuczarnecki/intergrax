@@ -48,7 +48,7 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
     validate_run_id,
 )
-from intergrax.runtime.execution.request import ExecutionRequest
+from intergrax.contracts.execution_request import ExecutionRequest
 
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")

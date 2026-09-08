@@ -40,10 +40,28 @@ def _network_access_for_operations(allowed_operations: frozenset[str]) -> Networ
     return NetworkAccess.NONE
 
 
-def _network_access_from_egress_proof(network_egress_deny_enforced: bool | None) -> NetworkAccess:
+def _network_access_from_egress_proof(
+    *,
+    network_egress_deny_enforced: bool | None,
+    network_egress_allowlist_enforced: bool | None,
+) -> NetworkAccess:
     if network_egress_deny_enforced is True:
         return NetworkAccess.RESTRICTED
+    if network_egress_allowlist_enforced is True:
+        return NetworkAccess.RESTRICTED
     return NetworkAccess.NONE
+
+
+def _supports_network_isolation_from_egress_proof(
+    *,
+    network_egress_deny_enforced: bool | None,
+    network_egress_allowlist_enforced: bool | None,
+) -> bool | None:
+    if network_egress_deny_enforced is True or network_egress_allowlist_enforced is True:
+        return True
+    if network_egress_deny_enforced is False or network_egress_allowlist_enforced is False:
+        return False
+    return None
 
 
 def capabilities_from_local_session(session: SandboxSession) -> SandboxProviderCapabilities:
@@ -59,7 +77,10 @@ def capabilities_from_local_session(session: SandboxSession) -> SandboxProviderC
         process_execution=ProcessExecution.SANDBOXED if _exec_supported(ops) else ProcessExecution.DENIED,
         supports_sandboxed_exec=_exec_supported(ops),
         supports_workspace_write="write_file" in ops,
-        supports_network_isolation=security.network_egress_deny_enforced,
+        supports_network_isolation=_supports_network_isolation_from_egress_proof(
+            network_egress_deny_enforced=security.network_egress_deny_enforced,
+            network_egress_allowlist_enforced=security.network_egress_allowlist_enforced,
+        ),
     )
 
 
@@ -72,11 +93,17 @@ def capabilities_from_hosted_session(session: HostedSandboxSession) -> SandboxPr
             provider_kind=ExecutionEnvironmentProviderKind.HOSTED,
         ),
         filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
-        network_access=_network_access_from_egress_proof(security.network_egress_deny_enforced),
+        network_access=_network_access_from_egress_proof(
+            network_egress_deny_enforced=security.network_egress_deny_enforced,
+            network_egress_allowlist_enforced=security.network_egress_allowlist_enforced,
+        ),
         process_execution=ProcessExecution.SANDBOXED,
         supports_sandboxed_exec=True,
         supports_workspace_write=True,
-        supports_network_isolation=security.network_egress_deny_enforced,
+        supports_network_isolation=_supports_network_isolation_from_egress_proof(
+            network_egress_deny_enforced=security.network_egress_deny_enforced,
+            network_egress_allowlist_enforced=security.network_egress_allowlist_enforced,
+        ),
     )
 
 
@@ -84,17 +111,25 @@ def capabilities_from_host_backend(backend: SandboxHostBackend) -> SandboxProvid
     if isinstance(backend, SandboxSecurityCapable):
         security = backend.security_capabilities()
         provider_id = security.provider_id
-        network_isolation = security.network_egress_deny_enforced
+        network_isolation = _supports_network_isolation_from_egress_proof(
+            network_egress_deny_enforced=security.network_egress_deny_enforced,
+            network_egress_allowlist_enforced=security.network_egress_allowlist_enforced,
+        )
+        network_access = _network_access_from_egress_proof(
+            network_egress_deny_enforced=security.network_egress_deny_enforced,
+            network_egress_allowlist_enforced=security.network_egress_allowlist_enforced,
+        )
     else:
         provider_id = f"hosted:{type(backend).__name__}"
         network_isolation = None
+        network_access = NetworkAccess.NONE
     return SandboxProviderCapabilities(
         provider_ref=ExecutionEnvironmentProviderRef(
             provider_id=provider_id,
             provider_kind=ExecutionEnvironmentProviderKind.HOSTED,
         ),
         filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
-        network_access=_network_access_from_egress_proof(network_isolation),
+        network_access=network_access,
         process_execution=ProcessExecution.SANDBOXED,
         supports_sandboxed_exec=True,
         supports_workspace_write=True,

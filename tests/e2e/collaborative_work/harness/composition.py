@@ -10,7 +10,7 @@ from datetime import datetime
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
-from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
 )
@@ -28,13 +28,13 @@ class MultiplayerE2EContext:
     """Provider-neutral runtime assembled from public platform contracts."""
 
     profile: IntegrationProfile
-    bundle: CollaborativeWorkRepositories
+    bundle: CollaborativeWorkMaterializedRepositories
     boundary: MeaningfulSideEffectAuthorizationBoundary
     runtime_policy: MutableRuntimePolicyEvaluator
 
 
 def build_authorization_boundary(
-    bundle: CollaborativeWorkRepositories,
+    bundle: CollaborativeWorkMaterializedRepositories,
     runtime_policy: MutableRuntimePolicyEvaluator,
     *,
     clock: Callable[[], datetime],

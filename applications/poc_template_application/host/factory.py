@@ -14,21 +14,29 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    HostTaskExecutionExecutor,
+    wire_harness_host_long_running_scheduler,
+)
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
     wire_harness_task_control,
 )
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from poc_template_application.host.agent_builders import POC_TEMPLATE_AGENT_BUILDERS
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 from poc_template_application.manifest import build_poc_template_manifest
@@ -57,12 +65,8 @@ def create_poc_template_application(
         builders=POC_TEMPLATE_AGENT_BUILDERS,
     )
     host_execution = runtime.execution
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     resolved_registry = runtime.registry
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
     checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
     task_enricher = build_reliability_task_enricher(
         env,
@@ -70,21 +74,22 @@ def create_poc_template_application(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
-    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
-    scheduler_wiring = wire_long_running_scheduler(
+    scheduler_wiring = wire_harness_host_long_running_scheduler(
+        runtime,
         checkpoint_store=checkpoint_store,
-        task_runner=task_runner,
+        host_execution=host_execution,
+        task_enricher=task_enricher,
         notification_adapter=None,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
     interaction_service = wire_interaction_intake_service(
-        nexus_loop,
         interaction_surface=settings.interaction_surface,
+        task_executor=HostTaskExecutionExecutor(host_execution),
         task_enricher=task_enricher,
     )
     hitl_service = DebugHitlResumeService(
-        resolved_registry,
+        host_execution=host_execution,
         checkpoint_store=checkpoint_store,
     )
     app = create_debug_app(
@@ -93,7 +98,6 @@ def create_poc_template_application(
         runtime_events_db_path=runtime.observability.runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry=resolved_registry,
-        nexus_loop=nexus_loop,
         interaction_service=interaction_service,
         hitl_service=hitl_service,
         checkpoint_store=checkpoint_store,
@@ -111,7 +115,7 @@ def create_poc_template_application(
         wire_harness_task_control(
             app,
             enabled=True,
-            task_runner=task_runner,
+            host_execution=host_execution,
             env=env,
             checkpoint_store=checkpoint_store,
             task_route_prefix=settings.task_control_route_prefix,

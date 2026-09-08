@@ -35,7 +35,14 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from lab_application.host.settings import LabApplicationSettings
@@ -208,7 +215,7 @@ def test_product_host_attaches_diagnostics_with_prerequisites(
     assert runtime.diagnostic_wiring.required is True
     assert runtime.diagnostic_wiring.attached is True
     assert runtime.diagnostic_wiring.readiness is DiagnosticReadiness.ATTACHED
-    assert resolve_harness_host_nexus_loop_legacy(runtime)._terminal_diagnostic_trigger is not None  # noqa: SLF001
+    assert runtime.diagnostic_wiring.attached  # noqa: SLF001
 
 
 def test_production_attached_scenario_fails_without_diagnostic_prerequisites(

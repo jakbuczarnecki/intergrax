@@ -413,6 +413,15 @@ wheels = [
 ]
 
 [[package]]
+name = "bracex"
+version = "3.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/01/5f394b8bcd6e5b92f73130990960423bbb19711f906bd9fe9ea5557c667c/bracex-3.0.1.tar.gz", hash = "sha256:4e38e32392e4a4780fe15d644bfc7c8514057cfc3861e060b11814ce829c25e4", size = 44019, upload-time = "2026-07-20T13:43:00.335Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/8f/6f7273a7adb8d73fc8d21ede4376a3e475e52f98435c6007f69100dec8ca/bracex-3.0.1-py3-none-any.whl", hash = "sha256:6523ad83aeb5098a4ee597cff0f964442ff74e460bd3fafaffab6a013ff2288c", size = 11940, upload-time = "2026-07-20T13:42:59.268Z" },
+]
+
+[[package]]
 name = "build"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -902,6 +911,15 @@ wheels = [
 ]
 
 [[package]]
+name = "dockerfile-parse"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/df/929ee0b5d2c8bd8d713c45e71b94ab57c7e11e322130724d54f469b2cd48/dockerfile-parse-2.0.1.tar.gz", hash = "sha256:3184ccdc513221983e503ac00e1aa504a2aa8f84e5de673c46b0b6eee99ec7bc", size = 24556, upload-time = "2023-07-18T13:36:07.897Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7a/6c/79cd5bc1b880d8c1a9a5550aa8dacd57353fa3bb2457227e1fb47383eb49/dockerfile_parse-2.0.1-py2.py3-none-any.whl", hash = "sha256:bdffd126d2eb26acf1066acb54cb2e336682e1d72b974a40894fac76a4df17f6", size = 14845, upload-time = "2023-07-18T13:36:06.052Z" },
+]
+
+[[package]]
 name = "doclang"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1057,6 +1075,28 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9d/a4/e44218c2b394e31a6dd0d6b095c4e1f32d0be54c2a4b250032d717647bab/durationpy-0.10.tar.gz", hash = "sha256:1fa6893409a6e739c9c72334fc65cca1f355dbdd93405d30f726deb5bde42fba", size = 3335, upload-time = "2025-05-17T13:52:37.26Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b0/0d/9feae160378a3553fa9a339b0e9c1a048e147a4127210e286ef18b730f03/durationpy-0.10-py3-none-any.whl", hash = "sha256:3b41e1b601234296b4fb368338fdcd3e13e0b4fb5b67345948f4f2bf9868b286", size = 3922, upload-time = "2025-05-17T13:52:36.463Z" },
+]
+
+[[package]]
+name = "e2b"
+version = "2.34.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "dockerfile-parse", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "h2", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "httpcore", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "httpx", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "packaging", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "protobuf", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "python-dateutil", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "rich", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "typing-extensions", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "wcmatch", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5b/22/5bcf34304b62e6984df9089eb996a4b2aa63618f901befe1f7cc73a24437/e2b-2.34.0.tar.gz", hash = "sha256:0dcc2694b3ead62e87b3d1070a05f66842dd2fa320fc1d7bd84c8fcfadeaf1b1", size = 189367, upload-time = "2026-07-17T09:59:23.844Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/ec/b2f9297afc25de7c27ab5a85db4060783680e2b132285e2498fdbad484cf/e2b-2.34.0-py3-none-any.whl", hash = "sha256:873323571d18bf633be45e59fc6271410b30dfbc81e8df85e711f4f184c03fea", size = 343447, upload-time = "2026-07-17T09:59:22.553Z" },
 ]
 
 [[package]]
@@ -1686,6 +1726,9 @@ harness-author = [
     { name = "pyyaml", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "uvicorn", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+integrations-e2b = [
+    { name = "e2b", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 integrations-guardrails = [
     { name = "presidio-analyzer", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "presidio-anonymizer", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1884,6 +1927,7 @@ requires-dist = [
     { name = "docling", extras = ["all"], marker = "extra == 'dev'", specifier = "==2.76.0" },
     { name = "docx2txt", marker = "extra == 'dev'", specifier = ">=0.8" },
     { name = "docx2txt", marker = "extra == 'parsing-office'", specifier = ">=0.8,<1" },
+    { name = "e2b", marker = "extra == 'integrations-e2b'", specifier = ">=2.0,<3" },
     { name = "fastapi", specifier = ">=0.115,<1" },
     { name = "fastapi", marker = "extra == 'harness-author'", specifier = ">=0.115,<1" },
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=3.3.1,<4" },
@@ -1986,7 +2030,7 @@ requires-dist = [
     { name = "xlrd", marker = "extra == 'parsing-office'", specifier = ">=2.0,<3" },
     { name = "yt-dlp", marker = "extra == 'media-youtube'", specifier = ">=2024.0,<2027" },
 ]
-provides-extras = ["integrations-neo4j", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-postgresql", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
+provides-extras = ["integrations-neo4j", "integrations-e2b", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-postgresql", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [package.metadata.requires-dev]
 platform-proofs-vpi-dataset = [{ name = "pyarrow", specifier = ">=18,<22" }]
@@ -5622,6 +5666,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0a/bf/95895e78dd75efe9a7f31733607f384b42eb5feb54bd2eb6ed57cc2e94f4/watchfiles-1.1.1-cp312-cp312-win32.whl", hash = "sha256:859e43a1951717cc8de7f4c77674a6d389b106361585951d9e69572823f311d9", size = 272042, upload-time = "2025-10-14T15:04:59.046Z" },
     { url = "https://files.pythonhosted.org/packages/87/0a/90eb755f568de2688cb220171c4191df932232c20946966c27a59c400850/watchfiles-1.1.1-cp312-cp312-win_amd64.whl", hash = "sha256:91d4c9a823a8c987cce8fa2690923b069966dabb196dd8d137ea2cede885fde9", size = 288410, upload-time = "2025-10-14T15:05:00.081Z" },
     { url = "https://files.pythonhosted.org/packages/36/76/f322701530586922fbd6723c4f91ace21364924822a8772c549483abed13/watchfiles-1.1.1-cp312-cp312-win_arm64.whl", hash = "sha256:a625815d4a2bdca61953dbba5a39d60164451ef34c88d751f6c368c3ea73d404", size = 278209, upload-time = "2025-10-14T15:05:01.168Z" },
+]
+
+[[package]]
+name = "wcmatch"
+version = "10.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "bracex", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/11/15/dc61746d8c0852f6d711ad09c774b63cf7c8211aa49e30871ac3d342b7e2/wcmatch-10.2.1.tar.gz", hash = "sha256:ecac70a5c70e62ba854b78318d3a1408e8651f8f1c96e5837743b71aa6a4fb92", size = 132497, upload-time = "2026-07-02T17:21:48.484Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/82/ba/20b48eedeab5316bf9a502bb9eb7e3b1588bd61d0f565822fefa8f06e10b/wcmatch-10.2.1-py3-none-any.whl", hash = "sha256:2d775395b93f233af66690f62cb9d52b084ec159a31cc4084f4069d72f437acd", size = 39763, upload-time = "2026-07-02T17:21:47.134Z" },
 ]
 
 [[package]]

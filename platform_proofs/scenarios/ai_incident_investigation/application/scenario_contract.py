@@ -36,8 +36,15 @@ TELEMETRY_EVIDENCE_ID = validate_evidence_reference_id(
 )
 DIAGNOSIS_KIND = validate_claim_kind(DIAGNOSIS_CLAIM_KIND)
 
-COMPLETION_SUPPORTED_DIAGNOSIS = "supported_diagnosis"
-COMPLETION_UNRESOLVED = "unresolved"
+class CompletionMode(StrEnum):
+    """Canonical terminal completion mode — not model/planning intent."""
+
+    SUPPORTED_DIAGNOSIS = "supported_diagnosis"
+    UNRESOLVED = "unresolved"
+
+
+COMPLETION_SUPPORTED_DIAGNOSIS = CompletionMode.SUPPORTED_DIAGNOSIS.value
+COMPLETION_UNRESOLVED = CompletionMode.UNRESOLVED.value
 COMPLETION_NEED_MORE_EVIDENCE = "need_more_evidence"
 
 INCIDENT_EVIDENCE_IDS = IncidentEvidenceIds(

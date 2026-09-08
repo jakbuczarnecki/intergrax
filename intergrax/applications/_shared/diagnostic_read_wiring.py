@@ -10,8 +10,8 @@ from intergrax.applications._shared.diagnostic_cursor_secret import (
     resolve_problem_list_cursor_secret,
 )
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
@@ -68,9 +68,7 @@ def resolve_host_diagnostic_read_dependencies(
         )
     document_store = assert_conditional_document_store(wiring_context.document_store)
 
-    runtime_events = runtime.observability.runtime_event_store
-    if runtime_events is None:
-        runtime_events = resolve_harness_host_nexus_loop_legacy(runtime).runtime_event_store
+    runtime_events = resolve_harness_host_runtime_event_persistence(runtime)
     if runtime_events is None:
         raise ValueError(
             "diagnostics-enabled product host requires RuntimeEventPersistence from "

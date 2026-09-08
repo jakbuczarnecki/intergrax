@@ -4,8 +4,8 @@
 """Runtime-scoped auxiliary wiring for Tier-3 harness hosts (NPSC-2).
 
 Author-facing application code should depend on ``HarnessHostRuntime.execution``.
-Internal platform subsystems (plugins, scheduler task runner, debug API) still
-compose through legacy Nexus handles resolved here — not in generated Tier-3 hosts.
+Internal platform subsystems (plugins, scheduler, debug API) compose through
+typed harness host capabilities — not in generated Tier-3 hosts.
 """
 
 from __future__ import annotations
@@ -15,57 +15,77 @@ from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_platform,
+    resolve_harness_host_execution_terminal,
 )
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
-from intergrax.applications._shared.plugin_bootstrap import PluginBootstrapResult
 from intergrax.applications._shared.task_control_wiring import (
     TaskEnricher,
-    build_task_runner_with_enricher,
+    wire_harness_task_control,
 )
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.interactions.intake_service import InteractionIntakeService
+from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.wiring import (
+    LongRunningSchedulerWiring,
+    wire_long_running_scheduler_with_host_execution,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskResult
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 
 
-class HostTaskExecutionExecutor:
-    """Execute interaction-intake tasks through canonical host task execution."""
-
-    def __init__(self, host_execution: HostTaskExecutionPort) -> None:
-        self._host_execution = host_execution
-
-    async def execute(self, task: Task) -> TaskResult:
-        return await self._host_execution.execute(task)
-
-
-def bootstrap_harness_host_platform(runtime: HarnessHostRuntime) -> PluginBootstrapResult:
-    """Register default runtime plugins for a composed harness host."""
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
-    return bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=runtime.observability.trace_store,
+def wire_harness_host_long_running_scheduler(
+    runtime: HarnessHostRuntime,
+    *,
+    checkpoint_store: TaskCheckpointPersistence,
+    host_execution: HostTaskExecutionPort,
+    task_enricher: TaskEnricher | None = None,
+    notification_adapter=None,
+    poll_interval_seconds: float | None = None,
+    enabled: bool = True,
+) -> LongRunningSchedulerWiring | None:
+    """Long-running scheduler wired to canonical host execution."""
+    return wire_long_running_scheduler_with_host_execution(
+        checkpoint_store=checkpoint_store,
+        host_execution=host_execution,
+        execution_terminal=resolve_harness_host_execution_terminal(runtime),
+        task_enricher=task_enricher,
+        notification_adapter=notification_adapter,
+        poll_interval_seconds=poll_interval_seconds,
+        enabled=enabled,
     )
 
 
-def build_harness_host_task_runner(
-    runtime: HarnessHostRuntime,
+def wire_harness_host_task_control(
+    app: FastAPI,
     *,
-    enricher: TaskEnricher | None = None,
-) -> UnifiedTaskRunner:
-    """Background scheduler / task-control runner bound to the host runtime."""
-    return build_task_runner_with_enricher(
-        resolve_harness_host_nexus_loop_legacy(runtime),
-        enricher,
+    enabled: bool,
+    host_execution: HostTaskExecutionPort,
+    env: ApplicationEnvironmentProfile,
+    runtime: HarnessHostRuntime,
+    checkpoint_store: TaskCheckpointPersistence | None = None,
+    task_route_prefix: str = "/v1/tasks",
+    extra_enricher: TaskEnricher | None = None,
+    task_enricher: TaskEnricher | None = None,
+) -> TaskEnricher:
+    """Mount harness task HTTP routes through canonical host execution."""
+    return wire_harness_task_control(
+        app,
+        enabled=enabled,
+        host_execution=host_execution,
+        env=env,
+        checkpoint_store=checkpoint_store,
+        task_route_prefix=task_route_prefix,
+        extra_enricher=extra_enricher,
+        task_enricher=task_enricher,
+        runtime=runtime,
     )
 
 
@@ -79,7 +99,7 @@ def wire_harness_host_interaction_intake(
     """Inbound interaction intake routed through canonical host execution."""
     _ = runtime
     return wire_interaction_intake_service(
-        task_executor=HostTaskExecutionExecutor(host_execution),
+        task_executor=HostTaskExecutionExecutor(host_execution, task_enricher=task_enricher),
         interaction_surface=interaction_surface,
         task_enricher=task_enricher,
     )
@@ -102,7 +122,7 @@ def create_harness_host_debug_app(
         runtime_events_db_path=runtime.observability.runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry=registry,
-        nexus_loop=resolve_harness_host_nexus_loop_legacy(runtime),
+        host_execution=runtime.execution,
         interaction_service=interaction_service,
         hitl_service=hitl_service,
         checkpoint_store=checkpoint_store,
@@ -114,7 +134,8 @@ def create_harness_host_debug_app(
 __all__ = [
     "HostTaskExecutionExecutor",
     "bootstrap_harness_host_platform",
-    "build_harness_host_task_runner",
     "create_harness_host_debug_app",
     "wire_harness_host_interaction_intake",
+    "wire_harness_host_long_running_scheduler",
+    "wire_harness_host_task_control",
 ]

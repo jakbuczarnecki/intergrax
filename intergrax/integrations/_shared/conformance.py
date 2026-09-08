@@ -122,6 +122,14 @@ def assert_object_storage(instance: object) -> ObjectStorage:
     return assert_implements(instance, ObjectStorage)
 
 
+def assert_conditional_object_storage(
+    instance: object,
+) -> "ConditionalObjectStorage":
+    from intergrax.integrations.contracts.object_storage import ConditionalObjectStorage
+
+    return assert_implements(instance, ConditionalObjectStorage)
+
+
 def assert_vector_store(instance: object) -> VectorStore:
     if not isinstance(instance, VectorStore):
         raise AssertionError(

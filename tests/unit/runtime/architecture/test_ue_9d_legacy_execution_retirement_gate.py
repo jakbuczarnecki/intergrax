@@ -84,6 +84,7 @@ def test_unified_task_runner_is_thin_adapter_without_legacy_root_path() -> None:
 def test_interaction_task_executor_does_not_call_nexus_handle_task_directly() -> None:
     source = (_INTERACTIONS_ROOT / "task_executor.py").read_text(encoding="utf-8")
     assert "handle_task(" not in source
+    assert "UnifiedTaskRunner" not in source
 
 
 def _call_name(func: ast.AST) -> str | None:

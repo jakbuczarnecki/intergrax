@@ -225,8 +225,9 @@ def test_canonical_approve_authorizes_uaep_skip_and_resume() -> None:
 
 
 def test_debug_service_requires_typed_verdict() -> None:
+    host_execution = MagicMock()
     service = DebugHitlResumeService(
-        AgentRegistry(),
+        host_execution=host_execution,
         checkpoint_store=MagicMock(),
     )
     with pytest.raises(TypeError):
@@ -260,31 +261,24 @@ async def test_debug_service_submits_exact_pause_request_identity() -> None:
 
     captured: dict[str, Task] = {}
 
-    async def _handle(task_arg: Task, *, run_id, attempt_id=None):
+    host_execution = MagicMock()
+
+    async def _execute(task_arg: Task, **kwargs):
         captured["task"] = task_arg
         from intergrax.runtime.task.task import TaskResult
 
-        return TaskResult(task_id=task_arg.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(task_id=task_arg.task_id, run_id=RUN_ID, state=TaskState.COMPLETED)
 
-    loop = MagicMock()
-    loop.handle_task = AsyncMock(side_effect=_handle)
-    service = DebugHitlResumeService(AgentRegistry(), checkpoint_store=store)
+    host_execution.execute = AsyncMock(side_effect=_execute)
+    service = DebugHitlResumeService(host_execution=host_execution, checkpoint_store=store)
     service._resolve_checkpoint = MagicMock(return_value=checkpoint)  # type: ignore[method-assign]
 
-    from intergrax.runtime.nexus import nexus_loop as nexus_loop_module
-    import intergrax.debug.hitl_service as hitl_service_module
-
-    original_loop = hitl_service_module.NexusLoop
-    hitl_service_module.NexusLoop = MagicMock(return_value=loop)
-    try:
-        await service.resume_with_human_response(
-            TASK_ID,
-            "t1",
-            verdict=HumanResponseVerdict.APPROVE,
-            response_text="approve deployment",
-        )
-    finally:
-        hitl_service_module.NexusLoop = original_loop
+    await service.resume_with_human_response(
+        TASK_ID,
+        "t1",
+        verdict=HumanResponseVerdict.APPROVE,
+        response_text="approve deployment",
+    )
 
     submitted = captured["task"]
     assert submitted.options.human.verdict == HumanResponseVerdict.APPROVE.value

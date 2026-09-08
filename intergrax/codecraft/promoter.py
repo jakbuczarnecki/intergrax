@@ -5,11 +5,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.codecraft.contracts import CodeCraftSession, CraftResult, StaticGateResult
+from intergrax.runtime.events.payload_registry import get_payload_schema
+
+_SCHEMA_VALIDATION_ERROR = "promotion_schema_validation_failed"
+
+SchemaResolver = Callable[[str], type[BaseModel] | None]
 
 
 class CraftPromotionPayload(BaseModel):
@@ -34,6 +40,9 @@ class CraftPromotionEligibility:
 
 class CraftResultPromoter:
     """Validate and export craft output for pipeline handoff."""
+
+    def __init__(self, *, schema_resolver: SchemaResolver | None = None) -> None:
+        self._schema_resolver: SchemaResolver = schema_resolver or get_payload_schema
 
     def assess_promotion_eligibility(self, session: CodeCraftSession) -> CraftPromotionEligibility:
         if session.disposed:
@@ -84,7 +93,10 @@ class CraftResultPromoter:
             code=session.code,
             success=True,
         )
-        structured = self._validate_payload(payload, schema_ref=schema_ref)
+        try:
+            structured = self._validate_payload(payload, schema_ref=schema_ref)
+        except ValueError:
+            return self._deny_schema_validation(session)
         return CraftResult(
             craft_id=session.craft_id,
             success=True,
@@ -96,13 +108,36 @@ class CraftResultPromoter:
             verdict="promote",
         )
 
-    @staticmethod
-    def _validate_payload(payload: CraftPromotionPayload, *, schema_ref: str | None) -> dict[str, object]:
+    def _validate_payload(
+        self,
+        payload: CraftPromotionPayload,
+        *,
+        schema_ref: str | None,
+    ) -> dict[str, object]:
         if schema_ref is None:
             return payload.model_dump()
         if not schema_ref.strip():
-            raise ValueError("promotion_schema_validation_failed: empty schema_ref")
+            raise ValueError(_SCHEMA_VALIDATION_ERROR)
+        schema_cls = self._schema_resolver(schema_ref)
+        if schema_cls is None:
+            raise ValueError(_SCHEMA_VALIDATION_ERROR)
         try:
-            return payload.model_dump()
+            validated = schema_cls.model_validate(payload.model_dump())
         except ValidationError as exc:
-            raise ValueError(f"promotion_schema_validation_failed: {exc}") from exc
+            raise ValueError(f"{_SCHEMA_VALIDATION_ERROR}: {exc}") from exc
+        return validated.model_dump()
+
+    @staticmethod
+    def _deny_schema_validation(session: CodeCraftSession) -> CraftResult:
+        return CraftResult(
+            craft_id=session.craft_id,
+            success=False,
+            mode=session.mode,
+            static_gate=StaticGateResult(
+                passed=False,
+                rule_ids=[_SCHEMA_VALIDATION_ERROR],
+                message=_SCHEMA_VALIDATION_ERROR,
+            ),
+            error=_SCHEMA_VALIDATION_ERROR,
+            verdict="abort",
+        )

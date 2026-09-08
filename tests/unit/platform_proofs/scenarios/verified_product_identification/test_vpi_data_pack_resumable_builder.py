@@ -15,7 +15,6 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.resumable_builder import (
     DataPackBuildConfig,
     ShardBuildSeams,
-    run_resumable_data_pack_build,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.build_state import (
     DataPackShardBuildState,
@@ -34,6 +33,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     RELATIONAL_SCHEMA_VERSION,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.paths import (
+    DEFAULT_PRODUCTION_SHARD_SIZE,
     final_shard_path,
     resolve_data_pack_paths,
     temp_shard_path,
@@ -42,8 +42,11 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     DataPackStatus,
 )
 from tests.unit.platform_proofs.scenarios.verified_product_identification.vpi_resumable_builder_test_support import (
+    canonical_fake_document_embedding_input_policy,
     FakeDataPackEmbeddingPort,
     patch_canonical_model_identity,
+    run_resumable_data_pack_build_with_fake_policy,
+    write_selected_dataset_with_manifest_count,
     write_tiny_selected_dataset,
 )
 
@@ -57,7 +60,7 @@ def _build_config(
     manifest_path: Path,
     output_root: Path,
     shard_size: int = 25,
-    max_records: int = 120,
+    max_records: int | None = 120,
     resume: bool = False,
     start_fresh: bool = False,
     max_shards: int | None = None,
@@ -184,7 +187,7 @@ def test_small_multi_shard_build_and_finalize(tmp_path: Path, monkeypatch: pytes
         max_records=120,
         start_fresh=True,
     )
-    report = run_resumable_data_pack_build(config, embedding_port=fake_embedding)
+    report = run_resumable_data_pack_build_with_fake_policy(config, embedding_port=fake_embedding)
     assert report.finalized is True
     assert report.status is DataPackStatus.READY
     assert report.manifest is not None
@@ -211,7 +214,7 @@ def test_resume_skips_ready_shards_without_reembedding(tmp_path: Path, monkeypat
         start_fresh=True,
         stop_after_shard=2,
     )
-    first_report = run_resumable_data_pack_build(first_config, embedding_port=fake_embedding)
+    first_report = run_resumable_data_pack_build_with_fake_policy(first_config, embedding_port=fake_embedding)
     assert first_report.finalized is False
     first_calls = fake_embedding.embed_calls
 
@@ -225,7 +228,7 @@ def test_resume_skips_ready_shards_without_reembedding(tmp_path: Path, monkeypat
         max_records=120,
         resume=True,
     )
-    second_report = run_resumable_data_pack_build(second_config, embedding_port=second_embedding)
+    second_report = run_resumable_data_pack_build_with_fake_policy(second_config, embedding_port=second_embedding)
     assert second_report.finalized is True
     assert second_embedding.embed_calls > 0
     assert first_calls > 0
@@ -245,14 +248,14 @@ def test_content_identity_mismatch_on_resume(tmp_path: Path, monkeypatch: pytest
         start_fresh=True,
         stop_after_shard=1,
     )
-    run_resumable_data_pack_build(config, embedding_port=FakeDataPackEmbeddingPort())
+    run_resumable_data_pack_build_with_fake_policy(config, embedding_port=FakeDataPackEmbeddingPort())
 
     payload = json.loads((output_root / "state" / "build-state.json").read_text(encoding="utf-8"))
     payload["content_identity"] = "deadbeef"
     (output_root / "state" / "build-state.json").write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(VpiDataPackBuildIdentityMismatchError):
-        run_resumable_data_pack_build(
+        run_resumable_data_pack_build_with_fake_policy(
             _build_config(
                 tmp_path,
                 dataset_path=dataset_path,
@@ -282,7 +285,7 @@ def test_interrupted_writing_shard_rebuilt_on_resume(tmp_path: Path, monkeypatch
         start_fresh=True,
         stop_after_shard=1,
     )
-    run_resumable_data_pack_build(partial_config, embedding_port=fake_embedding)
+    run_resumable_data_pack_build_with_fake_policy(partial_config, embedding_port=fake_embedding)
 
     payload = json.loads(paths.build_state_file.read_text(encoding="utf-8"))
     payload["shards"][1]["status"] = "WRITING"
@@ -302,7 +305,7 @@ def test_interrupted_writing_shard_rebuilt_on_resume(tmp_path: Path, monkeypatch
         max_records=50,
         resume=True,
     )
-    report = run_resumable_data_pack_build(resume_config, embedding_port=resume_embedding)
+    report = run_resumable_data_pack_build_with_fake_policy(resume_config, embedding_port=resume_embedding)
     assert report.finalized is True
     assert not temp_shard_path(paths.relational_dir, 2).exists()
 
@@ -320,7 +323,7 @@ def test_temp_validation_failure_leaves_no_final(
         temp_shard_path(paths.relational_dir, 1).write_bytes(b"not-parquet")
 
     with pytest.raises(VpiDataPackValidationError):
-        run_resumable_data_pack_build(
+        run_resumable_data_pack_build_with_fake_policy(
             _build_config(
                 tmp_path,
                 dataset_path=dataset_path,
@@ -350,7 +353,7 @@ def test_crash_between_renames_recovered_on_resume(
         raise VpiDataPackBuildError("simulated embedding rename failure")
 
     with pytest.raises(VpiDataPackBuildError, match="simulated embedding rename failure"):
-        run_resumable_data_pack_build(
+        run_resumable_data_pack_build_with_fake_policy(
             _build_config(
                 tmp_path,
                 dataset_path=dataset_path,
@@ -366,7 +369,7 @@ def test_crash_between_renames_recovered_on_resume(
     assert final_shard_path(paths.relational_dir, 1).exists()
     assert not final_shard_path(paths.embeddings_dir, 1).exists()
 
-    report = run_resumable_data_pack_build(
+    report = run_resumable_data_pack_build_with_fake_policy(
         _build_config(
             tmp_path,
             dataset_path=dataset_path,
@@ -391,7 +394,7 @@ def test_validating_with_both_finals_rebuilt_on_resume(
     dataset_path, manifest_path = write_tiny_selected_dataset(tmp_path / "dataset", row_count=50)
     output_root = tmp_path / "pack"
     paths = resolve_data_pack_paths(output_root)
-    run_resumable_data_pack_build(
+    run_resumable_data_pack_build_with_fake_policy(
         _build_config(
             tmp_path,
             dataset_path=dataset_path,
@@ -414,7 +417,7 @@ def test_validating_with_both_finals_rebuilt_on_resume(
     payload["shards"][1]["embedding_relative_path"] = "embeddings/part-000002.parquet"
     paths.build_state_file.write_text(json.dumps(payload), encoding="utf-8")
 
-    report = run_resumable_data_pack_build(
+    report = run_resumable_data_pack_build_with_fake_policy(
         _build_config(
             tmp_path,
             dataset_path=dataset_path,
@@ -459,3 +462,66 @@ def test_validating_with_only_relational_final_rebuilt_on_resume(
     )
     assert recovered.status is DataPackShardStatus.PENDING
     assert not final_shard_path(paths.relational_dir, 2).exists()
+
+
+def test_full_plan_resume_skips_ready_shard_and_builds_next(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patch_canonical_model_identity(monkeypatch)
+    dataset_path, manifest_path = write_selected_dataset_with_manifest_count(
+        tmp_path / "dataset",
+        parquet_row_count=10_000,
+        manifest_record_count=3_770_377,
+    )
+    output_root = tmp_path / "pack"
+    paths = resolve_data_pack_paths(output_root)
+    shard_size = DEFAULT_PRODUCTION_SHARD_SIZE
+
+    first_embedding = FakeDataPackEmbeddingPort()
+    run_resumable_data_pack_build_with_fake_policy(
+        _build_config(
+            tmp_path,
+            dataset_path=dataset_path,
+            manifest_path=manifest_path,
+            output_root=output_root,
+            shard_size=shard_size,
+            max_records=None,
+            start_fresh=True,
+            stop_after_shard=1,
+        ),
+        embedding_port=first_embedding,
+    )
+    state_after_run1 = read_build_state_file(paths.build_state_file)
+    assert state_after_run1.expected_record_count == 3_770_377
+    assert state_after_run1.shard_count == 3_771
+    assert state_after_run1.completed_shards == 1
+    assert state_after_run1.shards[0].status is DataPackShardStatus.READY
+    assert state_after_run1.shards[1].status is DataPackShardStatus.PENDING
+    assert not paths.manifest_file.exists()
+
+    resume_embedding = FakeDataPackEmbeddingPort()
+    report = run_resumable_data_pack_build_with_fake_policy(
+        _build_config(
+            tmp_path,
+            dataset_path=dataset_path,
+            manifest_path=manifest_path,
+            output_root=output_root,
+            shard_size=shard_size,
+            max_records=None,
+            resume=True,
+            stop_after_shard=2,
+        ),
+        embedding_port=resume_embedding,
+    )
+    state_after_run2 = read_build_state_file(paths.build_state_file)
+    assert report.finalized is False
+    assert state_after_run2.expected_record_count == 3_770_377
+    assert state_after_run2.shard_count == 3_771
+    assert state_after_run2.completed_shards == 2
+    assert state_after_run2.shards[0].status is DataPackShardStatus.READY
+    assert state_after_run2.shards[1].status is DataPackShardStatus.READY
+    assert state_after_run2.shards[2].status is DataPackShardStatus.PENDING
+    assert resume_embedding.embed_calls > 0
+    assert len(resume_embedding.texts_seen) == shard_size
+    assert not paths.manifest_file.exists()

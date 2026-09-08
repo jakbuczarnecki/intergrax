@@ -21,6 +21,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeAnswer,
     RuntimeRequest,
 )
+from intergrax.runtime.task.task import Task, TaskContext
 
 
 class LegalApiV1RuntimeMapper:
@@ -33,6 +34,49 @@ class LegalApiV1RuntimeMapper:
     API_METADATA_KEY = "api"
     API_PRODUCT = "legal_agent"
     API_VERSION = "1"
+
+    def to_task(
+        self,
+        body: LegalChatRequestV1,
+        *,
+        http_context: RequestContext,
+        default_agent_id: str,
+        tenant_id: str,
+        user_id: str,
+        capability: str = "legal.contract_review",
+    ) -> Task:
+        """Build a host-execution Task without minting execution identity at intake."""
+        agent_id = (body.agent_id or default_agent_id).strip()
+        meta = dict(body.metadata)
+        meta[self.API_METADATA_KEY] = {"product": self.API_PRODUCT, "version": self.API_VERSION}
+        meta["http_request_id"] = http_context.request_id
+        if body.workspace_id:
+            meta["workspace_id"] = body.workspace_id
+        if body.instructions:
+            meta["instructions"] = body.instructions
+        if body.history_compression:
+            meta["history_compression"] = body.history_compression
+        if body.max_output_tokens is not None:
+            meta["max_output_tokens"] = body.max_output_tokens
+        if body.attachments:
+            meta["attachments"] = [
+                {
+                    "id": ref.id,
+                    "type": ref.type,
+                    "uri": ref.uri,
+                    "metadata": dict(ref.metadata),
+                }
+                for ref in body.attachments
+            ]
+        return Task(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            session_id=body.session_id.strip(),
+            agent_id=agent_id,
+            message=body.message,
+            context=TaskContext(capability=capability),
+            metadata=meta,
+        )
 
     def to_runtime_request(
         self,

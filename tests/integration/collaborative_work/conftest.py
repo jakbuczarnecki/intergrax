@@ -11,7 +11,7 @@ from collections.abc import Generator
 import pytest
 
 from intergrax.collaborative_work.persistence import (
-    CollaborativeWorkRepositories,
+    CollaborativeWorkRepositoriesWithArtifacts,
     open_postgresql_collaborative_work_repositories,
 )
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
@@ -38,7 +38,7 @@ def _resolve_config() -> PostgreSQLIntegrationConfig | None:
     return PostgreSQLIntegrationConfig(dsn=dsn)
 
 
-def _open_bundle(schema_name: str) -> CollaborativeWorkRepositories:
+def _open_bundle(schema_name: str) -> CollaborativeWorkRepositoriesWithArtifacts:
     config = _resolve_config()
     if config is None:
         pytest.skip(
@@ -70,7 +70,7 @@ def _drop_schema(schema_name: str) -> None:
 
 
 @pytest.fixture
-def postgresql_collaborative_work_bundle() -> Generator[CollaborativeWorkRepositories, None, None]:
+def postgresql_collaborative_work_bundle() -> Generator[CollaborativeWorkRepositoriesWithArtifacts, None, None]:
     schema_name = f"{SCHEMA_PREFIX}{uuid.uuid4().hex}"
     bundle = _open_bundle(schema_name)
     try:
@@ -78,3 +78,18 @@ def postgresql_collaborative_work_bundle() -> Generator[CollaborativeWorkReposit
     finally:
         bundle.close()
         _drop_schema(schema_name)
+
+
+@pytest.fixture
+def artifact_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
+    return postgresql_collaborative_work_bundle.artifact
+
+
+@pytest.fixture
+def version_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
+    return postgresql_collaborative_work_bundle.version
+
+
+@pytest.fixture
+def publication_repo(postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts):
+    return postgresql_collaborative_work_bundle.publication

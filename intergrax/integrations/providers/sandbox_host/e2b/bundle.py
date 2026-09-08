@@ -1,9 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_e2b_sandbox_host as _legacy_create_e2b_sandbox_host
-
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.sandbox_host.e2b.factory import create_e2b_sandbox_host_backend
+
 from intergrax.integrations.providers.sandbox_host.e2b.integration import (
     E2B_SANDBOX_HOST_PROVIDER_ID,
     E2bSandboxHostIntegration,
@@ -42,8 +42,6 @@ def create_e2b_sandbox_host_integration(
 
 
 def create_e2b_sandbox_host(**kwargs: object) -> E2bSandboxHostIntegration:
-    """Compatibility shim — constructs E2bSandboxHostIntegration from legacy runtime."""
-    runtime = _legacy_create_e2b_sandbox_host(**kwargs)
-    if isinstance(runtime, E2bSandboxHostIntegration):
-        return runtime
-    return E2bSandboxHostIntegration.from_client(runtime)
+    """Construct E2B sandbox host integration using the provider-specific backend."""
+    backend = create_e2b_sandbox_host_backend(**kwargs)
+    return E2bSandboxHostIntegration.from_client(backend)

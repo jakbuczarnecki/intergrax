@@ -31,6 +31,7 @@ def compute_data_pack_content_identity(
         "embedding_model": embedding_identity.model,
         "embedding_model_revision": revision,
         "embedding_dimension": embedding_identity.dimension,
+        "embedding_input_policy_version": embedding_identity.input_policy_version,
         "relational_schema_version": relational_schema_version,
         "embedding_schema_version": embedding_schema_version,
     }

@@ -46,6 +46,12 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.stores.parquet.relational_codec import (
     read_relational_parquet,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.performance.contracts import (
+    PipelinePhase,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.performance.profiler import (
+    PipelineProfilerPort,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.contracts.results import (
     ValidationStatus,
 )
@@ -181,28 +187,54 @@ def prepare_validated_temp_shard_pair(
     embedding_relative_path: str,
     expected_count: int,
     expected_dimension: int,
+    profiler: PipelineProfilerPort | None = None,
 ) -> ValidatedTempShardPair:
-    relational_records, embedding_records = validate_temp_shard_pair(
-        relational_temp_path=relational_temp_path,
-        embedding_temp_path=embedding_temp_path,
-        expected_count=expected_count,
-        expected_dimension=expected_dimension,
-    )
-    relational_digest = compute_source_ref_set_sha256(
-        record.source_ref for record in relational_records
-    )
-    embedding_digest = compute_source_ref_set_sha256(
-        record.source_ref for record in embedding_records
-    )
+    if profiler is not None:
+        with profiler.measure(PipelinePhase.VALIDATION):
+            relational_records, embedding_records = validate_temp_shard_pair(
+                relational_temp_path=relational_temp_path,
+                embedding_temp_path=embedding_temp_path,
+                expected_count=expected_count,
+                expected_dimension=expected_dimension,
+            )
+    else:
+        relational_records, embedding_records = validate_temp_shard_pair(
+            relational_temp_path=relational_temp_path,
+            embedding_temp_path=embedding_temp_path,
+            expected_count=expected_count,
+            expected_dimension=expected_dimension,
+        )
+    if profiler is not None:
+        with profiler.measure(PipelinePhase.SOURCE_IDENTITY):
+            relational_digest = compute_source_ref_set_sha256(
+                record.source_ref for record in relational_records
+            )
+            embedding_digest = compute_source_ref_set_sha256(
+                record.source_ref for record in embedding_records
+            )
+    else:
+        relational_digest = compute_source_ref_set_sha256(
+            record.source_ref for record in relational_records
+        )
+        embedding_digest = compute_source_ref_set_sha256(
+            record.source_ref for record in embedding_records
+        )
     if relational_digest != embedding_digest:
         raise VpiDataPackBuildError("temp relational/embedding source-ref digest mismatch")
+    if profiler is not None:
+        with profiler.measure(PipelinePhase.CHECKSUM):
+            relational_sha256 = sha256_file(relational_temp_path)
+            embedding_sha256 = sha256_file(embedding_temp_path)
+    else:
+        relational_sha256 = sha256_file(relational_temp_path)
+        embedding_sha256 = sha256_file(embedding_temp_path)
     return ValidatedTempShardPair(
         relational_temp_path=relational_temp_path,
         embedding_temp_path=embedding_temp_path,
         relational_relative_path=relational_relative_path,
         embedding_relative_path=embedding_relative_path,
-        relational_sha256=sha256_file(relational_temp_path),
-        embedding_sha256=sha256_file(embedding_temp_path),
+        relational_sha256=relational_sha256,
+        embedding_sha256=embedding_sha256,
         relational_source_ref_set_sha256=relational_digest,
         embedding_source_ref_set_sha256=embedding_digest,
     )

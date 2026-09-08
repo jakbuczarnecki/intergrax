@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Optional, Protocol, runtime_checkable
 from uuid import uuid4
@@ -14,6 +15,7 @@ from uuid import uuid4
 from intergrax.contracts.agent_decision import AgentDecisionType
 from intergrax.runtime.cancellation.resume_admission import is_checkpoint_resumable
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
@@ -25,6 +27,7 @@ from intergrax.runtime.long_running.persistence_contract import (
 from intergrax.runtime.long_running.resume_planner import (
     build_scheduled_resume_task,
     build_timeout_resume_task,
+    execution_identity_from_checkpoint,
     timeout_action_to_verdict,
 )
 from intergrax.runtime.long_running.scheduler_claim import (
@@ -271,6 +274,30 @@ class LongRunningScheduler:
         if action_claim is not None and self._ledger is not None:
             self._ledger.complete_action(action_claim)
         return result
+
+
+class HostTaskResumeExecutor:
+    """Adapter from canonical host execution to TaskResumeExecutor."""
+
+    def __init__(
+        self,
+        host_execution: HostTaskExecutionPort,
+        *,
+        task_enricher: Callable[[Task], Task] | None = None,
+    ) -> None:
+        self._host_execution = host_execution
+        self._task_enricher = task_enricher
+
+    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult:
+        if self._task_enricher is not None:
+            task = self._task_enricher(task)
+        run_id, attempt_id = execution_identity_from_checkpoint(checkpoint)
+        return await self._host_execution.execute(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            resume_checkpoint=checkpoint,
+        )
 
 
 class UnifiedTaskResumeExecutor:

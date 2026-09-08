@@ -16,7 +16,7 @@ _LKW_ROOT = _REPO_ROOT / "applications" / "local_workspace_application"
 _FORBIDDEN_TOKENS: tuple[str, ...] = (
     "NexusLoop",
     "nexus_loop",
-    "resolve_harness_host_nexus_loop_legacy",
+    "resolve_harness_host_execution_terminal",
 )
 
 _GATE_PATHS: tuple[Path, ...] = (

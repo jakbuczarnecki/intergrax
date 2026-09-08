@@ -5,14 +5,20 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Iterable, Sequence, TypeVar
+from typing import Any, Iterable, Sequence, TypeVar
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.retry import is_retriable_provider_error
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+    StrictToolArgumentConformanceError,
+    coerce_canonical_tool_definitions,
+    tool_definitions_require_strict_argument_conformance,
+)
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 
@@ -75,10 +81,45 @@ class FailoverLLMAdapter(LLMAdapter):
         slug = provider.value if hasattr(provider, "value") else str(provider)
         return slug, str(adapter.model or "")
 
-    def _execute_with_failover(self, operation: Callable[[LLMAdapter], T]) -> T:
+    def _eligible_adapter_chain(
+        self,
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]] | None = None,
+    ) -> tuple[tuple[LLMAdapter, ...], tuple[str, ...]]:
+        """Return adapters eligible for dispatch; filter strict-ineligible children."""
+        if tools is None:
+            return self._adapters, self._profile_ids
+        definitions = coerce_canonical_tool_definitions(tools)
+        if not tool_definitions_require_strict_argument_conformance(definitions):
+            return self._adapters, self._profile_ids
+        if not self._adapters[0].supports_strict_tool_argument_conformance():
+            raise StrictToolArgumentConformanceError(
+                "tools schema requires provider-enforced strict argument conformance but "
+                f"{self._adapters[0].__class__.__name__} does not support it"
+            )
+        pairs = [
+            (adapter, profile_id)
+            for adapter, profile_id in zip(self._adapters, self._profile_ids)
+            if adapter.supports_strict_tool_argument_conformance()
+        ]
+        adapters, profile_ids = zip(*pairs)
+        return tuple(adapters), tuple(profile_ids)
+
+    def _execute_with_failover(
+        self,
+        operation: Callable[[LLMAdapter], T],
+        *,
+        adapters: Sequence[LLMAdapter] | None = None,
+        profile_ids: Sequence[str] | None = None,
+    ) -> T:
+        active_adapters = tuple(adapters) if adapters is not None else self._adapters
+        active_profile_ids = (
+            tuple(profile_ids) if profile_ids is not None else self._profile_ids
+        )
+        if len(active_adapters) != len(active_profile_ids):
+            raise ValueError("adapters and profile_ids length must match")
         self.routing_attempts.clear()
         last_exc: BaseException | None = None
-        for index, adapter in enumerate(self._adapters):
+        for index, adapter in enumerate(active_adapters):
             try:
                 return operation(adapter)
             except BaseException as exc:
@@ -86,7 +127,7 @@ class FailoverLLMAdapter(LLMAdapter):
                 provider, model = self._provider_model(adapter)
                 record = LLMRoutingAttemptRecord(
                     profile_index=index,
-                    profile_id=self._profile_ids[index],
+                    profile_id=active_profile_ids[index],
                     provider=provider,
                     model=model,
                     error=f"{type(exc).__name__}: {exc}",
@@ -94,7 +135,7 @@ class FailoverLLMAdapter(LLMAdapter):
                 self.routing_attempts.append(record)
                 if self.routing_attempt_observer is not None:
                     self.routing_attempt_observer(record)
-                is_last = index >= len(self._adapters) - 1
+                is_last = index >= len(active_adapters) - 1
                 if is_last or not is_retriable_provider_error(exc, adapter.call_config):
                     raise
         assert last_exc is not None
@@ -120,20 +161,25 @@ class FailoverLLMAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[dict],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
+        adapters, profile_ids = self._eligible_adapter_chain(tools)
         return self._execute_with_failover(
             lambda adapter: adapter.generate_with_tools(
                 messages,
                 tools,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                tool_choice=tool_choice,
                 run_id=run_id,
-            )
+            ),
+            adapters=adapters,
+            profile_ids=profile_ids,
         )
 
     def stream_messages(
@@ -144,7 +190,7 @@ class FailoverLLMAdapter(LLMAdapter):
         max_tokens: int | None = None,
         run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
-        adapter = self._select_streaming_adapter()
+        adapter = self._select_streaming_adapter_from(self._adapters)
         return adapter.stream_messages(
             messages,
             temperature=temperature,
@@ -155,18 +201,21 @@ class FailoverLLMAdapter(LLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[dict],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
-        adapter = self._select_streaming_adapter()
+        adapters, _profile_ids = self._eligible_adapter_chain(tools)
+        adapter = self._select_streaming_adapter_from(adapters)
         return adapter.stream_with_tools(
             messages,
             tools,
             temperature=temperature,
             max_tokens=max_tokens,
+            tool_choice=tool_choice,
             run_id=run_id,
         )
 
@@ -189,17 +238,21 @@ class FailoverLLMAdapter(LLMAdapter):
             )
         )
 
-    def _select_streaming_adapter(self) -> LLMAdapter:
-        for adapter in self._adapters:
+    def _select_streaming_adapter_from(self, adapters: Sequence[LLMAdapter]) -> LLMAdapter:
+        for adapter in adapters:
             if adapter.supports_streaming():
                 return adapter
-        return self._adapters[0]
+        return adapters[0]
 
     def supports_streaming(self) -> bool:
         return any(adapter.supports_streaming() for adapter in self._adapters)
 
     def supports_structured_output(self) -> bool:
         return any(adapter.supports_structured_output() for adapter in self._adapters)
+
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        """Primary must support strict; failover excludes strict-ineligible children."""
+        return self._adapters[0].supports_strict_tool_argument_conformance()
 
     def supports_vision(self) -> bool:
         return any(adapter.supports_vision() for adapter in self._adapters)

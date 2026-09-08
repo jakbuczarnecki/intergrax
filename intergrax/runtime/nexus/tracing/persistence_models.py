@@ -129,3 +129,7 @@ class RunTraceReader(ABC):
     def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[RunSummary]:
         """List recent finalized runs for a tenant (newest first)."""
         raise NotImplementedError(f"{type(self).__name__} does not support list_runs")
+
+
+class RunTraceStore(RunTraceWriter, RunTraceReader):
+    """Canonical persisted trace store with read and write capabilities."""

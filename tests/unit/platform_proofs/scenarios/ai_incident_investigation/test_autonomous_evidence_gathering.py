@@ -6,6 +6,7 @@ from __future__ import annotations
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import build_fixture_runtime_bundle, build_runtime_bundle
 
 import inspect
+import json
 
 import pytest
 
@@ -66,6 +67,29 @@ from tests.unit.platform_proofs.scenarios.ai_incident_investigation.planner_doub
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _replace_atomic_round_action(
+    response: LLMAdapterResponse,
+    *,
+    tool_id: str,
+    arguments: dict[str, str],
+) -> LLMAdapterResponse:
+    if not response.tool_calls:
+        return response
+    original = response.tool_calls[0]
+    payload = json.loads(original.arguments_json)
+    payload["actions"] = [{"tool_id": tool_id, "arguments": arguments}]
+    return LLMAdapterResponse(
+        content=response.content,
+        tool_calls=(
+            LLMToolCall(
+                id=original.id,
+                name=original.name,
+                arguments_json=json.dumps(payload),
+            ),
+        ),
+    )
 
 
 class _SentinelCanonicalInvoker:
@@ -293,22 +317,14 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
     class _OutOfScopeLLM(ScriptedIncidentInvestigationLLM):
         def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
             response = super().generate_with_tools(messages, tools_schema, **kwargs)
-            if not response.tool_calls:
-                return response
-            original = response.tool_calls[0]
-            return LLMAdapterResponse(
-                content=response.content,
-                tool_calls=(
-                    LLMToolCall.from_openai_shape(
-                        call_id=original.id,
-                        name=TOOL_COMPARISON_READ,
-                        arguments={
-                            "reference_line_id": "line_z",
-                            "comparison_line_id": "line3",
-                            "window": "comparison_window",
-                        },
-                    ),
-                ),
+            return _replace_atomic_round_action(
+                response,
+                tool_id=TOOL_COMPARISON_READ,
+                arguments={
+                    "reference_line_id": "line_z",
+                    "comparison_line_id": "line3",
+                    "window": "comparison_window",
+                },
             )
 
     def _out_of_scope_llm():
@@ -406,22 +422,14 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
     class _OutOfScopeLLM(ScriptedIncidentInvestigationLLM):
         def generate_with_tools(self, messages, tools_schema, **kwargs):  # type: ignore[no-untyped-def]
             response = super().generate_with_tools(messages, tools_schema, **kwargs)
-            if not response.tool_calls:
-                return response
-            original = response.tool_calls[0]
-            return LLMAdapterResponse(
-                content=response.content,
-                tool_calls=(
-                    LLMToolCall.from_openai_shape(
-                        call_id=original.id,
-                        name=TOOL_COMPARISON_READ,
-                        arguments={
-                            "reference_line_id": "line_z",
-                            "comparison_line_id": "line3",
-                            "window": "comparison_window",
-                        },
-                    ),
-                ),
+            return _replace_atomic_round_action(
+                response,
+                tool_id=TOOL_COMPARISON_READ,
+                arguments={
+                    "reference_line_id": "line_z",
+                    "comparison_line_id": "line3",
+                    "window": "comparison_window",
+                },
             )
 
     def _out_of_scope_llm():

@@ -80,6 +80,7 @@ FLAT_PROFILE_KEYS: frozenset[str] = frozenset(
         "shadow_workspace",
         "sandbox",
         "domain_policy_fragments",
+        "governance_permission_preset",
     }
 )
 
@@ -188,6 +189,7 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
         ("integration_governance_profile", "integration_marketplace"),
         ("host_deployment_profile", "deployment"),
         ("execution_boundary_export_profile", "boundary_export"),
+        ("governance_permission_preset", "permission_preset"),
     ):
         if flat_key in data:
             governance[nested_key] = data[flat_key]
@@ -285,6 +287,7 @@ def flatten_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
             "integration_governance_profile": governance.get("integration_marketplace"),
             "host_deployment_profile": governance.get("deployment"),
             "execution_boundary_export_profile": governance.get("boundary_export"),
+            "governance_permission_preset": governance.get("permission_preset"),
             "graph_spec": topology.get("graph_spec"),
             "shadow_workspace": isolation.get("shadow_workspace"),
             "sandbox": isolation.get("sandbox"),

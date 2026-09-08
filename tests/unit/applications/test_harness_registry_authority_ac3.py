@@ -28,7 +28,14 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from tests.unit.applications.test_registry_projection_ap10 import (
     ECHO_BUILDERS,
     _APP,
@@ -92,7 +99,7 @@ def test_revision_bound_host_uses_projection_registry_only() -> None:
     assert runtime.registry.list_agent_ids() == ["search"]
     assert runtime.registry_projection_evidence is not None
     assert runtime.registry_projection_evidence.runtime_revision_id == "rev-ac3"
-    assert resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids() == ["search"]
+    assert runtime.registry.list_agent_ids() == ["search"]
 
 
 def test_manifest_extra_agent_absent_from_revision_bound_nexus_registry() -> None:
@@ -106,8 +113,8 @@ def test_manifest_extra_agent_absent_from_revision_bound_nexus_registry() -> Non
         use_in_memory_trace=True,
     )
     assert "indexer" in {binding.contract_id for binding in manifest.enabled_agents()}
-    assert "indexer" not in resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids()
-    assert "synthesizer" not in resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids()
+    assert "indexer" not in runtime.registry.list_agent_ids()
+    assert "synthesizer" not in runtime.registry.list_agent_ids()
 
 
 def test_revision_bound_without_projection_fails_closed() -> None:

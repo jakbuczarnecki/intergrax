@@ -30,6 +30,7 @@ class NativePlannerProtocolMode(Enum):
 
     NONE = "none"
     INVESTIGATION_ACTION_CONTEXT = "investigation_action_context"
+    INVESTIGATION_ATOMIC_ROUND = "investigation_atomic_round"
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,7 +43,14 @@ class NativePlannerProtocolConfig:
 
     @property
     def protocol_active(self) -> bool:
-        return self.mode == NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT
+        return self.mode in {
+            NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+            NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND,
+        }
+
+    @property
+    def atomic_round_active(self) -> bool:
+        return self.mode == NativePlannerProtocolMode.INVESTIGATION_ATOMIC_ROUND
 
     @property
     def action_context_required(self) -> bool:
@@ -102,12 +110,12 @@ class SplitNativePlannerToolCalls:
 
 @dataclass(frozen=True, slots=True)
 class NativePlannerRound:
-    """One atomic native planner response after protocol/business separation."""
+    """One native planner response with materialized executable business actions."""
 
     response: LLMAdapterResponse
-    business_tool_calls: tuple[LLMToolCall, ...]
     tool_plan: ToolCallPlan
     action_context: NativePlannerActionContext | None
+    materialized_tool_calls: tuple[LLMToolCall, ...]
 
 
 class _OpenAIFunctionSchema(TypedDict):
@@ -122,7 +130,7 @@ class _OpenAIToolSchema(TypedDict):
 
 
 def build_native_planner_action_context_schema() -> _OpenAIToolSchema:
-    """Model-facing schema for the reserved planner protocol annotation."""
+    """LEGACY / NON-CERTIFIED sibling annotation schema."""
     return {
         "type": "function",
         "function": {
@@ -141,7 +149,7 @@ def build_native_planner_action_context_schema() -> _OpenAIToolSchema:
 def append_planner_action_context_schema(
     business_schemas: Sequence[Mapping[str, object]],
 ) -> list[dict[str, object]]:
-    """Append reserved planner annotation schema after validated business schemas."""
+    """LEGACY / NON-CERTIFIED — append sibling annotation after business schemas."""
     materialized = [dict(entry) for entry in business_schemas]
     materialized.append(dict(build_native_planner_action_context_schema()))
     return materialized
@@ -180,6 +188,24 @@ def _parse_basis_references(raw_references: list[str]) -> tuple[str, ...]:
         seen.add(stripped)
         ordered.append(stripped)
     return tuple(ordered)
+
+
+def parse_optional_planner_action_context_payload(
+    payload: Mapping[str, object],
+) -> NativePlannerActionContext:
+    """Parse one action-context object embedded in atomic planner round transport."""
+    try:
+        validated = _PlannerActionContextInput.model_validate(dict(payload))
+    except Exception as exc:
+        raise NativePlannerActionContextError(
+            f"planner action context schema validation failed: {exc}"
+        ) from exc
+    return NativePlannerActionContext(
+        evidence_basis_references=_parse_basis_references(
+            validated.evidence_basis_references
+        ),
+        purpose=validated.purpose,
+    )
 
 
 def parse_planner_action_context_call(call: LLMToolCall) -> NativePlannerActionContext:
@@ -260,7 +286,11 @@ def resolve_native_planner_protocol(
     *,
     protocol_config: NativePlannerProtocolConfig,
 ) -> tuple[NativePlannerActionContext | None, tuple[LLMToolCall, ...]]:
-    """Split, validate, and classify one native planner tool response."""
+    """LEGACY / NON-CERTIFIED sibling transport split and validation."""
+    if protocol_config.atomic_round_active:
+        raise NativePlannerActionContextError(
+            "resolve_native_planner_protocol is not used for atomic round transport"
+        )
     if not protocol_config.protocol_active:
         split = split_native_planner_tool_calls(tool_calls)
         if split.annotation_calls:

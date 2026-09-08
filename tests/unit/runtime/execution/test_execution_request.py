@@ -80,7 +80,7 @@ def test_execution_request_is_immutable_value_object() -> None:
     assert replacement.input is original_input
     assert replacement.capabilities == updated_capabilities
 
-    source = Path("intergrax/runtime/execution/request.py").read_text(encoding="utf-8")
+    source = Path("intergrax/contracts/execution_request.py").read_text(encoding="utf-8")
     assert "@dataclass(frozen=True, slots=True)" in source
     assert "class ExecutionRequest" in source
 

@@ -37,7 +37,9 @@ from intergrax.runtime.nexus.tools.tool_loop import (
     record_identical_tool_call_fingerprints,
     validate_identical_tool_call_repeats,
 )
-from intergrax.runtime.nexus.tools.tool_planning_policy import tool_choice_for_mode
+from intergrax.runtime.nexus.tools.tool_planning_policy import (
+    native_tool_choice_for_investigation_round,
+)
 from intergrax.runtime.nexus.tools.tool_planner_protocol import (
     IterativeToolPlannerProtocol,
     ToolPlannerProtocol,
@@ -110,7 +112,10 @@ class BoundedReactPattern:
                 planning_messages,
                 allowed_tool_ids=allowed_tool_ids,
                 run_id=state.run_id,
-                tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
+                tool_choice=native_tool_choice_for_investigation_round(
+                    protocol_config=protocol_config,
+                    tools_mode=state.context.config.tools_mode,
+                ),
                 protocol_config=protocol_config,
             )
             llm_result = planner_round.response
@@ -125,7 +130,7 @@ class BoundedReactPattern:
                 break
 
             validate_native_tool_plan_alignment(
-                planner_round.business_tool_calls,
+                planner_round.materialized_tool_calls,
                 tool_plan,
             )
 
@@ -133,7 +138,7 @@ class BoundedReactPattern:
                 build_investigation_proof_step_from_action_context(
                     round_index=iterations,
                     action_context=planner_round.action_context,
-                    tool_calls=planner_round.business_tool_calls,
+                    tool_calls=planner_round.materialized_tool_calls,
                     messages_before_round=messages,
                     prior_model_visible_references=prior_model_visible_references,
                 )
@@ -158,7 +163,7 @@ class BoundedReactPattern:
             append_native_tool_messages(
                 messages,
                 assistant_content=llm_result.content,
-                tool_calls=planner_round.business_tool_calls,
+                tool_calls=planner_round.materialized_tool_calls,
                 outcomes=round_outcomes,
             )
             appended.extend(messages[before:])

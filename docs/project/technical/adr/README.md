@@ -104,6 +104,8 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-MP-001](entries/2026-08-11/ADR-MP-001.md) | Collaborative Work Plane ownership | Accepted (architecture only) |
 | [ADR-MP-002](entries/2026-08-11/ADR-MP-002.md) | Principal / Membership / Delegation semantics | Accepted (architecture only) |
 | [ADR-MP-003](entries/2026-09-06/ADR-MP-003.md) | WorkItem vs Nexus Task — Shared Work ownership | Accepted (architecture only) |
+| [ADR-MP-004](entries/2026-09-07/ADR-MP-004.md) | WorkArtifact collaborative ownership and version authority | Accepted (architecture only) |
+| [ADR-MP-005](entries/2026-09-08/ADR-MP-005.md) | Decision / Approval / Governance collaborative ownership (MP-4) | Accepted (architecture only) |
 | [ADR-AGENT-004](entries/2026-08-12/ADR-AGENT-004.md) | Agent distribution, installation and enablement architecture (AGENT-PLATFORM-1) | Accepted (architecture only) |
 | [ADR-AGENT-005](entries/2026-08-17/ADR-AGENT-005.md) | Reference production process composition and AP-9/AP-10 store ownership (AGENT-CONSOLIDATION-3-ARCH) | Accepted (architecture only) |
 | [ADR-AGENT-006](entries/2026-09-01/ADR-AGENT-006.md) | Canonical runtime materialization authority - `RuntimeMaterializationRecord` (AC-3) | Accepted (architecture only) |
@@ -112,6 +114,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-PLATFORM-PLUGIN-001](entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) | Declarative policy REQUIRE_HITL → canonical Nexus HITL bridge (ENTERPRISE-4-ADR-1) | Accepted / Implemented |
 | [ADR-GOVERNED-EXECUTION-001](entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) | Governance Evaluation Points and Enforcement Ownership (Governed Execution G1A) | Accepted |
 | [ADR-GOVERNED-EXECUTION-002](entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) | Policy Catalog Identity, Versioning, and Runtime Ownership (Governed Execution G2A) | Accepted |
+| [ADR-SEC-002](entries/2026-09-07/ADR-SEC-002.md) | Third-Party Isolation and External Execution Boundary (Capability Catalog Stage 12) | Accepted (architecture only) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0…GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 

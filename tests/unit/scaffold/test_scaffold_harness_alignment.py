@@ -25,5 +25,5 @@ def test_scaffold_lab_factory_uses_harness_host_runtime(tmp_path) -> None:
     assert "host_execution = runtime.execution" in factory
     assert "nexus_loop = NexusLoop(" not in factory
     assert "runtime.nexus_loop" not in factory
-    assert "resolve_harness_host_nexus_loop_legacy" not in factory
+    assert "resolve_harness_host_execution_terminal" not in factory
     assert "host.integration_wiring import" not in factory

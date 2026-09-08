@@ -8,9 +8,10 @@ import pytest
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
-from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.llm_resolver import resolve_optional_llm_profile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest_default
 from intergrax.fastapi_core.config import ApiEnvironment
@@ -63,10 +64,10 @@ def test_resolve_llm_adapter_precedence() -> None:
     from intergrax.llm_adapters.registry.profile import LLMProfile
 
     env = ApplicationEnvironmentProfile.lab_defaults()
-    adapter = resolve_llm_adapter(env)
-    assert adapter is not None
-    env_with_llm = env.model_copy(update={"llm_profile": LLMProfile.lab()})
-    assert resolve_llm_adapter(env_with_llm) is not None
+    assert env.llm_profile == LLMProfile.lab()
+    env_with_llm = env.model_copy(update={"llm_profile": LLMProfile(provider=LLMProvider.GROQ, model="x")})
+    assert env_with_llm.llm_profile is not None
+    assert resolve_optional_llm_profile(env_with_llm) is not None
 
 
 def test_harness_production_defaults_wires_catalog_stack() -> None:

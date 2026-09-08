@@ -24,7 +24,6 @@ from intergrax.runtime.observability.operator_wiring import (
     parse_observability_export_backend_id,
 )
 
-
 LocalWorkspaceIdentitySource = Literal["body_or_context", "context_only"]
 
 _DEFAULT_DATA_HOME = "build/local_workspace"
@@ -716,7 +715,6 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             raise ValueError(
                 "LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND must be one of: auto, mongodb, inmemory."
             )
-
         managed_staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
         web_url_staging_root = _data_home_path(data_home, "run", "web_url_staging")
         allowed_read_roots = frozenset(

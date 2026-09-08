@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from enum import Enum
 from typing import Any, Protocol
 
@@ -12,6 +12,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEvaluation
@@ -189,7 +190,7 @@ class RoutingEvaluatingLLMAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: list[dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
@@ -199,7 +200,7 @@ class RoutingEvaluatingLLMAdapter(LLMAdapter):
         self._refresh_inner_adapter()
         return self._inner.generate_with_tools(
             messages,
-            tools_schema,
+            tools,
             temperature=temperature,
             max_tokens=max_tokens,
             tool_choice=tool_choice,

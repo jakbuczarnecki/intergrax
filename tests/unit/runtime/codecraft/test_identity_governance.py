@@ -36,6 +36,7 @@ from intergrax.tools.providers.codecraft.service import (
     codecraft_start,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
+from testing_support.codecraft_execution_environment import codecraft_sandbox_execution_profile
 
 pytestmark = pytest.mark.unit
 
@@ -68,6 +69,7 @@ def _ctx(
 ) -> ToolWiringContext:
     extras: dict[str, object] = {
         "codecraft_session_manager": manager or CodeCraftSessionManager(),
+        "effective_environment_profile": codecraft_sandbox_execution_profile(),
     }
     if profile is not None:
         extras["codecraft_profile"] = profile

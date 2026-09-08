@@ -38,14 +38,20 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 
 **A. Frozen architecture (this document).** Capability Catalog is a **pure federating consumer**. AC-4 (agent acquisition) and AW-7A (worker capability recovery) remain **separate mechanisms** that may share lower-level primitives only where reuse is real. No `UniversalCapabilityEngine`, no `UniversalRegistry`, no merged `AgentRegistry` / `SkillRegistry` / `ToolRegistry`.
 
-**B. Existing reusable implementation.** Platform Plugins (packaging, discovery primitives, trust/qualification vocabulary), Agent Distribution discovery/acquisition (AC-4), Tool selection layers, SkillResolver, domain registries, `wire_application_environment()` Tier-3 composition, AW-7A policy adapters (in progress).
+**B. Existing reusable implementation.** Platform Plugins (packaging, discovery primitives, trust/qualification vocabulary), Agent Distribution discovery/acquisition (AC-4), Tool selection layers, SkillResolver, domain registries, `wire_application_environment()` Tier-3 composition, AW-7A policy adapters, federated Capability Catalog (Stages 1–8), Marketplace product surface (Stage 11), usage metering substrate (Stage 13), and Stage-14 reference closed-loop proof.
 
-**C. Missing / planned.** Federated Capability Catalog read model across Agent + Skill + Tool, cross-domain ranking utilities, private enterprise catalog sources for Tool/Skill, third-party isolation beyond trusted in-process, monetization/metering product surfaces.
+**C. Implemented V1 program (Stages 1–14).** Federated catalog read model across Agent + Skill + Tool, cross-domain ranking and governance, private enterprise catalog sources for Tool/Skill, usage metering contracts/substrate, and Marketplace read surface — all implemented under domain-owned lifecycle authorities. Third-party isolation beyond trusted in-process remains **future roadmap** per [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md).
 
-**D. Future product surfaces.** Public/private Marketplace is a **product layer above** federated discovery — presentation, publisher metadata, pricing metadata, availability — not runtime or lifecycle authority.
+**D. Product surfaces above catalog.** Public/private Marketplace remains a **product layer above** federated discovery — presentation, publisher metadata, pricing metadata (display-only), availability — not runtime or lifecycle authority.
 
 > [!NOTE]
-> **Maturity boundary:** Frozen architecture documentation is **not** equivalent to shipped federated catalog federation or Marketplace product rollout. AC-4 agent discovery/acquisition is **implemented and frozen** for reference production V1 under Agent Distribution; cross-domain Capability Catalog federation is **planned**.
+> **Maturity boundary:** Capability Catalog & Discovery V1 — **CLOSED**. Stages 1–14 implemented and independently verified — see [final program audit](../maintainers/audits/CAPABILITY_CATALOG_V1_FINAL_AUDIT.md). AC-4 agent discovery/acquisition remains **implemented and frozen** under Agent Distribution as a **separate** authority from AW-7A.
+>
+> **V1 closure does NOT mean:**
+> - third-party sandbox runtime shipped,
+> - billing/settlement shipped,
+> - AW-8/9/10 shipped,
+> - Universal Capability Engine exists.
 
 **Primary audience:** CTOs, principal/staff engineers, software architects, and AI platform engineers evaluating how Intergrax separates capability discovery from domain lifecycle and execution.
 
@@ -66,7 +72,7 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 | **AC-4** | Agent acquisition discovery plane — **separate from AW-7A** |
 | **AW-7A** | Worker obstacle → tool/skill discovery → bounded decision — **separate from AC-4** |
 | **Marketplace** | Product surface above catalog — **not runtime** |
-| **Maturity** | Architecture frozen; federation and cross-domain maturity **planned** — see [Current reality](#current-reality--maturity-boundary) |
+| **Maturity** | Capability Catalog & Discovery V1 Stages 1–14 **independently verified**; **Program CLOSED** — see [Current reality](#current-reality--maturity-boundary) |
 | **Go deeper** | [Core mental model](#core-mental-model) · [§Hard invariants](#hard-invariants-normative) · [§Forbidden flows](#forbidden-flows) · [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
 
 ## Core mental model
@@ -305,7 +311,7 @@ bounded decision (A0–A4)
 governed downstream action
 ```
 
-AW-7A is **in progress** under Autonomous Work. It may discover Tools and Skills (and related surfaces per AW plan) but **cannot** directly install, mutate registries, or elevate authority. Durable change:
+AW-7A is **implemented** for V1 reference under Autonomous Work (Stage 9). It may discover Tools and Skills (and related surfaces per AW plan) but **cannot** directly install, mutate registries, or elevate authority. Durable change:
 
 ```text
 AW decision
@@ -422,6 +428,10 @@ Marketplace is a **product** built on top of federated catalog sources.
 
 **Marketplace must not:** install, activate, mutate registries, execute tools/skills/agents, or become lifecycle authority.
 
+**Stage 11 (implemented):** read-only product surface at `intergrax/marketplace/` with typed `MarketplaceCapabilityListing` wrapping canonical `CapabilityCatalogEntry`, `MarketplaceCapabilityCatalogSource` implementing `CapabilityCatalogSource`, and `MarketplaceCatalogService` joining Stage-3 discovery with product metadata. Commercial metadata is **display-only** and **must not** affect governance, ranking, or runtime selection.
+
+**Marketplace ≠ execution trust:** A public or official marketplace listing does not grant permission to execute third-party code in-process. Host isolation/trust policy may refuse execution while the capability remains catalog-discoverable. See [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md) (Stage 12).
+
 Public Marketplace is **optional** for platform operation (see Enterprise deployment).
 
 ---
@@ -434,7 +444,7 @@ Billing and metering are **separate subsystems**.
 - **Do not** embed prices in `ToolRegistry`, `SkillRegistry`, or `AgentRegistry`.
 - **Skill is not** a direct executable invocation surface for metering — tools and agent delegations carry execution semantics.
 
-Selection evidence from AC-4 already anticipates future usage accounting; implementation is **planned**, not shipped.
+Selection evidence from AC-4 already anticipates usage accounting; Stage 13 metering substrate is **implemented** (usage events and attribution — not billing).
 
 ---
 
@@ -519,7 +529,93 @@ Contracts: `intergrax/contracts/autonomous_work/capability_acquisition.py`. Adap
 
 **Current fact:** Platform Plugins use a **trusted in-process** Python extension model ([`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md)). Installing third-party packages deploys code into the host process; Platform Plugins provide admission and qualification controls, not arbitrary-code sandboxing.
 
-Public marketplace growth may require **stronger isolation** (remote execution, isolation providers). That is **future roadmap work** — do not design a new execution engine in Capability Catalog V1. Record as Stage 12 in the [plan](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md).
+Public marketplace growth may require **stronger isolation** (remote execution, isolation providers). That is **future roadmap work** — do not design a new execution engine in Capability Catalog V1.
+
+### Stage 12 — Isolation assessment (implemented)
+
+Stage 12 is an **assessment and ADR** stage — not isolation runtime shipment. Canonical decision: [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md).
+
+```text
+execution_posture metadata ≠ execution enforcement proof
+catalog discovery ≠ sandbox decision authority
+marketplace source ≠ trust authority
+```
+
+| Boundary | Rule |
+|----------|------|
+| Execution posture metadata | **May** be descriptive in future catalog projections (`TRUSTED_IN_PROCESS`, `HOST_ISOLATION_REQUIRED`, `REMOTE_EXECUTION_REQUIRED`, `UNKNOWN`) |
+| Catalog enforcement | Capability Catalog **MUST NOT** enforce isolation, choose isolation provider, launch sandbox, or mutate registries |
+| Marketplace | Listing (`CATALOG_AVAILABLE`) **≠** execution permission (`HOST_AVAILABLE`); marketplace source **≠** trust authority |
+| Skill | Not a direct execution unit — isolation applies to Tool/Agent domain paths only |
+| Default bootstrap | `wire_application_environment()` unchanged; trusted in-process remains default |
+
+**Two isolation planes (frozen):** package loading/import risk (third-party code imported at EP load) is separate from runtime capability execution risk (Tool/Agent after bootstrap). Remote execution of runtime calls does not solve unsafe plugin import if the package was already imported into the trusted host.
+
+**Future fail-closed rule (not wired):** when effective posture requires isolation and no qualifying provider exists → **no implicit fallback** to trusted in-process.
+
+Plan tracker: [Stage 12 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-12--isolation-and-external-execution-maturity).
+
+### Stage 13 — Usage metering (implemented)
+
+Stage 13 delivers enterprise-grade **metering substrate** — not billing, not pricing, not checkout.
+
+```text
+discovery/selection provenance snapshot
+→ immutable usage attribution
+→ domain/runtime recording (explicit caller)
+→ CapabilityUsageEvent
+→ pluggable CapabilityUsageConsumer
+→ attribution/reporting projection
+```
+
+| Boundary | Rule |
+|----------|------|
+| Discovery | Read-only — **never** emits usage |
+| Selection | Evidence only — selection **≠** usage |
+| Usage event | Typed `CapabilityUsageEvent` with `CapabilityIdentityKey` + `CapabilityProvenance` snapshot |
+| Publisher attribution | From `CapabilityProvenance.publisher` only — no Marketplace live lookup |
+| Skill | Not a direct metered execution subject |
+| Registries | No price/billing fields on `ToolRegistry` / `SkillRegistry` / `AgentRegistry` |
+| Runtime default | Unchanged unless caller injects recorder with explicit attribution |
+| Billing | Future consumer downstream of usage evidence — out of Stage 13 scope |
+
+**Runtime integration decision:** `RuntimeToolInvoker` currently receives `tool_id` and registry lookup only — no canonical source-qualified provenance in the public invoke contract. Stage 13 therefore ships typed event + `CapabilityUsageRecorder` requiring explicit attribution; **automatic runtime emission is intentionally not fabricated** from `tool_id` or registry lookup.
+
+**Observability distinction:** `CostDashboardMetrics` (`total_cost_usd`, token totals) remains an observability/dashboard projection — not Stage-13 usage authority. `CapabilityUsageEvent` is source-qualified capability usage evidence for downstream metering.
+
+Plan tracker: [Stage 13 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-13--usage-metering).
+
+### Stage 14 — Full autonomous worker integration (implemented)
+
+Stage 14 closes the **reference governed rediscovery loop** for Capability Catalog V1. Capability Catalog participates in an autonomous work loop but does **not** own worker orchestration, scheduling, or domain execution.
+
+```text
+WorkStageCapabilityNeed (typed)
+        ↓ fresh FederatedCapabilityCatalog.snapshot() per iteration
+WorkStageCapabilityDiscoveryService (Stage 8)
+        ↓ discover → rank → govern → effective narrow
+selected source-qualified GovernedCapabilityCandidate
+        ↓ domain authority only (Tool → WorkStageToolExecutionPort; Agent → AC-4 / Nexus)
+WorkStageToolExecutionPort / Agent path (never catalog.execute)
+        ↓ integration qualification routes Tool port → RuntimeToolInvoker (not AW core)
+        ↓
+WorkStageCapabilityObservation (typed execution + optional next need)
+        ↓ rediscovery only when next WorkStageCapabilityNeed exists
+WorkStageCapabilityLoopIterationEvidence (immutable ordered chain)
+```
+
+| Boundary | Rule |
+|----------|------|
+| Loop coordinator | `WorkStageCapabilityDiscoveryLoopCoordinator` — bounded reference composition only; not a universal worker orchestrator |
+| Rediscovery trigger | Typed `WorkStageCapabilityNeed` only — never hidden heuristics or registry mutation |
+| Stage 8 vs Stage 9 | Routine stage discovery ≠ AW recovery; Stage 9 invoked only for real obstacle/recovery conditions |
+| Skill | Not a direct execution unit — loop blocks Skill-only selection without generic executor |
+| Evidence | `WorkStageCapabilityLoopResult` + Stage-8 `WorkStageCapabilityDiscoveryEvidence` records per iteration |
+| AW-8/9/10 | Out of scope — Stage 14 proves catalog participation; does not ship worker control plane |
+
+Contracts: `intergrax/contracts/capability_catalog/work_stage_loop.py`. Coordinator: `intergrax/autonomous_work/work_stage_capability_loop.py`. Tool port: provider-neutral `WorkStageToolExecutionPort` on the coordinator. Reference qualification routes that port to `RuntimeToolInvoker` in `tests/integration/autonomous_work/runtime_tool_invoker_work_stage_port.py`. Proof: `tests/integration/autonomous_work/test_capability_discovery_closed_loop.py`.
+
+Plan tracker: [Stage 14 row](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md#stage-14--full-autonomous-worker-integration).
 
 ---
 
@@ -652,21 +748,22 @@ UniversalCapabilityEngine
 | Agent Distribution | `CatalogSourceProvider`, trust, AC-3 lifecycle |
 | Tools | `ToolProfile`, selection layers, semantic/hierarchical selection |
 | Skills | `SkillProfile`, `SkillRegistry`, `SkillResolver` |
-| AW-7A | Capability need classification, ordered search policy (in progress) |
+| AW-7A | Capability need classification, ordered search policy (Stage 9 implemented) |
 | Tier-3 | `wire_application_environment()` |
 
-### C. Missing / planned
+### C. Implemented vs future
 
 | Gap | Status |
 |-----|--------|
-| Cross-domain Capability Catalog federation | Planned |
-| Cross-domain ranking shared utilities | Planned (only if reuse proven) |
+| Cross-domain Capability Catalog federation | **Implemented** — Stages 1–2 (`FederatedCapabilityCatalog`) |
+| Cross-domain ranking shared utilities | **Implemented** — Stage 4 (`rank_capability_candidates`) |
 | Skill version pinning | **Implemented** — Skill domain + discovery projection (Stage 6) |
 | Tools/Skills typed bootstrap evidence | **Implemented** — Stage 10 `DomainPluginLoadReport` on `ApplicationPlatformPluginEvidence` |
-| Private enterprise catalog for Tool/Skill | Planned |
-| Third-party isolation beyond in-process | Future |
-| Monetization / metering consumer | Future |
-| Marketplace product surface | Future |
+| Private enterprise catalog for Tool/Skill | **Implemented** — Stage 7 private adapters |
+| Third-party isolation beyond in-process | **Assessment complete** — [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md); runtime provider not shipped |
+| Monetization / billing consumer | **Future** — Stage 13 metering substrate only (usage ≠ pricing) |
+| Marketplace product surface | **Implemented** — read-only contracts at `intergrax/contracts/marketplace/` and product layer at `intergrax/marketplace/`; federation via existing `FederatedCapabilityCatalog`; no billing, install, or registry mutation |
+| Full AW closed-loop reference proof | **Implemented** — Stage 14 (`WorkStageCapabilityDiscoveryLoopCoordinator`) |
 
 ---
 

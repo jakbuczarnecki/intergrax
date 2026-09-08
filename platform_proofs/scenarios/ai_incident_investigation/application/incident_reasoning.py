@@ -38,31 +38,19 @@ from platform_proofs.scenarios.ai_incident_investigation.application.observabili
 from platform_proofs.scenarios.ai_incident_investigation.application.platform_diagnostic_context import (
     format_platform_diagnostic_context_lines,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
+    EvidencePhaseContext,
+    render_completion_intent_contract_lines,
+    validate_completion_intent_for_phase,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_NEED_MORE_EVIDENCE,
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
-    DIAGNOSIS_KIND,
     INCIDENT_EVIDENCE_IDS,
 )
 
 LEGAL_HYPOTHESIS_IDS: frozenset[str] = frozenset({"H1", "H2", "H3"})
-COMPLETION_INTENT_CONTRACT = (
-    "Completion intent contract:\n"
-    "- claim_proposals must always be non-empty; include diagnosis claim proposals for "
-    "each hypothesis you assess.\n"
-    "- supported_diagnosis: only when gathered evidence supports a final diagnosis "
-    "strongly enough for the scenario contract.\n"
-    "- unresolved: only after available investigation is exhausted; must set unresolved_reason "
-    "to a non-empty string and information_gaps to a non-empty list.\n"
-    "- need_more_evidence: only when additional allowed evidence-gathering work remains possible; "
-    "still provide non-empty claim_proposals describing the current provisional assessment."
-)
-CLAIM_SEMANTIC_CONTRACT = (
-    "Claim proposal contract: always emit at least one claim_proposal with "
-    f"claim_kind={str(DIAGNOSIS_KIND)!s} for each hypothesis under active consideration. "
-    "Do not emit evidence_id fields — the platform binds evidence relations deterministically."
-)
 FORBIDDEN_MODEL_RESOLUTIONS: frozenset[ClaimResolution] = frozenset(
     {
         ClaimResolution.SUPPORTED,
@@ -420,6 +408,7 @@ def build_reasoning_messages(
     prior_state: PriorInvestigationState,
     critic_feedback: Sequence[str] | None,
     is_revision: bool,
+    evidence_phase_context: EvidencePhaseContext,
     investigation_input: IncidentInvestigationInput | None = None,
 ) -> list[ChatMessage]:
     evidence_reference_lines = [
@@ -442,8 +431,7 @@ def build_reasoning_messages(
         "Do not treat workload-throughput correlation as causation.",
         "Propose semantic diagnosis claims only — do not copy evidence IDs into structured output.",
         evidence_context,
-        COMPLETION_INTENT_CONTRACT,
-        CLAIM_SEMANTIC_CONTRACT,
+        *render_completion_intent_contract_lines(evidence_phase_context),
         "Do not output claim_id, resolution, supersedes_claim_id, or evidence_id lists.",
         f"Investigation phase: {'revision' if is_revision else 'initial'}",
     ]
@@ -494,6 +482,7 @@ def propose_incident_reasoning(
     prior_state: PriorInvestigationState,
     critic_feedback: Sequence[str] | None,
     is_revision: bool,
+    evidence_phase_context: EvidencePhaseContext,
     investigation_input: IncidentInvestigationInput | None = None,
 ) -> IncidentReasoningProposal:
     llm = runtime_state.context.config.llm_adapter
@@ -505,6 +494,7 @@ def propose_incident_reasoning(
         prior_state=prior_state,
         critic_feedback=critic_feedback,
         is_revision=is_revision,
+        evidence_phase_context=evidence_phase_context,
         investigation_input=investigation_input,
     )
     structured = llm.generate_structured(
@@ -515,6 +505,10 @@ def propose_incident_reasoning(
     )
     proposal = structured.parsed
     validate_reasoning_proposal(proposal, evidence_nodes=evidence_nodes)
+    validate_completion_intent_for_phase(
+        proposal.completion_intent,
+        evidence_phase_context,
+    )
     return proposal
 
 

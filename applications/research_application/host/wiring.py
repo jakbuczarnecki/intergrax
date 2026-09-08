@@ -24,7 +24,7 @@ def build_research_registry(
     """Compose research + summary agents via unified Tier-3 wiring."""
     settings = settings or ResearchBackendSettings.from_env()
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
+    env = build_research_environment_profile(settings)
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(

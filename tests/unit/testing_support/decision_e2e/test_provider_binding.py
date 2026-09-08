@@ -23,8 +23,23 @@ from intergrax.llm_adapters.registry.model_catalog import ModelRecord
 from testing_support.decision_e2e.provider_binding import (
     bind_qualification_llm_profile,
 )
+from testing_support.strict_tool_contract_validator import STRICT_CAPABILITY_BLOCK_REASON
 
 pytestmark = pytest.mark.unit
+
+
+class _StrictlessStubAdapter(LLMAdapter):
+    provider = LLMProvider.OLLAMA
+    model = "qwen2.5:32b"
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 128_000
+
+    def generate_messages(self, messages, *, temperature=None, max_tokens=None, run_id=None):
+        from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+
+        return build_adapter_response(content="ok")
 
 
 class _StubAdapter(LLMAdapter):
@@ -34,6 +49,9 @@ class _StubAdapter(LLMAdapter):
     @property
     def context_window_tokens(self) -> int:
         return 128_000
+
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return True
 
     def generate_messages(self, messages, *, temperature=None, max_tokens=None, run_id=None):
         from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
@@ -106,11 +124,9 @@ def test_bind_openai_gpt41_resolves_requested_and_resolved_identity() -> None:
     assert environment.llm_profile.model == "gpt-4.1"
 
 
-def test_bind_ollama_qwen32_resolves_requested_and_resolved_identity() -> None:
+def test_bind_ollama_qwen32_blocks_without_strict_capability() -> None:
     environment = build_scenario_environment_profile()
-    adapter = _StubAdapter()
-    adapter.provider = LLMProvider.OLLAMA
-    adapter.model = "qwen2.5:32b"
+    adapter = _StrictlessStubAdapter()
 
     with patch.dict(
         "os.environ",
@@ -126,19 +142,13 @@ def test_bind_ollama_qwen32_resolves_requested_and_resolved_identity() -> None:
                 adapter_resolver=lambda _env: adapter,
             )
 
-    assert block_reason is None
-    assert binding is not None
-    assert binding.requested_provider == "ollama"
-    assert binding.requested_model == "qwen2.5:32b"
-    assert binding.resolved_provider == "ollama"
-    assert binding.resolved_model == "qwen2.5:32b"
+    assert binding is None
+    assert block_reason == STRICT_CAPABILITY_BLOCK_REASON
 
 
-def test_explicit_model_differs_from_lab_default_uses_explicit_model() -> None:
+def test_explicit_model_differs_from_lab_default_blocks_without_strict_capability() -> None:
     environment = build_scenario_environment_profile()
-    adapter = _StubAdapter()
-    adapter.provider = LLMProvider.OLLAMA
-    adapter.model = "qwen2.5:32b"
+    adapter = _StrictlessStubAdapter()
 
     with patch.dict(
         "os.environ",
@@ -151,10 +161,8 @@ def test_explicit_model_differs_from_lab_default_uses_explicit_model() -> None:
                 adapter_resolver=lambda _env: adapter,
             )
 
-    assert block_reason is None
-    assert binding is not None
-    assert binding.resolved_model == "qwen2.5:32b"
-    assert binding.resolved_model != "llama3.1:latest"
+    assert binding is None
+    assert block_reason == STRICT_CAPABILITY_BLOCK_REASON
 
 
 def test_invalid_explicit_provider_fails_closed() -> None:
@@ -199,26 +207,25 @@ def test_invalid_explicit_adapter_resolution_fails_closed() -> None:
     assert "explicit qualification provider/model could not be resolved" in block_reason
 
 
-def test_missing_explicit_qualification_env_uses_documented_default_provider() -> None:
+def test_bind_qualification_llm_profile_consumes_prepared_environment() -> None:
+    """Binding reads caller-prepared ``os.environ``; it does not bootstrap dotenv."""
     environment = build_scenario_environment_profile()
-    adapter = _StubAdapter()
-    adapter.provider = LLMProvider.OLLAMA
-    adapter.model = None
-
-    env = {
-        key: value
-        for key, value in __import__("os").environ.items()
-        if not key.startswith("INTERGRAX_LLM_")
-    }
-    with patch.dict("os.environ", env, clear=True):
-        with patch.object(LLMProfile, "create_adapter", return_value=adapter):
+    with patch.dict(
+        "os.environ",
+        {
+            "INTERGRAX_LLM_PROVIDER": "openai",
+            "INTERGRAX_LLM_MODEL": "gpt-4.1",
+            "OPENAI_API_KEY": "test-key",
+        },
+        clear=True,
+    ):
+        with patch.object(LLMProfile, "create_adapter", return_value=_StubAdapter()):
             binding, block_reason = bind_qualification_llm_profile(
                 environment,
-                adapter_resolver=lambda _env: adapter,
+                adapter_resolver=_resolver,
             )
 
     assert block_reason is None
     assert binding is not None
-    assert binding.requested_provider is None
-    assert binding.requested_model is None
-    assert binding.resolved_provider == "ollama"
+    assert binding.resolved_provider == "openai"
+    assert binding.resolved_model == "gpt-4.1"

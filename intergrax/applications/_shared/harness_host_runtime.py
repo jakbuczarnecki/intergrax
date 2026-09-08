@@ -56,7 +56,6 @@ from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
     wire_application_guardrail,
 )
-from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.nexus_factory import (
     build_nexus_loop_from_environment,
 )
@@ -104,8 +103,9 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    HarnessHostLegacyComposition,
+from intergrax.applications._shared.harness_host_composition import (
+    HarnessHostInternalComposition,
+    build_harness_host_internal_composition,
 )
 from intergrax.applications._shared.host_task_execution_wiring import (
     build_environment_host_task_execution,
@@ -182,7 +182,7 @@ class HarnessHostRuntime:
     evaluation: ApplicationEvaluationWiring
     diagnostic_wiring: DiagnosticWiring
     execution: HostTaskExecution
-    _legacy_composition: HarnessHostLegacyComposition
+    _internal_composition: HarnessHostInternalComposition
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
     compensation_queue_store: CompensationQueueStore
@@ -352,7 +352,7 @@ def build_harness_host_runtime(
         task_memory_db_path=task_memory.db_path,
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
-        llm_adapter=resolve_environment_llm_adapter(effective_environment, tenant_id="default"),
+        llm_adapter=None,
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
@@ -457,7 +457,7 @@ def build_harness_host_runtime(
         evaluation=evaluation_wiring,
         diagnostic_wiring=diagnostic_wiring,
         execution=execution,
-        _legacy_composition=HarnessHostLegacyComposition(nexus_loop=nexus_loop),
+        _internal_composition=build_harness_host_internal_composition(nexus_loop),
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,

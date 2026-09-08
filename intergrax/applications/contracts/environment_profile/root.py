@@ -605,6 +605,18 @@ class ApplicationEnvironmentProfile(BaseModel):
         )
 
     @property
+    def governance_permission_preset(self):
+        return self.governance.permission_preset
+
+    @governance_permission_preset.setter
+    def governance_permission_preset(self, value) -> None:
+        object.__setattr__(
+            self,
+            "governance",
+            self.governance.model_copy(update={"permission_preset": value}),
+        )
+
+    @property
     def graph_spec(self):
         return self.topology.graph_spec
 

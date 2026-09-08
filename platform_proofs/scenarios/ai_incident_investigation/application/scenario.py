@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from intergrax.applications._shared.scenario_runtime_baseline import (
@@ -63,6 +65,11 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     build_scenario_runtime_composition,
     prepare_incident_execution_runtime,
     trace_reader_from_composition,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    completion_intent_from_completion_mode,
+    normalize_evidence_gathering_stop_reason,
+    reconcile_investigation_completion,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
@@ -131,6 +138,63 @@ def derive_terminal_outcome(
     ):
         return OUTCOME_UNRESOLVED
     raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
+
+
+TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH_ENV = "INTERGRAX_TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH"
+
+
+@dataclass(frozen=True, slots=True)
+class TerminalAcceptanceDiagnostic:
+    critic_verdict_passed: bool
+    has_supported_diagnosis: bool
+    completion_mode: str
+    validation_errors: tuple[str, ...]
+    revision_pass: bool
+    evidence_gathering_stop_reason: str
+
+    def to_json_dict(self) -> dict[str, object]:
+        return {
+            "critic_verdict_passed": self.critic_verdict_passed,
+            "has_supported_diagnosis": self.has_supported_diagnosis,
+            "completion_mode": self.completion_mode,
+            "validation_errors": list(self.validation_errors),
+            "revision_pass": self.revision_pass,
+            "evidence_gathering_stop_reason": self.evidence_gathering_stop_reason,
+        }
+
+
+def build_terminal_acceptance_diagnostic(
+    *,
+    critic_verdict_passed: bool,
+    has_supported_diagnosis: bool,
+    completion_mode: str,
+    validation_errors: tuple[str, ...],
+    revision_pass: bool,
+    evidence_gathering_stop_reason: str,
+) -> TerminalAcceptanceDiagnostic:
+    return TerminalAcceptanceDiagnostic(
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        completion_mode=completion_mode,
+        validation_errors=validation_errors,
+        revision_pass=revision_pass,
+        evidence_gathering_stop_reason=evidence_gathering_stop_reason,
+    )
+
+
+def persist_terminal_acceptance_diagnostic(diagnostic: TerminalAcceptanceDiagnostic) -> None:
+    path_raw = os.environ.get(TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH_ENV, "").strip()
+    if not path_raw:
+        return
+    try:
+        path = Path(path_raw)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(diagnostic.to_json_dict(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        return
 
 
 @dataclass(frozen=True, slots=True)
@@ -421,10 +485,28 @@ async def execute_resolved_skeleton(
     if task_result.state.value != "completed" and critic_verdict_passed:
         raise RuntimeError(f"investigator task not completed: {task_result.state}")
 
-    outcome = derive_terminal_outcome(
+    diagnostic = build_terminal_acceptance_diagnostic(
         critic_verdict_passed=critic_verdict_passed,
         has_supported_diagnosis=has_supported_diagnosis,
         completion_mode=completion_mode,
+        validation_errors=tuple(final_validation.errors),
+        revision_pass=revision_pass,
+        evidence_gathering_stop_reason=evidence_gathering_stop_reason,
+    )
+    persist_terminal_acceptance_diagnostic(diagnostic)
+    reconciled = reconcile_investigation_completion(
+        model_intent=completion_intent_from_completion_mode(completion_mode),
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        validation_errors=tuple(final_validation.errors),
+        evidence_gathering_stop_reason=normalize_evidence_gathering_stop_reason(
+            evidence_gathering_stop_reason
+        ),
+    )
+    outcome = derive_terminal_outcome(
+        critic_verdict_passed=critic_verdict_passed,
+        has_supported_diagnosis=has_supported_diagnosis,
+        completion_mode=reconciled.completion_mode.value,
     )
     leak_blob = _leak_scan_blob(claim_set, evidence_nodes)
     investigation_conclusion = build_investigation_conclusion(

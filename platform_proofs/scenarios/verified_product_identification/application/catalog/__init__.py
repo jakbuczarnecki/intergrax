@@ -5,7 +5,9 @@ from platform_proofs.scenarios.verified_product_identification.application.catal
 )
 from platform_proofs.scenarios.verified_product_identification.application.catalog.derive_search_representation import (
     build_source_record_ref,
+    derive_bounded_search_representation,
     derive_search_representation,
+    derive_search_representation_with_policy,
     flatten_lexical_text,
 )
 from platform_proofs.scenarios.verified_product_identification.application.catalog.source_resolution import (
@@ -17,7 +19,9 @@ __all__ = (
     "SourceTruthResolutionError",
     "build_source_record_ref",
     "collect_channel_candidates",
+    "derive_bounded_search_representation",
     "derive_search_representation",
+    "derive_search_representation_with_policy",
     "flatten_lexical_text",
     "resolve_source_record",
 )

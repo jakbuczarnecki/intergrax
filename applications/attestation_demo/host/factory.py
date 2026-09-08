@@ -15,11 +15,9 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
     wire_harness_task_control,
 )
 from intergrax.debug.app import create_debug_app
@@ -28,7 +26,14 @@ from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from attestation_demo.host.agent_builders import ATTESTATION_DEMO_AGENT_BUILDERS
 from attestation_demo.host.integration_wiring import wire_attestation_demo_integrations
 from attestation_demo.host.settings import AttestationDemoSettings
@@ -67,12 +72,8 @@ def create_attestation_demo_application(
         boundary_event_buffer=resolved_buffer,
     )
     host_execution = runtime.execution
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     resolved_registry = runtime.registry
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
     checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
     task_enricher = build_reliability_task_enricher(
         env,
@@ -80,9 +81,8 @@ def create_attestation_demo_application(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
-    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
     hitl_service = DebugHitlResumeService(
-        resolved_registry,
+        host_execution=host_execution,
         checkpoint_store=checkpoint_store,
     )
     app = create_debug_app(
@@ -90,7 +90,6 @@ def create_attestation_demo_application(
         runtime_events_db_path=runtime.observability.runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry=resolved_registry,
-        nexus_loop=nexus_loop,
         hitl_service=hitl_service,
         checkpoint_store=checkpoint_store,
         trace_store=runtime.observability.trace_store,
@@ -108,7 +107,7 @@ def create_attestation_demo_application(
         wire_harness_task_control(
             app,
             enabled=True,
-            task_runner=task_runner,
+            host_execution=host_execution,
             env=env,
             checkpoint_store=checkpoint_store,
             task_route_prefix=settings.task_control_route_prefix,

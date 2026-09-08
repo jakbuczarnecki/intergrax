@@ -57,3 +57,22 @@ class ObjectStorage(Protocol):
 
     def close(self) -> None:
         """Release resources."""
+
+
+@runtime_checkable
+class ConditionalObjectStorage(ObjectStorage, Protocol):
+    """
+    Optional atomic create capability for object storage.
+
+    Normal create conflicts return ``False``; they are not errors.
+    """
+
+    def put_if_absent(
+        self,
+        key: str,
+        body: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+        metadata: Mapping[str, str] | None = None,
+    ) -> bool:
+        """Atomically create when missing; return ``False`` when ``key`` already exists."""

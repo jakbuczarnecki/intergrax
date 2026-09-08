@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
-**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md)
+**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md) · MP-4 → [DECISION_APPROVAL_GOVERNANCE](DECISION_APPROVAL_GOVERNANCE.md) / [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md)
 
 ---
 
@@ -194,8 +194,14 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 
 Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
 
-**MP-2 status:** **IMPLEMENTATION IN PROGRESS** — ADR-MP-003 Accepted; COLLAB-WORK-2A **APPROVED / CLOSED**; COLLAB-WORK-2B **APPROVED / CLOSED**; COLLAB-WORK-2C **APPROVED / CLOSED**.
-**Current active task:** **COLLAB-WORK-2D** (SQLite durability parity).
+**MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
+**MP-3 status:** **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; MP-3 runtime implementation **IN PROGRESS**.
+**Current active task:** **MP-3G** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit).
+**Next task:** Independent MP-3G audit — **MP-3H NOT STARTED**.
+
+### MP-2 final closure summary (COLLAB-WORK-2G)
+
+MP-2 delivered: WorkItem; explicit collaborative lifecycle (`OPEN`/`ACTIVE`/`COMPLETED`/`CANCELLED`); Assignment; multi-principal participation; MP-1 authority enforcement reuse; optimistic concurrency (`revision` from `0`, expected-revision CAS); idempotency; in-memory reference persistence; SQLite durable persistence (**QUALIFIED** `cw.sqlite.repository.v1` v`3.0.0`); PostgreSQL production-qualified persistence (**PRODUCTION_QUALIFIED** `cw.postgresql.repository.v1` v`3.0.0`); cross-process CAS proof; zero..N Unified Execution provenance links via full `ExecutionProvenanceRef` (`TaskId`/`RunId`/`AttemptId`/`ExecutionId`); no Nexus lifecycle ownership; no `TaskState` substitution.
 
 ---
 
@@ -213,11 +219,11 @@ Collaborative Work owns MP-2 Shared Work:
 - collaborative optimistic concurrency and idempotency,
 - work-level `tenant_id` + `workspace_id` isolation,
 - work-level authority requirements (via MP-1 enforcement),
-- zero..N **execution links** to Nexus/UER identities.
+- zero..N **execution links** to canonical Unified Execution identities (`ExecutionProvenanceRef`).
 
-Collaborative Work does **not** own: Nexus Task lifecycle, run/attempt lifecycle, execution scheduling/retries, workflow graph execution, worker/process scheduling, or background task runtime ownership.
+Collaborative Work does **not** own: Task/Run/Attempt/Execution lifecycle, execution scheduling/retries, workflow graph execution, worker/process scheduling, background task runtime ownership, or Nexus orchestration control-plane internals.
 
-**Reused (non-owners):** ORCHESTRATION (graph policy; may consume WorkItem context), UNIFIED_EXECUTION_RUNTIME / NEXUS (`Task`, `run_id`, `attempt`, outcomes), BACKGROUND_TASKS (may execute work associated with a WorkItem), OBSERVABILITY / PROOF_RECEIPTS (provenance consumption).
+**Reused (non-owners):** ORCHESTRATION (graph policy; may consume WorkItem context), UNIFIED_EXECUTION_RUNTIME (`TaskId`, `RunId`, `AttemptId`, `ExecutionId`, outcomes), NEXUS (internal orchestration consumer/producer of Executions when strategy = orchestration — **not** a Collaborative Work contract dependency), BACKGROUND_TASKS (may execute work associated with a WorkItem), OBSERVABILITY / PROOF_RECEIPTS (provenance consumption).
 
 ### WorkItem != Nexus Task
 
@@ -240,14 +246,46 @@ Do **not** encode assignments as a single `WorkItem.assignee_id` when multi-prin
 
 **Reassignment semantics (MP-2 / COLLAB-WORK-2C):** `reassign` = revoke existing Assignment + create a new Assignment — two independently authorized, CAS-protected repository mutations. COLLAB-WORK-2B repositories expose no transactional Unit of Work; MP-2 must not expose a combined atomic reassignment command or simulate rollback across records. Atomic multi-record orchestration requires an explicit transactional boundary (future concern, not MP-2 scope).
 
-### Execution linkage
+### Unified Execution linkage
 
 ```text
 WorkItem → zero..N execution links
-  → optional task_id, run_id, attempt_id (provenance references)
+  → each link references exactly one ExecutionProvenanceRef
 ```
 
-Deleting or ending a run must not delete WorkItem. Any orchestration bridge must be explicit — no incidental workflow status propagation into WorkItemState.
+**ExecutionProvenanceRef** (neutral Tier-0 composite; future location e.g. `intergrax/contracts/execution_provenance.py`):
+
+```text
+ExecutionProvenanceRef
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
+```
+
+All four IDs are **required** for a WorkItem execution link. UEA canonical hierarchy is `TaskId → RunId → AttemptId → ExecutionId → EventId`; a WorkItem link points to a concrete **Execution**, not an individual event (`EventId` is out of scope). One Attempt may contain multiple Executions; Task/Run/Attempt alone cannot identify one concrete Execution.
+
+**Link semantics (provenance only):**
+
+- no lifecycle substitution; no `TaskState → WorkItemState` mapping; no Run completion → WorkItem completion
+- no cascade delete; WorkItem survives execution completion/deletion/archive
+- WorkItem may have zero links; may link to many Executions
+- multiple Executions may belong to the same Run/Attempt; multiple Tasks/Runs may advance one WorkItem
+- no 1:1 WorkItem ↔ Task assumption
+
+**Ownership:** Collaborative Work owns `WorkItemExecutionLink` association identity, association persistence, and WorkItem-side lookup of associations. Unified Execution / UER owns `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, runtime lifecycle, and Execution Tree. Nexus owns orchestration runtime control only (readiness/scheduling/fan-out/fan-in for orchestration strategy) — **not** Collaborative Work contract boundary.
+
+**Dependency direction (production):**
+
+```text
+Collaborative Work → neutral contracts → execution_identity / ExecutionProvenanceRef
+```
+
+Forbidden production dependencies: `intergrax.runtime.nexus.*`, `NexusLoop`, `GraphExecutor`, `TaskState`, `TaskResult`, `RuntimeExecutionContext` as the stored contract, `EmitContext`, runtime observability implementation types. Runtime/test adapters may extract neutral IDs from runtime objects.
+
+Deleting or ending a run/execution must not delete WorkItem. No incidental workflow status propagation into WorkItemState.
+
+**ADR-MP-003 reconciliation:** ADR-MP-003 accepted execution linkage without freezing concrete persistence schema or `ExecutionId` granularity. Later frozen Unified Execution architecture establishes `ExecutionId` as the concrete runtime execution unit; COLLAB-WORK-2F therefore resolves the previously open execution-link granularity to full `TaskId`/`RunId`/`AttemptId`/`ExecutionId` provenance via neutral `ExecutionProvenanceRef`.
 
 ### Contract direction (semantic categories only)
 
@@ -265,7 +303,7 @@ Reuse MP-1 repository semantics: revision 0 create, `expected_revision` CAS, typ
 
 ### Persistence direction
 
-Authoritative WorkItem and Assignment state uses Collaborative Work repository ports → in-memory reference → SQLite (local/dev) → production-qualified relational adapter (PostgreSQL first). No separate SharedWork database subsystem. Storage selection remains composition-root concern — no provider string switches in core contracts.
+Authoritative Shared Work persistence bundle (`WorkItem` + `Assignment` + append-only `WorkItemExecutionLink`) uses Collaborative Work repository ports → in-memory reference → SQLite (local/dev) → production-qualified relational adapter (PostgreSQL first). `WorkItemExecutionLink` records are append-only — no update/delete/revision. No separate SharedWork database subsystem. Storage selection remains composition-root concern — no provider string switches in core contracts.
 
 ### Authority reuse
 
@@ -276,9 +314,195 @@ Mutations (create WorkItem, assign, WorkItem/Assignment state transitions, close
 | Phase | Boundary |
 |-------|----------|
 | MP-3 | WorkArtifact / WorkArtifactVersion — not WorkItem payload |
-| MP-4 | Decision / Approval — distinct primitive; not WorkItem state machine |
+| MP-4 | Decision / Approval / Governance — distinct primitives; not WorkItem or WorkArtifact lifecycle — see [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
 | MP-6 | Activity projection — hooks via stable identity/revision only |
 | MP-7 | LKW/channel IDs — adapter reference mappings only |
+
+---
+
+## MP-3 — WorkArtifact / WorkArtifactVersion (architecture frozen)
+
+**Owning domain:** Collaborative Work (this hub). **ADR:** [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md).
+
+### Ownership
+
+Collaborative Work owns MP-3 WorkArtifact collaborative semantics:
+
+- **WorkArtifact** identity and aggregate/reference lifecycle,
+- **WorkArtifactVersion** identity (immutable authoritative collaborative output version),
+- artifact/version association and collaborative lineage (artifact-level),
+- authoritative **current-version pointer** semantics (`current_version_id` must reference a version in the same tenant, workspace, and work artifact),
+- collaborative **publication** semantics (append-only versions; CAS-protected pointer updates),
+- tenant/workspace/work-item scoping,
+- collaborative authority requirements for publication (MP-1 reuse),
+- optimistic concurrency and idempotent publication for authoritative mutations.
+
+Collaborative Work does **not** own: UCL `OptimizationArtifact` catalog, memory/session state, proof/evidence records, execution result objects, WorkItem mutable payload embedding, LKW/channel attachment identity, or raw blob/object storage providers.
+
+**Reused (non-owners):** UNIFIED_CONTEXT_LIFECYCLE (may consume published versions as context input), MEMORY (may index references / retrieve derived content), PROOF_RECEIPTS (may attest production/publication), UNIFIED_EXECUTION_RUNTIME / NEXUS (optional `ExecutionProvenanceRef`), DocumentStore/blob adapters (content storage only), LKW (consumer).
+
+### Hard invariants
+
+| Forbidden substitution | Authoritative owner |
+|------------------------|---------------------|
+| `WorkArtifact` / `WorkArtifactVersion` | Collaborative Work |
+| UCL `OptimizationArtifact` | UCL |
+| `ProofReceipt` | Proof Receipts |
+| Memory record | Memory |
+| Execution result object | UER |
+| WorkItem payload field | WorkItem body stays artifact-free |
+| LKW message/file/thread ID | Adapter mapping only |
+
+### WorkItem relationship
+
+```text
+WorkItem → zero..N WorkArtifact
+WorkArtifact → one..N WorkArtifactVersion (immutable)
+```
+
+- Each WorkArtifact references its owning WorkItem; scoped to one `tenant_id + workspace_id`.
+- WorkItem lifecycle and artifact version lifecycle are **distinct**.
+- Completing or cancelling a WorkItem does **not** delete artifact versions.
+- Deleting or ending execution does **not** delete artifact versions.
+
+### Aggregate model (frozen)
+
+```text
+WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable append-only)
+```
+
+- **WorkArtifact** is the mutable authoritative aggregate/reference — identity, scope, `current_version_id`, `revision`; does **not** embed version bodies.
+- **WorkArtifactVersion** is immutable authoritative history; no mutable `revision` or status machine on versions.
+- **WorkItem** does **not** embed WorkArtifact bodies; no cascading lifecycle substitution.
+
+### Creation semantics (frozen)
+
+First `WorkArtifactVersion` is created **atomically** with initial `WorkArtifact` creation — one authoritative domain operation; no persisted authoritative `WorkArtifact` with dangling `current_version_id`. Persistence atomicity is enforced by `ArtifactPublicationRepository.create_artifact_with_initial_version(...)` (MP-3B+); failure exposes neither half as a successful authoritative operation. Same idempotency key + same semantic request → original artifact + initial version; same key + changed semantic intent → typed idempotency conflict; server-generated timestamps do not pollute the semantic fingerprint.
+
+### Publication semantics (frozen)
+
+Domain operation `publish new artifact version`:
+
+1. authorize acting principal (MP-1),
+2. verify artifact tenant/workspace/work_item scope,
+3. verify expected artifact `revision`,
+4. append immutable `WorkArtifactVersion`,
+5. move `WorkArtifact.current_version_id` to new version,
+6. increment `WorkArtifact.revision`,
+7. preserve previous versions,
+8. return typed publication result (aggregate + new version — not untyped tuple/dict).
+
+No in-place version modification; no silent LWW; no implicit WorkItem state transition.
+
+### Atomic publication boundary (frozen)
+
+Independent `WorkArtifactRepository` and `WorkArtifactVersionRepository` ports cannot alone guarantee that multi-write authoritative operations succeed or fail together. MP-3B introduces a narrowly scoped **`ArtifactPublicationRepository`** covering both authoritative write paths:
+
+- **`create_artifact_with_initial_version(...)`** — atomically persist `WorkArtifact`, first immutable `WorkArtifactVersion`, `current_version_id` referencing that version, initial `revision`, and idempotency result.
+- **`publish_version(...)`** — verify `expected_revision`; append immutable version; CAS `current_version_id`; increment `revision`; preserve history; idempotent replay; exactly one store transaction/critical section.
+
+`WorkArtifactRepository` and `WorkArtifactVersionRepository` remain typed read/direct-persistence ports; **authoritative create/publish commands go through `ArtifactPublicationRepository` only** — the service must not coordinate two repository writes manually. No generic `Repository[T]`; no generic UnitOfWork; no service-level compensating rollback. In-memory: atomic critical section per operation. SQLite/PostgreSQL: single transaction per operation.
+
+### Idempotency and concurrency (frozen)
+
+- **Idempotency:** separate for (A) create artifact + first version and (B) publish subsequent version; fingerprint includes semantic intent, not server-generated timestamps unless caller-supplied and authoritative; same key + changed content → typed conflict.
+- **Concurrency:** `WorkArtifact.revision` starts at `0`; publication with `expected_revision = N` succeeds at `N+1`; concurrent publications from same revision → exactly one success, others `WorkArtifactRevisionConflict`. No CAS on immutable versions; no LWW.
+
+### Version authority and immutability
+
+- `WorkArtifactVersion` is **append-only / immutable** — corrections create a new version.
+- `WorkArtifact` holds an explicit current-version pointer updated under **expected-revision CAS**; stale updates fail explicitly (no silent last-write-wins).
+- Historical versions remain independently addressable; rollback is pointer selection via explicit publication semantics — not in-place rewrite.
+- Canonical version identity is `WorkArtifactVersionId`; do not derive authority from human-readable version labels.
+
+### Content vs metadata
+
+Architecture separates (A) collaborative identity + lineage from (B) content representation/storage reference:
+
+```text
+WorkArtifactVersion → ArtifactContentRef (neutral typed descriptor) → storage adapter (MP-3F)
+```
+
+**`ArtifactContentRef` (MP-3A contract):** provider-neutral typed content descriptor — stable content identity/location semantics, media/content type, integrity digest (algorithm not frozen unless platform canon standardizes one), optional size. **Storage provider identity must not become `WorkArtifactVersion` identity.** MP-3F integrates adapters; MP-3F must not redefine the contract.
+
+Collaborative Work owns metadata and version semantics; raw binary content may live in DocumentStore, blob/object storage, or external references. Content deletion/retention policy is **not** automatically artifact deletion.
+
+### Principal provenance (frozen)
+
+- **Mandatory:** `created_by_principal_id`, `published_by_principal_id` — canonical `Principal` for human, agent, service, external agent; not generic `owner_id`.
+- **Optional:** `ExecutionProvenanceRef` at version creation only — human-created versions valid with `execution=None`; no mutable post-publication lineage attachment.
+
+### Evidence direction (frozen)
+
+```text
+WorkArtifactVersion ← ProofReceipt / evidence references it
+```
+
+Evidence must not become artifact identity; do not import ProofReceipt runtime into Collaborative Work contracts.
+
+### Query, delete, and lifecycle boundaries
+
+- **Reads:** get artifact, get current version, get version by ID, list versions for artifact — no search/discovery/activity feed.
+- **Deletes:** MP-3 core does not require hard delete; historical versions remain addressable.
+- **Lifecycle:** identity + versions + current pointer + publication only — no approval/review/archive status machine (MP-4).
+
+### Authority (frozen)
+
+Publication and version creation require MP-1 effective authority via `CollaborativeWorkEnforcementGate` — trusted operation IDs for artifact create/publish; resource-scoped under existing Collaborative Work policy composition. No `ArtifactAuthorizationService`; no artifact ACL engine.
+
+### Extension boundaries (MP-4 / MP-6 / LKW)
+
+| Phase | Boundary |
+|-------|----------|
+| MP-4 | Decision / approval — not encoded in WorkArtifact lifecycle |
+| MP-6 | Activity projection — stable IDs/timestamps/refs only; no activity feed in MP-3 |
+| MP-7 / LKW | Consumer; channel/file IDs are adapter mappings only |
+
+### Persistence and composition (frozen)
+
+Extend the MP-2 Collaborative Work repository bundle using the same extension pattern as MP-1→MP-2:
+
+```text
+CollaborativeWorkRepositoriesWithSharedWork
+  → CollaborativeWorkRepositoriesWithArtifacts
+      core + shared_work + artifacts
+        artifacts: work_artifact, work_artifact_version, artifact_publication
+```
+
+MP-2-only compositions remain valid until MP-3 composition gate opens. Reuse MP-1 authority gate, revision/CAS, idempotency, tenant/workspace isolation. **`ArtifactPublicationRepository`** is part of the artifact bundle — not a generic UnitOfWork. No duplicate persistence framework; no speculative `ArtifactPlugin` / hook registries.
+
+**MP-3F ordering:** PostgreSQL qualification (MP-3E) qualifies metadata and neutral `ArtifactContentRef` without requiring live content-provider integration; MP-3F follows.
+
+### Implementation roadmap
+
+Decomposition **APPROVED / CLOSED** — full slice rows in [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md) § COLLAB-WORK-3. Runtime **IN PROGRESS**; **MP-3A** **APPROVED / CLOSED**.
+
+| Slice | Scope | Status |
+|-------|-------|--------|
+| MP-3A | Contracts + invariants + `ArtifactContentRef` | APPROVED / CLOSED |
+| MP-3B | Ports + in-memory + `ArtifactPublicationRepository` (atomic initial create + publish) | APPROVED / CLOSED |
+| MP-3C | Publication service + MP-1 authority | APPROVED / CLOSED |
+| MP-3D | SQLite transactional persistence | APPROVED / CLOSED |
+| MP-3E | PostgreSQL + qualification | APPROVED / CLOSED |
+| MP-3F | Content storage adapters | APPROVED / CLOSED |
+| MP-3G | Execution/evidence integration | READY_FOR_INDEPENDENT_AUDIT |
+| MP-3H | Final independent review | NOT STARTED |
+
+---
+
+## MP-4 boundary (Collaborative Work — reference only)
+
+**Owning domain:** [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) — **ADR-MP-005 Accepted**; MP-4A **APPROVED / CLOSED**.
+
+Collaborative Work **does not own** Decision, Approval, HumanReviewState, or GovernanceStatus. WorkItem, WorkArtifact, and WorkArtifactVersion remain artifact/work primitives only.
+
+**Frozen non-leakage:**
+
+- No `Decision`, `Approval`, or governance fields on WorkItem / WorkArtifact / WorkArtifactVersion.
+- No `DRAFT` / `REVIEW` / `APPROVED` / `ARCHIVED` on WorkArtifactVersion — Approval references `WorkArtifactVersionId` externally.
+- Execution links remain neutral `ExecutionProvenanceRef` references only.
+
+Full ownership, anti-substitution, and dependency rules: [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md).
 
 ---
 
@@ -290,7 +514,7 @@ Future Multiplayer phases that belong on the collaborative work plane extend **t
 |-------|-------------------|
 | MP-2 | WorkItem, Assignment, shared-work lifecycle |
 | MP-3 | WorkArtifact, WorkArtifactVersion collaborative ownership |
-| MP-4 | Decision / DecisionResponse collaborative semantics |
+| MP-4 | Decision / Approval / Governance collaborative semantics — [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
 | MP-5 | Principal-scoped ContextView boundary (composition with UCL/Memory) |
 | MP-6 | Collaborative Activity + provenance linkage |
 
@@ -316,6 +540,7 @@ Collaborative Work (identity + authority semantics)
 
 | Document | Role |
 |----------|------|
+| [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md) | MP-4 Decision / Approval / Governance ownership |
 | [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) | Multi-layer feature coordination |
 | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Hosting boundary |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | Execution boundary |

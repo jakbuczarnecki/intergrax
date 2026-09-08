@@ -197,13 +197,17 @@ class LLMProfile(BaseModel):
         return cls.model_validate(dict(data))
 
 
-def llm_profile_from_env(*, prefix: str = "INTERGRAX_LLM") -> LLMProfile:
+def llm_profile_from_env(*, prefix: str = "INTERGRAX_LLM") -> LLMProfile | None:
     """
-    Build profile from environment variables:
+    Build profile from environment variables when explicitly configured:
 
     - ``{PREFIX}_PROVIDER`` (required, e.g. ``groq``)
     - ``{PREFIX}_MODEL`` (optional)
+
+    Returns ``None`` when ``{PREFIX}_PROVIDER`` is absent or blank.
     """
-    provider_raw = os.getenv(f"{prefix}_PROVIDER", LLMProvider.OLLAMA.value).strip()
+    provider_raw = os.getenv(f"{prefix}_PROVIDER")
+    if provider_raw is None or not provider_raw.strip():
+        return None
     model = os.getenv(f"{prefix}_MODEL")
-    return LLMProfile(provider=provider_raw, model=model or None)
+    return LLMProfile(provider=provider_raw.strip(), model=model or None)

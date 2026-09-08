@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from intergrax.applications._shared.governance_permission_preset import (
+    expand_governance_permission_preset,
+)
 from intergrax.applications._shared.profile_resolution.field_resolvers import (
     DEFAULT_FIELD_RESOLVERS,
     ProfileFieldResolveContext,
@@ -210,7 +213,9 @@ def resolve_profile(
     ``application_profile`` remains the sole Tier-3 composition authority input.
     Overlay layers supply sparse typed deltas only.
     """
-    configured_application = application_profile.model_copy(deep=True)
+    configured_application = expand_governance_permission_preset(
+        application_profile.model_copy(deep=True),
+    )
     resolvers = resolver_index(tuple(field_resolvers))
     normalized_layers = _normalize_layer_inputs(layers)
     pre_application_layers, post_application_layers = _partition_layers(normalized_layers)

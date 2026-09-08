@@ -55,6 +55,9 @@ from intergrax.runtime.observability.problem_signal import (
     PROBLEM_SOURCE_LAYER_APPLICATION,
     PlatformProblemSignal,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
+    derive_evidence_phase_context,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     PriorInvestigationState,
     build_reasoning_messages,
@@ -76,6 +79,8 @@ from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle
 )
 
 pytestmark = pytest.mark.unit
+
+_PLANNER_FINAL_PHASE = derive_evidence_phase_context("planner_final_answer")
 
 _TENANT_A = "tenant-a"
 _TENANT_B = "tenant-b"
@@ -258,6 +263,7 @@ async def test_platform_attached_execution_problem_e2e() -> None:
         ),
         critic_feedback=None,
         is_revision=False,
+        evidence_phase_context=_PLANNER_FINAL_PHASE,
         investigation_input=bundle.investigation_input,
     )
     prompt = messages[0].content or ""
@@ -349,6 +355,7 @@ def test_limitation_survives_into_reasoning_context() -> None:
         ),
         critic_feedback=None,
         is_revision=False,
+        evidence_phase_context=_PLANNER_FINAL_PHASE,
         investigation_input=investigation_input,
     )
     content = messages[0].content or ""

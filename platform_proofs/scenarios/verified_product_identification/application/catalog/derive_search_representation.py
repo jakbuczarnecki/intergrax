@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from platform_proofs.scenarios.verified_product_identification.application.catalog.identifier_normalization import (
     classify_wdc_identifier_type,
     normalize_exact_lookup_value,
@@ -33,8 +35,24 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
 from platform_proofs.scenarios.verified_product_identification.application.domain.wdc_source_offer import (
     WdcSourceOffer,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.semantic_representation.builder import (
+    SemanticRepresentationBuilder,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.semantic_representation.contracts import (
+    SemanticRepresentationBuildOutput,
+    SemanticRepresentationPolicy,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.semantic_representation.policy import (
+    bounded_policy_v1,
+    load_semantic_representation_policy_from_env,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.semantic_representation.ports import (
+    CharacterRatioTokenEstimator,
+    TokenEstimatorPort,
+)
 
 _DEFAULT_STRUCTURED_POLICY = DefaultStructuredAttributeNormalizationPolicy()
+_DEFAULT_TOKEN_ESTIMATOR = CharacterRatioTokenEstimator()
 
 
 def build_source_record_ref(
@@ -74,6 +92,95 @@ def derive_search_representation(
         structured=structured,
         semantic=semantic,
         derivation_version=derivation_version,
+    )
+
+
+def derive_bounded_search_representation(
+    source_offer: WdcSourceOffer,
+    *,
+    source_ref: SourceRecordRef,
+    policy: SemanticRepresentationPolicy | None = None,
+    token_estimator: TokenEstimatorPort | None = None,
+    derivation_version: str = SEARCH_REPRESENTATION_DERIVATION_VERSION,
+) -> DerivedOfferSearchRepresentation:
+    """
+    Derive search representation with priority-compressed bounded semantic text.
+
+    Exact, lexical, and structured channels remain identical to legacy derivation.
+    """
+    base = derive_search_representation(
+        source_offer,
+        source_ref=source_ref,
+        derivation_version=derivation_version,
+    )
+    resolved_policy = policy or bounded_policy_v1()
+    estimator = token_estimator or _DEFAULT_TOKEN_ESTIMATOR
+    build_output = SemanticRepresentationBuilder(
+        resolved_policy,
+        token_estimator=estimator,
+    ).build(source_offer, source_ref=source_ref)
+    semantic = _semantic_from_bounded_build(
+        build_output,
+        source_ref=source_ref,
+    )
+    return replace(base, semantic=semantic)
+
+
+def derive_search_representation_with_policy(
+    source_offer: WdcSourceOffer,
+    *,
+    source_ref: SourceRecordRef,
+    representation_policy_profile: str | None = None,
+    token_estimator: TokenEstimatorPort | None = None,
+    derivation_version: str = SEARCH_REPRESENTATION_DERIVATION_VERSION,
+) -> DerivedOfferSearchRepresentation:
+    """
+    Select legacy or bounded semantic derivation from one profile name or env.
+
+    When ``representation_policy_profile`` is omitted, ``VPI_SEMANTIC_REPRESENTATION_POLICY``
+    is consulted. Legacy full v1 is the default.
+    """
+    if representation_policy_profile is None:
+        resolved_policy = load_semantic_representation_policy_from_env()
+    else:
+        from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.semantic_representation.policy import (
+            resolve_semantic_representation_policy,
+        )
+
+        resolved_policy = resolve_semantic_representation_policy(representation_policy_profile)
+
+    if resolved_policy is None:
+        return derive_search_representation(
+            source_offer,
+            source_ref=source_ref,
+            derivation_version=derivation_version,
+        )
+    return derive_bounded_search_representation(
+        source_offer,
+        source_ref=source_ref,
+        policy=resolved_policy,
+        token_estimator=token_estimator,
+        derivation_version=derivation_version,
+    )
+
+
+def _semantic_from_bounded_build(
+    build_output: SemanticRepresentationBuildOutput,
+    *,
+    source_ref: SourceRecordRef,
+) -> SemanticSearchRepresentation:
+    contributing_fields: list[SemanticContributingField] = []
+    for section in build_output.final_sections:
+        contributing_fields.append(
+            SemanticContributingField(
+                source_field=section.source_field,
+                text=section.text,
+            )
+        )
+    return SemanticSearchRepresentation(
+        source_ref=source_ref,
+        semantic_text=build_output.result.representation_text,
+        contributing_fields=tuple(contributing_fields),
     )
 
 

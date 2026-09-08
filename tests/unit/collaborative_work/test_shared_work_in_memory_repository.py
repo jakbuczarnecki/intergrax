@@ -1,11 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Repository tests for Collaborative Work WorkItem and Assignment (COLLAB-WORK-2B)."""
+"""Repository contract tests for Collaborative Work WorkItem and Assignment."""
 
 from __future__ import annotations
 
 import threading
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -13,6 +14,7 @@ from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAssignmentRepository,
     InMemoryWorkItemRepository,
 )
+from intergrax.collaborative_work.persistence import open_sqlite_collaborative_work_repositories
 from intergrax.collaborative_work.repository import (
     AssignmentAlreadyExists,
     AssignmentIdempotencyConflict,
@@ -44,12 +46,28 @@ _CREATED_AT = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 _UPDATED_AT = datetime(2026, 1, 1, 12, 30, tzinfo=UTC)
 
 
-def _work_item_repo() -> InMemoryWorkItemRepository:
-    return InMemoryWorkItemRepository()
+@pytest.fixture(params=("memory", "sqlite"))
+def work_item_repo(request: pytest.FixtureRequest, tmp_path: Path):
+    if request.param == "memory":
+        yield InMemoryWorkItemRepository()
+        return
+    bundle = open_sqlite_collaborative_work_repositories(str(tmp_path / "work-item.sqlite"))
+    try:
+        yield bundle.work_item
+    finally:
+        bundle.close()
 
 
-def _assignment_repo() -> InMemoryAssignmentRepository:
-    return InMemoryAssignmentRepository()
+@pytest.fixture(params=("memory", "sqlite"))
+def assignment_repo(request: pytest.FixtureRequest, tmp_path: Path):
+    if request.param == "memory":
+        yield InMemoryAssignmentRepository()
+        return
+    bundle = open_sqlite_collaborative_work_repositories(str(tmp_path / "assignment.sqlite"))
+    try:
+        yield bundle.assignment
+    finally:
+        bundle.close()
 
 
 def _create_work_item_command(**overrides: object) -> CreateWorkItemCommand:
@@ -87,26 +105,39 @@ def _create_assignment_command(**overrides: object) -> CreateAssignmentCommand:
 @pytest.mark.parametrize(
     "repo_factory, protocol_type",
     [
-        (_work_item_repo, WorkItemRepository),
-        (_assignment_repo, AssignmentRepository),
+        (InMemoryWorkItemRepository, WorkItemRepository),
+        (InMemoryAssignmentRepository, AssignmentRepository),
     ],
 )
 def test_repository_protocol_is_satisfied(
-    repo_factory: object,
+    repo_factory: type[object],
     protocol_type: type[object],
 ) -> None:
     repo = repo_factory()
     assert isinstance(repo, protocol_type)
 
 
-def test_work_item_create_and_get() -> None:
-    repo = _work_item_repo()
-    created = repo.create(_create_work_item_command())
+def test_sqlite_bundle_exposes_shared_work_ports(tmp_path: Path) -> None:
+    bundle = open_sqlite_collaborative_work_repositories(str(tmp_path / "bundle.sqlite"))
+    try:
+        assert isinstance(bundle.work_item, WorkItemRepository)
+        assert isinstance(bundle.assignment, AssignmentRepository)
+        assert bundle.work_item.capabilities.durable is True
+        assert bundle.work_item.capabilities.reference_only is False
+        assert bundle.assignment.capabilities.durable is True
+        assert bundle.assignment.capabilities.reference_only is False
+        assert bundle.work_item.capabilities.backend_id == "collaborative_work.sqlite"
+    finally:
+        bundle.close()
+
+
+def test_work_item_create_and_get(work_item_repo: WorkItemRepository) -> None:
+    created = work_item_repo.create(_create_work_item_command())
     assert created.revision == INITIAL_RECORD_REVISION
     assert created.work_item_id == "work-item-1"
     assert created.tenant_id == _TENANT_A
     assert created.workspace_id == _WORKSPACE_A
-    loaded = repo.get(
+    loaded = work_item_repo.get(
         tenant_id=_TENANT_A,
         workspace_id=_WORKSPACE_A,
         work_item_id="work-item-1",
@@ -114,9 +145,8 @@ def test_work_item_create_and_get() -> None:
     assert loaded == created
 
 
-def test_work_item_create_normalizes_values() -> None:
-    repo = _work_item_repo()
-    created = repo.create(
+def test_work_item_create_normalizes_values(work_item_repo: WorkItemRepository) -> None:
+    created = work_item_repo.create(
         _create_work_item_command(
             work_item_id="  work-item-1  ",
             title="  Title  ",
@@ -126,18 +156,16 @@ def test_work_item_create_normalizes_values() -> None:
     assert created.title == "Title"
 
 
-def test_work_item_duplicate_create_raises() -> None:
-    repo = _work_item_repo()
-    repo.create(_create_work_item_command())
+def test_work_item_duplicate_create_raises(work_item_repo: WorkItemRepository) -> None:
+    work_item_repo.create(_create_work_item_command())
     with pytest.raises(WorkItemAlreadyExists):
-        repo.create(_create_work_item_command())
+        work_item_repo.create(_create_work_item_command())
 
 
-def test_work_item_scoped_isolation_read() -> None:
-    repo = _work_item_repo()
-    repo.create(_create_work_item_command())
+def test_work_item_scoped_isolation_read(work_item_repo: WorkItemRepository) -> None:
+    work_item_repo.create(_create_work_item_command())
     assert (
-        repo.get(
+        work_item_repo.get(
             tenant_id=_TENANT_B,
             workspace_id=_WORKSPACE_A,
             work_item_id="work-item-1",
@@ -145,7 +173,7 @@ def test_work_item_scoped_isolation_read() -> None:
         is None
     )
     assert (
-        repo.get(
+        work_item_repo.get(
             tenant_id=_TENANT_A,
             workspace_id=_WORKSPACE_B,
             work_item_id="work-item-1",
@@ -154,10 +182,9 @@ def test_work_item_scoped_isolation_read() -> None:
     )
 
 
-def test_work_item_update_success() -> None:
-    repo = _work_item_repo()
-    created = repo.create(_create_work_item_command())
-    updated = repo.update(
+def test_work_item_update_success(work_item_repo: WorkItemRepository) -> None:
+    created = work_item_repo.create(_create_work_item_command())
+    updated = work_item_repo.update(
         UpdateWorkItemCommand(
             scope=WorkItemScopeKey(
                 tenant_id=_TENANT_A,
@@ -181,10 +208,9 @@ def test_work_item_update_success() -> None:
     assert updated.title == "Updated title"
 
 
-def test_work_item_stale_revision_conflict_preserves_state() -> None:
-    repo = _work_item_repo()
-    created = repo.create(_create_work_item_command())
-    repo.update(
+def test_work_item_stale_revision_conflict_preserves_state(work_item_repo: WorkItemRepository) -> None:
+    created = work_item_repo.create(_create_work_item_command())
+    work_item_repo.update(
         UpdateWorkItemCommand(
             scope=WorkItemScopeKey(
                 tenant_id=_TENANT_A,
@@ -197,7 +223,7 @@ def test_work_item_stale_revision_conflict_preserves_state() -> None:
         )
     )
     with pytest.raises(WorkItemRevisionConflict):
-        repo.update(
+        work_item_repo.update(
             UpdateWorkItemCommand(
                 scope=WorkItemScopeKey(
                     tenant_id=_TENANT_A,
@@ -209,7 +235,7 @@ def test_work_item_stale_revision_conflict_preserves_state() -> None:
                 updated_at=_UPDATED_AT + timedelta(minutes=1),
             )
         )
-    current = repo.get(
+    current = work_item_repo.get(
         tenant_id=_TENANT_A,
         workspace_id=_WORKSPACE_A,
         work_item_id="work-item-1",
@@ -219,11 +245,10 @@ def test_work_item_stale_revision_conflict_preserves_state() -> None:
     assert current.state is WorkItemState.ACTIVE
 
 
-def test_work_item_cross_scope_update_is_not_found() -> None:
-    repo = _work_item_repo()
-    created = repo.create(_create_work_item_command())
+def test_work_item_cross_scope_update_is_not_found(work_item_repo: WorkItemRepository) -> None:
+    created = work_item_repo.create(_create_work_item_command())
     with pytest.raises(WorkItemNotFound):
-        repo.update(
+        work_item_repo.update(
             UpdateWorkItemCommand(
                 scope=WorkItemScopeKey(
                     tenant_id=_TENANT_A,
@@ -237,14 +262,13 @@ def test_work_item_cross_scope_update_is_not_found() -> None:
         )
 
 
-def test_work_item_idempotency_replay_and_conflict() -> None:
-    repo = _work_item_repo()
+def test_work_item_idempotency_replay_and_conflict(work_item_repo: WorkItemRepository) -> None:
     command = _create_work_item_command(idempotency_key="work-item-idem")
-    first = repo.create(command)
-    second = repo.create(command)
+    first = work_item_repo.create(command)
+    second = work_item_repo.create(command)
     assert second == first
     with pytest.raises(WorkItemIdempotencyConflict):
-        repo.create(
+        work_item_repo.create(
             _create_work_item_command(
                 idempotency_key="work-item-idem",
                 title="Different title",
@@ -252,14 +276,15 @@ def test_work_item_idempotency_replay_and_conflict() -> None:
         )
 
 
-def test_work_item_idempotency_replay_after_update_returns_original_create() -> None:
-    repo = _work_item_repo()
+def test_work_item_idempotency_replay_after_update_returns_original_create(
+    work_item_repo: WorkItemRepository,
+) -> None:
     command = _create_work_item_command(idempotency_key="work-item-idem-delayed")
-    created = repo.create(command)
+    created = work_item_repo.create(command)
     assert created.title == "Title"
     assert created.revision == INITIAL_RECORD_REVISION
 
-    updated = repo.update(
+    updated = work_item_repo.update(
         UpdateWorkItemCommand(
             scope=WorkItemScopeKey(
                 tenant_id=_TENANT_A,
@@ -274,12 +299,12 @@ def test_work_item_idempotency_replay_after_update_returns_original_create() -> 
     )
     assert updated.revision == created.revision + 1
 
-    replayed = repo.create(command)
+    replayed = work_item_repo.create(command)
     assert replayed == created
     assert replayed.title == "Title"
     assert replayed.revision == INITIAL_RECORD_REVISION
 
-    current = repo.get(
+    current = work_item_repo.get(
         tenant_id=_TENANT_A,
         workspace_id=_WORKSPACE_A,
         work_item_id="work-item-1",
@@ -287,30 +312,28 @@ def test_work_item_idempotency_replay_after_update_returns_original_create() -> 
     assert current == updated
 
 
-def test_work_item_idempotency_key_allowed_in_different_scope() -> None:
-    repo = _work_item_repo()
+def test_work_item_idempotency_key_allowed_in_different_scope(work_item_repo: WorkItemRepository) -> None:
     command_a = _create_work_item_command(idempotency_key="shared-idem")
     command_b = _create_work_item_command(
         tenant_id=_TENANT_B,
         work_item_id="work-item-2",
         idempotency_key="shared-idem",
     )
-    first = repo.create(command_a)
-    second = repo.create(command_b)
+    first = work_item_repo.create(command_a)
+    second = work_item_repo.create(command_b)
     assert first.work_item_id == "work-item-1"
     assert second.work_item_id == "work-item-2"
 
 
-def test_work_item_concurrent_update_one_wins() -> None:
-    repo = _work_item_repo()
-    created = repo.create(_create_work_item_command())
+def test_work_item_concurrent_update_one_wins(work_item_repo: WorkItemRepository) -> None:
+    created = work_item_repo.create(_create_work_item_command())
     errors: list[BaseException] = []
     barrier = threading.Barrier(2)
 
     def attempt() -> None:
         try:
             barrier.wait(timeout=5)
-            repo.update(
+            work_item_repo.update(
                 UpdateWorkItemCommand(
                     scope=WorkItemScopeKey(
                         tenant_id=_TENANT_A,
@@ -333,7 +356,7 @@ def test_work_item_concurrent_update_one_wins() -> None:
 
     assert len(errors) == 1
     assert isinstance(errors[0], WorkItemRevisionConflict)
-    final = repo.get(
+    final = work_item_repo.get(
         tenant_id=_TENANT_A,
         workspace_id=_WORKSPACE_A,
         work_item_id="work-item-1",
@@ -342,11 +365,10 @@ def test_work_item_concurrent_update_one_wins() -> None:
     assert final.revision == created.revision + 1
 
 
-def test_assignment_create_and_get() -> None:
-    repo = _assignment_repo()
-    created = repo.create(_create_assignment_command())
+def test_assignment_create_and_get(assignment_repo: AssignmentRepository) -> None:
+    created = assignment_repo.create(_create_assignment_command())
     assert created.revision == INITIAL_RECORD_REVISION
-    loaded = repo.get(
+    loaded = assignment_repo.get(
         tenant_id=_TENANT_A,
         workspace_id=_WORKSPACE_A,
         assignment_id="assignment-1",
@@ -354,18 +376,16 @@ def test_assignment_create_and_get() -> None:
     assert loaded == created
 
 
-def test_assignment_duplicate_create_raises() -> None:
-    repo = _assignment_repo()
-    repo.create(_create_assignment_command())
+def test_assignment_duplicate_create_raises(assignment_repo: AssignmentRepository) -> None:
+    assignment_repo.create(_create_assignment_command())
     with pytest.raises(AssignmentAlreadyExists):
-        repo.create(_create_assignment_command())
+        assignment_repo.create(_create_assignment_command())
 
 
-def test_assignment_scoped_isolation_read() -> None:
-    repo = _assignment_repo()
-    repo.create(_create_assignment_command())
+def test_assignment_scoped_isolation_read(assignment_repo: AssignmentRepository) -> None:
+    assignment_repo.create(_create_assignment_command())
     assert (
-        repo.get(
+        assignment_repo.get(
             tenant_id=_TENANT_B,
             workspace_id=_WORKSPACE_A,
             assignment_id="assignment-1",
@@ -373,7 +393,7 @@ def test_assignment_scoped_isolation_read() -> None:
         is None
     )
     assert (
-        repo.get(
+        assignment_repo.get(
             tenant_id=_TENANT_A,
             workspace_id=_WORKSPACE_B,
             assignment_id="assignment-1",
@@ -382,16 +402,17 @@ def test_assignment_scoped_isolation_read() -> None:
     )
 
 
-def test_assignment_multiple_for_same_work_item_and_principals() -> None:
-    repo = _assignment_repo()
-    first = repo.create(_create_assignment_command(assignment_id="assignment-1"))
-    second = repo.create(
+def test_assignment_multiple_for_same_work_item_and_principals(
+    assignment_repo: AssignmentRepository,
+) -> None:
+    first = assignment_repo.create(_create_assignment_command(assignment_id="assignment-1"))
+    second = assignment_repo.create(
         _create_assignment_command(
             assignment_id="assignment-2",
             principal_id="principal-2",
         )
     )
-    third = repo.create(
+    third = assignment_repo.create(
         _create_assignment_command(
             assignment_id="assignment-3",
             principal_id="principal-1",
@@ -402,10 +423,9 @@ def test_assignment_multiple_for_same_work_item_and_principals() -> None:
     assert second.principal_id == "principal-2"
 
 
-def test_assignment_update_preserves_identity() -> None:
-    repo = _assignment_repo()
-    created = repo.create(_create_assignment_command())
-    updated = repo.update(
+def test_assignment_update_preserves_identity(assignment_repo: AssignmentRepository) -> None:
+    created = assignment_repo.create(_create_assignment_command())
+    updated = assignment_repo.update(
         UpdateAssignmentCommand(
             scope=AssignmentScopeKey(
                 tenant_id=_TENANT_A,
@@ -426,10 +446,9 @@ def test_assignment_update_preserves_identity() -> None:
     assert updated.state is AssignmentState.COMPLETED
 
 
-def test_assignment_stale_revision_conflict_preserves_state() -> None:
-    repo = _assignment_repo()
-    created = repo.create(_create_assignment_command())
-    repo.update(
+def test_assignment_stale_revision_conflict_preserves_state(assignment_repo: AssignmentRepository) -> None:
+    created = assignment_repo.create(_create_assignment_command())
+    assignment_repo.update(
         UpdateAssignmentCommand(
             scope=AssignmentScopeKey(
                 tenant_id=_TENANT_A,
@@ -442,7 +461,7 @@ def test_assignment_stale_revision_conflict_preserves_state() -> None:
         )
     )
     with pytest.raises(AssignmentRevisionConflict):
-        repo.update(
+        assignment_repo.update(
             UpdateAssignmentCommand(
                 scope=AssignmentScopeKey(
                     tenant_id=_TENANT_A,
@@ -456,11 +475,10 @@ def test_assignment_stale_revision_conflict_preserves_state() -> None:
         )
 
 
-def test_assignment_cross_scope_update_is_not_found() -> None:
-    repo = _assignment_repo()
-    created = repo.create(_create_assignment_command())
+def test_assignment_cross_scope_update_is_not_found(assignment_repo: AssignmentRepository) -> None:
+    created = assignment_repo.create(_create_assignment_command())
     with pytest.raises(AssignmentNotFound):
-        repo.update(
+        assignment_repo.update(
             UpdateAssignmentCommand(
                 scope=AssignmentScopeKey(
                     tenant_id=_TENANT_A,
@@ -474,14 +492,13 @@ def test_assignment_cross_scope_update_is_not_found() -> None:
         )
 
 
-def test_assignment_idempotency_replay_and_conflict() -> None:
-    repo = _assignment_repo()
+def test_assignment_idempotency_replay_and_conflict(assignment_repo: AssignmentRepository) -> None:
     command = _create_assignment_command(idempotency_key="assignment-idem")
-    first = repo.create(command)
-    second = repo.create(command)
+    first = assignment_repo.create(command)
+    second = assignment_repo.create(command)
     assert second == first
     with pytest.raises(AssignmentIdempotencyConflict):
-        repo.create(
+        assignment_repo.create(
             _create_assignment_command(
                 idempotency_key="assignment-idem",
                 principal_id="principal-other",
@@ -489,14 +506,15 @@ def test_assignment_idempotency_replay_and_conflict() -> None:
         )
 
 
-def test_assignment_idempotency_replay_after_update_returns_original_create() -> None:
-    repo = _assignment_repo()
+def test_assignment_idempotency_replay_after_update_returns_original_create(
+    assignment_repo: AssignmentRepository,
+) -> None:
     command = _create_assignment_command(idempotency_key="assignment-idem-delayed")
-    created = repo.create(command)
+    created = assignment_repo.create(command)
     assert created.state is AssignmentState.ACTIVE
     assert created.revision == INITIAL_RECORD_REVISION
 
-    updated = repo.update(
+    updated = assignment_repo.update(
         UpdateAssignmentCommand(
             scope=AssignmentScopeKey(
                 tenant_id=_TENANT_A,
@@ -510,21 +528,20 @@ def test_assignment_idempotency_replay_after_update_returns_original_create() ->
     )
     assert updated.revision == created.revision + 1
 
-    replayed = repo.create(command)
+    replayed = assignment_repo.create(command)
     assert replayed == created
     assert replayed.state is AssignmentState.ACTIVE
     assert replayed.revision == INITIAL_RECORD_REVISION
 
 
-def test_assignment_idempotency_key_allowed_in_different_scope() -> None:
-    repo = _assignment_repo()
+def test_assignment_idempotency_key_allowed_in_different_scope(assignment_repo: AssignmentRepository) -> None:
     command_a = _create_assignment_command(idempotency_key="shared-idem")
     command_b = _create_assignment_command(
         tenant_id=_TENANT_B,
         assignment_id="assignment-2",
         idempotency_key="shared-idem",
     )
-    first = repo.create(command_a)
-    second = repo.create(command_b)
+    first = assignment_repo.create(command_a)
+    second = assignment_repo.create(command_b)
     assert first.assignment_id == "assignment-1"
     assert second.assignment_id == "assignment-2"

@@ -11,7 +11,7 @@ from research_application.tests.research_ac3_projection import build_research_te
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-def test_research_application_health() -> None:
+def test_research_application_health(configured_research_llm: None) -> None:
     client = TestClient(
         create_research_backend_app(
             registry_projection=build_research_test_registry_projection(),

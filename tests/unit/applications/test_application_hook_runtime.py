@@ -10,7 +10,14 @@ from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
@@ -40,7 +47,7 @@ def test_build_harness_host_runtime_configures_hook_runtime_guard() -> None:
         environment,
         use_in_memory_trace=True,
     )
-    pipeline = resolve_harness_host_nexus_loop_legacy(runtime).middleware
+    pipeline = resolve_harness_host_middleware_pipeline(runtime)
     assert isinstance(pipeline, MiddlewarePipeline)
     assert pipeline._hook_timeout_seconds == 0.5  # noqa: SLF001
-    assert pipeline._event_bus is resolve_harness_host_nexus_loop_legacy(runtime).event_bus  # noqa: SLF001
+    assert pipeline._event_bus is resolve_harness_host_event_bus(runtime)  # noqa: SLF001

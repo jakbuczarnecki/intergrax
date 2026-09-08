@@ -821,28 +821,16 @@ class NexusLoop:
         execution_id: ExecutionId,
     ) -> RuntimeEvent:
         """Publish terminal RuntimeEvent truth for canonical host task execution."""
-        from intergrax.contracts.execution_identity import (
-            bind_active_execution_identity,
-            reset_active_execution_identity,
-        )
         from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 
-        token = bind_active_execution_identity(
+        operational_completed = runtime_event_from_task_state(
+            task,
             run_id=run_id,
             attempt_id=attempt_id,
-            execution_id=execution_id,
+            message="task state -> completed",
         )
-        try:
-            operational_completed = runtime_event_from_task_state(
-                task,
-                run_id=run_id,
-                attempt_id=attempt_id,
-                message="task state -> completed",
-            )
-            await self._events.publish(operational_completed, task=task)
-            return await self._publish_terminal_runtime_event_with_active_identity(task)
-        finally:
-            reset_active_execution_identity(token)
+        await self._events.publish(operational_completed, task=task)
+        return await self._publish_terminal_runtime_event_with_active_identity(task)
 
     async def _publish_terminal_runtime_event_with_active_identity(
         self,

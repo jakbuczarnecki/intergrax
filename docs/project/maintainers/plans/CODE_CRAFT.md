@@ -64,7 +64,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY - Session authority, canonical HITL, override lattice (Protocol v2 · 2026-08-18)
 
-**Status:** `IMPLEMENTED` (AW-7B-GATE on `development`)
+**Status:** `VERIFIED` (AW-7B-GATE independently verified; qualification SHA `2f8bc019a11de01f21498f952343e70f0cf3e369`)
 **Priority:** P0
 **Type:** Arch / Wire / Proof
 **Source:** [`AUDIT-20260818-CODE_CRAFT-01`](../../audit_results/2026-08-18/CODE_CRAFT.md), [`AUDIT-20260818-CODE_CRAFT-02`](../../audit_results/2026-08-18/CODE_CRAFT.md), [`AUDIT-20260818-CODE_CRAFT-03`](../../audit_results/2026-08-18/CODE_CRAFT.md)
@@ -89,7 +89,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### CODECRAFT-VERIFICATION-INTEGRITY - Promotion eligibility and same-sandbox verification (Protocol v2 · 2026-08-18)
 
-**Status:** `IMPLEMENTED` (AW-7B-GATE on `development`)
+**Status:** `VERIFIED` (AW-7B-GATE independently verified; qualification SHA `2f8bc019a11de01f21498f952343e70f0cf3e369`)
 **Priority:** P0
 **Type:** Arch / Wire / Proof
 **Source:** [`AUDIT-20260818-CODE_CRAFT-04`](../../audit_results/2026-08-18/CODE_CRAFT.md), [`AUDIT-20260818-CODE_CRAFT-05`](../../audit_results/2026-08-18/CODE_CRAFT.md)
@@ -113,7 +113,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### CODECRAFT-ISOLATION-INTEGRITY - Anti-downgrade and network egress enforcement (Protocol v2 · 2026-08-18)
 
-**Status:** `IMPLEMENTED` (AW-7B-GATE on `development`)
+**Status:** `VERIFIED` (AW-7B-GATE independently verified; qualification SHA `2f8bc019a11de01f21498f952343e70f0cf3e369`)
 **Priority:** P0
 **Type:** Arch / Wire / Proof
 **Source:** [`AUDIT-20260818-CODE_CRAFT-06`](../../audit_results/2026-08-18/CODE_CRAFT.md), [`AUDIT-20260818-CODE_CRAFT-07`](../../audit_results/2026-08-18/CODE_CRAFT.md)
@@ -122,7 +122,7 @@ Load **only** the satellite matching your task or cited gap ID.
 **Deliverable intent:**
 
 - isolation tier as minimum security requirement - required `cloud`/`container` fails closed when eligible hosted substrate cannot resolve; no silent local downgrade unless explicit trusted downgrade policy defines allowed downgrade; regulated preset must not silently downgrade
-- `network_egress` becomes runtime-enforced substrate capability - `deny` binds to substrate/network policy with provable outbound denial before generated code executes; fail closed when substrate cannot satisfy requested egress posture
+- `network_egress` is runtime-enforced substrate capability — `deny` and `allowlist` both require trusted substrate proof before exec; fail closed when substrate cannot satisfy requested egress posture (**contract implemented AW-7C P0-1**; physical hosted allowlist qualification still blocked pending real provider)
 - bind enforcement evidence to substrate capability - do not claim universal sandbox security
 
 **Remediation rules:**

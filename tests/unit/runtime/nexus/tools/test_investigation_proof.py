@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.runtime.nexus.tools.atomic_planner_round import PLANNER_ROUND_TOOL_ID
 from intergrax.runtime.nexus.tools.investigation_proof import (
     InvestigationEvidenceBasis,
     InvestigationProofValidationError,
@@ -408,9 +409,13 @@ def test_format_investigation_follow_up_context_lists_available_refs() -> None:
     assert "ROUND: 2" in rendered
     assert "- evidence.workload.line4.incident_window" in rendered
     assert "- evidence.throughput.line4.incident_window" in rendered
-    assert "intergrax.planner.action_context" in rendered
+    assert PLANNER_ROUND_TOOL_ID in rendered
     assert "AVAILABLE_EVIDENCE_REFS" in rendered
-    assert "emit exactly one intergrax.planner.action_context" in rendered
+    assert f"emit exactly one {PLANNER_ROUND_TOOL_ID}" in rendered
+    assert "evidence_basis_references" in rendered
+    assert " purpose" in rendered or "and purpose" in rendered
+    assert "do not use public_purpose" in rendered.lower()
+    assert "intergrax.planner.action_context" not in rendered
     assert "materially motivate this follow-up action" in rendered
 
 

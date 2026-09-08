@@ -6,10 +6,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from intergrax.runtime.sandbox.network_egress import NetworkEgressAllowlist
 
 
 class CredentialResolutionMode(StrEnum):
@@ -33,6 +36,14 @@ class CredentialScopeMismatchError(CredentialResolutionError):
 
 class CredentialProviderUnavailableError(CredentialResolutionError):
     """Credential backing provider is unavailable."""
+
+
+class CredentialUseGrantExpiredError(CredentialScopeMismatchError):
+    """Scoped credential grant is past its bounded lifetime."""
+
+
+class CredentialScopeAdmissionDeniedError(CredentialScopeMismatchError):
+    """Scoped credential admission policy denied the grant for the requested scope."""
 
 
 class CredentialRef(BaseModel):
@@ -97,6 +108,35 @@ class CredentialResolutionContext:
     application_id: str | None = None
     execution_id: str | None = None
     operation: str | None = None
+    integration_id: str | None = None
+    target_scope: NetworkEgressAllowlist | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CredentialUseScope:
+    """Immutable runtime scope for bounded credential use (A2 / scoped broker path)."""
+
+    tenant_id: str
+    provider_id: str
+    integration_id: str
+    operation: str
+    execution_id: str
+    target_scope: NetworkEgressAllowlist
+
+
+@dataclass(frozen=True, slots=True)
+class CredentialUseGrant:
+    """Immutable, secret-free admission grant for one bounded credential use."""
+
+    grant_id: str
+    credential_ref: CredentialRef
+    tenant_id: str
+    provider_id: str
+    integration_id: str
+    operation: str
+    execution_id: str
+    target_scope: NetworkEgressAllowlist
+    expires_at: datetime
 
 
 @dataclass(slots=True)
@@ -123,9 +163,66 @@ class CredentialUseEvidence:
 
     credential_ref: CredentialRef
     provider_id: str
-    execution_id: str | None = None
-    operation: str | None = None
+    tenant_id: str
+    execution_id: str
+    operation: str
+    integration_id: str
+    target_scope_fingerprint: str
+    credential_fingerprint: str
+    grant_id: str
     resolved_version: str | None = None
+
+    def __repr__(self) -> str:
+        return (
+            f"CredentialUseEvidence("
+            f"grant_id={self.grant_id!r}, "
+            f"credential_fingerprint={self.credential_fingerprint!r}, "
+            f"provider_id={self.provider_id!r}, "
+            f"tenant_id={self.tenant_id!r}, "
+            f"execution_id={self.execution_id!r}, "
+            f"operation={self.operation!r}, "
+            f"integration_id={self.integration_id!r}, "
+            f"target_scope_fingerprint={self.target_scope_fingerprint!r}, "
+            f"resolved_version={self.resolved_version!r})"
+        )
+
+
+@dataclass(slots=True)
+class ScopedCredentialResolutionResult:
+    """Broker output pairing resolved material with safe use evidence."""
+
+    resolved_credential: ResolvedCredential
+    use_evidence: CredentialUseEvidence
+
+    def __repr__(self) -> str:
+        return (
+            f"ScopedCredentialResolutionResult("
+            f"use_evidence={self.use_evidence!r}, "
+            f"resolved_credential={self.resolved_credential!r})"
+        )
+
+    def __str__(self) -> str:
+        return repr(self)
+
+
+class CredentialScopeAdmissionDecision(StrEnum):
+    """Typed admission outcome for scoped credential brokering."""
+
+    ALLOW = "allow"
+    DENY = "deny"
+    UNAVAILABLE = "unavailable"
+
+
+@runtime_checkable
+class CredentialScopeAdmissionPort(Protocol):
+    """Provider-neutral scoped credential admission seam (constructor-injected)."""
+
+    def admit(
+        self,
+        grant: CredentialUseGrant,
+        scope: CredentialUseScope,
+    ) -> CredentialScopeAdmissionDecision:
+        """Return whether the grant may be resolved for the requested scope."""
 
 
 @runtime_checkable
@@ -149,7 +246,14 @@ __all__ = [
     "CredentialResolutionError",
     "CredentialResolutionMode",
     "CredentialResolver",
+    "CredentialScopeAdmissionDecision",
+    "CredentialScopeAdmissionDeniedError",
+    "CredentialScopeAdmissionPort",
     "CredentialScopeMismatchError",
     "CredentialUseEvidence",
+    "CredentialUseGrant",
+    "CredentialUseGrantExpiredError",
+    "CredentialUseScope",
     "ResolvedCredential",
+    "ScopedCredentialResolutionResult",
 ]

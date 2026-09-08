@@ -24,6 +24,10 @@ from intergrax.applications.contracts.environment_profile.normalization import (
     migrate_profile_dict_to_spec_v2,
     uses_nested_profile_wire,
 )
+from intergrax.applications.contracts.environment_profile.governance_permission_preset import (
+    GovernancePermissionPreset,
+    GovernancePermissionPresetProvenance,
+)
 from intergrax.applications.contracts.environment_profile.root import (
     ApplicationEnvironmentProfile,
 )
@@ -86,6 +90,8 @@ __all__ = [
     "EventSubscriptionSpec",
     "ExecutionBoundaryExportProfile",
     "GovernanceBundle",
+    "GovernancePermissionPreset",
+    "GovernancePermissionPresetProvenance",
     "GovernanceProfile",
     "GuardrailProfile",
     "HostDeploymentProfile",

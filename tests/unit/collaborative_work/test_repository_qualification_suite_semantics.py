@@ -13,7 +13,7 @@ from intergrax.collaborative_work.repository_qualification_suite import (
     collaborative_work_sqlite_repository_qualification_binding,
     collaborative_work_sqlite_repository_qualification_suite,
 )
-from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
+from intergrax.collaborative_work.persistence import CollaborativeWorkRepositoriesWithArtifacts
 from intergrax.core.qualification.execution import ProviderQualificationSuiteInfrastructureError
 from intergrax.core.qualification.status import QualificationStatus
 from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
@@ -42,11 +42,14 @@ def test_semantic_repository_failure_maps_to_rejected(tmp_path: Path) -> None:
         profile,
         resolved_provider_id="sqlite",
     )[0]
-    assert isinstance(bundle, CollaborativeWorkRepositories)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
 
     with patch(
-        "intergrax.collaborative_work.repository_qualification_suite._run_repository_contract_checks",
+        "intergrax.collaborative_work.repository_qualification_suite._run_core_repository_contract_checks",
         return_value=(4, 2),
+    ), patch(
+        "intergrax.collaborative_work.repository_qualification_suite._run_shared_work_repository_contract_checks",
+        return_value=(0, 0),
     ):
         outcome = suite.execute(bundle)
     bundle.close()
@@ -66,11 +69,14 @@ def test_suite_infrastructure_failure_is_not_semantic_rejection(tmp_path: Path) 
         profile,
         resolved_provider_id="sqlite",
     )[0]
-    assert isinstance(bundle, CollaborativeWorkRepositories)
+    assert isinstance(bundle, CollaborativeWorkRepositoriesWithArtifacts)
 
     with patch(
-        "intergrax.collaborative_work.repository_qualification_suite._run_repository_contract_checks",
+        "intergrax.collaborative_work.repository_qualification_suite._run_core_repository_contract_checks",
         side_effect=RuntimeError("database host unavailable"),
+    ), patch(
+        "intergrax.collaborative_work.repository_qualification_suite._run_shared_work_repository_contract_checks",
+        return_value=(0, 0),
     ):
         with pytest.raises(RuntimeError, match="database host unavailable"):
             suite.execute(bundle)

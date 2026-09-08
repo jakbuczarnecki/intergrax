@@ -63,3 +63,21 @@ def test_discovery_service_has_no_concrete_persistence_imports() -> None:
         if token in source
     ]
     assert not violations, f"service concrete persistence imports: {violations}"
+
+
+_TRANSPORT_PROVIDER_FILE = (
+    _DISCOVERY_ROOT / "providers" / "causal_transport_scope_provider.py"
+)
+
+
+def test_causal_transport_scope_provider_uses_paged_persistence_api_only() -> None:
+    source = _TRANSPORT_PROVIDER_FILE.read_text(encoding="utf-8")
+    assert "page_for_transport_task(" in source
+    forbidden_tokens = (
+        "list_for_transport_task(",
+        "DocumentStore",
+        "causal_evidence_index",
+        "causal_evidence_query_cursor",
+    )
+    violations = [token for token in forbidden_tokens if token in source]
+    assert not violations, f"forbidden transport provider tokens: {violations}"

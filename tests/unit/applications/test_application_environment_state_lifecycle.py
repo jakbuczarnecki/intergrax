@@ -16,7 +16,14 @@ from intergrax.applications.contracts.environment_state import (
     EnvironmentTaskPhase,
 )
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.harness.application_host import ApplicationHost
 from intergrax.runtime.hooks.hook_context import HookContext, HookResult
@@ -52,7 +59,7 @@ def test_build_harness_host_runtime_mounts_environment_state_middleware() -> Non
         environment,
         use_in_memory_trace=True,
     )
-    pipeline = resolve_harness_host_nexus_loop_legacy(runtime).middleware
+    pipeline = resolve_harness_host_middleware_pipeline(runtime)
     assert isinstance(pipeline, MiddlewarePipeline)
     names = [mw.name for mw in pipeline._middleware]  # noqa: SLF001
     assert "application_environment_state" in names
@@ -82,7 +89,7 @@ async def test_environment_state_phase_tracks_lifecycle_hooks() -> None:
         message="hello",
         context=TaskContext(capability="echo.basic"),
     )
-    coordinator = resolve_harness_host_nexus_loop_legacy(runtime)._lifecycle_hooks  # noqa: SLF001
+    coordinator = resolve_harness_host_lifecycle_hook_coordinator(runtime)  # noqa: SLF001
 
     await coordinator.before(
         HookPoint.BEFORE_TASK_INTAKE,
@@ -133,7 +140,7 @@ async def test_environment_state_hitl_hook_updates_health() -> None:
         message="approve me",
         context=TaskContext(capability="echo.basic"),
     )
-    coordinator = resolve_harness_host_nexus_loop_legacy(runtime)._lifecycle_hooks  # noqa: SLF001
+    coordinator = resolve_harness_host_lifecycle_hook_coordinator(runtime)  # noqa: SLF001
 
     await coordinator.before(
         HookPoint.BEFORE_HUMAN_APPROVAL,

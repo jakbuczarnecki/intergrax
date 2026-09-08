@@ -14,35 +14,40 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
+from intergrax.applications._shared.harness_host_auxiliary_wiring import HostTaskExecutionExecutor
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import (
     attach_plugin_shutdown,
-    bootstrap_application_plugins,
 )
 from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
     build_observability_export_runtime_plugin,
 )
 from intergrax.runtime.interactions.router import create_interaction_intake_router
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    wire_harness_host_long_running_scheduler,
+)
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
     wire_harness_task_control,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     wire_harness_product_observability_dashboard,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
-from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from governed_contractor_application.host.execution_wiring import build_governed_contractor_host_task_execution
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.environment_profile import build_governed_contractor_environment_profile
@@ -76,33 +81,30 @@ def create_governed_contractor_backend_app(
         document_store=document_store,
     )
     host_execution = runtime.execution
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     registry = runtime.registry
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
     if observability_export is not None and observability_export.enabled:
         export_plugin = build_observability_export_runtime_plugin(observability_export)
         if export_plugin is not None:
-            export_bootstrap = bootstrap_application_plugins(
+            export_bootstrap = bootstrap_harness_host_application_plugins(
+                runtime,
                 [export_plugin],
-                nexus_loop=nexus_loop,
             )
             platform.shutdown_callbacks.extend(export_bootstrap.shutdown_callbacks)
     checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
     task_enricher = build_reliability_task_enricher(env)
-    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
-    scheduler_wiring = wire_long_running_scheduler(
+    scheduler_wiring = wire_harness_host_long_running_scheduler(
+        runtime,
         checkpoint_store=checkpoint_store,
-        task_runner=task_runner,
+        host_execution=host_execution,
+        task_enricher=task_enricher,
         notification_adapter=None,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
     interaction_service = wire_interaction_intake_service(
-        nexus_loop,
         interaction_surface=settings.interaction_surface,
+        task_executor=HostTaskExecutionExecutor(host_execution),
         task_enricher=task_enricher,
     )
 
@@ -147,7 +149,7 @@ def create_governed_contractor_backend_app(
         wire_harness_task_control(
             app,
             enabled=True,
-            task_runner=task_runner,
+            host_execution=host_execution,
             env=env,
             checkpoint_store=checkpoint_store,
             task_route_prefix=settings.task_control_route_prefix,

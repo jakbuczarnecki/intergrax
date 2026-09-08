@@ -9,7 +9,7 @@ import hashlib
 import json
 import os
 import re
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Union
 
 from openai import Client
 from openai.types.responses import Response
@@ -29,7 +29,22 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
-from intergrax.llm_adapters.providers._openai_schema import prepare_openai_strict_generation_schema
+from intergrax.llm_adapters.providers._openai_schema import (
+    prepare_openai_strict_generation_schema,
+    project_atomic_planner_round_parameters_for_openai_strict,
+    project_json_schema_for_openai_strict_tool_parameters,
+)
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+    StrictToolArgumentConformanceError,
+    StrictWireProjectionKind,
+    ToolDispatchRequirements,
+    coerce_canonical_tool_definitions,
+)
+from intergrax.runtime.nexus.tools.atomic_planner_round import (
+    AtomicPlannerRoundProjectionError,
+    decode_atomic_planner_round_arguments_json_envelope,
+)
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 # OpenAI SDK Client(...) kwargs — must never reach responses.create/stream.
@@ -183,6 +198,67 @@ def _extract_canonical_tool_names(tools_schema: Sequence[Dict[str, Any]]) -> Lis
     return names
 
 
+def _extract_canonical_tool_names_from_responses_input(
+    input_items: Sequence[Dict[str, Any]],
+) -> List[str]:
+    """Deterministic first-seen canonical names from function_call input items."""
+    seen: set[str] = set()
+    names: List[str] = []
+    for item in input_items:
+        if (
+            isinstance(item, dict)
+            and item.get("type") == "function_call"
+            and isinstance(item.get("name"), str)
+            and item["name"]
+        ):
+            name = item["name"]
+            if name not in seen:
+                seen.add(name)
+                names.append(name)
+    return names
+
+
+def _extract_tool_choice_canonical_name(
+    tool_choice: Union[str, Dict[str, Any]] | None,
+) -> str | None:
+    if tool_choice is None or isinstance(tool_choice, str):
+        return None
+    if (
+        isinstance(tool_choice, dict)
+        and tool_choice.get("type") == "function"
+        and isinstance(tool_choice.get("name"), str)
+        and tool_choice["name"]
+    ):
+        return tool_choice["name"]
+    return None
+
+
+def _build_request_canonical_tool_names(
+    tools_schema: Sequence[Dict[str, Any]],
+    input_items: Sequence[Dict[str, Any]],
+    tool_choice: Union[str, Dict[str, Any]] | None = None,
+) -> List[str]:
+    """Union of current callable, historical function_call, and forced-choice names."""
+    names: List[str] = []
+    seen: set[str] = set()
+
+    for name in _extract_canonical_tool_names(tools_schema):
+        if name not in seen:
+            seen.add(name)
+            names.append(name)
+
+    for name in _extract_canonical_tool_names_from_responses_input(input_items):
+        if name not in seen:
+            seen.add(name)
+            names.append(name)
+
+    forced_name = _extract_tool_choice_canonical_name(tool_choice)
+    if forced_name is not None and forced_name not in seen:
+        names.append(forced_name)
+
+    return names
+
+
 def _apply_tool_name_mapping_to_responses_tools(
     mapped_tools: Sequence[Dict[str, Any]],
     name_mapping: _OpenAIToolNameMapping,
@@ -239,10 +315,19 @@ def _apply_tool_name_mapping_to_responses_input(
 
 
 def _prepare_responses_tools_and_mapping(
-    tools_schema: Sequence[Dict[str, Any]],
+    tool_definitions: Sequence[CanonicalFunctionToolDefinition],
+    *,
+    input_items: Sequence[Dict[str, Any]] | None = None,
+    tool_choice: Union[str, Dict[str, Any]] | None = None,
 ) -> tuple[List[Dict[str, Any]], _OpenAIToolNameMapping]:
-    mapped_tools = _map_tools_to_responses_api(tools_schema)
-    name_mapping = _OpenAIToolNameMapping(_extract_canonical_tool_names(tools_schema))
+    mapped_tools = _map_tools_to_responses_api(tool_definitions)
+    tools_schema = [dict(definition.wire_schema) for definition in tool_definitions]
+    canonical_names = _build_request_canonical_tool_names(
+        tools_schema,
+        input_items or [],
+        tool_choice,
+    )
+    name_mapping = _OpenAIToolNameMapping(canonical_names)
     provider_tools = _apply_tool_name_mapping_to_responses_tools(mapped_tools, name_mapping)
     return provider_tools, name_mapping
 
@@ -263,16 +348,90 @@ def _partition_openai_responses_options(
     return client_kwargs, request_defaults
 
 
+def _canonical_function_tool_name(
+    tool: Mapping[str, Any],
+    index: int,
+) -> str:
+    if tool.get("type") != "function":
+        raise ValueError(
+            "OpenAI Responses adapter: "
+            f"tools_schema[{index}] is not a function tool"
+        )
+    fn = tool.get("function")
+    if isinstance(fn, Mapping):
+        name = fn.get("name")
+        if isinstance(name, str) and name:
+            return name
+    top_level_name = tool.get("name")
+    if isinstance(top_level_name, str) and top_level_name:
+        return top_level_name
+    raise ValueError(
+        "OpenAI Responses adapter: "
+        f"tools_schema[{index}] function tool missing canonical name"
+    )
+
+
+def _dispatch_requirements_by_canonical_name(
+    tool_definitions: Sequence[CanonicalFunctionToolDefinition],
+) -> dict[str, ToolDispatchRequirements]:
+    by_name: dict[str, ToolDispatchRequirements] = {}
+    for index, definition in enumerate(tool_definitions):
+        by_name[_canonical_function_tool_name(definition.wire_schema, index)] = (
+            definition.dispatch_requirements
+        )
+    return by_name
+
+
+def _project_strict_tool_parameters(
+    parameters: Mapping[str, Any],
+    *,
+    dispatch_requirements: ToolDispatchRequirements,
+    argument_guidance_description: str | None = None,
+) -> dict[str, Any]:
+    projection = dispatch_requirements.strict_wire_projection
+    if projection == StrictWireProjectionKind.ATOMIC_PLANNER_DISCRIMINATED_ACTIONS:
+        try:
+            return project_atomic_planner_round_parameters_for_openai_strict(
+                parameters,
+                argument_guidance_description=argument_guidance_description,
+            )
+        except AtomicPlannerRoundProjectionError as exc:
+            raise StrictToolArgumentConformanceError(
+                "atomic planner round strict wire projection failed"
+            ) from exc
+    return project_json_schema_for_openai_strict_tool_parameters(parameters)
+
+
+def _normalize_strict_tool_call_arguments(
+    arguments_json: str,
+    *,
+    dispatch_requirements: ToolDispatchRequirements,
+) -> str:
+    projection = dispatch_requirements.strict_wire_projection
+    if projection != StrictWireProjectionKind.ATOMIC_PLANNER_DISCRIMINATED_ACTIONS:
+        return arguments_json
+    try:
+        payload = json.loads(arguments_json)
+    except json.JSONDecodeError:
+        return arguments_json
+    if not isinstance(payload, dict):
+        return arguments_json
+    normalized = decode_atomic_planner_round_arguments_json_envelope(payload)
+    return json.dumps(normalized, ensure_ascii=False)
+
+
 def _map_tools_to_responses_api(
-    tools_schema: Sequence[Dict[str, Any]],
+    tool_definitions: Sequence[CanonicalFunctionToolDefinition],
 ) -> List[Dict[str, Any]]:
-    """Map canonical Chat-Completions-style tool schema to Responses API shape."""
+    """Map canonical tool bindings to Responses API shape."""
     mapped: List[Dict[str, Any]] = []
-    for index, tool in enumerate(tools_schema):
+    for index, definition in enumerate(tool_definitions):
+        tool = definition.wire_schema
         if not isinstance(tool, dict):
             raise ValueError(
                 "OpenAI Responses adapter: "
-                f"tools_schema[{index}] must be a dict, got {type(tool).__name__}"
+                f"tool_definitions[{index}] wire_schema must be a dict, "
+                f"got {type(tool).__name__}"
             )
 
         if tool.get("type") != "function":
@@ -285,7 +444,7 @@ def _map_tools_to_responses_api(
                 continue
             raise ValueError(
                 "OpenAI Responses adapter: "
-                f"tools_schema[{index}] function tool requires nested 'function' "
+                f"tool_definitions[{index}] function tool requires nested 'function' "
                 "object or top-level 'name'"
             )
 
@@ -293,7 +452,7 @@ def _map_tools_to_responses_api(
         if not isinstance(fn, dict):
             raise ValueError(
                 "OpenAI Responses adapter: "
-                f"tools_schema[{index}].function must be a dict, "
+                f"tool_definitions[{index}].function must be a dict, "
                 f"got {type(fn).__name__ if fn is not None else 'missing'}"
             )
 
@@ -301,16 +460,27 @@ def _map_tools_to_responses_api(
         if not isinstance(name, str) or not name:
             raise ValueError(
                 "OpenAI Responses adapter: "
-                f"tools_schema[{index}].function.name must be a non-empty string"
+                f"tool_definitions[{index}].function.name must be a non-empty string"
             )
 
         out: Dict[str, Any] = {"type": "function", "name": name}
         if "description" in fn:
             out["description"] = fn["description"]
-        if "parameters" in fn:
+        requires_strict = definition.requires_strict_argument_conformance
+        if requires_strict:
+            if "parameters" in fn:
+                parameters = fn["parameters"]
+                if isinstance(parameters, dict):
+                    out["parameters"] = _project_strict_tool_parameters(
+                        parameters,
+                        dispatch_requirements=definition.dispatch_requirements,
+                        argument_guidance_description=definition.argument_guidance_text,
+                    )
+                else:
+                    out["parameters"] = parameters
+            out["strict"] = True
+        elif "parameters" in fn:
             out["parameters"] = fn["parameters"]
-        if "strict" in fn:
-            out["strict"] = fn["strict"]
         mapped.append(out)
     return mapped
 
@@ -575,13 +745,16 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         """
         return True
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return True
+
     def supports_vision(self) -> bool:
         return True
 
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -591,6 +764,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         """
         Stream assistant text deltas, then yield the final typed response.
         """
+        tool_definitions = coerce_canonical_tool_definitions(tools)
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
@@ -605,11 +779,14 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 in_tok = 0
 
             mapped = self._map_messages_to_openai(messages)
+            input_items_raw = self._messages_to_responses_input(mapped)
             responses_tools, tool_name_mapping = _prepare_responses_tools_and_mapping(
-                tools_schema
+                tool_definitions,
+                input_items=input_items_raw,
+                tool_choice=tool_choice,
             )
             input_items = _apply_tool_name_mapping_to_responses_input(
-                self._messages_to_responses_input(mapped),
+                input_items_raw,
                 tool_name_mapping,
             )
             payload: Dict[str, Any] = dict(
@@ -639,7 +816,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                     raise RuntimeError("OpenAI responses stream did not return a final response")
 
                 native_tool_calls = self._extract_tool_calls_from_response(
-                    resp, tool_name_mapping
+                    resp,
+                    tool_name_mapping,
+                    tool_definitions=tool_definitions,
                 )
                 final_content = self._collect_output_text(resp) or "".join(buf)
                 final_response = adapter_response_from_openai_responses(
@@ -677,7 +856,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         self,
         response: Response,
         tool_name_mapping: _OpenAIToolNameMapping,
+        *,
+        tool_definitions: Sequence[CanonicalFunctionToolDefinition] | None = None,
     ) -> List[Dict[str, Any]]:
+        requirements_by_name: dict[str, ToolDispatchRequirements] = {}
+        if tool_definitions is not None:
+            requirements_by_name = _dispatch_requirements_by_canonical_name(tool_definitions)
         native_tool_calls: List[Dict[str, Any]] = []
         for item in response.output or []:
             if item.type != "function_call":
@@ -686,6 +870,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if not isinstance(args, str):
                 args = json.dumps(args, ensure_ascii=False)
             canonical_name = tool_name_mapping.to_canonical(item.name)
+            dispatch_requirements = requirements_by_name.get(canonical_name)
+            if dispatch_requirements is not None:
+                args = _normalize_strict_tool_call_arguments(
+                    args,
+                    dispatch_requirements=dispatch_requirements,
+                )
             native_tool_calls.append(
                 {
                     "id": item.call_id,
@@ -763,7 +953,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -773,6 +963,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         """
         Generate a response with potential function/tool calls.
         """
+        tool_definitions = coerce_canonical_tool_definitions(tools)
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
         success = False
@@ -780,11 +971,14 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
         try:
             mapped = self._map_messages_to_openai(messages)
+            input_items_raw = self._messages_to_responses_input(mapped)
             responses_tools, tool_name_mapping = _prepare_responses_tools_and_mapping(
-                tools_schema
+                tool_definitions,
+                input_items=input_items_raw,
+                tool_choice=tool_choice,
             )
             input_items = _apply_tool_name_mapping_to_responses_input(
-                self._messages_to_responses_input(mapped),
+                input_items_raw,
                 tool_name_mapping,
             )
 
@@ -808,7 +1002,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
             content = self._collect_output_text(api_response)
             native_tool_calls = self._extract_tool_calls_from_response(
-                api_response, tool_name_mapping
+                api_response,
+                tool_name_mapping,
+                tool_definitions=tool_definitions,
             )
             response = adapter_response_from_openai_responses(
                 api_response,

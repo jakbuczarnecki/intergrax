@@ -24,10 +24,16 @@ from intergrax.applications._shared.registry_projection import MaterializedRegis
 from intergrax.applications._shared.reference_production_lifecycle import (
     ReferenceProductionLifecycleLauncher,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
 )
 from local_workspace_application.background_ingest.contracts import LKW_BACKGROUND_INGEST_TASK_NAME
+from local_workspace_application.host.background_worker_constructor import BlockingBackgroundWorker
 from local_workspace_application.host.background_worker_factory import (
     build_local_workspace_background_worker_wiring,
 )
@@ -42,6 +48,12 @@ from local_workspace_application.host.settings import LocalWorkspaceBackendSetti
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+def _blocking_worker_mock() -> MagicMock:
+    worker = MagicMock(spec=BlockingBackgroundWorker)
+    worker.start = MagicMock()
+    return worker
 
 
 def _settings(monkeypatch: pytest.MonkeyPatch) -> LocalWorkspaceBackendSettings:
@@ -89,8 +101,8 @@ def test_worker_wiring_receives_materialized_registry_projection(
             ),
         ),
         patch(
-            "local_workspace_application.host.background_worker_factory.create_kafka_worker",
-            return_value=MagicMock(),
+            "local_workspace_application.host.background_worker_constructor.create_kafka_worker",
+            return_value=_blocking_worker_mock(),
         ),
     ):
         wiring = build_local_workspace_background_worker_wiring(
@@ -103,7 +115,7 @@ def test_worker_wiring_receives_materialized_registry_projection(
         wiring.runtime.registry_projection_evidence.runtime_revision_id
         == projection.evidence.runtime_revision_id
     )
-    assert "local_indexer" in resolve_harness_host_nexus_loop_legacy(wiring.runtime).registry.list_agent_ids()
+    assert "local_indexer" in wiring.runtime.registry.list_agent_ids()
 
 
 def test_worker_wiring_without_projection_fails_closed(
@@ -132,7 +144,7 @@ def test_authority_assembly_order_before_worker_start(
         events.append(event)
         return func(*args, **kwargs)
 
-    worker = MagicMock()
+    worker = _blocking_worker_mock()
     worker.start = MagicMock(side_effect=lambda: events.append("start_worker"))
     original_deploy = ReferenceProductionLifecycleLauncher.deploy_and_activate
 
@@ -166,6 +178,15 @@ def test_authority_assembly_order_before_worker_start(
             ),
         ),
         patch(
+            "local_workspace_application.host.background_worker_main.build_harness_host_runtime",
+            side_effect=lambda *args, **kwargs: _track(
+                "build_runtime_diag",
+                build_harness_host_runtime,
+                *args,
+                **kwargs,
+            ),
+        ),
+        patch(
             "local_workspace_application.host.background_worker_factory.build_harness_host_runtime",
             side_effect=lambda *args, **kwargs: _track(
                 "build_runtime",
@@ -182,7 +203,7 @@ def test_authority_assembly_order_before_worker_start(
             ),
         ),
         patch(
-            "local_workspace_application.host.background_worker_factory.create_kafka_worker",
+            "local_workspace_application.host.background_worker_constructor.create_kafka_worker",
             side_effect=lambda **kwargs: _track("create_worker", lambda **_: worker, **kwargs),
         ),
     ):
@@ -192,6 +213,7 @@ def test_authority_assembly_order_before_worker_start(
         "create_composition",
         "deploy_activate",
         "bootstrap_projection",
+        "build_runtime_diag",
         "build_runtime",
         "create_worker",
         "start_worker",
@@ -208,7 +230,7 @@ def test_bootstrap_failure_gates_worker_creation(
             side_effect=HarnessHostRegistryAuthorityError("projection bootstrap failed"),
         ),
         patch(
-            "local_workspace_application.host.background_worker_factory.create_kafka_worker",
+            "local_workspace_application.host.background_worker_constructor.create_kafka_worker",
         ) as create_worker,
     ):
         with pytest.raises(HarnessHostRegistryAuthorityError, match="projection bootstrap failed"):
@@ -242,8 +264,8 @@ def test_worker_registers_background_ingest_handler(
             ),
         ),
         patch(
-            "local_workspace_application.host.background_worker_factory.create_kafka_worker",
-            return_value=MagicMock(),
+            "local_workspace_application.host.background_worker_constructor.create_kafka_worker",
+            return_value=_blocking_worker_mock(),
         ),
     ):
         wiring = build_local_workspace_background_worker_wiring(

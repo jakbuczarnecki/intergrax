@@ -72,12 +72,10 @@ class _InvalidModelAdapter(LLMAdapter):
 @pytest.fixture()
 def _restore_registry_state():
     snapshot = dict(LLMAdapterRegistry._factories)
-    installed = LLMAdapterRegistry._builtin_registrations_installed
     try:
         yield
     finally:
         LLMAdapterRegistry._factories = snapshot
-        LLMAdapterRegistry._builtin_registrations_installed = installed
 
 
 def test_valid_adapter_public_model_is_used(_restore_registry_state) -> None:

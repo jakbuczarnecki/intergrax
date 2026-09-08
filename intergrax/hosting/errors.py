@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
+
+from intergrax.hosting.process_bootstrap import HostedProcessBootstrapPhase
+
 
 class HostedApplicationEngineError(Exception):
     """Base error for hosted application engine operations."""
@@ -78,5 +82,44 @@ class HostedApplicationRestartPolicyError(HostedApplicationEngineError):
     """Raised when restart policy evaluation or configuration is invalid."""
 
 
+class HostedApplicationSupervisorFailureReason(StrEnum):
+    """Deterministic bounded failure reasons for supervisor pre-engine failures."""
+
+    ENGINE_FACTORY_FAILED = "engine_factory_failed"
+    ENGINE_FACTORY_INVALID_RESULT = "engine_factory_invalid_result"
+    ENGINE_INSTANCE_ID_MISMATCH = "engine_instance_id_mismatch"
+    ENGINE_PROFILE_DIGEST_MISMATCH = "engine_profile_digest_mismatch"
+    ENGINE_DEFINITION_DIGEST_MISMATCH = "engine_definition_digest_mismatch"
+    ENGINE_APPLICATION_ID_MISMATCH = "engine_application_id_mismatch"
+
+    @property
+    def phase(self) -> HostedProcessBootstrapPhase:
+        if self in (
+            HostedApplicationSupervisorFailureReason.ENGINE_FACTORY_FAILED,
+            HostedApplicationSupervisorFailureReason.ENGINE_FACTORY_INVALID_RESULT,
+        ):
+            return HostedProcessBootstrapPhase.ENGINE_CONSTRUCTION
+        return HostedProcessBootstrapPhase.ENGINE_CONTRACT_VALIDATION
+
+
 class HostedApplicationSupervisorError(HostedApplicationEngineError):
     """Raised when supervisor orchestration fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason: HostedApplicationSupervisorFailureReason,
+        phase: HostedProcessBootstrapPhase,
+    ) -> None:
+        super().__init__(message)
+        self._reason = reason
+        self._phase = phase
+
+    @property
+    def reason(self) -> HostedApplicationSupervisorFailureReason:
+        return self._reason
+
+    @property
+    def phase(self) -> HostedProcessBootstrapPhase:
+        return self._phase

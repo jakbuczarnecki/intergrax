@@ -2,7 +2,7 @@
 
 **Status:** Active (architecture frozen — CAPABILITY-CATALOG-1)  
 **Architecture (1:1):** [`architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md`](../../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md)  
-**Last updated:** 2026-09-05
+**Last updated:** 2026-09-07
 
 ---
 
@@ -239,7 +239,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | AC-4 marketplace-not-required tests; air-gapped deployment without marketplace. |
 | **Completion criteria** | Marketplace lists capabilities via federated sources; lifecycle operations route to domain authorities only. |
 | **Depends on** | Stages 2, 5. |
-| **Maturity** | **Future product** — Agent Marketplace architecture already marks product as future. |
+| **Maturity** | **Implemented / independently verified** — typed product contracts at `intergrax/contracts/marketplace/` and read-only product layer at `intergrax/marketplace/` (`MarketplaceCapabilityListing`, `MarketplaceCapabilityCatalogSource`, `MarketplaceCatalogService`); official (`OFFICIAL`) and enterprise-private (`ENTERPRISE_PRIVATE`) marketplace sources; federation through existing `FederatedCapabilityCatalog`; commercial metadata display-only; architecture gates for Forbidden flows 1 and 3; no billing, checkout, install, or registry mutation. |
 
 ---
 
@@ -256,7 +256,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | No change to default in-process bootstrap without explicit host profile opt-in. |
 | **Completion criteria** | Published assessment + go/no-go criteria for isolation providers; roadmap item with explicit dependencies. |
 | **Depends on** | Stage 11 optional (public third-party growth). |
-| **Maturity** | **Future** — assessment stage. |
+| **Maturity** | **Implemented / independently verified** — threat model and isolation boundary frozen in [ADR-SEC-002](../../technical/adr/entries/2026-09-07/ADR-SEC-002.md); go/no-go criteria for future isolation providers; two-plane model (package loading vs runtime execution); catalog/marketplace explicitly not enforcement authority; no runtime/bootstrap change; no `execution_posture` schema until reuse threshold met. |
 
 ---
 
@@ -273,7 +273,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Runtime execution tests without billing side effects. |
 | **Completion criteria** | Metering consumer can attribute usage to source-qualified capability identity; billing subsystem remains separate. |
 | **Depends on** | Stages 2, 5; optional Stage 11 for publisher metadata richness. |
-| **Maturity** | **Future** — AC-4 notes billing not implemented. |
+| **Maturity** | **Implemented / independently verified** — typed `CapabilityUsageEvent`, explicit attribution recorder/consumer substrate, no registry prices, no billing subsystem; runtime automatic emission not wired (execution boundary lacks canonical provenance handoff). |
 
 ---
 
@@ -290,7 +290,7 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Regression gates** | Full AW acceptance suite; AC-4 E2E; Tier-3 composition gate. |
 | **Completion criteria** | Reference proof demonstrating full loop on harness with federated catalog; no forbidden flows in trace. |
 | **Depends on** | Stages 5, 8, 9, 10 (minimum). |
-| **Maturity** | **Planned** — target end-state for V1 discovery program. |
+| **Maturity** | **Implemented / independently verified** — reference proof demonstrating full loop on harness with federated catalog; no forbidden flows in trace. |
 
 ---
 
@@ -332,19 +332,34 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 
 | Stage | Name | Maturity |
 |-------|------|----------|
-| 1 | Contracts & frozen boundaries | Planned |
-| 2 | Federated catalog read model | Planned |
-| 3 | Query / filtering / candidate model | Planned |
-| 4 | Ranking | Implemented |
-| 5 | Governance integration | Implemented |
-| 6 | Skill enterprise correctness | Planned |
-| 7 | Tool/Skill catalog maturity | Planned |
-| 8 | Adaptive Unit-of-Work discovery | Implemented |
-| 9 | Autonomous Work bridge | **Implemented** |
-| 10 | Bootstrap evidence | Planned |
-| 11 | Marketplace product surface | Future |
-| 12 | Isolation / external execution | Future assessment |
-| 13 | Usage metering | Future |
-| 14 | Full autonomous worker integration | Planned |
+| 1 | Contracts & frozen boundaries | Implemented / independently verified |
+| 2 | Federated catalog read model | Implemented / independently verified |
+| 3 | Query / filtering / candidate model | Implemented / independently verified |
+| 4 | Ranking | Implemented / independently verified |
+| 5 | Governance integration | Implemented / independently verified |
+| 6 | Skill enterprise correctness | Implemented / independently verified |
+| 7 | Tool/Skill catalog maturity | Implemented / independently verified |
+| 8 | Adaptive Unit-of-Work discovery | Implemented / independently verified |
+| 9 | Autonomous Work bridge | Implemented / independently verified |
+| 10 | Bootstrap evidence | Implemented / independently verified |
+| 11 | Marketplace product surface | Implemented / independently verified |
+| 12 | Isolation / external execution | Implemented / independently verified |
+| 13 | Usage metering | Implemented / independently verified |
+| 14 | Full autonomous worker integration | Implemented / independently verified |
 
-**Architecture delivery (CAPABILITY-CATALOG-1):** canonical architecture + plan pair — **done** (this commit).
+**Capability Catalog & Discovery V1:** Stages 1–14 **independently verified**; **Program CLOSED**. See [CAPABILITY_CATALOG_V1_FINAL_AUDIT.md](../audits/CAPABILITY_CATALOG_V1_FINAL_AUDIT.md).
+
+---
+
+## Future work (post–V1 closure)
+
+**Capability Catalog V1 closure** is complete. The items below are **separate programs** — not Stages 15+ of this roadmap:
+
+| Program / surface | Relation to V1 |
+| --- | --- |
+| AW-8 Worker observability | Independent Autonomous Work program |
+| AW-9 Worker control plane | Independent Autonomous Work program |
+| AW-10 Virtual Workforce | Independent Autonomous Work program |
+| Third-party sandbox / external execution provider | Future isolation provider — assessed in Stage 12; runtime not shipped |
+| Billing / checkout / settlement | Downstream consumer of Stage 13 metering substrate |
+| Future capability types beyond Agent/Skill/Tool | Out of V1 scope — requires new program charter |

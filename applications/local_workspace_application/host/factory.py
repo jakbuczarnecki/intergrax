@@ -27,25 +27,29 @@ from intergrax.applications._shared.registry_projection import MaterializedRegis
 from intergrax.applications._shared.interaction_wiring import (
     wire_interaction_intake_service,
 )
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import (
     attach_plugin_shutdown,
-    bootstrap_application_plugins,
 )
 from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    wire_harness_host_long_running_scheduler,
 )
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
     wire_harness_task_control,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from local_workspace_application.host.lifecycle import (
     LocalWorkspaceHostLifecycle,
     apply_lkw_daemon_lifespan,
@@ -152,18 +156,17 @@ def create_local_workspace_backend_app(
     runtime.env_wiring.tool_wiring.wiring_context.extras[
         functional_evidence_wiring_extra_key()
     ] = functional_evidence_wiring
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
-    platform = bootstrap_nexus_platform(
-        nexus_loop,
+    platform = bootstrap_harness_host_platform(
+        runtime,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
     lkw_observability_plugins = build_local_workspace_observability_plugins(
         observability_export
     )
     if lkw_observability_plugins:
-        lkw_plugin_bootstrap = bootstrap_application_plugins(
+        lkw_plugin_bootstrap = bootstrap_harness_host_application_plugins(
+            runtime,
             list(lkw_observability_plugins),
-            nexus_loop=nexus_loop,
         )
         platform.shutdown_callbacks.extend(lkw_plugin_bootstrap.shutdown_callbacks)
 
@@ -174,7 +177,6 @@ def create_local_workspace_backend_app(
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
     )
-    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
     lkw_task_enricher = build_lkw_combined_task_enricher(
         env,
         default_capability=cast(str, manifest.default_capability),
@@ -224,9 +226,11 @@ def create_local_workspace_backend_app(
             if not resolved_settings.include_scheduler
             else "configured",
         )
-    scheduler_wiring = wire_long_running_scheduler(
+    scheduler_wiring = wire_harness_host_long_running_scheduler(
+        runtime,
         checkpoint_store=checkpoint_store,
-        task_runner=task_runner,
+        host_execution=host_execution,
+        task_enricher=task_enricher,
         notification_adapter=None,
         poll_interval_seconds=resolved_settings.scheduler_poll_seconds,
         enabled=resolved_settings.include_scheduler,
@@ -376,7 +380,7 @@ def create_local_workspace_backend_app(
         wire_harness_task_control(
             app,
             enabled=True,
-            task_runner=task_runner,
+            host_execution=host_execution,
             env=env,
             checkpoint_store=checkpoint_store,
             task_route_prefix=resolved_settings.task_control_route_prefix,

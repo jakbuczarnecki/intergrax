@@ -22,7 +22,14 @@ from intergrax.agents.persistence.catalog_declarative_invoker import (
 from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpointStore
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.acp_state import AcpSessionState
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel as ContractRiskLevel
@@ -177,10 +184,10 @@ async def test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume(
             use_in_memory_trace=True,
         )
 
-    nexus = resolve_harness_host_nexus_loop_legacy(runtime)
-    assert resolve_harness_host_nexus_loop_legacy(runtime)._declarative_tool_invoker is catalog_invoker  # noqa: SLF001
+    backend = runtime._internal_composition._orchestration_backend  # noqa: SLF001
+    assert backend._declarative_tool_invoker is catalog_invoker  # noqa: SLF001
 
-    await nexus.handle_task(_nexus_task(run_id=run_id, max_steps=1))
+    await backend.handle_task(_nexus_task(run_id=run_id, max_steps=1))
     checkpoint = agent_store.get_latest(run_id, "t-agent-os")
     assert checkpoint is not None
     assert _MutatingSendHandler.invoke_count == 1
@@ -189,6 +196,6 @@ async def test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume(
         for record in checkpoint.side_effect_ledger
     )
 
-    result = await nexus.handle_task(_nexus_task(run_id=run_id, max_steps=10))
+    result = await backend.handle_task(_nexus_task(run_id=run_id, max_steps=10))
     assert result.state == TaskState.COMPLETED
     assert _MutatingSendHandler.invoke_count == 1

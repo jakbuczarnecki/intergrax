@@ -106,7 +106,14 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
@@ -584,7 +591,7 @@ def _nexus_registry_agent_ids(harness: Phase5Harness) -> tuple[str, ...]:
         use_in_memory_trace=True,
         document_store=InMemoryDocumentStore(),
     )
-    return tuple(resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids())
+    return tuple(runtime.registry.list_agent_ids())
 
 
 def _assert_store_universe(harness: Phase5Harness) -> None:

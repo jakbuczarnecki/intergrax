@@ -13,6 +13,10 @@ class LLMAdapterDependencyError(RuntimeError):
     """Raised when a selected LLM provider SDK is not installed."""
 
 
+class LLMProviderNotConfiguredError(RuntimeError):
+    """Raised when LLM adapter resolution requires an explicitly selected provider."""
+
+
 class LLMAdapterRegistrationError(RuntimeError):
     """Raised when an LLM provider registration is invalid."""
 

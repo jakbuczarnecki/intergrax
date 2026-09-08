@@ -13,7 +13,6 @@ from intergrax.applications._shared.mcp_catalog_tools import mount_catalog_tools
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
@@ -28,10 +27,8 @@ async def execute_mcp_agent_task(
     intent: str | None = None,
 ) -> dict[str, object]:
     """Run one MCP agent task through canonical host task execution."""
-    task_id, _run_id = mint_intake_execution_identity()
     context = TaskContext(capability=capability, intent=intent) if intent else TaskContext(capability=capability)
     task = Task(
-        task_id=task_id,
         tenant_id=tenant_id,
         user_id=user_id,
         session_id=session_id,

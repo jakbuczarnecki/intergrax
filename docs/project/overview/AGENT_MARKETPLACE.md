@@ -1023,7 +1023,7 @@ Conservative maturity assessment verified against repository evidence (2026-08-1
 | Dependency lock producer + activation orchestration (AP-7–AP-9) | **PLANNED** |
 | Generic Tier-3 harness admin API (AP-11) | **PLANNED** |
 | LKW marketplace-style agent management UI (AP-12) | **PLANNED** |
-| Official public marketplace product | **FUTURE PRODUCT** |
+| Official public marketplace product | **IMPLEMENTED (read-only product surface)** — typed listing contracts + in-memory `MarketplaceCapabilityCatalogSource`; no public website, billing, or install UX |
 | Publisher portal, billing, reviews | **FUTURE PRODUCT** |
 
 ```mermaid
@@ -1031,7 +1031,7 @@ flowchart LR
     F["Platform foundation\nAVAILABLE TODAY"]
     A["Distribution architecture\nFROZEN"]
     I["Distribution services\nUNDER IMPLEMENTATION"]
-    P["Marketplace product\nFUTURE"]
+    P["Marketplace product\nREAD-ONLY SURFACE IMPLEMENTED"]
 
     F --> A --> I --> P
 ```

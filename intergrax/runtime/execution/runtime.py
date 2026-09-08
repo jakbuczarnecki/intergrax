@@ -13,9 +13,6 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
-    mint_attempt_id,
-    mint_execution_id,
-    mint_run_id,
 )
 from intergrax.runtime.execution.active_decision_checkpoint_persistence import (
     bind_active_decision_checkpoint_persistence,
@@ -55,6 +52,14 @@ from intergrax.runtime.execution.budget.ledger import (
     RunBudgetExecutionBudgetLedgerFactory,
 )
 from intergrax.runtime.execution.decision_lifecycle_host import DecisionLifecycleHost
+from intergrax.runtime.execution.identity_authority import (
+    BackgroundTransportIdentity,
+    RootTaskIdentity,
+    mint_background_transport_identity,
+    mint_child_execution_id,
+    mint_retry_attempt_id,
+    mint_root_execution_identity,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 RequestT = TypeVar("RequestT")
@@ -63,15 +68,6 @@ CheckpointPayloadT = TypeVar("CheckpointPayloadT")
 WorkInputT = TypeVar("WorkInputT")
 WorkOutputT = TypeVar("WorkOutputT")
 WorkResultT = TypeVar("WorkResultT")
-
-
-@dataclass(frozen=True, slots=True)
-class RootTaskIdentity:
-    """Resolved root Run and Attempt identifiers plus minted root ExecutionId."""
-
-    run_id: RunId
-    attempt_id: AttemptId
-    execution_id: ExecutionId
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,20 +90,6 @@ class RootExecutionOptions:
     attempt_id: AttemptId | None = None
     execution_id: ExecutionId | None = None
     tenant_id: str | None = None
-
-
-def mint_root_execution_identity(
-    *,
-    run_id: RunId | None = None,
-    attempt_id: AttemptId | None = None,
-    execution_id: ExecutionId | None = None,
-) -> RootTaskIdentity:
-    """Mint canonical generic root identity for one root execution invocation."""
-    return RootTaskIdentity(
-        run_id=run_id or mint_run_id(),
-        attempt_id=attempt_id or mint_attempt_id(),
-        execution_id=execution_id or mint_execution_id(),
-    )
 
 
 def resolve_root_execution_context(options: RootExecutionOptions) -> RootExecutionContext:

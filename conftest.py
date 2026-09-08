@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from testing_support.pytest_temp_root import apply_invocation_pytest_basetemp
+
 _REPO_ROOT = Path(__file__).resolve().parent
 _BUILD_DIR = _REPO_ROOT / "build"
 
@@ -16,8 +18,9 @@ GATE_HARNESS_API_KEY = "gate-test-harness-key"
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Ensure gitignored ``build/`` exists before xdist basetemp/cache setup."""
+    """Ensure gitignored ``build/`` exists and assign invocation-owned basetemp."""
     _BUILD_DIR.mkdir(parents=True, exist_ok=True)
+    apply_invocation_pytest_basetemp(config, _REPO_ROOT)
 
 
 @pytest.fixture

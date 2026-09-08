@@ -7,15 +7,11 @@ from __future__ import annotations
 
 from typing import Optional
 
-from intergrax.runtime.execution.orchestration import execute_root_task, resolve_root_task_identity
-from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.contracts.human_approver import HumanApproverEvidence
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.human.models import HumanResponseVerdict
-from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
@@ -29,16 +25,12 @@ class DebugHitlResumeService:
 
     def __init__(
         self,
-        registry: AgentRegistry,
         *,
+        host_execution: HostTaskExecutionPort,
         checkpoint_store: TaskCheckpointPersistence,
-        runtime_event_store: Optional[RuntimeEventPersistence] = None,
-        human_decision_store: HumanDecisionPersistence | None = None,
     ) -> None:
-        self._registry = registry
+        self._host_execution = host_execution
         self._checkpoint_store = checkpoint_store
-        self._runtime_event_store = runtime_event_store
-        self._human_decision_store = human_decision_store
 
     async def resume_with_human_response(
         self,
@@ -86,22 +78,10 @@ class DebugHitlResumeService:
         task.sync_metadata()
 
         run_id, attempt_id = execution_identity_from_checkpoint(checkpoint)
-
-        loop = NexusLoop(
-            self._registry,
-            checkpoint_store=self._checkpoint_store,
-            runtime_event_store=self._runtime_event_store,
-            human_decision_store=self._human_decision_store,
-        )
-        identity = resolve_root_task_identity(
+        return await self._host_execution.execute(
+            task,
             run_id=run_id,
             attempt_id=attempt_id,
-            resume_checkpoint=checkpoint,
-        )
-        return await execute_root_task(
-            task,
-            nexus_loop=loop,
-            identity=identity,
             resume_checkpoint=checkpoint,
         )
 

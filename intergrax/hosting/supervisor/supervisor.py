@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
@@ -21,7 +22,13 @@ from intergrax.hosting.control import HostedApplicationControlCoordinator
 from intergrax.hosting.engine.definition import HostedApplicationDefinition
 from intergrax.hosting.engine.diagnostics import HostedApplicationEngineTerminalResult
 from intergrax.hosting.engine.engine import HostedApplicationEngine
-from intergrax.hosting.errors import HostedApplicationSupervisorError
+from intergrax.hosting.errors import (
+  HostedApplicationSupervisorError,
+  HostedApplicationSupervisorFailureReason,
+)
+from intergrax.hosting.supervisor.failure_projection import (
+  supervisor_pre_engine_failure_to_hosted_event,
+)
 from intergrax.hosting.supervisor.classification import (
   HostedApplicationExitClassifier,
   HostedApplicationExitKind,
@@ -36,6 +43,8 @@ from intergrax.hosting.supervisor.restart import (
   SystemRandomSource,
 )
 from intergrax.hosting.shutdown import MonotonicClock, SystemMonotonicClock
+
+_LOGGER = logging.getLogger(__name__)
 
 InstanceIdGenerator = Callable[[], str]
 
@@ -152,6 +161,10 @@ class HostedApplicationSupervisor:
           instance_id=instance_id,
           profile_digest=self.definition.profile_digest,
           occurred_at=self.clock.now(),
+        )
+        await self._publish_pre_engine_failure_event_safe(
+          instance_id=instance_id,
+          failure=exc,
         )
         attempt_records.append(
           HostedApplicationSupervisorAttemptRecord(
@@ -351,9 +364,19 @@ class HostedApplicationSupervisor:
       else:
         engine = produced
     except Exception as exc:
-      raise HostedApplicationSupervisorError("engine factory failed") from exc
+      reason = HostedApplicationSupervisorFailureReason.ENGINE_FACTORY_FAILED
+      raise HostedApplicationSupervisorError(
+        "engine factory failed",
+        reason=reason,
+        phase=reason.phase,
+      ) from exc
     if not isinstance(engine, HostedApplicationEngine):
-      raise HostedApplicationSupervisorError("engine factory returned invalid type")
+      reason = HostedApplicationSupervisorFailureReason.ENGINE_FACTORY_INVALID_RESULT
+      raise HostedApplicationSupervisorError(
+        "engine factory returned invalid type",
+        reason=reason,
+        phase=reason.phase,
+      )
     return engine
 
   def _verify_engine_contract(
@@ -362,13 +385,33 @@ class HostedApplicationSupervisor:
     launch: HostedApplicationSupervisorLaunchContext,
   ) -> None:
     if engine.instance_id != launch.instance_id:
-      raise HostedApplicationSupervisorError("engine instance_id mismatch")
+      reason = HostedApplicationSupervisorFailureReason.ENGINE_INSTANCE_ID_MISMATCH
+      raise HostedApplicationSupervisorError(
+        "engine instance_id mismatch",
+        reason=reason,
+        phase=reason.phase,
+      )
     if engine.definition.profile_digest != self.definition.profile_digest:
-      raise HostedApplicationSupervisorError("engine profile_digest mismatch")
+      reason = HostedApplicationSupervisorFailureReason.ENGINE_PROFILE_DIGEST_MISMATCH
+      raise HostedApplicationSupervisorError(
+        "engine profile_digest mismatch",
+        reason=reason,
+        phase=reason.phase,
+      )
     if engine.definition.definition_digest != self.definition.definition_digest:
-      raise HostedApplicationSupervisorError("engine definition_digest mismatch")
+      reason = HostedApplicationSupervisorFailureReason.ENGINE_DEFINITION_DIGEST_MISMATCH
+      raise HostedApplicationSupervisorError(
+        "engine definition_digest mismatch",
+        reason=reason,
+        phase=reason.phase,
+      )
     if engine.definition.application_id != self.definition.application_id:
-      raise HostedApplicationSupervisorError("engine application_id mismatch")
+      reason = HostedApplicationSupervisorFailureReason.ENGINE_APPLICATION_ID_MISMATCH
+      raise HostedApplicationSupervisorError(
+        "engine application_id mismatch",
+        reason=reason,
+        phase=reason.phase,
+      )
 
   def _verify_engine_cleanup(self, engine: HostedApplicationEngine) -> tuple[bool, str]:
     diagnostics = engine.diagnostics_snapshot()
@@ -377,6 +420,31 @@ class HostedApplicationSupervisor:
     if not diagnostics.context_closed:
       return False, "prior_engine_context_not_closed"
     return True, ""
+
+  async def _publish_pre_engine_failure_event_safe(
+    self,
+    *,
+    instance_id: str,
+    failure: HostedApplicationSupervisorError,
+  ) -> None:
+    try:
+      event = supervisor_pre_engine_failure_to_hosted_event(
+        application_id=self.definition.application_id,
+        instance_id=instance_id,
+        failure=failure,
+        occurred_at=self.clock.now(),
+      )
+      await self.event_publisher.publish(event)
+    except Exception:
+      _LOGGER.error(
+        "Failed to publish hosted application pre-engine failure event",
+        extra={
+          "application_id": self.definition.application_id,
+          "instance_id": instance_id,
+          "phase": failure.phase.value,
+          "reason_code": failure.reason.value,
+        },
+      )
 
   async def _publish_restart_event_safe(
     self,

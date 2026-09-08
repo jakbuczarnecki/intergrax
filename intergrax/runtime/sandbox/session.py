@@ -95,6 +95,8 @@ class SandboxSession:
             isolation_tier="local",
             provider_id=f"local:{self.session_id}",
             network_egress_deny_enforced="browser_fetch" not in self._allowed_operations,
+            network_egress_allowlist_enforced=None,
+            enforced_network_hosts=None,
         )
 
     @property

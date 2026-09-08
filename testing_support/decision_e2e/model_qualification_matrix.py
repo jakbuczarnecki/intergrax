@@ -92,6 +92,8 @@ def _classify_attempt(
             return ModelQualificationFailureClass.RESOURCE_INSUFFICIENT
         if "configuration" in reason or "credential" in reason or "adapter unavailable" in reason:
             return ModelQualificationFailureClass.CONFIGURATION_BLOCKED
+        if "provider lacks strict tool argument conformance" in reason:
+            return ModelQualificationFailureClass.CONFIGURATION_BLOCKED
         return ModelQualificationFailureClass.PROVIDER_FAILURE
     if evidence.decision_path_exercised is False:
         return ModelQualificationFailureClass.PLATFORM_DEFECT

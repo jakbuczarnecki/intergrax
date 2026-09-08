@@ -56,7 +56,7 @@ Delivery rule:
 | AW-4 | Work intake and proactive goal evaluation | **IN PROGRESS** (AW-4A DONE, AW-4B DONE, AW-4C PARTIALLY_COMPLETE) |
 | AW-5 | Worker → execution composition and budgets | **DONE** (AW-5A DONE, AW-5B DONE) |
 | AW-6 | Recovery Controller and obstacle taxonomy | **DONE** (AW-6A DONE, AW-6B DONE) |
-| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A DONE, AW-7B-GATE READY FOR INDEPENDENT AUDIT, AW-7B NOT STARTED) |
+| AW-7 | Adaptive capability acquisition | **IN PROGRESS** (AW-7A DONE, AW-7B-GATE PASSED / independently verified, AW-7B PASSED / independently verified) |
 | AW-8 | Worker observability and evidence correlation | NOT STARTED |
 | AW-9 | Worker control plane | NOT STARTED |
 | AW-10 | Virtual Workforce reference application | NOT STARTED |
@@ -290,9 +290,9 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7 |
 | **Priority** | P0 |
-| **Status** | **IN PROGRESS** (AW-7A **DONE**; AW-7B-GATE **READY FOR INDEPENDENT AUDIT**) |
+| **Status** | **IN PROGRESS** (AW-7A **DONE**; AW-7B-GATE **PASSED / independently verified**; AW-7B **PASSED / independently verified**) |
 | **Purpose** | Capability discovery/acquisition policy and A0–A4 classification |
-| **Next step** | AW-7B-GATE independent audit acceptance |
+| **Next step** | AW-7C |
 
 | Field | Value |
 |---|---|
@@ -320,29 +320,33 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7B-GATE |
 | **Priority** | P0 |
-| **Status** | **READY FOR INDEPENDENT AUDIT** |
+| **Status** | **PASSED / independently verified** |
 | **Purpose** | CodeCraft safety prerequisite qualification (canonical CodeCraft/Sandbox/Governance reuse, anti-downgrade, identity/HITL, substrate coherence) |
 | **Dependencies** | AW-7A **DONE** |
+| **Independent qualification SHA** | `2f8bc019a11de01f21498f952343e70f0cf3e369` |
 | **Acceptance** | anti-downgrade contract PASS; hosted substrate abstraction PASS; identity/HITL regressions PASS; docs = as-built; independent audit owns PASS |
-| **Next step** | Independent audit acceptance → unblock AW-7B |
+| **Next step** | AW-7B |
 
 | Field | Value |
 |---|---|
 | **ID** | AW-7B |
 | **Priority** | P0 |
-| **Status** | **NOT STARTED** (BLOCKED UNTIL GATE ACCEPTED) |
+| **Status** | **PASSED / independently verified** |
 | **Purpose** | A1 ephemeral generated capability path |
-| **Dependencies** | AW-7A **DONE**; AW-7B-GATE **PASSED** (independent audit) |
-| **Acceptance** | generated parser/helper static-gated, strongly sandboxed, tested, verified, ephemeral, evidence-linked |
+| **Dependencies** | AW-7A **DONE**; AW-7B-GATE **PASSED / independently verified** |
+| **Implementation SHA** | `6a9286846f27b386473b93f223bceecc900bf6fa` |
+| **Independent qualification SHA** | `95e74a42af34fd66f83f5c78374e0efdb84230b9` |
+| **As-built** | `WorkerEphemeralCapabilityExecutionService` + `WorkerEphemeralCapabilityExecutionPort` in AW core; `CodeCraftEphemeralCapabilityExecutionAdapter` in `intergrax/runtime/codecraft/`; contracts in `intergrax/contracts/autonomous_work/ephemeral_capability_execution.py`; SUCCEEDED returns a live craft-scoped ephemeral capability; canonical CodeCraft dispose remains lifecycle cleanup authority |
+| **Acceptance** | generated parser/helper static-gated, strongly sandboxed, tested, verified, ephemeral, evidence-linked; no ToolRegistry mutation; decision ≠ execution preserved |
 | **Next step** | AW-7C |
 
 | Field | Value |
 |---|---|
 | **ID** | AW-7C |
 | **Priority** | P0/P1 |
-| **Status** | NOT STARTED |
+| **Status** | BLOCKED BY PREREQUISITE |
 | **Purpose** | A2 scoped adaptive integration path |
-| **Dependencies** | enforceable egress + scoped secret brokering |
+| **Dependencies** | enforceable egress + scoped secret brokering — see [`AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md`](../qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md) |
 | **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls |
 | **Next step** | AW-7D |
 

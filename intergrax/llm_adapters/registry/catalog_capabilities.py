@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Dict, List, Optional, Union
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -49,6 +50,9 @@ class CatalogCapabilityAdapter(LLMAdapter):
 
     def supports_tools(self) -> bool:
         return self._record.supports_tools and self._inner.supports_tools()
+
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return self._inner.supports_strict_tool_argument_conformance()
 
     def supports_structured_output(self) -> bool:
         return self._record.supports_structured_output or self._inner.supports_structured_output()
@@ -95,7 +99,7 @@ class CatalogCapabilityAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -104,7 +108,7 @@ class CatalogCapabilityAdapter(LLMAdapter):
     ) -> LLMAdapterResponse:
         return self._inner.generate_with_tools(
             messages,
-            tools_schema,
+            tools,
             temperature=temperature,
             max_tokens=max_tokens,
             tool_choice=tool_choice,

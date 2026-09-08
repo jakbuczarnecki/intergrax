@@ -160,13 +160,13 @@ class _TwoRoundPlanner:
             )
             return NativePlannerRound(
                 response=LLMAdapterResponse(content="round-1", tool_calls=(business_call,)),
-                business_tool_calls=(business_call,),
+                materialized_tool_calls=(business_call,),
                 tool_plan=ToolCallPlan(calls=[]),
                 action_context=None,
             )
         return NativePlannerRound(
             response=LLMAdapterResponse(content="done", tool_calls=()),
-            business_tool_calls=(),
+            materialized_tool_calls=(),
             tool_plan=ToolCallPlan(calls=[]),
             action_context=None,
         )
@@ -508,7 +508,8 @@ def test_three_consecutive_redeliveries_keep_run_and_attempt() -> None:
         transport_ref=transport,
         identity_persistence=persistence,
     )
-    first_run = persistence.resolve_or_create(transport)
+    first_run = persistence.load(transport)
+    assert first_run is not None
     assert second.run_id == first_run.run_id
     assert second.attempt_id == first_run.attempt_id
 

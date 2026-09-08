@@ -9,7 +9,11 @@ from governed_contractor_application.host.factory import create_governed_contrac
 from governed_contractor_application.tests.governed_contractor_ac3_projection import (
     build_governed_contractor_test_registry_projection,
 )
-from testing_support.builder import MeteringFakeLLMAdapter
+from testing_support.host_fixture_wiring import (
+    install_diagnostic_cursor_secret,
+    install_host_llm_stub,
+    reference_host_document_store,
+)
 
 pytestmark = [pytest.mark.unit]
 
@@ -18,39 +22,36 @@ _PREFIX = "/v1/governed_contractor"
 
 @pytest.fixture
 def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Product host resolves env LLM (Ollama); unit smoke must stay offline."""
-    adapter = MeteringFakeLLMAdapter()
-
-    def _resolve(
-        env: object,
-        agent_override: object | None = None,
-        **_: object,
-    ) -> object:
-        del env
-        if agent_override is not None:
-            return agent_override
-        return adapter
-
-    monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
-        _resolve,
-    )
+    install_host_llm_stub(monkeypatch)
 
 
-def test_governed_contractor_backend_health():
+@pytest.fixture
+def _diagnostic_cursor_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    install_diagnostic_cursor_secret(monkeypatch)
+
+
+def test_governed_contractor_backend_health(
+    _stub_host_llm: None,
+    _diagnostic_cursor_secret: None,
+):
     client = TestClient(
         create_governed_contractor_backend_app(
             registry_projection=build_governed_contractor_test_registry_projection(),
+            document_store=reference_host_document_store(),
         )
     )
     response = client.get("/health")
     assert response.status_code == 200
 
 
-def test_governed_contractor_backend_lists_agents():
+def test_governed_contractor_backend_lists_agents(
+    _stub_host_llm: None,
+    _diagnostic_cursor_secret: None,
+):
     client = TestClient(
         create_governed_contractor_backend_app(
             registry_projection=build_governed_contractor_test_registry_projection(),
+            document_store=reference_host_document_store(),
         )
     )
     response = client.get(f"{_PREFIX}/agents")
@@ -58,10 +59,14 @@ def test_governed_contractor_backend_lists_agents():
     assert "agents" in response.json()
 
 
-def test_governed_contractor_backend_run(_stub_host_llm: None):
+def test_governed_contractor_backend_run(
+    _stub_host_llm: None,
+    _diagnostic_cursor_secret: None,
+):
     client = TestClient(
         create_governed_contractor_backend_app(
             registry_projection=build_governed_contractor_test_registry_projection(),
+            document_store=reference_host_document_store(),
         )
     )
     response = client.post(

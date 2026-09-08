@@ -161,6 +161,25 @@ async def run_ai_incident_live_qualification(
                 evaluation_passed=False,
             )
 
+        if not adapter.supports_strict_tool_argument_conformance():
+            from testing_support.strict_tool_contract_validator import (
+                STRICT_CAPABILITY_BLOCK_REASON,
+            )
+
+            return ScenarioQualificationAttempt(
+                evidence=_scenario_evidence_base(
+                    scenario_id=scenario_id,
+                    invocation=invocation,
+                    binding=binding,
+                    executed=False,
+                    decision_path_exercised=None,
+                    used_mock_provider=False,
+                    block_reason=STRICT_CAPABILITY_BLOCK_REASON,
+                ),
+                evaluation_passed=False,
+                error=STRICT_CAPABILITY_BLOCK_REASON,
+            )
+
         if not runtime_modules:
             return ScenarioQualificationAttempt(
                 evidence=_scenario_evidence_base(

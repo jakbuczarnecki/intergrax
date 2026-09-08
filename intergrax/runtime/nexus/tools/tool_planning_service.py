@@ -8,16 +8,31 @@ from __future__ import annotations
 import copy
 import json
 from collections.abc import Mapping, Sequence
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.native_tool_choice import (
+    NativeToolChoice,
+    project_native_tool_choice_for_provider,
+)
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+    assert_strict_tool_argument_conformance_supported,
+)
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash, to_openai_tools
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.registry.runtime import RegisteredTool
+from intergrax.runtime.nexus.tools.atomic_planner_round import (
+    AtomicPlannerRoundError,
+    build_atomic_planner_round_tool_definition,
+    materialize_atomic_round_to_tool_plan,
+    mint_materialized_tool_calls_from_plan,
+    resolve_atomic_planner_round_calls,
+)
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     NATIVE_PLANNER_PROTOCOL_NONE,
     NativePlannerProtocolConfig,
@@ -49,7 +64,7 @@ def build_tool_planning_schema(
     registry: ToolRegistry,
     *,
     allowed_tool_ids: Sequence[str] | None = None,
-) -> List[Dict[str, Any]]:
+) -> List[Dict[str, object]]:
     """Export registered tools in deterministic lexicographic tool_id order."""
     registered = _registered_tools_for_planning(registry, allowed_tool_ids)
     ordered = sorted(registered, key=lambda item: item.contract.tool_id)
@@ -79,12 +94,14 @@ def _expected_ordered_tool_ids(
 
 
 def _validate_prepared_tools_schema(
-    prepared_tools_schema: Sequence[Mapping[str, Any]],
+    prepared_tools_schema: Sequence[Mapping[str, object]],
     *,
     expected_tool_ids: frozenset[str],
     expected_ordered_tool_ids: tuple[str, ...],
-) -> List[Dict[str, Any]]:
-    materialized: List[Dict[str, Any]] = [copy.deepcopy(dict(entry)) for entry in prepared_tools_schema]
+) -> List[Dict[str, object]]:
+    materialized: List[Dict[str, object]] = [
+        copy.deepcopy(dict(entry)) for entry in prepared_tools_schema
+    ]
     observed: list[str] = []
     for entry in materialized:
         function = entry.get("function")
@@ -115,7 +132,7 @@ def _build_openai_tools_schema(
     registry: ToolRegistry,
     *,
     allowed_tool_ids: Sequence[str] | None = None,
-) -> List[Dict[str, Any]]:
+) -> List[Dict[str, object]]:
     return build_tool_planning_schema(registry, allowed_tool_ids=allowed_tool_ids)
 
 
@@ -136,7 +153,7 @@ def _build_non_native_planner_system_content(
     *,
     planner_instructions: str,
     investigation_instructions: str,
-    tools_desc: list[dict[str, Any]],
+    tools_desc: list[dict[str, object]],
 ) -> str:
     sections: list[str] = [planner_instructions]
     policy = investigation_instructions.strip()
@@ -190,7 +207,7 @@ class ToolPlanningService:
         input_data: Union[str, List[ChatMessage]],
         *,
         context: Optional[str] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         allowed_tool_ids: Sequence[str] | None = None,
         run_id: Optional[str] = None,
     ) -> ToolPlanDecision:
@@ -320,8 +337,8 @@ class ToolPlanningService:
         *,
         allowed_tool_ids: Sequence[str] | None = None,
         run_id: Optional[str] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
-        prepared_tools_schema: Sequence[Mapping[str, Any]] | None = None,
+        tool_choice: NativeToolChoice | None = None,
+        prepared_tools_schema: Sequence[Mapping[str, object]] | None = None,
         prepared_tools_schema_hash: str | None = None,
         prepared_messages_hash: str | None = None,
         protocol_config: NativePlannerProtocolConfig | None = None,
@@ -331,12 +348,12 @@ class ToolPlanningService:
             raise ValueError("plan_native_round requires an LLM adapter with native tool support")
 
         allowed = frozenset(allowed_tool_ids) if allowed_tool_ids is not None else None
+        expected_tool_ids = _expected_tool_ids(self.tools, allowed_tool_ids)
         if prepared_tools_schema is not None:
-            expected = _expected_tool_ids(self.tools, allowed_tool_ids)
             expected_ordered = _expected_ordered_tool_ids(self.tools, allowed_tool_ids)
             tools_schema = _validate_prepared_tools_schema(
                 prepared_tools_schema,
-                expected_tool_ids=expected,
+                expected_tool_ids=expected_tool_ids,
                 expected_ordered_tool_ids=expected_ordered,
             )
             if prepared_tools_schema_hash is not None:
@@ -353,9 +370,14 @@ class ToolPlanningService:
             if protocol_config is not None
             else NATIVE_PLANNER_PROTOCOL_NONE
         )
-        provider_tools_schema = tools_schema
-        if effective_protocol.protocol_active:
-            provider_tools_schema = append_planner_action_context_schema(tools_schema)
+        provider_tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]]
+        if effective_protocol.atomic_round_active:
+            round_definition = build_atomic_planner_round_tool_definition(tools_schema)
+            provider_tools = (round_definition,)
+        elif effective_protocol.protocol_active:
+            provider_tools = append_planner_action_context_schema(tools_schema)
+        else:
+            provider_tools = tools_schema
         pruned = canonical_native_planner_messages(messages)
         if prepared_messages_hash is not None:
             computed_messages_hash = compute_model_facing_messages_hash(pruned)
@@ -365,20 +387,59 @@ class ToolPlanningService:
             pruned,
             investigation_instructions=self.cfg.investigation_instructions,
         )
-        effective_tool_choice = tool_choice if tool_choice is not None else "auto"
+        effective_tool_choice: NativeToolChoice = (
+            tool_choice if tool_choice is not None else "auto"
+        )
+        projected_tool_choice = project_native_tool_choice_for_provider(
+            effective_tool_choice,
+            provider=self.llm._provider_slug(),
+        )
 
         _sync_routing_before_tool_planner_llm(
             self._routing_runtime_config,
             run_id=run_id,
         )
+        assert_strict_tool_argument_conformance_supported(
+            self.llm,
+            provider_tools,
+        )
         result = self.llm.generate_with_tools(
             provider_messages,
-            provider_tools_schema,
+            provider_tools,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_answer_tokens,
-            tool_choice=effective_tool_choice,
+            tool_choice=projected_tool_choice,
             run_id=run_id,
         )
+
+        if effective_protocol.atomic_round_active:
+            if not result.tool_calls:
+                return NativePlannerRound(
+                    response=result,
+                    tool_plan=ToolCallPlan(calls=[]),
+                    action_context=None,
+                    materialized_tool_calls=(),
+                )
+            try:
+                decision = resolve_atomic_planner_round_calls(
+                    result.tool_calls,
+                    protocol_config=effective_protocol,
+                    admitted_tool_ids=expected_tool_ids,
+                )
+            except AtomicPlannerRoundError as exc:
+                raise ValueError(str(exc)) from exc
+            tool_plan = materialize_atomic_round_to_tool_plan(
+                decision,
+                self.tools,
+                allowed_tool_ids=allowed,
+            )
+            materialized_tool_calls = mint_materialized_tool_calls_from_plan(tool_plan)
+            return NativePlannerRound(
+                response=result,
+                tool_plan=tool_plan,
+                action_context=decision.action_context,
+                materialized_tool_calls=materialized_tool_calls,
+            )
 
         action_context, business_tool_calls = resolve_native_planner_protocol(
             result.tool_calls,
@@ -408,7 +469,7 @@ class ToolPlanningService:
 
         return NativePlannerRound(
             response=result,
-            business_tool_calls=business_tool_calls,
             tool_plan=ToolCallPlan(calls=calls),
             action_context=action_context,
+            materialized_tool_calls=business_tool_calls,
         )

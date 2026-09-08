@@ -5,11 +5,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.execution_identity import AttemptId, RunId
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskResult
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+TaskEnricher = Callable[[Task], Task]
 
 
 @runtime_checkable
@@ -20,11 +23,36 @@ class TaskExecutor(Protocol):
         ...
 
 
-class NexusLoopTaskExecutor:
-    """Execute tasks through canonical root execution."""
+class HostTaskExecutionExecutor:
+    """Execute interaction-intake tasks through canonical host task execution."""
 
-    def __init__(self, nexus_loop: NexusLoop) -> None:
-        self._task_runner = UnifiedTaskRunner(nexus_loop)
+    def __init__(
+        self,
+        host_execution: HostTaskExecutionPort,
+        *,
+        task_enricher: TaskEnricher | None = None,
+    ) -> None:
+        self._host_execution = host_execution
+        self._task_enricher = task_enricher
 
-    async def execute(self, task: Task) -> TaskResult:
-        return await self._task_runner.run_task(task)
+    @property
+    def host_execution(self) -> HostTaskExecutionPort:
+        return self._host_execution
+
+    async def execute(
+        self,
+        task: Task,
+        *,
+        run_id: RunId | None = None,
+        attempt_id: AttemptId | None = None,
+    ) -> TaskResult:
+        if self._task_enricher is not None:
+            task = self._task_enricher(task)
+        return await self._host_execution.execute(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+        )
+
+
+__all__ = ["HostTaskExecutionExecutor", "TaskEnricher", "TaskExecutor"]

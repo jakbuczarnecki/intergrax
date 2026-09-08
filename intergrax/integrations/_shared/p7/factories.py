@@ -874,11 +874,9 @@ def create_e2b_sandbox_host(
     client_factory: Optional[Callable[[], Any]] = None,
     **config_overrides: object,
 ) -> SandboxHostBackend:
-    return _sandbox_host_factory(
-        env_prefix="INTERGRAX_E2B",
-        provider="e2b",
-        default_url="https://api.e2b.dev",
-        health_path="/health",
+    from intergrax.integrations.providers.sandbox_host.e2b.factory import create_e2b_sandbox_host_backend
+
+    return create_e2b_sandbox_host_backend(
         sandbox_host=sandbox_host,
         client=client,
         client_factory=client_factory,

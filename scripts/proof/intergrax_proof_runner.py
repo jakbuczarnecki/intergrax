@@ -13,6 +13,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from collections.abc import Mapping
 from typing import Callable
 
 from scripts.proof.intergrax_proof_contracts import (
@@ -51,6 +52,7 @@ from scripts.proof.intergrax_platform_proof_execution import (
     proof_run_artifact_directory,
     suite_run_artifact_directory,
 )
+from scripts.proof.intergrax_proof_environment import resolve_proof_environment
 from scripts.proof.intergrax_proof_manifest import (
     ManifestLoadError,
     expanded_profiles,
@@ -162,8 +164,9 @@ def resolve_proof_selection(
     return narrowed
 
 
-def _env_present(name: str) -> bool:
-    return bool(os.environ.get(name, "").strip())
+def _env_present(name: str, *, environment: Mapping[str, str] | None = None) -> bool:
+    source = environment if environment is not None else os.environ
+    return bool(source.get(name, "").strip())
 
 
 def _docker_available() -> bool:
@@ -176,12 +179,14 @@ def _command_available(name: str) -> bool:
 
 def evaluate_environment(
     entry: ProofManifestEntry,
+    *,
+    environment: Mapping[str, str] | None = None,
 ) -> tuple[tuple[EnvRequirementResult, ...], bool]:
     results: list[EnvRequirementResult] = []
     all_satisfied = True
     for requirement in entry.environment_requirements:
         if requirement.kind == EnvRequirementKind.ENV_PRESENT:
-            satisfied = _env_present(requirement.name)
+            satisfied = _env_present(requirement.name, environment=environment)
         elif requirement.kind == EnvRequirementKind.COMMAND_AVAILABLE:
             satisfied = _command_available(requirement.name)
         elif requirement.kind == EnvRequirementKind.DOCKER_AVAILABLE:
@@ -225,11 +230,12 @@ def execute_proof(
     execution_spec: ProofExecutionSpec | None = None,
     proof_artifact_directory: Path | None = None,
     git_commit_sha: str = "unknown",
+    environment: Mapping[str, str] | None = None,
     subprocess_runner: SubprocessRunner = subprocess.run,
 ) -> ProofRunResult:
     command = [entry.command.executable, *entry.command.argv]
     started = datetime.now(UTC)
-    env = os.environ.copy()
+    env = dict(environment if environment is not None else os.environ)
     if proof_artifact_directory is not None:
         proof_artifact_directory.mkdir(parents=True, exist_ok=True)
         env[INTERGRAX_PROOF_ARTIFACT_DIR_ENV] = str(proof_artifact_directory.resolve())
@@ -549,6 +555,7 @@ def run_suite(
         platform_family=platform_family,
         proof_id=config.proof_id,
     )
+    base_environment = dict(os.environ)
     results: list[ProofRunResult] = []
 
     for entry in selected:
@@ -575,7 +582,18 @@ def run_suite(
             )
             continue
 
-        env_results, env_ok = evaluate_environment(entry)
+        execution_spec = execution_specs.get(entry.proof_id)
+        proof_package_dir = config.repo_root
+        if execution_spec is not None and execution_spec.package_root is not None:
+            proof_package_dir = execution_spec.package_root
+        resolved_proof_environment = resolve_proof_environment(
+            proof_package_dir=proof_package_dir,
+            repository_root=config.repo_root,
+            base_environment=base_environment,
+        )
+        proof_env = resolved_proof_environment.environment
+
+        env_results, env_ok = evaluate_environment(entry, environment=proof_env)
         if not env_ok:
             results.append(
                 ProofRunResult(
@@ -596,9 +614,10 @@ def run_suite(
         child_result = execute_proof(
             entry,
             repo_root=config.repo_root,
-            execution_spec=execution_specs.get(entry.proof_id),
+            execution_spec=execution_spec,
             proof_artifact_directory=proof_artifact_dir,
             git_commit_sha=git.commit_sha,
+            environment=proof_env,
             subprocess_runner=subprocess_runner,
         )
         child_result = child_result.model_copy(

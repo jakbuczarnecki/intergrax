@@ -9,7 +9,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from intergrax.applications._shared.host_queue_execution_wiring import HostQueueExecutionDependencies
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.contracts.execution_identity import (
     mint_execution_id,
     require_active_execution_id,
@@ -93,7 +100,7 @@ def _build_worker_handler(monkeypatch: pytest.MonkeyPatch, projection: object):
             ),
         ),
         patch(
-            "local_workspace_application.host.background_worker_factory.create_kafka_worker",
+            "local_workspace_application.host.background_worker_factory.create_default_background_worker",
             return_value=MagicMock(),
         ),
     ):
@@ -372,7 +379,7 @@ async def test_background_index_does_not_root_call_nexus_handle_task(
 ) -> None:
     projection = _activated_projection(monkeypatch)
     wiring, handler = _build_worker_handler(monkeypatch, projection)
-    resolve_harness_host_nexus_loop_legacy(wiring.runtime).handle_task = AsyncMock()  # type: ignore[method-assign]
+    wiring.runtime._internal_composition._orchestration_backend.handle_task  # noqa: SLF001 = AsyncMock()  # type: ignore[method-assign]
     job = _sample_job()
     identity = _bootstrap_identity(tenant_id=job.tenant_id, transport_task_id="transport-no-nexus")
 
@@ -397,7 +404,7 @@ async def test_background_index_does_not_root_call_nexus_handle_task(
         )
 
     assert result.success is True
-    resolve_harness_host_nexus_loop_legacy(wiring.runtime).handle_task.assert_not_called()
+    wiring.runtime._internal_composition._orchestration_backend.handle_task  # noqa: SLF001.assert_not_called()
 
 
 def test_background_index_capability_is_agentic() -> None:

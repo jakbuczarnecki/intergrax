@@ -258,7 +258,9 @@ def test_execution_request_has_no_strategy_mode_or_executor_fields() -> None:
     public_fields = {field.name for field in fields(ExecutionRequest)}
 
     assert public_fields.isdisjoint(_FORBIDDEN_PUBLIC_FIELD_NAMES)
-    assert public_fields == frozenset({"input", "output_type", "capabilities"})
+    assert public_fields == frozenset(
+        {"input", "output_type", "capabilities", "inference_profile_id"}
+    )
 
 
 def test_package_root_does_not_export_strategy_symbols() -> None:

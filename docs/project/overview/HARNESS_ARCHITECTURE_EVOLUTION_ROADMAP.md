@@ -1387,6 +1387,8 @@ Representative inference, agentic, orchestration, background, delegated, pause/r
 
 # 43. P1 — Composition, inspection, credentials, sandbox, health
 
+**P1 PROGRAM STATUS: CLOSED** (closeout evidence: [`HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md`](../maintainers/plans/HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md) §6, HEAD `376c2086fa82107e08e95898332a5850aa9a1e71`)
+
 1. Full ProfileResolution layering and provenance.
 2. Effective profile diff/versioning.
 3. Capability dependency validation.
@@ -1398,6 +1400,10 @@ Representative inference, agentic, orchestration, background, delegated, pause/r
 9. Context provider lifecycle/provenance hardening.
 10. Skill version/provenance bridge hardening.
 11. Governance permission presets.
+
+### P1 exit gate
+
+Profile resolution, revision pinning, capability validation, inspection/health projections, atomic activation, credential references, sandbox narrowing, context-provider lifecycle/provenance, skill version binding, and governance presets are evidenced on `development` with bounded proof suites. Deferred items documented per initiative are non-blocking for P1 runtime invariants.
 
 ---
 

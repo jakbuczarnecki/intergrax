@@ -311,17 +311,19 @@ async def test_d6_checkpoint_resume_preserves_execution_identity(monkeypatch: py
 
     captured: dict[str, object] = {}
 
-    async def _fake_handle_task(
-        _self: object,
+    async def _fake_execute(
         task: Task,
         *,
-        run_id: str,
+        run_id: str | None = None,
         attempt_id: str | None = None,
+        execution_id: str | None = None,
+        resume_checkpoint: TaskCheckpoint | None = None,
+        restore_existing_execution: bool = False,
     ) -> TaskResult:
         captured["run_id"] = run_id
         captured["attempt_id"] = attempt_id
         captured["task_id"] = task.task_id
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(task_id=task.task_id, run_id=run_id or RUN_ID, state=TaskState.COMPLETED)
 
     class _FakeCheckpointStore:
         def get_by_token(self, task_id: str, tenant_id: str, resume_token: str) -> TaskCheckpoint | None:
@@ -329,13 +331,11 @@ async def test_d6_checkpoint_resume_preserves_execution_identity(monkeypatch: py
                 return checkpoint
             return None
 
+    host_execution = MagicMock()
+    host_execution.execute = AsyncMock(side_effect=_fake_execute)
     service = DebugHitlResumeService(
-        AgentRegistry(),
+        host_execution=host_execution,
         checkpoint_store=_FakeCheckpointStore(),
-    )
-    monkeypatch.setattr(
-        "intergrax.debug.hitl_service.NexusLoop.handle_task",
-        _fake_handle_task,
     )
 
     await service.resume_with_human_response(

@@ -7,9 +7,15 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.runtime.sandbox.network_egress import (
+    NetworkEgressAllowlist,
+    NetworkEgressHost,
+    NetworkEgressScopeError,
+    canonicalize_network_egress_allowlist,
+)
 
 CraftMode = Literal["disabled", "dry_run", "assist_only", "supervised", "autonomous"]
 IsolationTier = Literal["local", "container", "cloud"]
@@ -46,11 +52,32 @@ class CodeCraftProfile(BaseModel):
     require_tests: bool = False
     test_command_template: str = "pytest {path}"
     network_egress: NetworkEgress = "deny"
+    network_egress_allowlist: tuple[NetworkEgressHost, ...] = ()
     promotion_schema_ref: str | None = None
     codegen_llm_profile_ref: str | None = None
     codegen_llm_profile: LLMProfile | None = None
     require_hitl_before_exec: bool = False
     security_scan_before_exec: bool = False
+
+    @field_validator("network_egress_allowlist", mode="before")
+    @classmethod
+    def _canonicalize_network_egress_allowlist(cls, value: object) -> tuple[NetworkEgressHost, ...]:
+        try:
+            return canonicalize_network_egress_allowlist(value if value is not None else ()).hosts
+        except NetworkEgressScopeError as exc:
+            raise ValueError(str(exc)) from exc
+
+    @model_validator(mode="after")
+    def _validate_network_egress_invariants(self) -> CodeCraftProfile:
+        if self.network_egress == "deny" and self.network_egress_allowlist:
+            raise ValueError("network_egress=deny cannot include network_egress_allowlist")
+        if self.network_egress == "allowlist" and not self.network_egress_allowlist:
+            raise ValueError("network_egress=allowlist requires non-empty network_egress_allowlist")
+        return self
+
+    @property
+    def network_egress_allowlist_scope(self) -> NetworkEgressAllowlist:
+        return NetworkEgressAllowlist(hosts=self.network_egress_allowlist)
 
     def exec_allowed(self) -> bool:
         return self.mode in ("supervised", "autonomous")

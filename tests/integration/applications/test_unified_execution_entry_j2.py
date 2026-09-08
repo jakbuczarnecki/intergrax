@@ -16,12 +16,12 @@ from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import CreateRunRequest, RunStatus
 from tests.unit.api.fastapi_core.budget.test_budget_required import AllowAllAuthProvider
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
+from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
+from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
@@ -29,17 +29,18 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 def _build_run_service() -> DefaultRunService:
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    task_runner = UnifiedTaskRunner(NexusLoop(registry))
-    adapter = NexusTaskExecutionAdapter(task_runner)
+    nexus_loop = NexusLoop(registry)
+    host_execution = build_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+    adapter = HostTaskExecutionRunAdapter(host_execution)
     store = InMemoryRunStore()
     service = DefaultRunService(store, adapter)
     adapter.bind_run_service(service)
     return service
 
 
-def test_run_service_and_http_chat_share_unified_task_runner_path() -> None:
+def test_run_service_and_http_chat_share_host_task_execution_path() -> None:
     service = _build_run_service()
-    task_runner = service._execution_adapter.task_runner
+    host_execution = service._execution_adapter.host_execution
 
     context = RequestContext(
         request_id="req-j2-int",
@@ -52,7 +53,7 @@ def test_run_service_and_http_chat_share_unified_task_runner_path() -> None:
     task = Task(
         tenant_id="t1",
         user_id="u1",
-        message="shared runner path",
+        message="shared host execution path",
         context=TaskContext(capability="echo.basic"),
     )
     background_tasks = BackgroundTasks()
@@ -70,11 +71,11 @@ def test_run_service_and_http_chat_share_unified_task_runner_path() -> None:
     final = service.get_run(run.run_id)
     assert final.status == RunStatus.COMPLETED
     assert final.result_payload is not None
-    assert "shared runner path" in final.result_payload["answer"]
-    assert service._execution_adapter.task_runner is task_runner
+    assert "shared host execution path" in final.result_payload["answer"]
+    assert service._execution_adapter.host_execution is host_execution
 
 
-def test_fastapi_runs_endpoint_executes_task_payload_via_unified_runner() -> None:
+def test_fastapi_runs_endpoint_executes_task_payload_via_host_execution() -> None:
     service = _build_run_service()
     app = create_app(
         ApiConfig(

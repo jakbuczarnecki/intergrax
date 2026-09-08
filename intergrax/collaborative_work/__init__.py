@@ -4,6 +4,22 @@
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
+from intergrax.collaborative_work.artifact_service import (
+    CollaborativeWorkArtifactService,
+    TRUSTED_OPERATION_WORK_ARTIFACT_CREATE,
+    TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH,
+)
+from intergrax.collaborative_work.content_storage import (
+    ArtifactContentIntegrityError,
+    ArtifactContentPersistenceError,
+    ArtifactContentReferenceUnsupported,
+    ArtifactContentStorageError,
+    ArtifactContentStore,
+    GetArtifactContentRequest,
+    ObjectStorageArtifactContentStore,
+    StoredArtifactContent,
+    StoreArtifactContentRequest,
+)
 from intergrax.collaborative_work.service import (
     CollaborativeWorkService,
     TRUSTED_OPERATION_ASSIGNMENT_CREATE,
@@ -13,8 +29,14 @@ from intergrax.collaborative_work.service import (
 )
 from intergrax.collaborative_work.policy_composition import compose_policy_decisions
 from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
     CollaborativeWorkRepositories,
+    CollaborativeWorkRepositoriesWithArtifacts,
+    CollaborativeWorkRepositoriesWithSharedWork,
+    CollaborativeWorkArtifactRepositories,
+    CollaborativeWorkSharedWorkRepositories,
     CollaborativeWorkStoreOwner,
+    collaborative_work_core_repositories,
     open_sqlite_collaborative_work_repositories,
 )
 from intergrax.collaborative_work.materialization_factory import (
@@ -82,10 +104,27 @@ __all__ = [
     "CollaborativeWorkMaterializationBinder",
     "CollaborativeWorkPersistenceFactory",
     "CollaborativeWorkPersistenceProvider",
+    "CollaborativeWorkMaterializedRepositories",
     "CollaborativeWorkRepositories",
+    "CollaborativeWorkRepositoriesWithSharedWork",
+    "CollaborativeWorkRepositoriesWithArtifacts",
+    "CollaborativeWorkArtifactRepositories",
+    "CollaborativeWorkSharedWorkRepositories",
     "CollaborativeWorkStoreOwner",
     "CollaborativeWorkAuthorityResolver",
     "CollaborativeWorkEnforcementGate",
+    "CollaborativeWorkArtifactService",
+    "TRUSTED_OPERATION_WORK_ARTIFACT_CREATE",
+    "TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH",
+    "ArtifactContentIntegrityError",
+    "ArtifactContentPersistenceError",
+    "ArtifactContentReferenceUnsupported",
+    "ArtifactContentStorageError",
+    "ArtifactContentStore",
+    "GetArtifactContentRequest",
+    "ObjectStorageArtifactContentStore",
+    "StoredArtifactContent",
+    "StoreArtifactContentRequest",
     "CollaborativeWorkService",
     "TRUSTED_OPERATION_ASSIGNMENT_CREATE",
     "TRUSTED_OPERATION_ASSIGNMENT_TRANSITION",
@@ -118,6 +157,7 @@ __all__ = [
     "CreateCollaborativePolicyRuleCommand",
     "CreatePrincipalAuthorityGrantCommand",
     "CreateWorkspaceMembershipCommand",
+    "collaborative_work_core_repositories",
     "resolve_collaborative_work_repositories",
     "open_sqlite_collaborative_work_repositories",
     "InMemoryAuthorityDelegationRepository",

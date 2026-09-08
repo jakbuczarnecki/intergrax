@@ -109,10 +109,17 @@ def test_debug_interaction_intake_with_teams_verifier():
     token = "teams_test_security_token"
     verifier = TeamsSignatureVerifier(security_token=token, enabled=True)
     from intergrax.debug.interaction_service import DebugInteractionIntakeService
+    from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+    from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
     loop = NexusLoop(registry)
-    service = DebugInteractionIntakeService(nexus_loop=loop, verifier=verifier)
+    service = DebugInteractionIntakeService(
+        task_executor=HostTaskExecutionExecutor(
+            build_host_task_execution(loop, orchestration_triggers=frozenset())
+        ),
+        verifier=verifier,
+    )
     app = create_debug_app(registry=registry, interaction_service=service, nexus_loop=loop)
 
     payload = _teams_activity_payload(text="<at>Intergrax</at> echo.basic signed teams request")

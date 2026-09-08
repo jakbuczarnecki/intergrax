@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.checksums import (
@@ -58,6 +59,18 @@ def validate_shard_status_transition(
         )
 
 
+def _utc_now_iso() -> str:
+    return datetime.now(UTC).isoformat()
+
+
+def _elapsed_seconds_since(started_at_utc: str | None) -> float | None:
+    if started_at_utc is None:
+        return None
+    started = datetime.fromisoformat(started_at_utc)
+    completed = datetime.now(UTC)
+    return max((completed - started).total_seconds(), 0.0)
+
+
 def reset_shard_to_pending(shard: DataPackShardBuildState) -> DataPackShardBuildState:
     if shard.status is DataPackShardStatus.READY:
         raise VpiDataPackBuildStateError("READY shard cannot transition to PENDING")
@@ -76,12 +89,21 @@ def reset_shard_to_pending(shard: DataPackShardBuildState) -> DataPackShardBuild
         embedding_source_ref_set_sha256=None,
         last_error_code=None,
         last_error_message=None,
+        started_at_utc=None,
+        completed_at_utc=None,
+        elapsed_seconds=None,
+        records_processed=None,
+        embedding_count=None,
     )
 
 
 def mark_deriving(shard: DataPackShardBuildState) -> DataPackShardBuildState:
     validate_shard_status_transition(shard.status, DataPackShardStatus.DERIVING)
-    return replace(shard, status=DataPackShardStatus.DERIVING)
+    return replace(
+        shard,
+        status=DataPackShardStatus.DERIVING,
+        started_at_utc=_utc_now_iso(),
+    )
 
 
 def mark_embedding(shard: DataPackShardBuildState) -> DataPackShardBuildState:
@@ -118,8 +140,10 @@ def mark_ready(
     embedding_sha256: str,
     relational_source_ref_set_sha256: str,
     embedding_source_ref_set_sha256: str,
+    embedding_count: int,
 ) -> DataPackShardBuildState:
     validate_shard_status_transition(shard.status, DataPackShardStatus.READY)
+    completed_at_utc = _utc_now_iso()
     return replace(
         shard,
         status=DataPackShardStatus.READY,
@@ -129,6 +153,10 @@ def mark_ready(
         embedding_sha256=embedding_sha256,
         relational_source_ref_set_sha256=relational_source_ref_set_sha256,
         embedding_source_ref_set_sha256=embedding_source_ref_set_sha256,
+        completed_at_utc=completed_at_utc,
+        elapsed_seconds=_elapsed_seconds_since(shard.started_at_utc),
+        records_processed=shard.expected_record_count,
+        embedding_count=embedding_count,
     )
 
 

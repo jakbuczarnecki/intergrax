@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+from testing_support.research_llm_test_support import configured_research_llm
+
 _RESEARCH_HARNESS_API_KEY = "gate-test-harness-key"
 _DIAGNOSTIC_CURSOR_SECRET = "unit-test-diagnostic-problem-list-cursor-secret"
+
+__all__ = ["configured_research_llm"]
 
 
 @pytest.fixture(autouse=True)

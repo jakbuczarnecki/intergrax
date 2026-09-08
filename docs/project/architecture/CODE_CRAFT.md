@@ -384,7 +384,14 @@ Not every CodeCraft execution uses HITL.
 
 `CodeCraftProfile.network_egress`: `deny` | `allowlist`.
 
-**Enforcement (AW-7B-GATE):** when `deny`, `resolve_craft_sandbox` requires explicit trusted substrate capability evidence before exec. Local `SandboxSession` proves operation-level denial only (`browser_fetch` unavailable) — not universal OS-network isolation. Hosted substrate type alone is not proof; provider backends must attest `network_egress_deny_enforced` through the public Sandbox security-capability contract. Unknown capability fails closed with `network_egress_requirement_unsatisfied`.
+`CodeCraftProfile.network_egress_allowlist`: typed exact host scopes (`NetworkEgressHost`: scheme, hostname, port). Profile validation rejects `deny` + non-empty allowlist and `allowlist` + empty allowlist. Host scopes are canonicalized deterministically (lowercase hostname, explicit scheme/port, dedupe, stable order); wildcards, localhost/private/metadata targets, and URL fragments are rejected.
+
+**Enforcement (AW-7B-GATE + AW-7C P0-1):** substrate resolution is mode-aware and fail-closed.
+
+- **`deny`:** `resolve_craft_sandbox` requires `SandboxSecurityCapabilities.network_egress_deny_enforced is True`. Local `SandboxSession` proves operation-level denial only (`browser_fetch` unavailable) — not universal OS-network isolation. Hosted substrate type alone is not proof; provider backends must attest deny through `SandboxSecurityCapable`. Unknown capability → `network_egress_requirement_unsatisfied`.
+- **`allowlist`:** requires `network_egress_allowlist_enforced is True` and substrate `enforced_network_hosts` that is at least as restrictive as the requested scope (V1: exact match or provider-enforced subset; never superset). Local workspace sandbox does **not** attest allowlist enforcement (`run_python` / `run_script` remain network-capable). Missing or mismatched proof → `network_egress_allowlist_requirement_unsatisfied`.
+
+Evidence types: `SandboxSecurityCapabilities`, optional aggregate `SandboxNetworkEgressEvidence`, request seam `SandboxSecurityRequirements`. Allowlist fingerprint: `sha256` over canonical sorted host-scope forms (governance correlation only; not a substitute for enforced scope proof).
 
 ## Forbidden imports and security scan
 
@@ -499,7 +506,7 @@ Accepted Protocol v2 audit layer [`CODE_CRAFT`](../../audit_results/2026-08-18/C
 6. **Isolation anti-downgrade** - required `cloud`/`container` tier fails closed when eligible substrate cannot resolve; no silent local downgrade unless explicit trusted downgrade policy ([`AUDIT-20260818-CODE_CRAFT-06`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** on harness path (AW-7B-GATE, 2026-09).
 7. **Runtime egress enforcement** - `network_egress` is substrate-enforced capability; `deny` requires trusted capability evidence (`network_egress_deny_enforced`) before exec; hosted substrate type alone is not proof; unknown capability fails closed ([`AUDIT-20260818-CODE_CRAFT-07`](../../audit_results/2026-08-18/CODE_CRAFT.md)). **Implemented** for operation-level local proof and hosted provider-attested path (AW-7B-GATE, 2026-09); universal OS-network egress proof not claimed.
 
-CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOrchestrator` remains canonical lifecycle owner. Remediation tracks **CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY** (01–03), **CODECRAFT-VERIFICATION-INTEGRITY** (04–05), **CODECRAFT-ISOLATION-INTEGRITY** (06–07) in [plan](../maintainers/plans/CODE_CRAFT.md). Historical Protocol v2 audit records pre-remediation defects; AW-7B-GATE implementation on `development` addresses 01–07 on the harness path pending independent audit acceptance.
+CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOrchestrator` remains canonical lifecycle owner. Remediation tracks **CODECRAFT-IDENTITY-GOVERNANCE-INTEGRITY** (01–03), **CODECRAFT-VERIFICATION-INTEGRITY** (04–05), **CODECRAFT-ISOLATION-INTEGRITY** (06–07) in [plan](../maintainers/plans/CODE_CRAFT.md). Historical Protocol v2 audit records pre-remediation defects; AW-7B-GATE on `development` independently verified (qualification SHA `2f8bc019a11de01f21498f952343e70f0cf3e369`) addresses 01–07 on the harness path.
 
 ## Evidence / proof
 
@@ -548,7 +555,7 @@ CodeCraft / Sandbox / Tools / Governance / CVL ownership unchanged. `CodeCraftOr
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md)  
 **Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`  
-**Last updated:** 2026-09-05 - AW-7B-GATE corrective: anti-downgrade truth reconciliation, authority/HITL current-state sync, substrate coherence documentation
+**Last updated:** 2026-09-07 - AW-7B-GATE independent verification closure (qualification SHA `2f8bc019a11de01f21498f952343e70f0cf3e369`)
 
 ### Cursor read scope (token budget)
 
@@ -732,7 +739,8 @@ Typed profile on `ApplicationEnvironmentProfile`:
 | `max_total_exec_time_s` | Cumulative sandbox CPU time |
 | `require_tests` | Mandate test command before promotion |
 | `test_command_template` | e.g. `pytest {path}` |
-| `network_egress` | `deny` \| `allowlist` (substrate-proven operation-level enforcement before exec; fail closed when proof missing) |
+| `network_egress` | `deny` \| `allowlist` (substrate-proven enforcement before exec; fail closed when proof missing) |
+| `network_egress_allowlist` | Typed exact host scopes when `network_egress=allowlist` (`NetworkEgressHost` tuple; canonicalized; no wildcards in V1) |
 | `promotion_schema_ref` | Pydantic model id for L0 output validation |
 | `codegen_llm_profile_ref` | Separate LLM for generation |
 | `require_hitl_before_exec` | Force human gate (supervised default) |

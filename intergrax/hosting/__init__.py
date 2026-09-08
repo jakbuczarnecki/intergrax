@@ -52,7 +52,9 @@ from intergrax.hosting.engine.health import (
     HostedApplicationHealthSnapshot,
     HostedApplicationReadinessService,
 )
-from intergrax.hosting.instance.contracts import HostedApplicationInstanceAcquisitionResult
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceAcquisitionResult,
+)
 from intergrax.hosting.engine.ports import HostedApplicationRuntime
 from intergrax.hosting.errors import (
     HostedApplicationComponentError,
@@ -77,6 +79,23 @@ from intergrax.hosting.eventing import (
     CompositeHostedApplicationEventPublisher,
     ObservabilityHostedApplicationEventPublisher,
 )
+from intergrax.hosting.bootstrap_failure import (
+    BootstrapIdentitySnapshot,
+    BootstrapReadinessLevel,
+    BootstrapSurfaceKind,
+    HostedBootstrapFailureProducer,
+    LoggingBootstrapFailureReporter,
+    mint_bootstrap_attempt_id,
+    run_guarded_hosted_bootstrap_segment,
+)
+from intergrax.hosting.process_bootstrap import (
+    BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE,
+    HostedProcessBootstrapContext,
+    HostedProcessBootstrapFailureFacts,
+    HostedProcessBootstrapPhase,
+    hosted_process_bootstrap_failure_payload,
+    run_guarded_hosted_process_bootstrap,
+)
 from intergrax.hosting.services import HostedApplicationServiceRegistry
 from intergrax.hosting.control import (
     HostedApplicationControlCoordinator,
@@ -84,9 +103,13 @@ from intergrax.hosting.control import (
     HostedApplicationControlSnapshot,
     HostedApplicationRestartRequestSnapshot,
 )
-from intergrax.hosting.contracts.lifecycle import HostedApplicationEffectiveControlRequest
+from intergrax.hosting.contracts.lifecycle import (
+    HostedApplicationEffectiveControlRequest,
+)
 from intergrax.hosting.instance import FileHostedApplicationInstanceGuard
-from intergrax.hosting.instance.contracts import HostedApplicationInstanceLeasePublicView
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceLeasePublicView,
+)
 from intergrax.hosting.shutdown import (
     HostedApplicationActiveWorkController,
     HostedApplicationFlushService,
@@ -106,6 +129,10 @@ from intergrax.hosting.supervisor import (
 )
 
 __all__ = [
+    "BOOTSTRAP_UNHANDLED_EXCEPTION_REASON_CODE",
+    "BootstrapIdentitySnapshot",
+    "BootstrapReadinessLevel",
+    "BootstrapSurfaceKind",
     "HOSTED_APPLICATION_PROFILE_SPEC_VERSION",
     "ComponentFailurePolicy",
     "HookFailurePolicy",
@@ -162,9 +189,14 @@ __all__ = [
     "HostedApplicationEventPublisher",
     "HostedApplicationEventSubscription",
     "HostedApplicationEventType",
+    "HostedProcessBootstrapContext",
+    "HostedProcessBootstrapFailureFacts",
+    "HostedProcessBootstrapPhase",
     "HostedApplicationFailurePhase",
+    "HostedBootstrapFailureProducer",
     "HostedApplicationFailureRecord",
     "HostedApplicationHealthSnapshot",
+    "LoggingBootstrapFailureReporter",
     "HostedApplicationHook",
     "HostedApplicationHookMode",
     "HostedApplicationHookPoint",
@@ -186,8 +218,12 @@ __all__ = [
     "InstancePolicy",
     "LifecyclePolicy",
     "RestartPolicy",
+    "mint_bootstrap_attempt_id",
     "ObservabilityHostedApplicationEventPublisher",
     "CompositeHostedApplicationEventPublisher",
+    "hosted_process_bootstrap_failure_payload",
+    "run_guarded_hosted_bootstrap_segment",
+    "run_guarded_hosted_process_bootstrap",
     "ShutdownPolicy",
     "resolve_hosted_application_definition",
     "run_hosted_application",

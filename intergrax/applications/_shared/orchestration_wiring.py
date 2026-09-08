@@ -182,6 +182,13 @@ def _normalize_classifier_kind(raw: str | None) -> NexusClassifierKind:
     raise OrchestrationWiringError(f"Unknown classifier_kind: {raw!r}")
 
 
+def orchestration_requires_llm_adapter(env: ApplicationEnvironmentProfile) -> bool:
+    """Return whether Nexus orchestration wiring must materialize an LLM adapter."""
+    planner_kind = _normalize_planner_kind(env.orchestration_profile.planner_kind)
+    classifier_kind = _normalize_classifier_kind(env.orchestration_profile.classifier_kind)
+    return planner_kind is NexusPlannerKind.ENGINE or classifier_kind is NexusClassifierKind.LLM
+
+
 def resolve_nexus_task_planner(
     env: ApplicationEnvironmentProfile,
     *,

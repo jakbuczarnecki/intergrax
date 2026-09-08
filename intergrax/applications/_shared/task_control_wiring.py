@@ -14,10 +14,12 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
 )
 from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    resolve_harness_host_execution_terminal,
 )
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from intergrax.applications._shared.harness_task_routes import mount_canonical_harness_task_routes
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.agents.persistence.compensation_queue_wiring import (
@@ -53,7 +55,7 @@ def resolve_harness_task_control_execution_terminal(
         return execution_terminal
     if runtime is None:
         return None
-    return resolve_harness_host_nexus_loop_legacy(runtime).execution_terminal
+    return resolve_harness_host_execution_terminal(runtime)
 
 
 def build_reliability_task_enricher(
@@ -88,7 +90,7 @@ def wire_harness_task_control(
     app: FastAPI,
     *,
     enabled: bool,
-    task_runner: UnifiedTaskRunner,
+    host_execution: HostTaskExecutionPort,
     env: ApplicationEnvironmentProfile,
     checkpoint_store: TaskCheckpointPersistence | None = None,
     task_route_prefix: str = "/v1/tasks",
@@ -115,9 +117,11 @@ def wire_harness_task_control(
             runtime=runtime,
             execution_terminal=execution_terminal,
         )
-        mount_harness_task_routes(
+        task_executor = HostTaskExecutionExecutor(host_execution, task_enricher=enricher)
+        mount_canonical_harness_task_routes(
             app,
-            task_runner=task_runner,
+            task_executor=task_executor,
+            host_execution=host_execution,
             checkpoint_store=checkpoint_store,
             execution_terminal=resolved_terminal,
             prefix=task_route_prefix,

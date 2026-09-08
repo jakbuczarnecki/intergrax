@@ -125,12 +125,10 @@ class _FakeEnterpriseGatewayAdapter(LLMAdapter):
 @pytest.fixture()
 def _restore_registry_state():
     snapshot = dict(LLMAdapterRegistry._factories)
-    installed = LLMAdapterRegistry._builtin_registrations_installed
     try:
         yield
     finally:
         LLMAdapterRegistry._factories = snapshot
-        LLMAdapterRegistry._builtin_registrations_installed = installed
 
 
 def _clear_sdk_modules() -> dict[str, object]:
@@ -162,8 +160,7 @@ def test_bootstrap_registration_does_not_import_vendor_sdks(
     _restore_registry_state,
 ) -> None:
     removed = _clear_sdk_modules()
-    LLMAdapterRegistry._factories = {}
-    LLMAdapterRegistry._builtin_registrations_installed = False
+    LLMAdapterRegistry.reset_for_testing()
     blocker = _SdkImportBlocker({root.split(".", 1)[0] for root in _SDK_ROOTS})
     sys.meta_path.insert(0, blocker)
     try:
@@ -181,8 +178,7 @@ def test_bootstrap_registration_does_not_import_vendor_sdks(
 def test_selected_provider_adapter_import_is_lazy(_restore_registry_state) -> None:
     adapter_module = "intergrax.llm_adapters.providers.openai_responses_adapter"
     sys.modules.pop(adapter_module, None)
-    LLMAdapterRegistry._factories = {}
-    LLMAdapterRegistry._builtin_registrations_installed = False
+    LLMAdapterRegistry.reset_for_testing()
 
     providers = LLMAdapterRegistry.registered_providers()
     assert LLMProvider.OPENAI.value in providers

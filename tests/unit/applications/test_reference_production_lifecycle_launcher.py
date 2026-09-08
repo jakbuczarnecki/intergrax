@@ -35,8 +35,13 @@ from intergrax.applications._shared.reference_production_lifecycle import (
 from intergrax.applications._shared.reference_runtime_materialization import (
     prepare_reference_runtime_materialization,
 )
-from intergrax.applications._shared.harness_host_runtime_compat import (
-    resolve_harness_host_nexus_loop_legacy,
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
 )
 from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
 from research_application.host.main import create_research_process_app
@@ -203,7 +208,7 @@ def test_reference_lifecycle_research_e2e_without_seed_helper(
         ),
     )
     assert runtime.registry_projection_evidence.runtime_revision_id == "rev-lifecycle-e2e"
-    assert resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids() == ["research"]
+    assert runtime.registry.list_agent_ids() == ["research"]
     assert app is not None
     assert launcher.process_composition is composition
 

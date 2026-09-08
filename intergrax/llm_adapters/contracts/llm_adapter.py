@@ -5,6 +5,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Callable, Sequence, Iterable, Optional, Any, Dict, Union, List, TypeVar, Generic
 
 T = TypeVar("T")
@@ -21,6 +22,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 
 
 
@@ -141,11 +143,14 @@ class LLMAdapter(ABC):
     def supports_tools(self) -> bool:
         return False
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        """Whether provider-enforced strict tool argument schemas are supported."""
+        return False
 
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -157,7 +162,7 @@ class LLMAdapter(ABC):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,

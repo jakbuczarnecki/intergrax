@@ -45,7 +45,14 @@ from intergrax.applications._shared.task_control_governance import (
 from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
@@ -288,7 +295,7 @@ async def test_taskcpm_b1_supported_cancel_route_reaches_coordinator_only_after_
     wire_harness_task_control(
         app_allow,
         enabled=True,
-        task_runner=UnifiedTaskRunner(runtime_allow.nexus_loop),  # type: ignore[arg-type]
+        host_execution=runtime_allow.execution,
         env=runtime_allow.environment,
         runtime=runtime_allow,
     )
@@ -482,27 +489,26 @@ async def test_taskcpm_b8_debug_hitl_resume_service_is_debug_lab_only() -> None:
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
     checkpoint = _checkpoint()
+    host_execution = MagicMock()
+    host_execution.execute = AsyncMock(
+        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+    )
     service = DebugHitlResumeService(
-        AgentRegistry(),
+        host_execution=host_execution,
         checkpoint_store=_StaticCheckpointStore(checkpoint),
     )
     with patch(
         "intergrax.applications._shared.task_control.governed_resume_checkpoint_task",
         new_callable=AsyncMock,
     ) as governed_resume:
-        with patch(
-            "intergrax.debug.hitl_service.NexusLoop.handle_task",
-            new_callable=AsyncMock,
-            return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
-        ) as handle_task:
-            await service.resume_with_human_response(
-                str(_TASK_ID),
-                _TENANT,
-                verdict=HumanResponseVerdict.APPROVE,
-                resume_token=_RESUME_TOKEN,
-            )
+        await service.resume_with_human_response(
+            str(_TASK_ID),
+            _TENANT,
+            verdict=HumanResponseVerdict.APPROVE,
+            resume_token=_RESUME_TOKEN,
+        )
     governed_resume.assert_not_awaited()
-    handle_task.assert_awaited_once()
+    host_execution.execute.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -523,7 +529,7 @@ async def test_taskcpm_b9_supported_cancel_route_does_not_invoke_taskqueue_cance
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )
@@ -549,7 +555,7 @@ def test_taskcpm_b10_product_scaffold_wiring_uses_shared_governed_task_control(
     wire_harness_task_control(
         app,
         enabled=True,
-        task_runner=UnifiedTaskRunner(resolve_harness_host_nexus_loop_legacy(runtime)),  # type: ignore[arg-type]
+        host_execution=runtime.execution,
         env=runtime.environment,
         runtime=runtime,
     )

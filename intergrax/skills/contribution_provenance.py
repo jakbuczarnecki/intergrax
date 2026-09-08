@@ -15,7 +15,7 @@ from intergrax.skills.core.version_binding import (
     ResolvedSkillRole,
     SkillVersionResolutionMode,
 )
-from intergrax.skills.resolver import ResolvedSkillPack
+from intergrax.skills.resolver import ResolvedSkillPack, SkillResolutionError
 
 
 class SkillContributionKind(str, Enum):
@@ -56,18 +56,27 @@ def _provenance_for_ref(
     )
 
 
+def _assert_manifest_matches_ref(ref: ResolvedSkillRef, manifest: SkillManifest) -> None:
+    if manifest.skill_id != ref.skill_id or manifest.version != ref.version:
+        raise SkillResolutionError(
+            f"manifest identity mismatch for {ref.qualified_id}: "
+            f"observed {manifest.skill_id}@{manifest.version}",
+        )
+
+
 def build_skill_contribution_provenance(
     pack: ResolvedSkillPack,
     manifests: Mapping[str, SkillManifest],
 ) -> tuple[SkillContributionProvenance, ...]:
     """Project per-contribution lineage from bound pack evidence and manifests."""
     entries: list[SkillContributionProvenance] = []
-    ref_by_skill_id = {ref.skill_id: ref for ref in pack.resolved_skills}
-    for skill_id in (ref.skill_id for ref in pack.resolved_skills):
-        manifest = manifests.get(skill_id)
+    for ref in pack.resolved_skills:
+        manifest = manifests.get(ref.skill_id)
         if manifest is None:
-            continue
-        ref = ref_by_skill_id[skill_id]
+            raise SkillResolutionError(
+                f"missing observed manifest for resolved skill: {ref.qualified_id}",
+            )
+        _assert_manifest_matches_ref(ref, manifest)
         for tool_id in manifest.tool_ids:
             normalized = tool_id.strip()
             if normalized:

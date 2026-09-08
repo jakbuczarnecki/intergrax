@@ -11,6 +11,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.registry.model_router import ModelRouter, ModelRoutingDecision
 from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
 from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext, RoutingEvaluation
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.applications._shared.routing_evaluating_adapter import (
@@ -21,6 +22,11 @@ from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
 
 _last_routing_evaluation: RoutingEvaluation | None = None
 
+_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE = (
+    "LLM provider not explicitly configured: set ApplicationEnvironmentProfile.llm_profile "
+    "or INTERGRAX_LLM_PROVIDER before materializing an adapter."
+)
+
 
 def consume_routing_evaluation() -> RoutingEvaluation | None:
     """Return and clear the last routing evaluation from resolver path."""
@@ -30,13 +36,23 @@ def consume_routing_evaluation() -> RoutingEvaluation | None:
     return result
 
 
-def resolve_llm_profile(
+def resolve_optional_llm_profile(
     env: ApplicationEnvironmentProfile | None,
-) -> LLMProfile:
-    """Resolve declarative LLM profile from environment or platform defaults."""
+) -> LLMProfile | None:
+    """Resolve declarative LLM profile when explicitly selected on host or in env."""
     if env is not None and env.llm_profile is not None:
         return env.llm_profile
     return llm_profile_from_env()
+
+
+def resolve_llm_profile(
+    env: ApplicationEnvironmentProfile | None,
+) -> LLMProfile:
+    """Resolve declarative LLM profile or fail closed when no provider is selected."""
+    profile = resolve_optional_llm_profile(env)
+    if profile is None:
+        raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
+    return profile
 
 
 def _record_routing_evaluation(evaluation: RoutingEvaluation) -> None:
@@ -168,9 +184,8 @@ def _create_base_llm_adapter(
     return profile.create_adapter()
 
 
-def resolve_llm_adapter(
+def _resolve_llm_adapter_impl(
     env: ApplicationEnvironmentProfile | None,
-    agent_override: LLMAdapter | None = None,
     *,
     policy_route_hint: str | None = None,
     routing_context: RoutingContext | None = None,
@@ -179,20 +194,6 @@ def resolve_llm_adapter(
     agent_id: str | None = None,
     context_provider: RoutingContextProvider | None = None,
 ) -> LLMAdapter:
-    """
-    Resolve LLM adapter with explicit precedence.
-
-    1. ``agent_override`` when provided by Tier-2 factory
-    2. ``env.llm_profile`` when set on environment (with failover chain when configured)
-    3. Platform default from ``INTERGRAX_LLM_*`` env vars
-
-    When ``llm_routing_profile`` is set, evaluates rules via ``LLMRoutingEvaluator``
-    before adapter creation. Live AHI routing may override hints on product hosts.
-    When ``context_provider`` is set, wraps with ``RoutingEvaluatingLLMAdapter`` (M-LLM-X.11).
-    """
-    if agent_override is not None:
-        return agent_override
-
     def _provider() -> RoutingContext:
         return _resolve_routing_context(
             routing_context=routing_context,
@@ -230,6 +231,94 @@ def resolve_llm_adapter(
             on_evaluated=_record_routing_evaluation,
         )
     return adapter
+
+
+def resolve_optional_llm_adapter(
+    env: ApplicationEnvironmentProfile | None,
+    agent_override: LLMAdapter | None = None,
+    *,
+    policy_route_hint: str | None = None,
+    routing_context: RoutingContext | None = None,
+    routing_metadata: dict[str, Any] | None = None,
+    tenant_id: str | None = None,
+    agent_id: str | None = None,
+    context_provider: RoutingContextProvider | None = None,
+) -> LLMAdapter | None:
+    """Resolve LLM adapter only when a provider is explicitly selected."""
+    if agent_override is not None:
+        return agent_override
+    if resolve_optional_llm_profile(env) is None:
+        return None
+    return _resolve_llm_adapter_impl(
+        env,
+        policy_route_hint=policy_route_hint,
+        routing_context=routing_context,
+        routing_metadata=routing_metadata,
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        context_provider=context_provider,
+    )
+
+
+def resolve_llm_adapter(
+    env: ApplicationEnvironmentProfile | None,
+    agent_override: LLMAdapter | None = None,
+    *,
+    policy_route_hint: str | None = None,
+    routing_context: RoutingContext | None = None,
+    routing_metadata: dict[str, Any] | None = None,
+    tenant_id: str | None = None,
+    agent_id: str | None = None,
+    context_provider: RoutingContextProvider | None = None,
+) -> LLMAdapter:
+    """
+    Resolve LLM adapter with explicit precedence.
+
+    1. ``agent_override`` when provided by Tier-2 factory
+    2. ``env.llm_profile`` when set on environment (with failover chain when configured)
+    3. Platform selection from ``INTERGRAX_LLM_*`` env vars when explicitly set
+
+    When ``llm_routing_profile`` is set, evaluates rules via ``LLMRoutingEvaluator``
+    before adapter creation. Live AHI routing may override hints on product hosts.
+    When ``context_provider`` is set, wraps with ``RoutingEvaluatingLLMAdapter`` (M-LLM-X.11).
+    """
+    if agent_override is not None:
+        return agent_override
+    if resolve_optional_llm_profile(env) is None:
+        raise LLMProviderNotConfiguredError(_LLM_PROVIDER_NOT_CONFIGURED_MESSAGE)
+    return _resolve_llm_adapter_impl(
+        env,
+        policy_route_hint=policy_route_hint,
+        routing_context=routing_context,
+        routing_metadata=routing_metadata,
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        context_provider=context_provider,
+    )
+
+
+def resolve_optional_environment_llm_adapter(
+    env: ApplicationEnvironmentProfile,
+    *,
+    agent_override: LLMAdapter | None = None,
+    tenant_id: str | None = None,
+    agent_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> LLMAdapter | None:
+    """Tier-3 helper — resolve adapter only when provider selection is explicit."""
+    routing_context = build_routing_context_from_runtime(
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        metadata=metadata,
+    )
+    return resolve_optional_llm_adapter(
+        env,
+        agent_override=agent_override,
+        routing_context=routing_context,
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        routing_metadata=metadata,
+    )
 
 
 def resolve_environment_llm_adapter(

@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — IMPLEMENTATION IN PROGRESS** (ADR-MP-003 Accepted)
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4 — ownership FROZEN / ACCEPTED** (ADR-MP-005); **MP-4A — APPROVED / CLOSED**
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001)
-**Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **COLLAB-WORK-2D** (SQLite durability parity)
-**Next task after MP-2 gate:** COLLAB-WORK-2D — SQLite durability parity
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4)
+**Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
+**Current active task:** **MP-4D** — Authority integration (**READY_FOR_REVIEW**)
+**Next task:** MP-4E — Persistence boundary (after MP-4D review)
 
 ---
 
@@ -137,21 +137,21 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **IMPLEMENTATION IN PROGRESS** — COLLAB-WORK-2A APPROVED / CLOSED; COLLAB-WORK-2B APPROVED / CLOSED; COLLAB-WORK-2C APPROVED / CLOSED |
+| **Status** | **APPROVED / CLOSED** — COLLAB-WORK-2A…2G APPROVED / CLOSED; ADR-MP-003 implementation **COMPLETE** |
 | **Purpose** | Platform-owned shared work primitives with lifecycle and concurrency semantics. |
 | **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-003 |
-| **Reused domain capabilities** | `ORCHESTRATION` (explicit bridge), `UNIFIED_EXECUTION_RUNTIME` / NEXUS (execution identities), `BACKGROUND_TASKS` (associated execution), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance) |
+| **Reused domain capabilities** | `ORCHESTRATION` (explicit WorkItem context consumption), `UNIFIED_EXECUTION_RUNTIME` (canonical execution identities), `NEXUS` (internal orchestration only — not Collaborative Work contract dependency), `BACKGROUND_TASKS` (associated execution), `OBSERVABILITY` / `PROOF_RECEIPTS` (provenance) |
 | **Dependencies** | MP-1 accepted |
 | **Exact scope** | WorkItem; Assignment; collaborative lifecycle; explicit optimistic concurrency and idempotency semantics |
-| **REUSED EXISTING CAPABILITY** | MP-1 authority, repository concurrency/idempotency patterns; Nexus task/run identities as execution references only |
+| **REUSED EXISTING CAPABILITY** | MP-1 authority, repository concurrency/idempotency patterns; canonical `TaskId`/`RunId`/`AttemptId`/`ExecutionId` via neutral `ExecutionProvenanceRef` |
 | **NEW CAPABILITY REQUIRED** | WorkItem, Assignment, shared-work lifecycle and concurrency |
 | **Explicit out of scope** | Slack shared-conversation or any channel adapter as Shared Work owner; WorkArtifact (MP-3); Decision (MP-4); Activity (MP-6) |
 | **Architecture/ADR gate** | WorkItem/Task separation and concurrency direction accepted; **ADR-MP-003 Accepted** |
 | **Pre-implementation domain-sync gate** | **Done** — bounded ownership check closed; COLLAB-WORK-2A…2G rows registered |
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
-| **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real `task_id`/`run_id` |
-| **Next implementation row** | **COLLAB-WORK-2D** |
+| **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real four-part `ExecutionProvenanceRef` |
+| **Next implementation row** | **Independent MP-3C audit** — MP-3D **NOT STARTED** |
 
 ---
 
@@ -160,40 +160,72 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED / NOT STARTED |
+| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; runtime **IN PROGRESS** |
 | **Purpose** | Durable collaborative outputs with versioning and provenance. |
-| **Likely owning domain plans** | `UNIFIED_CONTEXT_LIFECYCLE.md`, `PROOF_RECEIPTS.md`, `MEMORY.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
-| **Dependencies** | MP-2 accepted (may overlap MP-1 for authority on artifacts) |
-| **Exact scope** | WorkArtifact; authoritative WorkArtifactVersion; publication, version pointer, lineage, and provenance |
-| **REUSED EXISTING CAPABILITY** | UCL artifact lifecycle patterns; receipt/provenance models |
-| **NEW CAPABILITY REQUIRED** | WorkArtifact, WorkArtifactVersion |
-| **Explicit out of scope** | `LKW-HYBRID-ASK-*` as WorkArtifact owner |
-| **Architecture/ADR gate** | WorkArtifact is separated from UCL OptimizationArtifact and authoritative version semantics are accepted; ADR-MP-004 completed |
-| **Pre-implementation domain-sync gate** | Bounded ownership check → domain architecture/plan sync with MP-3 rows |
+| **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-004; full slice rows § COLLAB-WORK-3 |
+| **Reused domain capabilities** | UCL (consumption only); Memory indexing/retrieval; Proof Receipts attestation; MP-1 authority; MP-2 repository/CAS/idempotency patterns; optional `ExecutionProvenanceRef` |
+| **Dependencies** | MP-2 accepted (MP-1 authority on artifacts) |
+| **Exact scope** | WorkArtifact; authoritative immutable WorkArtifactVersion; publication; CAS-protected current-version pointer; `ArtifactPublicationRepository` transactional boundary for **both** atomic initial creation (`create_artifact_with_initial_version(...)`) and subsequent publication (`publish_version(...)`); lineage; principal provenance; optional execution provenance; neutral `ArtifactContentRef` |
+| **REUSED EXISTING CAPABILITY** | MP-1 effective authority; MP-2 persistence/concurrency patterns; neutral execution provenance contracts |
+| **NEW CAPABILITY REQUIRED** | WorkArtifact, WorkArtifactVersion runtime contracts and services (slices MP-3A…MP-3H) |
+| **Explicit out of scope** | `LKW-HYBRID-ASK-*` as WorkArtifact owner; UCL/Memory/Proof Receipts as owners; MP-4 Decision state; MP-6 Activity projection; MP-3B+ runtime until scheduled |
+| **Architecture/ADR gate** | **Done** — WorkArtifact separated from UCL OptimizationArtifact; immutable version + CAS current pointer accepted; **ADR-MP-004 Accepted** |
+| **Pre-implementation domain-sync gate** | **Done** — MP-3 bounded ownership check closed; decomposition **APPROVED / CLOSED**; MP-3A…MP-3H rows registered |
 | **User-visible outcome** | Versioned collaborative artifacts with lineage |
-| **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes |
-| **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent publication tests; provenance/evidence integration proof |
+| **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes; atomic initial creation and subsequent publication via dedicated port (no dangling `current_version_id`, no orphan initial version) |
+| **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent initial create tests; idempotent publication tests; cross-process publication proof (MP-3E); provenance/evidence integration proof (MP-3G) |
+| **Next implementation row** | **Independent MP-3C audit** — MP-3D **NOT STARTED** |
+
+### MP-3 architectural implementation slices
+
+Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) § COLLAB-WORK-3.
+
+| Slice | Scope | Status |
+|-------|-------|--------|
+| MP-3A | Contracts + invariants + `ArtifactContentRef` | APPROVED / CLOSED |
+| MP-3B | Ports + in-memory + `ArtifactPublicationRepository` (atomic initial create + publish) | APPROVED / CLOSED |
+| MP-3C | Publication service + MP-1 authority | READY_FOR_INDEPENDENT_AUDIT |
+| MP-3D | SQLite transactional persistence | NOT STARTED |
+| MP-3E | PostgreSQL + qualification | NOT STARTED |
+| MP-3F | Content storage adapters (after 3E) | NOT STARTED |
+| MP-3G | Execution/evidence integration | READY_FOR_INDEPENDENT_AUDIT |
+| MP-3H | Final independent review | NOT STARTED |
 
 ---
 
-## MP-4 - Decision / DecisionResponse or Approval semantics + HITL bridge
+## MP-4 - Decision / Approval / Governance + HITL bridge
+
+**Domain plan (1:1):** [`DECISION_APPROVAL_GOVERNANCE.md`](../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md) · **ADR:** [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md)
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED / NOT STARTED |
-| **Purpose** | Collaborative decision and approval semantics with explicit bridge to Nexus HITL when execution must pause. |
-| **Likely owning domain plans** | `RELIABILITY_FAILURE_AND_HITL.md`, `NEXUS_EXECUTION_FLOW.md`, `UNIFIED_EXECUTION_RUNTIME.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
-| **Dependencies** | MP-1 accepted; MP-2 recommended |
-| **Exact scope** | Decision; DecisionResponse/Approval semantics; policy-gated response; explicit bridge to existing Nexus HITL pause/resume |
-| **REUSED EXISTING CAPABILITY** | Nexus HITL pause/resume; policy evaluation hooks |
-| **NEW CAPABILITY REQUIRED** | Decision / DecisionResponse (or Approval) collaborative primitive; HITL bridge contract |
-| **Explicit out of scope** | Slack vertical rows as Decision owner; conflating Decision records with HITL machinery |
-| **Architecture/ADR gate** | Decision/HITL separation, approval non-authorization, and explicit bridge semantics accepted; ADR-MP-004 completed |
-| **Pre-implementation domain-sync gate** | Bounded ownership check → domain architecture/plan sync with MP-4 rows |
+| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-005 **Accepted**; **MP-4A APPROVED / CLOSED**; **MP-4B READY_FOR_REVIEW**; **MP-4C READY_FOR_REVIEW**; MP-4D…MP-4H **NOT STARTED** |
+| **Purpose** | Collaborative Decision, Approval, and Governance semantics with explicit bridge to Governed Execution HITL when execution must pause. |
+| **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) |
+| **Dependencies** | MP-1 **CLOSED**; MP-2 **APPROVED / CLOSED**; MP-3 ownership **FROZEN** |
+| **Exact scope** | MP-4A ownership freeze; MP-4B…H decomposition — see domain plan |
+| **REUSED EXISTING CAPABILITY** | MP-1 Principal/authority; Governed Execution HITL + policy; `ExecutionProvenanceRef`; evidence references |
+| **NEW CAPABILITY REQUIRED** | Decision/Approval/Governance contracts (MP-4B+); HITL bridge contract (MP-4C) |
+| **Explicit out of scope** | Runtime orchestration; artifact lifecycle ownership; execution ownership; ACL duplication; persistence in MP-4A |
+| **Architecture/ADR gate** | ADR-MP-005 **Accepted** at MP-4A |
+| **Pre-implementation domain-sync gate** | MP-4A closure → MP-4B opens |
 | **User-visible outcome** | Explicit collaborative approvals that can pause and resume governed execution |
-| **Acceptance criteria** | A Decision can exist without an active task; a pause bridge uses existing HITL only; responses are principal- and policy-authorized; approval/evidence alone does not authorize execution; decision responses are idempotent |
-| **Expected proof/evidence** | Contract tests; authorization/isolation tests; HITL bridge integration proof; decision concurrency tests; idempotency tests; provenance/evidence linkage |
+| **Acceptance criteria** | Anti-substitution rules frozen; dependency direction frozen; reuse audit complete; no CW/UER leakage |
+| **Expected proof/evidence** | `check_docs_domain_pairs.py`; leakage greps; ADR compliance |
+
+### MP-4 slice status
+
+| Slice | Scope | Status |
+|-------|-------|--------|
+| MP-4A | Ownership + contracts freeze | **APPROVED / CLOSED** |
+| MP-4B | Decision contracts | **READY_FOR_REVIEW** |
+| MP-4C | Approval / HITL contracts | **READY_FOR_REVIEW** |
+| MP-4D | Authority integration | **READY_FOR_REVIEW** |
+| MP-4E | Persistence boundary | NOT STARTED |
+| MP-4F | Evidence / provenance integration | NOT STARTED |
+| MP-4G | Qualification | NOT STARTED |
+| MP-4H | Final closure audit | NOT STARTED |
 
 ---
 
@@ -252,7 +284,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **REUSED EXISTING CAPABILITY** | Prior LKW conversation, Ask, channel capabilities until explicitly integrated |
 | **NEW CAPABILITY REQUIRED** | LKW integration rows per adopted primitive (consumer-side only) |
 | **Explicit out of scope** | Transferring platform primitive ownership to LKW |
-| **Architecture/ADR gate** | Platform ownership and non-migration of current LKW Workspace are accepted; ADR-MP-005 completed |
+| **Architecture/ADR gate** | Platform ownership and non-migration of current LKW Workspace are accepted; ADR-MP-008 completed |
 | **Pre-implementation domain-sync gate** | Bounded ownership check → LKW plan sync; no substitution of LKW-local rows for missing primitives |
 | **User-visible outcome** | LKW demonstrates end-to-end Multiplayer on platform contracts |
 | **Acceptance criteria** | LKW consumes the selected platform contracts without redefining them; current LKW Workspace is not moved by this phase; ownership and authority boundaries remain enforceable end to end |

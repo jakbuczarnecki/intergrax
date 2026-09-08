@@ -42,11 +42,13 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.investigation_proof import (
+    build_completed_observation_reference_index,
     collect_available_evidence_ids,
-    investigation_native_planner_protocol_config,
 )
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     PLANNER_ACTION_CONTEXT_TOOL_ID,
+    NativePlannerProtocolConfig,
+    NativePlannerProtocolMode,
     NativePlannerRound,
     resolve_native_planner_protocol,
 )
@@ -278,19 +280,31 @@ def _action_context_call(
     )
 
 
+def _legacy_investigation_protocol_config(
+    messages: list[ChatMessage],
+) -> NativePlannerProtocolConfig:
+    reference_index = build_completed_observation_reference_index(messages)
+    available = collect_available_evidence_ids(messages)
+    return NativePlannerProtocolConfig(
+        mode=NativePlannerProtocolMode.INVESTIGATION_ACTION_CONTEXT,
+        available_evidence_references=available,
+        _reference_index_items=tuple(sorted(reference_index.items())),
+    )
+
+
 def _native_round_from_response(
     response: LLMAdapterResponse,
     tool_plan: ToolCallPlan,
     messages: list[ChatMessage],
 ) -> NativePlannerRound:
-    protocol_config = investigation_native_planner_protocol_config(messages)
+    protocol_config = _legacy_investigation_protocol_config(messages)
     action_context, business_calls = resolve_native_planner_protocol(
         response.tool_calls,
         protocol_config=protocol_config,
     )
     return NativePlannerRound(
         response=response,
-        business_tool_calls=business_calls,
+        materialized_tool_calls=business_calls,
         tool_plan=tool_plan,
         action_context=action_context,
     )

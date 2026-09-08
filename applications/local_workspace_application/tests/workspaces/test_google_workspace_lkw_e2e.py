@@ -3,7 +3,14 @@
 """Google Workspace Calendar/Docs/Sheets application proof."""
 
 from __future__ import annotations
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 
 import copy
 import json
@@ -291,7 +298,7 @@ def _restart_with_google(
         compensation_queue_store=harness_runtime.compensation_queue_store,
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(harness_runtime)
+    nexus_loop = harness_runtime._internal_composition._orchestration_backend  # noqa: SLF001
     task_executor = LocalWorkspaceTaskExecutor(
         build_lkw_host_task_execution(nexus_loop, environment),
         task_enricher=task_enricher,

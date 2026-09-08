@@ -43,6 +43,9 @@ def build_nexus_task_execution_registry(
     kv_store: Optional[DistributedKVStore] = None,
     run_budget: RunBudget | None = None,
     execution_terminal: ExecutionTerminalService | None = None,
+    orchestration_triggers: frozenset[str] = frozenset(),
+    pipeline_capability_suffix: str = ".pipeline",
+    task_enricher=None,
 ) -> TaskExecutionRegistry:
     """Register ``nexus.task.v2`` on a worker TaskExecutionRegistry."""
     run_budget_persistence = None
@@ -56,6 +59,9 @@ def build_nexus_task_execution_registry(
         run_budget=run_budget,
         run_budget_persistence=run_budget_persistence,
         execution_terminal=execution_terminal,
+        orchestration_triggers=orchestration_triggers,
+        pipeline_capability_suffix=pipeline_capability_suffix,
+        task_enricher=task_enricher,
     )
     register_nexus_task_worker(worker_registry, runtime)
     return worker_registry
@@ -80,6 +86,9 @@ def create_nexus_celery_worker_app(
     lifecycle=None,
     kv_store: Optional[DistributedKVStore] = None,
     causal_evidence_persistence: CausalEvidencePersistence,
+    orchestration_triggers: frozenset[str] = frozenset(),
+    pipeline_capability_suffix: str = ".pipeline",
+    task_enricher=None,
 ) -> Celery:
     """Production/lab composition root: Celery + ``nexus.task.v2`` handler."""
     if retry_policy is not None and lock_ttl_seconds is not None:
@@ -99,6 +108,9 @@ def create_nexus_celery_worker_app(
         lifecycle=lifecycle,
         kv_store=kv_store,
         execution_terminal=admission.execution_terminal,
+        orchestration_triggers=orchestration_triggers,
+        pipeline_capability_suffix=pipeline_capability_suffix,
+        task_enricher=task_enricher,
     )
 
     app = Celery(app_name, broker=broker_url, backend=backend_url)

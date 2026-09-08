@@ -1,12 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Nexus Task v2 worker execution core (§41, J.3)."""
+"""Host task worker execution core for queue-dispatched runs (NPSC-3G)."""
 
 from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+from collections.abc import Callable
 from typing import Any, Dict, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
@@ -17,6 +18,8 @@ from intergrax.runtime.background_execution.identity_admission import (
     assert_handler_run_id_matches_identity,
     assert_payload_run_id_consistent,
 )
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
@@ -27,17 +30,19 @@ from intergrax.runtime.execution.budget.persistence import (
     create_durable_run_budget_ledger_factory,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_run_bridge import (
     task_from_execution_request,
     task_result_to_payload,
 )
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.runtime.task.worker_payload import decode_execution_request
 from intergrax.tools.execution_models import ToolExecutionError, ToolExecutionResult
 
+TaskEnricher = Callable[[Task], Task]
+
 
 def _run_coro_sync(coro):
-    """Run async Nexus work from Celery's synchronous worker handler."""
+    """Run async host execution work from Celery's synchronous worker handler."""
     try:
         asyncio.get_running_loop()
     except RuntimeError:
@@ -66,16 +71,18 @@ class WorkerRunLifecycle(Protocol):
 
 
 class NexusWorkerRuntime:
-    """Composition root for worker-side Nexus execution."""
+    """Composition root for worker-side host task execution."""
 
     def __init__(
         self,
-        task_runner: UnifiedTaskRunner,
+        host_execution: HostTaskExecutionPort,
         *,
         lifecycle: Optional[WorkerRunLifecycle] = None,
+        task_enricher: TaskEnricher | None = None,
     ) -> None:
-        self._task_runner = task_runner
+        self._host_execution = host_execution
         self._lifecycle = lifecycle
+        self._task_enricher = task_enricher
 
     @classmethod
     def from_registry(
@@ -88,6 +95,9 @@ class NexusWorkerRuntime:
         run_budget_persistence: RunBudgetPersistence | None = None,
         execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
         execution_terminal: ExecutionTerminalService | None = None,
+        orchestration_triggers: frozenset[str] = frozenset(),
+        pipeline_capability_suffix: str = ".pipeline",
+        task_enricher: TaskEnricher | None = None,
     ) -> NexusWorkerRuntime:
         resolved_factory = execution_budget_ledger_factory
         if resolved_factory is None and run_budget_persistence is not None:
@@ -102,18 +112,20 @@ class NexusWorkerRuntime:
             execution_budget_ledger_factory=resolved_factory,
             execution_terminal=execution_terminal,
         )
+        host_execution = build_host_task_execution(
+            loop,
+            orchestration_triggers=orchestration_triggers,
+            pipeline_capability_suffix=pipeline_capability_suffix,
+        )
         return cls(
-            UnifiedTaskRunner(
-                loop,
-                execution_budget_ledger_factory=resolved_factory,
-                run_budget=run_budget,
-            ),
+            host_execution,
             lifecycle=lifecycle,
+            task_enricher=task_enricher,
         )
 
     @property
-    def task_runner(self) -> UnifiedTaskRunner:
-        return self._task_runner
+    def host_execution(self) -> HostTaskExecutionPort:
+        return self._host_execution
 
     def execute_payload(
         self,
@@ -153,8 +165,10 @@ class NexusWorkerRuntime:
                 request,
                 execution_identity=execution_identity,
             )
+            if self._task_enricher is not None:
+                task = self._task_enricher(task)
             result = _run_coro_sync(
-                self._task_runner.run_task(
+                self._host_execution.execute(
                     task,
                     run_id=resolved_run_id,
                     attempt_id=resolved_attempt_id,

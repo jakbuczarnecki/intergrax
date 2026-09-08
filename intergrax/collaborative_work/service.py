@@ -11,8 +11,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Final, Protocol, runtime_checkable
+from typing import Final
 
+from intergrax.collaborative_work._authority_enforcement import _require_collaborative_allow
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
 from intergrax.collaborative_work.repository import (
     AssignmentNotFound,
@@ -31,42 +32,24 @@ from intergrax.collaborative_work.repository import (
 from intergrax.contracts.collaborative_work import (
     Assignment,
     AssignmentTransitionRequest,
-    AuthorityDelegation,
-    CollaborativeWorkAuthorizationDenied,
-    CollaborativeWorkEnforcementRequest,
-    CollaborativeWorkEnforcementResult,
     CollaborativeWorkLifecycleError,
     CreateAssignmentRequest,
     CreateWorkItemRequest,
-    MembershipResolutionMode,
     TransitionAssignmentRequest,
     TransitionWorkItemRequest,
     WorkItem,
     WorkItemTransitionRequest,
-    WorkspaceMembership,
     apply_assignment_transition,
     apply_work_item_transition,
     validate_assignment_state_transition,
     validate_work_item_state_transition,
     work_item_resource_scope,
 )
-from intergrax.contracts.runtime_policy import PolicyAction
 
 TRUSTED_OPERATION_WORK_ITEM_CREATE: Final = "collaborative_work.work_item.create"
 TRUSTED_OPERATION_WORK_ITEM_TRANSITION: Final = "collaborative_work.work_item.transition"
 TRUSTED_OPERATION_ASSIGNMENT_CREATE: Final = "collaborative_work.assignment.create"
 TRUSTED_OPERATION_ASSIGNMENT_TRANSITION: Final = "collaborative_work.assignment.transition"
-
-
-@runtime_checkable
-class _AuthorityContextRequest(Protocol):
-    tenant_id: str
-    workspace_id: str
-    acting_principal_id: str
-    delegator_principal_id: str | None
-    membership: WorkspaceMembership | None
-    membership_resolution_mode: MembershipResolutionMode
-    delegation: AuthorityDelegation | None
 
 
 class CollaborativeWorkService:
@@ -87,7 +70,8 @@ class CollaborativeWorkService:
 
     def create_work_item(self, request: CreateWorkItemRequest) -> WorkItem:
         resource_scope = work_item_resource_scope(work_item_id=request.work_item_id)
-        self._require_allow(
+        _require_collaborative_allow(
+            enforcement_gate=self._enforcement_gate,
             operation_id=TRUSTED_OPERATION_WORK_ITEM_CREATE,
             request=request,
             resource_scope=resource_scope,
@@ -116,7 +100,8 @@ class CollaborativeWorkService:
         self._assert_work_item_revision(work_item, expected_revision=request.expected_revision)
         self._validate_work_item_transition(work_item=work_item, request=request)
         resource_scope = work_item_resource_scope(work_item_id=work_item.work_item_id)
-        self._require_allow(
+        _require_collaborative_allow(
+            enforcement_gate=self._enforcement_gate,
             operation_id=TRUSTED_OPERATION_WORK_ITEM_TRANSITION,
             request=request,
             resource_scope=resource_scope,
@@ -150,7 +135,8 @@ class CollaborativeWorkService:
             work_item_id=request.work_item_id,
         )
         resource_scope = work_item_resource_scope(work_item_id=work_item.work_item_id)
-        self._require_allow(
+        _require_collaborative_allow(
+            enforcement_gate=self._enforcement_gate,
             operation_id=TRUSTED_OPERATION_ASSIGNMENT_CREATE,
             request=request,
             resource_scope=resource_scope,
@@ -179,7 +165,8 @@ class CollaborativeWorkService:
         self._assert_assignment_revision(assignment, expected_revision=request.expected_revision)
         self._validate_assignment_transition(assignment=assignment, request=request)
         resource_scope = work_item_resource_scope(work_item_id=assignment.work_item_id)
-        self._require_allow(
+        _require_collaborative_allow(
+            enforcement_gate=self._enforcement_gate,
             operation_id=TRUSTED_OPERATION_ASSIGNMENT_TRANSITION,
             request=request,
             resource_scope=resource_scope,
@@ -293,29 +280,6 @@ class CollaborativeWorkService:
             from_state=assignment.state,
             to_state=request.target_state,
         )
-
-    def _require_allow(
-        self,
-        *,
-        operation_id: str,
-        request: _AuthorityContextRequest,
-        resource_scope: str,
-    ) -> CollaborativeWorkEnforcementResult:
-        enforcement_request = CollaborativeWorkEnforcementRequest(
-            tenant_id=request.tenant_id,
-            workspace_id=request.workspace_id,
-            operation_id=operation_id,
-            acting_principal_id=request.acting_principal_id,
-            delegator_principal_id=request.delegator_principal_id,
-            resource_scope=resource_scope,
-            membership=request.membership,
-            membership_resolution_mode=request.membership_resolution_mode,
-            delegation=request.delegation,
-        )
-        result = self._enforcement_gate.evaluate(enforcement_request)
-        if result.composition.decision.action is not PolicyAction.ALLOW:
-            raise CollaborativeWorkAuthorizationDenied(enforcement_result=result)
-        return result
 
     @staticmethod
     def _work_item_transition_request(

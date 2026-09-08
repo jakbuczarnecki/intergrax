@@ -18,6 +18,9 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_gathering import (
     gather_incident_evidence,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
+    derive_evidence_phase_context,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     build_investigation_summary,
     completion_mode_from_proposal,
@@ -163,12 +166,14 @@ class IncidentInvestigatorAgent(Agent):
         )
 
         evidence_nodes = list(gathering.evidence_nodes)
+        evidence_phase_context = derive_evidence_phase_context(gathering.stop_reason)
         proposal = propose_incident_reasoning(
             runtime_state=runtime_state,
             evidence_nodes=evidence_nodes,
             prior_state=prior_state,
             critic_feedback=critic_feedback,
             is_revision=is_revision,
+            evidence_phase_context=evidence_phase_context,
             investigation_input=self._investigation_input,
         )
         pending_conversion = convert_proposal_to_pending_claims(

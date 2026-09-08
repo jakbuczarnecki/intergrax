@@ -9,6 +9,7 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterDependencyError,
+    LLMProviderNotConfiguredError,
     LLMAdapterFactory,
     LLMAdapterRegistrationError,
     LLMAdapterRegistrationSpec,
@@ -18,6 +19,7 @@ from intergrax.llm_adapters.registry.registration_contract import (
 
 __all__ = [
     "LLMAdapterDependencyError",
+    "LLMProviderNotConfiguredError",
     "LLMAdapterFactory",
     "LLMAdapterRegistrationError",
     "LLMAdapterRegistrationSpec",
@@ -27,9 +29,24 @@ __all__ = [
 ]
 
 
+class _BuiltinBootstrapRegistry:
+    """Builtin registration target that preserves existing provider entries."""
+
+    @staticmethod
+    def register_from_spec(
+        spec: LLMAdapterRegistrationSpec,
+        *,
+        override: bool = False,
+    ) -> None:
+        LLMAdapterRegistry.register_from_spec(
+            spec,
+            override=override,
+            skip_if_present=True,
+        )
+
+
 class LLMAdapterRegistry:
     _factories: dict[str, LLMAdapterFactory] = {}
-    _builtin_registrations_installed: bool = False
 
     @staticmethod
     def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
@@ -47,14 +64,16 @@ class LLMAdapterRegistry:
 
     @classmethod
     def ensure_builtin_registrations_installed(cls) -> None:
-        if cls._builtin_registrations_installed:
-            return
         from intergrax.llm_adapters.providers.registrations.builtin import (
             register_builtin_llm_adapters,
         )
 
-        register_builtin_llm_adapters(cls)
-        cls._builtin_registrations_installed = True
+        register_builtin_llm_adapters(_BuiltinBootstrapRegistry)
+
+    @classmethod
+    def reset_for_testing(cls) -> None:
+        """Clear registry contents for deterministic test isolation."""
+        cls._factories.clear()
 
     @classmethod
     def register_from_spec(
@@ -62,6 +81,7 @@ class LLMAdapterRegistry:
         spec: LLMAdapterRegistrationSpec,
         *,
         override: bool = False,
+        skip_if_present: bool = False,
     ) -> None:
         key = cls._normalize_provider(spec.provider_id)
         if key != spec.provider_id.strip().lower():
@@ -70,6 +90,8 @@ class LLMAdapterRegistry:
                 "must already be normalized."
             )
         if key in cls._factories and not override:
+            if skip_if_present:
+                return
             raise ValueError(f"LLM adapter already registered for provider='{key}'")
         cls._factories[key] = spec.factory
 

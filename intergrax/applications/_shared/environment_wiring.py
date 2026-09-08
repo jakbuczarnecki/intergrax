@@ -22,11 +22,8 @@ from intergrax.applications._shared.context_wiring import (
 from intergrax.applications._shared.integration_wiring import (
     bootstrap_application_integration_catalog,
 )
-from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
-from intergrax.applications._shared.rag_runtime_bridge import (
-    resolve_rag_profile_for_environment,
-    resolve_rag_stack_for_environment,
-)
+from intergrax.applications._shared.llm_resolver import resolve_optional_environment_llm_adapter
+from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.policy_wiring import (
     assert_strict_policy_bootstrap_acceptable,
@@ -253,7 +250,7 @@ def wire_application_environment(
             env,
             tenant_id=tenant_id,
             integration_profile=resolved_integration,
-            llm_adapter=resolve_environment_llm_adapter(env),
+            llm_adapter=resolve_optional_environment_llm_adapter(env),
         )
         assert_memory_vector_backend_available(env, rag_stack)
 
@@ -303,9 +300,7 @@ def wire_application_environment(
         from dataclasses import replace
 
         wiring_context = replace(wiring_context, key_value_cache=key_value_cache)
-    codecraft_wiring = wire_application_codecraft(
-        env, producer_adapter=resolve_environment_llm_adapter(env)
-    )
+    codecraft_wiring = wire_application_codecraft(env, producer_adapter=None)
     wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
     from dataclasses import replace
 

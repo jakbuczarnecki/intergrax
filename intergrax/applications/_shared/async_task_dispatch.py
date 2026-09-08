@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from intergrax.applications._shared.async_task_index_protocol import AsyncTaskIndexProtocol
 
 from intergrax.runtime.task.task import Task, TaskResult
+from intergrax.runtime.interactions.task_executor import TaskExecutor
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
@@ -58,6 +59,31 @@ class InMemoryAsyncTaskIndex:
         self._tasks[task_id] = asyncio.create_task(_run())
         return self._handles[task_id]
 
+    async def enqueue_task_executor(self, executor: TaskExecutor, task: Task) -> AsyncTaskHandle:
+        task_id = task.task_id
+        self._handles[task_id] = AsyncTaskHandle(task_id=task_id, status="pending")
+
+        async def _run() -> TaskResult:
+            self._handles[task_id] = AsyncTaskHandle(task_id=task_id, status="running")
+            try:
+                result = await executor.execute(task)
+            except Exception as exc:
+                self._handles[task_id] = AsyncTaskHandle(
+                    task_id=task_id,
+                    status="failed",
+                    error=f"{exc.__class__.__name__}: {exc}",
+                )
+                raise
+            self._handles[task_id] = AsyncTaskHandle(
+                task_id=task_id,
+                status=result.state.value,
+                result=result,
+            )
+            return result
+
+        self._tasks[task_id] = asyncio.create_task(_run())
+        return self._handles[task_id]
+
     def clear_for_tests(self) -> None:
         self._handles.clear()
         self._tasks.clear()
@@ -75,6 +101,24 @@ async def run_async(
     """Enqueue a Nexus task without blocking the caller."""
     store = index or _DEFAULT_INDEX
     handle = await store.enqueue(runner, task)
+    return {
+        "task_id": handle.task_id,
+        "status": handle.status,
+        "async": True,
+    }
+
+
+async def run_async_task_executor(
+    executor: TaskExecutor,
+    task: Task,
+    *,
+    index: "AsyncTaskIndexProtocol | InMemoryAsyncTaskIndex | None" = None,
+) -> dict[str, Any]:
+    """Enqueue a task through canonical host execution without blocking the caller."""
+    store = index or _DEFAULT_INDEX
+    if not isinstance(store, InMemoryAsyncTaskIndex):
+        raise TypeError("canonical async dispatch requires InMemoryAsyncTaskIndex")
+    handle = await store.enqueue_task_executor(executor, task)
     return {
         "task_id": handle.task_id,
         "status": handle.status,

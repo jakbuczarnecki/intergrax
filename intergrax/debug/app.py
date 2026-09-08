@@ -24,6 +24,8 @@ from intergrax.runtime.adaptive.proposal_store import ProposalStore
 from intergrax.runtime.adaptive.signal_store import SignalStore
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
@@ -43,6 +45,7 @@ def create_debug_app(
     registry: Optional[AgentRegistry] = None,
     hitl_service: DebugHitlResumeService | None = None,
     interaction_service: DebugInteractionIntakeService | None = None,
+    host_execution: HostTaskExecutionPort | None = None,
     nexus_loop: NexusLoop | None = None,
     delivery_ledger: DeliveryLedger | None = None,
     adaptive_signal_store: SignalStore | None = None,
@@ -64,29 +67,51 @@ def create_debug_app(
         db_path=runtime_events_db_path,
         implementation=runtime_event_store,
     )
-    resolved_hitl = hitl_service
-    if resolved_hitl is None and registry is not None:
-        resolved_hitl = DebugHitlResumeService(
-            registry,
-            checkpoint_store=resolved_checkpoint_store,
-            runtime_event_store=resolved_runtime_store,
-        )
-
     resolved_loop = nexus_loop
-    if resolved_loop is None and registry is not None:
+    if resolved_loop is None and registry is not None and host_execution is None:
         resolved_loop = NexusLoop(
             registry,
             checkpoint_store=resolved_checkpoint_store,
             trace_store=trace_store,
             runtime_event_store=resolved_runtime_store,
         )
+    resolved_hitl = hitl_service
+    if resolved_hitl is None and resolved_checkpoint_store is not None:
+        if host_execution is not None:
+            resolved_hitl = DebugHitlResumeService(
+                host_execution=host_execution,
+                checkpoint_store=resolved_checkpoint_store,
+            )
+        elif registry is not None and resolved_loop is not None:
+            from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+
+            resolved_hitl = DebugHitlResumeService(
+                host_execution=build_host_task_execution(
+                    resolved_loop,
+                    orchestration_triggers=frozenset(),
+                ),
+                checkpoint_store=resolved_checkpoint_store,
+            )
 
     resolved_interaction = interaction_service
     if resolved_interaction is None and registry is not None:
-        resolved_interaction = DebugInteractionIntakeService(
-            nexus_loop=resolved_loop,
-            verifier=create_inbound_verifier(),
-        )
+        if host_execution is not None:
+            resolved_interaction = DebugInteractionIntakeService(
+                task_executor=HostTaskExecutionExecutor(host_execution),
+                verifier=create_inbound_verifier(),
+            )
+        elif resolved_loop is not None:
+            from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+
+            resolved_interaction = DebugInteractionIntakeService(
+                task_executor=HostTaskExecutionExecutor(
+                    build_host_task_execution(
+                        resolved_loop,
+                        orchestration_triggers=frozenset(),
+                    )
+                ),
+                verifier=create_inbound_verifier(),
+            )
 
     app = FastAPI(
         title="Intergrax Debug API",

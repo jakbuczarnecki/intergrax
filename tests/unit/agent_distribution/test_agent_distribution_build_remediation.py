@@ -669,7 +669,9 @@ def test_r1_5_auth_persist_identity_parity() -> None:
     assert f"digest:{identity_digest}" in target
 
 
-def test_r1_7_reference_admission_allow_persists_revision() -> None:
+def test_r1_7_reference_admission_allow_persists_revision(
+    configured_research_llm: None,
+) -> None:
     from intergrax.applications._shared.production_process_composition import (
         create_reference_production_process_composition,
     )
@@ -700,7 +702,9 @@ def test_r1_7_reference_admission_allow_persists_revision() -> None:
     assert len(composition.agent_platform_runtime.distribution_state.revisions) == before + 1
 
 
-def test_r1_8_reference_admission_deny_zero_revision_writes() -> None:
+def test_r1_8_reference_admission_deny_zero_revision_writes(
+    configured_research_llm: None,
+) -> None:
     from intergrax.applications._shared.production_process_composition import (
         create_reference_production_process_composition,
     )
@@ -735,7 +739,9 @@ def test_r1_8_reference_admission_deny_zero_revision_writes() -> None:
     assert len(composition.agent_platform_runtime.distribution_state.revisions) == before
 
 
-def test_r1_9_reference_admission_require_human_zero_writes() -> None:
+def test_r1_9_reference_admission_require_human_zero_writes(
+    configured_research_llm: None,
+) -> None:
     from intergrax.applications._shared.production_process_composition import (
         create_reference_production_process_composition,
     )
@@ -780,7 +786,9 @@ class _AdmissionAllowActivationDenyEvaluator:
         return PolicyDecision(action=PolicyAction.DENY, reason="activation-deny")
 
 
-def test_r1_11_admission_allow_activation_deny_leaves_traffic_unchanged() -> None:
+def test_r1_11_admission_allow_activation_deny_leaves_traffic_unchanged(
+    configured_research_llm: None,
+) -> None:
     from intergrax.applications._shared.production_process_composition import (
         create_reference_production_process_composition,
     )

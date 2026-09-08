@@ -19,7 +19,6 @@ from intergrax.applications._shared.harness_principal import (
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from research_application.serving.schemas import ResearchRunRequestV1, ResearchRunResponseV1
 
 
@@ -54,9 +53,7 @@ class ResearchRunService:
             tenant_id = body.tenant_id
             user_id = body.user_id
 
-        task_id, _ = mint_intake_execution_identity()
         task = Task(
-            task_id=task_id,
             tenant_id=tenant_id,
             user_id=user_id,
             session_id=body.session_id,

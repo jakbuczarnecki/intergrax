@@ -13,20 +13,18 @@ from intergrax.debug.app import create_debug_app
 from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_routes
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
-from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
-from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
 from lab_application.host.agent_builders import LAB_AGENT_BUILDERS
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import bootstrap_lab_integration_wiring
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
-from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.acp_checkpoint_task_enricher import make_acp_checkpoint_task_enricher
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
@@ -41,15 +39,21 @@ from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, defau
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
 from lab_application.serving.fastapi_router import mount_lab_routes
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
-from intergrax.applications._shared.task_control_wiring import (
-    build_reliability_task_enricher,
-    build_task_runner_with_enricher,
-    wire_harness_task_control,
+from intergrax.applications._shared.harness_host_auxiliary_wiring import (
+    wire_harness_host_long_running_scheduler,
+    wire_harness_host_task_control,
 )
 from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
 from intergrax.applications._shared.replay_routes import create_replay_router
 from intergrax.applications._shared.scaling_wiring import wire_application_scaling
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 
 
 def create_lab_application(
@@ -106,12 +110,8 @@ def create_lab_application(
         notification_adapter=integrations.notification_adapter,
     )
     host_execution = runtime.execution
-    nexus_loop = resolve_harness_host_nexus_loop_legacy(runtime)
     resolved_registry = runtime.registry
-    plugin_bootstrap = bootstrap_nexus_platform(
-        nexus_loop,
-        trace_store=integrations.trace_store,  # type: ignore[arg-type]
-    )
+    plugin_bootstrap = bootstrap_harness_host_platform(runtime)
     lab_notify_enricher = make_lab_harness_task_enricher(
         default_notify_channel=integrations.default_long_running_notify_channel,
         harness=settings.harness,
@@ -127,22 +127,23 @@ def create_lab_application(
             task = lab_notify_enricher(task)
         return task
 
-    task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
-    scheduler_wiring = wire_long_running_scheduler(
+    scheduler_wiring = wire_harness_host_long_running_scheduler(
+        runtime,
         checkpoint_store=integrations.checkpoint_store,
-        task_runner=task_runner,
+        host_execution=host_execution,
+        task_enricher=task_enricher,
         notification_adapter=integrations.notification_adapter,
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
     interaction_service = DebugInteractionIntakeService(
-        nexus_loop=nexus_loop,
+        task_executor=HostTaskExecutionExecutor(host_execution, task_enricher=task_enricher),
         adapter=integrations.interaction_adapter,
         verifier=create_inbound_verifier(),
         task_enricher=task_enricher,
     )
     hitl_service = DebugHitlResumeService(
-        resolved_registry,
+        host_execution=host_execution,
         checkpoint_store=integrations.checkpoint_store,
     )
 
@@ -152,7 +153,6 @@ def create_lab_application(
         runtime_events_db_path=integrations.runtime_events_db_path,
         checkpoints_db_path=integrations.checkpoints_db_path,
         registry=resolved_registry,
-        nexus_loop=nexus_loop,
         interaction_service=interaction_service,
         hitl_service=hitl_service,
         checkpoint_store=integrations.checkpoint_store,
@@ -176,10 +176,10 @@ def create_lab_application(
         prefix=settings.route_prefix,
         task_enricher=task_enricher,
     )
-    wire_harness_task_control(
+    wire_harness_host_task_control(
         app,
         enabled=True,
-        task_runner=task_runner,
+        host_execution=host_execution,
         env=lab_env,
         checkpoint_store=integrations.checkpoint_store,
         task_enricher=task_enricher,
@@ -197,7 +197,7 @@ def create_lab_application(
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     scaling_wiring = wire_application_scaling(
         lab_env,
-        event_bus=resolve_harness_host_nexus_loop_legacy(runtime).event_bus,
+        event_bus=resolve_harness_host_event_bus(runtime),
     )
     factory_schedulers = [s for s in (scheduler, scaling_wiring.scheduler) if s is not None]
     if settings.include_mcp:

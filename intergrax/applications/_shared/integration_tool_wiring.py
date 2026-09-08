@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 from intergrax.integrations._shared.speech_integration_bridge import (
     IntegrationSpeechAdapter,
     infer_speech_provider_slug,
@@ -45,7 +43,7 @@ def wire_integration_tool_context(
         feature_flag_backend=ctx.feature_flag_backend
         or _resolve_optional(integration_profile, IntegrationCategory.FEATURE_FLAG),
         ci_cd_backend=ctx.ci_cd_backend or _resolve_optional(integration_profile, IntegrationCategory.CI_CD),
-        message_bus=ctx.message_bus or _resolve_optional(integration_profile, IntegrationCategory.MESSAGE_BUS),
+        message_bus=_selected_message_bus_runtime(ctx, integration_profile),
         graph_store=ctx.graph_store or _resolve_optional(integration_profile, IntegrationCategory.GRAPH_STORE),
         collaboration_suite=ctx.collaboration_suite
         or _resolve_optional(integration_profile, IntegrationCategory.COLLABORATION_SUITE),
@@ -83,8 +81,6 @@ def wire_integration_tool_context(
         extras=dict(ctx.extras),
     )
 
-    updated = _compose_kafka_message_bus_with_kv_store(updated, integration_profile)
-
     speech_slug = integration_profile.slug_for_category(IntegrationCategory.SPEECH_PROVIDER)
     if updated.speech_provider is not None:
         provider_slug = (
@@ -101,21 +97,19 @@ def wire_integration_tool_context(
     return updated
 
 
-def _compose_kafka_message_bus_with_kv_store(
+def _selected_message_bus_runtime(
     ctx: ToolWiringContext,
-    integration_profile: IntegrationProfile,
-) -> ToolWiringContext:
+    profile: IntegrationProfile,
+) -> object | None:
+    """Return only pre-materialized message bus instances for wiring context.
+
+    Catalog bindings on ``IntegrationProfile`` declare selection only; runtime
+    materialization belongs to explicit composition roots (for example
+    ``profile.resolve`` or provider factories), not host environment wiring.
+    """
     if ctx.message_bus is not None:
-        return ctx
-    if integration_profile.slug_for_category(IntegrationCategory.MESSAGE_BUS) != "kafka":
-        return ctx
-    kv_store = ctx.key_value_cache
-    if kv_store is None:
-        return ctx
-
-    from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_message_bus
-
-    return replace(ctx, message_bus=create_kafka_message_bus(kv_store=kv_store))
+        return ctx.message_bus
+    return profile.instance_for_category(IntegrationCategory.MESSAGE_BUS)
 
 
 def _resolve_optional(profile: IntegrationProfile, category: IntegrationCategory) -> object | None:

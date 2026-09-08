@@ -5,19 +5,24 @@
 
 from __future__ import annotations
 
-from typing import Sequence
 
 from pydantic import PrivateAttr
 
+from intergrax.integrations.providers.sandbox_host.e2b.config import E2bSandboxHostConfig
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
+from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend, SandboxSession
 from intergrax.runtime.integrations.categories.devops import SandboxHostIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.sandbox.contracts import (
+    SandboxSecurityConfigurable,
+    SandboxSecurityRequirements,
+    SandboxSessionSecurityEvidenceProvider,
+)
 
 E2B_SANDBOX_HOST_PROVIDER_ID = "e2b"
 
 
-class E2bSandboxHostIntegrationConfig(CategoryIntegrationConfig):
+class E2bSandboxHostIntegrationConfig(E2bSandboxHostConfig, CategoryIntegrationConfig):
     """Typed config for E2B sandbox host integration."""
 
     pass
@@ -38,6 +43,25 @@ class E2bSandboxHostIntegration(SandboxHostIntegrationContract):
 
     def create_session(self):
         return self._require_client().create_session()
+
+    def create_session_with_security(
+        self,
+        requirements: SandboxSecurityRequirements,
+    ) -> SandboxSession:
+        client = self._require_client()
+        if not isinstance(client, SandboxSecurityConfigurable):
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} client does not support sandbox security configuration",
+            )
+        return client.create_session_with_security(requirements)
+
+    def session_security_capabilities(self, session_id: str):
+        client = self._require_client()
+        if not isinstance(client, SandboxSessionSecurityEvidenceProvider):
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} client does not provide session security evidence",
+            )
+        return client.session_security_capabilities(session_id)
 
     def exec(self, session_id, command):
         return self._require_client().exec(session_id, command)
@@ -73,3 +97,5 @@ class E2bSandboxHostIntegration(SandboxHostIntegrationContract):
         return self._client
 
 SandboxHostBackend.register(E2bSandboxHostIntegration)
+SandboxSecurityConfigurable.register(E2bSandboxHostIntegration)
+SandboxSessionSecurityEvidenceProvider.register(E2bSandboxHostIntegration)

@@ -43,8 +43,9 @@ def materialize_local_workspace_message_bus_profile(
     """
     When message bus is enabled, keep serializable catalog bindings on the profile.
 
-    Live Kafka bus + Redis KV are composed later in ``wire_integration_tool_context``
-    so package closure checksums do not embed non-serializable runtime instances.
+    Live Kafka bus + Redis KV are composed at explicit composition roots
+    (for example ``create_local_workspace_kafka_message_bus`` or
+    ``profile.resolve``), not during host environment wiring.
     """
     if not local_workspace_message_bus_enabled():
         return profile

@@ -7,7 +7,14 @@ from __future__ import annotations
 import pytest
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_host_runtime_compat import resolve_harness_host_nexus_loop_legacy
+from intergrax.applications._shared.harness_host_composition import (
+    bootstrap_harness_host_application_plugins,
+    bootstrap_harness_host_platform,
+    resolve_harness_host_event_bus,
+    resolve_harness_host_lifecycle_hook_coordinator,
+    resolve_harness_host_middleware_pipeline,
+    resolve_harness_host_runtime_event_persistence,
+)
 from intergrax.applications._shared.production_platform_persistence import (
     build_reference_production_platform_persistence,
     resolve_reference_production_strict_host_environment,
@@ -21,10 +28,12 @@ from research_application.tests.research_ac3_projection import build_research_te
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-def test_research_factory_uses_projected_registry_not_manifest_extra_agents() -> None:
+def test_research_factory_uses_projected_registry_not_manifest_extra_agents(
+    configured_research_llm: None,
+) -> None:
     settings = ResearchBackendSettings(use_nexus_loop=True)
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(settings)
+    env = build_research_environment_profile(settings)
     projection = build_research_test_registry_projection(
         settings,
         revision_id="rev-research-e2e",
@@ -58,8 +67,8 @@ def test_research_factory_uses_projected_registry_not_manifest_extra_agents() ->
     )
     assert runtime.registry_projection_evidence is not None
     assert runtime.registry_projection_evidence.runtime_revision_id == "rev-research-e2e"
-    assert resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids() == ["research"]
-    assert "summary" not in resolve_harness_host_nexus_loop_legacy(runtime).registry.list_agent_ids()
+    assert runtime.registry.list_agent_ids() == ["research"]
+    assert "summary" not in runtime.registry.list_agent_ids()
 
 
 def _binding_stem(binding) -> str:

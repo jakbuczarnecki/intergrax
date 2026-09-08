@@ -28,6 +28,9 @@ from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
 
 from intergrax.applications.contracts.environment_profile.domain_policy import DomainPolicyFragments
+from intergrax.applications.contracts.environment_profile.governance_permission_preset import (
+    GovernancePermissionPreset,
+)
 from intergrax.applications.contracts.environment_profile.sub_profiles import (
     AdaptiveProfile,
     ApplicationSecurityProfile,
@@ -296,6 +299,7 @@ class GovernanceBundle(BaseModel):
     )
     deployment: HostDeploymentProfile = Field(default_factory=HostDeploymentProfile)
     boundary_export: ExecutionBoundaryExportProfile | None = None
+    permission_preset: GovernancePermissionPreset | None = None
 
     @classmethod
     def lab(cls) -> GovernanceBundle:

@@ -15,7 +15,7 @@ from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import CreateRunRequest, RunStatus
 from intergrax.queueing.providers.celery.celery_task_queue import CeleryTaskQueue
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.queued_nexus_execution_adapter import QueuedNexusExecutionAdapter
+from intergrax.runtime.task.queued_host_task_execution_adapter import QueuedHostTaskExecutionAdapter
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app
@@ -47,7 +47,7 @@ def _echo_celery_stack(*, wait_for_result: bool = True):
     queue = CeleryTaskQueue(app)
     store = DummyRunStore()
     service = DefaultRunService(store, execution_adapter=None)
-    adapter = QueuedNexusExecutionAdapter(
+    adapter = QueuedHostTaskExecutionAdapter(
         queue,
         service,
         wait_for_result=wait_for_result,
@@ -75,7 +75,7 @@ def test_worker_payload_roundtrip_execution_request() -> None:
     assert restored.input_payload["task"]["message"] == "payload roundtrip"
 
 
-def test_queued_nexus_execution_adapter_runs_echo_via_celery_eager() -> None:
+def test_queued_host_task_execution_adapter_runs_echo_via_celery_eager() -> None:
     service, store, _ = _echo_celery_stack()
     task = Task(
         tenant_id="t1",
@@ -227,7 +227,7 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
     queue = CeleryTaskQueue(app)
     store = DummyRunStore()
     service = DefaultRunService(store, execution_adapter=None)
-    adapter = QueuedNexusExecutionAdapter(queue, service, wait_for_result=True)
+    adapter = QueuedHostTaskExecutionAdapter(queue, service, wait_for_result=True)
     service._execution_adapter = adapter
 
     resumed_task = Task(

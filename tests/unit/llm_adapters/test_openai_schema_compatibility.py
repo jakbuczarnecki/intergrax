@@ -12,8 +12,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.llm_adapters.providers._openai_schema import (
     prepare_openai_strict_generation_schema,
+    project_atomic_planner_round_parameters_for_openai_strict,
     project_json_schema_for_openai_strict,
+    project_json_schema_for_openai_strict_tool_parameters,
 )
+from intergrax.runtime.nexus.tools.atomic_planner_round import (
+    build_atomic_planner_round_parameters_schema,
+)
+from testing_support.atomic_planner_round_transport import poc_business_tool_schemas
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     ClaimProposal,
     IncidentReasoningProposal,
@@ -139,3 +145,30 @@ def test_defs_references_are_normalized_recursively() -> None:
     assert branch_a["required"] == ["detail", "kind"]
     assert branch_b["required"] == ["count", "kind"]
     assert "default" not in branch_a["properties"]["detail"]
+
+
+def test_atomic_planner_tool_parameters_projection_preserves_semantics() -> None:
+    canonical = build_atomic_planner_round_parameters_schema(poc_business_tool_schemas())
+    projected = project_atomic_planner_round_parameters_for_openai_strict(canonical)
+
+    actions = projected["properties"]["actions"]
+    assert actions["minItems"] == 1
+    assert "oneOf" not in actions["items"]
+    action_item = actions["items"]
+    assert action_item["additionalProperties"] is False
+    assert action_item["required"] == ["arguments_json", "tool_id"]
+    tool_id_schema = action_item["properties"]["tool_id"]
+    assert tool_id_schema["type"] == "string"
+    assert set(tool_id_schema["enum"]) == {
+        "production.metrics.query",
+        "production.staffing.attendance.read",
+        "production.telemetry.read",
+    }
+    arguments_json = action_item["properties"]["arguments_json"]
+    assert arguments_json["type"] == "string"
+    assert "description" not in arguments_json
+
+    action_context = projected["properties"]["action_context"]
+    assert "anyOf" in action_context
+    assert "action_context" in projected["required"]
+    assert projected["additionalProperties"] is False

@@ -21,7 +21,7 @@ def build_research_test_registry_projection(
     """Revision-bound projection for research factory integration tests."""
     resolved_settings = settings or ResearchBackendSettings.from_env()
     manifest = RESEARCH_APPLICATION_MANIFEST
-    env = manifest.environment or build_research_environment_profile(resolved_settings)
+    env = build_research_environment_profile(resolved_settings)
     return build_test_registry_projection(
         manifest,
         env,

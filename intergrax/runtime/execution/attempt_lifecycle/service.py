@@ -14,10 +14,10 @@ from intergrax.contracts.attempt_lifecycle import (
 from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
-    mint_attempt_id,
     validate_attempt_id,
     validate_run_id,
 )
+from intergrax.runtime.execution.identity_authority import mint_retry_attempt_id
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
     DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG,
@@ -95,7 +95,7 @@ class AttemptLifecycleService:
             raise ValueError("transition_to_next_attempt supports RETRY reason only")
         validated_run_id = validate_run_id(run_id)
         validated_expected = validate_attempt_id(expected_attempt_id)
-        new_attempt_id = mint_attempt_id()
+        new_attempt_id = mint_retry_attempt_id()
 
         for _ in range(8):
             current_raw = self._load_raw_or_raise(tenant_id=tenant_id, run_id=validated_run_id)

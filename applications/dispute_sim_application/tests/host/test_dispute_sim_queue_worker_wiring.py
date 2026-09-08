@@ -10,11 +10,17 @@ from fastapi.testclient import TestClient
 from dispute_sim_application.host.factory import create_dispute_sim_backend_app
 from dispute_sim_application.host.settings import DisputeSimBackendSettings
 from dispute_sim_application.tests.dispute_sim_ac3_projection import (
+    build_dispute_sim_host_test_manifest,
     build_dispute_sim_test_registry_projection,
+)
+from testing_support.host_fixture_wiring import (
+    install_diagnostic_cursor_secret,
+    install_host_llm_stub,
+    reference_host_document_store,
+    reference_host_platform_persistence_kwargs,
 )
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.fastapi_core.config import ApiEnvironment
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from tests.unit.queueing.worker.dispatcher_test_kv import DispatcherTestKVStore
 
 pytestmark = pytest.mark.unit
@@ -71,12 +77,53 @@ def dev_settings() -> DisputeSimBackendSettings:
     )
 
 
+@pytest.fixture
+def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+    install_host_llm_stub(monkeypatch)
+
+
+@pytest.fixture
+def _diagnostic_cursor_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    install_diagnostic_cursor_secret(monkeypatch)
+
+
+@pytest.fixture
+def dispute_sim_host_test_manifest(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "dispute_sim_application.host.factory.build_dispute_sim_manifest",
+        build_dispute_sim_host_test_manifest,
+    )
+
+
+@pytest.fixture
+def _stub_queue_worker_wiring(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.applications._shared.queue_worker_wiring import QueueWorkerWiring
+    from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
+
+    def _wire_optional_queue_execution(*, host_execution, **kwargs: object) -> QueueWorkerWiring:
+        del kwargs
+        return QueueWorkerWiring(execution_adapter=HostTaskExecutionRunAdapter(host_execution))
+
+    monkeypatch.setattr(
+        "dispute_sim_application.host.factory.wire_optional_queue_execution",
+        _wire_optional_queue_execution,
+    )
+
+
 def test_dispute_sim_backend_builds_with_queue_worker_disabled(
     dev_settings: DisputeSimBackendSettings,
+    _stub_host_llm: None,
+    _diagnostic_cursor_secret: None,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(
+        "dispute_sim_application.host.factory.build_dispute_sim_manifest",
+        lambda: build_dispute_sim_host_test_manifest(strict_platform_backing=True),
+    )
     app = create_dispute_sim_backend_app(
         registry_projection=build_dispute_sim_test_registry_projection(),
         settings=dev_settings,
+        **reference_host_platform_persistence_kwargs(),
     )
     client = TestClient(app)
     assert client.get("/health").status_code in {200, 204}
@@ -84,13 +131,21 @@ def test_dispute_sim_backend_builds_with_queue_worker_disabled(
 
 def test_dispute_sim_backend_builds_with_queue_worker_and_platform_storage(
     dev_settings: DisputeSimBackendSettings,
+    dispute_sim_host_test_manifest: None,
+    _stub_host_llm: None,
+    _diagnostic_cursor_secret: None,
+    _stub_queue_worker_wiring: None,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(
+        "dispute_sim_application.host.factory.build_dispute_sim_manifest",
+        lambda: build_dispute_sim_host_test_manifest(strict_platform_backing=True),
+    )
     settings = replace(dev_settings, include_queue_worker=True)
     app = create_dispute_sim_backend_app(
         registry_projection=build_dispute_sim_test_registry_projection(),
         settings=settings,
-        document_store=InMemoryDocumentStore(),
-        key_value_cache=_QueueWorkerKeyValueCache(kv_store=DispatcherTestKVStore()),
+        **reference_host_platform_persistence_kwargs(),
     )
     client = TestClient(app)
     assert client.get("/health").status_code in {200, 204}
@@ -98,6 +153,9 @@ def test_dispute_sim_backend_builds_with_queue_worker_and_platform_storage(
 
 def test_dispute_sim_backend_queue_worker_fails_closed_without_platform_storage(
     dev_settings: DisputeSimBackendSettings,
+    dispute_sim_host_test_manifest: None,
+    _stub_host_llm: None,
+    _diagnostic_cursor_secret: None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     settings = replace(dev_settings, include_queue_worker=True)
@@ -109,4 +167,5 @@ def test_dispute_sim_backend_queue_worker_fails_closed_without_platform_storage(
         create_dispute_sim_backend_app(
             registry_projection=build_dispute_sim_test_registry_projection(),
             settings=settings,
+            document_store=reference_host_document_store(),
         )
