@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4)
 
-**Status:** **MP-4A — APPROVED / CLOSED** · MP-4B…MP-4H **NOT STARTED**
+**Status:** **MP-4A — APPROVED / CLOSED** · **MP-4B — READY_FOR_REVIEW** · MP-4C…MP-4H **NOT STARTED**
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -58,8 +58,8 @@ Implementation rows below are **architecture/contract gates** until the relevant
 |-------|-------|
 | **ID** | MP-4B |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
-| **Purpose** | Typed Decision identity, lifecycle, and outcome contracts under `intergrax/contracts/` (location TBD at slice gate) |
+| **Status** | **READY_FOR_REVIEW** |
+| **Purpose** | Typed Decision identity, lifecycle, and outcome contracts under `intergrax/contracts/decision.py` |
 | **Dependencies** | MP-4A **Accepted / CLOSED** |
 | **Exact scope** | DecisionId; Decision lifecycle states; DecisionOutcome; references to WorkItem / WorkArtifactVersion / ExecutionProvenanceRef — no artifact or execution lifecycle ownership |
 | **REUSED** | `CollaborativePrincipal`; `ExecutionProvenanceRef`; MP-1 authority patterns; tenant/workspace scoping from CW conventions |

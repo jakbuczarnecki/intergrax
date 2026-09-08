@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Collaborative Semantics (MP-4)
 
-**Status:** **MP-4A — APPROVED / CLOSED** (ownership + contracts freeze) · MP-4B…MP-4H **NOT STARTED**
+**Status:** **MP-4A — APPROVED / CLOSED** (ownership + contracts freeze) · **MP-4B — READY_FOR_REVIEW** · MP-4C…MP-4H **NOT STARTED**
 **ADR:** [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md) (reference-only boundary)
 **Plan (1:1):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -112,7 +112,7 @@ UER **must not add**:
 ```text
 intergrax/contracts/
     |
-    +-- decision contracts        (MP-4B — future)
+    +-- decision contracts        (MP-4B — `intergrax/contracts/decision.py`)
     +-- approval contracts        (MP-4C — future)
     +-- governance contracts      (MP-4D+ — future; posture/evidence linkage)
 
@@ -207,7 +207,7 @@ Full slice rows: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/D
 | Slice | Scope | Status |
 |-------|-------|--------|
 | **MP-4A** | Ownership + contracts freeze (this gate) | **APPROVED / CLOSED** |
-| MP-4B | Decision contracts | NOT STARTED |
+| **MP-4B** | Decision contracts | **READY_FOR_REVIEW** |
 | MP-4C | Approval / HITL contracts | NOT STARTED |
 | MP-4D | Authority integration | NOT STARTED |
 | MP-4E | Persistence boundary | NOT STARTED |
