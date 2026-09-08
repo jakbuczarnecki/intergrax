@@ -12,6 +12,9 @@ import pytest
 pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
+_IDENTITY_AUTHORITY_PATH = (
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "identity_authority.py"
+)
 _RUNTIME_PATH = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "runtime.py"
 
 
@@ -55,10 +58,15 @@ def test_execution_runtime_execute_does_not_mint_execution_id() -> None:
 
 
 def test_runtime_module_mints_execution_id_only_in_mint_root_execution_identity() -> None:
-    mint_root_node = _function_node(_RUNTIME_PATH, "mint_root_execution_identity")
+    mint_root_node = _function_node(_IDENTITY_AUTHORITY_PATH, "mint_root_execution_identity")
+    mint_child_node = _function_node(_IDENTITY_AUTHORITY_PATH, "mint_child_execution_id")
     allowed_lines = set(_collect_mint_execution_id_calls_in_node(mint_root_node))
+    allowed_lines.update(_collect_mint_execution_id_calls_in_node(mint_child_node))
 
-    tree = ast.parse(_RUNTIME_PATH.read_text(encoding="utf-8-sig"), filename=str(_RUNTIME_PATH))
+    tree = ast.parse(
+        _IDENTITY_AUTHORITY_PATH.read_text(encoding="utf-8-sig"),
+        filename=str(_IDENTITY_AUTHORITY_PATH),
+    )
     violations: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -66,9 +74,9 @@ def test_runtime_module_mints_execution_id_only_in_mint_root_execution_identity(
         if _call_name(node.func) != "mint_execution_id":
             continue
         if node.lineno not in allowed_lines:
-            rel = _RUNTIME_PATH.relative_to(_REPO_ROOT).as_posix()
+            rel = _IDENTITY_AUTHORITY_PATH.relative_to(_REPO_ROOT).as_posix()
             violations.append(f"{rel}:{node.lineno}: mint_execution_id()")
     assert violations == [], (
-        "runtime.py must mint ExecutionId only in mint_root_execution_identity: "
+        "identity_authority.py must mint ExecutionId only in mint_root_execution_identity: "
         + ", ".join(violations)
     )

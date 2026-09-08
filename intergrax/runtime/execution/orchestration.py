@@ -11,8 +11,6 @@ from intergrax.contracts.delegation_authority import resolve_root_parent_executi
 from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
-    mint_attempt_id,
-    mint_run_id,
     require_active_execution_id,
     require_active_execution_identity,
 )
@@ -87,15 +85,11 @@ def resolve_root_task_identity(
                 "explicit attempt_id conflicts with resume checkpoint identity: "
                 f"{attempt_id!r} != {checkpoint_attempt_id!r}"
             )
-        resolved_run_id = checkpoint_run_id
-        resolved_attempt_id = checkpoint_attempt_id
-    else:
-        resolved_run_id = run_id or mint_run_id()
-        resolved_attempt_id = attempt_id or mint_attempt_id()
-    return mint_root_execution_identity(
-        run_id=resolved_run_id,
-        attempt_id=resolved_attempt_id,
-    )
+        return mint_root_execution_identity(
+            run_id=checkpoint_run_id,
+            attempt_id=checkpoint_attempt_id,
+        )
+    return mint_root_execution_identity(run_id=run_id, attempt_id=attempt_id)
 
 
 class OrchestrationExecutor:

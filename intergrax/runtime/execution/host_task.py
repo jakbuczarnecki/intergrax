@@ -14,6 +14,7 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
+    require_active_execution_id,
     require_active_execution_identity,
 )
 from intergrax.runtime.execution.agentic import AgentEnginePort
@@ -142,6 +143,48 @@ def build_host_task_strategy_router(
     )
 
 
+class _HostTaskTerminalPublishingDelegate:
+    """Publish terminal host-task events while active execution identity remains bound."""
+
+    __slots__ = ("_inner", "_terminal_publisher", "_task")
+
+    def __init__(
+        self,
+        inner: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],
+        *,
+        terminal_publisher: HostTaskTerminalPublisher | None,
+        task: Task,
+    ) -> None:
+        self._inner = inner
+        self._terminal_publisher = terminal_publisher
+        self._task = task
+
+    async def execute(
+        self,
+        request: ExecutionRequest[TaskExecutionInput, TaskResult],
+    ) -> TaskResult:
+        result = await self._inner.execute(request)
+        if (
+            self._terminal_publisher is not None
+            and terminal_outcome_from_task_state(result.state) is not None
+        ):
+            run_id, attempt_id = require_active_execution_identity()
+            execution_id = require_active_execution_id()
+            terminal_task = self._task.model_copy(
+                update={
+                    "state": result.state,
+                    "agent_id": result.agent_id or self._task.agent_id,
+                },
+            )
+            await self._terminal_publisher.publish_terminal(
+                terminal_task,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+            )
+        return result
+
+
 class HostTaskExecutionPort(Protocol):
     async def execute(
         self,
@@ -182,11 +225,16 @@ class HostTaskExecution:
             agent_router=self._agent_router,
             orchestration_executor=self._orchestration_executor,
         )
+        delegate = _HostTaskTerminalPublishingDelegate(
+            router,
+            terminal_publisher=self._terminal_publisher,
+            task=task,
+        )
         return ExecutionRuntime[
             ExecutionRequest[TaskExecutionInput, TaskResult],
             TaskResult,
         ](
-            router,
+            delegate,
             ledger_factory=self._ledger_factory,
             run_budget=self._run_budget,
         )
@@ -237,23 +285,6 @@ class HostTaskExecution:
         await ActiveTaskRegistry.register(task, root_context.run_id)
         try:
             execution = Execution(self._execution_runtime_for_task(task))
-            result = await execution.execute(request, options=resolved_options)
-            if (
-                self._terminal_publisher is not None
-                and terminal_outcome_from_task_state(result.state) is not None
-            ):
-                terminal_task = task.model_copy(
-                    update={
-                        "state": result.state,
-                        "agent_id": result.agent_id or task.agent_id,
-                    },
-                )
-                await self._terminal_publisher.publish_terminal(
-                    terminal_task,
-                    run_id=root_context.run_id,
-                    attempt_id=root_context.attempt_id,
-                    execution_id=root_context.execution_id,
-                )
-            return result
+            return await execution.execute(request, options=resolved_options)
         finally:
             await ActiveTaskRegistry.unregister(task.task_id, root_context.run_id)

@@ -508,7 +508,8 @@ def test_three_consecutive_redeliveries_keep_run_and_attempt() -> None:
         transport_ref=transport,
         identity_persistence=persistence,
     )
-    first_run = persistence.resolve_or_create(transport)
+    first_run = persistence.load(transport)
+    assert first_run is not None
     assert second.run_id == first_run.run_id
     assert second.attempt_id == first_run.attempt_id
 

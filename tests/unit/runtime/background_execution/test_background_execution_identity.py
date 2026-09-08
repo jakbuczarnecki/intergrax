@@ -368,7 +368,7 @@ def test_kv_corrupted_identity_record_fails_closed() -> None:
     )
 
     with pytest.raises(RuntimeError, match="invalid background execution identity record"):
-        persistence.resolve_or_create(transport)
+        persistence.load(transport)
 
 
 def test_document_store_corrupted_identity_record_fails_closed() -> None:
@@ -384,7 +384,7 @@ def test_document_store_corrupted_identity_record_fails_closed() -> None:
     )
 
     with pytest.raises(RuntimeError, match="invalid background execution identity record"):
-        persistence.resolve_or_create(transport)
+        persistence.load(transport)
     store = PlainDocumentStore()
     with pytest.raises(TypeError, match="ConditionalDocumentStore"):
         DocumentStoreBackgroundExecutionIdentityPersistence(store)

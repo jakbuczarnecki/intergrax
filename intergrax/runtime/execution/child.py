@@ -8,10 +8,10 @@ from __future__ import annotations
 from typing import Generic, TypeVar
 
 from intergrax.contracts.execution_identity import (
-    mint_execution_id,
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.runtime.execution.identity_authority import mint_child_execution_id
 from intergrax.runtime.execution.active_execution_budget import (
     ActiveExecutionBudgetState,
     bind_active_execution_budget,
@@ -116,7 +116,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             )
         )
 
-        child_execution_id = mint_execution_id()
+        child_execution_id = mint_child_execution_id()
         ledger = self._resolve_ledger(parent_budget_state)
 
         grant = ledger.grant_child_budget(

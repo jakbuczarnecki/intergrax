@@ -18,6 +18,7 @@ from intergrax.runtime.background_execution.identity_persistence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
+from intergrax.runtime.execution.identity_authority import mint_background_transport_identity
 
 
 class BackgroundExecutionTenantMismatchError(ValueError):
@@ -75,7 +76,12 @@ def resolve_background_execution(
         provider=transport_ref.provider,
         transport_task_id=transport_ref.transport_task_id,
     )
-    persisted = identity_persistence.resolve_or_create(scoped_ref)
+    persisted = identity_persistence.load(scoped_ref)
+    if persisted is None:
+        persisted = identity_persistence.store_if_absent(
+            scoped_ref,
+            mint_background_transport_identity(),
+        )
     return BackgroundExecutionIdentity(
         tenant_id=tenant_id,
         task_id=persisted.task_id,

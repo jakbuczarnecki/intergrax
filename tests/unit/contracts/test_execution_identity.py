@@ -38,6 +38,49 @@ from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 _CANONICAL_ID = re.compile(r"^(task|run|attempt|exec|evt)_[0-9a-f]{32}$")
 
 
+def _bind_nexus_handle_task_context(
+    *,
+    run_id: RunId,
+    attempt_id: AttemptId,
+    execution_id: ExecutionId,
+) -> tuple[object, object, object]:
+    from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+    from intergrax.runtime.execution.active_execution_budget import bind_root_execution_budget
+    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+    from intergrax.runtime.governance.active_execution_authority import (
+        bind_active_execution_authority,
+    )
+
+    identity_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    authority_token = bind_active_execution_authority(
+        ParentExecutionAuthority.unrestricted_root(),
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(None),
+    )
+    return identity_token, authority_token, budget_token
+
+
+def _reset_nexus_handle_task_context(
+    identity_token: object,
+    authority_token: object,
+    budget_token: object,
+) -> None:
+    from intergrax.runtime.execution.active_execution_budget import reset_active_execution_budget
+    from intergrax.runtime.governance.active_execution_authority import (
+        reset_active_execution_authority,
+    )
+
+    reset_active_execution_budget(budget_token)
+    reset_active_execution_authority(authority_token)
+    reset_active_execution_identity(identity_token)
+
+
 @pytest.mark.unit
 @pytest.mark.gate
 def test_validate_task_id_accepts_valid():
@@ -282,6 +325,9 @@ async def test_unified_task_runner_mints_attempt_at_run_boundary():
     minted_attempt: AttemptId | None = None
 
     class _StubLoop:
+        execution_budget_ledger_factory = None
+        run_budget = None
+
         def __init__(self) -> None:
             from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
             from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -338,7 +384,7 @@ def test_runtime_request_requires_task_and_run_id_fields():
 @pytest.mark.unit
 @pytest.mark.gate
 @pytest.mark.asyncio
-async def test_handle_task_initial_execution_mints_attempt_id(monkeypatch):
+async def test_handle_task_initial_execution_consumes_bound_identity(monkeypatch):
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
     from intergrax.runtime.task.task import TaskResult, TaskState
@@ -347,23 +393,33 @@ async def test_handle_task_initial_execution_mints_attempt_id(monkeypatch):
     registry = AgentRegistry()
     loop = NexusLoop(registry)
     run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
-        run_id, attempt_id = require_active_execution_identity()
-        captured["run_id"] = run_id
-        captured["attempt_id"] = attempt_id
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        captured["run_id"] = active_run_id
+        captured["attempt_id"] = active_attempt_id
         return TaskResult(
             task_id=task.task_id,
-            run_id=run_id,
+            run_id=active_run_id,
             state=TaskState.COMPLETED,
         )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="execute")
-    await loop.handle_task(task, run_id=run_id)
+    identity_token, authority_token, budget_token = _bind_nexus_handle_task_context(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        await loop.handle_task(task, run_id=run_id)
+    finally:
+        _reset_nexus_handle_task_context(identity_token, authority_token, budget_token)
 
     assert captured["run_id"] == run_id
-    assert captured["attempt_id"] is not None
+    assert captured["attempt_id"] == attempt_id
     assert _CANONICAL_ID.fullmatch(captured["attempt_id"])
     assert captured["run_id"] != task.task_id
 
@@ -394,7 +450,15 @@ async def test_handle_task_resume_preserves_run_and_attempt_id(monkeypatch):
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume")
-    await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+    identity_token, authority_token, budget_token = _bind_nexus_handle_task_context(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
+    try:
+        await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+    finally:
+        _reset_nexus_handle_task_context(identity_token, authority_token, budget_token)
 
     assert captured["run_id"] == run_id
     assert captured["attempt_id"] == attempt_id
@@ -404,15 +468,9 @@ async def test_handle_task_resume_preserves_run_and_attempt_id(monkeypatch):
 @pytest.mark.gate
 @pytest.mark.asyncio
 async def test_handle_task_resume_does_not_mint_attempt_id(monkeypatch):
-    from intergrax.runtime.nexus import nexus_loop as nexus_loop_module
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
     from intergrax.runtime.task.task import TaskResult, TaskState
-
-    def _forbidden_mint() -> AttemptId:
-        raise AssertionError("mint_attempt_id must not be called on resume")
-
-    monkeypatch.setattr(nexus_loop_module, "mint_attempt_id", _forbidden_mint)
 
     registry = AgentRegistry()
     loop = NexusLoop(registry)
@@ -428,7 +486,15 @@ async def test_handle_task_resume_does_not_mint_attempt_id(monkeypatch):
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume")
-    await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+    identity_token, authority_token, budget_token = _bind_nexus_handle_task_context(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
+    try:
+        await loop.handle_task(task, run_id=run_id, attempt_id=attempt_id)
+    finally:
+        _reset_nexus_handle_task_context(identity_token, authority_token, budget_token)
 
 
 @pytest.mark.unit

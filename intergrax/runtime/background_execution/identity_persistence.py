@@ -12,9 +12,6 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
     TaskId,
-    mint_attempt_id,
-    mint_run_id,
-    mint_task_id,
     validate_attempt_id,
     validate_run_id,
     validate_task_id,
@@ -27,6 +24,10 @@ from intergrax.integrations.contracts.document_store import (
 )
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
+)
+from intergrax.runtime.execution.identity_authority import (
+    BackgroundTransportIdentity,
+    mint_background_transport_identity,
 )
 
 _IDENTITY_RECORD_SEPARATOR = "\n"
@@ -87,11 +88,19 @@ class BackgroundExecutionIdentityPersistence(ABC):
     """Platform-owned durable mapping from transport identity to canonical identity."""
 
     @abstractmethod
-    def resolve_or_create(
+    def load(
         self,
         transport_ref: BackgroundTransportExecutionRef,
+    ) -> PersistedBackgroundExecutionIdentity | None:
+        """Return persisted canonical identity for one transport execution."""
+
+    @abstractmethod
+    def store_if_absent(
+        self,
+        transport_ref: BackgroundTransportExecutionRef,
+        identity: BackgroundTransportIdentity,
     ) -> PersistedBackgroundExecutionIdentity:
-        """Return stable canonical identity for one transport execution."""
+        """Persist canonical identity when no durable mapping exists yet."""
 
 
 class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersistence):
@@ -100,25 +109,29 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
     def __init__(self, kv_store: DistributedKVStore) -> None:
         self._kv_store = kv_store
 
-    def resolve_or_create(
+    def load(
         self,
         transport_ref: BackgroundTransportExecutionRef,
-    ) -> PersistedBackgroundExecutionIdentity:
+    ) -> PersistedBackgroundExecutionIdentity | None:
         key = _kv_storage_key(transport_ref)
         existing = self._kv_store.get(
             tenant_id=transport_ref.tenant_id,
             key=key,
         )
-        if existing is not None:
-            return _decode_identity_record(existing)
+        if existing is None:
+            return None
+        return _decode_identity_record(existing)
 
-        task_id = mint_task_id()
-        run_id = mint_run_id()
-        attempt_id = mint_attempt_id()
+    def store_if_absent(
+        self,
+        transport_ref: BackgroundTransportExecutionRef,
+        identity: BackgroundTransportIdentity,
+    ) -> PersistedBackgroundExecutionIdentity:
+        key = _kv_storage_key(transport_ref)
         encoded = _encode_identity_record(
-            task_id=task_id,
-            run_id=run_id,
-            attempt_id=attempt_id,
+            task_id=identity.task_id,
+            run_id=identity.run_id,
+            attempt_id=identity.attempt_id,
         )
         if self._kv_store.compare_and_set(
             tenant_id=transport_ref.tenant_id,
@@ -127,9 +140,9 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
             new_value=encoded,
         ):
             return PersistedBackgroundExecutionIdentity(
-                task_id=task_id,
-                run_id=run_id,
-                attempt_id=attempt_id,
+                task_id=identity.task_id,
+                run_id=identity.run_id,
+                attempt_id=identity.attempt_id,
             )
 
         raced = self._kv_store.get(tenant_id=transport_ref.tenant_id, key=key)
@@ -150,33 +163,38 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
             )
         self._document_store = document_store
 
-    def resolve_or_create(
+    def load(
         self,
         transport_ref: BackgroundTransportExecutionRef,
-    ) -> PersistedBackgroundExecutionIdentity:
+    ) -> PersistedBackgroundExecutionIdentity | None:
         partition_key = _document_partition(transport_ref.tenant_id)
         row_key = _document_row_key(transport_ref)
         existing = self._document_store.get(partition_key, row_key)
-        if existing is not None:
-            return self._record_to_identity(existing)
+        if existing is None:
+            return None
+        return self._record_to_identity(existing)
 
-        task_id = mint_task_id()
-        run_id = mint_run_id()
-        attempt_id = mint_attempt_id()
+    def store_if_absent(
+        self,
+        transport_ref: BackgroundTransportExecutionRef,
+        identity: BackgroundTransportIdentity,
+    ) -> PersistedBackgroundExecutionIdentity:
+        partition_key = _document_partition(transport_ref.tenant_id)
+        row_key = _document_row_key(transport_ref)
         document = DocumentRecord(
             partition_key=partition_key,
             row_key=row_key,
             data={
-                "task_id": str(task_id),
-                "run_id": str(run_id),
-                "attempt_id": str(attempt_id),
+                "task_id": str(identity.task_id),
+                "run_id": str(identity.run_id),
+                "attempt_id": str(identity.attempt_id),
             },
         )
         if self._document_store.put_if_absent(document):
             return PersistedBackgroundExecutionIdentity(
-                task_id=task_id,
-                run_id=run_id,
-                attempt_id=attempt_id,
+                task_id=identity.task_id,
+                run_id=identity.run_id,
+                attempt_id=identity.attempt_id,
             )
 
         raced = self._document_store.get(partition_key, row_key)
