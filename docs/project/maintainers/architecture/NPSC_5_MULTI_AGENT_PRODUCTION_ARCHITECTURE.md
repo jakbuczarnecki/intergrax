@@ -4,7 +4,9 @@
 
 **Series owner:** Agent Distribution + frozen Execution Engine
 
-**Current phase:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In
+**Current phase:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In (R1 ownership reconciled; R2 migration pending)
+
+**R1 reconciliation:** [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md)
 
 **Branch:** `development`
 
@@ -164,6 +166,30 @@ Nested delegation is already possible when a specialist acquired through `Delega
 
 ## 8.1 NPSC-5B — Bounded fan-out / fan-in
 
+> **R1 ownership freeze:** Fan-out scheduling and bounded parallelism are **not** canonical Agent Distribution responsibilities. See [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md). Current runtime still uses the pre-R2 scheduler; R2 migrates to Execution `ExecutionWorkPort` + ORCHESTRATION → Nexus.
+
+### Target integration (frozen)
+
+```text
+FanOutRequest (semantic contract — Agent Distribution)
+        |
+        v
+BoundedMultiAgentFanOutService (R2: adapter only)
+        |
+        v
+ExecutionWorkPort + ORCHESTRATION capability
+        |
+        v
+Nexus (bounded scheduling, fan-out/fan-in, topology)
+        |
+        +---- per slot: MultiAgentCoordinationService → DelegatedSubtaskService
+        |
+        v
+FanOutResult (deterministic fan-in projection)
+```
+
+### Current implementation (pre-R2; scheduled for migration)
+
 ```text
 Parent execution
         |
@@ -174,30 +200,27 @@ BoundedMultiAgentFanOutService
         |
         +---- canonical coordination (item B)
         |
-        +---- canonical coordination (item C)
-        |
         v
 deterministic fan-in (request order)
 ```
 
-| Component | Package | Responsibility |
-| --------- | ------- | -------------- |
-| `FanOutRequest` | `intergrax/agent_distribution/` | Parent semantic intent for many bounded specialist contributions |
-| `FanOutResult` | `intergrax/agent_distribution/` | Deterministic aggregate outcome in stable item order |
-| `BoundedMultiAgentFanOutService` | `intergrax/agent_distribution/` | Validate fan-out intent → bounded parallel calls to `MultiAgentCoordinationService.coordinate` |
-| `AsyncioSemaphoreBoundedFanOutExecutor` | `intergrax/agent_distribution/` | Default bounded concurrency executor (coordination-local; no lifecycle ownership) |
-| `MultiAgentCoordinationService` | `intergrax/agent_distribution/` | Unchanged NPSC-5A single-delegation owner |
-| `DelegatedSubtaskService` | `intergrax/agent_distribution/` | Unchanged child lifecycle orchestration owner |
+| Component | Package | R1/R2 status |
+| --------- | ------- | ------------ |
+| `FanOutRequest` / `FanOutItem` | `intergrax/agent_distribution/` | `KEEP_AS_CONTRACT_ONLY` |
+| `FanOutResult` / `FanOutItemOutcome` | `intergrax/agent_distribution/` | `KEEP_AS_CONTRACT_ONLY` |
+| `BoundedMultiAgentFanOutService` | `intergrax/agent_distribution/` | R2: adapter to orchestration port (`DEPRECATE_IN_R2` current scheduler role) |
+| `AsyncioSemaphoreBoundedFanOutExecutor` | `intergrax/agent_distribution/` | `REMOVE_IN_R2` — duplicate scheduler |
+| `BoundedFanOutExecutor` | `intergrax/agent_distribution/` | `REMOVE_IN_R2` — invalid AD variation point |
+| `MultiAgentCoordinationService` | `intergrax/agent_distribution/` | `KEEP` — single-delegation owner |
+| `DelegatedSubtaskService` | `intergrax/agent_distribution/` | `KEEP` — specialist child orchestration |
 
-**Fan-out owner:** `BoundedMultiAgentFanOutService` owns fan-out validation, bounded concurrency scheduling, and deterministic fan-in projection. It does **not** mint execution identity, acquire leases directly, or invoke child execution.
+**Canonical fan-out scheduler owner:** Nexus (via `ExecutionStrategy.ORCHESTRATION`), not Agent Distribution.
 
-**Child lifecycle owner:** unchanged — each fan-out item still flows through `MultiAgentCoordinationService` → `DelegatedSubtaskService` → `ChildExecutionPort` → `ChildExecutionRunner`.
+**Agent Distribution fan-out ownership:** semantic contracts (`FanOutRequest`, `FanOutResult`) and per-slot specialist coordination only.
 
-**Concurrency bound:** `max_concurrency` is validated (`> 0`, platform cap `MAX_FAN_OUT_CONCURRENCY`). At most that many delegations may be active concurrently for one fan-out operation.
+**Child lifecycle owner:** unchanged — each slot flows through `MultiAgentCoordinationService` → `DelegatedSubtaskService` → `ChildExecutionPort` → `ChildExecutionRunner`.
 
-**Deterministic result:** aggregate item order matches request order regardless of completion order.
-
-**Partial failure:** per-item typed outcomes (`FanOutItemOutcome`) preserve successes and failures; aggregate result exposes `any_failed` / `all_succeeded` without substituting defaults.
+**Platform caps:** `MAX_FAN_OUT_ITEMS`, `MAX_FAN_OUT_CONCURRENCY` remain validation limits on fan-out contracts.
 
 **Not in NPSC-5B:** retry/recovery, global multi-agent budget allocation, planner routing, voting/swarm/quorum, durable checkpoint/resume, observability redesign.
 
