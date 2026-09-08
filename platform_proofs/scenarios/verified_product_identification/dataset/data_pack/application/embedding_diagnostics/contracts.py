@@ -22,10 +22,47 @@ class EmbeddingBottleneckCase(StrEnum):
     UNDETERMINED = "undetermined"
 
 
+class TokenPercentileBucket(StrEnum):
+    BELOW_P50 = "below_p50"
+    P50_TO_P90 = "p50_to_p90"
+    P90_TO_P95 = "p90_to_p95"
+    P95_TO_P99 = "p95_to_p99"
+    AT_OR_ABOVE_P99 = "at_or_above_p99"
+
+
+class DiagnosticExperimentKind(StrEnum):
+    PRODUCTION_BASELINE = "production_baseline"
+    BATCH_32 = "batch_32"
+    BATCH_64 = "batch_64"
+    REPRESENTATION_ONLY = "representation_only"
+
+
 @dataclass(frozen=True, slots=True)
 class CudaEnvironmentSnapshot:
     cuda_available: bool
     gpu_name: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class EmbeddingTokenStatistics:
+    count: int
+    minimum: int
+    mean: float
+    p50: float
+    p90: float
+    p95: float
+    p99: float
+    maximum: int
+
+
+@dataclass(frozen=True, slots=True)
+class EmbeddingDiagnosticSample:
+    record_id: str
+    source_ref: str
+    global_row_index: int
+    character_count: int
+    estimated_tokens: int
+    token_percentile_bucket: TokenPercentileBucket
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +78,8 @@ class BatchLatencyMeasurement:
     batch_index: int
     batch_size: int
     record_count: int
+    input_tokens: int
+    tokens_processed: int
     batch_latency_seconds: float
     inference_latency_seconds: float
 
@@ -75,21 +114,22 @@ class EmbeddingPerformanceMetrics:
 class TokenDistributionReport:
     record_count: int
     total_tokens: int
-    average_tokens: float
-    p50_tokens: float
-    p95_tokens: float
-    p99_tokens: float
-    max_tokens: int
+    statistics: EmbeddingTokenStatistics
     semantic_text_length_avg: float
     semantic_text_length_p95: float
     record_measurements: tuple[RecordRepresentationMeasurement, ...]
+    diagnostic_samples: tuple[EmbeddingDiagnosticSample, ...]
 
 
 @dataclass(frozen=True, slots=True)
-class BatchExperimentResult:
+class EmbeddingExperimentResult:
+    experiment_kind: DiagnosticExperimentKind
     batch_size: int
     metrics: EmbeddingPerformanceMetrics
     batch_latencies: tuple[BatchLatencyMeasurement, ...]
+
+
+BatchExperimentResult = EmbeddingExperimentResult
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,5 +145,5 @@ class EmbeddingDiagnosticReport:
     record_limit: int
     token_distribution: TokenDistributionReport
     baseline: EmbeddingPerformanceMetrics
-    batch_experiments: tuple[BatchExperimentResult, ...]
+    batch_experiments: tuple[EmbeddingExperimentResult, ...]
     classification: EmbeddingDiagnosticClassification

@@ -47,6 +47,20 @@ def _parse_args() -> argparse.Namespace:
         help=f"Maximum records to analyze (<= {DIAGNOSTIC_MAX_RECORD_LIMIT})",
     )
     parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=None,
+        help="Override production baseline batch size for experiment A",
+    )
+    parser.add_argument(
+        "--experiment",
+        default="full",
+        help=(
+            "Experiment scope: full, production_baseline, batch_32, batch_64, "
+            "representation_only, A, B, C, D"
+        ),
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=_default_output_dir(),
@@ -68,6 +82,8 @@ def main() -> int:
         dataset_path=args.dataset_path,
         record_limit=args.record_limit,
         qualification_id=args.qualification_id,
+        production_batch_size=args.batch_size,
+        experiment=args.experiment,
     )
     json_path, summary_path = write_embedding_diagnostic_report(args.output_dir, report)
     evidence = {
@@ -77,7 +93,7 @@ def main() -> int:
         "classification_case": report.classification.case.value,
         "recommended_next_task": report.classification.recommended_next_task,
         "baseline_records_per_second": round(report.baseline.records_per_second, 3),
-        "token_p95": round(report.token_distribution.p95_tokens, 3),
+        "token_p95": round(report.token_distribution.statistics.p95, 3),
         "report_json": str(json_path),
         "report_summary": str(summary_path),
     }
