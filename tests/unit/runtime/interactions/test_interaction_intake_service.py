@@ -65,6 +65,7 @@ def test_interaction_intake_service_source_has_no_nexus_tokens() -> None:
     source = source_path.read_text(encoding="utf-8")
     assert "NexusLoop" not in source
     assert "NexusLoopTaskExecutor" not in source
+    assert "UnifiedTaskRunner" not in source
     assert "hasattr(" not in source
     assert "# type: ignore[attr-defined]" not in source
 

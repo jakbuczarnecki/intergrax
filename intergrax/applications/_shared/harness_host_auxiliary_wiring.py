@@ -29,23 +29,13 @@ from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.interactions.intake_service import InteractionIntakeService
+from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
-
-
-class HostTaskExecutionExecutor:
-    """Execute interaction-intake tasks through canonical host task execution."""
-
-    def __init__(self, host_execution: HostTaskExecutionPort) -> None:
-        self._host_execution = host_execution
-
-    async def execute(self, task: Task) -> TaskResult:
-        return await self._host_execution.execute(task)
 
 
 def bootstrap_harness_host_platform(runtime: HarnessHostRuntime) -> PluginBootstrapResult:

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.runtime_checkpoint import UaepStepOutput
 from intergrax.runtime.task.task_state import TaskState
 
 _PAUSED_STATES = frozenset(
@@ -46,8 +47,13 @@ def partial_result_from_checkpoint(checkpoint: TaskCheckpoint) -> PartialResultS
         uaep_step_index = runtime.uaep_step_index
         uaep_step_id = runtime.uaep_step_id
         if runtime.last_step_output:
-            last_step_summary = str(runtime.last_step_output.get("summary") or "") or None
-            partial_payload["last_step_output"] = dict(runtime.last_step_output)
+            last_output = runtime.last_step_output
+            if isinstance(last_output, UaepStepOutput):
+                last_step_summary = last_output.summary or None
+                partial_payload["last_step_output"] = last_output.model_dump()
+            elif isinstance(last_output, dict):
+                last_step_summary = str(last_output.get("summary") or "") or None
+                partial_payload["last_step_output"] = dict(last_output)
         if runtime.prior_node_outputs:
             partial_payload["prior_node_outputs"] = dict(runtime.prior_node_outputs)
         if runtime.graph_node_id:

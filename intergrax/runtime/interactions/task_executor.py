@@ -7,9 +7,8 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task, TaskResult
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 @runtime_checkable
@@ -20,11 +19,14 @@ class TaskExecutor(Protocol):
         ...
 
 
-class NexusLoopTaskExecutor:
-    """Execute tasks through canonical root execution."""
+class HostTaskExecutionExecutor:
+    """Execute interaction-intake tasks through canonical host task execution."""
 
-    def __init__(self, nexus_loop: NexusLoop) -> None:
-        self._task_runner = UnifiedTaskRunner(nexus_loop)
+    def __init__(self, host_execution: HostTaskExecutionPort) -> None:
+        self._host_execution = host_execution
 
     async def execute(self, task: Task) -> TaskResult:
-        return await self._task_runner.run_task(task)
+        return await self._host_execution.execute(task)
+
+
+__all__ = ["HostTaskExecutionExecutor", "TaskExecutor"]
