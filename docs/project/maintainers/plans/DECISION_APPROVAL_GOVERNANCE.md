@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4)
 
-**Status:** **MP-4A — APPROVED / CLOSED** · **MP-4B — READY_FOR_REVIEW** · MP-4C…MP-4H **NOT STARTED**
+**Status:** **MP-4A — APPROVED / CLOSED** · **MP-4B — READY_FOR_REVIEW** · **MP-4C — READY_FOR_REVIEW** · MP-4D…MP-4H **NOT STARTED**
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -76,10 +76,10 @@ Implementation rows below are **architecture/contract gates** until the relevant
 |-------|-------|
 | **ID** | MP-4C |
 | **Priority** | P1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_REVIEW** |
 | **Purpose** | Approval request, approval lifecycle, human action contracts; explicit HITL **bridge** contract (not HITL ownership) |
 | **Dependencies** | MP-4B approved |
-| **Exact scope** | ApprovalRequest; approval lifecycle; human action records; bridge port referencing Governed Execution HITL — Approval ≠ Artifact state |
+| **Exact scope** | `ApprovalRequest`; `ApprovalId`; `ApprovalLifecycleState`; `HumanApprovalAction`; `ApprovalOutcome` in `intergrax/contracts/approval.py` — references Decision and neutral CW/UER refs only |
 | **REUSED** | Governed Execution HITL pause/resume semantics (bridge only); MP-1 authority; Decision references from MP-4B |
 | **NEW** | Approval-specific contracts; HITL bridge interface (vendor-neutral) |
 | **Explicit out of scope** | `WorkArtifactVersion.status`; `ExecutionState.WAITING_FOR_HUMAN` as approval store; Nexus orchestration imports |

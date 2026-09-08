@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4 ownership is FROZEN** (ADR-MP-005); **MP-4A — APPROVED / CLOSED**; **MP-4B — READY_FOR_REVIEW**; MP-4C…MP-4H **NOT STARTED** — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap. LKW adoption (MP-7), AgentDirectory / external-agent interoperability (MP-8), and advanced collaborative UX (MP-9) are **future**.
+**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4 ownership is FROZEN** (ADR-MP-005); **MP-4A — APPROVED / CLOSED**; **MP-4B — READY_FOR_REVIEW**; **MP-4C — READY_FOR_REVIEW**; MP-4D…MP-4H **NOT STARTED** — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap. LKW adoption (MP-7), AgentDirectory / external-agent interoperability (MP-8), and advanced collaborative UX (MP-9) are **future**.
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -450,7 +450,7 @@ not replace existing Evidence.
 
 ### MP-4 - Decision / Approval / Governance + HITL bridge
 
-**Status:** **Ownership FROZEN / ACCEPTED** — ADR-MP-005 **Accepted**; **MP-4A — APPROVED / CLOSED**; **MP-4B — READY_FOR_REVIEW**; MP-4C…MP-4H **NOT STARTED**.
+**Status:** **Ownership FROZEN / ACCEPTED** — ADR-MP-005 **Accepted**; **MP-4A — APPROVED / CLOSED**; **MP-4B — READY_FOR_REVIEW**; **MP-4C — READY_FOR_REVIEW**; MP-4D…MP-4H **NOT STARTED**.
 
 **Intent:** Collaborative Decision, Approval, and Governance semantics for multi-principal workflows. Where execution must pause until a human or policy gate responds, bridge to existing Governed Execution HITL pause/resume — without conflating Decision records with HITL machinery or artifact lifecycle.
 
@@ -460,9 +460,9 @@ not replace existing Evidence.
 
 **Reused (not owners):** Governed Execution HITL + policy evaluation; MP-1 Principal/membership/delegation; Proof Receipts / observability evidence handles; Collaborative Work WorkItem/WorkArtifact **references only**; channel presentation of approval UX.
 
-**New required (implementation):** MP-4B contracts delivered in `intergrax/contracts/decision.py`; MP-4C…MP-4H slices per [`DECISION_APPROVAL_GOVERNANCE` plan](../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md).
+**New required (implementation):** MP-4B contracts in `intergrax/contracts/decision.py`; MP-4C contracts in `intergrax/contracts/approval.py`; MP-4D…MP-4H slices per [`DECISION_APPROVAL_GOVERNANCE` plan](../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md).
 
-**Next active task:** **MP-4B review** → **MP-4C** — Approval / HITL contracts.
+**Next active task:** **MP-4C review** → **MP-4D** — Authority integration.
 
 ---
 

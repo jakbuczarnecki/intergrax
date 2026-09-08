@@ -10,8 +10,8 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4B** — Decision contracts (**READY_FOR_REVIEW**)
-**Next task:** MP-4C — Approval / HITL contracts (after MP-4B review)
+**Current active task:** **MP-4C** — Approval / HITL contracts (**READY_FOR_REVIEW**)
+**Next task:** MP-4D — Authority integration (after MP-4C review)
 
 ---
 
@@ -200,7 +200,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-005 **Accepted**; **MP-4A APPROVED / CLOSED**; **MP-4B READY_FOR_REVIEW**; MP-4C…MP-4H **NOT STARTED** |
+| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-005 **Accepted**; **MP-4A APPROVED / CLOSED**; **MP-4B READY_FOR_REVIEW**; **MP-4C READY_FOR_REVIEW**; MP-4D…MP-4H **NOT STARTED** |
 | **Purpose** | Collaborative Decision, Approval, and Governance semantics with explicit bridge to Governed Execution HITL when execution must pause. |
 | **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) |
 | **Dependencies** | MP-1 **CLOSED**; MP-2 **APPROVED / CLOSED**; MP-3 ownership **FROZEN** |
@@ -220,7 +220,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 |-------|-------|--------|
 | MP-4A | Ownership + contracts freeze | **APPROVED / CLOSED** |
 | MP-4B | Decision contracts | **READY_FOR_REVIEW** |
-| MP-4C | Approval / HITL contracts | NOT STARTED |
+| MP-4C | Approval / HITL contracts | **READY_FOR_REVIEW** |
 | MP-4D | Authority integration | NOT STARTED |
 | MP-4E | Persistence boundary | NOT STARTED |
 | MP-4F | Evidence / provenance integration | NOT STARTED |
