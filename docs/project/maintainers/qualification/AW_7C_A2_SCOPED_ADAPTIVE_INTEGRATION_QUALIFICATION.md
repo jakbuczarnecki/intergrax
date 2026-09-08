@@ -241,8 +241,9 @@ Do **not** implement `WorkerSecretBroker`, `AWSecretStore`, or host filtering in
 
 ```text
 AW-7C SECRET BROKER PREREQUISITE: PASSED / independently verified
-AW-7C EGRESS PREREQUISITE: IMPLEMENTED / PHYSICAL QUALIFICATION BLOCKED (E2B adapter in-repo; credential not available in qualification session)
-AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION BLOCKED
+AW-7C EGRESS PREREQUISITE: IMPLEMENTED / PHYSICAL QUALIFICATION HARNESS READY — WAITING FOR REAL PROVIDER EXECUTION
+AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION HARNESS READY — WAITING FOR REAL PROVIDER EXECUTION
+AW-7C P0-3A-02A: IMPLEMENTED / HARNESS READY — WAITING FOR REAL PROVIDER EXECUTION
 AW-7C: BLOCKED BY PREREQUISITE
 AW-7:  IN PROGRESS
 ```
@@ -364,7 +365,7 @@ docs/project/maintainers/qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUAL
 **P0-3A verdict:**
 
 ```text
-AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION BLOCKED
+AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION HARNESS READY — WAITING FOR REAL PROVIDER EXECUTION
 ```
 
 **P0-3A-01 (2026-09-07):** SDK `exit_code` mapping corrected — numeric zero preserved at E2B transport boundary (`SdkE2bSandboxApiClient` / legacy payload helper). Physical qualification remains pending if credentials unavailable.
@@ -385,14 +386,15 @@ AW-7C P0-3A: IMPLEMENTED / PHYSICAL QUALIFICATION BLOCKED
 **Physical test command:**
 
 ```powershell
-uv run pytest tests/integration/providers/sandbox_host/e2b/test_e2b_physical_egress_qualification.py `
-  -m "integration and network and sandbox_provider" -vv
+uv run pytest tests/integration/providers/sandbox_host/e2b/ -q
 ```
 
-**Physical session result:** `SKIPPED` — `E2B_API_KEY` / `INTERGRAX_E2B_API_KEY` unavailable in qualification session.
+**Harness (P0-3A-02A):** `tests/integration/providers/sandbox_host/e2b/qualification/` — causal-proof runner with C0 control, C3 qualified, and redirect-escape phases. Immutable evidence models; `SandboxNetworkProbe` abstraction; cleanup guaranteed via `try/finally` per phase.
+
+**Physical session result:** harness tests **skip safely** when `E2B_API_KEY` / `INTERGRAX_E2B_API_KEY` unavailable — **not PASS**. Real provider execution required for egress qualification verdict.
 
 **Unit tests:** `tests/unit/integrations/providers/sandbox_host/e2b/` — 18 passed.
 
 **Known limitations:** domain filter is routing control per E2B docs (shared CDN/SNI caveats); UDP/QUIC not domain-filtered; DNS rebinding not verified; E2B may inject `8.8.8.8` DNS helper IP in raw `allowOut` (excluded from canonical enforced host evidence).
 
-**Nexus:** untouched.
+**Nexus:** untouched — qualification harness has architecture gate `test_no_nexus_dependency`.
