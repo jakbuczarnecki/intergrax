@@ -145,5 +145,6 @@ def test_valid_transition_chain() -> None:
         embedding_sha256="b" * 64,
         relational_source_ref_set_sha256="c" * 64,
         embedding_source_ref_set_sha256="c" * 64,
+        embedding_count=25,
     )
     assert shard.status is DataPackShardStatus.READY

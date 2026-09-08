@@ -16,6 +16,8 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     require_int,
     require_known_keys,
     require_mapping,
+    require_optional_float,
+    require_optional_int,
     require_optional_str,
     require_sha256_hex,
     require_str,
@@ -54,6 +56,11 @@ _SHARD_STATE_KEYS = frozenset(
         "embedding_source_ref_set_sha256",
         "last_error_code",
         "last_error_message",
+        "started_at_utc",
+        "completed_at_utc",
+        "elapsed_seconds",
+        "records_processed",
+        "embedding_count",
     }
 )
 
@@ -83,6 +90,11 @@ class DataPackShardBuildState:
     embedding_source_ref_set_sha256: str | None = None
     last_error_code: str | None = None
     last_error_message: str | None = None
+    started_at_utc: str | None = None
+    completed_at_utc: str | None = None
+    elapsed_seconds: float | None = None
+    records_processed: int | None = None
+    embedding_count: int | None = None
 
     def __post_init__(self) -> None:
         if self.ordinal < 1:
@@ -260,6 +272,11 @@ def shard_build_state_from_json_dict(payload: dict[str, JsonValue]) -> DataPackS
             ),
             last_error_code=require_optional_str(payload, "last_error_code"),
             last_error_message=require_optional_str(payload, "last_error_message"),
+            started_at_utc=require_optional_str(payload, "started_at_utc"),
+            completed_at_utc=require_optional_str(payload, "completed_at_utc"),
+            elapsed_seconds=require_optional_float(payload, "elapsed_seconds", minimum=0.0),
+            records_processed=require_optional_int(payload, "records_processed", minimum=1),
+            embedding_count=require_optional_int(payload, "embedding_count", minimum=0),
         )
     except VpiDataPackFormatError as exc:
         raise VpiDataPackBuildStateError(str(exc)) from exc
@@ -315,6 +332,11 @@ def shard_build_state_to_json_dict(shard: DataPackShardBuildState) -> dict[str, 
         "embedding_source_ref_set_sha256": shard.embedding_source_ref_set_sha256,
         "last_error_code": shard.last_error_code,
         "last_error_message": shard.last_error_message,
+        "started_at_utc": shard.started_at_utc,
+        "completed_at_utc": shard.completed_at_utc,
+        "elapsed_seconds": shard.elapsed_seconds,
+        "records_processed": shard.records_processed,
+        "embedding_count": shard.embedding_count,
     }
     return payload
 

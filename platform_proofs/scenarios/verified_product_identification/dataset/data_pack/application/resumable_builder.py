@@ -34,6 +34,13 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
 from platform_proofs.scenarios.verified_product_identification.data_package.identity import (
     CANONICAL_CATALOG_ID,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.build_interruption import (
+    DataPackBuildInterrupted,
+    graceful_build_interruption_scope,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.build_performance import (
+    DataPackBuildPerformanceMonitor,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.build_progress import (
     DataPackBuildProgress,
     compute_build_progress,
@@ -218,6 +225,10 @@ class DataPackBuildReport:
     embedding_records_per_second: float | None
     average_relational_shard_bytes: int | None
     average_embedding_shard_bytes: int | None
+    average_shard_elapsed_seconds: float | None
+    peak_host_ram_mb: float | None
+    peak_vram_mb: float | None
+    interrupted: bool
     finalized: bool
 
 
@@ -697,6 +708,8 @@ def run_resumable_data_pack_build(
     embedding_bytes: list[int] = []
     manifest: DataPackManifest | None = None
     finalized = False
+    interrupted = False
+    performance_monitor = DataPackBuildPerformanceMonitor()
 
     shard_limit = config.max_shards
     if config.stop_after_shard is not None:
@@ -705,182 +718,197 @@ def run_resumable_data_pack_build(
     seams = build_seams or ShardBuildSeams()
 
     try:
-        for shard in state.shards:
-            if shard_limit is not None and shard.ordinal > shard_limit:
-                break
+        with graceful_build_interruption_scope():
+            for shard in state.shards:
+                if shard_limit is not None and shard.ordinal > shard_limit:
+                    break
 
-            if shard.status is DataPackShardStatus.READY:
-                validate_ready_shard_artifacts(
-                    pack_root=paths.root,
-                    shard=shard,
-                    relational_schema_version=RELATIONAL_SCHEMA_VERSION,
-                    embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
-                    expected_dimension=embedding_configuration.expected_dimension,
-                )
-                logger.info("skip READY shard ordinal=%s records=%s", shard.ordinal, shard.expected_record_count)
-                continue
-
-            current = shard
-            try:
-                current = mark_deriving(current)
-                state = replace_shard(state, current)
-                state = _persist_state(paths, state)
-
-                selected_rows = tuple(
-                    reader.read_range(current.start_row_index, current.end_row_index_exclusive)
-                )
-                relational_records = _sort_relational_records(
-                    tuple(
-                        _derive_relational_record(
-                            row,
-                            catalog_id=config.catalog_id,
-                            source_revision=config.source_revision,
-                        )
-                        for row in selected_rows
+                if shard.status is DataPackShardStatus.READY:
+                    validate_ready_shard_artifacts(
+                        pack_root=paths.root,
+                        shard=shard,
+                        relational_schema_version=RELATIONAL_SCHEMA_VERSION,
+                        embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
+                        expected_dimension=embedding_configuration.expected_dimension,
                     )
-                )
-                expected_refs = frozenset(source_ref_key(record.source_ref) for record in relational_records)
-                assert_validation_pass(
-                    validate_relational_records(
+                    logger.info(
+                        "skip READY shard ordinal=%s records=%s",
+                        shard.ordinal,
+                        shard.expected_record_count,
+                    )
+                    continue
+
+                current = shard
+                try:
+                    current = mark_deriving(current)
+                    state = replace_shard(state, current)
+                    state = _persist_state(paths, state)
+
+                    selected_rows = tuple(
+                        reader.read_range(current.start_row_index, current.end_row_index_exclusive)
+                    )
+                    relational_records = _sort_relational_records(
+                        tuple(
+                            _derive_relational_record(
+                                row,
+                                catalog_id=config.catalog_id,
+                                source_revision=config.source_revision,
+                            )
+                            for row in selected_rows
+                        )
+                    )
+                    expected_refs = frozenset(
+                        source_ref_key(record.source_ref) for record in relational_records
+                    )
+                    assert_validation_pass(
+                        validate_relational_records(
+                            relational_records,
+                            expected_count=current.expected_record_count,
+                        ),
+                        stage="relational_validation",
+                    )
+
+                    current = mark_embedding(current)
+                    state = replace_shard(state, current)
+                    state = _persist_state(paths, state)
+
+                    semantic_texts = [record.semantic_text for record in relational_records]
+                    vectors = _embed_shard_texts(
+                        active_embedding_port,
+                        semantic_texts=semantic_texts,
+                        provider_batch_size=provider_batch_size,
+                    )
+                    records_embedded += len(vectors)
+                    embedding_records = _build_embedding_records(
                         relational_records,
-                        expected_count=current.expected_record_count,
-                    ),
-                    stage="relational_validation",
-                )
+                        vectors,
+                        provider=embedding_configuration.provider,
+                        model=model,
+                        model_revision=model_revision,
+                        dimension=embedding_configuration.expected_dimension,
+                    )
+                    assert_validation_pass(
+                        validate_embedding_records(
+                            embedding_records,
+                            expected_count=current.expected_record_count,
+                            expected_dimension=embedding_configuration.expected_dimension,
+                        ),
+                        stage="embedding_validation",
+                    )
+                    assert_validation_pass(
+                        validate_cross_artifact_identity(
+                            relational_records,
+                            embedding_records,
+                            expected_refs=expected_refs,
+                        ),
+                        stage="cross_ref_validation",
+                    )
+                    assert_validation_pass(
+                        validate_semantic_text_hashes(relational_records, embedding_records),
+                        stage="semantic_text_hash_validation",
+                    )
 
-                current = mark_embedding(current)
-                state = replace_shard(state, current)
-                state = _persist_state(paths, state)
+                    current = mark_writing(current)
+                    state = replace_shard(state, current)
+                    state = _persist_state(paths, state)
 
-                semantic_texts = [record.semantic_text for record in relational_records]
-                vectors = _embed_shard_texts(
-                    active_embedding_port,
-                    semantic_texts=semantic_texts,
-                    provider_batch_size=provider_batch_size,
-                )
-                records_embedded += len(vectors)
-                embedding_records = _build_embedding_records(
-                    relational_records,
-                    vectors,
-                    provider=embedding_configuration.provider,
-                    model=model,
-                    model_revision=model_revision,
-                    dimension=embedding_configuration.expected_dimension,
-                )
-                assert_validation_pass(
-                    validate_embedding_records(
-                        embedding_records,
+                    relational_rel, embedding_rel = shard_descriptor_paths(current.ordinal)
+                    relational_temp = write_temp_shard(
+                        paths.relational_dir,
+                        current.ordinal,
+                        lambda temp_path: write_relational_parquet(temp_path, relational_records),
+                    )
+                    if seams.after_relational_temp_write is not None:
+                        seams.after_relational_temp_write()
+                    embedding_temp = write_temp_shard(
+                        paths.embeddings_dir,
+                        current.ordinal,
+                        lambda temp_path: write_embedding_parquet(
+                            temp_path,
+                            embedding_records,
+                            embedding_dimension=embedding_configuration.expected_dimension,
+                        ),
+                    )
+                    if seams.after_both_temp_writes is not None:
+                        seams.after_both_temp_writes()
+
+                    current = mark_validating(
+                        current,
+                        relational_relative_path=relational_rel,
+                        embedding_relative_path=embedding_rel,
+                    )
+                    state = replace_shard(state, current)
+                    state = _persist_state(paths, state)
+
+                    validated = prepare_validated_temp_shard_pair(
+                        relational_temp_path=relational_temp,
+                        embedding_temp_path=embedding_temp,
+                        relational_relative_path=relational_rel,
+                        embedding_relative_path=embedding_rel,
                         expected_count=current.expected_record_count,
                         expected_dimension=embedding_configuration.expected_dimension,
-                    ),
-                    stage="embedding_validation",
-                )
-                assert_validation_pass(
-                    validate_cross_artifact_identity(
-                        relational_records,
-                        embedding_records,
-                        expected_refs=expected_refs,
-                    ),
-                    stage="cross_ref_validation",
-                )
-                assert_validation_pass(
-                    validate_semantic_text_hashes(relational_records, embedding_records),
-                    stage="semantic_text_hash_validation",
-                )
+                    )
+                    relational_final, embedding_final = commit_temp_shard_pair(
+                        relational_dir=paths.relational_dir,
+                        embeddings_dir=paths.embeddings_dir,
+                        shard_ordinal=current.ordinal,
+                        embedding_commit_guard=seams.before_embedding_commit,
+                    )
+                    if seams.after_both_renames_before_ready_persist is not None:
+                        seams.after_both_renames_before_ready_persist()
 
-                current = mark_writing(current)
-                state = replace_shard(state, current)
-                state = _persist_state(paths, state)
+                    current = mark_ready(
+                        current,
+                        relational_relative_path=validated.relational_relative_path,
+                        embedding_relative_path=validated.embedding_relative_path,
+                        relational_sha256=validated.relational_sha256,
+                        embedding_sha256=validated.embedding_sha256,
+                        relational_source_ref_set_sha256=validated.relational_source_ref_set_sha256,
+                        embedding_source_ref_set_sha256=validated.embedding_source_ref_set_sha256,
+                        embedding_count=len(embedding_records),
+                    )
+                    state = replace_shard(state, current)
+                    state = _persist_state(paths, state)
 
-                relational_rel, embedding_rel = shard_descriptor_paths(current.ordinal)
-                relational_temp = write_temp_shard(
-                    paths.relational_dir,
-                    current.ordinal,
-                    lambda temp_path: write_relational_parquet(temp_path, relational_records),
-                )
-                if seams.after_relational_temp_write is not None:
-                    seams.after_relational_temp_write()
-                embedding_temp = write_temp_shard(
-                    paths.embeddings_dir,
-                    current.ordinal,
-                    lambda temp_path: write_embedding_parquet(
-                        temp_path,
-                        embedding_records,
-                        embedding_dimension=embedding_configuration.expected_dimension,
-                    ),
-                )
-                if seams.after_both_temp_writes is not None:
-                    seams.after_both_temp_writes()
+                    relational_bytes.append(relational_final.stat().st_size)
+                    embedding_bytes.append(embedding_final.stat().st_size)
+                    performance_monitor.sample()
+                    shard_progress = compute_build_progress(state)
+                    logger.info(
+                        "shard READY ordinal=%s records=%s elapsed_seconds=%s progress=%s/%s remaining_shards=%s",
+                        current.ordinal,
+                        current.expected_record_count,
+                        current.elapsed_seconds,
+                        shard_progress.ready_shards,
+                        shard_progress.total_shards,
+                        shard_progress.remaining_shards,
+                    )
+                except (KeyboardInterrupt, DataPackBuildInterrupted):
+                    interrupted = True
+                    state = _persist_state(paths, state)
+                    raise
+                except (VpiDataPackBuildError, VpiDataPackBuildStateError, VpiDataPackValidationError) as exc:
+                    state = _record_failure(
+                        state,
+                        current,
+                        error_code=exc.__class__.__name__,
+                        message=str(exc),
+                    )
+                    state = _persist_state(paths, state)
+                    raise
 
-                current = mark_validating(
-                    current,
-                    relational_relative_path=relational_rel,
-                    embedding_relative_path=embedding_rel,
+            progress = compute_build_progress(state)
+            all_ready = progress.ready_shards == progress.total_shards
+            partial = shard_limit is not None and shard_limit < state.shard_count
+            if all_ready and not partial:
+                manifest = _finalize_data_pack(
+                    paths=paths,
+                    state=state,
+                    dataset_identity=dataset_identity,
+                    embedding_identity=embedding_identity,
+                    execution_provenance=execution_provenance,
                 )
-                state = replace_shard(state, current)
-                state = _persist_state(paths, state)
-
-                validated = prepare_validated_temp_shard_pair(
-                    relational_temp_path=relational_temp,
-                    embedding_temp_path=embedding_temp,
-                    relational_relative_path=relational_rel,
-                    embedding_relative_path=embedding_rel,
-                    expected_count=current.expected_record_count,
-                    expected_dimension=embedding_configuration.expected_dimension,
-                )
-                relational_final, embedding_final = commit_temp_shard_pair(
-                    relational_dir=paths.relational_dir,
-                    embeddings_dir=paths.embeddings_dir,
-                    shard_ordinal=current.ordinal,
-                    embedding_commit_guard=seams.before_embedding_commit,
-                )
-                if seams.after_both_renames_before_ready_persist is not None:
-                    seams.after_both_renames_before_ready_persist()
-
-                current = mark_ready(
-                    current,
-                    relational_relative_path=validated.relational_relative_path,
-                    embedding_relative_path=validated.embedding_relative_path,
-                    relational_sha256=validated.relational_sha256,
-                    embedding_sha256=validated.embedding_sha256,
-                    relational_source_ref_set_sha256=validated.relational_source_ref_set_sha256,
-                    embedding_source_ref_set_sha256=validated.embedding_source_ref_set_sha256,
-                )
-                state = replace_shard(state, current)
-                state = _persist_state(paths, state)
-
-                relational_bytes.append(relational_final.stat().st_size)
-                embedding_bytes.append(embedding_final.stat().st_size)
-                logger.info(
-                    "shard READY ordinal=%s records=%s",
-                    current.ordinal,
-                    current.expected_record_count,
-                )
-            except KeyboardInterrupt:
-                state = _persist_state(paths, state)
-                raise
-            except (VpiDataPackBuildError, VpiDataPackBuildStateError, VpiDataPackValidationError) as exc:
-                state = _record_failure(
-                    state,
-                    current,
-                    error_code=exc.__class__.__name__,
-                    message=str(exc),
-                )
-                state = _persist_state(paths, state)
-                raise
-
-        progress = compute_build_progress(state)
-        all_ready = progress.ready_shards == progress.total_shards
-        partial = shard_limit is not None and shard_limit < state.shard_count
-        if all_ready and not partial:
-            manifest = _finalize_data_pack(
-                paths=paths,
-                state=state,
-                dataset_identity=dataset_identity,
-                embedding_identity=embedding_identity,
-                execution_provenance=execution_provenance,
-            )
-            finalized = True
+                finalized = True
     finally:
         if owns_embedding_port:
             active_embedding_port.close()
@@ -891,6 +919,7 @@ def run_resumable_data_pack_build(
     avg_emb = int(sum(embedding_bytes) / len(embedding_bytes)) if embedding_bytes else None
 
     progress = compute_build_progress(state)
+    performance_snapshot = performance_monitor.snapshot()
 
     return DataPackBuildReport(
         status=DataPackStatus.READY if finalized else DataPackStatus.BUILDING,
@@ -900,5 +929,9 @@ def run_resumable_data_pack_build(
         embedding_records_per_second=records_embedded / embedding_elapsed if records_embedded else None,
         average_relational_shard_bytes=avg_rel,
         average_embedding_shard_bytes=avg_emb,
+        average_shard_elapsed_seconds=progress.average_shard_elapsed_seconds,
+        peak_host_ram_mb=performance_snapshot.peak_host_ram_mb,
+        peak_vram_mb=performance_snapshot.peak_vram_mb,
+        interrupted=interrupted,
         finalized=finalized,
     )
