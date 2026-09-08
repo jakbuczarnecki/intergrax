@@ -8,7 +8,7 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.resumable_builder import (
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.ports import (
     DataPackEmbeddingPort,
 )
 

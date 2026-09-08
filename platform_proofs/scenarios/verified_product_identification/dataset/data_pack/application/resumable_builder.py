@@ -10,7 +10,6 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
 
 from platform_proofs.scenarios.verified_product_identification.application.catalog.derive_search_representation import (
     build_source_record_ref,
@@ -40,6 +39,21 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.build_performance import (
     DataPackBuildPerformanceMonitor,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.performance import (
+    PerformanceReport,
+    PipelinePhase,
+    build_performance_report,
+    build_shard_performance_metrics,
+    create_pipeline_profiler,
+    utc_now,
+    write_performance_evidence,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.performance.profiling_ports import (
+    ProfilingDatasetReader,
+    ProfilingEmbeddingPort,
+    profile_write_temp_shard,
+    resolve_tokenize_probe,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.build_progress import (
     DataPackBuildProgress,
@@ -183,10 +197,9 @@ _BUILD_SUBDIRS = (
 )
 
 
-class DataPackEmbeddingPort(Protocol):
-    def embed_batch(self, texts: Sequence[str]) -> list[list[float]]: ...
-
-    def close(self) -> None: ...
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.ports import (
+    DataPackEmbeddingPort,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +227,9 @@ class DataPackBuildConfig:
     stop_after_shard: int | None = None
     build_mode: DataPackBuildMode = DataPackBuildMode.CANONICAL
     reader_batch_size: int = 4096
+    enable_performance_profile: bool = False
+    performance_output_dir: Path | None = None
+    performance_qualification_id: str = "vpi-data-pack-performance"
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,6 +246,7 @@ class DataPackBuildReport:
     peak_vram_mb: float | None
     interrupted: bool
     finalized: bool
+    performance_report: PerformanceReport | None
 
 
 def _assert_destructive_clear_allowed(output_root: Path, paths: DataPackPaths) -> None:
@@ -445,6 +462,7 @@ def _embed_shard_texts(
     *,
     semantic_texts: Sequence[str],
     provider_batch_size: int,
+    profiler,
 ) -> list[list[float]]:
     vectors: list[list[float]] = []
     for _start, batch in iter_embedding_slices(semantic_texts, batch_size=provider_batch_size):
@@ -452,6 +470,15 @@ def _embed_shard_texts(
     if len(vectors) != len(semantic_texts):
         raise VpiDataPackBuildError("embedding batch size mismatch")
     return vectors
+
+
+def _persist_state_profiled(
+    paths: DataPackPaths,
+    state: DataPackBuildState,
+    profiler,
+) -> DataPackBuildState:
+    with profiler.measure(PipelinePhase.STATE_UPDATE):
+        return _persist_state(paths, state)
 
 
 def _build_embedding_records(
@@ -691,6 +718,9 @@ def run_resumable_data_pack_build(
         config.dataset_path,
         batch_size=config.reader_batch_size,
     )
+    profiler = create_pipeline_profiler(config.enable_performance_profile)
+    if config.enable_performance_profile:
+        reader = ProfilingDatasetReader(reader, profiler)
     execution_configuration = load_vpi_embedding_provider_execution_configuration()
     provider_batch_size = execution_configuration.provider_batch_size or 16
     execution_provenance = BuildExecutionProvenance(
@@ -699,7 +729,15 @@ def run_resumable_data_pack_build(
     )
 
     owns_embedding_port = embedding_port is None
-    active_embedding_port = embedding_port or _create_default_embedding_port()
+    base_embedding_port = embedding_port or _create_default_embedding_port()
+    if config.enable_performance_profile:
+        active_embedding_port = ProfilingEmbeddingPort(
+            base_embedding_port,
+            profiler,
+            tokenize_probe=resolve_tokenize_probe(base_embedding_port),
+        )
+    else:
+        active_embedding_port = base_embedding_port
 
     started = time.perf_counter()
     embedding_started = time.perf_counter()
@@ -710,6 +748,7 @@ def run_resumable_data_pack_build(
     finalized = False
     interrupted = False
     performance_monitor = DataPackBuildPerformanceMonitor()
+    shard_performance_metrics: list = []
 
     shard_limit = config.max_shards
     if config.stop_after_shard is not None:
@@ -739,140 +778,168 @@ def run_resumable_data_pack_build(
                     continue
 
                 current = shard
+                shard_started_at = utc_now()
+                profiler.reset()
                 try:
-                    current = mark_deriving(current)
-                    state = replace_shard(state, current)
-                    state = _persist_state(paths, state)
+                    with profiler.measure(PipelinePhase.TOTAL):
+                        current = mark_deriving(current)
+                        state = replace_shard(state, current)
+                        state = _persist_state_profiled(paths, state, profiler)
 
-                    selected_rows = tuple(
-                        reader.read_range(current.start_row_index, current.end_row_index_exclusive)
-                    )
-                    relational_records = _sort_relational_records(
-                        tuple(
-                            _derive_relational_record(
-                                row,
-                                catalog_id=config.catalog_id,
-                                source_revision=config.source_revision,
+                        selected_rows = tuple(
+                            reader.read_range(
+                                current.start_row_index,
+                                current.end_row_index_exclusive,
                             )
-                            for row in selected_rows
                         )
-                    )
-                    expected_refs = frozenset(
-                        source_ref_key(record.source_ref) for record in relational_records
-                    )
-                    assert_validation_pass(
-                        validate_relational_records(
+                        with profiler.measure(PipelinePhase.DERIVE):
+                            relational_records = _sort_relational_records(
+                                tuple(
+                                    _derive_relational_record(
+                                        row,
+                                        catalog_id=config.catalog_id,
+                                        source_revision=config.source_revision,
+                                    )
+                                    for row in selected_rows
+                                )
+                            )
+                        expected_refs = frozenset(
+                            source_ref_key(record.source_ref) for record in relational_records
+                        )
+                        with profiler.measure(PipelinePhase.VALIDATION):
+                            assert_validation_pass(
+                                validate_relational_records(
+                                    relational_records,
+                                    expected_count=current.expected_record_count,
+                                ),
+                                stage="relational_validation",
+                            )
+
+                        current = mark_embedding(current)
+                        state = replace_shard(state, current)
+                        state = _persist_state_profiled(paths, state, profiler)
+
+                        semantic_texts = [record.semantic_text for record in relational_records]
+                        vectors = _embed_shard_texts(
+                            active_embedding_port,
+                            semantic_texts=semantic_texts,
+                            provider_batch_size=provider_batch_size,
+                            profiler=profiler,
+                        )
+                        records_embedded += len(vectors)
+                        embedding_records = _build_embedding_records(
                             relational_records,
-                            expected_count=current.expected_record_count,
-                        ),
-                        stage="relational_validation",
-                    )
+                            vectors,
+                            provider=embedding_configuration.provider,
+                            model=model,
+                            model_revision=model_revision,
+                            dimension=embedding_configuration.expected_dimension,
+                        )
+                        with profiler.measure(PipelinePhase.VALIDATION):
+                            assert_validation_pass(
+                                validate_embedding_records(
+                                    embedding_records,
+                                    expected_count=current.expected_record_count,
+                                    expected_dimension=embedding_configuration.expected_dimension,
+                                ),
+                                stage="embedding_validation",
+                            )
+                            assert_validation_pass(
+                                validate_cross_artifact_identity(
+                                    relational_records,
+                                    embedding_records,
+                                    expected_refs=expected_refs,
+                                ),
+                                stage="cross_ref_validation",
+                            )
+                            assert_validation_pass(
+                                validate_semantic_text_hashes(relational_records, embedding_records),
+                                stage="semantic_text_hash_validation",
+                            )
 
-                    current = mark_embedding(current)
-                    state = replace_shard(state, current)
-                    state = _persist_state(paths, state)
+                        current = mark_writing(current)
+                        state = replace_shard(state, current)
+                        state = _persist_state_profiled(paths, state, profiler)
 
-                    semantic_texts = [record.semantic_text for record in relational_records]
-                    vectors = _embed_shard_texts(
-                        active_embedding_port,
-                        semantic_texts=semantic_texts,
-                        provider_batch_size=provider_batch_size,
-                    )
-                    records_embedded += len(vectors)
-                    embedding_records = _build_embedding_records(
-                        relational_records,
-                        vectors,
-                        provider=embedding_configuration.provider,
-                        model=model,
-                        model_revision=model_revision,
-                        dimension=embedding_configuration.expected_dimension,
-                    )
-                    assert_validation_pass(
-                        validate_embedding_records(
-                            embedding_records,
+                        relational_rel, embedding_rel = shard_descriptor_paths(current.ordinal)
+                        relational_temp = profile_write_temp_shard(
+                            profiler,
+                            paths.relational_dir,
+                            current.ordinal,
+                            lambda temp_path: write_relational_parquet(temp_path, relational_records),
+                            write_temp_shard_fn=write_temp_shard,
+                        )
+                        if seams.after_relational_temp_write is not None:
+                            seams.after_relational_temp_write()
+                        embedding_temp = profile_write_temp_shard(
+                            profiler,
+                            paths.embeddings_dir,
+                            current.ordinal,
+                            lambda temp_path: write_embedding_parquet(
+                                temp_path,
+                                embedding_records,
+                                embedding_dimension=embedding_configuration.expected_dimension,
+                            ),
+                            write_temp_shard_fn=write_temp_shard,
+                        )
+                        if seams.after_both_temp_writes is not None:
+                            seams.after_both_temp_writes()
+
+                        current = mark_validating(
+                            current,
+                            relational_relative_path=relational_rel,
+                            embedding_relative_path=embedding_rel,
+                        )
+                        state = replace_shard(state, current)
+                        state = _persist_state_profiled(paths, state, profiler)
+
+                        validated = prepare_validated_temp_shard_pair(
+                            relational_temp_path=relational_temp,
+                            embedding_temp_path=embedding_temp,
+                            relational_relative_path=relational_rel,
+                            embedding_relative_path=embedding_rel,
                             expected_count=current.expected_record_count,
                             expected_dimension=embedding_configuration.expected_dimension,
-                        ),
-                        stage="embedding_validation",
-                    )
-                    assert_validation_pass(
-                        validate_cross_artifact_identity(
-                            relational_records,
-                            embedding_records,
-                            expected_refs=expected_refs,
-                        ),
-                        stage="cross_ref_validation",
-                    )
-                    assert_validation_pass(
-                        validate_semantic_text_hashes(relational_records, embedding_records),
-                        stage="semantic_text_hash_validation",
-                    )
+                            profiler=profiler if config.enable_performance_profile else None,
+                        )
+                        relational_final, embedding_final = commit_temp_shard_pair(
+                            relational_dir=paths.relational_dir,
+                            embeddings_dir=paths.embeddings_dir,
+                            shard_ordinal=current.ordinal,
+                            embedding_commit_guard=seams.before_embedding_commit,
+                        )
+                        if seams.after_both_renames_before_ready_persist is not None:
+                            seams.after_both_renames_before_ready_persist()
 
-                    current = mark_writing(current)
-                    state = replace_shard(state, current)
-                    state = _persist_state(paths, state)
-
-                    relational_rel, embedding_rel = shard_descriptor_paths(current.ordinal)
-                    relational_temp = write_temp_shard(
-                        paths.relational_dir,
-                        current.ordinal,
-                        lambda temp_path: write_relational_parquet(temp_path, relational_records),
-                    )
-                    if seams.after_relational_temp_write is not None:
-                        seams.after_relational_temp_write()
-                    embedding_temp = write_temp_shard(
-                        paths.embeddings_dir,
-                        current.ordinal,
-                        lambda temp_path: write_embedding_parquet(
-                            temp_path,
-                            embedding_records,
-                            embedding_dimension=embedding_configuration.expected_dimension,
-                        ),
-                    )
-                    if seams.after_both_temp_writes is not None:
-                        seams.after_both_temp_writes()
-
-                    current = mark_validating(
-                        current,
-                        relational_relative_path=relational_rel,
-                        embedding_relative_path=embedding_rel,
-                    )
-                    state = replace_shard(state, current)
-                    state = _persist_state(paths, state)
-
-                    validated = prepare_validated_temp_shard_pair(
-                        relational_temp_path=relational_temp,
-                        embedding_temp_path=embedding_temp,
-                        relational_relative_path=relational_rel,
-                        embedding_relative_path=embedding_rel,
-                        expected_count=current.expected_record_count,
-                        expected_dimension=embedding_configuration.expected_dimension,
-                    )
-                    relational_final, embedding_final = commit_temp_shard_pair(
-                        relational_dir=paths.relational_dir,
-                        embeddings_dir=paths.embeddings_dir,
-                        shard_ordinal=current.ordinal,
-                        embedding_commit_guard=seams.before_embedding_commit,
-                    )
-                    if seams.after_both_renames_before_ready_persist is not None:
-                        seams.after_both_renames_before_ready_persist()
-
-                    current = mark_ready(
-                        current,
-                        relational_relative_path=validated.relational_relative_path,
-                        embedding_relative_path=validated.embedding_relative_path,
-                        relational_sha256=validated.relational_sha256,
-                        embedding_sha256=validated.embedding_sha256,
-                        relational_source_ref_set_sha256=validated.relational_source_ref_set_sha256,
-                        embedding_source_ref_set_sha256=validated.embedding_source_ref_set_sha256,
-                        embedding_count=len(embedding_records),
-                    )
-                    state = replace_shard(state, current)
-                    state = _persist_state(paths, state)
+                        current = mark_ready(
+                            current,
+                            relational_relative_path=validated.relational_relative_path,
+                            embedding_relative_path=validated.embedding_relative_path,
+                            relational_sha256=validated.relational_sha256,
+                            embedding_sha256=validated.embedding_sha256,
+                            relational_source_ref_set_sha256=validated.relational_source_ref_set_sha256,
+                            embedding_source_ref_set_sha256=validated.embedding_source_ref_set_sha256,
+                            embedding_count=len(embedding_records),
+                        )
+                        state = replace_shard(state, current)
+                        state = _persist_state_profiled(paths, state, profiler)
 
                     relational_bytes.append(relational_final.stat().st_size)
                     embedding_bytes.append(embedding_final.stat().st_size)
                     performance_monitor.sample()
+                    if config.enable_performance_profile:
+                        shard_performance_metrics.append(
+                            build_shard_performance_metrics(
+                                profiler,
+                                shard_ordinal=current.ordinal,
+                                record_count=current.expected_record_count,
+                                model_id=model,
+                                device=execution_configuration.device or "unknown",
+                                batch_size=provider_batch_size,
+                                started_at=shard_started_at,
+                                completed_at=utc_now(),
+                            )
+                        )
                     shard_progress = compute_build_progress(state)
                     logger.info(
                         "shard READY ordinal=%s records=%s elapsed_seconds=%s progress=%s/%s remaining_shards=%s",
@@ -920,6 +987,21 @@ def run_resumable_data_pack_build(
 
     progress = compute_build_progress(state)
     performance_snapshot = performance_monitor.snapshot()
+    performance_report: PerformanceReport | None = None
+    if config.enable_performance_profile and shard_performance_metrics:
+        performance_report = build_performance_report(
+            tuple(shard_performance_metrics),
+            qualification_id=config.performance_qualification_id,
+        )
+        output_dir = config.performance_output_dir
+        if output_dir is None:
+            output_dir = (
+                Path(".tmp")
+                / "session"
+                / config.performance_qualification_id
+                / "performance"
+            )
+        write_performance_evidence(output_dir, performance_report)
 
     return DataPackBuildReport(
         status=DataPackStatus.READY if finalized else DataPackStatus.BUILDING,
@@ -934,4 +1016,5 @@ def run_resumable_data_pack_build(
         peak_vram_mb=performance_snapshot.peak_vram_mb,
         interrupted=interrupted,
         finalized=finalized,
+        performance_report=performance_report,
     )

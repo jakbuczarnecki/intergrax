@@ -93,6 +93,16 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Apply production execution tuning (device, batch size) before build",
     )
+    parser.add_argument(
+        "--enable-performance-profile",
+        action="store_true",
+        help="Emit shard timing breakdown to .tmp/session/<qualification>/performance/",
+    )
+    parser.add_argument(
+        "--performance-qualification-id",
+        default="VPI-IMPLEMENTATION-5C4E1A",
+        help="Session folder name for performance evidence (with --enable-performance-profile)",
+    )
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -116,6 +126,17 @@ def main(argv: list[str] | None = None) -> int:
         max_shards=args.max_shards,
         max_records=args.max_records,
         stop_after_shard=args.stop_after_shard,
+        enable_performance_profile=args.enable_performance_profile,
+        performance_output_dir=(
+            _REPO_ROOT
+            / ".tmp"
+            / "session"
+            / args.performance_qualification_id
+            / "performance"
+            if args.enable_performance_profile
+            else None
+        ),
+        performance_qualification_id=args.performance_qualification_id,
     )
     report = run_resumable_data_pack_build(config)
     progress = report.progress
@@ -137,6 +158,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"peak host RAM: {report.peak_host_ram_mb:.1f} MB")
     if report.peak_vram_mb is not None:
         print(f"peak VRAM: {report.peak_vram_mb:.1f} MB")
+    if report.performance_report is not None:
+        metrics = report.performance_report.shard_metrics
+        if metrics:
+            last = metrics[-1]
+            print(
+                f"performance profile: dominant={report.performance_report.dominant_phase} "
+                f"({report.performance_report.dominant_phase_seconds:.1f}s), "
+                f"shard throughput={last.shard_records_per_second:.3f} records/sec"
+            )
+        if config.performance_output_dir is not None:
+            print(f"performance evidence: {config.performance_output_dir}")
     if report.interrupted:
         print("build interrupted — resume with --resume")
     if report.finalized:
