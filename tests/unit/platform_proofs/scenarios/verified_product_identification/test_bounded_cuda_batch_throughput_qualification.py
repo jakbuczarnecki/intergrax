@@ -39,6 +39,7 @@ def _measurement(
     peak_allocated: int,
     total_vram: int = 10_000,
     safe: bool = True,
+    safety_detail: str = "test",
     cuda_oom: bool = False,
 ) -> BatchVariantMeasurement:
     headroom = compute_vram_headroom_fraction(
@@ -65,8 +66,56 @@ def _measurement(
         cuda_oom=cuda_oom,
         vram_headroom_fraction=headroom,
         safe=safe,
-        safety_detail="test",
+        safety_detail=safety_detail,
     )
+
+
+def _frozen_closeout_measurement(
+    *,
+    batch_size: int,
+    records_per_second: float,
+    previous_smaller: BatchVariantMeasurement | None,
+) -> BatchVariantMeasurement:
+    measurement = _measurement(
+        batch_size=batch_size,
+        records_per_second=records_per_second,
+        peak_allocated=2_000,
+    )
+    safe, safety_detail = evaluate_batch_safety(
+        measurement,
+        previous_smaller=previous_smaller,
+    )
+    return _measurement(
+        batch_size=batch_size,
+        records_per_second=records_per_second,
+        peak_allocated=2_000,
+        safe=safe,
+        safety_detail=safety_detail,
+    )
+
+
+def _frozen_closeout_measurements() -> tuple[BatchVariantMeasurement, ...]:
+    batch_1 = _frozen_closeout_measurement(
+        batch_size=1,
+        records_per_second=23.42,
+        previous_smaller=None,
+    )
+    batch_4 = _frozen_closeout_measurement(
+        batch_size=4,
+        records_per_second=22.36,
+        previous_smaller=batch_1,
+    )
+    batch_8 = _frozen_closeout_measurement(
+        batch_size=8,
+        records_per_second=19.25,
+        previous_smaller=batch_4,
+    )
+    batch_16 = _frozen_closeout_measurement(
+        batch_size=16,
+        records_per_second=19.31,
+        previous_smaller=batch_8,
+    )
+    return (batch_1, batch_4, batch_8, batch_16)
 
 
 def test_compute_token_profile_percentiles() -> None:
@@ -126,14 +175,55 @@ def test_frozen_bounded_cuda_throughput_qualification_closeout() -> None:
     assert closeout.optional_batch_32_executed is False
 
     evidence_by_batch = {item.batch_size: item for item in closeout.batch_evidence}
+
+    assert evidence_by_batch[1].safe is True
     assert evidence_by_batch[1].selected is True
     assert evidence_by_batch[1].records_per_second == pytest.approx(23.42)
+
+    assert evidence_by_batch[4].safe is False
     assert evidence_by_batch[4].selected is False
     assert evidence_by_batch[4].records_per_second == pytest.approx(22.36)
+    assert "batch 1" in evidence_by_batch[4].notes
+
+    assert evidence_by_batch[8].safe is False
+    assert evidence_by_batch[8].selected is False
     assert evidence_by_batch[8].records_per_second == pytest.approx(19.25)
+    assert "batch 4" in evidence_by_batch[8].notes
+
+    assert evidence_by_batch[16].safe is True
+    assert evidence_by_batch[16].selected is False
     assert evidence_by_batch[16].records_per_second == pytest.approx(19.31)
+
+    assert evidence_by_batch[32].safe is False
+    assert evidence_by_batch[32].selected is False
     assert evidence_by_batch[32].records_per_second is None
     assert "gating" in evidence_by_batch[32].notes
+
+    selected_batches = [item.batch_size for item in closeout.batch_evidence if item.selected]
+    assert selected_batches == [1]
+
+
+def test_frozen_closeout_matches_evaluate_batch_safety_semantics() -> None:
+    closeout = BOUNDED_CUDA_THROUGHPUT_QUALIFICATION_CLOSEOUT
+    evidence_by_batch = {item.batch_size: item for item in closeout.batch_evidence}
+    measurements = _frozen_closeout_measurements()
+
+    previous: BatchVariantMeasurement | None = None
+    for measurement in measurements:
+        safe, _detail = evaluate_batch_safety(
+            measurement,
+            previous_smaller=previous,
+        )
+        assert safe is evidence_by_batch[measurement.batch_size].safe
+        previous = measurement
+
+
+def test_frozen_closeout_select_production_batch_candidate_returns_batch_1() -> None:
+    measurements = _frozen_closeout_measurements()
+
+    selection = select_production_batch_candidate(measurements)
+
+    assert selection.batch_size == 1
 
 
 def test_no_forbidden_contract_patterns_in_bounded_cuda_batch_modules() -> None:
