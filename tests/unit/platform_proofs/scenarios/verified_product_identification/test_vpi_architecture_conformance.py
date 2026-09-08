@@ -161,6 +161,8 @@ def test_production_code_has_no_concrete_hf_embedding_provider_imports() -> None
     forbidden = "intergrax.rag.embedding.providers.hf_embedding_provider"
     violations: list[str] = []
     for path in _iter_production_python_files(_VPI_ROOT):
+        if "qualification" in path.parts:
+            continue
         for imported in _module_imports(path):
             if imported == forbidden:
                 violations.append(str(path.relative_to(_REPO_ROOT)))

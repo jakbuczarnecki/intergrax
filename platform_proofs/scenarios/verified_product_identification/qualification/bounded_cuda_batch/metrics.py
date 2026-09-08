@@ -5,6 +5,9 @@ from __future__ import annotations
 import statistics
 from collections.abc import Sequence
 
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.embedding_input_policy import (
+    VPI_BGE_M3_DOCUMENT_EFFECTIVE_TOKEN_CEILING,
+)
 from platform_proofs.scenarios.verified_product_identification.qualification.bounded_cuda_batch.contracts import (
     FULL_DATASET_RECORD_COUNT,
     EmbeddingTimeProjection,
@@ -124,3 +127,10 @@ def verify_bounded_token_budget(
     if violations:
         msg = "; ".join(violations)
         raise ValueError(msg)
+
+
+def verify_effective_provider_token_ceiling(token_counts: Sequence[int]) -> None:
+    verify_bounded_token_budget(
+        token_counts,
+        token_budget=VPI_BGE_M3_DOCUMENT_EFFECTIVE_TOKEN_CEILING,
+    )

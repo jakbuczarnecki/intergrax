@@ -6,6 +6,9 @@ import pytest
 
 from platform_proofs.scenarios.verified_product_identification.qualification.bounded_cuda_batch.contracts import (
     BATCH_32_MIN_IMPROVEMENT_FRACTION,
+    BOUNDED_CUDA_THROUGHPUT_QUALIFICATION_CLOSEOUT,
+    CLOSEOUT_TASK_ID,
+    EFFECTIVE_PROVIDER_TOKEN_CEILING,
     MIN_VRAM_HEADROOM_FRACTION,
     BatchVariantMeasurement,
 )
@@ -15,6 +18,7 @@ from platform_proofs.scenarios.verified_product_identification.qualification.bou
     compute_vram_headroom_fraction,
     project_embedding_time,
     verify_bounded_token_budget,
+    verify_effective_provider_token_ceiling,
 )
 from platform_proofs.scenarios.verified_product_identification.qualification.bounded_cuda_batch.reporting import (
     bounded_cuda_report_to_json,
@@ -100,6 +104,58 @@ def test_project_embedding_time_scales_linearly() -> None:
 def test_verify_bounded_token_budget_rejects_overflow() -> None:
     with pytest.raises(ValueError, match="re-encodes to 800 tokens"):
         verify_bounded_token_budget((100, 800), token_budget=768)
+
+
+def test_verify_effective_provider_token_ceiling_allows_boundary() -> None:
+    verify_effective_provider_token_ceiling((100, EFFECTIVE_PROVIDER_TOKEN_CEILING))
+
+
+def test_verify_effective_provider_token_ceiling_rejects_overflow() -> None:
+    with pytest.raises(ValueError, match="re-encodes to 771 tokens"):
+        verify_effective_provider_token_ceiling((771,))
+
+
+def test_frozen_bounded_cuda_throughput_qualification_closeout() -> None:
+    closeout = BOUNDED_CUDA_THROUGHPUT_QUALIFICATION_CLOSEOUT
+
+    assert closeout.closeout_task_id == CLOSEOUT_TASK_ID
+    assert closeout.qualified_production_batch_size == 1
+    assert closeout.qualified_records_per_second == pytest.approx(23.42)
+    assert closeout.projected_embedding_only_hours == pytest.approx(44.7)
+    assert closeout.projection_only is True
+    assert closeout.optional_batch_32_executed is False
+
+    evidence_by_batch = {item.batch_size: item for item in closeout.batch_evidence}
+    assert evidence_by_batch[1].selected is True
+    assert evidence_by_batch[1].records_per_second == pytest.approx(23.42)
+    assert evidence_by_batch[4].selected is False
+    assert evidence_by_batch[4].records_per_second == pytest.approx(22.36)
+    assert evidence_by_batch[8].records_per_second == pytest.approx(19.25)
+    assert evidence_by_batch[16].records_per_second == pytest.approx(19.31)
+    assert evidence_by_batch[32].records_per_second is None
+    assert "gating" in evidence_by_batch[32].notes
+
+
+def test_no_forbidden_contract_patterns_in_bounded_cuda_batch_modules() -> None:
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parents[5]
+    bounded_root = (
+        repo_root
+        / "platform_proofs/scenarios/verified_product_identification/qualification/bounded_cuda_batch"
+    )
+    forbidden_fragments = (
+        "dict[str, Any]",
+        ": Any",
+        "dict[str, object]",
+        "getattr",
+        "setattr",
+        "hasattr",
+    )
+    for module_path in sorted(bounded_root.glob("*.py")):
+        source = module_path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {module_path.name}"
 
 
 def test_select_production_batch_candidate_prefers_safe_highest_throughput() -> None:
