@@ -2,6 +2,7 @@
 
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.embedding_diagnostics.analyzer import (
     create_diagnostic_embedding_port,
+    derive_bounded_semantic_texts,
     derive_record_identifiers,
     derive_semantic_texts,
     load_diagnostic_dataset_sample,
@@ -97,6 +98,7 @@ __all__ = [
     "classify_embedding_bottleneck",
     "create_diagnostic_embedding_port",
     "create_gpu_telemetry",
+    "derive_bounded_semantic_texts",
     "derive_record_identifiers",
     "derive_semantic_texts",
     "experiment_kind_for_batch_size",

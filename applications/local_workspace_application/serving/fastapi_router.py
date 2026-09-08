@@ -10,7 +10,6 @@ from intergrax.runtime.events.persistence_contract import RuntimeEventPersistenc
 from intergrax.runtime.interactions.errors import HostNotAcceptingWorkError
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.serving.proof_summary import attach_lkw_proof_summary_metadata
 from local_workspace_application.serving.run_artifact_metadata import ensure_run_artifact_bundle_metadata
@@ -26,12 +25,10 @@ class LocalWorkspaceRunService:
     runtime_event_persistence: RuntimeEventPersistence | None = None
 
     async def run_task(self, body: LocalWorkspaceRunRequestV1) -> LocalWorkspaceRunResponseV1:
-        task_id, _ = mint_intake_execution_identity()
         metadata = dict(body.metadata)
         if body.tenant_id and "tenant_id" not in metadata:
             metadata["tenant_id"] = body.tenant_id
         task = Task(
-            task_id=task_id,
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             session_id=body.session_id,

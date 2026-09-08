@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
 
 
 class PocTemplateRunRequestV1(BaseModel):
@@ -44,9 +43,7 @@ class PocTemplateRunService:
         return cls(host_execution=host_execution)
 
     async def run_task(self, body: PocTemplateRunRequestV1) -> PocTemplateRunResponseV1:
-        run_id = new_run_id()
         task = Task(
-            task_id=run_id,
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             session_id=body.session_id,

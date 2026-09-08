@@ -9,7 +9,6 @@ from fastapi import APIRouter, FastAPI, HTTPException, status
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
 from dispute_sim_application.serving.schemas import DisputeSimRunRequestV1, DisputeSimRunResponseV1
 
 
@@ -31,9 +30,7 @@ class DisputeSimRunService:
         )
 
     async def run_task(self, body: DisputeSimRunRequestV1) -> DisputeSimRunResponseV1:
-        task_id, _ = mint_intake_execution_identity()
         task = Task(
-            task_id=task_id,
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             session_id=body.session_id,

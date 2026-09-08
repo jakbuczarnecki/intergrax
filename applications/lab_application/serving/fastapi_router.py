@@ -17,7 +17,6 @@ from intergrax.applications._shared.task_intake import (
     apply_long_running_enabled,
     apply_orchestration_graph_id,
 )
-from intergrax.runtime.task.task_run_bridge import new_run_id
 
 
 class LabRunRequestV1(BaseModel):
@@ -58,9 +57,7 @@ class LabRunService:
         )
 
     async def run_task(self, body: LabRunRequestV1) -> LabRunResponseV1:
-        run_id = new_run_id()
         task = Task(
-            task_id=run_id,
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             session_id=body.session_id,

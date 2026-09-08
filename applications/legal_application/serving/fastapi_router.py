@@ -15,7 +15,7 @@ LegalIdentitySource = Literal["body_or_context", "context_only"]
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
-from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity, task_from_runtime_request
+from intergrax.runtime.task.task import Task
 
 from legal.legal_agent import LegalAgent
 from legal_application.serving.runtime_bridge import LegalApiV1RuntimeMapper
@@ -25,7 +25,7 @@ from legal_application.serving.schemas import (
 )
 from intergrax.fastapi_core.context import RequestContext, get_request_context
 from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
 
 
 class LegalAgentService(Protocol):
@@ -64,8 +64,8 @@ class DefaultLegalAgentService:
     config: LegalAgentServingConfig
     mapper: LegalApiV1RuntimeMapper = field(default_factory=LegalApiV1RuntimeMapper)
 
-    def _data_compliance_for_request(self, runtime_req: RuntimeRequest) -> DataCompliancePolicy:
-        agent = self.config.registry.get(runtime_req.agent_id or self.config.default_agent_id)
+    def _data_compliance_for_task(self, task: Task) -> DataCompliancePolicy:
+        agent = self.config.registry.get(task.agent_id or self.config.default_agent_id)
         if isinstance(agent, LegalAgent):
             return agent.data_compliance_policy
         return DataCompliancePolicy()
@@ -77,18 +77,10 @@ class DefaultLegalAgentService:
     ) -> LegalChatResponseV1:
         tenant, user = self._resolve_identity(body, http_ctx)
 
-        task_id, run_id = mint_intake_execution_identity()
-        runtime_req = self.mapper.to_runtime_request(
+        task = self.mapper.to_task(
             body,
             http_context=http_ctx,
             default_agent_id=self.config.default_agent_id,
-            tenant_id=tenant,
-            user_id=user,
-            task_id=task_id,
-            run_id=run_id,
-        )
-        task = task_from_runtime_request(
-            runtime_req,
             tenant_id=tenant,
             user_id=user,
             capability="legal.contract_review",
@@ -97,7 +89,7 @@ class DefaultLegalAgentService:
         try:
             result = await self.config.host_execution.execute(task)
             answer = RuntimeAnswer(
-                run_id=result.run_id or run_id,
+                run_id=result.run_id,
                 answer=result.answer,
             )
         except ValueError as exc:
@@ -115,7 +107,7 @@ class DefaultLegalAgentService:
             answer,
             http_context=http_ctx,
             include_trace=body.include_trace,
-            data_compliance=self._data_compliance_for_request(runtime_req),
+            data_compliance=self._data_compliance_for_task(task),
         )
 
     def _resolve_identity(

@@ -7,7 +7,7 @@ from __future__ import annotations
 from legal_application.serving.runtime_bridge import LegalApiV1RuntimeMapper
 from legal_application.serving.schemas import LegalChatRequestV1
 from intergrax.fastapi_core.context import RequestContext
-from intergrax.runtime.task.task_run_bridge import mint_intake_execution_identity
+from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.nexus.responses.response_schema import (
     RouteInfo,
     RuntimeAnswer,
@@ -18,6 +18,9 @@ from intergrax.runtime.nexus.responses.response_schema import (
 import pytest
 
 pytestmark = pytest.mark.unit
+
+_FIXTURE_TASK_ID = TaskId("task_0123456789abcdef0123456789abcdef")
+_FIXTURE_RUN_ID = RunId("run_0123456789abcdef0123456789abcdef")
 
 
 def test_legal_chat_request_maps_to_runtime_request() -> None:
@@ -38,15 +41,14 @@ def test_legal_chat_request_maps_to_runtime_request() -> None:
         metadata={"k": "v"},
     )
     mapper = LegalApiV1RuntimeMapper()
-    task_id, run_id = mint_intake_execution_identity()
     rt = mapper.to_runtime_request(
         body,
         http_context=ctx,
         default_agent_id="legal-default",
         tenant_id="ten-1",
         user_id="usr-1",
-        task_id=task_id,
-        run_id=run_id,
+        task_id=_FIXTURE_TASK_ID,
+        run_id=_FIXTURE_RUN_ID,
     )
     assert rt.agent_id == "legal-default"
     assert rt.message == "Hello"
@@ -54,8 +56,8 @@ def test_legal_chat_request_maps_to_runtime_request() -> None:
     assert rt.workspace_id == "ws-1"
     assert rt.tenant_id == "ten-1"
     assert rt.user_id == "usr-1"
-    assert rt.task_id == task_id
-    assert rt.run_id == run_id
+    assert rt.task_id == _FIXTURE_TASK_ID
+    assert rt.run_id == _FIXTURE_RUN_ID
     assert rt.metadata.get("api") == {"product": "legal_agent", "version": "1"}
     assert rt.metadata.get("http_request_id") == "req-1"
 

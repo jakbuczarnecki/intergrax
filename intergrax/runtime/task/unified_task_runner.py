@@ -26,7 +26,11 @@ class UnifiedTaskRunner:
     """
     Thin Task adapter into canonical root execution (§41).
 
-    Used by HTTP serving and eval paths.
+    HARNESS / SCHEDULING ONLY — not a production Tier-3 execution entry.
+
+    Allowed: scheduler coordination, harness compatibility, eval orchestration.
+    Forbidden: lifecycle ownership, identity creation, direct production execution
+    bypassing :class:`~intergrax.runtime.execution.host_task.HostTaskExecutionPort`.
     """
 
     def __init__(

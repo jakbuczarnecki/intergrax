@@ -12,6 +12,7 @@ from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderE
 from platform_proofs.scenarios.verified_product_identification.application.catalog.derive_search_representation import (
     build_source_record_ref,
     derive_search_representation,
+    derive_search_representation_with_policy,
 )
 from platform_proofs.scenarios.verified_product_identification.application.config.embedding_configuration import (
     load_vpi_embedding_configuration,
@@ -167,6 +168,30 @@ def derive_semantic_texts(
             source_revision=source_revision,
         )
         representation = derive_search_representation(source_offer, source_ref=source_ref)
+        semantic_texts.append(representation.semantic.semantic_text)
+    return tuple(semantic_texts)
+
+
+def derive_bounded_semantic_texts(
+    rows: Sequence[SelectedDatasetRow],
+    *,
+    catalog_id: str = CANONICAL_CATALOG_ID,
+    source_revision: str | None = None,
+    representation_policy_profile: str,
+) -> tuple[str, ...]:
+    semantic_texts: list[str] = []
+    for row in rows:
+        source_offer = parse_wdc_source_offer_json(row.record_json)
+        source_ref = build_source_record_ref(
+            source_offer,
+            catalog_id=catalog_id,
+            source_revision=source_revision,
+        )
+        representation = derive_search_representation_with_policy(
+            source_offer,
+            source_ref=source_ref,
+            representation_policy_profile=representation_policy_profile,
+        )
         semantic_texts.append(representation.semantic.semantic_text)
     return tuple(semantic_texts)
 
