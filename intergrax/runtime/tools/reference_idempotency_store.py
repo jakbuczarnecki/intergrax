@@ -28,8 +28,15 @@ def resolve_reference_idempotency_store(
 
     PROCESS_LOCAL → in-process reference provider.
     DURABLE_SINGLE_HOST → durable single-host reference provider (SQLite).
-    SHARED_MULTI_HOST → None; caller must inject a qualifying shared provider.
+    SHARED_MULTI_HOST → None unless ``db_path`` is explicitly provided
+    (topology validation rejects durable single-host under shared requirement).
     """
+    if db_path is not None:
+        resolved_path = resolve_idempotency_db_path(db_path)
+        store = create_sqlite_idempotency_store(db_path=resolved_path)
+        assert isinstance(store, IdempotencyStore)
+        return store
+
     if required_topology is PersistenceTopology.PROCESS_LOCAL:
         return InMemoryIdempotencyStore()
 

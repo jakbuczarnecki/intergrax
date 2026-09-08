@@ -525,3 +525,29 @@ class NexusGraphRunner:
             graph_id=graph.graph_id,
         )
         return GraphPhaseOutcome(early_result=early)
+
+
+@dataclass(slots=True)
+class _VerificationTraceEmitter:
+    """Canonical graph verification trace seam bound to active execution identity."""
+
+    _run_id: RunId
+
+
+def _build_critic_trace_emitter(
+    *,
+    task: Task,
+    trace_emitter: TaskTraceEmitter,
+    hooks: object | None,
+) -> _VerificationTraceEmitter | None:
+    """Build verification trace emitter from hook flags and active run identity."""
+    if hooks is None:
+        return None
+    verify_node_partial = bool(getattr(hooks, "verify_node_partial", False))
+    verify_graph_final = bool(getattr(hooks, "verify_graph_final", False))
+    if not verify_node_partial and not verify_graph_final:
+        return None
+    active_run_id, _ = require_active_execution_identity()
+    _ = task
+    _ = trace_emitter
+    return _VerificationTraceEmitter(_run_id=active_run_id)

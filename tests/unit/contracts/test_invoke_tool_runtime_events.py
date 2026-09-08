@@ -5,7 +5,7 @@ import json
 import pytest
 
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_run_id, mint_task_id
 from intergrax.contracts.runtime_execution_context import (
     RAG_RETRIEVE_TOOL_ID,
     RuntimeExecutionContext,
@@ -42,6 +42,7 @@ def _exec_ctx(
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         agent_id="local_indexer",
         tool_gateway=gateway,
         event_emitter=collector,

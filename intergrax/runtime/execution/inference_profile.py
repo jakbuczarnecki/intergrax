@@ -6,11 +6,12 @@
 from __future__ import annotations
 
 from types import MappingProxyType
-from typing import NewType, Protocol
+from typing import Protocol
 
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-
-InferenceProfileId = NewType("InferenceProfileId", str)
+from intergrax.contracts.inference_profile_id import (
+    InferenceProfileId,
+    validate_inference_profile_id,
+)
 
 
 class InferenceProfileError(RuntimeError):
@@ -35,23 +36,6 @@ class InferenceProfileAlreadyRegisteredError(InferenceProfileError):
 
 class InferenceProfileResolutionError(InferenceProfileError):
     """Raised when explicit profile selection cannot be resolved."""
-
-
-def validate_inference_profile_id(value: object) -> InferenceProfileId:
-    """Validate a logical inference profile identity for Execution requests."""
-    if type(value) is not str:
-        raise TypeError(
-            f"InferenceProfileId must be str, got {type(value).__name__}",
-        )
-    if not value or not value.strip():
-        raise ValueError(
-            "InferenceProfileId must be non-empty and not whitespace-only",
-        )
-    if value != value.strip():
-        raise ValueError(
-            "InferenceProfileId must not contain leading or trailing whitespace",
-        )
-    return InferenceProfileId(value)
 
 
 class InferenceProfileResolver(Protocol):

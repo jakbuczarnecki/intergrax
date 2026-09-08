@@ -34,7 +34,7 @@ from intergrax.contracts.execution_identity import (
     ExecutionId,
     validate_execution_id,
 )
-from intergrax.runtime.execution.budget.models import BudgetUsageTotals
+from intergrax.contracts.budget_usage_totals import BudgetUsageTotals
 
 
 class WorkerAccountingWindowKind(StrEnum):
