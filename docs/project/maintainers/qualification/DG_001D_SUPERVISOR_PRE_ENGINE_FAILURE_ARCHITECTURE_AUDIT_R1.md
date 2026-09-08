@@ -29,22 +29,21 @@
 | Diagnostics core changes | **NONE** |
 | DG-001D vs DG-001A | **Separate** — producer vs default composition coverage |
 
-**DG-001 remains `PARTIALLY ADDRESSED`.** DG-001D R2 producer shipped; HOST-DIAG-3 conformance and real qualification pending.
+**DG-001 remains `PARTIALLY ADDRESSED`.** **DG-001D = CLOSED / QUALIFIED** — see [`DG_001D_FINAL_CLOSURE.md`](DG_001D_FINAL_CLOSURE.md).
 
 ---
 
-## Implementation status (R2)
+## Implementation status (post-closure reconciliation)
 
 | Slice | Status |
 |-------|--------|
-| R1 architecture audit | **PASS** — frozen |
-| R2 producer (`APPLICATION_FAILED` for pre-engine supervisor failures) | **SHIPPED** |
-| R3 HOST-DIAG-3 conformance | **PENDING** |
-| R4 real qualification | **PENDING** |
+| R1 architecture audit | **PASS** — frozen (`d64ad525e02d5c58831c7e1328b9e91d83a26b55`) |
+| R2 producer (`APPLICATION_FAILED` for pre-engine supervisor failures) | **PASS** (`4dff9d136085fe46fbffc342d1bfc690ce7a8d85`) |
+| R3 HOST-DIAG-3 conformance | **PASS** (`70c342d4ccd0d65299bf433fbf7b74818e9f1b45`) |
+| R4 real qualification | **PASS** (`a4b04eeeb5956408e847864773337cd396f50f68`) |
+| Final closure | **CLOSED / QUALIFIED** — [`DG_001D_FINAL_CLOSURE.md`](DG_001D_FINAL_CLOSURE.md) |
 
 **R2 shipped:** typed `HostedApplicationSupervisorFailureReason`, `HostedProcessBootstrapPhase` extension (`engine_construction`, `engine_contract_validation`), `supervisor_pre_engine_failure_to_hosted_event`, supervisor catch-path publication with isolated publisher failure handling. Supervisor truth (`HostedApplicationExitRecord`) and restart semantics unchanged.
-
-**Not yet qualified:** DG-001D remains open — producer implemented / qualification pending.
 
 ---
 

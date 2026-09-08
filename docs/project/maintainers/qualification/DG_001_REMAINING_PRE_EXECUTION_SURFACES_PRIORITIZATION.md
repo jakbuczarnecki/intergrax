@@ -6,6 +6,8 @@
 > **Qualified sub-slice:** DG-001B worker bootstrap B6/B7 = **CLOSED / QUALIFIED** (R6 @ `aac75b8e8dfc82192595eaacd0a561249f47f171`)  
 > **Start HEAD:** `7720341bb17b1f6f1fa340c233e06ea80d118323`  
 > **Audit date:** 2026-09-07
+>
+> **Post-closure reconciliation (2026-09-08):** **DG-001D = CLOSED / QUALIFIED** — [`DG_001D_FINAL_CLOSURE.md`](DG_001D_FINAL_CLOSURE.md). Sections §2–§3 below remain **historical pre-R2 audit evidence** for prioritization rationale; do not treat DG-001D row status as current operator truth.
 
 ---
 
@@ -25,7 +27,7 @@ Closure ancestor check: `git merge-base --is-ancestor aac75b8e8dfc82192595eaacd0
 |----|---------|--------|
 | **DG-001A** | Hosted/default production wiring — HOST-DIAG-3 publisher coverage | Open |
 | **DG-001C** | Public proof / launcher PYTHON-BOOTSTRAP before host publisher | Open |
-| **DG-001D** | Supervisor / pre-engine failure before `HostedApplicationEngine` | Open |
+| **DG-001D** | Supervisor / pre-engine failure before `HostedApplicationEngine` | **CLOSED / QUALIFIED** (final closure; table is historical pre-R2 audit) |
 | **B0–B5** | Bootstrap failures before diagnostic prerequisites exist | Open |
 
 **Not merged into DG-001B.** DG-001B qualifies only guarded B6/B7 after B3–B5 exist.

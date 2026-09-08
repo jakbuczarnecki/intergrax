@@ -28,6 +28,8 @@ PRODUCER + HOST-DIAG-3 CONFORMANCE + REAL INTEGRATION QUALIFIED
 
 **DG-001 overall:** `PARTIALLY ADDRESSED` (unchanged — DG-001A/C remain open).
 
+**Final closure:** [`DG_001D_FINAL_CLOSURE.md`](DG_001D_FINAL_CLOSURE.md) — **CLOSED / QUALIFIED**.
+
 ---
 
 ## 2. R3 vs R4
