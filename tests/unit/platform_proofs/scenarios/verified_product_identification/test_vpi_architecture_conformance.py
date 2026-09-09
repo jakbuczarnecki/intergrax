@@ -63,6 +63,26 @@ def test_storage_bootstrap_contracts_have_no_provider_paths() -> None:
     assert violations == []
 
 
+def test_data_pack_load_adapters_do_not_import_vector_or_model_providers() -> None:
+    adapter_root = _VPI_ROOT / "storage_bootstrap/adapters/postgresql"
+    forbidden = frozenset(
+        {
+            "qdrant",
+            "pgvector",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(adapter_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
 def test_data_pack_load_core_has_no_provider_imports() -> None:
     core_root = _VPI_ROOT / "storage_bootstrap/data_pack_load"
     forbidden = frozenset(
