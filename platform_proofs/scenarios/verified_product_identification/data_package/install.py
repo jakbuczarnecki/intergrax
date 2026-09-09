@@ -19,6 +19,10 @@ from platform_proofs.scenarios.verified_product_identification.data_package.conf
     VpiDataPackageConfig,
     load_vpi_data_package_config,
 )
+from platform_proofs.scenarios.verified_product_identification.data_package.installed_validation import (
+    InstalledDataPackValidationResult,
+    validate_installed_distributed_data_pack,
+)
 from platform_proofs.scenarios.verified_product_identification.data_package.validation import (
     VpiDataPackageValidationReport,
     validate_installed_vpi_data_package,
@@ -29,6 +33,12 @@ from platform_proofs.scenarios.verified_product_identification.data_package.vali
 class VpiDataPackageInstallResult:
     install_report: DataPackageInstallReport
     validation_report: VpiDataPackageValidationReport
+
+
+@dataclass(frozen=True, slots=True)
+class VpiDataPackDistributionInstallResult:
+    install_report: DataPackageInstallReport
+    validation_report: InstalledDataPackValidationResult
 
 
 def install_vpi_data_package(
@@ -66,6 +76,36 @@ def _select_transport(local_mirror_root: Path | None):
     if local_mirror_root is not None:
         return LocalFileDataPackageTransport()
     return HttpDataPackageTransport()
+
+
+def install_vpi_data_pack_distribution(
+    config: VpiDataPackageConfig,
+    *,
+    local_mirror_root: Path | None = None,
+) -> VpiDataPackDistributionInstallResult:
+    descriptor = load_proof_data_package_descriptor(config.descriptor_path)
+    cache = DataPackageCache(config.cache_dir)
+    transport = _select_transport(local_mirror_root)
+    base_uri = _resolve_base_uri(config.base_uri, local_mirror_root)
+
+    installer = DataPackageInstaller()
+    install_report = installer.install(
+        DataPackageInstallRequest(
+            descriptor=descriptor,
+            install_root=config.install_dir,
+            cache=cache,
+            transport=transport,
+            base_uri=base_uri,
+        )
+    )
+    validation_report = validate_installed_distributed_data_pack(
+        config.install_dir,
+        descriptor,
+    )
+    return VpiDataPackDistributionInstallResult(
+        install_report=install_report,
+        validation_report=validation_report,
+    )
 
 
 def _resolve_base_uri(

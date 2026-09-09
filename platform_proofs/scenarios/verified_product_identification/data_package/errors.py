@@ -17,3 +17,7 @@ class VpiDataPackageCompatibilityError(VpiDataPackageError):
 
 class VpiDataPackageNotInstalledError(VpiDataPackageError):
     """Required VPI data package is missing."""
+
+
+class VpiDataPackageDescriptorBuildError(VpiDataPackageError):
+    """Descriptor generation preconditions or content policy failed."""
