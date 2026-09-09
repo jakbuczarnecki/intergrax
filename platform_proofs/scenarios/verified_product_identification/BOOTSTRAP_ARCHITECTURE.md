@@ -111,6 +111,12 @@ Provider selection (`qdrant`) is composition configuration; vendor implementatio
 - Idempotent upserts; one transaction per ingest batch
 - Indexes: `(identifier_type, lookup_value)`, structured canonical lookup, `global_row_index`
 
+**Data Pack relational storage** (`storage_bootstrap/adapters/postgresql/`)
+
+- Offer truth: `vpi_data_pack_relational_record`
+- Derived exact lookup index: `vpi_product_identifiers` with B-tree `(identifier_type, normalized_value)`
+- Runtime exact retrieval: `ExactIdentifierLookupPort` → `PostgreSqlExactIdentifierLookupAdapter`
+
 **Search index** (`integrations/search_store/platform_bootstrap_adapter.py`)
 
 - Provider-neutral adapter over `VectorIndexAdministration` + `VectorStore`

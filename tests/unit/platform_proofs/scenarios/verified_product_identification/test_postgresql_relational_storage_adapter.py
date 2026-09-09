@@ -146,6 +146,7 @@ def _configuration(schema_name: str = "vpi_test_schema") -> PostgreSqlBootstrapC
         integration=integration,
         schema_name=schema_name,
         table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
     )
 
 
@@ -167,6 +168,7 @@ class _FakeCursor:
 class _FakeConnection:
     storage: dict[tuple[str, str, str], dict[str, object]] = field(default_factory=dict)
     by_row_index: dict[int, tuple[str, str, str]] = field(default_factory=dict)
+    identifier_rows: list[tuple[Any, ...]] = field(default_factory=list)
     committed: int = 0
     rolled_back: int = 0
     in_transaction: bool = False
@@ -175,12 +177,14 @@ class _FakeConnection:
     schema_constraints: list[Mapping[str, object]] | None = None
     _txn_storage: dict[tuple[str, str, str], dict[str, object]] | None = None
     _txn_by_row_index: dict[int, tuple[str, str, str]] | None = None
+    _txn_identifier_rows: list[tuple[Any, ...]] | None = None
     executed: list[tuple[Any, tuple[Any, ...]]] = field(default_factory=list)
 
     def _begin_snapshot(self) -> None:
         self.in_transaction = True
         self._txn_storage = dict(self.storage)
         self._txn_by_row_index = dict(self.by_row_index)
+        self._txn_identifier_rows = list(self.identifier_rows)
 
     def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
         self.executed.append((sql, params))
@@ -214,6 +218,9 @@ class _FakeConnection:
             else:
                 constraints = self.schema_constraints
             return _FakeCursor(_rows=constraints)
+        if "insert into" in sql_text and "vpi_product_identifiers" in sql_text and params:
+            self.identifier_rows.append(tuple(params))
+            return _FakeCursor(rowcount=1)
         if "insert into" in sql_text and params:
             catalog_id, offer_id, revision_norm = params[0], params[1], params[2]
             if self.fail_insert_on_offer == offer_id:
@@ -253,15 +260,18 @@ class _FakeConnection:
         self.in_transaction = False
         self._txn_storage = None
         self._txn_by_row_index = None
+        self._txn_identifier_rows = None
 
     def rollback(self) -> None:
         self.rolled_back += 1
         if self._txn_storage is not None:
             self.storage = dict(self._txn_storage)
             self.by_row_index = dict(self._txn_by_row_index or {})
+            self.identifier_rows = list(self._txn_identifier_rows or [])
         self.in_transaction = False
         self._txn_storage = None
         self._txn_by_row_index = None
+        self._txn_identifier_rows = None
 
     def close(self) -> None:
         return None
@@ -334,9 +344,23 @@ def test_unsafe_logical_target_rejected() -> None:
 def test_prepare_new_schema_table() -> None:
     connection = _FakeConnection()
     adapter = _adapter_with_fake(connection, prepared=False)
-    with patch(
-        "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_table_ddl",
-        return_value="CREATE TABLE IF NOT EXISTS vpi_data_pack_relational_record (id int)",
+    with (
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_data_pack_relational_record (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_identifier_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_product_identifiers (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_identifier_lookup_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_product_identifiers_lookup_idx ON vpi_product_identifiers (identifier_type, normalized_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_identifier_table_compatible",
+            return_value=None,
+        ),
     ):
         adapter.prepare_target(RelationalTargetId("vpi-products"))
     assert connection.committed >= 1
@@ -345,9 +369,23 @@ def test_prepare_new_schema_table() -> None:
 def test_prepare_existing_compatible_table() -> None:
     connection = _FakeConnection()
     adapter = _adapter_with_fake(connection, prepared=False)
-    with patch(
-        "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_table_ddl",
-        return_value="CREATE TABLE IF NOT EXISTS vpi_data_pack_relational_record (id int)",
+    with (
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_data_pack_relational_record (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_identifier_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_product_identifiers (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_identifier_lookup_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_product_identifiers_lookup_idx ON vpi_product_identifiers (identifier_type, normalized_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_identifier_table_compatible",
+            return_value=None,
+        ),
     ):
         adapter.prepare_target(RelationalTargetId("vpi-products"))
         adapter.prepare_target(RelationalTargetId("vpi-products"))
@@ -817,6 +855,7 @@ def test_configuration_table_mismatch_rejected() -> None:
         integration=_configuration().integration,
         schema_name="vpi_test_schema",
         table_name="other_table",
+        identifier_table_name="vpi_product_identifiers",
     )
     with pytest.raises(PostgreSqlBootstrapConfigurationError):
         resolve_physical_target(RelationalTargetId("vpi-products"), config)
@@ -837,6 +876,7 @@ def test_apply_session_limits_uses_parameterized_set_config() -> None:
         integration=_configuration().integration,
         schema_name="vpi_test_schema",
         table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
         statement_timeout_ms=7500,
         application_name="vpi-relational-bootstrap",
     )
@@ -867,6 +907,7 @@ def test_apply_session_limits_skips_empty_application_name() -> None:
         integration=_configuration().integration,
         schema_name="vpi_test_schema",
         table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
         application_name="",
     )
     provider = PostgreSQLConnectionProvider(
@@ -894,6 +935,7 @@ def test_apply_session_limits_skips_none_statement_timeout() -> None:
         integration=_configuration().integration,
         schema_name="vpi_test_schema",
         table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
         statement_timeout_ms=None,
     )
     provider = PostgreSQLConnectionProvider(
@@ -922,6 +964,7 @@ def test_apply_session_limits_hostile_application_name_is_value_only() -> None:
         integration=_configuration().integration,
         schema_name="vpi_test_schema",
         table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
         application_name=hostile,
     )
     provider = PostgreSQLConnectionProvider(
@@ -942,3 +985,66 @@ def test_apply_session_limits_hostile_application_name_is_value_only() -> None:
             assert params[1] == hostile
             return
     raise AssertionError("expected application_name set_config call")
+
+
+def test_write_batch_persists_identifier_projection_rows() -> None:
+    record_json = json.dumps(
+        {
+            "id": "offer-identifiers",
+            "identifiers": [
+                {"/gtin13": "[8806095123456]"},
+                {"/mpn": "[MZ-V9P2T0BW]"},
+            ],
+        }
+    )
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    result = adapter.write_batch(
+        _batch(
+            _record(
+                7,
+                offer_suffix="identifiers",
+                record_json=record_json,
+            )
+        )
+    )
+    assert result.written_count == 1
+    assert len(connection.identifier_rows) == 2
+    identifier_types = {row[4] for row in connection.identifier_rows}
+    assert identifier_types == {"gtin", "mpn"}
+
+
+@dataclass
+class _FailSecondIdentifierConnection(_FakeConnection):
+    def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
+        sql_text = str(sql).lower()
+        if "insert into" in sql_text and "vpi_product_identifiers" in sql_text and params:
+            if self.identifier_rows:
+                raise RuntimeError("identifier write failed")
+        return super().execute(sql, params)
+
+
+def test_failed_batch_rolls_back_identifier_projection_rows() -> None:
+    ok_json = json.dumps(
+        {
+            "id": "offer-ok",
+            "identifiers": [{"/gtin13": "[8806095123456]"}],
+        }
+    )
+    fail_json = json.dumps(
+        {
+            "id": "offer-fail",
+            "identifiers": [{"/mpn": "[MZ-V9P2T0BW]"}],
+        }
+    )
+    connection = _FailSecondIdentifierConnection()
+    adapter = _adapter_with_fake(connection)
+    with pytest.raises(RuntimeError, match="identifier write failed"):
+        adapter.write_batch(
+            _batch(
+                _record(10, offer_suffix="ok", record_json=ok_json),
+                _record(11, offer_suffix="fail", record_json=fail_json),
+            )
+        )
+    assert connection.rolled_back >= 1
+    assert connection.identifier_rows == []

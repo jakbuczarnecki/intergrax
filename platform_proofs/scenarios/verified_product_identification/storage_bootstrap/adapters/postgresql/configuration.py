@@ -17,6 +17,7 @@ _TABLE_VALIDATION_MESSAGE = (
 
 DEFAULT_APPLICATION_NAME = "vpi-relational-bootstrap"
 DEFAULT_RELATIONAL_TABLE_NAME = "vpi_data_pack_relational_record"
+DEFAULT_IDENTIFIER_TABLE_NAME = "vpi_product_identifiers"
 
 
 def validate_table_identifier(value: str) -> str:
@@ -31,6 +32,7 @@ class PostgreSqlBootstrapConfiguration:
     integration: PostgreSQLIntegrationConfig
     schema_name: str
     table_name: str
+    identifier_table_name: str
     statement_timeout_ms: int | None = None
     connection_timeout_seconds: int | None = None
     application_name: str = DEFAULT_APPLICATION_NAME
@@ -41,6 +43,7 @@ class PostgreSqlBootstrapConfiguration:
         *,
         schema_name: str,
         table_name: str = DEFAULT_RELATIONAL_TABLE_NAME,
+        identifier_table_name: str = DEFAULT_IDENTIFIER_TABLE_NAME,
         statement_timeout_ms: int | None = None,
         connection_timeout_seconds: int | None = None,
         application_name: str = DEFAULT_APPLICATION_NAME,
@@ -52,6 +55,7 @@ class PostgreSqlBootstrapConfiguration:
             integration=integration,
             schema_name=validate_schema_identifier(schema_name),
             table_name=validate_table_identifier(table_name),
+            identifier_table_name=validate_table_identifier(identifier_table_name),
             statement_timeout_ms=statement_timeout_ms,
             connection_timeout_seconds=connection_timeout_seconds,
             application_name=application_name,
@@ -62,6 +66,7 @@ class PostgreSqlBootstrapConfiguration:
             "PostgreSqlBootstrapConfiguration("
             f"schema_name={self.schema_name!r}, "
             f"table_name={self.table_name!r}, "
+            f"identifier_table_name={self.identifier_table_name!r}, "
             f"statement_timeout_ms={self.statement_timeout_ms!r}, "
             f"connection_timeout_seconds={self.connection_timeout_seconds!r}, "
             f"application_name={self.application_name!r})"

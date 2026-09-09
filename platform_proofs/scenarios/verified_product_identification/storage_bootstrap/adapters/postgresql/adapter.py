@@ -23,9 +23,17 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     PostgreSqlBootstrapOperationError,
     PostgreSqlBootstrapSchemaError,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.identifier_projection import (
+    ProjectedIdentifierRow,
+    project_identifiers_from_load_record,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
+    IdentifierTableSpec,
     RelationalTableSpec,
+    create_identifier_lookup_index_ddl,
+    create_identifier_table_ddl,
     create_table_ddl,
+    verify_identifier_table_compatible,
     verify_table_compatible,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
@@ -51,6 +59,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 
 _InsertSqlParams = tuple[str, str, str, str | None, int, str, str, str, str]
+_IdentifierInsertParams = tuple[str, str, str, str | None, str, str, str, str]
 
 
 def _source_revision_norm(source_revision: str | None) -> str:
@@ -119,6 +128,10 @@ class PostgreSqlRelationalStorageAdapter:
             schema_name=physical.schema_name,
             table_name=physical.table_name,
         )
+        identifier_spec = IdentifierTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.identifier_table_name,
+        )
         try:
             with self._provider.transaction(
                 isolation_level=PostgreSQLIsolationLevel.READ_COMMITTED,
@@ -127,6 +140,9 @@ class PostgreSqlRelationalStorageAdapter:
                 self._provider.ensure_schema_exists(session, physical.schema_name)
                 session.execute_statement(create_table_ddl(spec))
                 verify_table_compatible(session, spec)
+                session.execute_statement(create_identifier_table_ddl(identifier_spec))
+                session.execute_statement(create_identifier_lookup_index_ddl(identifier_spec))
+                verify_identifier_table_compatible(session, identifier_spec)
         except PostgreSqlBootstrapSchemaError:
             raise
         except PostgreSqlBootstrapConfigurationError:
@@ -268,6 +284,11 @@ class PostgreSqlRelationalStorageAdapter:
             record.derivation_version,
         )
         if self._execute_insert(session, insert_sql, params, physical, record) > 0:
+            self._write_identifier_rows(
+                session,
+                physical,
+                project_identifiers_from_load_record(record),
+            )
             return "written"
 
         existing = self._fetch_by_source_identity(session, physical, record.source_ref)
@@ -312,6 +333,34 @@ class PostgreSqlRelationalStorageAdapter:
         record: RelationalLoadRecord,
     ) -> int:
         return session.execute(insert_sql, params).rowcount
+
+    def _write_identifier_rows(
+        self,
+        session: PostgreSQLSession,
+        physical: PhysicalRelationalTarget,
+        rows: tuple[ProjectedIdentifierRow, ...],
+    ) -> None:
+        if not rows:
+            return
+        insert_sql = (
+            f"INSERT INTO {self._configuration.identifier_table_name} ("
+            "catalog_id, offer_id, source_revision_norm, source_revision, "
+            "identifier_type, source_value, normalized_value, source_field"
+            ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+            "ON CONFLICT DO NOTHING"
+        )
+        for row in rows:
+            params: _IdentifierInsertParams = (
+                row.catalog_id,
+                row.offer_id,
+                row.source_revision_norm,
+                row.source_revision,
+                row.identifier_type.value,
+                row.source_value,
+                row.normalized_value,
+                row.source_field,
+            )
+            session.execute(insert_sql, params)
 
     def _verify_record(
         self,
