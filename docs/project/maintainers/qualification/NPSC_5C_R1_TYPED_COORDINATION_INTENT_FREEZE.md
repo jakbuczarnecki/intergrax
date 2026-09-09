@@ -10,11 +10,15 @@
 
 **Task:** NPSC-5C/R1-F — Typed Coordination Intent Freeze + External Decision Contract Requirement
 
-**Baseline SHA (NPSC-5B frozen):** `473b790bcbae18cc5669015264018259783a5839` *(pre-R1 coordination-intent checkpoint; H1 hardening landed on same revision)*
+**NPSC-5B frozen qualification SHA:** `64a16efe149c747ead6b920208f3cdcbe17c552a`
 
-**R1 implementation SHA:** `edcb51949b8622de2fe6c17eae6b245c8056d94d`
+**NPSC-5C/R1 implementation SHA:** `edcb51949b8622de2fe6c17eae6b245c8056d94d`
 
-**H1 hardening SHA:** `473b790bcbae18cc5669015264018259783a5839`
+**NPSC-5C/R1-H1 hardening SHA:** `473b790bcbae18cc5669015264018259783a5839`
+
+**Freeze task start SHA:** `a3491861d43abf7056a25c45af3e4c30d35ffc8e`
+
+**Freeze certificate SHA:** `078fbd00f10c1177c2ef3d35d6c0dccc3f285397`
 
 **Predecessors:** NPSC-5A `FROZEN / PASS` · NPSC-5B `FROZEN / PASS` · NPSC-5C/R1 `FORMAL PASS` · NPSC-5C/R1-H1 `PASS`
 
@@ -96,7 +100,7 @@ Semantic contributions do **not** carry `agent_id`, `agent_instance_id`, `lease_
 
 Runtime lease binding is resolved by `CoordinationContributionId` → `CoordinationContributionBinding`. Not by tuple index, zip position, or implicit order.
 
-### 4.6 Referential integrity (H1 baseline)
+### 4.6 Referential integrity (NPSC-5C/R1-H1 hardening)
 
 Fail-closed on: missing binding, extra binding, duplicate binding id, unknown binding id. Reordered binding tuples are legal.
 
