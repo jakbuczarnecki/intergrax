@@ -75,7 +75,7 @@ MultiAgentCoordinationService
             v
 DelegatedSubtaskService
             |
-            +--> TaskCapabilityResolver
+            +--> TaskCapabilityResolver (only for UNRESOLVED_TASK)
             +--> AgentDiscoveryStrategy
             +--> CapabilityMatcher
             +--> AgentSelectionStrategy
@@ -104,9 +104,14 @@ A coordination request contains:
 - `coordination_id` — stable coordination audit identity
 - `delegation_id` — reused delegated-subtask identity
 - `task_scope_id` — must match canonical active execution task scope
-- capability resolution request — functional need, not concrete agent identity
+- typed capability need (`AgentDistributionCapabilityNeed`) — either unresolved task intent (`TaskCapabilityResolutionRequest`) or already-resolved canonical capability authority (`AgentCapabilityRequirement`); never concrete physical agent identity
 - lease identity and application binding context
 - optional `CoordinationPolicy` — typed selection constraints for audit / future policy wiring
+
+Capability need paths:
+
+- `UNRESOLVED_TASK` → `TaskCapabilityResolver` → discovery / matching / selection
+- `RESOLVED_REQUIREMENT` → resolver bypass → discovery / matching / selection
 
 A coordination request must **not** contain caller-minted execution identity, Nexus handles, agent instances, or LLM clients.
 
@@ -130,7 +135,7 @@ The coordination layer rejects caller-supplied task scopes that do not match the
 
 Selection remains platform-owned through injectable strategies:
 
-- `TaskCapabilityResolver`
+- `TaskCapabilityResolver` (only when capability need is `UNRESOLVED_TASK`)
 - `AgentDiscoveryStrategy`
 - `CapabilityMatcher`
 - `AgentSelectionStrategy`
@@ -166,7 +171,11 @@ Nested delegation is already possible when a specialist acquired through `Delega
 
 ## 8.1 NPSC-5B — Bounded fan-out / fan-in
 
-> **R1 ownership freeze:** Fan-out scheduling and bounded parallelism are **not** canonical Agent Distribution responsibilities. See [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md). **R2 CORRECTION REQUIRED** — R2 removed AD scheduler but introduced orchestration mini-runtime bypass. **R3 BLOCKED** — see [`NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md`](NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md).
+> **R1 ownership freeze:** Fan-out scheduling and bounded parallelism are **not** canonical Agent Distribution responsibilities. See [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md).
+>
+> **Historical progression:** R2 CORRECTION REQUIRED → R3 BLOCKED → R4 implemented → final qualification PASS. See [`NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md`](NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md) for R3 contract requirements.
+>
+> **Current status:** **FROZEN / PASS** — qualification: [`NPSC_5B_FINAL_PRODUCTION_FANOUT_FANIN_QUALIFICATION.md`](../qualification/NPSC_5B_FINAL_PRODUCTION_FANOUT_FANIN_QUALIFICATION.md)
 
 ### Canonical integration (R4 — implemented)
 
@@ -267,7 +276,7 @@ CoordinationIntentExecutor
 | Phase | Scope |
 | ----- | ----- |
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
-| **NPSC-5B** | Bounded fan-out / fan-in (R3 blocked on Execution/Nexus contract) |
+| **NPSC-5B** | Bounded fan-out / fan-in (**FROZEN / PASS**) |
 | **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
 | **NPSC-5D** | Multi-agent governance |
 | **NPSC-5E** | Retry / checkpoint / recovery |
