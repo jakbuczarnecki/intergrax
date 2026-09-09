@@ -25,8 +25,14 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     CompletionAlignmentState,
     assess_completion_alignment,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_revision_context import (
+    CompletionAlignmentRevisionContext,
+    build_completion_alignment_revision_context,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
+    PriorInvestigationState,
     build_investigation_summary,
+    completion_mode_from_intent,
     completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
     extract_prior_investigation_state,
@@ -37,6 +43,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.observabili
     IncidentCompletionAlignmentDiagV1,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    apply_critic_claim_resolutions,
     authoritative_supported_diagnosis_present,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -87,6 +94,32 @@ def _is_revision(ctx: RuntimeExecutionContext) -> bool:
         return True
     raw_feedback = ctx.metadata.get("critic_feedback")
     return isinstance(raw_feedback, list) and bool(raw_feedback)
+
+
+def _build_alignment_revision_context_from_prior(
+    prior_state: PriorInvestigationState,
+) -> CompletionAlignmentRevisionContext | None:
+    if prior_state.claim_set is None or prior_state.completion_intent is None:
+        return None
+    prior_completion_mode = completion_mode_from_intent(prior_state.completion_intent)
+    domain_payload = {
+        "claim_set": prior_state.claim_set.model_dump(mode="json"),
+        "claim_hypothesis_bindings": [
+            binding.model_dump(mode="json") for binding in prior_state.claim_hypothesis_bindings
+        ],
+        "evidence_nodes": list(prior_state.evidence_nodes),
+        "completion_mode": prior_completion_mode,
+    }
+    resolved_claim_set = apply_critic_claim_resolutions(
+        prior_state.claim_set,
+        domain_payload,
+        bindings=prior_state.claim_hypothesis_bindings,
+    )
+    return build_completion_alignment_revision_context(
+        resolved_claim_set=resolved_claim_set,
+        bindings=prior_state.claim_hypothesis_bindings,
+        prior_completion_mode=prior_completion_mode,
+    )
 
 
 def _prior_metadata(ctx: RuntimeExecutionContext) -> dict[str, object]:
@@ -160,6 +193,9 @@ class IncidentInvestigatorAgent(Agent):
             node_id=node_id or None,
         )
         critic_feedback = _extract_critic_feedback(ctx, is_revision)
+        alignment_revision_context = (
+            _build_alignment_revision_context_from_prior(prior_state) if is_revision else None
+        )
 
         gathering = gather_incident_evidence(
             runtime_state=runtime_state,
@@ -181,6 +217,7 @@ class IncidentInvestigatorAgent(Agent):
             is_revision=is_revision,
             evidence_phase_context=evidence_phase_context,
             investigation_input=self._investigation_input,
+            alignment_revision_context=alignment_revision_context,
         )
         pending_conversion = convert_proposal_to_pending_claims(
             proposal,
@@ -226,6 +263,19 @@ class IncidentInvestigatorAgent(Agent):
                     else None
                 ),
                 revision_pass=is_revision,
+                revision_authoritative_context_present=alignment_revision_context is not None,
+                supported_hypothesis_id=(
+                    alignment_revision_context.supported_hypothesis_id.value
+                    if alignment_revision_context is not None
+                    and alignment_revision_context.supported_hypothesis_id is not None
+                    else None
+                ),
+                supported_resolution=(
+                    alignment_revision_context.supported_resolution.value
+                    if alignment_revision_context is not None
+                    and alignment_revision_context.supported_resolution is not None
+                    else None
+                ),
             ),
         )
         emit_reasoning_observability(

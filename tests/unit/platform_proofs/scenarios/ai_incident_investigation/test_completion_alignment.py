@@ -37,6 +37,12 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     decide_pre_reconciliation_transition,
     PreReconciliationTransitionState,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_revision_context import (
+    CompletionAlignmentRevisionContext,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
+    HypothesisId,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     CompletionIntent,
     PriorInvestigationState,
@@ -216,10 +222,16 @@ def test_reasoning_messages_include_alignment_guidance_on_revision() -> None:
             stop_reason="planner_final_answer",
             additional_evidence_gathering_allowed=False,
         ),
+        alignment_revision_context=CompletionAlignmentRevisionContext(
+            mismatch_reason=CompletionAlignmentMismatchReason.UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS,
+            supported_hypothesis_id=HypothesisId.H3,
+            supported_resolution=ClaimResolution.SUPPORTED,
+        ),
     )
     system_content = messages[0].content
     assert UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR in system_content
     assert COMPLETION_ALIGNMENT_REVISION_GUIDANCE in system_content
+    assert "Authoritative validation state" in system_content
 
 
 def test_validation_uses_alignment_for_15e_residual() -> None:

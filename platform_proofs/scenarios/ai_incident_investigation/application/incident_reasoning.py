@@ -41,6 +41,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.platform_di
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
     expand_critic_feedback_with_alignment_guidance,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_revision_context import (
+    CompletionAlignmentRevisionContext,
+    render_completion_alignment_revision_context,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
     EvidencePhaseContext,
     render_completion_intent_contract_lines,
@@ -413,6 +417,7 @@ def build_reasoning_messages(
     is_revision: bool,
     evidence_phase_context: EvidencePhaseContext,
     investigation_input: IncidentInvestigationInput | None = None,
+    alignment_revision_context: CompletionAlignmentRevisionContext | None = None,
 ) -> list[ChatMessage]:
     evidence_reference_lines = [
         "Gathered evidence is listed for semantic reasoning only.",
@@ -452,9 +457,12 @@ def build_reasoning_messages(
             else:
                 lines.append(f"- {evidence_id}")
     if prior_state.reasoning_proposal is not None:
+        lines.append("Prior model reasoning (non-authoritative prior proposal):")
         lines.append("Prior hypothesis summaries:")
         for hypothesis in prior_state.reasoning_proposal.hypotheses:
             lines.append(f"- {hypothesis.hypothesis_id}: {hypothesis.summary}")
+    if alignment_revision_context is not None:
+        lines.extend(render_completion_alignment_revision_context(alignment_revision_context))
     if critic_feedback:
         expanded_feedback = expand_critic_feedback_with_alignment_guidance(critic_feedback)
         lines.append("Critic feedback requiring incremental correction:")
@@ -488,6 +496,7 @@ def propose_incident_reasoning(
     is_revision: bool,
     evidence_phase_context: EvidencePhaseContext,
     investigation_input: IncidentInvestigationInput | None = None,
+    alignment_revision_context: CompletionAlignmentRevisionContext | None = None,
 ) -> IncidentReasoningProposal:
     llm = runtime_state.context.config.llm_adapter
     if llm is None:
@@ -500,6 +509,7 @@ def propose_incident_reasoning(
         is_revision=is_revision,
         evidence_phase_context=evidence_phase_context,
         investigation_input=investigation_input,
+        alignment_revision_context=alignment_revision_context,
     )
     structured = llm.generate_structured(
         messages,
@@ -587,9 +597,13 @@ def emit_reasoning_observability(
 
 
 def completion_mode_from_proposal(proposal: IncidentReasoningProposal) -> str:
-    if proposal.completion_intent is CompletionIntent.UNRESOLVED:
+    return completion_mode_from_intent(proposal.completion_intent)
+
+
+def completion_mode_from_intent(completion_intent: CompletionIntent) -> str:
+    if completion_intent is CompletionIntent.UNRESOLVED:
         return COMPLETION_UNRESOLVED
-    if proposal.completion_intent is CompletionIntent.NEED_MORE_EVIDENCE:
+    if completion_intent is CompletionIntent.NEED_MORE_EVIDENCE:
         return COMPLETION_NEED_MORE_EVIDENCE
     return COMPLETION_SUPPORTED_DIAGNOSIS
 

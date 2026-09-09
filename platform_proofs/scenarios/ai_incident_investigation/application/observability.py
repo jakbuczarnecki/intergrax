@@ -241,6 +241,9 @@ class IncidentCompletionAlignmentDiagV1(DiagnosticPayload):
     alignment_status: str
     mismatch_reason: str | None = None
     revision_pass: bool = False
+    revision_authoritative_context_present: bool = False
+    supported_hypothesis_id: str | None = None
+    supported_resolution: str | None = None
 
     @classmethod
     def schema_id(cls) -> str:
@@ -253,6 +256,9 @@ class IncidentCompletionAlignmentDiagV1(DiagnosticPayload):
             "alignment_status": self.alignment_status,
             "mismatch_reason": self.mismatch_reason,
             "revision_pass": self.revision_pass,
+            "revision_authoritative_context_present": self.revision_authoritative_context_present,
+            "supported_hypothesis_id": self.supported_hypothesis_id,
+            "supported_resolution": self.supported_resolution,
         }
 
     def redact(self) -> IncidentCompletionAlignmentDiagV1:
@@ -262,6 +268,9 @@ class IncidentCompletionAlignmentDiagV1(DiagnosticPayload):
             alignment_status=self.alignment_status,
             mismatch_reason=self.mismatch_reason,
             revision_pass=self.revision_pass,
+            revision_authoritative_context_present=self.revision_authoritative_context_present,
+            supported_hypothesis_id=self.supported_hypothesis_id,
+            supported_resolution=self.supported_resolution,
         )
 
 

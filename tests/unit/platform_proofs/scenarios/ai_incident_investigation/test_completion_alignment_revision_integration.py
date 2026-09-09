@@ -153,6 +153,13 @@ async def test_alignment_misalignment_routes_through_evaluator_loop_to_revision(
     assert UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR in system_content
     assert COMPLETION_ALIGNMENT_MISMATCH_SIGNAL in system_content
     assert COMPLETION_ALIGNMENT_REVISION_GUIDANCE in system_content
+    assert "Authoritative validation state" in system_content
+    assert "supported hypothesis: H3" in system_content
+    assert "resolution: supported" in system_content
+    prior_index = system_content.index("Prior model reasoning")
+    authoritative_index = system_content.index("Authoritative validation state")
+    critic_index = system_content.index("Critic feedback requiring incremental correction")
+    assert prior_index < authoritative_index < critic_index
     assert "set completion_mode" not in system_content.lower()
     assert COMPLETION_SUPPORTED_DIAGNOSIS not in COMPLETION_ALIGNMENT_REVISION_GUIDANCE
 
