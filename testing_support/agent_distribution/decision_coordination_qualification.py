@@ -13,6 +13,9 @@ from intergrax.agent_distribution.coordination_intent_executor import (
     CoordinationIntentBinding,
     CoordinationIntentExecutor,
 )
+from testing_support.agent_distribution.coordination_governance import (
+    allowing_coordination_governance,
+)
 from intergrax.agent_distribution.decision_coordination_projection import (
     coordination_intent_id_from_decision_identity,
     project_authoritative_accepted_decision_coordination,
@@ -236,6 +239,7 @@ def build_decision_coordination_executor_fixture(
     executor = CoordinationIntentExecutor(
         coordination=coordination,
         fan_out=fan_out_service,
+        governance=allowing_coordination_governance(),
     )
     return DecisionCoordinationExecutorFixture(
         harness=harness,

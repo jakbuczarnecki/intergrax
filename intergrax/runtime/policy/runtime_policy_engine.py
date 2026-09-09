@@ -18,6 +18,10 @@ from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, P
 from intergrax.contracts.runtime_execution_policy_admission import (
     RootExecutionAdmissionPolicyRule,
 )
+from intergrax.contracts.multi_agent_coordination_governance import (
+    MultiAgentCoordinationGovernancePolicyRule,
+    MultiAgentCoordinationGovernanceRequest,
+)
 from intergrax.contracts.runtime_policy_context import (
     AgentDecisionPolicyContext,
     PreModelPhase,
@@ -111,6 +115,44 @@ def _meaningful_side_effect_controlling_rule(
     )
 
 
+def _multi_agent_coordination_rule_specificity(
+    rule: MultiAgentCoordinationGovernancePolicyRule,
+) -> int:
+    return 0 if rule.execution_mode is not None else 1
+
+
+def _normalize_multi_agent_coordination_rule_action(
+    rule: MultiAgentCoordinationGovernancePolicyRule,
+) -> PolicyAction:
+    if rule.decision is PolicyAction.MODIFY:
+        return PolicyAction.DENY
+    return rule.decision
+
+
+def _multi_agent_coordination_controlling_rule(
+    candidates: list[tuple[MultiAgentCoordinationGovernancePolicyRule, PolicyAction]],
+) -> tuple[MultiAgentCoordinationGovernancePolicyRule, PolicyAction]:
+    best_rank = min(_meaningful_side_effect_action_rank(action) for _, action in candidates)
+    rank_candidates = [
+        pair for pair in candidates if _meaningful_side_effect_action_rank(pair[1]) == best_rank
+    ]
+    best_specificity = min(
+        _multi_agent_coordination_rule_specificity(rule) for rule, _ in rank_candidates
+    )
+    specific_candidates = [
+        pair
+        for pair in rank_candidates
+        if _multi_agent_coordination_rule_specificity(pair[0]) == best_specificity
+    ]
+    return min(
+        specific_candidates,
+        key=lambda pair: (
+            1 if pair[0].decision is PolicyAction.MODIFY else 0,
+            pair[0].rule_id,
+        ),
+    )
+
+
 class RuntimePolicyEngine:
     """Rule-based policy evaluation for live task execution."""
 
@@ -119,9 +161,14 @@ class RuntimePolicyEngine:
         *,
         meaningful_side_effect_rules: tuple[MeaningfulSideEffectPolicyRule, ...] = (),
         root_execution_admission_rules: tuple[RootExecutionAdmissionPolicyRule, ...] = (),
+        multi_agent_coordination_rules: tuple[
+            MultiAgentCoordinationGovernancePolicyRule,
+            ...,
+        ] = (),
     ) -> None:
         self._meaningful_side_effect_rules = meaningful_side_effect_rules
         self._root_execution_admission_rules = root_execution_admission_rules
+        self._multi_agent_coordination_rules = multi_agent_coordination_rules
 
     def has_root_execution_admission_rules(self) -> bool:
         return bool(self._root_execution_admission_rules)
@@ -215,6 +262,77 @@ class RuntimePolicyEngine:
                 },
             ),
             approved_scopes,
+        )
+
+    def evaluate_multi_agent_coordination(
+        self,
+        request: MultiAgentCoordinationGovernanceRequest,
+    ) -> PolicyDecision:
+        """Authorize semantic coordination admission — fail closed when unconfigured."""
+        if not self._multi_agent_coordination_rules:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="multi_agent_coordination_unconfigured",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="default.multi_agent_coordination.unconfigured",
+            )
+        if not request.principal.tenant_id.strip():
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="multi_agent_coordination_tenant_missing",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="default.multi_agent_coordination.tenant",
+            )
+
+        applicable: list[tuple[MultiAgentCoordinationGovernancePolicyRule, PolicyAction]] = []
+        for rule in self._multi_agent_coordination_rules:
+            if (
+                rule.execution_mode is not None
+                and rule.execution_mode.value != request.execution_mode.value
+            ):
+                continue
+            applicable.append(
+                (rule, _normalize_multi_agent_coordination_rule_action(rule)),
+            )
+
+        if not applicable:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="multi_agent_coordination_indeterminate",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="default.multi_agent_coordination.indeterminate",
+                audit_payload={
+                    "intent_id": request.intent_id,
+                    "execution_mode": request.execution_mode.value,
+                },
+            )
+
+        controlling_rule, controlling_action = _multi_agent_coordination_controlling_rule(
+            applicable,
+        )
+        if (
+            controlling_action is PolicyAction.DENY
+            and controlling_rule.decision is PolicyAction.MODIFY
+        ):
+            reason = "multi_agent_coordination_unsupported_decision"
+        else:
+            reason = (
+                controlling_rule.reason
+                or f"multi_agent_coordination:{controlling_action.value}"
+            )
+
+        return PolicyDecision(
+            action=controlling_action,
+            reason=reason,
+            enforcement_level=EnforcementLevel.MANDATORY,
+            policy_rule_id=controlling_rule.rule_id,
+            audit_payload={
+                "intent_id": request.intent_id,
+                "execution_mode": request.execution_mode.value,
+                "contribution_count": len(request.contributions),
+                "tenant_id": request.tenant_id,
+                "task_scope_id": request.task_scope_id,
+            },
         )
 
     def evaluate_meaningful_side_effect(

@@ -254,7 +254,7 @@ CoordinationIntentExecutor
 | `project_authoritative_accepted_decision_coordination` | `intergrax/agent_distribution/` | Pure deterministic projection (no I/O) |
 | `CoordinationIntent` / `CoordinationContribution` | `intergrax/agent_distribution/` | Semantic multi-agent work request |
 | `CoordinationIntentPlanner` | `intergrax/agent_distribution/` | Neutral producer protocol (not LLM-specific) |
-| `CoordinationIntentExecutor` | `intergrax/agent_distribution/` | Validate intent → route to frozen NPSC-5A or NPSC-5B |
+| `CoordinationIntentExecutor` | `intergrax/agent_distribution/` | Validate intent → governance admission → route to frozen NPSC-5A or NPSC-5B |
 | `CoordinationIntentBinding` | `intergrax/agent_distribution/` | Runtime execution binding (leases, task scope) — not part of intent |
 
 **Ownership:** Decision owns WHAT; Agent Distribution owns WHO; Execution owns lifecycle; Nexus owns HOW/WHEN for FAN_OUT scheduling.
@@ -271,6 +271,25 @@ CoordinationIntentExecutor
 
 ---
 
+## 8.1 NPSC-5D/R1 — semantic coordination governance admission
+
+**Status:** NPSC-5D/R1 **PASS** (not frozen).
+
+| Component | Package | Responsibility |
+| --------- | ------- | -------------- |
+| `MultiAgentCoordinationGovernanceRequest` | `intergrax/contracts/` | Typed stage-1 coordination admission facts (no physical agent identity) |
+| `MultiAgentCoordinationGovernancePort` | `intergrax/contracts/` | Public evaluator boundary reusing canonical `PolicyDecision` |
+| `MultiAgentCoordinationGovernanceBoundary` | `intergrax/runtime/governance/` | Fail-closed admission over configured evaluator |
+| `build_multi_agent_coordination_governance_request` | `intergrax/agent_distribution/` | Caller adapter from `CoordinationIntent` + binding |
+
+**Canonical evaluation location:** `CoordinationIntentExecutor` after semantic intent validation and before `MultiAgentCoordinationService` / `BoundedMultiAgentFanOutService`.
+
+**Governance model (R1):** coordination-level admission only; per-contribution physical authorization deferred to NPSC-5D/R2.
+
+**Distinction:** NPSC `CoordinationPolicy` remains Agent Distribution selection semantics — not platform Governance policy.
+
+---
+
 ## 9. Future NPSC-5 phases
 
 | Phase | Scope |
@@ -278,7 +297,7 @@ CoordinationIntentExecutor
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
 | **NPSC-5B** | Bounded fan-out / fan-in (**FROZEN / PASS**) |
 | **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
-| **NPSC-5D** | Multi-agent governance |
+| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 typed admission seam **PASS**) |
 | **NPSC-5E** | Retry / checkpoint / recovery |
 | **NPSC-5F** | Audit / observability hooks expansion |
 

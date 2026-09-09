@@ -15,6 +15,9 @@ from typing import Any, Dict, List, Optional, Union
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
+from intergrax.contracts.multi_agent_coordination_governance import (
+    MultiAgentCoordinationGovernanceRequest,
+)
 from intergrax.contracts.runtime_policy import PolicyDecision as RuntimePolicyDecision
 from intergrax.contracts.runtime_policy_context import (
     AgentDecisionPolicyContext,
@@ -68,6 +71,13 @@ class PolicyEngine:
     ) -> RuntimePolicyDecision:
         """Authorize a proposed meaningful external side effect (GEC-5). Fail closed."""
         return self.runtime.evaluate_meaningful_side_effect(request)
+
+    def evaluate_multi_agent_coordination(
+        self,
+        request: MultiAgentCoordinationGovernanceRequest,
+    ) -> RuntimePolicyDecision:
+        """Authorize semantic multi-agent coordination admission (NPSC-5D). Fail closed."""
+        return self.runtime.evaluate_multi_agent_coordination(request)
 
     def evaluate_pre_llm(
         self,

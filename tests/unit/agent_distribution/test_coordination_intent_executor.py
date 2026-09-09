@@ -74,6 +74,9 @@ from tests.unit.agent_distribution.test_multi_agent_coordination import (
     _build_coordination_service,
     _root_identity,
 )
+from testing_support.agent_distribution.coordination_governance import (
+    allowing_coordination_governance,
+)
 from intergrax.runtime.execution.boundary import ExecutionBoundary
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -177,6 +180,7 @@ async def test_single_execution_routes_through_multi_agent_coordination_service(
     executor = CoordinationIntentExecutor(
         coordination=coordination,
         fan_out=fan_out,
+        governance=allowing_coordination_governance(),
     )
     task_scope = mint_task_id()
     intent = _single_intent("contrib-a")
@@ -219,6 +223,7 @@ async def test_fan_out_execution_routes_through_bounded_fan_out_service() -> Non
     executor = CoordinationIntentExecutor(
         coordination=coordination,
         fan_out=fan_out,
+        governance=allowing_coordination_governance(),
     )
     task_scope = mint_task_id()
     intent = _fan_out_intent(
@@ -270,6 +275,7 @@ async def test_fan_out_partial_failure_preserves_other_results() -> None:
     executor = CoordinationIntentExecutor(
         coordination=coordination,
         fan_out=fan_out,
+        governance=allowing_coordination_governance(),
     )
     task_scope = mint_task_id()
     intent = _fan_out_intent(("contrib-a", "contrib-b", "contrib-c"))
@@ -312,6 +318,7 @@ async def test_programming_error_propagates_from_coordination_service() -> None:
         fan_out=BoundedMultiAgentFanOutService(
             orchestration=_StaticOrchestrationPort(()),
         ),
+        governance=allowing_coordination_governance(),
     )
     task_scope = mint_task_id()
     with pytest.raises(TypeError, match="programming error"):
@@ -334,6 +341,7 @@ async def test_single_end_to_end_through_coordination_intent_executor() -> None:
     executor = CoordinationIntentExecutor(
         coordination=coordination,
         fan_out=fan_out,
+        governance=allowing_coordination_governance(),
     )
     task_scope = mint_task_id()
     harness.task_scope_authority.task_scope_id = task_scope
@@ -387,6 +395,7 @@ async def test_fan_out_end_to_end_without_decision_through_nexus() -> None:
     executor = CoordinationIntentExecutor(
         coordination=coordination,
         fan_out=fan_out,
+        governance=allowing_coordination_governance(),
     )
     task_scope = mint_task_id()
     harness.task_scope_authority.task_scope_id = task_scope
@@ -460,6 +469,7 @@ def _executor_with_tracking() -> tuple[
     executor = CoordinationIntentExecutor(
         coordination=coordination,
         fan_out=fan_out,
+        governance=allowing_coordination_governance(),
     )
     return executor, coordination, fan_out
 
@@ -509,6 +519,7 @@ async def test_fan_out_reordered_bindings_resolve_by_contribution_id() -> None:
     executor = CoordinationIntentExecutor(
         coordination=coordination,
         fan_out=fan_out,
+        governance=allowing_coordination_governance(),
     )
     task_scope = mint_task_id()
     intent = _fan_out_intent(("contrib-a", "contrib-b", "contrib-c"))

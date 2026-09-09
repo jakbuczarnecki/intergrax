@@ -8,6 +8,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
+from intergrax.agent_distribution.coordination_governance_adapter import (
+    build_multi_agent_coordination_governance_request,
+)
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     BoundedMultiAgentFanOutService,
     FanOutId,
@@ -38,6 +41,10 @@ from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopeId,
 )
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.multi_agent_coordination_governance import (
+    MultiAgentCoordinationGovernancePort,
+    MultiAgentCoordinationGovernanceResult,
+)
 
 RequestT = TypeVar("RequestT")
 ResultT = TypeVar("ResultT")
@@ -105,6 +112,24 @@ class CoordinationIntentResult(Generic[ResultT]):
                 )
             return
         raise ValueError(f"unsupported coordination execution mode: {self.mode}")
+
+
+class CoordinationGovernanceDenied(Exception):
+    """Mandatory coordination admission denied before execution side effects."""
+
+    def __init__(self, result: MultiAgentCoordinationGovernanceResult) -> None:
+        self.result = result
+        super().__init__(result.decision.reason or "coordination governance denied")
+
+
+class CoordinationGovernanceRequiresHuman(Exception):
+    """Coordination admission requires canonical governed continuation."""
+
+    def __init__(self, result: MultiAgentCoordinationGovernanceResult) -> None:
+        self.result = result
+        super().__init__(
+            result.decision.reason or "coordination governance requires human approval",
+        )
 
 
 def _validate_and_index_binding(
@@ -195,18 +220,41 @@ def _materialize_fan_out_request(
 
 
 class CoordinationIntentExecutor(Generic[RequestT, ResultT]):
-    """Validate intent semantics and route through frozen NPSC-5A / NPSC-5B."""
+    """Validate intent semantics, evaluate governance, route through NPSC-5A / 5B."""
 
-    __slots__ = ("_coordination", "_fan_out")
+    __slots__ = ("_coordination", "_fan_out", "_governance")
 
     def __init__(
         self,
         *,
         coordination: MultiAgentCoordinationService[RequestT, ResultT],
         fan_out: BoundedMultiAgentFanOutService[RequestT, ResultT],
+        governance: MultiAgentCoordinationGovernancePort,
     ) -> None:
         self._coordination = coordination
         self._fan_out = fan_out
+        self._governance = governance
+
+    def _enforce_governance(
+        self,
+        intent: CoordinationIntent[RequestT],
+        *,
+        binding: CoordinationIntentBinding,
+        principal: RequestIdentity,
+    ) -> MultiAgentCoordinationGovernanceResult:
+        request = build_multi_agent_coordination_governance_request(
+            intent,
+            task_scope_id=binding.task_scope_id,
+            application_id=binding.application_id,
+            application_environment_id=binding.application_environment_id,
+            principal=principal,
+        )
+        result = self._governance.evaluate(request)
+        if result.permitted:
+            return result
+        if result.requires_governed_continuation:
+            raise CoordinationGovernanceRequiresHuman(result)
+        raise CoordinationGovernanceDenied(result)
 
     async def execute(
         self,
@@ -220,6 +268,8 @@ class CoordinationIntentExecutor(Generic[RequestT, ResultT]):
             contribution_binding_index = _validate_and_index_binding(intent, binding)
         except CoordinationIntentContractError as exc:
             raise CoordinationIntentContractError(str(exc)) from exc
+
+        self._enforce_governance(intent, binding=binding, principal=principal)
 
         if intent.mode is CoordinationExecutionMode.SINGLE:
             contribution = intent.contributions[0]
@@ -265,6 +315,8 @@ class CoordinationIntentExecutor(Generic[RequestT, ResultT]):
 
 __all__ = [
     "CoordinationContributionBinding",
+    "CoordinationGovernanceDenied",
+    "CoordinationGovernanceRequiresHuman",
     "CoordinationIntentBinding",
     "CoordinationIntentExecutor",
     "CoordinationIntentFanOutResult",
