@@ -22,6 +22,7 @@ from intergrax.agent_distribution.coordination_intent import (
     CoordinationContributionId,
     CoordinationExecutionMode,
     CoordinationIntent,
+    CoordinationIntentContractError,
     CoordinationIntentId,
 )
 from intergrax.agent_distribution.coordination_intent_executor import (
@@ -82,7 +83,7 @@ _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
 def _binding(
     task_scope,
     *,
-    lease_ids: tuple[str, ...],
+    pairs: tuple[tuple[str, str], ...],
 ) -> CoordinationIntentBinding:
     return CoordinationIntentBinding(
         task_scope_id=task_scope,
@@ -90,9 +91,10 @@ def _binding(
         application_environment_id=_ENV,
         contribution_bindings=tuple(
             CoordinationContributionBinding(
+                contribution_id=CoordinationContributionId(contribution_id),
                 lease_id=TaskScopedAgentLeaseId(lease_id),
             )
-            for lease_id in lease_ids
+            for contribution_id, lease_id in pairs
         ),
     )
 
@@ -177,7 +179,7 @@ async def test_single_execution_routes_through_multi_agent_coordination_service(
     )
     task_scope = mint_task_id()
     intent = _single_intent("contrib-a")
-    binding = _binding(task_scope, lease_ids=("lease-a",))
+    binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
 
     result = await executor.execute(
         intent,
@@ -224,7 +226,11 @@ async def test_fan_out_execution_routes_through_bounded_fan_out_service() -> Non
     )
     binding = _binding(
         task_scope,
-        lease_ids=("lease-a", "lease-b", "lease-c"),
+        pairs=(
+            ("contrib-a", "lease-a"),
+            ("contrib-b", "lease-b"),
+            ("contrib-c", "lease-c"),
+        ),
     )
 
     result = await executor.execute(
@@ -268,7 +274,11 @@ async def test_fan_out_partial_failure_preserves_other_results() -> None:
     intent = _fan_out_intent(("contrib-a", "contrib-b", "contrib-c"))
     binding = _binding(
         task_scope,
-        lease_ids=("lease-a", "lease-b", "lease-c"),
+        pairs=(
+            ("contrib-a", "lease-a"),
+            ("contrib-b", "lease-b"),
+            ("contrib-c", "lease-c"),
+        ),
     )
 
     result = await executor.execute(
@@ -306,7 +316,7 @@ async def test_programming_error_propagates_from_coordination_service() -> None:
     with pytest.raises(TypeError, match="programming error"):
         await executor.execute(
             _single_intent(),
-            binding=_binding(task_scope, lease_ids=("lease-a",)),
+            binding=_binding(task_scope, pairs=(("contrib-a", "lease-a"),)),
             principal=admin_test_principal(),
         )
 
@@ -345,7 +355,7 @@ async def test_single_end_to_end_through_coordination_intent_executor() -> None:
                         ),
                     ),
                 ),
-                binding=_binding(task_scope, lease_ids=("lease-e2e",)),
+                binding=_binding(task_scope, pairs=(("contrib-e2e", "lease-e2e"),)),
                 principal=admin_test_principal(),
             )
             captured.append(result)
@@ -395,7 +405,11 @@ async def test_fan_out_end_to_end_without_decision_through_nexus() -> None:
                     ),
                     binding=_binding(
                         task_scope,
-                        lease_ids=("lease-a", "lease-b", "lease-c"),
+                        pairs=(
+                            ("contrib-a", "lease-a"),
+                            ("contrib-b", "lease-b"),
+                            ("contrib-c", "lease-c"),
+                        ),
                     ),
                     principal=admin_test_principal(),
                 )
@@ -427,3 +441,194 @@ async def test_fan_out_end_to_end_without_decision_through_nexus() -> None:
         item.status is FanOutItemStatus.SUCCESS
         for item in result.fan_out.fan_out.items
     )
+
+
+def _executor_with_tracking() -> tuple[
+    CoordinationIntentExecutor[OcrRequest, OcrResult],
+    _TrackingCoordinationService,
+    _TrackingFanOutService,
+]:
+    coordination = _TrackingCoordinationService()
+    fan_out = _TrackingFanOutService(
+        BoundedMultiAgentFanOutService(
+            orchestration=_StaticOrchestrationPort(()),
+        ),
+    )
+    executor = CoordinationIntentExecutor(
+        coordination=coordination,
+        fan_out=fan_out,
+    )
+    return executor, coordination, fan_out
+
+
+@pytest.mark.asyncio
+async def test_single_binding_wrong_contribution_id_fails_closed() -> None:
+    executor, coordination, fan_out = _executor_with_tracking()
+    task_scope = mint_task_id()
+
+    with pytest.raises(
+        CoordinationIntentContractError,
+        match="missing contribution binding ids: \\[contrib-a\\]",
+    ):
+        await executor.execute(
+            _single_intent("contrib-a"),
+            binding=_binding(task_scope, pairs=(("contrib-b", "lease-b"),)),
+            principal=admin_test_principal(),
+        )
+
+    assert coordination.calls == 0
+    assert fan_out.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_fan_out_reordered_bindings_resolve_by_contribution_id() -> None:
+    coordination = _TrackingCoordinationService()
+    captured_leases: list[str] = []
+
+    class _LeaseCapturingOrchestration(FanOutOrchestrationPort[OcrRequest, OcrResult]):
+        async def orchestrate_fan_out(
+            self,
+            request: FanOutRequest[OcrRequest],
+            *,
+            principal,
+        ) -> tuple[FanOutItemOutcome[OcrResult], ...]:
+            del principal
+            for item in request.items:
+                captured_leases.append(str(item.request.lease_id))
+            return tuple(
+                _success_outcome(str(item.item_id), str(item.item_id))
+                for item in request.items
+            )
+
+    fan_out = BoundedMultiAgentFanOutService(
+        orchestration=_LeaseCapturingOrchestration(),
+    )
+    executor = CoordinationIntentExecutor(
+        coordination=coordination,
+        fan_out=fan_out,
+    )
+    task_scope = mint_task_id()
+    intent = _fan_out_intent(("contrib-a", "contrib-b", "contrib-c"))
+    binding = _binding(
+        task_scope,
+        pairs=(
+            ("contrib-c", "lease-c"),
+            ("contrib-a", "lease-a"),
+            ("contrib-b", "lease-b"),
+        ),
+    )
+
+    result = await executor.execute(
+        intent,
+        binding=binding,
+        principal=admin_test_principal(),
+    )
+
+    assert captured_leases == ["lease-a", "lease-b", "lease-c"]
+    assert result.fan_out is not None
+    assert [item.item_id for item in result.fan_out.fan_out.items] == [
+        FanOutItemId("contrib-a"),
+        FanOutItemId("contrib-b"),
+        FanOutItemId("contrib-c"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_binding_missing_contribution_id_fails_closed() -> None:
+    executor, coordination, fan_out = _executor_with_tracking()
+    task_scope = mint_task_id()
+
+    with pytest.raises(
+        CoordinationIntentContractError,
+        match="missing contribution binding ids: \\[contrib-c\\]",
+    ):
+        await executor.execute(
+            _fan_out_intent(("contrib-a", "contrib-b", "contrib-c")),
+            binding=_binding(
+                task_scope,
+                pairs=(
+                    ("contrib-a", "lease-a"),
+                    ("contrib-b", "lease-b"),
+                ),
+            ),
+            principal=admin_test_principal(),
+        )
+
+    assert coordination.calls == 0
+    assert fan_out.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_binding_extra_contribution_id_fails_closed() -> None:
+    executor, coordination, fan_out = _executor_with_tracking()
+    task_scope = mint_task_id()
+
+    with pytest.raises(
+        CoordinationIntentContractError,
+        match="extra contribution binding ids: \\[contrib-c\\]",
+    ):
+        await executor.execute(
+            _fan_out_intent(("contrib-a", "contrib-b")),
+            binding=_binding(
+                task_scope,
+                pairs=(
+                    ("contrib-a", "lease-a"),
+                    ("contrib-b", "lease-b"),
+                    ("contrib-c", "lease-c"),
+                ),
+            ),
+            principal=admin_test_principal(),
+        )
+
+    assert coordination.calls == 0
+    assert fan_out.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_binding_duplicate_contribution_id_fails_closed() -> None:
+    executor, coordination, fan_out = _executor_with_tracking()
+    task_scope = mint_task_id()
+
+    with pytest.raises(
+        CoordinationIntentContractError,
+        match="duplicate contribution binding id: contrib-a",
+    ):
+        await executor.execute(
+            _fan_out_intent(("contrib-a", "contrib-b")),
+            binding=_binding(
+                task_scope,
+                pairs=(
+                    ("contrib-a", "lease-a"),
+                    ("contrib-a", "lease-a-duplicate"),
+                ),
+            ),
+            principal=admin_test_principal(),
+        )
+
+    assert coordination.calls == 0
+    assert fan_out.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_binding_unknown_same_count_fails_closed() -> None:
+    executor, coordination, fan_out = _executor_with_tracking()
+    task_scope = mint_task_id()
+
+    with pytest.raises(
+        CoordinationIntentContractError,
+        match="missing contribution binding ids: \\[contrib-b\\]",
+    ):
+        await executor.execute(
+            _fan_out_intent(("contrib-a", "contrib-b")),
+            binding=_binding(
+                task_scope,
+                pairs=(
+                    ("contrib-a", "lease-a"),
+                    ("contrib-c", "lease-c"),
+                ),
+            ),
+            principal=admin_test_principal(),
+        )
+
+    assert coordination.calls == 0
+    assert fan_out.calls == 0

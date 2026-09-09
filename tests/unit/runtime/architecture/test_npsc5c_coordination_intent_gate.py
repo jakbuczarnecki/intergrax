@@ -140,3 +140,65 @@ def test_npsc5c_no_prohibited_patterns() -> None:
         "NPSC-5C production modules contain prohibited patterns:\n"
         + "\n".join(violations)
     )
+
+
+def _dataclass_field_names(path: Path, class_name: str) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            fields: set[str] = set()
+            for item in node.body:
+                if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
+                    fields.add(item.target.id)
+            return fields
+    raise AssertionError(f"class not found: {class_name} in {path}")
+
+
+def _zip_pairs_contributions_with_bindings(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not (
+            isinstance(node.func, ast.Name)
+            and node.func.id == "zip"
+        ):
+            continue
+        arg_names = {
+            expr.id
+            for expr in node.args
+            if isinstance(expr, ast.Attribute)
+        }
+        if (
+            "contributions" in arg_names
+            and "contribution_bindings" in arg_names
+        ):
+            violations.append(
+                f"{path.relative_to(_REPO_ROOT).as_posix()}:{node.lineno}",
+            )
+    return violations
+
+
+@pytest.mark.gate
+def test_npsc5c_contribution_binding_requires_contribution_id() -> None:
+    executor_path = (
+        _REPO_ROOT / "intergrax" / "agent_distribution" / "coordination_intent_executor.py"
+    )
+    fields = _dataclass_field_names(executor_path, "CoordinationContributionBinding")
+    assert "contribution_id" in fields, (
+        "CoordinationContributionBinding must declare contribution_id"
+    )
+
+
+@pytest.mark.gate
+def test_npsc5c_executor_does_not_zip_bindings_by_position() -> None:
+    executor_path = (
+        _REPO_ROOT / "intergrax" / "agent_distribution" / "coordination_intent_executor.py"
+    )
+    violations = _zip_pairs_contributions_with_bindings(executor_path)
+    assert violations == [], (
+        "CoordinationIntentExecutor must not zip intent.contributions with "
+        "binding.contribution_bindings for semantic association:\n"
+        + "\n".join(violations)
+    )

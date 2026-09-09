@@ -47,6 +47,7 @@ ResultT = TypeVar("ResultT")
 class CoordinationContributionBinding:
     """Per-contribution runtime binding supplied at execution."""
 
+    contribution_id: CoordinationContributionId
     lease_id: TaskScopedAgentLeaseId
 
 
@@ -106,14 +107,43 @@ class CoordinationIntentResult(Generic[ResultT]):
         raise ValueError(f"unsupported coordination execution mode: {self.mode}")
 
 
-def _validate_binding(
+def _validate_and_index_binding(
     intent: CoordinationIntent[RequestT],
     binding: CoordinationIntentBinding,
-) -> None:
-    if len(binding.contribution_bindings) != len(intent.contributions):
+) -> dict[CoordinationContributionId, CoordinationContributionBinding]:
+    expected_ids = {contribution.contribution_id for contribution in intent.contributions}
+    indexed_bindings: dict[CoordinationContributionId, CoordinationContributionBinding] = {}
+    duplicate_ids: list[CoordinationContributionId] = []
+
+    for contribution_binding in binding.contribution_bindings:
+        contribution_id = contribution_binding.contribution_id
+        if contribution_id in indexed_bindings:
+            duplicate_ids.append(contribution_id)
+            continue
+        indexed_bindings[contribution_id] = contribution_binding
+
+    if duplicate_ids:
+        duplicate_id = sorted(duplicate_ids, key=str)[0]
         raise CoordinationIntentContractError(
-            "contribution_bindings count must match intent contributions",
+            f"duplicate contribution binding id: {duplicate_id}",
         )
+
+    actual_ids = set(indexed_bindings)
+    missing_ids = sorted(expected_ids - actual_ids, key=str)
+    if missing_ids:
+        missing = ", ".join(str(contribution_id) for contribution_id in missing_ids)
+        raise CoordinationIntentContractError(
+            f"missing contribution binding ids: [{missing}]",
+        )
+
+    extra_ids = sorted(actual_ids - expected_ids, key=str)
+    if extra_ids:
+        extra = ", ".join(str(contribution_id) for contribution_id in extra_ids)
+        raise CoordinationIntentContractError(
+            f"extra contribution binding ids: [{extra}]",
+        )
+
+    return indexed_bindings
 
 
 def _materialize_coordination_request(
@@ -138,13 +168,14 @@ def _materialize_fan_out_request(
     intent: CoordinationIntent[RequestT],
     *,
     binding: CoordinationIntentBinding,
+    contribution_binding_index: dict[
+        CoordinationContributionId,
+        CoordinationContributionBinding,
+    ],
 ) -> FanOutRequest[RequestT]:
     items: list[FanOutItem[RequestT]] = []
-    for contribution, contribution_binding in zip(
-        intent.contributions,
-        binding.contribution_bindings,
-        strict=True,
-    ):
+    for contribution in intent.contributions:
+        contribution_binding = contribution_binding_index[contribution.contribution_id]
         items.append(
             FanOutItem(
                 item_id=FanOutItemId(str(contribution.contribution_id)),
@@ -186,13 +217,15 @@ class CoordinationIntentExecutor(Generic[RequestT, ResultT]):
     ) -> CoordinationIntentResult[ResultT]:
         try:
             validate_coordination_intent(intent)
-            _validate_binding(intent, binding)
+            contribution_binding_index = _validate_and_index_binding(intent, binding)
         except CoordinationIntentContractError as exc:
             raise CoordinationIntentContractError(str(exc)) from exc
 
         if intent.mode is CoordinationExecutionMode.SINGLE:
             contribution = intent.contributions[0]
-            contribution_binding = binding.contribution_bindings[0]
+            contribution_binding = contribution_binding_index[
+                contribution.contribution_id
+            ]
             coordination_result = await self._coordination.coordinate(
                 _materialize_coordination_request(
                     contribution,
@@ -213,7 +246,11 @@ class CoordinationIntentExecutor(Generic[RequestT, ResultT]):
             )
 
         fan_out_result = await self._fan_out.fan_out(
-            _materialize_fan_out_request(intent, binding=binding),
+            _materialize_fan_out_request(
+                intent,
+                binding=binding,
+                contribution_binding_index=contribution_binding_index,
+            ),
             principal=principal,
         )
         return CoordinationIntentResult(
