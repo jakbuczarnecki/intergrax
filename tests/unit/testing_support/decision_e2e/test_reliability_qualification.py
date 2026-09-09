@@ -62,6 +62,10 @@ def _signals(**overrides: object) -> AiIncidentQualificationRunSignals:
         "trace_event_count": 3,
         "route": "unavailable",
         "stop_reason": "complete",
+        "reconciliation_error_reason": None,
+        "reconciliation_model_intent": None,
+        "reconciliation_has_supported_diagnosis": None,
+        "reconciliation_validation_errors": (),
     }
     base.update(overrides)
     return AiIncidentQualificationRunSignals(**base)

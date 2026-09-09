@@ -87,6 +87,14 @@ def _run_record_to_dict(
             "trace_event_count": record.signals.trace_event_count,
             "route": record.signals.route,
             "stop_reason": record.signals.stop_reason,
+            "reconciliation_error_reason": record.signals.reconciliation_error_reason,
+            "reconciliation_model_intent": record.signals.reconciliation_model_intent,
+            "reconciliation_has_supported_diagnosis": (
+                record.signals.reconciliation_has_supported_diagnosis
+            ),
+            "reconciliation_validation_errors": list(
+                record.signals.reconciliation_validation_errors
+            ),
         }
     return payload
 

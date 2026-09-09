@@ -12,7 +12,12 @@ from intergrax.decision_system.qualification.taxonomy import (
     DecisionFailureReason,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    CompletionReconciliationDiagnostic,
     CompletionReconciliationError,
+    CompletionReconciliationFailureReason,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
+    CompletionIntent,
 )
 from testing_support.decision_e2e.failure_observation_adapter import (
     AI_INCIDENT_DIAGNOSTIC_TOOL_TRACE_FAILURE_ID,
@@ -93,7 +98,16 @@ def test_adapter_maps_epistemic_failure_id_without_string_classifier() -> None:
 
 def test_adapter_maps_completion_reconciliation_error_to_model_unsupported_completion() -> None:
     observation = observation_from_scenario_execution_exception(
-        CompletionReconciliationError("validation_errors_present_during_reconciliation")
+        CompletionReconciliationError(
+            CompletionReconciliationFailureReason.VALIDATION_ERRORS_PRESENT,
+            diagnostic=CompletionReconciliationDiagnostic(
+                model_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+                critic_verdict_passed=True,
+                has_supported_diagnosis=True,
+                validation_errors=("some_error",),
+                evidence_gathering_stop_reason="planner_final_answer",
+            ),
+        )
     )
     result = classify_decision_failure(observation)
     assert result is not None

@@ -20,6 +20,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     resolve_scenario_llm_adapter,
     trace_reader_from_composition,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    CompletionReconciliationError,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     ScenarioExecutionResult,
     execute_resolved_skeleton,
@@ -67,6 +70,10 @@ class AiIncidentQualificationRunSignals:
     trace_event_count: int
     route: str
     stop_reason: str | None
+    reconciliation_error_reason: str | None
+    reconciliation_model_intent: str | None
+    reconciliation_has_supported_diagnosis: bool | None
+    reconciliation_validation_errors: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +136,55 @@ def _signals_from_result(
         trace_event_count=trace_event_count,
         route="unavailable",
         stop_reason=result.evidence_gathering_stop_reason or None,
+        reconciliation_error_reason=None,
+        reconciliation_model_intent=None,
+        reconciliation_has_supported_diagnosis=None,
+        reconciliation_validation_errors=(),
+    )
+
+
+def _signals_from_reconciliation_error(
+    exc: CompletionReconciliationError,
+    *,
+    strict_tool_capability: bool,
+) -> AiIncidentQualificationRunSignals:
+    diagnostic = exc.diagnostic
+    reconciliation_model_intent = None
+    critic_verdict_passed = None
+    reconciliation_has_supported_diagnosis = None
+    reconciliation_validation_errors: tuple[str, ...] = ()
+    evidence_gathering_stop_reason = ""
+    if diagnostic is not None:
+        reconciliation_model_intent = diagnostic.model_intent.value
+        critic_verdict_passed = diagnostic.critic_verdict_passed
+        reconciliation_has_supported_diagnosis = diagnostic.has_supported_diagnosis
+        reconciliation_validation_errors = diagnostic.validation_errors
+        evidence_gathering_stop_reason = diagnostic.evidence_gathering_stop_reason
+    return AiIncidentQualificationRunSignals(
+        selected_tool_ids=(),
+        executed_tool_ids=(),
+        tool_invocation_count=0,
+        planner_round_count=0,
+        evidence_node_count=0,
+        initial_evidence_count=0,
+        follow_up_evidence_count=0,
+        evidence_gathering_stop_reason=evidence_gathering_stop_reason,
+        terminal_outcome=None,
+        model_completion_intent=None,
+        reconciliation_result=None,
+        critic_verdict_passed=critic_verdict_passed,
+        evaluator_passed=False,
+        evaluator_failures=(),
+        validation_error_categories=reconciliation_validation_errors,
+        strict_tool_capability=strict_tool_capability,
+        trace_readback_pass=False,
+        trace_event_count=0,
+        route="unavailable",
+        stop_reason=evidence_gathering_stop_reason or None,
+        reconciliation_error_reason=exc.reason.value,
+        reconciliation_model_intent=reconciliation_model_intent,
+        reconciliation_has_supported_diagnosis=reconciliation_has_supported_diagnosis,
+        reconciliation_validation_errors=reconciliation_validation_errors,
     )
 
 
@@ -246,6 +302,25 @@ async def execute_ai_incident_qualification_run(
     try:
         result = await execute_resolved_skeleton(bundle)
         evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
+    except CompletionReconciliationError as exc:
+        observation = observation_from_scenario_execution_exception(exc)
+        failed_run_id = mint_run_id()
+        return AiIncidentQualificationRunOutcome(
+            run_index=run_index,
+            valid_model_trial=True,
+            environment_event=False,
+            run_id=failed_run_id,
+            signals=_signals_from_reconciliation_error(
+                exc,
+                strict_tool_capability=strict_tool_capability,
+            ),
+            run_result=build_decision_qualification_run_result(
+                run_id=failed_run_id,
+                observation=observation,
+                evaluator_passed=False,
+            ),
+            block_reason=f"{type(exc).__name__}: {exc}",
+        )
     except Exception as exc:
         observation = observation_from_scenario_execution_exception(exc)
         failed_run_id = mint_run_id()

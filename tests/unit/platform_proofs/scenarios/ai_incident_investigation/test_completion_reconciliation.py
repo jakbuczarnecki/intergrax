@@ -5,9 +5,15 @@ from __future__ import annotations
 import pytest
 
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationStopReason
+from dataclasses import FrozenInstanceError
+
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    CompletionReconciliationDiagnostic,
     CompletionReconciliationError,
+    CompletionReconciliationFailureReason,
     CompletionReconciliationReason,
+    completion_intent_from_completion_mode,
+    normalize_evidence_gathering_stop_reason,
     reconcile_investigation_completion,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
@@ -172,6 +178,108 @@ def test_t4_reconciled_state_passes_terminal_gate() -> None:
         completion_mode=reconciled.completion_mode.value,
     )
     assert outcome == OUTCOME_RESOLVED
+
+
+def test_validation_errors_present_carries_typed_reason_and_diagnostic() -> None:
+    with pytest.raises(CompletionReconciliationError) as exc_info:
+        _reconcile(
+            model_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+            validation_errors=("some_error",),
+        )
+    exc = exc_info.value
+    assert exc.reason is CompletionReconciliationFailureReason.VALIDATION_ERRORS_PRESENT
+    assert str(exc) == "validation_errors_present_during_reconciliation"
+    assert exc.diagnostic is not None
+    assert exc.diagnostic.model_intent is CompletionIntent.SUPPORTED_DIAGNOSIS
+    assert exc.diagnostic.critic_verdict_passed is True
+    assert exc.diagnostic.has_supported_diagnosis is True
+    assert exc.diagnostic.validation_errors == ("some_error",)
+    assert exc.diagnostic.evidence_gathering_stop_reason == "planner_final_answer"
+
+
+def test_critic_failure_carries_typed_reason_and_diagnostic() -> None:
+    with pytest.raises(CompletionReconciliationError) as exc_info:
+        _reconcile(
+            model_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+            critic_verdict_passed=False,
+        )
+    exc = exc_info.value
+    assert exc.reason is CompletionReconciliationFailureReason.CRITIC_VERDICT_NOT_PASSED
+    assert exc.diagnostic is not None
+    assert exc.diagnostic.critic_verdict_passed is False
+
+
+def test_supported_intent_mismatch_carries_typed_reason() -> None:
+    with pytest.raises(CompletionReconciliationError) as exc_info:
+        _reconcile(
+            model_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+            has_supported_diagnosis=False,
+        )
+    assert exc_info.value.reason is (
+        CompletionReconciliationFailureReason.SUPPORTED_INTENT_WITHOUT_SUPPORTED_STATE
+    )
+
+
+def test_unresolved_intent_mismatch_carries_typed_reason() -> None:
+    with pytest.raises(CompletionReconciliationError) as exc_info:
+        _reconcile(
+            model_intent=CompletionIntent.UNRESOLVED,
+            has_supported_diagnosis=True,
+        )
+    assert exc_info.value.reason is (
+        CompletionReconciliationFailureReason.UNRESOLVED_INTENT_WITH_SUPPORTED_STATE
+    )
+
+
+def test_safety_limit_carries_typed_reason() -> None:
+    with pytest.raises(CompletionReconciliationError) as exc_info:
+        _reconcile(
+            model_intent=CompletionIntent.NEED_MORE_EVIDENCE,
+            evidence_gathering_stop_reason="max_iterations",
+        )
+    assert exc_info.value.reason is (
+        CompletionReconciliationFailureReason.EVIDENCE_GATHERING_SAFETY_LIMIT_REACHED
+    )
+
+
+def test_need_more_evidence_without_supported_state_carries_typed_reason() -> None:
+    with pytest.raises(CompletionReconciliationError) as exc_info:
+        _reconcile(
+            model_intent=CompletionIntent.NEED_MORE_EVIDENCE,
+            has_supported_diagnosis=False,
+        )
+    assert exc_info.value.reason is (
+        CompletionReconciliationFailureReason.NEED_MORE_EVIDENCE_WITHOUT_SUPPORTED_STATE
+    )
+
+
+def test_unknown_stop_reason_has_typed_reason_without_diagnostic() -> None:
+    with pytest.raises(CompletionReconciliationError) as exc_info:
+        normalize_evidence_gathering_stop_reason("not_a_real_stop_reason")
+    exc = exc_info.value
+    assert exc.reason is CompletionReconciliationFailureReason.UNKNOWN_EVIDENCE_GATHERING_STOP_REASON
+    assert exc.diagnostic is None
+
+
+def test_unknown_completion_mode_has_typed_reason_without_diagnostic() -> None:
+    with pytest.raises(CompletionReconciliationError) as exc_info:
+        completion_intent_from_completion_mode("not_a_mode")
+    exc = exc_info.value
+    assert exc.reason is CompletionReconciliationFailureReason.UNKNOWN_COMPLETION_MODE
+    assert exc.diagnostic is None
+    assert "unknown completion_mode" in str(exc)
+
+
+def test_reconciliation_diagnostic_is_immutable() -> None:
+    diagnostic = CompletionReconciliationDiagnostic(
+        model_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+        critic_verdict_passed=True,
+        has_supported_diagnosis=True,
+        validation_errors=(),
+        evidence_gathering_stop_reason="planner_final_answer",
+    )
+    with pytest.raises(FrozenInstanceError):
+        diagnostic.critic_verdict_passed = False  # type: ignore[misc]
 
 
 @pytest.mark.parametrize(
