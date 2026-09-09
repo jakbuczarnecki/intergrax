@@ -17,63 +17,70 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.relational import (
     RelationalDataPackRecord,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.stores.parquet.schema import (
+    relational_parquet_field_types,
+)
 
 
 def write_relational_parquet(path: Path, records: Sequence[RelationalDataPackRecord]) -> None:
     if not records:
         raise VpiDataPackIntegrityError("cannot write empty relational shard")
+    field_types = relational_parquet_field_types()
     table = pa.table(
         {
             "global_row_index": pa.array(
                 [record.global_row_index for record in records],
-                type=pa.int64(),
+                type=field_types["global_row_index"],
             ),
             "catalog_id": pa.array(
                 [record.source_ref.catalog_id for record in records],
-                type=pa.string(),
+                type=field_types["catalog_id"],
             ),
             "offer_id": pa.array(
                 [record.source_ref.offer_id.value for record in records],
-                type=pa.string(),
+                type=field_types["offer_id"],
             ),
             "source_revision": pa.array(
                 [record.source_ref.source_revision for record in records],
-                type=pa.string(),
+                type=field_types["source_revision"],
             ),
             "record_json": pa.array(
                 [record.record_json for record in records],
-                type=pa.string(),
+                type=field_types["record_json"],
             ),
             "derivation_version": pa.array(
                 [record.derivation_version for record in records],
-                type=pa.string(),
+                type=field_types["derivation_version"],
             ),
             "semantic_text": pa.array(
                 [record.semantic_text for record in records],
-                type=pa.string(),
+                type=field_types["semantic_text"],
             ),
             "semantic_text_hash": pa.array(
                 [record.semantic_text_hash for record in records],
-                type=pa.string(),
+                type=field_types["semantic_text_hash"],
             ),
-            "title": pa.array([record.title for record in records], type=pa.string()),
-            "brand": pa.array([record.brand for record in records], type=pa.string()),
-            "category": pa.array([record.category for record in records], type=pa.string()),
+            "title": pa.array([record.title for record in records], type=field_types["title"]),
+            "brand": pa.array([record.brand for record in records], type=field_types["brand"]),
+            "category": pa.array(
+                [record.category for record in records],
+                type=field_types["category"],
+            ),
             "description": pa.array(
                 [record.description for record in records],
-                type=pa.string(),
+                type=field_types["description"],
             ),
             "has_identifiers": pa.array(
                 [record.has_identifiers for record in records],
-                type=pa.bool_(),
+                type=field_types["has_identifiers"],
             ),
             "has_spec_table": pa.array(
                 [record.has_spec_table for record in records],
-                type=pa.bool_(),
+                type=field_types["has_spec_table"],
             ),
             "has_structured_attributes": pa.array(
                 [record.has_structured_attributes for record in records],
-                type=pa.bool_(),
+                type=field_types["has_structured_attributes"],
             ),
         }
     )
