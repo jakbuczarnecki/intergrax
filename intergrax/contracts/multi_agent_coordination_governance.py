@@ -1,9 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Multi-agent coordination governance contracts (NPSC-5D/R1).
+"""Multi-agent coordination governance contracts (NPSC-5D/R1 / R1-H1).
 
 Semantic coordination admission evaluated through canonical ``PolicyDecision`` /
 ``PolicyAction`` — not a second policy engine or NPSC-local authorization runtime.
+
+Collaborative authority applicability is classified on the typed request; callers
+must not supply caller-controlled booleans or pre-resolved authority outcomes.
 """
 
 from __future__ import annotations
@@ -11,9 +14,10 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Final, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.collaborative_work import MembershipResolutionMode
 from intergrax.contracts.control_plane_mutation import GovernanceEvaluationPoint
 from intergrax.contracts.evaluated_policy_decision import request_digest_for_payload
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
@@ -24,8 +28,51 @@ SCHEMA_MULTI_AGENT_COORDINATION_GOVERNANCE_REQUEST_V1: Final = (
 SCHEMA_MULTI_AGENT_COORDINATION_GOVERNANCE_EVIDENCE_V1: Final = (
     "multi_agent_coordination_governance_evidence.v1"
 )
+MULTI_AGENT_COORDINATION_COLLABORATIVE_AUTHORITY_SCOPE: Final = (
+    "collab:multi_agent_coordination"
+)
 
 _NON_EMPTY = Field(min_length=1)
+
+
+class MultiAgentCoordinationCollaborativeApplicability(StrEnum):
+    """Trusted collaborative authority classification for coordination admission."""
+
+    NOT_APPLICABLE = "not_applicable"
+    REQUIRED = "required"
+
+
+class MultiAgentCoordinationCollaborativeContext(BaseModel):
+    """Collaborative scope locators for authority reload — not authority proof."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    workspace_id: str = _NON_EMPTY
+    acting_principal_id: str = _NON_EMPTY
+    delegator_principal_id: str | None = None
+    delegation_id: str | None = None
+    resource_scope: str | None = None
+    membership_resolution_mode: MembershipResolutionMode = (
+        MembershipResolutionMode.CANONICAL_PRINCIPAL
+    )
+
+    @field_validator("workspace_id", "acting_principal_id", "delegator_principal_id", "delegation_id")
+    @classmethod
+    def _strip_required_or_optional(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty when provided")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_delegation_locator(self) -> MultiAgentCoordinationCollaborativeContext:
+        if self.delegator_principal_id is not None and self.delegation_id is None:
+            raise ValueError("delegation_id required when delegator_principal_id is set")
+        if self.delegation_id is not None and self.delegator_principal_id is None:
+            raise ValueError("delegator_principal_id required when delegation_id is set")
+        return self
 
 
 class MultiAgentCoordinationExecutionMode(StrEnum):
@@ -92,6 +139,10 @@ class MultiAgentCoordinationGovernanceRequest(BaseModel):
     application_id: str = _NON_EMPTY
     application_environment_id: str = _NON_EMPTY
     principal: RequestIdentity
+    collaborative_applicability: MultiAgentCoordinationCollaborativeApplicability = (
+        MultiAgentCoordinationCollaborativeApplicability.NOT_APPLICABLE
+    )
+    collaborative_context: MultiAgentCoordinationCollaborativeContext | None = None
 
     @field_validator(
         "intent_id",
@@ -114,6 +165,25 @@ class MultiAgentCoordinationGovernanceRequest(BaseModel):
         if value <= 0:
             raise ValueError("requested_max_concurrency must be positive when set")
         return value
+
+    @model_validator(mode="after")
+    def _validate_collaborative_classification(
+        self,
+    ) -> MultiAgentCoordinationGovernanceRequest:
+        if (
+            self.collaborative_applicability
+            is MultiAgentCoordinationCollaborativeApplicability.REQUIRED
+        ):
+            if self.collaborative_context is None:
+                raise ValueError(
+                    "collaborative_context required when collaborative_applicability is REQUIRED",
+                )
+            return self
+        if self.collaborative_context is not None:
+            raise ValueError(
+                "collaborative_context forbidden when collaborative_applicability is NOT_APPLICABLE",
+            )
+        return self
 
     @property
     def tenant_id(self) -> str:
@@ -208,6 +278,19 @@ class MultiAgentCoordinationGovernancePort(Protocol):
     ) -> MultiAgentCoordinationGovernanceResult:
         """Evaluate coordination admission using typed request facts only."""
         ...
+
+
+def multi_agent_coordination_acting_principal_id(principal: RequestIdentity) -> str:
+    """Derive acting principal identity reference — not collaborative authority proof."""
+    if principal.user_id is not None:
+        normalized = principal.user_id.strip()
+        if normalized:
+            return normalized
+    if principal.auth_subject is not None:
+        normalized = principal.auth_subject.strip()
+        if normalized:
+            return normalized
+    raise ValueError("principal identity required")
 
 
 def multi_agent_coordination_governance_request_digest(

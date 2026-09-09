@@ -66,6 +66,10 @@ class CoordinationIntentBinding:
     application_id: str
     application_environment_id: str
     contribution_bindings: tuple[CoordinationContributionBinding, ...]
+    workspace_id: str | None = None
+    delegator_principal_id: str | None = None
+    delegation_id: str | None = None
+    resource_scope: str | None = None
 
     def __post_init__(self) -> None:
         if not self.contribution_bindings:
@@ -248,6 +252,10 @@ class CoordinationIntentExecutor(Generic[RequestT, ResultT]):
             application_id=binding.application_id,
             application_environment_id=binding.application_environment_id,
             principal=principal,
+            workspace_id=binding.workspace_id,
+            delegator_principal_id=binding.delegator_principal_id,
+            delegation_id=binding.delegation_id,
+            resource_scope=binding.resource_scope,
         )
         result = self._governance.evaluate(request)
         if result.permitted:

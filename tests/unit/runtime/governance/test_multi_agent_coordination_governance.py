@@ -107,7 +107,9 @@ def test_runtime_evaluator_allow_by_mode() -> None:
 
 def test_modify_maps_to_fail_closed_deny() -> None:
     boundary = MultiAgentCoordinationGovernanceBoundary(
-        evaluator=FailClosedMultiAgentCoordinationGovernanceEvaluator(),
+        evaluator=FailClosedMultiAgentCoordinationGovernanceEvaluator(
+            policy_engine=RuntimePolicyEngine(),
+        ),
     )
     result = boundary.evaluate(_request())
     assert result.permitted is False

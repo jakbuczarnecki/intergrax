@@ -271,9 +271,9 @@ CoordinationIntentExecutor
 
 ---
 
-## 8.1 NPSC-5D/R1 — semantic coordination governance admission
+## 8.1 NPSC-5D/R1 / R1-H1 — semantic coordination governance admission
 
-**Status:** NPSC-5D/R1 **PASS** (not frozen).
+**Status:** NPSC-5D/R1 **PASS** · NPSC-5D/R1-H1 **PASS** (not frozen).
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -285,6 +285,18 @@ CoordinationIntentExecutor
 **Canonical evaluation location:** `CoordinationIntentExecutor` after semantic intent validation and before `MultiAgentCoordinationService` / `BoundedMultiAgentFanOutService`.
 
 **Governance model (R1):** coordination-level admission only; per-contribution physical authorization deferred to NPSC-5D/R2.
+
+**Authority reconciliation (R1-H1):**
+
+```text
+NPSC delegation (specialist contribution) ≠ Collaborative Work authority delegation
+RequestIdentity = identity reference only — never authority proof
+Collaborative Work owns collaborative authority via CollaborativeWorkAuthorityResolverPort
+Governance consumes authoritative EffectiveAuthorityDecision + coordination policy via compose_policy_decisions
+Execution effective authority remains independent and monotonic on the active Execution path
+```
+
+**Collaborative applicability:** classified on the typed governance request from authoritative binding context (`workspace_id` present → `REQUIRED`; absent → `NOT_APPLICABLE`). No caller-controlled `is_collaborative` boolean.
 
 **Distinction:** NPSC `CoordinationPolicy` remains Agent Distribution selection semantics — not platform Governance policy.
 
