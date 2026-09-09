@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from psycopg.sql import Composable
 
 from intergrax.integrations.providers.relational_store.postgresql.session import (
     PostgreSQLSession,
@@ -39,7 +43,7 @@ class RelationalTableSpec:
     table_name: str
 
 
-def create_table_ddl(spec: RelationalTableSpec) -> object:
+def create_table_ddl(spec: RelationalTableSpec) -> Composable:
     _, _, _, sql = import_psycopg()
     qualified = sql.SQL("{}.{}").format(
         sql.Identifier(spec.schema_name),

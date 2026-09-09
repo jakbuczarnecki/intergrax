@@ -38,7 +38,12 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.errors import (
     PostgreSqlBootstrapConfigurationError,
     PostgreSqlBootstrapIdentityConflictError,
+    PostgreSqlBootstrapOperationError,
     PostgreSqlBootstrapSchemaError,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
+    StoredRelationalRow,
+    stored_relational_row_from_fetched_row,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.target_mapping import (
     reject_unsafe_logical_target,
@@ -634,15 +639,87 @@ def test_adapter_has_no_vector_or_model_import(forbidden: str) -> None:
     assert violations == []
 
 
-def test_record_payload_matches_helper() -> None:
+def _stored_row_from_record(record: RelationalLoadRecord) -> StoredRelationalRow:
+    return StoredRelationalRow(
+        catalog_id=record.source_ref.catalog_id,
+        offer_id=record.source_ref.offer_id.value,
+        source_revision_norm=_source_revision_norm(record.source_ref.source_revision),
+        source_revision=record.source_ref.source_revision,
+        global_row_index=record.global_row_index,
+        record_json=record.record_json,
+        semantic_text=record.semantic_text,
+        semantic_text_hash=record.semantic_text_hash,
+        derivation_version=record.derivation_version,
+    )
+
+
+def test_postgresql_row_converts_to_stored_relational_row() -> None:
     record = _record(0)
-    existing = {
-        "global_row_index": 0,
-        "semantic_text_hash": record.semantic_text_hash,
-        "derivation_version": record.derivation_version,
+    row = {
+        "catalog_id": record.source_ref.catalog_id,
+        "offer_id": record.source_ref.offer_id.value,
+        "source_revision_norm": "",
+        "source_revision": None,
+        "global_row_index": record.global_row_index,
         "record_json": record.record_json,
         "semantic_text": record.semantic_text,
+        "semantic_text_hash": record.semantic_text_hash,
+        "derivation_version": record.derivation_version,
     }
+    converted = stored_relational_row_from_fetched_row(row)
+    assert isinstance(converted, StoredRelationalRow)
+    assert converted.offer_id == record.source_ref.offer_id.value
+
+
+def test_nullable_source_revision_handled_in_row_conversion() -> None:
+    record = _record(1, offer_suffix="rev")
+    record_with_revision = RelationalLoadRecord(
+        source_ref=SourceRecordRef(
+            offer_id=record.source_ref.offer_id,
+            catalog_id=record.source_ref.catalog_id,
+            source_revision="rev-1",
+        ),
+        global_row_index=record.global_row_index,
+        record_json=record.record_json,
+        semantic_text=record.semantic_text,
+        semantic_text_hash=record.semantic_text_hash,
+        derivation_version=record.derivation_version,
+    )
+    converted = stored_relational_row_from_fetched_row(
+        {
+            "catalog_id": record_with_revision.source_ref.catalog_id,
+            "offer_id": record_with_revision.source_ref.offer_id.value,
+            "source_revision_norm": "rev-1",
+            "source_revision": "rev-1",
+            "global_row_index": record_with_revision.global_row_index,
+            "record_json": record_with_revision.record_json,
+            "semantic_text": record_with_revision.semantic_text,
+            "semantic_text_hash": record_with_revision.semantic_text_hash,
+            "derivation_version": record_with_revision.derivation_version,
+        }
+    )
+    assert converted.source_revision == "rev-1"
+
+
+def test_malformed_row_conversion_fails_closed() -> None:
+    with pytest.raises(PostgreSqlBootstrapOperationError, match="missing catalog_id"):
+        stored_relational_row_from_fetched_row(
+            {
+                "offer_id": "offer-0",
+                "source_revision_norm": "",
+                "source_revision": None,
+                "global_row_index": 0,
+                "record_json": "{}",
+                "semantic_text": "semantic",
+                "semantic_text_hash": "hash-a",
+                "derivation_version": "v1",
+            }
+        )
+
+
+def test_record_payload_matches_helper() -> None:
+    record = _record(0)
+    existing = _stored_row_from_record(record)
     assert _record_payload_matches(existing, record) is True
 
 

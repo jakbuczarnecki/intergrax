@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from intergrax.integrations.providers.relational_store.postgresql.session import (
@@ -30,6 +29,10 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     create_table_ddl,
     verify_table_compatible,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
+    StoredRelationalRow,
+    stored_relational_row_from_fetched_row,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.target_mapping import (
     PhysicalRelationalTarget,
     resolve_physical_target,
@@ -48,6 +51,8 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     identity_key,
 )
 
+_InsertSqlParams = tuple[str, str, str, str | None, int, str, str, str, str]
+
 
 def _source_revision_norm(source_revision: str | None) -> str:
     return source_revision or ""
@@ -63,15 +68,15 @@ def _identity_params(record: RelationalLoadRecord) -> tuple[str, str, str]:
 
 
 def _record_payload_matches(
-    existing: Mapping[str, object],
+    existing: StoredRelationalRow,
     record: RelationalLoadRecord,
 ) -> bool:
     return (
-        int(existing["global_row_index"]) == record.global_row_index
-        and str(existing["semantic_text_hash"]) == record.semantic_text_hash
-        and str(existing["derivation_version"]) == record.derivation_version
-        and str(existing["record_json"]) == record.record_json
-        and str(existing["semantic_text"]) == record.semantic_text
+        existing.global_row_index == record.global_row_index
+        and existing.semantic_text_hash == record.semantic_text_hash
+        and existing.derivation_version == record.derivation_version
+        and existing.record_json == record.record_json
+        and existing.semantic_text == record.semantic_text
     )
 
 
@@ -250,7 +255,7 @@ class PostgreSqlRelationalStorageAdapter:
             ") VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s) "
             "ON CONFLICT (catalog_id, offer_id, source_revision_norm) DO NOTHING"
         )
-        params = (
+        params: _InsertSqlParams = (
             catalog_id,
             offer_id,
             revision_norm,
@@ -261,8 +266,7 @@ class PostgreSqlRelationalStorageAdapter:
             record.semantic_text_hash,
             record.derivation_version,
         )
-        result = self._execute_insert(session, insert_sql, params, physical, record)
-        if result.rowcount > 0:
+        if self._execute_insert(session, insert_sql, params, physical, record) > 0:
             return "written"
 
         existing = self._fetch_by_source_identity(session, physical, record.source_ref)
@@ -280,13 +284,13 @@ class PostgreSqlRelationalStorageAdapter:
         self,
         session: PostgreSQLSession,
         insert_sql: str,
-        params: tuple[object, ...],
+        params: _InsertSqlParams,
         physical: PhysicalRelationalTarget,
         record: RelationalLoadRecord,
-    ) -> object:
+    ) -> int:
         _, pg_errors, _, _ = import_psycopg()
         try:
-            return session.execute(insert_sql, params)
+            return session.execute(insert_sql, params).rowcount
         except pg_errors.Error as exc:
             if is_postgresql_unique_violation(exc):
                 self._raise_identity_conflict_for_unique_violation(
@@ -316,9 +320,9 @@ class PostgreSqlRelationalStorageAdapter:
         )
         if by_row_index is not None:
             existing_identity = (
-                str(by_row_index["catalog_id"]),
-                str(by_row_index["offer_id"]),
-                str(by_row_index["source_revision_norm"]),
+                by_row_index.catalog_id,
+                by_row_index.offer_id,
+                by_row_index.source_revision_norm,
             )
             incoming_identity = _identity_params(record)
             if existing_identity != incoming_identity:
@@ -344,8 +348,8 @@ class PostgreSqlRelationalStorageAdapter:
         if existing is None:
             return False
         return (
-            int(existing["global_row_index"]) == record.global_row_index
-            and str(existing["semantic_text_hash"]) == record.semantic_text_hash
+            existing.global_row_index == record.global_row_index
+            and existing.semantic_text_hash == record.semantic_text_hash
         )
 
     def _fetch_by_source_identity(
@@ -353,7 +357,7 @@ class PostgreSqlRelationalStorageAdapter:
         session: PostgreSQLSession,
         physical: PhysicalRelationalTarget,
         source_ref: SourceRecordRef,
-    ) -> Mapping[str, object] | None:
+    ) -> StoredRelationalRow | None:
         revision_norm = _source_revision_norm(source_ref.source_revision)
         row = session.execute(
             f"""
@@ -369,15 +373,17 @@ class PostgreSqlRelationalStorageAdapter:
                 revision_norm,
             ),
         ).fetchone()
-        return row
+        if row is None:
+            return None
+        return stored_relational_row_from_fetched_row(row)
 
     def _fetch_by_global_row_index(
         self,
         session: PostgreSQLSession,
         physical: PhysicalRelationalTarget,
         global_row_index: int,
-    ) -> Mapping[str, object] | None:
-        return session.execute(
+    ) -> StoredRelationalRow | None:
+        row = session.execute(
             f"""
             SELECT catalog_id, offer_id, source_revision_norm, source_revision,
                    global_row_index, record_json::text AS record_json,
@@ -387,3 +393,6 @@ class PostgreSqlRelationalStorageAdapter:
             """,
             (global_row_index,),
         ).fetchone()
+        if row is None:
+            return None
+        return stored_relational_row_from_fetched_row(row)
