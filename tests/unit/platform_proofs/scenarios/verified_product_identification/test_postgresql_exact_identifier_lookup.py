@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import ast
-import inspect
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Any
-from unittest.mock import patch
 
 import pytest
 
@@ -63,6 +60,13 @@ from tests.unit.platform_proofs.scenarios.verified_product_identification.test_m
 
 pytestmark = pytest.mark.unit
 
+_, _, _, _PSYCOPG_SQL = import_psycopg()
+
+SqlParam = str | int | None
+SqlParams = tuple[SqlParam, ...]
+SqlStatement = str | _PSYCOPG_SQL.Composable
+ExecutedStatement = tuple[SqlStatement, SqlParams]
+
 _REPO_ROOT = Path(__file__).resolve().parents[5]
 _ADAPTER_ROOT = (
     _REPO_ROOT
@@ -74,16 +78,13 @@ _APPLICATION_ROOT = (
 )
 
 
-def _executed_sql_text(statement: object) -> str:
+def _executed_sql_text(statement: SqlStatement) -> str:
     if isinstance(statement, str):
         return statement
-    _, _, _, sql_module = import_psycopg()
-    if isinstance(statement, sql_module.Composable):
-        return statement.as_string(None)
-    return str(statement)
+    return statement.as_string(None)
 
 
-def _lookup_sql_text(executed: list[tuple[Any, tuple[Any, ...]]]) -> str:
+def _lookup_sql_text(executed: list[ExecutedStatement]) -> str:
     statement, _params = executed[-1]
     return _executed_sql_text(statement)
 
@@ -116,10 +117,10 @@ class _FakeCursor:
 @dataclass
 class _FakeConnection:
     rows: list[Mapping[str, str | None]] = field(default_factory=list)
-    executed: list[tuple[str, tuple[Any, ...]]] = field(default_factory=list)
-    fail_with: Exception | None = None
+    executed: list[ExecutedStatement] = field(default_factory=list)
+    fail_with: BaseException | None = None
 
-    def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
+    def execute(self, sql: SqlStatement, params: SqlParams = ()) -> _FakeCursor:
         self.executed.append((sql, params))
         if self.fail_with is not None:
             raise self.fail_with
@@ -152,21 +153,24 @@ def _identifier_row(
     }
 
 
-def _adapter_with_connection(connection: _FakeConnection) -> PostgreSqlExactIdentifierLookupAdapter:
-    configuration = _configuration()
+def _adapter_with_connection(
+    connection: _FakeConnection,
+    *,
+    configuration: PostgreSqlBootstrapConfiguration | None = None,
+) -> PostgreSqlExactIdentifierLookupAdapter:
+    config = configuration or _configuration()
 
     def _factory() -> _FakeConnection:
         return connection
 
     provider = PostgreSQLConnectionProvider(
-        configuration.integration,
-        tenant_schema=configuration.schema_name,
+        config.integration,
+        tenant_schema=config.schema_name,
         connection_factory=_factory,
     )
-    provider._apply_search_path_on_connection = lambda _connection: None  # type: ignore[method-assign]
     return PostgreSqlExactIdentifierLookupAdapter(
         _provider=provider,
-        _configuration=configuration,
+        _configuration=config,
     )
 
 
@@ -184,8 +188,8 @@ def _query(
 
 def test_adapter_satisfies_exact_identifier_lookup_port() -> None:
     adapter = _adapter_with_connection(_FakeConnection())
-    assert hasattr(adapter, "lookup")
-    assert callable(adapter.lookup)
+    port: ExactIdentifierLookupPort = adapter
+    assert callable(port.lookup)
 
 
 def test_gtin_exact_hit_maps_candidate() -> None:
@@ -355,21 +359,8 @@ def test_lookup_sql_schema_and_table_explicitly_qualified() -> None:
         table_name="vpi_data_pack_relational_record",
         identifier_table_name="vpi_lookup_identifiers",
     )
-
-    def _factory() -> _FakeConnection:
-        return connection
-
     connection = _FakeConnection(rows=[])
-    provider = PostgreSQLConnectionProvider(
-        configuration.integration,
-        tenant_schema=configuration.schema_name,
-        connection_factory=_factory,
-    )
-    provider._apply_search_path_on_connection = lambda _connection: None  # type: ignore[method-assign]
-    adapter = PostgreSqlExactIdentifierLookupAdapter(
-        _provider=provider,
-        _configuration=configuration,
-    )
+    adapter = _adapter_with_connection(connection, configuration=configuration)
     adapter.lookup(_query(ProductIdentifierType.GTIN, "8806095123456"))
     assert (
         '"vpi_lookup_schema"."vpi_lookup_identifiers"'
@@ -447,8 +438,13 @@ def test_application_has_zero_postgresql_imports() -> None:
 
 
 def test_multi_channel_service_unchanged_signature() -> None:
-    params = list(inspect.signature(MultiChannelRetrievalService).parameters)
-    assert params == ["exact_lookup", "lexical_search", "structured_search", "vector_search"]
+    param_names = [service_field.name for service_field in fields(MultiChannelRetrievalService)]
+    assert param_names == [
+        "exact_lookup",
+        "lexical_search",
+        "structured_search",
+        "vector_search",
+    ]
 
 
 def test_pluginability_with_fake_and_postgresql_adapter() -> None:
