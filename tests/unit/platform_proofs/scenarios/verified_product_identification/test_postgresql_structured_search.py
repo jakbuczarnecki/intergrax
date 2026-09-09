@@ -58,6 +58,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
     StructuredAttributeTableSpec,
     _STRUCTURED_CANONICAL_EQUALS_INDEX_NAME,
+    _STRUCTURED_CONTAINS_INDEX_NAME,
     _STRUCTURED_SOURCE_EQUALS_INDEX_NAME,
     structured_constraint_search_dml,
 )
@@ -252,20 +253,39 @@ class _FakeCursor:
         return self._rows[0]
 
 
+@dataclass(frozen=True, slots=True)
+class _ContainsIndexCapability:
+    schema_name: str
+    table_name: str
+    valid_definition: bool = True
+
+
 @dataclass
 class _FakeConnection:
     ranked_rows: list[Mapping[str, str | int | None]] = field(default_factory=list)
     executed: list[ExecutedStatement] = field(default_factory=list)
     fail_with: BaseException | None = None
     pg_trgm_available: bool = False
+    contains_index: _ContainsIndexCapability | None = None
 
     def execute(self, sql: SqlStatement, params: SqlParams = ()) -> _FakeCursor:
         self.executed.append((sql, params))
         if self.fail_with is not None:
             raise self.fail_with
         sql_text = _executed_sql_text(sql).lower()
-        if "pg_extension" in sql_text:
-            if self.pg_trgm_available:
+        if "pg_extension" in sql_text and "extname" in sql_text:
+            if self.pg_trgm_available and params == ("pg_trgm",):
+                return _FakeCursor(_rows=[{"present": 1}])
+            return _FakeCursor(_rows=[])
+        if "pg_index" in sql_text and "gin_trgm_ops" in sql_text:
+            if (
+                self.contains_index is not None
+                and self.contains_index.valid_definition
+                and len(params) == 3
+                and str(params[0]) == self.contains_index.schema_name
+                and str(params[1]) == self.contains_index.table_name
+                and str(params[2]) == _STRUCTURED_CONTAINS_INDEX_NAME
+            ):
                 return _FakeCursor(_rows=[{"present": 1}])
             return _FakeCursor(_rows=[])
         return _FakeCursor(_rows=self.ranked_rows)
@@ -280,7 +300,7 @@ def _adapter_with_connection(
     configuration: PostgreSqlBootstrapConfiguration | None = None,
 ) -> PostgreSqlStructuredCandidateSearchAdapter:
     config = configuration or _configuration()
-    adapter = PostgreSqlStructuredCandidateSearchAdapter(
+    return PostgreSqlStructuredCandidateSearchAdapter(
         _provider=PostgreSQLConnectionProvider(
             config.integration,
             tenant_schema=config.schema_name,
@@ -288,11 +308,37 @@ def _adapter_with_connection(
         ),
         _configuration=config,
     )
-    if connection.pg_trgm_available:
-        adapter._contains_capability_available = True
-    else:
-        adapter._contains_capability_available = False
-    return adapter
+
+
+def _contains_query(*, value: str = "pro") -> StructuredSearchQuery:
+    return StructuredSearchQuery(
+        constraints=(
+            StructuredAttributeConstraint(
+                attribute_name="Model",
+                operator=StructuredConstraintOperator.CONTAINS,
+                value=value,
+            ),
+        )
+    )
+
+
+def _configured_contains_index() -> _ContainsIndexCapability:
+    return _ContainsIndexCapability(
+        schema_name="vpi_test_schema",
+        table_name="vpi_structured_attribute",
+    )
+
+
+def _capability_executions(connection: _FakeConnection) -> list[ExecutedStatement]:
+    return [
+        executed
+        for executed in connection.executed
+        if "gin_trgm_ops" in _executed_sql_text(executed[0]).lower()
+        or (
+            "pg_extension" in _executed_sql_text(executed[0]).lower()
+            and "extname" in _executed_sql_text(executed[0]).lower()
+        )
+    ]
 
 
 def _search_executions(connection: _FakeConnection) -> list[ExecutedStatement]:
@@ -457,22 +503,134 @@ def test_query_normalization_matches_projection_values() -> None:
 
 
 def test_contains_without_pg_trgm_fails_closed() -> None:
-    adapter = _adapter_with_connection(_FakeConnection(pg_trgm_available=False))
-    result = adapter.search(
-        StructuredSearchQuery(
-            constraints=(
-                StructuredAttributeConstraint(
-                    attribute_name="Model",
-                    operator=StructuredConstraintOperator.CONTAINS,
-                    value="pro",
-                ),
-            )
-        )
-    )
+    connection = _FakeConnection(pg_trgm_available=False)
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(_contains_query())
     assert result.candidates == ()
     assert result.failure is not None
     assert result.failure.kind is CatalogSearchFailureKind.INVALID_QUERY
     assert "pg_trgm" in result.failure.message
+    assert _search_executions(connection) == []
+
+
+def test_contains_without_index_fails_closed() -> None:
+    connection = _FakeConnection(pg_trgm_available=True, contains_index=None)
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(_contains_query())
+    assert result.failure is not None
+    assert result.failure.kind is CatalogSearchFailureKind.INVALID_QUERY
+    assert _search_executions(connection) == []
+
+
+def test_contains_with_index_in_wrong_schema_fails_closed() -> None:
+    connection = _FakeConnection(
+        pg_trgm_available=True,
+        contains_index=_ContainsIndexCapability(
+            schema_name="other_schema",
+            table_name="vpi_structured_attribute",
+        ),
+    )
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(_contains_query())
+    assert result.failure is not None
+    assert result.failure.kind is CatalogSearchFailureKind.INVALID_QUERY
+    assert _search_executions(connection) == []
+
+
+def test_contains_with_index_on_wrong_table_fails_closed() -> None:
+    connection = _FakeConnection(
+        pg_trgm_available=True,
+        contains_index=_ContainsIndexCapability(
+            schema_name="vpi_test_schema",
+            table_name="other_structured_table",
+        ),
+    )
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(_contains_query())
+    assert result.failure is not None
+    assert result.failure.kind is CatalogSearchFailureKind.INVALID_QUERY
+    assert _search_executions(connection) == []
+
+
+def test_contains_with_incompatible_index_definition_fails_closed() -> None:
+    connection = _FakeConnection(
+        pg_trgm_available=True,
+        contains_index=_ContainsIndexCapability(
+            schema_name="vpi_test_schema",
+            table_name="vpi_structured_attribute",
+            valid_definition=False,
+        ),
+    )
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(_contains_query())
+    assert result.failure is not None
+    assert result.failure.kind is CatalogSearchFailureKind.INVALID_QUERY
+    assert _search_executions(connection) == []
+
+
+def test_contains_available_executes_single_search_query() -> None:
+    connection = _FakeConnection(
+        pg_trgm_available=True,
+        contains_index=_configured_contains_index(),
+        ranked_rows=[
+            {
+                "catalog_id": _CATALOG_ID,
+                "offer_id": "offer-a",
+                "source_revision_norm": "rev-structured",
+                "source_revision": "rev-structured",
+                "matched_constraint_count": 1,
+            }
+        ],
+    )
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(_contains_query())
+    assert result.failure is None
+    assert len(result.candidates) == 1
+    assert len(_search_executions(connection)) == 1
+
+
+def test_equals_only_query_does_not_probe_contains_capability() -> None:
+    connection = _FakeConnection(
+        pg_trgm_available=False,
+        ranked_rows=[
+            {
+                "catalog_id": _CATALOG_ID,
+                "offer_id": "offer-a",
+                "source_revision_norm": "rev-structured",
+                "source_revision": "rev-structured",
+                "matched_constraint_count": 1,
+            }
+        ],
+    )
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(
+        StructuredSearchQuery(
+            constraints=(
+                StructuredAttributeConstraint(
+                    attribute_name="Brand",
+                    operator=StructuredConstraintOperator.EQUALS,
+                    value="Samsung",
+                ),
+            )
+        )
+    )
+    assert result.failure is None
+    assert _capability_executions(connection) == []
+
+
+def test_contains_capability_result_is_cached() -> None:
+    connection = _FakeConnection(
+        pg_trgm_available=True,
+        contains_index=_configured_contains_index(),
+        ranked_rows=[],
+    )
+    adapter = _adapter_with_connection(connection)
+    first = adapter.search(_contains_query())
+    assert first.failure is None
+    capability_count_after_first = len(_capability_executions(connection))
+    second = adapter.search(_contains_query())
+    assert second.failure is None
+    assert len(_capability_executions(connection)) == capability_count_after_first
 
 
 def test_contains_branch_included_when_requested() -> None:

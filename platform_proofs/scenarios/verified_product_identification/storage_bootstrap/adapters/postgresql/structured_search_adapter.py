@@ -38,7 +38,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
     StructuredAttributeTableSpec,
-    pg_trgm_extension_available,
+    structured_contains_capability_available,
     structured_constraint_search_dml,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_structured_row import (
@@ -164,8 +164,7 @@ class PostgreSqlStructuredCandidateSearchAdapter:
                 failure=CatalogSearchFailure(
                     kind=CatalogSearchFailureKind.INVALID_QUERY,
                     message=(
-                        "structured CONTAINS requires pg_trgm extension and "
-                        "vpi_structured_value_trgm_idx index capability"
+                        "CONTAINS requires pg_trgm and compatible trigram index"
                     ),
                 ),
             )
@@ -204,10 +203,14 @@ class PostgreSqlStructuredCandidateSearchAdapter:
     def _resolve_contains_capability(self) -> bool:
         if self._contains_capability_available is not None:
             return self._contains_capability_available
+        table_spec = StructuredAttributeTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.structured_attribute_table_name,
+        )
         try:
             with self._provider.connection() as session:
                 self._apply_session_limits(session)
-                available = pg_trgm_extension_available(session)
+                available = structured_contains_capability_available(session, table_spec)
         except (OSError, ConnectionError):
             available = False
         self._contains_capability_available = available

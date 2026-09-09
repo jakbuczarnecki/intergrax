@@ -1146,6 +1146,45 @@ def pg_trgm_extension_available(session: PostgreSQLSession) -> bool:
     return row is not None
 
 
+def _structured_contains_index_compatible(
+    session: PostgreSQLSession,
+    spec: StructuredAttributeTableSpec,
+) -> bool:
+    row = session.execute(
+        """
+        SELECT 1 AS present
+        FROM pg_index idx
+        JOIN pg_class index_class ON index_class.oid = idx.indexrelid
+        JOIN pg_class table_class ON table_class.oid = idx.indrelid
+        JOIN pg_namespace table_ns ON table_ns.oid = table_class.relnamespace
+        JOIN pg_am access_method ON access_method.oid = index_class.relam
+        JOIN pg_attribute column_attr
+          ON column_attr.attrelid = table_class.oid
+         AND column_attr.attnum = idx.indkey[1]
+         AND NOT column_attr.attisdropped
+        JOIN pg_opclass operator_class ON operator_class.oid = idx.indclass[1]
+        WHERE table_ns.nspname = %s
+          AND table_class.relname = %s
+          AND index_class.relname = %s
+          AND access_method.amname = 'gin'
+          AND column_attr.attname = 'normalized_text_value'
+          AND operator_class.opcname = 'gin_trgm_ops'
+        LIMIT 1
+        """,
+        (spec.schema_name, spec.table_name, _STRUCTURED_CONTAINS_INDEX_NAME),
+    ).fetchone()
+    return row is not None
+
+
+def structured_contains_capability_available(
+    session: PostgreSQLSession,
+    spec: StructuredAttributeTableSpec,
+) -> bool:
+    if not pg_trgm_extension_available(session):
+        return False
+    return _structured_contains_index_compatible(session, spec)
+
+
 def verify_structured_attribute_table_compatible(
     session: PostgreSQLSession,
     spec: StructuredAttributeTableSpec,
@@ -1215,22 +1254,11 @@ def verify_structured_attribute_table_compatible(
                 f"{index_name}"
             )
 
-    if require_contains_index:
-        contains_row = session.execute(
-            """
-            SELECT indexname
-            FROM pg_indexes
-            WHERE schemaname = %s
-              AND tablename = %s
-              AND indexname = %s
-            """,
-            (spec.schema_name, spec.table_name, _STRUCTURED_CONTAINS_INDEX_NAME),
-        ).fetchone()
-        if contains_row is None:
-            raise PostgreSqlBootstrapSchemaError(
-                "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing structured CONTAINS index "
-                f"{_STRUCTURED_CONTAINS_INDEX_NAME}"
-            )
+    if require_contains_index and not _structured_contains_index_compatible(session, spec):
+        raise PostgreSqlBootstrapSchemaError(
+            "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing structured CONTAINS index "
+            f"{_STRUCTURED_CONTAINS_INDEX_NAME}"
+        )
 
 
 def structured_constraint_search_dml(
@@ -1241,6 +1269,8 @@ def structured_constraint_search_dml(
     _, _, _, sql = import_psycopg()
     contains_branch = sql.SQL("")
     if include_contains_branch:
+        # Capability gate must prove pg_trgm and vpi_structured_value_trgm_idx before
+        # this ILIKE branch is emitted; no unindexed fallback is permitted.
         contains_branch = sql.SQL(
             """
             UNION ALL
