@@ -103,6 +103,8 @@ def _configuration() -> PostgreSqlBootstrapConfiguration:
         schema_name="vpi_test_schema",
         table_name="vpi_data_pack_relational_record",
         identifier_table_name="vpi_product_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
     )
 
 
@@ -358,6 +360,8 @@ def test_lookup_sql_schema_and_table_explicitly_qualified() -> None:
         schema_name="vpi_lookup_schema",
         table_name="vpi_data_pack_relational_record",
         identifier_table_name="vpi_lookup_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
     )
     connection = _FakeConnection(rows=[])
     adapter = _adapter_with_connection(connection, configuration=configuration)

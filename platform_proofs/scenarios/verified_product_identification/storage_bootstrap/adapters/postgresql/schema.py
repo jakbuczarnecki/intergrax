@@ -55,6 +55,39 @@ _IDENTIFIER_REQUIRED_CONSTRAINTS: frozenset[str] = frozenset(
 
 _IDENTIFIER_LOOKUP_INDEX_NAME = "vpi_product_identifiers_lookup_idx"
 
+_LEXICAL_DOCUMENT_REQUIRED_COLUMNS: tuple[tuple[str, str, str], ...] = (
+    ("catalog_id", "text", "NO"),
+    ("offer_id", "text", "NO"),
+    ("source_revision_norm", "text", "NO"),
+    ("source_revision", "text", "YES"),
+    ("lexical_document", "text", "NO"),
+    ("document_hash", "text", "NO"),
+    ("document_length", "integer", "NO"),
+    ("derivation_version", "text", "NO"),
+)
+
+_LEXICAL_DOCUMENT_REQUIRED_CONSTRAINTS: frozenset[str] = frozenset(
+    {
+        "vpi_lexical_document_pk",
+    }
+)
+
+_LEXICAL_POSTING_REQUIRED_COLUMNS: tuple[tuple[str, str, str], ...] = (
+    ("term", "text", "NO"),
+    ("catalog_id", "text", "NO"),
+    ("offer_id", "text", "NO"),
+    ("source_revision_norm", "text", "NO"),
+    ("term_frequency", "integer", "NO"),
+)
+
+_LEXICAL_POSTING_REQUIRED_CONSTRAINTS: frozenset[str] = frozenset(
+    {
+        "vpi_lexical_posting_pk",
+    }
+)
+
+_LEXICAL_POSTING_LOOKUP_INDEX_NAME = "vpi_lexical_posting_term_idx"
+
 
 @dataclass(frozen=True, slots=True)
 class RelationalTableSpec:
@@ -64,6 +97,18 @@ class RelationalTableSpec:
 
 @dataclass(frozen=True, slots=True)
 class IdentifierTableSpec:
+    schema_name: str
+    table_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class LexicalDocumentTableSpec:
+    schema_name: str
+    table_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class LexicalPostingTableSpec:
     schema_name: str
     table_name: str
 
@@ -162,6 +207,284 @@ def identifier_insert_dml(spec: IdentifierTableSpec) -> Composable:
         ON CONFLICT DO NOTHING
         """
     ).format(table=qualified_identifier_table(spec))
+
+
+def create_lexical_document_table_ddl(spec: LexicalDocumentTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    qualified = sql.SQL("{}.{}").format(
+        sql.Identifier(spec.schema_name),
+        sql.Identifier(spec.table_name),
+    )
+    return sql.SQL(
+        """
+        CREATE TABLE IF NOT EXISTS {table} (
+            catalog_id TEXT NOT NULL,
+            offer_id TEXT NOT NULL,
+            source_revision_norm TEXT NOT NULL DEFAULT '',
+            source_revision TEXT,
+            lexical_document TEXT NOT NULL,
+            document_hash TEXT NOT NULL,
+            document_length INTEGER NOT NULL,
+            derivation_version TEXT NOT NULL,
+            CONSTRAINT vpi_lexical_document_pk
+                PRIMARY KEY (catalog_id, offer_id, source_revision_norm)
+        )
+        """
+    ).format(table=qualified)
+
+
+def create_lexical_posting_table_ddl(spec: LexicalPostingTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    qualified = sql.SQL("{}.{}").format(
+        sql.Identifier(spec.schema_name),
+        sql.Identifier(spec.table_name),
+    )
+    return sql.SQL(
+        """
+        CREATE TABLE IF NOT EXISTS {table} (
+            term TEXT NOT NULL,
+            catalog_id TEXT NOT NULL,
+            offer_id TEXT NOT NULL,
+            source_revision_norm TEXT NOT NULL DEFAULT '',
+            term_frequency INTEGER NOT NULL,
+            CONSTRAINT vpi_lexical_posting_pk
+                PRIMARY KEY (
+                    term,
+                    catalog_id,
+                    offer_id,
+                    source_revision_norm
+                )
+        )
+        """
+    ).format(table=qualified)
+
+
+def create_lexical_posting_lookup_index_ddl(spec: LexicalPostingTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    qualified = sql.SQL("{}.{}").format(
+        sql.Identifier(spec.schema_name),
+        sql.Identifier(spec.table_name),
+    )
+    return sql.SQL(
+        """
+        CREATE INDEX IF NOT EXISTS {index_name}
+        ON {table} (term)
+        """
+    ).format(
+        index_name=sql.Identifier(_LEXICAL_POSTING_LOOKUP_INDEX_NAME),
+        table=qualified,
+    )
+
+
+def qualified_lexical_document_table(spec: LexicalDocumentTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL("{}.{}").format(
+        sql.Identifier(spec.schema_name),
+        sql.Identifier(spec.table_name),
+    )
+
+
+def qualified_lexical_posting_table(spec: LexicalPostingTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL("{}.{}").format(
+        sql.Identifier(spec.schema_name),
+        sql.Identifier(spec.table_name),
+    )
+
+
+def lexical_document_insert_dml(spec: LexicalDocumentTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        INSERT INTO {table} (
+            catalog_id,
+            offer_id,
+            source_revision_norm,
+            source_revision,
+            lexical_document,
+            document_hash,
+            document_length,
+            derivation_version
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+        """
+    ).format(table=qualified_lexical_document_table(spec))
+
+
+def lexical_posting_insert_dml(spec: LexicalPostingTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        INSERT INTO {table} (
+            term,
+            catalog_id,
+            offer_id,
+            source_revision_norm,
+            term_frequency
+        )
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+        """
+    ).format(table=qualified_lexical_posting_table(spec))
+
+
+def lexical_corpus_stats_dml(spec: LexicalDocumentTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        SELECT
+            COUNT(*) AS document_count,
+            COALESCE(AVG(document_length), 0) AS average_document_length
+        FROM {table}
+        """
+    ).format(table=qualified_lexical_document_table(spec))
+
+
+def lexical_posting_lookup_dml(spec: LexicalPostingTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        SELECT
+            term,
+            catalog_id,
+            offer_id,
+            source_revision_norm,
+            term_frequency
+        FROM {table}
+        WHERE term = ANY(%s)
+        """
+    ).format(table=qualified_lexical_posting_table(spec))
+
+
+def lexical_document_lookup_dml(spec: LexicalDocumentTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        SELECT
+            catalog_id,
+            offer_id,
+            source_revision_norm,
+            source_revision,
+            document_length
+        FROM {table}
+        WHERE catalog_id = %s
+          AND offer_id = %s
+          AND source_revision_norm = %s
+        """
+    ).format(table=qualified_lexical_document_table(spec))
+
+
+def verify_lexical_document_table_compatible(
+    session: PostgreSQLSession,
+    spec: LexicalDocumentTableSpec,
+) -> None:
+    columns = session.execute(
+        """
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s
+        ORDER BY ordinal_position
+        """,
+        (spec.schema_name, spec.table_name),
+    ).fetchall()
+    if not columns:
+        raise PostgreSqlBootstrapSchemaError(
+            "POSTGRESQL_SCHEMA_INCOMPATIBLE: lexical document table missing"
+        )
+
+    actual_columns = {
+        (str(row["column_name"]), str(row["data_type"]), str(row["is_nullable"]))
+        for row in columns
+    }
+    for required_name, required_type, required_nullable in _LEXICAL_DOCUMENT_REQUIRED_COLUMNS:
+        if (required_name, required_type, required_nullable) not in actual_columns:
+            raise PostgreSqlBootstrapSchemaError(
+                "POSTGRESQL_SCHEMA_INCOMPATIBLE: "
+                f"missing or incompatible lexical document column {required_name}"
+            )
+
+    constraints = session.execute(
+        """
+        SELECT tc.constraint_name
+        FROM information_schema.table_constraints tc
+        WHERE tc.table_schema = %s
+          AND tc.table_name = %s
+          AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE')
+        """,
+        (spec.schema_name, spec.table_name),
+    ).fetchall()
+    present = {str(row["constraint_name"]) for row in constraints}
+    missing = sorted(_LEXICAL_DOCUMENT_REQUIRED_CONSTRAINTS - present)
+    if missing:
+        raise PostgreSqlBootstrapSchemaError(
+            "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing lexical document constraints "
+            + ", ".join(missing)
+        )
+
+
+def verify_lexical_posting_table_compatible(
+    session: PostgreSQLSession,
+    spec: LexicalPostingTableSpec,
+) -> None:
+    columns = session.execute(
+        """
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s
+        ORDER BY ordinal_position
+        """,
+        (spec.schema_name, spec.table_name),
+    ).fetchall()
+    if not columns:
+        raise PostgreSqlBootstrapSchemaError(
+            "POSTGRESQL_SCHEMA_INCOMPATIBLE: lexical posting table missing"
+        )
+
+    actual_columns = {
+        (str(row["column_name"]), str(row["data_type"]), str(row["is_nullable"]))
+        for row in columns
+    }
+    for required_name, required_type, required_nullable in _LEXICAL_POSTING_REQUIRED_COLUMNS:
+        if (required_name, required_type, required_nullable) not in actual_columns:
+            raise PostgreSqlBootstrapSchemaError(
+                "POSTGRESQL_SCHEMA_INCOMPATIBLE: "
+                f"missing or incompatible lexical posting column {required_name}"
+            )
+
+    constraints = session.execute(
+        """
+        SELECT tc.constraint_name
+        FROM information_schema.table_constraints tc
+        WHERE tc.table_schema = %s
+          AND tc.table_name = %s
+          AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE')
+        """,
+        (spec.schema_name, spec.table_name),
+    ).fetchall()
+    present = {str(row["constraint_name"]) for row in constraints}
+    missing = sorted(_LEXICAL_POSTING_REQUIRED_CONSTRAINTS - present)
+    if missing:
+        raise PostgreSqlBootstrapSchemaError(
+            "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing lexical posting constraints "
+            + ", ".join(missing)
+        )
+
+    index_row = session.execute(
+        """
+        SELECT indexname
+        FROM pg_indexes
+        WHERE schemaname = %s
+          AND tablename = %s
+          AND indexname = %s
+        """,
+        (spec.schema_name, spec.table_name, _LEXICAL_POSTING_LOOKUP_INDEX_NAME),
+    ).fetchone()
+    if index_row is None:
+        raise PostgreSqlBootstrapSchemaError(
+            "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing lexical posting lookup index "
+            f"{_LEXICAL_POSTING_LOOKUP_INDEX_NAME}"
+        )
 
 
 def identifier_lookup_dml(spec: IdentifierTableSpec) -> Composable:

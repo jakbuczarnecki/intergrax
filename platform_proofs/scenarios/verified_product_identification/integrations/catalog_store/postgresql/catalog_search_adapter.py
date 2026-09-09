@@ -1,4 +1,11 @@
-"""PostgreSQL reference adapters for catalog search ports."""
+"""PostgreSQL reference adapters for catalog search ports.
+
+LEGACY / REFERENCE ONLY — not canonical production retrieval.
+
+The lexical implementation in this module uses ``record_json ILIKE`` and a
+rank-derived fake ``bm25_score``. Production VPI lexical retrieval uses the
+indexed BM25 adapter in ``storage_bootstrap/adapters/postgresql/lexical_search_adapter.py``.
+"""
 
 from __future__ import annotations
 

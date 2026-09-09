@@ -27,14 +27,27 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     ProjectedIdentifierRow,
     project_identifiers_from_load_record,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.lexical_projection import (
+    project_lexical_from_load_record,
+    project_lexical_postings,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
     IdentifierTableSpec,
+    LexicalDocumentTableSpec,
+    LexicalPostingTableSpec,
     RelationalTableSpec,
     create_identifier_lookup_index_ddl,
     create_identifier_table_ddl,
+    create_lexical_document_table_ddl,
+    create_lexical_posting_lookup_index_ddl,
+    create_lexical_posting_table_ddl,
     create_table_ddl,
     identifier_insert_dml,
+    lexical_document_insert_dml,
+    lexical_posting_insert_dml,
     verify_identifier_table_compatible,
+    verify_lexical_document_table_compatible,
+    verify_lexical_posting_table_compatible,
     verify_table_compatible,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
@@ -61,6 +74,8 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 
 _InsertSqlParams = tuple[str, str, str, str | None, int, str, str, str, str]
 _IdentifierInsertParams = tuple[str, str, str, str | None, str, str, str, str]
+_LexicalDocumentInsertParams = tuple[str, str, str, str | None, str, str, int, str]
+_LexicalPostingInsertParams = tuple[str, str, str, str, int]
 
 
 def _source_revision_norm(source_revision: str | None) -> str:
@@ -133,6 +148,14 @@ class PostgreSqlRelationalStorageAdapter:
             schema_name=physical.schema_name,
             table_name=self._configuration.identifier_table_name,
         )
+        lexical_document_spec = LexicalDocumentTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.lexical_document_table_name,
+        )
+        lexical_posting_spec = LexicalPostingTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.lexical_posting_table_name,
+        )
         try:
             with self._provider.transaction(
                 isolation_level=PostgreSQLIsolationLevel.READ_COMMITTED,
@@ -144,6 +167,13 @@ class PostgreSqlRelationalStorageAdapter:
                 session.execute_statement(create_identifier_table_ddl(identifier_spec))
                 session.execute_statement(create_identifier_lookup_index_ddl(identifier_spec))
                 verify_identifier_table_compatible(session, identifier_spec)
+                session.execute_statement(create_lexical_document_table_ddl(lexical_document_spec))
+                verify_lexical_document_table_compatible(session, lexical_document_spec)
+                session.execute_statement(create_lexical_posting_table_ddl(lexical_posting_spec))
+                session.execute_statement(
+                    create_lexical_posting_lookup_index_ddl(lexical_posting_spec)
+                )
+                verify_lexical_posting_table_compatible(session, lexical_posting_spec)
         except PostgreSqlBootstrapSchemaError:
             raise
         except PostgreSqlBootstrapConfigurationError:
@@ -290,6 +320,7 @@ class PostgreSqlRelationalStorageAdapter:
                 physical,
                 project_identifiers_from_load_record(record),
             )
+            self._write_lexical_rows(session, record)
             return "written"
 
         existing = self._fetch_by_source_identity(session, physical, record.source_ref)
@@ -361,6 +392,46 @@ class PostgreSqlRelationalStorageAdapter:
                 row.source_field,
             )
             session.execute(insert_sql, params)
+
+    def _write_lexical_rows(
+        self,
+        session: PostgreSQLSession,
+        record: RelationalLoadRecord,
+    ) -> None:
+        projection = project_lexical_from_load_record(record)
+        if projection is None:
+            return
+
+        document_spec = LexicalDocumentTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_document_table_name,
+        )
+        posting_spec = LexicalPostingTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_posting_table_name,
+        )
+        revision_norm = _source_revision_norm(record.source_ref.source_revision)
+        document_params: _LexicalDocumentInsertParams = (
+            record.source_ref.catalog_id,
+            record.source_ref.offer_id.value,
+            revision_norm,
+            record.source_ref.source_revision,
+            projection.lexical_document,
+            projection.document_hash,
+            projection.document_length,
+            projection.derivation_version,
+        )
+        session.execute(lexical_document_insert_dml(document_spec), document_params)
+        posting_insert_sql = lexical_posting_insert_dml(posting_spec)
+        for posting in project_lexical_postings(projection):
+            posting_params: _LexicalPostingInsertParams = (
+                posting.term,
+                posting.catalog_id,
+                posting.offer_id,
+                posting.source_revision_norm,
+                posting.term_frequency,
+            )
+            session.execute(posting_insert_sql, posting_params)
 
     def _verify_record(
         self,
