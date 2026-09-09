@@ -82,6 +82,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.investigato
     THROUGHPUT_EVIDENCE_ID,
     WORKLOAD_EVIDENCE_ID,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+    PreReconciliationValidationError,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     EVALUATOR_LOOP_MAX_ITERATIONS,
     OUTCOME_RESOLVED,
@@ -277,7 +280,7 @@ async def test_completion_gate_required_on_resolved_path() -> None:
 async def test_completion_gate_blocks_resolved_on_real_scenario_path() -> None:
     fixture_bundle = build_fixture_runtime_bundle()
     bundle = fixture_bundle.bundle
-    with pytest.raises(RuntimeError, match="incident_terminal_state_not_accepted"):
+    with pytest.raises(PreReconciliationValidationError):
         await execute_with_completion_gate_blocked(bundle)
 
 

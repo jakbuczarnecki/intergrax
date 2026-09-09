@@ -71,6 +71,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     normalize_evidence_gathering_stop_reason,
     reconcile_investigation_completion,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+    enforce_pre_reconciliation_validation_clean_transition,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_completion_gate import (
     CompletionEligibilityGateConfig,
     assert_ai_incident_completion_eligible,
@@ -498,6 +501,13 @@ async def execute_resolved_skeleton(
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
     persist_terminal_acceptance_diagnostic(diagnostic)
+    enforce_pre_reconciliation_validation_clean_transition(
+        validation_valid=final_validation.valid,
+        validation_errors=tuple(final_validation.errors),
+        revision_budget_remaining=max_decision_revisions,
+        completion_mode=completion_mode,
+        has_supported_diagnosis=has_supported_diagnosis,
+    )
     reconciled = reconcile_investigation_completion(
         model_intent=completion_intent_from_completion_mode(completion_mode),
         critic_verdict_passed=critic_verdict_passed,

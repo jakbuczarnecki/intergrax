@@ -23,6 +23,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
     CompletionReconciliationError,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+    PreReconciliationValidationError,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     ScenarioExecutionResult,
     execute_resolved_skeleton,
@@ -140,6 +143,40 @@ def _signals_from_result(
         reconciliation_model_intent=None,
         reconciliation_has_supported_diagnosis=None,
         reconciliation_validation_errors=(),
+    )
+
+
+def _signals_from_pre_reconciliation_error(
+    exc: PreReconciliationValidationError,
+    *,
+    strict_tool_capability: bool,
+) -> AiIncidentQualificationRunSignals:
+    diagnostic = exc.diagnostic
+    return AiIncidentQualificationRunSignals(
+        selected_tool_ids=(),
+        executed_tool_ids=(),
+        tool_invocation_count=0,
+        planner_round_count=0,
+        evidence_node_count=0,
+        initial_evidence_count=0,
+        follow_up_evidence_count=0,
+        evidence_gathering_stop_reason="",
+        terminal_outcome=None,
+        model_completion_intent=None,
+        reconciliation_result=None,
+        critic_verdict_passed=None,
+        evaluator_passed=False,
+        evaluator_failures=(),
+        validation_error_categories=diagnostic.validation_errors,
+        strict_tool_capability=strict_tool_capability,
+        trace_readback_pass=False,
+        trace_event_count=0,
+        route="unavailable",
+        stop_reason=None,
+        reconciliation_error_reason=diagnostic.recovery_status.value,
+        reconciliation_model_intent=diagnostic.completion_mode,
+        reconciliation_has_supported_diagnosis=diagnostic.has_supported_diagnosis,
+        reconciliation_validation_errors=diagnostic.validation_errors,
     )
 
 
@@ -302,6 +339,25 @@ async def execute_ai_incident_qualification_run(
     try:
         result = await execute_resolved_skeleton(bundle)
         evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
+    except PreReconciliationValidationError as exc:
+        observation = observation_from_scenario_execution_exception(exc)
+        failed_run_id = mint_run_id()
+        return AiIncidentQualificationRunOutcome(
+            run_index=run_index,
+            valid_model_trial=True,
+            environment_event=False,
+            run_id=failed_run_id,
+            signals=_signals_from_pre_reconciliation_error(
+                exc,
+                strict_tool_capability=strict_tool_capability,
+            ),
+            run_result=build_decision_qualification_run_result(
+                run_id=failed_run_id,
+                observation=observation,
+                evaluator_passed=False,
+            ),
+            block_reason=f"{type(exc).__name__}: {exc}",
+        )
     except CompletionReconciliationError as exc:
         observation = observation_from_scenario_execution_exception(exc)
         failed_run_id = mint_run_id()

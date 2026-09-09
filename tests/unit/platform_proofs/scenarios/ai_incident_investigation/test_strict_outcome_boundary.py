@@ -6,6 +6,9 @@ from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle
 import pytest
 
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+    PreReconciliationValidationError,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
@@ -35,7 +38,7 @@ async def test_valid_unresolved_terminal_outcome() -> None:
 @pytest.mark.asyncio
 async def test_critic_failure_does_not_return_unresolved() -> None:
     bundle = build_runtime_bundle()
-    with pytest.raises(RuntimeError, match=TERMINAL_STATE_NOT_ACCEPTED):
+    with pytest.raises(PreReconciliationValidationError):
         await execute_with_completion_gate_blocked(bundle)
 
 

@@ -223,9 +223,26 @@ def observation_from_scenario_execution_exception(
     from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
         CompletionReconciliationError,
     )
+    from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+        PreReconciliationValidationError,
+    )
     from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
         TERMINAL_STATE_NOT_ACCEPTED,
     )
+
+    if isinstance(exc, PreReconciliationValidationError):
+        return DecisionQualificationObservation(
+            boundary=DecisionFailureBoundary.PHASE_VALIDATION,
+            platform_contract=PlatformContractQualificationSignal(trace_finalized=True),
+            model_behavior=ModelBehaviorQualificationSignal(
+                unsupported_completion=True,
+                behavior_boundary=DecisionFailureBoundary.PHASE_VALIDATION,
+            ),
+            evaluator=EvaluatorQualificationSignal(passed=False),
+            provider=ProviderQualificationSignal(),
+            environment=EnvironmentQualificationSignal(),
+            observability=ObservabilityQualificationSignal(),
+        )
 
     if isinstance(exc, CompletionReconciliationError):
         return DecisionQualificationObservation(

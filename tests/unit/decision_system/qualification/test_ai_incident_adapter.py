@@ -16,6 +16,18 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     CompletionReconciliationError,
     CompletionReconciliationFailureReason,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+    PreReconciliationRecoveryStatus,
+    PreReconciliationTransitionDecision,
+    PreReconciliationTransitionOutcome,
+    PreReconciliationValidationError,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
+    COMPLETION_UNRESOLVED,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     CompletionIntent,
 )
@@ -94,6 +106,26 @@ def test_adapter_maps_epistemic_failure_id_without_string_classifier() -> None:
     assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
     assert result.reason is DecisionFailureReason.EPISTEMIC_CONTRADICTION
     assert not result.is_platform_failure
+
+
+def test_adapter_maps_pre_reconciliation_validation_error_to_model_unsupported_completion() -> None:
+    observation = observation_from_scenario_execution_exception(
+        PreReconciliationValidationError(
+            PreReconciliationTransitionDecision(
+                outcome=PreReconciliationTransitionOutcome.REJECTED,
+                validation_errors=(UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,),
+                recovery_status=PreReconciliationRecoveryStatus.BUDGET_EXHAUSTED,
+                revision_budget_remaining=0,
+                completion_mode=COMPLETION_UNRESOLVED,
+                has_supported_diagnosis=True,
+                recovery_attempted=False,
+            )
+        )
+    )
+    result = classify_decision_failure(observation)
+    assert result is not None
+    assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
+    assert result.reason is DecisionFailureReason.UNSUPPORTED_COMPLETION
 
 
 def test_adapter_maps_completion_reconciliation_error_to_model_unsupported_completion() -> None:
