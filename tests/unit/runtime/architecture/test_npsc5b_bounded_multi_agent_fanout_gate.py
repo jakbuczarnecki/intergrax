@@ -33,15 +33,27 @@ _FORBIDDEN_OWNERSHIP_CALLS = (
     "ExecutionRuntime",
     "StrategyExecutionRouter",
     "NexusLoop",
+    "GraphExecutor",
     "AgentExecutor",
 )
 
 _FORBIDDEN_DIRECT_EXECUTION_CALLS = (
     "AgentExecutor",
     "NexusLoop",
+    "GraphExecutor",
     "ExecutionRuntime",
     "ChildExecutionRunner",
     "DelegatedSubtaskService",
+    "MultiAgentCoordinationService",
+)
+
+_FORBIDDEN_SCHEDULER_PATTERNS = (
+    re.compile(r"\basyncio\.Semaphore\b"),
+    re.compile(r"\basyncio\.gather\b"),
+    re.compile(r"\basyncio\.create_task\b"),
+    re.compile(r"\bTaskGroup\b"),
+    re.compile(r"\bBoundedFanOutExecutor\b"),
+    re.compile(r"\bAsyncioSemaphoreBoundedFanOutExecutor\b"),
 )
 
 _FORBIDDEN_PROHIBITED_PATTERNS = (
@@ -94,6 +106,18 @@ def _instantiation_calls(path: Path, class_names: tuple[str, ...]) -> list[str]:
     return hits
 
 
+def _pattern_violations(path: Path, patterns: tuple[re.Pattern[str], ...]) -> list[str]:
+    source = path.read_text(encoding="utf-8")
+    violations: list[str] = []
+    for pattern in patterns:
+        for match in pattern.finditer(source):
+            line = source.count("\n", 0, match.start()) + 1
+            violations.append(
+                f"{path.relative_to(_REPO_ROOT).as_posix()}:{line}:{match.group()}",
+            )
+    return violations
+
+
 @pytest.mark.gate
 def test_npsc5b_enforces_total_fan_out_item_limit() -> None:
     source = _NPSC5B_MODULE.read_text(encoding="utf-8")
@@ -102,11 +126,20 @@ def test_npsc5b_enforces_total_fan_out_item_limit() -> None:
 
 
 @pytest.mark.gate
-def test_npsc5b_validates_executor_outcomes() -> None:
+def test_npsc5b_validates_orchestration_outcomes() -> None:
     source = _NPSC5B_MODULE.read_text(encoding="utf-8")
-    assert "_normalize_executor_outcomes" in source
-    assert "FanOutExecutorContractError" in source
-    assert "EXECUTOR_CONTRACT_VIOLATION" in source
+    assert "_normalize_orchestration_outcomes" in source
+    assert "FanOutOrchestrationContractError" in source
+    assert "ORCHESTRATION_CONTRACT_VIOLATION" in source
+
+
+@pytest.mark.gate
+def test_npsc5b_declares_orchestration_port_boundary() -> None:
+    source = _NPSC5B_MODULE.read_text(encoding="utf-8")
+    assert "FanOutOrchestrationPort" in source
+    assert "orchestrate_fan_out" in source
+    modules = _imported_modules(_NPSC5B_MODULE)
+    assert not any(module.startswith("intergrax.runtime.nexus") for module in modules)
 
 
 @pytest.mark.gate
@@ -147,25 +180,25 @@ def test_npsc5b_no_execution_ownership_operations() -> None:
 
 
 @pytest.mark.gate
-def test_npsc5b_delegates_through_coordination_service() -> None:
-    source = _NPSC5B_MODULE.read_text(encoding="utf-8")
-    assert "MultiAgentCoordinationService" in source
-    assert "await coordination.coordinate" in source
-    assert "ChildExecutionPort" not in source
-    assert "ChildExecutionRunner" not in source
-    assert "DelegatedSubtaskService" not in source
+def test_npsc5b_no_local_scheduler_or_nexus_imports() -> None:
+    modules = _imported_modules(_NPSC5B_MODULE)
+    nexus_imports = sorted(
+        module for module in modules if module.startswith("intergrax.runtime.nexus")
+    )
+    assert nexus_imports == [], (
+        "fan-out production module must not import Nexus backend:\n"
+        + "\n".join(nexus_imports)
+    )
+    scheduler_violations = _pattern_violations(_NPSC5B_MODULE, _FORBIDDEN_SCHEDULER_PATTERNS)
+    assert scheduler_violations == [], (
+        "fan-out production module must not own local scheduling:\n"
+        + "\n".join(scheduler_violations)
+    )
 
 
 @pytest.mark.gate
 def test_npsc5b_no_prohibited_patterns() -> None:
-    source = _NPSC5B_MODULE.read_text(encoding="utf-8")
-    violations: list[str] = []
-    for pattern in _FORBIDDEN_PROHIBITED_PATTERNS:
-        for match in pattern.finditer(source):
-            line = source.count("\n", 0, match.start()) + 1
-            violations.append(
-                f"{_NPSC5B_MODULE.relative_to(_REPO_ROOT).as_posix()}:{line}:{match.group()}"
-            )
+    violations = _pattern_violations(_NPSC5B_MODULE, _FORBIDDEN_PROHIBITED_PATTERNS)
     assert violations == [], (
         "NPSC-5B production module contains prohibited patterns:\n"
         + "\n".join(violations)

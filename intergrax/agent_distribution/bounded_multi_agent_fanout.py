@@ -5,20 +5,16 @@
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final, Generic, NewType, Protocol, TypeVar
 
 from intergrax.agent_distribution.errors import AgentDistributionError
 from intergrax.agent_distribution.multi_agent_coordination import (
-    CoordinationCleanupError,
     CoordinationDelegation,
-    CoordinationError,
     CoordinationFailureCode,
     CoordinationRequest,
     CoordinationResult,
-    MultiAgentCoordinationService,
 )
 from intergrax.contracts.agent_run import RequestIdentity
 
@@ -55,7 +51,8 @@ class FanOutFailureCode(StrEnum):
     """Bounded semantic categories for fan-out boundary violations."""
 
     INVALID_FAN_OUT = "invalid_fan_out"
-    EXECUTOR_CONTRACT_VIOLATION = "executor_contract_violation"
+    ORCHESTRATION_CONTRACT_VIOLATION = "orchestration_contract_violation"
+    EXECUTOR_CONTRACT_VIOLATION = "orchestration_contract_violation"
 
 
 class FanOutError(AgentDistributionError):
@@ -83,14 +80,18 @@ class InvalidFanOutError(FanOutError):
         )
 
 
-class FanOutExecutorContractError(FanOutError):
-    """Executor returned outcomes that violate the fan-out contract."""
+class FanOutOrchestrationContractError(FanOutError):
+    """Orchestration returned outcomes that violate the fan-out contract."""
 
     def __init__(self, message: str) -> None:
         super().__init__(
             message,
-            failure_code=FanOutFailureCode.EXECUTOR_CONTRACT_VIOLATION,
+            failure_code=FanOutFailureCode.ORCHESTRATION_CONTRACT_VIOLATION,
         )
+
+
+class FanOutExecutorContractError(FanOutOrchestrationContractError):
+    """Backward-compatible alias for orchestration contract violations."""
 
 
 class FanOutItemStatus(StrEnum):
@@ -168,6 +169,18 @@ class FanOutResult(Generic[ResultT]):
         return any(item.status is FanOutItemStatus.FAILURE for item in self.items)
 
 
+class FanOutOrchestrationPort(Protocol[RequestT, ResultT]):
+    """Submit validated multi-specialist fan-out intent to canonical orchestration."""
+
+    async def orchestrate_fan_out(
+        self,
+        request: FanOutRequest[RequestT],
+        *,
+        principal: RequestIdentity,
+    ) -> tuple[FanOutItemOutcome[ResultT], ...]:
+        ...
+
+
 def validate_fan_out_request(request: FanOutRequest[object]) -> None:
     """Fail-closed validation for fan-out request contracts."""
     try:
@@ -204,59 +217,21 @@ def validate_fan_out_request(request: FanOutRequest[object]) -> None:
         seen_item_ids.add(item.item_id)
 
 
-async def _coordinate_item(
-    coordination: MultiAgentCoordinationService[RequestT, ResultT],
-    item: FanOutItem[RequestT],
-    *,
-    principal: RequestIdentity,
-) -> FanOutItemOutcome[ResultT]:
-    try:
-        coordination_result = await coordination.coordinate(
-            item.request,
-            delegation=item.delegation,
-            principal=principal,
-        )
-    except CoordinationCleanupError as exc:
-        return FanOutItemOutcome(
-            item_id=item.item_id,
-            status=FanOutItemStatus.FAILURE,
-            failure=FanOutItemFailure(
-                failure_code=CoordinationFailureCode.LEASE_RELEASE_FAILED,
-                message=str(exc),
-                partial_result=exc.result,
-            ),
-        )
-    except CoordinationError as exc:
-        return FanOutItemOutcome(
-            item_id=item.item_id,
-            status=FanOutItemStatus.FAILURE,
-            failure=FanOutItemFailure(
-                failure_code=exc.failure_code,
-                message=str(exc),
-            ),
-        )
-    return FanOutItemOutcome(
-        item_id=item.item_id,
-        status=FanOutItemStatus.SUCCESS,
-        result=coordination_result,
-    )
-
-
-def _normalize_executor_outcomes(
+def _normalize_orchestration_outcomes(
     request_items: tuple[FanOutItem[RequestT], ...],
     outcomes: tuple[FanOutItemOutcome[ResultT], ...],
 ) -> tuple[FanOutItemOutcome[ResultT], ...]:
-    """Validate executor output and project outcomes in request order."""
+    """Validate orchestration output and project outcomes in request order."""
     if len(outcomes) != len(request_items):
         raise FanOutExecutorContractError(
-            "executor outcome count must match request item count",
+            "orchestration outcome count must match request item count",
         )
 
     outcome_by_id: dict[FanOutItemId, FanOutItemOutcome[ResultT]] = {}
     for outcome in outcomes:
         if outcome.item_id in outcome_by_id:
             raise FanOutExecutorContractError(
-                f"duplicate executor outcome item_id: {outcome.item_id}",
+                f"duplicate orchestration outcome item_id: {outcome.item_id}",
             )
         outcome_by_id[outcome.item_id] = outcome
 
@@ -265,70 +240,24 @@ def _normalize_executor_outcomes(
         outcome = outcome_by_id.get(item.item_id)
         if outcome is None:
             raise FanOutExecutorContractError(
-                f"missing executor outcome for item_id: {item.item_id}",
+                f"missing orchestration outcome for item_id: {item.item_id}",
             )
         ordered.append(outcome)
 
     return tuple(ordered)
 
 
-class BoundedFanOutExecutor(Protocol[RequestT, ResultT]):
-    """Variation point for bounded fan-out execution without lifecycle ownership."""
-
-    async def execute(
-        self,
-        *,
-        items: tuple[FanOutItem[RequestT], ...],
-        max_concurrency: int,
-        coordination: MultiAgentCoordinationService[RequestT, ResultT],
-        principal: RequestIdentity,
-    ) -> tuple[FanOutItemOutcome[ResultT], ...]: ...
-
-
-class AsyncioSemaphoreBoundedFanOutExecutor(Generic[RequestT, ResultT]):
-    """Default bounded fan-out executor using local asyncio concurrency control."""
-
-    async def execute(
-        self,
-        *,
-        items: tuple[FanOutItem[RequestT], ...],
-        max_concurrency: int,
-        coordination: MultiAgentCoordinationService[RequestT, ResultT],
-        principal: RequestIdentity,
-    ) -> tuple[FanOutItemOutcome[ResultT], ...]:
-        semaphore = asyncio.Semaphore(max_concurrency)
-
-        async def _run_item(
-            item: FanOutItem[RequestT],
-        ) -> FanOutItemOutcome[ResultT]:
-            async with semaphore:
-                return await _coordinate_item(
-                    coordination,
-                    item,
-                    principal=principal,
-                )
-
-        return tuple(
-            await asyncio.gather(*(_run_item(item) for item in items)),
-        )
-
-
 class BoundedMultiAgentFanOutService(Generic[RequestT, ResultT]):
-    """Coordinate many bounded specialist delegations with deterministic fan-in."""
+    """Validate fan-out intent and project deterministic fan-in from orchestration."""
 
-    __slots__ = ("_coordination", "_executor")
+    __slots__ = ("_orchestration",)
 
     def __init__(
         self,
         *,
-        coordination: MultiAgentCoordinationService[RequestT, ResultT],
-        executor: BoundedFanOutExecutor[RequestT, ResultT] | None = None,
+        orchestration: FanOutOrchestrationPort[RequestT, ResultT],
     ) -> None:
-        self._coordination = coordination
-        self._executor = executor or AsyncioSemaphoreBoundedFanOutExecutor[
-            RequestT,
-            ResultT,
-        ]()
+        self._orchestration = orchestration
 
     async def fan_out(
         self,
@@ -337,13 +266,11 @@ class BoundedMultiAgentFanOutService(Generic[RequestT, ResultT]):
         principal: RequestIdentity,
     ) -> FanOutResult[ResultT]:
         validate_fan_out_request(request)
-        raw_outcomes = await self._executor.execute(
-            items=request.items,
-            max_concurrency=request.max_concurrency,
-            coordination=self._coordination,
+        raw_outcomes = await self._orchestration.orchestrate_fan_out(
+            request,
             principal=principal,
         )
-        outcomes = _normalize_executor_outcomes(request.items, raw_outcomes)
+        outcomes = _normalize_orchestration_outcomes(request.items, raw_outcomes)
         return FanOutResult(
             fan_out_id=request.fan_out_id,
             items=outcomes,
@@ -351,8 +278,6 @@ class BoundedMultiAgentFanOutService(Generic[RequestT, ResultT]):
 
 
 __all__ = [
-    "AsyncioSemaphoreBoundedFanOutExecutor",
-    "BoundedFanOutExecutor",
     "BoundedMultiAgentFanOutService",
     "FanOutError",
     "FanOutExecutorContractError",
@@ -363,6 +288,8 @@ __all__ = [
     "FanOutItemId",
     "FanOutItemOutcome",
     "FanOutItemStatus",
+    "FanOutOrchestrationContractError",
+    "FanOutOrchestrationPort",
     "FanOutRequest",
     "FanOutResult",
     "InvalidFanOutError",

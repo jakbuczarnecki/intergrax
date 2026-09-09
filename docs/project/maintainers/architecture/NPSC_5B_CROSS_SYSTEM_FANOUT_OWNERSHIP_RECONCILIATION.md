@@ -1,6 +1,6 @@
 # NPSC-5B/R1 — Cross-System Fan-Out Ownership Reconciliation
 
-**Status:** `FROZEN` (R1 architecture decision)
+**Status:** `FROZEN` (R1 architecture decision) · **R2:** `IMPLEMENTED`
 
 **Series:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In
 
@@ -226,12 +226,29 @@ Execution Strategy Resolution (StrategyExecutionRouter)
 
 ## 11. R2 migration plan
 
+**Status: IMPLEMENTED.**
+
 1. **Freeze contracts** — retain `FanOutRequest`, `FanOutItem`, `FanOutResult`, `FanOutItemOutcome` as Agent Distribution semantic contracts.
-2. **Remove duplicate scheduler** — delete `AsyncioSemaphoreBoundedFanOutExecutor` and `BoundedFanOutExecutor`; stop assigning scheduling ownership to Agent Distribution in NPSC-5 hub §8.1.
-3. **Rewire `BoundedMultiAgentFanOutService`** — degrade to validation + adapter that submits orchestration work through injected `ExecutionWorkPort` (ORCHESTRATION capability); fan-in projection consumes orchestration/Nexus results mapped back to `FanOutResult`.
+2. **Remove duplicate scheduler** — deleted `AsyncioSemaphoreBoundedFanOutExecutor` and `BoundedFanOutExecutor`.
+3. **Rewire `BoundedMultiAgentFanOutService`** — validation + `FanOutOrchestrationPort` adapter; fan-in projection from orchestration outcomes mapped to `FanOutResult`.
 4. **Preserve NPSC-5A path** — `MultiAgentCoordinationService` single-delegation unchanged; specialist resolution stays in Agent Distribution.
-5. **Update gates** — extend `test_npsc5b_bounded_multi_agent_fanout_gate.py` to forbid canonical scheduler ownership in Agent Distribution after R2.
-6. **Composition root** — wire ORCHESTRATION backend on `StrategyExecutionRouter` for fan-out adapter; no `NexusLoop` imports in `intergrax/agent_distribution/`.
+5. **Update gates** — `test_npsc5b_bounded_multi_agent_fanout_gate.py` forbids AD-local scheduling and Nexus imports.
+6. **Composition root** — `build_fan_out_orchestration_work_port` wires ORCHESTRATION via `ExecutionWorkPort` → `FanOutTopologyOrchestrator` → `GraphExecutor` (`max_parallel_nodes`).
+
+### R2 canonical path
+
+```text
+FanOutRequest
+→ BoundedMultiAgentFanOutService (validate)
+→ FanOutOrchestrationPort
+→ FanOutOrchestrationWorkPort / ExecutionWorkPort
+→ StrategyExecutionRouter (ORCHESTRATION)
+→ FanOutOrchestrationRouterDelegate
+→ FanOutTopologyOrchestrator
+→ GraphExecutor (Nexus bounded scheduling)
+→ per-slot MultiAgentCoordinationService → DelegatedSubtaskService → ChildExecutionPort
+→ FanOutResult
+```
 
 ---
 

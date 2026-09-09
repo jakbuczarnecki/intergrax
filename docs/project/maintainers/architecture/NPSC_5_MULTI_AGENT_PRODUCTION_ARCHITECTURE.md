@@ -4,7 +4,7 @@
 
 **Series owner:** Agent Distribution + frozen Execution Engine
 
-**Current phase:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In (R1 ownership reconciled; R2 migration pending)
+**Current phase:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In (**R2 IMPLEMENTED**)
 
 **R1 reconciliation:** [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md)
 
@@ -166,21 +166,27 @@ Nested delegation is already possible when a specialist acquired through `Delega
 
 ## 8.1 NPSC-5B — Bounded fan-out / fan-in
 
-> **R1 ownership freeze:** Fan-out scheduling and bounded parallelism are **not** canonical Agent Distribution responsibilities. See [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md). Current runtime still uses the pre-R2 scheduler; R2 migrates to Execution `ExecutionWorkPort` + ORCHESTRATION → Nexus.
+> **R1 ownership freeze:** Fan-out scheduling and bounded parallelism are **not** canonical Agent Distribution responsibilities. See [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md). **R2 IMPLEMENTED** — canonical path below.
 
-### Target integration (frozen)
+### Canonical integration (R2)
 
 ```text
 FanOutRequest (semantic contract — Agent Distribution)
         |
         v
-BoundedMultiAgentFanOutService (R2: adapter only)
+BoundedMultiAgentFanOutService (validation + fan-in projection)
         |
         v
-ExecutionWorkPort + ORCHESTRATION capability
+FanOutOrchestrationPort (semantic boundary)
         |
         v
-Nexus (bounded scheduling, fan-out/fan-in, topology)
+FanOutOrchestrationWorkPort / ExecutionWorkPort + ORCHESTRATION
+        |
+        v
+StrategyExecutionRouter → FanOutOrchestrationRouterDelegate
+        |
+        v
+FanOutTopologyOrchestrator → GraphExecutor (max_parallel_nodes)
         |
         +---- per slot: MultiAgentCoordinationService → DelegatedSubtaskService
         |
@@ -188,29 +194,15 @@ Nexus (bounded scheduling, fan-out/fan-in, topology)
 FanOutResult (deterministic fan-in projection)
 ```
 
-### Current implementation (pre-R2; scheduled for migration)
-
-```text
-Parent execution
-        |
-        v
-BoundedMultiAgentFanOutService
-        |
-        +---- canonical coordination (item A)
-        |
-        +---- canonical coordination (item B)
-        |
-        v
-deterministic fan-in (request order)
-```
-
-| Component | Package | R1/R2 status |
-| --------- | ------- | ------------ |
+| Component | Package | R2 status |
+| --------- | ------- | --------- |
 | `FanOutRequest` / `FanOutItem` | `intergrax/agent_distribution/` | `KEEP_AS_CONTRACT_ONLY` |
 | `FanOutResult` / `FanOutItemOutcome` | `intergrax/agent_distribution/` | `KEEP_AS_CONTRACT_ONLY` |
-| `BoundedMultiAgentFanOutService` | `intergrax/agent_distribution/` | R2: adapter to orchestration port (`DEPRECATE_IN_R2` current scheduler role) |
-| `AsyncioSemaphoreBoundedFanOutExecutor` | `intergrax/agent_distribution/` | `REMOVE_IN_R2` — duplicate scheduler |
-| `BoundedFanOutExecutor` | `intergrax/agent_distribution/` | `REMOVE_IN_R2` — invalid AD variation point |
+| `FanOutOrchestrationPort` | `intergrax/agent_distribution/` | `KEEP` — semantic orchestration boundary |
+| `BoundedMultiAgentFanOutService` | `intergrax/agent_distribution/` | `KEEP` — thin adapter (no scheduler) |
+| `FanOutOrchestrationWorkPort` | `intergrax/runtime/execution/` | `KEEP` — composition adapter |
+| `AsyncioSemaphoreBoundedFanOutExecutor` | removed in R2 | `REMOVED` |
+| `BoundedFanOutExecutor` | removed in R2 | `REMOVED` |
 | `MultiAgentCoordinationService` | `intergrax/agent_distribution/` | `KEEP` — single-delegation owner |
 | `DelegatedSubtaskService` | `intergrax/agent_distribution/` | `KEEP` — specialist child orchestration |
 

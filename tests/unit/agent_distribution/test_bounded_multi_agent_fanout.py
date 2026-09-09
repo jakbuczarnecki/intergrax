@@ -24,7 +24,6 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegationId,
 )
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
-    BoundedFanOutExecutor,
     BoundedMultiAgentFanOutService,
     FanOutExecutorContractError,
     FanOutId,
@@ -33,6 +32,7 @@ from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     FanOutItemId,
     FanOutItemOutcome,
     FanOutItemStatus,
+    FanOutOrchestrationPort,
     FanOutRequest,
     InvalidFanOutError,
     MAX_FAN_OUT_CONCURRENCY,
@@ -69,6 +69,9 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.delegated_subtask_child_port import (
     as_child_execution_port,
 )
+from intergrax.runtime.execution.multi_agent_fanout_orchestration import (
+    build_fan_out_orchestration_work_port,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from tests.unit.agent_distribution.test_delegated_subtasks import (
     OcrRequest,
@@ -89,6 +92,8 @@ from tests.unit.agent_distribution.test_multi_agent_coordination import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
 
 
 class _FanOutAcquisitionPlanFactory:
@@ -166,9 +171,18 @@ def _fan_out_item(
 
 
 def _build_fan_out_service(harness) -> BoundedMultiAgentFanOutService[OcrRequest, OcrResult]:
-    return BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(harness),
+    coordination = _build_coordination_service(harness)
+    orchestration = build_fan_out_orchestration_work_port(
+        coordination,
+        ledger=_UNLIMITED_LEDGER,
     )
+    return BoundedMultiAgentFanOutService(orchestration=orchestration)
+
+
+class _RejectingOrchestrationPort(FanOutOrchestrationPort[OcrRequest, OcrResult]):
+    async def orchestrate_fan_out(self, request, *, principal):
+        del request, principal
+        raise AssertionError("orchestration must not run for invalid fan-out request")
 
 
 async def _run_fan_out(
@@ -187,14 +201,21 @@ async def _run_fan_out(
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             del request
-            result = await fan_out.fan_out(
-                FanOutRequest(
-                    fan_out_id=FanOutId(fan_out_id),
-                    items=items,
-                    max_concurrency=max_concurrency,
-                ),
-                principal=admin_test_principal(),
+            budget_token = bind_root_execution_budget(
+                execution_id=require_active_execution_id(),
+                ledger=_UNLIMITED_LEDGER,
             )
+            try:
+                result = await fan_out.fan_out(
+                    FanOutRequest(
+                        fan_out_id=FanOutId(fan_out_id),
+                        items=items,
+                        max_concurrency=max_concurrency,
+                    ),
+                    principal=admin_test_principal(),
+                )
+            finally:
+                reset_active_execution_budget(budget_token)
             captured.append(result)
             return OcrResult(text="root-done")
 
@@ -220,13 +241,7 @@ def test_validate_fan_out_item_id_rejects_non_string() -> None:
 def test_fan_out_request_rejects_empty_fan_out_id() -> None:
     task_scope = mint_task_id()
     service = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(
-            build_delegated_harness(
-                candidates=(
-                    _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-                ),
-            ),
-        ),
+        orchestration=_RejectingOrchestrationPort(),
     )
     with pytest.raises(InvalidFanOutError):
         asyncio.run(
@@ -251,13 +266,7 @@ def test_fan_out_request_rejects_empty_fan_out_id() -> None:
 
 def test_fan_out_request_rejects_empty_items() -> None:
     service = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(
-            build_delegated_harness(
-                candidates=(
-                    _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-                ),
-            ),
-        ),
+        orchestration=_RejectingOrchestrationPort(),
     )
     with pytest.raises(InvalidFanOutError, match="non-empty"):
         asyncio.run(
@@ -276,13 +285,7 @@ def test_fan_out_request_rejects_empty_items() -> None:
 def test_fan_out_request_rejects_non_positive_concurrency(max_concurrency: int) -> None:
     task_scope = mint_task_id()
     service = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(
-            build_delegated_harness(
-                candidates=(
-                    _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-                ),
-            ),
-        ),
+        orchestration=_RejectingOrchestrationPort(),
     )
     with pytest.raises(InvalidFanOutError, match="positive"):
         asyncio.run(
@@ -308,13 +311,7 @@ def test_fan_out_request_rejects_non_positive_concurrency(max_concurrency: int) 
 def test_fan_out_request_rejects_duplicate_item_ids() -> None:
     task_scope = mint_task_id()
     service = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(
-            build_delegated_harness(
-                candidates=(
-                    _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-                ),
-            ),
-        ),
+        orchestration=_RejectingOrchestrationPort(),
     )
     with pytest.raises(InvalidFanOutError, match="duplicate"):
         asyncio.run(
@@ -347,13 +344,7 @@ def test_fan_out_request_rejects_duplicate_item_ids() -> None:
 def test_fan_out_request_rejects_invalid_item_id() -> None:
     task_scope = mint_task_id()
     service = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(
-            build_delegated_harness(
-                candidates=(
-                    _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-                ),
-            ),
-        ),
+        orchestration=_RejectingOrchestrationPort(),
     )
     with pytest.raises(InvalidFanOutError):
         asyncio.run(
@@ -384,13 +375,7 @@ def test_fan_out_request_rejects_invalid_item_id() -> None:
 def test_fan_out_request_rejects_concurrency_above_platform_limit() -> None:
     task_scope = mint_task_id()
     service = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(
-            build_delegated_harness(
-                candidates=(
-                    _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-                ),
-            ),
-        ),
+        orchestration=_RejectingOrchestrationPort(),
     )
     with pytest.raises(InvalidFanOutError, match=str(MAX_FAN_OUT_CONCURRENCY)):
         asyncio.run(
@@ -445,13 +430,7 @@ def test_validate_fan_out_request_accepts_at_item_limit() -> None:
 def test_fan_out_request_rejects_item_count_above_platform_limit() -> None:
     task_scope = mint_task_id()
     service = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(
-            build_delegated_harness(
-                candidates=(
-                    _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-                ),
-            ),
-        ),
+        orchestration=_RejectingOrchestrationPort(),
     )
     with pytest.raises(InvalidFanOutError, match=str(MAX_FAN_OUT_ITEMS)):
         asyncio.run(
@@ -476,9 +455,9 @@ async def test_fan_out_rejects_item_count_above_limit_before_execution() -> None
             _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
         ),
     )
-    inner = _build_coordination_service(harness)
-    tracker = _TrackingCoordinationService(inner=inner)
-    fan_out = BoundedMultiAgentFanOutService(coordination=tracker)
+    fan_out = BoundedMultiAgentFanOutService(
+        orchestration=_RejectingOrchestrationPort(),
+    )
     task_scope = mint_task_id()
     with pytest.raises(InvalidFanOutError, match=str(MAX_FAN_OUT_ITEMS)):
         await fan_out.fan_out(
@@ -492,7 +471,6 @@ async def test_fan_out_rejects_item_count_above_limit_before_execution() -> None
             ),
             principal=admin_test_principal(),
         )
-    assert tracker.calls == 0
 
 
 @pytest.mark.parametrize(
@@ -522,21 +500,19 @@ def test_fan_out_item_outcome_rejects_invalid_combinations(
         )
 
 
-class _StaticOutcomeExecutor(BoundedFanOutExecutor[OcrRequest, OcrResult]):
+class _StaticOrchestrationPort(FanOutOrchestrationPort[OcrRequest, OcrResult]):
     def __init__(self, outcomes: tuple[FanOutItemOutcome[OcrResult], ...]) -> None:
         self._outcomes = outcomes
-        self.execute_calls = 0
+        self.orchestrate_calls = 0
 
-    async def execute(
+    async def orchestrate_fan_out(
         self,
+        request: FanOutRequest[OcrRequest],
         *,
-        items: tuple[FanOutItem[OcrRequest], ...],
-        max_concurrency: int,
-        coordination: MultiAgentCoordinationService[OcrRequest, OcrResult],
         principal,
     ) -> tuple[FanOutItemOutcome[OcrResult], ...]:
-        del items, max_concurrency, coordination, principal
-        self.execute_calls += 1
+        del request, principal
+        self.orchestrate_calls += 1
         return self._outcomes
 
 
@@ -582,17 +558,14 @@ async def test_fan_out_reorders_executor_outcomes_to_request_order() -> None:
             lease_id="lease-c",
         ),
     )
-    executor = _StaticOutcomeExecutor(
+    orchestration = _StaticOrchestrationPort(
         (
             _contract_outcome("item-c"),
             _contract_outcome("item-a"),
             _contract_outcome("item-b"),
         ),
     )
-    fan_out = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(harness),
-        executor=executor,
-    )
+    fan_out = BoundedMultiAgentFanOutService(orchestration=orchestration)
     result = await fan_out.fan_out(
         FanOutRequest(
             fan_out_id=FanOutId("fan-out-reorder"),
@@ -650,11 +623,8 @@ async def test_fan_out_rejects_invalid_executor_outcomes(
             lease_id="lease-b",
         ),
     )
-    executor = _StaticOutcomeExecutor(outcomes)
-    fan_out = BoundedMultiAgentFanOutService(
-        coordination=_build_coordination_service(harness),
-        executor=executor,
-    )
+    orchestration = _StaticOrchestrationPort(outcomes)
+    fan_out = BoundedMultiAgentFanOutService(orchestration=orchestration)
     with pytest.raises(FanOutExecutorContractError):
         await fan_out.fan_out(
             FanOutRequest(
@@ -664,7 +634,7 @@ async def test_fan_out_rejects_invalid_executor_outcomes(
             ),
             principal=admin_test_principal(),
         )
-    assert executor.execute_calls == 1
+    assert orchestration.orchestrate_calls == 1
 
 
 @dataclass
@@ -743,6 +713,19 @@ class _TrackingCoordinationService:
         )
 
 
+class _TrackingOrchestrationPort(FanOutOrchestrationPort[OcrRequest, OcrResult]):
+    def __init__(
+        self,
+        inner: FanOutOrchestrationPort[OcrRequest, OcrResult],
+    ) -> None:
+        self._inner = inner
+        self.calls = 0
+
+    async def orchestrate_fan_out(self, request, *, principal):
+        self.calls += 1
+        return await self._inner.orchestrate_fan_out(request, principal=principal)
+
+
 @pytest.mark.asyncio
 async def test_fan_out_uses_coordination_service_not_direct_runner() -> None:
     harness = build_fan_out_harness(
@@ -752,7 +735,11 @@ async def test_fan_out_uses_coordination_service_not_direct_runner() -> None:
     )
     inner = _build_coordination_service(harness)
     tracker = _TrackingCoordinationService(inner=inner)
-    fan_out = BoundedMultiAgentFanOutService(coordination=tracker)
+    orchestration = build_fan_out_orchestration_work_port(
+        tracker,
+        ledger=_UNLIMITED_LEDGER,
+    )
+    fan_out = BoundedMultiAgentFanOutService(orchestration=orchestration)
     task_scope = mint_task_id()
     harness.task_scope_authority.task_scope_id = task_scope
     root = _root_identity()
@@ -778,14 +765,21 @@ async def test_fan_out_uses_coordination_service_not_direct_runner() -> None:
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             del request
-            await fan_out.fan_out(
-                FanOutRequest(
-                    fan_out_id=FanOutId("fan-out-track"),
-                    items=items,
-                    max_concurrency=2,
-                ),
-                principal=admin_test_principal(),
+            budget_token = bind_root_execution_budget(
+                execution_id=require_active_execution_id(),
+                ledger=_UNLIMITED_LEDGER,
             )
+            try:
+                await fan_out.fan_out(
+                    FanOutRequest(
+                        fan_out_id=FanOutId("fan-out-track"),
+                        items=items,
+                        max_concurrency=2,
+                    ),
+                    principal=admin_test_principal(),
+                )
+            finally:
+                reset_active_execution_budget(budget_token)
             return OcrResult(text="done")
 
     await ExecutionBoundary[OcrRequest, OcrResult](
@@ -1158,14 +1152,21 @@ async def _run_fan_out_with_authority(
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
             del request
-            result = await fan_out.fan_out(
-                FanOutRequest(
-                    fan_out_id=FanOutId("fan-out-auth"),
-                    items=items,
-                    max_concurrency=1,
-                ),
-                principal=admin_test_principal(),
+            budget_token = bind_root_execution_budget(
+                execution_id=require_active_execution_id(),
+                ledger=_UNLIMITED_LEDGER,
             )
+            try:
+                result = await fan_out.fan_out(
+                    FanOutRequest(
+                        fan_out_id=FanOutId("fan-out-auth"),
+                        items=items,
+                        max_concurrency=1,
+                    ),
+                    principal=admin_test_principal(),
+                )
+            finally:
+                reset_active_execution_budget(budget_token)
             captured.append(result)
             return OcrResult(text="done")
 
