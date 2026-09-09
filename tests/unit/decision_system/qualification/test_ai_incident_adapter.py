@@ -9,6 +9,12 @@ from intergrax.decision_system.qualification.taxonomy import (
     DecisionFailureCategory,
     DecisionFailureReason,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    CompletionReconciliationError,
+)
+from testing_support.decision_e2e.failure_observation_adapter import (
+    observation_from_scenario_execution_exception,
+)
 from testing_support.decision_e2e.failure_observation_adapter import (
     AI_INCIDENT_EPISTEMIC_FAILURE_ID,
     AI_INCIDENT_TOOL_USE_FAILURE_ID,
@@ -27,6 +33,32 @@ def test_adapter_maps_tool_runtime_not_exercised_to_model_tool_use_deficiency() 
     assert result.reason is DecisionFailureReason.TOOL_USE_DEFICIENCY
 
 
+def test_adapter_maps_insufficient_evidence_gathering_failure_ids() -> None:
+    observation = observation_from_ai_incident_evaluation(
+        failures=("staffing_attendance_not_gathered", "follow_up_not_via_tools"),
+        evaluator_passed=False,
+    )
+    result = classify_decision_failure(observation)
+    assert result is not None
+    assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
+    assert result.reason is DecisionFailureReason.TOOL_USE_DEFICIENCY
+
+
+def test_adapter_maps_revision_flow_failures_to_premature_completion() -> None:
+    observation = observation_from_ai_incident_evaluation(
+        failures=(
+            "telemetry_visible_before_revision",
+            "critic_falsification_missing",
+            "evidence_challenge_missing",
+        ),
+        evaluator_passed=False,
+    )
+    result = classify_decision_failure(observation)
+    assert result is not None
+    assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
+    assert result.reason is DecisionFailureReason.PREMATURE_COMPLETION
+
+
 def test_adapter_maps_epistemic_failure_id_without_string_classifier() -> None:
     observation = observation_from_ai_incident_evaluation(
         failures=(AI_INCIDENT_EPISTEMIC_FAILURE_ID,),
@@ -37,3 +69,13 @@ def test_adapter_maps_epistemic_failure_id_without_string_classifier() -> None:
     assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
     assert result.reason is DecisionFailureReason.EPISTEMIC_CONTRADICTION
     assert not result.is_platform_failure
+
+
+def test_adapter_maps_completion_reconciliation_error_to_model_unsupported_completion() -> None:
+    observation = observation_from_scenario_execution_exception(
+        CompletionReconciliationError("validation_errors_present_during_reconciliation")
+    )
+    result = classify_decision_failure(observation)
+    assert result is not None
+    assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
+    assert result.reason is DecisionFailureReason.UNSUPPORTED_COMPLETION
