@@ -33,9 +33,8 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
     SourceRecordRef,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.bm25_engine import (
-    Bm25CorpusStatistics,
-    Bm25IndexedDocument,
-    rank_bm25_documents,
+    BM25_B,
+    BM25_K1,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.configuration import (
     DEFAULT_APPLICATION_NAME,
@@ -45,11 +44,12 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     tokenize_lexical_document,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
+    LEXICAL_CORPUS_STATS_SINGLETON_KEY,
+    LexicalCorpusStatsTableSpec,
     LexicalDocumentTableSpec,
     LexicalPostingTableSpec,
-    lexical_corpus_stats_dml,
-    lexical_document_lookup_dml,
-    lexical_posting_lookup_dml,
+    LexicalTermStatsTableSpec,
+    lexical_bm25_ranked_search_dml,
 )
 
 
@@ -74,31 +74,25 @@ def _map_provider_failure(exc: BaseException) -> CatalogSearchFailure | None:
 
 
 @dataclass(frozen=True, slots=True)
-class _PostingHit:
-    term: str
+class _RankedLexicalRow:
     catalog_id: str
     offer_id: str
     source_revision_norm: str
-    term_frequency: int
+    source_revision: str | None
+    bm25_score: float
 
 
-def _candidate_from_score(
-    *,
-    score: float,
-    rank: int,
-    document: Bm25IndexedDocument,
-) -> ProductCandidate:
-    source_revision = document.source_revision if document.source_revision is not None else None
+def _candidate_from_row(row: _RankedLexicalRow, rank: int) -> ProductCandidate:
     return ProductCandidate(
-        offer_id=ProductOfferId(document.offer_id),
+        offer_id=ProductOfferId(row.offer_id),
         channel=RetrievalChannel.LEXICAL,
         rank=rank,
         source_ref=SourceRecordRef(
-            offer_id=ProductOfferId(document.offer_id),
-            catalog_id=document.catalog_id,
-            source_revision=source_revision,
+            offer_id=ProductOfferId(row.offer_id),
+            catalog_id=row.catalog_id,
+            source_revision=row.source_revision,
         ),
-        channel_score=LexicalChannelScore(bm25_score=score),
+        channel_score=LexicalChannelScore(bm25_score=row.bm25_score),
     )
 
 
@@ -171,20 +165,26 @@ class PostgreSqlLexicalCandidateSearchAdapter:
             schema_name=self._configuration.schema_name,
             table_name=self._configuration.lexical_posting_table_name,
         )
+        corpus_stats_spec = LexicalCorpusStatsTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_corpus_stats_table_name,
+        )
+        term_stats_spec = LexicalTermStatsTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_term_stats_table_name,
+        )
         _, errors, _, _ = import_psycopg()
         try:
             with self._provider.connection() as session:
                 self._apply_session_limits(session)
-                corpus = self._fetch_corpus_statistics(session, document_spec)
-                postings = self._fetch_postings(
+                ranked_rows = self._fetch_ranked_rows(
                     session,
-                    posting_spec,
+                    document_spec=document_spec,
+                    posting_spec=posting_spec,
+                    corpus_stats_spec=corpus_stats_spec,
+                    term_stats_spec=term_stats_spec,
                     query_terms=query_terms,
-                )
-                documents = self._fetch_documents_for_postings(
-                    session,
-                    document_spec,
-                    postings=postings,
+                    limit=query.limit,
                 )
         except (OSError, ConnectionError, errors.QueryCanceled, errors.OperationalError) as exc:
             mapped = _map_provider_failure(exc)
@@ -192,30 +192,8 @@ class PostgreSqlLexicalCandidateSearchAdapter:
                 return LexicalSearchResult(candidates=(), failure=mapped)
             raise
 
-        if corpus.document_count <= 0:
-            return LexicalSearchResult(candidates=())
-
-        term_document_frequencies = self._term_document_frequencies(postings)
-        ranked = rank_bm25_documents(
-            query_text=query.query_text,
-            documents=documents,
-            corpus=corpus,
-            term_document_frequencies=term_document_frequencies,
-            limit=query.limit,
-        )
-        document_by_identity = {
-            (item.catalog_id, item.offer_id, item.source_revision_norm): item
-            for item in documents
-        }
         candidates = tuple(
-            _candidate_from_score(
-                score=scored.bm25_score,
-                rank=index,
-                document=document_by_identity[
-                    (scored.catalog_id, scored.offer_id, scored.source_revision_norm)
-                ],
-            )
-            for index, scored in enumerate(ranked)
+            _candidate_from_row(row, index) for index, row in enumerate(ranked_rows)
         )
         return LexicalSearchResult(candidates=candidates)
 
@@ -233,87 +211,39 @@ class PostgreSqlLexicalCandidateSearchAdapter:
                 self._configuration.application_name,
             )
 
-    def _fetch_corpus_statistics(
+    def _fetch_ranked_rows(
         self,
         session: PostgreSQLSession,
-        document_spec: LexicalDocumentTableSpec,
-    ) -> Bm25CorpusStatistics:
-        row = session.execute(lexical_corpus_stats_dml(document_spec)).fetchone()
-        if row is None:
-            return Bm25CorpusStatistics(document_count=0, average_document_length=0.0)
-        return Bm25CorpusStatistics(
-            document_count=int(row["document_count"]),
-            average_document_length=float(row["average_document_length"]),
-        )
-
-    def _fetch_postings(
-        self,
-        session: PostgreSQLSession,
-        posting_spec: LexicalPostingTableSpec,
         *,
+        document_spec: LexicalDocumentTableSpec,
+        posting_spec: LexicalPostingTableSpec,
+        corpus_stats_spec: LexicalCorpusStatsTableSpec,
+        term_stats_spec: LexicalTermStatsTableSpec,
         query_terms: tuple[str, ...],
-    ) -> tuple[_PostingHit, ...]:
+        limit: int,
+    ) -> tuple[_RankedLexicalRow, ...]:
         rows = session.execute(
-            lexical_posting_lookup_dml(posting_spec),
-            (list(query_terms),),
+            lexical_bm25_ranked_search_dml(
+                document_spec,
+                posting_spec,
+                corpus_stats_spec,
+                term_stats_spec,
+                k1=BM25_K1,
+                b=BM25_B,
+            ),
+            (list(query_terms), LEXICAL_CORPUS_STATS_SINGLETON_KEY, limit),
         ).fetchall()
         return tuple(
-            _PostingHit(
-                term=str(row["term"]),
+            _RankedLexicalRow(
                 catalog_id=str(row["catalog_id"]),
                 offer_id=str(row["offer_id"]),
                 source_revision_norm=str(row["source_revision_norm"]),
-                term_frequency=int(row["term_frequency"]),
+                source_revision=(
+                    str(row["source_revision"])
+                    if row["source_revision"] is not None
+                    else None
+                ),
+                bm25_score=float(row["bm25_score"]),
             )
             for row in rows
         )
-
-    def _fetch_documents_for_postings(
-        self,
-        session: PostgreSQLSession,
-        document_spec: LexicalDocumentTableSpec,
-        *,
-        postings: tuple[_PostingHit, ...],
-    ) -> tuple[Bm25IndexedDocument, ...]:
-        grouped: dict[tuple[str, str, str], dict[str, int]] = {}
-        for posting in postings:
-            identity = (posting.catalog_id, posting.offer_id, posting.source_revision_norm)
-            term_map = grouped.setdefault(identity, {})
-            term_map[posting.term] = posting.term_frequency
-
-        documents: list[Bm25IndexedDocument] = []
-        for (catalog_id, offer_id, revision_norm), term_frequencies in grouped.items():
-            row = session.execute(
-                lexical_document_lookup_dml(document_spec),
-                (catalog_id, offer_id, revision_norm),
-            ).fetchone()
-            if row is None:
-                continue
-            source_revision_raw = row["source_revision"]
-            source_revision = (
-                str(source_revision_raw)
-                if source_revision_raw is not None
-                else None
-            )
-            documents.append(
-                Bm25IndexedDocument(
-                    catalog_id=catalog_id,
-                    offer_id=offer_id,
-                    source_revision_norm=revision_norm,
-                    source_revision=source_revision,
-                    document_length=int(row["document_length"]),
-                    term_frequencies=term_frequencies,
-                )
-            )
-        return tuple(documents)
-
-    @staticmethod
-    def _term_document_frequencies(
-        postings: tuple[_PostingHit, ...],
-    ) -> dict[str, int]:
-        frequencies: dict[str, set[tuple[str, str, str]]] = {}
-        for posting in postings:
-            identity = (posting.catalog_id, posting.offer_id, posting.source_revision_norm)
-            bucket = frequencies.setdefault(posting.term, set())
-            bucket.add(identity)
-        return {term: len(identities) for term, identities in frequencies.items()}

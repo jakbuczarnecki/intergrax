@@ -33,21 +33,32 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
     IdentifierTableSpec,
+    LEXICAL_CORPUS_STATS_SINGLETON_KEY,
+    LEXICAL_STATISTICS_VERSION,
+    LexicalCorpusStatsTableSpec,
     LexicalDocumentTableSpec,
     LexicalPostingTableSpec,
+    LexicalTermStatsTableSpec,
     RelationalTableSpec,
     create_identifier_lookup_index_ddl,
     create_identifier_table_ddl,
+    create_lexical_corpus_stats_table_ddl,
     create_lexical_document_table_ddl,
     create_lexical_posting_lookup_index_ddl,
     create_lexical_posting_table_ddl,
+    create_lexical_term_stats_table_ddl,
     create_table_ddl,
     identifier_insert_dml,
+    lexical_corpus_stats_increment_dml,
     lexical_document_insert_dml,
     lexical_posting_insert_dml,
+    lexical_term_stats_increment_dml,
+    rebuild_lexical_statistics,
     verify_identifier_table_compatible,
+    verify_lexical_corpus_stats_table_compatible,
     verify_lexical_document_table_compatible,
     verify_lexical_posting_table_compatible,
+    verify_lexical_term_stats_table_compatible,
     verify_table_compatible,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
@@ -156,6 +167,14 @@ class PostgreSqlRelationalStorageAdapter:
             schema_name=physical.schema_name,
             table_name=self._configuration.lexical_posting_table_name,
         )
+        corpus_stats_spec = LexicalCorpusStatsTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.lexical_corpus_stats_table_name,
+        )
+        term_stats_spec = LexicalTermStatsTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.lexical_term_stats_table_name,
+        )
         try:
             with self._provider.transaction(
                 isolation_level=PostgreSQLIsolationLevel.READ_COMMITTED,
@@ -174,6 +193,21 @@ class PostgreSqlRelationalStorageAdapter:
                     create_lexical_posting_lookup_index_ddl(lexical_posting_spec)
                 )
                 verify_lexical_posting_table_compatible(session, lexical_posting_spec)
+                session.execute_statement(
+                    create_lexical_corpus_stats_table_ddl(corpus_stats_spec)
+                )
+                verify_lexical_corpus_stats_table_compatible(session, corpus_stats_spec)
+                session.execute_statement(
+                    create_lexical_term_stats_table_ddl(term_stats_spec)
+                )
+                verify_lexical_term_stats_table_compatible(session, term_stats_spec)
+                rebuild_lexical_statistics(
+                    session,
+                    document_spec=lexical_document_spec,
+                    posting_spec=lexical_posting_spec,
+                    corpus_stats_spec=corpus_stats_spec,
+                    term_stats_spec=term_stats_spec,
+                )
         except PostgreSqlBootstrapSchemaError:
             raise
         except PostgreSqlBootstrapConfigurationError:
@@ -410,6 +444,14 @@ class PostgreSqlRelationalStorageAdapter:
             schema_name=self._configuration.schema_name,
             table_name=self._configuration.lexical_posting_table_name,
         )
+        corpus_stats_spec = LexicalCorpusStatsTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_corpus_stats_table_name,
+        )
+        term_stats_spec = LexicalTermStatsTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_term_stats_table_name,
+        )
         revision_norm = _source_revision_norm(record.source_ref.source_revision)
         document_params: _LexicalDocumentInsertParams = (
             record.source_ref.catalog_id,
@@ -421,8 +463,22 @@ class PostgreSqlRelationalStorageAdapter:
             projection.document_length,
             projection.derivation_version,
         )
-        session.execute(lexical_document_insert_dml(document_spec), document_params)
+        document_inserted = (
+            session.execute(lexical_document_insert_dml(document_spec), document_params).rowcount
+            > 0
+        )
+        if document_inserted:
+            session.execute(
+                lexical_corpus_stats_increment_dml(corpus_stats_spec),
+                (
+                    LEXICAL_CORPUS_STATS_SINGLETON_KEY,
+                    LEXICAL_STATISTICS_VERSION,
+                    projection.document_length,
+                    float(projection.document_length),
+                ),
+            )
         posting_insert_sql = lexical_posting_insert_dml(posting_spec)
+        term_stats_increment_sql = lexical_term_stats_increment_dml(term_stats_spec)
         for posting in project_lexical_postings(projection):
             posting_params: _LexicalPostingInsertParams = (
                 posting.term,
@@ -431,7 +487,8 @@ class PostgreSqlRelationalStorageAdapter:
                 posting.source_revision_norm,
                 posting.term_frequency,
             )
-            session.execute(posting_insert_sql, posting_params)
+            if session.execute(posting_insert_sql, posting_params).rowcount > 0:
+                session.execute(term_stats_increment_sql, (posting.term,))
 
     def _verify_record(
         self,

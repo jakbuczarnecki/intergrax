@@ -47,7 +47,9 @@ from platform_proofs.scenarios.verified_product_identification.retrieval.composi
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.bm25_engine import (
     Bm25CorpusStatistics,
     Bm25IndexedDocument,
+    Bm25EngineConfiguration,
     build_term_frequencies,
+    compute_bm25_score,
     rank_bm25_documents,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.configuration import (
@@ -60,9 +62,12 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     tokenize_lexical_document,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
+    LexicalCorpusStatsTableSpec,
     LexicalDocumentTableSpec,
     LexicalPostingTableSpec,
+    LexicalTermStatsTableSpec,
     _LEXICAL_POSTING_LOOKUP_INDEX_NAME,
+    lexical_bm25_ranked_search_dml,
     lexical_posting_lookup_dml,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.contracts import (
@@ -107,6 +112,14 @@ def _executed_sql_text(statement: SqlStatement) -> str:
     return statement.as_string(None)
 
 
+def _ranked_search_executions(connection: _RoutingFakeConnection) -> list[ExecutedStatement]:
+    return [
+        executed
+        for executed in connection.executed
+        if "term_contributions" in _executed_sql_text(executed[0]).lower()
+    ]
+
+
 def _configuration() -> PostgreSqlBootstrapConfiguration:
     integration = PostgreSQLIntegrationConfig(
         host="localhost",
@@ -123,6 +136,8 @@ def _configuration() -> PostgreSqlBootstrapConfiguration:
         identifier_table_name="vpi_product_identifiers",
         lexical_document_table_name="vpi_lexical_document",
         lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
     )
 
 
@@ -298,27 +313,19 @@ class _FakeCursor:
 
 @dataclass
 class _RoutingFakeConnection:
-    corpus_row: Mapping[str, str | int | float | None]
-    posting_rows: list[Mapping[str, str | int | None]]
-    document_rows: dict[tuple[str, str, str], Mapping[str, str | int | None]]
+    ranked_rows: list[Mapping[str, str | int | float | None]]
     executed: list[ExecutedStatement] = field(default_factory=list)
     fail_with: BaseException | None = None
+    common_term_posting_count: int = 0
 
     def execute(self, sql: SqlStatement, params: SqlParams = ()) -> _FakeCursor:
         self.executed.append((sql, params))
         if self.fail_with is not None:
             raise self.fail_with
         sql_text = _executed_sql_text(sql).lower()
-        if "count(*)" in sql_text:
-            return _FakeCursor(_rows=[self.corpus_row])
-        if "term = any" in sql_text:
-            return _FakeCursor(_rows=self.posting_rows)
-        if "document_length" in sql_text and "source_revision" in sql_text:
-            key = (str(params[0]), str(params[1]), str(params[2]))
-            row = self.document_rows.get(key)
-            if row is None:
-                return _FakeCursor(_rows=[])
-            return _FakeCursor(_rows=[row])
+        if "term_contributions" in sql_text and "limit %s" in sql_text:
+            limit = int(params[-1]) if params else len(self.ranked_rows)
+            return _FakeCursor(_rows=self.ranked_rows[:limit])
         return _FakeCursor(_rows=[])
 
     def close(self) -> None:
@@ -498,34 +505,23 @@ def test_score_is_real_backend_bm25_not_rank_derived() -> None:
 
 
 def test_adapter_satisfies_lexical_candidate_search_port() -> None:
-    connection = _RoutingFakeConnection(
-        corpus_row={"document_count": 0, "average_document_length": 0.0},
-        posting_rows=[],
-        document_rows={},
-    )
+    connection = _RoutingFakeConnection(ranked_rows=[])
     adapter = _adapter_with_connection(connection)
     port: LexicalCandidateSearchPort = adapter
     assert callable(port.search)
 
 
-def test_adapter_search_uses_indexed_posting_lookup_not_ilike() -> None:
+def test_adapter_search_uses_storage_side_ranked_bm25_not_ilike() -> None:
     connection = _RoutingFakeConnection(
-        corpus_row={"document_count": 1, "average_document_length": 5.0},
-        posting_rows=[
+        ranked_rows=[
             {
-                "term": "sn850x",
                 "catalog_id": _CATALOG_ID,
                 "offer_id": "sn850x-2tb",
                 "source_revision_norm": "rev-lexical",
-                "term_frequency": 1,
+                "source_revision": "rev-lexical",
+                "bm25_score": 2.5,
             }
         ],
-        document_rows={
-            (_CATALOG_ID, "sn850x-2tb", "rev-lexical"): {
-                "source_revision": "rev-lexical",
-                "document_length": 5,
-            }
-        },
     )
     adapter = _adapter_with_connection(connection)
     result = adapter.search(LexicalSearchQuery(query_text="SN850X", limit=3))
@@ -537,22 +533,17 @@ def test_adapter_search_uses_indexed_posting_lookup_not_ilike() -> None:
     assert candidate.source_ref.offer_id.value == "sn850x-2tb"
     assert candidate.channel_score is not None
     assert candidate.channel_score.bm25_score > 0.0
-    posting_sql = " ".join(
-        _executed_sql_text(statement).lower()
-        for statement, _params in connection.executed
-        if "term = any" in _executed_sql_text(statement).lower()
-    )
-    assert posting_sql
-    assert "ilike" not in posting_sql
-    assert "record_json" not in posting_sql
+    ranked_executions = _ranked_search_executions(connection)
+    assert len(ranked_executions) == 1
+    ranked_sql = _executed_sql_text(ranked_executions[0][0]).lower()
+    assert "term_contributions" in ranked_sql
+    assert "limit %s" in ranked_sql
+    assert "ilike" not in ranked_sql
+    assert "record_json" not in ranked_sql
 
 
 def test_adapter_zero_match_success_empty() -> None:
-    connection = _RoutingFakeConnection(
-        corpus_row={"document_count": 2, "average_document_length": 4.0},
-        posting_rows=[],
-        document_rows={},
-    )
+    connection = _RoutingFakeConnection(ranked_rows=[])
     adapter = _adapter_with_connection(connection)
     result = adapter.search(LexicalSearchQuery(query_text="missing-token", limit=5))
     assert result.failure is None
@@ -626,11 +617,7 @@ def test_multi_channel_service_unchanged_signature() -> None:
 
 
 def test_pluginability_with_fake_and_postgresql_lexical_adapter() -> None:
-    connection = _RoutingFakeConnection(
-        corpus_row={"document_count": 0, "average_document_length": 0.0},
-        posting_rows=[],
-        document_rows={},
-    )
+    connection = _RoutingFakeConnection(ranked_rows=[])
     request = MultiChannelRetrievalRequest(
         lexical_query=LexicalSearchQuery(query_text="SN850X", limit=2),
     )
@@ -671,13 +658,117 @@ def test_build_lexical_candidate_search_returns_port() -> None:
 
 
 def test_invalid_empty_token_query_maps_to_invalid_query_failure() -> None:
-    connection = _RoutingFakeConnection(
-        corpus_row={"document_count": 0, "average_document_length": 0.0},
-        posting_rows=[],
-        document_rows={},
-    )
+    connection = _RoutingFakeConnection(ranked_rows=[])
     adapter = _adapter_with_connection(connection)
     result = adapter.search(LexicalSearchQuery(query_text="***", limit=3))
     assert result.candidates == ()
     assert result.failure is not None
     assert result.failure.kind is CatalogSearchFailureKind.INVALID_QUERY
+
+
+def test_ranked_search_dml_enforces_storage_side_limit_and_joins() -> None:
+    composed = lexical_bm25_ranked_search_dml(
+        LexicalDocumentTableSpec(schema_name="vpi_test_schema", table_name="vpi_lexical_document"),
+        LexicalPostingTableSpec(schema_name="vpi_test_schema", table_name="vpi_lexical_posting"),
+        LexicalCorpusStatsTableSpec(
+            schema_name="vpi_test_schema",
+            table_name="vpi_lexical_corpus_stats",
+        ),
+        LexicalTermStatsTableSpec(
+            schema_name="vpi_test_schema",
+            table_name="vpi_lexical_term_stats",
+        ),
+        k1=1.2,
+        b=0.75,
+    )
+    sql = _executed_sql_text(composed).lower()
+    assert "unnest(%s::text[])" in sql
+    assert '"vpi_lexical_posting"' in sql
+    assert '"vpi_lexical_document"' in sql
+    assert '"vpi_lexical_term_stats"' in sql
+    assert '"vpi_lexical_corpus_stats"' in sql
+    assert "order by" in sql
+    assert "limit %s" in sql
+    assert "count(*)" not in sql
+    assert "avg(" not in sql
+
+
+def test_adapter_search_uses_single_db_round_trip() -> None:
+    connection = _RoutingFakeConnection(
+        ranked_rows=[
+            {
+                "catalog_id": _CATALOG_ID,
+                "offer_id": "offer-a",
+                "source_revision_norm": "rev-lexical",
+                "source_revision": "rev-lexical",
+                "bm25_score": 1.0,
+            }
+        ],
+        common_term_posting_count=1500,
+    )
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(LexicalSearchQuery(query_text="common", limit=5))
+    assert result.failure is None
+    assert len(_ranked_search_executions(connection)) == 1
+    assert len(result.candidates) <= 5
+
+
+def test_common_term_fixture_does_not_materialize_all_matches_in_python() -> None:
+    limit = 3
+    connection = _RoutingFakeConnection(
+        ranked_rows=[
+            {
+                "catalog_id": _CATALOG_ID,
+                "offer_id": f"offer-{index}",
+                "source_revision_norm": "rev-lexical",
+                "source_revision": "rev-lexical",
+                "bm25_score": float(limit - index),
+            }
+            for index in range(limit)
+        ],
+        common_term_posting_count=1200,
+    )
+    adapter = _adapter_with_connection(connection)
+    result = adapter.search(LexicalSearchQuery(query_text="common", limit=limit))
+    assert result.failure is None
+    assert len(result.candidates) == limit
+    ranked_executions = _ranked_search_executions(connection)
+    assert len(ranked_executions) == 1
+    sql_text = _executed_sql_text(ranked_executions[0][0]).lower()
+    assert "where catalog_id = %s" not in sql_text
+    assert "term = any(%s)" not in sql_text
+
+
+def test_duplicate_query_terms_double_count_semantics() -> None:
+    document = _indexed_document_from_text(
+        offer_id="dup-offer",
+        text="alpha beta",
+    )
+    corpus = Bm25CorpusStatistics(document_count=1, average_document_length=float(document.document_length))
+    term_df = {"alpha": 1, "beta": 1}
+    single = compute_bm25_score(
+        query_terms=("alpha",),
+        document=document,
+        corpus=corpus,
+        term_document_frequencies=term_df,
+        configuration=Bm25EngineConfiguration(),
+    )
+    double = compute_bm25_score(
+        query_terms=("alpha", "alpha"),
+        document=document,
+        corpus=corpus,
+        term_document_frequencies=term_df,
+        configuration=Bm25EngineConfiguration(),
+    )
+    assert double == single * 2.0
+    ranked_sql = _executed_sql_text(
+        lexical_bm25_ranked_search_dml(
+            LexicalDocumentTableSpec(schema_name="s", table_name="d"),
+            LexicalPostingTableSpec(schema_name="s", table_name="p"),
+            LexicalCorpusStatsTableSpec(schema_name="s", table_name="c"),
+            LexicalTermStatsTableSpec(schema_name="s", table_name="t"),
+            k1=1.2,
+            b=0.75,
+        )
+    ).lower()
+    assert "unnest(%s::text[])" in ranked_sql

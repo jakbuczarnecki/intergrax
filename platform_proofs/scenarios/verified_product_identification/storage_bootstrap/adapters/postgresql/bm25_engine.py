@@ -34,10 +34,14 @@ class Bm25ScoredDocument:
     bm25_score: float
 
 
+BM25_K1: float = 1.2
+BM25_B: float = 0.75
+
+
 @dataclass(frozen=True, slots=True)
 class Bm25EngineConfiguration:
-    k1: float = 1.2
-    b: float = 0.75
+    k1: float = BM25_K1
+    b: float = BM25_B
 
 
 def build_term_frequencies(text: str) -> tuple[tuple[str, ...], dict[str, int]]:

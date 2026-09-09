@@ -152,6 +152,8 @@ def _configuration(schema_name: str = "vpi_test_schema") -> PostgreSqlBootstrapC
         identifier_table_name="vpi_product_identifiers",
         lexical_document_table_name="vpi_lexical_document",
         lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
     )
 
 
@@ -404,6 +406,14 @@ def test_prepare_new_schema_table() -> None:
             return_value="CREATE INDEX IF NOT EXISTS vpi_lexical_posting_term_idx ON vpi_lexical_posting (term)",
         ),
         patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_corpus_stats_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_corpus_stats (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_term_stats_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_term_stats (id int)",
+        ),
+        patch(
             "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_identifier_table_compatible",
             return_value=None,
         ),
@@ -413,6 +423,18 @@ def test_prepare_new_schema_table() -> None:
         ),
         patch(
             "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_posting_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_corpus_stats_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_term_stats_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.rebuild_lexical_statistics",
             return_value=None,
         ),
     ):
@@ -449,6 +471,14 @@ def test_prepare_existing_compatible_table() -> None:
             return_value="CREATE INDEX IF NOT EXISTS vpi_lexical_posting_term_idx ON vpi_lexical_posting (term)",
         ),
         patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_corpus_stats_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_corpus_stats (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_term_stats_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_term_stats (id int)",
+        ),
+        patch(
             "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_identifier_table_compatible",
             return_value=None,
         ),
@@ -458,6 +488,18 @@ def test_prepare_existing_compatible_table() -> None:
         ),
         patch(
             "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_posting_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_corpus_stats_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_term_stats_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.rebuild_lexical_statistics",
             return_value=None,
         ),
     ):
@@ -742,6 +784,8 @@ def test_identifier_write_schema_and_table_explicitly_qualified() -> None:
         identifier_table_name="vpi_alt_identifiers",
         lexical_document_table_name="vpi_lexical_document",
         lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
     )
 
     connection = _FakeConnection()
@@ -1054,6 +1098,8 @@ def test_configuration_table_mismatch_rejected() -> None:
         identifier_table_name="vpi_product_identifiers",
         lexical_document_table_name="vpi_lexical_document",
         lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
     )
     with pytest.raises(PostgreSqlBootstrapConfigurationError):
         resolve_physical_target(RelationalTargetId("vpi-products"), config)
@@ -1077,6 +1123,8 @@ def test_apply_session_limits_uses_parameterized_set_config() -> None:
         identifier_table_name="vpi_product_identifiers",
         lexical_document_table_name="vpi_lexical_document",
         lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
         statement_timeout_ms=7500,
         application_name="vpi-relational-bootstrap",
     )
@@ -1110,6 +1158,8 @@ def test_apply_session_limits_skips_empty_application_name() -> None:
         identifier_table_name="vpi_product_identifiers",
         lexical_document_table_name="vpi_lexical_document",
         lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
         application_name="",
     )
     provider = PostgreSQLConnectionProvider(
@@ -1140,6 +1190,8 @@ def test_apply_session_limits_skips_none_statement_timeout() -> None:
         identifier_table_name="vpi_product_identifiers",
         lexical_document_table_name="vpi_lexical_document",
         lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
         statement_timeout_ms=None,
     )
     provider = PostgreSQLConnectionProvider(
@@ -1171,6 +1223,8 @@ def test_apply_session_limits_hostile_application_name_is_value_only() -> None:
         identifier_table_name="vpi_product_identifiers",
         lexical_document_table_name="vpi_lexical_document",
         lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
         application_name=hostile,
     )
     provider = PostgreSQLConnectionProvider(
