@@ -4,7 +4,7 @@
 
 **Series owner:** Agent Distribution + frozen Execution Engine
 
-**Current phase:** NPSC-5C — Typed Coordination Intent + Deterministic Routing (**R1 PASS** · Decision integration **BLOCKED ON DECISION CONTRACT**)
+**Current phase:** NPSC-5C — Typed Coordination Intent + Decision Integration (**FROZEN / PASS** · R1–R3 qualified)
 
 **R1 reconciliation:** [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md)
 
@@ -219,15 +219,15 @@ typed per-slot outcomes → FanOutResult
 
 ---
 
-## 8.2 NPSC-5C — Typed coordination intent (R1)
+## 8.2 NPSC-5C — Typed coordination intent + Decision integration (FROZEN)
 
-NPSC-5C introduces a **semantic** coordination intent layer above frozen NPSC-5A / NPSC-5B. It describes *what* multi-agent work is requested without owning scheduling, physical agent selection, or execution lifecycle.
+NPSC-5C introduces a **semantic** coordination intent layer above frozen NPSC-5A / NPSC-5B, plus a pure Decision → NPSC projection path. It describes *what* multi-agent work is requested without owning scheduling, physical agent selection, or execution lifecycle.
 
 ```text
-Producer (deterministic / future Decision-backed)
+AuthoritativeAcceptedDecision
         |
         v
-CoordinationIntentPlanner (neutral protocol)
+project_authoritative_accepted_decision_coordination (pure projection)
         |
         v
 CoordinationIntent
@@ -236,23 +236,28 @@ CoordinationIntent
 CoordinationIntentExecutor
         +-- SINGLE --> MultiAgentCoordinationService (NPSC-5A)
         |
-        +-- FAN_OUT --> BoundedMultiAgentFanOutService (NPSC-5B)
+        +-- FAN_OUT --> BoundedMultiAgentFanOutService (NPSC-5B) --> Nexus
 ```
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
+| `DecisionCoordinationSemantic` | `intergrax/contracts/` | Decision-owned semantic WHAT |
+| `project_authoritative_accepted_decision_coordination` | `intergrax/agent_distribution/` | Pure deterministic projection (no I/O) |
 | `CoordinationIntent` / `CoordinationContribution` | `intergrax/agent_distribution/` | Semantic multi-agent work request |
 | `CoordinationIntentPlanner` | `intergrax/agent_distribution/` | Neutral producer protocol (not LLM-specific) |
 | `CoordinationIntentExecutor` | `intergrax/agent_distribution/` | Validate intent → route to frozen NPSC-5A or NPSC-5B |
 | `CoordinationIntentBinding` | `intergrax/agent_distribution/` | Runtime execution binding (leases, task scope) — not part of intent |
 
-**Decision optionality:** deterministic producers are first-class. Decision-backed projection is deferred until a public typed Decision semantic output exists for multi-agent coordination (no string/metadata parsing).
+**Ownership:** Decision owns WHAT; Agent Distribution owns WHO; Execution owns lifecycle; Nexus owns HOW/WHEN for FAN_OUT scheduling.
+
+**Qualification:** [`NPSC_5C_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5C_FINAL_QUALIFICATION_AND_FREEZE.md)
 
 **Hard boundaries preserved:**
 
-- no `NexusLoop` / `GraphExecutor` / `ChildExecutionRunner` imports in NPSC-5C modules;
+- no `NexusLoop` / `GraphExecutor` / `ChildExecutionRunner` imports in NPSC-5C projection modules;
 - no direct `DelegatedSubtaskService` calls from the intent executor;
 - no physical `agent_id` / `lease_id` fields on semantic intent contributions;
+- no `decision_system → agent_distribution` reverse dependency;
 - authority and budget remain on the active Execution path.
 
 ---
@@ -263,8 +268,9 @@ CoordinationIntentExecutor
 | ----- | ----- |
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
 | **NPSC-5B** | Bounded fan-out / fan-in (R3 blocked on Execution/Nexus contract) |
-| **NPSC-5C** | Typed coordination intent + deterministic routing (**R1 PASS**; Decision integration blocked) |
-| **NPSC-5C/R2** | Decision-backed typed projection (blocked on Decision-owned contract extension) |
+| **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
+| **NPSC-5D** | Multi-agent governance |
+| **NPSC-5E** | Retry / checkpoint / recovery |
 | **NPSC-5F** | Audit / observability hooks expansion |
 
 ---
