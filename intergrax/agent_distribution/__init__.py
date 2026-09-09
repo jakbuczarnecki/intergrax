@@ -101,6 +101,13 @@ from intergrax.agent_distribution.dynamic_acquisition import (
     assert_exact_discovery_candidate_match,
     resolve_discovery_candidate_exact,
 )
+from intergrax.agent_distribution.decision_coordination_projection import (
+    DecisionCoordinationProjectionContext,
+    DecisionCoordinationProjectionError,
+    coordination_intent_id_from_decision_identity,
+    project_authoritative_accepted_decision_coordination,
+    project_decision_coordination_artifact,
+)
 from intergrax.agent_distribution.delegated_subtasks import (
     ChildExecutionPort,
     DelegatedSubtaskAcquisitionPlanFactory,
@@ -455,6 +462,8 @@ __all__ = [
     "AgentSelectionStrategyId",
     "DeterministicIdentitySelectionStrategy",
     "DeterministicTaskCapabilityResolver",
+    "DecisionCoordinationProjectionContext",
+    "DecisionCoordinationProjectionError",
     "DelegatedSubtaskAcquisitionPlanFactory",
     "CoordinationDelegation",
     "CoordinationError",
@@ -692,7 +701,10 @@ __all__ = [
     "validate_fan_out_item_id",
     "validate_fan_out_request",
     "parse_agent_project_pyproject",
+    "coordination_intent_id_from_decision_identity",
     "project_agent_capability_descriptors",
+    "project_authoritative_accepted_decision_coordination",
+    "project_decision_coordination_artifact",
     "PolicyDependencyConstraint",
     "ProviderHealth",
     "ProviderHealthStatus",
