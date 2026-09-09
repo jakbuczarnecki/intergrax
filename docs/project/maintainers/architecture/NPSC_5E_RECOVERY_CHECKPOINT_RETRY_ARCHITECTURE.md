@@ -1,6 +1,6 @@
 # NPSC-5E — Recovery, Checkpoint & Retry Architecture
 
-> **Stage:** P0 + P0A qualified; **R1 execution-attempt retry semantics implemented**
+> **Stage:** P0 + P0A qualified; **R1 execution-attempt retry FROZEN / PASS**; R2/R3 ACTIVE
 
 ## P0 inventory
 
@@ -52,7 +52,11 @@ NPSC-5E LINEAGE BASELINE: a72c9b568c61e28180756059ae48a99fb56eaa19
 
 ## R1 — Canonical Execution Retry & Attempt Semantics
 
+**Status:** `FROZEN / PASS` (2026-09-09)
+
 Qualified module: `intergrax/runtime/execution/retry/` + `intergrax/contracts/execution_retry.py`.
+
+Final freeze: `docs/project/maintainers/qualification/NPSC_5E_R1_FINAL_CANONICAL_RETRY_ATTEMPT_QUALIFICATION_AND_FREEZE.md`
 
 ### Retry layer taxonomy
 
@@ -131,7 +135,7 @@ Blind retry forbidden when `has_unknown_side_effect` and no idempotency guarante
 | unknown unsafe side-effect | blocked |
 | unknown (unclassified) | fail closed |
 
-See: `docs/project/maintainers/qualification/NPSC_5E_R1_CANONICAL_EXECUTION_RETRY_ATTEMPT_SEMANTICS.md`
+See: `docs/project/maintainers/qualification/NPSC_5E_R1_FINAL_CANONICAL_RETRY_ATTEMPT_QUALIFICATION_AND_FREEZE.md`
 
 ## Future boundaries
 
