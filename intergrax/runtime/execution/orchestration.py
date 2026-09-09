@@ -137,6 +137,7 @@ async def execute_root_task(
     ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     run_budget: RunBudget | None = None,
 ) -> TaskResult:
+    segment_predecessor_root_execution_id = None
     resume_plan_token = None
     if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
         _checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
@@ -153,6 +154,8 @@ async def execute_root_task(
             identity.attempt_id != checkpoint_attempt_id
             or identity.execution_id != checkpoint_root_execution_id
         ):
+            if identity.execution_id != checkpoint_root_execution_id:
+                segment_predecessor_root_execution_id = checkpoint_root_execution_id
             resume_plan = build_task_checkpoint_resume_plan(
                 task,
                 resume_checkpoint,
@@ -195,6 +198,7 @@ async def execute_root_task(
         ledger_factory=ledger_factory,
         run_budget=run_budget,
         decision_lifecycle_host=_default_root_decision_lifecycle_host(),
+        execution_lineage_persistence=nexus_loop.execution_lineage_persistence,
     )
     root_context = RootExecutionContext(
         run_id=identity.run_id,
@@ -202,6 +206,8 @@ async def execute_root_task(
         execution_id=identity.execution_id,
         authority=resolve_root_parent_execution_authority(task.execution_authority),
         tenant_id=task.tenant_id,
+        task_id=task.task_id,
+        segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
     )
     try:
         return await runtime.execute(request, root_context)

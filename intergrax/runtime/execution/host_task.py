@@ -17,6 +17,7 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.execution_terminal.persistence import (
@@ -212,6 +213,7 @@ class HostTaskExecution:
     _run_budget: RunBudget | None
     _terminal_publisher: HostTaskTerminalPublisher | None = None
     _revision_admission: EffectiveProfileRevisionAdmissionPort | None = None
+    _execution_lineage_persistence: ExecutionLineagePersistence | None = None
 
     def _execution_runtime_for_task(
         self,
@@ -239,6 +241,7 @@ class HostTaskExecution:
             ledger_factory=self._ledger_factory,
             run_budget=self._run_budget,
             decision_lifecycle_host=CanonicalDecisionLifecycleHost(),
+            execution_lineage_persistence=self._execution_lineage_persistence,
         )
 
     async def execute(
@@ -267,6 +270,7 @@ class HostTaskExecution:
             run_id=run_id,
             attempt_id=attempt_id,
             execution_id=execution_id,
+            task_id=task.task_id,
         )
         root_context = resolve_root_execution_context(options)
         resolved_options = RootExecutionOptions(

@@ -38,6 +38,8 @@ from intergrax.runtime.execution.budget.policy import (
     DefaultSharedPoolBudgetPolicy,
     ExecutionBudgetAllocationPolicy,
 )
+from intergrax.runtime.execution.lineage.active_lineage import peek_active_execution_lineage
+from intergrax.runtime.execution.lineage.admission import build_child_lineage_admission_hook
 from intergrax.runtime.governance.active_execution_authority import (
     require_active_execution_authority,
 )
@@ -137,9 +139,20 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             execution_id=child_execution_id,
             parent_execution_id=parent_execution_id,
         )
+        resolved_hooks = admission_hooks
+        lineage_state = peek_active_execution_lineage()
+        if lineage_state is not None:
+            lineage_hook = build_child_lineage_admission_hook(
+                persistence=lineage_state.persistence,
+                scope=lineage_state.scope,
+                segment_root_execution_id=lineage_state.segment_root_execution_id,
+                execution_id=child_execution_id,
+                parent_execution_id=parent_execution_id,
+            )
+            resolved_hooks = (lineage_hook, *admission_hooks)
         boundary = ExecutionBoundary[RequestT, ResultT](
             delegate,
-            admission_hooks=admission_hooks,
+            admission_hooks=resolved_hooks,
             identity=identity,
             authority=child_authority,
             effective_delegation=effective,

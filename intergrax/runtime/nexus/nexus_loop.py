@@ -130,6 +130,7 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.contracts.agent_execution_result import AgentExecutionResult
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
@@ -199,6 +200,7 @@ class NexusLoop:
         execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
         attempt_lifecycle: AttemptLifecycleService | None = None,
         execution_terminal: ExecutionTerminalService | None = None,
+        execution_lineage_persistence: "ExecutionLineagePersistence | None" = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -332,6 +334,7 @@ class NexusLoop:
             store=self._execution_terminal.store,
         )
         self._production_mode = production_mode
+        self._execution_lineage_persistence = execution_lineage_persistence
         trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
@@ -364,6 +367,7 @@ class NexusLoop:
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             attempt_lifecycle=self._attempt_lifecycle,
             execution_terminal=self._execution_terminal,
+            execution_lineage_persistence=self._execution_lineage_persistence,
             max_run_retries=max_run_retries,
             production_mode=production_mode,
             decision_flow_gate=decision_flow_gate,
@@ -480,6 +484,10 @@ class NexusLoop:
     @property
     def execution_terminal(self) -> ExecutionTerminalService:
         return self._execution_terminal
+
+    @property
+    def execution_lineage_persistence(self) -> "ExecutionLineagePersistence | None":
+        return self._execution_lineage_persistence
 
     async def handle_task(
         self,
@@ -753,6 +761,7 @@ class NexusLoop:
             plan=plan,
             graph=graph,
             last_execution=last_execution,
+            execution_lineage_persistence=self._execution_lineage_persistence,
         )
 
     async def _publish_runtime_event(
@@ -773,6 +782,33 @@ class NexusLoop:
         """Attach platform terminal diagnostic trigger after host composition."""
         self._terminal_diagnostic_trigger = trigger
 
+    def _seal_execution_lineage_after_terminal(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        outcome: object,
+    ) -> None:
+        if self._execution_lineage_persistence is None:
+            return
+        from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome
+        from intergrax.runtime.execution.lineage.seal import (
+            closure_kind_for_terminal_outcome,
+            seal_lineage_attempt,
+        )
+
+        _, attempt_id = require_active_execution_identity()
+        if not isinstance(outcome, ExecutionTerminalOutcome):
+            return
+        seal_lineage_attempt(
+            self._execution_lineage_persistence,
+            tenant_id=task.tenant_id,
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            closure_kind=closure_kind_for_terminal_outcome(outcome),
+        )
+
     def _commit_durable_terminal_authority(self, task: Task) -> TerminalCommitResolution:
         """Persist terminal outcome and return canonical durable authority."""
         outcome = terminal_outcome_from_task_state(task.state)
@@ -791,6 +827,7 @@ class NexusLoop:
                 reason=terminal_reason_for_task_state(task.state),
                 production_mode=self._production_mode,
             )
+            self._seal_execution_lineage_after_terminal(task, run_id=run_id, outcome=record.outcome)
             return TerminalCommitResolution(
                 canonical_record=record,
                 should_publish_terminal_event=True,

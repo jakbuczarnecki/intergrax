@@ -57,6 +57,7 @@ from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTr
 from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.runtime.decision_flow import DecisionFlowGate
 
 FinishFn = Callable[..., Awaitable[TaskResult]]
@@ -110,6 +111,7 @@ class NexusGraphRunner:
     maybe_checkpoint: CheckpointFn
     attempt_lifecycle: AttemptLifecycleService
     execution_terminal: ExecutionTerminalService
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None
     max_run_retries: int = 0
     production_mode: bool = False
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
@@ -136,6 +138,18 @@ class NexusGraphRunner:
             return None
         except Exception:
             return None
+        if self.execution_lineage_persistence is not None:
+            from intergrax.contracts.execution_lineage import ExecutionLineageAttemptClosureKind
+            from intergrax.runtime.execution.lineage.seal import seal_lineage_attempt
+
+            seal_lineage_attempt(
+                self.execution_lineage_persistence,
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=run_id,
+                attempt_id=expected_attempt_id,
+                closure_kind=ExecutionLineageAttemptClosureKind.RETRY_SUPERSEDED,
+            )
         return rebind_active_attempt_for_retry(
             run_id=result.run_id,
             attempt_id=result.active_attempt_id,

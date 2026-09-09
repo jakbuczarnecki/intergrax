@@ -13,7 +13,9 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
+    TaskId,
 )
+from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.runtime.execution.active_decision_checkpoint_persistence import (
     bind_active_decision_checkpoint_persistence,
     reset_active_decision_checkpoint_persistence,
@@ -52,6 +54,13 @@ from intergrax.runtime.execution.budget.ledger import (
     RunBudgetExecutionBudgetLedgerFactory,
 )
 from intergrax.runtime.execution.decision_lifecycle_host import DecisionLifecycleHost
+from intergrax.runtime.execution.lineage.root_activation import (
+    activate_root_execution_lineage,
+    build_root_lineage_admission_hook,
+    deactivate_root_execution_lineage,
+    merge_lineage_root_admission_hooks,
+    validate_root_lineage_inputs,
+)
 from intergrax.runtime.execution.identity_authority import (
     BackgroundTransportIdentity,
     RootTaskIdentity,
@@ -79,6 +88,8 @@ class RootExecutionContext:
     execution_id: ExecutionId
     authority: ParentExecutionAuthority
     tenant_id: str | None = None
+    task_id: TaskId | None = None
+    segment_predecessor_root_execution_id: ExecutionId | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +101,8 @@ class RootExecutionOptions:
     attempt_id: AttemptId | None = None
     execution_id: ExecutionId | None = None
     tenant_id: str | None = None
+    task_id: TaskId | None = None
+    segment_predecessor_root_execution_id: ExecutionId | None = None
 
 
 def resolve_root_execution_context(options: RootExecutionOptions) -> RootExecutionContext:
@@ -105,6 +118,8 @@ def resolve_root_execution_context(options: RootExecutionOptions) -> RootExecuti
         execution_id=identity.execution_id,
         authority=options.authority,
         tenant_id=options.tenant_id,
+        task_id=options.task_id,
+        segment_predecessor_root_execution_id=options.segment_predecessor_root_execution_id,
     )
 
 
@@ -125,6 +140,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_decision_checkpoint_persistence",
         "_decision_finalization_persistence",
         "_execution_work_port_binding",
+        "_execution_lineage_persistence",
     )
 
     def __init__(
@@ -134,6 +150,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         ledger_factory: ExecutionBudgetLedgerFactory | None = None,
         run_budget: RunBudget | None = None,
         admission_hooks: tuple[ExecutionAdmissionHook[RequestT], ...] = (),
+        execution_lineage_persistence: ExecutionLineagePersistence | None = None,
         decision_lifecycle_host: DecisionLifecycleHost | None = None,
         decision_checkpoint_persistence: (
             DecisionCheckpointPersistence[CheckpointPayloadT] | None
@@ -157,6 +174,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._decision_checkpoint_persistence = decision_checkpoint_persistence
         self._decision_finalization_persistence = decision_finalization_persistence
         self._execution_work_port_binding = execution_work_port_binding
+        self._execution_lineage_persistence = execution_lineage_persistence
 
     async def execute(
         self,
@@ -175,9 +193,35 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             attempt_id=root_context.attempt_id,
             execution_id=execution_id,
         )
+        admission_hooks = self._admission_hooks
+        lineage_token = None
+        if self._execution_lineage_persistence is not None:
+            lineage_scope = validate_root_lineage_inputs(
+                tenant_id=root_context.tenant_id,
+                task_id=root_context.task_id,
+                run_id=root_context.run_id,
+                attempt_id=root_context.attempt_id,
+                execution_id=execution_id,
+            )
+            _, lineage_token = activate_root_execution_lineage(
+                persistence=self._execution_lineage_persistence,
+                scope=lineage_scope,
+                root_execution_id=execution_id,
+                predecessor_root_execution_id=root_context.segment_predecessor_root_execution_id,
+            )
+            lineage_hook = build_root_lineage_admission_hook(
+                persistence=self._execution_lineage_persistence,
+                scope=lineage_scope,
+                segment_root_execution_id=execution_id,
+                execution_id=execution_id,
+            )
+            admission_hooks = merge_lineage_root_admission_hooks(
+                lineage_hook,
+                self._admission_hooks,
+            )
         boundary = ExecutionBoundary[RequestT, ResultT](
             self._delegate,
-            admission_hooks=self._admission_hooks,
+            admission_hooks=admission_hooks,
             identity=binding,
             authority=root_context.authority,
         )
@@ -208,6 +252,8 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 )
             return await boundary.execute(request)
         finally:
+            if lineage_token is not None:
+                deactivate_root_execution_lineage(lineage_token)
             if work_port_token is not None:
                 reset_active_execution_work_port(work_port_token)
             if persistence_token is not None:

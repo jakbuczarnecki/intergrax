@@ -63,6 +63,7 @@ from intergrax.runtime.execution.execution_terminal import ExecutionTerminalServ
 from intergrax.runtime.execution.execution_terminal.wiring import (
     resolve_execution_terminal_store,
 )
+from intergrax.runtime.execution.lineage.wiring import resolve_execution_lineage_persistence
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
@@ -74,6 +75,7 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.contracts.execution_terminal import ExecutionTerminalStore
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
@@ -119,6 +121,7 @@ def build_nexus_loop_from_environment(
     document_store: Any | None = None,
     execution_terminal: ExecutionTerminalService | None = None,
     execution_terminal_store: ExecutionTerminalStore | None = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -184,6 +187,9 @@ def build_nexus_loop_from_environment(
         if resolved_attempt_lifecycle_store is not None
         else None
     )
+    resolved_execution_lineage = resolve_execution_lineage_persistence(
+        explicit_persistence=execution_lineage_persistence,
+    )
     resolved_execution_terminal = execution_terminal
     if resolved_execution_terminal is None and (
         execution_terminal_store is not None
@@ -247,6 +253,7 @@ def build_nexus_loop_from_environment(
         execution_budget_ledger_factory=resolved_budget_ledger_factory,
         attempt_lifecycle=resolved_attempt_lifecycle,
         execution_terminal=resolved_execution_terminal,
+        execution_lineage_persistence=resolved_execution_lineage,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)
