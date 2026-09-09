@@ -11,11 +11,13 @@ import pytest
 from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     BoundedMultiAgentFanOutService,
 )
+from intergrax.agent_distribution.coordination_binding_materialization import (
+    materialize_coordination_intent_binding,
+)
 from intergrax.agent_distribution.coordination_intent import CoordinationExecutionMode
 from intergrax.agent_distribution.coordination_intent_executor import (
     CoordinationGovernanceDenied,
     CoordinationGovernanceRequiresHuman,
-    CoordinationIntentBinding,
     CoordinationIntentExecutor,
 )
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
@@ -55,7 +57,11 @@ from intergrax.runtime.governance.multi_agent_coordination_governance import (
     RuntimeMultiAgentCoordinationGovernance,
     _StaticMultiAgentCoordinationGovernanceEvaluator,
 )
+from intergrax.runtime.governance.active_governed_execution_task import (
+    ActiveGovernedExecutionTask,
+)
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from intergrax.runtime.task.task import Task
 from tests.unit.agent_distribution.test_coordination_intent import _single_intent
 from tests.unit.agent_distribution.test_coordination_intent_executor import (
     _StaticOrchestrationPort,
@@ -79,6 +85,29 @@ def _principal() -> RequestIdentity:
         tenant_id=_TENANT,
         user_id=_ACTING,
         auth_subject="subject-acting",
+    )
+
+
+def _governed_task(*, workspace_id: str | None = _WORKSPACE) -> Task:
+    metadata: dict[str, str] = {}
+    if workspace_id is not None:
+        metadata["workspace_id"] = workspace_id
+    return Task(
+        tenant_id=_TENANT,
+        user_id=_ACTING,
+        agent_id="agent-a",
+        metadata=metadata,
+    )
+
+
+def _collaborative_binding(task_scope, *, pairs: tuple[tuple[str, str], ...]):
+    base = _binding(task_scope, pairs=pairs)
+    return materialize_coordination_intent_binding(
+        task_scope_id=base.task_scope_id,
+        application_id=base.application_id,
+        application_environment_id=base.application_environment_id,
+        contribution_bindings=base.contribution_bindings,
+        governed_task=_governed_task(),
     )
 
 
@@ -437,15 +466,14 @@ async def test_deny_has_zero_downstream_effects_with_collaborative_workspace() -
     )
     task_scope = mint_task_id()
     intent = _single_intent("contrib-a")
-    binding = CoordinationIntentBinding(
-        task_scope_id=task_scope,
-        application_id="app-a",
-        application_environment_id="env-a",
-        contribution_bindings=_binding(task_scope, pairs=(("contrib-a", "lease-a"),)).contribution_bindings,
-        workspace_id=_WORKSPACE,
-    )
-    with pytest.raises(CoordinationGovernanceDenied):
-        await executor.execute(intent, binding=binding, principal=_principal())
+    binding = _collaborative_binding(task_scope, pairs=(("contrib-a", "lease-a"),))
+    governed = ActiveGovernedExecutionTask()
+    token = governed.bind(_governed_task())
+    try:
+        with pytest.raises(CoordinationGovernanceDenied):
+            await executor.execute(intent, binding=binding, principal=_principal())
+    finally:
+        governed.reset(token)
     assert coordination.calls == 0
     assert fan_out.calls == 0
 
@@ -467,14 +495,13 @@ async def test_collaborative_allow_executes_coordination_path() -> None:
     )
     task_scope = mint_task_id()
     intent = _single_intent("contrib-a")
-    binding = CoordinationIntentBinding(
-        task_scope_id=task_scope,
-        application_id="app-a",
-        application_environment_id="env-a",
-        contribution_bindings=_binding(task_scope, pairs=(("contrib-a", "lease-a"),)).contribution_bindings,
-        workspace_id=_WORKSPACE,
-    )
-    result = await executor.execute(intent, binding=binding, principal=_principal())
+    binding = _collaborative_binding(task_scope, pairs=(("contrib-a", "lease-a"),))
+    governed = ActiveGovernedExecutionTask()
+    token = governed.bind(_governed_task())
+    try:
+        result = await executor.execute(intent, binding=binding, principal=_principal())
+    finally:
+        governed.reset(token)
     assert result.mode is CoordinationExecutionMode.SINGLE
     assert coordination.calls == 1
 
@@ -496,15 +523,14 @@ async def test_require_human_blocks_execution_before_approval() -> None:
     )
     task_scope = mint_task_id()
     intent = _single_intent("contrib-a")
-    binding = CoordinationIntentBinding(
-        task_scope_id=task_scope,
-        application_id="app-a",
-        application_environment_id="env-a",
-        contribution_bindings=_binding(task_scope, pairs=(("contrib-a", "lease-a"),)).contribution_bindings,
-        workspace_id=_WORKSPACE,
-    )
-    with pytest.raises(CoordinationGovernanceRequiresHuman):
-        await executor.execute(intent, binding=binding, principal=_principal())
+    binding = _collaborative_binding(task_scope, pairs=(("contrib-a", "lease-a"),))
+    governed = ActiveGovernedExecutionTask()
+    token = governed.bind(_governed_task())
+    try:
+        with pytest.raises(CoordinationGovernanceRequiresHuman):
+            await executor.execute(intent, binding=binding, principal=_principal())
+    finally:
+        governed.reset(token)
     assert coordination.calls == 0
     assert fan_out.calls == 0
 

@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from typing import TypeVar
 
+from intergrax.agent_distribution.coordination_binding_materialization import (
+    CoordinationCollaborativeApplicabilityClassification,
+)
 from intergrax.agent_distribution.coordination_intent import (
     CoordinationExecutionMode,
     CoordinationIntent,
@@ -65,10 +68,7 @@ def build_multi_agent_coordination_governance_request(
     application_id: str,
     application_environment_id: str,
     principal: RequestIdentity,
-    workspace_id: str | None = None,
-    delegator_principal_id: str | None = None,
-    delegation_id: str | None = None,
-    resource_scope: str | None = None,
+    collaborative_applicability: CoordinationCollaborativeApplicabilityClassification,
 ) -> MultiAgentCoordinationGovernanceRequest:
     """Project validated semantic intent into governance-owned admission request."""
     contributions: list[MultiAgentCoordinationGovernanceContribution] = []
@@ -83,21 +83,17 @@ def build_multi_agent_coordination_governance_request(
                 required_capability_ids=required_capability_ids,
             ),
         )
-    collaborative_applicability = (
-        MultiAgentCoordinationCollaborativeApplicability.NOT_APPLICABLE
-    )
     collaborative_context: MultiAgentCoordinationCollaborativeContext | None = None
-    normalized_workspace = workspace_id.strip() if workspace_id is not None else ""
-    if normalized_workspace:
-        collaborative_applicability = (
-            MultiAgentCoordinationCollaborativeApplicability.REQUIRED
-        )
+    if (
+        collaborative_applicability.applicability
+        is MultiAgentCoordinationCollaborativeApplicability.REQUIRED
+    ):
         collaborative_context = MultiAgentCoordinationCollaborativeContext(
-            workspace_id=normalized_workspace,
+            workspace_id=collaborative_applicability.workspace_id or "",
             acting_principal_id=multi_agent_coordination_acting_principal_id(principal),
-            delegator_principal_id=delegator_principal_id,
-            delegation_id=delegation_id,
-            resource_scope=resource_scope,
+            delegator_principal_id=collaborative_applicability.delegator_principal_id,
+            delegation_id=collaborative_applicability.delegation_id,
+            resource_scope=collaborative_applicability.resource_scope,
         )
     return MultiAgentCoordinationGovernanceRequest(
         intent_id=str(intent.intent_id),
@@ -108,7 +104,7 @@ def build_multi_agent_coordination_governance_request(
         application_id=application_id,
         application_environment_id=application_environment_id,
         principal=principal,
-        collaborative_applicability=collaborative_applicability,
+        collaborative_applicability=collaborative_applicability.applicability,
         collaborative_context=collaborative_context,
     )
 

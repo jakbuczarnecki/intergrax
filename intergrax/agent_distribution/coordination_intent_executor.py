@@ -8,6 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
+from intergrax.agent_distribution.coordination_binding_materialization import (
+    CoordinationCollaborativeApplicabilityClassification,
+    reconcile_coordination_collaborative_applicability,
+)
 from intergrax.agent_distribution.coordination_governance_adapter import (
     build_multi_agent_coordination_governance_request,
 )
@@ -44,6 +48,12 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.multi_agent_coordination_governance import (
     MultiAgentCoordinationGovernancePort,
     MultiAgentCoordinationGovernanceResult,
+    evidence_from_request_and_decision,
+    multi_agent_coordination_governance_request_digest,
+)
+from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.runtime.governance.active_governed_execution_task import (
+    peek_governed_execution_task,
 )
 
 RequestT = TypeVar("RequestT")
@@ -66,10 +76,7 @@ class CoordinationIntentBinding:
     application_id: str
     application_environment_id: str
     contribution_bindings: tuple[CoordinationContributionBinding, ...]
-    workspace_id: str | None = None
-    delegator_principal_id: str | None = None
-    delegation_id: str | None = None
-    resource_scope: str | None = None
+    collaborative_applicability: CoordinationCollaborativeApplicabilityClassification
 
     def __post_init__(self) -> None:
         if not self.contribution_bindings:
@@ -239,12 +246,13 @@ class CoordinationIntentExecutor(Generic[RequestT, ResultT]):
         self._fan_out = fan_out
         self._governance = governance
 
-    def _enforce_governance(
+    def _fail_closed_governance(
         self,
         intent: CoordinationIntent[RequestT],
         *,
         binding: CoordinationIntentBinding,
         principal: RequestIdentity,
+        reason: str,
     ) -> MultiAgentCoordinationGovernanceResult:
         request = build_multi_agent_coordination_governance_request(
             intent,
@@ -252,10 +260,56 @@ class CoordinationIntentExecutor(Generic[RequestT, ResultT]):
             application_id=binding.application_id,
             application_environment_id=binding.application_environment_id,
             principal=principal,
-            workspace_id=binding.workspace_id,
-            delegator_principal_id=binding.delegator_principal_id,
-            delegation_id=binding.delegation_id,
-            resource_scope=binding.resource_scope,
+            collaborative_applicability=binding.collaborative_applicability,
+        )
+        decision = PolicyDecision(
+            action=PolicyAction.DENY,
+            reason=reason,
+            enforcement_level=EnforcementLevel.MANDATORY,
+            policy_rule_id="multi_agent_coordination.collaborative_applicability.fail_closed",
+        )
+        request_digest = multi_agent_coordination_governance_request_digest(request)
+        evidence = evidence_from_request_and_decision(
+            request,
+            decision=decision,
+            request_digest=request_digest,
+        )
+        return MultiAgentCoordinationGovernanceResult(
+            permitted=False,
+            decision=decision,
+            evidence=evidence,
+            requires_governed_continuation=False,
+            validation_failed=True,
+        )
+
+    def _enforce_governance(
+        self,
+        intent: CoordinationIntent[RequestT],
+        *,
+        binding: CoordinationIntentBinding,
+        principal: RequestIdentity,
+    ) -> MultiAgentCoordinationGovernanceResult:
+        reconcile_reason = reconcile_coordination_collaborative_applicability(
+            binding.collaborative_applicability,
+            peek_governed_execution_task(),
+        )
+        if reconcile_reason is not None:
+            raise CoordinationGovernanceDenied(
+                self._fail_closed_governance(
+                    intent,
+                    binding=binding,
+                    principal=principal,
+                    reason=reconcile_reason,
+                ),
+            )
+
+        request = build_multi_agent_coordination_governance_request(
+            intent,
+            task_scope_id=binding.task_scope_id,
+            application_id=binding.application_id,
+            application_environment_id=binding.application_environment_id,
+            principal=principal,
+            collaborative_applicability=binding.collaborative_applicability,
         )
         result = self._governance.evaluate(request)
         if result.permitted:

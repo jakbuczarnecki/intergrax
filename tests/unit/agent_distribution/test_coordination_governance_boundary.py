@@ -16,6 +16,9 @@ from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     FanOutOrchestrationPort,
     FanOutRequest,
 )
+from intergrax.agent_distribution.coordination_binding_materialization import (
+    CoordinationCollaborativeApplicabilityClassification,
+)
 from intergrax.agent_distribution.coordination_governance_adapter import (
     build_multi_agent_coordination_governance_request,
 )
@@ -273,6 +276,7 @@ def test_governance_request_has_no_agent_or_lease_identity() -> None:
         application_id=binding.application_id,
         application_environment_id=binding.application_environment_id,
         principal=admin_test_principal(),
+        collaborative_applicability=binding.collaborative_applicability,
     )
     payload = request.model_dump(mode="json")
     serialized = str(payload)

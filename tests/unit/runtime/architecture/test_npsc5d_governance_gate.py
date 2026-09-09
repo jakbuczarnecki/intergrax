@@ -17,6 +17,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _NPSC5D_PRODUCTION = (
     _REPO_ROOT / "intergrax" / "contracts" / "multi_agent_coordination_governance.py",
     _REPO_ROOT / "intergrax" / "runtime" / "governance" / "multi_agent_coordination_governance.py",
+    _REPO_ROOT / "intergrax" / "agent_distribution" / "coordination_binding_materialization.py",
     _REPO_ROOT / "intergrax" / "agent_distribution" / "coordination_governance_adapter.py",
     _REPO_ROOT / "intergrax" / "agent_distribution" / "coordination_intent_executor.py",
 )
@@ -129,6 +130,17 @@ def test_npsc5d_contracts_avoid_prohibited_patterns() -> None:
         "NPSC-5D/R1 authoritative modules contain prohibited patterns:\n"
         + "\n".join(violations)
     )
+
+
+@pytest.mark.gate
+def test_adapter_does_not_infer_not_applicable_from_workspace_omission() -> None:
+    adapter_path = (
+        _REPO_ROOT / "intergrax" / "agent_distribution" / "coordination_governance_adapter.py"
+    )
+    source = adapter_path.read_text(encoding="utf-8-sig")
+    assert "workspace_id: str | None" not in source
+    assert "normalized_workspace" not in source
+    assert "collaborative_applicability: CoordinationCollaborativeApplicabilityClassification" in source
 
 
 @pytest.mark.gate

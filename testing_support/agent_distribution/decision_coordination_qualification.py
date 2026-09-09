@@ -7,6 +7,9 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, fields, replace
 
+from intergrax.agent_distribution.coordination_binding_materialization import (
+    CoordinationCollaborativeApplicabilityClassification,
+)
 from intergrax.agent_distribution.coordination_intent import CoordinationContributionId
 from intergrax.agent_distribution.coordination_intent_executor import (
     CoordinationContributionBinding,
@@ -189,6 +192,9 @@ def coordination_binding(
                 lease_id=TaskScopedAgentLeaseId(lease_id),
             )
             for contribution_id, lease_id in contribution_lease_pairs
+        ),
+        collaborative_applicability=(
+            CoordinationCollaborativeApplicabilityClassification.not_applicable()
         ),
     )
 

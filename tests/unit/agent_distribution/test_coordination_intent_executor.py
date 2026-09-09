@@ -25,6 +25,9 @@ from intergrax.agent_distribution.coordination_intent import (
     CoordinationIntentContractError,
     CoordinationIntentId,
 )
+from intergrax.agent_distribution.coordination_binding_materialization import (
+    CoordinationCollaborativeApplicabilityClassification,
+)
 from intergrax.agent_distribution.coordination_intent_executor import (
     CoordinationContributionBinding,
     CoordinationIntentBinding,
@@ -88,7 +91,15 @@ def _binding(
     task_scope,
     *,
     pairs: tuple[tuple[str, str], ...],
+    workspace_id: str | None = None,
 ) -> CoordinationIntentBinding:
+    collaborative_applicability = (
+        CoordinationCollaborativeApplicabilityClassification.required(
+            workspace_id=workspace_id,
+        )
+        if workspace_id is not None
+        else CoordinationCollaborativeApplicabilityClassification.not_applicable()
+    )
     return CoordinationIntentBinding(
         task_scope_id=task_scope,
         application_id=_APP,
@@ -100,6 +111,7 @@ def _binding(
             )
             for contribution_id, lease_id in pairs
         ),
+        collaborative_applicability=collaborative_applicability,
     )
 
 
