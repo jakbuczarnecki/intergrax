@@ -271,9 +271,9 @@ CoordinationIntentExecutor
 
 ---
 
-## 8.1 NPSC-5D/R1 / R1-H1 — semantic coordination governance admission
+## 8.1 NPSC-5D/R1 — semantic coordination governance admission
 
-**Status:** NPSC-5D/R1 **PASS** · NPSC-5D/R1-H1 **PASS** (not frozen).
+**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D **ACTIVE** (R2/R3 remain)
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -281,10 +281,12 @@ CoordinationIntentExecutor
 | `MultiAgentCoordinationGovernancePort` | `intergrax/contracts/` | Public evaluator boundary reusing canonical `PolicyDecision` |
 | `MultiAgentCoordinationGovernanceBoundary` | `intergrax/runtime/governance/` | Fail-closed admission over configured evaluator |
 | `build_multi_agent_coordination_governance_request` | `intergrax/agent_distribution/` | Caller adapter from `CoordinationIntent` + binding |
+| `materialize_coordination_intent_binding` | `intergrax/agent_distribution/` | Runtime binding projection from governed host Task |
+| `CollaborativeWorkAuthorityResolverPort` | `intergrax/autonomous_work/execution_authority_admission.py` | Shared consumer seam (AW-3B) — Collaborative Work owns semantics |
 
-**Canonical evaluation location:** `CoordinationIntentExecutor` after semantic intent validation and before `MultiAgentCoordinationService` / `BoundedMultiAgentFanOutService`.
+**Canonical evaluation location:** `CoordinationIntentExecutor` after intent/binding validation and authoritative applicability reconciliation, before `MultiAgentCoordinationService` / `BoundedMultiAgentFanOutService`.
 
-**Governance model (R1):** coordination-level admission only; per-contribution physical authorization deferred to NPSC-5D/R2.
+**Governance model (R1):** coordination-level all-or-nothing admission only; per-contribution physical authorization deferred to NPSC-5D/R2.
 
 **Authority reconciliation (R1-H1):**
 
@@ -296,7 +298,9 @@ Governance consumes authoritative EffectiveAuthorityDecision + coordination poli
 Execution effective authority remains independent and monotonic on the active Execution path
 ```
 
-**Collaborative applicability:** classified on the typed governance request from authoritative binding context (`workspace_id` present → `REQUIRED`; absent → `NOT_APPLICABLE`). No caller-controlled `is_collaborative` boolean.
+**Collaborative applicability (R1-H2):** authoritative source is governed Execution / host Task context — not `CoordinationIntent`, Decision artifact, or caller workspace omission. `workspace_id` present → `REQUIRED`; absent → `NOT_APPLICABLE`; missing/malformed host → fail-closed.
+
+**Qualification:** [`NPSC_5D_R1_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R1_FINAL_QUALIFICATION_AND_FREEZE.md)
 
 **Distinction:** NPSC `CoordinationPolicy` remains Agent Distribution selection semantics — not platform Governance policy.
 
@@ -309,7 +313,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
 | **NPSC-5B** | Bounded fan-out / fan-in (**FROZEN / PASS**) |
 | **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
-| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 typed admission seam **PASS**) |
+| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 **FROZEN / PASS**; R2/R3 remain) |
 | **NPSC-5E** | Retry / checkpoint / recovery |
 | **NPSC-5F** | Audit / observability hooks expansion |
 
