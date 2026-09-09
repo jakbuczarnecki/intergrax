@@ -28,6 +28,8 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     DataPackReaderSchemaError,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.reader.parquet_row_decode import (
+    ParquetScalar,
+    extract_parquet_scalar,
     require_bool,
     require_float_vector,
     require_int,
@@ -79,6 +81,22 @@ def _validate_columns(
             )
 
 
+def _cell_scalar(
+    batch: pa.RecordBatch,
+    column: str,
+    batch_row_index: int,
+    *,
+    shard_path: Path,
+    shard_row_index: int,
+) -> ParquetScalar:
+    return extract_parquet_scalar(
+        batch.column(column)[batch_row_index],
+        shard_path=shard_path,
+        row_index=shard_row_index,
+        column=column,
+    )
+
+
 def _decode_relational_row(
     batch: pa.RecordBatch,
     batch_row_index: int,
@@ -87,27 +105,51 @@ def _decode_relational_row(
     shard_row_index: int,
 ) -> RelationalDataPackRecord:
     source_revision = require_optional_string(
-        batch.column("source_revision")[batch_row_index].as_py(),
+        _cell_scalar(
+            batch,
+            "source_revision",
+            batch_row_index,
+            shard_path=shard_path,
+            shard_row_index=shard_row_index,
+        ),
         shard_path=shard_path,
         row_index=shard_row_index,
         column="source_revision",
     )
     return RelationalDataPackRecord(
         global_row_index=require_int(
-            batch.column("global_row_index")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "global_row_index",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="global_row_index",
         ),
         source_ref=source_ref_from_columns(
             catalog_id=require_string(
-                batch.column("catalog_id")[batch_row_index].as_py(),
+                _cell_scalar(
+                    batch,
+                    "catalog_id",
+                    batch_row_index,
+                    shard_path=shard_path,
+                    shard_row_index=shard_row_index,
+                ),
                 shard_path=shard_path,
                 row_index=shard_row_index,
                 column="catalog_id",
             ),
             offer_id=require_string(
-                batch.column("offer_id")[batch_row_index].as_py(),
+                _cell_scalar(
+                    batch,
+                    "offer_id",
+                    batch_row_index,
+                    shard_path=shard_path,
+                    shard_row_index=shard_row_index,
+                ),
                 shard_path=shard_path,
                 row_index=shard_row_index,
                 column="offer_id",
@@ -115,67 +157,133 @@ def _decode_relational_row(
             source_revision=source_revision,
         ),
         record_json=require_string(
-            batch.column("record_json")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "record_json",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="record_json",
         ),
         derivation_version=require_string(
-            batch.column("derivation_version")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "derivation_version",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="derivation_version",
         ),
         semantic_text=require_string(
-            batch.column("semantic_text")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "semantic_text",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="semantic_text",
         ),
         semantic_text_hash=require_string(
-            batch.column("semantic_text_hash")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "semantic_text_hash",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="semantic_text_hash",
         ),
         title=require_optional_string(
-            batch.column("title")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "title",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="title",
         ),
         brand=require_optional_string(
-            batch.column("brand")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "brand",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="brand",
         ),
         category=require_optional_string(
-            batch.column("category")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "category",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="category",
         ),
         description=require_optional_string(
-            batch.column("description")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "description",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="description",
         ),
         has_identifiers=require_bool(
-            batch.column("has_identifiers")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "has_identifiers",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="has_identifiers",
         ),
         has_spec_table=require_bool(
-            batch.column("has_spec_table")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "has_spec_table",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="has_spec_table",
         ),
         has_structured_attributes=require_bool(
-            batch.column("has_structured_attributes")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "has_structured_attributes",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="has_structured_attributes",
@@ -192,7 +300,13 @@ def _decode_embedding_row(
     shard_row_index: int,
 ) -> EmbeddingDataPackRecord:
     embedding_dimension = require_int(
-        batch.column("embedding_dimension")[batch_row_index].as_py(),
+        _cell_scalar(
+            batch,
+            "embedding_dimension",
+            batch_row_index,
+            shard_path=shard_path,
+            shard_row_index=shard_row_index,
+        ),
         shard_path=shard_path,
         row_index=shard_row_index,
         column="embedding_dimension",
@@ -204,40 +318,76 @@ def _decode_embedding_row(
             f"expected {expected_dimension}, got {embedding_dimension}"
         )
     dense_embedding = require_float_vector(
-        batch.column("dense_embedding")[batch_row_index].as_py(),
+        _cell_scalar(
+            batch,
+            "dense_embedding",
+            batch_row_index,
+            shard_path=shard_path,
+            shard_row_index=shard_row_index,
+        ),
         shard_path=shard_path,
         row_index=shard_row_index,
         column="dense_embedding",
         expected_length=expected_dimension,
     )
     source_revision = require_optional_string(
-        batch.column("source_revision")[batch_row_index].as_py(),
+        _cell_scalar(
+            batch,
+            "source_revision",
+            batch_row_index,
+            shard_path=shard_path,
+            shard_row_index=shard_row_index,
+        ),
         shard_path=shard_path,
         row_index=shard_row_index,
         column="source_revision",
     )
     model_revision = require_optional_string(
-        batch.column("embedding_model_revision")[batch_row_index].as_py(),
+        _cell_scalar(
+            batch,
+            "embedding_model_revision",
+            batch_row_index,
+            shard_path=shard_path,
+            shard_row_index=shard_row_index,
+        ),
         shard_path=shard_path,
         row_index=shard_row_index,
         column="embedding_model_revision",
     )
     return EmbeddingDataPackRecord(
         logical_point_id=require_string(
-            batch.column("logical_point_id")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "logical_point_id",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="logical_point_id",
         ),
         source_ref=source_ref_from_columns(
             catalog_id=require_string(
-                batch.column("catalog_id")[batch_row_index].as_py(),
+                _cell_scalar(
+                    batch,
+                    "catalog_id",
+                    batch_row_index,
+                    shard_path=shard_path,
+                    shard_row_index=shard_row_index,
+                ),
                 shard_path=shard_path,
                 row_index=shard_row_index,
                 column="catalog_id",
             ),
             offer_id=require_string(
-                batch.column("offer_id")[batch_row_index].as_py(),
+                _cell_scalar(
+                    batch,
+                    "offer_id",
+                    batch_row_index,
+                    shard_path=shard_path,
+                    shard_row_index=shard_row_index,
+                ),
                 shard_path=shard_path,
                 row_index=shard_row_index,
                 column="offer_id",
@@ -245,25 +395,49 @@ def _decode_embedding_row(
             source_revision=source_revision,
         ),
         derivation_version=require_string(
-            batch.column("derivation_version")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "derivation_version",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="derivation_version",
         ),
         semantic_text_hash=require_string(
-            batch.column("semantic_text_hash")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "semantic_text_hash",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="semantic_text_hash",
         ),
         embedding_provider=require_string(
-            batch.column("embedding_provider")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "embedding_provider",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="embedding_provider",
         ),
         embedding_model=require_string(
-            batch.column("embedding_model")[batch_row_index].as_py(),
+            _cell_scalar(
+                batch,
+                "embedding_model",
+                batch_row_index,
+                shard_path=shard_path,
+                shard_row_index=shard_row_index,
+            ),
             shard_path=shard_path,
             row_index=shard_row_index,
             column="embedding_model",

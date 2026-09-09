@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from unittest.mock import Mock
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -23,6 +24,10 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     DataPackReaderSchemaError,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.reader.parquet_row_decode import (
+    ParquetIntegerScalar,
+    ParquetStringScalar,
+    ParquetVectorScalar,
+    extract_parquet_scalar,
     require_bool,
     require_float_vector,
     require_int,
@@ -357,13 +362,112 @@ def test_optional_string_helper_accepts_null() -> None:
 
 
 def test_required_string_helper_rejects_int() -> None:
+    invalid_value: ParquetStringScalar = 123  # type: ignore[assignment]
     with pytest.raises(DataPackReaderSchemaError, match="catalog_id"):
-        require_string(123, shard_path=_SHARD_PATH, row_index=0, column="catalog_id")
+        require_string(invalid_value, shard_path=_SHARD_PATH, row_index=0, column="catalog_id")
 
 
 def test_global_row_index_string_helper_rejected() -> None:
+    invalid_value: ParquetIntegerScalar = "17"  # type: ignore[assignment]
     with pytest.raises(DataPackReaderSchemaError, match="global_row_index"):
-        require_int("17", shard_path=_SHARD_PATH, row_index=0, column="global_row_index")
+        require_int(invalid_value, shard_path=_SHARD_PATH, row_index=0, column="global_row_index")
+
+
+def test_extract_parquet_scalar_string() -> None:
+    scalar = pa.scalar("catalog-a")
+    assert (
+        extract_parquet_scalar(
+            scalar,
+            shard_path=_SHARD_PATH,
+            row_index=0,
+            column="catalog_id",
+        )
+        == "catalog-a"
+    )
+
+
+def test_extract_parquet_scalar_nullable_string() -> None:
+    scalar = pa.scalar(None, type=pa.string())
+    assert (
+        extract_parquet_scalar(
+            scalar,
+            shard_path=_SHARD_PATH,
+            row_index=0,
+            column="source_revision",
+        )
+        is None
+    )
+
+
+def test_extract_parquet_scalar_int_and_bool() -> None:
+    assert (
+        extract_parquet_scalar(
+            pa.scalar(17),
+            shard_path=_SHARD_PATH,
+            row_index=0,
+            column="global_row_index",
+        )
+        == 17
+    )
+    assert (
+        extract_parquet_scalar(
+            pa.scalar(True),
+            shard_path=_SHARD_PATH,
+            row_index=0,
+            column="has_identifiers",
+        )
+        is True
+    )
+
+
+def test_extract_parquet_scalar_vector_numeric() -> None:
+    vector = [1.0, 2.0, 3.0]
+    scalar = pa.scalar(vector, type=pa.list_(pa.float32(), len(vector)))
+    extracted = extract_parquet_scalar(
+        scalar,
+        shard_path=_SHARD_PATH,
+        row_index=0,
+        column="dense_embedding",
+    )
+    assert isinstance(extracted, list)
+    assert len(extracted) == len(vector)
+    assert all(isinstance(element, float) for element in extracted)
+
+
+def test_extract_parquet_scalar_unsupported_shape_rejected() -> None:
+    unsupported_cell = Mock(spec=pa.Scalar)
+    unsupported_cell.as_py.return_value = {"unexpected": "dict"}
+    with pytest.raises(DataPackReaderSchemaError, match="canonical Parquet scalar"):
+        extract_parquet_scalar(
+            unsupported_cell,
+            shard_path=_SHARD_PATH,
+            row_index=0,
+            column="catalog_id",
+        )
+
+
+def test_extract_parquet_scalar_vector_string_element_rejected() -> None:
+    invalid_vector_cell = Mock(spec=pa.Scalar)
+    invalid_vector_cell.as_py.return_value = ["0.1", 0.0, 0.0]
+    with pytest.raises(DataPackReaderSchemaError, match="dense_embedding\\[0\\]"):
+        extract_parquet_scalar(
+            invalid_vector_cell,
+            shard_path=_SHARD_PATH,
+            row_index=0,
+            column="dense_embedding",
+        )
+
+
+def test_vector_helper_rejects_non_list() -> None:
+    invalid_value: ParquetVectorScalar = 42  # type: ignore[assignment]
+    with pytest.raises(DataPackReaderSchemaError, match="dense_embedding"):
+        require_float_vector(
+            invalid_value,
+            shard_path=_SHARD_PATH,
+            row_index=0,
+            column="dense_embedding",
+            expected_length=_EMBEDDING_DIMENSION,
+        )
 
 
 def test_forbidden_type_coercion_patterns_absent() -> None:
@@ -380,11 +484,30 @@ def test_forbidden_type_coercion_patterns_absent() -> None:
         "int(batch.column",
         "tuple(float(value)",
         "float(value)",
+        ": object",
+        "-> object",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        "Sequence[object]",
+        "tuple[object, ...]",
+        "getattr(",
+        "setattr(",
+        "hasattr(",
+        "import inspect",
+        "import importlib",
+        "except Exception",
+        "from typing import Any",
+        ": Any",
     )
-    for module_name in ("parquet_streaming.py", "parquet_row_decode.py"):
+    reader_modules = tuple(
+        path.name
+        for path in reader_root.iterdir()
+        if path.suffix == ".py" and path.name != "__init__.py"
+    )
+    for module_name in reader_modules:
         source = (reader_root / module_name).read_text(encoding="utf-8")
         for fragment in forbidden_fragments:
-            assert fragment not in source, f"{module_name} contains forbidden coercion {fragment}"
+            assert fragment not in source, f"{module_name} contains forbidden pattern {fragment}"
 
 
 def test_schema_helpers_match_codec_types() -> None:
