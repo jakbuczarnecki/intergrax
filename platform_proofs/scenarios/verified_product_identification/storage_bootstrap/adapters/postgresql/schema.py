@@ -1004,3 +1004,308 @@ def verify_identifier_table_compatible(
             "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing identifier lookup index "
             f"{_IDENTIFIER_LOOKUP_INDEX_NAME}"
         )
+
+
+_STRUCTURED_REQUIRED_COLUMNS: tuple[tuple[str, str, str], ...] = (
+    ("catalog_id", "text", "NO"),
+    ("offer_id", "text", "NO"),
+    ("source_revision_norm", "text", "NO"),
+    ("source_revision", "text", "YES"),
+    ("attr_identity", "text", "NO"),
+    ("canonical_key", "text", "YES"),
+    ("source_key", "text", "NO"),
+    ("source_value", "text", "NO"),
+    ("normalized_text_value", "text", "NO"),
+    ("typed_value_text", "text", "YES"),
+    ("source_field", "text", "NO"),
+)
+
+_STRUCTURED_REQUIRED_CONSTRAINTS: frozenset[str] = frozenset(
+    {
+        "vpi_structured_attribute_pk",
+    }
+)
+
+_STRUCTURED_CANONICAL_EQUALS_INDEX_NAME = "vpi_structured_canonical_equals_idx"
+_STRUCTURED_SOURCE_EQUALS_INDEX_NAME = "vpi_structured_source_equals_idx"
+_STRUCTURED_CONTAINS_INDEX_NAME = "vpi_structured_value_trgm_idx"
+
+
+@dataclass(frozen=True, slots=True)
+class StructuredAttributeTableSpec:
+    schema_name: str
+    table_name: str
+
+
+def qualified_structured_attribute_table(spec: StructuredAttributeTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL("{}.{}").format(
+        sql.Identifier(spec.schema_name),
+        sql.Identifier(spec.table_name),
+    )
+
+
+def create_structured_attribute_table_ddl(spec: StructuredAttributeTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    qualified = qualified_structured_attribute_table(spec)
+    return sql.SQL(
+        """
+        CREATE TABLE IF NOT EXISTS {table} (
+            catalog_id TEXT NOT NULL,
+            offer_id TEXT NOT NULL,
+            source_revision_norm TEXT NOT NULL DEFAULT '',
+            source_revision TEXT,
+            attr_identity TEXT NOT NULL,
+            canonical_key TEXT,
+            source_key TEXT NOT NULL,
+            source_value TEXT NOT NULL,
+            normalized_text_value TEXT NOT NULL,
+            typed_value_text TEXT,
+            source_field TEXT NOT NULL,
+            CONSTRAINT vpi_structured_attribute_pk
+                PRIMARY KEY (
+                    catalog_id,
+                    offer_id,
+                    source_revision_norm,
+                    attr_identity
+                )
+        )
+        """
+    ).format(table=qualified)
+
+
+def create_structured_canonical_equals_index_ddl(spec: StructuredAttributeTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        CREATE INDEX IF NOT EXISTS {index_name}
+        ON {table} (canonical_key, normalized_text_value)
+        WHERE canonical_key IS NOT NULL
+        """
+    ).format(
+        index_name=sql.Identifier(_STRUCTURED_CANONICAL_EQUALS_INDEX_NAME),
+        table=qualified_structured_attribute_table(spec),
+    )
+
+
+def create_structured_source_equals_index_ddl(spec: StructuredAttributeTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        CREATE INDEX IF NOT EXISTS {index_name}
+        ON {table} (source_key, normalized_text_value)
+        """
+    ).format(
+        index_name=sql.Identifier(_STRUCTURED_SOURCE_EQUALS_INDEX_NAME),
+        table=qualified_structured_attribute_table(spec),
+    )
+
+
+def create_structured_contains_index_ddl(spec: StructuredAttributeTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        CREATE INDEX IF NOT EXISTS {index_name}
+        ON {table}
+        USING gin (normalized_text_value gin_trgm_ops)
+        """
+    ).format(
+        index_name=sql.Identifier(_STRUCTURED_CONTAINS_INDEX_NAME),
+        table=qualified_structured_attribute_table(spec),
+    )
+
+
+def structured_attribute_insert_dml(spec: StructuredAttributeTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        INSERT INTO {table} (
+            catalog_id,
+            offer_id,
+            source_revision_norm,
+            source_revision,
+            attr_identity,
+            canonical_key,
+            source_key,
+            source_value,
+            normalized_text_value,
+            typed_value_text,
+            source_field
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+        """
+    ).format(table=qualified_structured_attribute_table(spec))
+
+
+def pg_trgm_extension_available(session: PostgreSQLSession) -> bool:
+    row = session.execute(
+        "SELECT 1 AS present FROM pg_extension WHERE extname = %s",
+        ("pg_trgm",),
+    ).fetchone()
+    return row is not None
+
+
+def verify_structured_attribute_table_compatible(
+    session: PostgreSQLSession,
+    spec: StructuredAttributeTableSpec,
+    *,
+    require_contains_index: bool = False,
+) -> None:
+    columns = session.execute(
+        """
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s
+        ORDER BY ordinal_position
+        """,
+        (spec.schema_name, spec.table_name),
+    ).fetchall()
+    if not columns:
+        raise PostgreSqlBootstrapSchemaError(
+            "POSTGRESQL_SCHEMA_INCOMPATIBLE: structured attribute table missing"
+        )
+
+    actual_columns = {
+        (str(row["column_name"]), str(row["data_type"]), str(row["is_nullable"]))
+        for row in columns
+    }
+    for required_name, required_type, required_nullable in _STRUCTURED_REQUIRED_COLUMNS:
+        if (required_name, required_type, required_nullable) not in actual_columns:
+            raise PostgreSqlBootstrapSchemaError(
+                "POSTGRESQL_SCHEMA_INCOMPATIBLE: "
+                f"missing or incompatible structured attribute column {required_name}"
+            )
+
+    constraints = session.execute(
+        """
+        SELECT tc.constraint_name
+        FROM information_schema.table_constraints tc
+        WHERE tc.table_schema = %s
+          AND tc.table_name = %s
+          AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE')
+        """,
+        (spec.schema_name, spec.table_name),
+    ).fetchall()
+    present = {str(row["constraint_name"]) for row in constraints}
+    missing = sorted(_STRUCTURED_REQUIRED_CONSTRAINTS - present)
+    if missing:
+        raise PostgreSqlBootstrapSchemaError(
+            "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing structured attribute constraints "
+            + ", ".join(missing)
+        )
+
+    for index_name in (
+        _STRUCTURED_CANONICAL_EQUALS_INDEX_NAME,
+        _STRUCTURED_SOURCE_EQUALS_INDEX_NAME,
+    ):
+        index_row = session.execute(
+            """
+            SELECT indexname
+            FROM pg_indexes
+            WHERE schemaname = %s
+              AND tablename = %s
+              AND indexname = %s
+            """,
+            (spec.schema_name, spec.table_name, index_name),
+        ).fetchone()
+        if index_row is None:
+            raise PostgreSqlBootstrapSchemaError(
+                "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing structured attribute index "
+                f"{index_name}"
+            )
+
+    if require_contains_index:
+        contains_row = session.execute(
+            """
+            SELECT indexname
+            FROM pg_indexes
+            WHERE schemaname = %s
+              AND tablename = %s
+              AND indexname = %s
+            """,
+            (spec.schema_name, spec.table_name, _STRUCTURED_CONTAINS_INDEX_NAME),
+        ).fetchone()
+        if contains_row is None:
+            raise PostgreSqlBootstrapSchemaError(
+                "POSTGRESQL_SCHEMA_INCOMPATIBLE: missing structured CONTAINS index "
+                f"{_STRUCTURED_CONTAINS_INDEX_NAME}"
+            )
+
+
+def structured_constraint_search_dml(
+    spec: StructuredAttributeTableSpec,
+    *,
+    include_contains_branch: bool,
+) -> Composable:
+    _, _, _, sql = import_psycopg()
+    contains_branch = sql.SQL("")
+    if include_contains_branch:
+        contains_branch = sql.SQL(
+            """
+            UNION ALL
+            SELECT
+                qc.constraint_ordinal,
+                sa.catalog_id,
+                sa.offer_id,
+                sa.source_revision_norm,
+                sa.source_revision
+            FROM query_constraints qc
+            INNER JOIN {table} sa
+                ON sa.normalized_text_value ILIKE ('%%' || qc.normalized_value || '%%')
+               AND (
+                   (sa.canonical_key IS NOT NULL AND sa.canonical_key = qc.normalized_key)
+                   OR sa.source_key = qc.normalized_key
+               )
+            WHERE qc.operator = 'contains'
+            """
+        ).format(table=qualified_structured_attribute_table(spec))
+
+    return sql.SQL(
+        """
+        WITH query_constraints AS (
+            SELECT *
+            FROM unnest(%s::int[], %s::text[], %s::text[], %s::text[])
+                AS qc(
+                    constraint_ordinal,
+                    normalized_key,
+                    operator,
+                    normalized_value
+                )
+        ),
+        constraint_matches AS (
+            SELECT
+                qc.constraint_ordinal,
+                sa.catalog_id,
+                sa.offer_id,
+                sa.source_revision_norm,
+                sa.source_revision
+            FROM query_constraints qc
+            INNER JOIN {table} sa
+                ON sa.normalized_text_value = qc.normalized_value
+               AND (
+                   (sa.canonical_key IS NOT NULL AND sa.canonical_key = qc.normalized_key)
+                   OR sa.source_key = qc.normalized_key
+               )
+            WHERE qc.operator = 'eq'
+            {contains_branch}
+        )
+        SELECT
+            catalog_id,
+            offer_id,
+            source_revision_norm,
+            source_revision,
+            COUNT(DISTINCT constraint_ordinal)::integer AS matched_constraint_count
+        FROM constraint_matches
+        GROUP BY catalog_id, offer_id, source_revision_norm, source_revision
+        ORDER BY
+            matched_constraint_count DESC,
+            catalog_id ASC,
+            offer_id ASC,
+            source_revision_norm ASC
+        LIMIT %s
+        """
+    ).format(
+        table=qualified_structured_attribute_table(spec),
+        contains_branch=contains_branch,
+    )

@@ -22,6 +22,7 @@ DEFAULT_LEXICAL_DOCUMENT_TABLE_NAME = "vpi_lexical_document"
 DEFAULT_LEXICAL_POSTING_TABLE_NAME = "vpi_lexical_posting"
 DEFAULT_LEXICAL_CORPUS_STATS_TABLE_NAME = "vpi_lexical_corpus_stats"
 DEFAULT_LEXICAL_TERM_STATS_TABLE_NAME = "vpi_lexical_term_stats"
+DEFAULT_STRUCTURED_ATTRIBUTE_TABLE_NAME = "vpi_structured_attribute"
 
 
 def validate_table_identifier(value: str) -> str:
@@ -41,6 +42,7 @@ class PostgreSqlBootstrapConfiguration:
     lexical_posting_table_name: str
     lexical_corpus_stats_table_name: str
     lexical_term_stats_table_name: str
+    structured_attribute_table_name: str
     statement_timeout_ms: int | None = None
     connection_timeout_seconds: int | None = None
     application_name: str = DEFAULT_APPLICATION_NAME
@@ -56,6 +58,7 @@ class PostgreSqlBootstrapConfiguration:
         lexical_posting_table_name: str = DEFAULT_LEXICAL_POSTING_TABLE_NAME,
         lexical_corpus_stats_table_name: str = DEFAULT_LEXICAL_CORPUS_STATS_TABLE_NAME,
         lexical_term_stats_table_name: str = DEFAULT_LEXICAL_TERM_STATS_TABLE_NAME,
+        structured_attribute_table_name: str = DEFAULT_STRUCTURED_ATTRIBUTE_TABLE_NAME,
         statement_timeout_ms: int | None = None,
         connection_timeout_seconds: int | None = None,
         application_name: str = DEFAULT_APPLICATION_NAME,
@@ -72,6 +75,7 @@ class PostgreSqlBootstrapConfiguration:
             lexical_posting_table_name=validate_table_identifier(lexical_posting_table_name),
             lexical_corpus_stats_table_name=validate_table_identifier(lexical_corpus_stats_table_name),
             lexical_term_stats_table_name=validate_table_identifier(lexical_term_stats_table_name),
+            structured_attribute_table_name=validate_table_identifier(structured_attribute_table_name),
             statement_timeout_ms=statement_timeout_ms,
             connection_timeout_seconds=connection_timeout_seconds,
             application_name=application_name,
@@ -87,6 +91,7 @@ class PostgreSqlBootstrapConfiguration:
             f"lexical_posting_table_name={self.lexical_posting_table_name!r}, "
             f"lexical_corpus_stats_table_name={self.lexical_corpus_stats_table_name!r}, "
             f"lexical_term_stats_table_name={self.lexical_term_stats_table_name!r}, "
+            f"structured_attribute_table_name={self.structured_attribute_table_name!r}, "
             f"statement_timeout_ms={self.statement_timeout_ms!r}, "
             f"connection_timeout_seconds={self.connection_timeout_seconds!r}, "
             f"application_name={self.application_name!r})"

@@ -154,6 +154,7 @@ def _configuration(schema_name: str = "vpi_test_schema") -> PostgreSqlBootstrapC
         lexical_posting_table_name="vpi_lexical_posting",
         lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
         lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
     )
 
 
@@ -236,6 +237,12 @@ class _FakeConnection:
             return _FakeCursor(rowcount=1)
         if "insert into" in sql_text and "term_frequency" in sql_text and len(params) == 5:
             return _FakeCursor(rowcount=1)
+        if (
+            "insert into" in sql_text
+            and "attr_identity" in sql_text
+            and len(params) == 11
+        ):
+            return _FakeCursor(rowcount=1)
         if "insert into" in sql_text and params and len(params) == 9:
             catalog_id, offer_id, revision_norm = params[0], params[1], params[2]
             if self.fail_insert_on_offer == offer_id:
@@ -265,7 +272,11 @@ class _FakeConnection:
             row = self.storage.get(identity)
             return _FakeCursor(_rows=[row] if row else [])
         if "pg_indexes" in sql_text:
+            if params and len(params) >= 3:
+                return _FakeCursor(_rows=[{"indexname": str(params[2])}])
             return _FakeCursor(_rows=[{"indexname": "vpi_lexical_posting_term_idx"}])
+        if "pg_extension" in sql_text:
+            return _FakeCursor(_rows=[])
         if "where global_row_index = %s" in sql_text and params:
             identity = self.by_row_index.get(int(params[0]))
             row = self.storage.get(identity) if identity else None
@@ -414,6 +425,26 @@ def test_prepare_new_schema_table() -> None:
             return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_term_stats (id int)",
         ),
         patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_attribute_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_structured_attribute (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_canonical_equals_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_structured_canonical_equals_idx ON vpi_structured_attribute (canonical_key, normalized_text_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_source_equals_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_structured_source_equals_idx ON vpi_structured_attribute (source_key, normalized_text_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_structured_attribute_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.pg_trgm_extension_available",
+            return_value=False,
+        ),
+        patch(
             "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_identifier_table_compatible",
             return_value=None,
         ),
@@ -477,6 +508,26 @@ def test_prepare_existing_compatible_table() -> None:
         patch(
             "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_term_stats_table_ddl",
             return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_term_stats (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_attribute_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_structured_attribute (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_canonical_equals_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_structured_canonical_equals_idx ON vpi_structured_attribute (canonical_key, normalized_text_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_source_equals_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_structured_source_equals_idx ON vpi_structured_attribute (source_key, normalized_text_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_structured_attribute_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.pg_trgm_extension_available",
+            return_value=False,
         ),
         patch(
             "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_identifier_table_compatible",
@@ -786,6 +837,7 @@ def test_identifier_write_schema_and_table_explicitly_qualified() -> None:
         lexical_posting_table_name="vpi_lexical_posting",
         lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
         lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
     )
 
     connection = _FakeConnection()
@@ -1100,6 +1152,7 @@ def test_configuration_table_mismatch_rejected() -> None:
         lexical_posting_table_name="vpi_lexical_posting",
         lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
         lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
     )
     with pytest.raises(PostgreSqlBootstrapConfigurationError):
         resolve_physical_target(RelationalTargetId("vpi-products"), config)
@@ -1125,6 +1178,7 @@ def test_apply_session_limits_uses_parameterized_set_config() -> None:
         lexical_posting_table_name="vpi_lexical_posting",
         lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
         lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
         statement_timeout_ms=7500,
         application_name="vpi-relational-bootstrap",
     )
@@ -1160,6 +1214,7 @@ def test_apply_session_limits_skips_empty_application_name() -> None:
         lexical_posting_table_name="vpi_lexical_posting",
         lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
         lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
         application_name="",
     )
     provider = PostgreSQLConnectionProvider(
@@ -1192,6 +1247,7 @@ def test_apply_session_limits_skips_none_statement_timeout() -> None:
         lexical_posting_table_name="vpi_lexical_posting",
         lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
         lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
         statement_timeout_ms=None,
     )
     provider = PostgreSQLConnectionProvider(
@@ -1225,6 +1281,7 @@ def test_apply_session_limits_hostile_application_name_is_value_only() -> None:
         lexical_posting_table_name="vpi_lexical_posting",
         lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
         lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
         application_name=hostile,
     )
     provider = PostgreSQLConnectionProvider(

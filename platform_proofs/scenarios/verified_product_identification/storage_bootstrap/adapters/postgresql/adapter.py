@@ -47,23 +47,34 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     create_lexical_posting_lookup_index_ddl,
     create_lexical_posting_table_ddl,
     create_lexical_term_stats_table_ddl,
+    create_structured_attribute_table_ddl,
+    create_structured_canonical_equals_index_ddl,
+    create_structured_contains_index_ddl,
+    create_structured_source_equals_index_ddl,
     create_table_ddl,
     identifier_insert_dml,
     lexical_corpus_stats_increment_dml,
     lexical_document_insert_dml,
     lexical_posting_insert_dml,
     lexical_term_stats_increment_dml,
+    pg_trgm_extension_available,
     rebuild_lexical_statistics,
+    structured_attribute_insert_dml,
+    StructuredAttributeTableSpec,
     verify_identifier_table_compatible,
     verify_lexical_corpus_stats_table_compatible,
     verify_lexical_document_table_compatible,
     verify_lexical_posting_table_compatible,
     verify_lexical_term_stats_table_compatible,
+    verify_structured_attribute_table_compatible,
     verify_table_compatible,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
     StoredRelationalRow,
     stored_relational_row_from_fetched_row,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.structured_projection import (
+    project_structured_from_load_record,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.target_mapping import (
     PhysicalRelationalTarget,
@@ -85,6 +96,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 
 _InsertSqlParams = tuple[str, str, str, str | None, int, str, str, str, str]
 _IdentifierInsertParams = tuple[str, str, str, str | None, str, str, str, str]
+_StructuredInsertParams = tuple[str, str, str, str | None, str, str | None, str, str, str, str | None, str]
 _LexicalDocumentInsertParams = tuple[str, str, str, str | None, str, str, int, str]
 _LexicalPostingInsertParams = tuple[str, str, str, str, int]
 
@@ -175,6 +187,10 @@ class PostgreSqlRelationalStorageAdapter:
             schema_name=physical.schema_name,
             table_name=self._configuration.lexical_term_stats_table_name,
         )
+        structured_spec = StructuredAttributeTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.structured_attribute_table_name,
+        )
         try:
             with self._provider.transaction(
                 isolation_level=PostgreSQLIsolationLevel.READ_COMMITTED,
@@ -201,6 +217,19 @@ class PostgreSqlRelationalStorageAdapter:
                     create_lexical_term_stats_table_ddl(term_stats_spec)
                 )
                 verify_lexical_term_stats_table_compatible(session, term_stats_spec)
+                session.execute_statement(create_structured_attribute_table_ddl(structured_spec))
+                session.execute_statement(
+                    create_structured_canonical_equals_index_ddl(structured_spec)
+                )
+                session.execute_statement(create_structured_source_equals_index_ddl(structured_spec))
+                contains_available = pg_trgm_extension_available(session)
+                if contains_available:
+                    session.execute_statement(create_structured_contains_index_ddl(structured_spec))
+                verify_structured_attribute_table_compatible(
+                    session,
+                    structured_spec,
+                    require_contains_index=contains_available,
+                )
                 rebuild_lexical_statistics(
                     session,
                     document_spec=lexical_document_spec,
@@ -354,6 +383,7 @@ class PostgreSqlRelationalStorageAdapter:
                 physical,
                 project_identifiers_from_load_record(record),
             )
+            self._write_structured_rows(session, record)
             self._write_lexical_rows(session, record)
             return "written"
 
@@ -423,6 +453,36 @@ class PostgreSqlRelationalStorageAdapter:
                 row.identifier_type.value,
                 row.source_value,
                 row.normalized_value,
+                row.source_field,
+            )
+            session.execute(insert_sql, params)
+
+    def _write_structured_rows(
+        self,
+        session: PostgreSQLSession,
+        record: RelationalLoadRecord,
+    ) -> None:
+        rows = project_structured_from_load_record(record)
+        if not rows:
+            return
+        insert_sql = structured_attribute_insert_dml(
+            StructuredAttributeTableSpec(
+                schema_name=self._configuration.schema_name,
+                table_name=self._configuration.structured_attribute_table_name,
+            )
+        )
+        for row in rows:
+            params: _StructuredInsertParams = (
+                row.catalog_id,
+                row.offer_id,
+                row.source_revision_norm,
+                row.source_revision,
+                row.attr_identity,
+                row.canonical_key,
+                row.source_key,
+                row.source_value,
+                row.normalized_text_value,
+                row.typed_value_text,
                 row.source_field,
             )
             session.execute(insert_sql, params)

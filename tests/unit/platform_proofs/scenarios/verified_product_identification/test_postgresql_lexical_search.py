@@ -138,6 +138,7 @@ def _configuration() -> PostgreSqlBootstrapConfiguration:
         lexical_posting_table_name="vpi_lexical_posting",
         lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
         lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
     )
 
 
