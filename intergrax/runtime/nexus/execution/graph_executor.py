@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Awaitable, Callable, Dict, Generic, List, Optional, TypeVar
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
@@ -20,6 +20,18 @@ from intergrax.agents.persistence.idempotency_store_wiring import (
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.contracts.orchestration_topology import (
+    OrchestrationResult,
+    OrchestrationSchedulingPolicy,
+    OrchestrationSlotFailure,
+    OrchestrationSlotId,
+    OrchestrationSlotOutcome,
+    OrchestrationSlotStatus,
+    OrchestrationTopology,
+    build_orchestration_result,
+    validate_orchestration_scheduling_policy,
+    validate_orchestration_topology,
+)
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
@@ -96,6 +108,9 @@ from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionNode,
     ExecutionNodeStatus,
 )
+from intergrax.runtime.nexus.execution.orchestration_node_execution import (
+    OrchestrationNodeExecutionPort,
+)
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy, RetryRecord
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.execution.agentic import AgentExecutor
@@ -116,6 +131,35 @@ if TYPE_CHECKING:
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
 RetryCallback = Callable[[RetryRecord], Awaitable[None]]
+HandoffExtra = tuple[str, AgentExecutionResult]
+
+PayloadT = TypeVar("PayloadT")
+ResultT = TypeVar("ResultT")
+
+
+@dataclass(frozen=True, slots=True)
+class _OrchestrationWorkChildRequest(Generic[PayloadT, ResultT]):
+    node: ExecutionNode
+    node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT]
+
+
+@dataclass(frozen=True, slots=True)
+class _OrchestrationWorkChildResult(Generic[ResultT]):
+    outcome: OrchestrationSlotOutcome[ResultT]
+
+
+class _OrchestrationWorkChildDelegate(Generic[PayloadT, ResultT]):
+    __slots__ = ()
+
+    async def execute(
+        self,
+        request: _OrchestrationWorkChildRequest[PayloadT, ResultT],
+    ) -> _OrchestrationWorkChildResult[ResultT]:
+        slot_id = request.node.orchestration_slot_id
+        if slot_id is None:
+            raise RuntimeError("orchestration work node missing orchestration_slot_id")
+        outcome = await request.node_execution.execute_node(slot_id=slot_id)
+        return _OrchestrationWorkChildResult(outcome=outcome)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1284,3 +1328,209 @@ class GraphExecutor:
         if delegation.max_tool_calls is not None and delegation.max_tool_calls < 1:
             return "delegation_budget_tool_calls_exhausted"
         return None
+
+    async def execute_orchestration_topology(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        *,
+        topology: OrchestrationTopology[PayloadT],
+        node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT],
+        scheduling_policy: OrchestrationSchedulingPolicy,
+    ) -> OrchestrationResult[ResultT]:
+        """Execute typed orchestration work nodes via canonical child execution scheduling."""
+        validate_orchestration_topology(topology)
+        validate_orchestration_scheduling_policy(scheduling_policy)
+        require_active_execution_identity()
+        require_active_execution_id()
+
+        previous_parallel_cap = self._max_parallel_nodes
+        if scheduling_policy.max_concurrency is not None:
+            self._max_parallel_nodes = scheduling_policy.max_concurrency
+        try:
+            outcomes_by_slot = await self._execute_orchestration_work_graph(
+                graph,
+                task,
+                node_execution=node_execution,
+            )
+        finally:
+            self._max_parallel_nodes = previous_parallel_cap
+
+        return build_orchestration_result(
+            topology,
+            outcomes_by_slot=outcomes_by_slot,
+        )
+
+    async def _execute_orchestration_work_graph(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        *,
+        node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT],
+    ) -> dict[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]]:
+        outcomes: dict[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]] = {}
+        try:
+            batches = graph.batches()
+        except ExecutionGraphCycleError as exc:
+            raise RuntimeError(str(exc)) from exc
+
+        work_delegate = _OrchestrationWorkChildDelegate[PayloadT, ResultT]()
+        for batch in batches:
+            if CancellationCoordinator.is_requested(task.metadata):
+                for node in batch:
+                    slot_id = node.orchestration_slot_id
+                    if slot_id is None:
+                        continue
+                    outcomes[slot_id] = OrchestrationSlotOutcome(
+                        slot_id=slot_id,
+                        status=OrchestrationSlotStatus.SKIPPED,
+                        failure=OrchestrationSlotFailure(
+                            code="task_cancelled",
+                            message="orchestration topology cancelled",
+                        ),
+                    )
+                continue
+
+            if len(batch) == 1:
+                node = batch[0]
+                outcome = await self._execute_orchestration_work_node(
+                    graph,
+                    task,
+                    node,
+                    node_execution=node_execution,
+                    work_delegate=work_delegate,
+                )
+                slot_id = node.orchestration_slot_id
+                if slot_id is not None:
+                    outcomes[slot_id] = outcome
+                continue
+
+            batch_outcomes = await self._execute_orchestration_work_parallel_batch(
+                batch,
+                graph=graph,
+                task=task,
+                node_execution=node_execution,
+                work_delegate=work_delegate,
+            )
+            outcomes.update(batch_outcomes)
+
+        expected_slot_ids = {
+            node.orchestration_slot_id
+            for node in graph.nodes
+            if node.orchestration_slot_id is not None
+        }
+        missing = expected_slot_ids - outcomes.keys()
+        if missing:
+            raise RuntimeError(
+                f"orchestration topology missing outcomes for slots: {sorted(missing)!r}"
+            )
+        return outcomes
+
+    async def _execute_orchestration_work_parallel_batch(
+        self,
+        batch: list[ExecutionNode],
+        *,
+        graph: ExecutionGraph,
+        task: Task,
+        node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT],
+        work_delegate: _OrchestrationWorkChildDelegate[PayloadT, ResultT],
+    ) -> dict[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]]:
+        if self._inflight_semaphore is None and self._max_inflight_nodes is not None:
+            self._inflight_semaphore = asyncio.Semaphore(self._max_inflight_nodes)
+
+        limit = self._max_parallel_nodes
+        if limit is None or limit >= len(batch):
+
+            async def _run(node: ExecutionNode) -> tuple[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]]:
+                outcome = await self._execute_orchestration_work_node(
+                    graph,
+                    task,
+                    node,
+                    node_execution=node_execution,
+                    work_delegate=work_delegate,
+                )
+                slot_id = node.orchestration_slot_id
+                if slot_id is None:
+                    raise RuntimeError("orchestration work node missing orchestration_slot_id")
+                return slot_id, outcome
+
+            pairs = await asyncio.gather(*[_run(node) for node in batch])
+            return dict(pairs)
+
+        semaphore = asyncio.Semaphore(limit)
+
+        async def _run_limited(
+            node: ExecutionNode,
+        ) -> tuple[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]]:
+            inflight = self._inflight_semaphore
+            if inflight is not None and inflight.locked():
+                await self._emit_backpressure(task, node.node_id)
+            async with semaphore:
+                if inflight is not None:
+                    async with inflight:
+                        outcome = await self._execute_orchestration_work_node(
+                            graph,
+                            task,
+                            node,
+                            node_execution=node_execution,
+                            work_delegate=work_delegate,
+                        )
+                else:
+                    outcome = await self._execute_orchestration_work_node(
+                        graph,
+                        task,
+                        node,
+                        node_execution=node_execution,
+                        work_delegate=work_delegate,
+                    )
+            slot_id = node.orchestration_slot_id
+            if slot_id is None:
+                raise RuntimeError("orchestration work node missing orchestration_slot_id")
+            return slot_id, outcome
+
+        pairs = await asyncio.gather(*[_run_limited(node) for node in batch])
+        return dict(pairs)
+
+    async def _execute_orchestration_work_node(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        node: ExecutionNode,
+        *,
+        node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT],
+        work_delegate: _OrchestrationWorkChildDelegate[PayloadT, ResultT],
+    ) -> OrchestrationSlotOutcome[ResultT]:
+        del graph
+        slot_id = node.orchestration_slot_id
+        if slot_id is None:
+            raise RuntimeError("orchestration work node missing orchestration_slot_id")
+
+        if CancellationCoordinator.is_requested(task.metadata):
+            node.status = ExecutionNodeStatus.SKIPPED
+            return OrchestrationSlotOutcome(
+                slot_id=slot_id,
+                status=OrchestrationSlotStatus.SKIPPED,
+                failure=OrchestrationSlotFailure(
+                    code="task_cancelled",
+                    message="orchestration slot cancelled",
+                ),
+            )
+
+        node.status = ExecutionNodeStatus.RUNNING
+        child_request = _OrchestrationWorkChildRequest(
+            node=node,
+            node_execution=node_execution,
+        )
+        child_result = await self._child_runner.execute(
+            request=child_request,
+            delegate=work_delegate,
+        )
+        outcome = child_result.outcome
+        if outcome.status is OrchestrationSlotStatus.SUCCESS:
+            node.status = ExecutionNodeStatus.COMPLETED
+        elif outcome.status is OrchestrationSlotStatus.SKIPPED:
+            node.status = ExecutionNodeStatus.SKIPPED
+        else:
+            node.status = ExecutionNodeStatus.FAILED
+        return outcome
+

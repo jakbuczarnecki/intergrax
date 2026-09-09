@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.delegation import DelegationSpec
+from intergrax.contracts.orchestration_topology import OrchestrationSlotId
 
 
 class ExecutionGraphCycleError(ValueError):
@@ -40,6 +41,7 @@ class ExecutionNode(BaseModel):
     """Node in a Nexus execution graph (§24)."""
 
     node_id: str
+    orchestration_slot_id: OrchestrationSlotId | None = None
     agent_id: Optional[str] = None
     capability: Optional[str] = None
     description: str = ""

@@ -176,6 +176,8 @@ Direct inference is still a **full Execution** with Task, Run, Attempt, Executio
 
 **CURRENT IMPLEMENTATION:** `ExecutionBoundary` and `StrategyExecutionRouter` exist; `UnifiedTaskRunner` still routes through Nexus on many paths and full neutral strategy adoption remains **PARTIAL**.
 
+**Dynamic topology submission (CURRENT):** Under active parent Execution, `OrchestrationTopologySubmissionPort.submit(...)` schedules typed slot work via canonical Nexus `GraphExecutor` → `ChildExecutionRunner` → `OrchestrationSlotExecutor`, returning immutable `OrchestrationResult` ordered by submission.
+
 ## Direct execution (inference strategy)
 
 **TARGET ARCHITECTURE**

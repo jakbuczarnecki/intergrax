@@ -1,6 +1,6 @@
 # NPSC-5B/R3 — Nexus Fan-Out Contract Requirement
 
-**Status:** `BLOCKED` — shared Execution/Nexus contract required before NPSC production implementation
+**Status:** `SHARED CONTRACT DELIVERED` — NPSC-5B may resume at R4
 
 **Series:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In
 
@@ -16,7 +16,8 @@
 ## 1. R3 gate outcome
 
 ```text
-STATUS: EXECUTION/NEXUS CONTRACT REQUIRED
+STATUS: SHARED CONTRACT DELIVERED
+NPSC-5B may resume at R4
 ```
 
 R3 contract-closure analysis (F1–F10) concludes that the existing public Execution/Nexus surface is **not sufficient** for NPSC-5B fan-out without a local mini-runtime workaround.
