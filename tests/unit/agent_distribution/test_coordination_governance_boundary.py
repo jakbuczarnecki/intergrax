@@ -43,6 +43,7 @@ from intergrax.contracts.multi_agent_coordination_governance import (
 from intergrax.contracts.execution_identity import mint_task_id
 from testing_support.agent_distribution.coordination_governance import (
     allowing_coordination_governance,
+    bound_governed_host_task,
     denying_coordination_governance,
     require_human_coordination_governance,
     unavailable_coordination_governance,
@@ -114,11 +115,12 @@ async def test_single_allow_executes_coordination_path() -> None:
     intent = _single_intent("contrib-a")
     binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
 
-    result = await executor.execute(
-        intent,
-        binding=binding,
-        principal=admin_test_principal(),
-    )
+    with bound_governed_host_task():
+        result = await executor.execute(
+            intent,
+            binding=binding,
+            principal=admin_test_principal(),
+        )
 
     assert governance.calls == 1
     assert governance.last_request is not None
@@ -137,12 +139,13 @@ async def test_single_deny_blocks_coordination_and_fan_out() -> None:
     intent = _single_intent("contrib-a")
     binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
 
-    with pytest.raises(CoordinationGovernanceDenied):
-        await executor.execute(
-            intent,
-            binding=binding,
-            principal=admin_test_principal(),
-        )
+    with bound_governed_host_task():
+        with pytest.raises(CoordinationGovernanceDenied):
+            await executor.execute(
+                intent,
+                binding=binding,
+                principal=admin_test_principal(),
+            )
 
     assert governance.calls == 1
     assert coordination.calls == 0
@@ -174,11 +177,12 @@ async def test_fan_out_allow_executes_bounded_fan_out_service() -> None:
         ),
     )
 
-    result = await executor.execute(
-        intent,
-        binding=binding,
-        principal=admin_test_principal(),
-    )
+    with bound_governed_host_task():
+        result = await executor.execute(
+            intent,
+            binding=binding,
+            principal=admin_test_principal(),
+        )
 
     assert governance.calls == 1
     assert fan_out.calls == 1
@@ -212,12 +216,13 @@ async def test_fan_out_deny_blocks_fan_out_and_orchestration() -> None:
         ),
     )
 
-    with pytest.raises(CoordinationGovernanceDenied):
-        await executor.execute(
-            intent,
-            binding=binding,
-            principal=admin_test_principal(),
-        )
+    with bound_governed_host_task():
+        with pytest.raises(CoordinationGovernanceDenied):
+            await executor.execute(
+                intent,
+                binding=binding,
+                principal=admin_test_principal(),
+            )
 
     assert governance.calls == 1
     assert fan_out.calls == 0
@@ -234,12 +239,13 @@ async def test_require_human_blocks_execution_before_approval() -> None:
     intent = _single_intent("contrib-a")
     binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
 
-    with pytest.raises(CoordinationGovernanceRequiresHuman):
-        await executor.execute(
-            intent,
-            binding=binding,
-            principal=admin_test_principal(),
-        )
+    with bound_governed_host_task():
+        with pytest.raises(CoordinationGovernanceRequiresHuman):
+            await executor.execute(
+                intent,
+                binding=binding,
+                principal=admin_test_principal(),
+            )
 
     assert governance.calls == 1
     assert coordination.calls == 0
@@ -255,12 +261,13 @@ async def test_unavailable_governance_fail_closed() -> None:
     intent = _single_intent("contrib-a")
     binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
 
-    with pytest.raises(CoordinationGovernanceDenied):
-        await executor.execute(
-            intent,
-            binding=binding,
-            principal=admin_test_principal(),
-        )
+    with bound_governed_host_task():
+        with pytest.raises(CoordinationGovernanceDenied):
+            await executor.execute(
+                intent,
+                binding=binding,
+                principal=admin_test_principal(),
+            )
 
     assert governance.calls == 1
     assert coordination.calls == 0
@@ -315,11 +322,12 @@ async def test_deny_prevents_agent_lease_use_in_coordination_request() -> None:
     intent = _single_intent("contrib-a")
     binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
 
-    with pytest.raises(CoordinationGovernanceDenied):
-        await executor.execute(
-            intent,
-            binding=binding,
-            principal=admin_test_principal(),
-        )
+    with bound_governed_host_task():
+        with pytest.raises(CoordinationGovernanceDenied):
+            await executor.execute(
+                intent,
+                binding=binding,
+                principal=admin_test_principal(),
+            )
 
     assert coordination.seen_lease_ids == []

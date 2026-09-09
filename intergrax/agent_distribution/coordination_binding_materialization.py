@@ -148,7 +148,9 @@ def classify_coordination_collaborative_applicability_from_governed_task(
             raise CoordinationCollaborativeApplicabilityIndeterminateError(
                 "delegation_locators_without_governed_task",
             )
-        return CoordinationCollaborativeApplicabilityClassification.not_applicable()
+        raise CoordinationCollaborativeApplicabilityIndeterminateError(
+            "governed_task_required_for_authoritative_classification",
+        )
 
     workspace_id = _workspace_id_from_governed_task(governed_task)
     if workspace_id is None:
@@ -184,12 +186,7 @@ def reconcile_coordination_collaborative_applicability(
 ) -> str | None:
     """Return fail-closed reason when binding disagrees with authoritative host context."""
     if governed_task is None:
-        if (
-            binding_classification.applicability
-            is MultiAgentCoordinationCollaborativeApplicability.REQUIRED
-        ):
-            return "collaborative_applicability_without_authoritative_host_context"
-        return None
+        return "collaborative_applicability_without_authoritative_host_context"
 
     try:
         authoritative = classify_coordination_collaborative_applicability_from_governed_task(

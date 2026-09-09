@@ -79,6 +79,7 @@ from tests.unit.agent_distribution.test_multi_agent_coordination import (
 )
 from testing_support.agent_distribution.coordination_governance import (
     allowing_coordination_governance,
+    bound_governed_host_task,
 )
 from intergrax.runtime.execution.boundary import ExecutionBoundary
 
@@ -198,11 +199,12 @@ async def test_single_execution_routes_through_multi_agent_coordination_service(
     intent = _single_intent("contrib-a")
     binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
 
-    result = await executor.execute(
-        intent,
-        binding=binding,
-        principal=admin_test_principal(),
-    )
+    with bound_governed_host_task():
+        result = await executor.execute(
+            intent,
+            binding=binding,
+            principal=admin_test_principal(),
+        )
 
     assert coordination.calls == 1
     assert coordination.last_request is not None
@@ -251,11 +253,12 @@ async def test_fan_out_execution_routes_through_bounded_fan_out_service() -> Non
         ),
     )
 
-    result = await executor.execute(
-        intent,
-        binding=binding,
-        principal=admin_test_principal(),
-    )
+    with bound_governed_host_task():
+        result = await executor.execute(
+            intent,
+            binding=binding,
+            principal=admin_test_principal(),
+        )
 
     assert fan_out.calls == 1
     assert orchestration.calls == 1
@@ -300,11 +303,12 @@ async def test_fan_out_partial_failure_preserves_other_results() -> None:
         ),
     )
 
-    result = await executor.execute(
-        intent,
-        binding=binding,
-        principal=admin_test_principal(),
-    )
+    with bound_governed_host_task():
+        result = await executor.execute(
+            intent,
+            binding=binding,
+            principal=admin_test_principal(),
+        )
 
     assert result.fan_out is not None
     items = result.fan_out.fan_out.items
@@ -333,12 +337,13 @@ async def test_programming_error_propagates_from_coordination_service() -> None:
         governance=allowing_coordination_governance(),
     )
     task_scope = mint_task_id()
-    with pytest.raises(TypeError, match="programming error"):
-        await executor.execute(
-            _single_intent(),
-            binding=_binding(task_scope, pairs=(("contrib-a", "lease-a"),)),
-            principal=admin_test_principal(),
-        )
+    with bound_governed_host_task():
+        with pytest.raises(TypeError, match="programming error"):
+            await executor.execute(
+                _single_intent(),
+                binding=_binding(task_scope, pairs=(("contrib-a", "lease-a"),)),
+                principal=admin_test_principal(),
+            )
 
 
 @pytest.mark.asyncio
@@ -362,25 +367,26 @@ async def test_single_end_to_end_through_coordination_intent_executor() -> None:
 
     class RootDelegate:
         async def execute(self, request: OcrRequest) -> OcrResult:
-            result = await executor.execute(
-                CoordinationIntent(
-                    intent_id=CoordinationIntentId("intent-single-e2e"),
-                    mode=CoordinationExecutionMode.SINGLE,
-                    contributions=(
-                        CoordinationContribution(
-                            contribution_id=CoordinationContributionId("contrib-e2e"),
-                            payload=request,
-                            capability_need=unresolved_agent_distribution_capability_need(
-                                build_task_capability_resolution_request(
-                                    task_kind="document.ocr",
+            with bound_governed_host_task():
+                result = await executor.execute(
+                    CoordinationIntent(
+                        intent_id=CoordinationIntentId("intent-single-e2e"),
+                        mode=CoordinationExecutionMode.SINGLE,
+                        contributions=(
+                            CoordinationContribution(
+                                contribution_id=CoordinationContributionId("contrib-e2e"),
+                                payload=request,
+                                capability_need=unresolved_agent_distribution_capability_need(
+                                    build_task_capability_resolution_request(
+                                        task_kind="document.ocr",
+                                    ),
                                 ),
                             ),
                         ),
                     ),
-                ),
-                binding=_binding(task_scope, pairs=(("contrib-e2e", "lease-e2e"),)),
-                principal=admin_test_principal(),
-            )
+                    binding=_binding(task_scope, pairs=(("contrib-e2e", "lease-e2e"),)),
+                    principal=admin_test_principal(),
+                )
             captured.append(result)
             assert result.single is not None
             return result.single.coordination.result
@@ -422,21 +428,22 @@ async def test_fan_out_end_to_end_without_decision_through_nexus() -> None:
                 ledger=_UNLIMITED_LEDGER,
             )
             try:
-                result = await executor.execute(
-                    _fan_out_intent(
-                        ("contrib-a", "contrib-b", "contrib-c"),
-                        requested_max_concurrency=2,
-                    ),
-                    binding=_binding(
-                        task_scope,
-                        pairs=(
-                            ("contrib-a", "lease-a"),
-                            ("contrib-b", "lease-b"),
-                            ("contrib-c", "lease-c"),
+                with bound_governed_host_task():
+                    result = await executor.execute(
+                        _fan_out_intent(
+                            ("contrib-a", "contrib-b", "contrib-c"),
+                            requested_max_concurrency=2,
                         ),
-                    ),
-                    principal=admin_test_principal(),
-                )
+                        binding=_binding(
+                            task_scope,
+                            pairs=(
+                                ("contrib-a", "lease-a"),
+                                ("contrib-b", "lease-b"),
+                                ("contrib-c", "lease-c"),
+                            ),
+                        ),
+                        principal=admin_test_principal(),
+                    )
             finally:
                 reset_active_execution_budget(budget_token)
             captured.append(result)
@@ -544,11 +551,12 @@ async def test_fan_out_reordered_bindings_resolve_by_contribution_id() -> None:
         ),
     )
 
-    result = await executor.execute(
-        intent,
-        binding=binding,
-        principal=admin_test_principal(),
-    )
+    with bound_governed_host_task():
+        result = await executor.execute(
+            intent,
+            binding=binding,
+            principal=admin_test_principal(),
+        )
 
     assert captured_leases == ["lease-a", "lease-b", "lease-c"]
     assert result.fan_out is not None

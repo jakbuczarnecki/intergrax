@@ -38,6 +38,7 @@ from intergrax.runtime.execution.active_execution_budget import (
 from intergrax.runtime.execution.boundary import ExecutionBoundary
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from testing_support.agent_distribution.coordination_governance import bound_governed_host_task
 from testing_support.agent_distribution.decision_coordination_qualification import (
     GatedFanOutDelegate,
     accepted_decision,
@@ -128,11 +129,12 @@ async def _execute_projected_intent(
                     ledger=_UNLIMITED_LEDGER,
                 )
             try:
-                result = await fixture.executor.execute(
-                    intent,
-                    binding=binding,
-                    principal=admin_test_principal(),
-                )
+                with bound_governed_host_task():
+                    result = await fixture.executor.execute(
+                        intent,
+                        binding=binding,
+                        principal=admin_test_principal(),
+                    )
             finally:
                 if budget_token is not None:
                     reset_active_execution_budget(budget_token)

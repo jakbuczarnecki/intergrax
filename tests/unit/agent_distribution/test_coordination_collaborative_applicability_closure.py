@@ -153,9 +153,17 @@ def test_materialize_binding_from_governed_task_workspace() -> None:
     assert binding.collaborative_applicability.workspace_id == _WORKSPACE
 
 
-def test_classify_non_collaborative_without_governed_task() -> None:
+def test_classify_without_governed_task_fails_closed() -> None:
+    with pytest.raises(
+        CoordinationCollaborativeApplicabilityIndeterminateError,
+        match="governed_task_required_for_authoritative_classification",
+    ):
+        classify_coordination_collaborative_applicability_from_governed_task(None)
+
+
+def test_classify_non_collaborative_with_governed_task() -> None:
     classification = classify_coordination_collaborative_applicability_from_governed_task(
-        None,
+        _governed_task(workspace_id=None),
     )
     assert (
         classification.applicability
@@ -197,6 +205,28 @@ def test_required_without_host_context_fails_closed() -> None:
     )
     reason = reconcile_coordination_collaborative_applicability(required, None)
     assert reason == "collaborative_applicability_without_authoritative_host_context"
+
+
+def test_not_applicable_without_host_context_fails_closed() -> None:
+    omitted = CoordinationCollaborativeApplicabilityClassification.not_applicable()
+    reason = reconcile_coordination_collaborative_applicability(omitted, None)
+    assert reason == "collaborative_applicability_without_authoritative_host_context"
+
+
+def test_materialize_without_governed_task_fails_closed() -> None:
+    task_scope = mint_task_id()
+    base = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
+    with pytest.raises(
+        CoordinationCollaborativeApplicabilityIndeterminateError,
+        match="governed_task_required_for_authoritative_classification",
+    ):
+        materialize_coordination_intent_binding(
+            task_scope_id=base.task_scope_id,
+            application_id=base.application_id,
+            application_environment_id=base.application_environment_id,
+            contribution_bindings=base.contribution_bindings,
+            governed_task=None,
+        )
 
 
 @pytest.mark.asyncio
@@ -261,6 +291,30 @@ async def test_workspace_substitution_attack_blocks_execution() -> None:
 
 
 @pytest.mark.asyncio
+async def test_missing_governed_host_context_blocks_execution() -> None:
+    coordination = _TrackingCoordinationService()
+    fan_out = _TrackingFanOutService(
+        BoundedMultiAgentFanOutService(orchestration=_StaticOrchestrationPort(())),
+    )
+    executor = CoordinationIntentExecutor(
+        coordination=coordination,
+        fan_out=fan_out,
+        governance=AllowingMultiAgentCoordinationGovernance(authority_resolver=None),
+    )
+    task_scope = mint_task_id()
+    intent = _single_intent("contrib-a")
+    binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
+    with pytest.raises(CoordinationGovernanceDenied) as exc_info:
+        await executor.execute(intent, binding=binding, principal=admin_test_principal())
+    assert (
+        exc_info.value.result.decision.reason
+        == "collaborative_applicability_without_authoritative_host_context"
+    )
+    assert coordination.calls == 0
+    assert fan_out.calls == 0
+
+
+@pytest.mark.asyncio
 async def test_true_non_collaborative_executes_without_authority_resolver() -> None:
     coordination = _TrackingCoordinationService()
     fan_out = _TrackingFanOutService(
@@ -274,7 +328,16 @@ async def test_true_non_collaborative_executes_without_authority_resolver() -> N
     task_scope = mint_task_id()
     intent = _single_intent("contrib-a")
     binding = _binding(task_scope, pairs=(("contrib-a", "lease-a"),))
-    result = await executor.execute(intent, binding=binding, principal=admin_test_principal())
+    governed = ActiveGovernedExecutionTask()
+    token = governed.bind(_governed_task(workspace_id=None))
+    try:
+        result = await executor.execute(
+            intent,
+            binding=binding,
+            principal=admin_test_principal(),
+        )
+    finally:
+        governed.reset(token)
     assert result.mode.value == "single"
     assert coordination.calls == 1
 
