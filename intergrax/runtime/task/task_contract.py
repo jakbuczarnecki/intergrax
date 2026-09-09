@@ -21,6 +21,10 @@ from intergrax.contracts.declarative_hitl import (
     DeclarativeHitlPendingApproval,
 )
 from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
+from intergrax.contracts.physical_delegation_governance import (
+    PhysicalDelegationContinuationApprovalGrant,
+    PhysicalDelegationGovernedContinuation,
+)
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 
@@ -129,6 +133,12 @@ class TaskGovernanceState(BaseModel):
     declarative_hitl_pending: Optional[DeclarativeHitlPendingApproval] = None
     declarative_hitl_grant: Optional[DeclarativeHitlApprovalGrant] = None
     governed_continuation_grant: Optional[GovernedContinuationApprovalGrant] = None
+    physical_delegation_governed_continuation: Optional[
+        PhysicalDelegationGovernedContinuation
+    ] = None
+    physical_delegation_continuation_grant: Optional[
+        PhysicalDelegationContinuationApprovalGrant
+    ] = None
 
 
 class TaskClassificationState(BaseModel):

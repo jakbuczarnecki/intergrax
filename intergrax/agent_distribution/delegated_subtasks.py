@@ -19,6 +19,8 @@ from intergrax.agent_distribution.agent_discovery import (
 from intergrax.agent_distribution.agent_selection import (
     AgentSelectionDecision,
     AgentSelectionStrategy,
+    AgentSelectionStrategyId,
+    SelectionDecisionBasis,
     SelectionOutcome,
     build_agent_selection_request,
     require_selected_identity,
@@ -62,7 +64,14 @@ from intergrax.contracts.physical_delegation_governance import (
     PhysicalDelegationGovernanceResult,
     PhysicalDelegationGovernedContinuation,
     build_physical_delegation_governed_continuation,
+    grant_matches_physical_delegation_continuation,
 )
+from intergrax.runtime.human.pause import HumanPauseCoordinator
+from intergrax.runtime.human.physical_delegation_continuation_grant import (
+    PhysicalDelegationContinuationGrantCoordinator,
+    matches_current_physical_delegation_requirement,
+)
+from intergrax.runtime.task.task import Task
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
@@ -141,6 +150,10 @@ class DelegatedSubtaskGovernanceRequiresHuman(DelegatedSubtaskError):
         super().__init__(
             result.decision.reason or "physical delegation governance requires human approval",
         )
+
+
+class DelegatedSubtaskContinuationGrantError(DelegatedSubtaskError):
+    """Exact physical delegation continuation grant validation failed."""
 
 
 class DelegatedSubtaskAcquisitionError(DelegatedSubtaskError):
@@ -504,6 +517,155 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
             requested_permission_scopes=invocation.requested_permission_scopes,
         )
 
+        return await self._execute_post_selection_pipeline(
+            request=request,
+            invocation=invocation,
+            principal=principal,
+            canonical_task_scope=canonical_task_scope,
+            capability_resolution=capability_resolution,
+            requirement=requirement,
+            match_results=match_results,
+            selection_decision=selection_decision,
+            selected_identity=selected_identity,
+        )
+
+    async def continue_governed_delegation(
+        self,
+        request: DelegatedSubtaskRequest,
+        *,
+        invocation: DelegatedSubtaskInvocation[RequestT],
+        continuation: PhysicalDelegationGovernedContinuation,
+        principal: RequestIdentity,
+        task: Task,
+        expected_grant_id: str,
+    ) -> DelegatedSubtaskResult[ResultT]:
+        """Resume exact post-selection physical delegation after canonical human approval."""
+        from intergrax.agent_distribution.physical_delegation_governance_adapter import (
+            build_physical_delegation_governance_request,
+            project_agent_capability_requirement_from_physical,
+            project_agent_discovery_candidate_identity,
+        )
+
+        canonical_task_scope = _resolve_canonical_task_scope(self._task_scope_authority)
+        if request.task_scope_id != canonical_task_scope:
+            raise DelegatedSubtaskTaskScopeMismatch(
+                "delegated subtask task_scope_id does not match canonical active task scope",
+            )
+        if continuation.delegation_id != str(request.delegation_id):
+            raise DelegatedSubtaskContinuationGrantError(
+                "continuation delegation_id mismatch",
+            )
+        if continuation.task_scope_id != str(canonical_task_scope):
+            raise DelegatedSubtaskContinuationGrantError(
+                "continuation task_scope_id mismatch",
+            )
+
+        gov = task.runtime.governance
+        pause_record = gov.pause_record
+        human_request = gov.human_request
+        if pause_record is None or human_request is None:
+            raise DelegatedSubtaskContinuationGrantError("active pause lifecycle required")
+
+        approved = HumanPauseCoordinator.approved_resolution_for_resume(
+            task_id=task.task_id,
+            resolution=gov.hitl_resolution,
+            expected_pause_id=pause_record.pause_id,
+            expected_human_request_id=human_request.request_id,
+            run_id=human_request.governed_continuation.run_id
+            if human_request.governed_continuation is not None
+            else None,
+        )
+        if approved is None:
+            raise DelegatedSubtaskContinuationGrantError(
+                "canonical approve resolution required for resume",
+            )
+
+        stored_grant = gov.physical_delegation_continuation_grant
+        if stored_grant is None:
+            raise DelegatedSubtaskContinuationGrantError("physical delegation grant required")
+        if not grant_matches_physical_delegation_continuation(stored_grant, continuation):
+            raise DelegatedSubtaskContinuationGrantError(
+                "stored grant does not match physical continuation",
+            )
+
+        selected_identity = project_agent_discovery_candidate_identity(
+            continuation.selected_identity,
+        )
+        requirement = project_agent_capability_requirement_from_physical(
+            continuation.capability_requirement,
+        )
+        governance_request = build_physical_delegation_governance_request(
+            delegation_id=str(request.delegation_id),
+            task_scope_id=str(canonical_task_scope),
+            application_id=request.application_id,
+            application_environment_id=request.application_environment_id,
+            capability_requirement=requirement,
+            selected_identity=selected_identity,
+            principal=principal,
+            requested_permission_scopes=invocation.requested_permission_scopes,
+        )
+        current_result = self._physical_delegation_governance.evaluate(governance_request)
+        if current_result.permitted:
+            if not grant_matches_physical_delegation_continuation(
+                stored_grant,
+                continuation,
+            ):
+                raise DelegatedSubtaskContinuationGrantError(
+                    "grant no longer matches continuation under current policy",
+                )
+        elif current_result.requires_governed_continuation:
+            if not matches_current_physical_delegation_requirement(
+                stored_grant,
+                continuation=continuation,
+                current_result=current_result,
+            ):
+                raise DelegatedSubtaskGovernanceDenied(current_result)
+        else:
+            raise DelegatedSubtaskGovernanceDenied(current_result)
+
+        consumed = PhysicalDelegationContinuationGrantCoordinator.consume_matching_grant(
+            task,
+            expected_grant_id=expected_grant_id,
+        )
+        if consumed is None:
+            raise DelegatedSubtaskContinuationGrantError(
+                "physical delegation grant consumption failed",
+            )
+        if consumed.grant_id != stored_grant.grant_id:
+            raise DelegatedSubtaskContinuationGrantError("grant identity mismatch after consume")
+
+        selection_decision = AgentSelectionDecision(
+            strategy_id=AgentSelectionStrategyId(value="physical_delegation.governed_continuation"),
+            outcome=SelectionOutcome.SELECTED,
+            selected_identity=selected_identity,
+            considered_candidates=(selected_identity,),
+            decision_basis=SelectionDecisionBasis.STABLE_IDENTITY_ORDER,
+        )
+        return await self._execute_post_selection_pipeline(
+            request=request,
+            invocation=invocation,
+            principal=principal,
+            canonical_task_scope=canonical_task_scope,
+            capability_resolution=None,
+            requirement=requirement,
+            match_results=(),
+            selection_decision=selection_decision,
+            selected_identity=selected_identity,
+        )
+
+    async def _execute_post_selection_pipeline(
+        self,
+        *,
+        request: DelegatedSubtaskRequest,
+        invocation: DelegatedSubtaskInvocation[RequestT],
+        principal: RequestIdentity,
+        canonical_task_scope: TaskScopeId,
+        capability_resolution: TaskCapabilityResolutionResult | None,
+        requirement: AgentCapabilityRequirement,
+        match_results: tuple[CapabilityMatchResult, ...],
+        selection_decision: AgentSelectionDecision,
+        selected_identity: AgentDiscoveryCandidateIdentity,
+    ) -> DelegatedSubtaskResult[ResultT]:
         lifecycle_plan = self._acquisition_plan_factory.build_acquisition_plan(
             delegation_id=request.delegation_id,
             task_scope_id=canonical_task_scope,
@@ -701,6 +863,7 @@ __all__ = [
     "DelegatedSubtaskError",
     "DelegatedSubtaskExecutionAndReleaseError",
     "DelegatedSubtaskGovernanceDenied",
+    "DelegatedSubtaskContinuationGrantError",
     "DelegatedSubtaskGovernanceRequiresHuman",
     "DelegatedSubtaskInvocation",
     "DelegatedSubtaskInvocationError",

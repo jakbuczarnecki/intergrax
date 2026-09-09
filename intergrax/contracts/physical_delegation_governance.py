@@ -26,6 +26,9 @@ SCHEMA_PHYSICAL_DELEGATION_GOVERNANCE_EVIDENCE_V1: Final = (
 SCHEMA_PHYSICAL_DELEGATION_GOVERNED_CONTINUATION_V1: Final = (
     "physical_delegation_governed_continuation.v1"
 )
+SCHEMA_PHYSICAL_DELEGATION_CONTINUATION_APPROVAL_GRANT_V1: Final = (
+    "physical_delegation_continuation_approval_grant.v1"
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -280,6 +283,99 @@ def evidence_from_request_and_decision(
         policy_rule_id=decision.policy_rule_id,
         policy_decision_id=decision.decision_id,
     )
+
+
+class PhysicalDelegationContinuationApprovalGrant(BaseModel):
+    """Scoped authorization for one exact physical delegation governed continuation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["physical_delegation_continuation_approval_grant.v1"] = (
+        SCHEMA_PHYSICAL_DELEGATION_CONTINUATION_APPROVAL_GRANT_V1
+    )
+    grant_id: str = _NON_EMPTY
+    continuation_digest: str = _NON_EMPTY
+    continuation_request_id: str = _NON_EMPTY
+    delegation_id: str = _NON_EMPTY
+    task_scope_id: str = _NON_EMPTY
+    run_id: str = _NON_EMPTY
+    selected_identity: PhysicalDelegationSelectedIdentity
+    capability_requirement: PhysicalDelegationCapabilityRequirement
+    governance_request_digest: str = _NON_EMPTY
+    policy_rule_id: str = ""
+    policy_decision_id: str = ""
+    pause_id: str = _NON_EMPTY
+    human_request_id: str = _NON_EMPTY
+    approved_at: str = _NON_EMPTY
+
+    @field_validator(
+        "grant_id",
+        "continuation_digest",
+        "continuation_request_id",
+        "delegation_id",
+        "task_scope_id",
+        "run_id",
+        "governance_request_digest",
+        "pause_id",
+        "human_request_id",
+        "approved_at",
+    )
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @field_validator("continuation_digest", "governance_request_digest")
+    @classmethod
+    def _validate_digest(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized.startswith("sha256:"):
+            raise ValueError("digest must be sha256")
+        return normalized
+
+
+def physical_delegation_operation_id(delegation_id: str) -> str:
+    normalized = delegation_id.strip()
+    if not normalized:
+        raise ValueError("delegation_id must be non-empty")
+    return f"physical_delegation:{normalized}"
+
+
+def physical_delegation_governed_continuation_digest(
+    continuation: PhysicalDelegationGovernedContinuation,
+) -> str:
+    payload = continuation.model_dump(mode="json")
+    return request_digest_for_payload(payload)
+
+
+def grant_matches_physical_delegation_continuation(
+    grant: PhysicalDelegationContinuationApprovalGrant,
+    continuation: PhysicalDelegationGovernedContinuation,
+) -> bool:
+    if grant.continuation_digest != physical_delegation_governed_continuation_digest(
+        continuation,
+    ):
+        return False
+    if grant.delegation_id != continuation.delegation_id:
+        return False
+    if grant.task_scope_id != continuation.task_scope_id:
+        return False
+    if (
+        grant.selected_identity.model_dump(mode="json")
+        != continuation.selected_identity.model_dump(mode="json")
+    ):
+        return False
+    if (
+        grant.capability_requirement.model_dump(mode="json")
+        != continuation.capability_requirement.model_dump(mode="json")
+    ):
+        return False
+    evidence = continuation.governance_result.evidence
+    if grant.governance_request_digest != evidence.request_digest:
+        return False
+    return True
 
 
 def build_physical_delegation_governed_continuation(

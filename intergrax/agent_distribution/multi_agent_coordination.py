@@ -46,6 +46,7 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.physical_delegation_governance import (
     PhysicalDelegationGovernedContinuation,
 )
+from intergrax.runtime.task.task import Task
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -378,6 +379,45 @@ class MultiAgentCoordinationService(Generic[RequestT, ResultT]):
                 delegated_request,
                 invocation=invocation,
                 principal=principal,
+            )
+        except DelegatedSubtaskCleanupError as exc:
+            raise CoordinationCleanupError(
+                "coordination succeeded but lease release failed",
+                coordination_id=request.coordination_id,
+                result=exc.result,
+                release_cause=exc.release_cause,
+            ) from exc
+        except DelegatedSubtaskError as exc:
+            raise _map_delegated_subtask_error(exc) from exc
+        return CoordinationResult(
+            coordination_id=request.coordination_id,
+            delegated=delegated_result,
+        )
+
+    async def continue_governed_coordination(
+        self,
+        request: CoordinationRequest,
+        *,
+        delegation: CoordinationDelegation[RequestT],
+        continuation: PhysicalDelegationGovernedContinuation,
+        principal: RequestIdentity,
+        task: Task,
+        expected_grant_id: str,
+    ) -> CoordinationResult[ResultT]:
+        delegated_request = build_delegated_subtask_request(request)
+        invocation = DelegatedSubtaskInvocation(
+            payload=delegation.payload,
+            requested_permission_scopes=delegation.requested_permission_scopes,
+            requested_budget=delegation.requested_budget,
+        )
+        try:
+            delegated_result = await self._delegated_subtasks.continue_governed_delegation(
+                delegated_request,
+                invocation=invocation,
+                continuation=continuation,
+                principal=principal,
+                task=task,
+                expected_grant_id=expected_grant_id,
             )
         except DelegatedSubtaskCleanupError as exc:
             raise CoordinationCleanupError(

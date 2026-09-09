@@ -5,8 +5,16 @@
 
 from __future__ import annotations
 
-from intergrax.agent_distribution.capability_matching import AgentCapabilityRequirement
-from intergrax.agent_distribution.catalog import AgentDiscoveryCandidateIdentity
+from intergrax.agent_distribution.capability_matching import (
+    AgentCapabilityRequirement,
+    build_agent_capability_requirement,
+)
+from intergrax.agent_distribution.catalog import (
+    AgentDiscoveryCandidateIdentity,
+    CatalogProviderKind,
+    CatalogSourceIdentity,
+)
+from intergrax.agent_distribution.identity import AgentPackageCandidate
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.physical_delegation_governance import (
     PhysicalDelegationCapabilityRequirement,
@@ -67,6 +75,32 @@ def build_physical_delegation_governance_request(
 
 __all__ = [
     "build_physical_delegation_governance_request",
+    "project_agent_capability_requirement_from_physical",
+    "project_agent_discovery_candidate_identity",
     "project_physical_delegation_capability_requirement",
     "project_physical_delegation_selected_identity",
 ]
+
+
+def project_agent_discovery_candidate_identity(
+    selected_identity: PhysicalDelegationSelectedIdentity,
+) -> AgentDiscoveryCandidateIdentity:
+    return AgentDiscoveryCandidateIdentity(
+        source=CatalogSourceIdentity(
+            catalog_source_id=selected_identity.catalog_source_id,
+            provider_kind=CatalogProviderKind(selected_identity.provider_kind),
+        ),
+        package=AgentPackageCandidate(
+            distribution_package_id=selected_identity.distribution_package_id,
+            package_version=selected_identity.package_version,
+            package_digest=selected_identity.package_digest,
+        ),
+    )
+
+
+def project_agent_capability_requirement_from_physical(
+    capability_requirement: PhysicalDelegationCapabilityRequirement,
+) -> AgentCapabilityRequirement:
+    return build_agent_capability_requirement(
+        required=capability_requirement.required_capability_ids,
+    )
