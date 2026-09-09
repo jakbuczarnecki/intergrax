@@ -8,8 +8,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
+from intergrax.contracts.delegation_authority import (
+    resolve_root_parent_execution_authority,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -29,22 +34,45 @@ from intergrax.runtime.execution.orchestration import (
     TaskBoundOrchestrationDelegate,
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
+from intergrax.runtime.execution.active_execution_resume import (
+    ActiveExecutionResumePlan,
+    bind_active_execution_resume_plan,
+    reset_active_execution_resume_plan,
+)
+from intergrax.runtime.execution.orchestration import resolve_root_task_identity
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionOptions,
     resolve_root_execution_context,
 )
+from intergrax.runtime.long_running.checkpoint_builder import (
+    apply_runtime_checkpoint_to_task,
+    build_task_checkpoint_resume_plan,
+    prepare_task_for_checkpoint_resume,
+)
+from intergrax.runtime.long_running.resume_planner import (
+    execution_identity_from_checkpoint,
+)
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
-from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
-from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
-from intergrax.runtime.execution.decision_lifecycle_host import CanonicalDecisionLifecycleHost
+from intergrax.runtime.execution.task_adapter import (
+    TaskExecutionInput,
+    execution_request_from_task,
+)
+from intergrax.runtime.execution.host_task_terminal_publisher import (
+    HostTaskTerminalPublisher,
+)
+from intergrax.runtime.execution.decision_lifecycle_host import (
+    CanonicalDecisionLifecycleHost,
+)
 from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.nexus.orchestration_capabilities import is_orchestration_capability
+from intergrax.runtime.nexus.orchestration_capabilities import (
+    is_orchestration_capability,
+)
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 
@@ -264,23 +292,62 @@ class HostTaskExecution:
             capabilities=capabilities,
             output_type=TaskResult,
         )
+        identity = resolve_root_task_identity(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            resume_checkpoint=resume_checkpoint,
+        )
+        segment_predecessor_root_execution_id = None
+        resume_plan_token = None
+        if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
+            _checkpoint_run_id, checkpoint_attempt_id = (
+                execution_identity_from_checkpoint(
+                    resume_checkpoint,
+                )
+            )
+            resume_checkpoint.runtime.validate_canonical()
+            checkpoint_tree = resume_checkpoint.runtime.execution_tree
+            checkpoint_root_execution_id = next(
+                entry.execution_id
+                for entry in checkpoint_tree.entries
+                if entry.parent_execution_id is None
+            )
+            resolved_execution_id = execution_id or identity.execution_id
+            if (
+                identity.attempt_id != checkpoint_attempt_id
+                or resolved_execution_id != checkpoint_root_execution_id
+            ):
+                if resolved_execution_id != checkpoint_root_execution_id:
+                    segment_predecessor_root_execution_id = checkpoint_root_execution_id
+                resume_plan = build_task_checkpoint_resume_plan(
+                    task,
+                    resume_checkpoint,
+                    active_attempt_id=identity.attempt_id,
+                    active_root_execution_id=resolved_execution_id,
+                )
+                prepare_task_for_checkpoint_resume(
+                    task,
+                    resume_checkpoint,
+                    active_attempt_id=identity.attempt_id,
+                    active_root_execution_id=resolved_execution_id,
+                    resume_plan=resume_plan,
+                )
+                resume_plan_token = bind_active_execution_resume_plan(
+                    ActiveExecutionResumePlan(plan=resume_plan),
+                )
+            elif task.runtime.orchestration.runtime_checkpoint is None:
+                apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
         options = RootExecutionOptions(
             authority=resolve_root_parent_execution_authority(task.execution_authority),
             tenant_id=task.tenant_id,
-            run_id=run_id,
-            attempt_id=attempt_id,
+            run_id=identity.run_id,
+            attempt_id=identity.attempt_id,
             execution_id=execution_id,
             task_id=task.task_id,
-        )
-        root_context = resolve_root_execution_context(options)
-        resolved_options = RootExecutionOptions(
-            authority=options.authority,
-            tenant_id=options.tenant_id,
-            run_id=root_context.run_id,
-            attempt_id=root_context.attempt_id,
-            execution_id=root_context.execution_id,
+            segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
         )
         if self._revision_admission is not None:
+            root_context = resolve_root_execution_context(options)
             task = self._revision_admission.admit_root_execution(
                 tenant_id=task.tenant_id,
                 execution_id=root_context.execution_id,
@@ -288,9 +355,11 @@ class HostTaskExecution:
                 resume_checkpoint=resume_checkpoint,
                 restore_existing_execution=restore_existing_execution,
             )
-        await ActiveTaskRegistry.register(task, root_context.run_id)
+        await ActiveTaskRegistry.register(task, identity.run_id)
         try:
             execution = Execution(self._execution_runtime_for_task(task))
-            return await execution.execute(request, options=resolved_options)
+            return await execution.execute(request, options=options)
         finally:
-            await ActiveTaskRegistry.unregister(task.task_id, root_context.run_id)
+            if resume_plan_token is not None:
+                reset_active_execution_resume_plan(resume_plan_token)
+            await ActiveTaskRegistry.unregister(task.task_id, identity.run_id)

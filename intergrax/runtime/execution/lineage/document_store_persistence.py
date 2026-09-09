@@ -23,19 +23,66 @@ from intergrax.integrations.contracts.document_store import (
     DocumentQueryCursorCodec,
     DocumentRecord,
 )
-from intergrax.integrations.contracts.partition_atomic_document_store import (
-    PartitionAtomicDocumentStore,
-)
-from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence import (
+from intergrax.integrations.contracts.document_store_query_cursor_provider import (
     DocumentStoreQueryCursorProvider,
+)
+from intergrax.integrations.contracts.partition_atomic_document_store import (
+    PartitionAtomicBatch,
+    PartitionAtomicBatchResult,
+    PartitionAtomicDocumentStore,
+    PartitionPutIfAbsentOnCreated,
+    PartitionReplaceIfMatchOnCreated,
 )
 from intergrax.runtime.execution.lineage.persistence import (
     _ExecutionLineageStoreLogic,
+    _PartitionAtomicRowBatch,
+    _PartitionAtomicRowBatchResult,
+    _PartitionPutIfAbsentOnCreated,
+    _PartitionReplaceIfMatchOnCreated,
     _PartitionRow,
 )
 
 
-class _DocumentStorePartitionRowStore:
+def _row_to_document(row: _PartitionRow) -> DocumentRecord:
+    return DocumentRecord(
+        partition_key=row.partition_key,
+        row_key=row.row_key,
+        data=row.data,
+    )
+
+
+def _document_to_row(document: DocumentRecord) -> _PartitionRow:
+    return _PartitionRow(document.partition_key, document.row_key, dict(document.data))
+
+
+def _row_batch_to_document_batch(
+    batch: _PartitionAtomicRowBatch,
+) -> PartitionAtomicBatch:
+    on_created_ops: list[
+        PartitionPutIfAbsentOnCreated | PartitionReplaceIfMatchOnCreated
+    ] = []
+    for op in batch.on_created_ops:
+        if isinstance(op, _PartitionPutIfAbsentOnCreated):
+            on_created_ops.append(
+                PartitionPutIfAbsentOnCreated(document=_row_to_document(op.row)),
+            )
+        elif isinstance(op, _PartitionReplaceIfMatchOnCreated):
+            on_created_ops.append(
+                PartitionReplaceIfMatchOnCreated(
+                    expected=_row_to_document(op.expected),
+                    replacement=_row_to_document(op.replacement),
+                ),
+            )
+        else:
+            raise TypeError("partition_atomic_row_batch_on_created_op_invalid")
+    return PartitionAtomicBatch(
+        partition_key=batch.partition_key,
+        primary_put_if_absent=_row_to_document(batch.primary_put_if_absent),
+        on_created_ops=tuple(on_created_ops),
+    )
+
+
+class _DocumentStorePartitionAtomicRowStore:
     def __init__(
         self,
         document_store: PartitionAtomicDocumentStore,
@@ -49,28 +96,17 @@ class _DocumentStorePartitionRowStore:
         record = self._document_store.get(partition_key, row_key)
         if record is None:
             return None
-        return _PartitionRow(partition_key, row_key, dict(record.data))
+        return _document_to_row(record)
 
     def put_if_absent(self, row: _PartitionRow) -> bool:
-        document = DocumentRecord(
-            partition_key=row.partition_key,
-            row_key=row.row_key,
-            data=row.data,
-        )
-        return self._document_store.put_if_absent(document)
+        return self._document_store.put_if_absent(_row_to_document(row))
 
-    def replace_if_match(self, expected: _PartitionRow, replacement: _PartitionRow) -> bool:
+    def replace_if_match(
+        self, expected: _PartitionRow, replacement: _PartitionRow
+    ) -> bool:
         return self._document_store.replace_if_match(
-            expected=DocumentRecord(
-                partition_key=expected.partition_key,
-                row_key=expected.row_key,
-                data=expected.data,
-            ),
-            replacement=DocumentRecord(
-                partition_key=replacement.partition_key,
-                row_key=replacement.row_key,
-                data=replacement.data,
-            ),
+            expected=_row_to_document(expected),
+            replacement=_row_to_document(replacement),
         )
 
     def list_rows(
@@ -89,11 +125,19 @@ class _DocumentStorePartitionRowStore:
             cursor=cursor,
             sort=(DocumentDataSort(path=sort_path, direction="asc"),),
         )
-        rows = tuple(
-            _PartitionRow(partition_key, document.row_key, dict(document.data))
-            for document in page.documents
-        )
+        rows = tuple(_document_to_row(document) for document in page.documents)
         return rows, page.next_cursor
+
+    def execute_partition_atomic_batch(
+        self,
+        batch: _PartitionAtomicRowBatch,
+    ) -> _PartitionAtomicRowBatchResult:
+        result: PartitionAtomicBatchResult = (
+            self._document_store.execute_partition_atomic_batch(
+                _row_batch_to_document_batch(batch),
+            )
+        )
+        return _PartitionAtomicRowBatchResult(primary_created=result.primary_created)
 
 
 class DocumentStoreExecutionLineagePersistence(ExecutionLineagePersistence):
@@ -114,21 +158,28 @@ class DocumentStoreExecutionLineagePersistence(ExecutionLineagePersistence):
                 "execution lineage persistence requires ConditionalDocumentStore",
             )
         cursor_codec = document_query_cursor_codec
-        if cursor_codec is None and isinstance(document_store, DocumentStoreQueryCursorProvider):
+        if cursor_codec is None and isinstance(
+            document_store, DocumentStoreQueryCursorProvider
+        ):
             cursor_codec = document_store.query_cursor_codec
         if cursor_codec is None:
             raise ExecutionLineageConfigurationError(
                 "execution lineage persistence requires document query cursor codec",
             )
         self._logic = _ExecutionLineageStoreLogic(
-            _DocumentStorePartitionRowStore(document_store, query_cursor_codec=cursor_codec),
+            _DocumentStorePartitionAtomicRowStore(
+                document_store,
+                query_cursor_codec=cursor_codec,
+            ),
         )
 
     @property
     def is_durable(self) -> bool:
         return True
 
-    def open_attempt(self, scope: ExecutionLineageAttemptScope) -> ExecutionLineageAttemptState:
+    def open_attempt(
+        self, scope: ExecutionLineageAttemptScope
+    ) -> ExecutionLineageAttemptState:
         return self._logic.open_attempt(scope)
 
     def open_segment(
@@ -137,7 +188,9 @@ class DocumentStoreExecutionLineagePersistence(ExecutionLineagePersistence):
         root_execution_id: ExecutionId,
         predecessor_root_execution_id: ExecutionId | None = None,
     ) -> ExecutionLineageSegmentRecord:
-        return self._logic.open_segment(scope, root_execution_id, predecessor_root_execution_id)
+        return self._logic.open_segment(
+            scope, root_execution_id, predecessor_root_execution_id
+        )
 
     def admit_root(
         self,
@@ -206,5 +259,7 @@ class DocumentStoreExecutionLineagePersistence(ExecutionLineagePersistence):
     ) -> ExecutionLineageAttemptState | None:
         return self._logic.read_attempt_lineage_state(scope)
 
-    def read_seal(self, scope: ExecutionLineageAttemptScope) -> ExecutionLineageSealRecord | None:
+    def read_seal(
+        self, scope: ExecutionLineageAttemptScope
+    ) -> ExecutionLineageSealRecord | None:
         return self._logic.read_seal(scope)

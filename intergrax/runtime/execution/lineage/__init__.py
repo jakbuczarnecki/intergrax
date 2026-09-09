@@ -17,8 +17,12 @@ from intergrax.runtime.execution.lineage.active_lineage import (
 from intergrax.runtime.execution.lineage.document_store_persistence import (
     DocumentStoreExecutionLineagePersistence,
 )
-from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
-from intergrax.runtime.execution.lineage.wiring import resolve_execution_lineage_persistence
+from intergrax.runtime.execution.lineage.persistence import (
+    InMemoryExecutionLineagePersistence,
+)
+from intergrax.runtime.execution.lineage.wiring import (
+    resolve_execution_lineage_persistence,
+)
 
 __all__ = [
     "ActiveExecutionLineageState",

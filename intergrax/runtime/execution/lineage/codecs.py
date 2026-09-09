@@ -38,7 +38,9 @@ def _reject_unknown_keys(payload: Mapping[str, Any], allowed: frozenset[str]) ->
         )
 
 
-def encode_execution_lineage_attempt_scope(scope: ExecutionLineageAttemptScope) -> dict[str, Any]:
+def encode_execution_lineage_attempt_scope(
+    scope: ExecutionLineageAttemptScope,
+) -> dict[str, Any]:
     return {
         "schema_version": _SCHEMA_VERSION,
         "tenant_id": scope.tenant_id,
@@ -48,13 +50,17 @@ def encode_execution_lineage_attempt_scope(scope: ExecutionLineageAttemptScope) 
     }
 
 
-def decode_execution_lineage_attempt_scope(payload: Mapping[str, Any]) -> ExecutionLineageAttemptScope:
+def decode_execution_lineage_attempt_scope(
+    payload: Mapping[str, Any],
+) -> ExecutionLineageAttemptScope:
     _reject_unknown_keys(
         payload,
         frozenset({"schema_version", "tenant_id", "task_id", "run_id", "attempt_id"}),
     )
     if payload.get("schema_version") != _SCHEMA_VERSION:
-        raise ExecutionLineageError("unsupported execution lineage scope schema version")
+        raise ExecutionLineageError(
+            "unsupported execution lineage scope schema version"
+        )
     return build_execution_lineage_attempt_scope(
         tenant_id=str(payload["tenant_id"]),
         task_id=validate_task_id(payload["task_id"]),
@@ -63,7 +69,9 @@ def decode_execution_lineage_attempt_scope(payload: Mapping[str, Any]) -> Execut
     )
 
 
-def encode_execution_lineage_attempt_state(state: ExecutionLineageAttemptState) -> dict[str, Any]:
+def encode_execution_lineage_attempt_state(
+    state: ExecutionLineageAttemptState,
+) -> dict[str, Any]:
     return {
         "schema_version": _SCHEMA_VERSION,
         "scope": encode_execution_lineage_attempt_scope(state.scope),
@@ -82,7 +90,9 @@ def encode_execution_lineage_attempt_state(state: ExecutionLineageAttemptState) 
     }
 
 
-def decode_execution_lineage_attempt_state(payload: Mapping[str, Any]) -> ExecutionLineageAttemptState:
+def decode_execution_lineage_attempt_state(
+    payload: Mapping[str, Any],
+) -> ExecutionLineageAttemptState:
     _reject_unknown_keys(
         payload,
         frozenset(
@@ -99,7 +109,9 @@ def decode_execution_lineage_attempt_state(payload: Mapping[str, Any]) -> Execut
         ),
     )
     if payload.get("schema_version") != _SCHEMA_VERSION:
-        raise ExecutionLineageError("unsupported execution lineage attempt state schema version")
+        raise ExecutionLineageError(
+            "unsupported execution lineage attempt state schema version"
+        )
     closure_raw = payload.get("closure_kind")
     closure_kind = (
         ExecutionLineageAttemptClosureKind(closure_raw)
@@ -115,7 +127,9 @@ def decode_execution_lineage_attempt_state(payload: Mapping[str, Any]) -> Execut
             label="next_admission_position",
         ),
         active_segment_root_execution_id=(
-            validate_execution_id(active_segment) if active_segment is not None else None
+            validate_execution_id(active_segment)
+            if active_segment is not None
+            else None
         ),
         degraded=bool(payload.get("degraded")),
         sealed=bool(payload.get("sealed")),
@@ -139,7 +153,9 @@ def encode_execution_lineage_segment_record(
     }
 
 
-def decode_execution_lineage_segment_record(payload: Mapping[str, Any]) -> ExecutionLineageSegmentRecord:
+def decode_execution_lineage_segment_record(
+    payload: Mapping[str, Any],
+) -> ExecutionLineageSegmentRecord:
     _reject_unknown_keys(
         payload,
         frozenset(
@@ -153,7 +169,9 @@ def decode_execution_lineage_segment_record(payload: Mapping[str, Any]) -> Execu
         ),
     )
     if payload.get("schema_version") != _SCHEMA_VERSION:
-        raise ExecutionLineageError("unsupported execution lineage segment schema version")
+        raise ExecutionLineageError(
+            "unsupported execution lineage segment schema version"
+        )
     predecessor = payload.get("predecessor_root_execution_id")
     return ExecutionLineageSegmentRecord(
         scope=decode_execution_lineage_attempt_scope(payload["scope"]),
@@ -174,7 +192,9 @@ def encode_execution_lineage_admission_record(
         "segment_root_execution_id": str(record.segment_root_execution_id),
         "execution_id": str(record.execution_id),
         "parent_execution_id": (
-            str(record.parent_execution_id) if record.parent_execution_id is not None else None
+            str(record.parent_execution_id)
+            if record.parent_execution_id is not None
+            else None
         ),
         "admission_position": record.admission_position,
         "graph_node_id": record.graph_node_id,
@@ -199,24 +219,34 @@ def decode_execution_lineage_admission_record(
         ),
     )
     if payload.get("schema_version") != _SCHEMA_VERSION:
-        raise ExecutionLineageError("unsupported execution lineage admission schema version")
+        raise ExecutionLineageError(
+            "unsupported execution lineage admission schema version"
+        )
     parent = payload.get("parent_execution_id")
     return ExecutionLineageAdmissionRecord(
         scope=decode_execution_lineage_attempt_scope(payload["scope"]),
-        segment_root_execution_id=validate_execution_id(payload["segment_root_execution_id"]),
+        segment_root_execution_id=validate_execution_id(
+            payload["segment_root_execution_id"]
+        ),
         execution_id=validate_execution_id(payload["execution_id"]),
-        parent_execution_id=validate_execution_id(parent) if parent is not None else None,
+        parent_execution_id=validate_execution_id(parent)
+        if parent is not None
+        else None,
         admission_position=_require_positive_int(
             payload.get("admission_position"),
             label="admission_position",
         ),
         graph_node_id=(
-            str(payload["graph_node_id"]) if payload.get("graph_node_id") is not None else None
+            str(payload["graph_node_id"])
+            if payload.get("graph_node_id") is not None
+            else None
         ),
     )
 
 
-def encode_execution_lineage_seal_record(record: ExecutionLineageSealRecord) -> dict[str, Any]:
+def encode_execution_lineage_seal_record(
+    record: ExecutionLineageSealRecord,
+) -> dict[str, Any]:
     return {
         "schema_version": _SCHEMA_VERSION,
         "scope": encode_execution_lineage_attempt_scope(record.scope),
@@ -225,7 +255,9 @@ def encode_execution_lineage_seal_record(record: ExecutionLineageSealRecord) -> 
     }
 
 
-def decode_execution_lineage_seal_record(payload: Mapping[str, Any]) -> ExecutionLineageSealRecord:
+def decode_execution_lineage_seal_record(
+    payload: Mapping[str, Any],
+) -> ExecutionLineageSealRecord:
     _reject_unknown_keys(
         payload,
         frozenset({"schema_version", "scope", "closure_kind", "degraded"}),
@@ -239,7 +271,9 @@ def decode_execution_lineage_seal_record(payload: Mapping[str, Any]) -> Executio
     )
 
 
-def encode_execution_lineage_attempt_state_bytes(state: ExecutionLineageAttemptState) -> bytes:
+def encode_execution_lineage_attempt_state_bytes(
+    state: ExecutionLineageAttemptState,
+) -> bytes:
     return json.dumps(
         encode_execution_lineage_attempt_state(state),
         separators=(",", ":"),
@@ -247,11 +281,15 @@ def encode_execution_lineage_attempt_state_bytes(state: ExecutionLineageAttemptS
     ).encode("utf-8")
 
 
-def decode_execution_lineage_attempt_state_bytes(raw: bytes) -> ExecutionLineageAttemptState:
+def decode_execution_lineage_attempt_state_bytes(
+    raw: bytes,
+) -> ExecutionLineageAttemptState:
     try:
         payload = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ExecutionLineageError("invalid execution lineage attempt state encoding") from exc
+        raise ExecutionLineageError(
+            "invalid execution lineage attempt state encoding"
+        ) from exc
     if not isinstance(payload, dict):
         raise ExecutionLineageError("invalid execution lineage attempt state payload")
     return decode_execution_lineage_attempt_state(payload)

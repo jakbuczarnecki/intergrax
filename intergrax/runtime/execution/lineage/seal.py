@@ -15,7 +15,9 @@ from intergrax.contracts.execution_lineage import (
     build_execution_lineage_attempt_scope,
 )
 from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome
-from intergrax.runtime.execution.lineage.active_lineage import peek_active_execution_lineage
+from intergrax.runtime.execution.lineage.active_lineage import (
+    peek_active_execution_lineage,
+)
 
 _LOGGER = logging.getLogger(__name__)
 

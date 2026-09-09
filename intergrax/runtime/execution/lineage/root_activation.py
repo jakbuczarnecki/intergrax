@@ -7,7 +7,11 @@ from __future__ import annotations
 
 from contextvars import Token
 
-from intergrax.contracts.execution_identity import ExecutionId, TaskId, validate_execution_id
+from intergrax.contracts.execution_identity import (
+    ExecutionId,
+    TaskId,
+    validate_execution_id,
+)
 from intergrax.contracts.execution_lineage import (
     ExecutionLineageAttemptScope,
     ExecutionLineageConfigurationError,
@@ -17,9 +21,13 @@ from intergrax.contracts.execution_lineage import (
 from intergrax.runtime.execution.lineage.active_lineage import (
     ActiveExecutionLineageState,
     bind_active_execution_lineage,
+    bind_attempt_lineage_degradation,
     reset_active_execution_lineage,
+    reset_attempt_lineage_degradation,
 )
-from intergrax.runtime.execution.lineage.admission import ExecutionLineageRootAdmissionHook
+from intergrax.runtime.execution.lineage.admission import (
+    ExecutionLineageRootAdmissionHook,
+)
 from intergrax.runtime.execution.boundary import ExecutionAdmissionHook
 
 
@@ -49,22 +57,23 @@ def activate_root_execution_lineage(
     scope: ExecutionLineageAttemptScope,
     root_execution_id: ExecutionId,
     predecessor_root_execution_id: ExecutionId | None = None,
-) -> tuple[ActiveExecutionLineageState, Token]:
+) -> tuple[ActiveExecutionLineageState, Token, Token]:
     root = validate_execution_id(root_execution_id)
     predecessor = (
         validate_execution_id(predecessor_root_execution_id)
         if predecessor_root_execution_id is not None
         else None
     )
-    persistence.open_attempt(scope)
+    attempt_state = persistence.open_attempt(scope)
     persistence.open_segment(scope, root, predecessor)
     state = ActiveExecutionLineageState(
         persistence=persistence,
         scope=scope,
         segment_root_execution_id=root,
     )
-    token = bind_active_execution_lineage(state)
-    return state, token
+    lineage_token = bind_active_execution_lineage(state)
+    degradation_token = bind_attempt_lineage_degradation(attempt_state.degraded)
+    return state, lineage_token, degradation_token
 
 
 def build_root_lineage_admission_hook(
@@ -89,5 +98,8 @@ def merge_lineage_root_admission_hooks(
     return (lineage_hook, *admission_hooks)
 
 
-def deactivate_root_execution_lineage(token: Token) -> None:
-    reset_active_execution_lineage(token)
+def deactivate_root_execution_lineage(
+    lineage_token: Token, degradation_token: Token
+) -> None:
+    reset_active_execution_lineage(lineage_token)
+    reset_attempt_lineage_degradation(degradation_token)

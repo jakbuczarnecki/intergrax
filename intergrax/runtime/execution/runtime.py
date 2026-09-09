@@ -195,6 +195,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         )
         admission_hooks = self._admission_hooks
         lineage_token = None
+        degradation_token = None
         if self._execution_lineage_persistence is not None:
             lineage_scope = validate_root_lineage_inputs(
                 tenant_id=root_context.tenant_id,
@@ -203,7 +204,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 attempt_id=root_context.attempt_id,
                 execution_id=execution_id,
             )
-            _, lineage_token = activate_root_execution_lineage(
+            _, lineage_token, degradation_token = activate_root_execution_lineage(
                 persistence=self._execution_lineage_persistence,
                 scope=lineage_scope,
                 root_execution_id=execution_id,
@@ -252,8 +253,8 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 )
             return await boundary.execute(request)
         finally:
-            if lineage_token is not None:
-                deactivate_root_execution_lineage(lineage_token)
+            if lineage_token is not None and degradation_token is not None:
+                deactivate_root_execution_lineage(lineage_token, degradation_token)
             if work_port_token is not None:
                 reset_active_execution_work_port(work_port_token)
             if persistence_token is not None:

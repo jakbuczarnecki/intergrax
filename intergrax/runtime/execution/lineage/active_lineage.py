@@ -35,9 +35,11 @@ _active_execution_lineage: ContextVar[ActiveExecutionLineageState | None] = Cont
     "active_execution_lineage",
     default=None,
 )
-_attempt_lineage_degradation: ContextVar[AttemptLineageDegradationState | None] = ContextVar(
-    "attempt_lineage_degradation",
-    default=None,
+_attempt_lineage_degradation: ContextVar[AttemptLineageDegradationState | None] = (
+    ContextVar(
+        "attempt_lineage_degradation",
+        default=None,
+    )
 )
 
 
@@ -71,7 +73,9 @@ def bind_attempt_lineage_degradation(degraded: bool) -> Token:
     current = peek_attempt_lineage_degradation()
     if current is not None and current.degraded:
         degraded = True
-    return _attempt_lineage_degradation.set(AttemptLineageDegradationState(degraded=degraded))
+    return _attempt_lineage_degradation.set(
+        AttemptLineageDegradationState(degraded=degraded)
+    )
 
 
 def peek_attempt_lineage_degradation() -> AttemptLineageDegradationState | None:

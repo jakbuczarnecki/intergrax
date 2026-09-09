@@ -9,13 +9,13 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from typing import Protocol, runtime_checkable
-
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
-    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
+)
+from intergrax.integrations.contracts.document_store_query_cursor_provider import (
+    DocumentStoreQueryCursorProvider,
 )
 from intergrax.runtime.diagnostics.diagnostic_subject import diagnostic_subject_index_token
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
@@ -65,13 +65,6 @@ _INDEX_SCHEMA = "intergrax.diagnostic_problem.index.v1"
 _PROBLEM_ID_FIELD = "problem_id"
 _LIST_QUERY_OVERFETCH_FACTOR = 4
 _LIST_QUERY_MAX_INDEX_EXAMINED_FACTOR = 16
-
-
-@runtime_checkable
-class DocumentStoreQueryCursorProvider(Protocol):
-    @property
-    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
-        """Authenticated codec for document-store query continuation cursors."""
 
 
 @dataclass(frozen=True, slots=True)

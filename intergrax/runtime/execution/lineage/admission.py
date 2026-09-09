@@ -12,7 +12,9 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineagePersistence,
     ExecutionLineageUnavailableError,
 )
-from intergrax.runtime.execution.lineage.active_lineage import bind_attempt_lineage_degradation
+from intergrax.runtime.execution.lineage.active_lineage import (
+    bind_attempt_lineage_degradation,
+)
 
 
 class ExecutionLineageRootAdmissionHook:
@@ -92,7 +94,9 @@ class ExecutionLineageChildAdmissionHook:
             )
         except ExecutionLineageUnavailableError:
             try:
-                self._persistence.mark_degraded(self._scope, "child_admission_unavailable")
+                self._persistence.mark_degraded(
+                    self._scope, "child_admission_unavailable"
+                )
             except ExecutionLineageUnavailableError:
                 raise
             bind_attempt_lineage_degradation(True)

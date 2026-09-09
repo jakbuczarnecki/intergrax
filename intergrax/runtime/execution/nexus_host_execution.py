@@ -12,7 +12,9 @@ from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecution
-from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
+from intergrax.runtime.execution.host_task_terminal_publisher import (
+    HostTaskTerminalPublisher,
+)
 from intergrax.runtime.execution.orchestration import OrchestrationExecutor
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -67,4 +69,5 @@ def build_host_task_execution(
         _run_budget=nexus_loop.run_budget,
         _terminal_publisher=build_nexus_host_task_terminal_publisher(nexus_loop),
         _revision_admission=revision_admission,
+        _execution_lineage_persistence=nexus_loop.execution_lineage_persistence,
     )

@@ -41,6 +41,7 @@ _SEAL_ROW = "meta:seal"
 _SEGMENT_ROW_PREFIX = "segment:"
 _ADMISSION_ROW_PREFIX = "admission:"
 _MAX_ATOMIC_RETRIES = 256
+_MAX_ON_CREATED_OPS = 4
 
 
 def execution_lineage_partition_key(scope: ExecutionLineageAttemptScope) -> str:
@@ -58,7 +59,9 @@ def _admission_row_key(execution_id: ExecutionId) -> str:
     return f"{_ADMISSION_ROW_PREFIX}{execution_id}"
 
 
-def _scopes_match(left: ExecutionLineageAttemptScope, right: ExecutionLineageAttemptScope) -> bool:
+def _scopes_match(
+    left: ExecutionLineageAttemptScope, right: ExecutionLineageAttemptScope
+) -> bool:
     return (
         left.tenant_id == right.tenant_id
         and left.task_id == right.task_id
@@ -67,7 +70,9 @@ def _scopes_match(left: ExecutionLineageAttemptScope, right: ExecutionLineageAtt
     )
 
 
-def _initial_attempt_state(scope: ExecutionLineageAttemptScope) -> ExecutionLineageAttemptState:
+def _initial_attempt_state(
+    scope: ExecutionLineageAttemptScope,
+) -> ExecutionLineageAttemptState:
     return ExecutionLineageAttemptState(
         scope=scope,
         generation=1,
@@ -86,15 +91,76 @@ class _PartitionRow:
     data: dict[str, object]
 
 
-class _PartitionRowStore(Protocol):
-    def get_row(self, partition_key: str, row_key: str) -> _PartitionRow | None:
-        ...
+@dataclass(frozen=True, slots=True)
+class _PartitionPutIfAbsentOnCreated:
+    row: _PartitionRow
 
-    def put_if_absent(self, row: _PartitionRow) -> bool:
-        ...
 
-    def replace_if_match(self, expected: _PartitionRow, replacement: _PartitionRow) -> bool:
-        ...
+@dataclass(frozen=True, slots=True)
+class _PartitionReplaceIfMatchOnCreated:
+    expected: _PartitionRow
+    replacement: _PartitionRow
+
+
+_PartitionOnCreatedRowOp = (
+    _PartitionPutIfAbsentOnCreated | _PartitionReplaceIfMatchOnCreated
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _PartitionAtomicRowBatch:
+    partition_key: str
+    primary_put_if_absent: _PartitionRow
+    on_created_ops: tuple[_PartitionOnCreatedRowOp, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class _PartitionAtomicRowBatchResult:
+    primary_created: bool
+
+
+def _validate_partition_atomic_row_batch(
+    batch: _PartitionAtomicRowBatch,
+) -> _PartitionAtomicRowBatch:
+    if not batch.partition_key:
+        raise ValueError("partition_atomic_row_batch_partition_key_invalid")
+    primary = batch.primary_put_if_absent
+    if primary.partition_key != batch.partition_key:
+        raise ValueError("partition_atomic_row_batch_primary_partition_mismatch")
+    if len(batch.on_created_ops) > _MAX_ON_CREATED_OPS:
+        raise ValueError("partition_atomic_row_batch_on_created_ops_exceeded")
+    for op in batch.on_created_ops:
+        if isinstance(op, _PartitionPutIfAbsentOnCreated):
+            if op.row.partition_key != batch.partition_key:
+                raise ValueError(
+                    "partition_atomic_row_batch_on_created_partition_mismatch"
+                )
+        elif isinstance(op, _PartitionReplaceIfMatchOnCreated):
+            if op.expected.partition_key != batch.partition_key:
+                raise ValueError(
+                    "partition_atomic_row_batch_on_created_partition_mismatch"
+                )
+            if op.replacement.partition_key != batch.partition_key:
+                raise ValueError(
+                    "partition_atomic_row_batch_on_created_partition_mismatch"
+                )
+            if op.expected.row_key != op.replacement.row_key:
+                raise ValueError(
+                    "partition_atomic_row_batch_on_created_row_key_mismatch"
+                )
+        else:
+            raise TypeError("partition_atomic_row_batch_on_created_op_invalid")
+    return batch
+
+
+class _PartitionAtomicRowStore(Protocol):
+    def get_row(self, partition_key: str, row_key: str) -> _PartitionRow | None: ...
+
+    def put_if_absent(self, row: _PartitionRow) -> bool: ...
+
+    def replace_if_match(
+        self, expected: _PartitionRow, replacement: _PartitionRow
+    ) -> bool: ...
 
     def list_rows(
         self,
@@ -104,17 +170,23 @@ class _PartitionRowStore(Protocol):
         limit: int,
         cursor: str | None,
         sort_path: str,
-    ) -> tuple[tuple[_PartitionRow, ...], str | None]:
-        ...
+    ) -> tuple[tuple[_PartitionRow, ...], str | None]: ...
+
+    def execute_partition_atomic_batch(
+        self,
+        batch: _PartitionAtomicRowBatch,
+    ) -> _PartitionAtomicRowBatchResult: ...
 
 
 class _ExecutionLineageStoreLogic:
-    """Shared lineage semantics over a partition row store."""
+    """Shared lineage semantics over a partition-atomic row store."""
 
-    def __init__(self, store: _PartitionRowStore) -> None:
+    def __init__(self, store: _PartitionAtomicRowStore) -> None:
         self._store = store
 
-    def open_attempt(self, scope: ExecutionLineageAttemptScope) -> ExecutionLineageAttemptState:
+    def open_attempt(
+        self, scope: ExecutionLineageAttemptScope
+    ) -> ExecutionLineageAttemptState:
         partition = execution_lineage_partition_key(scope)
         existing = self._read_attempt_state(partition)
         if existing is not None:
@@ -123,13 +195,17 @@ class _ExecutionLineageStoreLogic:
             return existing
         initial = _initial_attempt_state(scope)
         created = self._store.put_if_absent(
-            _PartitionRow(partition, _META_ROW, encode_execution_lineage_attempt_state(initial)),
+            _PartitionRow(
+                partition, _META_ROW, encode_execution_lineage_attempt_state(initial)
+            ),
         )
         if created:
             return initial
         loaded = self._read_attempt_state(partition)
         if loaded is None:
-            raise ExecutionLineageUnavailableError("attempt open race left no durable state")
+            raise ExecutionLineageUnavailableError(
+                "attempt open race left no durable state"
+            )
         return loaded
 
     def open_segment(
@@ -145,12 +221,16 @@ class _ExecutionLineageStoreLogic:
             else None
         )
         if predecessor is not None and predecessor == root:
-            raise ExecutionLineageIntegrityError("segment predecessor cannot equal current root")
+            raise ExecutionLineageIntegrityError(
+                "segment predecessor cannot equal current root"
+            )
         partition = execution_lineage_partition_key(scope)
         for _ in range(_MAX_ATOMIC_RETRIES):
             attempt_state = self._require_attempt_state(partition, scope)
             if attempt_state.sealed:
-                raise ExecutionLineageIntegrityError("cannot open segment on sealed attempt")
+                raise ExecutionLineageIntegrityError(
+                    "cannot open segment on sealed attempt"
+                )
             segment_key = _segment_row_key(root)
             existing_segment = self._read_segment(partition, segment_key)
             if existing_segment is not None:
@@ -189,34 +269,43 @@ class _ExecutionLineageStoreLogic:
                     ),
                 },
             )
+            predecessor_unclean: (
+                tuple[
+                    ExecutionLineageSegmentRecord,
+                    ExecutionLineageSegmentRecord,
+                ]
+                | None
+            ) = None
             if predecessor is not None:
-                predecessor_segment = self._read_segment(partition, _segment_row_key(predecessor))
+                predecessor_segment = self._read_segment(
+                    partition, _segment_row_key(predecessor)
+                )
                 if predecessor_segment is None:
                     raise ExecutionLineageIntegrityError("predecessor segment missing")
-                if predecessor_segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_OPEN:
-                    unclean_predecessor = predecessor_segment.model_copy(
-                        update={"lifecycle": ExecutionLineageSegmentLifecycle.SEGMENT_UNCLEAN},
+                if (
+                    predecessor_segment.lifecycle
+                    is ExecutionLineageSegmentLifecycle.SEGMENT_OPEN
+                ):
+                    predecessor_unclean = (
+                        predecessor_segment,
+                        predecessor_segment.model_copy(
+                            update={
+                                "lifecycle": ExecutionLineageSegmentLifecycle.SEGMENT_UNCLEAN
+                            },
+                        ),
                     )
-                    if not self._write_segment_and_attempt(
-                        partition,
-                        attempt_state,
-                        updated_attempt,
-                        segment_key,
-                        new_segment,
-                        predecessor_expected=predecessor_segment,
-                        predecessor_replacement=unclean_predecessor,
-                    ):
-                        continue
-                    return new_segment
-            if self._write_segment_and_attempt(
+            if self._execute_segment_open_batch(
                 partition,
                 attempt_state,
                 updated_attempt,
                 segment_key,
                 new_segment,
+                predecessor_unclean=predecessor_unclean,
             ):
                 return new_segment
-        raise ExecutionLineageUnavailableError("failed to open segment after bounded retries")
+        raise ExecutionLineageUnavailableError(
+            "failed to open segment after bounded retries"
+        )
 
     def admit_root(
         self,
@@ -265,20 +354,31 @@ class _ExecutionLineageStoreLogic:
         for _ in range(_MAX_ATOMIC_RETRIES):
             attempt_state = self._require_attempt_state(partition, scope)
             if attempt_state.sealed:
-                raise ExecutionLineageIntegrityError("cannot close segment on sealed attempt")
+                raise ExecutionLineageIntegrityError(
+                    "cannot close segment on sealed attempt"
+                )
             segment = self._read_segment(partition, _segment_row_key(root))
             if segment is None:
-                raise ExecutionLineageIntegrityError("segment not found for clean close")
-            if segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN:
+                raise ExecutionLineageIntegrityError(
+                    "segment not found for clean close"
+                )
+            if (
+                segment.lifecycle
+                is ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN
+            ):
                 return segment
             if segment.lifecycle is not ExecutionLineageSegmentLifecycle.SEGMENT_OPEN:
                 raise ExecutionLineageIntegrityError("segment not open for clean close")
             closed = segment.model_copy(
-                update={"lifecycle": ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN},
+                update={
+                    "lifecycle": ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN
+                },
             )
             if self._replace_segment(partition, segment, closed):
                 return closed
-        raise ExecutionLineageUnavailableError("failed to close segment after bounded retries")
+        raise ExecutionLineageUnavailableError(
+            "failed to close segment after bounded retries"
+        )
 
     def mark_degraded(
         self,
@@ -291,10 +391,14 @@ class _ExecutionLineageStoreLogic:
             attempt_state = self._require_attempt_state(partition, scope)
             if attempt_state.degraded:
                 return attempt_state
-            updated = attempt_state.model_copy(update={"generation": attempt_state.generation + 1, "degraded": True})
+            updated = attempt_state.model_copy(
+                update={"generation": attempt_state.generation + 1, "degraded": True},
+            )
             if self._replace_attempt_state(partition, attempt_state, updated):
                 return updated
-        raise ExecutionLineageUnavailableError("failed to mark degraded after bounded retries")
+        raise ExecutionLineageUnavailableError(
+            "failed to mark degraded after bounded retries"
+        )
 
     def seal_attempt(
         self,
@@ -312,7 +416,9 @@ class _ExecutionLineageStoreLogic:
             if attempt_state.sealed:
                 existing = self._read_seal(partition)
                 if existing is None:
-                    raise ExecutionLineageIntegrityError("sealed attempt without seal record")
+                    raise ExecutionLineageIntegrityError(
+                        "sealed attempt without seal record"
+                    )
                 return existing
             updated_attempt = attempt_state.model_copy(
                 update={
@@ -327,25 +433,36 @@ class _ExecutionLineageStoreLogic:
                 degraded=updated_attempt.degraded,
             )
             active_root = attempt_state.active_segment_root_execution_id
+            segment_close: (
+                tuple[ExecutionLineageSegmentRecord, ExecutionLineageSegmentRecord]
+                | None
+            ) = None
             if active_root is not None:
                 segment = self._read_segment(partition, _segment_row_key(active_root))
-                if segment is not None and segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_OPEN:
-                    closed_segment = segment.model_copy(
-                        update={"lifecycle": ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN},
-                    )
-                    if not self._seal_with_segment_close(
-                        partition,
-                        attempt_state,
-                        updated_attempt,
+                if (
+                    segment is not None
+                    and segment.lifecycle
+                    is ExecutionLineageSegmentLifecycle.SEGMENT_OPEN
+                ):
+                    segment_close = (
                         segment,
-                        closed_segment,
-                        seal,
-                    ):
-                        continue
-                    return seal
-            if self._seal_attempt_only(partition, attempt_state, updated_attempt, seal):
+                        segment.model_copy(
+                            update={
+                                "lifecycle": ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN
+                            },
+                        ),
+                    )
+            if self._execute_seal_batch(
+                partition,
+                attempt_state,
+                updated_attempt,
+                seal,
+                segment_close=segment_close,
+            ):
                 return seal
-        raise ExecutionLineageUnavailableError("failed to seal attempt after bounded retries")
+        raise ExecutionLineageUnavailableError(
+            "failed to seal attempt after bounded retries"
+        )
 
     def list_admissions_for_attempt(
         self,
@@ -368,7 +485,9 @@ class _ExecutionLineageStoreLogic:
         admissions = tuple(
             sorted(admissions, key=lambda item: item.admission_position),
         )
-        return ExecutionLineageAdmissionPage(admissions=admissions, next_cursor=next_cursor)
+        return ExecutionLineageAdmissionPage(
+            admissions=admissions, next_cursor=next_cursor
+        )
 
     def read_attempt_lineage_state(
         self,
@@ -376,7 +495,9 @@ class _ExecutionLineageStoreLogic:
     ) -> ExecutionLineageAttemptState | None:
         return self._read_attempt_state(execution_lineage_partition_key(scope))
 
-    def read_seal(self, scope: ExecutionLineageAttemptScope) -> ExecutionLineageSealRecord | None:
+    def read_seal(
+        self, scope: ExecutionLineageAttemptScope
+    ) -> ExecutionLineageSealRecord | None:
         return self._read_seal(execution_lineage_partition_key(scope))
 
     def _admit(
@@ -394,7 +515,10 @@ class _ExecutionLineageStoreLogic:
             attempt_state = self._require_attempt_state(partition, scope)
             if attempt_state.sealed:
                 raise ExecutionLineageIntegrityError("cannot admit on sealed attempt")
-            if attempt_state.active_segment_root_execution_id != segment_root_execution_id:
+            if (
+                attempt_state.active_segment_root_execution_id
+                != segment_root_execution_id
+            ):
                 raise ExecutionLineageIntegrityError("admission segment root mismatch")
             existing = self._read_admission(partition, admission_key)
             if existing is not None:
@@ -424,7 +548,13 @@ class _ExecutionLineageStoreLogic:
                     "next_admission_position": position + 1,
                 },
             )
-            if self._write_admission(partition, attempt_state, updated_attempt, admission_key, record):
+            if self._execute_admission_batch(
+                partition,
+                attempt_state,
+                updated_attempt,
+                admission_key,
+                record,
+            ):
                 return record
         raise ExecutionLineageUnavailableError("failed to admit after bounded retries")
 
@@ -468,7 +598,9 @@ class _ExecutionLineageStoreLogic:
         predecessor: ExecutionId,
         new_root: ExecutionId,
     ) -> None:
-        predecessor_segment = self._read_segment(partition, _segment_row_key(predecessor))
+        predecessor_segment = self._read_segment(
+            partition, _segment_row_key(predecessor)
+        )
         if predecessor_segment is None:
             raise ExecutionLineageIntegrityError("predecessor segment does not exist")
         if not _scopes_match(predecessor_segment.scope, scope):
@@ -484,7 +616,140 @@ class _ExecutionLineageStoreLogic:
                 raise ExecutionLineageIntegrityError("continuation segment missing")
             current = segment.predecessor_root_execution_id
 
-    def _read_attempt_state(self, partition: str) -> ExecutionLineageAttemptState | None:
+    def _attempt_row(
+        self,
+        partition: str,
+        state: ExecutionLineageAttemptState,
+    ) -> _PartitionRow:
+        return _PartitionRow(
+            partition, _META_ROW, encode_execution_lineage_attempt_state(state)
+        )
+
+    def _segment_row(
+        self,
+        partition: str,
+        segment: ExecutionLineageSegmentRecord,
+    ) -> _PartitionRow:
+        return _PartitionRow(
+            partition,
+            _segment_row_key(segment.root_execution_id),
+            encode_execution_lineage_segment_record(segment),
+        )
+
+    def _execute_admission_batch(
+        self,
+        partition: str,
+        attempt_expected: ExecutionLineageAttemptState,
+        attempt_replacement: ExecutionLineageAttemptState,
+        admission_row_key: str,
+        record: ExecutionLineageAdmissionRecord,
+    ) -> bool:
+        batch = _PartitionAtomicRowBatch(
+            partition_key=partition,
+            primary_put_if_absent=_PartitionRow(
+                partition,
+                admission_row_key,
+                encode_execution_lineage_admission_record(record),
+            ),
+            on_created_ops=(
+                _PartitionReplaceIfMatchOnCreated(
+                    expected=self._attempt_row(partition, attempt_expected),
+                    replacement=self._attempt_row(partition, attempt_replacement),
+                ),
+            ),
+        )
+        try:
+            return self._store.execute_partition_atomic_batch(batch).primary_created
+        except RuntimeError:
+            return False
+
+    def _execute_segment_open_batch(
+        self,
+        partition: str,
+        attempt_expected: ExecutionLineageAttemptState,
+        attempt_replacement: ExecutionLineageAttemptState,
+        segment_row_key: str,
+        segment: ExecutionLineageSegmentRecord,
+        *,
+        predecessor_unclean: tuple[
+            ExecutionLineageSegmentRecord,
+            ExecutionLineageSegmentRecord,
+        ]
+        | None = None,
+    ) -> bool:
+        on_created: list[_PartitionOnCreatedRowOp] = []
+        if predecessor_unclean is not None:
+            predecessor_expected, predecessor_replacement = predecessor_unclean
+            on_created.append(
+                _PartitionReplaceIfMatchOnCreated(
+                    expected=self._segment_row(partition, predecessor_expected),
+                    replacement=self._segment_row(partition, predecessor_replacement),
+                ),
+            )
+        on_created.append(
+            _PartitionReplaceIfMatchOnCreated(
+                expected=self._attempt_row(partition, attempt_expected),
+                replacement=self._attempt_row(partition, attempt_replacement),
+            ),
+        )
+        batch = _PartitionAtomicRowBatch(
+            partition_key=partition,
+            primary_put_if_absent=_PartitionRow(
+                partition,
+                segment_row_key,
+                encode_execution_lineage_segment_record(segment),
+            ),
+            on_created_ops=tuple(on_created),
+        )
+        try:
+            return self._store.execute_partition_atomic_batch(batch).primary_created
+        except RuntimeError:
+            return False
+
+    def _execute_seal_batch(
+        self,
+        partition: str,
+        attempt_expected: ExecutionLineageAttemptState,
+        attempt_replacement: ExecutionLineageAttemptState,
+        seal: ExecutionLineageSealRecord,
+        *,
+        segment_close: tuple[
+            ExecutionLineageSegmentRecord, ExecutionLineageSegmentRecord
+        ]
+        | None,
+    ) -> bool:
+        on_created: list[_PartitionOnCreatedRowOp] = []
+        if segment_close is not None:
+            segment_expected, segment_replacement = segment_close
+            on_created.append(
+                _PartitionReplaceIfMatchOnCreated(
+                    expected=self._segment_row(partition, segment_expected),
+                    replacement=self._segment_row(partition, segment_replacement),
+                ),
+            )
+        on_created.append(
+            _PartitionReplaceIfMatchOnCreated(
+                expected=self._attempt_row(partition, attempt_expected),
+                replacement=self._attempt_row(partition, attempt_replacement),
+            ),
+        )
+        batch = _PartitionAtomicRowBatch(
+            partition_key=partition,
+            primary_put_if_absent=_PartitionRow(
+                partition,
+                _SEAL_ROW,
+                encode_execution_lineage_seal_record(seal),
+            ),
+            on_created_ops=tuple(on_created),
+        )
+        try:
+            return self._store.execute_partition_atomic_batch(batch).primary_created
+        except RuntimeError:
+            return False
+
+    def _read_attempt_state(
+        self, partition: str
+    ) -> ExecutionLineageAttemptState | None:
         row = self._store.get_row(partition, _META_ROW)
         if row is None:
             return None
@@ -502,13 +767,17 @@ class _ExecutionLineageStoreLogic:
             raise ExecutionLineageIntegrityError("attempt scope mismatch")
         return state
 
-    def _read_segment(self, partition: str, row_key: str) -> ExecutionLineageSegmentRecord | None:
+    def _read_segment(
+        self, partition: str, row_key: str
+    ) -> ExecutionLineageSegmentRecord | None:
         row = self._store.get_row(partition, row_key)
         if row is None:
             return None
         return decode_execution_lineage_segment_record(row.data)
 
-    def _read_admission(self, partition: str, row_key: str) -> ExecutionLineageAdmissionRecord | None:
+    def _read_admission(
+        self, partition: str, row_key: str
+    ) -> ExecutionLineageAdmissionRecord | None:
         row = self._store.get_row(partition, row_key)
         if row is None:
             return None
@@ -527,8 +796,8 @@ class _ExecutionLineageStoreLogic:
         replacement: ExecutionLineageAttemptState,
     ) -> bool:
         return self._store.replace_if_match(
-            _PartitionRow(partition, _META_ROW, encode_execution_lineage_attempt_state(expected)),
-            _PartitionRow(partition, _META_ROW, encode_execution_lineage_attempt_state(replacement)),
+            self._attempt_row(partition, expected),
+            self._attempt_row(partition, replacement),
         )
 
     def _replace_segment(
@@ -537,86 +806,13 @@ class _ExecutionLineageStoreLogic:
         expected: ExecutionLineageSegmentRecord,
         replacement: ExecutionLineageSegmentRecord,
     ) -> bool:
-        row_key = _segment_row_key(expected.root_execution_id)
         return self._store.replace_if_match(
-            _PartitionRow(partition, row_key, encode_execution_lineage_segment_record(expected)),
-            _PartitionRow(partition, row_key, encode_execution_lineage_segment_record(replacement)),
+            self._segment_row(partition, expected),
+            self._segment_row(partition, replacement),
         )
 
-    def _write_segment_and_attempt(
-        self,
-        partition: str,
-        attempt_expected: ExecutionLineageAttemptState,
-        attempt_replacement: ExecutionLineageAttemptState,
-        segment_row_key: str,
-        segment: ExecutionLineageSegmentRecord,
-        *,
-        predecessor_expected: ExecutionLineageSegmentRecord | None = None,
-        predecessor_replacement: ExecutionLineageSegmentRecord | None = None,
-    ) -> bool:
-        if predecessor_expected is not None and predecessor_replacement is not None:
-            if not self._replace_segment(
-                partition,
-                predecessor_expected,
-                predecessor_replacement,
-            ):
-                return False
-        if not self._store.put_if_absent(
-            _PartitionRow(partition, segment_row_key, encode_execution_lineage_segment_record(segment)),
-        ):
-            return False
-        return self._replace_attempt_state(partition, attempt_expected, attempt_replacement)
 
-    def _write_admission(
-        self,
-        partition: str,
-        attempt_expected: ExecutionLineageAttemptState,
-        attempt_replacement: ExecutionLineageAttemptState,
-        admission_row_key: str,
-        record: ExecutionLineageAdmissionRecord,
-    ) -> bool:
-        if not self._store.put_if_absent(
-            _PartitionRow(
-                partition,
-                admission_row_key,
-                encode_execution_lineage_admission_record(record),
-            ),
-        ):
-            return False
-        return self._replace_attempt_state(partition, attempt_expected, attempt_replacement)
-
-    def _seal_attempt_only(
-        self,
-        partition: str,
-        attempt_expected: ExecutionLineageAttemptState,
-        attempt_replacement: ExecutionLineageAttemptState,
-        seal: ExecutionLineageSealRecord,
-    ) -> bool:
-        if not self._store.put_if_absent(
-            _PartitionRow(partition, _SEAL_ROW, encode_execution_lineage_seal_record(seal)),
-        ):
-            return False
-        return self._replace_attempt_state(partition, attempt_expected, attempt_replacement)
-
-    def _seal_with_segment_close(
-        self,
-        partition: str,
-        attempt_expected: ExecutionLineageAttemptState,
-        attempt_replacement: ExecutionLineageAttemptState,
-        segment_expected: ExecutionLineageSegmentRecord,
-        segment_replacement: ExecutionLineageSegmentRecord,
-        seal: ExecutionLineageSealRecord,
-    ) -> bool:
-        if not self._replace_segment(partition, segment_expected, segment_replacement):
-            return False
-        if not self._store.put_if_absent(
-            _PartitionRow(partition, _SEAL_ROW, encode_execution_lineage_seal_record(seal)),
-        ):
-            return False
-        return self._replace_attempt_state(partition, attempt_expected, attempt_replacement)
-
-
-class _InMemoryPartitionRowStore:
+class _InMemoryPartitionAtomicRowStore:
     def __init__(self) -> None:
         self._rows: dict[tuple[str, str], _PartitionRow] = {}
         self._lock = threading.RLock()
@@ -633,7 +829,9 @@ class _InMemoryPartitionRowStore:
             self._rows[key] = row
             return True
 
-    def replace_if_match(self, expected: _PartitionRow, replacement: _PartitionRow) -> bool:
+    def replace_if_match(
+        self, expected: _PartitionRow, replacement: _PartitionRow
+    ) -> bool:
         with self._lock:
             current = self._rows.get((expected.partition_key, expected.row_key))
             if current is None or current.data != expected.data:
@@ -658,7 +856,9 @@ class _InMemoryPartitionRowStore:
                 if partition == partition_key and row.row_key.startswith(row_key_prefix)
             ]
         rows.sort(
-            key=lambda row: decode_execution_lineage_admission_record(row.data).admission_position,
+            key=lambda row: (
+                decode_execution_lineage_admission_record(row.data).admission_position
+            ),
         )
         start = 0
         if cursor is not None:
@@ -670,18 +870,79 @@ class _InMemoryPartitionRowStore:
         next_cursor = page[-1].row_key if len(rows) > start + limit else None
         return page, next_cursor
 
+    def execute_partition_atomic_batch(
+        self,
+        batch: _PartitionAtomicRowBatch,
+    ) -> _PartitionAtomicRowBatchResult:
+        validated = _validate_partition_atomic_row_batch(batch)
+        with self._lock:
+            snapshot = dict(self._rows)
+            primary_created = self._put_if_absent_unlocked(
+                validated.primary_put_if_absent,
+                rows=snapshot,
+            )
+            if primary_created:
+                for op in validated.on_created_ops:
+                    if isinstance(op, _PartitionPutIfAbsentOnCreated):
+                        if not self._put_if_absent_unlocked(op.row, rows=snapshot):
+                            raise RuntimeError(
+                                "partition_atomic_row_batch_on_created_conflict"
+                            )
+                    elif isinstance(op, _PartitionReplaceIfMatchOnCreated):
+                        if not self._replace_if_match_unlocked(
+                            expected=op.expected,
+                            replacement=op.replacement,
+                            rows=snapshot,
+                        ):
+                            raise RuntimeError(
+                                "partition_atomic_row_batch_on_created_stale"
+                            )
+                    else:
+                        raise TypeError(
+                            "partition_atomic_row_batch_on_created_op_invalid"
+                        )
+            self._rows = snapshot
+            return _PartitionAtomicRowBatchResult(primary_created=primary_created)
+
+    @staticmethod
+    def _put_if_absent_unlocked(
+        row: _PartitionRow,
+        *,
+        rows: dict[tuple[str, str], _PartitionRow],
+    ) -> bool:
+        key = (row.partition_key, row.row_key)
+        if key in rows:
+            return False
+        rows[key] = row
+        return True
+
+    @staticmethod
+    def _replace_if_match_unlocked(
+        *,
+        expected: _PartitionRow,
+        replacement: _PartitionRow,
+        rows: dict[tuple[str, str], _PartitionRow],
+    ) -> bool:
+        current = rows.get((expected.partition_key, expected.row_key))
+        if current is None or current.data != expected.data:
+            return False
+        rows[(replacement.partition_key, replacement.row_key)] = replacement
+        return True
+
 
 class InMemoryExecutionLineagePersistence(ExecutionLineagePersistence):
     """Thread-safe in-memory lineage persistence for tests."""
 
     def __init__(self) -> None:
-        self._logic = _ExecutionLineageStoreLogic(_InMemoryPartitionRowStore())
+        self._logic = _ExecutionLineageStoreLogic(_InMemoryPartitionAtomicRowStore())
 
     @property
     def is_durable(self) -> bool:
         return False
 
-    def open_attempt(self, scope: ExecutionLineageAttemptScope) -> ExecutionLineageAttemptState:
+    def open_attempt(
+        self, scope: ExecutionLineageAttemptScope
+    ) -> ExecutionLineageAttemptState:
         return self._logic.open_attempt(scope)
 
     def open_segment(
@@ -690,7 +951,9 @@ class InMemoryExecutionLineagePersistence(ExecutionLineagePersistence):
         root_execution_id: ExecutionId,
         predecessor_root_execution_id: ExecutionId | None = None,
     ) -> ExecutionLineageSegmentRecord:
-        return self._logic.open_segment(scope, root_execution_id, predecessor_root_execution_id)
+        return self._logic.open_segment(
+            scope, root_execution_id, predecessor_root_execution_id
+        )
 
     def admit_root(
         self,
@@ -759,5 +1022,7 @@ class InMemoryExecutionLineagePersistence(ExecutionLineagePersistence):
     ) -> ExecutionLineageAttemptState | None:
         return self._logic.read_attempt_lineage_state(scope)
 
-    def read_seal(self, scope: ExecutionLineageAttemptScope) -> ExecutionLineageSealRecord | None:
+    def read_seal(
+        self, scope: ExecutionLineageAttemptScope
+    ) -> ExecutionLineageSealRecord | None:
         return self._logic.read_seal(scope)

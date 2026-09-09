@@ -38,6 +38,12 @@ class ExecutionLineageAttemptClosureKind(StrEnum):
     RETRY_SUPERSEDED = "RETRY_SUPERSEDED"
 
 
+class ExecutionLineagePersistenceProvider(StrEnum):
+    """Composition-time selector for durable :class:`ExecutionLineagePersistence` wiring."""
+
+    DOCUMENT_STORE = "document_store"
+
+
 class ExecutionLineageError(RuntimeError):
     """Base error for execution lineage persistence."""
 
@@ -114,7 +120,9 @@ class ExecutionLineageAdmissionRecord(BaseModel):
                 )
         else:
             if execution == parent:
-                raise ValueError("child admission requires execution_id != parent_execution_id")
+                raise ValueError(
+                    "child admission requires execution_id != parent_execution_id"
+                )
 
 
 class ExecutionLineageSegmentRecord(BaseModel):
@@ -153,7 +161,9 @@ class ExecutionLineageAdmissionPage(BaseModel):
     next_cursor: str | None = None
 
 
-def validate_admission_page_limit(limit: int, *, hard_maximum: int = _MAX_ADMISSION_PAGE_LIMIT) -> int:
+def validate_admission_page_limit(
+    limit: int, *, hard_maximum: int = _MAX_ADMISSION_PAGE_LIMIT
+) -> int:
     if type(limit) is not int or isinstance(limit, bool) or limit < 1:
         raise ValueError("limit must be a positive int")
     if limit > hard_maximum:
@@ -170,7 +180,9 @@ class ExecutionLineagePersistence(ABC):
         """Whether state survives process restart."""
 
     @abstractmethod
-    def open_attempt(self, scope: ExecutionLineageAttemptScope) -> ExecutionLineageAttemptState:
+    def open_attempt(
+        self, scope: ExecutionLineageAttemptScope
+    ) -> ExecutionLineageAttemptState:
         """Open attempt coordination state idempotently."""
 
     @abstractmethod
@@ -263,6 +275,7 @@ __all__ = [
     "ExecutionLineageError",
     "ExecutionLineageIntegrityError",
     "ExecutionLineagePersistence",
+    "ExecutionLineagePersistenceProvider",
     "ExecutionLineageSealRecord",
     "ExecutionLineageSegmentLifecycle",
     "ExecutionLineageSegmentRecord",

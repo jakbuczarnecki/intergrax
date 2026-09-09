@@ -18,11 +18,15 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineagePersistence,
     build_execution_lineage_attempt_scope,
 )
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.runtime.execution.lineage.document_store_persistence import (
     DocumentStoreExecutionLineagePersistence,
 )
-from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
+from intergrax.runtime.execution.lineage.persistence import (
+    InMemoryExecutionLineagePersistence,
+)
 
 
 def _scope(
@@ -68,7 +72,9 @@ def test_root_and_child_admissions(persistence: ExecutionLineagePersistence) -> 
     assert page.admissions[1].parent_execution_id == root
 
 
-def test_duplicate_identical_child_is_idempotent(persistence: ExecutionLineagePersistence) -> None:
+def test_duplicate_identical_child_is_idempotent(
+    persistence: ExecutionLineagePersistence,
+) -> None:
     scope = _scope()
     root = mint_execution_id()
     child = mint_execution_id()
@@ -80,7 +86,9 @@ def test_duplicate_identical_child_is_idempotent(persistence: ExecutionLineagePe
     assert first == second
 
 
-def test_conflicting_parent_fails_closed(persistence: ExecutionLineagePersistence) -> None:
+def test_conflicting_parent_fails_closed(
+    persistence: ExecutionLineagePersistence,
+) -> None:
     scope = _scope()
     root = mint_execution_id()
     child = mint_execution_id()
@@ -93,7 +101,9 @@ def test_conflicting_parent_fails_closed(persistence: ExecutionLineagePersistenc
         persistence.admit_child(scope, root, child, other_parent)
 
 
-def test_resume_segment_with_predecessor(persistence: ExecutionLineagePersistence) -> None:
+def test_resume_segment_with_predecessor(
+    persistence: ExecutionLineagePersistence,
+) -> None:
     scope = _scope()
     e1 = mint_execution_id()
     e4 = mint_execution_id()
@@ -105,7 +115,9 @@ def test_resume_segment_with_predecessor(persistence: ExecutionLineagePersistenc
     assert segment.predecessor_root_execution_id == e1
 
 
-def test_unclean_resume_marks_degraded(persistence: ExecutionLineagePersistence) -> None:
+def test_unclean_resume_marks_degraded(
+    persistence: ExecutionLineagePersistence,
+) -> None:
     scope = _scope()
     e1 = mint_execution_id()
     e4 = mint_execution_id()
@@ -129,7 +141,9 @@ def test_seal_blocks_writes(persistence: ExecutionLineagePersistence) -> None:
         persistence.admit_child(scope, root, mint_execution_id(), root)
 
 
-def test_concurrent_sibling_admissions(persistence: ExecutionLineagePersistence) -> None:
+def test_concurrent_sibling_admissions(
+    persistence: ExecutionLineagePersistence,
+) -> None:
     scope = _scope()
     root = mint_execution_id()
     persistence.open_attempt(scope)
@@ -144,7 +158,9 @@ def test_concurrent_sibling_admissions(persistence: ExecutionLineagePersistence)
         for future in futures:
             future.result()
     page = persistence.list_admissions_for_attempt(scope, limit=100)
-    positions = [item.admission_position for item in page.admissions if item.execution_id != root]
+    positions = [
+        item.admission_position for item in page.admissions if item.execution_id != root
+    ]
     assert len(positions) == 32
     assert len(set(positions)) == 32
 
@@ -164,5 +180,7 @@ def test_pagination_stable_ordering(persistence: ExecutionLineagePersistence) ->
         limit=3,
         cursor=first.next_cursor,
     )
-    all_positions = [item.admission_position for item in first.admissions + second.admissions]
+    all_positions = [
+        item.admission_position for item in first.admissions + second.admissions
+    ]
     assert all_positions == sorted(all_positions)

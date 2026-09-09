@@ -8,13 +8,21 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageUnavailableError,
     build_execution_lineage_attempt_scope,
 )
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
-from intergrax.runtime.execution.active_execution_budget import bind_root_execution_budget, reset_active_execution_budget
+from intergrax.runtime.execution.boundary import (
+    ExecutionBoundary,
+    ExecutionIdentityBinding,
+)
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.execution.identity_authority import mint_root_execution_identity
-from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
+from intergrax.runtime.execution.lineage.persistence import (
+    InMemoryExecutionLineagePersistence,
+)
 from intergrax.runtime.execution.lineage.root_activation import (
     activate_root_execution_lineage,
     build_root_lineage_admission_hook,
@@ -25,7 +33,9 @@ from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
     reset_active_execution_authority,
 )
-from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
+from intergrax.contracts.delegation_authority import (
+    resolve_root_parent_execution_authority,
+)
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_task_id,
@@ -44,7 +54,7 @@ async def test_root_admission_before_delegate() -> None:
         run_id=identity.run_id,
         attempt_id=identity.attempt_id,
     )
-    _, token = activate_root_execution_lineage(
+    _, lineage_token, degradation_token = activate_root_execution_lineage(
         persistence=persistence,
         scope=scope,
         root_execution_id=identity.execution_id,
@@ -92,7 +102,7 @@ async def test_root_admission_before_delegate() -> None:
     finally:
         reset_active_execution_authority(authority_token)
         reset_active_execution_identity(identity_token)
-        deactivate_root_execution_lineage(token)
+        deactivate_root_execution_lineage(lineage_token, degradation_token)
     assert order == ["admit_root"]
 
 
@@ -111,7 +121,7 @@ async def test_child_lineage_hook_auto_attached() -> None:
     persistence.open_attempt(scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
-    _, lineage_token = activate_root_execution_lineage(
+    _, lineage_token, degradation_token = activate_root_execution_lineage(
         persistence=persistence,
         scope=scope,
         root_execution_id=root,
@@ -141,8 +151,10 @@ async def test_child_lineage_hook_auto_attached() -> None:
         reset_active_execution_budget(budget_token)
         reset_active_execution_authority(authority_token)
         reset_active_execution_identity(identity_token)
-        deactivate_root_execution_lineage(lineage_token)
+        deactivate_root_execution_lineage(lineage_token, degradation_token)
     page = persistence.list_admissions_for_attempt(scope, limit=10)
-    child_records = [item for item in page.admissions if item.parent_execution_id == root]
+    child_records = [
+        item for item in page.admissions if item.parent_execution_id == root
+    ]
     assert len(child_records) == 1
     assert observed_child == ["delegate"]
