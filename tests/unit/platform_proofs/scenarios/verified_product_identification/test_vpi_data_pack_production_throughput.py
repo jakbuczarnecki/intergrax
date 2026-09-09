@@ -24,6 +24,12 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     apply_data_pack_build_execution_profile,
     resolve_data_pack_build_execution_profile,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
+    VPI_CANONICAL_EMBEDDING_MODEL,
+)
+from platform_proofs.scenarios.verified_product_identification.qualification.bounded_cuda_batch.contracts import (
+    BOUNDED_CUDA_THROUGHPUT_QUALIFICATION_CLOSEOUT,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.build_state import (
     DataPackShardBuildState,
     DataPackShardStatus,
@@ -79,8 +85,16 @@ def test_production_local_gpu_profile_applies_env(monkeypatch: pytest.MonkeyPatc
     profile = resolve_data_pack_build_execution_profile(PRODUCTION_LOCAL_GPU_PROFILE_ID)
     apply_data_pack_build_execution_profile(profile)
     assert os.environ["VPI_EMBEDDING_DEVICE"] == "cuda"
-    assert os.environ["VPI_EMBEDDING_PROVIDER_BATCH_SIZE"] == "16"
-    assert profile.model == "BAAI/bge-m3"
+    assert os.environ["VPI_EMBEDDING_PROVIDER_BATCH_SIZE"] == "1"
+    assert profile.model == VPI_CANONICAL_EMBEDDING_MODEL
+
+
+def test_production_local_gpu_profile_matches_bounded_cuda_qualification_closeout() -> None:
+    profile = resolve_data_pack_build_execution_profile(PRODUCTION_LOCAL_GPU_PROFILE_ID)
+    closeout = BOUNDED_CUDA_THROUGHPUT_QUALIFICATION_CLOSEOUT
+    assert profile.provider_batch_size == closeout.qualified_production_batch_size == 1
+    assert profile.device == "cuda"
+    assert profile.model == VPI_CANONICAL_EMBEDDING_MODEL
 
 
 def test_unknown_execution_profile_fails() -> None:

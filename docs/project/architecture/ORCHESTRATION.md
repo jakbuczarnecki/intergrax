@@ -109,6 +109,24 @@ Fan-out: `NodeId = researcher` → `Execution E2`, `E3`, `E4`.
 
 **CURRENT IMPLEMENTATION:** Nexus `GraphExecutor` remains agent-centric on harness paths - see [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md).
 
+## Dynamic topology submission (CURRENT)
+
+Consumer-defined orchestration topologies may enter the canonical Nexus host through `OrchestrationTopologySubmissionPort` (`intergrax/contracts/orchestration_topology.py` + `build_orchestration_topology_submission_port`).
+
+```text
+Consumer topology + typed slot payloads
+        ↓
+OrchestrationTopologySubmissionPort
+        ↓
+canonical NexusLoop.graph_executor (single scheduler)
+        ↓
+ChildExecutionRunner per slot
+        ↓
+OrchestrationResult (submission-order fan-in)
+```
+
+This path is generic (not NPSC-specific). Bounded concurrency is enforced by `GraphExecutor` scheduling policy — not consumer-side semaphores.
+
 ## How configuration reaches Nexus (CURRENT harness path)
 
 ```text

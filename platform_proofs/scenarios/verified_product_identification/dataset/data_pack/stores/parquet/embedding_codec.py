@@ -17,10 +17,10 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
     source_ref_from_columns,
 )
-
-
-def _vector_type(embedding_dimension: int) -> pa.DataType:
-    return pa.list_(pa.float32(), embedding_dimension)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.stores.parquet.schema import (
+    embedding_parquet_field_types,
+    embedding_vector_type,
+)
 
 
 def write_embedding_parquet(
@@ -31,48 +31,49 @@ def write_embedding_parquet(
 ) -> None:
     if not records:
         raise VpiDataPackIntegrityError("cannot write empty embedding shard")
-    vector_type = _vector_type(embedding_dimension)
+    field_types = embedding_parquet_field_types(embedding_dimension)
+    vector_type = embedding_vector_type(embedding_dimension)
     table = pa.table(
         {
             "logical_point_id": pa.array(
                 [record.logical_point_id for record in records],
-                type=pa.string(),
+                type=field_types["logical_point_id"],
             ),
             "catalog_id": pa.array(
                 [record.source_ref.catalog_id for record in records],
-                type=pa.string(),
+                type=field_types["catalog_id"],
             ),
             "offer_id": pa.array(
                 [record.source_ref.offer_id.value for record in records],
-                type=pa.string(),
+                type=field_types["offer_id"],
             ),
             "source_revision": pa.array(
                 [record.source_ref.source_revision for record in records],
-                type=pa.string(),
+                type=field_types["source_revision"],
             ),
             "derivation_version": pa.array(
                 [record.derivation_version for record in records],
-                type=pa.string(),
+                type=field_types["derivation_version"],
             ),
             "semantic_text_hash": pa.array(
                 [record.semantic_text_hash for record in records],
-                type=pa.string(),
+                type=field_types["semantic_text_hash"],
             ),
             "embedding_provider": pa.array(
                 [record.embedding_provider for record in records],
-                type=pa.string(),
+                type=field_types["embedding_provider"],
             ),
             "embedding_model": pa.array(
                 [record.embedding_model for record in records],
-                type=pa.string(),
+                type=field_types["embedding_model"],
             ),
             "embedding_model_revision": pa.array(
                 [record.embedding_model_revision for record in records],
-                type=pa.string(),
+                type=field_types["embedding_model_revision"],
             ),
             "embedding_dimension": pa.array(
                 [record.embedding_dimension for record in records],
-                type=pa.int32(),
+                type=field_types["embedding_dimension"],
             ),
             "dense_embedding": pa.array(
                 [list(record.dense_embedding) for record in records],

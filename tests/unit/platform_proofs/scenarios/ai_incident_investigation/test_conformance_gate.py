@@ -106,7 +106,6 @@ def test_ai_incident_lab_runtime_builds_with_default_conformance() -> None:
         tool_registry=registry,
     )
     investigator = IncidentInvestigatorAgent(
-        registry=registry,
         station_id=operational_data.station_id,
         runtime_composition=composition,
         incident_scope=IncidentScope.from_operational_defaults(

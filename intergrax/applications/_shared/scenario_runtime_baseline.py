@@ -72,7 +72,9 @@ from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.execution_identity import RunId, TaskId
-from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+from intergrax.applications._shared.host_task_execution_wiring import (
+    build_environment_host_task_execution,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import (
     NexusObservabilityStores,
@@ -442,9 +444,9 @@ async def execute_scenario_task(
         task_kwargs["context"] = TaskContext(capability=request.capability)
 
     task = Task(**task_kwargs)
-    host_execution = build_host_task_execution(
+    host_execution = build_environment_host_task_execution(
         composition.nexus_loop,
-        orchestration_triggers=frozenset(),
+        composition.environment,
     )
     task_result = await host_execution.execute(task)
     return ScenarioRuntimeExecutionResult(

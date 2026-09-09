@@ -91,19 +91,14 @@ def _prior_metadata(ctx: RuntimeExecutionContext) -> dict[str, object]:
 class IncidentInvestigatorAgent(Agent):
     def __init__(
         self,
-        registry: object,
         station_id: str,
         runtime_composition: ScenarioRuntimeComposition,
         incident_scope: IncidentScope,
         evidence_store: object | None = None,
         investigation_input: IncidentInvestigationInput | None = None,
     ) -> None:
-        from intergrax.tools.registry import ToolRegistry
         from platform_proofs.scenarios.ai_incident_investigation.application.tools import ScenarioEvidenceStore
 
-        if not isinstance(registry, ToolRegistry):
-            raise TypeError("registry must be ToolRegistry")
-        self._registry = registry
         self._station_id = station_id
         self._runtime_composition = runtime_composition
         self._incident_scope = incident_scope
@@ -157,7 +152,7 @@ class IncidentInvestigatorAgent(Agent):
 
         gathering = gather_incident_evidence(
             runtime_state=runtime_state,
-            registry=self._registry,
+            registry=self._runtime_composition.tool_registry,
             scope=self._incident_scope,
             is_revision=is_revision,
             critic_feedback=critic_feedback,

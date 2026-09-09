@@ -17,6 +17,12 @@ def qdrant_environment_available() -> bool:
     return bool(url or host)
 
 
+def pgvector_environment_available() -> bool:
+    dsn = os.getenv("INTERGRAX_PGVECTOR_DSN", "").strip()
+    connection_string = os.getenv("INTERGRAX_PGVECTOR_CONNECTION_STRING", "").strip()
+    return bool(dsn or connection_string)
+
+
 def storage_environment_available() -> bool:
     return postgres_environment_available() and qdrant_environment_available()
 

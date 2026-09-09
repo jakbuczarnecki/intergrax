@@ -28,7 +28,10 @@ from intergrax.agent_distribution.agent_project_metadata import (
 from intergrax.agent_distribution.agent_selection import (
     DeterministicIdentitySelectionStrategy,
 )
-from intergrax.agent_distribution.capability_matching import CapabilityMatcher
+from intergrax.agent_distribution.capability_matching import (
+    CapabilityMatcher,
+    build_agent_capability_requirement,
+)
 from intergrax.agent_distribution.catalog import (
     AgentDiscoveryCandidateIdentity,
     CatalogProviderKind,
@@ -36,6 +39,7 @@ from intergrax.agent_distribution.catalog import (
 )
 from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskAcquisitionError,
+    DelegatedSubtaskAcquisitionPlanFactory,
     DelegatedSubtaskCleanupError,
     DelegatedSubtaskContractError,
     DelegatedSubtaskDelegate,
@@ -60,9 +64,16 @@ from intergrax.agent_distribution.federated_discovery import (
 )
 from intergrax.agent_distribution.identity import AgentPackageCandidate
 from intergrax.agent_distribution.task_capability_resolution import (
+    TaskCapabilityResolutionContractError,
+    TaskCapabilityResolutionRequest,
+    TaskCapabilityResolutionResult,
+    TaskCapabilityResolver,
+    TaskCapabilityResolverId,
     build_deterministic_task_capability_resolver,
     build_task_capability_resolution_request,
     build_task_capability_rule,
+    resolved_agent_distribution_capability_need,
+    unresolved_agent_distribution_capability_need,
 )
 from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopedAgentLease,
@@ -165,6 +176,24 @@ class _CountingMatcher:
     def find_matches(self, **kwargs):
         self.call_count += 1
         return self._inner.find_matches(**kwargs)
+
+
+class _FailingResolver:
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    @property
+    def resolver_id(self) -> TaskCapabilityResolverId:
+        return TaskCapabilityResolverId(value="failing.test")
+
+    def resolve(
+        self,
+        request: TaskCapabilityResolutionRequest,
+    ) -> TaskCapabilityResolutionResult:
+        self.call_count += 1
+        raise TaskCapabilityResolutionContractError(
+            "resolver must not run for pre-resolved capability need",
+        )
 
 
 @dataclass(frozen=True)
@@ -344,19 +373,21 @@ def build_delegated_harness(
     revision_id: str = "rev-delegate-1",
     specialist_delegate: DelegatedSubtaskDelegate[OcrRequest, OcrResult] | None = None,
     acquisition_kwargs: dict | None = None,
+    acquisition_plan_factory: DelegatedSubtaskAcquisitionPlanFactory | None = None,
     task_scope: TaskId | None = None,
     task_scope_authority: _FixedTaskScopeAuthority | None = None,
+    capability_resolver: TaskCapabilityResolver | None = None,
 ) -> DelegatedHarness:
     harness = build_task_scoped_harness()
     delegate = specialist_delegate or _EchoOcrDelegate()
     resolved_task_scope = task_scope or mint_task_id()
     authority = task_scope_authority or _FixedTaskScopeAuthority(resolved_task_scope)
-    acquisition_factory = _TestAcquisitionPlanFactory(
+    acquisition_factory = acquisition_plan_factory or _TestAcquisitionPlanFactory(
         revision_id=revision_id,
         **(acquisition_kwargs or {}),
     )
     service = DelegatedSubtaskService(
-        capability_resolver=_baseline_resolver(),
+        capability_resolver=capability_resolver or _baseline_resolver(),
         discovery=_federated_discovery(*candidates),
         matcher=CapabilityMatcher(),
         selector=DeterministicIdentitySelectionStrategy(),
@@ -398,8 +429,8 @@ def _delegated_request(
         application_id=_APP,
         application_environment_id=_ENV,
         lease_id=TaskScopedAgentLeaseId(lease_id),
-        capability_resolution_request=build_task_capability_resolution_request(
-            task_kind=task_kind,
+        capability_need=unresolved_agent_distribution_capability_need(
+            build_task_capability_resolution_request(task_kind=task_kind),
         ),
     )
 
@@ -1210,6 +1241,49 @@ async def test_delegated_subtask_matcher_called_once() -> None:
     harness.service._matcher = counting_matcher
     await _run_delegation(harness, task_scope=task_scope)
     assert counting_matcher.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_pre_resolved_capability_need_skips_task_resolution() -> None:
+    task_scope = mint_task_id()
+    failing_resolver = _FailingResolver()
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        task_scope=task_scope,
+    )
+    harness.service._capability_resolver = failing_resolver
+    requirement = build_agent_capability_requirement(required=("document.ocr",))
+    request = DelegatedSubtaskRequest(
+        delegation_id=DelegationId("delegation-pre-resolved"),
+        task_scope_id=task_scope,
+        application_id=_APP,
+        application_environment_id=_ENV,
+        lease_id=TaskScopedAgentLeaseId("lease-pre-resolved"),
+        capability_need=resolved_agent_distribution_capability_need(requirement),
+    )
+    harness.task_scope_authority.task_scope_id = task_scope
+    root = _root_identity()
+
+    class RootDelegate:
+        async def execute(self, payload: OcrRequest) -> OcrResult:
+            result = await harness.service.execute(
+                request,
+                invocation=DelegatedSubtaskInvocation(payload=payload),
+                principal=admin_test_principal(),
+            )
+            assert result.capability_resolution is None
+            assert result.capability_requirement == requirement
+            assert result.selected_identity is not None
+            return result.result
+
+    await ExecutionBoundary[OcrRequest, OcrResult](
+        RootDelegate(),
+        identity=root,
+        authority=ParentExecutionAuthority.unrestricted_root(),
+    ).execute(OcrRequest(document_ref="pre-resolved"))
+    assert failing_resolver.call_count == 0
 
 
 def test_delegated_subtask_module_has_no_forbidden_imports() -> None:

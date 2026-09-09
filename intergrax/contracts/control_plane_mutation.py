@@ -42,6 +42,7 @@ class GovernanceEvaluationPoint(StrEnum):
     """Minimal Governed Execution evaluation-point taxonomy."""
 
     CONTROL_PLANE_MUTATION = "control_plane_mutation"
+    MULTI_AGENT_COORDINATION = "multi_agent_coordination"
 
 
 class ControlPlaneMutationRisk(StrEnum):

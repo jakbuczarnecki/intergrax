@@ -62,3 +62,11 @@ def _patch_scenario_llm_resolver(monkeypatch: pytest.MonkeyPatch) -> None:
         "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
         _fake_resolve,
     )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_optional_llm_adapter",
+        _fake_resolve,
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_optional_environment_llm_adapter",
+        _fake_resolve,
+    )

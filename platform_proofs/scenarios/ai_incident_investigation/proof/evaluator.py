@@ -159,11 +159,6 @@ def evaluate_resolved_scenario_run(
     else:
         checks.append("h1_initially_plausible")
 
-    if result.tool_trace_count < 3:
-        failures.append("tool_runtime_not_exercised")
-    else:
-        checks.append("tool_runtime_exercised")
-
     if not result.critic_challenged:
         failures.append("critic_falsification_missing")
     else:

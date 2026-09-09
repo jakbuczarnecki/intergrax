@@ -35,7 +35,7 @@ _DATA_PACK_BUILD_EXECUTION_PROFILES: dict[DataPackBuildExecutionProfileId, DataP
     DataPackBuildExecutionProfileId.PRODUCTION_LOCAL_GPU: DataPackBuildExecutionProfile(
         profile_id=DataPackBuildExecutionProfileId.PRODUCTION_LOCAL_GPU,
         device="cuda",
-        provider_batch_size=16,
+        provider_batch_size=1,
         model=VPI_CANONICAL_EMBEDDING_MODEL,
     ),
 }

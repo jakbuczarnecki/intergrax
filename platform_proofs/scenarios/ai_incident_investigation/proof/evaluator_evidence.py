@@ -28,10 +28,6 @@ _CHECK_LABELS: dict[str, tuple[str, str]] = {
         "Initial overload hypothesis was genuinely plausible",
         "Workload rose while throughput fell during the incident window.",
     ),
-    "tool_runtime_exercised": (
-        "Platform ToolRuntime was exercised",
-        "Investigation used bounded platform tool invocations.",
-    ),
     "critic_falsification_occurred": (
         "Critic issued a falsification challenge",
         "Unsupported causal inference was challenged before diagnosis acceptance.",

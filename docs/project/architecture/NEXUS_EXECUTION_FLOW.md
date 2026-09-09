@@ -177,6 +177,8 @@ No second UER inside Nexus.
 
 **CURRENT IMPLEMENTATION:** `GraphExecutor` → `AgentRouter` → `AgentEngine` on harness paths - label as migration wiring only.
 
+**Dynamic topology submission (CURRENT):** `OrchestrationTopologySubmissionPort` routes typed non-agent work nodes through the same `GraphExecutor` scheduler and `ChildExecutionRunner` lineage (`orchestration_slot_id` on `ExecutionNode`). See `intergrax/contracts/orchestration_topology.py`.
+
 Direct agentic execution (`Execution` → agentic → `AgentEngine` → UAEP) does **not** require Nexus. Orchestration with one logical node is possible but is **not** the definition of single-agent execution.
 
 ## Multi-agent vs orchestration

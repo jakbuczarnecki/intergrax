@@ -398,6 +398,11 @@ class NexusLoop:
     def agent_engine(self) -> AgentEngine:
         return self._engine
 
+    @property
+    def graph_executor(self) -> GraphExecutor:
+        """Canonical graph scheduler owned by this Nexus host."""
+        return self._graph_executor
+
     def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
         """Replace the active validation engine across Nexus execution surfaces."""
         self._validation_engine = validation_engine

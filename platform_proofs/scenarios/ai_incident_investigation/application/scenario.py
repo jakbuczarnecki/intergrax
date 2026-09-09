@@ -71,6 +71,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     normalize_evidence_gathering_stop_reason,
     reconcile_investigation_completion,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_completion_gate import (
+    CompletionEligibilityGateConfig,
+    assert_ai_incident_completion_eligible,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
@@ -259,7 +263,6 @@ def build_runtime_bundle(
         llm_adapter_override=llm_adapter_override,
     )
     investigator = IncidentInvestigatorAgent(
-        registry=tool_registry,
         station_id=operational_data.station_id,
         runtime_composition=composition,
         incident_scope=IncidentScope.from_operational_defaults(
@@ -283,9 +286,10 @@ def build_runtime_bundle(
             agent_registry=agent_registry,
         )
     composition.tool_registry = composition.platform.env_wiring.tool_wiring.registry
+    canonical_registry = composition.tool_registry
     return ScenarioRuntimeBundle(
         operational_data=operational_data,
-        registry=tool_registry,
+        registry=canonical_registry,
         investigator=investigator,
         runtime_composition=composition,
         evidence_store=evidence_store,
@@ -503,6 +507,11 @@ async def execute_resolved_skeleton(
             evidence_gathering_stop_reason
         ),
     )
+    if reconciled.completion_mode.value == COMPLETION_SUPPORTED_DIAGNOSIS:
+        assert_ai_incident_completion_eligible(
+            evidence_nodes=evidence_nodes,
+            gate=CompletionEligibilityGateConfig(),
+        )
     outcome = derive_terminal_outcome(
         critic_verdict_passed=critic_verdict_passed,
         has_supported_diagnosis=has_supported_diagnosis,
