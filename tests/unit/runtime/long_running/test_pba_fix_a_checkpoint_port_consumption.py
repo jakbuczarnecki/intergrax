@@ -43,7 +43,7 @@ from intergrax.runtime.nexus.orchestration.long_running_bridge import (
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
-from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
@@ -100,6 +100,7 @@ def _long_running_task(*, resume_token: str | None = None) -> Task:
         tenant_id="t1",
         user_id="u1",
         message="long-running work",
+        state=TaskState.WAITING_FOR_HUMAN,
         options=TaskExecutionOptions(
             long_running=TaskLongRunningOptions(
                 enabled=True,

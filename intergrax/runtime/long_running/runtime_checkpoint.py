@@ -19,6 +19,7 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import ExecutionTr
 
 UAEP_STEP_CURSOR_KEY = "uaep_step_cursor"
 PLAN_SNAPSHOT_KEY = "plan_snapshot.v1"
+CANONICAL_RUNTIME_CHECKPOINT_SCHEMA_VERSION = "runtime_checkpoint.v2"
 
 
 class GraphNodeCheckpoint(BaseModel):
@@ -77,6 +78,11 @@ class RuntimeCheckpoint(BaseModel):
         return validate_attempt_id(value)
 
     def validate_canonical(self) -> None:
+        if self.schema_version != CANONICAL_RUNTIME_CHECKPOINT_SCHEMA_VERSION:
+            raise ValueError(
+                "unsupported runtime checkpoint schema_version: "
+                f"{self.schema_version!r}"
+            )
         self.execution_tree.validate_for_task(
             task_id=self.execution_tree.task_id,
             run_id=self.run_id,

@@ -1,6 +1,6 @@
 # NPSC-5E — Recovery, Checkpoint & Retry Architecture
 
-> **Stage:** P0 + P0A qualified; **R1 execution-attempt retry FROZEN / PASS**; R2/R3 ACTIVE
+> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 checkpoint durable resume ACTIVE / PASS**; R3 ACTIVE
 
 ## P0 inventory
 
@@ -137,12 +137,100 @@ Blind retry forbidden when `has_unknown_side_effect` and no idempotency guarante
 
 See: `docs/project/maintainers/qualification/NPSC_5E_R1_FINAL_CANONICAL_RETRY_ATTEMPT_QUALIFICATION_AND_FREEZE.md`
 
+## R2 — Checkpoint & Durable Resume Hardening
+
+**Status:** `ACTIVE / PASS` (2026-09-09)
+
+Qualified module: `intergrax/runtime/long_running/checkpoint_resume_validation.py` + hardened `LongRunningCoordinator` / `RuntimeCheckpoint`.
+
+Qualification: `docs/project/maintainers/qualification/NPSC_5E_R2_CHECKPOINT_DURABLE_RESUME_HARDENING.md`
+
+### Checkpoint ownership (frozen)
+
+```text
+RuntimeCheckpoint              = checkpoint contract (runtime_checkpoint.v2)
+checkpoint_builder             = snapshot creation/application
+TaskCheckpointPersistence      = persistence port (provider-neutral)
+LongRunningCoordinator         = checkpoint/resume coordination
+Nexus                          = resume scheduling / topology
+ExecutionRuntime               = execution lifecycle
+AttemptLifecycleService        = attempt authority (no resume mint)
+ExecutionLineagePersistence    = durable provenance (cross-check only)
+ExecutionTerminalService       = terminal truth (dominates checkpoint)
+Governance / authority plane   = current effective WHETHER / authority
+scheduler_claim / ledger       = exclusive scheduler action ownership
+```
+
+Checkpoint ≠ authority ≠ policy ≠ permission ≠ scheduler ≠ runtime.
+
+### Schema version gate
+
+- Supported exact version: `runtime_checkpoint.v2`
+- Unknown version: fail closed in `RuntimeCheckpoint.validate_canonical()` and `validate_runtime_checkpoint_schema`
+- No silent legacy fallback
+
+### Identity binding
+
+On resume, `evaluate_checkpoint_resume_eligibility` validates:
+
+```text
+checkpoint.task_id == target TaskId
+checkpoint.tenant_id == target tenant
+checkpoint.run_id == execution_tree.run_id
+checkpoint.attempt_id == execution_tree.attempt_id
+execution tree root == optional target root ExecutionId
+```
+
+Wrong task/run/attempt/root/tenant: `REJECT_IDENTITY` / `REJECT_TENANT`.
+
+### Lineage cross-validation
+
+When lineage persistence is wired:
+
+- sealed attempt → `REJECT_TERMINAL`
+- degraded attempt → `REJECT_LINEAGE`
+- active segment root ≠ checkpoint root → `REJECT_LINEAGE`
+- required durable lineage missing → `REJECT_LINEAGE`
+
+Non-durable parent guard (DG_001 / `a18e65c`) preserved by lineage admission; resume does not bypass it.
+
+### Terminal / cancellation precedence
+
+`ExecutionTerminalService` and `assert_checkpoint_resumable` dominate checkpoint task state. Terminal success/failed/cancel blocks resume. Cancel-after-checkpoint blocks restore.
+
+### Governance / authority freshness
+
+- Stored checkpoint policy is historical only; current `PolicyDecision` may deny resume (`REJECT_GOVERNANCE`).
+- Checkpoint cannot expand authority: `validate_checkpoint_authority_expansion` blocks wider historical authority application.
+- `resolve_resume_execution_authority` applies narrowed current authority on coordinator restore.
+
+### Budget / attempt continuity
+
+Checkpoint resume does not mint `AttemptId` and does not reset attempt lifecycle generation. R1 `max_attempts` semantics remain frozen for post-resume retry.
+
+### Stale checkpoint semantics
+
+- Restore by superseded `created_at_utc` vs store `get_latest`: `REJECT_STALE`
+- Store remains append-only; newer checkpoint wins; no stale clobber (CAS via new rows + latest selection)
+
+### Duplicate / concurrent resume
+
+- Scheduler ledger `claim_action` provides one winner for exclusive actions.
+- Resume coordination remains in `LongRunningCoordinator`; no second runtime/scheduler/checkpoint engine.
+
+### Cross-process resume
+
+`SQLiteTaskCheckpointStore` + fresh process adapter restore canonical identity without process-local ContextVar dependency for persisted facts.
+
+### Side-effect safety
+
+Completed execution-tree nodes restore `prior_output` and are not blindly replayed. Interrupted nodes without idempotency remain pending (no blind replay).
+
+### Provider neutrality
+
+Generic coordinator depends on `TaskCheckpointPersistence` / `TaskCheckpointReader` ports only.
+
 ## Future boundaries
-
-### R2 — Checkpoint Lineage Hardening
-
-- Validate resumed execution/run/attempt lineage against checkpoint facts (gap recorded in P0A).
-- Checkpoint remains source of truth for restorable state.
 
 ### R3 — Partial Recovery / Fan-out Continuation
 
@@ -150,9 +238,9 @@ See: `docs/project/maintainers/qualification/NPSC_5E_R1_FINAL_CANONICAL_RETRY_AT
 - Exact slot resume must not create false sibling lineage.
 - Governed HITL continuation ≠ failure retry.
 
-## Deferred / out of scope (P0A)
+## Deferred / out of scope
 
 - `RecoveryLineageManager`, `RetryLineageEngine`, `ExecutionLineageRuntime` — forbidden
 - KV lineage adapter
-- Wrong-checkpoint lineage validation (R2)
-- New schema version gate beyond codec v1 fail-closed
+- R3 partial failed-slot fan-out recovery
+- NPSC-5F evidence/replay store

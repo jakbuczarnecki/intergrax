@@ -8,7 +8,14 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.runtime.human.models import EscalationOutcome
+from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
+from intergrax.contracts.runtime_policy import PolicyDecision
 from intergrax.runtime.cancellation.resume_admission import assert_checkpoint_resumable
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    assert_checkpoint_persistable,
+    assert_checkpoint_resume_eligible,
+    resolve_resume_execution_authority,
+)
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
@@ -60,6 +67,9 @@ class LongRunningCoordinator:
         store: TaskCheckpointReader,
         *,
         execution_terminal: ExecutionTerminalService | None = None,
+        execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+        require_durable_lineage: bool = False,
+        policy_decision: PolicyDecision | None = None,
     ) -> Optional[TaskCheckpoint]:
         if not LongRunningCoordinator.is_long_running(task):
             if not _wants_human_resume(task):
@@ -82,11 +92,24 @@ class LongRunningCoordinator:
         if checkpoint is None:
             return None
 
+        latest = store.get_latest(task.task_id, task.tenant_id)
+        assert_checkpoint_resume_eligible(
+            checkpoint,
+            target_task_id=task.task_id,
+            target_tenant_id=task.tenant_id,
+            latest_checkpoint=latest,
+            execution_terminal=execution_terminal,
+            execution_lineage_persistence=execution_lineage_persistence,
+            require_durable_lineage=require_durable_lineage,
+            current_task=task,
+            policy_decision=policy_decision,
+        )
         assert_checkpoint_resumable(checkpoint, execution_terminal=execution_terminal)
 
         token = checkpoint.resume_token
 
         incoming_human = task.options.human.model_copy(deep=True)
+        incoming_authority = task.execution_authority
         restored = Task.model_validate(checkpoint.task_snapshot)
         task.state = restored.state
         task.options = restored.options
@@ -98,6 +121,16 @@ class LongRunningCoordinator:
         task.options.long_running.resume_token = token
         if incoming_human.verdict is not None or incoming_human.response_text is not None:
             task.options.human = incoming_human
+        if incoming_authority is not None:
+            authority_context = task.model_copy(
+                update={"execution_authority": incoming_authority},
+            )
+            task.execution_authority = resolve_resume_execution_authority(
+                checkpoint,
+                authority_context,
+            )
+        elif restored.execution_authority is not None:
+            task.execution_authority = restored.execution_authority
         task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
         task.runtime.orchestration.resume_token = checkpoint.resume_token
         task.runtime.orchestration.progress_message = checkpoint.progress_message
@@ -126,6 +159,7 @@ class LongRunningCoordinator:
             graph=graph,
             last_execution=last_execution,
         )
+        assert_checkpoint_persistable(task, runtime)
         existing_token = task.runtime.orchestration.resume_token
         checkpoint = build_task_checkpoint(
             task,
