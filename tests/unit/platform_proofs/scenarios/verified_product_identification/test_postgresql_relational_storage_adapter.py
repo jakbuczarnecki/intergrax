@@ -175,6 +175,7 @@ class _FakeConnection:
     schema_constraints: list[Mapping[str, object]] | None = None
     _txn_storage: dict[tuple[str, str, str], dict[str, object]] | None = None
     _txn_by_row_index: dict[int, tuple[str, str, str]] | None = None
+    executed: list[tuple[Any, tuple[Any, ...]]] = field(default_factory=list)
 
     def _begin_snapshot(self) -> None:
         self.in_transaction = True
@@ -182,6 +183,7 @@ class _FakeConnection:
         self._txn_by_row_index = dict(self.by_row_index)
 
     def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
+        self.executed.append((sql, params))
         sql_text = str(sql).lower()
         if "set transaction isolation level" in sql_text:
             self._begin_snapshot()
@@ -763,3 +765,125 @@ def test_configuration_table_mismatch_rejected() -> None:
     )
     with pytest.raises(PostgreSqlBootstrapConfigurationError):
         resolve_physical_target(RelationalTargetId("vpi-products"), config)
+
+
+# --- SESSION CONFIG ---
+
+
+def test_adapter_source_has_no_set_local_bind_parameters() -> None:
+    source = (_ADAPTER_ROOT / "adapter.py").read_text(encoding="utf-8")
+    assert "SET LOCAL" not in source
+    assert "set_local_config" in source
+
+
+def test_apply_session_limits_uses_parameterized_set_config() -> None:
+    conn = _FakeConnection()
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_relational_record",
+        statement_timeout_ms=7500,
+        application_name="vpi-relational-bootstrap",
+    )
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=lambda: conn,
+    )
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets=set(),
+    )
+    with provider.connection() as session:
+        adapter._apply_session_limits(session)
+    set_config_calls = [
+        (str(params[0]), str(params[1]))
+        for sql, params in conn.executed
+        if "set_config" in str(sql).lower() and params
+    ]
+    assert ("statement_timeout", "7500") in set_config_calls
+    assert ("application_name", "vpi-relational-bootstrap") in set_config_calls
+
+
+def test_apply_session_limits_skips_empty_application_name() -> None:
+    conn = _FakeConnection()
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_relational_record",
+        application_name="",
+    )
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=lambda: conn,
+    )
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets=set(),
+    )
+    with provider.connection() as session:
+        adapter._apply_session_limits(session)
+    assert all(
+        params[0] != "application_name"
+        for sql, params in conn.executed
+        if "set_config" in str(sql).lower() and params
+    )
+
+
+def test_apply_session_limits_skips_none_statement_timeout() -> None:
+    conn = _FakeConnection()
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_relational_record",
+        statement_timeout_ms=None,
+    )
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=lambda: conn,
+    )
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets=set(),
+    )
+    with provider.connection() as session:
+        adapter._apply_session_limits(session)
+    assert all(
+        params[0] != "statement_timeout"
+        for sql, params in conn.executed
+        if "set_config" in str(sql).lower() and params
+    )
+
+
+def test_apply_session_limits_hostile_application_name_is_value_only() -> None:
+    hostile = "'; DROP TABLE users; --"
+    conn = _FakeConnection()
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_relational_record",
+        application_name=hostile,
+    )
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=lambda: conn,
+    )
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets=set(),
+    )
+    with provider.connection() as session:
+        adapter._apply_session_limits(session)
+    for sql, params in conn.executed:
+        if "set_config" in str(sql).lower() and params and params[0] == "application_name":
+            assert hostile not in str(sql)
+            assert params[1] == hostile
+            return
+    raise AssertionError("expected application_name set_config call")

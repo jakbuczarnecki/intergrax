@@ -10,6 +10,7 @@ from intergrax.integrations.providers.relational_store.postgresql.session import
     PostgreSQLSession,
     import_psycopg,
     is_postgresql_unique_violation,
+    set_local_config,
 )
 
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
@@ -230,14 +231,16 @@ class PostgreSqlRelationalStorageAdapter:
 
     def _apply_session_limits(self, session: PostgreSQLSession) -> None:
         if self._configuration.statement_timeout_ms is not None:
-            session.execute(
-                "SET LOCAL statement_timeout = %s",
-                (str(self._configuration.statement_timeout_ms),),
+            set_local_config(
+                session,
+                "statement_timeout",
+                str(self._configuration.statement_timeout_ms),
             )
         if self._configuration.application_name:
-            session.execute(
-                "SET LOCAL application_name = %s",
-                (self._configuration.application_name,),
+            set_local_config(
+                session,
+                "application_name",
+                self._configuration.application_name,
             )
 
     def _write_record(
