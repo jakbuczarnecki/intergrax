@@ -34,6 +34,9 @@ from platform_proofs.scenarios.verified_product_identification.integrations.sear
 from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant_vector_candidate_search_adapter import (
     QdrantVectorCandidateSearchAdapter,
 )
+from tests.unit.platform_proofs.scenarios.verified_product_identification.test_qdrant_vector_candidate_search import (
+    _compatibility_gate,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -140,6 +143,7 @@ def test_legacy_platform_vector_search_adapter_delegates_to_canonical_adapter() 
         embedding=embedding,
         embedding_configuration=_configuration(),
         catalog_scope_id="wdc-v2-selected",
+        compatibility_gate=_compatibility_gate(),
     )
     adapter = PlatformVectorSearchAdapter(_delegate=delegate)
     result = adapter.search(VectorSearchQuery(query_text="relay 24V", limit=3))

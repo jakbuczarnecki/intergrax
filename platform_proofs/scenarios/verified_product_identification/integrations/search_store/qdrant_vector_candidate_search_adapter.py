@@ -44,10 +44,23 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
 from platform_proofs.scenarios.verified_product_identification.integrations.embedding.intergrax_adapter import (
     IntergraxEmbeddingBootstrapAdapter,
 )
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant_index_identity_resolver import (
+    QdrantVectorIndexIdentityResolver,
+)
 from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_hit_identity import (
     VectorHitIdentity,
     VectorHitIdentityDecodeError,
     decode_vector_hit_identity_from_metadata,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_index_compatibility import (
+    VectorIndexCompatibilityGate,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_index_expectations import (
+    VectorIndexExpectationSources,
+    build_expected_vector_index_identity_for_collection,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_index_runtime_identity import (
+    ExpectedVectorIndexRuntimeIdentity,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.payload import (
     SOURCE_CATALOG_PAYLOAD_KEY,
@@ -159,6 +172,9 @@ class QdrantVectorCandidateSearchAdapter:
     _embedding_configuration: VpiEmbeddingConfiguration
     _catalog_scope_id: str | None
     _owns_embedding: bool
+    _compatibility_gate: VectorIndexCompatibilityGate
+    _identity_resolver: QdrantVectorIndexIdentityResolver | None
+    _owns_identity_resolver: bool
 
     @classmethod
     def from_env(
@@ -168,6 +184,8 @@ class QdrantVectorCandidateSearchAdapter:
         catalog_scope_id: str | None = None,
         embedding_configuration: VpiEmbeddingConfiguration | None = None,
         execution_configuration: VpiEmbeddingProviderExecutionConfiguration | None = None,
+        expected_index_identity: ExpectedVectorIndexRuntimeIdentity | None = None,
+        expectation_sources: VectorIndexExpectationSources | None = None,
     ) -> QdrantVectorCandidateSearchAdapter:
         resolved_embedding_configuration = (
             embedding_configuration or load_vpi_embedding_configuration()
@@ -180,6 +198,13 @@ class QdrantVectorCandidateSearchAdapter:
             enable_sparse_vectors=False,
             metric="cosine",
         )
+        resolved_expected_identity = expected_index_identity or build_expected_vector_index_identity_for_collection(
+            collection_name=collection_name,
+            embedding_configuration=resolved_embedding_configuration,
+            qdrant_config=qdrant_config,
+            expectation_sources=expectation_sources,
+        )
+        identity_resolver = QdrantVectorIndexIdentityResolver.from_qdrant_config(qdrant_config)
         vector_store = open_qdrant_vector_store(qdrant_config)
         scope = VectorStoreScope(tenant_id=qdrant_config.tenant_id)
         embedding = IntergraxEmbeddingBootstrapAdapter(
@@ -193,6 +218,12 @@ class QdrantVectorCandidateSearchAdapter:
             _embedding_configuration=resolved_embedding_configuration,
             _catalog_scope_id=catalog_scope_id,
             _owns_embedding=True,
+            _compatibility_gate=VectorIndexCompatibilityGate(
+                expected=resolved_expected_identity,
+                resolver=identity_resolver,
+            ),
+            _identity_resolver=identity_resolver,
+            _owns_identity_resolver=True,
         )
 
     @classmethod
@@ -204,6 +235,9 @@ class QdrantVectorCandidateSearchAdapter:
         embedding: EmbeddingExecutionPort,
         embedding_configuration: VpiEmbeddingConfiguration,
         catalog_scope_id: str | None = None,
+        compatibility_gate: VectorIndexCompatibilityGate,
+        identity_resolver: QdrantVectorIndexIdentityResolver | None = None,
+        owns_identity_resolver: bool = False,
     ) -> QdrantVectorCandidateSearchAdapter:
         return cls(
             _vector_store=vector_store,
@@ -212,9 +246,16 @@ class QdrantVectorCandidateSearchAdapter:
             _embedding_configuration=embedding_configuration,
             _catalog_scope_id=catalog_scope_id,
             _owns_embedding=False,
+            _compatibility_gate=compatibility_gate,
+            _identity_resolver=identity_resolver,
+            _owns_identity_resolver=owns_identity_resolver,
         )
 
     def search(self, query: VectorSearchQuery) -> VectorSearchResult:
+        compatibility_failure = self._compatibility_gate.ensure_compatible()
+        if compatibility_failure is not None:
+            return VectorSearchResult(candidates=(), failure=compatibility_failure)
+
         try:
             query_vectors = self._embedding.embed_batch((query.query_text,))
         except (VpiBootstrapProviderError, VpiEmbeddingDimensionMismatchError) as exc:
@@ -299,5 +340,7 @@ class QdrantVectorCandidateSearchAdapter:
         return identity, score
 
     def close(self) -> None:
+        if self._owns_identity_resolver and self._identity_resolver is not None:
+            self._identity_resolver.close()
         if self._owns_embedding:
             self._embedding.close()

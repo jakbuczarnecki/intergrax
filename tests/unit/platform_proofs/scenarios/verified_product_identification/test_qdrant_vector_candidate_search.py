@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from intergrax.integrations.contracts.base import IntegrationDependencyError
+from intergrax.integrations.contracts.vector_index_administration import VectorIndexIdentity
 from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStoreScope
 from intergrax.knowledge.contracts.document import KnowledgeDocument
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
@@ -60,6 +61,21 @@ from platform_proofs.scenarios.verified_product_identification.integrations.embe
 )
 from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant_vector_candidate_search_adapter import (
     QdrantVectorCandidateSearchAdapter,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_index_compatibility import (
+    VectorIndexCompatibilityGate,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_index_expectations import (
+    expected_vector_index_identity_from_bootstrap_vector_identity,
+)
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_index_runtime_identity import (
+    ExpectedVectorIndexRuntimeIdentity,
+    ResolvedVectorIndexRuntimeIdentity,
+    VectorIndexIdentityResolution,
+    VectorIndexIdentityResolutionStatus,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.configuration import (
+    ExpectedVectorIdentity,
 )
 from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_hit_identity import (
     decode_vector_hit_identity_from_storage_payload,
@@ -209,12 +225,69 @@ def _execution_configuration() -> VpiEmbeddingProviderExecutionConfiguration:
     )
 
 
+_CANONICAL_EMBEDDING = ExpectedVectorIdentity(
+    provider="hf",
+    model="BAAI/bge-m3",
+    revision="5617a9f61b028005a4858fdac845db406aefb181",
+    dimension=4,
+)
+
+
+@dataclass
+class _FakeVectorIndexIdentityResolver:
+    resolution: VectorIndexIdentityResolution
+
+    def resolve(self, expected: ExpectedVectorIndexRuntimeIdentity) -> VectorIndexIdentityResolution:
+        return self.resolution
+
+
+def _compatibility_gate(
+    *,
+    dimension: int = 4,
+    tenant_id: str = "default",
+    resolution: VectorIndexIdentityResolution | None = None,
+) -> VectorIndexCompatibilityGate:
+    embedding = ExpectedVectorIdentity(
+        provider=_CANONICAL_EMBEDDING.provider,
+        model=_CANONICAL_EMBEDDING.model,
+        revision=_CANONICAL_EMBEDDING.revision,
+        dimension=dimension,
+    )
+    expected = expected_vector_index_identity_from_bootstrap_vector_identity(
+        target=VectorIndexIdentity(
+            logical_name="vpi-product-embeddings",
+            tenant_id=tenant_id,
+        ),
+        embedding_identity=embedding,
+    )
+    if resolution is None:
+        resolution = VectorIndexIdentityResolution(
+            status=VectorIndexIdentityResolutionStatus.RESOLVED,
+            identity=ResolvedVectorIndexRuntimeIdentity(
+                target=expected.target,
+                exists=True,
+                reachable=True,
+                provider=expected.provider,
+                model=expected.model,
+                revision=expected.revision,
+                dimension=expected.dimension,
+                metric=expected.metric,
+                content_identity=expected.content_identity,
+            ),
+        )
+    return VectorIndexCompatibilityGate(
+        expected=expected,
+        resolver=_FakeVectorIndexIdentityResolver(resolution=resolution),
+    )
+
+
 def _adapter(
     *,
     vector_store: _FakeVectorStore,
     provider: _FakeEmbeddingProvider | None = None,
     catalog_scope_id: str | None = _CATALOG_ID,
     dimension: int = 4,
+    compatibility_gate: VectorIndexCompatibilityGate | None = None,
 ) -> QdrantVectorCandidateSearchAdapter:
     ensure_embedding_provider_integrations_registered()
     embedding = IntergraxEmbeddingBootstrapAdapter(
@@ -228,6 +301,7 @@ def _adapter(
         embedding=embedding,
         embedding_configuration=_configuration(dimension=dimension),
         catalog_scope_id=catalog_scope_id,
+        compatibility_gate=compatibility_gate or _compatibility_gate(dimension=dimension),
     )
 
 
@@ -342,6 +416,40 @@ def test_one_embedding_call_per_search() -> None:
     query_text = "2TB high performance NVMe SSD"
     adapter.search(VectorSearchQuery(query_text=query_text, limit=3))
     assert provider.calls == [[query_text]]
+
+
+def test_compatibility_failure_prevents_embedding_call() -> None:
+    provider = _FakeEmbeddingProvider()
+    adapter = _adapter(
+        vector_store=_FakeVectorStore(hits=(_FakeHitSpec(offer_id="blocked"),)),
+        provider=provider,
+        compatibility_gate=_compatibility_gate(
+            resolution=VectorIndexIdentityResolution(
+                status=VectorIndexIdentityResolutionStatus.INDEX_MISSING,
+                identity=None,
+            )
+        ),
+    )
+    result = adapter.search(VectorSearchQuery(query_text="probe", limit=3))
+    assert result.candidates == ()
+    assert result.failure is not None
+    assert provider.calls == []
+
+
+def test_compatibility_failure_prevents_vector_store_query() -> None:
+    vector_store = _FakeVectorStore(hits=(_FakeHitSpec(offer_id="blocked"),))
+    adapter = _adapter(
+        vector_store=vector_store,
+        compatibility_gate=_compatibility_gate(
+            resolution=VectorIndexIdentityResolution(
+                status=VectorIndexIdentityResolutionStatus.INDEX_MISSING,
+                identity=None,
+            )
+        ),
+    )
+    result = adapter.search(VectorSearchQuery(query_text="probe", limit=3))
+    assert result.candidates == ()
+    assert vector_store.last_top_k is None
 
 
 def test_embedding_dimension_mismatch_fails_closed() -> None:
@@ -463,12 +571,14 @@ def test_vector_score_is_not_verification_confidence() -> None:
     assert type(candidate.channel_score) is VectorChannelScore
 
 
-def test_build_vector_candidate_search_returns_port() -> None:
+def test_build_vector_candidate_search_returns_port(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VPI_EMBEDDING_MODEL_REVISION", _CANONICAL_EMBEDDING.revision)
     port = build_vector_candidate_search(
         collection_name="vpi-product-embeddings",
         catalog_scope_id=_CATALOG_ID,
     )
     assert isinstance(port, QdrantVectorCandidateSearchAdapter)
+    port.close()
 
 
 def test_legacy_adapter_is_marked_reference_only() -> None:

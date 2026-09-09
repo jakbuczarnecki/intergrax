@@ -45,10 +45,43 @@ No configured-catalog fallback. Missing or malformed identity → typed `INVALID
 | Qdrant | qualified (5C5C) | **supported** via `VectorStore` |
 | PostgreSQL + pgvector | qualified (5C5C2) | **PGVECTOR_RUNTIME_QUERY_GAP** — bootstrap writes scenario-owned tables; platform `VectorStore` does not query them |
 
-## Index identity
+## Index identity compatibility gate
 
-`VECTOR_INDEX_IDENTITY_CAPABILITY_GAP` — runtime adapter does not verify collection
-embedding/model/revision identity; bootstrap/index administration owns that gate.
+Before the first provider vector query, `QdrantVectorCandidateSearchAdapter` runs a
+lazy one-time compatibility gate (`VectorIndexCompatibilityGate`):
+
+1. resolve actual index identity from Qdrant administration + typed payload probes;
+2. compare against expected identity from VPI configuration and Data Pack/bootstrap
+   contracts;
+3. fail closed on any mismatch or missing required metadata.
+
+**Expected identity source (authoritative):**
+
+- `VpiEmbeddingConfiguration` for provider, model, dimension;
+- `VPI_DATA_PACK_MANIFEST_PATH` manifest `embedding_identity` + `content_identity`, or
+  `VPI_EMBEDDING_MODEL_REVISION` (+ optional `VPI_DATA_PACK_CONTENT_IDENTITY`);
+- same `ExpectedVectorIdentity` helper as storage bootstrap (`expected_vector_identity_from_embedding_configuration`);
+- target identity: `VectorIndexIdentity(logical_name=collection_name, tenant_id=qdrant tenant)`.
+
+**Actual identity source (authoritative):**
+
+- `VectorIndexAdministration.describe_index` — existence, reachability, dense dimension;
+- Qdrant collection config — distance metric (cosine required);
+- durable index metadata point (`vpi:__index_identity_metadata__`) written during
+  storage bootstrap `prepare_target` when Data Pack manifest is bound;
+- fallback probe: first stored vector payload embedding fields (no content identity).
+
+**Compared fields:** target, provider, model, revision, dimension, metric, content identity
+(when expected).
+
+**Cache:** successful compatibility only; transient provider failures are not cached.
+
+**UNKNOWN != COMPATIBLE** — missing required identity metadata fails closed.
+
+## pgvector runtime gap
+
+PostgreSQL + pgvector bootstrap remains qualified; runtime query support is still
+**PGVECTOR_RUNTIME_QUERY_GAP** (unchanged in R1).
 
 ## Legacy
 
