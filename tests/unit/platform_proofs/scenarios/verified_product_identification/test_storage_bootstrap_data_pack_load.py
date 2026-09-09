@@ -560,12 +560,11 @@ def test_final_partial_batch_handled() -> None:
     assert result.status is BootstrapFinalStatus.SUCCESS
 
 
-def test_canonical_ordering_preserved() -> None:
+def test_non_ascending_order_rejected() -> None:
     pairs = list(_build_pairs(4))
     pairs.reverse()
-    batches = list(iter_record_batches(pairs, batch_size=2))
-    first_batch_indices = [pair.relational.global_row_index for pair in batches[0][1]]
-    assert first_batch_indices == [0, 1]
+    with pytest.raises(StorageBootstrapIdentityError, match="non-ascending global_row_index"):
+        list(iter_record_batches(pairs, batch_size=2))
 
 
 # --- IDENTITY ---

@@ -17,6 +17,8 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.contracts import (
     BootstrapProgress,
+    BootstrapRequest,
+    BootstrapResult,
     RelationalBatch,
     StorageLoadBatchResult,
     VectorBatch,
@@ -61,7 +63,7 @@ class VectorStorageLoadPort(Protocol):
 class StorageBootstrapServicePort(Protocol):
     def run(
         self,
-        request: object,
+        request: BootstrapRequest,
         *,
         progress_sink: BootstrapProgressSinkPort | None = None,
-    ) -> object: ...
+    ) -> BootstrapResult: ...

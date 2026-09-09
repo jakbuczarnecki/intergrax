@@ -83,9 +83,11 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.ports import (
     DataPackBootstrapReaderPort,
-    PairedDataPackRecord,
     RelationalStorageLoadPort,
     VectorStorageLoadPort,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.reader.errors import (
+    DataPackReaderError,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.progress import (
     BootstrapProgressSinkPort,
@@ -116,7 +118,17 @@ class StorageBootstrapService:
     ) -> BootstrapResult:
         started = time.perf_counter()
         self._validate_request(request)
-        manifest = self.dependencies.reader.read_manifest()
+        try:
+            manifest = self.dependencies.reader.read_manifest()
+        except DataPackReaderError as exc:
+            return self._failed_result(
+                request=request,
+                record_count=0,
+                failure=BootstrapFailure(
+                    category=BootstrapFailureCategory.PRECONDITION_FAILED,
+                    detail=str(exc),
+                ),
+            )
         if manifest.status is not DataPackStatus.READY:
             return self._failed_result(
                 request=request,
@@ -127,8 +139,7 @@ class StorageBootstrapService:
                 ),
             )
 
-        paired_records = self._collect_paired_records()
-        record_count = len(paired_records)
+        record_count = manifest.record_count
         plan = compute_bootstrap_plan(
             record_count=record_count,
             batch_size=request.batch_size.value,
@@ -138,7 +149,7 @@ class StorageBootstrapService:
 
         if request.plan_only:
             return BootstrapResult(
-                status=BootstrapFinalStatus.SUCCESS if record_count >= 0 else BootstrapFinalStatus.FAILED,
+                status=BootstrapFinalStatus.SUCCESS,
                 plan=plan,
                 total_expected_records=record_count,
                 total_relational_written=0,
@@ -186,174 +197,207 @@ class StorageBootstrapService:
         last_committed_global_row_index = checkpoint_state.last_committed_global_row_index
         terminal_failure: BootstrapFailure | None = None
 
-        for batch_number, batch_pairs in iter_record_batches(
-            paired_records,
-            batch_size=request.batch_size.value,
-        ):
-            if batch_number < start_batch_number:
-                continue
-
-            relational_records: list[RelationalLoadRecord] = []
-            vector_records: list[VectorLoadRecord] = []
-            try:
-                for pair in batch_pairs:
-                    relational_record, vector_record = paired_load_records(pair)
-                    relational_records.append(relational_record)
-                    vector_records.append(vector_record)
-            except StorageBootstrapIdentityError as exc:
-                failed_batches += 1
-                terminal_failure = BootstrapFailure(
-                    category=BootstrapFailureCategory.IDENTITY_MISMATCH,
+        records_streamed = 0
+        try:
+            batch_iterator = iter_record_batches(
+                self.dependencies.reader.iter_paired_records(),
+                batch_size=request.batch_size.value,
+            )
+        except DataPackReaderError as exc:
+            return self._failed_result(
+                request=request,
+                record_count=record_count,
+                failure=BootstrapFailure(
+                    category=BootstrapFailureCategory.PRECONDITION_FAILED,
                     detail=str(exc),
-                    batch_number=batch_number,
-                )
-                break
-
-            relational_batch = RelationalBatch(
-                batch_number=batch_number,
-                target=request.relational_target,
-                records=tuple(relational_records),
-            )
-            vector_batch = VectorBatch(
-                batch_number=batch_number,
-                target=request.vector_target,
-                records=tuple(vector_records),
-            )
-            assert_batch_identity_parity(relational_batch, vector_batch)
-
-            last_identity = identity_key(relational_batch.records[-1].source_ref)
-            records_processed_before_batch = (
-                previously_committed_records + committed_batches * request.batch_size.value
-            )
-            self._emit_progress(
-                progress_sink,
-                phase=BootstrapBatchPhase.RELATIONAL_WRITING,
-                batch_number=batch_number,
-                records_processed=records_processed_before_batch,
-                total_records=record_count,
-                elapsed_seconds=time.perf_counter() - started,
-                last_identity=last_identity,
+                ),
             )
 
-            try:
-                relational_result = self.dependencies.relational.write_batch(relational_batch)
-            except StorageBootstrapWriteError as exc:
-                failed_batches += 1
-                terminal_failure = BootstrapFailure(
-                    category=BootstrapFailureCategory.RELATIONAL_WRITE_FAILED,
-                    detail=str(exc),
+        try:
+            for batch_number, batch_pairs in batch_iterator:
+                records_streamed += len(batch_pairs)
+                if batch_number < start_batch_number:
+                    continue
+
+                relational_records: list[RelationalLoadRecord] = []
+                vector_records: list[VectorLoadRecord] = []
+                try:
+                    for pair in batch_pairs:
+                        relational_record, vector_record = paired_load_records(pair)
+                        relational_records.append(relational_record)
+                        vector_records.append(vector_record)
+                except StorageBootstrapIdentityError as exc:
+                    failed_batches += 1
+                    terminal_failure = BootstrapFailure(
+                        category=BootstrapFailureCategory.IDENTITY_MISMATCH,
+                        detail=str(exc),
+                        batch_number=batch_number,
+                    )
+                    break
+
+                relational_batch = RelationalBatch(
                     batch_number=batch_number,
+                    target=request.relational_target,
+                    records=tuple(relational_records),
                 )
-                break
-
-            if not relational_result.is_complete_success:
-                failed_batches += 1
-                terminal_failure = BootstrapFailure(
-                    category=BootstrapFailureCategory.RELATIONAL_WRITE_FAILED,
-                    detail="relational batch write incomplete",
+                vector_batch = VectorBatch(
                     batch_number=batch_number,
-                    first_failed_identity=relational_result.first_failed_identity,
+                    target=request.vector_target,
+                    records=tuple(vector_records),
                 )
-                break
+                assert_batch_identity_parity(relational_batch, vector_batch)
 
-            self._emit_progress(
-                progress_sink,
-                phase=BootstrapBatchPhase.VECTOR_WRITING,
-                batch_number=batch_number,
-                records_processed=records_processed_before_batch,
-                total_records=record_count,
-                elapsed_seconds=time.perf_counter() - started,
-                last_identity=last_identity,
-            )
-
-            try:
-                vector_result = self.dependencies.vector.write_batch(vector_batch)
-            except StorageBootstrapWriteError as exc:
-                failed_batches += 1
-                terminal_failure = BootstrapFailure(
-                    category=BootstrapFailureCategory.VECTOR_WRITE_FAILED,
-                    detail=str(exc),
-                    batch_number=batch_number,
+                last_identity = identity_key(relational_batch.records[-1].source_ref)
+                records_processed_before_batch = (
+                    previously_committed_records + committed_batches * request.batch_size.value
                 )
-                break
-
-            if not vector_result.is_complete_success:
-                failed_batches += 1
-                terminal_failure = BootstrapFailure(
-                    category=BootstrapFailureCategory.VECTOR_WRITE_FAILED,
-                    detail="vector batch write incomplete",
-                    batch_number=batch_number,
-                    first_failed_identity=vector_result.first_failed_identity,
-                )
-                break
-
-            if request.verification_mode is VerificationMode.STRICT:
                 self._emit_progress(
                     progress_sink,
-                    phase=BootstrapBatchPhase.VERIFYING,
+                    phase=BootstrapBatchPhase.RELATIONAL_WRITING,
                     batch_number=batch_number,
                     records_processed=records_processed_before_batch,
                     total_records=record_count,
                     elapsed_seconds=time.perf_counter() - started,
                     last_identity=last_identity,
                 )
+
                 try:
-                    relational_verify = self.dependencies.relational.verify_batch(relational_batch)
-                    vector_verify = self.dependencies.vector.verify_batch(vector_batch)
-                    assert_verification_complete(
-                        batch_number=batch_number,
-                        relational_result=relational_verify,
-                        vector_result=vector_verify,
-                    )
-                except StorageBootstrapIntegrityError as exc:
+                    relational_result = self.dependencies.relational.write_batch(relational_batch)
+                except StorageBootstrapWriteError as exc:
                     failed_batches += 1
                     terminal_failure = BootstrapFailure(
-                        category=BootstrapFailureCategory.INTEGRITY_FAILED,
+                        category=BootstrapFailureCategory.RELATIONAL_WRITE_FAILED,
                         detail=str(exc),
                         batch_number=batch_number,
                     )
                     break
 
-            next_checkpoint = advance_checkpoint_after_batch(
-                checkpoint_state,
-                batch_number=batch_number,
-                last_global_row_index=relational_batch.records[-1].global_row_index,
-                last_identity=last_identity,
-                updated_at_utc=utc_now_iso(),
-            )
-            try:
-                checkpoint_state = self.dependencies.checkpoint_store.commit_batch(
-                    run_identity=run_identity,
-                    expected_revision=checkpoint_state.state_revision,
-                    checkpoint=next_checkpoint,
-                )
-            except (
-                CheckpointConcurrentModification,
-                CheckpointPersistenceError,
-                CheckpointCorrupt,
-                CheckpointNotFound,
-            ) as exc:
-                failed_batches += 1
-                terminal_failure = BootstrapFailure(
-                    category=BootstrapFailureCategory.CHECKPOINT_FAILED,
-                    detail=str(exc),
+                if not relational_result.is_complete_success:
+                    failed_batches += 1
+                    terminal_failure = BootstrapFailure(
+                        category=BootstrapFailureCategory.RELATIONAL_WRITE_FAILED,
+                        detail="relational batch write incomplete",
+                        batch_number=batch_number,
+                        first_failed_identity=relational_result.first_failed_identity,
+                    )
+                    break
+
+                self._emit_progress(
+                    progress_sink,
+                    phase=BootstrapBatchPhase.VECTOR_WRITING,
                     batch_number=batch_number,
+                    records_processed=records_processed_before_batch,
+                    total_records=record_count,
+                    elapsed_seconds=time.perf_counter() - started,
+                    last_identity=last_identity,
                 )
-                break
 
-            committed_batches += 1
-            total_relational_written += relational_result.successful_count
-            total_vectors_written += vector_result.successful_count
-            last_committed_global_row_index = relational_batch.records[-1].global_row_index
+                try:
+                    vector_result = self.dependencies.vector.write_batch(vector_batch)
+                except StorageBootstrapWriteError as exc:
+                    failed_batches += 1
+                    terminal_failure = BootstrapFailure(
+                        category=BootstrapFailureCategory.VECTOR_WRITE_FAILED,
+                        detail=str(exc),
+                        batch_number=batch_number,
+                    )
+                    break
 
-            self._emit_progress(
-                progress_sink,
-                phase=BootstrapBatchPhase.COMMITTED,
-                batch_number=batch_number,
-                records_processed=previously_committed_records + total_relational_written,
-                total_records=record_count,
-                elapsed_seconds=time.perf_counter() - started,
-                last_identity=last_identity,
+                if not vector_result.is_complete_success:
+                    failed_batches += 1
+                    terminal_failure = BootstrapFailure(
+                        category=BootstrapFailureCategory.VECTOR_WRITE_FAILED,
+                        detail="vector batch write incomplete",
+                        batch_number=batch_number,
+                        first_failed_identity=vector_result.first_failed_identity,
+                    )
+                    break
+
+                if request.verification_mode is VerificationMode.STRICT:
+                    self._emit_progress(
+                        progress_sink,
+                        phase=BootstrapBatchPhase.VERIFYING,
+                        batch_number=batch_number,
+                        records_processed=records_processed_before_batch,
+                        total_records=record_count,
+                        elapsed_seconds=time.perf_counter() - started,
+                        last_identity=last_identity,
+                    )
+                    try:
+                        relational_verify = self.dependencies.relational.verify_batch(relational_batch)
+                        vector_verify = self.dependencies.vector.verify_batch(vector_batch)
+                        assert_verification_complete(
+                            batch_number=batch_number,
+                            relational_result=relational_verify,
+                            vector_result=vector_verify,
+                        )
+                    except StorageBootstrapIntegrityError as exc:
+                        failed_batches += 1
+                        terminal_failure = BootstrapFailure(
+                            category=BootstrapFailureCategory.INTEGRITY_FAILED,
+                            detail=str(exc),
+                            batch_number=batch_number,
+                        )
+                        break
+
+                next_checkpoint = advance_checkpoint_after_batch(
+                    checkpoint_state,
+                    batch_number=batch_number,
+                    last_global_row_index=relational_batch.records[-1].global_row_index,
+                    last_identity=last_identity,
+                    updated_at_utc=utc_now_iso(),
+                )
+                try:
+                    checkpoint_state = self.dependencies.checkpoint_store.commit_batch(
+                        run_identity=run_identity,
+                        expected_revision=checkpoint_state.state_revision,
+                        checkpoint=next_checkpoint,
+                    )
+                except (
+                    CheckpointConcurrentModification,
+                    CheckpointPersistenceError,
+                    CheckpointCorrupt,
+                    CheckpointNotFound,
+                ) as exc:
+                    failed_batches += 1
+                    terminal_failure = BootstrapFailure(
+                        category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                        detail=str(exc),
+                        batch_number=batch_number,
+                    )
+                    break
+
+                committed_batches += 1
+                total_relational_written += relational_result.successful_count
+                total_vectors_written += vector_result.successful_count
+                last_committed_global_row_index = relational_batch.records[-1].global_row_index
+
+                self._emit_progress(
+                    progress_sink,
+                    phase=BootstrapBatchPhase.COMMITTED,
+                    batch_number=batch_number,
+                    records_processed=previously_committed_records + total_relational_written,
+                    total_records=record_count,
+                    elapsed_seconds=time.perf_counter() - started,
+                    last_identity=last_identity,
+                )
+        except (DataPackReaderError, StorageBootstrapIdentityError) as exc:
+            terminal_failure = BootstrapFailure(
+                category=(
+                    BootstrapFailureCategory.IDENTITY_MISMATCH
+                    if isinstance(exc, StorageBootstrapIdentityError)
+                    else BootstrapFailureCategory.PRECONDITION_FAILED
+                ),
+                detail=str(exc),
+            )
+
+        if terminal_failure is None and records_streamed != record_count:
+            terminal_failure = BootstrapFailure(
+                category=BootstrapFailureCategory.PRECONDITION_FAILED,
+                detail=(
+                    "DATA_PACK_RECORD_COUNT_MISMATCH: "
+                    f"manifest declares {record_count}, streamed {records_streamed}"
+                ),
             )
 
         status = self._resolve_final_status(
@@ -471,10 +515,6 @@ class StorageBootstrapService:
     def _validate_request(self, request: BootstrapRequest) -> None:
         if request.batch_size.value <= 0:
             raise StorageBootstrapPreconditionError("batch_size must be > 0")
-
-    def _collect_paired_records(self) -> tuple[PairedDataPackRecord, ...]:
-        records = list(self.dependencies.reader.iter_paired_records())
-        return tuple(sorted(records, key=lambda pair: pair.relational.global_row_index))
 
     def _failed_result(
         self,
