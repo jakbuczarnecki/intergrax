@@ -21,6 +21,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.evidence_ga
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
     derive_evidence_phase_context,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
+    CompletionAlignmentState,
+    assess_completion_alignment,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     build_investigation_summary,
     completion_mode_from_proposal,
@@ -29,6 +33,13 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     propose_incident_reasoning,
     emit_reasoning_observability,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.observability import (
+    IncidentCompletionAlignmentDiagV1,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    authoritative_supported_diagnosis_present,
+)
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     ScenarioRuntimeComposition,
@@ -181,6 +192,42 @@ class IncidentInvestigatorAgent(Agent):
         pending_claim_set = pending_conversion.claim_set
         claim_bindings = pending_conversion.bindings
         completion_mode = completion_mode_from_proposal(proposal)
+        preview_domain_payload = {
+            "claim_set": pending_claim_set.model_dump(mode="json"),
+            "claim_hypothesis_bindings": [
+                binding.model_dump(mode="json") for binding in claim_bindings
+            ],
+            "evidence_nodes": evidence_nodes,
+            "completion_mode": completion_mode,
+        }
+        has_supported_diagnosis = authoritative_supported_diagnosis_present(
+            pending_claim_set,
+            preview_domain_payload,
+            bindings=claim_bindings,
+        )
+        alignment = assess_completion_alignment(
+            CompletionAlignmentState(
+                completion_mode=completion_mode,
+                has_supported_diagnosis=has_supported_diagnosis,
+            )
+        )
+        runtime_state.trace_event(
+            component=TraceComponent.PLANNER,
+            step="incident_completion_alignment",
+            message="Incident investigator completion alignment assessment",
+            level=TraceLevel.INFO,
+            payload=IncidentCompletionAlignmentDiagV1(
+                completion_mode=completion_mode,
+                has_supported_diagnosis=has_supported_diagnosis,
+                alignment_status=alignment.status.value,
+                mismatch_reason=(
+                    alignment.mismatch_reason.value
+                    if alignment.mismatch_reason is not None
+                    else None
+                ),
+                revision_pass=is_revision,
+            ),
+        )
         emit_reasoning_observability(
             runtime_state=runtime_state,
             proposal=proposal,

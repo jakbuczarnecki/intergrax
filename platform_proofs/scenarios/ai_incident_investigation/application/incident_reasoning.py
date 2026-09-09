@@ -38,6 +38,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.observabili
 from platform_proofs.scenarios.ai_incident_investigation.application.platform_diagnostic_context import (
     format_platform_diagnostic_context_lines,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
+    expand_critic_feedback_with_alignment_guidance,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
     EvidencePhaseContext,
     render_completion_intent_contract_lines,
@@ -453,8 +456,9 @@ def build_reasoning_messages(
         for hypothesis in prior_state.reasoning_proposal.hypotheses:
             lines.append(f"- {hypothesis.hypothesis_id}: {hypothesis.summary}")
     if critic_feedback:
+        expanded_feedback = expand_critic_feedback_with_alignment_guidance(critic_feedback)
         lines.append("Critic feedback requiring incremental correction:")
-        lines.extend(f"- {item}" for item in critic_feedback)
+        lines.extend(f"- {item}" for item in expanded_feedback)
     if is_revision:
         lines.append(
             "Revision contract: revise the semantic reasoning using the prior proposal, "
