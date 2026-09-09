@@ -25,6 +25,12 @@ from platform_proofs.scenarios.verified_product_identification.data_package.iden
     VPI_PACKAGE_ID,
     VPI_PACKAGE_VERSION,
 )
+from platform_proofs.scenarios.verified_product_identification.data_package.publication import (
+    assert_publication_permitted_with_qualification,
+)
+from platform_proofs.scenarios.verified_product_identification.data_package.redistribution_qualification import (
+    load_default_redistribution_qualification,
+)
 from platform_proofs.scenarios.verified_product_identification.data_package.validation_handoff import (
     assert_descriptor_generation_preconditions,
     load_descriptor_validation_gate,
@@ -80,6 +86,12 @@ def build_data_pack_descriptor(
     package_version: str = VPI_CANONICAL_DATA_PACK_PACKAGE_VERSION,
 ) -> ProofDataPackageDescriptor:
     resolved_root = artifact_root.resolve()
+    if redistribution_status is PublicationStatus.PUBLICATION_APPROVED:
+        qualification = load_default_redistribution_qualification()
+        assert_publication_permitted_with_qualification(
+            redistribution_status,
+            qualification,
+        )
     gate = load_descriptor_validation_gate(validation_report_path)
     assert_descriptor_generation_preconditions(gate, resolved_root)
     distributable_files = collect_distributable_files(resolved_root)

@@ -1,0 +1,204 @@
+{
+  "asset_decisions": [
+    {
+      "asset_type": "RAW_WDC_CORPUS",
+      "attribution": {
+        "legally_required": false,
+        "source_attribution_text": "Web Data Commons Large Scale Product Corpus V2 (offers_corpus_all_v2_non_norm)",
+        "source_dataset": "offers_corpus_all_v2_non_norm",
+        "source_name": "Web Data Commons Large Scale Product Corpus V2",
+        "source_terms_url": "https://commoncrawl.org/terms-of-use/",
+        "source_url": "https://webdatacommons.org/largescaleproductcorpus/v2/index.html"
+      },
+      "blocking_uncertainty": null,
+      "evidence_source_ids": [
+        "wdc-lspm-v2-page",
+        "wdc-main-license"
+      ],
+      "license_terms_reference": "Operator download under upstream terms; not redistributed by Intergrax.",
+      "model_weights_distributed": false,
+      "recommended_publication_action": "Do not include raw WDC corpus in Intergrax distribution packages.",
+      "status": "INTERNAL_USE_ONLY"
+    },
+    {
+      "asset_type": "VPI_RELATIONAL_PARQUET",
+      "attribution": {
+        "legally_required": false,
+        "generation_notice": "Derived subset selected by keyValuePairs != null OR specTableContent != null.",
+        "source_attribution_text": "Derived from Web Data Commons Large Scale Product Corpus V2 (offers_corpus_all_v2_non_norm).",
+        "source_dataset": "offers_corpus_all_v2_non_norm",
+        "source_name": "Web Data Commons Large Scale Product Corpus V2",
+        "source_terms_url": "https://commoncrawl.org/terms-of-use/",
+        "source_url": "https://webdatacommons.org/largescaleproductcorpus/v2/index.html"
+      },
+      "blocking_uncertainty": "THIRD_PARTY_CONTENT_RIGHTS_UNRESOLVED: corpus-level terms do not grant republication rights over extracted third-party product text.",
+      "evidence_source_ids": [
+        "wdc-lspm-v2-page",
+        "wdc-main-license",
+        "common-crawl-tou",
+        "wdc-product-corpus-lineage"
+      ],
+      "license_terms_reference": "No authoritative WDC/Product Corpus redistribution grant located; upstream lineage depends on Common Crawl crawled content.",
+      "model_weights_distributed": false,
+      "recommended_publication_action": "Retain publication gate until WDC/DWS Group or counsel confirms derived relational republication rights.",
+      "status": "REDISTRIBUTION_REVIEW_REQUIRED"
+    },
+    {
+      "asset_type": "VPI_EMBEDDING_PARQUET",
+      "attribution": {
+        "legally_required": false,
+        "generation_notice": "Dense vectors generated with BAAI/bge-m3; model weights are not distributed in the VPI Data Pack.",
+        "model_license": "MIT",
+        "model_license_url": "https://github.com/FlagOpen/FlagEmbedding/blob/master/LICENSE",
+        "model_name": "BAAI/bge-m3",
+        "model_url": "https://huggingface.co/BAAI/bge-m3",
+        "source_attribution_text": "Embeddings computed from VPI relational semantic text derived from WDC Product Corpus V2.",
+        "source_dataset": "offers_corpus_all_v2_non_norm",
+        "source_name": "Web Data Commons Large Scale Product Corpus V2",
+        "source_terms_url": "https://commoncrawl.org/terms-of-use/",
+        "source_url": "https://webdatacommons.org/largescaleproductcorpus/v2/index.html"
+      },
+      "blocking_uncertainty": "INPUT_DATA_RIGHTS_GATE unresolved; MIT model license does not resolve rights in source-derived inputs.",
+      "evidence_source_ids": [
+        "bge-m3-hf-metadata",
+        "bge-m3-flagembedding-license",
+        "common-crawl-tou",
+        "wdc-lspm-v2-page"
+      ],
+      "license_terms_reference": "BAAI/bge-m3 MIT applies to model software/weights; no authoritative output-dataset redistribution grant identified.",
+      "model_weights_distributed": false,
+      "recommended_publication_action": "Retain publication gate until input-content republication rights are resolved independently of model license.",
+      "status": "REDISTRIBUTION_REVIEW_REQUIRED"
+    },
+    {
+      "asset_type": "VPI_COMBINED_DATA_PACK",
+      "attribution": {
+        "legally_required": false,
+        "generation_notice": "Canonical portable Data Pack combining relational Parquet, embedding Parquet, manifest, checksums, and proof evidence.",
+        "model_license": "MIT",
+        "model_license_url": "https://github.com/FlagOpen/FlagEmbedding/blob/master/LICENSE",
+        "model_name": "BAAI/bge-m3",
+        "model_url": "https://huggingface.co/BAAI/bge-m3",
+        "source_attribution_text": "Derived from Web Data Commons Large Scale Product Corpus V2 (offers_corpus_all_v2_non_norm).",
+        "source_dataset": "offers_corpus_all_v2_non_norm",
+        "source_name": "Web Data Commons Large Scale Product Corpus V2",
+        "source_terms_url": "https://commoncrawl.org/terms-of-use/",
+        "source_url": "https://webdatacommons.org/largescaleproductcorpus/v2/index.html"
+      },
+      "blocking_uncertainty": "Combined publication requires all component asset gates; relational and embedding gates remain unresolved.",
+      "evidence_source_ids": [
+        "wdc-lspm-v2-page",
+        "common-crawl-tou",
+        "bge-m3-hf-metadata"
+      ],
+      "license_terms_reference": "Fail-closed combined gate; see component asset decisions.",
+      "model_weights_distributed": false,
+      "recommended_publication_action": "Do not publish combined canonical Data Pack publicly until all component gates are PUBLIC_REDISTRIBUTION_APPROVED.",
+      "status": "REDISTRIBUTION_REVIEW_REQUIRED"
+    },
+    {
+      "asset_type": "PACKAGE_METADATA",
+      "attribution": {
+        "legally_required": false,
+        "source_attribution_text": "Package descriptor and provenance reference WDC-derived corpus identity.",
+        "source_dataset": "offers_corpus_all_v2_non_norm",
+        "source_name": "Web Data Commons Large Scale Product Corpus V2",
+        "source_url": "https://webdatacommons.org/largescaleproductcorpus/v2/index.html"
+      },
+      "blocking_uncertainty": "Descriptor metadata alone may be lower risk but still references restricted upstream corpus; conservative gate retained.",
+      "evidence_source_ids": [
+        "wdc-lspm-v2-page",
+        "wdc-main-license"
+      ],
+      "license_terms_reference": "No standalone metadata-only redistribution grant identified.",
+      "model_weights_distributed": false,
+      "recommended_publication_action": "Publish metadata publicly only after explicit qualification update; default gate remains closed.",
+      "status": "REDISTRIBUTION_REVIEW_REQUIRED"
+    }
+  ],
+  "embedding_gates": {
+    "input_data_rights_gate": "FAILED",
+    "model_license_gate": "PASSED",
+    "output_restriction_gate": "UNCLEAR"
+  },
+  "embeddings_only_fallback_viable": "UNRESOLVED",
+  "evidence_records": [
+    {
+      "accessed_at": "2026-09-09",
+      "authority": "Web Data Commons / University of Mannheim Data and Web Science Group",
+      "evidence_scope": "WDC site-wide license section",
+      "short_finding": "Only the extraction framework is licensed under Apache; extracted dataset contents are not granted an Apache redistribution license on this page.",
+      "source_id": "wdc-main-license",
+      "title": "Web Data Commons — License",
+      "url": "https://webdatacommons.org/index.html"
+    },
+    {
+      "accessed_at": "2026-09-09",
+      "authority": "Web Data Commons / University of Mannheim Data and Web Science Group",
+      "evidence_scope": "Large Scale Product Corpus V2 download page",
+      "short_finding": "Corpus V2 (26M offers, offers_corpus_all_v2_non_norm) is offered for public download for research; page does not state a separate redistribution license for derived republication by third parties.",
+      "source_id": "wdc-lspm-v2-page",
+      "title": "WDC Product Data Corpus and Gold Standard for Large-Scale Product Matching (LSPM) V2",
+      "url": "https://webdatacommons.org/largescaleproductcorpus/v2/index.html"
+    },
+    {
+      "accessed_at": "2026-09-09",
+      "authority": "Web Data Commons / University of Mannheim Data and Web Science Group",
+      "evidence_scope": "Product corpus provenance statement",
+      "short_finding": "Product Corpus V2 was derived from November 2017 WDC schema.org extraction of Common Crawl structured data.",
+      "source_id": "wdc-product-corpus-lineage",
+      "title": "WDC Product Data Corpus V2 — Introduction",
+      "url": "https://webdatacommons.org/largescaleproductcorpus/v2/index.html"
+    },
+    {
+      "accessed_at": "2026-09-09",
+      "authority": "Common Crawl Foundation",
+      "evidence_scope": "Common Crawl Terms of Use",
+      "short_finding": "CC grants a limited, non-transferable, non-sublicensable license to access/use the Service; crawled content remains subject to third-party terms; users must respect third-party copyrights and CC recommends legal counsel before commercial use.",
+      "source_id": "common-crawl-tou",
+      "terms_last_updated": "2024-03-07",
+      "title": "Common Crawl — Terms of Use",
+      "url": "https://commoncrawl.org/terms-of-use/"
+    },
+    {
+      "accessed_at": "2026-09-09",
+      "authority": "Beijing Academy of Artificial Intelligence (BAAI) via Hugging Face",
+      "evidence_scope": "Hugging Face model repository metadata",
+      "short_finding": "BAAI/bge-m3 revision 5617a9f61b028005a4858fdac845db406aefb181 declares license:mit in repository metadata; VPI distributes computed vectors only, not model weights.",
+      "source_id": "bge-m3-hf-metadata",
+      "title": "BAAI/bge-m3 — Hugging Face model card metadata",
+      "url": "https://huggingface.co/BAAI/bge-m3"
+    },
+    {
+      "accessed_at": "2026-09-09",
+      "authority": "FlagOpen / BAAI FlagEmbedding repository",
+      "evidence_scope": "Upstream LICENSE file",
+      "short_finding": "FlagEmbedding repository LICENSE is MIT; license applies to software/model artifacts, not to rights in arbitrary input corpora or their generated embedding datasets.",
+      "source_id": "bge-m3-flagembedding-license",
+      "title": "FlagEmbedding — LICENSE",
+      "url": "https://github.com/FlagOpen/FlagEmbedding/blob/master/LICENSE"
+    }
+  ],
+  "legal_escalation_question": "Does Web Data Commons / the University of Mannheim Data and Web Science Group authorize third-party public redistribution of a derived subset of Large Scale Product Corpus V2 (offers_corpus_all_v2_non_norm), including relational fields (title, description, brand, specification text) and/or precomputed BAAI/bge-m3 embedding vectors generated from that subset, under the Common Crawl/WDC terms regime or any separate dataset license?",
+  "legal_escalation_required": true,
+  "processed_dataset_sha256": "fc1268a9c4b3e37325919cd127912a67db0a0b6d1943229a2026d9fedff1d998",
+  "recommended_attribution": {
+    "generation_notice": "Intergrax VPI canonical Data Pack — deterministic subset and embedding pipeline; not a substitute for upstream dataset license.",
+    "legally_required": false,
+    "model_license": "MIT",
+    "model_license_url": "https://github.com/FlagOpen/FlagEmbedding/blob/master/LICENSE",
+    "model_name": "BAAI/bge-m3",
+    "model_url": "https://huggingface.co/BAAI/bge-m3",
+    "source_attribution_text": "Derived from Web Data Commons Large Scale Product Corpus V2 (offers_corpus_all_v2_non_norm).",
+    "source_dataset": "offers_corpus_all_v2_non_norm",
+    "source_name": "Web Data Commons Large Scale Product Corpus V2",
+    "source_terms_url": "https://commoncrawl.org/terms-of-use/",
+    "source_url": "https://webdatacommons.org/largescaleproductcorpus/v2/index.html"
+  },
+  "review_id": "vpi-redistribution-review-2026-09-09",
+  "reviewed_at": "2026-09-09",
+  "reviewer": "VPI-IMPLEMENTATION-5C4H-B",
+  "schema_version": "verified_product_identification.redistribution_review.v1",
+  "source_dataset_identifier": "offers_corpus_all_v2_non_norm",
+  "third_party_content_rights_resolved": false
+}

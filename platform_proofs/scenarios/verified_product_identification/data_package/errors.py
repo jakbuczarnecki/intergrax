@@ -21,3 +21,7 @@ class VpiDataPackageNotInstalledError(VpiDataPackageError):
 
 class VpiDataPackageDescriptorBuildError(VpiDataPackageError):
     """Descriptor generation preconditions or content policy failed."""
+
+
+class VpiRedistributionQualificationError(VpiDataPackageError):
+    """Redistribution qualification record is missing or invalid."""

@@ -1,7 +1,7 @@
 # VPI Portable Data Pack Distribution Architecture
 
-**Task:** VPI-IMPLEMENTATION-5C4H-A  
-**Publication:** blocked until 5C4H-B redistribution qualification
+**Task:** VPI-IMPLEMENTATION-5C4H-A / 5C4H-B  
+**Publication:** blocked — see `redistribution-review.json` and `DATASET_DISTRIBUTION_REVIEW.md`
 
 ## Flow
 
@@ -72,4 +72,6 @@ Never generate from RUNNING, partial, interrupted, or unvalidated artifacts.
 
 ## Redistribution gate
 
-Current status: `REDISTRIBUTION_REVIEW_REQUIRED`. Public HTTPS publication is blocked. Local mirror install is supported for development and offline tests.
+Typed qualification: `data_package/v1/redistribution-review.json` (loaded by `redistribution_qualification.py`).
+
+Current status: `REDISTRIBUTION_REVIEW_REQUIRED`. `can_publish(VPI_COMBINED_DATA_PACK)` returns false. Public HTTPS publication is blocked. Local mirror install is supported for development and offline tests.
