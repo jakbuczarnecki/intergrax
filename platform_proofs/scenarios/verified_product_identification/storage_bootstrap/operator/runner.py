@@ -8,6 +8,7 @@ import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
+from types import FrameType
 
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.batching import (
     compute_bootstrap_plan,
@@ -48,6 +49,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     build_operator_lock_metadata,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.operator.preconditions import (
+    ResolvedOperatorPreconditions,
     resolve_operator_preconditions,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.operator.progress import (
@@ -152,7 +154,7 @@ class StorageLoadOperatorRunner:
         interrupted = False
         previous_sigterm = signal.getsignal(signal.SIGTERM)
 
-        def _handle_sigterm(signum: int, _frame: object) -> None:
+        def _handle_sigterm(signum: int, _frame: FrameType | None) -> None:
             raise KeyboardInterrupt(f"received signal {signum}")
 
         signal.signal(signal.SIGTERM, _handle_sigterm)
@@ -204,13 +206,8 @@ class StorageLoadOperatorRunner:
     def _interrupted_result(
         *,
         config: StorageLoadOperatorConfig,
-        resolved: object,
+        resolved: ResolvedOperatorPreconditions,
     ) -> BootstrapResult:
-        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.operator.preconditions import (
-            ResolvedOperatorPreconditions,
-        )
-
-        assert isinstance(resolved, ResolvedOperatorPreconditions)
         plan = compute_bootstrap_plan(
             record_count=resolved.manifest.record_count,
             batch_size=config.batch_size.value,
