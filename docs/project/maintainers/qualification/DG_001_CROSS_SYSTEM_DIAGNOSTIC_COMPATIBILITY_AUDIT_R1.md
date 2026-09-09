@@ -1,6 +1,7 @@
 # DG-001 — Cross-system diagnostic compatibility audit (R1)
 
 > **Task:** `DG-001-CROSS-SYSTEM-DIAGNOSTIC-COMPATIBILITY-AUDIT-R1`  
+> **Correction:** `DG-001-CROSS-SYSTEM-DIAGNOSTIC-COMPATIBILITY-AUDIT-R1-CORRECTION` (classification only)  
 > **Mode:** architecture + contract + regression impact audit — **no implementation**  
 > **Branch:** `development`  
 > **Audit date:** 2026-09-09
@@ -11,7 +12,8 @@
 
 | Item | Value |
 | ---- | ----- |
-| **START HEAD** | `3a90e2e1c042bbabf392fbc172b359b059a66f54` |
+| **START HEAD** | `1b8f42143ed59a8d70fc7c5db9ae1e7283b40a3f` |
+| **Correction ancestor** | `bbf21a7b1338d0c60183501a0854a00216ade37a` → `git merge-base --is-ancestor` exit 0 |
 | **DG-001B3 ancestor** | `e0e99e907e5f7e1b02e452bab0e1eefc5822a07b` → `git merge-base --is-ancestor` exit 0 |
 | **Reference instruction point** | `1af51065070dae2f5b777abc2e0bc9fc1821bb67` (included in ancestry) |
 | **Reference commits audited** | `0936a614` (identity authority) · `30750b42` (runtime convergence) · `d3225587` (decision→execution) · `1af510650` (decision failure diagnostics) |
@@ -73,35 +75,49 @@ Diagnostics no longer depends on Nexus as an execution root for read composition
 
 ## 5. Diagnostic reconstruction impact
 
-**Verdict: QUALIFICATION_REQUIRED**
+**Verdict: PASS (run / attempt / event reconstruction) · GAP (multi-execution parent/child tree)**
 
 `ExecutionReconstructor` (`execution_reconstruction.py`) reconstructs by `(tenant_id, task_id, run_id)` from `RuntimeEventPersistence` + `CausalEvidencePersistence`. Attempt grouping uses `attempt_id` from events and causal evidence.
 
 | Check | Result |
 | ----- | ------ |
 | `RunId` / `AttemptId` / `TaskId` align with authority model | Yes — validated at reconstruction scope |
-| `ExecutionId` in read model | Present on individual `RuntimeEvent` rows inside `positioned_events`; not a top-level reconstruction key |
-| Parent/child tree projection | **Not built** — `parent_execution_id` is runtime-boundary state, not persisted on `RuntimeEvent` or `PlatformCausalEvidence` |
+| Run / attempt / event reconstruction within scope | **PASS** — existing DIAG-2 paths remain valid for qualified use cases |
+| `ExecutionId` in read model | Present on individual `RuntimeEvent` rows inside `positioned_events`; tags execution membership within one run — **available** |
+| Exact direct parent→child execution edge | **Not available** in DIAG-2 canonical read sources — `RuntimeEvent` carries `execution_id` but not `parent_execution_id`; no parent→child `CausalRelationKind`; `DELEGATION_GRANTED` does not carry direct parent execution identity |
+| Parent/child tree projection | **GAP** — DIAG-2 cannot deterministically reconstruct an arbitrary parent/child execution tree from its canonical sources alone |
 | Retry attempts | Supported via attempt grouping |
 | Background execution | Supported via causal evidence + shared run scope |
 
-Static contract is sound; **operator-facing proof** that reconstruction answers multi-execution questions within one run is not yet qualified (see §6).
+Do not degrade correctly working DIAG-2 for prior qualified cases. The gap is confined to multi-execution parent/child lineage read architecture (see §6, GAP-R1-01).
 
 ---
 
 ## 6. Multi-agent impact
 
-**Verdict: QUALIFICATION_REQUIRED**
+**Verdict: GAP**
 
-Multi-agent coordination (`CoordinationIntent` → `CoordinationIntentExecutor` → `ChildExecutionRunner`) preserves execution lineage at the runtime boundary:
+Multi-agent coordination (`CoordinationIntent` → `CoordinationIntentExecutor` → `ChildExecutionRunner`) preserves execution lineage at the **runtime** boundary:
 
 - Children share parent `run_id` / `attempt_id`, mint distinct `execution_id`.
 - `ExecutionIdentityBinding.parent_execution_id` is set in `child.py`.
-- `RuntimeEvent.execution_id` tags per-event execution context within one run reconstruction.
+- `RuntimeEvent.execution_id` tags per-event execution context — execution **membership within one run** is available in DIAG-2 canonical sources.
 
-**Gap assessment (not BLOCKER):** `CausalRelationKind` defines only `TRANSPORT_TASK_TRIGGERED_EXECUTION`. No dedicated parent→child causal relation. `DELEGATION_GRANTED` payload is agent-level, not `ExecutionId`-level.
+**Read-side architecture gap (not Execution Engine defect):** `ExecutionReconstructor` consumes `RuntimeEventPersistence` + `CausalEvidencePersistence`. `RuntimeEvent` has `execution_id` but not `parent_execution_id`. `CausalRelationKind` has no parent-execution → child-execution relation. `DELEGATION_GRANTED` does not carry direct parent execution identity. Therefore DIAG-2 **cannot deterministically reconstruct** an arbitrary parent/child execution tree from its canonical read sources. The exact direct parent→child edge is **not available** in those sources today.
 
-Raw persistence **contains sufficient facts** for an operator to correlate parent root events, child `execution_id` slices, and `STEP_FAILED`/`TASK_FAILED` within one `ExecutionReconstruction`. The canonical **read projection** does not yet expose a parent/child execution tree — qualification proof required, not a production change in this audit.
+**Existing canonical Execution Tree (reuse first — do not propose a parallel model):** the platform already owns:
+
+- `ExecutionTreeSnapshot`
+- `ExecutionCheckpointEntry.parent_execution_id`
+- `ExecutionTreeRecorder`
+
+The next architecture task must assess whether the correct remediation is:
+
+- **A.** safe reuse of existing canonical Execution Tree / checkpoint truth on the Diagnostics read side,
+- **B.** extension of canonical causal/runtime evidence with a parent→child relation,
+- **C.** another existing public contract discovered during that future audit.
+
+**Do not choose A/B/C in this audit.** No new parallel Execution Tree, private API, dynamic contracts, or diagnostics pipeline bypass.
 
 ---
 
@@ -125,7 +141,7 @@ Core Decision contracts (`intergrax/contracts/decision_*.py`, `agent_distributio
 - Decision does **not** mint `ExecutionId`; Execution authority remains in `identity_authority.py`.
 - `DecisionCoordinationProjection` preserves `source_decision_identity` when projecting to `CoordinationIntent`.
 
-Cross-run operator view `Decision → Execution → child failures` requires joining decision observability (`decision_lifecycle_observability.py`) with DIAG-2 reconstruction. Contract exists; end-to-end diagnostic read qualification **not yet proven**.
+Cross-run operator view `Decision → Execution → child failures` requires joining decision observability (`decision_lifecycle_observability.py`) with DIAG-2 reconstruction. Decision Lifecycle `RuntimeEvent` payload already carries `decision_id`, `task_id`, `run_id`, `attempt_id`, and `execution_id` — existing public read contracts may suffice; end-to-end diagnostic read qualification **not yet proven**. Do not introduce a new Decision diagnostics lifecycle.
 
 ---
 
@@ -139,19 +155,21 @@ Cross-run operator view `Decision → Execution → child failures` requires joi
 - `bootstrap_attempt_id` minting,
 - explicit docstring: *"not a Problem"*.
 
-**DG-001B4: B4_READY**
+**DG-001B4: B4_READY (architecture / proof design valid)**
 
-B4 qualification (`DG_001B4_WORKER_PRE_B5_INTEGRATION_QUALIFICATION.md`, HEAD `1af510650`) remains valid. Worker bootstrap path is orthogonal to canonical execution identity changes. Focused bootstrap test `tests/unit/hosting/test_bootstrap_failure_record.py` passes at audit HEAD. No rebase of proof harness design required — only routine re-run on current HEAD.
+Existing B4 qualification was executed at `1af51065070dae2f5b777abc2e0bc9fc1821bb67` (`DG_001B4_WORKER_PRE_B5_INTEGRATION_QUALIFICATION.md`). Worker bootstrap path is orthogonal to canonical execution identity changes; B4 architecture and proof design remain valid. Focused bootstrap test `tests/unit/hosting/test_bootstrap_failure_record.py` passes at correction HEAD.
+
+Before formal B4 closure, a **routine focused B4 proof re-run on current HEAD** is required. The multi-agent diagnostic lineage gap (GAP-R1-01) **does not block B4** — pre-B5 bootstrap occurs before canonical task execution.
 
 ---
 
 ## 9. Identified gaps
 
-| ID | Component | Impact | Minimal recommended action | Proposed task |
-| -- | --------- | ------ | ------------------------ | ------------- |
-| GAP-R1-01 | `ExecutionReconstructor` | No parent/child execution tree projection; `parent_execution_id` not in persisted events | Qualification proof: correlate `execution_id` slices + `DELEGATION_GRANTED` within one run | `DG-001-CROSS-SYSTEM-MULTI-AGENT-DIAGNOSTIC-QUALIFICATION-R1` |
-| GAP-R1-02 | Decision→Execution diagnostic read | `DecisionExecutionLineage` contract exists; operator read join not qualified | Qualification harness joining `DecisionIdentity` observability with DIAG-2 scope | `DG-001-DECISION-EXECUTION-DIAGNOSTIC-LINEAGE-QUALIFICATION-R1` |
-| GAP-R1-03 | `CausalRelationKind` | Only transport→execution relation; no explicit parent→child causal fact | **Defer** — runtime events carry `execution_id`; evaluate after GAP-R1-01 qualification | Architecture review if qualification fails |
+| ID | Component | Classification | Impact | Minimal recommended action | Proposed task |
+| -- | --------- | -------------- | ------ | ------------------------ | ------------- |
+| GAP-R1-01 | `ExecutionReconstructor` / DIAG-2 read sources | **ARCHITECTURAL READ-MODEL GAP** (`GAP`) | `ExecutionReconstructor` consumes `RuntimeEventPersistence` + `CausalEvidencePersistence`. `RuntimeEvent` has `execution_id` but not `parent_execution_id`. `CausalRelationKind` has no parent→child execution relation. `DELEGATION_GRANTED` does not carry direct parent execution identity. Execution membership within one run is available; the exact direct parent→child edge is not. DIAG-2 cannot deterministically reconstruct an arbitrary parent/child execution tree. Platform already has canonical `ExecutionTreeSnapshot`, `ExecutionCheckpointEntry.parent_execution_id`, and `ExecutionTreeRecorder` — reuse first; no parallel tree. | Architecture decision (options A/B/C in §6); then read-side integration — no new diagnostics pipeline, private API, or bypass | `DG-001-CROSS-SYSTEM-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ARCHITECTURE-R1` |
+| GAP-R1-02 | Decision→Execution diagnostic read | **QUALIFICATION_REQUIRED** | `DecisionExecutionLineage` contract exists; operator read join not qualified. Decision Lifecycle `RuntimeEvent` payload carries `decision_id`, `task_id`, `run_id`, `attempt_id`, `execution_id` — existing public read contracts may suffice; proof still required. | Qualification harness joining `DecisionIdentity` observability with DIAG-2 scope — not a new Decision diagnostics lifecycle | `DG-001-DECISION-EXECUTION-DIAGNOSTIC-LINEAGE-QUALIFICATION-R1` |
+| GAP-R1-03 | `CausalRelationKind` | **ARCHITECTURE DECISION DEFERRED TO GAP-R1-01 REMEDIATION** | Only `TRANSPORT_TASK_TRIGGERED_EXECUTION` today; no parent→child execution relation. `execution_id` identifies an execution but does not encode its direct parent — not sufficient to dismiss this gap. | Defer causal relation design until GAP-R1-01 architecture remediation chooses reuse vs evidence extension vs other public contract | *(subsumed by GAP-R1-01 architecture task)* |
 
 No STOP-condition blockers. No production code change required to unblock B4/B5 track.
 
@@ -159,20 +177,21 @@ No STOP-condition blockers. No production code change required to unblock B4/B5 
 
 ## 10. Recommended roadmap
 
-1. **Re-run B4 proof** on current HEAD (`3a90e2e1`) — expected PASS, no harness redesign.
-2. **Qualify multi-agent diagnostic read** (GAP-R1-01) before claiming multi-agent operator completeness.
-3. **Qualify Decision→Execution lineage read** (GAP-R1-02) as a read-composition proof, not a new diagnostics lifecycle.
-4. **Defer** `CausalRelationKind` extension (GAP-R1-03) unless GAP-R1-01 qualification fails with raw event data.
+1. **DG-001B4 current-HEAD revalidation** — independent bootstrap track; routine focused B4 proof re-run on current HEAD (no harness redesign).
+2. **`DG-001-CROSS-SYSTEM-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ARCHITECTURE-R1`** — read-side architecture decision (reuse Execution Tree / extend evidence / other public contract); enterprise rules: reuse existing contracts first, no parallel Execution Tree, no private API, no `getattr`/`setattr`, no dynamic contracts, no bypass, no new diagnostics pipeline, no Problem lifecycle in Decision System.
+3. **Multi-agent diagnostic qualification** — after architecture decision from step 2, not before.
+4. **`DG-001-DECISION-EXECUTION-DIAGNOSTIC-LINEAGE-QUALIFICATION-R1`** — read-composition proof for Decision→Execution operator linkage.
+5. **Further DG-001 closure** — only after results from steps 1–4.
 
 ---
 
 ## 11. Final verdict
 
 ```text
-DG-001 CROSS-SYSTEM DIAGNOSTIC COMPATIBILITY AUDIT R1 = PASS WITH QUALIFICATION DEBT
+DG-001 CROSS-SYSTEM DIAGNOSTIC COMPATIBILITY AUDIT R1 = GAPS_FOUND
 ```
 
-Large parallel changes after DG-001B3 **do not invalidate** Diagnostic Engine identity consumption, canonical runtime event flow, Decision failure-fact ownership, or B3/B4 bootstrap contracts. Qualification debt is confined to **read-side projection proofs** for multi-agent and Decision→Execution lineage — not architectural bypass or competing diagnostics lifecycle.
+Cross-system compatibility for existing **DG-001B3/B4 boundaries remains valid**, but this audit discovered **one real read-side architecture gap** for multi-agent parent/child execution lineage (GAP-R1-01), plus **separate qualification debt** for Decision→Execution operator linkage (GAP-R1-02). Large parallel changes after DG-001B3 do not invalidate Diagnostic Engine identity consumption, canonical runtime event flow, Decision failure-fact ownership, or B3/B4 bootstrap contracts. The multi-agent gap belongs to **Diagnostics read-side integration**, not Execution Engine correctness. No architectural bypass or competing diagnostics lifecycle is required.
 
 ---
 
@@ -182,14 +201,14 @@ Large parallel changes after DG-001B3 **do not invalidate** Diagnostic Engine id
 | -------- | ------------------- | ------------- | ------------------ | ------- |
 | Execution identity | Single authority after NPSC-3C | `identity_authority.py` owns root/child/retry/background minting | Diagnostics consumes, does not mint | **PASS** |
 | Root execution | `ExecutionRuntime` mints root triple | `resolve_root_execution_context` → `mint_root_execution_identity` | Terminal trigger + reconstruction use same IDs | **PASS** |
-| Child execution | Child mints under active parent | `ChildExecutionRunner` → `mint_child_execution_id`, shared `run_id`/`attempt_id` | Events tagged with child `execution_id` in run scope | **QUALIFICATION_REQUIRED** |
+| Child execution | Child mints under active parent | `ChildExecutionRunner` → `mint_child_execution_id`, shared `run_id`/`attempt_id` | Membership via `execution_id` in run scope; direct parent→child edge not in DIAG-2 canonical sources | **GAP** |
 | Retries | Retry mints new `AttemptId` | `mint_retry_attempt_id` in attempt lifecycle | Attempt grouping in reconstruction | **PASS** |
 | Queue/background execution | Transport identity persisted before runtime | `mint_background_transport_identity` + `identity_persistence` + causal evidence | Reconstruction sees transport→execution link | **PASS** |
 | Terminal events | Host task publishes terminal with active identity | `_HostTaskTerminalPublishingDelegate` publishes `run_id`/`attempt_id`/`execution_id` | `TerminalExecutionDiagnosticTrigger` fires on terminal scope | **PASS** |
-| Causal evidence | Transport→execution link | `TRANSPORT_TASK_TRIGGERED_EXECUTION` only | Sufficient for background; no parent→child causal kind | **PASS** |
+| Causal evidence | Transport→execution link | `TRANSPORT_TASK_TRIGGERED_EXECUTION` only | Sufficient for background transport boundary; no parent→child execution relation — decision deferred to GAP-R1-01 | **GAP (lineage subset)** |
 | Decision failure facts | Decision owns meaning, not Problem lifecycle | `CompletionReconciliationDiagnostic` is typed exception payload; no Problem store | No competing diagnostics lifecycle | **PASS** |
 | Decision→Execution lineage | Separate identity domains with binding | `DecisionExecutionLineage` on `DecisionIdentity`; projection preserves `source_decision_identity` | Join not yet qualified in DiagnosticReadService | **QUALIFICATION_REQUIRED** |
-| Multi-agent fan-out | Parent + N children under coordination | `CoordinationIntentExecutor` + `ChildExecutionRunner`; FAN_OUT via `BoundedMultiAgentFanOutService` | Raw events sufficient; tree projection unqualified | **QUALIFICATION_REQUIRED** |
+| Multi-agent fan-out | Parent + N children under coordination | `CoordinationIntentExecutor` + `ChildExecutionRunner`; runtime `ExecutionTreeRecorder` / checkpoint truth exists | DIAG-2 canonical read sources lack direct parent→child lineage; architecture decision before qualification | **GAP** |
 | Diagnostic read composition | One spine, no Nexus fallback | `diagnostic_read_wiring.py` → harness host `RuntimeEventPersistence` + shared causal/Problem stores | Legacy Nexus read fallback absent — positive | **PASS** |
 | DG-001B pre-B5 | Bootstrap failure before canonical execution | `HostedBootstrapFailureRecord` unchanged in role; orthogonal to ExecutionRuntime | No regression from parallel system changes | **VALID** |
 
