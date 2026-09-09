@@ -55,8 +55,8 @@ def _signals(**overrides: object) -> AiIncidentQualificationRunSignals:
         "reconciliation_result": "UNRESOLVED",
         "critic_verdict_passed": True,
         "evaluator_passed": False,
-        "evaluator_failures": ("tool_runtime_not_exercised",),
-        "validation_error_categories": ("tool_runtime_not_exercised",),
+        "evaluator_failures": ("staffing_attendance_not_gathered",),
+        "validation_error_categories": ("staffing_attendance_not_gathered",),
         "strict_tool_capability": True,
         "trace_readback_pass": True,
         "trace_event_count": 3,
@@ -69,7 +69,7 @@ def _signals(**overrides: object) -> AiIncidentQualificationRunSignals:
 
 def _model_fail_outcome(run_index: int) -> AiIncidentQualificationRunOutcome:
     observation = observation_from_ai_incident_evaluation(
-        failures=("tool_runtime_not_exercised",),
+        failures=("staffing_attendance_not_gathered",),
         evaluator_passed=False,
     )
     run_id = mint_run_id()
@@ -84,7 +84,7 @@ def _model_fail_outcome(run_index: int) -> AiIncidentQualificationRunOutcome:
             observation=observation,
             evaluator_passed=False,
         ),
-        block_reason="tool_runtime_not_exercised",
+        block_reason="staffing_attendance_not_gathered",
     )
 
 
@@ -246,7 +246,7 @@ async def test_artifact_serialization_and_provenance(tmp_path: Path) -> None:
 
 def test_consistency_rule_rejects_contradiction() -> None:
     observation = observation_from_ai_incident_evaluation(
-        failures=("tool_runtime_not_exercised",),
+        failures=("staffing_attendance_not_gathered",),
         evaluator_passed=False,
     )
     run_result = build_decision_qualification_run_result(

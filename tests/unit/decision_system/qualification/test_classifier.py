@@ -52,17 +52,17 @@ def _base_observation(**overrides: object) -> DecisionQualificationObservation:
     return DecisionQualificationObservation(**defaults)  # type: ignore[arg-type]
 
 
-def test_case_a_tool_runtime_not_exercised() -> None:
+def test_case_a_tool_runtime_not_exercised_is_not_tool_use_deficiency() -> None:
     observation = observation_from_ai_incident_evaluation(
         failures=("tool_runtime_not_exercised",),
         evaluator_passed=False,
     )
     result = classify_decision_failure(observation)
     assert result is not None
-    assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
-    assert result.reason is DecisionFailureReason.TOOL_USE_DEFICIENCY
-    assert result.owner is DecisionFailureOwner.MODEL
-    assert result.diagnostic_code is DecisionFailureDiagnosticCode.MODEL_TOOL_USE_DEFICIENCY
+    assert result.category is DecisionFailureCategory.UNCLASSIFIED
+    assert result.reason is DecisionFailureReason.UNCLASSIFIED
+    assert result.owner is DecisionFailureOwner.DECISION_SYSTEM
+    assert result.diagnostic_code is DecisionFailureDiagnosticCode.UNCLASSIFIED
 
 
 def test_case_b_epistemic_contradiction_platform_enforcement_pass() -> None:

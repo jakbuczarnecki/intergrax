@@ -33,9 +33,9 @@ def _run_from_ai_incident(*failures: str):
 
 def test_ds_e2e_14_1b_five_run_replay() -> None:
     run_results = (
-        _run_from_ai_incident("tool_runtime_not_exercised"),
-        _run_from_ai_incident("tool_runtime_not_exercised"),
-        _run_from_ai_incident("tool_runtime_not_exercised"),
+        _run_from_ai_incident("staffing_attendance_not_gathered"),
+        _run_from_ai_incident("staffing_attendance_not_gathered"),
+        _run_from_ai_incident("staffing_attendance_not_gathered"),
         _run_from_ai_incident("unsupported_inference:unresolved_with_supported_diagnosis"),
         _run_from_ai_incident("unsupported_inference:unresolved_with_supported_diagnosis"),
     )
@@ -53,7 +53,9 @@ def test_ds_e2e_14_1b_five_run_replay() -> None:
 
 
 def test_reliability_aggregation_five_model_failures() -> None:
-    run_results = tuple(_run_from_ai_incident("tool_runtime_not_exercised") for _ in range(3)) + tuple(
+    run_results = tuple(
+        _run_from_ai_incident("staffing_attendance_not_gathered") for _ in range(3)
+    ) + tuple(
         _run_from_ai_incident("unsupported_inference:unresolved_with_supported_diagnosis")
         for _ in range(2)
     )
@@ -72,7 +74,7 @@ def test_mixed_failure_counts_stay_separated() -> None:
         ),
         evaluator_passed=True,
     )
-    model_tool_fail = _run_from_ai_incident("tool_runtime_not_exercised")
+    model_tool_fail = _run_from_ai_incident("staffing_attendance_not_gathered")
     model_epistemic_fail = _run_from_ai_incident(
         "unsupported_inference:unresolved_with_supported_diagnosis"
     )
@@ -129,11 +131,11 @@ def test_zero_division_returns_none_rates() -> None:
 
 
 def test_model_failure_reasons_are_counted_via_run_axes() -> None:
-    tool_fail = _run_from_ai_incident("tool_runtime_not_exercised")
+    evidence_fail = _run_from_ai_incident("staffing_attendance_not_gathered")
     epistemic_fail = _run_from_ai_incident(
         "unsupported_inference:unresolved_with_supported_diagnosis"
     )
-    assert tool_fail.classification is not None
-    assert tool_fail.classification.reason is DecisionFailureReason.TOOL_USE_DEFICIENCY
+    assert evidence_fail.classification is not None
+    assert evidence_fail.classification.reason is DecisionFailureReason.INSUFFICIENT_EVIDENCE_GATHERING
     assert epistemic_fail.classification is not None
     assert epistemic_fail.classification.reason is DecisionFailureReason.EPISTEMIC_CONTRADICTION

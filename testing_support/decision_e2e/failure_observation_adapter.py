@@ -21,14 +21,8 @@ from intergrax.decision_system.qualification.taxonomy import DecisionFailureBoun
 AI_INCIDENT_EPISTEMIC_FAILURE_ID = (
     "unsupported_inference:unresolved_with_supported_diagnosis"
 )
-AI_INCIDENT_TOOL_USE_FAILURE_ID = "tool_runtime_not_exercised"
+AI_INCIDENT_DIAGNOSTIC_TOOL_TRACE_FAILURE_ID = "tool_runtime_not_exercised"
 
-AI_INCIDENT_TOOL_USE_FAILURE_IDS: frozenset[str] = frozenset(
-    {
-        AI_INCIDENT_TOOL_USE_FAILURE_ID,
-        "follow_up_not_via_tools",
-    }
-)
 AI_INCIDENT_INSUFFICIENT_EVIDENCE_FAILURE_IDS: frozenset[str] = frozenset(
     {
         "staffing_attendance_not_gathered",
@@ -44,6 +38,7 @@ AI_INCIDENT_REVISION_FLOW_FAILURE_IDS: frozenset[str] = frozenset(
         "failed_critic_verdict_missing",
         "evidence_challenge_missing",
         "bounded_recovery_missing",
+        "follow_up_not_via_tools",
     }
 )
 AI_INCIDENT_EPISTEMIC_FAILURE_IDS: frozenset[str] = frozenset(
@@ -58,11 +53,6 @@ def _model_behavior_from_ai_incident_failures(
     failures: tuple[str, ...],
 ) -> ModelBehaviorQualificationSignal:
     failure_set = frozenset(failures)
-    if failure_set.intersection(AI_INCIDENT_TOOL_USE_FAILURE_IDS):
-        return ModelBehaviorQualificationSignal(
-            tool_use_deficiency=True,
-            behavior_boundary=DecisionFailureBoundary.TOOL_DISPATCH,
-        )
     if failure_set.intersection(AI_INCIDENT_INSUFFICIENT_EVIDENCE_FAILURE_IDS):
         return ModelBehaviorQualificationSignal(
             insufficient_evidence_gathering=True,

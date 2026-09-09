@@ -35,7 +35,7 @@ def _model_fail_run() -> DecisionQualificationRunResult:
     return build_decision_qualification_run_result(
         run_id=mint_run_id(),
         observation=observation_from_ai_incident_evaluation(
-            failures=("tool_runtime_not_exercised",),
+            failures=("staffing_attendance_not_gathered",),
             evaluator_passed=False,
         ),
         evaluator_passed=False,
