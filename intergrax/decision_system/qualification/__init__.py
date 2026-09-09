@@ -3,6 +3,10 @@
 
 """Decision qualification failure taxonomy and reliability contracts (DS-E2E-14.3)."""
 
+from intergrax.decision_system.qualification.axis_outcome import (
+    DecisionQualificationAxisOutcome,
+    derive_axis_outcomes,
+)
 from intergrax.decision_system.qualification.classification import (
     DecisionFailureClassification,
     DecisionFailureClassificationAmbiguityError,
@@ -19,8 +23,10 @@ from intergrax.decision_system.qualification.reliability import (
 )
 from intergrax.decision_system.qualification.run_result import (
     DecisionQualificationRunResult,
+    DecisionQualificationRunResultConsistencyError,
     build_decision_qualification_run_result,
     category_from_run_result,
+    validate_run_result_axis_consistency,
 )
 from intergrax.decision_system.qualification.serialization import (
     classification_to_dict,
@@ -60,8 +66,10 @@ __all__ = [
     "DecisionFailureDiagnosticCode",
     "DecisionFailureOwner",
     "DecisionFailureReason",
+    "DecisionQualificationAxisOutcome",
     "DecisionQualificationObservation",
     "DecisionQualificationRunResult",
+    "DecisionQualificationRunResultConsistencyError",
     "DecisionReliabilitySummary",
     "DecisionRetryability",
     "EnvironmentQualificationSignal",
@@ -74,6 +82,8 @@ __all__ = [
     "boundary_rank",
     "build_decision_qualification_run_result",
     "category_from_run_result",
+    "derive_axis_outcomes",
+    "validate_run_result_axis_consistency",
     "classification_to_dict",
     "classify_decision_failure",
     "earliest_boundary",

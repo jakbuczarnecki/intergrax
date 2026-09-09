@@ -11,6 +11,7 @@ import pytest
 
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.decision_system.qualification.reliability import aggregate_decision_reliability
+from intergrax.decision_system.qualification.axis_outcome import DecisionQualificationAxisOutcome
 from intergrax.decision_system.qualification.run_result import (
     DecisionQualificationRunResult,
     build_decision_qualification_run_result,
@@ -273,8 +274,9 @@ def test_consistency_rule_rejects_contradiction() -> None:
         run_result=DecisionQualificationRunResult(
             run_id=run_result.run_id,
             classification=run_result.classification,
-            platform_contract_passed=True,
-            model_behavior_passed=True,
+            platform_outcome=DecisionQualificationAxisOutcome.PASS,
+            model_outcome=DecisionQualificationAxisOutcome.PASS,
+            evaluator_outcome=DecisionQualificationAxisOutcome.FAIL,
             evaluator_passed=False,
         ),
         signals=_signals(),
@@ -290,6 +292,7 @@ def test_summary_contains_evaluator_fail_count() -> None:
         _result_from_outcomes(outcomes, run_count=1),
     )
     assert result["evaluator_fail_count"] == 1
+    assert result["reliability"]["model_evaluable_count"] == 1
 
 
 async def _async_return(value: AiIncidentQualificationRunOutcome) -> AiIncidentQualificationRunOutcome:

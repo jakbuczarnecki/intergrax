@@ -15,6 +15,7 @@ from intergrax.decision_system.qualification.reliability import (
     DecisionReliabilitySummary,
     aggregate_decision_reliability,
 )
+from intergrax.decision_system.qualification.axis_outcome import DecisionQualificationAxisOutcome
 from intergrax.decision_system.qualification.run_result import DecisionQualificationRunResult
 from intergrax.decision_system.qualification.taxonomy import (
     DecisionFailureCategory,
@@ -80,19 +81,19 @@ class DecisionReliabilityQualificationRunRecord:
     def platform_passed(self) -> bool:
         if self.run_result is None:
             return False
-        return self.run_result.platform_contract_passed
+        return self.run_result.platform_outcome is DecisionQualificationAxisOutcome.PASS
 
     @property
     def model_passed(self) -> bool:
         if self.run_result is None:
             return False
-        return self.run_result.model_behavior_passed
+        return self.run_result.model_outcome is DecisionQualificationAxisOutcome.PASS
 
     @property
     def evaluator_passed(self) -> bool:
         if self.run_result is None:
             return False
-        return self.run_result.evaluator_passed
+        return self.run_result.evaluator_outcome is DecisionQualificationAxisOutcome.PASS
 
     @property
     def provider_failed(self) -> bool:
@@ -139,13 +140,19 @@ def validate_run_result_consistency(record: DecisionReliabilityQualificationRunR
     classification = record.run_result.classification
     if classification is None:
         return
-    if classification.is_model_failure and record.run_result.model_behavior_passed:
+    if (
+        classification.is_model_failure
+        and record.run_result.model_outcome is not DecisionQualificationAxisOutcome.FAIL
+    ):
         raise QualificationSessionIntegrityError(
-            f"run {record.run_index}: model failure classification with model_passed=true"
+            f"run {record.run_index}: model failure classification with model_outcome!=FAIL"
         )
-    if classification.is_platform_failure and record.run_result.platform_contract_passed:
+    if (
+        classification.is_platform_failure
+        and record.run_result.platform_outcome is not DecisionQualificationAxisOutcome.FAIL
+    ):
         raise QualificationSessionIntegrityError(
-            f"run {record.run_index}: platform failure classification with platform_passed=true"
+            f"run {record.run_index}: platform failure classification with platform_outcome!=FAIL"
         )
 
 

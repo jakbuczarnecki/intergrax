@@ -33,6 +33,16 @@ def _pct(count: int, total: int) -> str:
     return f"{count / total:.1%}"
 
 
+def _axis_outcome_label(outcome_value: str | None) -> str:
+    if outcome_value is None:
+        return "n/a"
+    if outcome_value == "pass":
+        return "PASS"
+    if outcome_value == "fail":
+        return "FAIL"
+    return "NOT_EVALUABLE"
+
+
 def _run_record_to_dict(
     result: DecisionReliabilityQualificationResult,
     record_index: int,
@@ -85,8 +95,7 @@ def qualification_result_to_summary_dict(
     result: DecisionReliabilityQualificationResult,
 ) -> dict[str, object]:
     summary = result.summary
-    total = summary.total_runs
-    evaluator_fail_count = total - summary.evaluator_pass_count
+    evaluator_fail_count = summary.evaluator_fail_count
     return {
         "qualification_id": result.provenance.qualification_id,
         "git_sha": result.provenance.git_sha,
@@ -165,7 +174,7 @@ def write_qualification_artifacts(
 def render_qualification_report(result: DecisionReliabilityQualificationResult) -> str:
     summary = result.summary
     total = summary.total_runs
-    evaluator_fail = total - summary.evaluator_pass_count
+    evaluator_fail = summary.evaluator_fail_count
     top_failures = top_model_failure_reasons(result.runs)
     lines = [
         "# DS-E2E-14.3b — Model Reliability Qualification",
@@ -187,12 +196,21 @@ def render_qualification_report(result: DecisionReliabilityQualificationResult) 
         "",
         "| Metric | Count / Rate |",
         "|---|---|",
-        f"| Platform pass | {summary.platform_pass_count}/{total} ({_pct(summary.platform_pass_count, total)}) |",
-        f"| Platform fail | {summary.platform_failure_count}/{total} ({_pct(summary.platform_failure_count, total)}) |",
-        f"| Model pass | {summary.model_pass_count}/{total} ({_pct(summary.model_pass_count, total)}) |",
-        f"| Model fail | {summary.model_failure_count}/{total} ({_pct(summary.model_failure_count, total)}) |",
-        f"| Evaluator pass | {summary.evaluator_pass_count}/{total} ({_pct(summary.evaluator_pass_count, total)}) |",
-        f"| Evaluator fail | {evaluator_fail}/{total} ({_pct(evaluator_fail, total)}) |",
+        f"| Platform pass | {summary.platform_pass_count}/{summary.platform_evaluable_count} ({_pct(summary.platform_pass_count, summary.platform_evaluable_count)}) |",
+        f"| Platform fail | {summary.platform_failure_count}/{summary.platform_evaluable_count} ({_pct(summary.platform_failure_count, summary.platform_evaluable_count)}) |",
+        f"| Platform not evaluable | {summary.platform_not_evaluable_count}/{total} |",
+        f"| Platform reliability | {_pct(summary.platform_pass_count, summary.platform_evaluable_count)} |",
+        f"| Platform coverage | {_pct(summary.platform_evaluable_count, total)} |",
+        f"| Model pass | {summary.model_pass_count}/{summary.model_evaluable_count} ({_pct(summary.model_pass_count, summary.model_evaluable_count)}) |",
+        f"| Model fail | {summary.model_failure_count}/{summary.model_evaluable_count} ({_pct(summary.model_failure_count, summary.model_evaluable_count)}) |",
+        f"| Model not evaluable | {summary.model_not_evaluable_count}/{total} |",
+        f"| Model reliability | {_pct(summary.model_pass_count, summary.model_evaluable_count)} |",
+        f"| Model coverage | {_pct(summary.model_evaluable_count, total)} |",
+        f"| Evaluator pass | {summary.evaluator_pass_count}/{summary.evaluator_evaluable_count} ({_pct(summary.evaluator_pass_count, summary.evaluator_evaluable_count)}) |",
+        f"| Evaluator fail | {evaluator_fail}/{summary.evaluator_evaluable_count} ({_pct(evaluator_fail, summary.evaluator_evaluable_count)}) |",
+        f"| Evaluator not evaluable | {summary.evaluator_not_evaluable_count}/{total} |",
+        f"| Evaluator pass rate | {_pct(summary.evaluator_pass_count, summary.evaluator_evaluable_count)} |",
+        f"| Evaluator coverage | {_pct(summary.evaluator_evaluable_count, total)} |",
         f"| Provider infra failures | {summary.provider_infra_failure_count} |",
         f"| Environment failures | {result.environment_failure_count} |",
         f"| Observability gaps | {summary.observability_gap_count} |",
@@ -226,6 +244,13 @@ def render_qualification_report(result: DecisionReliabilityQualificationResult) 
         classification = (
             record.run_result.classification if record.run_result is not None else None
         )
+        platform_label = "n/a"
+        model_label = "n/a"
+        evaluator_label = "n/a"
+        if record.run_result is not None:
+            platform_label = _axis_outcome_label(record.run_result.platform_outcome.value)
+            model_label = _axis_outcome_label(record.run_result.model_outcome.value)
+            evaluator_label = _axis_outcome_label(record.run_result.evaluator_outcome.value)
         tools = ""
         evidence = ""
         stop_reason = ""
@@ -241,9 +266,9 @@ def render_qualification_report(result: DecisionReliabilityQualificationResult) 
                 [
                     str(record.run_index),
                     str(record.run_id) if record.run_id is not None else "n/a",
-                    "PASS" if record.platform_passed else "FAIL",
-                    "PASS" if record.model_passed else "FAIL",
-                    "PASS" if record.evaluator_passed else "FAIL",
+                    platform_label,
+                    model_label,
+                    evaluator_label,
                     classification.category.value if classification else "NONE",
                     classification.reason.value if classification else "",
                     classification.boundary.value if classification else "",
@@ -262,7 +287,7 @@ def render_qualification_report(result: DecisionReliabilityQualificationResult) 
             "",
             "## Historical Comparison",
             "- DS-E2E-14.1b: platform=100%, model=0%",
-            f"- DS-E2E-14.3b: platform={_pct(summary.platform_pass_count, total)}, model={_pct(summary.model_pass_count, total)}",
+            f"- DS-E2E-14.3b: platform={_pct(summary.platform_pass_count, summary.platform_evaluable_count)}, model={_pct(summary.model_pass_count, summary.model_evaluable_count)}",
             "- directional: insufficient evidence for strict statistical comparison at n=20 vs n=5",
             "",
             "## Top Model Failure Modes",
@@ -281,9 +306,9 @@ def render_qualification_report(result: DecisionReliabilityQualificationResult) 
             "## Conclusion",
             f"- QUALIFICATION HARNESS: {'PASS' if harness_pass else 'FAIL'}",
             f"- SESSION COMPLETE: {result.session_complete}",
-            f"- PLATFORM RELIABILITY: {summary.platform_pass_count}/{total}",
-            f"- MODEL RELIABILITY: {summary.model_pass_count}/{total}",
-            f"- EVALUATOR: {summary.evaluator_pass_count}/{total}",
+            f"- PLATFORM RELIABILITY: {summary.platform_pass_count}/{summary.platform_evaluable_count}",
+            f"- MODEL RELIABILITY: {summary.model_pass_count}/{summary.model_evaluable_count}",
+            f"- EVALUATOR PASS RATE: {summary.evaluator_pass_count}/{summary.evaluator_evaluable_count}",
             f"- STATUS: {qualification_status}",
         ]
     )

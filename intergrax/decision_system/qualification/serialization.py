@@ -29,6 +29,9 @@ def classification_to_dict(
 def run_result_to_dict(result: DecisionQualificationRunResult) -> dict[str, object]:
     payload: dict[str, object] = {
         "run_id": str(result.run_id),
+        "platform_outcome": result.platform_outcome.value,
+        "model_outcome": result.model_outcome.value,
+        "evaluator_outcome": result.evaluator_outcome.value,
         "platform_contract_passed": result.platform_contract_passed,
         "model_behavior_passed": result.model_behavior_passed,
         "evaluator_passed": result.evaluator_passed,
@@ -42,15 +45,25 @@ def run_result_to_dict(result: DecisionQualificationRunResult) -> dict[str, obje
 def reliability_summary_to_dict(summary: DecisionReliabilitySummary) -> dict[str, object]:
     return {
         "total_runs": summary.total_runs,
+        "platform_evaluable_count": summary.platform_evaluable_count,
         "platform_pass_count": summary.platform_pass_count,
         "platform_failure_count": summary.platform_failure_count,
+        "platform_not_evaluable_count": summary.platform_not_evaluable_count,
+        "model_evaluable_count": summary.model_evaluable_count,
         "model_pass_count": summary.model_pass_count,
         "model_failure_count": summary.model_failure_count,
+        "model_not_evaluable_count": summary.model_not_evaluable_count,
+        "evaluator_evaluable_count": summary.evaluator_evaluable_count,
         "evaluator_pass_count": summary.evaluator_pass_count,
+        "evaluator_fail_count": summary.evaluator_fail_count,
+        "evaluator_not_evaluable_count": summary.evaluator_not_evaluable_count,
         "provider_infra_failure_count": summary.provider_infra_failure_count,
         "environment_failure_count": summary.environment_failure_count,
         "observability_gap_count": summary.observability_gap_count,
         "platform_reliability": summary.platform_reliability,
         "model_reliability": summary.model_reliability,
         "evaluator_pass_rate": summary.evaluator_pass_rate,
+        "platform_evaluation_coverage": summary.platform_evaluation_coverage,
+        "model_evaluation_coverage": summary.model_evaluation_coverage,
+        "evaluator_evaluation_coverage": summary.evaluator_evaluation_coverage,
     }
