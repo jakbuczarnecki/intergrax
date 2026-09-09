@@ -273,7 +273,7 @@ CoordinationIntentExecutor
 
 ## 8.1 NPSC-5D/R1 — semantic coordination governance admission
 
-**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D **ACTIVE** (R3 remains)
+**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **ready for Final qualification**
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -308,7 +308,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 ## 8.2 NPSC-5D/R2 — physical delegation governance admission
 
-**Status:** NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D **ACTIVE** (R3 remains)
+**Status:** NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **ready for Final qualification**
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -335,13 +335,19 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 **Qualification:** [`NPSC_5D_R2_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R2_FINAL_QUALIFICATION_AND_FREEZE.md)
 
-**Deferred to R3:** Execution pause, HITL runtime, human approval, resume, child Execution continuation. Future human approval must bind the exact continuation identity — no re-selection.
+**R3 delivered:** canonical HITL pause/approval/grant/resume bound to exact `PhysicalDelegationGovernedContinuation` — no re-selection. See §8.2.2.
 
 **Distinction from R1:** R1 `REQUIRE_HUMAN` is semantic coordination admission (`CoordinationGovernanceRequiresHuman`); R2-H1 is exact selected physical delegation (`PhysicalDelegationGovernedContinuation`).
 
-### 8.2.2 NPSC-5D/R3-H1 — truthful resume provenance and Nexus exact slot continuation
+### 8.2.2 NPSC-5D/R3 — canonical HITL governed continuation
 
-**Status:** R3-H1 active — governed resume without synthetic selection; Nexus-owned exact fan-out slot continuation.
+**Status:** NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **ready for Final qualification**
+
+**Qualification:** [`NPSC_5D_R3_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R3_FINAL_QUALIFICATION_AND_FREEZE.md)
+
+#### 8.2.2.1 NPSC-5D/R3-H1 — truthful resume provenance and Nexus exact slot continuation
+
+**Status:** R3-H1 incorporated into R3 freeze — governed resume without synthetic selection; Nexus-owned exact fan-out slot continuation.
 
 | Artifact | Package | Responsibility |
 | -------- | ------- | -------------- |
@@ -366,7 +372,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
 | **NPSC-5B** | Bounded fan-out / fan-in (**FROZEN / PASS**) |
 | **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
-| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 **FROZEN / PASS**; R2 **FROZEN / PASS**; R3 remains) |
+| **NPSC-5D** | Multi-agent governance (**ready for Final qualification** — R1/R2/R3 **FROZEN / PASS**) |
 | **NPSC-5E** | Retry / checkpoint / recovery |
 | **NPSC-5F** | Audit / observability hooks expansion |
 
