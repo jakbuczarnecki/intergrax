@@ -26,16 +26,27 @@ from intergrax.agent_distribution.coordination_intent import (
     validate_coordination_intent,
     validate_coordination_intent_id,
 )
+from intergrax.agent_distribution.capability_matching import (
+    CapabilityId,
+    build_agent_capability_requirement,
+)
 from intergrax.agent_distribution.task_capability_resolution import (
+    AgentDistributionCapabilityNeed,
+    AgentDistributionCapabilityNeedKind,
+    TaskCapabilityResolutionContractError,
     build_task_capability_resolution_request,
+    resolved_agent_distribution_capability_need,
+    unresolved_agent_distribution_capability_need,
 )
 from tests.unit.agent_distribution.test_delegated_subtasks import OcrRequest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-def _capability_requirement(task_kind: str = "document.ocr"):
-    return build_task_capability_resolution_request(task_kind=task_kind)
+def _capability_need(task_kind: str = "document.ocr"):
+    return unresolved_agent_distribution_capability_need(
+        build_task_capability_resolution_request(task_kind=task_kind),
+    )
 
 
 def _contribution(
@@ -46,7 +57,7 @@ def _contribution(
     return CoordinationContribution(
         contribution_id=CoordinationContributionId(contribution_id),
         payload=OcrRequest(document_ref=document_ref),
-        capability_requirement=_capability_requirement(),
+        capability_need=_capability_need(),
     )
 
 
@@ -248,3 +259,48 @@ def test_coordination_contribution_has_no_physical_agent_fields() -> None:
         "lease_id",
     }
     assert forbidden.isdisjoint(fields)
+
+
+def test_resolved_capability_need_accepts_multiple_capabilities() -> None:
+    requirement = build_agent_capability_requirement(
+        required=("invoice_ocr", "document.read"),
+        optional=("citation.generate",),
+    )
+    contribution = CoordinationContribution(
+        contribution_id=CoordinationContributionId("contrib-resolved"),
+        payload=OcrRequest(document_ref="doc-resolved"),
+        capability_need=resolved_agent_distribution_capability_need(requirement),
+    )
+    assert contribution.capability_need.kind is (
+        AgentDistributionCapabilityNeedKind.RESOLVED_REQUIREMENT
+    )
+    assert contribution.capability_need.resolved_requirement == requirement
+
+
+def test_decision_compatible_capability_id_projects_to_canonical_requirement() -> None:
+    decision_capability_id = "invoice_ocr"
+    requirement = build_agent_capability_requirement(required=(decision_capability_id,))
+    need = resolved_agent_distribution_capability_need(requirement)
+    required_ids = {
+        item.value for item in need.resolved_requirement.required_capability_ids
+    }
+    assert required_ids == {decision_capability_id}
+    assert CapabilityId(value=decision_capability_id) in (
+        need.resolved_requirement.required_capability_ids
+    )
+
+
+def test_capability_need_rejects_mixed_variant_payload() -> None:
+    with pytest.raises(
+        TaskCapabilityResolutionContractError,
+        match="unresolved_task capability need must not set resolved_requirement",
+    ):
+        AgentDistributionCapabilityNeed(
+            kind=AgentDistributionCapabilityNeedKind.UNRESOLVED_TASK,
+            unresolved_task=build_task_capability_resolution_request(
+                task_kind="document.ocr",
+            ),
+            resolved_requirement=build_agent_capability_requirement(
+                required=("document.ocr",),
+            ),
+        )

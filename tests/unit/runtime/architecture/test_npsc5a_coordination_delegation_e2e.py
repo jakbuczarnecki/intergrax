@@ -17,6 +17,7 @@ from intergrax.agent_distribution.multi_agent_coordination import (
 )
 from intergrax.agent_distribution.task_capability_resolution import (
     build_task_capability_resolution_request,
+    unresolved_agent_distribution_capability_need,
 )
 from intergrax.agent_distribution.task_scoped_agents import TaskScopedAgentLeaseId
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
@@ -90,8 +91,8 @@ async def test_npsc5a_end_to_end_coordination_delegation_proof() -> None:
                     application_id=_APP,
                     application_environment_id=_ENV,
                     lease_id=TaskScopedAgentLeaseId("lease-e2e"),
-                    capability_resolution_request=build_task_capability_resolution_request(
-                        task_kind="document.ocr",
+                    capability_need=unresolved_agent_distribution_capability_need(
+                        build_task_capability_resolution_request(task_kind="document.ocr"),
                     ),
                 ),
                 delegation=CoordinationDelegation(payload=request),

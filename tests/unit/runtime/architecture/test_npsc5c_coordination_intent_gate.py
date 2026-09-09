@@ -191,6 +191,46 @@ def test_npsc5c_contribution_binding_requires_contribution_id() -> None:
     )
 
 
+def _task_kind_fake_capability_mapping_calls(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not (
+            isinstance(node.func, ast.Name)
+            and node.func.id == "TaskKind"
+        ):
+            continue
+        if not node.args:
+            continue
+        argument = node.args[0]
+        if not isinstance(argument, ast.Name):
+            continue
+        if argument.id in {"capability_id", "decision_capability_id"}:
+            lineno = getattr(node, "lineno", 0)
+            violations.append(
+                f"{path.relative_to(_REPO_ROOT).as_posix()}:{lineno}",
+            )
+    return violations
+
+
+@pytest.mark.gate
+def test_npsc5c_no_fake_task_kind_capability_mapping() -> None:
+    intent_path = _REPO_ROOT / "intergrax" / "agent_distribution" / "coordination_intent.py"
+    executor_path = (
+        _REPO_ROOT / "intergrax" / "agent_distribution" / "coordination_intent_executor.py"
+    )
+    violations = [
+        *(_task_kind_fake_capability_mapping_calls(intent_path)),
+        *(_task_kind_fake_capability_mapping_calls(executor_path)),
+    ]
+    assert violations == [], (
+        "NPSC-5C modules must not map capability_id to TaskKind:\n"
+        + "\n".join(violations)
+    )
+
+
 @pytest.mark.gate
 def test_npsc5c_executor_does_not_zip_bindings_by_position() -> None:
     executor_path = (

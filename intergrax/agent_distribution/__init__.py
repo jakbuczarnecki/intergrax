@@ -178,6 +178,8 @@ from intergrax.agent_distribution.task_scoped_agents import (
     binding_requires_runtime_release,
 )
 from intergrax.agent_distribution.task_capability_resolution import (
+    AgentDistributionCapabilityNeed,
+    AgentDistributionCapabilityNeedKind,
     CapabilityRequirementKind,
     DETERMINISTIC_MAPPING_RESOLVER_ID,
     DeterministicTaskCapabilityResolver,
@@ -199,6 +201,9 @@ from intergrax.agent_distribution.task_capability_resolution import (
     build_deterministic_task_capability_resolver,
     build_task_capability_resolution_request,
     build_task_capability_rule,
+    materialize_agent_capability_requirement,
+    resolved_agent_distribution_capability_need,
+    unresolved_agent_distribution_capability_need,
 )
 from intergrax.agent_distribution.binding_service import BindingService
 from intergrax.agent_distribution.capability_matching import (
@@ -475,6 +480,8 @@ __all__ = [
     "TaskCapabilityEvidenceRationaleCategory",
     "TaskCapabilityResolutionConflict",
     "TaskCapabilityResolutionContractError",
+    "AgentDistributionCapabilityNeed",
+    "AgentDistributionCapabilityNeedKind",
     "TaskCapabilityResolutionError",
     "TaskCapabilityResolutionNoMatch",
     "TaskCapabilityResolutionRequest",
@@ -722,6 +729,9 @@ __all__ = [
     "build_candidate_dependency_specification",
     "build_deterministic_task_capability_resolver",
     "build_task_capability_resolution_request",
+    "materialize_agent_capability_requirement",
+    "resolved_agent_distribution_capability_need",
+    "unresolved_agent_distribution_capability_need",
     "build_task_capability_rule",
     "merge_federated_candidates",
     "normalize_discovery_candidates",

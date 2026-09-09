@@ -19,7 +19,7 @@ from intergrax.agent_distribution.bounded_multi_agent_fanout import (
 )
 from intergrax.agent_distribution.multi_agent_coordination import CoordinationPolicy
 from intergrax.agent_distribution.task_capability_resolution import (
-    TaskCapabilityResolutionRequest,
+    AgentDistributionCapabilityNeed,
 )
 
 MIN_FAN_OUT_CONTRIBUTIONS: Final = 2
@@ -69,7 +69,7 @@ class CoordinationContribution(Generic[RequestT]):
 
     contribution_id: CoordinationContributionId
     payload: RequestT
-    capability_requirement: TaskCapabilityResolutionRequest
+    capability_need: AgentDistributionCapabilityNeed
     policy: CoordinationPolicy = CoordinationPolicy()
 
 

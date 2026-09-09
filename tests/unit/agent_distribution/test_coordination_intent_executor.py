@@ -38,6 +38,7 @@ from intergrax.agent_distribution.multi_agent_coordination import (
 )
 from intergrax.agent_distribution.task_capability_resolution import (
     build_task_capability_resolution_request,
+    unresolved_agent_distribution_capability_need,
 )
 from intergrax.agent_distribution.task_scoped_agents import TaskScopedAgentLeaseId
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
@@ -349,8 +350,10 @@ async def test_single_end_to_end_through_coordination_intent_executor() -> None:
                         CoordinationContribution(
                             contribution_id=CoordinationContributionId("contrib-e2e"),
                             payload=request,
-                            capability_requirement=build_task_capability_resolution_request(
-                                task_kind="document.ocr",
+                            capability_need=unresolved_agent_distribution_capability_need(
+                                build_task_capability_resolution_request(
+                                    task_kind="document.ocr",
+                                ),
                             ),
                         ),
                     ),

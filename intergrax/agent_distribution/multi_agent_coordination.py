@@ -34,7 +34,7 @@ from intergrax.agent_distribution.delegated_subtasks import (
 )
 from intergrax.agent_distribution.errors import AgentDistributionError
 from intergrax.agent_distribution.task_capability_resolution import (
-    TaskCapabilityResolutionRequest,
+    AgentDistributionCapabilityNeed,
 )
 from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopedAgentLeaseId,
@@ -188,7 +188,7 @@ class CoordinationRequest(BaseModel):
     application_id: str = _NON_EMPTY
     application_environment_id: str = _NON_EMPTY
     lease_id: TaskScopedAgentLeaseId
-    capability_resolution_request: TaskCapabilityResolutionRequest
+    capability_need: AgentDistributionCapabilityNeed
     policy: CoordinationPolicy = CoordinationPolicy()
 
     @field_validator("coordination_id", mode="before")
@@ -280,7 +280,7 @@ def build_delegated_subtask_request(
         application_id=request.application_id,
         application_environment_id=request.application_environment_id,
         lease_id=request.lease_id,
-        capability_resolution_request=request.capability_resolution_request,
+        capability_need=request.capability_need,
     )
 
 

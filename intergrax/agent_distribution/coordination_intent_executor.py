@@ -159,7 +159,7 @@ def _materialize_coordination_request(
         application_id=binding.application_id,
         application_environment_id=binding.application_environment_id,
         lease_id=contribution_binding.lease_id,
-        capability_resolution_request=contribution.capability_requirement,
+        capability_need=contribution.capability_need,
         policy=contribution.policy,
     )
 

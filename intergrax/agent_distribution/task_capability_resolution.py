@@ -30,6 +30,9 @@ SCHEMA_TASK_CAPABILITY_EVIDENCE_V1: Final = "task_capability_evidence.v1"
 SCHEMA_TASK_CAPABILITY_RESOLUTION_RESULT_V1: Final = (
     "task_capability_resolution_result.v1"
 )
+SCHEMA_AGENT_DISTRIBUTION_CAPABILITY_NEED_V1: Final = (
+    "agent_distribution_capability_need.v1"
+)
 
 
 def _strip_required(value: str) -> str:
@@ -182,6 +185,92 @@ class TaskCapabilityResolutionResult(BaseModel):
     request: TaskCapabilityResolutionRequest
     capability_requirement: AgentCapabilityRequirement
     evidence: tuple[TaskCapabilityEvidence, ...]
+
+
+class AgentDistributionCapabilityNeedKind(StrEnum):
+    """Discriminates unresolved task intent from resolved capability authority."""
+
+    UNRESOLVED_TASK = "unresolved_task"
+    RESOLVED_REQUIREMENT = "resolved_requirement"
+
+
+class AgentDistributionCapabilityNeed(BaseModel):
+    """Typed capability authority source — request-to-resolve or already resolved."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = SCHEMA_AGENT_DISTRIBUTION_CAPABILITY_NEED_V1
+    kind: AgentDistributionCapabilityNeedKind
+    unresolved_task: TaskCapabilityResolutionRequest | None = None
+    resolved_requirement: AgentCapabilityRequirement | None = None
+
+    @model_validator(mode="after")
+    def _validate_variant_payload(self) -> AgentDistributionCapabilityNeed:
+        if self.kind is AgentDistributionCapabilityNeedKind.UNRESOLVED_TASK:
+            if self.unresolved_task is None:
+                raise TaskCapabilityResolutionContractError(
+                    "unresolved_task capability need requires unresolved_task payload",
+                )
+            if self.resolved_requirement is not None:
+                raise TaskCapabilityResolutionContractError(
+                    "unresolved_task capability need must not set resolved_requirement",
+                )
+            return self
+        if self.kind is AgentDistributionCapabilityNeedKind.RESOLVED_REQUIREMENT:
+            if self.resolved_requirement is None:
+                raise TaskCapabilityResolutionContractError(
+                    "resolved_requirement capability need requires resolved_requirement payload",
+                )
+            if self.unresolved_task is not None:
+                raise TaskCapabilityResolutionContractError(
+                    "resolved_requirement capability need must not set unresolved_task",
+                )
+            return self
+        raise TaskCapabilityResolutionContractError(
+            f"unsupported AgentDistributionCapabilityNeedKind: {self.kind!r}",
+        )
+
+
+def unresolved_agent_distribution_capability_need(
+    request: TaskCapabilityResolutionRequest,
+) -> AgentDistributionCapabilityNeed:
+    """Wrap stage-A task intent for downstream task→capability resolution."""
+    return AgentDistributionCapabilityNeed(
+        kind=AgentDistributionCapabilityNeedKind.UNRESOLVED_TASK,
+        unresolved_task=request,
+    )
+
+
+def resolved_agent_distribution_capability_need(
+    requirement: AgentCapabilityRequirement,
+) -> AgentDistributionCapabilityNeed:
+    """Wrap stage-B canonical capability authority without re-resolution."""
+    return AgentDistributionCapabilityNeed(
+        kind=AgentDistributionCapabilityNeedKind.RESOLVED_REQUIREMENT,
+        resolved_requirement=requirement,
+    )
+
+
+def materialize_agent_capability_requirement(
+    capability_need: AgentDistributionCapabilityNeed,
+    *,
+    resolver: TaskCapabilityResolver,
+) -> tuple[TaskCapabilityResolutionResult | None, AgentCapabilityRequirement]:
+    """Resolve unresolved task intent or return pre-resolved canonical authority."""
+    if capability_need.kind is AgentDistributionCapabilityNeedKind.RESOLVED_REQUIREMENT:
+        requirement = capability_need.resolved_requirement
+        if requirement is None:
+            raise TaskCapabilityResolutionContractError(
+                "resolved_requirement capability need missing resolved_requirement payload",
+            )
+        return None, requirement
+    request = capability_need.unresolved_task
+    if request is None:
+        raise TaskCapabilityResolutionContractError(
+            "unresolved_task capability need missing unresolved_task payload",
+        )
+    capability_resolution = resolver.resolve(request)
+    return capability_resolution, capability_resolution.capability_requirement
 
 
 class TaskCapabilityRule(BaseModel):

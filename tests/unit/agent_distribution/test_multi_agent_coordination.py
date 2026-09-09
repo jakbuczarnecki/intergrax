@@ -32,6 +32,7 @@ from intergrax.agent_distribution.multi_agent_coordination import (
 )
 from intergrax.agent_distribution.task_capability_resolution import (
     build_task_capability_resolution_request,
+    unresolved_agent_distribution_capability_need,
 )
 from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopedAgentLeaseId,
@@ -97,8 +98,8 @@ def _coordination_request(
         application_id=_APP,
         application_environment_id=_ENV,
         lease_id=TaskScopedAgentLeaseId(lease_id),
-        capability_resolution_request=build_task_capability_resolution_request(
-            task_kind=task_kind,
+        capability_need=unresolved_agent_distribution_capability_need(
+            build_task_capability_resolution_request(task_kind=task_kind),
         ),
     )
 
@@ -168,8 +169,8 @@ def test_coordination_request_rejects_empty_coordination_id() -> None:
             application_id=_APP,
             application_environment_id=_ENV,
             lease_id=TaskScopedAgentLeaseId("lease-1"),
-            capability_resolution_request=build_task_capability_resolution_request(
-                task_kind="document.ocr",
+            capability_need=unresolved_agent_distribution_capability_need(
+                build_task_capability_resolution_request(task_kind="document.ocr"),
             ),
         )
 
@@ -184,8 +185,8 @@ def test_coordination_request_rejects_invalid_delegation_id() -> None:
             application_id=_APP,
             application_environment_id=_ENV,
             lease_id=TaskScopedAgentLeaseId("lease-1"),
-            capability_resolution_request=build_task_capability_resolution_request(
-                task_kind="document.ocr",
+            capability_need=unresolved_agent_distribution_capability_need(
+                build_task_capability_resolution_request(task_kind="document.ocr"),
             ),
         )
 

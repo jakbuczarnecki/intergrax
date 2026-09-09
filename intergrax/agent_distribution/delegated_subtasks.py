@@ -34,10 +34,11 @@ from intergrax.agent_distribution.dynamic_acquisition import (
 )
 from intergrax.agent_distribution.errors import AgentDistributionError
 from intergrax.agent_distribution.task_capability_resolution import (
+    AgentDistributionCapabilityNeed,
     TaskCapabilityResolutionError,
-    TaskCapabilityResolutionRequest,
     TaskCapabilityResolutionResult,
     TaskCapabilityResolver,
+    materialize_agent_capability_requirement,
 )
 from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopedAgentAcquisitionRequest,
@@ -165,7 +166,7 @@ class DelegatedSubtaskRequest(BaseModel):
     application_id: str = _NON_EMPTY
     application_environment_id: str = _NON_EMPTY
     lease_id: TaskScopedAgentLeaseId
-    capability_resolution_request: TaskCapabilityResolutionRequest
+    capability_need: AgentDistributionCapabilityNeed
 
     @field_validator("delegation_id", mode="before")
     @classmethod
@@ -225,7 +226,7 @@ class DelegatedSubtaskResult(Generic[ResultT]):
 
     delegation_id: DelegationId
     task_scope_id: TaskScopeId
-    capability_resolution: TaskCapabilityResolutionResult
+    capability_resolution: TaskCapabilityResolutionResult | None
     capability_requirement: AgentCapabilityRequirement
     match_results: tuple[CapabilityMatchResult, ...]
     selection_decision: AgentSelectionDecision
@@ -425,15 +426,14 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
             )
 
         try:
-            capability_resolution = self._capability_resolver.resolve(
-                request.capability_resolution_request,
+            capability_resolution, requirement = materialize_agent_capability_requirement(
+                request.capability_need,
+                resolver=self._capability_resolver,
             )
         except TaskCapabilityResolutionError as exc:
             raise DelegatedSubtaskResolutionError(
                 "task capability resolution failed",
             ) from exc
-
-        requirement = capability_resolution.capability_requirement
         try:
             discovery_result = self._discovery.discover(
                 AgentDiscoveryRequest(requirement=requirement),

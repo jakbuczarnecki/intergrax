@@ -68,6 +68,7 @@ from intergrax.agent_distribution.runtime_revision_service import RuntimeRevisio
 from intergrax.agent_distribution.task_capability_resolution import (
     build_deterministic_task_capability_resolver,
     build_task_capability_resolution_request,
+    unresolved_agent_distribution_capability_need,
     build_task_capability_rule,
 )
 from intergrax.agent_distribution.task_scoped_agents import (
@@ -495,8 +496,8 @@ def _delegated_request(
         application_id=_APP,
         application_environment_id=_ENV,
         lease_id=TaskScopedAgentLeaseId(lease_id),
-        capability_resolution_request=build_task_capability_resolution_request(
-            task_kind="document.ocr",
+        capability_need=unresolved_agent_distribution_capability_need(
+            build_task_capability_resolution_request(task_kind="document.ocr"),
         ),
     )
 
