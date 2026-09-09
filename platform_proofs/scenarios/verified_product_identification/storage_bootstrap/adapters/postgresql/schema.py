@@ -96,10 +96,7 @@ def create_table_ddl(spec: RelationalTableSpec) -> Composable:
 
 def create_identifier_table_ddl(spec: IdentifierTableSpec) -> Composable:
     _, _, _, sql = import_psycopg()
-    qualified = sql.SQL("{}.{}").format(
-        sql.Identifier(spec.schema_name),
-        sql.Identifier(spec.table_name),
-    )
+    qualified = qualified_identifier_table(spec)
     return sql.SQL(
         """
         CREATE TABLE IF NOT EXISTS {table} (
@@ -127,10 +124,7 @@ def create_identifier_table_ddl(spec: IdentifierTableSpec) -> Composable:
 
 def create_identifier_lookup_index_ddl(spec: IdentifierTableSpec) -> Composable:
     _, _, _, sql = import_psycopg()
-    qualified = sql.SQL("{}.{}").format(
-        sql.Identifier(spec.schema_name),
-        sql.Identifier(spec.table_name),
-    )
+    qualified = qualified_identifier_table(spec)
     return sql.SQL(
         """
         CREATE INDEX IF NOT EXISTS {index_name}
@@ -140,6 +134,59 @@ def create_identifier_lookup_index_ddl(spec: IdentifierTableSpec) -> Composable:
         index_name=sql.Identifier(_IDENTIFIER_LOOKUP_INDEX_NAME),
         table=qualified,
     )
+
+
+def qualified_identifier_table(spec: IdentifierTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL("{}.{}").format(
+        sql.Identifier(spec.schema_name),
+        sql.Identifier(spec.table_name),
+    )
+
+
+def identifier_insert_dml(spec: IdentifierTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        INSERT INTO {table} (
+            catalog_id,
+            offer_id,
+            source_revision_norm,
+            source_revision,
+            identifier_type,
+            source_value,
+            normalized_value,
+            source_field
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+        """
+    ).format(table=qualified_identifier_table(spec))
+
+
+def identifier_lookup_dml(spec: IdentifierTableSpec) -> Composable:
+    _, _, _, sql = import_psycopg()
+    return sql.SQL(
+        """
+        SELECT
+            catalog_id,
+            offer_id,
+            source_revision_norm,
+            source_revision,
+            identifier_type,
+            source_value,
+            normalized_value,
+            source_field
+        FROM {table}
+        WHERE identifier_type = %s
+          AND normalized_value = %s
+        ORDER BY
+            catalog_id ASC,
+            offer_id ASC,
+            source_revision_norm ASC
+        LIMIT %s
+        """
+    ).format(table=qualified_identifier_table(spec))
 
 
 def verify_table_compatible(session: PostgreSQLSession, spec: RelationalTableSpec) -> None:

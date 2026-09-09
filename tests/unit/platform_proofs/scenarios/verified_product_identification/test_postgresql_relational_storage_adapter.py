@@ -41,6 +41,9 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     PostgreSqlBootstrapOperationError,
     PostgreSqlBootstrapSchemaError,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
+    IdentifierTableSpec,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
     StoredRelationalRow,
     stored_relational_row_from_fetched_row,
@@ -188,7 +191,7 @@ class _FakeConnection:
 
     def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
         self.executed.append((sql, params))
-        sql_text = str(sql).lower()
+        sql_text = _executed_sql_text(sql).lower()
         if "set transaction isolation level" in sql_text:
             self._begin_snapshot()
             return _FakeCursor()
@@ -218,7 +221,11 @@ class _FakeConnection:
             else:
                 constraints = self.schema_constraints
             return _FakeCursor(_rows=constraints)
-        if "insert into" in sql_text and "vpi_product_identifiers" in sql_text and params:
+        if (
+            "insert into" in sql_text
+            and "normalized_value" in sql_text
+            and len(params) == 8
+        ):
             self.identifier_rows.append(tuple(params))
             return _FakeCursor(rowcount=1)
         if "insert into" in sql_text and params:
@@ -275,6 +282,25 @@ class _FakeConnection:
 
     def close(self) -> None:
         return None
+
+
+def _executed_sql_text(statement: object) -> str:
+    if isinstance(statement, str):
+        return statement
+    _, _, _, sql_module = import_psycopg()
+    if isinstance(statement, sql_module.Composable):
+        return statement.as_string(None)
+    return str(statement)
+
+
+def _identifier_insert_sql_text(executed: list[tuple[Any, tuple[Any, ...]]]) -> str:
+    for statement, params in executed:
+        if len(params) != 8:
+            continue
+        sql_text = _executed_sql_text(statement).lower()
+        if "insert into" in sql_text and "normalized_value" in sql_text:
+            return _executed_sql_text(statement)
+    raise AssertionError("expected identifier insert SQL execution")
 
 
 def _pg_unique_violation() -> Exception:
@@ -625,6 +651,126 @@ def test_data_values_parameterized() -> None:
 def test_unsafe_logical_target_cannot_become_raw_sql_identifier() -> None:
     with pytest.raises(PostgreSqlBootstrapConfigurationError):
         reject_unsafe_logical_target("vpi_products;drop")
+
+
+def test_identifier_write_sql_uses_composed_qualified_table() -> None:
+    record_json = json.dumps(
+        {
+            "id": "offer-identifiers",
+            "identifiers": [{"/gtin13": "[8806095123456]"}],
+        }
+    )
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(
+        _batch(
+            _record(
+                0,
+                offer_suffix="identifiers",
+                record_json=record_json,
+            )
+        )
+    )
+    insert_sql = _identifier_insert_sql_text(connection.executed)
+    _, _, _, sql_module = import_psycopg()
+    composed_statement = next(
+        statement for statement, params in connection.executed if len(params) == 8
+    )
+    assert isinstance(composed_statement, sql_module.Composable)
+    assert '"vpi_test_schema"."vpi_product_identifiers"' in insert_sql.lower()
+
+
+def test_identifier_write_schema_and_table_explicitly_qualified() -> None:
+    record_json = json.dumps(
+        {
+            "id": "offer-identifiers",
+            "identifiers": [{"/gtin13": "[8806095123456]"}],
+        }
+    )
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_alt_schema",
+        table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_alt_identifiers",
+    )
+
+    connection = _FakeConnection()
+
+    def _factory() -> _FakeConnection:
+        return connection
+
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=_factory,
+    )
+    provider._apply_search_path_on_connection = lambda _connection: None  # type: ignore[method-assign]
+    provider.ensure_schema_exists = lambda _session, _schema_name=None: None  # type: ignore[method-assign]
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets={"vpi-products"},
+    )
+    adapter.write_batch(
+        _batch(
+            _record(
+                0,
+                offer_suffix="identifiers",
+                record_json=record_json,
+            )
+        )
+    )
+    insert_sql = _identifier_insert_sql_text(connection.executed)
+    assert '"vpi_alt_schema"."vpi_alt_identifiers"' in insert_sql.lower()
+
+
+def test_identifier_write_values_remain_bind_parameters() -> None:
+    record_json = json.dumps(
+        {
+            "id": "offer-identifiers",
+            "identifiers": [{"/gtin13": "[8806095123456]"}],
+        }
+    )
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(
+        _batch(
+            _record(
+                0,
+                offer_suffix="identifiers",
+                record_json=record_json,
+            )
+        )
+    )
+    insert_sql = _identifier_insert_sql_text(connection.executed)
+    assert insert_sql.count("%s") == 8
+    _, params = next(
+        (statement, params) for statement, params in connection.executed if len(params) == 8
+    )
+    assert len(params) == 8
+
+
+def test_invalid_identifier_table_configuration_still_rejected() -> None:
+    with pytest.raises(ValueError, match="table_name must be a simple SQL identifier"):
+        validate_table_identifier("bad-table")
+
+
+def test_no_f_string_identifier_sql_in_adapter_identifier_write() -> None:
+    module_path = _ADAPTER_ROOT / "adapter.py"
+    tree = ast.parse(module_path.read_text(encoding="utf-8"))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.JoinedStr):
+            continue
+        for value in node.values:
+            if isinstance(value, ast.FormattedValue):
+                violations.append(ast.get_source_segment(module_path.read_text(encoding="utf-8"), value) or "")
+    identifier_violations = [
+        fragment
+        for fragment in violations
+        if "identifier_table_name" in fragment or "INSERT INTO {" in fragment
+    ]
+    assert identifier_violations == []
 
 
 def test_malicious_source_text_remains_data() -> None:
@@ -1017,10 +1163,14 @@ def test_write_batch_persists_identifier_projection_rows() -> None:
 @dataclass
 class _FailSecondIdentifierConnection(_FakeConnection):
     def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
-        sql_text = str(sql).lower()
-        if "insert into" in sql_text and "vpi_product_identifiers" in sql_text and params:
-            if self.identifier_rows:
-                raise RuntimeError("identifier write failed")
+        sql_text = _executed_sql_text(sql).lower()
+        if (
+            "insert into" in sql_text
+            and "normalized_value" in sql_text
+            and len(params) == 8
+            and self.identifier_rows
+        ):
+            raise RuntimeError("identifier write failed")
         return super().execute(sql, params)
 
 

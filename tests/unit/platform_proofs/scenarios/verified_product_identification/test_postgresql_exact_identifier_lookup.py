@@ -45,7 +45,9 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     PostgreSqlExactIdentifierLookupAdapter,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
+    IdentifierTableSpec,
     _IDENTIFIER_LOOKUP_INDEX_NAME,
+    identifier_lookup_dml,
 )
 from platform_proofs.scenarios.verified_product_identification.application.retrieval import (
     MultiChannelRetrievalRequest,
@@ -70,6 +72,20 @@ _APPLICATION_ROOT = (
     _REPO_ROOT
     / "platform_proofs/scenarios/verified_product_identification/application"
 )
+
+
+def _executed_sql_text(statement: object) -> str:
+    if isinstance(statement, str):
+        return statement
+    _, _, _, sql_module = import_psycopg()
+    if isinstance(statement, sql_module.Composable):
+        return statement.as_string(None)
+    return str(statement)
+
+
+def _lookup_sql_text(executed: list[tuple[Any, tuple[Any, ...]]]) -> str:
+    statement, _params = executed[-1]
+    return _executed_sql_text(statement)
 
 
 def _configuration() -> PostgreSqlBootstrapConfiguration:
@@ -103,7 +119,7 @@ class _FakeConnection:
     executed: list[tuple[str, tuple[Any, ...]]] = field(default_factory=list)
     fail_with: Exception | None = None
 
-    def execute(self, sql: str, params: tuple[Any, ...] = ()) -> _FakeCursor:
+    def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
         self.executed.append((sql, params))
         if self.fail_with is not None:
             raise self.fail_with
@@ -256,13 +272,13 @@ def test_lookup_uses_indexed_predicate_without_like_or_semantic_scan() -> None:
     connection = _FakeConnection(rows=[])
     adapter = _adapter_with_connection(connection)
     adapter.lookup(_query(ProductIdentifierType.MPN, "MZ-V9P2T0BW"))
-    sql, params = connection.executed[-1]
-    lowered = sql.lower()
-    assert "identifier_type = %s" in lowered
-    assert "normalized_value = %s" in lowered
-    assert "like" not in lowered
-    assert "semantic_text" not in lowered
-    assert "record_json" not in lowered
+    sql = _lookup_sql_text(connection.executed).lower()
+    params = connection.executed[-1][1]
+    assert "identifier_type = %s" in sql
+    assert "normalized_value = %s" in sql
+    assert "like" not in sql
+    assert "semantic_text" not in sql
+    assert "record_json" not in sql
     assert params[0] == "mpn"
     assert params[1] == "MZ-V9P2T0BW"
 
@@ -274,7 +290,7 @@ def test_hostile_identifier_value_is_bound_data() -> None:
     adapter.lookup(_query(ProductIdentifierType.MPN, hostile))
     _, params = connection.executed[-1]
     assert params[1] == hostile
-    assert "drop table" not in connection.executed[-1][0].lower()
+    assert "drop table" not in _lookup_sql_text(connection.executed).lower()
 
 
 def test_provider_timeout_maps_to_typed_failure() -> None:
@@ -315,8 +331,101 @@ def test_lookup_sql_uses_deterministic_order_by() -> None:
     connection = _FakeConnection(rows=[])
     adapter = _adapter_with_connection(connection)
     adapter.lookup(_query(ProductIdentifierType.GTIN, "8806095123456"))
-    sql = connection.executed[-1][0].lower()
-    assert "order by catalog_id asc, offer_id asc, source_revision_norm asc" in sql
+    sql = " ".join(_lookup_sql_text(connection.executed).lower().split())
+    assert (
+        "order by catalog_id asc, offer_id asc, source_revision_norm asc"
+        in sql
+    )
+
+
+def test_lookup_sql_uses_composed_qualified_identifier_table() -> None:
+    connection = _FakeConnection(rows=[])
+    adapter = _adapter_with_connection(connection)
+    adapter.lookup(_query(ProductIdentifierType.GTIN, "8806095123456"))
+    statement, _params = connection.executed[-1]
+    _, _, _, sql_module = import_psycopg()
+    assert isinstance(statement, sql_module.Composable)
+    assert '"vpi_test_schema"."vpi_product_identifiers"' in _lookup_sql_text(connection.executed).lower()
+
+
+def test_lookup_sql_schema_and_table_explicitly_qualified() -> None:
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_lookup_schema",
+        table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_lookup_identifiers",
+    )
+
+    def _factory() -> _FakeConnection:
+        return connection
+
+    connection = _FakeConnection(rows=[])
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=_factory,
+    )
+    provider._apply_search_path_on_connection = lambda _connection: None  # type: ignore[method-assign]
+    adapter = PostgreSqlExactIdentifierLookupAdapter(
+        _provider=provider,
+        _configuration=configuration,
+    )
+    adapter.lookup(_query(ProductIdentifierType.GTIN, "8806095123456"))
+    assert (
+        '"vpi_lookup_schema"."vpi_lookup_identifiers"'
+        in _lookup_sql_text(connection.executed).lower()
+    )
+
+
+def test_lookup_limit_and_values_remain_bind_parameters() -> None:
+    connection = _FakeConnection(rows=[])
+    adapter = _adapter_with_connection(connection)
+    adapter.lookup(_query(ProductIdentifierType.GTIN, "8806095123456", limit=3))
+    sql = _lookup_sql_text(connection.executed)
+    assert sql.count("%s") == 3
+    _, params = connection.executed[-1]
+    assert params == ("gtin", "8806095123456", 3)
+
+
+def test_invalid_identifier_table_configuration_still_rejected() -> None:
+    with pytest.raises(ValueError, match="table_name must be a simple SQL identifier"):
+        PostgreSqlBootstrapConfiguration.from_env(
+            schema_name="vpi_test_schema",
+            identifier_table_name="bad-table",
+        )
+
+
+def test_identifier_lookup_dml_matches_adapter_query_shape() -> None:
+    composed = identifier_lookup_dml(
+        IdentifierTableSpec(
+            schema_name="vpi_test_schema",
+            table_name="vpi_product_identifiers",
+        )
+    )
+    sql = _executed_sql_text(composed).lower()
+    assert '"vpi_test_schema"."vpi_product_identifiers"' in sql
+    assert "identifier_type = %s" in sql
+    assert "normalized_value = %s" in sql
+    assert "limit %s" in sql
+
+
+def test_no_f_string_identifier_sql_in_exact_lookup_module() -> None:
+    module_path = _ADAPTER_ROOT / "exact_identifier_lookup.py"
+    source = module_path.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.JoinedStr):
+            continue
+        for value in node.values:
+            if isinstance(value, ast.FormattedValue):
+                violations.append(ast.get_source_segment(source, value) or "")
+    identifier_violations = [
+        fragment
+        for fragment in violations
+        if "identifier_table_name" in fragment or "FROM {" in fragment
+    ]
+    assert identifier_violations == []
 
 
 def test_index_name_is_declared_for_qualification() -> None:

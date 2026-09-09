@@ -33,6 +33,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     create_identifier_lookup_index_ddl,
     create_identifier_table_ddl,
     create_table_ddl,
+    identifier_insert_dml,
     verify_identifier_table_compatible,
     verify_table_compatible,
 )
@@ -342,12 +343,11 @@ class PostgreSqlRelationalStorageAdapter:
     ) -> None:
         if not rows:
             return
-        insert_sql = (
-            f"INSERT INTO {self._configuration.identifier_table_name} ("
-            "catalog_id, offer_id, source_revision_norm, source_revision, "
-            "identifier_type, source_value, normalized_value, source_field"
-            ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
-            "ON CONFLICT DO NOTHING"
+        insert_sql = identifier_insert_dml(
+            IdentifierTableSpec(
+                schema_name=self._configuration.schema_name,
+                table_name=self._configuration.identifier_table_name,
+            )
         )
         for row in rows:
             params: _IdentifierInsertParams = (

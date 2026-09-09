@@ -40,6 +40,10 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     DEFAULT_APPLICATION_NAME,
     PostgreSqlBootstrapConfiguration,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
+    IdentifierTableSpec,
+    identifier_lookup_dml,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_identifier_row import (
     StoredIdentifierRow,
     stored_identifier_row_from_fetched_row,
@@ -148,13 +152,11 @@ class PostgreSqlExactIdentifierLookupAdapter:
                 ),
             )
 
-        lookup_sql = (
-            f"SELECT catalog_id, offer_id, source_revision_norm, source_revision, "
-            f"identifier_type, source_value, normalized_value, source_field "
-            f"FROM {self._configuration.identifier_table_name} "
-            f"WHERE identifier_type = %s AND normalized_value = %s "
-            f"ORDER BY catalog_id ASC, offer_id ASC, source_revision_norm ASC "
-            f"LIMIT %s"
+        lookup_sql = identifier_lookup_dml(
+            IdentifierTableSpec(
+                schema_name=self._configuration.schema_name,
+                table_name=self._configuration.identifier_table_name,
+            )
         )
         params = (
             identifier.identifier_type.value,
