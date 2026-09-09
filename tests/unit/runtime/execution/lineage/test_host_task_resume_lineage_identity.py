@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
-
 import pytest
 
+from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -28,16 +27,21 @@ from intergrax.contracts.execution_lineage import (
 from intergrax.runtime.execution.active_execution_resume import (
     peek_active_execution_resume_plan,
 )
-from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
 )
+from intergrax.runtime.execution.nexus_host_execution import (
+    build_nexus_host_task_terminal_publisher,
+)
+from intergrax.runtime.execution.orchestration import OrchestrationExecutor
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
     minimal_runtime_checkpoint,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 
 
@@ -62,6 +66,45 @@ def _checkpoint(
     )
 
 
+def _host_execution(
+    nexus_loop: NexusLoop,
+    *,
+    agent_engine: AgentEngine,
+    orchestration_triggers: frozenset[str] = frozenset(),
+) -> HostTaskExecution:
+    return HostTaskExecution(
+        _agent_engine=agent_engine,
+        _agent_router=AgentRouter(
+            nexus_loop.registry,
+            event_bus=nexus_loop.event_bus,
+        ),
+        _orchestration_executor=OrchestrationExecutor(nexus_loop),
+        _orchestration_triggers=orchestration_triggers,
+        _pipeline_capability_suffix=".pipeline",
+        _ledger_factory=nexus_loop.execution_budget_ledger_factory,
+        _run_budget=nexus_loop.run_budget,
+        _terminal_publisher=build_nexus_host_task_terminal_publisher(nexus_loop),
+        _execution_lineage_persistence=nexus_loop.execution_lineage_persistence,
+    )
+
+
+class _CallbackAgentEngine(AgentEngine):
+    __slots__ = ("_callback",)
+
+    def __init__(
+        self,
+        registry: AgentRegistry,
+        callback: object,
+    ) -> None:
+        super().__init__(registry)
+        self._callback = callback
+
+    async def run_with_result(self, runtime_request: object) -> AgentExecutionResult:
+        callback = self._callback
+        assert callable(callback)
+        return await callback(runtime_request)
+
+
 @pytest.mark.asyncio
 async def test_host_task_resume_uses_single_canonical_root_execution_id(
     monkeypatch: pytest.MonkeyPatch,
@@ -69,9 +112,6 @@ async def test_host_task_resume_uses_single_canonical_root_execution_id(
     persistence = InMemoryExecutionLineagePersistence()
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
-    host_execution = build_host_task_execution(
-        nexus_loop, orchestration_triggers=frozenset()
-    )
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -124,15 +164,15 @@ async def test_host_task_resume_uses_single_canonical_root_execution_id(
             for entry in active_snapshot.entries
             if entry.parent_execution_id is None
         )
-        scope = build_execution_lineage_attempt_scope(
+        attempt_scope = build_execution_lineage_attempt_scope(
             tenant_id=task.tenant_id,
             task_id=task_id,
             run_id=active_run_id,
             attempt_id=active_attempt_id,
         )
-        attempt_state = persistence.read_attempt_lineage_state(scope)
+        attempt_state = persistence.read_attempt_lineage_state(attempt_scope)
         assert attempt_state is not None
-        page = persistence.list_admissions_for_attempt(scope, limit=10)
+        page = persistence.list_admissions_for_attempt(attempt_scope, limit=10)
         root_admissions = [
             item for item in page.admissions if item.parent_execution_id is None
         ]
@@ -148,7 +188,10 @@ async def test_host_task_resume_uses_single_canonical_root_execution_id(
             summary="ok",
         )
 
-    nexus_loop._engine.run_with_result = AsyncMock(side_effect=_run_with_result)  # noqa: SLF001
+    host_execution = _host_execution(
+        nexus_loop,
+        agent_engine=_CallbackAgentEngine(registry, _run_with_result),
+    )
 
     result = await host_execution.execute(
         task,
@@ -171,9 +214,6 @@ async def test_host_task_resume_same_attempt_persists_two_segment_roots() -> Non
     persistence = InMemoryExecutionLineagePersistence()
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
-    host_execution = build_host_task_execution(
-        nexus_loop, orchestration_triggers=frozenset()
-    )
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -200,7 +240,10 @@ async def test_host_task_resume_same_attempt_persists_two_segment_roots() -> Non
             summary="ok",
         )
 
-    nexus_loop._engine.run_with_result = AsyncMock(side_effect=_run_with_result)  # noqa: SLF001
+    host_execution = _host_execution(
+        nexus_loop,
+        agent_engine=_CallbackAgentEngine(registry, _run_with_result),
+    )
 
     await host_execution.execute(task, run_id=run_id, attempt_id=attempt_id)
     assert first_root is not None
@@ -241,9 +284,12 @@ async def test_host_task_resume_same_attempt_persists_two_segment_roots() -> Non
             summary="ok",
         )
 
-    nexus_loop._engine.run_with_result = AsyncMock(side_effect=_run_resume)  # noqa: SLF001
+    resume_host_execution = _host_execution(
+        nexus_loop,
+        agent_engine=_CallbackAgentEngine(registry, _run_resume),
+    )
 
-    await host_execution.execute(
+    await resume_host_execution.execute(
         resume_task,
         resume_checkpoint=checkpoint,
         execution_id=None,

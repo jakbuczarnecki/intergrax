@@ -45,7 +45,7 @@
 - Child admission unavailable + durable `mark_degraded` → child may continue
 - Child admission unavailable + `mark_degraded` failure → fail closed
 - Structural conflicts → `ExecutionLineageIntegrityError` (fail closed)
-- Nested child after degraded parent without durable parent admission → fail closed (`parent admission missing`)
+- Nested child after non-durable parent admission → fail closed (runtime non-durable parent guard)
 
 ## Concurrency
 
@@ -99,7 +99,7 @@ Root activation binds `AttemptLineageDegradationState` from durable attempt meta
 
 ## Correction — Nested fail-open decision
 
-**PASS (fail-closed enterprise semantics):** when child admission is unavailable and only `mark_degraded` succeeds, nested children without durable parent admission raise `ExecutionLineageIntegrityError` (`parent admission missing`). No synthetic/orphan lineage is created.
+**PASS (fail-closed enterprise semantics):** when child admission is unavailable and only `mark_degraded` succeeds, the degraded child may execute but is marked in runtime `non_durable_execution_ids`; nested delegation from that parent fails closed before storage/delegate side effects.
 
 ## Correction — New tests
 
@@ -116,6 +116,14 @@ Root activation binds `AttemptLineageDegradationState` from durable attempt meta
 - **Explicit provider fail-closed:** `resolve_execution_lineage_persistence(provider=DOCUMENT_STORE, document_store=None)` raises `ExecutionLineageConfigurationError`; `provider=None` remains lineage disabled.
 - **Real nested degraded-parent proof:** `test_nested_child_after_degraded_parent.py` uses one persistence object and production `ChildExecutionRunner` nested delegation; nested child without durable parent admission fails closed (`parent admission missing`).
 - **Post-open_segment degradation binding:** root activation binds `AttemptLineageDegradationState` from durable attempt metadata after `open_segment` (unclean predecessor resume).
+
+## Nested persistent-outage correction
+
+- **Runtime non-durable parent guard:** `ActiveExecutionLineageState.non_durable_execution_ids` (immutable `frozenset[ExecutionId]`) tracks executions whose admission was not durably persisted; `ChildExecutionRunner` fails closed before mint/budget/admission/delegate when parent is non-durable.
+- **Monotonic mark:** child admission hook calls `mark_execution_lineage_non_durable(execution_id)` after durable `mark_degraded` success; `mark_attempt_lineage_degraded()` separated from root `bind_attempt_lineage_degradation`.
+- **Sibling isolation:** non-durable guard is per-parent execution — siblings from durable root remain allowed (`test_sibling_from_durable_root_allowed_after_non_durable_child`).
+- **Persistent-outage proof:** `test_nested_child_after_degraded_parent.py` keeps child admission unavailable for entire test; E3 blocked before second `admit_child` call.
+- **Private test seam cleanup:** `test_host_task_resume_lineage_identity.py` uses `HostTaskExecution` + `AgentEngine` subclass instead of `nexus_loop._engine`.
 
 ## Final verdict
 

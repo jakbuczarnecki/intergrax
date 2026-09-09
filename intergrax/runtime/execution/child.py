@@ -11,6 +11,7 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import mint_child_execution_id
 from intergrax.runtime.execution.active_execution_budget import (
     ActiveExecutionBudgetState,
@@ -38,8 +39,12 @@ from intergrax.runtime.execution.budget.policy import (
     DefaultSharedPoolBudgetPolicy,
     ExecutionBudgetAllocationPolicy,
 )
-from intergrax.runtime.execution.lineage.active_lineage import peek_active_execution_lineage
-from intergrax.runtime.execution.lineage.admission import build_child_lineage_admission_hook
+from intergrax.runtime.execution.lineage.active_lineage import (
+    peek_active_execution_lineage,
+)
+from intergrax.runtime.execution.lineage.admission import (
+    build_child_lineage_admission_hook,
+)
 from intergrax.runtime.governance.active_execution_authority import (
     require_active_execution_authority,
 )
@@ -86,6 +91,14 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
     ) -> ResultT:
         parent_run_id, parent_attempt_id = require_active_execution_identity()
         parent_execution_id = require_active_execution_id()
+        lineage_state = peek_active_execution_lineage()
+        if (
+            lineage_state is not None
+            and parent_execution_id in lineage_state.non_durable_execution_ids
+        ):
+            raise ExecutionLineageIntegrityError(
+                "non-durable lineage parent cannot admit nested child",
+            )
         parent_authority = require_active_execution_authority()
 
         resolution = self._authority_policy.resolve_child_authority(
@@ -105,8 +118,10 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             parent_mode = parent_budget_state.mode
             parent_remaining = None
             if parent_mode is ExecutionBudgetAllocationMode.RESERVED:
-                parent_remaining = parent_budget_state.ledger.snapshot_reservation_remaining(
-                    parent_execution_id,
+                parent_remaining = (
+                    parent_budget_state.ledger.snapshot_reservation_remaining(
+                        parent_execution_id,
+                    )
                 )
 
         budget_decision = self._budget_policy.resolve_child_budget(
@@ -140,7 +155,6 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             parent_execution_id=parent_execution_id,
         )
         resolved_hooks = admission_hooks
-        lineage_state = peek_active_execution_lineage()
         if lineage_state is not None:
             lineage_hook = build_child_lineage_admission_hook(
                 persistence=lineage_state.persistence,
