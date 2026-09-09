@@ -223,7 +223,7 @@ class _FakeConnection:
                 return _FakeCursor(rowcount=0)
             row_index = int(params[4])
             if row_index in self.by_row_index and self.by_row_index[row_index] != identity:
-                raise _pg_unique_violation()
+                return _FakeCursor(rowcount=0)
             row = {
                 "catalog_id": catalog_id,
                 "offer_id": offer_id,
@@ -750,6 +750,61 @@ def test_insert_sql_uses_placeholders_not_interpolation() -> None:
     source = (_ADAPTER_ROOT / "adapter.py").read_text(encoding="utf-8")
     assert re.search(r"VALUES\s*\(%s", source)
     assert "record_json" in source
+    assert "ON CONFLICT DO NOTHING" in source
+
+
+def test_global_row_conflict_does_not_abort_transaction() -> None:
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(_batch(_record(7, offer_suffix="a")))
+    with pytest.raises(StorageBootstrapWriteError):
+        adapter.write_batch(_batch(_record(7, offer_suffix="b")))
+    assert connection.in_transaction is False
+    assert any(
+        "where global_row_index = %s" in str(sql).lower()
+        for sql, _params in connection.executed
+    )
+
+
+def test_global_row_conflict_classifies_different_identity() -> None:
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(_batch(_record(9, offer_suffix="first")))
+    with pytest.raises(StorageBootstrapWriteError, match="IDENTITY_CONTENT_CONFLICT"):
+        adapter.write_batch(_batch(_record(9, offer_suffix="second")))
+
+
+def test_source_identity_identical_retry_skipped_without_exception() -> None:
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    batch = _batch(_record(2, offer_suffix="retry"))
+    adapter.write_batch(batch)
+    result = adapter.write_batch(batch)
+    assert result.skipped_count == 1
+    assert result.written_count == 0
+    assert not any(
+        "where global_row_index = %s" in str(sql).lower()
+        for sql, _params in connection.executed[-3:]
+        if "insert into" not in str(sql).lower()
+    )
+
+
+def test_insert_conflict_readback_only_after_valid_insert_state() -> None:
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(_batch(_record(11, offer_suffix="row")))
+    connection.executed.clear()
+    adapter.write_batch(_batch(_record(11, offer_suffix="row")))
+    post_insert_sql = [
+        (str(sql).lower(), params)
+        for sql, params in connection.executed
+        if "insert into" not in str(sql).lower()
+        and "set transaction" not in str(sql).lower()
+        and "set_config" not in str(sql).lower()
+    ]
+    assert post_insert_sql
+    for sql, _params in post_insert_sql:
+        assert "where catalog_id = %s" in sql or "where global_row_index = %s" in sql
 
 
 def test_logical_target_maps_to_approved_table() -> None:

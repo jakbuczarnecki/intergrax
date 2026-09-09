@@ -35,6 +35,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     _distance_label,
     _extract_dense_vector,
     _extract_provider_payload,
+    _record_matches_stored,
     _stored_point_from_provider_record,
     _validate_vector_record,
 )
@@ -54,8 +55,10 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     QdrantBootstrapVectorValidationError,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.payload import (
+    QdrantStoredPoint,
     QdrantUpsertPoint,
     QdrantVectorPayload,
+    cosine_storage_normalize,
     normalize_vector_float32,
     payload_from_record,
     payload_identity_matches,
@@ -556,7 +559,8 @@ def test_same_point_different_vector_fails() -> None:
     record = _vector_record(0)
     adapter.write_batch(_batch(record))
     vector = list(_unit_vector())
-    vector[0] = 0.5
+    vector[0] = 0.0
+    vector[1] = 1.0
     conflict = _vector_record(0, vector=tuple(vector))
     with pytest.raises(StorageBootstrapWriteError):
         adapter.write_batch(_batch(conflict))
@@ -610,7 +614,8 @@ def test_verify_vector_mismatch_detected() -> None:
     adapter.write_batch(_batch(record))
     point_id = _normalize_point_id(record.logical_point_id)
     vector = list(client.points[point_id].vector)
-    vector[0] = 0.25
+    vector[0] = 0.0
+    vector[1] = 1.0
     client.points[point_id].vector = vector
     verify = adapter.verify_batch(_batch(record))
     assert verify.failed_count == 1
@@ -772,6 +777,40 @@ def _named_physical_target() -> PhysicalVectorTarget:
 def test_extract_dense_vector_rejects_invalid_channel_shape() -> None:
     with pytest.raises(QdrantBootstrapOperationError, match="missing named dense channel"):
         _extract_dense_vector({"other": [1.0, 0.0]}, _named_physical_target())
+
+
+def test_cosine_storage_normalize_matches_qdrant_roundtrip_for_sparse_vectors() -> None:
+    sparse = normalize_vector_float32((0.0, 0.002, 0.0))
+    stored = cosine_storage_normalize(sparse)
+    readback = cosine_storage_normalize((0.0, 1.0, 0.0))
+    assert vectors_transport_equal(stored, readback, tolerance=0.0) is True
+
+
+def test_record_matches_stored_accepts_runtime_composition_vectors() -> None:
+    from tests.integration.platform_proofs.scenarios.verified_product_identification.conftest import (
+        deterministic_dense_embedding,
+    )
+
+    record = _vector_record(3, offer_suffix="3", semantic_hash="hash-runtime")
+    record = VectorLoadRecord(
+        logical_point_id=record.logical_point_id,
+        source_ref=record.source_ref,
+        semantic_text_hash=record.semantic_text_hash,
+        embedding_provider=record.embedding_provider,
+        embedding_model=record.embedding_model,
+        embedding_revision=record.embedding_revision,
+        embedding_dimension=record.embedding_dimension,
+        dense_embedding=deterministic_dense_embedding(3),
+        derivation_version=record.derivation_version,
+    )
+    payload = payload_from_record(record)
+    stored = QdrantStoredPoint(
+        point_id=_normalize_point_id(record.logical_point_id),
+        logical_point_id=record.logical_point_id,
+        payload=payload,
+        vector=cosine_storage_normalize(record.dense_embedding),
+    )
+    assert _record_matches_stored(record, stored, tolerance=0.0) is True
 
 
 def test_stored_point_from_provider_record_converts_payload_and_vector() -> None:

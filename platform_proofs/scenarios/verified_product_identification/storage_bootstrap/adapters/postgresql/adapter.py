@@ -8,8 +8,6 @@ from intergrax.integrations.providers.relational_store.postgresql.session import
     PostgreSQLConnectionProvider,
     PostgreSQLIsolationLevel,
     PostgreSQLSession,
-    import_psycopg,
-    is_postgresql_unique_violation,
     set_local_config,
 )
 
@@ -256,7 +254,7 @@ class PostgreSqlRelationalStorageAdapter:
             "global_row_index, record_json, semantic_text, semantic_text_hash, "
             "derivation_version"
             ") VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s) "
-            "ON CONFLICT (catalog_id, offer_id, source_revision_norm) DO NOTHING"
+            "ON CONFLICT DO NOTHING"
         )
         params: _InsertSqlParams = (
             catalog_id,
@@ -273,49 +271,13 @@ class PostgreSqlRelationalStorageAdapter:
             return "written"
 
         existing = self._fetch_by_source_identity(session, physical, record.source_ref)
-        if existing is None:
-            raise PostgreSqlBootstrapOperationError(
-                "insert conflict without existing row"
-            )
-        if _record_payload_matches(existing, record):
-            return "skipped"
-        raise PostgreSqlBootstrapIdentityConflictError(
-            f"identity {identity_key(record.source_ref)} has incompatible stored content"
-        )
-
-    def _execute_insert(
-        self,
-        session: PostgreSQLSession,
-        insert_sql: str,
-        params: _InsertSqlParams,
-        physical: PhysicalRelationalTarget,
-        record: RelationalLoadRecord,
-    ) -> int:
-        _, pg_errors, _, _ = import_psycopg()
-        try:
-            return session.execute(insert_sql, params).rowcount
-        except pg_errors.Error as exc:
-            if is_postgresql_unique_violation(exc):
-                self._raise_identity_conflict_for_unique_violation(
-                    session,
-                    physical,
-                    record,
-                )
-            raise PostgreSqlBootstrapOperationError(
-                "PostgreSQL insert failed"
-            ) from exc
-
-    def _raise_identity_conflict_for_unique_violation(
-        self,
-        session: PostgreSQLSession,
-        physical: PhysicalRelationalTarget,
-        record: RelationalLoadRecord,
-    ) -> None:
-        by_identity = self._fetch_by_source_identity(session, physical, record.source_ref)
-        if by_identity is not None and not _record_payload_matches(by_identity, record):
+        if existing is not None:
+            if _record_payload_matches(existing, record):
+                return "skipped"
             raise PostgreSqlBootstrapIdentityConflictError(
                 f"identity {identity_key(record.source_ref)} has incompatible stored content"
             )
+
         by_row_index = self._fetch_by_global_row_index(
             session,
             physical,
@@ -337,9 +299,19 @@ class PostgreSqlRelationalStorageAdapter:
                 raise PostgreSqlBootstrapIdentityConflictError(
                     f"global_row_index {record.global_row_index} has incompatible stored content"
                 )
-        raise PostgreSqlBootstrapIdentityConflictError(
-            f"identity {identity_key(record.source_ref)} conflicts with stored row"
-        )
+            return "skipped"
+
+        raise PostgreSqlBootstrapOperationError("insert conflict without existing row")
+
+    def _execute_insert(
+        self,
+        session: PostgreSQLSession,
+        insert_sql: str,
+        params: _InsertSqlParams,
+        physical: PhysicalRelationalTarget,
+        record: RelationalLoadRecord,
+    ) -> int:
+        return session.execute(insert_sql, params).rowcount
 
     def _verify_record(
         self,

@@ -40,12 +40,14 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.pgvector.errors import (
     PgVectorBootstrapConfigurationError,
     PgVectorBootstrapIdentityConflictError,
+    PgVectorBootstrapOperationError,
     PgVectorBootstrapSchemaError,
     PgVectorBootstrapVectorValidationError,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.pgvector.stored_row import (
     normalize_vector_float32,
     record_matches_stored,
+    stored_pgvector_row_from_fetched_row,
     stored_row_from_record,
     stored_row_identity_matches,
     vectors_transport_equal,
@@ -773,6 +775,76 @@ def test_float32_transport_equality() -> None:
     left = normalize_vector_float32((1.0, 0.0))
     right = normalize_vector_float32((1.0, 0.0))
     assert vectors_transport_equal(left, right, tolerance=0.0) is True
+
+
+def test_provider_native_pgvector_vector_conversion() -> None:
+    pytest.importorskip("pgvector")
+    from pgvector import Vector
+
+    record = _vector_record(0)
+    provider_vector = Vector(list(record.dense_embedding))
+    row = {
+        "logical_point_id": record.logical_point_id,
+        "catalog_id": record.source_ref.catalog_id,
+        "offer_id": record.source_ref.offer_id.value,
+        "source_revision_norm": "",
+        "source_revision": None,
+        "semantic_text_hash": record.semantic_text_hash,
+        "embedding_provider": record.embedding_provider,
+        "embedding_model": record.embedding_model,
+        "embedding_revision": record.embedding_revision,
+        "embedding_dimension": record.embedding_dimension,
+        "derivation_version": record.derivation_version,
+        "dense_embedding": provider_vector,
+    }
+    converted = stored_pgvector_row_from_fetched_row(row)
+    assert len(converted.dense_embedding) == CANONICAL_EMBEDDING_DIMENSION
+    assert converted.dense_embedding == normalize_vector_float32(record.dense_embedding)
+
+
+def test_provider_native_pgvector_vector_wrong_type_fails_closed() -> None:
+    record = _vector_record(0)
+    with pytest.raises(PgVectorBootstrapOperationError, match="dense_embedding must be a vector sequence"):
+        stored_pgvector_row_from_fetched_row(
+            {
+                "logical_point_id": record.logical_point_id,
+                "catalog_id": record.source_ref.catalog_id,
+                "offer_id": record.source_ref.offer_id.value,
+                "source_revision_norm": "",
+                "source_revision": None,
+                "semantic_text_hash": record.semantic_text_hash,
+                "embedding_provider": record.embedding_provider,
+                "embedding_model": record.embedding_model,
+                "embedding_revision": record.embedding_revision,
+                "embedding_dimension": record.embedding_dimension,
+                "derivation_version": record.derivation_version,
+                "dense_embedding": "not-a-vector",
+            }
+        )
+
+
+def test_provider_native_pgvector_vector_dimension_mismatch_fails_closed() -> None:
+    pytest.importorskip("pgvector")
+    from pgvector import Vector
+
+    record = _vector_record(0)
+    with pytest.raises(PgVectorBootstrapOperationError, match="dimension mismatch"):
+        stored_pgvector_row_from_fetched_row(
+            {
+                "logical_point_id": record.logical_point_id,
+                "catalog_id": record.source_ref.catalog_id,
+                "offer_id": record.source_ref.offer_id.value,
+                "source_revision_norm": "",
+                "source_revision": None,
+                "semantic_text_hash": record.semantic_text_hash,
+                "embedding_provider": record.embedding_provider,
+                "embedding_model": record.embedding_model,
+                "embedding_revision": record.embedding_revision,
+                "embedding_dimension": record.embedding_dimension,
+                "derivation_version": record.derivation_version,
+                "dense_embedding": Vector([0.0, 1.0]),
+            }
+        )
 
 
 def test_record_matches_stored_helper() -> None:

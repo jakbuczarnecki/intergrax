@@ -40,6 +40,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     QdrantStoredPoint,
     QdrantUpsertPoint,
     QdrantVectorPayload,
+    cosine_storage_normalize,
     embedding_identity_matches,
     normalize_vector_float32,
     payload_from_provider_dict,
@@ -237,8 +238,11 @@ def _record_matches_stored(
     expected_payload = payload_from_record(record)
     if not payload_identity_matches(stored.payload, expected_payload):
         return False
-    expected_vector = normalize_vector_float32(record.dense_embedding)
-    return vectors_transport_equal(expected_vector, stored.vector, tolerance=tolerance)
+    expected_vector = cosine_storage_normalize(
+        normalize_vector_float32(record.dense_embedding)
+    )
+    stored_vector = cosine_storage_normalize(stored.vector)
+    return vectors_transport_equal(expected_vector, stored_vector, tolerance=tolerance)
 
 
 @dataclass(slots=True)

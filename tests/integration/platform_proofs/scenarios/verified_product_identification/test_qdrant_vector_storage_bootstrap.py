@@ -141,7 +141,8 @@ def test_qdrant_vector_conflict_fails_closed_without_overwrite() -> None:
         record = _vector_record(0)
         adapter.write_batch(_batch(record))
         vector = list(record.dense_embedding)
-        vector[0] = 0.5
+        vector[0] = 0.0
+        vector[1] = 1.0
         conflict = VectorLoadRecord(
             logical_point_id=record.logical_point_id,
             source_ref=record.source_ref,
