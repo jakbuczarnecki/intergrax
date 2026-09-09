@@ -77,7 +77,6 @@ def build_agent(ctx: ApplicationBuildContext, binding: AgentBinding) -> Agent:
     composition.llm_adapter_override = production_settings.llm_adapter_override
     production_settings.evidence_store = evidence_store
     return IncidentInvestigatorAgent(
-        registry=tool_registry,
         station_id=production_settings.operational_data.station_id,
         runtime_composition=composition,
         incident_scope=IncidentScope.from_operational_defaults(

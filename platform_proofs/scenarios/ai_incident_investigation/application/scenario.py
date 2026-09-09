@@ -259,7 +259,6 @@ def build_runtime_bundle(
         llm_adapter_override=llm_adapter_override,
     )
     investigator = IncidentInvestigatorAgent(
-        registry=tool_registry,
         station_id=operational_data.station_id,
         runtime_composition=composition,
         incident_scope=IncidentScope.from_operational_defaults(
@@ -283,9 +282,10 @@ def build_runtime_bundle(
             agent_registry=agent_registry,
         )
     composition.tool_registry = composition.platform.env_wiring.tool_wiring.registry
+    canonical_registry = composition.tool_registry
     return ScenarioRuntimeBundle(
         operational_data=operational_data,
-        registry=tool_registry,
+        registry=canonical_registry,
         investigator=investigator,
         runtime_composition=composition,
         evidence_store=evidence_store,

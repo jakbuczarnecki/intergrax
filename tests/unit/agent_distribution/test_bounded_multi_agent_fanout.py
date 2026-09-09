@@ -11,6 +11,7 @@ import pytest
 
 from intergrax.agent_distribution.multi_agent_coordination import (
     ChildExecutionFailedError,
+    CoordinationCleanupError,
     CoordinationDelegation,
     CoordinationFailureCode,
     CoordinationId,
@@ -19,6 +20,7 @@ from intergrax.agent_distribution.multi_agent_coordination import (
     MultiAgentCoordinationService,
     NoEligibleSpecialistError,
 )
+from intergrax.contracts.orchestration_topology import OrchestrationSlotId
 from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskLifecyclePlan,
     DelegationId,
@@ -69,9 +71,20 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.delegated_subtask_child_port import (
     as_child_execution_port,
 )
-from intergrax.runtime.execution.multi_agent_fanout_orchestration import (
-    build_fan_out_orchestration_work_port,
+from intergrax.runtime.execution.fan_out_orchestration_adapter import (
+    FanOutCoordinationSlotExecutor,
+    FanOutSlotPayload,
+    build_fan_out_orchestration_port,
+    project_fan_out_scheduling_policy,
+    project_fan_out_to_topology,
+    to_fan_out_item_id,
+    to_orchestration_slot_id,
 )
+from intergrax.runtime.execution.orchestration_topology_submission import (
+    build_orchestration_topology_submission_port,
+)
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from tests.unit.agent_distribution.test_delegated_subtasks import (
     OcrRequest,
@@ -172,9 +185,11 @@ def _fan_out_item(
 
 def _build_fan_out_service(harness) -> BoundedMultiAgentFanOutService[OcrRequest, OcrResult]:
     coordination = _build_coordination_service(harness)
-    orchestration = build_fan_out_orchestration_work_port(
+    nexus_loop = NexusLoop(AgentRegistry())
+    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    orchestration = build_fan_out_orchestration_port(
+        submission_port,
         coordination,
-        ledger=_UNLIMITED_LEDGER,
     )
     return BoundedMultiAgentFanOutService(orchestration=orchestration)
 
@@ -735,9 +750,11 @@ async def test_fan_out_uses_coordination_service_not_direct_runner() -> None:
     )
     inner = _build_coordination_service(harness)
     tracker = _TrackingCoordinationService(inner=inner)
-    orchestration = build_fan_out_orchestration_work_port(
+    nexus_loop = NexusLoop(AgentRegistry())
+    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    orchestration = build_fan_out_orchestration_port(
+        submission_port,
         tracker,
-        ledger=_UNLIMITED_LEDGER,
     )
     fan_out = BoundedMultiAgentFanOutService(orchestration=orchestration)
     task_scope = mint_task_id()
@@ -791,25 +808,24 @@ async def test_fan_out_uses_coordination_service_not_direct_runner() -> None:
 
 
 class _OrderedCompletionDelegate:
-    def __init__(self, *, delays: dict[str, float]) -> None:
-        self._delays = delays
+    def __init__(self, *, release_events: dict[str, asyncio.Event]) -> None:
+        self._release_events = release_events
         self.completion_order: list[str] = []
 
     async def execute(self, request: OcrRequest) -> OcrResult:
-        await asyncio.sleep(self._delays[request.document_ref])
+        await self._release_events[request.document_ref].wait()
         self.completion_order.append(request.document_ref)
         return OcrResult(text=f"ocr:{request.document_ref}")
 
 
 @pytest.mark.asyncio
 async def test_fan_out_preserves_request_order_despite_completion_order() -> None:
-    delegate = _OrderedCompletionDelegate(
-        delays={
-            "doc-a": 0.03,
-            "doc-b": 0.01,
-            "doc-c": 0.02,
-        },
-    )
+    release_events = {
+        "doc-a": asyncio.Event(),
+        "doc-b": asyncio.Event(),
+        "doc-c": asyncio.Event(),
+    }
+    delegate = _OrderedCompletionDelegate(release_events=release_events)
     harness = build_fan_out_harness(
         candidates=(
             _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
@@ -843,12 +859,24 @@ async def test_fan_out_preserves_request_order_despite_completion_order() -> Non
             document_ref="doc-c",
         ),
     )
-    result = await _run_fan_out(
-        harness,
-        task_scope=task_scope,
-        items=items,
-        max_concurrency=3,
-    )
+
+    async def _release_in_completion_order() -> None:
+        release_events["doc-b"].set()
+        await asyncio.sleep(0.01)
+        release_events["doc-c"].set()
+        await asyncio.sleep(0.01)
+        release_events["doc-a"].set()
+
+    release_task = asyncio.create_task(_release_in_completion_order())
+    try:
+        result = await _run_fan_out(
+            harness,
+            task_scope=task_scope,
+            items=items,
+            max_concurrency=3,
+        )
+    finally:
+        await release_task
     assert delegate.completion_order == ["doc-b", "doc-c", "doc-a"]
     assert [item.item_id for item in result.items] == [
         FanOutItemId("item-a"),
@@ -1214,6 +1242,275 @@ async def test_fan_out_permission_escalation_still_blocked() -> None:
         result.items[0].failure.failure_code
         is CoordinationFailureCode.CHILD_EXECUTION_FAILED
     )
+
+
+def test_fan_out_topology_projection_maps_independent_slots() -> None:
+    task_scope = mint_task_id()
+    request = FanOutRequest(
+        fan_out_id=FanOutId("fan-out-topology"),
+        items=(
+            _fan_out_item(
+                item_id="a",
+                task_scope=task_scope,
+                coordination_id="coord-a",
+                delegation_id="delegation-a",
+                lease_id="lease-a",
+            ),
+            _fan_out_item(
+                item_id="b",
+                task_scope=task_scope,
+                coordination_id="coord-b",
+                delegation_id="delegation-b",
+                lease_id="lease-b",
+            ),
+            _fan_out_item(
+                item_id="c",
+                task_scope=task_scope,
+                coordination_id="coord-c",
+                delegation_id="delegation-c",
+                lease_id="lease-c",
+            ),
+        ),
+        max_concurrency=4,
+    )
+    topology = project_fan_out_to_topology(request)
+    assert [slot.slot_id for slot in topology.slots] == [
+        OrchestrationSlotId("a"),
+        OrchestrationSlotId("b"),
+        OrchestrationSlotId("c"),
+    ]
+    assert all(slot.depends_on == () for slot in topology.slots)
+    policy = project_fan_out_scheduling_policy(request)
+    assert policy.max_concurrency == 4
+
+
+def test_fan_out_slot_id_mapping_is_explicit_without_prefixes() -> None:
+    item_id = FanOutItemId("a")
+    slot_id = to_orchestration_slot_id(item_id)
+    assert slot_id == OrchestrationSlotId("a")
+    assert to_fan_out_item_id(slot_id) == item_id
+
+
+@pytest.mark.asyncio
+async def test_fan_out_slot_executor_success_preserves_coordination_result() -> None:
+    task_scope = mint_task_id()
+    item = _fan_out_item(
+        item_id="a",
+        task_scope=task_scope,
+        coordination_id="coord-a",
+        delegation_id="delegation-a",
+        lease_id="lease-a",
+    )
+    expected = object()
+
+    class _SuccessCoordination:
+        async def coordinate(self, request, *, delegation, principal):
+            del request, delegation, principal
+            return expected
+
+    executor = FanOutCoordinationSlotExecutor(
+        coordination=_SuccessCoordination(),
+        principal=admin_test_principal(),
+    )
+    outcome = await executor.execute_slot(
+        slot_id=OrchestrationSlotId("a"),
+        payload=FanOutSlotPayload(item=item),
+    )
+    assert outcome.status is FanOutItemStatus.SUCCESS
+    assert outcome.result is expected
+
+
+@pytest.mark.asyncio
+async def test_fan_out_slot_executor_preserves_typed_coordination_failure() -> None:
+    task_scope = mint_task_id()
+    item = _fan_out_item(
+        item_id="a",
+        task_scope=task_scope,
+        coordination_id="coord-a",
+        delegation_id="delegation-a",
+        lease_id="lease-a",
+    )
+
+    class _FailingCoordination:
+        async def coordinate(self, request, *, delegation, principal):
+            del request, delegation, principal
+            raise NoEligibleSpecialistError("no specialist")
+
+    executor = FanOutCoordinationSlotExecutor(
+        coordination=_FailingCoordination(),
+        principal=admin_test_principal(),
+    )
+    outcome = await executor.execute_slot(
+        slot_id=OrchestrationSlotId("a"),
+        payload=FanOutSlotPayload(item=item),
+    )
+    assert outcome.status is FanOutItemStatus.FAILURE
+    assert outcome.failure is not None
+    assert (
+        outcome.failure.failure_code
+        is CoordinationFailureCode.NO_ELIGIBLE_SPECIALIST
+    )
+
+
+@pytest.mark.asyncio
+async def test_fan_out_slot_executor_preserves_cleanup_partial_result() -> None:
+    task_scope = mint_task_id()
+    item = _fan_out_item(
+        item_id="a",
+        task_scope=task_scope,
+        coordination_id="coord-a",
+        delegation_id="delegation-a",
+        lease_id="lease-a",
+    )
+    partial = OcrResult(text="ocr:partial")
+
+    class _CleanupFailingCoordination:
+        async def coordinate(self, request, *, delegation, principal):
+            del request, delegation, principal
+            raise CoordinationCleanupError(
+                "cleanup failed",
+                coordination_id=CoordinationId("coord-a"),
+                result=partial,
+                release_cause=RuntimeError("release"),
+            )
+
+    executor = FanOutCoordinationSlotExecutor(
+        coordination=_CleanupFailingCoordination(),
+        principal=admin_test_principal(),
+    )
+    outcome = await executor.execute_slot(
+        slot_id=OrchestrationSlotId("a"),
+        payload=FanOutSlotPayload(item=item),
+    )
+    assert outcome.status is FanOutItemStatus.FAILURE
+    assert outcome.failure is not None
+    assert (
+        outcome.failure.failure_code
+        is CoordinationFailureCode.LEASE_RELEASE_FAILED
+    )
+    assert outcome.failure.partial_result == partial
+
+
+@pytest.mark.asyncio
+async def test_fan_out_slot_executor_propagates_programming_errors() -> None:
+    task_scope = mint_task_id()
+    item = _fan_out_item(
+        item_id="a",
+        task_scope=task_scope,
+        coordination_id="coord-a",
+        delegation_id="delegation-a",
+        lease_id="lease-a",
+    )
+
+    class _BrokenCoordination:
+        async def coordinate(self, request, *, delegation, principal):
+            del request, delegation, principal
+            raise TypeError("programming error")
+
+    executor = FanOutCoordinationSlotExecutor(
+        coordination=_BrokenCoordination(),
+        principal=admin_test_principal(),
+    )
+    with pytest.raises(TypeError, match="programming error"):
+        await executor.execute_slot(
+            slot_id=OrchestrationSlotId("a"),
+            payload=FanOutSlotPayload(item=item),
+        )
+
+
+@pytest.mark.asyncio
+async def test_fan_out_canonical_path_preserves_two_level_child_execution_lineage() -> None:
+    orchestration_child_ids: list[str] = []
+    specialist_child_ids: list[str] = []
+
+    class LineageDelegate:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            specialist_child_ids.append(require_active_execution_id())
+            return OcrResult(text=request.document_ref)
+
+    harness = build_fan_out_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        specialist_delegate=LineageDelegate(),
+    )
+    task_scope = mint_task_id()
+    root = _root_identity()
+    parent_execution_id = root.execution_id
+    items = (
+        _fan_out_item(
+            item_id="item-a",
+            task_scope=task_scope,
+            coordination_id="coord-a",
+            delegation_id="delegation-a",
+            lease_id="lease-a",
+            document_ref="doc-a",
+        ),
+    )
+    nexus_loop = NexusLoop(AgentRegistry())
+    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    coordination = _build_coordination_service(harness)
+
+    class _TrackingSubmissionPort:
+        def __init__(self, inner):
+            self._inner = inner
+
+        async def submit(self, topology, scheduling_policy, slot_executor):
+            class _TrackingSlotExecutor:
+                def __init__(self, wrapped):
+                    self._wrapped = wrapped
+
+                async def execute_slot(self, *, slot_id, payload):
+                    orchestration_child_ids.append(require_active_execution_id())
+                    return await self._wrapped.execute_slot(
+                        slot_id=slot_id,
+                        payload=payload,
+                    )
+
+            return await self._inner.submit(
+                topology,
+                scheduling_policy,
+                _TrackingSlotExecutor(slot_executor),
+            )
+
+    fan_out = BoundedMultiAgentFanOutService(
+        orchestration=build_fan_out_orchestration_port(
+            _TrackingSubmissionPort(submission_port),
+            coordination,
+        ),
+    )
+    harness.task_scope_authority.task_scope_id = task_scope
+
+    class RootDelegate:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            del request
+            budget_token = bind_root_execution_budget(
+                execution_id=require_active_execution_id(),
+                ledger=_UNLIMITED_LEDGER,
+            )
+            try:
+                await fan_out.fan_out(
+                    FanOutRequest(
+                        fan_out_id=FanOutId("fan-out-lineage"),
+                        items=items,
+                        max_concurrency=1,
+                    ),
+                    principal=admin_test_principal(),
+                )
+            finally:
+                reset_active_execution_budget(budget_token)
+            return OcrResult(text="done")
+
+    await ExecutionBoundary[OcrRequest, OcrResult](
+        RootDelegate(),
+        identity=root,
+        authority=ParentExecutionAuthority.unrestricted_root(),
+    ).execute(OcrRequest(document_ref="root"))
+    assert parent_execution_id not in orchestration_child_ids
+    assert parent_execution_id not in specialist_child_ids
+    assert len(orchestration_child_ids) == 1
+    assert len(specialist_child_ids) == 1
+    assert orchestration_child_ids[0] != specialist_child_ids[0]
 
 
 @pytest.mark.asyncio

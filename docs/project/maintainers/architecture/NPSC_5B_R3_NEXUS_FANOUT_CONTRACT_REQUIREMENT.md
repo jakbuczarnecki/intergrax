@@ -1,6 +1,6 @@
 # NPSC-5B/R3 — Nexus Fan-Out Contract Requirement
 
-**Status:** `SHARED CONTRACT DELIVERED` — NPSC-5B may resume at R4
+**Status:** `R4 CANONICAL ADAPTER IMPLEMENTED` — NPSC-5B final qualification may proceed
 
 **Series:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In
 
@@ -8,7 +8,7 @@
 
 **Related:**
 
-- [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md) (R1 `FROZEN`, R2 `CORRECTION REQUIRED`)
+- [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md) (R1 `FROZEN`, R2 `RETIRED`, R4 `PASS`)
 - [`NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md`](NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md)
 
 ---
@@ -16,13 +16,24 @@
 ## 1. R3 gate outcome
 
 ```text
-STATUS: SHARED CONTRACT DELIVERED
-NPSC-5B may resume at R4
+STATUS: R4 CANONICAL ADAPTER IMPLEMENTED
+R2 correction retired; R3 shared contract delivered; R4 adapter wired
 ```
 
-R3 contract-closure analysis (F1–F10) concludes that the existing public Execution/Nexus surface is **not sufficient** for NPSC-5B fan-out without a local mini-runtime workaround.
+R3 contract-closure analysis (F1–F10) identified gaps in the public Execution/Nexus surface. R3 delivered the minimal shared contracts; R4 wired NPSC fan-out as a consumer-only adapter.
 
-**No production NPSC fan-out implementation may ship** until the minimal shared contracts below are owned and delivered by Execution / Nexus.
+**Canonical production path:**
+
+```text
+FanOutRequest
+→ BoundedMultiAgentFanOutService
+→ FanOutOrchestrationPort
+→ OrchestrationTopologySubmissionPort
+→ Nexus
+→ child Execution
+→ MultiAgentCoordinationService
+→ FanOutResult
+```
 
 ---
 

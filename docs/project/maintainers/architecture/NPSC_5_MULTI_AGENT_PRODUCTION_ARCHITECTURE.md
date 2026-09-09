@@ -168,7 +168,7 @@ Nested delegation is already possible when a specialist acquired through `Delega
 
 > **R1 ownership freeze:** Fan-out scheduling and bounded parallelism are **not** canonical Agent Distribution responsibilities. See [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md). **R2 CORRECTION REQUIRED** — R2 removed AD scheduler but introduced orchestration mini-runtime bypass. **R3 BLOCKED** — see [`NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md`](NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md).
 
-### Target integration (R3 — blocked)
+### Canonical integration (R4 — implemented)
 
 ```text
 FanOutRequest (semantic contract — Agent Distribution)
@@ -180,10 +180,10 @@ BoundedMultiAgentFanOutService (validation + fan-in projection)
 FanOutOrchestrationPort
         |
         v
-ExecutionWorkPort + ORCHESTRATION (child under active parent)
+OrchestrationTopologySubmissionPort
         |
         v
-canonical NexusLoop / OrchestrationExecutor (composition-root wired)
+canonical NexusLoop graph_executor (composition-root wired)
         |
         v
 typed dynamic topology + bounded scheduling
@@ -200,7 +200,8 @@ typed per-slot outcomes → FanOutResult
 | `FanOutResult` / `FanOutItemOutcome` | `intergrax/agent_distribution/` | `KEEP` — semantic contracts |
 | `FanOutOrchestrationPort` | `intergrax/agent_distribution/` | `KEEP` — semantic boundary |
 | `BoundedMultiAgentFanOutService` | `intergrax/agent_distribution/` | `KEEP` — thin adapter (no scheduler) |
-| `multi_agent_fanout_orchestration.py` | `intergrax/runtime/execution/` | `CORRECTION REQUIRED` — local mini-runtime, not canonical Nexus |
+| `fan_out_orchestration_adapter.py` | `intergrax/runtime/execution/` | `KEEP` — thin R4 consumer adapter |
+| `multi_agent_fanout_orchestration.py` | removed in R4 | `RETIRED` |
 | `AsyncioSemaphoreBoundedFanOutExecutor` | removed in R2 | `REMOVED` |
 | `BoundedFanOutExecutor` | removed in R2 | `REMOVED` |
 | `MultiAgentCoordinationService` | `intergrax/agent_distribution/` | `KEEP` — single-delegation owner |

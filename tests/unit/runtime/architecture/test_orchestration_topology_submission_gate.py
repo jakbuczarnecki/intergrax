@@ -32,12 +32,12 @@ _NODE_EXECUTION_MODULE = (
 _GRAPH_EXECUTOR_MODULE = (
     _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "execution" / "graph_executor.py"
 )
-_FANOUT_ORCHESTRATION_MODULE = (
+_FANOUT_ADAPTER_MODULE = (
     _REPO_ROOT
     / "intergrax"
     / "runtime"
     / "execution"
-    / "multi_agent_fanout_orchestration.py"
+    / "fan_out_orchestration_adapter.py"
 )
 
 _FORBIDDEN_CONSUMER_SCHEDULER_PATTERNS = (
@@ -119,13 +119,24 @@ def test_gate_j_topology_contract_modules_do_not_reference_llm() -> None:
 
 
 @pytest.mark.gate
-def test_shared_topology_submission_does_not_import_r2_fanout_mini_runtime() -> None:
+def test_shared_topology_submission_does_not_import_fanout_adapter() -> None:
     tree = ast.parse(_read(_SUBMISSION_MODULE), filename=str(_SUBMISSION_MODULE))
     modules: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
             modules.add(node.module)
-    assert "intergrax.runtime.execution.multi_agent_fanout_orchestration" not in modules
+    assert "intergrax.runtime.execution.fan_out_orchestration_adapter" not in modules
+
+
+@pytest.mark.gate
+def test_fanout_adapter_does_not_construct_consumer_graph_executor() -> None:
+    source = _read(_FANOUT_ADAPTER_MODULE)
+    violations = [
+        pattern.pattern
+        for pattern in _FORBIDDEN_CONSUMER_SCHEDULER_PATTERNS
+        if pattern.search(source)
+    ]
+    assert violations == []
 
 
 @pytest.mark.gate

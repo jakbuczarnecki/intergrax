@@ -19,6 +19,13 @@ _NPSC5B_MODULE = (
     / "agent_distribution"
     / "bounded_multi_agent_fanout.py"
 )
+_FANOUT_ADAPTER_MODULE = (
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "execution"
+    / "fan_out_orchestration_adapter.py"
+)
 
 _FORBIDDEN_SUPERVISOR_IMPORTS = (
     "intergrax.supervisor",
@@ -45,6 +52,23 @@ _FORBIDDEN_DIRECT_EXECUTION_CALLS = (
     "ChildExecutionRunner",
     "DelegatedSubtaskService",
     "MultiAgentCoordinationService",
+)
+
+_FORBIDDEN_R2_PATTERNS = (
+    re.compile(r"\bGraphExecutor\s*\("),
+    re.compile(r"\bAgentEngine\s*\("),
+    re.compile(r"\bAgentRegistry\s*\("),
+    re.compile(r"\bPrefixStubLLMAdapter\b"),
+    re.compile(r"\bInMemorySessionStorage\b"),
+    re.compile(r"\basyncio\.Semaphore\b"),
+    re.compile(r"\basyncio\.gather\b"),
+    re.compile(r"\basyncio\.create_task\b"),
+    re.compile(r"\bTaskGroup\b"),
+    re.compile(r"\bmint_task_id\b"),
+    re.compile(r'tenant_id\s*=\s*["\']npsc-fanout["\']'),
+    re.compile(r'user_id\s*=\s*["\']npsc-fanout-user["\']'),
+    re.compile(r'metadata\[\s*["\']graph_node_id["\']\s*\]'),
+    re.compile(r"fanout-slot-"),
 )
 
 _FORBIDDEN_SCHEDULER_PATTERNS = (
@@ -203,3 +227,47 @@ def test_npsc5b_no_prohibited_patterns() -> None:
         "NPSC-5B production module contains prohibited patterns:\n"
         + "\n".join(violations)
     )
+
+
+@pytest.mark.gate
+def test_npsc5b_r4_adapter_uses_topology_submission_port() -> None:
+    source = _FANOUT_ADAPTER_MODULE.read_text(encoding="utf-8")
+    modules = _imported_modules(_FANOUT_ADAPTER_MODULE)
+    assert "intergrax.contracts.orchestration_topology" in modules
+    assert "OrchestrationTopologySubmissionPort" in source
+    assert "topology_submission.submit" in source
+    assert "build_orchestration_topology_submission_port" not in source
+    assert "NexusLoop" not in source
+    nexus_imports = [
+        module for module in modules if module.startswith("intergrax.runtime.nexus")
+    ]
+    assert nexus_imports == []
+
+
+@pytest.mark.gate
+def test_npsc5b_r4_adapter_forbids_invalid_r2_mini_runtime() -> None:
+    violations = _pattern_violations(_FANOUT_ADAPTER_MODULE, _FORBIDDEN_R2_PATTERNS)
+    assert violations == [], (
+        "fan-out adapter must not contain invalid R2 mini-runtime patterns:\n"
+        + "\n".join(violations)
+    )
+
+
+@pytest.mark.gate
+def test_npsc5b_r4_adapter_no_prohibited_patterns() -> None:
+    violations = _pattern_violations(_FANOUT_ADAPTER_MODULE, _FORBIDDEN_PROHIBITED_PATTERNS)
+    assert violations == [], (
+        "fan-out adapter contains prohibited patterns:\n" + "\n".join(violations)
+    )
+
+
+@pytest.mark.gate
+def test_npsc5b_r4_invalid_r2_module_removed() -> None:
+    removed = (
+        _REPO_ROOT
+        / "intergrax"
+        / "runtime"
+        / "execution"
+        / "multi_agent_fanout_orchestration.py"
+    )
+    assert not removed.exists()

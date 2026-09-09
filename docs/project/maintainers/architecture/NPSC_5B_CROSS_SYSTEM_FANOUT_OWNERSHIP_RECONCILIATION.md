@@ -221,13 +221,14 @@ Execution Strategy Resolution (StrategyExecutionRouter)
 | Execution changes required | **YES** — minimal shared orchestration topology submission + typed slot outcome contracts (R3) |
 | Nexus public seam sufficient | **NO** — `ExecutionWorkPort` + ORCHESTRATION routes strategy, but no typed dynamic topology submission to canonical `NexusLoop` host |
 | Missing contract | **YES** — see [`NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md`](NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md) |
-| R2 production status | **CORRECTION REQUIRED** — R2 mini-runtime in `multi_agent_fanout_orchestration.py` is not canonical integration |
+| R2 production status | **RETIRED** — invalid mini-runtime removed in R4 |
+| R4 production status | **PASS** — `fan_out_orchestration_adapter.py` consumes canonical topology submission |
 
 ---
 
 ## 11. R2 migration plan
 
-**Status: CORRECTION REQUIRED** (scheduler removed; canonical orchestration integration invalid — see R3).
+**Status: R4 COMPLETE** (R2 mini-runtime retired; canonical adapter implemented).
 
 Completed in R2:
 
@@ -235,21 +236,19 @@ Completed in R2:
 2. **Remove duplicate scheduler** — deleted `AsyncioSemaphoreBoundedFanOutExecutor` and `BoundedFanOutExecutor`.
 3. **Rewire `BoundedMultiAgentFanOutService`** — validation + `FanOutOrchestrationPort` adapter shell.
 
-**Invalid (R3 correction target):** `intergrax/runtime/execution/multi_agent_fanout_orchestration.py` constructs local `AgentRegistry` / `AgentEngine` / `GraphExecutor`, synthetic agents, stub LLM, synthetic identity, and process-local outcome side-channel. This is **not** canonical Nexus integration.
+**Retired (R4):** invalid `multi_agent_fanout_orchestration.py` removed.
 
-### R3 target path (blocked until Execution/Nexus contract)
+### R4 canonical path (implemented)
 
 ```text
 FanOutRequest
 → BoundedMultiAgentFanOutService (validate)
 → FanOutOrchestrationPort
-→ ExecutionWorkPort (ORCHESTRATION child under active parent)
-→ StrategyExecutionRouter
-→ canonical OrchestrationExecutor / NexusLoop (composition-root wired)
-→ typed dynamic topology submission
+→ OrchestrationTopologySubmissionPort
+→ canonical NexusLoop graph_executor
 → real child Execution per slot
 → MultiAgentCoordinationService → DelegatedSubtaskService
-→ typed OrchestrationSlotOutcome fan-in
+→ typed fan-in projection
 → FanOutResult
 ```
 
