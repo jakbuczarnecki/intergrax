@@ -67,6 +67,7 @@ from intergrax.agent_distribution.task_capability_resolution import (
     TaskCapabilityResolutionContractError,
     TaskCapabilityResolutionRequest,
     TaskCapabilityResolutionResult,
+    TaskCapabilityResolver,
     TaskCapabilityResolverId,
     build_deterministic_task_capability_resolver,
     build_task_capability_resolution_request,
@@ -375,6 +376,7 @@ def build_delegated_harness(
     acquisition_plan_factory: DelegatedSubtaskAcquisitionPlanFactory | None = None,
     task_scope: TaskId | None = None,
     task_scope_authority: _FixedTaskScopeAuthority | None = None,
+    capability_resolver: TaskCapabilityResolver | None = None,
 ) -> DelegatedHarness:
     harness = build_task_scoped_harness()
     delegate = specialist_delegate or _EchoOcrDelegate()
@@ -385,7 +387,7 @@ def build_delegated_harness(
         **(acquisition_kwargs or {}),
     )
     service = DelegatedSubtaskService(
-        capability_resolver=_baseline_resolver(),
+        capability_resolver=capability_resolver or _baseline_resolver(),
         discovery=_federated_discovery(*candidates),
         matcher=CapabilityMatcher(),
         selector=DeterministicIdentitySelectionStrategy(),

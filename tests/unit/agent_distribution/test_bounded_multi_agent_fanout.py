@@ -151,12 +151,18 @@ class _FanOutAcquisitionPlanFactory:
         )
 
 
-def build_fan_out_harness(*, candidates, specialist_delegate=None):
+def build_fan_out_harness(
+    *,
+    candidates,
+    specialist_delegate=None,
+    capability_resolver=None,
+):
     factory = _FanOutAcquisitionPlanFactory()
     return build_delegated_harness(
         candidates=candidates,
         specialist_delegate=specialist_delegate,
         acquisition_plan_factory=factory,
+        capability_resolver=capability_resolver,
     )
 
 
