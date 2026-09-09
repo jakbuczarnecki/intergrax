@@ -83,6 +83,46 @@ def test_data_pack_load_adapters_do_not_import_vector_or_model_providers() -> No
     assert violations == []
 
 
+def test_pgvector_adapter_does_not_import_model_providers() -> None:
+    adapter_root = _VPI_ROOT / "storage_bootstrap/adapters/pgvector"
+    forbidden = frozenset(
+        {
+            "qdrant",
+            "qdrant_client",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(adapter_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_pgvector_adapter_does_not_import_qdrant() -> None:
+    adapter_root = _VPI_ROOT / "storage_bootstrap/adapters/pgvector"
+    violations: list[str] = []
+    for module_path in sorted(adapter_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if imported.split(".")[0] in {"qdrant", "qdrant_client"}:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_qdrant_adapter_does_not_import_pgvector() -> None:
+    adapter_root = _VPI_ROOT / "storage_bootstrap/adapters/qdrant"
+    violations: list[str] = []
+    for module_path in sorted(adapter_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if imported.split(".")[0] == "pgvector":
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
 def test_data_pack_load_core_has_no_provider_imports() -> None:
     core_root = _VPI_ROOT / "storage_bootstrap/data_pack_load"
     forbidden = frozenset(
