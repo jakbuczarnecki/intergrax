@@ -1,6 +1,6 @@
 # NPSC-5B/R1 — Cross-System Fan-Out Ownership Reconciliation
 
-**Status:** `FROZEN` (R1 architecture decision) · **R2:** `IMPLEMENTED`
+**Status:** `FROZEN` (R1 architecture decision) · **R2:** `CORRECTION REQUIRED` · **R3:** `BLOCKED ON SHARED CONTRACT`
 
 **Series:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In
 
@@ -218,37 +218,42 @@ Execution Strategy Resolution (StrategyExecutionRouter)
 | Question | Answer |
 | -------- | ------ |
 | Decision changes required | **NO** |
-| Execution changes required for R2 wiring | **YES** (composition / adapter wiring only; no R1 contract change) |
-| Nexus public seam sufficient | **YES** (via `ExecutionWorkPort` + ORCHESTRATION routing) |
-| Missing contract | **None** for orchestration submission. Optional future: Execution-owned bounded `concurrent_execution_work` variant if non-orchestration bounded parallelism is needed without Nexus — owned by Execution session, not NPSC. |
+| Execution changes required | **YES** — minimal shared orchestration topology submission + typed slot outcome contracts (R3) |
+| Nexus public seam sufficient | **NO** — `ExecutionWorkPort` + ORCHESTRATION routes strategy, but no typed dynamic topology submission to canonical `NexusLoop` host |
+| Missing contract | **YES** — see [`NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md`](NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md) |
+| R2 production status | **CORRECTION REQUIRED** — R2 mini-runtime in `multi_agent_fanout_orchestration.py` is not canonical integration |
 
 ---
 
 ## 11. R2 migration plan
 
-**Status: IMPLEMENTED.**
+**Status: CORRECTION REQUIRED** (scheduler removed; canonical orchestration integration invalid — see R3).
 
-1. **Freeze contracts** — retain `FanOutRequest`, `FanOutItem`, `FanOutResult`, `FanOutItemOutcome` as Agent Distribution semantic contracts.
+Completed in R2:
+
+1. **Freeze contracts** — `FanOutRequest`, `FanOutItem`, `FanOutResult`, `FanOutItemOutcome` retained as Agent Distribution semantic contracts.
 2. **Remove duplicate scheduler** — deleted `AsyncioSemaphoreBoundedFanOutExecutor` and `BoundedFanOutExecutor`.
-3. **Rewire `BoundedMultiAgentFanOutService`** — validation + `FanOutOrchestrationPort` adapter; fan-in projection from orchestration outcomes mapped to `FanOutResult`.
-4. **Preserve NPSC-5A path** — `MultiAgentCoordinationService` single-delegation unchanged; specialist resolution stays in Agent Distribution.
-5. **Update gates** — `test_npsc5b_bounded_multi_agent_fanout_gate.py` forbids AD-local scheduling and Nexus imports.
-6. **Composition root** — `build_fan_out_orchestration_work_port` wires ORCHESTRATION via `ExecutionWorkPort` → `FanOutTopologyOrchestrator` → `GraphExecutor` (`max_parallel_nodes`).
+3. **Rewire `BoundedMultiAgentFanOutService`** — validation + `FanOutOrchestrationPort` adapter shell.
 
-### R2 canonical path
+**Invalid (R3 correction target):** `intergrax/runtime/execution/multi_agent_fanout_orchestration.py` constructs local `AgentRegistry` / `AgentEngine` / `GraphExecutor`, synthetic agents, stub LLM, synthetic identity, and process-local outcome side-channel. This is **not** canonical Nexus integration.
+
+### R3 target path (blocked until Execution/Nexus contract)
 
 ```text
 FanOutRequest
 → BoundedMultiAgentFanOutService (validate)
 → FanOutOrchestrationPort
-→ FanOutOrchestrationWorkPort / ExecutionWorkPort
-→ StrategyExecutionRouter (ORCHESTRATION)
-→ FanOutOrchestrationRouterDelegate
-→ FanOutTopologyOrchestrator
-→ GraphExecutor (Nexus bounded scheduling)
-→ per-slot MultiAgentCoordinationService → DelegatedSubtaskService → ChildExecutionPort
+→ ExecutionWorkPort (ORCHESTRATION child under active parent)
+→ StrategyExecutionRouter
+→ canonical OrchestrationExecutor / NexusLoop (composition-root wired)
+→ typed dynamic topology submission
+→ real child Execution per slot
+→ MultiAgentCoordinationService → DelegatedSubtaskService
+→ typed OrchestrationSlotOutcome fan-in
 → FanOutResult
 ```
+
+See [`NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md`](NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md).
 
 ---
 
@@ -287,7 +292,7 @@ Allowed variation points (pluginability at correct layer):
 
 ## 14. Architecture conflicts
 
-**NONE** after R1 freeze — conflict is **documented and scheduled for R2 retirement** of duplicate scheduler. No cross-session architecture decision required; existing Execution seam is sufficient.
+**R3 BLOCKED** — R1 scheduler conflict was retired, but R2 introduced an orchestration mini-runtime bypass. Minimal shared Execution/Nexus contracts are required before NPSC-5B can reach production qualification. Decision System impact: **NONE**.
 
 ---
 

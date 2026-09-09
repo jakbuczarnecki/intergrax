@@ -4,7 +4,7 @@
 
 **Series owner:** Agent Distribution + frozen Execution Engine
 
-**Current phase:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In (**R2 IMPLEMENTED**)
+**Current phase:** NPSC-5B — Bounded Multi-Agent Fan-Out / Fan-In (**R2 CORRECTION REQUIRED** · **R3 BLOCKED ON SHARED CONTRACT**)
 
 **R1 reconciliation:** [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md)
 
@@ -166,9 +166,9 @@ Nested delegation is already possible when a specialist acquired through `Delega
 
 ## 8.1 NPSC-5B — Bounded fan-out / fan-in
 
-> **R1 ownership freeze:** Fan-out scheduling and bounded parallelism are **not** canonical Agent Distribution responsibilities. See [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md). **R2 IMPLEMENTED** — canonical path below.
+> **R1 ownership freeze:** Fan-out scheduling and bounded parallelism are **not** canonical Agent Distribution responsibilities. See [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md). **R2 CORRECTION REQUIRED** — R2 removed AD scheduler but introduced orchestration mini-runtime bypass. **R3 BLOCKED** — see [`NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md`](NPSC_5B_R3_NEXUS_FANOUT_CONTRACT_REQUIREMENT.md).
 
-### Canonical integration (R2)
+### Target integration (R3 — blocked)
 
 ```text
 FanOutRequest (semantic contract — Agent Distribution)
@@ -177,30 +177,30 @@ FanOutRequest (semantic contract — Agent Distribution)
 BoundedMultiAgentFanOutService (validation + fan-in projection)
         |
         v
-FanOutOrchestrationPort (semantic boundary)
+FanOutOrchestrationPort
         |
         v
-FanOutOrchestrationWorkPort / ExecutionWorkPort + ORCHESTRATION
+ExecutionWorkPort + ORCHESTRATION (child under active parent)
         |
         v
-StrategyExecutionRouter → FanOutOrchestrationRouterDelegate
+canonical NexusLoop / OrchestrationExecutor (composition-root wired)
         |
         v
-FanOutTopologyOrchestrator → GraphExecutor (max_parallel_nodes)
+typed dynamic topology + bounded scheduling
         |
-        +---- per slot: MultiAgentCoordinationService → DelegatedSubtaskService
+        +---- per slot: child Execution → MultiAgentCoordinationService → DelegatedSubtaskService
         |
         v
-FanOutResult (deterministic fan-in projection)
+typed per-slot outcomes → FanOutResult
 ```
 
-| Component | Package | R2 status |
-| --------- | ------- | --------- |
-| `FanOutRequest` / `FanOutItem` | `intergrax/agent_distribution/` | `KEEP_AS_CONTRACT_ONLY` |
-| `FanOutResult` / `FanOutItemOutcome` | `intergrax/agent_distribution/` | `KEEP_AS_CONTRACT_ONLY` |
-| `FanOutOrchestrationPort` | `intergrax/agent_distribution/` | `KEEP` — semantic orchestration boundary |
+| Component | Package | Status |
+| --------- | ------- | ------ |
+| `FanOutRequest` / `FanOutItem` | `intergrax/agent_distribution/` | `KEEP` — semantic contracts |
+| `FanOutResult` / `FanOutItemOutcome` | `intergrax/agent_distribution/` | `KEEP` — semantic contracts |
+| `FanOutOrchestrationPort` | `intergrax/agent_distribution/` | `KEEP` — semantic boundary |
 | `BoundedMultiAgentFanOutService` | `intergrax/agent_distribution/` | `KEEP` — thin adapter (no scheduler) |
-| `FanOutOrchestrationWorkPort` | `intergrax/runtime/execution/` | `KEEP` — composition adapter |
+| `multi_agent_fanout_orchestration.py` | `intergrax/runtime/execution/` | `CORRECTION REQUIRED` — local mini-runtime, not canonical Nexus |
 | `AsyncioSemaphoreBoundedFanOutExecutor` | removed in R2 | `REMOVED` |
 | `BoundedFanOutExecutor` | removed in R2 | `REMOVED` |
 | `MultiAgentCoordinationService` | `intergrax/agent_distribution/` | `KEEP` — single-delegation owner |
@@ -223,7 +223,7 @@ FanOutResult (deterministic fan-in projection)
 | Phase | Scope |
 | ----- | ----- |
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
-| **NPSC-5B** | Bounded fan-out / fan-in (implemented) |
+| **NPSC-5B** | Bounded fan-out / fan-in (R3 blocked on Execution/Nexus contract) |
 | **NPSC-5C** | Planner-produced typed coordination intents |
 | **NPSC-5F** | Audit / observability hooks expansion |
 
