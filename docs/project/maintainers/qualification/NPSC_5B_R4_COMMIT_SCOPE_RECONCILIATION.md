@@ -59,16 +59,20 @@ The historical commit message belongs to the AI-incident task scope. R4-owned fi
 
 ## 4. Why history was not rewritten
 
-| Forbidden action | Taken |
+| Operation | Taken |
 | --- | --- |
 | Revert mixed commit | NO |
-| Reapply AI-incident / R4 splits | NO |
+| Reapply AI-incident / R4 split | NO |
 | Interactive rebase | NO |
 | Force push | NO |
-| Reset | NO |
+| `git reset --hard` | NO |
+| `git reset --keep origin/development` for local alignment | YES |
+| Rewrite remote history | NO |
 | Delete unrelated AI-incident work | NO |
 
 Rewriting would create artificial history, risk collision with parallel AI-incident ownership, and violate immutable provenance requirements. Both R4 and AI-incident production state already exist on `origin/development` at the mixed commit; R4-S adds an auditable qualification boundary instead.
+
+The local branch was aligned to canonical `origin/development` using `git reset --keep` after all unique local work had been classified and preserved. This changed only local branch pointer state; no remote commit was rewritten, removed, or force-updated.
 
 ---
 
@@ -154,7 +158,7 @@ Prior local-only qualification commit (`941ba8f84`) was **not** transplanted; on
 | **R4 exact mixed commit accepted** | NO |
 | **R4 qualification checkpoint accepted** | YES |
 | **Qualification document** | `docs/project/maintainers/qualification/NPSC_5B_R4_COMMIT_SCOPE_RECONCILIATION.md` |
-| **Qualification commit SHA** | _(recorded at commit time — see git log)_ |
+| **Qualification commit SHA** | `bad762a7cc27d8c1bf8a0f51430dfe31f2f5b695` |
 
 ---
 
