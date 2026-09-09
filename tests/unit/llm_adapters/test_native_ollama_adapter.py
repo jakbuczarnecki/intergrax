@@ -21,6 +21,9 @@ from intergrax.llm_adapters.providers.native_ollama_adapter import (
     NativeOllamaAdapter,
 )
 from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.contracts.strict_tool_call_validation import (
+    StrictToolContractValidationError,
+)
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaModelCapabilityResolver,
 )
@@ -345,7 +348,7 @@ def test_tools_validate_choice_preserve_schema_and_parse_calls() -> None:
         ),
         SimpleNamespace(
             id="call-2",
-            function=SimpleNamespace(name="second", arguments='{"n":2}'),
+            function=SimpleNamespace(name="lookup", arguments={"query": "next"}),
         ),
     ]
     client = FakeNativeClient(
@@ -366,7 +369,7 @@ def test_tools_validate_choice_preserve_schema_and_parse_calls() -> None:
     )
 
     request = client.calls[0]
-    assert request["tools"] is TOOLS_SCHEMA
+    assert request["tools"] == TOOLS_SCHEMA
     assert "tool_choice" not in request
     assert response.finish_reason == LLMFinishReason.TOOL_CALLS
     assert [call.id for call in response.tool_calls] == ["call-1", "call-2"]
@@ -376,6 +379,63 @@ def test_tools_validate_choice_preserve_schema_and_parse_calls() -> None:
     assert response.provider_extensions is not None
     assert response.provider_extensions.usage_source == "sdk"
     assert adapter.usage.get_run_stats("tools").calls == 1
+
+
+def test_generate_with_tools_rejects_unknown_tool_name_fail_closed() -> None:
+    tool_calls = [
+        SimpleNamespace(
+            id="call-1",
+            function=SimpleNamespace(name="unknown_tool", arguments={"query": "x"}),
+        ),
+    ]
+    client = FakeNativeClient(response=_native_response("", tool_calls=tool_calls))
+    adapter = _adapter(client)
+
+    with pytest.raises(StrictToolContractValidationError, match="not in canonical tool definitions"):
+        adapter.generate_with_tools(
+            [ChatMessage(role="user", content="search")],
+            TOOLS_SCHEMA,
+        )
+
+
+def test_generate_with_tools_rejects_wrong_argument_type_fail_closed() -> None:
+    schema = [
+        {
+            "type": "function",
+            "function": {
+                "name": "lookup",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"count": {"type": "integer"}},
+                    "required": ["count"],
+                },
+            },
+        }
+    ]
+    tool_calls = [
+        SimpleNamespace(
+            id="call-1",
+            function=SimpleNamespace(name="lookup", arguments={"count": "5"}),
+        ),
+    ]
+    client = FakeNativeClient(response=_native_response("", tool_calls=tool_calls))
+    adapter = _adapter(client)
+
+    with pytest.raises(StrictToolContractValidationError, match="expected type integer"):
+        adapter.generate_with_tools(
+            [ChatMessage(role="user", content="search")],
+            schema,
+        )
+
+
+def test_strict_capability_true_only_when_tools_supported() -> None:
+    assert _adapter(FakeNativeClient()).supports_strict_tool_argument_conformance() is True
+    adapter = NativeOllamaAdapter(
+        client=FakeNativeClient(),
+        model="llama3.1:latest",
+        capability_resolver=_resolver(["completion"]),
+    )
+    assert adapter.supports_strict_tool_argument_conformance() is False
 
 
 def test_tool_streaming_remains_unsupported() -> None:

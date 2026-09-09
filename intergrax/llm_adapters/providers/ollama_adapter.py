@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 import json
-import os
+from collections.abc import Mapping
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 from intergrax.llm.messages import ChatMessage
@@ -21,7 +21,15 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+)
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters._shared.strict_tool_enforcement import (
+    enforce_strict_tool_call_conformance,
+    resolve_canonical_tool_definitions,
+    wire_schemas_from_definitions,
+)
 from intergrax.llm_adapters.providers._langchain_compat import (
     tool_calls_from_langchain_message,
 )
@@ -450,13 +458,16 @@ class LangChainOllamaAdapter(LLMAdapter):
         """Native non-streaming tool calling when the installed model declares tools."""
         return self.model_capabilities.supports_tools
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return self.supports_tools()
+
     def supports_structured_output(self) -> bool:
         return True
 
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -468,6 +479,8 @@ class LangChainOllamaAdapter(LLMAdapter):
                 f"Ollama model does not declare native tool support: {self.model}"
             )
         self._validate_ollama_tool_choice(tool_choice)
+        tool_definitions = resolve_canonical_tool_definitions(tools)
+        provider_tools = wire_schemas_from_definitions(tool_definitions)
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
         success = False
@@ -491,7 +504,7 @@ class LangChainOllamaAdapter(LLMAdapter):
             bind_kwargs: Dict[str, Any] = {}
             if tool_choice is not None:
                 bind_kwargs["tool_choice"] = tool_choice
-            bound_chat = self.chat.bind_tools(tools_schema, **bind_kwargs)
+            bound_chat = self.chat.bind_tools(provider_tools, **bind_kwargs)
             result = self._execute(lambda: bound_chat.invoke(lc_msgs, **kwargs))
 
             invalid_tool_calls = attribute_access.optional(result, "invalid_tool_calls", None) or []
@@ -499,6 +512,8 @@ class LangChainOllamaAdapter(LLMAdapter):
                 raise ValueError("Ollama returned invalid native tool calls")
 
             tool_calls = tool_calls_from_langchain_message(result)
+            if tool_calls:
+                enforce_strict_tool_call_conformance(tool_calls, tool_definitions)
             content = self._coerce_ai_message_content(result)
             finish = (
                 LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED

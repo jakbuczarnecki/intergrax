@@ -360,8 +360,8 @@ def test_multiple_tool_calls_preserve_order(
     _tool_call_result(
         bound_chat,
         tool_calls=[
-            {"name": "first", "args": {"n": 1}, "id": "call-1", "type": "tool_call"},
-            {"name": "second", "args": {"n": 2}, "id": "call-2", "type": "tool_call"},
+            {"name": "lookup", "args": {"query": "first"}, "id": "call-1", "type": "tool_call"},
+            {"name": "lookup", "args": {"query": "second"}, "id": "call-2", "type": "tool_call"},
         ],
     )
     result = adapter.generate_with_tools(
@@ -369,7 +369,7 @@ def test_multiple_tool_calls_preserve_order(
         TOOLS_SCHEMA,
     )
     assert [tc.id for tc in result.tool_calls] == ["call-1", "call-2"]
-    assert [tc.name for tc in result.tool_calls] == ["first", "second"]
+    assert [tc.name for tc in result.tool_calls] == ["lookup", "lookup"]
 
 
 def test_no_tool_call_returns_completed(

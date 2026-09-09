@@ -10,6 +10,7 @@ Used by Groq, vLLM, and similar providers (same message/tools/stream shape).
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
+from collections.abc import Mapping
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 from openai import OpenAI
@@ -32,7 +33,15 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+)
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.strict_tool_enforcement import (
+    enforce_strict_tool_call_conformance,
+    resolve_canonical_tool_definitions,
+    wire_schemas_from_definitions,
+)
 from intergrax.llm_adapters.providers._openai_schema import prepare_openai_strict_generation_schema
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
@@ -172,6 +181,9 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
     def supports_tools(self) -> bool:
         return True
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return True
+
     def supports_structured_output(self) -> bool:
         return True
 
@@ -181,13 +193,17 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
+        tool_definitions = resolve_canonical_tool_definitions(tools)
+        provider_tools: List[Dict[str, Any]] = [
+            dict(wire_schema) for wire_schema in wire_schemas_from_definitions(tool_definitions)
+        ]
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
         success = False
@@ -200,7 +216,7 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                 temperature=temperature,
                 max_tokens=max_tokens,
                 stream=False,
-                tools=tools_schema,
+                tools=provider_tools,
                 tool_choice=tool_choice,
             )
             res: ChatCompletion = self._execute(
@@ -211,6 +227,8 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                 model=self.model,
                 provider=self._provider_slug(),
             )
+            if response.tool_calls:
+                enforce_strict_tool_call_conformance(response.tool_calls, tool_definitions)
             success = True
             return response
         except Exception as e:
@@ -229,13 +247,17 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
+        tool_definitions = resolve_canonical_tool_definitions(tools)
+        provider_tools: List[Dict[str, Any]] = [
+            dict(wire_schema) for wire_schema in wire_schemas_from_definitions(tool_definitions)
+        ]
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         success = False
         err_type = None
@@ -252,7 +274,7 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                 temperature=temperature,
                 max_tokens=max_tokens,
                 stream=True,
-                tools=tools_schema,
+                tools=provider_tools,
                 tool_choice=tool_choice,
             )
             stream = self._execute(lambda: self.client.chat.completions.create(**payload))
@@ -279,6 +301,8 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                             if tc.function.arguments:
                                 acc["function"]["arguments"] += tc.function.arguments
             tool_calls = tool_calls_from_openai_dicts(tool_calls_acc)
+            if tool_calls:
+                enforce_strict_tool_call_conformance(tool_calls, tool_definitions)
             finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
