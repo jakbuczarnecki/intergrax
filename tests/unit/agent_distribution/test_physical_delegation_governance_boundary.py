@@ -156,6 +156,19 @@ class _PackageDenyingGovernance(PhysicalDelegationGovernancePort):
         return allowing_physical_delegation_governance().evaluate(request)
 
 
+class _DelegationDenyingGovernance(PhysicalDelegationGovernancePort):
+    def __init__(self, *, denied_delegation_id: str) -> None:
+        self._denied_delegation_id = denied_delegation_id
+
+    def evaluate(
+        self,
+        request: PhysicalDelegationGovernanceRequest,
+    ) -> PhysicalDelegationGovernanceResult:
+        if request.delegation_id == self._denied_delegation_id:
+            return DenyingPhysicalDelegationGovernance().evaluate(request)
+        return allowing_physical_delegation_governance().evaluate(request)
+
+
 class _ModifyGovernance(PhysicalDelegationGovernancePort):
     def evaluate(
         self,
@@ -493,6 +506,72 @@ def test_architecture_gate_selection_before_governance_before_acquire() -> None:
         i for i, line in enumerate(source_lines) if "self._task_scoped_agents.acquire" in line
     )
     assert select_idx < governance_idx < acquire_idx
+
+
+@pytest.mark.asyncio
+async def test_fan_out_mixed_allow_deny_preserves_sibling_isolation() -> None:
+    from intergrax.agent_distribution.bounded_multi_agent_fanout import (
+        FanOutId,
+        FanOutItemStatus,
+        FanOutRequest,
+    )
+    from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
+        _FanOutAcquisitionPlanFactory,
+        _fan_out_item,
+        _run_fan_out,
+    )
+
+    factory = _FanOutAcquisitionPlanFactory()
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+            _discovery_candidate(_LEGAL_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        acquisition_plan_factory=factory,
+        physical_delegation_governance=_DelegationDenyingGovernance(
+            denied_delegation_id="delegation-b",
+        ),
+    )
+    factory.bind_harness(harness)
+    task_scope = harness.task_scope_authority.task_scope_id
+    result = await _run_fan_out(
+        harness,
+        task_scope=task_scope,
+        items=(
+            _fan_out_item(
+                item_id="a",
+                task_scope=task_scope,
+                coordination_id="coord-a",
+                delegation_id="delegation-a",
+                lease_id="lease-a",
+                document_ref="doc-a",
+            ),
+            _fan_out_item(
+                item_id="b",
+                task_scope=task_scope,
+                coordination_id="coord-b",
+                delegation_id="delegation-b",
+                lease_id="lease-b",
+                document_ref="doc-b",
+            ),
+            _fan_out_item(
+                item_id="c",
+                task_scope=task_scope,
+                coordination_id="coord-c",
+                delegation_id="delegation-c",
+                lease_id="lease-c",
+                document_ref="doc-c",
+            ),
+        ),
+        fan_out_id="fan-out-mixed",
+        max_concurrency=3,
+    )
+    assert len(result.items) == 3
+    assert result.items[0].status is FanOutItemStatus.SUCCESS
+    assert result.items[1].status is FanOutItemStatus.FAILURE
+    assert result.items[1].failure is not None
+    assert result.items[1].failure.failure_code is CoordinationFailureCode.GOVERNANCE_DENIED
+    assert result.items[2].status is FanOutItemStatus.SUCCESS
 
 
 @pytest.mark.asyncio
