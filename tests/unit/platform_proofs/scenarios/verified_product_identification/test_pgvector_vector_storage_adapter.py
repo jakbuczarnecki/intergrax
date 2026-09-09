@@ -76,6 +76,7 @@ from tests.unit.platform_proofs.scenarios.verified_product_identification.test_s
     FakeDataPackReader,
     FakeRelationalAdapter,
     FakeVectorAdapter,
+    InMemoryBootstrapCheckpointStore,
     _build_pairs,
     _ready_manifest,
     _request,
@@ -841,6 +842,7 @@ def test_same_storage_bootstrap_service_with_pgvector_adapter() -> None:
             reader=reader,
             relational=FakeRelationalAdapter(),
             vector=vector,
+            checkpoint_store=InMemoryBootstrapCheckpointStore(),
         )
     )
     result = service.run(_request(batch_size=2))
@@ -855,6 +857,7 @@ def test_same_storage_bootstrap_service_with_qdrant_compatible_fake() -> None:
             reader=reader,
             relational=FakeRelationalAdapter(),
             vector=FakeVectorAdapter(adapter_label="qdrant-compatible"),
+            checkpoint_store=InMemoryBootstrapCheckpointStore(),
         )
     )
     result = service.run(_request(batch_size=2))

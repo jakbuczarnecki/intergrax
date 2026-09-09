@@ -7,6 +7,13 @@ Cross-store consistency model (PostgreSQL + Qdrant, MySQL + Qdrant, etc.):
 - Checkpoint advances only after relational write AND vector write AND verification succeed.
 - If vector write fails after relational success, batch remains NOT COMMITTED.
 - Retry is idempotent via adapter upsert / insert-if-absent semantics.
+
+Execution semantics:
+
+- AT-LEAST-ONCE batch execution.
+- Idempotent storage adapters.
+- Durable logical-batch commit checkpoint.
+- Effectively-once canonical storage results — not distributed exactly-once.
 """
 
 from __future__ import annotations
@@ -17,22 +24,49 @@ from dataclasses import dataclass
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.status import (
     DataPackStatus,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.manifest import (
+    DataPackManifest,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.batching import (
     compute_bootstrap_plan,
     iter_record_batches,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.compatibility import (
+    advance_checkpoint_after_batch,
+    build_run_identity,
+    compute_resume_decision,
+    initial_checkpoint_state,
+    utc_now_iso,
+    validate_checkpoint_compatibility,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.contracts import (
+    BootstrapCheckpointState,
+    BootstrapResumeDecision,
+    BootstrapRunIdentity,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.errors import (
+    BootstrapCheckpointError,
+    CheckpointAlreadyExists,
+    CheckpointConcurrentModification,
+    CheckpointCorrupt,
+    CheckpointNotFound,
+    CheckpointPersistenceError,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.ports import (
+    BootstrapCheckpointStorePort,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.contracts import (
     BootstrapBatchPhase,
     BootstrapFinalStatus,
+    BootstrapPlan,
     BootstrapProgress,
     BootstrapRequest,
     BootstrapResult,
     RelationalBatch,
     RelationalLoadRecord,
-    RelationalTargetId,
+    ResumeMode,
     VectorBatch,
     VectorLoadRecord,
-    VectorTargetId,
     VerificationMode,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.errors import (
@@ -67,6 +101,7 @@ class StorageBootstrapDependencies:
     reader: DataPackBootstrapReaderPort
     relational: RelationalStorageLoadPort
     vector: VectorStorageLoadPort
+    checkpoint_store: BootstrapCheckpointStorePort
 
 
 @dataclass(slots=True)
@@ -114,17 +149,50 @@ class StorageBootstrapService:
                 failure=None,
             )
 
+        run_identity = build_run_identity(manifest=manifest, request=request)
+        checkpoint_state, resume_context = self._prepare_checkpoint(
+            request=request,
+            manifest=manifest,
+            run_identity=run_identity,
+            plan=plan,
+        )
+        if isinstance(resume_context, BootstrapFailure):
+            return self._failed_result(
+                request=request,
+                record_count=record_count,
+                failure=resume_context,
+            )
+
+        start_batch_number = resume_context.start_batch_number
+        previously_committed_batches = resume_context.committed_batch_count
+        previously_committed_records = resume_context.committed_record_count
+        resumed_from_batch = start_batch_number if previously_committed_batches > 0 else None
+
+        if resumed_from_batch is not None:
+            self._emit_progress(
+                progress_sink,
+                phase=BootstrapBatchPhase.RESUMED,
+                batch_number=resumed_from_batch,
+                records_processed=previously_committed_records,
+                total_records=record_count,
+                elapsed_seconds=time.perf_counter() - started,
+                last_identity=checkpoint_state.last_committed_identity,
+            )
+
         total_relational_written = 0
         total_vectors_written = 0
         committed_batches = 0
         failed_batches = 0
-        last_committed_global_row_index: int | None = None
+        last_committed_global_row_index = checkpoint_state.last_committed_global_row_index
         terminal_failure: BootstrapFailure | None = None
 
         for batch_number, batch_pairs in iter_record_batches(
             paired_records,
             batch_size=request.batch_size.value,
         ):
+            if batch_number < start_batch_number:
+                continue
+
             relational_records: list[RelationalLoadRecord] = []
             vector_records: list[VectorLoadRecord] = []
             try:
@@ -154,11 +222,14 @@ class StorageBootstrapService:
             assert_batch_identity_parity(relational_batch, vector_batch)
 
             last_identity = identity_key(relational_batch.records[-1].source_ref)
+            records_processed_before_batch = (
+                previously_committed_records + committed_batches * request.batch_size.value
+            )
             self._emit_progress(
                 progress_sink,
                 phase=BootstrapBatchPhase.RELATIONAL_WRITING,
                 batch_number=batch_number,
-                records_processed=committed_batches * request.batch_size.value,
+                records_processed=records_processed_before_batch,
                 total_records=record_count,
                 elapsed_seconds=time.perf_counter() - started,
                 last_identity=last_identity,
@@ -189,7 +260,7 @@ class StorageBootstrapService:
                 progress_sink,
                 phase=BootstrapBatchPhase.VECTOR_WRITING,
                 batch_number=batch_number,
-                records_processed=committed_batches * request.batch_size.value,
+                records_processed=records_processed_before_batch,
                 total_records=record_count,
                 elapsed_seconds=time.perf_counter() - started,
                 last_identity=last_identity,
@@ -221,7 +292,7 @@ class StorageBootstrapService:
                     progress_sink,
                     phase=BootstrapBatchPhase.VERIFYING,
                     batch_number=batch_number,
-                    records_processed=committed_batches * request.batch_size.value,
+                    records_processed=records_processed_before_batch,
                     total_records=record_count,
                     elapsed_seconds=time.perf_counter() - started,
                     last_identity=last_identity,
@@ -243,6 +314,33 @@ class StorageBootstrapService:
                     )
                     break
 
+            next_checkpoint = advance_checkpoint_after_batch(
+                checkpoint_state,
+                batch_number=batch_number,
+                last_global_row_index=relational_batch.records[-1].global_row_index,
+                last_identity=last_identity,
+                updated_at_utc=utc_now_iso(),
+            )
+            try:
+                checkpoint_state = self.dependencies.checkpoint_store.commit_batch(
+                    run_identity=run_identity,
+                    expected_revision=checkpoint_state.state_revision,
+                    checkpoint=next_checkpoint,
+                )
+            except (
+                CheckpointConcurrentModification,
+                CheckpointPersistenceError,
+                CheckpointCorrupt,
+                CheckpointNotFound,
+            ) as exc:
+                failed_batches += 1
+                terminal_failure = BootstrapFailure(
+                    category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                    detail=str(exc),
+                    batch_number=batch_number,
+                )
+                break
+
             committed_batches += 1
             total_relational_written += relational_result.successful_count
             total_vectors_written += vector_result.successful_count
@@ -252,7 +350,7 @@ class StorageBootstrapService:
                 progress_sink,
                 phase=BootstrapBatchPhase.COMMITTED,
                 batch_number=batch_number,
-                records_processed=total_relational_written,
+                records_processed=previously_committed_records + total_relational_written,
                 total_records=record_count,
                 elapsed_seconds=time.perf_counter() - started,
                 last_identity=last_identity,
@@ -262,8 +360,8 @@ class StorageBootstrapService:
             record_count=record_count,
             committed_batches=committed_batches,
             failed_batches=failed_batches,
-            total_relational_written=total_relational_written,
-            total_vectors_written=total_vectors_written,
+            previously_committed_records=previously_committed_records,
+            final_committed_record_count=checkpoint_state.committed_record_count,
             terminal_failure=terminal_failure,
         )
 
@@ -277,6 +375,9 @@ class StorageBootstrapService:
             failed_batches=failed_batches,
             last_committed_global_row_index=last_committed_global_row_index,
             failure=terminal_failure,
+            resumed_from_batch=resumed_from_batch,
+            previously_committed_batches=previously_committed_batches,
+            previously_committed_records=previously_committed_records,
         )
 
     def plan(self, request: BootstrapRequest) -> BootstrapResult:
@@ -290,6 +391,82 @@ class StorageBootstrapService:
             plan_only=True,
         )
         return self.run(plan_request)
+
+    def _prepare_checkpoint(
+        self,
+        *,
+        request: BootstrapRequest,
+        manifest: DataPackManifest,
+        run_identity: BootstrapRunIdentity,
+        plan: BootstrapPlan,
+    ) -> tuple[BootstrapCheckpointState, BootstrapResumeDecision | BootstrapFailure]:
+        if request.resume_mode is ResumeMode.FRESH:
+            existing = self.dependencies.checkpoint_store.load(run_identity)
+            if existing is not None:
+                return existing, BootstrapFailure(
+                    category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                    detail="checkpoint already exists for FRESH run",
+                )
+            initial_state = initial_checkpoint_state(
+                run_identity=run_identity,
+                plan=plan,
+                updated_at_utc=utc_now_iso(),
+            )
+            try:
+                checkpoint_state = self.dependencies.checkpoint_store.initialize(
+                    run_identity,
+                    initial_state,
+                )
+            except CheckpointAlreadyExists as exc:
+                return initial_state, BootstrapFailure(
+                    category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                    detail=str(exc),
+                )
+            except (CheckpointPersistenceError, CheckpointCorrupt) as exc:
+                return initial_state, BootstrapFailure(
+                    category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                    detail=str(exc),
+                )
+            return checkpoint_state, BootstrapResumeDecision(
+                start_batch_number=0,
+                committed_batch_count=0,
+                committed_record_count=0,
+            )
+
+        loaded = self.dependencies.checkpoint_store.load(run_identity)
+        if loaded is None:
+            return initial_checkpoint_state(
+                run_identity=run_identity,
+                plan=plan,
+                updated_at_utc=utc_now_iso(),
+            ), BootstrapFailure(
+                category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                detail="checkpoint not found for RESUME run",
+            )
+        try:
+            compatibility = validate_checkpoint_compatibility(
+                run_identity=run_identity,
+                checkpoint=loaded,
+                manifest=manifest,
+            )
+        except BootstrapCheckpointError as exc:
+            return loaded, BootstrapFailure(
+                category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                detail=str(exc),
+            )
+        if not compatibility.is_compatible:
+            return loaded, BootstrapFailure(
+                category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                detail=compatibility.reason or "checkpoint incompatible",
+            )
+        try:
+            resume_decision = compute_resume_decision(loaded)
+        except BootstrapCheckpointError as exc:
+            return loaded, BootstrapFailure(
+                category=BootstrapFailureCategory.CHECKPOINT_FAILED,
+                detail=str(exc),
+            )
+        return loaded, resume_decision
 
     def _validate_request(self, request: BootstrapRequest) -> None:
         if request.batch_size.value <= 0:
@@ -330,29 +507,22 @@ class StorageBootstrapService:
         record_count: int,
         committed_batches: int,
         failed_batches: int,
-        total_relational_written: int,
-        total_vectors_written: int,
+        previously_committed_records: int,
+        final_committed_record_count: int,
         terminal_failure: BootstrapFailure | None,
     ) -> BootstrapFinalStatus:
-        if terminal_failure is not None and committed_batches == 0:
-            return BootstrapFinalStatus.FAILED
-        if (
-            committed_batches > 0
-            and failed_batches > 0
-            and total_relational_written < record_count
-        ):
-            return BootstrapFinalStatus.PARTIAL
-        if (
-            committed_batches > 0
-            and failed_batches == 0
-            and total_relational_written == record_count
-            and total_vectors_written == record_count
-        ):
-            return BootstrapFinalStatus.SUCCESS
-        if terminal_failure is not None:
-            return BootstrapFinalStatus.PARTIAL if committed_batches > 0 else BootstrapFinalStatus.FAILED
         if record_count == 0:
             return BootstrapFinalStatus.SUCCESS
+        if terminal_failure is not None:
+            if final_committed_record_count == 0:
+                return BootstrapFinalStatus.FAILED
+            if final_committed_record_count < record_count:
+                return BootstrapFinalStatus.PARTIAL
+            return BootstrapFinalStatus.SUCCESS
+        if final_committed_record_count == record_count and failed_batches == 0:
+            return BootstrapFinalStatus.SUCCESS
+        if committed_batches > 0 or previously_committed_records > 0:
+            return BootstrapFinalStatus.PARTIAL
         return BootstrapFinalStatus.FAILED
 
     @staticmethod

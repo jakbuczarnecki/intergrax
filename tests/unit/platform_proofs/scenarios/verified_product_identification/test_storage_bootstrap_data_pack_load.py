@@ -79,15 +79,25 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.ports import (
     PairedDataPackRecord,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.codec import (
+    run_identity_digest,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.errors import (
+    CheckpointAlreadyExists,
+    CheckpointConcurrentModification,
+    CheckpointNotFound,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.filesystem_store import (
+    FilesystemBootstrapCheckpointStore,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.service import (
     StorageBootstrapDependencies,
     StorageBootstrapService,
 )
+
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.manifest.deterministic_ids import (
     search_representation_point_id,
 )
-
-pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[5]
 _DATA_PACK_LOAD_ROOT = (
@@ -109,6 +119,61 @@ _FORBIDDEN_PROVIDER_IMPORTS = frozenset(
 )
 _EMBEDDING_REVISION = "5617a9f61b028005a4858fdac845db406aefb181"
 _EMBEDDING_DIMENSION = 8
+
+pytestmark = pytest.mark.unit
+
+
+@dataclass
+class InMemoryBootstrapCheckpointStore:
+    states: dict[str, object] = field(default_factory=dict)
+
+    def load(self, run_identity: object) -> object | None:
+        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.contracts import (
+            BootstrapRunIdentity,
+        )
+
+        assert isinstance(run_identity, BootstrapRunIdentity)
+        return self.states.get(run_identity_digest(run_identity))
+
+    def initialize(self, run_identity: object, state: object) -> object:
+        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.contracts import (
+            BootstrapCheckpointState,
+            BootstrapRunIdentity,
+        )
+
+        assert isinstance(run_identity, BootstrapRunIdentity)
+        assert isinstance(state, BootstrapCheckpointState)
+        digest = run_identity_digest(run_identity)
+        if digest in self.states:
+            raise CheckpointAlreadyExists(f"checkpoint already exists: {digest}")
+        self.states[digest] = state
+        return state
+
+    def commit_batch(
+        self,
+        *,
+        run_identity: object,
+        expected_revision: int,
+        checkpoint: object,
+    ) -> object:
+        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.data_pack_load.checkpoint.contracts import (
+            BootstrapCheckpointState,
+            BootstrapRunIdentity,
+        )
+
+        assert isinstance(run_identity, BootstrapRunIdentity)
+        assert isinstance(checkpoint, BootstrapCheckpointState)
+        digest = run_identity_digest(run_identity)
+        current = self.states.get(digest)
+        if current is None:
+            raise CheckpointNotFound(f"checkpoint missing: {digest}")
+        assert isinstance(current, BootstrapCheckpointState)
+        if current.state_revision != expected_revision:
+            raise CheckpointConcurrentModification(
+                f"expected revision {expected_revision}, found {current.state_revision}"
+            )
+        self.states[digest] = checkpoint
+        return checkpoint
 
 
 def _sample_json(offer_suffix: str) -> str:
@@ -387,13 +452,14 @@ def _request(
     batch_size: int = 3,
     plan_only: bool = False,
     verification_mode: VerificationMode = VerificationMode.STRICT,
+    resume_mode: ResumeMode = ResumeMode.FRESH,
 ) -> BootstrapRequest:
     return BootstrapRequest(
         artifact_root=Path("/tmp/vpi-fixture-pack"),
         relational_target=RelationalTargetId("vpi-products"),
         vector_target=VectorTargetId("vpi-product-embeddings"),
         batch_size=BootstrapBatchSize(batch_size),
-        resume_mode=ResumeMode.FRESH,
+        resume_mode=resume_mode,
         verification_mode=verification_mode,
         plan_only=plan_only,
     )
@@ -405,6 +471,7 @@ def _service(
     relational: FakeRelationalAdapter | None = None,
     vector: FakeVectorAdapter | None = None,
     status: DataPackStatus = DataPackStatus.READY,
+    checkpoint_store: InMemoryBootstrapCheckpointStore | None = None,
 ) -> StorageBootstrapService:
     pairs = _build_pairs(pair_count)
     reader = FakeDataPackReader(
@@ -416,6 +483,7 @@ def _service(
             reader=reader,
             relational=relational or FakeRelationalAdapter(),
             vector=vector or FakeVectorAdapter(),
+            checkpoint_store=checkpoint_store or InMemoryBootstrapCheckpointStore(),
         )
     )
 
@@ -631,11 +699,22 @@ def test_vector_fail_after_relational_not_committed() -> None:
 def test_retry_after_vector_failure_no_relational_duplicate() -> None:
     relational = FakeRelationalAdapter()
     vector = FakeVectorAdapter(fail_on_batch=1)
-    first = _service(4, relational=relational, vector=vector).run(_request(batch_size=2))
+    checkpoint_store = InMemoryBootstrapCheckpointStore()
+    first = _service(
+        4,
+        relational=relational,
+        vector=vector,
+        checkpoint_store=checkpoint_store,
+    ).run(_request(batch_size=2))
     vector.fail_on_batch = None
-    second = _service(4, relational=relational, vector=vector).run(_request(batch_size=2))
+    second = _service(
+        4,
+        relational=relational,
+        vector=vector,
+        checkpoint_store=checkpoint_store,
+    ).run(_request(batch_size=2, resume_mode=ResumeMode.RESUME))
     assert first.committed_batches == 1
-    assert second.committed_batches == 2
+    assert second.committed_batches == 1
     assert len(relational.storage) == 4
 
 
@@ -710,6 +789,7 @@ def test_same_service_with_alternate_relational_adapters() -> None:
                 reader=reader,
                 relational=FakeRelationalAdapter(adapter_label=label),
                 vector=FakeVectorAdapter(),
+                checkpoint_store=InMemoryBootstrapCheckpointStore(),
             )
         )
         result = service.run(_request(batch_size=2))
@@ -725,6 +805,7 @@ def test_same_service_with_alternate_vector_adapters() -> None:
                 reader=reader,
                 relational=FakeRelationalAdapter(),
                 vector=FakeVectorAdapter(adapter_label=label),
+                checkpoint_store=InMemoryBootstrapCheckpointStore(),
             )
         )
         result = service.run(_request(batch_size=2))
@@ -787,6 +868,7 @@ def test_identity_mismatch_in_service_fails() -> None:
             reader=reader,
             relational=FakeRelationalAdapter(),
             vector=FakeVectorAdapter(),
+            checkpoint_store=InMemoryBootstrapCheckpointStore(),
         )
     )
     result = service.run(_request(batch_size=1))

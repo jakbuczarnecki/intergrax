@@ -36,6 +36,7 @@ class BootstrapFinalStatus(str, Enum):
 
 class BootstrapBatchPhase(str, Enum):
     PENDING = "PENDING"
+    RESUMED = "RESUMED"
     RELATIONAL_WRITING = "RELATIONAL_WRITING"
     VECTOR_WRITING = "VECTOR_WRITING"
     VERIFYING = "VERIFYING"
@@ -222,3 +223,14 @@ class BootstrapResult:
     failed_batches: int
     last_committed_global_row_index: int | None
     failure: BootstrapFailure | None = None
+    resumed_from_batch: int | None = None
+    previously_committed_batches: int = 0
+    previously_committed_records: int = 0
+
+    @property
+    def total_committed_batches(self) -> int:
+        return self.previously_committed_batches + self.committed_batches
+
+    @property
+    def total_committed_records(self) -> int:
+        return self.previously_committed_records + self.total_relational_written
