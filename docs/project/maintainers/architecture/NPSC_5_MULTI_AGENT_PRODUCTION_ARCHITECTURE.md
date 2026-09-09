@@ -273,7 +273,7 @@ CoordinationIntentExecutor
 
 ## 8.1 NPSC-5D/R1 — semantic coordination governance admission
 
-**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D/R2 **ACTIVE** · NPSC-5D **ACTIVE** (R3 remains)
+**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D **ACTIVE** (R3 remains)
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -308,7 +308,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 ## 8.2 NPSC-5D/R2 — physical delegation governance admission
 
-**Status:** NPSC-5D/R2 **ACTIVE** (implemented slice) · NPSC-5D **ACTIVE** (R3 remains)
+**Status:** NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D **ACTIVE** (R3 remains)
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -333,6 +333,8 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 **Propagation:** `DelegatedSubtaskGovernanceRequiresHuman` → `GovernanceRequiresHumanError.continuation` → `FanOutItemFailure.continuation` when `GOVERNANCE_REQUIRES_HUMAN`. Ordinary failures carry no continuation payload.
 
+**Qualification:** [`NPSC_5D_R2_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R2_FINAL_QUALIFICATION_AND_FREEZE.md)
+
 **Deferred to R3:** Execution pause, HITL runtime, human approval, resume, child Execution continuation. Future human approval must bind the exact continuation identity — no re-selection.
 
 **Distinction from R1:** R1 `REQUIRE_HUMAN` is semantic coordination admission (`CoordinationGovernanceRequiresHuman`); R2-H1 is exact selected physical delegation (`PhysicalDelegationGovernedContinuation`).
@@ -346,7 +348,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
 | **NPSC-5B** | Bounded fan-out / fan-in (**FROZEN / PASS**) |
 | **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
-| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 **FROZEN / PASS**; R2 **ACTIVE**; R3 remains) |
+| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 **FROZEN / PASS**; R2 **FROZEN / PASS**; R3 remains) |
 | **NPSC-5E** | Retry / checkpoint / recovery |
 | **NPSC-5F** | Audit / observability hooks expansion |
 
