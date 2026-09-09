@@ -273,7 +273,7 @@ CoordinationIntentExecutor
 
 ## 8.1 NPSC-5D/R1 — semantic coordination governance admission
 
-**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D **ACTIVE** (R2/R3 remain)
+**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D/R2 **ACTIVE** · NPSC-5D **ACTIVE** (R3 remains)
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -306,6 +306,25 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 ---
 
+## 8.2 NPSC-5D/R2 — physical delegation governance admission
+
+**Status:** NPSC-5D/R2 **ACTIVE** (implemented slice) · NPSC-5D **ACTIVE** (R3 remains)
+
+| Component | Package | Responsibility |
+| --------- | ------- | -------------- |
+| `PhysicalDelegationGovernanceRequest` | `intergrax/contracts/` | Typed post-selection physical delegation facts |
+| `PhysicalDelegationGovernancePort` | `intergrax/contracts/` | Public evaluator boundary reusing canonical `PolicyDecision` |
+| `PhysicalDelegationGovernanceBoundary` | `intergrax/runtime/governance/` | Fail-closed admission over configured evaluator |
+| `build_physical_delegation_governance_request` | `intergrax/agent_distribution/` | Caller adapter from delegated subtask selection facts |
+
+**Canonical evaluation location:** `DelegatedSubtaskService` after `require_selected_identity`, before `build_acquisition_plan` / `TaskScopedAgentService.acquire`.
+
+**Governance model (R2):** per-contribution physical admission for the exact selected specialist identity — no re-selection, no AC-3 trust duplication, no lease/child side effects before ALLOW.
+
+**Evaluation point:** `GovernanceEvaluationPoint.MULTI_AGENT_DELEGATION` (distinct from R1 `MULTI_AGENT_COORDINATION`).
+
+---
+
 ## 9. Future NPSC-5 phases
 
 | Phase | Scope |
@@ -313,7 +332,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
 | **NPSC-5B** | Bounded fan-out / fan-in (**FROZEN / PASS**) |
 | **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
-| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 **FROZEN / PASS**; R2/R3 remain) |
+| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 **FROZEN / PASS**; R2 **ACTIVE**; R3 remains) |
 | **NPSC-5E** | Retry / checkpoint / recovery |
 | **NPSC-5F** | Audit / observability hooks expansion |
 

@@ -17,6 +17,12 @@ from intergrax.runtime.governance.multi_agent_coordination_governance import (
     RequireHumanMultiAgentCoordinationGovernance,
     UnavailableMultiAgentCoordinationGovernance,
 )
+from intergrax.runtime.governance.physical_delegation_governance import (
+    AllowingPhysicalDelegationGovernance,
+    DenyingPhysicalDelegationGovernance,
+    RequireHumanPhysicalDelegationGovernance,
+    UnavailablePhysicalDelegationGovernance,
+)
 from intergrax.runtime.task.task import Task
 
 
@@ -58,3 +64,19 @@ def require_human_coordination_governance() -> RequireHumanMultiAgentCoordinatio
 
 def unavailable_coordination_governance() -> UnavailableMultiAgentCoordinationGovernance:
     return UnavailableMultiAgentCoordinationGovernance()
+
+
+def allowing_physical_delegation_governance() -> AllowingPhysicalDelegationGovernance:
+    return AllowingPhysicalDelegationGovernance()
+
+
+def denying_physical_delegation_governance() -> DenyingPhysicalDelegationGovernance:
+    return DenyingPhysicalDelegationGovernance()
+
+
+def require_human_physical_delegation_governance() -> RequireHumanPhysicalDelegationGovernance:
+    return RequireHumanPhysicalDelegationGovernance()
+
+
+def unavailable_physical_delegation_governance() -> UnavailablePhysicalDelegationGovernance:
+    return UnavailablePhysicalDelegationGovernance()

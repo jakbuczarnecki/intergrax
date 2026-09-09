@@ -19,6 +19,8 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskContractError,
     DelegatedSubtaskError,
     DelegatedSubtaskExecutionAndReleaseError,
+    DelegatedSubtaskGovernanceDenied,
+    DelegatedSubtaskGovernanceRequiresHuman,
     DelegatedSubtaskInvocation,
     DelegatedSubtaskInvocationError,
     DelegatedSubtaskNoEligibleAgent,
@@ -80,6 +82,8 @@ class CoordinationFailureCode(StrEnum):
     CHILD_EXECUTION_FAILED = "child_execution_failed"
     LEASE_RELEASE_FAILED = "lease_release_failed"
     AUTHORITY_SCOPE_MISMATCH = "authority_scope_mismatch"
+    GOVERNANCE_DENIED = "governance_denied"
+    GOVERNANCE_REQUIRES_HUMAN = "governance_requires_human"
 
 
 class CoordinationError(AgentDistributionError):
@@ -164,6 +168,26 @@ class AuthorityScopeMismatchError(CoordinationError):
         super().__init__(
             message,
             failure_code=CoordinationFailureCode.AUTHORITY_SCOPE_MISMATCH,
+        )
+
+
+class GovernanceDeniedError(CoordinationError):
+    """Physical delegation governance denied before acquisition."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(
+            message,
+            failure_code=CoordinationFailureCode.GOVERNANCE_DENIED,
+        )
+
+
+class GovernanceRequiresHumanError(CoordinationError):
+    """Physical delegation governance requires governed continuation."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(
+            message,
+            failure_code=CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN,
         )
 
 
@@ -295,6 +319,10 @@ def _map_delegated_subtask_error(exc: DelegatedSubtaskError) -> CoordinationErro
         return CapabilityResolutionFailedError(str(exc))
     if isinstance(exc, DelegatedSubtaskNoEligibleAgent):
         return NoEligibleSpecialistError(str(exc))
+    if isinstance(exc, DelegatedSubtaskGovernanceDenied):
+        return GovernanceDeniedError(str(exc))
+    if isinstance(exc, DelegatedSubtaskGovernanceRequiresHuman):
+        return GovernanceRequiresHumanError(str(exc))
     if isinstance(exc, DelegatedSubtaskAcquisitionError):
         return AcquisitionFailedError(str(exc))
     if isinstance(exc, DelegatedSubtaskInvocationError):
@@ -365,6 +393,8 @@ __all__ = [
     "CoordinationPolicy",
     "CoordinationRequest",
     "CoordinationResult",
+    "GovernanceDeniedError",
+    "GovernanceRequiresHumanError",
     "InvalidCoordinationError",
     "LeaseReleaseFailedError",
     "MultiAgentCoordinationService",

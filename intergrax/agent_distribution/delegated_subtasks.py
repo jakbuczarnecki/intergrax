@@ -57,6 +57,10 @@ from intergrax.contracts.active_execution_task_scope import (
     ActiveExecutionTaskScopeUnavailable,
 )
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.physical_delegation_governance import (
+    PhysicalDelegationGovernancePort,
+    PhysicalDelegationGovernanceResult,
+)
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
@@ -111,6 +115,24 @@ class DelegatedSubtaskResolutionError(DelegatedSubtaskError):
 
 class DelegatedSubtaskNoEligibleAgent(DelegatedSubtaskError):
     """No discovered candidate satisfies the resolved capability requirement."""
+
+
+class DelegatedSubtaskGovernanceDenied(DelegatedSubtaskError):
+    """Mandatory physical delegation governance denied before acquisition."""
+
+    def __init__(self, result: PhysicalDelegationGovernanceResult) -> None:
+        self.result = result
+        super().__init__(result.decision.reason or "physical delegation governance denied")
+
+
+class DelegatedSubtaskGovernanceRequiresHuman(DelegatedSubtaskError):
+    """Physical delegation governance requires canonical governed continuation."""
+
+    def __init__(self, result: PhysicalDelegationGovernanceResult) -> None:
+        self.result = result
+        super().__init__(
+            result.decision.reason or "physical delegation governance requires human approval",
+        )
 
 
 class DelegatedSubtaskAcquisitionError(DelegatedSubtaskError):
@@ -400,6 +422,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         release_plan_factory: DelegatedSubtaskReleasePlanFactory,
         specialist_invocation: SpecialistInvocationPort[RequestT, ResultT],
         child_execution: ChildExecutionPort[RequestT, ResultT],
+        physical_delegation_governance: PhysicalDelegationGovernancePort,
     ) -> None:
         self._capability_resolver = capability_resolver
         self._discovery = discovery
@@ -411,6 +434,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         self._release_plan_factory = release_plan_factory
         self._specialist_invocation = specialist_invocation
         self._child_execution = child_execution
+        self._physical_delegation_governance = physical_delegation_governance
 
     async def execute(
         self,
@@ -462,6 +486,15 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
                 "no eligible specialist candidate for delegated subtask",
             )
         selected_identity = require_selected_identity(selection_decision)
+
+        self._enforce_physical_delegation_governance(
+            request=request,
+            canonical_task_scope=canonical_task_scope,
+            capability_requirement=requirement,
+            selected_identity=selected_identity,
+            principal=principal,
+            requested_permission_scopes=invocation.requested_permission_scopes,
+        )
 
         lifecycle_plan = self._acquisition_plan_factory.build_acquisition_plan(
             delegation_id=request.delegation_id,
@@ -555,6 +588,37 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
             result=specialist_result,
         )
 
+    def _enforce_physical_delegation_governance(
+        self,
+        *,
+        request: DelegatedSubtaskRequest,
+        canonical_task_scope: TaskScopeId,
+        capability_requirement: AgentCapabilityRequirement,
+        selected_identity: AgentDiscoveryCandidateIdentity,
+        principal: RequestIdentity,
+        requested_permission_scopes: tuple[str, ...] | None,
+    ) -> PhysicalDelegationGovernanceResult:
+        from intergrax.agent_distribution.physical_delegation_governance_adapter import (
+            build_physical_delegation_governance_request,
+        )
+
+        governance_request = build_physical_delegation_governance_request(
+            delegation_id=str(request.delegation_id),
+            task_scope_id=str(canonical_task_scope),
+            application_id=request.application_id,
+            application_environment_id=request.application_environment_id,
+            capability_requirement=capability_requirement,
+            selected_identity=selected_identity,
+            principal=principal,
+            requested_permission_scopes=requested_permission_scopes,
+        )
+        result = self._physical_delegation_governance.evaluate(governance_request)
+        if result.permitted:
+            return result
+        if result.requires_governed_continuation:
+            raise DelegatedSubtaskGovernanceRequiresHuman(result)
+        raise DelegatedSubtaskGovernanceDenied(result)
+
     def _attempt_release(
         self,
         *,
@@ -621,6 +685,8 @@ __all__ = [
     "DelegatedSubtaskDelegate",
     "DelegatedSubtaskError",
     "DelegatedSubtaskExecutionAndReleaseError",
+    "DelegatedSubtaskGovernanceDenied",
+    "DelegatedSubtaskGovernanceRequiresHuman",
     "DelegatedSubtaskInvocation",
     "DelegatedSubtaskInvocationError",
     "DelegatedSubtaskLifecyclePlan",

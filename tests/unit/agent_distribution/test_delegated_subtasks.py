@@ -111,6 +111,9 @@ from intergrax.runtime.execution.delegated_subtask_child_port import (
     as_child_execution_port,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from testing_support.agent_distribution.coordination_governance import (
+    allowing_physical_delegation_governance,
+)
 from tests.unit.agent_distribution.test_task_scoped_agents import (
     _APP,
     _BINDING_ID,
@@ -377,6 +380,7 @@ def build_delegated_harness(
     task_scope: TaskId | None = None,
     task_scope_authority: _FixedTaskScopeAuthority | None = None,
     capability_resolver: TaskCapabilityResolver | None = None,
+    physical_delegation_governance=None,
 ) -> DelegatedHarness:
     harness = build_task_scoped_harness()
     delegate = specialist_delegate or _EchoOcrDelegate()
@@ -398,6 +402,9 @@ def build_delegated_harness(
         specialist_invocation=_StaticSpecialistInvocation(delegate=delegate),
         child_execution=as_child_execution_port(
             ChildExecutionRunner[OcrRequest, OcrResult](ledger=_UNLIMITED_LEDGER),
+        ),
+        physical_delegation_governance=(
+            physical_delegation_governance or allowing_physical_delegation_governance()
         ),
     )
     delegated = DelegatedHarness(

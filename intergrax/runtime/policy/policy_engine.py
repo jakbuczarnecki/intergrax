@@ -18,6 +18,9 @@ from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectReque
 from intergrax.contracts.multi_agent_coordination_governance import (
     MultiAgentCoordinationGovernanceRequest,
 )
+from intergrax.contracts.physical_delegation_governance import (
+    PhysicalDelegationGovernanceRequest,
+)
 from intergrax.contracts.runtime_policy import PolicyDecision as RuntimePolicyDecision
 from intergrax.contracts.runtime_policy_context import (
     AgentDecisionPolicyContext,
@@ -78,6 +81,13 @@ class PolicyEngine:
     ) -> RuntimePolicyDecision:
         """Authorize semantic multi-agent coordination admission (NPSC-5D). Fail closed."""
         return self.runtime.evaluate_multi_agent_coordination(request)
+
+    def evaluate_physical_delegation(
+        self,
+        request: PhysicalDelegationGovernanceRequest,
+    ) -> RuntimePolicyDecision:
+        """Authorize selected physical delegation admission (NPSC-5D/R2). Fail closed."""
+        return self.runtime.evaluate_physical_delegation(request)
 
     def evaluate_pre_llm(
         self,

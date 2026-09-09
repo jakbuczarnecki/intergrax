@@ -43,6 +43,7 @@ class GovernanceEvaluationPoint(StrEnum):
 
     CONTROL_PLANE_MUTATION = "control_plane_mutation"
     MULTI_AGENT_COORDINATION = "multi_agent_coordination"
+    MULTI_AGENT_DELEGATION = "multi_agent_delegation"
 
 
 class ControlPlaneMutationRisk(StrEnum):

@@ -85,8 +85,12 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.delegated_subtask_child_port import (
     as_child_execution_port,
 )
+from intergrax.contracts.physical_delegation_governance import PhysicalDelegationGovernancePort
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
+)
+from intergrax.runtime.governance.physical_delegation_governance import (
+    AllowingPhysicalDelegationGovernance,
 )
 from intergrax.runtime.task.active_task_registry import (
     ActiveTaskRegistryTaskScopeResolver,
@@ -139,6 +143,7 @@ class ProductionAgentCapabilityRuntime:
     selector: AgentSelectionStrategy
     acquisition_plan_factory: ProductionDelegatedSubtaskAcquisitionPlanFactory
     release_plan_factory: ProductionDelegatedSubtaskReleasePlanFactory
+    physical_delegation_governance: PhysicalDelegationGovernancePort
     lifecycle_services: ReferenceProductionLifecycleServices
 
 
@@ -173,6 +178,7 @@ class DelegatedSubtaskServiceFactory:
             release_plan_factory=runtime.release_plan_factory,
             specialist_invocation=specialist_invocation,
             child_execution=child_port,
+            physical_delegation_governance=runtime.physical_delegation_governance,
         )
 
 
@@ -316,6 +322,7 @@ def build_production_agent_capability_runtime(
         selector=selector,
         acquisition_plan_factory=acquisition_plan_factory,
         release_plan_factory=release_plan_factory,
+        physical_delegation_governance=AllowingPhysicalDelegationGovernance(),
         lifecycle_services=lifecycle_services,
     )
 
