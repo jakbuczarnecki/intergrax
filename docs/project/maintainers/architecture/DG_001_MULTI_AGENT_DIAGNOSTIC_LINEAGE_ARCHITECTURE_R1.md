@@ -1,11 +1,11 @@
 # DG-001 — Multi-agent diagnostic execution lineage architecture (R1)
 
-> **Task:** `DG-001-CROSS-SYSTEM-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ARCHITECTURE-R1-RESUME-SEGMENT-SEMANTICS-CORRECTION`  
+> **Task:** `DG-001-CROSS-SYSTEM-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ARCHITECTURE-R1-SEGMENT-IDENTITY-REUSE-CORRECTION`  
 > **Resolves:** GAP-R1-01 from `DG-001-CROSS-SYSTEM-DIAGNOSTIC-COMPATIBILITY-AUDIT-R1`  
 > **Mode:** architecture decision + contract ownership audit — **no implementation**  
 > **Branch:** `development`  
-> **START HEAD:** `f5a07bb467db6fe639648b1bd21f597744878400`  
-> **Ancestry verified:** `0ee3079791ebf0ea373943171bc7133e91357133` · prior R1 correction chain
+> **START HEAD:** `738c05708ba8ab947886b750687dd6d96dfea479`  
+> **Ancestry verified:** `41efad29020dac005b9d63d4b01512fca08ad85a` · prior R1 correction chain
 
 ---
 
@@ -76,12 +76,14 @@ Attempt-level APIs (`open_attempt`, `seal_attempt`, `read_seal`, `list_admission
 ```text
 ExecutionLineageAdmissionRecord  (immutable append-only row)
   scope: ExecutionLineageAttemptScope
-  segment_identity: ExecutionLineageSegmentId
+  segment_root_execution_id: ExecutionId
   execution_id: ExecutionId
   parent_execution_id: ExecutionId | None
   admission_position: int  (monotonic within attempt)
   optional: graph_node_id (structural ref only)
 ```
+
+For root admission (hard invariant): `execution_id == segment_root_execution_id` and `parent_execution_id == None`.
 
 Each **real execution admission** belongs to exactly one segment. Historical checkpoint adoption of a completed execution does **not** create a new admission row (§2A).
 
@@ -145,22 +147,27 @@ Attempt A1
   Segment S2: root E4 → children E5, E6 → resume / work
 ```
 
-`ExecutionLineageAttemptScope` remains attempt-only — no `root_execution_id`, `segment_identity`, or parent/child execution fields.
+`ExecutionLineageAttemptScope` remains attempt-only — no `root_execution_id`, `segment_root_execution_id`, or parent/child execution fields.
 
-**Segment identity (decision):** no existing public typed contract represents execution process/resume segment. `open_segment` is durable **before** root admission, so root `ExecutionId` cannot serve as segment identity. **Selected:** new typed `ExecutionLineageSegmentId` — stable, serializable, minted at segment open, scoped within attempt, no request introspection, no timestamps as identity.
+**Segment identity (decision):** canonical root `ExecutionId` for that execution segment. `RootExecutionContext.execution_id` (via `resolve_root_execution_context` → `mint_root_execution_identity`) exists **before** `ExecutionBoundary` construction → admission hooks → root delegate, so segment continuity can be opened using the already-minted canonical root `ExecutionId`. No additional mint. No `ExecutionLineageSegmentId` type.
+
+**Reuse-first invariant:** No second identifier may be minted for a lifecycle unit when canonical `ExecutionId` already uniquely identifies it. Segment semantics are a new relation/lifecycle projection — segment identity does not require a new identity authority.
 
 **Segment record (durable continuity — not runtime status):**
 
 ```text
 ExecutionLineageSegmentRecord
   attempt_scope: ExecutionLineageAttemptScope
-  segment_identity: ExecutionLineageSegmentId
-  root_execution_id: ExecutionId | None   (set when segment root durably admitted)
-  predecessor_segment_identity: ExecutionLineageSegmentId | None
+  root_execution_id: ExecutionId
+  predecessor_root_execution_id: ExecutionId | None
   lifecycle: SEGMENT_OPEN | SEGMENT_CLOSED_CLEAN | SEGMENT_UNCLEAN
 ```
 
-Segment numbering is **local to attempt** — each new `AttemptId` starts a fresh segment sequence; segment identity is not reused across retry attempts.
+`root_execution_id` is simultaneously segment identity. No second ID.
+
+**Segment root admission invariant (hard):** For every `segment_root_execution_id`, exactly one root admission exists where `execution_id == segment_root_execution_id` and `parent_execution_id is None`. Segment root identity `E4` with root admission `execution_id = E7` = hard integrity failure.
+
+Segment numbering is **local to attempt** — each new `AttemptId` starts a fresh segment sequence; segment root `ExecutionId` is not reused across retry attempts or across two segments within one attempt.
 
 **Runtime contract (verified):**
 
@@ -169,9 +176,9 @@ Segment numbering is **local to attempt** — each new `AttemptId` starts a fres
 
 **Forensic parent immutability:** if S1 actually admitted `E2.parent = E1`, durable lineage retains that edge forever. Resume projection showing `E2.parent = E4` in `active_snapshot` is legal; rewriting durable `E2.parent` is forbidden.
 
-**Historical adoption ≠ admission:** adopting completed `E2` into S2 active snapshot does not emit `ExecutionLineageAdmissionRecord` for `E2`, does not modify durable parent, and is not lineage corruption.
+**Historical adoption ≠ admission:** adopting completed `E2` into S2 active snapshot does not emit `ExecutionLineageAdmissionRecord` for `E2`, does not modify durable parent, and is not lineage corruption. Durable record remains `segment_root_execution_id = E1`, `execution_id = E2`, `parent_execution_id = E1` — immutable. No second E2 admission with `segment_root_execution_id = E4`.
 
-**Segment continuity ≠ execution parent edge:** `S2` resumed after `S1` via `predecessor_segment_identity`; new root `E4` has `parent_execution_id = None` — never `E4.parent = E1` to link segments.
+**Segment continuity ≠ execution parent edge:** `S2` resumed after `S1` via `predecessor_root_execution_id = E1`; new root `E4` has `parent_execution_id = None` — never `E4.parent = E1` to link segments. Segment continuity: `E4 resumed_from_segment_root E1` (continuity record), not an execution parent edge.
 
 **Nested historical children:** after resume with new root `E4`, durable lineage retains `E2.parent = E1` and `E3.parent = E2` — nested forensic edges are not flattened. Only the necessary adopted entry may appear reparented in `active_snapshot`.
 
@@ -498,14 +505,20 @@ Root lineage fact is born at root admission with `parent_execution_id = None`.
 ### Root admission flow
 
 ```text
-ExecutionRuntime root identity
+mint root ExecutionId
+  → RootExecutionContext.execution_id = E1
+  → open_segment(scope, root_execution_id=E1)
   → ExecutionBoundary
   → existing ExecutionAdmissionHook
-  → ExecutionLineagePersistence root admission (durable, if lineage persistence active)
+  → ExecutionLineagePersistence.admit_root(
+        segment_root_execution_id=E1,
+        execution_id=E1,
+        parent_execution_id=None,
+    )
   → root delegate
 ```
 
-**Root entry must be durably admitted before root delegate work** when lineage persistence is active.
+**Root entry must be durably admitted before root delegate work** when lineage persistence is active. Root admission hard invariant: `execution_id == segment_root_execution_id` and `parent_execution_id == None`.
 
 ### Child admission flow
 
@@ -522,18 +535,24 @@ ChildExecutionRunner child identity
 ### Implementation boundary (logical — not implemented in this task)
 
 ```text
-ROOT:
-  ExecutionRuntime
-    → ExecutionBoundary
-    → ExecutionAdmissionHook implementation (lineage recorder)
-    → ExecutionLineagePersistence root admission
+ROOT (initial segment):
+  mint root ExecutionId
+    → RootExecutionContext.execution_id = E1
+    → open_segment(scope, root_execution_id=E1)
+    → admit_root(segment_root_execution_id=E1, execution_id=E1, parent=None)
+    → delegate
+
+ROOT (resume segment):
+  mint new canonical root E4
+    → open_segment(scope, root_execution_id=E4, predecessor_root_execution_id=E1)
+    → admit_root(segment_root_execution_id=E4, execution_id=E4, parent=None)
     → delegate
 
 CHILD:
   ChildExecutionRunner
     → ExecutionBoundary
     → same ExecutionAdmissionHook abstraction
-    → ExecutionLineagePersistence child admission
+    → ExecutionLineagePersistence.admit_child(segment_root_execution_id, ...)
     → delegate
 ```
 
@@ -563,12 +582,14 @@ The repo already provides `ExecutionAdmissionHook[RequestT]`. Lineage recording 
 
 ```text
 scope: ExecutionLineageAttemptScope
-segment_identity: ExecutionLineageSegmentId
+segment_root_execution_id: ExecutionId
 execution_id: ExecutionId
 parent_execution_id: ExecutionId | None
 admission_position (monotonic within attempt)
 optional: graph_node_id (structural ref only)
 ```
+
+Root admission hard invariant: `execution_id == segment_root_execution_id` and `parent_execution_id == None`.
 
 **Excluded:** prompts, raw payloads, PII, raw exceptions, runtime status, failure details.
 
@@ -576,9 +597,9 @@ optional: graph_node_id (structural ref only)
 
 ```text
 open_attempt(scope)                         → attempt OPEN
-open_segment(scope, segment_identity, predecessor_segment_identity=None)
-                                            → SEGMENT_OPEN (durable marker before segment work)
-close_segment_for_resume(scope, segment_identity)
+open_segment(scope, root_execution_id, predecessor_root_execution_id=None)
+                                            → SEGMENT_OPEN (durable marker; root_execution_id already minted)
+close_segment_for_resume(scope, root_execution_id)
                                             → clean resumable suspension; predecessor link preserved
 mark_degraded(scope, reason_code)           → durable monotonic degradation truth
 seal_attempt(scope, closure_kind)           → attempt closed (see below)
@@ -651,7 +672,8 @@ PAUSE_BEHAVIOR:
 
 RESUME_BEHAVIOR:
   Validate previous segment continuity for same AttemptId;
-  open_segment(S2, predecessor=S1); mint new root ExecutionId;
+  open_segment(scope, root_execution_id=E4, predecessor_root_execution_id=E1);
+  mint new root ExecutionId;
   attempt remains OPEN; durable admissions from S1 unchanged;
   checkpoint active_snapshot may reparent adopted historical entries (projection only)
 
@@ -689,7 +711,7 @@ either:
   final closure               → ExecutionTerminalService + seal_attempt
 ```
 
-If the process disappears **without** clean segment closure, the next resume/re-entry must detect the incomplete prior segment and force attempt lineage to **PARTIAL/DEGRADED** for forensic completeness. Missing admissions must not be guessed absent.
+If the process disappears **without** clean segment closure, the next resume/re-entry must detect the incomplete prior segment and force attempt lineage to **PARTIAL/DEGRADED** for forensic completeness. Missing admissions must not be guessed absent. Re-entry mints a new root `ExecutionId` → `open_segment(scope, root_execution_id)`; store validates `predecessor_root_execution_id` continuity — no separate segment ID mint.
 
 **Store unavailable at segment open:** **FAIL-CLOSED FOR SEGMENT OPEN** — do not begin a new root/resume segment unless a minimal durable continuity marker (`open_segment`) can be written. No ad-hoc second durability pipeline; reuse `ExecutionLineagePersistence` continuity records.
 
@@ -749,8 +771,9 @@ Structural conflicts remain hard integrity failures (admission rejected), distin
 
 | Condition | Result |
 | --------- | ------ |
-| Same segment + same root `execution_id` | Idempotent success |
-| Same segment + different root `execution_id` | Hard integrity conflict |
+| Same segment + same root `execution_id` where `execution_id == segment_root_execution_id` | Idempotent success |
+| Same segment + root admission where `execution_id != segment_root_execution_id` | Hard integrity failure |
+| Same segment + different root `execution_id` (conflicting segment root) | Hard integrity conflict |
 | Different segments + different root `execution_id` | Legal (S1 root E1, S2 root E4 — same attempt) |
 
 **Child re-admission:**
@@ -809,25 +832,30 @@ Never aggregate multiple attempts into one merged tree. Never flatten segment bo
 ```text
 Attempt A1
 
-Segment S1:
-  root E1
-  E2.parent = E1
-  E3.parent = E2
+Segment S1 identity/root:
+  E1
 
-clean pause → close_segment_for_resume(S1)
+E2.parent = E1
+E3.parent = E2
 
-Segment S2 (open_segment, predecessor=S1):
-  root E4
+clean pause → close_segment_for_resume(root_execution_id=E1)
+
+Segment S2 identity/root:
+  E4
+  predecessor_root_execution_id = E1
+
+Segment continuity:
+  E4 resumed_from_segment_root E1   (NOT E4.parent_execution_id = E1)
 
 active checkpoint projection may show:
   E2.parent = E4   # projection only
 
 durable forensic lineage remains:
   S1: E1 root; E2.parent = E1; E3.parent = E2
-  S2: E4 root
+  S2: E4 root; E5.parent = E4 (if E5 admitted in S2)
 
 if S2 admits new child E5:
-  E5.parent = E4; segment = S2
+  E5.parent = E4; segment_root_execution_id = E4
 ```
 
 ### Operator read model (architecture only — not implemented)
@@ -869,7 +897,7 @@ Assemble forensic lineage from immutable `ExecutionLineageAdmissionRecord` rows 
 | Capability | Source |
 | ---------- | ------ |
 | Segment list | `ExecutionLineageSegmentRecord` rows for attempt scope |
-| Root per segment | Admission record with `parent_execution_id is None` within segment (exactly one per segment) |
+| Root per segment | Admission record where `execution_id == segment_root_execution_id` and `parent_execution_id is None` (exactly one per segment) |
 | Direct parent (forensic) | `record.parent_execution_id` at admission time |
 | Direct children | Records where `parent_execution_id == execution_id` within segment scope |
 | Bounded full tree | All admission records for attempt, grouped by segment |
@@ -923,9 +951,12 @@ COMPLETE (lineage completeness — distinct from execution outcome)
 
 - Attempt was actually closed via retry supersession or terminal authority — **not** because `ExecutionRuntime` returned.
 - Attempt cannot accept further canonical admissions.
+- All segment roots known; each root has exactly one root admission (`execution_id == segment_root_execution_id`, `parent_execution_id is None`).
 - All required continuity segments are known and clean (or closure is degraded-only by policy).
+- All segment continuity known (`predecessor_root_execution_id` chain complete within attempt).
 - No persistent/detected admission gap; every segment structural-valid with exactly one root.
 - Does **not** require exactly one root for the entire attempt — requires exactly one root per known segment.
+- No separate segment identity registry required.
 - Terminal/retry closure authority confirmed and correlated with seal.
 
 **Execution outcome vs lineage completeness (orthogonal):**
@@ -973,7 +1004,7 @@ RESUMABLE PAUSE:
   close_segment_for_resume (clean) → attempt remains OPEN
 
 RESUME SAME ATTEMPT:
-  validate segment continuity → open_segment(S2, predecessor=S1)
+  validate segment continuity → open_segment(scope, root_execution_id=E4, predecessor_root_execution_id=E1)
   → new root ExecutionId → attempt remains OPEN
   → durable S1 admissions unchanged; active_snapshot may reparent adopted historical entries
 
@@ -1023,7 +1054,7 @@ Seal for attempt A1 does not affect attempt A2. A1 closure is triggered **only**
 
 ## 15. Integrity invariants (post resume-segment correction)
 
-1. Exactly **one admitted root** per execution segment (`parent_execution_id is None` in segment root admission record).
+1. Exactly **one admitted root** per execution segment: root admission where `execution_id == segment_root_execution_id` and `parent_execution_id is None` (exactly one per segment).
 2. One `AttemptId` may contain **multiple ordered execution segments**.
 3. Every non-root admission references an existing parent `execution_id` admitted in the same segment (forensic truth at admission time).
 4. Graph per segment is acyclic.
@@ -1031,10 +1062,10 @@ Seal for attempt A1 does not affect attempt A2. A1 closure is triggered **only**
 6. `(child_execution_id → parent_execution_id)` is **immutable** once durably admitted — resume projection reparenting does not rewrite durable edges.
 7. Adopted historical checkpoint entry is **not** a new admission.
 8. Resume projection parent mapping **may** differ from historical forensic parent for adopted completed entries.
-9. Segment continuation (`predecessor_segment_identity`) is **not** an execution parent→child edge; segment roots always have `parent_execution_id = None`.
-10. Cross-tenant segment linkage **must fail**; segment predecessor must belong to same `tenant_id/task_id/run_id/attempt_id`.
-11. Segment graph cannot create continuation cycle.
-12. Retry creates a **new** `AttemptId` within the same `RunId`; segment identity sequence resets per attempt.
+9. Segment continuation (`predecessor_root_execution_id`) is **not** an execution parent→child edge; segment roots always have `parent_execution_id = None`.
+10. Cross-tenant segment linkage **must fail**; `predecessor_root_execution_id` must belong to same `tenant_id/task_id/run_id/attempt_id` (cross-attempt or cross-tenant predecessor = hard failure).
+11. Segment graph cannot create continuation cycle (`predecessor_root_execution_id` chain acyclic within attempt).
+12. Retry creates a **new** `AttemptId` within the same `RunId`; segment root sequence resets per attempt.
 13. `ExecutionIds` for a new attempt must follow canonical identity authority — **never inferred from the previous attempt**.
 
 ### Retry semantics (safe contract)
@@ -1131,10 +1162,10 @@ All attempt-level methods accept `ExecutionLineageAttemptScope` only:
 
 ```text
 open_attempt(scope)
-open_segment(scope, segment_identity, predecessor_segment_identity=None)
-admit_root(scope, segment_identity, record_fields...)   # parent_execution_id = None; once per segment
-admit_child(scope, segment_identity, record_fields...) # parent_execution_id required
-close_segment_for_resume(scope, segment_identity)
+open_segment(scope, root_execution_id, predecessor_root_execution_id=None)
+admit_root(scope, root_execution_id, record_fields...)   # execution_id == segment_root_execution_id; parent_execution_id = None; once per segment
+admit_child(scope, segment_root_execution_id, record_fields...) # parent_execution_id required
+close_segment_for_resume(scope, root_execution_id)
 mark_degraded(scope, reason_code)
 seal_attempt(scope, closure_kind)        # RETRY_SUPERSEDED | TERMINAL_* | ATTEMPT_LINEAGE_DEGRADED
 list_admissions_for_attempt(scope, ...)  # paginated
@@ -1200,6 +1231,12 @@ read_attempt_lineage_state(scope)
 | Q43 | Checkpoint projection parent difference is legal when entry is adopted historical state |
 | Q44 | Real duplicate admission with different parent remains hard integrity failure |
 | Q45 | Unclean S1 + resume S2 → attempt permanently PARTIAL/DEGRADED |
+| Q46 | Segment identity equals canonical root `ExecutionId` |
+| Q47 | `open_segment` occurs using root `ExecutionId` already minted before root admission |
+| Q48 | No `ExecutionLineageSegmentId` is minted or persisted |
+| Q49 | Root admission `execution_id` must equal `segment_root_execution_id` |
+| Q50 | `predecessor_root_execution_id` links segments but never creates execution parent edge |
+| Q51 | Same-attempt resume: S1 root E1, S2 root E4; E4 is segment identity for S2 |
 
 ---
 
@@ -1229,33 +1266,42 @@ Writer (runtime):
     open_attempt(scope)                         → attempt OPEN (idempotent)
 
   SEGMENT (per process/resume invocation):
-    open_segment(scope, segment_identity, predecessor?)
-      → admit_root(scope, segment_identity)     → once per segment
-      → actual child admissions (segment-scoped)
-      → clean pause → close_segment_for_resume
+    mint root ExecutionId → RootExecutionContext.execution_id
+    open_segment(scope, root_execution_id, predecessor_root_execution_id?)
+      → admit_root(scope, root_execution_id)     → execution_id == segment_root_execution_id; once per segment
+      → actual child admissions (segment-scoped via segment_root_execution_id)
+      → clean pause → close_segment_for_resume(scope, root_execution_id)
       OR crash → unclean segment
       OR retry/final terminal → close segment + attempt seal
 
   ROOT:
     ExecutionRuntime
+      → resolve_root_execution_context / RootExecutionContext (execution_id minted)
+      → open_segment(scope, root_execution_id)
       → ExecutionBoundary
       → ExecutionAdmissionHook (lineage recorder implementation)
-      → ExecutionLineagePersistence.admit_root(segment)
+      → ExecutionLineagePersistence.admit_root(segment_root_execution_id=root_execution_id)
       → delegate
 
   CHILD:
     ChildExecutionRunner
       → ExecutionBoundary
       → ExecutionAdmissionHook (same abstraction)
-      → ExecutionLineagePersistence.admit_child(segment)
+      → ExecutionLineagePersistence.admit_child(segment_root_execution_id)
       → delegate
 
   RESUME (same AttemptId):
     validate segment continuity
-    → open_segment(S2, predecessor=S1)
     → mint new root ExecutionId
+    → open_segment(scope, root_execution_id=E4, predecessor_root_execution_id=E1)
     → checkpoint active_snapshot may reparent adopted historical entries
     → durable historical admissions unchanged
+
+  CRASH / REENTRY:
+    new root ExecutionId naturally creates new segment identity
+    → open_segment(scope, root_execution_id)
+    → store validates predecessor continuity
+    → no separate segment ID mint
 
   PROJECTION (converge later — not this task):
     ExecutionTreeRecorder.record_child_started()
@@ -1295,198 +1341,219 @@ SELECTED_OPTION:
 OPTION_A
 
 ATTEMPT_SCOPE:
-  ExecutionLineageAttemptScope (tenant_id, task_id, run_id, attempt_id) — attempt-only;
-  no root_execution_id, segment_identity, or parent/child execution fields
+ExecutionLineageAttemptScope
 
 SEGMENT_IDENTITY:
-  ExecutionLineageSegmentId (new typed identifier — minted at open_segment;
-  required because open_segment precedes root admission)
+Canonical root ExecutionId
+
+NEW_SEGMENT_IDENTITY_TYPE:
+NO
+
+SEGMENT_RECORD:
+ExecutionLineageSegmentRecord:
+  attempt_scope: ExecutionLineageAttemptScope
+  root_execution_id: ExecutionId
+  predecessor_root_execution_id: ExecutionId | None
+  lifecycle: SEGMENT_OPEN | SEGMENT_CLOSED_CLEAN | SEGMENT_UNCLEAN
 
 SEGMENT_ROOT_INVARIANT:
-  Exactly one admitted root per segment (parent_execution_id = None in root admission record);
-  one attempt may contain S1→S2→… with roots E1, E4, E9, …
+For every segment_root_execution_id: exactly one root admission where
+execution_id == segment_root_execution_id and parent_execution_id is None;
+segment root identity E4 with root admission execution_id E7 = hard integrity failure
+
+SEGMENT_PREDECESSOR:
+predecessor_root_execution_id identifies prior segment by its root ExecutionId;
+same tenant/task/run/attempt only; cross-attempt or cross-tenant = hard failure;
+continuation cycle = hard failure
+
+SEGMENT_PREDECESSOR_IS_PARENT_EDGE:
+NO
 
 MULTIPLE_SEGMENTS_PER_ATTEMPT:
-  YES
+YES
 
 SAME_ATTEMPT_NEW_ROOT_ON_RESUME:
-  SUPPORTED
+SUPPORTED
 
 FORENSIC_PARENT_IMMUTABILITY:
-  Durable (child_execution_id → parent_execution_id) immutable after admission;
-  resume/checkpoint reparenting of adopted historical entries does not rewrite durable edges
+Durable (child_execution_id → parent_execution_id) immutable after admission;
+resume/checkpoint reparenting of adopted historical entries does not rewrite durable edges
 
 CHECKPOINT_REPARENTING_SEMANTICS:
-  ExecutionTreeResumePlan.active_snapshot may reparent adopted historical completed entries
-  under new segment root — resume/checkpoint execution projection only; not new admission;
-  not forensic lineage rewrite
+PROJECTION_ONLY
 
 HISTORICAL_ADOPTION_IS_NEW_ADMISSION:
-  NO
+NO
+
+REUSE_FIRST_INVARIANT:
+No second identifier may be minted for a lifecycle unit when canonical ExecutionId
+already uniquely identifies it
 
 SEGMENT_CONTINUITY_RELATION:
-  ExecutionLineageSegmentRecord.predecessor_segment_identity links S2 resumed_from S1;
-  durable segment lifecycle markers (open/close/unclean); distinct from execution parent edge
+ExecutionLineageSegmentRecord.predecessor_root_execution_id links S2 resumed_from S1;
+durable segment lifecycle markers (open/close/unclean); distinct from execution parent edge
 
 SEGMENT_CONTINUITY_IS_EXECUTION_PARENT_EDGE:
-  NO
+NO
 
 CHECKPOINT_VS_LINEAGE_CONFLICT_RULE:
-  HARD: duplicate real admission (same execution_id, different canonical parent)
-  LEGAL: checkpoint active_snapshot parent ≠ durable forensic parent for adopted historical entry
+HARD: duplicate real admission (same execution_id, different canonical parent)
+LEGAL: checkpoint active_snapshot parent ≠ durable forensic parent for adopted historical entry
 
 ATTEMPT_COMPLETENESS_RULE:
-  COMPLETE requires all segments continuity known, none unclean, all actual admissions durable,
-  every known segment structural-valid with exactly one root, attempt canonically closed/sealed;
-  does NOT require exactly one root for entire attempt
+all segment roots known + each root has exactly one root admission +
+all segment continuity known + all segments clean + all actual admissions durable +
+attempt canonically sealed → COMPLETE; no separate segment identity registry
 
 EXECUTION_TREE_SNAPSHOT_ROLE:
-  Canonical active/checkpoint structural projection for specific runtime/resume view;
-  NOT immutable forensic tree for whole attempt
+Canonical active/checkpoint structural projection for specific runtime/resume view;
+NOT immutable forensic tree for whole attempt
 
 EXECUTION_LINEAGE_PERSISTENCE_ROLE:
-  Canonical immutable forensic history of actual admissions + segment continuity records;
-  Diagnostics assembles multi-segment forensic truth from this store
+Canonical immutable forensic history of actual admissions + segment continuity records;
+Diagnostics assembles multi-segment forensic truth from this store
 
 ATTEMPT_SCOPE_TYPE:
-  ExecutionLineageAttemptScope (tenant_id, task_id, run_id, attempt_id)
-  ExecutionLineageAdmissionRecord carries segment_identity + execution_id + parent_execution_id
+ExecutionLineageAttemptScope (tenant_id, task_id, run_id, attempt_id)
+ExecutionLineageAdmissionRecord carries segment_root_execution_id + execution_id + parent_execution_id
 
 ROOT_TASK_SCOPE_DELIVERY:
-  Optional RootExecutionContext.task_id: TaskId | None at task composition paths only;
-  lineage persistence wired only when capability active; fail-closed when enabled without task_id;
-  resolve_root_execution_context(...) unchanged for generic non-task ExecutionRuntime paths
+Optional RootExecutionContext.task_id: TaskId | None at task composition paths only;
+lineage persistence wired only when capability active; fail-closed when enabled without task_id;
+resolve_root_execution_context(...) unchanged for generic non-task ExecutionRuntime paths
 
 CHILD_SCOPE:
-  Inherit attempt scope only; execution identity from ExecutionIdentityBinding
+Inherit attempt scope only; execution identity from ExecutionIdentityBinding
 
 ADMISSION_SCOPE_DELIVERY:
-  Pattern A — lineage ExecutionAdmissionHook constructed with immutable ExecutionLineageAttemptScope
-  + admission record fields per ExecutionBoundary; admit(request) never inspects request
+Pattern A — lineage ExecutionAdmissionHook constructed with immutable ExecutionLineageAttemptScope
++ admission record fields per ExecutionBoundary; admit(request) never inspects request
 
 RETRY_CLOSURE_AUTHORITY:
-  AttemptLifecycleService successful transition_to_next_attempt(...)
+AttemptLifecycleService successful transition_to_next_attempt(...)
 
 FINAL_TERMINAL_AUTHORITY:
-  ExecutionTerminalService.commit_terminal_outcome / record_cancellation
-  composed at NexusLoop._commit_durable_terminal_authority with active AttemptId
+ExecutionTerminalService.commit_terminal_outcome / record_cancellation
+composed at NexusLoop._commit_durable_terminal_authority with active AttemptId
 
 PAUSE_BEHAVIOR:
-  Resumable states → attempt OPEN; close_segment_for_resume only; no seal
+Resumable states → attempt OPEN; close_segment_for_resume only; no seal
 
 RESUME_BEHAVIOR:
-  Validate segment continuity; open_segment; same AttemptId; attempt OPEN
+Validate segment continuity; open_segment with root_execution_id; same AttemptId; attempt OPEN
 
 RAW_EXCEPTION_BEHAVIOR:
-  Raw boundary/runtime exception does not seal; seal only after canonical terminal commit
+Raw boundary/runtime exception does not seal; seal only after canonical terminal commit
 
 PROCESS_CRASH_BEHAVIOR:
-  Unclean segment → permanent PARTIAL/DEGRADED; COMPLETE forbidden after resume
+Unclean segment → permanent PARTIAL/DEGRADED; COMPLETE forbidden after resume
 
 PROCESS_SEGMENT_CONTINUITY:
-  open_segment / close_segment_for_resume / unclean detection via durable continuity records
+open_segment(root_execution_id) / close_segment_for_resume(root_execution_id) / unclean detection
 
 EXECUTION_RUNTIME_RETURN_IS_TERMINAL:
-  NO
+NO
 
 SEAL_LEGALITY:
-  COMPLETE lineage only when durable continuity proves no unknown gap;
-  seal correlated with retry transition or terminal authority — not ExecutionRuntime return
+COMPLETE lineage only when durable continuity proves no unknown gap;
+seal correlated with retry transition or terminal authority — not ExecutionRuntime return
 
 ADMISSION_FAILURE_POLICY:
-  Fail-open execution MAY continue if durable mark_degraded succeeds;
-  crash before durable degradation → unclean segment → PARTIAL on resume
+Fail-open execution MAY continue if durable mark_degraded succeeds;
+crash before durable degradation → unclean segment → PARTIAL on resume
 
 DEGRADATION_DURABILITY:
-  Canonical truth: durable mark_degraded + continuity records in ExecutionLineagePersistence;
-  AttemptLineageDegradationState ContextVar = RUNTIME_ONLY monotonic indicator
+Canonical truth: durable mark_degraded + continuity records in ExecutionLineagePersistence;
+AttemptLineageDegradationState ContextVar = RUNTIME_ONLY monotonic indicator
 
 FALSE_COMPLETE_PREVENTION:
-  Formal invariant — no crash/resume/retry/terminal sequence yields COMPLETE without durable proof
+Formal invariant — no crash/resume/retry/terminal sequence yields COMPLETE without durable proof
 
 GENERIC_EXECUTION_RUNTIME_COMPATIBILITY:
-  YES — non-task paths remain valid without mandatory task_id
+YES — non-task paths remain valid without mandatory task_id
 
 FAILED_ATTEMPT_COMPLETE_LINEAGE_ALLOWED:
-  YES (orthogonal execution outcome vs lineage completeness)
+YES (orthogonal execution outcome vs lineage completeness)
 
 CANCELLED_ATTEMPT_COMPLETE_LINEAGE_ALLOWED:
-  YES
+YES
 
 LINEAGE_FACT_AUTHORITY:
-  ExecutionRuntime / ChildExecutionRunner admission boundary
-  → ExecutionIdentityBinding (parent_execution_id)
-  → durable write via ExecutionAdmissionHook → ExecutionLineagePersistence
+ExecutionRuntime / ChildExecutionRunner admission boundary
+→ ExecutionIdentityBinding (parent_execution_id)
+→ durable write via ExecutionAdmissionHook → ExecutionLineagePersistence
 
 CANONICAL_STRUCTURAL_MODEL:
-  ExecutionTreeSnapshot / ExecutionCheckpointEntry
-  (validated tree invariants; attempt-scoped; in-memory + checkpoint projection)
+ExecutionTreeSnapshot / ExecutionCheckpointEntry
+(validated tree invariants; attempt-scoped; in-memory + checkpoint projection)
 
 CANONICAL_DURABLE_SOURCE:
-  ExecutionLineagePersistence
-  (immutable admissions + segment continuity + degradation + seal per attempt)
+ExecutionLineagePersistence
+(immutable admissions + segment continuity + degradation + seal per attempt)
 
 PERSISTENCE_SCOPE:
-  tenant_id + task_id + run_id + attempt_id (attempt APIs — no execution_id)
+tenant_id + task_id + run_id + attempt_id (attempt APIs — no execution_id)
 
 ROOT_WRITE_BOUNDARY:
-  ExecutionRuntime → ExecutionBoundary → ExecutionAdmissionHook (scope-bound)
-  → open_segment(segment_identity) → admit_root(segment) → root delegate
-  (once per execution segment — not once per attempt)
+root identity mint → RootExecutionContext.execution_id
+→ open_segment(scope, root_execution_id)
+→ admit_root(segment_root_execution_id=root_execution_id, execution_id=root_execution_id, parent=None)
+→ root delegate (once per execution segment — not once per attempt)
 
 CHILD_WRITE_BOUNDARY:
-  ChildExecutionRunner → ExecutionBoundary → ExecutionAdmissionHook (scope-bound)
-  → ExecutionLineagePersistence.admit_child → child delegate
+ChildExecutionRunner → ExecutionBoundary → ExecutionAdmissionHook (scope-bound)
+→ ExecutionLineagePersistence.admit_child(segment_root_execution_id) → child delegate
 
 EXISTING_ADMISSION_PROTOCOL:
-  ExecutionAdmissionHook[RequestT] (reuse — no new protocol)
+ExecutionAdmissionHook[RequestT] (reuse — no new protocol)
 
 COMPLETENESS_PROTOCOL:
-  OPEN + segment continuity + admissions + canonical closure authority + seal → COMPLETE
-  degraded / unclean segment / missing seal / crash → PARTIAL or UNAVAILABLE
+OPEN + segment continuity + admissions + canonical closure authority + seal → COMPLETE
+degraded / unclean segment / missing seal / crash → PARTIAL or UNAVAILABLE
 
 FAILURE_POLICY:
-  Segment open: fail-closed if continuity marker unavailable
-  Admission availability: fail-open only with durable mark_degraded
-  Structural conflict → hard integrity failure
+Segment open: fail-closed if continuity marker unavailable
+Admission availability: fail-open only with durable mark_degraded
+Structural conflict → hard integrity failure
 
 CHECKPOINT_RELATIONSHIP:
-  TaskCheckpoint.runtime.execution_tree = mutable resume/checkpoint projection
-  ExecutionLineagePersistence = immutable forensic actual-admission history
-  ExecutionTreeResumePlan = historical → active resume projection transform
-  Projection reparenting MUST NOT mutate forensic lineage
-  Duplicate real admission → HARD INTEGRITY FAILURE; legal projection difference → NOT conflict
+TaskCheckpoint.runtime.execution_tree = mutable resume/checkpoint projection
+ExecutionLineagePersistence = immutable forensic actual-admission history
+ExecutionTreeResumePlan = historical → active resume projection transform
+Projection reparenting MUST NOT mutate forensic lineage
+Duplicate real admission → HARD INTEGRITY FAILURE; legal projection difference → NOT conflict
 
 RETRY_SEMANTICS:
-  A1 sealed on successful AttemptLifecycle transition; A2 open_attempt independently
+A1 sealed on successful AttemptLifecycle transition; A2 open_attempt independently
 
 STATUS_SOURCE:
-  RuntimeEventPersistence / DIAG-2 runtime evidence (read-side join in ExecutionReconstructor)
+RuntimeEventPersistence / DIAG-2 runtime evidence (read-side join in ExecutionReconstructor)
 
 NEW_ABSTRACTIONS_REQUIRED:
-  ExecutionLineagePersistence: REQUIRED
-  ExecutionLineageAttemptScope: REQUIRED
-  ExecutionLineageAdmissionRecord: REQUIRED (segment_identity field added)
-  ExecutionLineageSegmentRecord: REQUIRED
-  ExecutionLineageSegmentId: REQUIRED (new typed identifier)
-  AttemptLineageDegradationState: RUNTIME_ONLY
-  New Execution Tree model: NO
-  New admission protocol: NO
-  New attempt authority: NO
-  New terminal authority: NO
-  ExecutionTreeAdmissionHook protocol: NOT REQUIRED — reuse ExecutionAdmissionHook
+ExecutionLineagePersistence: REQUIRED
+ExecutionLineageAttemptScope: REQUIRED
+ExecutionLineageAdmissionRecord: REQUIRED
+ExecutionLineageSegmentRecord: REQUIRED
+ExecutionLineageSegmentId: NOT REQUIRED — reuse root ExecutionId
+AttemptLineageDegradationState: RUNTIME_ONLY
+New Execution Tree: NO
+New admission protocol: NO
+New identity authority: NO
+New attempt authority: NO
+New terminal authority: NO
+ExecutionTreeAdmissionHook protocol: NOT REQUIRED — reuse ExecutionAdmissionHook
 
 NEXT_TASK:
-  DG-001-MULTI-AGENT-EXECUTION-LINEAGE-ADMISSION-PERSISTENCE-R1
+DG-001-MULTI-AGENT-EXECUTION-LINEAGE-ADMISSION-PERSISTENCE-R1
 
 DIAGNOSTICS_CORE_CHANGE_REQUIRED:
-  YES (read projection + completeness + status join — ExecutionReconstructor / read models)
+YES (read projection + completeness + status join — ExecutionReconstructor / read models)
 
 EXECUTION_ENGINE_CHANGE_REQUIRED:
-  YES (admission durable write; segment continuity; seal at retry/terminal composition boundaries)
+YES (admission durable write; segment continuity; seal at retry/terminal composition boundaries)
 
 CAUSAL_EVIDENCE_CHANGE_REQUIRED:
-  NO
+NO
 ```
 
 ---
@@ -1536,14 +1603,14 @@ HOW do we avoid duplicate authority?
 
 Minimal implementation surface:
 
-1. Define `ExecutionLineageAttemptScope`, `ExecutionLineageSegmentId`, `ExecutionLineageSegmentRecord`, `ExecutionLineageAdmissionRecord` (with `segment_identity`), and `AttemptLineageDegradationState` (runtime-only) typed contracts.
+1. Define `ExecutionLineageAttemptScope`, `ExecutionLineageSegmentRecord`, `ExecutionLineageAdmissionRecord` (with `segment_root_execution_id`), and `AttemptLineageDegradationState` (runtime-only) typed contracts — **no** `ExecutionLineageSegmentId`.
 2. Optional `RootExecutionContext.task_id: TaskId | None` at task composition boundary only.
 3. Define `ExecutionLineagePersistence` public ABC (attempt-scoped: `open_attempt`, `open_segment`, `admit_root`, `admit_child`, `close_segment_for_resume`, `mark_degraded`, `seal_attempt`, `list_admissions_for_attempt`, `read_seal`, `read_attempt_lineage_state`).
 4. Implement scope-bound `ExecutionAdmissionHook` lineage recorder at root and child admission.
 5. Wire seal at retry transition handler (`AttemptLifecycleService`) and terminal commit handler (`NexusLoop._commit_durable_terminal_authority` + `ExecutionTerminalService`) — **not** at `ExecutionRuntime` return.
 6. Extend `ExecutionReconstructor` with attempt-scoped lineage projection, status join, and `LineageCompleteness`.
 7. Harness host wiring for persistence adapter.
-8. Execute qualification scenarios Q1–Q45.
+8. Execute qualification scenarios Q1–Q51.
 
 ---
 
@@ -1589,6 +1656,7 @@ Focused regression at correction START HEAD — prior evidence from R1 draft:
 - Immutable forensic parent edges — resume projection reparenting does not rewrite durable lineage
 - Historical checkpoint adoption is not new admission
 - No fake execution parent edge between segments
-- `ExecutionLineageSegmentId` + `ExecutionLineageSegmentRecord` defined; segment identity local to attempt
+- Segment identity = canonical root `ExecutionId`; no `ExecutionLineageSegmentId`; no second identity authority
+- `ExecutionLineageSegmentRecord` defined; segment root `ExecutionId` local to attempt
 - Generic non-task `ExecutionRuntime` paths preserved
 - No branch / worktree / history rewrite
