@@ -110,6 +110,13 @@ Root activation binds `AttemptLineageDegradationState` from durable attempt meta
 - `test_nested_child_after_degraded_parent.py`
 - `test_terminal_conflict_seal.py`
 
+## Final correction
+
+- **HostTask single root identity:** `resolve_root_task_identity(..., execution_id=...)` mints exactly one canonical root; `HostTaskExecution.execute()` passes `identity.execution_id` to resume plan, revision admission, and `RootExecutionOptions` (no second mint in `ExecutionRuntime`).
+- **Explicit provider fail-closed:** `resolve_execution_lineage_persistence(provider=DOCUMENT_STORE, document_store=None)` raises `ExecutionLineageConfigurationError`; `provider=None` remains lineage disabled.
+- **Real nested degraded-parent proof:** `test_nested_child_after_degraded_parent.py` uses one persistence object and production `ChildExecutionRunner` nested delegation; nested child without durable parent admission fails closed (`parent admission missing`).
+- **Post-open_segment degradation binding:** root activation binds `AttemptLineageDegradationState` from durable attempt metadata after `open_segment` (unclean predecessor resume).
+
 ## Final verdict
 
-**PASS** — logical lineage mutations (admission, segment open, unclean successor, seal) are single durable atomic transitions; canonical HostTask path uses production lineage composition without manual injection.
+**PASS** — logical lineage mutations (admission, segment open, unclean successor, seal) are single durable atomic transitions; canonical HostTask path uses production lineage composition without manual injection; resume and provider contracts are fail-closed where required.

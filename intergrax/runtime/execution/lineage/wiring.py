@@ -36,8 +36,12 @@ def resolve_execution_lineage_persistence(
     """
     if explicit_persistence is not None:
         return explicit_persistence
-    if provider is None or document_store is None:
+    if provider is None:
         return None
+    if document_store is None:
+        raise ExecutionLineageConfigurationError(
+            _MISSING_SELECTED_PROVIDER_MSG.format(provider=provider.value),
+        )
     if provider is not ExecutionLineagePersistenceProvider.DOCUMENT_STORE:
         raise ExecutionLineageConfigurationError(
             _MISSING_SELECTED_PROVIDER_MSG.format(provider=provider.value),

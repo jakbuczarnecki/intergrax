@@ -295,6 +295,7 @@ class HostTaskExecution:
         identity = resolve_root_task_identity(
             run_id=run_id,
             attempt_id=attempt_id,
+            execution_id=execution_id,
             resume_checkpoint=resume_checkpoint,
         )
         segment_predecessor_root_execution_id = None
@@ -312,24 +313,23 @@ class HostTaskExecution:
                 for entry in checkpoint_tree.entries
                 if entry.parent_execution_id is None
             )
-            resolved_execution_id = execution_id or identity.execution_id
             if (
                 identity.attempt_id != checkpoint_attempt_id
-                or resolved_execution_id != checkpoint_root_execution_id
+                or identity.execution_id != checkpoint_root_execution_id
             ):
-                if resolved_execution_id != checkpoint_root_execution_id:
+                if identity.execution_id != checkpoint_root_execution_id:
                     segment_predecessor_root_execution_id = checkpoint_root_execution_id
                 resume_plan = build_task_checkpoint_resume_plan(
                     task,
                     resume_checkpoint,
                     active_attempt_id=identity.attempt_id,
-                    active_root_execution_id=resolved_execution_id,
+                    active_root_execution_id=identity.execution_id,
                 )
                 prepare_task_for_checkpoint_resume(
                     task,
                     resume_checkpoint,
                     active_attempt_id=identity.attempt_id,
-                    active_root_execution_id=resolved_execution_id,
+                    active_root_execution_id=identity.execution_id,
                     resume_plan=resume_plan,
                 )
                 resume_plan_token = bind_active_execution_resume_plan(
@@ -342,7 +342,7 @@ class HostTaskExecution:
             tenant_id=task.tenant_id,
             run_id=identity.run_id,
             attempt_id=identity.attempt_id,
-            execution_id=execution_id,
+            execution_id=identity.execution_id,
             task_id=task.task_id,
             segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
         )

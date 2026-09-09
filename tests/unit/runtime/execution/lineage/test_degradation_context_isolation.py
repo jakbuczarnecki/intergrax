@@ -13,8 +13,33 @@ from intergrax.runtime.execution.lineage.root_activation import (
     activate_root_execution_lineage,
     deactivate_root_execution_lineage,
 )
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import mint_task_id, mint_execution_id
 from intergrax.runtime.execution.identity_authority import mint_root_execution_identity
+
+
+def test_post_open_segment_degradation_binding_on_crash_resume() -> None:
+    persistence = InMemoryExecutionLineagePersistence()
+    identity = mint_root_execution_identity()
+    e1 = mint_execution_id()
+    e4 = mint_execution_id()
+    scope = build_execution_lineage_attempt_scope(
+        tenant_id="tenant-a",
+        task_id=mint_task_id(),
+        run_id=identity.run_id,
+        attempt_id=identity.attempt_id,
+    )
+    persistence.open_attempt(scope)
+    persistence.open_segment(scope, e1)
+    _, lineage_token, degradation_token = activate_root_execution_lineage(
+        persistence=persistence,
+        scope=scope,
+        root_execution_id=e4,
+        predecessor_root_execution_id=e1,
+    )
+    assert peek_attempt_lineage_degradation() is not None
+    assert peek_attempt_lineage_degradation().degraded is True
+    deactivate_root_execution_lineage(lineage_token, degradation_token)
+    assert peek_attempt_lineage_degradation() is None
 
 
 def test_degradation_context_resets_between_root_bindings() -> None:

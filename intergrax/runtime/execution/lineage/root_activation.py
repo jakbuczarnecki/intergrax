@@ -64,15 +64,20 @@ def activate_root_execution_lineage(
         if predecessor_root_execution_id is not None
         else None
     )
-    attempt_state = persistence.open_attempt(scope)
+    persistence.open_attempt(scope)
     persistence.open_segment(scope, root, predecessor)
+    durable_attempt_state = persistence.read_attempt_lineage_state(scope)
+    if durable_attempt_state is None:
+        raise ExecutionLineageConfigurationError(
+            "lineage attempt state missing after segment open",
+        )
     state = ActiveExecutionLineageState(
         persistence=persistence,
         scope=scope,
         segment_root_execution_id=root,
     )
     lineage_token = bind_active_execution_lineage(state)
-    degradation_token = bind_attempt_lineage_degradation(attempt_state.degraded)
+    degradation_token = bind_attempt_lineage_degradation(durable_attempt_state.degraded)
     return state, lineage_token, degradation_token
 
 

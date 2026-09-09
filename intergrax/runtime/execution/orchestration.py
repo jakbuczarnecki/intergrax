@@ -7,9 +7,12 @@ from __future__ import annotations
 
 from typing import Protocol, TypeVar
 
-from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
+from intergrax.contracts.delegation_authority import (
+    resolve_root_parent_execution_authority,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     require_active_execution_id,
     require_active_execution_identity,
@@ -32,14 +35,19 @@ from intergrax.runtime.execution.decision_lifecycle_host import (
     DecisionLifecycleHost,
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
-from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
+from intergrax.runtime.execution.task_adapter import (
+    TaskExecutionInput,
+    execution_request_from_task,
+)
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_task_checkpoint_resume_plan,
     prepare_task_for_checkpoint_resume,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
+from intergrax.runtime.long_running.resume_planner import (
+    execution_identity_from_checkpoint,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult
@@ -61,17 +69,17 @@ class NexusOrchestrationPort(Protocol):
         *,
         run_id: RunId,
         attempt_id: AttemptId | None = None,
-    ) -> TaskResult:
-        ...
+    ) -> TaskResult: ...
 
 
 def resolve_root_task_identity(
     *,
     run_id: RunId | None = None,
     attempt_id: AttemptId | None = None,
+    execution_id: ExecutionId | None = None,
     resume_checkpoint: TaskCheckpoint | None = None,
 ) -> RootTaskIdentity:
-    if resume_checkpoint is not None:
+    if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
         checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
             resume_checkpoint
         )
@@ -88,8 +96,13 @@ def resolve_root_task_identity(
         return mint_root_execution_identity(
             run_id=checkpoint_run_id,
             attempt_id=checkpoint_attempt_id,
+            execution_id=execution_id,
         )
-    return mint_root_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    return mint_root_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
 
 
 class OrchestrationExecutor:

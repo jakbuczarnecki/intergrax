@@ -36,6 +36,22 @@ def test_lineage_disabled_when_provider_unset() -> None:
     assert resolved is None
 
 
+def test_lineage_disabled_without_provider_and_store() -> None:
+    resolved = resolve_execution_lineage_persistence(
+        document_store=None,
+        provider=None,
+    )
+    assert resolved is None
+
+
+def test_configured_document_store_without_store_raises() -> None:
+    with pytest.raises(ExecutionLineageConfigurationError):
+        resolve_execution_lineage_persistence(
+            document_store=None,
+            provider=ExecutionLineagePersistenceProvider.DOCUMENT_STORE,
+        )
+
+
 def test_lineage_enabled_with_document_store_provider() -> None:
     store = InMemoryDocumentStore()
     resolved = resolve_execution_lineage_persistence(
