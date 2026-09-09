@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from qdrant_client.http.models import Distance, PointStruct
 
 from intergrax.integrations.contracts.vector_index_administration import (
     VectorIndexAdministration,
@@ -60,9 +63,14 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 
 
+type QdrantProviderDistance = str | Distance
+type QdrantProviderPayloadInput = Mapping[str, str | int] | None
+type QdrantProviderVectorInput = list[float] | dict[str, list[float]] | None
+
+
 class QdrantVectorParamsView(Protocol):
     size: int
-    distance: object
+    distance: QdrantProviderDistance
 
 
 class QdrantCollectionParamsView(Protocol):
@@ -77,10 +85,16 @@ class QdrantCollectionInfoView(Protocol):
     config: QdrantCollectionConfigView
 
 
+class QdrantUpsertPointView(Protocol):
+    id: str | int
+    vector: list[float] | dict[str, list[float]]
+    payload: dict[str, str | int]
+
+
 class QdrantProviderPoint(Protocol):
     id: str | int
-    payload: dict[str, str | int] | None
-    vector: list[float] | dict[str, list[float]] | None
+    payload: QdrantProviderPayloadInput
+    vector: QdrantProviderVectorInput
 
 
 class QdrantDataPlaneClient(Protocol):
@@ -93,7 +107,11 @@ class QdrantDataPlaneClient(Protocol):
         with_vectors: bool,
     ) -> Sequence[QdrantProviderPoint]: ...
 
-    def upsert(self, collection_name: str, points: Sequence[object]) -> object: ...
+    def upsert(
+        self,
+        collection_name: str,
+        points: Sequence[QdrantUpsertPointView],
+    ) -> None: ...
 
     def get_collection(self, collection_name: str) -> QdrantCollectionInfoView: ...
 
@@ -126,11 +144,9 @@ def _validate_vector_record(
         raise QdrantBootstrapVectorValidationError("zero vector rejected")
 
 
-def _extract_provider_payload(raw_payload: object) -> dict[str, str | int]:
+def _extract_provider_payload(raw_payload: QdrantProviderPayloadInput) -> dict[str, str | int]:
     if raw_payload is None:
         raise QdrantBootstrapOperationError("stored payload missing")
-    if not isinstance(raw_payload, dict):
-        raise QdrantBootstrapOperationError("stored payload has invalid type")
     converted: dict[str, str | int] = {}
     for key, value in raw_payload.items():
         if not isinstance(key, str):
@@ -141,7 +157,7 @@ def _extract_provider_payload(raw_payload: object) -> dict[str, str | int]:
 
 
 def _extract_dense_vector(
-    raw_vector: object,
+    raw_vector: QdrantProviderVectorInput,
     physical: PhysicalVectorTarget,
 ) -> tuple[float, ...]:
     if physical.uses_named_dense_vector:
@@ -174,7 +190,7 @@ def _stored_point_from_provider_record(
     )
 
 
-def _distance_label(distance: object) -> str:
+def _distance_label(distance: QdrantProviderDistance) -> str:
     return str(distance)
 
 
@@ -475,7 +491,7 @@ class QdrantVectorStorageAdapter:
             vector_payload = vector_values
         return QdrantUpsertPoint(id=point_id, vector=vector_payload, payload=payload)
 
-    def _to_sdk_upsert_point(self, point: QdrantUpsertPoint) -> object:
+    def _to_sdk_upsert_point(self, point: QdrantUpsertPoint) -> PointStruct | QdrantUpsertPoint:
         try:
             from qdrant_client.http.models import PointStruct
         except ImportError:

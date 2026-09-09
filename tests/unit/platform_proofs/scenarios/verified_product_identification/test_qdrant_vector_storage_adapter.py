@@ -32,6 +32,10 @@ from platform_proofs.scenarios.verified_product_identification.qualification.int
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.adapter import (
     QdrantVectorStorageAdapter,
     _collection_vector_shape,
+    _distance_label,
+    _extract_dense_vector,
+    _extract_provider_payload,
+    _stored_point_from_provider_record,
     _validate_vector_record,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.configuration import (
@@ -46,9 +50,11 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     QdrantBootstrapCollectionError,
     QdrantBootstrapConfigurationError,
     QdrantBootstrapIdentityConflictError,
+    QdrantBootstrapOperationError,
     QdrantBootstrapVectorValidationError,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.payload import (
+    QdrantUpsertPoint,
     QdrantVectorPayload,
     normalize_vector_float32,
     payload_from_record,
@@ -223,7 +229,7 @@ class _FakeIndexAdmin:
 @dataclass
 class _FakeQdrantPoint:
     id: str | int
-    payload: dict[str, object]
+    payload: dict[str, str | int]
     vector: list[float] | dict[str, list[float]]
 
 
@@ -270,7 +276,11 @@ class _FakeQdrantClient:
                 found.append(point)
         return found
 
-    def upsert(self, collection_name: str, points: list[object]) -> None:
+    def upsert(
+        self,
+        collection_name: str,
+        points: list[QdrantUpsertPoint],
+    ) -> None:
         if self.fail_upsert:
             raise OSError("upsert failed")
         self.upsert_calls += 1
@@ -685,6 +695,112 @@ def test_collection_shape_parses_default_dense_vector() -> None:
     shape = _collection_vector_shape(client.get_collection("x"), _physical_target())
     assert shape.dimension == 1024
     assert shape.distance.lower().startswith("cos")
+
+
+def test_distance_label_normalizes_string_distance() -> None:
+    assert _distance_label("Cosine") == "Cosine"
+
+
+def test_distance_label_normalizes_sdk_distance_enum() -> None:
+    try:
+        from qdrant_client.http.models import Distance
+    except ImportError:
+        pytest.skip("qdrant-client unavailable")
+    assert _distance_label(Distance.COSINE).lower().startswith("cos")
+
+
+def test_extract_provider_payload_converts_typed_mapping() -> None:
+    record = _vector_record(0)
+    payload = payload_from_record(record).to_provider_payload()
+    converted = _extract_provider_payload(payload)
+    assert converted == payload
+
+
+def test_extract_provider_payload_rejects_missing_payload() -> None:
+    with pytest.raises(QdrantBootstrapOperationError, match="stored payload missing"):
+        _extract_provider_payload(None)
+
+
+def test_extract_provider_payload_filters_non_scalar_values() -> None:
+    converted = _extract_provider_payload(
+        {
+            "logical_id": "point-1",
+            "catalog_id": "wdc-v2-selected",
+            "offer_id": "offer-0",
+            "semantic_text_hash": "hash-a",
+            "embedding_provider": CANONICAL_EMBEDDING_PROVIDER,
+            "embedding_model": CANONICAL_EMBEDDING_MODEL,
+            "embedding_dimension": CANONICAL_EMBEDDING_DIMENSION,
+            "derivation_version": "v1",
+            "ignored": 1.5,
+        }
+    )
+    assert "ignored" not in converted
+    assert converted["logical_id"] == "point-1"
+
+
+def test_extract_dense_vector_default_channel() -> None:
+    physical = _physical_target()
+    vector = _extract_dense_vector([1.0, 0.0], physical)
+    assert vector == (1.0, 0.0)
+
+
+def test_extract_dense_vector_rejects_named_shape_on_default_target() -> None:
+    physical = _physical_target()
+    with pytest.raises(QdrantBootstrapOperationError, match="unexpected named channels"):
+        _extract_dense_vector({"dense": [1.0, 0.0]}, physical)
+
+
+def test_extract_dense_vector_rejects_missing_vector() -> None:
+    physical = _physical_target()
+    with pytest.raises(QdrantBootstrapOperationError, match="invalid type"):
+        _extract_dense_vector(None, physical)
+
+
+def _named_physical_target() -> PhysicalVectorTarget:
+    config = QdrantBootstrapConfiguration(
+        integration=_configuration().integration,
+        logical_collection_name="vpi-product-embeddings",
+        expected_vector_identity=ExpectedVectorIdentity.canonical_vpi(),
+        upsert_batch_size=64,
+        uses_named_dense_vector=True,
+        dense_vector_channel_name="dense",
+    )
+    return resolve_physical_target(VectorTargetId("vpi-product-embeddings"), config)
+
+
+def test_extract_dense_vector_rejects_invalid_channel_shape() -> None:
+    with pytest.raises(QdrantBootstrapOperationError, match="missing named dense channel"):
+        _extract_dense_vector({"other": [1.0, 0.0]}, _named_physical_target())
+
+
+def test_stored_point_from_provider_record_converts_payload_and_vector() -> None:
+    record = _vector_record(0)
+    payload = payload_from_record(record).to_provider_payload()
+    provider_point = _FakeQdrantPoint(
+        id=_normalize_point_id(record.logical_point_id),
+        payload=payload,
+        vector=list(normalize_vector_float32(record.dense_embedding)),
+    )
+    stored = _stored_point_from_provider_record(provider_point, _physical_target())
+    assert stored.logical_point_id == record.logical_point_id
+    assert payload_identity_matches(stored.payload, payload_from_record(record)) is True
+
+
+def test_adapter_has_no_forbidden_contract_patterns() -> None:
+    forbidden_fragments = (
+        ": object",
+        "-> object",
+        "Sequence[object]",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        ": Any",
+        "dict[str, Any]",
+    )
+    for module_path in sorted(_ADAPTER_ROOT.rglob("*.py")):
+        source = module_path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {module_path.name}"
 
 
 def test_identity_conflict_error_type() -> None:
