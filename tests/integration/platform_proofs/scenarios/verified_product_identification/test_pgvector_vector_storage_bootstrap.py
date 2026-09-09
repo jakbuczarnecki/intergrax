@@ -82,3 +82,14 @@ def test_pgvector_vector_conflict_fails_closed() -> None:
     )
     with pytest.raises(StorageBootstrapWriteError):
         adapter.write_batch(_batch(conflict))
+
+
+@pytest.mark.skipif(not pgvector_environment_available(), reason="pgvector not configured locally")
+def test_pgvector_batch_rollback_leaves_no_partial_writes() -> None:
+    adapter = _adapter()
+    good = _vector_record(0)
+    bad = _vector_record(0, semantic_hash="hash-b")
+    with pytest.raises(StorageBootstrapWriteError):
+        adapter.write_batch(_batch(good, bad))
+    verify = adapter.verify_batch(_batch(good))
+    assert verify.failed_count == 1
