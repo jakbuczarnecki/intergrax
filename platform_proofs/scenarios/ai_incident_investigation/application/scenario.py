@@ -71,6 +71,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     normalize_evidence_gathering_stop_reason,
     reconcile_investigation_completion,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.evidence_completion_gate import (
+    CompletionEligibilityGateConfig,
+    assert_ai_incident_completion_eligible,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
     COMPLETION_UNRESOLVED,
@@ -503,6 +507,11 @@ async def execute_resolved_skeleton(
             evidence_gathering_stop_reason
         ),
     )
+    if reconciled.completion_mode.value == COMPLETION_SUPPORTED_DIAGNOSIS:
+        assert_ai_incident_completion_eligible(
+            evidence_nodes=evidence_nodes,
+            gate=CompletionEligibilityGateConfig(),
+        )
     outcome = derive_terminal_outcome(
         critic_verdict_passed=critic_verdict_passed,
         has_supported_diagnosis=has_supported_diagnosis,
