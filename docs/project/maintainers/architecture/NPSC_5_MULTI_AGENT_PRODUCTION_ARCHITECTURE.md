@@ -4,7 +4,7 @@
 
 **Series owner:** Agent Distribution + frozen Execution Engine
 
-**Current phase:** NPSC-5C — Typed Coordination Intent + Decision Integration (**FROZEN / PASS** · R1–R3 qualified)
+**Current phase:** NPSC-5D — Multi-Agent Governance (**FROZEN / PASS** · R1+R2+R3 unified)
 
 **R1 reconciliation:** [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md)
 
@@ -273,7 +273,7 @@ CoordinationIntentExecutor
 
 ## 8.1 NPSC-5D/R1 — semantic coordination governance admission
 
-**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **ready for Final qualification**
+**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **FROZEN / PASS**
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -308,7 +308,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 ## 8.2 NPSC-5D/R2 — physical delegation governance admission
 
-**Status:** NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **ready for Final qualification**
+**Status:** NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **FROZEN / PASS**
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -341,9 +341,9 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 ### 8.2.2 NPSC-5D/R3 — canonical HITL governed continuation
 
-**Status:** NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **ready for Final qualification**
+**Status:** NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **FROZEN / PASS**
 
-**Qualification:** [`NPSC_5D_R3_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R3_FINAL_QUALIFICATION_AND_FREEZE.md)
+**Qualification:** [`NPSC_5D_R3_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R3_FINAL_QUALIFICATION_AND_FREEZE.md) · **NPSC-5D Final:** [`NPSC_5D_FINAL_MULTI_AGENT_GOVERNANCE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_FINAL_MULTI_AGENT_GOVERNANCE_QUALIFICATION_AND_FREEZE.md)
 
 #### 8.2.2.1 NPSC-5D/R3-H1 — truthful resume provenance and Nexus exact slot continuation
 
@@ -372,7 +372,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
 | **NPSC-5B** | Bounded fan-out / fan-in (**FROZEN / PASS**) |
 | **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
-| **NPSC-5D** | Multi-agent governance (**ready for Final qualification** — R1/R2/R3 **FROZEN / PASS**) |
+| **NPSC-5D** | Multi-agent governance (**FROZEN / PASS** — R1+R2+R3 unified governance plane) |
 | **NPSC-5E** | Retry / checkpoint / recovery |
 | **NPSC-5F** | Audit / observability hooks expansion |
 
