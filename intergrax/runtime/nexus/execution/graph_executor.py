@@ -1361,6 +1361,42 @@ class GraphExecutor:
             outcomes_by_slot=outcomes_by_slot,
         )
 
+    async def continue_orchestration_topology_slot(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        *,
+        slot_id: OrchestrationSlotId,
+        topology: OrchestrationTopology[PayloadT],
+        node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT],
+        scheduling_policy: OrchestrationSchedulingPolicy,
+    ) -> OrchestrationSlotOutcome[ResultT]:
+        """Execute one orchestration slot through canonical child execution scheduling."""
+        validate_orchestration_topology(topology)
+        validate_orchestration_scheduling_policy(scheduling_policy)
+        require_active_execution_identity()
+        require_active_execution_id()
+
+        node = next(
+            (
+                candidate
+                for candidate in graph.nodes
+                if candidate.orchestration_slot_id == slot_id
+            ),
+            None,
+        )
+        if node is None:
+            raise RuntimeError(f"orchestration slot not found in graph: {slot_id!r}")
+
+        work_delegate = _OrchestrationWorkChildDelegate[PayloadT, ResultT]()
+        return await self._execute_orchestration_work_node(
+            graph,
+            task,
+            node,
+            node_execution=node_execution,
+            work_delegate=work_delegate,
+        )
+
     async def _execute_orchestration_work_graph(
         self,
         graph: ExecutionGraph,

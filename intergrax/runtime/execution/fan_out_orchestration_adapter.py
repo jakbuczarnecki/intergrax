@@ -30,18 +30,27 @@ from intergrax.contracts.orchestration_topology import (
     OrchestrationResult,
     OrchestrationSchedulingPolicy,
     OrchestrationSlot,
+    OrchestrationSlotContinuationRequest,
     OrchestrationSlotId,
     OrchestrationSlotOutcome,
     OrchestrationSlotStatus,
     OrchestrationTopology,
+    OrchestrationTopologyContinuationPort,
+    OrchestrationTopologyExecutionId,
     OrchestrationTopologySubmissionPort,
 )
+from intergrax.contracts.physical_delegation_governance import (
+    PhysicalDelegationGovernedContinuation,
+)
 from intergrax.runtime.execution.orchestration_topology_submission import (
+    CanonicalOrchestrationTopologySubmissionPort,
     build_orchestration_topology_host_task,
+    resolve_orchestration_topology_execution_id,
 )
 from intergrax.runtime.governance.active_governed_execution_task import (
     ActiveGovernedExecutionTask,
 )
+from intergrax.runtime.task.task import Task
 
 RequestT = TypeVar("RequestT")
 ResultT = TypeVar("ResultT")
@@ -158,11 +167,21 @@ def map_orchestration_result_to_fan_out_outcomes(
 
 
 @dataclass(frozen=True, slots=True)
+class FanOutGovernedSlotContinuationContext:
+    """Agent Distribution resume facts bound to one governed fan-out slot."""
+
+    continuation: PhysicalDelegationGovernedContinuation
+    expected_grant_id: str
+    task: Task
+
+
+@dataclass(frozen=True, slots=True)
 class FanOutCoordinationSlotExecutor(Generic[RequestT, ResultT]):
     """Execute one fan-out slot through canonical multi-agent coordination."""
 
     coordination: MultiAgentCoordinationService[RequestT, ResultT]
     principal: RequestIdentity
+    resume_context: FanOutGovernedSlotContinuationContext | None = None
 
     async def execute_slot(
         self,
@@ -213,6 +232,56 @@ class FanOutCoordinationSlotExecutor(Generic[RequestT, ResultT]):
             result=coordination_result,
         )
 
+    async def continue_slot(
+        self,
+        *,
+        slot_id: OrchestrationSlotId,
+        payload: FanOutSlotPayload[RequestT],
+    ) -> FanOutItemOutcome[ResultT]:
+        if self.resume_context is None:
+            raise FanOutOrchestrationContractError(
+                "fan-out slot continuation requires governed resume context",
+            )
+        item = payload.item
+        item_id = to_fan_out_item_id(slot_id)
+        if item.item_id != item_id:
+            raise FanOutOrchestrationContractError(
+                "fan-out slot payload item_id does not match orchestration slot_id",
+            )
+        try:
+            coordination_result = await self.coordination.continue_governed_coordination(
+                item.request,
+                delegation=item.delegation,
+                continuation=self.resume_context.continuation,
+                principal=self.principal,
+                task=self.resume_context.task,
+                expected_grant_id=self.resume_context.expected_grant_id,
+            )
+        except CoordinationCleanupError as exc:
+            return FanOutItemOutcome(
+                item_id=item_id,
+                status=FanOutItemStatus.FAILURE,
+                failure=FanOutItemFailure(
+                    failure_code=CoordinationFailureCode.LEASE_RELEASE_FAILED,
+                    message=str(exc),
+                    partial_result=exc.result,
+                ),
+            )
+        except CoordinationError as exc:
+            return FanOutItemOutcome(
+                item_id=item_id,
+                status=FanOutItemStatus.FAILURE,
+                failure=FanOutItemFailure(
+                    failure_code=exc.failure_code,
+                    message=str(exc),
+                ),
+            )
+        return FanOutItemOutcome(
+            item_id=item_id,
+            status=FanOutItemStatus.SUCCESS,
+            result=coordination_result,
+        )
+
 
 def _build_fan_out_host_task(
     request: FanOutRequest[RequestT],
@@ -234,7 +303,24 @@ class CanonicalFanOutOrchestrationAdapter(Generic[RequestT, ResultT]):
         FanOutSlotPayload[RequestT],
         FanOutItemOutcome[ResultT],
     ]
+    topology_continuation: OrchestrationTopologyContinuationPort[
+        FanOutSlotPayload[RequestT],
+        FanOutItemOutcome[ResultT],
+    ]
     coordination: MultiAgentCoordinationService[RequestT, ResultT]
+
+    def resolve_execution_id(
+        self,
+        request: FanOutRequest[RequestT],
+        *,
+        principal: RequestIdentity,
+    ) -> OrchestrationTopologyExecutionId:
+        host_task = _build_fan_out_host_task(request, principal)
+        topology = project_fan_out_to_topology(request)
+        return resolve_orchestration_topology_execution_id(
+            host_task=host_task,
+            topology=topology,
+        )
 
     async def orchestrate_fan_out(
         self,
@@ -259,6 +345,53 @@ class CanonicalFanOutOrchestrationAdapter(Generic[RequestT, ResultT]):
             )
         finally:
             governed.reset(token)
+        outcomes = map_orchestration_result_to_fan_out_outcomes(
+            request,
+            orchestration_result,
+        )
+        continuable = tuple(
+            to_orchestration_slot_id(outcome.item_id)
+            for outcome in outcomes
+            if outcome.status is FanOutItemStatus.FAILURE
+            and outcome.failure is not None
+            and outcome.failure.continuation is not None
+        )
+        if continuable:
+            self.topology_continuation.register_governed_continuation_slots(
+                self.resolve_execution_id(request, principal=principal),
+                continuable,
+            )
+        return outcomes
+
+    async def continue_governed_fan_out_slot(
+        self,
+        request: FanOutRequest[RequestT],
+        *,
+        principal: RequestIdentity,
+        item_id: FanOutItemId,
+        continuation_context: FanOutGovernedSlotContinuationContext,
+        correlation_id: str,
+    ) -> tuple[FanOutItemOutcome[ResultT], ...]:
+        host_task = _build_fan_out_host_task(request, principal)
+        execution_id = self.resolve_execution_id(request, principal=principal)
+        slot_executor = FanOutCoordinationSlotExecutor(
+            coordination=self.coordination,
+            principal=principal,
+            resume_context=continuation_context,
+        )
+        governed = ActiveGovernedExecutionTask()
+        token = governed.bind(host_task)
+        try:
+            orchestration_result = await self.topology_continuation.continue_slot(
+                OrchestrationSlotContinuationRequest(
+                    execution_id=execution_id,
+                    slot_id=to_orchestration_slot_id(item_id),
+                    correlation_id=correlation_id,
+                ),
+                slot_continuation_executor=slot_executor,
+            )
+        finally:
+            governed.reset(token)
         return map_orchestration_result_to_fan_out_outcomes(
             request,
             orchestration_result,
@@ -271,10 +404,24 @@ def build_fan_out_orchestration_port(
         FanOutItemOutcome[ResultT],
     ],
     coordination: MultiAgentCoordinationService[RequestT, ResultT],
+    *,
+    topology_continuation: OrchestrationTopologyContinuationPort[
+        FanOutSlotPayload[RequestT],
+        FanOutItemOutcome[ResultT],
+    ] | None = None,
 ) -> FanOutOrchestrationPort[RequestT, ResultT]:
     """Composition-root factory for canonical fan-out orchestration."""
+    continuation = topology_continuation
+    if continuation is None:
+        if not isinstance(topology_submission, CanonicalOrchestrationTopologySubmissionPort):
+            raise TypeError(
+                "topology_continuation required when submission port is not "
+                "CanonicalOrchestrationTopologySubmissionPort",
+            )
+        continuation = topology_submission
     return CanonicalFanOutOrchestrationAdapter(
         topology_submission=topology_submission,
+        topology_continuation=continuation,
         coordination=coordination,
     )
 
@@ -282,6 +429,7 @@ def build_fan_out_orchestration_port(
 __all__ = [
     "CanonicalFanOutOrchestrationAdapter",
     "FanOutCoordinationSlotExecutor",
+    "FanOutGovernedSlotContinuationContext",
     "FanOutSlotPayload",
     "build_fan_out_orchestration_port",
     "map_orchestration_outcome_to_fan_out",

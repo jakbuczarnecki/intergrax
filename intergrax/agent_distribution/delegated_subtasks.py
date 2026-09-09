@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Final, Generic, NewType, Protocol, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -19,8 +20,6 @@ from intergrax.agent_distribution.agent_discovery import (
 from intergrax.agent_distribution.agent_selection import (
     AgentSelectionDecision,
     AgentSelectionStrategy,
-    AgentSelectionStrategyId,
-    SelectionDecisionBasis,
     SelectionOutcome,
     build_agent_selection_request,
     require_selected_identity,
@@ -263,6 +262,13 @@ class DelegatedSubtaskReleaseContext:
     selected_identity: AgentDiscoveryCandidateIdentity
 
 
+class DelegatedSelectionProvenanceKind(StrEnum):
+    """How delegated subtask selection provenance was established."""
+
+    SELECTED = "selected"
+    PRESERVED_GOVERNED_CONTINUATION = "preserved_governed_continuation"
+
+
 @dataclass(frozen=True, slots=True)
 class DelegatedSubtaskResult(Generic[ResultT]):
     """Audit-friendly delegated subtask outcome."""
@@ -272,13 +278,26 @@ class DelegatedSubtaskResult(Generic[ResultT]):
     capability_resolution: TaskCapabilityResolutionResult | None
     capability_requirement: AgentCapabilityRequirement
     match_results: tuple[CapabilityMatchResult, ...]
-    selection_decision: AgentSelectionDecision
+    selection_decision: AgentSelectionDecision | None
+    selection_provenance_kind: DelegatedSelectionProvenanceKind
     selected_identity: AgentDiscoveryCandidateIdentity
     lease_id: TaskScopedAgentLeaseId
     application_binding_id: str
     acquisition_result: DynamicAgentAcquisitionResult
     release_result: TaskScopedAgentReleaseResult
     result: ResultT
+
+    def __post_init__(self) -> None:
+        if self.selection_provenance_kind is DelegatedSelectionProvenanceKind.SELECTED:
+            if self.selection_decision is None:
+                raise DelegatedSubtaskContractError(
+                    "SELECTED provenance requires selection_decision",
+                )
+            return
+        if self.selection_decision is not None:
+            raise DelegatedSubtaskContractError(
+                "PRESERVED_GOVERNED_CONTINUATION must not include selection_decision",
+            )
 
 
 class DelegatedSubtaskAcquisitionPlanFactory(Protocol):
@@ -526,6 +545,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
             requirement=requirement,
             match_results=match_results,
             selection_decision=selection_decision,
+            selection_provenance_kind=DelegatedSelectionProvenanceKind.SELECTED,
             selected_identity=selected_identity,
         )
 
@@ -634,13 +654,6 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         if consumed.grant_id != stored_grant.grant_id:
             raise DelegatedSubtaskContinuationGrantError("grant identity mismatch after consume")
 
-        selection_decision = AgentSelectionDecision(
-            strategy_id=AgentSelectionStrategyId(value="physical_delegation.governed_continuation"),
-            outcome=SelectionOutcome.SELECTED,
-            selected_identity=selected_identity,
-            considered_candidates=(selected_identity,),
-            decision_basis=SelectionDecisionBasis.STABLE_IDENTITY_ORDER,
-        )
         return await self._execute_post_selection_pipeline(
             request=request,
             invocation=invocation,
@@ -649,7 +662,10 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
             capability_resolution=None,
             requirement=requirement,
             match_results=(),
-            selection_decision=selection_decision,
+            selection_decision=None,
+            selection_provenance_kind=(
+                DelegatedSelectionProvenanceKind.PRESERVED_GOVERNED_CONTINUATION
+            ),
             selected_identity=selected_identity,
         )
 
@@ -663,7 +679,8 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         capability_resolution: TaskCapabilityResolutionResult | None,
         requirement: AgentCapabilityRequirement,
         match_results: tuple[CapabilityMatchResult, ...],
-        selection_decision: AgentSelectionDecision,
+        selection_decision: AgentSelectionDecision | None,
+        selection_provenance_kind: DelegatedSelectionProvenanceKind,
         selected_identity: AgentDiscoveryCandidateIdentity,
     ) -> DelegatedSubtaskResult[ResultT]:
         lifecycle_plan = self._acquisition_plan_factory.build_acquisition_plan(
@@ -750,6 +767,7 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
             capability_requirement=requirement,
             match_results=match_results,
             selection_decision=selection_decision,
+            selection_provenance_kind=selection_provenance_kind,
             selected_identity=selected_identity,
             lease_id=request.lease_id,
             application_binding_id=acquisition.lease.application_binding_id,
@@ -872,6 +890,7 @@ __all__ = [
     "DelegatedSubtaskAcquisitionError",
     "DelegatedSubtaskReleaseContext",
     "DelegatedSubtaskReleaseError",
+    "DelegatedSelectionProvenanceKind",
     "DelegatedSubtaskReleasePlanFactory",
     "DelegatedSubtaskRequest",
     "DelegatedSubtaskTaskScopeError",

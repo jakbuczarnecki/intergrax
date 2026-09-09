@@ -339,6 +339,24 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 **Distinction from R1:** R1 `REQUIRE_HUMAN` is semantic coordination admission (`CoordinationGovernanceRequiresHuman`); R2-H1 is exact selected physical delegation (`PhysicalDelegationGovernedContinuation`).
 
+### 8.2.2 NPSC-5D/R3-H1 — truthful resume provenance and Nexus exact slot continuation
+
+**Status:** R3-H1 active — governed resume without synthetic selection; Nexus-owned exact fan-out slot continuation.
+
+| Artifact | Package | Responsibility |
+| -------- | ------- | -------------- |
+| `DelegatedSelectionProvenanceKind` | `intergrax/agent_distribution/` | Distinguishes real selection (`SELECTED`) from preserved governed resume (`PRESERVED_GOVERNED_CONTINUATION`) |
+| `OrchestrationTopologyContinuationPort` | `intergrax/contracts/` | Canonical exact-slot continuation within a prior topology execution |
+| `OrchestrationSlotContinuationExecutor` | `intergrax/contracts/` | Optional slot executor capability for resumed governed slots |
+| `CanonicalOrchestrationTopologySubmissionPort` | `intergrax/runtime/execution/` | Stores in-process topology execution context; continues one registered slot without whole-topology resubmit |
+| `FanOutCoordinationSlotExecutor.continue_slot` | `intergrax/runtime/execution/` | Projects Nexus slot continuation into `continue_governed_coordination` |
+
+**Provenance rule:** resume does **not** constitute a new selection. `continue_governed_delegation` preserves exact `selected_identity` from `PhysicalDelegationGovernedContinuation` and records `PRESERVED_GOVERNED_CONTINUATION` without fabricating `AgentSelectionDecision`.
+
+**Ownership:** Nexus resumes the exact blocked slot and scheduling context; Agent Distribution resumes physical delegation semantics (`continue_governed_coordination` / `continue_governed_delegation`). Governance/HITL remain canonical pause/grant owners.
+
+**Fan-out:** `GOVERNANCE_REQUIRES_HUMAN` items register continuable slot identities on the topology execution record. Approval resumes **only** that slot — successful siblings are not re-executed; whole fan-out and whole topology resubmit are forbidden on the resume path.
+
 ---
 
 ## 9. Future NPSC-5 phases

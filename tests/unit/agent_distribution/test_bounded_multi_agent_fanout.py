@@ -156,14 +156,18 @@ def build_fan_out_harness(
     candidates,
     specialist_delegate=None,
     capability_resolver=None,
+    physical_delegation_governance=None,
 ):
     factory = _FanOutAcquisitionPlanFactory()
-    return build_delegated_harness(
+    harness = build_delegated_harness(
         candidates=candidates,
         specialist_delegate=specialist_delegate,
         acquisition_plan_factory=factory,
         capability_resolver=capability_resolver,
+        physical_delegation_governance=physical_delegation_governance,
     )
+    factory.bind_harness(harness)
+    return harness
 
 
 def _fan_out_item(
@@ -1483,6 +1487,7 @@ async def test_fan_out_canonical_path_preserves_two_level_child_execution_lineag
         orchestration=build_fan_out_orchestration_port(
             _TrackingSubmissionPort(submission_port),
             coordination,
+            topology_continuation=submission_port,
         ),
     )
     harness.task_scope_authority.task_scope_id = task_scope

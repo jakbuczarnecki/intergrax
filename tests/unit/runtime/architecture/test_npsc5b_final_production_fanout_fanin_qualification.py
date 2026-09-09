@@ -182,6 +182,7 @@ async def test_npsc5b_final_production_fanout_fanin_e2e_qualification() -> None:
         orchestration=build_fan_out_orchestration_port(
             _TrackingSubmissionPort(submission_port),
             coordination,
+            topology_continuation=submission_port,
         ),
     )
     task_scope = mint_task_id()
