@@ -125,6 +125,12 @@ Root activation binds `AttemptLineageDegradationState` from durable attempt meta
 - **Persistent-outage proof:** `test_nested_child_after_degraded_parent.py` keeps child admission unavailable for entire test; E3 blocked before second `admit_child` call.
 - **Private test seam cleanup:** `test_host_task_resume_lineage_identity.py` uses `HostTaskExecution` + `AgentEngine` subclass instead of `nexus_loop._engine`.
 
+## Correction — Public qualification seam correction
+
+- HostTask resume qualification now traverses canonical `build_host_task_execution` composition path without private production API access.
+- `test_host_task_resume_lineage_identity.py` registers `_LineageIdentityProbeAgent` (`UaepPipelineStubAgent` derivative) via `AgentRegistry` → real `AgentEngine` → `NexusLoop` → `build_host_task_execution` → `HostTaskExecution` → `ExecutionRuntime` → lineage.
+- Removed manual `HostTaskExecution(_agent_engine=..., _agent_router=..., ...)` cross-module constructor surface from qualification tests.
+
 ## Final verdict
 
 **PASS** — logical lineage mutations (admission, segment open, unclean successor, seal) are single durable atomic transitions; canonical HostTask path uses production lineage composition without manual injection; resume and provider contracts are fail-closed where required.

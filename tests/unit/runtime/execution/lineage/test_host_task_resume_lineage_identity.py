@@ -4,11 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.agents.agent_engine import AgentEngine
-from intergrax.contracts.agent_execution_result import (
-    AgentExecutionResult,
-    AgentExecutionStatus,
-)
+from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -27,22 +24,18 @@ from intergrax.contracts.execution_lineage import (
 from intergrax.runtime.execution.active_execution_resume import (
     peek_active_execution_resume_plan,
 )
-from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
 )
-from intergrax.runtime.execution.nexus_host_execution import (
-    build_nexus_host_task_terminal_publisher,
-)
-from intergrax.runtime.execution.orchestration import OrchestrationExecutor
+from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
     minimal_runtime_checkpoint,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 
 def _checkpoint(
@@ -66,43 +59,99 @@ def _checkpoint(
     )
 
 
-def _host_execution(
-    nexus_loop: NexusLoop,
-    *,
-    agent_engine: AgentEngine,
-    orchestration_triggers: frozenset[str] = frozenset(),
-) -> HostTaskExecution:
-    return HostTaskExecution(
-        _agent_engine=agent_engine,
-        _agent_router=AgentRouter(
-            nexus_loop.registry,
-            event_bus=nexus_loop.event_bus,
-        ),
-        _orchestration_executor=OrchestrationExecutor(nexus_loop),
-        _orchestration_triggers=orchestration_triggers,
-        _pipeline_capability_suffix=".pipeline",
-        _ledger_factory=nexus_loop.execution_budget_ledger_factory,
-        _run_budget=nexus_loop.run_budget,
-        _terminal_publisher=build_nexus_host_task_terminal_publisher(nexus_loop),
-        _execution_lineage_persistence=nexus_loop.execution_lineage_persistence,
+class _LineageIdentityProbeAgent(UaepPipelineStubAgent):
+    """Registered UAEP gate stub that observes active execution identity during delegate."""
+
+    __slots__ = (
+        "_capture_resume_details",
+        "_captured",
+        "_persistence",
+        "_task_id",
+        "_task_tenant_id",
     )
-
-
-class _CallbackAgentEngine(AgentEngine):
-    __slots__ = ("_callback",)
 
     def __init__(
         self,
-        registry: AgentRegistry,
-        callback: object,
+        *,
+        captured: dict[str, ExecutionId],
+        persistence: InMemoryExecutionLineagePersistence | None = None,
+        task_id: str | None = None,
+        task_tenant_id: str = "tenant-a",
+        capture_resume_details: bool = False,
     ) -> None:
-        super().__init__(registry)
-        self._callback = callback
+        super().__init__(
+            agent_id="demo-agent",
+            capability="agent.demo",
+            prefix="demo",
+        )
+        self._captured = captured
+        self._persistence = persistence
+        self._task_id = task_id
+        self._task_tenant_id = task_tenant_id
+        self._capture_resume_details = capture_resume_details
 
-    async def run_with_result(self, runtime_request: object) -> AgentExecutionResult:
-        callback = self._callback
-        assert callable(callback)
-        return await callback(runtime_request)
+    async def run_step(
+        self,
+        step: AgentStep,
+        ctx: RuntimeExecutionContext,
+    ) -> StepOutput:
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        active_execution_id = require_active_execution_id()
+        if self._capture_resume_details:
+            resume_plan = peek_active_execution_resume_plan()
+            assert resume_plan is not None
+            active_snapshot = resume_plan.plan.active_snapshot
+            resume_root = next(
+                entry.execution_id
+                for entry in active_snapshot.entries
+                if entry.parent_execution_id is None
+            )
+            assert self._persistence is not None
+            assert self._task_id is not None
+            attempt_scope = build_execution_lineage_attempt_scope(
+                tenant_id=self._task_tenant_id,
+                task_id=self._task_id,
+                run_id=active_run_id,
+                attempt_id=active_attempt_id,
+            )
+            attempt_state = self._persistence.read_attempt_lineage_state(attempt_scope)
+            assert attempt_state is not None
+            page = self._persistence.list_admissions_for_attempt(
+                attempt_scope, limit=10
+            )
+            root_admissions = [
+                item for item in page.admissions if item.parent_execution_id is None
+            ]
+            assert len(root_admissions) == 1
+            self._captured["resume_plan_root"] = resume_root
+            self._captured["active_execution_id"] = active_execution_id
+            self._captured["segment_root"] = (
+                attempt_state.active_segment_root_execution_id
+            )
+            self._captured["root_admission"] = root_admissions[0].execution_id
+        else:
+            self._captured["active_execution_id"] = active_execution_id
+        return await super().run_step(step, ctx)
+
+
+def _build_host_execution(
+    persistence: InMemoryExecutionLineagePersistence,
+    *,
+    captured: dict[str, ExecutionId],
+    task_id: str | None = None,
+    capture_resume_details: bool = False,
+):
+    registry = AgentRegistry()
+    registry.register(
+        _LineageIdentityProbeAgent(
+            captured=captured,
+            persistence=persistence,
+            task_id=task_id,
+            capture_resume_details=capture_resume_details,
+        ),
+    )
+    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
+    return build_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
 
 
 @pytest.mark.asyncio
@@ -110,8 +159,6 @@ async def test_host_task_resume_uses_single_canonical_root_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     persistence = InMemoryExecutionLineagePersistence()
-    registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -151,46 +198,11 @@ async def test_host_task_resume_uses_single_canonical_root_execution_id(
         agent_id="demo-agent",
     )
     captured: dict[str, ExecutionId] = {}
-
-    async def _run_with_result(runtime_request: object) -> AgentExecutionResult:
-        del runtime_request
-        active_run_id, active_attempt_id = require_active_execution_identity()
-        active_execution_id = require_active_execution_id()
-        resume_plan = peek_active_execution_resume_plan()
-        assert resume_plan is not None
-        active_snapshot = resume_plan.plan.active_snapshot
-        resume_root = next(
-            entry.execution_id
-            for entry in active_snapshot.entries
-            if entry.parent_execution_id is None
-        )
-        attempt_scope = build_execution_lineage_attempt_scope(
-            tenant_id=task.tenant_id,
-            task_id=task_id,
-            run_id=active_run_id,
-            attempt_id=active_attempt_id,
-        )
-        attempt_state = persistence.read_attempt_lineage_state(attempt_scope)
-        assert attempt_state is not None
-        page = persistence.list_admissions_for_attempt(attempt_scope, limit=10)
-        root_admissions = [
-            item for item in page.admissions if item.parent_execution_id is None
-        ]
-        assert len(root_admissions) == 1
-        captured["resume_plan_root"] = resume_root
-        captured["active_execution_id"] = active_execution_id
-        captured["segment_root"] = attempt_state.active_segment_root_execution_id
-        captured["root_admission"] = root_admissions[0].execution_id
-        return AgentExecutionResult(
-            agent_id="demo-agent",
-            run_id=active_run_id,
-            status=AgentExecutionStatus.COMPLETED,
-            summary="ok",
-        )
-
-    host_execution = _host_execution(
-        nexus_loop,
-        agent_engine=_CallbackAgentEngine(registry, _run_with_result),
+    host_execution = _build_host_execution(
+        persistence,
+        captured=captured,
+        task_id=task_id,
+        capture_resume_details=True,
     )
 
     result = await host_execution.execute(
@@ -212,8 +224,6 @@ async def test_host_task_resume_uses_single_canonical_root_execution_id(
 @pytest.mark.asyncio
 async def test_host_task_resume_same_attempt_persists_two_segment_roots() -> None:
     persistence = InMemoryExecutionLineagePersistence()
-    registry = AgentRegistry()
-    nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
@@ -226,26 +236,11 @@ async def test_host_task_resume_same_attempt_persists_two_segment_roots() -> Non
         agent_id="demo-agent",
     )
 
-    first_root: ExecutionId | None = None
-
-    async def _run_with_result(runtime_request: object) -> AgentExecutionResult:
-        nonlocal first_root
-        del runtime_request
-        active_run_id, active_attempt_id = require_active_execution_identity()
-        first_root = require_active_execution_id()
-        return AgentExecutionResult(
-            agent_id="demo-agent",
-            run_id=active_run_id,
-            status=AgentExecutionStatus.COMPLETED,
-            summary="ok",
-        )
-
-    host_execution = _host_execution(
-        nexus_loop,
-        agent_engine=_CallbackAgentEngine(registry, _run_with_result),
-    )
+    first_captured: dict[str, ExecutionId] = {}
+    host_execution = _build_host_execution(persistence, captured=first_captured)
 
     await host_execution.execute(task, run_id=run_id, attempt_id=attempt_id)
+    first_root = first_captured.get("active_execution_id")
     assert first_root is not None
     scope = build_execution_lineage_attempt_scope(
         tenant_id=task.tenant_id,
@@ -270,23 +265,10 @@ async def test_host_task_resume_same_attempt_persists_two_segment_roots() -> Non
         context=TaskContext(capability="agent.demo"),
         agent_id="demo-agent",
     )
-    resume_root: ExecutionId | None = None
-
-    async def _run_resume(runtime_request: object) -> AgentExecutionResult:
-        nonlocal resume_root
-        del runtime_request
-        active_run_id, active_attempt_id = require_active_execution_identity()
-        resume_root = require_active_execution_id()
-        return AgentExecutionResult(
-            agent_id="demo-agent",
-            run_id=active_run_id,
-            status=AgentExecutionStatus.COMPLETED,
-            summary="ok",
-        )
-
-    resume_host_execution = _host_execution(
-        nexus_loop,
-        agent_engine=_CallbackAgentEngine(registry, _run_resume),
+    resume_captured: dict[str, ExecutionId] = {}
+    resume_host_execution = _build_host_execution(
+        persistence,
+        captured=resume_captured,
     )
 
     await resume_host_execution.execute(
@@ -295,6 +277,7 @@ async def test_host_task_resume_same_attempt_persists_two_segment_roots() -> Non
         execution_id=None,
     )
 
+    resume_root = resume_captured.get("active_execution_id")
     assert resume_root is not None
     assert resume_root != first_root
     second_segment = persistence.open_segment(scope, resume_root, first_root)
