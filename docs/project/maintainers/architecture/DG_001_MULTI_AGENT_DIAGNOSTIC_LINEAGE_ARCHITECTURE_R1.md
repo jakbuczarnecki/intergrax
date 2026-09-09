@@ -1,11 +1,11 @@
 # DG-001 — Multi-agent diagnostic execution lineage architecture (R1)
 
-> **Task:** `DG-001-CROSS-SYSTEM-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ARCHITECTURE-R1-CORRECTION`  
+> **Task:** `DG-001-CROSS-SYSTEM-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ARCHITECTURE-R1-FINAL-CORRECTION`  
 > **Resolves:** GAP-R1-01 from `DG-001-CROSS-SYSTEM-DIAGNOSTIC-COMPATIBILITY-AUDIT-R1`  
 > **Mode:** architecture decision + contract ownership audit — **no implementation**  
 > **Branch:** `development`  
-> **START HEAD:** `3b145f811d6248a8f3dec2236aeba130552b42b0`  
-> **Ancestry verified:** `5a768aac` · `d5c5b1cf` (cross-system correction) · `91568550` (B4 revalidation)
+> **START HEAD:** `c90e37d4e2db5629ac920deae61242fc0e1ef950`  
+> **Ancestry verified:** `e470e50e` · `5a768aac` · `d5c5b1cf` (cross-system correction) · `91568550` (B4 revalidation)
 
 ---
 
@@ -48,6 +48,73 @@ This is a **read-side architecture gap**, not an Execution Engine correctness de
 | Active identity binding | `bind_active_execution_identity()` in `intergrax/contracts/execution_identity.py` | contextvars: `run_id`, `attempt_id`, `execution_id`, `parent_execution_id` |
 
 **Identity authority ≠ lineage fact authority.** Minting a child `ExecutionId` establishes the runtime admission fact; durable lineage persistence and structural projection are separate concerns.
+
+### Execution lineage scope (R1 final — missing contract closed)
+
+`ExecutionLineagePersistence` requires attempt-scoped keys:
+
+```text
+tenant_id
+task_id
+run_id
+attempt_id
+execution_id
+parent_execution_id
+```
+
+**Repo audit:** no existing public type carries the full persistence scope.
+
+| Existing contract | Fields present | Gap |
+| ----------------- | -------------- | --- |
+| `ExecutionIdentityBinding` | `run_id`, `attempt_id`, `execution_id`, `parent_execution_id` | no `tenant_id`, no `task_id` |
+| `RootExecutionContext` | `run_id`, `attempt_id`, `execution_id`, `tenant_id` | no `task_id` |
+| `ActiveExecutionIdentityState` | same as binding | no `tenant_id`, no `task_id` |
+| `ActiveExecutionTaskScopePort` | resolves `TaskId` from active execution | no `tenant_id`; lookup port, not admission scope carrier |
+| `ExecutionRequest` | neutral work-intent | **must not** receive identity/lifecycle scope for lineage hook consumption |
+
+**Selected minimal new abstraction (REQUIRED):**
+
+```text
+ExecutionLineageScope  (immutable @dataclass, frozen=True)
+  tenant_id: str
+  task_id: TaskId
+  run_id: RunId
+  attempt_id: AttemptId
+  execution_id: ExecutionId
+  parent_execution_id: ExecutionId | None
+```
+
+`ExecutionLineageScope` is execution-infrastructure concern only. It is **not** placed on neutral `ExecutionRequest`.
+
+**ROOT TASK_ID SOURCE:**
+
+```text
+Task.task_id: TaskId
+  (intergrax.runtime.task.task.Task)
+```
+
+Composition boundary: `execute_root_task(task, ...)` and `HostTaskExecution.execute(task, ...)`. On the canonical orchestration path, `execute_root_task()` owns `Task` but `RootExecutionContext` today lacks `task_id`. **Minimal clean boundary:** extend `RootExecutionContext` with `task_id: TaskId`, populated at root composition from `task.task_id` together with existing `tenant_id=task.tenant_id`. No `ExecutionRequest` introspection; no `getattr` / reflection / arbitrary metadata.
+
+**CHILD TASK_ID SOURCE:**
+
+```text
+parent ExecutionLineageScope.task_id  (and tenant_id, run_id, attempt_id)
+```
+
+Child admissions derive child `ExecutionLineageScope` by inheriting `tenant_id`, `task_id`, `run_id`, `attempt_id` from the active parent attempt scope and supplying child `execution_id` + `parent_execution_id` from the child `ExecutionIdentityBinding`. Child must **not** re-derive `task_id` from request payload or application-specific request typing.
+
+**ADMISSION SCOPE DELIVERY (single pattern — no alternatives):**
+
+**Pattern A — hook constructed with immutable typed scope.**
+
+The lineage concrete `ExecutionAdmissionHook` implementation is constructed per admission with an immutable `ExecutionLineageScope`. `admit(request)` uses only constructor-bound scope + `ExecutionLineagePersistence` port; it **never** inspects `request` for identity or scope.
+
+| Admission | Scope construction |
+| --------- | ------------------ |
+| Root | `ExecutionRuntime.execute()` builds scope from extended `RootExecutionContext` + root `ExecutionIdentityBinding` |
+| Child | `ChildExecutionRunner.execute()` builds child scope from active parent attempt `ExecutionLineageScope` + child `ExecutionIdentityBinding` |
+
+Parent attempt scope is bound attempt-scoped at root admission (alongside active execution identity) so children inherit without request introspection.
 
 ### Lineage authority (corrected)
 
@@ -272,7 +339,7 @@ Scores: **Strong** / **Partial** / **Weak** / **N/A** — qualitative.
 ## 11. Selected architecture
 
 ```text
-SELECTED_OPTION: OPTION_A (SELECTED WITH CORRECTED CONTRACTS)
+SELECTED_OPTION: OPTION_A
 ```
 
 **Execution admission at root and child boundaries is lineage fact authority; `ExecutionLineagePersistence` is durable source; `ExecutionTreeSnapshot` is canonical structural model; Diagnostics consumes via public read path.**
@@ -397,6 +464,10 @@ The repo already provides `ExecutionAdmissionHook[RequestT]`. Lineage recording 
 
 **`ExecutionTreeAdmissionHook` as a new public protocol: NOT REQUIRED.**
 
+**Scope delivery contract:** lineage hook receives `ExecutionLineageScope` via **constructor binding (Pattern A)** at each `ExecutionBoundary` construction. `admit(request)` must not use `getattr`, reflection, application-specific request typing, arbitrary metadata, or request payload inspection to obtain `task_id`, `tenant_id`, or execution identity.
+
+**Neutral `ExecutionRequest` invariant:** identity/lifecycle scope stays execution-infrastructure concern; do not extend `ExecutionRequest` with `task_id`, tenant, run, or execution identity solely for lineage hook consumption.
+
 ### Durable data model (resolved — no ambiguity)
 
 **Selected model: append-only immutable structural admission records.**
@@ -426,11 +497,71 @@ optional: graph_node_id (structural ref only)
 
 ```text
 tenant_id, task_id, run_id, attempt_id
-seal_kind = ATTEMPT_LINEAGE_SEALED
+seal_kind = ATTEMPT_LINEAGE_SEALED | ATTEMPT_LINEAGE_DEGRADED
 sealed_at_position
 ```
 
-Written when attempt lineage is closed (root + all admitted children terminal, or explicit attempt completion boundary). Required for `COMPLETE` completeness — see §14.
+Required for typed completeness — see §14.
+
+### Terminal lineage seal authority (R1 final)
+
+```text
+LINEAGE_SEAL_AUTHORITY:
+  ExecutionRuntime  (canonical root attempt lifecycle owner, UE-10R1)
+```
+
+Diagnostics **reads** seal only; Diagnostics does **not** own or write seal.
+
+```text
+LINEAGE_SEAL_BOUNDARY:
+  ExecutionRuntime.execute()
+    → root ExecutionBoundary.execute(request) returns
+       (canonical attempt delegate terminal; no further child admissions legal)
+    → seal_attempt(ExecutionLineageScope) when lineage persistence active
+    → finally: reset active execution tokens
+```
+
+Seal correlates with **canonical attempt lifecycle**, not merely “all children terminal” in isolation. Child runners do not seal; only the root attempt owner (`ExecutionRuntime`) seals once the root boundary delegate has returned.
+
+### Seal legality and degradation (R1 final)
+
+```text
+lineage admission persistence availability failure
+        ↓
+AttemptLineageDegradationState.degraded = true  (attempt-scoped)
+        ↓
+ATTEMPT_LINEAGE_SEALED (COMPLETE) prohibited
+        ↓
+seal_attempt writes ATTEMPT_LINEAGE_DEGRADED or skips COMPLETE seal
+        ↓
+Diagnostics completeness → PARTIAL (never COMPLETE)
+```
+
+**Forbidden sequence (must be impossible by contract):**
+
+```text
+child admission persistence failed
+  → execution continued (fail-open)
+  → later store recovered
+  → terminal COMPLETE seal written
+  → false COMPLETE
+```
+
+**`AttemptLineageDegradationState` (REQUIRED — new minimal abstraction):**
+
+```text
+@dataclass(frozen=True)
+AttemptLineageDegradationState:
+  degraded: bool = False
+```
+
+- **Owner:** execution infrastructure; bound attempt-scoped at root admission via `bind_active_attempt_lineage_degradation()` (parallel to `bind_active_execution_identity()`).
+- **Set:** lineage admission hook sets `degraded=True` on persistence **availability** failure (store down, timeout).
+- **Read:** `ExecutionRuntime` seal boundary and `seal_attempt` legality check.
+- **Not stored in:** `Task` metadata, `Problem`, Decision System, or raw dict.
+- **Inherited:** children read parent attempt degradation; cannot clear degradation within the same attempt.
+
+Structural conflicts remain hard integrity failures (admission rejected), distinct from availability degradation.
 
 ### Idempotency
 
@@ -558,12 +689,36 @@ COMPLETE
 
 **Never** return `COMPLETE` when:
 
-- Admission write failed but execution continued
+- Admission write failed but execution continued (`AttemptLineageDegradationState.degraded`)
 - Process crashed before seal
 - Store was unavailable during admission
 - Terminal seal does not exist
+- Seal is `ATTEMPT_LINEAGE_DEGRADED` rather than `ATTEMPT_LINEAGE_SEALED`
 
 **Never** infer `parent = root` for missing edges.
+
+### Crash semantics (R1 final — unambiguous)
+
+| Scenario | Completeness |
+| -------- | ------------ |
+| Crash before any admission or before seal | `UNAVAILABLE` or `PARTIAL` |
+| Admission persistence failure + crash | `PARTIAL` / `UNAVAILABLE` (degraded; no COMPLETE seal possible) |
+| Successful admissions + process termination before canonical terminal seal | `PARTIAL` |
+| Valid terminal `ATTEMPT_LINEAGE_SEALED` and attempt lineage not degraded | `COMPLETE` eligible |
+
+### Retry isolation (R1 final)
+
+Each new `AttemptId` within the same `RunId`:
+
+```text
+new ExecutionLineageScope (new attempt_id)
+new OPEN lineage state
+new root admission
+new AttemptLineageDegradationState (degraded=False)
+new eventual seal
+```
+
+Seal for attempt A1 does not affect attempt A2. Diagnostics reads attempt trees independently.
 
 ---
 
@@ -604,11 +759,18 @@ Current retry behavior:
 
 ### Storage availability failure
 
-Lineage durable write fails (store down, timeout):
+**Admission persistence availability failure:**
 
 - **Execution may continue** (fail-open for execution)
-- Lineage **must not** be marked `COMPLETE`
-- Result: `PARTIAL` or `UNAVAILABLE`
+- Attempt lineage → **DEGRADED** (`AttemptLineageDegradationState.degraded = true`)
+- `ATTEMPT_LINEAGE_SEALED` (COMPLETE) → **FORBIDDEN**
+- Diagnostics: `PARTIAL` or `UNAVAILABLE` — never `COMPLETE`
+
+**Seal persistence availability failure:**
+
+- Execution already terminal (root delegate returned)
+- Seal write fails → Diagnostics `PARTIAL` (structural admissions may exist; seal absent)
+- Does not retroactively mark attempt non-degraded if admissions succeeded
 
 ### Structural conflict
 
@@ -650,11 +812,25 @@ Lineage durable records contain **structural facts only** — see §13 `Executio
 
 ## 19. Scale / performance requirements (next task)
 
-- Support 1 parent + thousands of direct children via paginated `list_admissions_for_attempt`.
+- Support 1 parent + thousands of direct children via paginated `list_admissions_for_attempt(scope, ...)`.
 - Support nesting depth ≥ 3 with bounded traversal.
 - Index by `(tenant_id, task_id, run_id, attempt_id)` and `execution_id`.
 - Run-level views return explicit attempt-tree collections — no merged multi-attempt trees.
 - Idempotent append suitable for concurrent child fan-out (sibling admissions).
+
+### Persistence public API (attempt-scoped — R1 final)
+
+All methods accept `ExecutionLineageScope` (or equivalent attempt key derived from scope):
+
+```text
+admit_root(scope, ...)           # parent_execution_id = None
+admit_child(scope, ...)          # parent_execution_id required
+seal_attempt(scope, ...)         # ATTEMPT_LINEAGE_SEALED | ATTEMPT_LINEAGE_DEGRADED
+list_admissions_for_attempt(scope, ...)  # paginated
+read_seal(scope, ...)
+```
+
+`seal_attempt` rejects COMPLETE (`ATTEMPT_LINEAGE_SEALED`) when `AttemptLineageDegradationState.degraded` is true for the attempt.
 
 ---
 
@@ -680,6 +856,12 @@ Lineage durable records contain **structural facts only** — see §13 `Executio
 | Q16 | Missing terminal seal → never `COMPLETE` |
 | Q17 | Failed admission write + execution continues → `PARTIAL`/`UNAVAILABLE` |
 | Q18 | Checkpoint vs durable lineage parent conflict → hard integrity failure |
+| Q19 | Lineage hook receives `task_id` without request introspection |
+| Q20 | Child inherits exact parent task/tenant scope |
+| Q21 | Admission storage failure prohibits COMPLETE seal |
+| Q22 | Seal storage failure → `PARTIAL` |
+| Q23 | Retry A2 has independent OPEN/seal lifecycle |
+| Q24 | Stale/degraded attempt cannot later be falsely sealed COMPLETE |
 
 ---
 
@@ -748,7 +930,47 @@ Checkpoint relationship:
 
 ```text
 SELECTED_OPTION:
-OPTION_A (SELECTED WITH CORRECTED CONTRACTS)
+OPTION_A
+
+LINEAGE_SCOPE_SOURCE:
+  ExecutionLineageScope (new minimal immutable @dataclass)
+  composed at admission boundary from RootExecutionContext + ExecutionIdentityBinding (root)
+  or parent ExecutionLineageScope + child ExecutionIdentityBinding (child)
+
+ROOT_TASK_ID_SOURCE:
+  Task.task_id: TaskId (intergrax.runtime.task.task.Task)
+  composed at execute_root_task(task, ...) / HostTaskExecution.execute(task, ...)
+  propagated via RootExecutionContext.task_id: TaskId (minimal infrastructure extension)
+
+CHILD_TASK_ID_SOURCE:
+  parent ExecutionLineageScope — inherited tenant_id, task_id, run_id, attempt_id
+  child execution_id + parent_execution_id from child ExecutionIdentityBinding
+
+ADMISSION_SCOPE_DELIVERY:
+  Pattern A — lineage ExecutionAdmissionHook constructed with immutable ExecutionLineageScope
+  per ExecutionBoundary; admit(request) never inspects request for scope
+
+LINEAGE_SEAL_AUTHORITY:
+  ExecutionRuntime (canonical root attempt lifecycle owner, UE-10R1)
+
+LINEAGE_SEAL_BOUNDARY:
+  ExecutionRuntime.execute() — after root ExecutionBoundary.execute(request) returns
+  (attempt delegate terminal; no further child admissions legal), before active token reset
+
+SEAL_LEGALITY:
+  ATTEMPT_LINEAGE_SEALED (COMPLETE) only when AttemptLineageDegradationState.degraded is false;
+  admission availability failure sets degraded=true → COMPLETE seal forbidden;
+  degraded attempts receive ATTEMPT_LINEAGE_DEGRADED or no COMPLETE seal
+
+DEGRADATION_STATE_OWNER:
+  AttemptLineageDegradationState (new minimal immutable binding, attempt-scoped contextvar
+  at root admission via bind_active_attempt_lineage_degradation(); not Task/Problem/Decision/dict)
+
+FALSE_COMPLETE_PREVENTION:
+  Degradation flag set on admission persistence availability failure;
+  ExecutionRuntime seal boundary checks degradation before COMPLETE seal;
+  seal_attempt rejects ATTEMPT_LINEAGE_SEALED when degraded;
+  Diagnostics read-only — never infers COMPLETE without valid non-degraded seal
 
 LINEAGE_FACT_AUTHORITY:
   ExecutionRuntime / ChildExecutionRunner admission boundary
@@ -767,24 +989,25 @@ PERSISTENCE_SCOPE:
   tenant_id + task_id + run_id + attempt_id
 
 ROOT_WRITE_BOUNDARY:
-  ExecutionRuntime → ExecutionBoundary → ExecutionAdmissionHook
-  → ExecutionLineagePersistence root admission → root delegate
+  ExecutionRuntime → ExecutionBoundary → ExecutionAdmissionHook (scope-bound)
+  → ExecutionLineagePersistence.admit_root(scope) → root delegate
   (durable before delegate when lineage persistence active)
 
 CHILD_WRITE_BOUNDARY:
-  ChildExecutionRunner → ExecutionBoundary → ExecutionAdmissionHook
-  → ExecutionLineagePersistence child admission → child delegate
+  ChildExecutionRunner → ExecutionBoundary → ExecutionAdmissionHook (scope-bound)
+  → ExecutionLineagePersistence.admit_child(scope) → child delegate
   (durable before delegate when lineage persistence active)
 
 EXISTING_ADMISSION_PROTOCOL:
   ExecutionAdmissionHook[RequestT] (reuse — no new protocol)
 
 COMPLETENESS_PROTOCOL:
-  attempt lineage OPEN → root + child admissions → terminal lineage seal → COMPLETE
-  missing seal / failed write / crash → PARTIAL or UNAVAILABLE (never infer COMPLETE)
+  attempt lineage OPEN → root + child durable admissions → terminal lineage seal → COMPLETE
+  degraded / missing seal / crash / failed admission write → PARTIAL or UNAVAILABLE
 
 FAILURE_POLICY:
-  Storage availability failure → execution may continue; lineage never COMPLETE
+  Admission availability failure → execution may continue; attempt degraded; COMPLETE seal forbidden
+  Seal availability failure → execution terminal; Diagnostics PARTIAL
   Structural conflict / cross-tenant / cycle / checkpoint-parent mismatch → hard integrity failure
 
 CHECKPOINT_RELATIONSHIP:
@@ -792,8 +1015,8 @@ CHECKPOINT_RELATIONSHIP:
   Durable lineage parent mapping wins; conflict → HARD INTEGRITY FAILURE
 
 RETRY_SEMANTICS:
-  Retry creates new AttemptId within same RunId; each attempt owns isolated tree;
-  ExecutionIds minted via canonical admission — never inferred from prior attempt
+  New AttemptId → new scope, OPEN state, new root admission, new degradation state, new seal;
+  A1 seal does not affect A2
 
 STATUS_SOURCE:
   RuntimeEventPersistence / DIAG-2 runtime evidence (read-side join in ExecutionReconstructor)
@@ -801,15 +1024,18 @@ STATUS_SOURCE:
 
 NEW_ABSTRACTIONS_REQUIRED:
   ExecutionLineagePersistence: REQUIRED
-  ExecutionLineageAdmissionRecord (immutable structural record): REQUIRED
-    — ExecutionCheckpointEntry is too mutable/checkpoint-specific for durable lineage truth
+  ExecutionLineageAdmissionRecord: REQUIRED
+  ExecutionLineageScope: REQUIRED (new — no existing full-scope equivalent)
+  AttemptLineageDegradationState: REQUIRED (new — no existing attempt degradation binding)
+  RootExecutionContext.task_id: REQUIRED (minimal extension — composition boundary only)
   ExecutionTreeAdmissionHook protocol: NOT REQUIRED — reuse ExecutionAdmissionHook
+  New admission hook protocol: NO
 
 DIAGNOSTICS_CORE_CHANGE_REQUIRED:
   YES (read projection + completeness + status join — ExecutionReconstructor / read models)
 
 EXECUTION_ENGINE_CHANGE_REQUIRED:
-  YES (admission durable write at root + child via ExecutionAdmissionHook — no semantic fork)
+  YES (scope-bound admission durable write at root + child; seal at ExecutionRuntime boundary)
 
 CAUSAL_EVIDENCE_CHANGE_REQUIRED:
   NO
@@ -857,12 +1083,15 @@ HOW do we avoid duplicate authority?
 
 Minimal implementation surface:
 
-1. Define `ExecutionLineagePersistence` public ABC (`admit_root`, `admit_child`, `seal_attempt`, `list_admissions_for_attempt` with pagination).
-2. Define immutable `ExecutionLineageAdmissionRecord` typed contract.
-3. Implement `ExecutionAdmissionHook` lineage recorder at root (`ExecutionRuntime`) and child (`ChildExecutionRunner`) admission.
-4. Extend `ExecutionReconstructor` with attempt-scoped lineage projection, status join, and `LineageCompleteness`.
-5. Harness host wiring for persistence adapter.
-6. Execute qualification scenarios Q1–Q18.
+1. Define `ExecutionLineageScope` and `AttemptLineageDegradationState` immutable typed contracts.
+2. Extend `RootExecutionContext` with `task_id: TaskId` at composition boundary.
+3. Define `ExecutionLineagePersistence` public ABC (scope-parameterized: `admit_root`, `admit_child`, `seal_attempt`, `list_admissions_for_attempt`, `read_seal`).
+4. Define immutable `ExecutionLineageAdmissionRecord` typed contract.
+5. Implement scope-bound `ExecutionAdmissionHook` lineage recorder at root (`ExecutionRuntime`) and child (`ChildExecutionRunner`) admission.
+6. Implement `ExecutionRuntime` terminal seal boundary with degradation legality check.
+7. Extend `ExecutionReconstructor` with attempt-scoped lineage projection, status join, and `LineageCompleteness`.
+8. Harness host wiring for persistence adapter.
+9. Execute qualification scenarios Q1–Q24.
 
 ---
 
@@ -898,4 +1127,9 @@ Focused regression at correction START HEAD — prior evidence from R1 draft:
 - No causal evidence change
 - No private API requirement
 - No `getattr` / `setattr` / dynamic dict contracts proposed
+- No identity copied into neutral `ExecutionRequest`
+- No request introspection for lineage scope
+- `ExecutionLineageScope` + `AttemptLineageDegradationState` contracts defined
+- Terminal seal owned by `ExecutionRuntime`, not Diagnostics
+- False COMPLETE prevented by degradation + seal legality contract
 - No branch / worktree / history rewrite
