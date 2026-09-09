@@ -323,6 +323,20 @@ Execution effective authority remains independent and monotonic on the active Ex
 
 **Evaluation point:** `GovernanceEvaluationPoint.MULTI_AGENT_DELEGATION` (distinct from R1 `MULTI_AGENT_COORDINATION`).
 
+### 8.2.1 NPSC-5D/R2-H1 — governed continuation identity preservation
+
+**Status:** R2-H1 preserves exact post-selection physical delegation identity across Agent Distribution boundaries.
+
+| Artifact | Package | Responsibility |
+| -------- | ------- | -------------- |
+| `PhysicalDelegationGovernedContinuation` | `intergrax/contracts/` | Immutable typed continuation binding `delegation_id`, exact `selected_identity`, `governance_result` / evidence, task scope, application binding |
+
+**Propagation:** `DelegatedSubtaskGovernanceRequiresHuman` → `GovernanceRequiresHumanError.continuation` → `FanOutItemFailure.continuation` when `GOVERNANCE_REQUIRES_HUMAN`. Ordinary failures carry no continuation payload.
+
+**Deferred to R3:** Execution pause, HITL runtime, human approval, resume, child Execution continuation. Future human approval must bind the exact continuation identity — no re-selection.
+
+**Distinction from R1:** R1 `REQUIRE_HUMAN` is semantic coordination admission (`CoordinationGovernanceRequiresHuman`); R2-H1 is exact selected physical delegation (`PhysicalDelegationGovernedContinuation`).
+
 ---
 
 ## 9. Future NPSC-5 phases

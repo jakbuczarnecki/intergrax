@@ -43,6 +43,9 @@ from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopeId,
 )
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.physical_delegation_governance import (
+    PhysicalDelegationGovernedContinuation,
+)
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -184,11 +187,19 @@ class GovernanceDeniedError(CoordinationError):
 class GovernanceRequiresHumanError(CoordinationError):
     """Physical delegation governance requires governed continuation."""
 
-    def __init__(self, message: str) -> None:
+    continuation: PhysicalDelegationGovernedContinuation
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        continuation: PhysicalDelegationGovernedContinuation,
+    ) -> None:
         super().__init__(
             message,
             failure_code=CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN,
         )
+        self.continuation = continuation
 
 
 class CoordinationPolicy(BaseModel):
@@ -322,7 +333,10 @@ def _map_delegated_subtask_error(exc: DelegatedSubtaskError) -> CoordinationErro
     if isinstance(exc, DelegatedSubtaskGovernanceDenied):
         return GovernanceDeniedError(str(exc))
     if isinstance(exc, DelegatedSubtaskGovernanceRequiresHuman):
-        return GovernanceRequiresHumanError(str(exc))
+        return GovernanceRequiresHumanError(
+            str(exc),
+            continuation=exc.continuation,
+        )
     if isinstance(exc, DelegatedSubtaskAcquisitionError):
         return AcquisitionFailedError(str(exc))
     if isinstance(exc, DelegatedSubtaskInvocationError):

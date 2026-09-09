@@ -8,9 +8,9 @@ Evaluated through canonical ``PolicyDecision`` / ``PolicyAction`` — not a seco
 
 from __future__ import annotations
 
-from typing import Final, Literal, Protocol
+from typing import Final, Literal, Protocol, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.control_plane_mutation import GovernanceEvaluationPoint
@@ -22,6 +22,9 @@ SCHEMA_PHYSICAL_DELEGATION_GOVERNANCE_REQUEST_V1: Final = (
 )
 SCHEMA_PHYSICAL_DELEGATION_GOVERNANCE_EVIDENCE_V1: Final = (
     "physical_delegation_governance_evidence.v1"
+)
+SCHEMA_PHYSICAL_DELEGATION_GOVERNED_CONTINUATION_V1: Final = (
+    "physical_delegation_governed_continuation.v1"
 )
 
 _NON_EMPTY = Field(min_length=1)
@@ -162,6 +165,47 @@ class PhysicalDelegationGovernanceResult(BaseModel):
     validation_failed: bool = False
 
 
+class PhysicalDelegationGovernedContinuation(BaseModel):
+    """Typed governed continuation for exact post-selection physical delegation (R2-H1)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["physical_delegation_governed_continuation.v1"] = (
+        SCHEMA_PHYSICAL_DELEGATION_GOVERNED_CONTINUATION_V1
+    )
+    delegation_id: str = _NON_EMPTY
+    task_scope_id: str = _NON_EMPTY
+    application_id: str = _NON_EMPTY
+    application_environment_id: str = _NON_EMPTY
+    selected_identity: PhysicalDelegationSelectedIdentity
+    capability_requirement: PhysicalDelegationCapabilityRequirement
+    governance_result: PhysicalDelegationGovernanceResult
+
+    @model_validator(mode="after")
+    def _validate_continuation_contract(self) -> Self:
+        if self.governance_result.permitted:
+            raise ValueError("governance_result must not be permitted for continuation")
+        if not self.governance_result.requires_governed_continuation:
+            raise ValueError("governance_result must require governed continuation")
+        evidence = self.governance_result.evidence
+        if evidence.delegation_id != self.delegation_id:
+            raise ValueError("delegation_id mismatch with governance evidence")
+        if evidence.task_scope_id != self.task_scope_id:
+            raise ValueError("task_scope_id mismatch with governance evidence")
+        if evidence.application_id != self.application_id:
+            raise ValueError("application_id mismatch with governance evidence")
+        if evidence.application_environment_id != self.application_environment_id:
+            raise ValueError(
+                "application_environment_id mismatch with governance evidence",
+            )
+        if (
+            evidence.selected_package_id
+            != self.selected_identity.distribution_package_id
+        ):
+            raise ValueError("selected_identity mismatch with governance evidence")
+        return self
+
+
 class PhysicalDelegationGovernancePolicyRule:
     """Immutable runtime rule for physical delegation admission evaluation."""
 
@@ -235,4 +279,21 @@ def evidence_from_request_and_decision(
         policy_action=decision.action,
         policy_rule_id=decision.policy_rule_id,
         policy_decision_id=decision.decision_id,
+    )
+
+
+def build_physical_delegation_governed_continuation(
+    *,
+    request: PhysicalDelegationGovernanceRequest,
+    governance_result: PhysicalDelegationGovernanceResult,
+) -> PhysicalDelegationGovernedContinuation:
+    """Project exact selected physical delegation facts into governed continuation."""
+    return PhysicalDelegationGovernedContinuation(
+        delegation_id=request.delegation_id,
+        task_scope_id=request.task_scope_id,
+        application_id=request.application_id,
+        application_environment_id=request.application_environment_id,
+        selected_identity=request.selected_identity,
+        capability_requirement=request.capability_requirement,
+        governance_result=governance_result,
     )

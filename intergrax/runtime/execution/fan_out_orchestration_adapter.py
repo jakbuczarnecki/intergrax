@@ -22,6 +22,7 @@ from intergrax.agent_distribution.multi_agent_coordination import (
     CoordinationCleanupError,
     CoordinationError,
     CoordinationFailureCode,
+    GovernanceRequiresHumanError,
     MultiAgentCoordinationService,
 )
 from intergrax.contracts.agent_run import RequestIdentity
@@ -192,12 +193,18 @@ class FanOutCoordinationSlotExecutor(Generic[RequestT, ResultT]):
                 ),
             )
         except CoordinationError as exc:
+            continuation = (
+                exc.continuation
+                if isinstance(exc, GovernanceRequiresHumanError)
+                else None
+            )
             return FanOutItemOutcome(
                 item_id=item_id,
                 status=FanOutItemStatus.FAILURE,
                 failure=FanOutItemFailure(
                     failure_code=exc.failure_code,
                     message=str(exc),
+                    continuation=continuation,
                 ),
             )
         return FanOutItemOutcome(

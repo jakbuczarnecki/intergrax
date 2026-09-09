@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.agent_distribution.agent_selection import (
+    AgentSelectionContext,
     AgentSelectionRequest,
     AgentSelectionStrategy,
     DeterministicIdentitySelectionStrategy,
@@ -22,6 +23,7 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskService,
     SpecialistInvocationPort,
 )
+from intergrax.agent_distribution.bounded_multi_agent_fanout import FanOutItemFailure
 from intergrax.agent_distribution.multi_agent_coordination import (
     CoordinationDelegation,
     CoordinationFailureCode,
@@ -36,6 +38,7 @@ from intergrax.contracts.physical_delegation_governance import (
     PhysicalDelegationGovernancePort,
     PhysicalDelegationGovernanceRequest,
     PhysicalDelegationGovernanceResult,
+    PhysicalDelegationGovernedContinuation,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
@@ -43,6 +46,7 @@ from intergrax.runtime.execution.boundary import ExecutionBoundary
 from intergrax.runtime.governance.physical_delegation_governance import (
     DenyingPhysicalDelegationGovernance,
     PhysicalDelegationGovernanceBoundary,
+    RequireHumanPhysicalDelegationGovernance,
     RuntimePhysicalDelegationGovernance,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
@@ -166,6 +170,19 @@ class _DelegationDenyingGovernance(PhysicalDelegationGovernancePort):
     ) -> PhysicalDelegationGovernanceResult:
         if request.delegation_id == self._denied_delegation_id:
             return DenyingPhysicalDelegationGovernance().evaluate(request)
+        return allowing_physical_delegation_governance().evaluate(request)
+
+
+class _DelegationRequireHumanGovernance(PhysicalDelegationGovernancePort):
+    def __init__(self, *, require_human_delegation_id: str) -> None:
+        self._require_human_delegation_id = require_human_delegation_id
+
+    def evaluate(
+        self,
+        request: PhysicalDelegationGovernanceRequest,
+    ) -> PhysicalDelegationGovernanceResult:
+        if request.delegation_id == self._require_human_delegation_id:
+            return require_human_physical_delegation_governance().evaluate(request)
         return allowing_physical_delegation_governance().evaluate(request)
 
 
@@ -489,6 +506,316 @@ async def test_coordination_maps_governance_requires_human() -> None:
             identity=root,
         ).execute(OcrRequest(document_ref="doc-1"))
     assert exc_info.value.failure_code is CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN
+    continuation = exc_info.value.continuation
+    assert isinstance(continuation, PhysicalDelegationGovernedContinuation)
+    assert continuation.selected_identity.distribution_package_id == _OCR_PACKAGE
+    assert continuation.governance_result.requires_governed_continuation is True
+    assert continuation.governance_result.evidence.request_digest.startswith("sha256:")
+
+
+@pytest.mark.asyncio
+async def test_coordination_continuation_no_cause_walk() -> None:
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        physical_delegation_governance=require_human_physical_delegation_governance(),
+    )
+    coordination = _build_coordination_service(harness)
+    task_scope = harness.task_scope_authority.task_scope_id
+    root = _root_identity()
+
+    class _Root:
+        async def execute(self, payload: OcrRequest) -> OcrResult:
+            return (
+                await coordination.coordinate(
+                    _coordination_request(task_scope=task_scope),
+                    delegation=CoordinationDelegation(payload=payload),
+                    principal=admin_test_principal(),
+                )
+            ).result
+
+    with pytest.raises(GovernanceRequiresHumanError) as exc_info:
+        await ExecutionBoundary[OcrRequest, OcrResult](
+            _Root(),
+            identity=root,
+        ).execute(OcrRequest(document_ref="doc-1"))
+    outer = exc_info.value
+    assert outer.__cause__ is not None
+    assert not isinstance(outer.__cause__, PhysicalDelegationGovernedContinuation)
+    assert outer.continuation.delegation_id == outer.continuation.governance_result.evidence.delegation_id
+
+
+@pytest.mark.asyncio
+async def test_require_human_preserves_exact_selected_identity() -> None:
+    harness, selector, task_scoped, specialist, child, governance = _build_instrumented_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+            _discovery_candidate(_LEGAL_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        governance=require_human_physical_delegation_governance(),
+    )
+    task_scope = harness.task_scope_authority.task_scope_id
+    with pytest.raises(DelegatedSubtaskGovernanceRequiresHuman) as exc_info:
+        await _run_delegation(
+            harness,
+            task_scope=task_scope,
+        )
+    from intergrax.agent_distribution.physical_delegation_governance_adapter import (
+        project_physical_delegation_selected_identity,
+    )
+
+    selected = require_selected_identity(selector._inner.select(selector.last_request))
+    expected_identity = project_physical_delegation_selected_identity(selected)
+    assert governance.last_request is not None
+    assert exc_info.value.continuation.selected_identity == expected_identity
+    assert exc_info.value.continuation.selected_identity.distribution_package_id == _OCR_PACKAGE
+    assert selector.call_count == 1
+    assert task_scoped.acquire_count == 0
+    assert specialist.call_count == 0
+    assert child.call_count == 0
+
+
+@pytest.mark.asyncio
+async def test_deny_has_no_continuation_on_coordination_boundary() -> None:
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        physical_delegation_governance=denying_physical_delegation_governance(),
+    )
+    coordination = _build_coordination_service(harness)
+    task_scope = harness.task_scope_authority.task_scope_id
+    root = _root_identity()
+
+    class _Root:
+        async def execute(self, payload: OcrRequest) -> OcrResult:
+            return (
+                await coordination.coordinate(
+                    _coordination_request(task_scope=task_scope),
+                    delegation=CoordinationDelegation(payload=payload),
+                    principal=admin_test_principal(),
+                )
+            ).result
+
+    with pytest.raises(GovernanceDeniedError) as exc_info:
+        await ExecutionBoundary[OcrRequest, OcrResult](
+            _Root(),
+            identity=root,
+        ).execute(OcrRequest(document_ref="doc-1"))
+    assert exc_info.value.failure_code is CoordinationFailureCode.GOVERNANCE_DENIED
+    assert not hasattr(exc_info.value, "continuation")
+
+
+def test_fan_out_item_failure_rejects_inconsistent_contract() -> None:
+    from intergrax.contracts.physical_delegation_governance import (
+        PhysicalDelegationCapabilityRequirement,
+        PhysicalDelegationGovernanceRequest,
+        PhysicalDelegationSelectedIdentity,
+        build_physical_delegation_governed_continuation,
+    )
+
+    with pytest.raises(ValueError, match="requires continuation payload"):
+        FanOutItemFailure(
+            failure_code=CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN,
+            message="requires human",
+        )
+    governance_request = PhysicalDelegationGovernanceRequest(
+        delegation_id="delegation-1",
+        task_scope_id="task-scope-1",
+        application_id="app-a",
+        application_environment_id="env-a",
+        principal=admin_test_principal(),
+        capability_requirement=PhysicalDelegationCapabilityRequirement(
+            required_capability_ids=("document.ocr",),
+        ),
+        selected_identity=PhysicalDelegationSelectedIdentity(
+            catalog_source_id="builtin-1",
+            provider_kind="builtin",
+            distribution_package_id=_OCR_PACKAGE,
+            package_version="1.0.0",
+            package_digest="sha256:abc",
+        ),
+    )
+    governance_result = RequireHumanPhysicalDelegationGovernance().evaluate(
+        governance_request,
+    )
+    continuation = build_physical_delegation_governed_continuation(
+        request=governance_request,
+        governance_result=governance_result,
+    )
+    with pytest.raises(ValueError, match="only allowed for GOVERNANCE_REQUIRES_HUMAN"):
+        FanOutItemFailure(
+            failure_code=CoordinationFailureCode.GOVERNANCE_DENIED,
+            message="denied",
+            continuation=continuation,
+        )
+
+
+@pytest.mark.asyncio
+async def test_fan_out_mixed_allow_require_human_allow_preserves_siblings() -> None:
+    from intergrax.agent_distribution.bounded_multi_agent_fanout import (
+        FanOutId,
+        FanOutItemId,
+        FanOutItemStatus,
+        FanOutRequest,
+    )
+    from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
+        _FanOutAcquisitionPlanFactory,
+        _fan_out_item,
+        _run_fan_out,
+    )
+
+    factory = _FanOutAcquisitionPlanFactory()
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+            _discovery_candidate(_LEGAL_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        acquisition_plan_factory=factory,
+        physical_delegation_governance=_DelegationRequireHumanGovernance(
+            require_human_delegation_id="delegation-b",
+        ),
+    )
+    factory.bind_harness(harness)
+    task_scope = harness.task_scope_authority.task_scope_id
+    result = await _run_fan_out(
+        harness,
+        task_scope=task_scope,
+        items=(
+            _fan_out_item(
+                item_id="a",
+                task_scope=task_scope,
+                coordination_id="coord-a",
+                delegation_id="delegation-a",
+                lease_id="lease-a",
+                document_ref="doc-a",
+            ),
+            _fan_out_item(
+                item_id="b",
+                task_scope=task_scope,
+                coordination_id="coord-b",
+                delegation_id="delegation-b",
+                lease_id="lease-b",
+                document_ref="doc-b",
+            ),
+            _fan_out_item(
+                item_id="c",
+                task_scope=task_scope,
+                coordination_id="coord-c",
+                delegation_id="delegation-c",
+                lease_id="lease-c",
+                document_ref="doc-c",
+            ),
+        ),
+        fan_out_id="fan-out-require-human",
+        max_concurrency=3,
+    )
+    assert len(result.items) == 3
+    assert [item.item_id for item in result.items] == [
+        FanOutItemId("a"),
+        FanOutItemId("b"),
+        FanOutItemId("c"),
+    ]
+    assert result.items[0].status is FanOutItemStatus.SUCCESS
+    assert result.items[1].status is FanOutItemStatus.FAILURE
+    assert result.items[1].failure is not None
+    assert (
+        result.items[1].failure.failure_code
+        is CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN
+    )
+    continuation = result.items[1].failure.continuation
+    assert continuation is not None
+    assert continuation.delegation_id == "delegation-b"
+    assert continuation.governance_result.requires_governed_continuation is True
+    assert result.items[2].status is FanOutItemStatus.SUCCESS
+
+
+@pytest.mark.asyncio
+async def test_decision_backed_coordination_preserves_r2_continuation() -> None:
+    from intergrax.agent_distribution.bounded_multi_agent_fanout import (
+        BoundedMultiAgentFanOutService,
+    )
+    from intergrax.agent_distribution.coordination_intent import (
+        CoordinationContribution,
+        CoordinationContributionId,
+        CoordinationExecutionMode,
+        CoordinationIntent,
+        CoordinationIntentId,
+    )
+    from intergrax.agent_distribution.coordination_intent_executor import (
+        CoordinationIntentExecutor,
+    )
+    from intergrax.agent_distribution.task_capability_resolution import (
+        build_task_capability_resolution_request,
+        unresolved_agent_distribution_capability_need,
+    )
+    from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+    from testing_support.agent_distribution.coordination_governance import (
+        allowing_coordination_governance,
+        bound_governed_host_task,
+    )
+    from tests.unit.agent_distribution.test_coordination_intent_executor import (
+        _StaticOrchestrationPort,
+        _binding,
+    )
+
+    harness = build_delegated_harness(
+        candidates=(
+            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+        ),
+        physical_delegation_governance=require_human_physical_delegation_governance(),
+    )
+    coordination = _build_coordination_service(harness)
+    executor = CoordinationIntentExecutor(
+        coordination=coordination,
+        fan_out=BoundedMultiAgentFanOutService(orchestration=_StaticOrchestrationPort(())),
+        governance=allowing_coordination_governance(),
+    )
+    task_scope = harness.task_scope_authority.task_scope_id
+    harness.task_scope_authority.task_scope_id = task_scope
+    root = _root_identity()
+    captured: list[GovernanceRequiresHumanError] = []
+
+    class RootDelegate:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            del request
+            with bound_governed_host_task():
+                try:
+                    await executor.execute(
+                        CoordinationIntent(
+                            intent_id=CoordinationIntentId("intent-r2-h1"),
+                            mode=CoordinationExecutionMode.SINGLE,
+                            contributions=(
+                                CoordinationContribution(
+                                    contribution_id=CoordinationContributionId("contrib-a"),
+                                    payload=OcrRequest(document_ref="doc-r2-h1"),
+                                    capability_need=unresolved_agent_distribution_capability_need(
+                                        build_task_capability_resolution_request(
+                                            task_kind="document.ocr",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        binding=_binding(task_scope, pairs=(("contrib-a", "lease-a"),)),
+                        principal=admin_test_principal(),
+                    )
+                except GovernanceRequiresHumanError as exc:
+                    captured.append(exc)
+                    raise
+            raise AssertionError("expected GovernanceRequiresHumanError")
+
+    with pytest.raises(GovernanceRequiresHumanError):
+        await ExecutionBoundary[OcrRequest, OcrResult](
+            RootDelegate(),
+            identity=root,
+            authority=ParentExecutionAuthority.unrestricted_root(),
+        ).execute(OcrRequest(document_ref="doc-r2-h1"))
+    assert captured
+    continuation = captured[0].continuation
+    assert continuation.delegation_id
+    assert continuation.selected_identity.distribution_package_id == _OCR_PACKAGE
 
 
 def test_architecture_gate_selection_before_governance_before_acquire() -> None:

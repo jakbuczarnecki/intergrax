@@ -12,7 +12,9 @@ from intergrax.contracts.physical_delegation_governance import (
     PhysicalDelegationCapabilityRequirement,
     PhysicalDelegationGovernancePolicyRule,
     PhysicalDelegationGovernanceRequest,
+    PhysicalDelegationGovernedContinuation,
     PhysicalDelegationSelectedIdentity,
+    build_physical_delegation_governed_continuation,
     physical_delegation_governance_request_digest,
 )
 from intergrax.contracts.runtime_policy import PolicyAction
@@ -92,6 +94,29 @@ def test_require_human_adapter_requires_continuation() -> None:
     assert result.permitted is False
     assert result.requires_governed_continuation is True
     assert result.decision.action is PolicyAction.REQUIRE_HUMAN
+
+
+def test_governed_continuation_binds_exact_selected_identity() -> None:
+    request = _request(package_id="ocr-agent")
+    result = RequireHumanPhysicalDelegationGovernance().evaluate(request)
+    continuation = build_physical_delegation_governed_continuation(
+        request=request,
+        governance_result=result,
+    )
+    assert isinstance(continuation, PhysicalDelegationGovernedContinuation)
+    assert continuation.delegation_id == "delegation-1"
+    assert continuation.selected_identity.distribution_package_id == "ocr-agent"
+    assert continuation.governance_result is result
+
+
+def test_governed_continuation_rejects_inconsistent_contract() -> None:
+    request = _request()
+    allowed = AllowingPhysicalDelegationGovernance().evaluate(request)
+    with pytest.raises(ValueError, match="must not be permitted"):
+        build_physical_delegation_governed_continuation(
+            request=request,
+            governance_result=allowed,
+        )
 
 
 def test_unavailable_adapter_fail_closed() -> None:

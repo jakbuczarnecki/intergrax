@@ -17,6 +17,9 @@ from intergrax.agent_distribution.multi_agent_coordination import (
     CoordinationResult,
 )
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.physical_delegation_governance import (
+    PhysicalDelegationGovernedContinuation,
+)
 
 MAX_FAN_OUT_CONCURRENCY: Final = 64
 MAX_FAN_OUT_ITEMS: Final = 256
@@ -108,6 +111,19 @@ class FanOutItemFailure(Generic[ResultT]):
     failure_code: CoordinationFailureCode
     message: str
     partial_result: ResultT | None = None
+    continuation: PhysicalDelegationGovernedContinuation | None = None
+
+    def __post_init__(self) -> None:
+        if self.failure_code is CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN:
+            if self.continuation is None:
+                raise ValueError(
+                    "GOVERNANCE_REQUIRES_HUMAN failure requires continuation payload",
+                )
+            return
+        if self.continuation is not None:
+            raise ValueError(
+                "continuation payload only allowed for GOVERNANCE_REQUIRES_HUMAN",
+            )
 
 
 @dataclass(frozen=True, slots=True)

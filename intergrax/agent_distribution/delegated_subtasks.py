@@ -60,6 +60,8 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.physical_delegation_governance import (
     PhysicalDelegationGovernancePort,
     PhysicalDelegationGovernanceResult,
+    PhysicalDelegationGovernedContinuation,
+    build_physical_delegation_governed_continuation,
 )
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
@@ -128,8 +130,14 @@ class DelegatedSubtaskGovernanceDenied(DelegatedSubtaskError):
 class DelegatedSubtaskGovernanceRequiresHuman(DelegatedSubtaskError):
     """Physical delegation governance requires canonical governed continuation."""
 
-    def __init__(self, result: PhysicalDelegationGovernanceResult) -> None:
+    def __init__(
+        self,
+        result: PhysicalDelegationGovernanceResult,
+        *,
+        continuation: PhysicalDelegationGovernedContinuation,
+    ) -> None:
         self.result = result
+        self.continuation = continuation
         super().__init__(
             result.decision.reason or "physical delegation governance requires human approval",
         )
@@ -616,7 +624,14 @@ class DelegatedSubtaskService(Generic[RequestT, ResultT]):
         if result.permitted:
             return result
         if result.requires_governed_continuation:
-            raise DelegatedSubtaskGovernanceRequiresHuman(result)
+            continuation = build_physical_delegation_governed_continuation(
+                request=governance_request,
+                governance_result=result,
+            )
+            raise DelegatedSubtaskGovernanceRequiresHuman(
+                result,
+                continuation=continuation,
+            )
         raise DelegatedSubtaskGovernanceDenied(result)
 
     def _attempt_release(
