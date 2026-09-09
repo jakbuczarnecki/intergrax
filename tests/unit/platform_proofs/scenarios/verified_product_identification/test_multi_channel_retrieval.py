@@ -745,3 +745,373 @@ def test_malformed_channel_outcome_rejects_channel_mismatch() -> None:
                 _vector_candidate(offer_id=OFFER_A, rank=0, score=0.5),
             ),
         )
+
+
+def test_retrieval_execution_policy_rejects_int_bool() -> None:
+    with pytest.raises(TypeError, match="fail_fast_on_exact_failure must be a bool"):
+        RetrievalExecutionPolicy(fail_fast_on_exact_failure=1)  # type: ignore[arg-type]
+
+
+def test_retrieval_execution_policy_rejects_string_bool() -> None:
+    with pytest.raises(TypeError, match="fail_fast_on_exact_failure must be a bool"):
+        RetrievalExecutionPolicy(fail_fast_on_exact_failure="true")  # type: ignore[arg-type]
+
+
+def test_retrieval_execution_policy_has_no_allow_partial_channel_results() -> None:
+    assert "allow_partial_channel_results" not in RetrievalExecutionPolicy.__dataclass_fields__
+
+
+def test_fail_fast_false_still_executes_downstream_channels_after_exact_failure() -> None:
+    failure = CatalogSearchFailure(
+        kind=CatalogSearchFailureKind.TIMEOUT,
+        message="exact timeout",
+    )
+    service, exact_port, lexical_port, structured_port, vector_port = _service(
+        exact=RecordingExactLookup(
+            responses=(ExactIdentifierLookupResult(candidates=(), failure=failure),)
+        ),
+        lexical=RecordingLexicalSearch(
+            response=LexicalSearchResult(
+                candidates=(_lexical_candidate(offer_id=OFFER_A, rank=0, score=6.0),)
+            )
+        ),
+    )
+
+    result = service.retrieve(
+        MultiChannelRetrievalRequest(
+            exact_queries=(ExactIdentifierQuery(identifier=GTIN_IDENTIFIER),),
+            lexical_query=LexicalSearchQuery(query_text="990 PRO"),
+            execution_policy=RetrievalExecutionPolicy(fail_fast_on_exact_failure=False),
+        )
+    )
+
+    assert len(exact_port.calls) == 1
+    assert len(lexical_port.calls) == 1
+    assert structured_port.calls == []
+    assert vector_port.calls == []
+    assert result.exact.status is RetrievalChannelExecutionStatus.FAILED
+    assert result.lexical.status is RetrievalChannelExecutionStatus.SUCCESS
+
+
+def test_failed_lexical_outcome_must_have_empty_candidates() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.retrieval.contracts import (
+        LexicalChannelRetrievalOutcome,
+    )
+
+    failure = CatalogSearchFailure(
+        kind=CatalogSearchFailureKind.UNAVAILABLE,
+        message="lexical unavailable",
+    )
+    with pytest.raises(ValueError, match="failed lexical channel must have empty candidates"):
+        LexicalChannelRetrievalOutcome(
+            status=RetrievalChannelExecutionStatus.FAILED,
+            search_result=LexicalSearchResult(candidates=(), failure=failure),
+            candidates=(_lexical_candidate(offer_id=OFFER_A, rank=0, score=1.0),),
+            failure=failure,
+        )
+
+
+def test_failed_structured_outcome_must_have_empty_candidates() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.retrieval.contracts import (
+        StructuredChannelRetrievalOutcome,
+    )
+
+    failure = CatalogSearchFailure(
+        kind=CatalogSearchFailureKind.UNAVAILABLE,
+        message="structured unavailable",
+    )
+    with pytest.raises(ValueError, match="failed structured channel must have empty candidates"):
+        StructuredChannelRetrievalOutcome(
+            status=RetrievalChannelExecutionStatus.FAILED,
+            search_result=StructuredSearchResult(candidates=(), failure=failure),
+            candidates=(_structured_candidate(offer_id=OFFER_A, rank=0),),
+            failure=failure,
+        )
+
+
+def test_failed_vector_outcome_must_have_empty_candidates() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.retrieval.contracts import (
+        VectorChannelRetrievalOutcome,
+    )
+
+    failure = CatalogSearchFailure(
+        kind=CatalogSearchFailureKind.UNAVAILABLE,
+        message="vector unavailable",
+    )
+    with pytest.raises(ValueError, match="failed vector channel must have empty candidates"):
+        VectorChannelRetrievalOutcome(
+            status=RetrievalChannelExecutionStatus.FAILED,
+            search_result=VectorSearchResult(candidates=(), failure=failure),
+            candidates=(_vector_candidate(offer_id=OFFER_A, rank=0, score=0.5),),
+            failure=failure,
+        )
+
+
+def test_exact_failed_with_candidates_requires_multi_query_partial_execution() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.retrieval.contracts import (
+        ExactChannelRetrievalOutcome,
+    )
+
+    failure = CatalogSearchFailure(
+        kind=CatalogSearchFailureKind.INVALID_QUERY,
+        message="invalid gtin",
+    )
+    with pytest.raises(
+        ValueError,
+        match="failed exact channel with candidates requires multi-query partial execution",
+    ):
+        ExactChannelRetrievalOutcome(
+            status=RetrievalChannelExecutionStatus.FAILED,
+            lookup_results=(ExactIdentifierLookupResult(candidates=(), failure=failure),),
+            candidates=(_exact_candidate(offer_id=OFFER_A, rank=0, identifier=GTIN_IDENTIFIER),),
+            failure=failure,
+        )
+
+
+def test_execution_summary_rejects_inconsistent_attempted_count() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.retrieval.contracts import (
+        RetrievalExecutionSummary,
+    )
+
+    with pytest.raises(ValueError, match="channels_attempted must equal"):
+        RetrievalExecutionSummary(
+            channels_attempted=3,
+            channels_succeeded=2,
+            channels_failed=0,
+            channels_skipped=1,
+            exact_candidate_count=0,
+            lexical_candidate_count=0,
+            structured_candidate_count=0,
+            vector_candidate_count=0,
+        )
+
+
+def test_execution_summary_rejects_attempted_plus_skipped_not_four() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.retrieval.contracts import (
+        RetrievalExecutionSummary,
+    )
+
+    with pytest.raises(ValueError, match="channels_attempted \\+ channels_skipped must equal 4"):
+        RetrievalExecutionSummary(
+            channels_attempted=2,
+            channels_succeeded=2,
+            channels_failed=0,
+            channels_skipped=1,
+            exact_candidate_count=0,
+            lexical_candidate_count=0,
+            structured_candidate_count=0,
+            vector_candidate_count=0,
+        )
+
+
+def test_multi_channel_result_rejects_drifted_candidate_counts() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.domain.candidates import (
+        MultiChannelCandidateCollection,
+    )
+    from platform_proofs.scenarios.verified_product_identification.application.retrieval.contracts import (
+        ExactChannelRetrievalOutcome,
+        LexicalChannelRetrievalOutcome,
+        MultiChannelRetrievalResult,
+        RetrievalExecutionSummary,
+        StructuredChannelRetrievalOutcome,
+        VectorChannelRetrievalOutcome,
+    )
+
+    exact_candidate = _exact_candidate(
+        offer_id=OFFER_A,
+        rank=0,
+        identifier=GTIN_IDENTIFIER,
+    )
+    exact = ExactChannelRetrievalOutcome(
+        status=RetrievalChannelExecutionStatus.SUCCESS,
+        lookup_results=(
+            ExactIdentifierLookupResult(candidates=(exact_candidate,)),
+        ),
+        candidates=(exact_candidate,),
+    )
+    lexical = LexicalChannelRetrievalOutcome(
+        status=RetrievalChannelExecutionStatus.SKIPPED,
+        search_result=None,
+        candidates=(),
+    )
+    structured = StructuredChannelRetrievalOutcome(
+        status=RetrievalChannelExecutionStatus.SKIPPED,
+        search_result=None,
+        candidates=(),
+    )
+    vector = VectorChannelRetrievalOutcome(
+        status=RetrievalChannelExecutionStatus.SKIPPED,
+        search_result=None,
+        candidates=(),
+    )
+    summary = RetrievalExecutionSummary(
+        channels_attempted=1,
+        channels_succeeded=1,
+        channels_failed=0,
+        channels_skipped=3,
+        exact_candidate_count=0,
+        lexical_candidate_count=0,
+        structured_candidate_count=0,
+        vector_candidate_count=0,
+    )
+
+    with pytest.raises(ValueError, match="exact_candidate_count must match"):
+        MultiChannelRetrievalResult(
+            exact=exact,
+            lexical=lexical,
+            structured=structured,
+            vector=vector,
+            candidates=MultiChannelCandidateCollection(candidates=(exact_candidate,)),
+            execution_summary=summary,
+        )
+
+
+def test_multi_channel_result_rejects_non_deterministic_candidate_order() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.domain.candidates import (
+        MultiChannelCandidateCollection,
+    )
+    from platform_proofs.scenarios.verified_product_identification.application.retrieval.contracts import (
+        ExactChannelRetrievalOutcome,
+        LexicalChannelRetrievalOutcome,
+        MultiChannelRetrievalResult,
+        RetrievalExecutionSummary,
+        StructuredChannelRetrievalOutcome,
+        VectorChannelRetrievalOutcome,
+    )
+
+    exact_candidate = _exact_candidate(
+        offer_id=OFFER_A,
+        rank=0,
+        identifier=GTIN_IDENTIFIER,
+    )
+    lexical_candidate = _lexical_candidate(offer_id=OFFER_B, rank=0, score=4.0)
+    exact = ExactChannelRetrievalOutcome(
+        status=RetrievalChannelExecutionStatus.SUCCESS,
+        lookup_results=(
+            ExactIdentifierLookupResult(candidates=(exact_candidate,)),
+        ),
+        candidates=(exact_candidate,),
+    )
+    lexical = LexicalChannelRetrievalOutcome(
+        status=RetrievalChannelExecutionStatus.SUCCESS,
+        search_result=LexicalSearchResult(candidates=(lexical_candidate,)),
+        candidates=(lexical_candidate,),
+    )
+    structured = StructuredChannelRetrievalOutcome(
+        status=RetrievalChannelExecutionStatus.SKIPPED,
+        search_result=None,
+        candidates=(),
+    )
+    vector = VectorChannelRetrievalOutcome(
+        status=RetrievalChannelExecutionStatus.SKIPPED,
+        search_result=None,
+        candidates=(),
+    )
+    summary = RetrievalExecutionSummary(
+        channels_attempted=2,
+        channels_succeeded=2,
+        channels_failed=0,
+        channels_skipped=2,
+        exact_candidate_count=1,
+        lexical_candidate_count=1,
+        structured_candidate_count=0,
+        vector_candidate_count=0,
+    )
+
+    with pytest.raises(ValueError, match="deterministic order"):
+        MultiChannelRetrievalResult(
+            exact=exact,
+            lexical=lexical,
+            structured=structured,
+            vector=vector,
+            candidates=MultiChannelCandidateCollection(
+                candidates=(lexical_candidate, exact_candidate),
+            ),
+            execution_summary=summary,
+        )
+
+
+def test_deterministic_merged_order_exact_lexical_structured_vector() -> None:
+    service, _, _, _, _ = _service(
+        exact=RecordingExactLookup(
+            responses=(
+                ExactIdentifierLookupResult(
+                    candidates=(
+                        _exact_candidate(
+                            offer_id=OFFER_A,
+                            rank=0,
+                            identifier=GTIN_IDENTIFIER,
+                        ),
+                    )
+                ),
+            )
+        ),
+        lexical=RecordingLexicalSearch(
+            response=LexicalSearchResult(
+                candidates=(_lexical_candidate(offer_id=OFFER_A, rank=0, score=9.0),)
+            )
+        ),
+        structured=RecordingStructuredSearch(
+            response=StructuredSearchResult(
+                candidates=(_structured_candidate(offer_id=OFFER_A, rank=0),)
+            )
+        ),
+        vector=RecordingVectorSearch(
+            response=VectorSearchResult(
+                candidates=(_vector_candidate(offer_id=OFFER_A, rank=0, score=0.8),)
+            )
+        ),
+    )
+
+    result = service.retrieve(
+        MultiChannelRetrievalRequest(
+            exact_queries=(ExactIdentifierQuery(identifier=GTIN_IDENTIFIER),),
+            lexical_query=LexicalSearchQuery(query_text="990 PRO"),
+            structured_query=_structured_query(),
+            vector_query=VectorSearchQuery(query_text="990 PRO"),
+        )
+    )
+
+    channels = [candidate.channel for candidate in result.candidates.candidates]
+    assert channels == [
+        RetrievalChannel.EXACT,
+        RetrievalChannel.LEXICAL,
+        RetrievalChannel.STRUCTURED,
+        RetrievalChannel.VECTOR,
+    ]
+
+
+def test_orchestration_does_not_fuse_or_rank_across_channels() -> None:
+    service, _, _, _, _ = _service(
+        exact=RecordingExactLookup(
+            responses=(
+                ExactIdentifierLookupResult(
+                    candidates=(
+                        _exact_candidate(
+                            offer_id=OFFER_A,
+                            rank=0,
+                            identifier=GTIN_IDENTIFIER,
+                        ),
+                    )
+                ),
+            )
+        ),
+        lexical=RecordingLexicalSearch(
+            response=LexicalSearchResult(
+                candidates=(_lexical_candidate(offer_id=OFFER_A, rank=0, score=99.0),)
+            )
+        ),
+    )
+
+    result = service.retrieve(
+        MultiChannelRetrievalRequest(
+            exact_queries=(ExactIdentifierQuery(identifier=GTIN_IDENTIFIER),),
+            lexical_query=LexicalSearchQuery(query_text="990 PRO"),
+        )
+    )
+
+    assert len(result.candidates.candidates) == 2
+    assert result.candidates.candidates[0].channel == RetrievalChannel.EXACT
+    assert result.candidates.candidates[1].channel == RetrievalChannel.LEXICAL
+    assert result.candidates.candidates[0].rank == 0
+    assert result.candidates.candidates[1].rank == 0
