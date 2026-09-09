@@ -25,6 +25,33 @@ class OrchestrationSchedulingPolicyValidationError(ValueError):
     """Raised when orchestration scheduling policy is invalid."""
 
 
+class OrchestrationOutcomeValidationError(ValueError):
+    """Raised when orchestration slot outcome or failure invariants are violated."""
+
+
+class OrchestrationSlotExecutionError(Exception):
+    """Public typed orchestration slot execution failure projected as slot FAILURE."""
+
+    __slots__ = ("code", "message")
+
+    def __init__(self, *, code: str, message: str) -> None:
+        if not code or not code.strip():
+            raise ValueError("OrchestrationSlotExecutionError code must be non-empty")
+        if not message or not message.strip():
+            raise ValueError("OrchestrationSlotExecutionError message must be non-empty")
+        if code != code.strip():
+            raise ValueError(
+                "OrchestrationSlotExecutionError code must not contain leading or trailing whitespace"
+            )
+        if message != message.strip():
+            raise ValueError(
+                "OrchestrationSlotExecutionError message must not contain leading or trailing whitespace"
+            )
+        self.code = code.strip()
+        self.message = message.strip()
+        super().__init__(self.message)
+
+
 class OrchestrationSlotStatus(str, Enum):
     """Per-slot orchestration outcome status."""
 
@@ -39,6 +66,24 @@ class OrchestrationSlotFailure:
 
     code: str
     message: str
+
+    def __post_init__(self) -> None:
+        if not self.code or not self.code.strip():
+            raise OrchestrationOutcomeValidationError(
+                "orchestration failure code must be non-empty"
+            )
+        if self.code != self.code.strip():
+            raise OrchestrationOutcomeValidationError(
+                "orchestration failure code must not contain leading or trailing whitespace"
+            )
+        if not self.message or not self.message.strip():
+            raise OrchestrationOutcomeValidationError(
+                "orchestration failure message must be non-empty"
+            )
+        if self.message != self.message.strip():
+            raise OrchestrationOutcomeValidationError(
+                "orchestration failure message must not contain leading or trailing whitespace"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,12 +111,39 @@ class OrchestrationSchedulingPolicy:
 
 @dataclass(frozen=True, slots=True)
 class OrchestrationSlotOutcome(Generic[ResultT]):
-    """Typed per-slot orchestration outcome."""
+    """Typed per-slot orchestration outcome.
+
+    SUCCESS: ``failure`` must be absent; ``result`` may be ``None``.
+    FAILURE: ``failure`` required; ``result`` must be absent.
+    SKIPPED: ``result`` must be absent; ``failure`` may carry an optional skip reason.
+    """
 
     slot_id: OrchestrationSlotId
     status: OrchestrationSlotStatus
     result: ResultT | None = None
     failure: OrchestrationSlotFailure | None = None
+
+    def __post_init__(self) -> None:
+        if self.status is OrchestrationSlotStatus.SUCCESS:
+            if self.failure is not None:
+                raise OrchestrationOutcomeValidationError(
+                    "SUCCESS orchestration outcome must not include failure"
+                )
+            return
+        if self.status is OrchestrationSlotStatus.FAILURE:
+            if self.failure is None:
+                raise OrchestrationOutcomeValidationError(
+                    "FAILURE orchestration outcome must include failure"
+                )
+            if self.result is not None:
+                raise OrchestrationOutcomeValidationError(
+                    "FAILURE orchestration outcome must not include result"
+                )
+            return
+        if self.status is OrchestrationSlotStatus.SKIPPED and self.result is not None:
+            raise OrchestrationOutcomeValidationError(
+                "SKIPPED orchestration outcome must not include result"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,19 +210,43 @@ def orchestration_slot_order(
     return tuple(slot.slot_id for slot in topology.slots)
 
 
+def resolve_effective_orchestration_concurrency(
+    platform_limit: int | None,
+    submission_limit: int | None,
+) -> int | None:
+    """Resolve per-submission concurrency without mutating shared scheduler state."""
+    if platform_limit is None and submission_limit is None:
+        return None
+    if platform_limit is None:
+        return submission_limit
+    if submission_limit is None:
+        return platform_limit
+    return min(platform_limit, submission_limit)
+
+
 def build_orchestration_result(
     topology: OrchestrationTopology[PayloadT],
     *,
     outcomes_by_slot: Mapping[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]],
 ) -> OrchestrationResult[ResultT]:
     validate_orchestration_topology(topology)
+    expected_slot_ids = {slot.slot_id for slot in topology.slots}
+    actual_slot_ids = set(outcomes_by_slot.keys())
+
+    missing = sorted(expected_slot_ids - actual_slot_ids, key=str)
+    if missing:
+        raise OrchestrationTopologyValidationError(
+            f"missing orchestration outcomes: {[str(slot_id) for slot_id in missing]!r}"
+        )
+    extra = sorted(actual_slot_ids - expected_slot_ids, key=str)
+    if extra:
+        raise OrchestrationTopologyValidationError(
+            f"extra orchestration outcomes: {[str(slot_id) for slot_id in extra]!r}"
+        )
+
     ordered: list[OrchestrationSlotOutcome[ResultT]] = []
     for slot in topology.slots:
-        outcome = outcomes_by_slot.get(slot.slot_id)
-        if outcome is None:
-            raise OrchestrationTopologyValidationError(
-                f"missing orchestration outcome for slot: {slot.slot_id!r}"
-            )
+        outcome = outcomes_by_slot[slot.slot_id]
         if outcome.slot_id != slot.slot_id:
             raise OrchestrationTopologyValidationError(
                 "orchestration outcome slot_id does not match topology slot"

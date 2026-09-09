@@ -29,6 +29,7 @@ from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotStatus,
     OrchestrationTopology,
     build_orchestration_result,
+    resolve_effective_orchestration_concurrency,
     validate_orchestration_scheduling_policy,
     validate_orchestration_topology,
 )
@@ -1344,17 +1345,16 @@ class GraphExecutor:
         require_active_execution_identity()
         require_active_execution_id()
 
-        previous_parallel_cap = self._max_parallel_nodes
-        if scheduling_policy.max_concurrency is not None:
-            self._max_parallel_nodes = scheduling_policy.max_concurrency
-        try:
-            outcomes_by_slot = await self._execute_orchestration_work_graph(
-                graph,
-                task,
-                node_execution=node_execution,
-            )
-        finally:
-            self._max_parallel_nodes = previous_parallel_cap
+        effective_max_concurrency = resolve_effective_orchestration_concurrency(
+            self._max_parallel_nodes,
+            scheduling_policy.max_concurrency,
+        )
+        outcomes_by_slot = await self._execute_orchestration_work_graph(
+            graph,
+            task,
+            node_execution=node_execution,
+            effective_max_concurrency=effective_max_concurrency,
+        )
 
         return build_orchestration_result(
             topology,
@@ -1367,6 +1367,7 @@ class GraphExecutor:
         task: Task,
         *,
         node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT],
+        effective_max_concurrency: int | None,
     ) -> dict[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]]:
         outcomes: dict[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]] = {}
         try:
@@ -1411,6 +1412,7 @@ class GraphExecutor:
                 task=task,
                 node_execution=node_execution,
                 work_delegate=work_delegate,
+                effective_max_concurrency=effective_max_concurrency,
             )
             outcomes.update(batch_outcomes)
 
@@ -1434,11 +1436,12 @@ class GraphExecutor:
         task: Task,
         node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT],
         work_delegate: _OrchestrationWorkChildDelegate[PayloadT, ResultT],
+        effective_max_concurrency: int | None,
     ) -> dict[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]]:
         if self._inflight_semaphore is None and self._max_inflight_nodes is not None:
             self._inflight_semaphore = asyncio.Semaphore(self._max_inflight_nodes)
 
-        limit = self._max_parallel_nodes
+        limit = effective_max_concurrency
         if limit is None or limit >= len(batch):
 
             async def _run(node: ExecutionNode) -> tuple[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]]:

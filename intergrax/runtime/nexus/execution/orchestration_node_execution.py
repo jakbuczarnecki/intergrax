@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Generic, Mapping, Protocol, TypeVar
 
 from intergrax.contracts.orchestration_topology import (
+    OrchestrationSlotExecutionError,
     OrchestrationSlotExecutor,
     OrchestrationSlotFailure,
     OrchestrationSlotId,
@@ -49,13 +50,13 @@ class BoundOrchestrationNodeExecution(Generic[PayloadT, ResultT]):
                 slot_id=slot_id,
                 payload=bound_payload,
             )
-        except Exception as exc:
+        except OrchestrationSlotExecutionError as exc:
             return OrchestrationSlotOutcome(
                 slot_id=slot_id,
                 status=OrchestrationSlotStatus.FAILURE,
                 failure=OrchestrationSlotFailure(
-                    code=type(exc).__name__,
-                    message=str(exc),
+                    code=exc.code,
+                    message=exc.message,
                 ),
             )
         return OrchestrationSlotOutcome(

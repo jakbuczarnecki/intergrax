@@ -134,3 +134,59 @@ def test_graph_executor_orchestration_work_path_uses_child_execution_runner() ->
     assert "execute_orchestration_topology" in source
     assert "_child_runner.execute" in source
     assert "orchestration_slot_id" in source
+
+
+def _function_def(
+    tree: ast.Module,
+    name: str,
+) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:
+            return node
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            for child in node.body:
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == name:
+                    return child
+    return None
+
+
+def _assigns_self_attr(func_node: ast.FunctionDef | ast.AsyncFunctionDef, attr: str) -> bool:
+    for node in ast.walk(func_node):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if (
+                isinstance(target, ast.Attribute)
+                and isinstance(target.value, ast.Name)
+                and target.value.id == "self"
+                and target.attr == attr
+            ):
+                return True
+    return False
+
+
+def _function_uses_name(func_node: ast.FunctionDef | ast.AsyncFunctionDef, name: str) -> bool:
+    for node in ast.walk(func_node):
+        if isinstance(node, ast.Name) and node.id == name:
+            return True
+    return False
+
+
+@pytest.mark.gate
+def test_gate_k_execute_orchestration_topology_does_not_mutate_shared_parallel_cap() -> None:
+    tree = ast.parse(_read(_GRAPH_EXECUTOR_MODULE), filename=str(_GRAPH_EXECUTOR_MODULE))
+    func = _function_def(tree, "execute_orchestration_topology")
+    assert func is not None
+    assert _assigns_self_attr(func, "_max_parallel_nodes") is False
+    assert _function_uses_name(func, "scheduling_policy") is True
+    assert _function_uses_name(func, "resolve_effective_orchestration_concurrency") is True
+
+
+@pytest.mark.gate
+def test_gate_l_topology_modules_do_not_use_broad_exception_handler() -> None:
+    for path in (_CONTRACT_MODULE, _SUBMISSION_MODULE, _NODE_EXECUTION_MODULE):
+        source = _read(path)
+        assert "except Exception" not in source, (
+            f"{path.name} must not use broad except Exception"
+        )
