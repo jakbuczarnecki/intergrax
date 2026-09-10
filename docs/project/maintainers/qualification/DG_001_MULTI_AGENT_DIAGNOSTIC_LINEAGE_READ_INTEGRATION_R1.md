@@ -197,6 +197,7 @@ Historical table below retained from initial correction landing; verdict superse
 
 > **Task:** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-FINAL-COMPLETENESS-HARDENING`
 > **Base correction SHA:** `42cb94ec080eddbd7106af86c96d78d17f5e34b7`
+> **Final completeness hardening SHA:** `130c4715b49653d3ab2bbfb1630bb97143004218`
 
 **Scope:**
 
