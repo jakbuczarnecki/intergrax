@@ -1,0 +1,146 @@
+# Platform Execution Unification — P0 Bypass Inventory
+
+**Status:** `INVENTORY_QUALIFIED` (discovery only — **PRODUCTION CODE CHANGED: NO**)  
+**Task:** Platform Execution Unification / P0 — Platform-Wide Execution Bypass Inventory  
+**Architecture:** [`../architecture/PLATFORM_EXECUTION_UNIFICATION_ARCHITECTURE.md`](../architecture/PLATFORM_EXECUTION_UNIFICATION_ARCHITECTURE.md)  
+**Baseline reference:** NPSC-5E Final `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7`
+
+## Session gate
+
+| Field | Value |
+| --- | --- |
+| Branch | `development` |
+| START_HEAD / START_ORIGIN | `b5cdef98200667b3b559673e91b7bbdf8ca013b9` |
+| Cross-session drift | No tracked modifications to execution seams; unrelated untracked NPSC-5F artifacts left untouched |
+
+## Method
+
+1. Entrypoint discovery via CLI scripts, shared application wiring, scenario baseline, queue worker, and symbol references (`ChildExecutionRunner`, `RuntimeToolInvoker`, `execute_scenario_task`, `execute_logical_task`, `HostTaskExecutionPort`).
+2. Call-path proof limited to files needed for each row (no whole-repo file walk).
+3. Verdict + severity per architecture doc rules.
+
+## Metrics (summary)
+
+| Metric | Count |
+| --- | ---: |
+| Total execution-capable entrypoints inventoried | 22 |
+| CANONICAL | 11 |
+| CANONICAL WITH GAP | 4 |
+| LEGACY BUT NON-PRODUCTION | 3 |
+| UNSUPPORTED / DEAD | 0 |
+| BYPASS | 3 |
+| AMBIGUOUS | 1 |
+| Supported execution bypasses (production) | 3 |
+| Direct child execution bypasses | 1 |
+| Direct tool / side-effect bypasses | 1 |
+| Governance bypasses (proven) | 1 |
+| Authority bypasses (proven) | 0 |
+| Nexus scheduling bypasses | 0 |
+| Uncontrolled parallel execution paths (execution-relevant) | 0 (bounded fan-out under coordination tests) |
+| P0 bypasses | 1 |
+| P1 bypasses | 2 |
+| P2 gaps | 4 |
+| P3 legacy cleanups | 3 |
+
+## Central inventory
+
+| ID | Entry point | Domain | Current path | Canonical boundary reached? | Side effect? | Execution identity? | Authority? | Governance? | Lineage? | Verdict | Severity | Evidence | Proposed owner | Closure task |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| EP-01 | Interaction intake | runtime / API | `InteractionIntakeService` → `HostTaskExecutionExecutor` → `HostTaskExecutionPort.execute` → `Execution` / `ExecutionRuntime` | Yes | Agent/tool via runtime | Yes (root) | Yes (active authority) | Policy on tool path | Root | CANONICAL | — | `intergrax/runtime/interactions/task_executor.py`, `host_task.py`, `test_npsc3c_d_*` | ExecutionRuntime | — |
+| EP-02 | Scenario task | applications / scenarios | `execute_scenario_task` → `build_environment_host_task_execution` → host task port | Yes | Yes | Yes | Yes | Via Nexus runtime | Root | CANONICAL | — | `scenario_runtime_baseline.py:427-451` | Host task / scenario baseline | — |
+| EP-03 | Platform proof scenarios | platform_proofs | `execute_scenario` → `execute_scenario_task` | Yes | Yes | Yes | Yes | Same as EP-02 | Root | CANONICAL | — | `platform_proofs/scenarios/*/application/scenario.py` | Scenario baseline | — |
+| EP-04 | Harness HTTP tasks | applications | `mount_canonical_harness_task_routes` → `HostTaskExecutionExecutor` | Yes | Yes | Yes | Yes | Harness wiring | Root | CANONICAL | — | `task_control_wiring.py`, `test_ue_11gp_*` | Applications harness | — |
+| EP-05 | Tier-3 app hosts (LKW, legal, contractor, …) | applications | App factory → `build_host_task_execution` / environment host execution (no `UnifiedTaskRunner` in app tree) | Yes | Yes | Yes | Yes | App composition | Root | CANONICAL | — | `test_lkw_canonical_execution.py`, `test_governed_contractor_canonical_execution.py` | Application host factories | — |
+| EP-06 | Queue / background worker | queueing | Broker → `execute_logical_task` → registry handler (identity admission in bootstrap) | Yes (handler-dependent) | Handler-dependent | `BackgroundExecutionIdentity` | Admitted handler | Handler-dependent | When handler spawns child | CANONICAL | — | `queueing/worker/execution.py`, `test_diag_foundation_4_*` | Background execution bootstrap | — |
+| EP-07 | Background task runtime | background_tasks | `worker_runtime` → `execute_logical_task` | Same as EP-06 | Same | Same | Same | Same | Same | CANONICAL | — | `background_tasks/worker_runtime.py` | Queue worker | — |
+| EP-08 | CLI `intergrax run` | CLI | `uvicorn.run(module:app)` — no direct execution | Delegated to app | Via app | Via app | Via app | Via app | Via app | CANONICAL | — | `intergrax/cli/run.py` | Tier-3 host | — |
+| EP-09 | Nexus agentic task | runtime / nexus | `NexusLoop.handle_task` → agent engine / tool invoker inside active execution | Yes | Yes | Yes | Yes | `RuntimeToolInvoker` + policy | Child via ports | CANONICAL | — | `NEXUS_EXECUTION_FLOW.md`, runtime_context `RuntimeToolInvoker` | Nexus + ExecutionRuntime | — |
+| EP-10 | Graph orchestration | nexus | `GraphExecutor` → `ChildExecutionRunner` + declarative invoker | Yes | Yes | Yes | Child authority policy | Policy on tools | Child lineage | CANONICAL | — | `graph_executor.py:118,254` | GraphExecutor | — |
+| EP-11 | Execution work port | runtime | `ExecutionWorkPort` → `ChildExecutionRunner` | Yes | Yes | Yes | Yes | Admission hooks | Child | CANONICAL | — | `execution_work_port.py` | ExecutionWorkPort | — |
+| EP-12 | Coordination / fan-out | agent_distribution | `CoordinationIntentExecutor` → `MultiAgentCoordinationService` / `BoundedMultiAgentFanOutService` under `peek_governed_execution_task` | Yes | Delegated child | Under root | Governed coordination port | Multi-agent governance | Fan-out lineage | CANONICAL | — | `coordination_intent_executor.py`, `test_npsc5a_*`, `test_npsc5c_*` | Agent distribution | — |
+| EP-13 | UAEP agent step | agents | `RuntimeExecutionContext.invoke_tool` → catalog gateway → `RuntimeToolInvoker` | Yes when inside Nexus step | Yes | Active execution | Active authority | Agent governance when configured | Under parent | CANONICAL WITH GAP | P2 | `runtime_tool_helpers.py`, `invoker.py` (`agent_runtime_governance` optional) | Agent governance wiring | U3 |
+| EP-14 | ACP declarative catalog tools | applications / agents | `build_declarative_invoker_from_tool_wiring` → `RuntimeToolInvoker` (no governance param in wiring) | Partial | Yes | When bound to active run | Side-effect auth in invoker | Optional agent governance | When in run | CANONICAL WITH GAP | P2 | `declarative_tool_wiring.py:33-38` | Applications tool wiring | U2 |
+| EP-15 | Default delegated subtask factory | applications / agent_distribution | `DelegatedSubtaskServiceFactory.create` default `as_child_execution_port(ChildExecutionRunner())` | **No** — bypasses `ExecutionWorkPort` / Nexus child scheduling adapter | Child agent work | Child IDs minted in runner | Parent context required | Physical delegation governance only | Child lineage in runner | **BYPASS** | **P1** | `production_agent_capability_runtime.py:163-167` | Applications composition | **U4** |
+| EP-16 | Compensation queue drain | agents / persistence | `drain_pending_compensation_jobs` → `DeclarativeToolInvoker.invoke` | **No** `ExecutionRuntime` / host task | **Yes** (compensation tools) | **No** canonical ExecutionId | **No** active execution authority | **No** governance port on worker path | **No** | **BYPASS** | **P0** | `compensation_queue_worker.py:36-40` | ACP persistence / background admission | **U2** |
+| EP-17 | Work-stage capability loop | autonomous_work / catalog | `WorkStageCapabilityLoop` → `WorkStageToolExecutionPort.execute` | **Port-defined** | Tool when TOOL kind | Loop binds minted ids locally | Depends on port impl | Catalog governance context only | Correlation fields | **AMBIGUOUS — REQUIRES OWNER DECISION** | P1 | `work_stage_capability_loop.py:290-296`, identity mint in module | Capability catalog + AW | Owner decision |
+| EP-18 | HITL governed continuation | runtime | Governed continuation tests / `test_npsc5d_r3_*` production wiring | Yes (qualified) | Resumes canonical execution | Yes | Yes | HITL governance | Resume lineage | CANONICAL | — | `test_npsc5d_r3_governed_continuation.py` | HITL / recovery | — |
+| EP-19 | Recovery retry / resume / partial | runtime | R1 `ExecutionAttemptRetryService`, R2 checkpoint resume, R3 fan-out partial recovery | Returns to canonical execution | No new bypass plane | Yes | Authority gates in R2 | Policy in recovery contracts | Yes | CANONICAL | — | NPSC-5E finals | Frozen recovery plane | — |
+| EP-20 | Experiments workflow | experiments | `UnifiedTaskRunner(loop).run_task` direct | **No** host task / ExecutionRuntime facade | Yes | Partial | Unclear | Unclear | Unclear | LEGACY BUT NON-PRODUCTION | P3 | `intergrax/experiments/workflow.py:153` | Experiments | Remove or gate |
+| EP-21 | Nexus eval runner | eval | Constructs `UnifiedTaskRunner` for eval | Non-production eval | Yes | Eval scope | Eval scope | Limited | Limited | LEGACY BUT NON-PRODUCTION | P3 | `eval/nexus_eval_runner.py` | Eval | Document non-prod |
+| EP-22 | Integration providers in app wiring | integrations | `integration_tool_wiring` resolves providers into tool context (not direct mutation from app code) | Yes (via tools) | Via tools | Via execution | Via tool auth | Tool policy | N/A | CANONICAL WITH GAP | P2 | `integration_tool_wiring.py` | Tools / integrations | U2 monitoring |
+
+## Bypass graph (proven)
+
+### BY-01 (P1) — default child runner at application composition
+
+```text
+ProductionAgentCapabilityRuntime.DelegatedSubtaskServiceFactory.create
+  → as_child_execution_port(ChildExecutionRunner())
+  → DelegatedSubtaskService.execute
+  → specialist child work
+```
+
+Missing: canonical **`ExecutionWorkPort` / Nexus child scheduling adapter** injection at production default.
+
+### BY-02 (P0) — compensation worker tool side effects
+
+```text
+drain_pending_compensation_jobs
+  → DeclarativeToolInvoker.invoke
+  → (CatalogDeclarativeToolInvoker / RuntimeToolInvoker when wired)
+  → external tool side effect
+```
+
+Missing: **`ExecutionRuntime` / host task / background execution identity admission** before side effect.
+
+### BY-03 (P1) — work-stage tool port (when implemented off-platform)
+
+```text
+WorkStageCapabilityLoop.run
+  → WorkStageToolExecutionPort.execute
+  → (implementation may bypass RuntimeToolInvoker)
+```
+
+Missing boundary **depends on port implementation** — owner decision required (EP-17).
+
+## Direct `ChildExecutionRunner` import surface (production)
+
+Frozen allowlist (`intergrax/` only):
+
+| Module | Role |
+| --- | --- |
+| `runtime/execution/child.py` | Owner (defines `ChildExecutionRunner`; not an importer) |
+| `runtime/execution/delegated_subtask_child_port.py` | Canonical adapter |
+| `runtime/execution/execution_work_port.py` | Canonical adapter |
+| `runtime/nexus/execution/graph_executor.py` | Nexus orchestration |
+| `applications/_shared/production_agent_capability_runtime.py` | **Default bypass (BY-01)** |
+
+Static gate: `test_platform_execution_unification_p0_bypass_inventory.py`.
+
+## Parallel execution
+
+| Location | Classification |
+| --- | --- |
+| `BoundedMultiAgentFanOutService` / coordination | Bounded / canonical (NPSC-5B qualified) |
+| `RuntimeToolInvoker` thread pool for timeouts | Bounded / not separate execution admission |
+| Ad-hoc `asyncio.create_task` in product paths reviewed via coordination gates | No additional uncontrolled execution entrypoints proven in P0 |
+
+## Closure ownership
+
+| Wave | Scope (from inventory) |
+| --- | --- |
+| **U1** | EP-05 harness consistency (already largely canonical); enforce host-task-only documentation |
+| **U2** | EP-16 BY-02; EP-14 governance wiring; integration side-effect monitoring (EP-22) |
+| **U3** | EP-13 agent governance defaults |
+| **U4** | EP-15 BY-01 — inject `ExecutionWorkPort` at production composition |
+| **U5** | Re-run inventory with zero production bypasses; extend static gates |
+
+## Regression notes (P0 commit)
+
+Frozen suites invoked for this qualification:
+
+- NPSC-5E Final — `test_npsc5e_final_recovery_plane_qualification_and_freeze.py`
+- NPSC-5D Final — `test_npsc5d_final_multi_agent_governance_qualification.py`
+- NPSC-5B Final — `test_npsc5b_final_production_fanout_fanin_qualification.py`
+- DG_001 — `tests/unit/contracts/test_execution_lineage_contracts.py` + `tests/unit/runtime/execution/lineage/`
+- P0 gate — `test_platform_execution_unification_p0_bypass_inventory.py`
