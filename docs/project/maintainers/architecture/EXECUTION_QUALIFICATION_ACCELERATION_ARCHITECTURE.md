@@ -1,6 +1,6 @@
 # Execution Qualification Acceleration — Architecture (R1 Target)
 
-**Status:** `R1 IMPLEMENTED` (bounded coordinator + subprocess executor in `testing_support/execution_qualification/`; gate integration remains R2)
+**Status:** `R2 IMPLEMENTED` (NPSC-5E/R3 Final mandatory matrix projects `_MANDATORY_SUITES` → `QualificationRunManifest` → `QualificationCoordinator`; NPSC-5E Final parent topology unchanged)
 
 **Scope:** Qualification / certification orchestration for Execution Engine frozen gates.
 
@@ -133,10 +133,23 @@ Not fail-fast on single suite test failure.
 
 ---
 
-## Integration (R2+)
+## Integration (R2)
 
-- Wire coordinator into CI / maintainer qualification entrypoint
-- Preserve existing gate files as **suite targets** until parity proof replaces composed finals
+```text
+_MANDATORY_SUITES (R3 Final test module)
+        ↓
+adapt_frozen_pytest_suites + gate label→suite_id map
+        ↓
+QualificationRunManifest
+        ↓
+QualificationCoordinator (max_parallel=2)
+        ↓
+test_mandatory_frozen_suites_pass_via_parallel_qualification
+```
+
+- **Canonical scope:** `_MANDATORY_SUITES` in `test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py` only.
+- **Exclusive resource:** `npsc5e-r3-cross-db` on label `R3 implementation gate` (manifest construction; coordinator stays generic).
+- **R3+:** performance tuning, optional deeper flattening of nested finals.
 
 ---
 

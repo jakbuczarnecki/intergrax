@@ -65,6 +65,9 @@ from tests.unit.agent_distribution.test_delegated_subtasks import (
 from tests.unit.agent_distribution.test_physical_delegation_governance_boundary import (
     _CountingSelector,
 )
+from tests.unit.runtime.architecture.npsc5e_r3_final_execution_qualification import (
+    run_npsc5e_r3_mandatory_qualification,
+)
 from tests.unit.runtime.architecture.test_npsc5e_r3_child_fanout_partial_recovery import (
     _FORBIDDEN_RECOVERY_NAMES,
     _InvocationTracker,
@@ -74,7 +77,6 @@ from tests.unit.runtime.architecture.test_npsc5e_r3_child_fanout_partial_recover
     _build_stack,
     _checkpoint_with_topology,
     _run_partial_fan_out,
-    _run_pytest,
     _run_recovery_under_root,
     _three_item_request,
 )
@@ -244,10 +246,8 @@ def _recovery_service(tmp_path: Path | None = None) -> FanOutPartialRecoveryServ
     return recovery
 
 
-@pytest.mark.parametrize(("label", "targets"), _MANDATORY_SUITES, ids=[label for label, _ in _MANDATORY_SUITES])
-def test_mandatory_frozen_suite_passes(label: str, targets: list[str]) -> None:
-    proc = _run_pytest(targets)
-    assert proc.returncode == 0, f"{label} failed:\n{proc.stdout}\n{proc.stderr}"
+def test_mandatory_frozen_suites_pass_via_parallel_qualification() -> None:
+    run_npsc5e_r3_mandatory_qualification(_MANDATORY_SUITES, _REPO_ROOT)
 
 
 def test_canonical_predecessor_shas_recorded() -> None:
