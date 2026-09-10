@@ -139,7 +139,7 @@ Static gate: `test_platform_execution_unification_p0_bypass_inventory.py`.
 
 | Wave | Scope (from inventory) |
 | --- | --- |
-| **U1** | EP-05 harness consistency (already largely canonical); enforce host-task-only documentation |
+| **U1** | ✅ Closed — EP-02–EP-05 qualified; see `PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md` |
 | **U2** | EP-16 BY-02; EP-14 governance wiring; integration side-effect monitoring (EP-22) |
 | **U3** | EP-13 agent governance defaults |
 | **U4** | EP-15 BY-01 — inject `ExecutionWorkPort` at production composition |

@@ -1,8 +1,8 @@
 # Platform Execution Unification — Architecture (P0 baseline)
 
-**Status:** `QUALIFICATION_BASELINE` (inventory only — no closure implementation in P0)  
+**Status:** `U1_APPLICATION_SCENARIO_ENTRY_QUALIFIED` (P0 inventory + U1 application/scenario entry closure)  
 **Architectural baseline:** NPSC-5E Final `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7` (reference only; work proceeds on current `development`)  
-**Evidence companion:** [`../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md)
+**Evidence companions:** [`../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md)
 
 ## Purpose
 
@@ -102,6 +102,16 @@ Proven invariants are encoded in:
 `tests/unit/runtime/architecture/test_platform_execution_unification_p0_bypass_inventory.py`
 
 Gates freeze **import surfaces** and **inventory document presence** — not heuristic grep of legitimate adapters.
+
+## Static gates (U1)
+
+Application and scenario production entry closure (EP-02–EP-05) is encoded in:
+
+`tests/unit/runtime/architecture/test_platform_execution_unification_u1_application_scenario_entry.py`
+
+Complements NPSC-3G factory convergence (`tests/unit/applications/architecture/test_npsc3g_application_runtime_convergence_gate.py`) and P0 scenario/host-task anchors.
+
+**U1 rule (supported production):** application HTTP / harness task surfaces and scenario tasks must resolve host work through `build_host_task_execution` / `build_environment_host_task_execution` (or harness `build_harness_host_runtime` composition that delegates to the same wiring) — not `UnifiedTaskRunner` or application-local execution runtimes.
 
 ## Closure waves (default proposal)
 
