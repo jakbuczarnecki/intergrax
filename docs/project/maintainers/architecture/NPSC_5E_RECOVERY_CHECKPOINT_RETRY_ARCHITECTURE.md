@@ -245,6 +245,14 @@ Completed execution-tree nodes restore `prior_output` and are not blindly replay
 
 Generic coordinator depends on `TaskCheckpointPersistence` / `TaskCheckpointReader` ports only.
 
+### R2-H2 qualification closure (Q1)
+
+**Status:** `PASS / QUALIFIED` (2026-09-10)
+
+Mandatory frozen regression closure (`NPSC-5E/R2-H2-Q1`) re-ran R1 Final, P0A, DG_001, NPSC-5D Final, HITL R3, NPSC-5A/B/C, attempt/child/terminal/cancellation/checkpoint/long-running suites and certified revision CAS does not alter Execution, lineage, Governance, HITL, child execution, or recovery ownership.
+
+See: `docs/project/maintainers/qualification/NPSC_5E_R2_H2_Q1_MANDATORY_FROZEN_REGRESSION_CLOSURE.md`
+
 ## Future boundaries
 
 ### R3 — Partial Recovery / Fan-out Continuation
