@@ -831,7 +831,7 @@ Decision System provides **generic** decision lifecycle and verification composi
 - **B. Native hybrid/BM25 not on PgVector** - **CONFIRMED** (present on InMemory/Qdrant/Weaviate)
 - **C. No HNSW/IVFFlat in PgVector schema** - **CONFIRMED**
 - **D. Metadata filtering = JSON equality containment** - **CONFIRMED** (membership unsupported on pgvector)
-- **E. Product query understanding absent** - **CONFIRMED**
+- **E. Product query understanding** - **PARTIAL** — deterministic typed layer (`QUERY_UNDERSTANDING.md`); not full multilingual NL
 - **F. Product identity verification = application responsibility** - **CONFIRMED**
 
 ---
