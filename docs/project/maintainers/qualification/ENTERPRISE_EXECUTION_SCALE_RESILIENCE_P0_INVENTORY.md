@@ -133,7 +133,7 @@ No execution-plane-wide circuit breaker.
 
 ## Backpressure gaps
 
-1. No bounded admission on `ExecutionRuntime` root execute (W1 ADR pending).  
+1. ~~No bounded admission on `ExecutionRuntime` root execute.~~ **W1-A:** optional `ExecutionCapacityAdmissionPort` on `ExecutionRuntime` (explicit policy; process-local).
 2. ~~`execute_concurrent_execution_work` — no width cap.~~ **W1:** explicit `ConcurrentExecutionWorkPolicy`.  
 3. GraphExecutor — unbounded when caps unset.  
 4. Event bus — fire-and-forget tasks.  

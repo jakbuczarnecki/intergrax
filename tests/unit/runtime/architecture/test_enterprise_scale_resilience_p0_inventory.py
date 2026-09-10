@@ -92,6 +92,25 @@ def test_graph_runner_retry_eligibility_propagates_global_deadline() -> None:
     assert "global_deadline_monotonic=peek_active_execution_global_deadline_monotonic()" in source
 
 
+def test_execution_capacity_policy_contract_exists() -> None:
+    from intergrax.contracts.execution_capacity_admission import (
+        ExecutionCapacityPolicy,
+    )
+
+    assert ExecutionCapacityPolicy(max_concurrent_root_executions=4).max_concurrent_root_executions == 4
+
+
+def test_execution_runtime_acquires_capacity_before_delegate() -> None:
+    runtime_source = (
+        _REPO_ROOT / "intergrax" / "runtime" / "execution" / "runtime.py"
+    ).read_text(encoding="utf-8")
+    assert "_execution_capacity_admission.acquire" in runtime_source
+    assert "await capacity_permit.release()" in runtime_source
+    assert runtime_source.index("_execution_capacity_admission.acquire") < runtime_source.index(
+        "boundary.execute"
+    )
+
+
 def test_orchestration_scheduling_policy_carries_submission_concurrency() -> None:
     policy = OrchestrationSchedulingPolicy(max_concurrency=8)
     assert policy.max_concurrency == 8

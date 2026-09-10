@@ -9,6 +9,11 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.contracts.execution_capacity_admission import (
+    ExecutionCapacityAdmissionPort,
+    ExecutionCapacityAdmissionRequest,
+    ExecutionCapacityPermit,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -141,6 +146,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_decision_finalization_persistence",
         "_execution_work_port_binding",
         "_execution_lineage_persistence",
+        "_execution_capacity_admission",
     )
 
     def __init__(
@@ -161,6 +167,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         execution_work_port_binding: (
             ActiveExecutionWorkPortBinding[WorkInputT, WorkOutputT, WorkResultT] | None
         ) = None,
+        execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None,
     ) -> None:
         self._delegate = delegate
         self._ledger_factory = (
@@ -175,13 +182,42 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._decision_finalization_persistence = decision_finalization_persistence
         self._execution_work_port_binding = execution_work_port_binding
         self._execution_lineage_persistence = execution_lineage_persistence
+        self._execution_capacity_admission = execution_capacity_admission
 
     async def execute(
         self,
         request: RequestT,
         root_context: RootExecutionContext,
     ) -> ResultT:
+        capacity_permit: ExecutionCapacityPermit | None = None
+        if self._execution_capacity_admission is not None:
+            capacity_permit = await self._execution_capacity_admission.acquire(
+                ExecutionCapacityAdmissionRequest(
+                    tenant_id=root_context.tenant_id,
+                    task_id=root_context.task_id,
+                    run_id=root_context.run_id,
+                    attempt_id=root_context.attempt_id,
+                    execution_id=root_context.execution_id,
+                ),
+            )
         execution_id = root_context.execution_id
+        try:
+            return await self._execute_with_capacity(
+                request,
+                root_context,
+                execution_id=execution_id,
+            )
+        finally:
+            if capacity_permit is not None:
+                await capacity_permit.release()
+
+    async def _execute_with_capacity(
+        self,
+        request: RequestT,
+        root_context: RootExecutionContext,
+        *,
+        execution_id: ExecutionId,
+    ) -> ResultT:
         ledger = self._ledger_factory.create_ledger(
             self._run_budget,
             tenant_id=root_context.tenant_id,

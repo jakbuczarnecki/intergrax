@@ -1,6 +1,6 @@
 # Enterprise Execution Scale & Resilience — Architecture (P0 baseline)
 
-**Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1** bounded concurrent work + global deadline propagation (root admission ADR pending).  
+**Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1** bounded concurrent work + global deadline propagation + **W1-A** process-local root capacity admission (optional runtime injection).
 **Baseline:** `origin/development` at audit start.  
 **Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
 
@@ -8,7 +8,7 @@
 
 | Layer | Owner | Scale note |
 |-------|--------|------------|
-| Root lifecycle | `ExecutionRuntime` (`intergrax/runtime/execution/runtime.py`) | Per-request context binding; no global execution admission queue |
+| Root lifecycle | `ExecutionRuntime` (`intergrax/runtime/execution/runtime.py`) | Per-request context binding; optional `ExecutionCapacityAdmissionPort` (W1-A) for bounded process-local root slots |
 | Strategy / graph | `NexusLoop` → `GraphExecutor` | In-process asyncio parallelism; optional caps on executor |
 | Child work | `ChildExecutionRunner` + `ExecutionBoundary` | One child per spawn; budget via shared ledger |
 | Fan-out / fan-in | `bounded_multi_agent_fanout` + `CanonicalFanOutOrchestrationAdapter` | Hard platform bounds on item count and concurrency |
@@ -59,7 +59,7 @@ Each child: new `ExecutionId`, ledger grant, boundary invoke. No global counter 
 |----------|----------|----------|
 | Graph parallel batch | Optional semaphore wait; `GRAPH_BACKPRESSURE` event when inflight semaphore locked | `GraphExecutor._execute_parallel_batch`, `_emit_backpressure` |
 | Fan-out submission | Reject at validation (invalid request) | `validate_fan_out_request` |
-| Root execution admission | No central bounded queue in ExecutionRuntime | `runtime.py` lifecycle only |
+| Root execution admission | Optional typed port on `ExecutionRuntime` (`ExecutionCapacityAdmissionPort`); default `None` preserves legacy callers | `execution_capacity_admission.py` + `local_execution_capacity_admission.py` |
 | Tool invoker | Bounded default workers; implicit pending-work queue (no admission shed); blocking wait on shared pool | `invoker.py` `_execution_pool` |
 | Event bus | `create_task` on publish | `event_bus.py` |
 
@@ -97,7 +97,7 @@ Do not treat `asyncio.Lock` / `Semaphore` on GraphExecutor as protecting resourc
 
 ## Target problems for follow-on waves (not P0)
 
-1. **Execution admission** — bounded global/regional concurrency with explicit reject/shed policy (**W1: ADR required** — no lifecycle permit in platform).  
+1. **Execution admission** — W1-A: bounded process-local root slots via injectable port; distributed/global cap deferred.
 2. ~~**Deadline propagation**~~ — **W1:** `global_deadline_monotonic` wired from active execution budget into `GraphRunner` retry eligibility when root wall-time budget is set.  
 3. **Provider bulkhead** — per-dependency concurrency and retry budgets (without bypassing canonical ports).  
 4. **Distributed rate limiting** — tenant/provider fairness across workers.  
