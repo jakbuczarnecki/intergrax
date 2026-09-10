@@ -198,6 +198,7 @@ def _project_stable_attempt_lineage(
     _validate_parentless_non_root_admissions(admissions_raw)
 
     if segments_truncated:
+        _validate_admission_parent_edges_under_prefix(admissions_raw)
         return ReconstructedAttemptLineage(
             attempt_id=attempt_id,
             read_status=ExecutionLineageReadStatus.AVAILABLE,
@@ -480,8 +481,7 @@ def _validate_admission_segment_membership(
             )
 
 
-def _validate_parent_edges_under_prefix(
-    segments: tuple[ExecutionLineageSegmentRecord, ...],
+def _validate_admission_parent_edges_under_prefix(
     admissions: tuple[ExecutionLineageAdmissionRecord, ...],
 ) -> None:
     admissions_by_segment: dict[
@@ -494,8 +494,7 @@ def _validate_parent_edges_under_prefix(
         )
         segment_map[admission.execution_id] = admission
 
-    for segment in segments:
-        segment_map = admissions_by_segment.get(segment.root_execution_id, {})
+    for segment_map in admissions_by_segment.values():
         for admission in segment_map.values():
             parent_id = admission.parent_execution_id
             if parent_id is None:
@@ -505,10 +504,22 @@ def _validate_parent_edges_under_prefix(
                     "child admission parent missing in loaded admission prefix",
                 )
             parent = segment_map[parent_id]
+            if parent.segment_root_execution_id != admission.segment_root_execution_id:
+                raise ExecutionLineageReconstructionIntegrityError(
+                    "child admission parent segment mismatch",
+                )
             if parent.admission_position >= admission.admission_position:
                 raise ExecutionLineageReconstructionIntegrityError(
                     "child admission parent order invalid",
                 )
+
+
+def _validate_parent_edges_under_prefix(
+    segments: tuple[ExecutionLineageSegmentRecord, ...],
+    admissions: tuple[ExecutionLineageAdmissionRecord, ...],
+) -> None:
+    del segments
+    _validate_admission_parent_edges_under_prefix(admissions)
 
 
 def _validate_root_admission_topology(

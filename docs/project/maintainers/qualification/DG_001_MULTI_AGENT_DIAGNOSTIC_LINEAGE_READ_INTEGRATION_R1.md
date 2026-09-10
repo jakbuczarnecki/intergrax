@@ -192,3 +192,21 @@ Historical table below retained from initial correction landing; verdict superse
 | Provider conformance (memory + document store) | PASS |
 
 **Final verdict:** **PASS** — bounded run-scoped attempt discovery, honest coverage metadata, stable snapshots, truncation-safe reconstruction, legacy-safe marker semantics, no second store/tree.
+
+## READ_INTEGRATION_R1_FINAL_COMPLETENESS_HARDENING
+
+> **Task:** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-FINAL-COMPLETENESS-HARDENING`
+> **Base correction SHA:** `42cb94ec080eddbd7106af86c96d78d17f5e34b7`
+
+**Scope:**
+
+- candidate materialization availability (`_AttemptBuildResult` effective discovery metadata)
+- false `COMPLETE` prevention when discovery-only candidate state is `UNAVAILABLE`
+- local admission parent-edge integrity under segment truncation
+- strict empty run-meta semantics (`FROM_RUN_START` empty run only when legal)
+- real torn-seal qualification (§70)
+- full state/seal contradiction matrix (C11)
+- DocumentStore get/query provider outage qualification (§73) including diagnostics reconstruction path
+- idempotent register rejects corrupt discovery run-meta scope
+
+**Verdict:** **PASS** (pending runtime commit SHA recorded in operator final report).

@@ -320,6 +320,46 @@ class _OperationalOutageDocumentStore(InMemoryDocumentStore):
         raise RuntimeError("operational query failure")
 
 
+class _QueryOutageDocumentStore(InMemoryDocumentStore):
+    def __init__(self) -> None:
+        super().__init__()
+        self._query_outage = False
+
+    def enable_query_outage(self) -> None:
+        self._query_outage = True
+
+    def query(
+        self,
+        partition_key: str,
+        *,
+        limit: int = 100,
+        row_key_prefix: str | None = None,
+        cursor: str | None = None,
+        row_key_upper_bound: str | None = None,
+        data_equalities: Sequence[DocumentDataEquality] = (),
+        sort: Sequence[DocumentDataSort] = (),
+    ) -> DocumentQueryPageV1:
+        if self._query_outage:
+            raise RuntimeError("operational query failure")
+        return super().query(
+            partition_key,
+            limit=limit,
+            row_key_prefix=row_key_prefix,
+            cursor=cursor,
+            row_key_upper_bound=row_key_upper_bound,
+            data_equalities=data_equalities,
+            sort=sort,
+        )
+
+
+class _AttemptStateUnavailableReader(_DelegateReader):
+    def read_attempt_lineage_state(
+        self,
+        scope: ExecutionLineageAttemptScope,
+    ) -> ExecutionLineageAttemptState | None:
+        raise ExecutionLineageUnavailableError("attempt state unavailable")
+
+
 class _FromRunStartReader(_DelegateReader):
     def read_discovery_run_state(
         self,
@@ -801,6 +841,66 @@ def test_c11_state_seal_contradiction(persistence: ExecutionLineagePersistence) 
         )
 
 
+@pytest.mark.parametrize(
+    ("state_update", "seal"),
+    [
+        ({"sealed": False}, "present"),
+        ({"sealed": True}, "absent"),
+        (
+            {"closure_kind": ExecutionLineageAttemptClosureKind.FAILED},
+            "present",
+        ),
+        ({"degraded": True}, "present"),
+    ],
+    ids=[
+        "state_unsealed_seal_exists",
+        "state_sealed_seal_absent",
+        "closure_kind_mismatch",
+        "degraded_mismatch",
+    ],
+)
+def test_c11_state_seal_contradiction_matrix(
+    persistence: ExecutionLineagePersistence,
+    state_update: dict[str, object],
+    seal: str,
+) -> None:
+    scope = _attempt_scope()
+    root = mint_execution_id()
+    register_v1_attempt(persistence, scope)
+    persistence.open_segment(scope, root)
+    persistence.admit_root(scope, root, root)
+    persistence.seal_attempt(scope, ExecutionLineageAttemptClosureKind.COMPLETED)
+    state = persistence.read_attempt_lineage_state(scope)
+    assert state is not None
+    seal_record = persistence.read_seal(scope)
+    tampered_state = state.model_copy(update=state_update)
+
+    class _MatrixReader(_DelegateReader):
+        def read_attempt_lineage_state(
+            self,
+            scope: ExecutionLineageAttemptScope,
+        ) -> ExecutionLineageAttemptState | None:
+            return tampered_state
+
+        def read_seal(
+            self, scope: ExecutionLineageAttemptScope
+        ) -> ExecutionLineageSealRecord | None:
+            if seal == "absent":
+                return None
+            return seal_record
+
+    with pytest.raises(ExecutionLineageReconstructionIntegrityError):
+        reconstruct_attempt_lineage(
+            _MatrixReader(persistence),
+            tenant_id=scope.tenant_id,
+            task_id=scope.task_id,
+            run_id=scope.run_id,
+            attempt_id=scope.attempt_id,
+            initial_lineage_page_limit=100,
+            max_lineage_records=10_000,
+        )
+
+
 def test_c12_backend_unavailable() -> None:
     store = _OperationalOutageDocumentStore()
     lineage = DocumentStoreExecutionLineagePersistence(store)
@@ -862,7 +962,55 @@ def test_section_69_multi_segment_truncation(
 
 
 def test_section_70_torn_seal_retry(persistence: ExecutionLineagePersistence) -> None:
-    test_c9_per_attempt_snapshot_retry(persistence)
+    scope = _attempt_scope()
+    root = mint_execution_id()
+    register_v1_attempt(persistence, scope)
+    persistence.open_segment(scope, root)
+    persistence.admit_root(scope, root, root)
+    persistence.seal_attempt(scope, ExecutionLineageAttemptClosureKind.COMPLETED)
+    sealed_state = persistence.read_attempt_lineage_state(scope)
+    assert sealed_state is not None
+
+    class _TornSealReader(_DelegateReader):
+        def __init__(self, inner: ExecutionLineageReader) -> None:
+            super().__init__(inner)
+            self._state_reads = 0
+
+        def read_attempt_lineage_state(
+            self,
+            scope: ExecutionLineageAttemptScope,
+        ) -> ExecutionLineageAttemptState | None:
+            state = self._inner.read_attempt_lineage_state(scope)
+            if state is None:
+                return None
+            self._state_reads += 1
+            if self._state_reads == 1:
+                return state.model_copy(
+                    update={
+                        "generation": state.generation,
+                        "sealed": False,
+                        "closure_kind": None,
+                    },
+                )
+            if self._state_reads == 2:
+                return state.model_copy(
+                    update={"generation": state.generation + 1},
+                )
+            return state
+
+    lineage = reconstruct_attempt_lineage(
+        _TornSealReader(persistence),
+        tenant_id=scope.tenant_id,
+        task_id=scope.task_id,
+        run_id=scope.run_id,
+        attempt_id=scope.attempt_id,
+        initial_lineage_page_limit=100,
+        max_lineage_records=10_000,
+        max_lineage_snapshot_retries=4,
+    )
+    assert lineage.read_status is ExecutionLineageReadStatus.AVAILABLE
+    assert lineage.completeness is ExecutionLineageCompleteness.COMPLETE
+    assert lineage.closure_kind is ExecutionLineageAttemptClosureKind.COMPLETED
 
 
 def test_section_71_stable_contradiction(
@@ -903,8 +1051,27 @@ def test_section_72_root_admission_crash_open_then_partial(
     assert partial.completeness is ExecutionLineageCompleteness.PARTIAL
 
 
+def test_section_73_documentstore_get_outage() -> None:
+    store = _OperationalOutageDocumentStore()
+    lineage = DocumentStoreExecutionLineagePersistence(store)
+    scope = _attempt_scope()
+    with pytest.raises(ExecutionLineageUnavailableError):
+        lineage.read_attempt_lineage_state(scope)
+
+
+def test_section_73_documentstore_query_outage() -> None:
+    scope = _attempt_scope()
+    run_scope = _run_scope(scope)
+    store = _QueryOutageDocumentStore()
+    lineage = DocumentStoreExecutionLineagePersistence(store)
+    lineage.register_attempt_for_run(run_scope, scope.attempt_id)
+    store.enable_query_outage()
+    with pytest.raises(ExecutionLineageUnavailableError):
+        lineage.list_attempts_for_run(run_scope, 100)
+
+
 def test_section_73_documentstore_outage() -> None:
-    test_c12_backend_unavailable()
+    test_section_73_documentstore_get_outage()
 
 
 def test_parentless_non_root_admission_integrity(
@@ -1055,3 +1222,273 @@ def test_provider_conformance_indexed_real_attempt(
     persistence: ExecutionLineagePersistence,
 ) -> None:
     test_indexed_lineage_only_real_attempt(persistence)
+
+
+def test_from_run_start_candidate_state_unavailable_never_reports_complete(
+    persistence: ExecutionLineagePersistence,
+) -> None:
+    scope = _attempt_scope()
+    run_scope = _run_scope(scope)
+    persistence.register_attempt_for_run(run_scope, scope.attempt_id)
+
+    class _FromRunStartIndexedReader(_DelegateReader):
+        def read_discovery_run_state(
+            self,
+            run_scope: ExecutionLineageRunScope,
+        ) -> ExecutionLineageDiscoveryRunState | None:
+            state = self._inner.read_discovery_run_state(run_scope)
+            if state is None:
+                return None
+            return state.model_copy(
+                update={
+                    "coverage_origin": (
+                        ExecutionLineageDiscoveryCoverageOrigin.FROM_RUN_START
+                    ),
+                    "coverage_contract_version": 1,
+                },
+            )
+
+    reader = _AttemptStateUnavailableReader(
+        _FromRunStartIndexedReader(persistence),
+    )
+    reconstruction = _reconstructor(lineage=reader).reconstruct_execution(
+        scope.tenant_id,
+        scope.task_id,
+        scope.run_id,
+    )
+    assert reconstruction.attempt_count == 0
+    assert (
+        reconstruction.attempt_discovery_read_status
+        is ExecutionAttemptDiscoveryReadStatus.UNAVAILABLE
+    )
+    assert reconstruction.attempt_discovery_completeness is None
+    assert (
+        reconstruction.attempt_discovery_completeness
+        is not ExecutionAttemptDiscoveryCompleteness.COMPLETE
+    )
+
+
+def test_legacy_discovery_only_candidate_state_unavailable_not_legacy_unknown(
+    persistence: ExecutionLineagePersistence,
+) -> None:
+    scope = _attempt_scope()
+    run_scope = _run_scope(scope)
+    persistence.register_attempt_for_run(run_scope, scope.attempt_id)
+    reader = _AttemptStateUnavailableReader(persistence)
+    reconstruction = _reconstructor(lineage=reader).reconstruct_execution(
+        scope.tenant_id,
+        scope.task_id,
+        scope.run_id,
+    )
+    assert reconstruction.attempt_count == 0
+    assert (
+        reconstruction.attempt_discovery_read_status
+        is ExecutionAttemptDiscoveryReadStatus.UNAVAILABLE
+    )
+    assert reconstruction.attempt_discovery_completeness is None
+
+
+def test_truncated_segments_broken_admission_parent_integrity(
+    persistence: ExecutionLineagePersistence,
+) -> None:
+    scope = _attempt_scope()
+    e1, e2, e3 = mint_execution_id(), mint_execution_id(), mint_execution_id()
+    register_v1_attempt(persistence, scope)
+    persistence.open_segment(scope, e1)
+    persistence.admit_root(scope, e1, e1)
+
+    class _BrokenParentReader(_DelegateReader):
+        def list_admissions_for_attempt(
+            self,
+            scope: ExecutionLineageAttemptScope,
+            limit: int,
+            cursor: str | None = None,
+        ) -> ExecutionLineageAdmissionPage:
+            root = ExecutionLineageAdmissionRecord(
+                scope=scope,
+                segment_root_execution_id=e1,
+                execution_id=e1,
+                parent_execution_id=None,
+                admission_position=1,
+            )
+            orphan = ExecutionLineageAdmissionRecord(
+                scope=scope,
+                segment_root_execution_id=e1,
+                execution_id=e3,
+                parent_execution_id=e2,
+                admission_position=3,
+            )
+            return ExecutionLineageAdmissionPage(admissions=(root, orphan))
+
+        def list_segments_for_attempt(
+            self,
+            scope: ExecutionLineageAttemptScope,
+            limit: int,
+            cursor: str | None = None,
+        ) -> ExecutionLineageSegmentPage:
+            segment = ExecutionLineageSegmentRecord(
+                scope=scope,
+                root_execution_id=e1,
+                predecessor_root_execution_id=None,
+                lifecycle=ExecutionLineageSegmentLifecycle.SEGMENT_OPEN,
+            )
+            extra = ExecutionLineageSegmentRecord(
+                scope=scope,
+                root_execution_id=e2,
+                predecessor_root_execution_id=e1,
+                lifecycle=ExecutionLineageSegmentLifecycle.SEGMENT_OPEN,
+            )
+            tail = ExecutionLineageSegmentRecord(
+                scope=scope,
+                root_execution_id=e3,
+                predecessor_root_execution_id=e2,
+                lifecycle=ExecutionLineageSegmentLifecycle.SEGMENT_OPEN,
+            )
+            return ExecutionLineageSegmentPage(segments=(segment, extra, tail))
+
+    with pytest.raises(ExecutionLineageReconstructionIntegrityError):
+        reconstruct_attempt_lineage(
+            _BrokenParentReader(persistence),
+            tenant_id=scope.tenant_id,
+            task_id=scope.task_id,
+            run_id=scope.run_id,
+            attempt_id=scope.attempt_id,
+            initial_lineage_page_limit=100,
+            max_lineage_records=2,
+        )
+
+
+def _put_discovery_run_meta(
+    store: InMemoryDocumentStore,
+    run_scope: ExecutionLineageRunScope,
+    *,
+    coverage_origin: ExecutionLineageDiscoveryCoverageOrigin | None,
+    coverage_contract_version: int | None,
+    next_discovery_position: int,
+) -> None:
+    partition = execution_lineage_discovery_partition_key(run_scope)
+    store.put(
+        DocumentRecord(
+            partition_key=partition,
+            row_key="meta:discovery_run",
+            data=encode_execution_lineage_discovery_run_state(
+                ExecutionLineageDiscoveryRunState(
+                    run_scope=run_scope,
+                    generation=1,
+                    next_discovery_position=next_discovery_position,
+                    coverage_contract_version=coverage_contract_version,
+                    coverage_origin=coverage_origin,
+                ),
+            ),
+        ),
+    )
+
+
+def test_empty_discovery_run_meta_coverage_none_next_one_integrity() -> None:
+    scope = _attempt_scope()
+    run_scope = _run_scope(scope)
+    store = InMemoryDocumentStore()
+    _put_discovery_run_meta(
+        store,
+        run_scope,
+        coverage_origin=None,
+        coverage_contract_version=None,
+        next_discovery_position=1,
+    )
+    lineage = DocumentStoreExecutionLineagePersistence(store)
+    with pytest.raises(ExecutionReconstructionIntegrityError):
+        _reconstructor(lineage=lineage).reconstruct_execution(
+            scope.tenant_id,
+            scope.task_id,
+            scope.run_id,
+        )
+
+
+def test_empty_discovery_run_meta_coverage_none_next_gt_one_integrity() -> None:
+    scope = _attempt_scope()
+    run_scope = _run_scope(scope)
+    store = InMemoryDocumentStore()
+    _put_discovery_run_meta(
+        store,
+        run_scope,
+        coverage_origin=None,
+        coverage_contract_version=None,
+        next_discovery_position=2,
+    )
+    lineage = DocumentStoreExecutionLineagePersistence(store)
+    with pytest.raises(ExecutionReconstructionIntegrityError):
+        _reconstructor(lineage=lineage).reconstruct_execution(
+            scope.tenant_id,
+            scope.task_id,
+            scope.run_id,
+        )
+
+
+def test_empty_from_run_start_discovery_run_meta_complete() -> None:
+    scope = _attempt_scope()
+    reconstruction = _reconstructor(
+        lineage=_FromRunStartReader(_document_persistence()),
+    ).reconstruct_execution(
+        scope.tenant_id,
+        scope.task_id,
+        scope.run_id,
+    )
+    assert (
+        reconstruction.attempt_discovery_completeness
+        is ExecutionAttemptDiscoveryCompleteness.COMPLETE
+    )
+
+
+def test_idempotent_register_corrupt_run_meta_scope() -> None:
+    scope = _attempt_scope()
+    run_scope = _run_scope(scope)
+    store = InMemoryDocumentStore()
+    lineage = DocumentStoreExecutionLineagePersistence(store)
+    lineage.register_attempt_for_run(run_scope, scope.attempt_id)
+    state = lineage.read_discovery_run_state(run_scope)
+    assert state is not None
+    wrong_scope = build_execution_lineage_run_scope(
+        tenant_id=scope.tenant_id,
+        task_id=mint_task_id(),
+        run_id=scope.run_id,
+    )
+    partition = execution_lineage_discovery_partition_key(run_scope)
+    store.put(
+        DocumentRecord(
+            partition_key=partition,
+            row_key="meta:discovery_run",
+            data=encode_execution_lineage_discovery_run_state(
+                state.model_copy(update={"run_scope": wrong_scope}),
+            ),
+        ),
+    )
+    with pytest.raises(ExecutionLineageIntegrityError):
+        lineage.register_attempt_for_run(run_scope, scope.attempt_id)
+
+
+def test_diagnostics_reconstruction_query_outage_metadata() -> None:
+    scope = _attempt_scope()
+    store = _QueryOutageDocumentStore()
+    lineage = DocumentStoreExecutionLineagePersistence(store)
+    register_v1_attempt(lineage, scope)
+    store.enable_query_outage()
+    reconstruction = _reconstructor(lineage=lineage).reconstruct_execution(
+        scope.tenant_id,
+        scope.task_id,
+        scope.run_id,
+    )
+    assert (
+        reconstruction.attempt_discovery_read_status
+        is ExecutionAttemptDiscoveryReadStatus.UNAVAILABLE
+    )
+    assert reconstruction.attempt_discovery_completeness is None
+
+
+def test_documentstore_operational_oserror_translation() -> None:
+    class _OSErrorDocumentStore(InMemoryDocumentStore):
+        def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
+            raise OSError("operational os failure")
+
+    lineage = DocumentStoreExecutionLineagePersistence(_OSErrorDocumentStore())
+    with pytest.raises(ExecutionLineageUnavailableError):
+        lineage.read_attempt_lineage_state(_attempt_scope())

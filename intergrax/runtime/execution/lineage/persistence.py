@@ -364,8 +364,11 @@ class _ExecutionLineageStoreLogic:
                 raise ExecutionLineageIntegrityError("discovery attempt_id mismatch")
             if not _run_scopes_match(existing.run_scope, run_scope):
                 raise ExecutionLineageIntegrityError("discovery run scope mismatch")
-            if self._read_discovery_run_state(partition) is None:
+            run_meta = self._read_discovery_run_state(partition)
+            if run_meta is None:
                 raise ExecutionLineageIntegrityError("discovery row without run meta")
+            if not _run_scopes_match(run_meta.run_scope, run_scope):
+                raise ExecutionLineageIntegrityError("discovery run scope mismatch")
             return existing
         for _ in range(_MAX_ATOMIC_RETRIES):
             run_state = self._read_discovery_run_state(partition)

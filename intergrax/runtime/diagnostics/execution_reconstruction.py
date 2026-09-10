@@ -75,6 +75,13 @@ class _RunDiscoverySnapshot:
 
 
 @dataclass(frozen=True, slots=True)
+class _AttemptBuildResult:
+    attempts: tuple[ReconstructedAttempt, ...]
+    discovery_read_status: ExecutionAttemptDiscoveryReadStatus | None
+    discovery_completeness: ExecutionAttemptDiscoveryCompleteness | None
+
+
+@dataclass(frozen=True, slots=True)
 class ReconstructedAttempt:
     """One attempt within an execution reconstruction — derived, not canonical."""
 
@@ -244,7 +251,7 @@ class ExecutionReconstructor:
             max_retries=self._max_attempt_discovery_snapshot_retries,
         )
 
-        attempts = _build_attempts(
+        attempt_build = _build_attempts(
             causal,
             positioned,
             execution_lineage=self._execution_lineage,
@@ -256,18 +263,15 @@ class ExecutionReconstructor:
             max_lineage_snapshot_retries=self._max_lineage_snapshot_retries,
             discovery_snapshot=discovery_snapshot,
         )
-        discovery_read_status = None
-        discovery_completeness = None
-        if self._execution_lineage is not None:
-            discovery_read_status = discovery_snapshot.read_status
-            discovery_completeness = discovery_snapshot.completeness
+        discovery_read_status = attempt_build.discovery_read_status
+        discovery_completeness = attempt_build.discovery_completeness
         return ExecutionReconstruction(
             tenant_id=tenant_id,
             task_id=task_id,
             run_id=run_id,
             causal_evidence=causal,
             positioned_events=positioned,
-            attempts=attempts,
+            attempts=attempt_build.attempts,
             runtime_history_completeness=completeness,
             attempt_discovery_read_status=discovery_read_status,
             attempt_discovery_completeness=discovery_completeness,
@@ -341,15 +345,17 @@ def _load_run_discovery_snapshot(
             and run_state_after is not None
             and run_state_before.generation == run_state_after.generation
         ):
-            if (
-                not records
-                and run_state_after.next_discovery_position > 1
-                and run_state_after.coverage_origin
-                is not ExecutionLineageDiscoveryCoverageOrigin.FROM_RUN_START
-            ):
-                raise ExecutionReconstructionIntegrityError(
-                    "empty discovery snapshot with impossible counter",
-                )
+            if not records:
+                if _is_legal_empty_from_run_start_run_meta(run_state_after):
+                    pass
+                elif run_state_after.next_discovery_position > 1:
+                    raise ExecutionReconstructionIntegrityError(
+                        "empty discovery snapshot with impossible counter",
+                    )
+                else:
+                    raise ExecutionReconstructionIntegrityError(
+                        "invalid empty discovery run meta",
+                    )
             if truncated or next_cursor is not None:
                 completeness = ExecutionAttemptDiscoveryCompleteness.TRUNCATED
             elif (
@@ -425,6 +431,33 @@ def _load_discovery_pages(
     return tuple(collected), truncated, next_cursor
 
 
+def _is_legal_empty_from_run_start_run_meta(
+    run_state: ExecutionLineageDiscoveryRunState,
+) -> bool:
+    return (
+        run_state.coverage_origin
+        is ExecutionLineageDiscoveryCoverageOrigin.FROM_RUN_START
+        and run_state.coverage_contract_version == 1
+        and run_state.next_discovery_position == 1
+    )
+
+
+def _effective_attempt_discovery_metadata(
+    snapshot: _RunDiscoverySnapshot,
+    *,
+    discovery_only_candidate_unavailable: bool,
+    lineage_configured: bool,
+) -> tuple[
+    ExecutionAttemptDiscoveryReadStatus | None,
+    ExecutionAttemptDiscoveryCompleteness | None,
+]:
+    if not lineage_configured:
+        return None, None
+    if discovery_only_candidate_unavailable:
+        return ExecutionAttemptDiscoveryReadStatus.UNAVAILABLE, None
+    return snapshot.read_status, snapshot.completeness
+
+
 def _validate_full_discovery_snapshot(
     records: tuple[ExecutionLineageAttemptDiscoveryRecord, ...],
     *,
@@ -493,7 +526,7 @@ def _build_attempts(
     max_lineage_records: int,
     max_lineage_snapshot_retries: int,
     discovery_snapshot: _RunDiscoverySnapshot,
-) -> tuple[ReconstructedAttempt, ...]:
+) -> _AttemptBuildResult:
     causal_by_attempt: dict[AttemptId, list[PlatformCausalEvidence]] = {}
     for evidence in causal:
         attempt_id = evidence.target.attempt_id
@@ -525,6 +558,7 @@ def _build_attempts(
     )
 
     attempts: list[ReconstructedAttempt] = []
+    discovery_only_candidate_unavailable = False
     for attempt_id in attempt_ids:
         discovery_record = discovery_by_attempt.get(attempt_id)
         is_discovery_only = (
@@ -552,9 +586,21 @@ def _build_attempts(
             if lineage.read_status is ExecutionLineageReadStatus.ABSENT:
                 continue
             if lineage.read_status is ExecutionLineageReadStatus.UNAVAILABLE:
+                discovery_only_candidate_unavailable = True
                 continue
         attempts.append(reconstructed)
-    return tuple(attempts)
+    discovery_read_status, discovery_completeness = (
+        _effective_attempt_discovery_metadata(
+            discovery_snapshot,
+            discovery_only_candidate_unavailable=discovery_only_candidate_unavailable,
+            lineage_configured=execution_lineage is not None,
+        )
+    )
+    return _AttemptBuildResult(
+        attempts=tuple(attempts),
+        discovery_read_status=discovery_read_status,
+        discovery_completeness=discovery_completeness,
+    )
 
 
 def _build_reconstructed_attempt(

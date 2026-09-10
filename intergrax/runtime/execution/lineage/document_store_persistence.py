@@ -101,7 +101,7 @@ class _DocumentStorePartitionAtomicRowStore:
     def get_row(self, partition_key: str, row_key: str) -> _PartitionRow | None:
         try:
             record = self._document_store.get(partition_key, row_key)
-        except RuntimeError as exc:
+        except (OSError, RuntimeError) as exc:
             raise ExecutionLineageUnavailableError(str(exc)) from exc
         if record is None:
             return None
@@ -135,7 +135,7 @@ class _DocumentStorePartitionAtomicRowStore:
                 cursor=cursor,
                 sort=(DocumentDataSort(path=sort_path, direction="asc"),),
             )
-        except RuntimeError as exc:
+        except (OSError, RuntimeError) as exc:
             raise ExecutionLineageUnavailableError(str(exc)) from exc
         rows = tuple(_document_to_row(document) for document in page.documents)
         return rows, page.next_cursor
