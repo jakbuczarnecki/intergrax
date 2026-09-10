@@ -233,9 +233,10 @@ Independent logical work may run concurrently when Nexus schedules ready child E
 
 | Control | Effect |
 | ------- | ------ |
-| `max_parallel_nodes` | Concurrent nodes in one topological batch (**CURRENT** graph executor) |
-| `max_inflight_nodes` | Global inflight cap; `GRAPH_BACKPRESSURE` |
-| Tenant / host concurrency | Cross-task fairness - host runtime |
+| `max_parallel_nodes` | Concurrent nodes in one topological batch (**process-local** per GraphExecutor instance) |
+| `max_inflight_nodes` | Process-local inflight cap on that executor; `GRAPH_BACKPRESSURE` — **not** cluster-wide |
+| Strict production guardrail | `ExecutionMode.STRICT` requires both caps explicit on `orchestration_profile` (W0) |
+| Tenant / host concurrency | Cross-task fairness - host runtime (no global semaphore in W0) |
 | `max_delegation_depth` | Nested delegation limit |
 
 **Boundary:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) owns infrastructure replicas - not graph scheduling caps.

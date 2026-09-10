@@ -25,6 +25,9 @@ from intergrax.applications._shared.context_wiring import (
     resolve_context_manager_from_environment,
 )
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
+from intergrax.applications._shared.host_execution_capacity_policy import (
+    validate_strict_host_execution_capacity,
+)
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
     orchestration_requires_llm_adapter,
@@ -136,6 +139,7 @@ def build_nexus_loop_from_environment(
     execution_lineage_persistence: ExecutionLineagePersistence | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
+    validate_strict_host_execution_capacity(env)
     orch = env.orchestration_profile
     reliability = env.reliability_profile
     retry_policy = RetryPolicy(max_retries=3)

@@ -239,14 +239,14 @@ Do not infer numeric SLOs from this model without measurement.
 
 | Risk | Severity | Trigger | Blast radius | Mitigation | Gap | Future wave |
 |------|----------|---------|--------------|------------|-----|-------------|
-| Unbounded graph/orchestration parallelism | P0 | caps unset | whole worker | host profile wiring | default None in executor | W1 admission + mandatory caps |
+| Unbounded graph/orchestration parallelism | P0 | caps unset in non-strict | whole worker | host profile wiring | strict mode fail-closed (W0) | W1 admission |
 | Retry storm on provider outage | P0 | many runs fail together | provider + all tenants | backoff, CB, max_attempts | no jitter on all presets; no retry bulkhead | W2 provider retry budget |
 | SQLite checkpoint hotspot | P1 | many concurrent writes | all tenants on DB file | CAS, indexes | single-file SQLite | W3 store sharding |
 | Shared tool thread pool | P1 | slow tool | all agents on host | timeouts | no per-tool bulkhead | W2 tool pools |
 | Cancel orphan work | P1 | cancel during tool/child | wasted spend | cooperative cancel | no hard preemption | W4 cancel propagation audit |
 | Deadline not on Nexus retry request | P1 | long graph retry | parent SLA | R1 contract | graph_runner omits field | W1 deadline wiring |
 | ConcurrentExecutionWork unbounded | P1 | large council tuple | memory/tasks | none | no cap | W1 width limit at port |
-| Process-local semaphore illusion | P1 | multi-worker deploy | 2× intended parallelism | ops scaling | semantic misunderstanding | W0 ops guidance |
+| Process-local semaphore illusion | P1 | multi-worker deploy | N× local slots vs one cap | ops scaling + W0 docs | semantic misunderstanding | W1 distributed admission |
 | Recovery storm post outage | P2 | many resumes due | Nexus + DB | claim limit | no global throttle | W3 scheduler budgets |
 | Event bus task spam | P2 | high emit rate | CPU | none | unbounded create_task | W5 observability shed |
 
@@ -254,7 +254,7 @@ Do not infer numeric SLOs from this model without measurement.
 
 | Wave | Focus |
 |------|--------|
-| **W0** | Document mandatory host caps + deployment guardrails (no new frameworks) |
+| **W0** | Mandatory host caps guardrails + process-local semantics (`host_execution_capacity_policy`; strict Nexus composition) |
 | **W1** | Execution admission + deadline propagation on all retry paths |
 | **W2** | Provider/tool bulkheads + distributed rate limits |
 | **W3** | Checkpoint/evidence store scaling + recovery throttles |

@@ -833,6 +833,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                         "orchestration": OrchestrationProfile(
                             merge_strategy="structured_json",
                             max_parallel_nodes=8,
+                            max_inflight_nodes=8,
                             max_run_retries=1,
                         ),
                         "decision": regulated.decision,
@@ -879,6 +880,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                             "merge_strategy": strict.orchestration_profile.merge_strategy,
                             "max_run_retries": strict.orchestration_profile.max_run_retries,
                             "max_parallel_nodes": strict.orchestration_profile.max_parallel_nodes,
+                            "max_inflight_nodes": strict.orchestration_profile.max_inflight_nodes,
                         },
                     ),
                 },
@@ -997,7 +999,11 @@ class ApplicationEnvironmentProfile(BaseModel):
                 memory=MemoryProfile(enable_entity_graph_memory=True),
             ),
             cognition=CognitionBundle(
-                orchestration=OrchestrationProfile(long_running_enabled=True),
+                orchestration=OrchestrationProfile(
+                    long_running_enabled=True,
+                    max_parallel_nodes=8,
+                    max_inflight_nodes=8,
+                ),
                 adaptive=AdaptiveProfile(
                     enabled=True,
                     mode="recommend",

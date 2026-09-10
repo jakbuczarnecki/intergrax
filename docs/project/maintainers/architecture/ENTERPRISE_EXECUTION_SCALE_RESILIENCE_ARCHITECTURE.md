@@ -1,6 +1,6 @@
 # Enterprise Execution Scale & Resilience — Architecture (P0 baseline)
 
-**Status:** P0 inventory baseline (evidence-backed; no production changes).  
+**Status:** P0 inventory baseline; **W0** strict host capacity guardrails (see qualification doc).  
 **Baseline:** `origin/development` at audit start.  
 **Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
 
@@ -47,7 +47,7 @@ These mechanisms coordinate **durability and resume**, not fair sharing of CPU a
 
 Orchestration concurrency resolves as `min(platform_limit, submission_limit)` when either is set (`resolve_effective_orchestration_concurrency`). When **both** GraphExecutor caps and policy limits are `None`, parallel batches run **unbounded** within the batch (`asyncio.gather` on full batch).
 
-Host profile contract allows `max_parallel_nodes` / `max_inflight_nodes` up to 256 (`host_profile_slices.py`). Application wiring often sets defaults (e.g. `resolve_max_inflight_nodes` → 8 in `scaling_wiring.py`) — **deployment configuration**, not a hard runtime invariant when unset.
+Host profile contract allows `max_parallel_nodes` / `max_inflight_nodes` up to 256 (`host_profile_slices.py` / environment `OrchestrationProfile`). Application wiring often sets deployment defaults (e.g. product template 8/8, scaling ceiling patcher fallback 8) — **W0:** `ExecutionMode.STRICT` requires both caps explicitly set before Nexus composition (`host_execution_capacity_policy.py`); `None` is not a safe production default.
 
 ### Child execution scale
 
@@ -93,7 +93,7 @@ Same-slot recovery is idempotent via checkpoint revision and slot disposition co
 
 ## Process-local assumptions (explicit)
 
-Do not treat `asyncio.Lock` / `Semaphore` on GraphExecutor as protecting resources across Celery workers or K8s pods. Scheduler lease claims are the cross-worker primitive for **resume scheduling**, not for limiting simultaneous graph execution.
+Do not treat `asyncio.Lock` / `Semaphore` on GraphExecutor as protecting resources across Celery workers or K8s pods. Each worker process holds its **own** local caps; multiplying worker count multiplies local capacity unless a future distributed admission wave says otherwise (W0 qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W0_GUARDRAILS.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W0_GUARDRAILS.md)). Scheduler lease claims are the cross-worker primitive for **resume scheduling**, not for limiting simultaneous graph execution.
 
 ## Target problems for follow-on waves (not P0)
 
