@@ -327,6 +327,27 @@ class OrchestrationSlotContinuationRequest:
             raise ValueError("correlation_id must not contain leading or trailing whitespace")
 
 
+@dataclass(frozen=True, slots=True)
+class OrchestrationSlotRecoveryRequest:
+    """Identity-bound request to recover one previously failed orchestration slot."""
+
+    execution_id: OrchestrationTopologyExecutionId
+    slot_id: OrchestrationSlotId
+    correlation_id: str
+    source_checkpoint_revision: int
+
+    def __post_init__(self) -> None:
+        if not str(self.execution_id).strip():
+            raise ValueError("execution_id must be non-empty")
+        validate_orchestration_slot_id(self.slot_id)
+        if not self.correlation_id or not self.correlation_id.strip():
+            raise ValueError("correlation_id must be non-empty")
+        if self.correlation_id != self.correlation_id.strip():
+            raise ValueError("correlation_id must not contain leading or trailing whitespace")
+        if self.source_checkpoint_revision < 1:
+            raise ValueError("source_checkpoint_revision must be >= 1")
+
+
 class OrchestrationSlotContinuationError(ValueError):
     """Fail-closed orchestration slot continuation validation error."""
 
@@ -335,6 +356,18 @@ class OrchestrationSlotContinuationError(ValueError):
     def __init__(self, message: str, *, code: str) -> None:
         if not code or not code.strip():
             raise ValueError("OrchestrationSlotContinuationError code must be non-empty")
+        self.code = code.strip()
+        super().__init__(message)
+
+
+class OrchestrationSlotRecoveryError(ValueError):
+    """Fail-closed orchestration slot failure recovery validation error."""
+
+    __slots__ = ("code",)
+
+    def __init__(self, message: str, *, code: str) -> None:
+        if not code or not code.strip():
+            raise ValueError("OrchestrationSlotRecoveryError code must be non-empty")
         self.code = code.strip()
         super().__init__(message)
 
@@ -366,6 +399,14 @@ class OrchestrationTopologyContinuationPort(Protocol[PayloadT, ResultT]):
         request: OrchestrationSlotContinuationRequest,
         *,
         slot_continuation_executor: OrchestrationSlotContinuationExecutor[PayloadT, ResultT],
+    ) -> OrchestrationResult[ResultT]:
+        ...
+
+    async def recover_failed_slot(
+        self,
+        request: OrchestrationSlotRecoveryRequest,
+        *,
+        slot_executor: OrchestrationSlotExecutor[PayloadT, ResultT],
     ) -> OrchestrationResult[ResultT]:
         ...
 

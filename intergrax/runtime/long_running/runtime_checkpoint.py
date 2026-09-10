@@ -16,6 +16,7 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
 )
 from intergrax.runtime.long_running.execution_tree_checkpoint import ExecutionTreeSnapshot
+from intergrax.runtime.long_running.topology_recovery_snapshot import TopologyRecoverySnapshot
 
 UAEP_STEP_CURSOR_KEY = "uaep_step_cursor"
 PLAN_SNAPSHOT_KEY = "plan_snapshot.v1"
@@ -66,6 +67,7 @@ class RuntimeCheckpoint(BaseModel):
     pending_decisions: List[PendingDecision] = Field(default_factory=list)
     pending_human_request: Optional[Dict[str, object]] = None
     last_step_output: Optional[UaepStepOutput] = None
+    topology_recovery: Optional[TopologyRecoverySnapshot] = None
 
     @field_validator("run_id", mode="before")
     @classmethod

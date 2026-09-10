@@ -18,6 +18,8 @@ from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotExecutor,
     OrchestrationSlotId,
     OrchestrationSlotOutcome,
+    OrchestrationSlotRecoveryError,
+    OrchestrationSlotRecoveryRequest,
     OrchestrationSlotStatus,
     OrchestrationTopology,
     OrchestrationTopologyContinuationPort,
@@ -66,6 +68,9 @@ class _OrchestrationExecutionRecord(Generic[PayloadT, ResultT]):
     outcomes: dict[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]]
     continuable_slots: set[OrchestrationSlotId] = field(default_factory=set)
     continuation_results: dict[tuple[str, str], OrchestrationSlotOutcome[ResultT]] = field(
+        default_factory=dict,
+    )
+    recovery_results: dict[tuple[str, str], OrchestrationSlotOutcome[ResultT]] = field(
         default_factory=dict,
     )
 
@@ -218,6 +223,108 @@ class CanonicalOrchestrationTopologySubmissionPort(
         updated[request.slot_id] = resumed
         record.outcomes = updated
         record.continuable_slots.discard(request.slot_id)
+        return build_orchestration_result(
+            record.topology,
+            outcomes_by_slot=updated,
+        )
+
+    def restore_execution_record(
+        self,
+        execution_id: OrchestrationTopologyExecutionId,
+        *,
+        topology: OrchestrationTopology[PayloadT],
+        scheduling_policy: OrchestrationSchedulingPolicy,
+        host_task: Task,
+        payloads: dict[OrchestrationSlotId, PayloadT],
+        outcomes: dict[OrchestrationSlotId, OrchestrationSlotOutcome[ResultT]],
+        continuable_slots: set[OrchestrationSlotId] | None = None,
+    ) -> None:
+        """Rehydrate an orchestration execution record from durable recovery state."""
+        validate_orchestration_topology(topology)
+        validate_orchestration_scheduling_policy(scheduling_policy)
+        graph = orchestration_topology_to_execution_graph(
+            topology,
+            graph_id=f"orchestration-topology:{host_task.task_id}",
+            task_id=host_task.task_id,
+        )
+        self._registry.records[str(execution_id)] = _OrchestrationExecutionRecord(
+            topology=topology,
+            scheduling_policy=scheduling_policy,
+            graph=graph,
+            host_task=host_task,
+            payloads=payloads,
+            outcomes=dict(outcomes),
+            continuable_slots=set(continuable_slots or ()),
+        )
+
+    async def recover_failed_slot(
+        self,
+        request: OrchestrationSlotRecoveryRequest,
+        *,
+        slot_executor: OrchestrationSlotExecutor[PayloadT, ResultT],
+    ) -> OrchestrationResult[ResultT]:
+        record = self._registry.records.get(str(request.execution_id))
+        if record is None:
+            raise OrchestrationSlotRecoveryError(
+                "unknown orchestration topology execution",
+                code="wrong_topology",
+            )
+        if request.slot_id not in record.payloads:
+            raise OrchestrationSlotRecoveryError(
+                "slot_id not present in topology execution",
+                code="wrong_slot",
+            )
+
+        cache_key = (str(request.slot_id), request.correlation_id)
+        cached = record.recovery_results.get(cache_key)
+        if cached is not None:
+            updated = dict(record.outcomes)
+            updated[request.slot_id] = cached
+            record.outcomes = updated
+            return build_orchestration_result(
+                record.topology,
+                outcomes_by_slot=updated,
+            )
+
+        prior = record.outcomes.get(request.slot_id)
+        if prior is None:
+            raise OrchestrationSlotRecoveryError(
+                "slot has no prior orchestration outcome",
+                code="wrong_slot",
+            )
+        if prior.status is OrchestrationSlotStatus.SUCCESS:
+            updated = dict(record.outcomes)
+            return build_orchestration_result(
+                record.topology,
+                outcomes_by_slot=updated,
+            )
+        if prior.status is OrchestrationSlotStatus.SKIPPED:
+            raise OrchestrationSlotRecoveryError(
+                "skipped slot cannot be recovered",
+                code="terminal_slot",
+            )
+        if request.slot_id in record.continuable_slots:
+            raise OrchestrationSlotRecoveryError(
+                "governed continuation slot must use continue_slot",
+                code="require_human",
+            )
+
+        node_execution = bind_orchestration_node_execution(
+            payloads=record.payloads,
+            slot_executor=slot_executor,
+        )
+        recovered = await self._graph_executor.continue_orchestration_topology_slot(
+            record.graph,
+            record.host_task,
+            slot_id=request.slot_id,
+            topology=record.topology,
+            node_execution=node_execution,
+            scheduling_policy=record.scheduling_policy,
+        )
+        record.recovery_results[cache_key] = recovered
+        updated = dict(record.outcomes)
+        updated[request.slot_id] = recovered
+        record.outcomes = updated
         return build_orchestration_result(
             record.topology,
             outcomes_by_slot=updated,

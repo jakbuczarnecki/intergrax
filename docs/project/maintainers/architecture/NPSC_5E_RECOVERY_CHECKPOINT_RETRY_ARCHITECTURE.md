@@ -1,6 +1,6 @@
 # NPSC-5E — Recovery, Checkpoint & Retry Architecture
 
-> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 FROZEN / PASS**; R3 ACTIVE
+> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 FROZEN / PASS**; **R3 ACTIVE**
 
 ## P0 inventory
 
@@ -267,17 +267,52 @@ Final qualification composes R2 + H1 + H2 + Q1 with cross-layer E2E scenarios (n
 
 See: `docs/project/maintainers/qualification/NPSC_5E_R2_FINAL_CHECKPOINT_DURABLE_RESUME_QUALIFICATION_AND_FREEZE.md`
 
-## Future boundaries
+## R3 — Child & Fan-Out Partial Recovery
 
-### R3 — Partial Recovery / Fan-out Continuation
+**Status:** `ACTIVE` (2026-09-10)
 
-- Preserve NPSC-5B two-level fan-out lineage.
-- Exact slot resume must not create false sibling lineage.
-- Governed HITL continuation ≠ failure retry.
+Qualified modules: `intergrax/contracts/partial_recovery.py`, `intergrax/runtime/long_running/topology_recovery_snapshot.py`, `intergrax/runtime/execution/fan_out_partial_recovery.py`.
+
+### Recovery unit
+
+```text
+exact failed topology slot (or exact failed child Execution)
+≠ entire fan-out replay
+```
+
+### Ownership
+
+```text
+Fan-out request / fan-in projection  → Agent Distribution (BoundedMultiAgentFanOutService)
+Topology / slot scheduling             → Nexus (OrchestrationTopologySubmissionPort)
+Slot failure recovery                  → OrchestrationTopologyContinuationPort.recover_failed_slot
+Slot HITL continuation                 → OrchestrationTopologyContinuationPort.continue_slot (NPSC-5D/R3 frozen)
+Child execution boundary               → ChildExecutionPort
+Checkpoint / revision CAS              → LongRunningCoordinator + TaskCheckpointPersistence
+Attempt retry                          → ExecutionAttemptRetryService (R1 — not duplicated)
+Lineage                                → ExecutionLineagePersistence
+```
+
+### Contracts
+
+- `PartialRecoveryRequest` — identity-bound recovery intent (root, topology execution, slot, checkpoint revision, attempt, reason)
+- `TopologyRecoverySnapshot` — optional `RuntimeCheckpoint.topology_recovery` v2-compatible field
+- `SlotRecoveryDisposition` — durable per-slot state (SUCCEEDED, FAILED, WAITING_FOR_HUMAN, …)
+- `evaluate_slot_recovery_policy` — narrow RECOVER / PRESERVE_FAILURE / WAIT / CANCEL seam
+
+### Invariants
+
+- Successful siblings: never rescheduled; results and lineage preserved
+- Failed slot only: `recover_failed_slot` via canonical Nexus graph executor
+- HITL slots: governed `continue_slot` only — not failure recovery
+- R1 retry: child attempt retry remains R1; R3 selects which slot to recover
+- R2 revision CAS: recovery checkpoint persist uses `expected_revision`
+- No second recovery runtime, scheduler, checkpoint framework, or retry engine
+
+See: `docs/project/maintainers/qualification/NPSC_5E_R3_CHILD_FANOUT_PARTIAL_RECOVERY.md`
 
 ## Deferred / out of scope
 
 - `RecoveryLineageManager`, `RetryLineageEngine`, `ExecutionLineageRuntime` — forbidden
 - KV lineage adapter
-- R3 partial failed-slot fan-out recovery
 - NPSC-5F evidence/replay store
