@@ -15,6 +15,7 @@ from intergrax.agents.persistence.idempotency_ledger_bridge import (
     resolve_external_ref_from_store,
 )
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
+from intergrax.contracts.declarative_tool_invoke_result import DeclarativeToolInvokeResult
 from intergrax.contracts.idempotency_store import (
     ClaimOutcome,
     ClaimResult,
@@ -31,15 +32,6 @@ DeclarativeToolStatus = Literal[
     "replay_skipped",
     "skipped_no_invoker",
 ]
-
-
-@dataclass(frozen=True)
-class DeclarativeToolInvokeResult:
-    status: Literal["success", "failed", "denied"]
-    output: dict[str, Any] | None = None
-    external_ref: str | None = None
-    error: str | None = None
-    duration_ms: int = 0
 
 
 @runtime_checkable
@@ -313,6 +305,16 @@ class CallableDeclarativeToolInvoker:
     """Test and host adapter wrapping an async invoke callable."""
 
     _invoke_fn: Callable[..., Awaitable[DeclarativeToolInvokeResult]]
+
+    def bind_execution_identity(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        task_id: str,
+        agent_id: str,
+    ) -> None:
+        _ = tenant_id, run_id, task_id, agent_id
 
     async def invoke(
         self,

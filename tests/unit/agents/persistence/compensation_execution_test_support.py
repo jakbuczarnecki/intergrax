@@ -7,7 +7,9 @@ from __future__ import annotations
 from intergrax.agents.persistence.compensation_tool_invoke_session import (
     bound_compensation_tool_invoke_session,
 )
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 from intergrax.contracts.compensation_side_effect_execution import (
     CompensationSideEffectExecutionPort,
 )
@@ -18,7 +20,7 @@ from intergrax.runtime.execution.compensation_side_effect import (
 
 
 def build_test_admitted_compensation_side_effect_execution(
-    invoker: DeclarativeToolInvoker,
+    invoker: ExecutionBoundDeclarativeToolInvoker,
     *,
     authority: ParentExecutionAuthority | None = None,
 ) -> CompensationSideEffectExecutionPort:

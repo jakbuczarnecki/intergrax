@@ -22,6 +22,19 @@ _COMPENSATION_TOOL_SESSION = (
     / "persistence"
     / "compensation_tool_invoke_session.py"
 )
+_EXECUTION_BOUND_INVOKER_CONTRACT = (
+    _REPO_ROOT
+    / "intergrax"
+    / "contracts"
+    / "execution_bound_declarative_tool_invocation.py"
+)
+_COMPENSATION_SIDE_EFFECT_WIRING = (
+    _REPO_ROOT
+    / "intergrax"
+    / "applications"
+    / "_shared"
+    / "compensation_side_effect_wiring.py"
+)
 _U2_COMPENSATION_CONTRACT = (
     _REPO_ROOT / "intergrax" / "contracts" / "compensation_side_effect_execution.py"
 )
@@ -64,14 +77,43 @@ def test_u2_compensation_contract_has_no_any_on_public_boundary() -> None:
 def test_u2_compensation_session_has_no_catalog_invoker_type_discrimination() -> None:
     source = _COMPENSATION_TOOL_SESSION.read_text(encoding="utf-8")
     assert "CatalogDeclarativeToolInvoker" not in source
+    assert "CallableDeclarativeToolInvoker" not in source
+    stripped = source.replace("ExecutionBoundDeclarativeToolInvoker", "")
+    assert "DeclarativeToolInvoker" not in stripped
+    assert "ExecutionBoundDeclarativeToolInvoker" in source
+    for forbidden in ("getattr", "hasattr", "setattr"):
+        assert forbidden not in source
     tree = ast.parse(source)
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        if isinstance(func, ast.Name) and func.id == "isinstance":
-            for arg in node.args[1:]:
-                if isinstance(arg, ast.Name) and arg.id == "CatalogDeclarativeToolInvoker":
-                    raise AssertionError(
-                        "compensation session must not isinstance CatalogDeclarativeToolInvoker",
-                    )
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id == "isinstance":
+                raise AssertionError(
+                    "compensation session must not use runtime isinstance discrimination",
+                )
+
+
+def test_u2_execution_bound_invoker_invoke_returns_typed_result() -> None:
+    source = _EXECUTION_BOUND_INVOKER_CONTRACT.read_text(encoding="utf-8")
+    assert "-> object" not in source.replace(" ", "")
+    tree = ast.parse(source)
+    invoke_methods = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "invoke"
+    ]
+    assert invoke_methods, "ExecutionBoundDeclarativeToolInvoker must declare invoke"
+    returns = invoke_methods[0].returns
+    assert returns is not None
+    if isinstance(returns, ast.Name):
+        assert returns.id == "DeclarativeToolInvokeResult"
+    elif isinstance(returns, ast.Constant) and isinstance(returns.value, str):
+        assert returns.value == "DeclarativeToolInvokeResult"
+    else:
+        raise AssertionError("invoke must annotate DeclarativeToolInvokeResult return type")
+
+
+def test_u2_compensation_wiring_requires_execution_bound_invoker() -> None:
+    source = _COMPENSATION_SIDE_EFFECT_WIRING.read_text(encoding="utf-8")
+    stripped = source.replace("ExecutionBoundDeclarativeToolInvoker", "")
+    assert "DeclarativeToolInvoker" not in stripped
+    assert "ExecutionBoundDeclarativeToolInvoker" in source

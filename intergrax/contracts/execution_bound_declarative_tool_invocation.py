@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.declarative_tool_invoke_result import DeclarativeToolInvokeResult
 from intergrax.knowledge.contracts.validation import JsonObject
 
 
@@ -29,5 +30,5 @@ class ExecutionBoundDeclarativeToolInvoker(Protocol):
         tool_id: str,
         args: JsonObject,
         idempotency_key: str | None,
-    ) -> object:
+    ) -> DeclarativeToolInvokeResult:
         ...
