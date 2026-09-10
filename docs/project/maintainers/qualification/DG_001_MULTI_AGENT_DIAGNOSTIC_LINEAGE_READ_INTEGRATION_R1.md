@@ -25,13 +25,17 @@
 
 ## Attempt discovery decision
 
-**PASS** — attempt set remains:
+> **Correction (2026-09-10):** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ATTEMPT-DISCOVERY-ARCHITECTURE-R1`
+> **Architecture:** `docs/project/maintainers/architecture/DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_ATTEMPT_DISCOVERY_ARCHITECTURE_R1.md`
 
 ```text
-RuntimeEvent attempts UNION CausalEvidence attempts
+READ_INTEGRATION_R1:
+BLOCKED_PENDING_ATTEMPT_DISCOVERY_ARCHITECTURE
 ```
 
-Lineage persistence is per-attempt enrichment only. No run-wide attempt index, cross-partition scan, checkpoint discovery, or lexical/heuristic ordering added.
+**Historical PASS (superseded):** attempt set was declared as `RuntimeEvent attempts UNION CausalEvidence attempts` with lineage as per-attempt enrichment only. Independent audit confirmed a legal counterexample: durable `ExecutionLineagePersistence` attempt state (`open_attempt` / `open_segment`) may exist before any RuntimeEvent or CausalEvidence for that `AttemptId`. That discovery model is **incomplete**.
+
+**Current verdict:** `EXISTING_DIAG2_DISCOVERY_COMPLETE: NO`. Implementation correction deferred to `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION` per attempt-discovery architecture R1 (OPTION_C — lineage-owned run-scoped discovery index).
 
 ## Read-only port
 
@@ -102,6 +106,19 @@ uv run pytest tests/integration/runtime/test_harden_4e_diagnostic_read_truth_e2e
 
 Write-side admission semantics, checkpoint resume engine, DIAG-3/DIAG-4 taxonomy changes, Decision System, scope discovery lineage provider, second execution tree/store.
 
+## Audit trail — read integration corrections pending
+
+Architecture `DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_ATTEMPT_DISCOVERY_ARCHITECTURE_R1` registers these implement corrections (not in scope of original READ_INTEGRATION_R1):
+
+| Item | Required semantics |
+| ---- | ------------------ |
+| Truncation | Truncated pages must not be validated as complete forensic snapshots |
+| Stable snapshot | Generation-guarded bounded retry; no torn cross-generation compose |
+| State/seal consistency | `sealed` / `closure_kind` / `degraded` equality across state and seal after stable snapshot |
+| Provider error translation | DocumentStore operational failures → `ExecutionLineageUnavailableError` |
+
 ## Final verdict
 
-**PASS** — canonical diagnostics read-side reconstructs durable forensic parent topology and segment continuity as derived read models without checkpoint authority or write-side coupling.
+**PASS (forensic topology read path)** — canonical diagnostics read-side reconstructs durable forensic parent topology and segment continuity as derived read models without checkpoint authority or write-side coupling.
+
+**BLOCKED (attempt discovery)** — `READ_INTEGRATION_R1: BLOCKED_PENDING_ATTEMPT_DISCOVERY_ARCHITECTURE` until `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION` lands per attempt-discovery architecture R1.
