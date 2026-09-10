@@ -13,10 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import ValidationError
 
-from intergrax.contracts.concurrent_execution_work import (
-    MAX_CONCURRENT_EXECUTION_WORK,
-    ConcurrentExecutionWorkPolicy,
-)
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -185,8 +182,22 @@ def test_concurrent_execution_work_policy_invalid_max_concurrency_fail_closed() 
         ConcurrentExecutionWorkPolicy(max_concurrency=0)
     with pytest.raises(ValidationError):
         ConcurrentExecutionWorkPolicy(max_concurrency=-1)
-    with pytest.raises(ValidationError):
-        ConcurrentExecutionWorkPolicy(max_concurrency=MAX_CONCURRENT_EXECUTION_WORK + 1)
+
+
+def test_concurrent_execution_work_policy_independent_from_fan_out_ceiling() -> None:
+    policy = ConcurrentExecutionWorkPolicy(max_concurrency=65)
+    assert policy.max_concurrency == 65
+
+
+@pytest.mark.asyncio
+async def test_bounded_concurrent_work_large_policy_does_not_exceed_request_count() -> None:
+    port = ConcurrencyObservingPort()
+    labels = ("a", "b", "c", "d")
+    requests = tuple(_request(label) for label in labels)
+    policy = ConcurrentExecutionWorkPolicy(max_concurrency=100)
+    results = await execute_concurrent_execution_work(port, requests, policy=policy)
+    assert port.max_observed <= 4
+    assert tuple(result.value for result in results) == labels
 
 
 def test_root_execution_global_deadline_fixed_at_bind() -> None:

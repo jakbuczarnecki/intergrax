@@ -28,7 +28,7 @@ Most execution-plane limits are **per host process**:
 - `ActiveTaskRegistry` (`_LOCK`, in-memory maps) — mid-run cancel lookup; not cross-worker.
 - `IntegrationCircuitBreaker` / registry — in-process state per integration slug.
 - `DeclarativeToolInvoker._execution_pool` — `ThreadPoolExecutor()` with no explicit `max_workers` (stdlib default **bounded** worker concurrency); Integrax does not define a platform-owned capacity/admission contract; overload can accumulate pending work in the executor's internal queue; one **shared** pool per invoker across tool calls (noisy-neighbor risk between tools).
-- `ConcurrentExecutionWork` — bounded worker pool via `ConcurrentExecutionWorkPolicy` (platform max 64; see W1 qualification).
+- `ConcurrentExecutionWork` — execution-owned bounded worker pool via required `ConcurrentExecutionWorkPolicy` (no platform default; independent from fan-out 64; see W1-B qualification).
 
 ### Cross-process / durable
 

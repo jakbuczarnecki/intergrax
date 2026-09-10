@@ -88,14 +88,14 @@ Future: Redis / DB / cluster coordinator implementing `ExecutionCapacityAdmissio
 |-------|--------|
 | Status | COMPLETE |
 | Owner | `intergrax/runtime/execution/concurrent_execution_work.py` |
-| Bound | `ConcurrentExecutionWorkPolicy.max_concurrency` (1…64, contract-owned) |
-| Default | `DEFAULT_CONCURRENT_EXECUTION_WORK_POLICY` (64) — explicit typed default, not magic in module |
-| Algorithm | Worker pool + index queue; at most `max_concurrency` active `port.execute()` |
+| Bound | `ConcurrentExecutionWorkPolicy.max_concurrency` (≥1, caller-supplied; no platform default) |
+| Default | **None** — policy is required at every public call site |
+| Algorithm | Worker pool + index queue; at most `min(max_concurrency, len(requests))` active `port.execute()` |
 | Ordering | Input order preserved in result tuples |
 | Strict | First failure fails operation; in-flight workers cancelled |
 | Resilient | Per-item `ConcurrentExecutionWorkOutcome` |
 | Cancellation | Parent cancel propagates (`CancelledError`) |
-| Production caller | `council_deliberation.py` passes participant-scoped policy |
+| Production caller | Composition injects `concurrent_work_policy` into `execute_council_deliberation` / parallel proposal hosts |
 
 ## GLOBAL DEADLINE
 
@@ -114,11 +114,11 @@ Future: Redis / DB / cluster coordinator implementing `ExecutionCapacityAdmissio
 - `ExecutionRetryEligibilityRequest` / `evaluate_execution_retry_eligibility`
 - `ExecutionRuntime` + `bind_root_execution_budget`
 - `ExecutionAttemptRetryService` / `GraphRunner` retry seam
-- Fan-out platform max (64) reused as **ceiling** for concurrent work policy field validation only
+- Fan-out platform max (64) is **independent** from `ConcurrentExecutionWorkPolicy` (W1-B decoupling)
 
 ## NEW CONTRACTS
 
-- `intergrax/contracts/concurrent_execution_work.py` — `ConcurrentExecutionWorkPolicy`, `MAX_CONCURRENT_EXECUTION_WORK`
+- `intergrax/contracts/concurrent_execution_work.py` — `ConcurrentExecutionWorkPolicy` (explicit injection; no platform ceiling)
 - `intergrax/contracts/execution_capacity_admission.py` — W1-A root capacity port/policy/permit
 - `ActiveExecutionBudgetState.global_deadline_monotonic` + `peek_active_execution_global_deadline_monotonic()`
 

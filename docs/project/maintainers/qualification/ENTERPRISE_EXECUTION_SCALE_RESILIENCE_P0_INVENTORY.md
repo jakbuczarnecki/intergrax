@@ -41,7 +41,7 @@ Architecture companion: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md`
 | GraphExecutor (legacy graph) | batch parallel | optional 256 cap | executor instance | no | GRAPH_BACKPRESSURE | high if caps unset | `graph_executor.py` |
 | Orchestration topology | slot batch | min(host, policy) | submission | no | semaphore wait | unbounded if both None | `orchestration_topology.py` |
 | Child execution | sequential per spawn | budget ledger | parent tree | no | none | depth/budget exhaustion | `child.py` |
-| Concurrent council work | worker pool | **policy max_concurrency ≤64** | caller | no | bounded per call | `concurrent_execution_work.py` |
+| Concurrent council work | worker pool | **explicit `ConcurrentExecutionWorkPolicy`** | composition → council host | no | bounded per call | `concurrent_execution_work.py`, `council_deliberation.py` |
 | R1 retry | attempt generations | max_attempts | run | durable CAS | none | retry storm | `retry/policy.py`, `retry/service.py` |
 | R2 checkpoint | writes per task | revision CAS | tenant+task stream | yes (SQLite) | lock contention | hotspot | `long_running/store.py` |
 | R3 partial recovery | per failed slot | fan-out bounds | topology | no | same as fan-out | recovery storm | `fan_out_partial_recovery.py` |

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 from dataclasses import dataclass
 
 import pytest
 
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.runtime.execution.concurrent_execution_work import (
     ConcurrentExecutionWorkDisposition,
     execute_concurrent_execution_work,
@@ -16,6 +18,8 @@ from intergrax.runtime.execution.execution_work_port import ExecutionWorkPort
 from intergrax.runtime.execution.request import ExecutionRequest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_TEST_CONCURRENT_WORK_POLICY = ConcurrentExecutionWorkPolicy(max_concurrency=3)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +91,7 @@ async def test_concurrent_execution_work_all_success() -> None:
     results = await execute_concurrent_execution_work(
         port,
         (_request("a"), _request("b"), _request("c")),
+        policy=_TEST_CONCURRENT_WORK_POLICY,
     )
     assert tuple(result.value for result in results) == ("a", "b", "c")
 
@@ -98,6 +103,7 @@ async def test_concurrent_execution_work_one_failure_raises() -> None:
         await execute_concurrent_execution_work(
             port,
             (_request("a"), _request("b"), _request("c")),
+            policy=_TEST_CONCURRENT_WORK_POLICY,
         )
 
 
@@ -107,6 +113,7 @@ async def test_concurrent_execution_work_resilient_all_success() -> None:
     outcomes = await execute_concurrent_execution_work_resilient(
         port,
         (_request("a"), _request("b"), _request("c")),
+        policy=_TEST_CONCURRENT_WORK_POLICY,
     )
     assert len(outcomes) == 3
     assert all(
@@ -122,6 +129,7 @@ async def test_concurrent_execution_work_resilient_one_failure() -> None:
     outcomes = await execute_concurrent_execution_work_resilient(
         port,
         (_request("a"), _request("b"), _request("c")),
+        policy=_TEST_CONCURRENT_WORK_POLICY,
     )
     assert outcomes[0].disposition is ConcurrentExecutionWorkDisposition.SUCCEEDED
     assert outcomes[0].result is not None
@@ -139,6 +147,7 @@ async def test_concurrent_execution_work_resilient_multiple_failures() -> None:
     outcomes = await execute_concurrent_execution_work_resilient(
         port,
         (_request("a"), _request("b"), _request("c")),
+        policy=_TEST_CONCURRENT_WORK_POLICY,
     )
     assert outcomes[0].disposition is ConcurrentExecutionWorkDisposition.FAILED
     assert outcomes[1].disposition is ConcurrentExecutionWorkDisposition.SUCCEEDED
@@ -160,6 +169,7 @@ async def test_concurrent_execution_work_resilient_stable_ordering() -> None:
         execute_concurrent_execution_work_resilient(
             port,
             (_request("a"), _request("b"), _request("c")),
+            policy=_TEST_CONCURRENT_WORK_POLICY,
         ),
     )
     await _wait_until_started(started, frozenset({"a", "b", "c"}))
@@ -177,6 +187,7 @@ async def test_concurrent_execution_work_resilient_all_scheduled_concurrently() 
         execute_concurrent_execution_work_resilient(
             port,
             (_request("a"), _request("b"), _request("c")),
+            policy=_TEST_CONCURRENT_WORK_POLICY,
         ),
     )
     await _wait_until_started(started, frozenset({"a", "b", "c"}))
@@ -195,9 +206,24 @@ async def test_concurrent_execution_work_resilient_cancellation_propagates() -> 
         execute_concurrent_execution_work_resilient(
             port,
             (_request("a"), _request("b")),
+            policy=_TEST_CONCURRENT_WORK_POLICY,
         ),
     )
     await _wait_until_started(started, frozenset({"a", "b"}))
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
+
+
+def test_execute_concurrent_execution_work_policy_is_required_keyword_only() -> None:
+    strict_params = inspect.signature(execute_concurrent_execution_work).parameters
+    resilient_params = inspect.signature(execute_concurrent_execution_work_resilient).parameters
+    for name, params in (("strict", strict_params), ("resilient", resilient_params)):
+        policy_param = params["policy"]
+        assert policy_param.default is inspect.Parameter.empty, name
+        assert policy_param.kind is inspect.Parameter.KEYWORD_ONLY, name
+
+
+def test_concurrent_execution_work_policy_not_capped_by_fan_out_ceiling() -> None:
+    policy = ConcurrentExecutionWorkPolicy(max_concurrency=65)
+    assert policy.max_concurrency == 65

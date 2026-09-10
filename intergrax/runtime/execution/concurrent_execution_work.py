@@ -15,10 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Generic, TypeVar
 
-from intergrax.contracts.concurrent_execution_work import (
-    DEFAULT_CONCURRENT_EXECUTION_WORK_POLICY,
-    ConcurrentExecutionWorkPolicy,
-)
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.runtime.execution.execution_work_port import ExecutionWorkPort
 from intergrax.runtime.execution.request import ExecutionRequest
 
@@ -178,7 +175,7 @@ async def execute_concurrent_execution_work(
     port: ExecutionWorkPort[InputT, OutputT, ResultT],
     requests: tuple[ExecutionRequest[InputT, OutputT], ...],
     *,
-    policy: ConcurrentExecutionWorkPolicy = DEFAULT_CONCURRENT_EXECUTION_WORK_POLICY,
+    policy: ConcurrentExecutionWorkPolicy,
 ) -> tuple[ResultT, ...]:
     """Execute independent work units concurrently through one Execution work port."""
     if type(requests) is not tuple:
@@ -193,7 +190,7 @@ async def execute_concurrent_execution_work_resilient(
     port: ExecutionWorkPort[InputT, OutputT, ResultT],
     requests: tuple[ExecutionRequest[InputT, OutputT], ...],
     *,
-    policy: ConcurrentExecutionWorkPolicy = DEFAULT_CONCURRENT_EXECUTION_WORK_POLICY,
+    policy: ConcurrentExecutionWorkPolicy,
 ) -> tuple[ConcurrentExecutionWorkOutcome[ResultT], ...]:
     """Execute independent work units concurrently; capture per-unit failures."""
     if type(requests) is not tuple:

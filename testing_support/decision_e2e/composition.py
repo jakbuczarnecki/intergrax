@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.decision_identity import (
     DecisionExecutionLineage,
@@ -183,6 +184,7 @@ class QualificationComposition:
     lifecycle_host: CanonicalDecisionLifecycleHost
     lifecycle_observer: CanonicalRuntimeEventDecisionLifecycleObserver
     event_bus: RuntimeEventBus
+    participant_concurrent_work_policy: ConcurrentExecutionWorkPolicy
 
     def lifecycle_for_identity(
         self,
@@ -254,6 +256,7 @@ def build_sqlite_persistence(tmp_dir: Path) -> QualificationPersistenceBundle:
 def build_qualification_composition(
     environment: QualificationEnvironment,
     *,
+    participant_concurrent_work_policy: ConcurrentExecutionWorkPolicy,
     run_budget: RunBudget | None = None,
     persistence: QualificationPersistenceBundle | None = None,
 ) -> QualificationComposition:
@@ -307,6 +310,7 @@ def build_qualification_composition(
         tool_wiring=tool_wiring,
         persistence=persistence,
         event_bus=placeholder_bus,
+        participant_concurrent_work_policy=participant_concurrent_work_policy,
     )
 
 

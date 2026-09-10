@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.contracts.council_strategy import CouncilDeadlockReasonCode
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
@@ -43,6 +44,9 @@ async def test_ds_e2e_08_budget_exhaustion(
 ) -> None:
     composition = build_qualification_composition(
         require_decision_e2e_environment,
+        participant_concurrent_work_policy=ConcurrentExecutionWorkPolicy(
+            max_concurrency=3,
+        ),
         run_budget=RunBudget(max_llm_calls=1),
     )
     identity = mint_qualification_identity(subject="budget-exhaustion")

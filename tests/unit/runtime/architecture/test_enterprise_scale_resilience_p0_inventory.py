@@ -77,14 +77,13 @@ def test_graph_executor_exposes_optional_parallel_caps() -> None:
     assert "max_inflight_nodes" in params
 
 
-def test_concurrent_execution_work_policy_contract_bounded() -> None:
-    from intergrax.contracts.concurrent_execution_work import (
-        MAX_CONCURRENT_EXECUTION_WORK,
-        ConcurrentExecutionWorkPolicy,
-    )
+def test_concurrent_execution_work_policy_contract_explicit_required() -> None:
+    from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 
-    assert MAX_CONCURRENT_EXECUTION_WORK == 64
-    assert ConcurrentExecutionWorkPolicy(max_concurrency=8).max_concurrency == 8
+    policy = ConcurrentExecutionWorkPolicy(max_concurrency=8)
+    assert policy.max_concurrency == 8
+    high_policy = ConcurrentExecutionWorkPolicy(max_concurrency=65)
+    assert high_policy.max_concurrency == 65
 
 
 def test_graph_runner_retry_eligibility_propagates_global_deadline() -> None:

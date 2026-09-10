@@ -145,6 +145,7 @@ async def run_council_deliberation(
         strategy=strategy,
         deliberation_input=deliberation_input,
         work_port=composition.work_port,
+        concurrent_work_policy=composition.participant_concurrent_work_policy,
         disagreement_analyzer=analyzer,
         synthesizer=synthesizer,
         resilient_participant_failures=True,
