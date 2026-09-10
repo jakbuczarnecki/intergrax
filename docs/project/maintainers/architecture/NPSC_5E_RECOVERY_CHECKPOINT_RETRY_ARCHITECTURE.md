@@ -1,6 +1,6 @@
 # NPSC-5E — Recovery, Checkpoint & Retry Architecture
 
-> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 checkpoint durable resume ACTIVE / PASS**; R3 ACTIVE
+> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 FROZEN / PASS**; R3 ACTIVE
 
 ## P0 inventory
 
@@ -139,11 +139,17 @@ See: `docs/project/maintainers/qualification/NPSC_5E_R1_FINAL_CANONICAL_RETRY_AT
 
 ## R2 — Checkpoint & Durable Resume Hardening
 
-**Status:** `ACTIVE / PASS` (2026-09-09)
+**Status:** `FROZEN / PASS` (2026-09-10)
 
 Qualified module: `intergrax/runtime/long_running/checkpoint_resume_validation.py` + hardened `LongRunningCoordinator` / `RuntimeCheckpoint`.
 
-Qualification: `docs/project/maintainers/qualification/NPSC_5E_R2_CHECKPOINT_DURABLE_RESUME_HARDENING.md`
+Qualification chain:
+
+- `docs/project/maintainers/qualification/NPSC_5E_R2_CHECKPOINT_DURABLE_RESUME_HARDENING.md`
+- `docs/project/maintainers/qualification/NPSC_5E_R2_H1_AUTHORITATIVE_RESUME_AUTHORITY_STALE_CHECKPOINT_CLOSURE.md`
+- `docs/project/maintainers/qualification/NPSC_5E_R2_H2_DURABLE_CHECKPOINT_REVISION_STALE_WRITER_PROTECTION.md`
+- `docs/project/maintainers/qualification/NPSC_5E_R2_H2_Q1_MANDATORY_FROZEN_REGRESSION_CLOSURE.md`
+- **Final freeze:** `docs/project/maintainers/qualification/NPSC_5E_R2_FINAL_CHECKPOINT_DURABLE_RESUME_QUALIFICATION_AND_FREEZE.md`
 
 ### Checkpoint ownership (frozen)
 
@@ -252,6 +258,14 @@ Generic coordinator depends on `TaskCheckpointPersistence` / `TaskCheckpointRead
 Mandatory frozen regression closure (`NPSC-5E/R2-H2-Q1`) re-ran R1 Final, P0A, DG_001, NPSC-5D Final, HITL R3, NPSC-5A/B/C, attempt/child/terminal/cancellation/checkpoint/long-running suites and certified revision CAS does not alter Execution, lineage, Governance, HITL, child execution, or recovery ownership.
 
 See: `docs/project/maintainers/qualification/NPSC_5E_R2_H2_Q1_MANDATORY_FROZEN_REGRESSION_CLOSURE.md`
+
+### R2 Final freeze (2026-09-10)
+
+**Status:** `FROZEN / PASS`
+
+Final qualification composes R2 + H1 + H2 + Q1 with cross-layer E2E scenarios (normal resume, stale writer, authority/policy/terminal/lineage gates, cross-process, concurrent claim, R1 retry interop, HITL/child boundaries).
+
+See: `docs/project/maintainers/qualification/NPSC_5E_R2_FINAL_CHECKPOINT_DURABLE_RESUME_QUALIFICATION_AND_FREEZE.md`
 
 ## Future boundaries
 
