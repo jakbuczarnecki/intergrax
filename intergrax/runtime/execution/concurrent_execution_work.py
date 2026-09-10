@@ -15,6 +15,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Generic, TypeVar
 
+from intergrax.contracts.concurrent_execution_work import (
+    DEFAULT_CONCURRENT_EXECUTION_WORK_POLICY,
+    ConcurrentExecutionWorkPolicy,
+)
 from intergrax.runtime.execution.execution_work_port import ExecutionWorkPort
 from intergrax.runtime.execution.request import ExecutionRequest
 
@@ -54,48 +58,147 @@ class ConcurrentExecutionWorkOutcome(Generic[ResultT]):
         raise ValueError(f"unsupported disposition: {self.disposition!r}")
 
 
+def _validate_policy(policy: ConcurrentExecutionWorkPolicy) -> None:
+    if type(policy) is not ConcurrentExecutionWorkPolicy:
+        raise TypeError("policy must be ConcurrentExecutionWorkPolicy")
+
+
+async def _run_bounded_strict(
+    port: ExecutionWorkPort[InputT, OutputT, ResultT],
+    requests: tuple[ExecutionRequest[InputT, OutputT], ...],
+    *,
+    policy: ConcurrentExecutionWorkPolicy,
+) -> tuple[ResultT, ...]:
+    count = len(requests)
+    worker_count = min(policy.max_concurrency, count)
+    results: list[ResultT | None] = [None] * count
+    queue: asyncio.Queue[int | None] = asyncio.Queue()
+    for index in range(count):
+        queue.put_nowait(index)
+
+    async def worker() -> None:
+        while True:
+            index = await queue.get()
+            if index is None:
+                queue.task_done()
+                return
+            try:
+                results[index] = await port.execute(requests[index])
+            except Exception:
+                raise
+            finally:
+                queue.task_done()
+
+    workers = [asyncio.create_task(worker()) for _ in range(worker_count)]
+    try:
+        try:
+            await queue.join()
+        except asyncio.CancelledError:
+            for task in workers:
+                task.cancel()
+            raise
+    finally:
+        for _ in range(worker_count):
+            queue.put_nowait(None)
+        await asyncio.gather(*workers, return_exceptions=True)
+
+    for task in workers:
+        if not task.cancelled():
+            exc = task.exception()
+            if exc is not None:
+                raise exc
+
+    ordered: list[ResultT] = []
+    for item in results:
+        if item is None:
+            raise RuntimeError("bounded concurrent work did not produce all results")
+        ordered.append(item)
+    return tuple(ordered)
+
+
+async def _run_bounded_resilient(
+    port: ExecutionWorkPort[InputT, OutputT, ResultT],
+    requests: tuple[ExecutionRequest[InputT, OutputT], ...],
+    *,
+    policy: ConcurrentExecutionWorkPolicy,
+) -> tuple[ConcurrentExecutionWorkOutcome[ResultT], ...]:
+    count = len(requests)
+    worker_count = min(policy.max_concurrency, count)
+    outcomes: list[ConcurrentExecutionWorkOutcome[ResultT] | None] = [None] * count
+    queue: asyncio.Queue[int | None] = asyncio.Queue()
+    for index in range(count):
+        queue.put_nowait(index)
+
+    async def worker() -> None:
+        while True:
+            index = await queue.get()
+            if index is None:
+                queue.task_done()
+                return
+            try:
+                try:
+                    result = await port.execute(requests[index])
+                except Exception as exc:
+                    outcomes[index] = ConcurrentExecutionWorkOutcome(
+                        disposition=ConcurrentExecutionWorkDisposition.FAILED,
+                        result=None,
+                        error=exc,
+                    )
+                else:
+                    outcomes[index] = ConcurrentExecutionWorkOutcome(
+                        disposition=ConcurrentExecutionWorkDisposition.SUCCEEDED,
+                        result=result,
+                        error=None,
+                    )
+            finally:
+                queue.task_done()
+
+    workers = [asyncio.create_task(worker()) for _ in range(worker_count)]
+    try:
+        try:
+            await queue.join()
+        except asyncio.CancelledError:
+            for task in workers:
+                task.cancel()
+            raise
+    finally:
+        for _ in range(worker_count):
+            queue.put_nowait(None)
+        await asyncio.gather(*workers, return_exceptions=True)
+
+    ordered: list[ConcurrentExecutionWorkOutcome[ResultT]] = []
+    for item in outcomes:
+        if item is None:
+            raise RuntimeError("bounded resilient concurrent work did not produce all outcomes")
+        ordered.append(item)
+    return tuple(ordered)
+
+
 async def execute_concurrent_execution_work(
     port: ExecutionWorkPort[InputT, OutputT, ResultT],
     requests: tuple[ExecutionRequest[InputT, OutputT], ...],
+    *,
+    policy: ConcurrentExecutionWorkPolicy = DEFAULT_CONCURRENT_EXECUTION_WORK_POLICY,
 ) -> tuple[ResultT, ...]:
     """Execute independent work units concurrently through one Execution work port."""
     if type(requests) is not tuple:
         raise TypeError("requests must be tuple")
     if len(requests) == 0:
         raise ValueError("requests must not be empty")
-    results = await asyncio.gather(*(port.execute(request) for request in requests))
-    return tuple(results)
-
-
-async def _execute_one_resilient(
-    port: ExecutionWorkPort[InputT, OutputT, ResultT],
-    request: ExecutionRequest[InputT, OutputT],
-) -> ConcurrentExecutionWorkOutcome[ResultT]:
-    try:
-        result = await port.execute(request)
-    except Exception as exc:
-        return ConcurrentExecutionWorkOutcome(
-            disposition=ConcurrentExecutionWorkDisposition.FAILED,
-            result=None,
-            error=exc,
-        )
-    return ConcurrentExecutionWorkOutcome(
-        disposition=ConcurrentExecutionWorkDisposition.SUCCEEDED,
-        result=result,
-        error=None,
-    )
+    _validate_policy(policy)
+    return await _run_bounded_strict(port, requests, policy=policy)
 
 
 async def execute_concurrent_execution_work_resilient(
     port: ExecutionWorkPort[InputT, OutputT, ResultT],
     requests: tuple[ExecutionRequest[InputT, OutputT], ...],
+    *,
+    policy: ConcurrentExecutionWorkPolicy = DEFAULT_CONCURRENT_EXECUTION_WORK_POLICY,
 ) -> tuple[ConcurrentExecutionWorkOutcome[ResultT], ...]:
     """Execute independent work units concurrently; capture per-unit failures."""
     if type(requests) is not tuple:
         raise TypeError("requests must be tuple")
     if len(requests) == 0:
         raise ValueError("requests must not be empty")
-    outcomes = await asyncio.gather(
-        *(_execute_one_resilient(port, request) for request in requests),
-    )
-    return tuple(outcomes)
+    _validate_policy(policy)
+    return await _run_bounded_resilient(port, requests, policy=policy)

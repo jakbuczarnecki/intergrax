@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional
 
@@ -55,6 +56,9 @@ from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecyc
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.execution.retry.classification import classify_execution_failure
 from intergrax.runtime.execution.retry.service import ExecutionAttemptRetryService
+from intergrax.runtime.execution.active_execution_budget import (
+    peek_active_execution_global_deadline_monotonic,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -150,6 +154,7 @@ class NexusGraphRunner:
             attempt_number=attempt_number,
             resilience_policy=resilience_policy,
         )
+        now_monotonic = time.monotonic()
         request = ExecutionRetryEligibilityRequest(
             classification=classify_execution_failure(
                 kind=ExecutionFailureKind.RETRYABLE_TRANSIENT,
@@ -159,6 +164,8 @@ class NexusGraphRunner:
             max_attempts=max_attempts,
             cancelled=CancellationCoordinator.is_requested(task.metadata),
             proposed_backoff_seconds=backoff,
+            now_monotonic=now_monotonic,
+            global_deadline_monotonic=peek_active_execution_global_deadline_monotonic(),
         )
         try:
             transition = retry_service.transition_for_retry(

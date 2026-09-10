@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import ast
 import inspect
 from pathlib import Path
 
@@ -32,9 +31,6 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _FANOUT_MODULE = (
     _REPO_ROOT / "intergrax" / "agent_distribution" / "bounded_multi_agent_fanout.py"
-)
-_CONCURRENT_WORK = (
-    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "concurrent_execution_work.py"
 )
 _GRAPH_RUNNER = (
     _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "orchestration" / "graph_runner.py"
@@ -81,24 +77,19 @@ def test_graph_executor_exposes_optional_parallel_caps() -> None:
     assert "max_inflight_nodes" in params
 
 
-def test_concurrent_execution_work_has_no_platform_width_constant() -> None:
-    source = _CONCURRENT_WORK.read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    assigned_names = {
-        target.id
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Assign)
-        for target in node.targets
-        if isinstance(target, ast.Name)
-    }
-    assert "MAX_CONCURRENT_EXECUTION_WORK" not in assigned_names
+def test_concurrent_execution_work_policy_contract_bounded() -> None:
+    from intergrax.contracts.concurrent_execution_work import (
+        MAX_CONCURRENT_EXECUTION_WORK,
+        ConcurrentExecutionWorkPolicy,
+    )
+
+    assert MAX_CONCURRENT_EXECUTION_WORK == 64
+    assert ConcurrentExecutionWorkPolicy(max_concurrency=8).max_concurrency == 8
 
 
-def test_graph_runner_retry_eligibility_request_documents_deadline_gap() -> None:
-    """Documented gap: Nexus graph retry path does not pass global_deadline_monotonic."""
+def test_graph_runner_retry_eligibility_propagates_global_deadline() -> None:
     source = _GRAPH_RUNNER.read_text(encoding="utf-8")
-    assert "ExecutionRetryEligibilityRequest(" in source
-    assert "global_deadline_monotonic" not in source
+    assert "global_deadline_monotonic=peek_active_execution_global_deadline_monotonic()" in source
 
 
 def test_orchestration_scheduling_policy_carries_submission_concurrency() -> None:

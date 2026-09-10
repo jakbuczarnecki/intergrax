@@ -13,6 +13,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
+from intergrax.contracts.concurrent_execution_work import (
+    MAX_CONCURRENT_EXECUTION_WORK,
+    ConcurrentExecutionWorkPolicy,
+)
 from intergrax.contracts.decision_context_visibility import (
     DeliberationContextId,
     ParticipantContextVisibilityPolicy,
@@ -66,6 +70,13 @@ T = TypeVar("T")
 
 _UNTRUSTED_PEER_PROPOSAL_PREFIX = "[untrusted-participant-proposal]"
 _UNTRUSTED_DISAGREEMENT_PREFIX = "[untrusted-disagreement-context]"
+
+
+def _participant_concurrent_work_policy(
+    participant_count: int,
+) -> ConcurrentExecutionWorkPolicy:
+    bounded = min(participant_count, MAX_CONCURRENT_EXECUTION_WORK)
+    return ConcurrentExecutionWorkPolicy(max_concurrency=bounded)
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,6 +287,7 @@ async def execute_parallel_participant_proposals(
     outputs = await execute_concurrent_execution_work(
         work_port,
         tuple(requests),
+        policy=_participant_concurrent_work_policy(len(requests)),
     )
     proposals: list[CouncilParticipantProposal[T]] = []
     for binding, payload in zip(bindings, outputs, strict=True):
@@ -321,6 +333,7 @@ async def execute_parallel_participant_proposals_resilient(
     outcomes = await execute_concurrent_execution_work_resilient(
         work_port,
         tuple(requests),
+        policy=_participant_concurrent_work_policy(len(requests)),
     )
     proposals: list[CouncilParticipantProposal[T]] = []
     for binding, outcome in zip(bindings, outcomes, strict=True):

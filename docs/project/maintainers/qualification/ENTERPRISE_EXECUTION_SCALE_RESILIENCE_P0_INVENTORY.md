@@ -41,7 +41,7 @@ Architecture companion: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md`
 | GraphExecutor (legacy graph) | batch parallel | optional 256 cap | executor instance | no | GRAPH_BACKPRESSURE | high if caps unset | `graph_executor.py` |
 | Orchestration topology | slot batch | min(host, policy) | submission | no | semaphore wait | unbounded if both None | `orchestration_topology.py` |
 | Child execution | sequential per spawn | budget ledger | parent tree | no | none | depth/budget exhaustion | `child.py` |
-| Concurrent council work | gather N | **unbounded N** | caller | no | none | memory/task storm | `concurrent_execution_work.py` |
+| Concurrent council work | worker pool | **policy max_concurrency ≤64** | caller | no | bounded per call | `concurrent_execution_work.py` |
 | R1 retry | attempt generations | max_attempts | run | durable CAS | none | retry storm | `retry/policy.py`, `retry/service.py` |
 | R2 checkpoint | writes per task | revision CAS | tenant+task stream | yes (SQLite) | lock contention | hotspot | `long_running/store.py` |
 | R3 partial recovery | per failed slot | fan-out bounds | topology | no | same as fan-out | recovery storm | `fan_out_partial_recovery.py` |
@@ -66,7 +66,7 @@ Architecture companion: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md`
 |---------|----------|----------|
 | Backoff | yes | `compute_backoff_delay` |
 | Jitter | yes (JITTERED kind) | `backoff.py` |
-| Global deadline on eligibility | **contract yes; Nexus graph retry often omits** | `policy.py` vs `graph_runner.py` request construction |
+| Global deadline on eligibility | contract yes; Nexus graph retry passes when budget bound | `active_execution_budget.py`, `graph_runner.py` |
 | Retry budget | max_attempts | `evaluate_execution_retry_eligibility` |
 | Per-provider isolation | no global retry semaphore | gap |
 | Aligned retry risk | **yes** under outage + shared provider + zero backoff presets | `execution_mode_defaults.py` |
@@ -119,7 +119,7 @@ No execution-plane-wide circuit breaker.
 | Provider | integration timeouts | per adapter |
 | Child | delegate / boundary | parent deadline not auto-reset in child mint |
 | Topology | batch cooperative cancel | in-flight slot may complete |
-| Global deadline | R1 eligibility field | **not wired in GraphRunner retry request** |
+| Global deadline | R1 eligibility field | **W1:** wired in GraphRunner when active execution budget carries deadline |
 | HITL | `HumanTimeoutCoordinator` | long-running scheduler |
 
 ## Cancellation / orphan-work risks
@@ -133,8 +133,8 @@ No execution-plane-wide circuit breaker.
 
 ## Backpressure gaps
 
-1. No bounded admission on `ExecutionRuntime` root execute.  
-2. `execute_concurrent_execution_work` — no width cap.  
+1. No bounded admission on `ExecutionRuntime` root execute (W1 ADR pending).  
+2. ~~`execute_concurrent_execution_work` — no width cap.~~ **W1:** explicit `ConcurrentExecutionWorkPolicy`.  
 3. GraphExecutor — unbounded when caps unset.  
 4. Event bus — fire-and-forget tasks.  
 5. Evidence/checkpoint writes — no explicit write shed.

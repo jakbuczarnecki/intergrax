@@ -1,6 +1,6 @@
 # Enterprise Execution Scale & Resilience — Architecture (P0 baseline)
 
-**Status:** P0 inventory baseline; **W0** strict host capacity guardrails (see qualification doc).  
+**Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1** bounded concurrent work + global deadline propagation (root admission ADR pending).  
 **Baseline:** `origin/development` at audit start.  
 **Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
 
@@ -28,7 +28,7 @@ Most execution-plane limits are **per host process**:
 - `ActiveTaskRegistry` (`_LOCK`, in-memory maps) — mid-run cancel lookup; not cross-worker.
 - `IntegrationCircuitBreaker` / registry — in-process state per integration slug.
 - `DeclarativeToolInvoker._execution_pool` — `ThreadPoolExecutor()` with no explicit `max_workers` (stdlib default **bounded** worker concurrency); Integrax does not define a platform-owned capacity/admission contract; overload can accumulate pending work in the executor's internal queue; one **shared** pool per invoker across tool calls (noisy-neighbor risk between tools).
-- `ConcurrentExecutionWork` — `asyncio.gather` over caller-supplied tuple length (no platform cap in module).
+- `ConcurrentExecutionWork` — bounded worker pool via `ConcurrentExecutionWorkPolicy` (platform max 64; see W1 qualification).
 
 ### Cross-process / durable
 
@@ -97,8 +97,8 @@ Do not treat `asyncio.Lock` / `Semaphore` on GraphExecutor as protecting resourc
 
 ## Target problems for follow-on waves (not P0)
 
-1. **Execution admission** — bounded global/regional concurrency with explicit reject/shed policy.  
-2. **Deadline propagation** — wire `global_deadline_monotonic` on all retry eligibility paths (e.g. Nexus `GraphRunner._transition_attempt_for_retry`).  
+1. **Execution admission** — bounded global/regional concurrency with explicit reject/shed policy (**W1: ADR required** — no lifecycle permit in platform).  
+2. ~~**Deadline propagation**~~ — **W1:** `global_deadline_monotonic` wired from active execution budget into `GraphRunner` retry eligibility when root wall-time budget is set.  
 3. **Provider bulkhead** — per-dependency concurrency and retry budgets (without bypassing canonical ports).  
 4. **Distributed rate limiting** — tenant/provider fairness across workers.  
 5. **Checkpoint store scaling** — reduce SQLite hotspot or shard by tenant for write-heavy fleets.

@@ -229,6 +229,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         budget_token = bind_root_execution_budget(
             execution_id=execution_id,
             ledger=ledger,
+            run_budget=self._run_budget,
         )
         host_token = None
         persistence_token = None

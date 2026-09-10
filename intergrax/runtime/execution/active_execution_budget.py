@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import time
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
 
@@ -25,6 +26,7 @@ class ActiveExecutionBudgetState:
     mode: ExecutionBudgetAllocationMode
     ledger: ExecutionBudgetLedger
     reservation_allowance: RunBudget | None = None
+    global_deadline_monotonic: float | None = None
 
 
 _active_execution_budget: ContextVar[ActiveExecutionBudgetState | None] = ContextVar(
@@ -50,6 +52,14 @@ def peek_active_execution_budget() -> ActiveExecutionBudgetState | None:
     return _active_execution_budget.get()
 
 
+def peek_active_execution_global_deadline_monotonic() -> float | None:
+    """Absolute monotonic deadline for the active execution scope, when configured."""
+    state = peek_active_execution_budget()
+    if state is None:
+        return None
+    return state.global_deadline_monotonic
+
+
 def require_active_execution_budget() -> ActiveExecutionBudgetState:
     state = peek_active_execution_budget()
     if state is None:
@@ -61,12 +71,19 @@ def bind_root_execution_budget(
     *,
     execution_id: ExecutionId,
     ledger: ExecutionBudgetLedger,
+    run_budget: RunBudget | None = None,
 ) -> Token:
     """Bind the canonical per-Run ledger at root execution entry."""
+    global_deadline_monotonic: float | None = None
+    if run_budget is not None and run_budget.max_wall_time_seconds is not None:
+        global_deadline_monotonic = (
+            time.monotonic() + run_budget.max_wall_time_seconds
+        )
     return bind_active_execution_budget(
         ActiveExecutionBudgetState(
             execution_id=execution_id,
             mode=ExecutionBudgetAllocationMode.SHARED,
             ledger=ledger,
+            global_deadline_monotonic=global_deadline_monotonic,
         )
     )

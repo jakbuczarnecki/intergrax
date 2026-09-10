@@ -141,11 +141,17 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             parent_execution_id=parent_execution_id,
             decision=budget_decision,
         )
+        inherited_deadline = (
+            parent_budget_state.global_deadline_monotonic
+            if parent_budget_state is not None
+            else None
+        )
         active_budget = ActiveExecutionBudgetState(
             execution_id=child_execution_id,
             mode=grant.mode,
             ledger=ledger,
             reservation_allowance=grant.reservation_allowance,
+            global_deadline_monotonic=inherited_deadline,
         )
 
         identity = ExecutionIdentityBinding(
