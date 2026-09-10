@@ -1,8 +1,8 @@
 # Platform Execution Unification — Architecture (P0 baseline)
 
-**Status:** `U1_APPLICATION_SCENARIO_ENTRY_QUALIFIED` (P0 inventory + U1 application/scenario entry closure)  
+**Status:** `U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFIED` (P0 inventory + U1 entry + U2 compensation / tool side-effect closure)  
 **Architectural baseline:** NPSC-5E Final `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7` (reference only; work proceeds on current `development`)  
-**Evidence companions:** [`../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md)
+**Evidence companions:** [`../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFICATION.md)
 
 ## Purpose
 
@@ -72,7 +72,7 @@ A **bypass** is a production-capable path that performs execution or a meaningfu
 Examples proven in P0 inventory:
 
 - Instantiating `ChildExecutionRunner` at application composition default instead of injecting `ExecutionWorkPort` / Nexus-backed child port.
-- Background compensation drain invoking `DeclarativeToolInvoker` without `ExecutionRuntime` / active execution admission.
+- Background compensation drain invoking tools without `ExecutionRuntime` admission (**closed U2** — see U2 qualification).
 - Tier-3 or diagnostic code constructing `UnifiedTaskRunner` or calling providers for mutations outside tool/execution boundaries (legacy / non-production paths listed separately).
 
 ## Classification verdicts (exactly one per path)
@@ -112,6 +112,12 @@ Application and scenario production entry closure (EP-02–EP-05) is encoded in:
 Complements NPSC-3G factory convergence (`tests/unit/applications/architecture/test_npsc3g_application_runtime_convergence_gate.py`) and P0 scenario/host-task anchors.
 
 **U1 rule (supported production):** application HTTP / harness task surfaces and scenario tasks must resolve host work through `build_host_task_execution` / `build_environment_host_task_execution` (or harness `build_harness_host_runtime` composition that delegates to the same wiring) — not `UnifiedTaskRunner` or application-local execution runtimes.
+
+## Static gates (U2)
+
+Compensation side-effect admission and worker surface closure:
+
+`tests/unit/runtime/architecture/test_platform_execution_unification_u2_tool_integration_side_effect_closure.py`
 
 ## Closure waves (default proposal)
 

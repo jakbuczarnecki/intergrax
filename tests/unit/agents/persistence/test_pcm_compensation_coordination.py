@@ -25,7 +25,11 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     DeclarativeToolInvokeResult,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.contracts.side_effect import CompensationRequest
+from tests.unit.agents.persistence.compensation_execution_test_support import (
+    build_test_admitted_compensation_side_effect_execution,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -33,7 +37,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 def _sample_job(*, tenant_id: str = "tenant-a", key_suffix: str = "orig") -> CompensationJob:
     key = build_compensation_idempotency_key(f"acp:{key_suffix}")
     return CompensationJob(
-        run_id="run-1",
+        run_id=str(mint_run_id()),
         tenant_id=tenant_id,
         agent_id="agent-a",
         step_index=0,
@@ -86,7 +90,7 @@ async def test_b2_second_worker_does_not_invoke() -> None:
     await drain_pending_compensation_jobs(
         store,
         tenant_id="tenant-a",
-        invoker=invoker,
+        side_effect_execution=build_test_admitted_compensation_side_effect_execution(invoker),
         owner_id="worker-b",
         limit=1,
     )
@@ -129,7 +133,7 @@ async def test_a1_crash_after_compensation_effect_becomes_uncertain() -> None:
     await drain_pending_compensation_jobs(
         store,
         tenant_id="tenant-a",
-        invoker=invoker,
+        side_effect_execution=build_test_admitted_compensation_side_effect_execution(invoker),
         owner_id="worker-b",
         limit=1,
     )
@@ -284,7 +288,9 @@ async def test_b10_idempotency_key_is_not_ownership() -> None:
     await drain_pending_compensation_jobs(
         store,
         tenant_id="tenant-a",
-        invoker=CallableDeclarativeToolInvoker(_invoke),
+        side_effect_execution=build_test_admitted_compensation_side_effect_execution(
+            CallableDeclarativeToolInvoker(_invoke),
+        ),
         owner_id="worker-b",
         limit=1,
     )

@@ -10,6 +10,10 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     DeclarativeToolInvokeResult,
 )
 from intergrax.contracts.side_effect import CompensationRequest
+from intergrax.contracts.execution_identity import mint_run_id
+from tests.unit.agents.persistence.compensation_execution_test_support import (
+    build_test_admitted_compensation_side_effect_execution,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -20,7 +24,7 @@ async def test_drain_pending_compensation_jobs_marks_completed() -> None:
     key = build_compensation_idempotency_key("acp:worker")
     store.enqueue(
         CompensationJob(
-            run_id="run-worker",
+            run_id=str(mint_run_id()),
             tenant_id="tenant-a",
             agent_id="agent-a",
             step_index=0,
@@ -41,7 +45,9 @@ async def test_drain_pending_compensation_jobs_marks_completed() -> None:
     results = await drain_pending_compensation_jobs(
         store,
         tenant_id="tenant-a",
-        invoker=CallableDeclarativeToolInvoker(_invoke),
+        side_effect_execution=build_test_admitted_compensation_side_effect_execution(
+            CallableDeclarativeToolInvoker(_invoke),
+        ),
     )
     assert invoked == ["email.recall"]
     assert results[0].status == "compensated"

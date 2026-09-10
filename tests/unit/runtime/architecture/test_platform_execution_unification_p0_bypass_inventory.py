@@ -166,13 +166,13 @@ def test_p0_documented_direct_child_bypass_still_at_composition_default() -> Non
     assert "as_child_execution_port(ChildExecutionRunner" in source
 
 
-def test_p0_compensation_worker_not_execution_runtime_entry() -> None:
-    """BY-02 evidence anchor — worker drains tools without ExecutionRuntime admission."""
+def test_p0_compensation_worker_routes_through_admitted_execution_port() -> None:
+    """EP-16 closure — worker must not invoke tools outside admitted execution."""
     source = _COMPENSATION_WORKER.read_text(encoding="utf-8")
     assert "drain_pending_compensation_jobs" in source
-    assert "DeclarativeToolInvoker" in source
-    assert "ExecutionRuntime" not in source
-    assert "HostTaskExecutionPort" not in source
+    assert "CompensationSideEffectExecutionPort" in source
+    assert "DeclarativeToolInvoker" not in source
+    assert ".invoke(" not in source
 
 
 def test_p0_scenario_entry_uses_host_task_execution() -> None:
@@ -216,7 +216,7 @@ def test_p0_central_inventory_metrics_and_bypass_consistency() -> None:
     )
     assert "BY-03" not in proven_section
     assert "BY-01" in proven_section
-    assert "BY-02" in proven_section
+    assert "BY-02" not in proven_section or "closed in U2" in proven_section
 
     for row in bypass_rows:
         proven_id = _BYPASS_ROW_TO_PROVEN_ID.get(row["id"])

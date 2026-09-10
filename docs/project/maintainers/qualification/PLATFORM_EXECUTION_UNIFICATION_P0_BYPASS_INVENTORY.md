@@ -24,20 +24,20 @@
 | Metric | Count |
 | --- | ---: |
 | Total execution-capable entrypoints inventoried | 22 |
-| CANONICAL | 14 |
+| CANONICAL | 15 |
 | CANONICAL WITH GAP | 3 |
 | LEGACY BUT NON-PRODUCTION | 2 |
 | UNSUPPORTED / DEAD | 0 |
-| BYPASS | 2 |
+| BYPASS | 1 |
 | AMBIGUOUS | 1 |
-| Supported execution bypasses (production) | 2 |
+| Supported execution bypasses (production) | 1 |
 | Direct child execution bypasses | 1 |
-| Direct tool / side-effect bypasses | 1 |
+| Direct tool / side-effect bypasses | 0 |
 | Governance bypasses (proven) | 0 |
 | Authority bypasses (proven) | 0 |
 | Nexus scheduling bypasses | 0 |
 | Uncontrolled parallel execution paths (execution-relevant) | 0 (bounded fan-out under coordination tests) |
-| P0 bypasses | 1 |
+| P0 bypasses | 0 |
 | P1 bypasses | 1 |
 | P2 gaps | 3 |
 | P3 legacy cleanups | 2 |
@@ -61,7 +61,7 @@
 | EP-13 | UAEP agent step | agents | `RuntimeExecutionContext.invoke_tool` → catalog gateway → `RuntimeToolInvoker` | Yes when inside Nexus step | Yes | Active execution | Active authority | Agent governance when configured | Under parent | CANONICAL WITH GAP | P2 | `runtime_tool_helpers.py`, `invoker.py` (`agent_runtime_governance` optional) | Agent governance wiring | U3 |
 | EP-14 | ACP declarative catalog tools | applications / agents | `build_declarative_invoker_from_tool_wiring` → `RuntimeToolInvoker` (no governance param in wiring) | Partial | Yes | When bound to active run | Side-effect auth in invoker | Optional agent governance | When in run | CANONICAL WITH GAP | P2 | `declarative_tool_wiring.py:33-38` | Applications tool wiring | U2 |
 | EP-15 | Default delegated subtask factory | applications / agent_distribution | `DelegatedSubtaskServiceFactory.create` default `as_child_execution_port(ChildExecutionRunner())` | **No** — bypasses `ExecutionWorkPort` / Nexus child scheduling adapter | Child agent work | Child IDs minted in runner | Parent context required | Physical delegation governance only | Child lineage in runner | **BYPASS** | **P1** | `production_agent_capability_runtime.py:163-167` | Applications composition | **U4** |
-| EP-16 | Compensation queue drain | agents / persistence | `drain_pending_compensation_jobs` → `DeclarativeToolInvoker.invoke` | **No** `ExecutionRuntime` / host task | **Yes** (compensation tools) | **No** canonical ExecutionId | **No** active execution authority | **No** governance port on worker path | **No** | **BYPASS** | **P0** | `compensation_queue_worker.py:36-40` | ACP persistence / background admission | **U2** |
+| EP-16 | Compensation queue drain | agents / persistence | `drain_pending_compensation_jobs` → `CompensationSideEffectExecutionPort` → `Execution` / `ExecutionRuntime` → `CompensationToolInvokeSession` → `RuntimeToolInvoker` | Yes | Yes (compensation tools) | Yes (root admission; preserves job `run_id`) | Active authority enforced in delegate | Decision lifecycle host + tool policy on invoke | Root segment for job run | **CANONICAL** | — | `compensation_queue_worker.py`, `runtime/execution/compensation_side_effect.py` | Runtime compensation admission | **U2 closed** |
 | EP-17 | Work-stage capability loop | autonomous_work / catalog | `WorkStageCapabilityLoop` → `WorkStageToolExecutionPort.execute` | **Port-defined** | Tool when TOOL kind | Loop binds minted ids locally | Depends on port impl | Catalog governance context only | Correlation fields | **AMBIGUOUS — REQUIRES OWNER DECISION** | P1 | `work_stage_capability_loop.py:290-296`, identity mint in module | Capability catalog + AW | Owner decision |
 | EP-18 | HITL governed continuation | runtime | Governed continuation tests / `test_npsc5d_r3_*` production wiring | Yes (qualified) | Resumes canonical execution | Yes | Yes | HITL governance | Resume lineage | CANONICAL | — | `test_npsc5d_r3_governed_continuation.py` | HITL / recovery | — |
 | EP-19 | Recovery retry / resume / partial | runtime | R1 `ExecutionAttemptRetryService`, R2 checkpoint resume, R3 fan-out partial recovery | Returns to canonical execution | No new bypass plane | Yes | Authority gates in R2 | Policy in recovery contracts | Yes | CANONICAL | — | NPSC-5E finals | Frozen recovery plane | — |
@@ -82,16 +82,9 @@ ProductionAgentCapabilityRuntime.DelegatedSubtaskServiceFactory.create
 
 Missing: canonical **`ExecutionWorkPort` / Nexus child scheduling adapter** injection at production default.
 
-### BY-02 (P0) — compensation worker tool side effects
+### BY-02 (P0) — closed in U2
 
-```text
-drain_pending_compensation_jobs
-  → DeclarativeToolInvoker.invoke
-  → (CatalogDeclarativeToolInvoker / RuntimeToolInvoker when wired)
-  → external tool side effect
-```
-
-Missing: **`ExecutionRuntime` / host task / background execution identity admission** before side effect.
+Compensation queue drain no longer invokes tools directly. See [`PLATFORM_EXECUTION_UNIFICATION_U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFICATION.md`](PLATFORM_EXECUTION_UNIFICATION_U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFICATION.md).
 
 ## Ambiguous execution paths requiring owner decision
 
@@ -140,7 +133,7 @@ Static gate: `test_platform_execution_unification_p0_bypass_inventory.py`.
 | Wave | Scope (from inventory) |
 | --- | --- |
 | **U1** | ✅ Closed — EP-02–EP-05 qualified; see `PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md` |
-| **U2** | EP-16 BY-02; EP-14 governance wiring; integration side-effect monitoring (EP-22) |
+| **U2** | ✅ EP-16 / BY-02 closed; EP-14 qualified; EP-22 qualified — see U2 qualification artifact |
 | **U3** | EP-13 agent governance defaults |
 | **U4** | EP-15 BY-01 — inject `ExecutionWorkPort` at production composition |
 | **U5** | Re-run inventory with zero production bypasses; extend static gates |
