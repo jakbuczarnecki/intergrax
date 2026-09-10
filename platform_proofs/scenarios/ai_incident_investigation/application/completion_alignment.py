@@ -37,6 +37,7 @@ class CompletionAlignmentStatus(StrEnum):
 class CompletionAlignmentMismatchReason(StrEnum):
     UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS = "unresolved_with_supported_diagnosis"
     SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE = "supported_diagnosis_without_supported_state"
+    UNKNOWN_COMPLETION_MODE = "unknown_completion_mode"
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,9 +81,7 @@ def assess_completion_alignment(
 
     return CompletionAlignmentAssessment(
         status=CompletionAlignmentStatus.MISALIGNED,
-        mismatch_reason=(
-            CompletionAlignmentMismatchReason.SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE
-        ),
+        mismatch_reason=CompletionAlignmentMismatchReason.UNKNOWN_COMPLETION_MODE,
     )
 
 
@@ -101,6 +100,11 @@ def validation_error_for_alignment_assessment(
         is CompletionAlignmentMismatchReason.SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE
     ):
         return SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR
+    if (
+        assessment.mismatch_reason
+        is CompletionAlignmentMismatchReason.UNKNOWN_COMPLETION_MODE
+    ):
+        return COMPLETION_ALIGNMENT_MISMATCH_SIGNAL
     return COMPLETION_ALIGNMENT_MISMATCH_SIGNAL
 
 

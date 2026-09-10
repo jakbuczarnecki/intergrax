@@ -16,6 +16,7 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     COMPLETION_ALIGNMENT_REVISION_GUIDANCE,
     CompletionAlignmentState,
     CompletionAlignmentStatus,
+    SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR,
     UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,
     assess_completion_alignment,
 )
@@ -79,6 +80,47 @@ _ALL_EVIDENCE_IDS = {
 
 def _has_full_evidence(messages: Sequence[ChatMessage]) -> bool:
     return _ALL_EVIDENCE_IDS.issubset(_evidence_ids_from_messages(messages))
+
+
+class _ReverseAlignmentRevisionLLM(FixtureDrivenIncidentInvestigationLLM):
+    """Full evidence with supported-diagnosis overcommit, then canonical repair on revision."""
+
+    def __init__(self, *, persist_misalignment: bool = False) -> None:
+        super().__init__(
+            initial_sequence=_FULL_EVIDENCE_SEQUENCE,
+            revision_sequence=(),
+        )
+        self._persist_misalignment = persist_misalignment
+        self.revision_messages: tuple[ChatMessage, ...] = ()
+
+    def generate_structured(self, messages, output_model, **kwargs):  # type: ignore[no-untyped-def]
+        if output_model is not IncidentReasoningProposal:
+            return super().generate_structured(messages, output_model, **kwargs)
+        is_revision = self._detect_reasoning_phase(messages) == "revision"
+        if is_revision:
+            self.revision_messages = tuple(messages)
+        evidence_ids = _evidence_ids_from_messages(messages)
+        if _has_full_evidence(messages) and (not is_revision or self._persist_misalignment):
+            partial = build_fixture_reasoning_proposal(
+                evidence_ids={
+                    str(WORKLOAD_EVIDENCE_ID),
+                    str(THROUGHPUT_EVIDENCE_ID),
+                    str(STAFFING_PRELIMINARY_EVIDENCE_ID),
+                },
+                is_revision=False,
+            )
+            proposal = partial.model_copy(
+                update={"completion_intent": CompletionIntent.SUPPORTED_DIAGNOSIS}
+            )
+        else:
+            proposal = build_fixture_reasoning_proposal(
+                evidence_ids=evidence_ids,
+                is_revision=is_revision,
+            )
+        return LLMStructuredResult(
+            parsed=proposal,
+            response=build_adapter_response(content=""),
+        )
 
 
 class _AlignmentRevisionLLM(FixtureDrivenIncidentInvestigationLLM):
@@ -190,6 +232,10 @@ async def test_alignment_zero_evaluator_budget_fails_closed() -> None:
 
 
 def test_unknown_completion_mode_fails_closed_as_misaligned() -> None:
+    from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
+        CompletionAlignmentMismatchReason,
+    )
+
     assessment = assess_completion_alignment(
         CompletionAlignmentState(
             completion_mode="unsupported_mode",
@@ -197,8 +243,58 @@ def test_unknown_completion_mode_fails_closed_as_misaligned() -> None:
         )
     )
     assert assessment.status is CompletionAlignmentStatus.MISALIGNED
+    assert assessment.mismatch_reason is CompletionAlignmentMismatchReason.UNKNOWN_COMPLETION_MODE
 
 
 def test_alignment_guidance_signal_is_non_prescriptive() -> None:
     assert "set completion_mode" not in COMPLETION_ALIGNMENT_REVISION_GUIDANCE.lower()
     assert COMPLETION_SUPPORTED_DIAGNOSIS not in COMPLETION_ALIGNMENT_REVISION_GUIDANCE
+
+
+@pytest.mark.asyncio
+async def test_reverse_alignment_misalignment_routes_through_evaluator_loop_to_revision() -> None:
+    llm = _ReverseAlignmentRevisionLLM()
+    fixture_bundle = build_fixture_runtime_bundle(llm_adapter_override=llm)
+
+    result = await execute_resolved_skeleton(fixture_bundle.bundle)
+
+    assert result.outcome == OUTCOME_RESOLVED
+    assert result.critic_verdict_passed
+    assert result.revision_pass is True
+    assert result.evaluator_loop_iterations >= 1
+    assert result.evaluator_loop_iterations <= EVALUATOR_LOOP_MAX_ITERATIONS
+    assert llm.revision_messages
+    system_content = next(
+        message.content or ""
+        for message in llm.revision_messages
+        if message.role == "system"
+    )
+    assert SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR in system_content
+    assert "Authoritative validation state" in system_content
+    assert "supported hypothesis:" not in system_content.lower()
+    assert "alignment mismatch: supported diagnosis completion intent lacks" in system_content
+
+
+@pytest.mark.asyncio
+async def test_reverse_alignment_revision_failure_exhausts_evaluator_budget() -> None:
+    fixture_bundle = build_fixture_runtime_bundle(
+        llm_adapter_override=_ReverseAlignmentRevisionLLM(persist_misalignment=True),
+    )
+    with pytest.raises(PreReconciliationValidationError) as exc_info:
+        await execute_resolved_skeleton(
+            fixture_bundle.bundle,
+            evaluator_loop_max_iterations=EVALUATOR_LOOP_MAX_ITERATIONS,
+        )
+    assert SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR in exc_info.value.diagnostic.validation_errors
+
+
+@pytest.mark.asyncio
+async def test_reverse_alignment_zero_evaluator_budget_fails_closed() -> None:
+    fixture_bundle = build_fixture_runtime_bundle(
+        llm_adapter_override=_ReverseAlignmentRevisionLLM(persist_misalignment=True),
+    )
+    with pytest.raises(PreReconciliationValidationError):
+        await execute_resolved_skeleton(
+            fixture_bundle.bundle,
+            evaluator_loop_max_iterations=1,
+        )

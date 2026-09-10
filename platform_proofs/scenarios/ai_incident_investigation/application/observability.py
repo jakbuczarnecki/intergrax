@@ -244,6 +244,13 @@ class IncidentCompletionAlignmentDiagV1(DiagnosticPayload):
     revision_authoritative_context_present: bool = False
     supported_hypothesis_id: str | None = None
     supported_resolution: str | None = None
+    alignment_mismatch_detected: bool = False
+    alignment_direction: str | None = None
+    alignment_correctable: bool = False
+    alignment_correction_attempted: bool = False
+    alignment_correction_attempt_index: int | None = None
+    alignment_correction_succeeded: bool = False
+    alignment_correction_exhausted: bool = False
 
     @classmethod
     def schema_id(cls) -> str:
@@ -259,6 +266,13 @@ class IncidentCompletionAlignmentDiagV1(DiagnosticPayload):
             "revision_authoritative_context_present": self.revision_authoritative_context_present,
             "supported_hypothesis_id": self.supported_hypothesis_id,
             "supported_resolution": self.supported_resolution,
+            "alignment_mismatch_detected": self.alignment_mismatch_detected,
+            "alignment_direction": self.alignment_direction,
+            "alignment_correctable": self.alignment_correctable,
+            "alignment_correction_attempted": self.alignment_correction_attempted,
+            "alignment_correction_attempt_index": self.alignment_correction_attempt_index,
+            "alignment_correction_succeeded": self.alignment_correction_succeeded,
+            "alignment_correction_exhausted": self.alignment_correction_exhausted,
         }
 
     def redact(self) -> IncidentCompletionAlignmentDiagV1:
@@ -271,6 +285,13 @@ class IncidentCompletionAlignmentDiagV1(DiagnosticPayload):
             revision_authoritative_context_present=self.revision_authoritative_context_present,
             supported_hypothesis_id=self.supported_hypothesis_id,
             supported_resolution=self.supported_resolution,
+            alignment_mismatch_detected=self.alignment_mismatch_detected,
+            alignment_direction=self.alignment_direction,
+            alignment_correctable=self.alignment_correctable,
+            alignment_correction_attempted=self.alignment_correction_attempted,
+            alignment_correction_attempt_index=self.alignment_correction_attempt_index,
+            alignment_correction_succeeded=self.alignment_correction_succeeded,
+            alignment_correction_exhausted=self.alignment_correction_exhausted,
         )
 
 

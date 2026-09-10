@@ -67,6 +67,8 @@ class CompletionAlignmentRevisionContext:
                     "supported_diagnosis_without_supported_state forbids supported_resolution"
                 )
             return
+        if self.mismatch_reason is CompletionAlignmentMismatchReason.UNKNOWN_COMPLETION_MODE:
+            raise ValueError("unknown_completion_mode cannot produce revision context")
         raise ValueError(f"unsupported mismatch_reason: {self.mismatch_reason}")
 
 
